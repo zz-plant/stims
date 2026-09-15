@@ -35,11 +35,13 @@ const HINTS: HelpHintDef[] = [
     // a dead end for anyone driving the page from the keyboard — the one
     // audience that most needs to be told where the controls are, since the
     // dock is hidden until something asks for it. Tab reaches the same dock.
+    // `?` is named here because nothing else on the stage ever mentions it,
+    // and it is the one key that lists every other one.
     message: () =>
       isMobileDevice()
         ? 'Swipe to change the visuals — double-tap to fill the screen'
-        : 'Press → for a different visual. Tab (or move the mouse) for the controls.',
-    autoHideMs: 6000,
+        : 'Press → for a different visual, Space to pause, ? for every key. Tab (or move the mouse) for the controls.',
+    autoHideMs: 7000,
     anchor: 'stage',
   },
   {
@@ -49,15 +51,16 @@ const HINTS: HelpHintDef[] = [
     anchor: 'panel',
   },
   {
-    // Interaction-reactive presets were completely silent about being
-    // interactive: the keys and gestures that drive them are documented in
-    // the shortcuts dialog now, but nothing told you *this* visual is one of
-    // the few that listens. Fires once, the first time you land on one.
+    // Taught on the first drag, whatever the preset. This used to fire only
+    // on presets that read the interaction signals — which is 0 of the 2,686
+    // bundled — while drag, pinch and twist move the picture on every one of
+    // them through the runtime's interaction response. So the hint about
+    // dragging never showed, and the drag it described worked everywhere.
     id: 'interactive-preset',
     message: () =>
       isMobileDevice()
-        ? 'This visual reacts to you — drag, pinch and twist it'
-        : 'This visual reacts to you — click it and drag, or press Q, R, [ and ]',
+        ? 'Dragging moves the visuals. Pinch to zoom and warp, twist to rotate.'
+        : 'Dragging moves the visuals. Scroll to nudge them; = and - zoom, , and . rotate.',
     autoHideMs: 7000,
     anchor: 'stage',
   },

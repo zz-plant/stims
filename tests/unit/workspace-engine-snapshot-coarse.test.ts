@@ -48,6 +48,7 @@ const CHANGED_VALUES: { [K in keyof EngineSnapshot]: EngineSnapshot[K] } = {
   runtimeReady: true,
   audioActive: true,
   audioSource: 'demo',
+  playbackPaused: true,
   audioEnergy: 0.9,
   audioBass: 0.9,
   audioMid: 0.9,

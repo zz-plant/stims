@@ -39,6 +39,7 @@ import {
   setAudioBandScalars,
   setAudioEnergy,
 } from './engine-audio-energy-store.ts';
+import { setActiveFileAudioPaused } from './file-audio.ts';
 import { useAudioSourceSync } from './hooks/use-audio-source-sync.ts';
 import { useCatalogLoading } from './hooks/use-catalog-loading.ts';
 import { useDocumentDatasetSync } from './hooks/use-document-dataset-sync.ts';
@@ -904,6 +905,28 @@ export function useWorkspaceSessionState({
     },
     resumePreview: () => {
       engineRef.current?.resumePreview();
+    },
+    /**
+     * Hold or release the whole stage. The engine holds the picture; the two
+     * sources whose sound this page itself produces — a file's <audio>
+     * element and the embedded YouTube player — pause with it, since a frozen
+     * frame over a track that plays on reads as the visuals having died.
+     * Mic and tab audio belong to something else and keep playing; holding
+     * the frame is all "pause" can mean for them.
+     */
+    setPlaybackPaused: (paused: boolean): boolean => {
+      const applied = engineRef.current?.setPlaybackPaused(paused) ?? false;
+      const source = engineRef.current?.getSnapshot().audioSource ?? null;
+      if (source === 'file') {
+        setActiveFileAudioPaused(applied);
+      } else if (source === 'youtube') {
+        if (applied) {
+          youtubeTransportControls.pause();
+        } else {
+          youtubeTransportControls.play();
+        }
+      }
+      return applied;
     },
     stopAudio: async () => {
       await engineRef.current?.stopAudio().catch((error) => {

@@ -20,6 +20,7 @@ import {
   subscribeToAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
+import { isMobileDevice } from '../utils/browser/device-detect.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { useScrollerOverflow } from './hooks/use-scroller-overflow.ts';
@@ -28,6 +29,11 @@ import { PresetGrid } from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
 import { PresetSignals } from './PresetSignals.tsx';
 import { runPresetPromoteTransition } from './promote-transition.ts';
+import {
+  clearQuickSelectEntries,
+  publishQuickSelectEntries,
+  quickSelectDigit,
+} from './quick-select.ts';
 import { SkeletonPresetCard } from './SkeletonPresetCard.tsx';
 import { writeStored } from './safe-storage.ts';
 import { UiIcon } from './UiIcon.tsx';
@@ -276,6 +282,15 @@ export function BrowseSheetPanel({
     () => sortBrowseEntries(browseEntries, sortMode, randomSeed),
     [browseEntries, sortMode, randomSeed],
   );
+
+  // In list view this panel is what the digit keys index; in grid view the
+  // grid publishes its own (variant-collapsed) order. Only one is mounted.
+  const showQuickSelectKeys = !isMobileDevice();
+  useEffect(() => {
+    if (gridView) return;
+    publishQuickSelectEntries(sorted.map((entry) => entry.id));
+    return clearQuickSelectEntries;
+  }, [gridView, sorted]);
 
   /**
    * How many presets "Reduce flashing" is holding back.
@@ -1043,6 +1058,11 @@ export function BrowseSheetPanel({
                       aria-current={
                         entry.id === currentPresetId ? 'true' : undefined
                       }
+                      aria-keyshortcuts={
+                        showQuickSelectKeys
+                          ? (quickSelectDigit(virtualRow.index) ?? undefined)
+                          : undefined
+                      }
                       onClick={(event) => {
                         setRovingIndex(virtualRow.index);
                         runPresetPromoteTransition({
@@ -1058,6 +1078,15 @@ export function BrowseSheetPanel({
                           compact
                           preview={presetPreviews[entry.id] ?? null}
                         />
+                        {showQuickSelectKeys &&
+                        quickSelectDigit(virtualRow.index) ? (
+                          <span
+                            className="ctl-preset__quick-key"
+                            aria-hidden="true"
+                          >
+                            {quickSelectDigit(virtualRow.index)}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="ctl-preset__copy">
                         <span className="ctl-preset__title">

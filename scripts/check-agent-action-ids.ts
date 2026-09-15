@@ -71,6 +71,21 @@ const PALETTE_ONLY_EXEMPT = new Set([
   'open-shortcuts',
   'cycle-theme',
   'use-webgl',
+  // Keyboard-first tuning of the playing preset (shortcut-registry.ts binds
+  // H, W, I, O, J and < >). The dock's transition control opens the ladder
+  // of durations, which covers blend-vs-cut; a bar button per nudge would
+  // be ten buttons for what is a keyboard idiom.
+  'toggle-transition-mode',
+  'wave-mode-next',
+  'wave-mode-previous',
+  'nudge-zoom-in',
+  'nudge-zoom-out',
+  'nudge-warp-up',
+  'nudge-warp-down',
+  'nudge-wave-scale-up',
+  'nudge-wave-scale-down',
+  'nudge-rotate-right',
+  'nudge-rotate-left',
 ]);
 
 /**
@@ -83,8 +98,15 @@ const PALETTE_ONLY_EXEMPT = new Set([
  *   check (`pip.supported`) that only makes sense as a dock control.
  * - 'open-palette': the dock's "open command palette" button — a palette
  *   action to open the palette from within itself would be meaningless.
+ * - 'transition-menu': the trigger that opens the transition ladder. The
+ *   rungs inside it carry the palette ids (transition-cut / -1s / -2s /
+ *   -5s); the trigger itself only discloses them.
  */
-const DOCK_ONLY_EXEMPT = new Set(['toggle-pip', 'open-palette']);
+const DOCK_ONLY_EXEMPT = new Set([
+  'toggle-pip',
+  'open-palette',
+  'transition-menu',
+]);
 
 function extractPaletteActionIds(source: string): string[] {
   const startMarker = 'const paletteActions: CommandAction[] = useMemo(';

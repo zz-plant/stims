@@ -4,25 +4,26 @@ import {
   NO_RESERVED_KEYS,
   setReservedShellKeys,
 } from '../../core/unified-input.ts';
-import type { PanelState, PresetCatalogEntry } from '../contracts';
+import type { PanelState } from '../contracts';
+import { getQuickSelectEntries } from '../quick-select.ts';
 import {
   eventMatchesShortcut,
   getShortcutKeys,
   parseShortcut,
   readShortcutOverrides,
   SHORTCUT_REGISTRY,
+  shortcutHintFor,
 } from '../shortcut-registry.ts';
 
 export function useKeyboardShortcuts({
   liveMode,
   engineReady,
   panel,
-  filteredCatalog,
   updatePanel,
   handlePresetSelection,
   handleShufflePreset,
   handlePreviousPreset,
-  handleAudioStop,
+  handleTogglePlayback,
   handleVisualSearch,
   handleToggleFullscreen,
   toggleFavoritePreset,
@@ -33,12 +34,12 @@ export function useKeyboardShortcuts({
   liveMode: boolean;
   engineReady: boolean;
   panel: string | null;
-  filteredCatalog: PresetCatalogEntry[];
   updatePanel: (panel: PanelState) => void;
   handlePresetSelection: (presetId: string) => void;
   handleShufflePreset: () => void;
   handlePreviousPreset: () => void;
-  handleAudioStop: () => void;
+  /** Space while live: hold or release the stage without ending the session. */
+  handleTogglePlayback: () => void;
   handleVisualSearch: () => Promise<void>;
   handleToggleFullscreen: () => void;
   toggleFavoritePreset?: () => void;
@@ -47,8 +48,6 @@ export function useKeyboardShortcuts({
   /** Runs a command-palette action by id — see ShortcutDefinition.paletteActionId. */
   runPaletteAction?: (actionId: string) => void;
 }) {
-  const filteredCatalogRef = useRef(filteredCatalog);
-  filteredCatalogRef.current = filteredCatalog;
   const updatePanelRef = useRef(updatePanel);
   updatePanelRef.current = updatePanel;
   const handlePresetSelectionRef = useRef(handlePresetSelection);
@@ -57,8 +56,8 @@ export function useKeyboardShortcuts({
   handleShufflePresetRef.current = handleShufflePreset;
   const handlePreviousPresetRef = useRef(handlePreviousPreset);
   handlePreviousPresetRef.current = handlePreviousPreset;
-  const handleAudioStopRef = useRef(handleAudioStop);
-  handleAudioStopRef.current = handleAudioStop;
+  const handleTogglePlaybackRef = useRef(handleTogglePlayback);
+  handleTogglePlaybackRef.current = handleTogglePlayback;
   const handleToggleFullscreenRef = useRef(handleToggleFullscreen);
   handleToggleFullscreenRef.current = handleToggleFullscreen;
   const handleVisualSearchRef = useRef(handleVisualSearch);
@@ -123,7 +122,7 @@ export function useKeyboardShortcuts({
       if (eventMatchesShortcut(event, 'audio', shortcutOverrides)) {
         event.preventDefault();
         if (liveMode) {
-          handleAudioStopRef.current();
+          handleTogglePlaybackRef.current();
         } else if (engineReady) {
           updatePanelRef.current('settings');
         }
@@ -181,16 +180,20 @@ export function useKeyboardShortcuts({
       ) {
         event.preventDefault();
         const index = Number.parseInt(key, 10) - 1;
-        const preset = filteredCatalogRef.current[index];
-        if (preset) {
-          handlePresetSelectionRef.current(preset.id);
+        // The list Browse is showing, in the order it shows it — the cards
+        // wear these digits. Empty while Browse is closed.
+        const numbered = getQuickSelectEntries();
+        const presetId = numbered[index];
+        if (presetId) {
+          handlePresetSelectionRef.current(presetId);
         } else {
           // Silent no-op otherwise reads as a dead keyboard, not "there's no
           // 7th preset right now" — the two are indistinguishable without this.
+          const browseKey = shortcutHintFor('open-browse');
           setStatusMessageRef.current?.(
-            filteredCatalogRef.current.length === 0
-              ? `No presets loaded yet.`
-              : `No preset ${key} — only ${filteredCatalogRef.current.length} in view.`,
+            numbered.length === 0
+              ? `Open Browse${browseKey ? ` (${browseKey})` : ''} to pick presets by number.`
+              : `No preset ${key} — only ${numbered.length} in view.`,
           );
         }
       } else if (eventMatchesShortcut(event, 'help', shortcutOverrides)) {

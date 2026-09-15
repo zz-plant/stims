@@ -25,13 +25,30 @@ export type ShortcutActionId =
   | 'live-performance'
   | 'record'
   | 'generate'
-  | 'theme';
+  | 'theme'
+  | 'transition-mode'
+  | 'wave-mode-next'
+  | 'wave-mode-previous'
+  | 'zoom-in'
+  | 'zoom-out'
+  | 'warp-up'
+  | 'warp-down'
+  | 'wave-scale-up'
+  | 'wave-scale-down'
+  | 'rotate-right'
+  | 'rotate-left';
 
 export type ShortcutDefinition = {
   id: ShortcutActionId;
   label: string;
   defaultKeys: string[];
   configurable?: boolean;
+  /**
+   * Sub-heading the shortcuts dialog draws above this entry and the ones
+   * that follow it. Entries are authored in group order; only the first of
+   * a run needs to name it.
+   */
+  group?: string;
   /**
    * The command-palette action this binding corresponds to.
    *
@@ -68,12 +85,14 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     paletteActionId: 'open-palette',
   },
   {
+    // Space used to stop audio, which unmounts the engine and lands on the
+    // start page — the most universal media key doing the app's most
+    // destructive thing, with no key to undo it. It now holds the picture
+    // and releases it; stopping audio is a named item in the dock menu.
     id: 'audio',
-    label: 'Playback choices / stop audio',
+    label: 'Pause / resume (playback choices before you start)',
     defaultKeys: ['Space'],
-    // Space stops audio while live and opens playback choices otherwise; the
-    // stop action is the one the palette lists, so that is what it annotates.
-    paletteActionId: 'stop-audio',
+    paletteActionId: 'toggle-playback',
   },
   {
     id: 'fullscreen',
@@ -120,38 +139,34 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   {
     id: 'previous',
     label: 'Previous preset',
-    defaultKeys: ['P', 'ArrowLeft'],
+    // Backspace came from the runtime's own key layer, where it went back
+    // undocumented; kept as an alias now that the layer is gone.
+    defaultKeys: ['P', 'ArrowLeft', 'Backspace'],
     paletteActionId: 'previous-preset',
   },
   {
     id: 'favorite',
     label: 'Save current preset',
-    // Not L: the standalone MilkDrop overlay's own keybinding layer
-    // (src/js/milkdrop/runtime/ui-bridge.ts) already owns L for preset-lock,
-    // among a wide set of single-letter nudges (I/O/J/Q, H, W, R) it deals
-    // with independently of this registry. Confirmed unused there and here.
+    // Not L: that is preset lock, below.
     defaultKeys: ['A'],
     paletteActionId: 'save-preset',
   },
   {
-    // Documented here, dispatched elsewhere. The MilkDrop keybinding layer
-    // (runtime/ui-bridge.ts) has owned 'l' for preset lock since long before
-    // this registry existed, and it preventDefault()s, so useKeyboardShortcuts
-    // never sees the key. The entry exists so the hint resolves — the dock's
-    // "Stay here" item can print its key like every other control — and so
-    // `setReservedShellKeys` stops the canvas from claiming it.
-    //
-    // Not configurable, precisely because this registry does not dispatch it:
-    // a rebind here would move the label and leave the behaviour on 'l'.
+    // L was owned by the MilkDrop runtime's own document-level key layer
+    // (runtime/ui-bridge.ts) since before this registry existed, and this
+    // entry only documented it. That layer is gone — the standalone overlay
+    // it served redirects here now — so the shell dispatches the key itself.
     id: 'preset-lock',
     label: 'Stay on this preset (pause auto-advance)',
     defaultKeys: ['L'],
-    configurable: false,
     paletteActionId: 'toggle-preset-lock',
+    dispatchViaPalette: true,
   },
   {
+    // The digits pick the numbered cards while Browse is open; the cards
+    // wear their numbers, so the mapping is visible rather than guessed.
     id: 'quick-select',
-    label: 'Quick-select preset',
+    label: 'Play a numbered preset while Browse is open',
     defaultKeys: ['1–9'],
     configurable: false,
   },
@@ -175,33 +190,27 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   },
   // Bound by dispatching the palette action of the same name.
   //
-  // A letter has to clear three claimants, and only the first is visible from
+  // A letter has to clear two claimants, and only the first is visible from
   // this file:
   //   1. this registry;
-  //   2. the MilkDrop overlay's document handler (runtime/ui-bridge.ts) —
-  //      H, L, R, W plus the I/J/O/Q nudge map, which preventDefault()s and
-  //      returns, so useKeyboardShortcuts never sees the key at all;
-  //   3. the focused-canvas surface (core/unified-input.ts), which
-  //      stopPropagation()s its pointer (WASD), gesture and performance
+  //   2. the focused-canvas surface (core/unified-input.ts), which
+  //      stopPropagation()s its pointer, gesture and performance
   //      (E/X/Q/Z/R/space/1-3/brackets) keys.
-  // That leaves C, T, U, V and Y. Q reads better for 'queue' and D for
-  // 'dark', and both were tried first — they are silently dead keys.
+  // The MilkDrop runtime used to be a third, with its own document-level
+  // handler for H, L, R, W and an I/J/O/Q nudge map; those bindings now live
+  // here (the nudge group below) or were retired (R duplicated N). Letters
+  // still free after everything below: D, K and Y; the canvas holds Q, R, X
+  // and Z as performance keys whenever the stage has focus.
   {
     id: 'queue-add',
     label: 'Add this preset to the queue',
-    // Not Q: the overlay's nudge map owns q (and the canvas takes it too).
+    // Not Q: the canvas takes it as a performance key.
     defaultKeys: ['U'],
     paletteActionId: 'queue-add',
     dispatchViaPalette: true,
   },
   {
     // Shift+D, for "display" — the mode is about driving one.
-    //
-    // Not the obvious Shift+L: the MilkDrop overlay handles both 'l' and 'L'
-    // for preset lock and calls preventDefault, so an L binding never
-    // reaches the shell at all. Across the three key layers exactly two
-    // letters were unclaimed when this shipped (d and y), which is worth
-    // knowing before adding the next binding.
     id: 'live-performance',
     label: 'Toggle live performance mode',
     defaultKeys: ['Shift+D'],
@@ -235,9 +244,93 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   {
     id: 'theme',
     label: 'Cycle theme (dark / light / system)',
-    // Not D: the canvas uses W/A/S/D for the virtual pointer.
     defaultKeys: ['V'],
     paletteActionId: 'cycle-theme',
+    dispatchViaPalette: true,
+  },
+  // ── Tune the playing preset ─────────────────────────────────────────
+  // The MilkDrop runtime's old nudge keys, kept on the letters people knew
+  // (I zoom, O warp, J wave scale, W wave mode, H blend/cut) with the
+  // shifted chord as the opposite direction. Q (video echo zoom) is not
+  // carried over: the canvas takes Q as a performance key, so it would be
+  // dead whenever the stage had focus. Each step edits the preset's source,
+  // the same as a drag in the editor, and says where the value landed.
+  {
+    id: 'transition-mode',
+    group: 'Tune the playing preset',
+    label: 'Switch between blend and cut',
+    defaultKeys: ['H'],
+    paletteActionId: 'toggle-transition-mode',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'wave-mode-next',
+    label: 'Next waveform',
+    defaultKeys: ['W'],
+    paletteActionId: 'wave-mode-next',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'wave-mode-previous',
+    label: 'Previous waveform',
+    defaultKeys: ['Shift+W'],
+    paletteActionId: 'wave-mode-previous',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'zoom-in',
+    label: 'Zoom in',
+    defaultKeys: ['I'],
+    paletteActionId: 'nudge-zoom-in',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'zoom-out',
+    label: 'Zoom out',
+    defaultKeys: ['Shift+I'],
+    paletteActionId: 'nudge-zoom-out',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'warp-up',
+    label: 'More warp',
+    defaultKeys: ['O'],
+    paletteActionId: 'nudge-warp-up',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'warp-down',
+    label: 'Less warp',
+    defaultKeys: ['Shift+O'],
+    paletteActionId: 'nudge-warp-down',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'wave-scale-up',
+    label: 'Bigger waveform',
+    defaultKeys: ['J'],
+    paletteActionId: 'nudge-wave-scale-up',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'wave-scale-down',
+    label: 'Smaller waveform',
+    defaultKeys: ['Shift+J'],
+    paletteActionId: 'nudge-wave-scale-down',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'rotate-right',
+    label: 'Rotate clockwise',
+    defaultKeys: ['>'],
+    paletteActionId: 'nudge-rotate-right',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'rotate-left',
+    label: 'Rotate counter-clockwise',
+    defaultKeys: ['<'],
+    paletteActionId: 'nudge-rotate-left',
     dispatchViaPalette: true,
   },
 ];

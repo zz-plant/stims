@@ -31,8 +31,12 @@
 }
 
 /* Never hide the bar under a keyboard user: hiding while a control inside
-   holds focus would drop focus to <body> (WCAG 2.4.7). */
-.bar[data-visible="false"]:focus-within {
+   holds focus would drop focus to <body> (WCAG 2.4.7) — nor under a resting
+   pointer, which used to watch the bar fade out from beneath the cursor after
+   three still seconds. The component holds `data-visible` true in both cases;
+   these rules are the guarantee if it ever lags. */
+.bar[data-visible="false"]:focus-within,
+.bar[data-visible="false"]:hover {
   opacity: 1;
   transform: translateY(0);
   visibility: visible;
@@ -257,6 +261,11 @@
   white-space: nowrap;
   flex-shrink: 0;
   animation: transition-pulse 1.2s ease-in-out infinite;
+}
+
+/* "Paused" is a resting state, not something in progress: it must not pulse. */
+.statusText[data-static="true"] {
+  animation: none;
 }
 
 /* The incoming title recedes until the canvas actually shows it. */
@@ -520,6 +529,54 @@
   background: var(--ctl-fill-hover);
 }
 
+.menuColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+/* Two columns once there is room. Below this the menu is one column and
+   scrolls, with Settings now the third group rather than the last. */
+@media (min-width: 640px) {
+  .menu {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .menuColumn {
+    flex: 1 1 0;
+    min-width: 224px;
+  }
+}
+
+/* ── Transition popover ──────────────────────────────────────────────
+   The overflow menu's radio row, on its own, anchored over the pill's
+   transition trigger. Positioned by the component (left/bottom inline),
+   which measures the trigger on open; the pill is centred and sized by its
+   title, so the trigger has no fixed x. */
+.popover {
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: var(--z-stage-menu);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 200px;
+  padding: 8px 10px 10px;
+  border-radius: var(--radius-lg);
+  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  animation: menu-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+.popover .menuOption {
+  min-width: 40px;
+  padding: 7px 8px;
+}
+
 .menuLabel {
   padding: 6px 12px 2px;
   font-size: 0.6875rem;
@@ -613,10 +670,19 @@
     max-width: calc(100vw - 16px);
   }
 
-  /* The save star added a fourth 32px control, so the title's budget
-     shrinks accordingly to keep the pill on one row. */
+  /* Measured at 375px with every control on the bar: the title button was
+     45px wide and read "K.." — the one piece of information the bar exists
+     to carry was the least legible thing on it. Save and full screen leave
+     the bar here; both stay one tap away in the menu, and each has a stage
+     gesture (press-and-hold, double-tap). Six 44px controls plus gaps leave
+     the title about 150px. */
+  .navBtn[data-action="save-preset"],
+  .navBtn[data-action="toggle-fullscreen"] {
+    display: none;
+  }
+
   .titleBtn {
-    max-width: calc(100vw - 156px);
+    max-width: none;
   }
 
   .menu {
@@ -635,7 +701,11 @@
 }
 
 @media (pointer: coarse) {
+  /* The primary pair is listed explicitly: `.navBtn[data-primary]` above
+     outranks a bare `.navBtn` here, which left the two most-pressed buttons
+     at 38px on touch while every other control grew to 44. */
   .navBtn,
+  .navBtn[data-primary="true"],
   .menuBtn {
     width: 44px;
     height: 44px;

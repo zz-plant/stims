@@ -266,15 +266,29 @@ export function AudioStatusControl({
           </div>
 
           {audioSource ? (
-            <button
-              type="button"
-              role="menuitem"
-              className={styles.item}
-              data-action="stop-audio"
-              onClick={() => run(() => engine.handleAudioStop())}
-            >
-              Stop audio
-            </button>
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                className={styles.item}
+                data-action="toggle-playback"
+                onClick={() => run(() => engine.handleTogglePlayback())}
+              >
+                {engineSnapshot?.playbackPaused ? 'Resume' : 'Pause'}
+              </button>
+              {/* Same verb as the dock menu, same label: this unmounts the
+                  engine and returns to the start page, and as "Stop audio"
+                  it read as mute. */}
+              <button
+                type="button"
+                role="menuitem"
+                className={styles.item}
+                data-action="stop-audio"
+                onClick={() => run(() => engine.handleAudioStop())}
+              >
+                Stop audio and go back to start
+              </button>
+            </>
           ) : null}
 
           <button
