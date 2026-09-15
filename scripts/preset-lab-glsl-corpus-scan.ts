@@ -16,9 +16,13 @@
  * template omits it (three.js's WebGLProgram injects precision/version
  * boilerplate at compile time), so a bare validator run rejects every
  * shader with "type requires declaration of default precision qualifier"
- * — a false positive, not a real compile error. No other rewriting happens;
- * this is the same GLSL body the browser compiles, ESSL 1.00 defaults
- * (gl_FragColor, texture2D) included.
+ * — a false positive, not a real compile error. The derivatives extension
+ * is enabled the same way: the browser compiles this text as WebGL2 / ESSL
+ * 3.00, where dFdx/dFdy/fwidth are core, so the ESSL 1.00 "required
+ * extension not requested" report was a false positive too (martin-invasion
+ * and martin-alien-grand-theft-water compile and draw in Chromium). No
+ * other rewriting happens; this is the same GLSL body the browser compiles,
+ * ESSL 1.00 defaults (gl_FragColor, texture2D) included.
  *
  * Baseline workflow (same shape as lab:nan-sweep):
  *   bun run lab:glsl-corpus-scan                      # scan, compare to baseline
@@ -72,7 +76,7 @@ function getValidatorVersion(): string | null {
 
 /** Validates one fragment shader body; returns an error summary or null. */
 function validateFragmentShader(glsl: string): string | null {
-  const source = `precision mediump float;\n${glsl}`;
+  const source = `#extension GL_OES_standard_derivatives : enable\nprecision mediump float;\n${glsl}`;
   const result = spawnSync(VALIDATOR_BIN, ['--stdin', '-S', 'frag'], {
     input: source,
     encoding: 'utf8',
