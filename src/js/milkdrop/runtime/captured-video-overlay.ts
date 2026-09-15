@@ -111,17 +111,6 @@ export function createMilkdropCapturedVideoOverlay() {
 
   let attachedCamera: Camera | null = null;
 
-  const setDomOverlayState = (active: boolean) => {
-    if (typeof document === 'undefined') {
-      return;
-    }
-    if (active) {
-      document.documentElement.dataset.youtubeThreeOverlay = 'true';
-      return;
-    }
-    delete document.documentElement.dataset.youtubeThreeOverlay;
-  };
-
   return {
     attach(camera: Camera) {
       if (attachedCamera === camera) {
@@ -141,7 +130,6 @@ export function createMilkdropCapturedVideoOverlay() {
     }) {
       const active = isMilkdropCapturedVideoReady();
       group.visible = active;
-      setDomOverlayState(active);
       if (!active) {
         return;
       }
@@ -184,7 +172,6 @@ export function createMilkdropCapturedVideoOverlay() {
       texture.needsUpdate = true;
     },
     dispose() {
-      setDomOverlayState(false);
       if (attachedCamera) {
         attachedCamera.remove(group);
         attachedCamera = null;
