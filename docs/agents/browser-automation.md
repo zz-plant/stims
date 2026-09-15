@@ -36,6 +36,7 @@ __stims_agent.getState().statusLog.at(-1);              // {at, message}
 | `engineReady`, `liveMode`, `backend` | engine status; backend is `'webgl' \| 'webgpu'` once mounted |
 | `panel` | open side panel (`browse`, `settings`, `editor`, …) or null |
 | `presetId`, `presetTitle` | active preset |
+| `catalogSize` | presets the shell can pick from; `0` until the deferred catalog load lands, which is later than `ready`, so `next-preset` is a no-op before then — `waitFor((s) => s.catalogSize > 0)` before choosing presets |
 | `audioSource`, `audioEnergy` | current source and live RMS energy |
 | `autoplay`, `transition` | playback settings (`transition.mode`, `transition.blendDuration`) |
 | `shaderExecution` | is the preset rendering as authored on the active backend? `'direct'` yes; `'none'` the preset has no shader text; `'translated'` / `'unsupported'` the backend cannot run the shader text and the renderer is substituting a **uniform-only approximation** — a plausible frame that is not the preset; `null` nothing compiled yet (never read null as "fine") |

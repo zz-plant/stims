@@ -297,6 +297,15 @@ function StimsWorkspaceAppShell() {
   // `ui` directly would rebuild the runtime on every route change.
   const uiRef = useRef(ui);
   uiRef.current = ui;
+  // Same latest-value pattern for the engine handlers: the palette action
+  // list below is memoized on the few inputs that change a row's label or
+  // presence, so anything it calls must be read at run time. Capturing
+  // `engine`/`ui` in the memo froze `handleShufflePreset` with an empty
+  // catalog and `handleShowCurrentLink` with the boot-time route, so the
+  // palette, the agent API and every shortcut bound to a palette id did
+  // nothing (or shared the wrong URL) until an unrelated dep refreshed it.
+  const engineRef = useRef(engine);
+  engineRef.current = engine;
   const { engineSnapshot } = useEngineSnapshot();
   const awaitingAudioGesture = useAudioAwaitingGesture();
   const growthLandingEventsRef = useRef<Set<string>>(new Set());
@@ -505,7 +514,7 @@ function StimsWorkspaceAppShell() {
   // Behavior bodies live in workspace-actions.ts, shared with the stage
   // dock menu — a verb must not do different things depending on which
   // surface invoked it.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers are stable context methods; the list only needs to refresh with live/fullscreen/hosting/editor state
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers are read through uiRef/engineRef when a row runs; the list only needs to rebuild when a label or the row set changes (live/fullscreen/hosting/theme/editor state)
   const paletteActions: CommandAction[] = useMemo(
     () => [
       {
@@ -519,14 +528,14 @@ function StimsWorkspaceAppShell() {
         group: 'Presets',
         label: 'Next preset (random)',
         keywords: ['shuffle', 'surprise'],
-        run: () => void engine.handleShufflePreset(),
+        run: () => void engineRef.current.handleShufflePreset(),
       },
       {
         id: 'previous-preset',
         group: 'Presets',
         label: 'Previous preset',
         keywords: ['back'],
-        run: () => void engine.handlePreviousPreset(),
+        run: () => void engineRef.current.handlePreviousPreset(),
       },
       {
         id: 'save-preset',
@@ -540,7 +549,7 @@ function StimsWorkspaceAppShell() {
         group: 'Presets',
         label: 'Find similar presets',
         keywords: ['match', 'sound', 'look'],
-        run: () => void engine.handleVisualSearch(),
+        run: () => void engineRef.current.handleVisualSearch(),
       },
       {
         // The small step next to next-preset's big one. Shares its body with
@@ -631,7 +640,7 @@ function StimsWorkspaceAppShell() {
           const order: ThemeChoice[] = ['dark', 'light', 'system'];
           const next = order[(order.indexOf(themeChoice) + 1) % order.length];
           setThemePreference({ theme: next });
-          ui.setStatusMessage(
+          uiRef.current.setStatusMessage(
             `Theme: ${next === 'system' ? 'match system' : next}`,
           );
         },
@@ -646,7 +655,9 @@ function StimsWorkspaceAppShell() {
         keywords: ['backend', 'webgpu', 'compatibility', 'slow', 'performance'],
         run: () => {
           setCompatibilityMode(true);
-          ui.setStatusMessage('Renderer set to WebGL. Reload to apply.');
+          uiRef.current.setStatusMessage(
+            'Renderer set to WebGL. Reload to apply.',
+          );
         },
       },
       {
@@ -660,14 +671,15 @@ function StimsWorkspaceAppShell() {
         group: 'View',
         label: 'Camera as video input',
         keywords: ['webcam', 'video', 'input', 'source'],
-        run: () => toggleCameraAction(ui.setStatusMessage),
+        run: () => toggleCameraAction(uiRef.current.setStatusMessage),
       },
       {
         id: 'external-display',
         group: 'Share',
         label: 'Show on second screen or cast',
         keywords: ['projector', 'monitor', 'chromecast', 'present', 'tv'],
-        run: () => presentToExternalDisplayAction(ui.setStatusMessage),
+        run: () =>
+          presentToExternalDisplayAction(uiRef.current.setStatusMessage),
       },
       {
         id: 'share-link',
@@ -680,7 +692,7 @@ function StimsWorkspaceAppShell() {
         // someone the preset you are in the middle of writing.
         label: editorDirty ? 'Share link (carries your edits)' : 'Share link',
         keywords: ['copy', 'url', 'remix', 'draft'],
-        run: () => void ui.handleShowCurrentLink(),
+        run: () => void uiRef.current.handleShowCurrentLink(),
       },
       {
         id: 'watch-party',
@@ -689,7 +701,7 @@ function StimsWorkspaceAppShell() {
           ? 'Copy watch party link'
           : 'Start watch party (copy link)',
         keywords: ['sync', 'room', 'host', 'together'],
-        run: () => startOrCopyWatchPartyAction(ui.setStatusMessage),
+        run: () => startOrCopyWatchPartyAction(uiRef.current.setStatusMessage),
       },
       ...(hostingWatchParty
         ? [
@@ -698,7 +710,7 @@ function StimsWorkspaceAppShell() {
               group: 'Share',
               label: 'End watch party',
               keywords: ['sync', 'room', 'leave', 'stop'],
-              run: () => endWatchParty(ui.setStatusMessage),
+              run: () => endWatchParty(uiRef.current.setStatusMessage),
             } satisfies CommandAction,
           ]
         : []),
@@ -735,6 +747,12 @@ function StimsWorkspaceAppShell() {
           const presetId = uiRef.current.presetQueue.popNext();
           if (!presetId) {
             uiRef.current.setStatusMessage('Nothing is cued.');
+            return;
+          }
+          if (presetId === engineSnapshotRef.current?.activePresetId) {
+            uiRef.current.setStatusMessage(
+              'That preset is already on the stage.',
+            );
             return;
           }
           uiRef.current.setRouteState((current) => ({ ...current, presetId }));
@@ -796,7 +814,7 @@ function StimsWorkspaceAppShell() {
         keywords: ['vj', 'show', 'projector', 'gig', 'stage', 'perform'],
         run: () => {
           const live = toggleLivePerformanceMode();
-          ui.setStatusMessage(
+          uiRef.current.setStatusMessage(
             live
               ? 'Live performance mode on — quality held steady, no battery frame cap, keeps drawing in an unfocused window.'
               : 'Live performance mode off — quality adapts again and background tabs pause.',
@@ -810,8 +828,8 @@ function StimsWorkspaceAppShell() {
         keywords: ['shuffle', 'automatic'],
         run: () =>
           toggleAutoplay(
-            engine,
-            ui.setStatusMessage,
+            engineRef.current,
+            uiRef.current.setStatusMessage,
             engineSnapshotRef.current?.autoplay ?? false,
           ),
       },
@@ -819,25 +837,49 @@ function StimsWorkspaceAppShell() {
         id: 'transition-cut',
         group: 'Playback',
         label: 'Transition: instant cut',
-        run: () => setTransition(engine, ui.setStatusMessage, 'cut', 0),
+        run: () =>
+          setTransition(
+            engineRef.current,
+            uiRef.current.setStatusMessage,
+            'cut',
+            0,
+          ),
       },
       {
         id: 'transition-1s',
         group: 'Playback',
         label: 'Transition: 1s blend',
-        run: () => setTransition(engine, ui.setStatusMessage, 'blend', 1),
+        run: () =>
+          setTransition(
+            engineRef.current,
+            uiRef.current.setStatusMessage,
+            'blend',
+            1,
+          ),
       },
       {
         id: 'transition-2s',
         group: 'Playback',
         label: 'Transition: 2s blend',
-        run: () => setTransition(engine, ui.setStatusMessage, 'blend', 2),
+        run: () =>
+          setTransition(
+            engineRef.current,
+            uiRef.current.setStatusMessage,
+            'blend',
+            2,
+          ),
       },
       {
         id: 'transition-5s',
         group: 'Playback',
         label: 'Transition: 5s blend',
-        run: () => setTransition(engine, ui.setStatusMessage, 'blend', 5),
+        run: () =>
+          setTransition(
+            engineRef.current,
+            uiRef.current.setStatusMessage,
+            'blend',
+            5,
+          ),
       },
       {
         id: 'cycle-transition',
@@ -868,7 +910,12 @@ function StimsWorkspaceAppShell() {
             }
           }
           const next = steps[(best + 1) % steps.length];
-          setTransition(engine, ui.setStatusMessage, next.mode, next.seconds);
+          setTransition(
+            engineRef.current,
+            uiRef.current.setStatusMessage,
+            next.mode,
+            next.seconds,
+          );
         },
       },
       {
@@ -876,21 +923,21 @@ function StimsWorkspaceAppShell() {
         group: 'Audio',
         label: 'Play demo audio',
         keywords: ['source', 'sample'],
-        run: () => startAudioSource(engine, 'demo'),
+        run: () => startAudioSource(engineRef.current, 'demo'),
       },
       {
         id: 'audio-microphone',
         group: 'Audio',
         label: 'Use microphone audio',
         keywords: ['source', 'mic'],
-        run: () => startAudioSource(engine, 'microphone'),
+        run: () => startAudioSource(engineRef.current, 'microphone'),
       },
       {
         id: 'audio-tab',
         group: 'Audio',
         label: "Use this tab's audio",
         keywords: ['source', 'capture'],
-        run: () => startAudioSource(engine, 'tab'),
+        run: () => startAudioSource(engineRef.current, 'tab'),
       },
       ...(liveMode
         ? [
@@ -898,7 +945,7 @@ function StimsWorkspaceAppShell() {
               id: 'stop-audio',
               group: 'Audio',
               label: 'Stop audio',
-              run: () => engine.handleAudioStop(),
+              run: () => engineRef.current.handleAudioStop(),
             } satisfies CommandAction,
           ]
         : []),
@@ -927,6 +974,7 @@ function StimsWorkspaceAppShell() {
       panel: uiRef.current.routeState.panel ?? null,
       presetId: snap?.activePresetId ?? null,
       presetTitle: engineBridgeRef.current.selectedPreset?.title ?? null,
+      catalogSize: snap?.catalogEntries.length ?? 0,
       audioSource: snap?.audioSource ?? null,
       audioEnergy: getAudioEnergy(),
       autoplay: snap?.autoplay ?? null,
