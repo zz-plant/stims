@@ -3,9 +3,27 @@ import {
   buildMainWaveFrame,
   defaultSignalEnv,
 } from '../../src/js/milkdrop/vm/frame-generation.ts';
-import { buildMesh } from '../../src/js/milkdrop/vm/geometry-builder.ts';
+import {
+  buildMesh,
+  signedZoomScale,
+} from '../../src/js/milkdrop/vm/geometry-builder.ts';
 
 describe('milkdrop vm frame generation', () => {
+  test('mesh zoom keeps its sign: zoom = -1 is a mirror, not a 0.02 collapse', () => {
+    // MilkDrop's powf(zoom, powf(zoomexp, 2r-1)) with zoomexp 1 is exactly
+    // zoom, so `zoom = -1` samples through the centre. Clamping the signed
+    // value to [0.02, 50] shrank the whole frame onto its centre pixel for
+    // the 23 bundled presets that mirror this way (2026-09-15).
+    expect(signedZoomScale(-1, 1)).toBe(-1);
+    expect(signedZoomScale(-1.01, 1)).toBe(-1.01);
+    expect(signedZoomScale(-100, 1)).toBe(-50);
+    expect(signedZoomScale(-2, 1.5)).toBe(-(2 ** 1.5));
+    // Positive zooms are untouched by the change.
+    expect(signedZoomScale(1.02, 1)).toBe(1.02);
+    expect(signedZoomScale(0, 1)).toBe(0.02);
+    expect(signedZoomScale(100, 100)).toBe(50);
+  });
+
   test('keeps an explicitly disabled mesh fully transparent', () => {
     const mesh = buildMesh({
       state: {

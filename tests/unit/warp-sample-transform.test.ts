@@ -192,6 +192,60 @@ describe('identity values reduce to the legacy transform', () => {
   });
 });
 
+describe('negative zoom is a mirror, not a collapse', () => {
+  // MilkDrop: fZoom2 = powf(zoom, powf(zoomexp, rad*2-1)); with zoomexp 1
+  // the exponent is exactly 1, so zoom = -1 samples through the centre — a
+  // point mirror 23 bundled presets rely on (eos-ether-posession-phat-edit-v3,
+  // shifter-swarm, phat-it-sjustnumbers …). A signed max() floor turned every
+  // one into a 10000x magnification of the centre pixel.
+  test('the divisor keeps its sign on both the fast path and the pow path', () => {
+    expect(computeWarpZoomDivisor(-1, 1, 0.3)).toBe(-1);
+    expect(computeWarpZoomDivisor(-1.01, 1, 0.9)).toBe(-1.01);
+    const mirrored = computeWarpZoomDivisor(-2, 1.5, 0.75);
+    expect(mirrored).toBeLessThan(0);
+    expect(Math.abs(mirrored)).toBe(computeWarpZoomDivisor(2, 1.5, 0.75));
+  });
+
+  test('zoom = -1 with zoomexp 1 samples the point-mirrored coordinate', () => {
+    for (const compute of [
+      (zoom: number) =>
+        computeWarpSampleUv({
+          centeredX: 0.25,
+          centeredY: -0.125,
+          aspectX: ASPECT_X,
+          aspectY: ASPECT_Y,
+          cx: 0.5,
+          cy: 0.5,
+          sx: 1,
+          sy: 1,
+          zoom,
+          zoomexp: 1,
+          rot: 0,
+          dx: 0,
+          dy: 0,
+          rad: computeWarpSampleRad(0.25, -0.125, ASPECT_X, ASPECT_Y),
+        }),
+      (zoom: number) =>
+        computeLegacyWarpSampleUv({
+          centeredX: 0.25,
+          centeredY: -0.125,
+          zoom,
+          rot: 0,
+          dx: 0,
+          dy: 0,
+        }),
+    ]) {
+      const mirrored = compute(-1);
+      expect(mirrored.x).toBeCloseTo(0.25, 12);
+      expect(mirrored.y).toBeCloseTo(0.625, 12);
+      // Tiny negative values floor to -0.0001, the mirror of the positive
+      // floor, never to +0.0001.
+      const nearZero = compute(-1e-9);
+      expect(nearZero.x).toBeCloseTo(-0.25 / 0.0001 + 0.5, 6);
+    }
+  });
+});
+
 describe('300-beatdetect-bassmidtreb stays bit-for-bit identical', () => {
   // per_pixel_1=cx=x, over cx=0.5 cy=1.0 sx=1 sy=1 dx=0 dy=0.02 zoom=1.0
   // fZoomExponent=1, rot unset. cx/cy are the centre for sx/sy and rot ONLY,

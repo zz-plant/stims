@@ -538,6 +538,14 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
           return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
         }
 
+        // Zoom divisor floor that keeps the sign: zoom = -1 (zoomexp 1) is
+        // MilkDrop's point mirror through the centre, and max(zoom, 0.0001)
+        // turned it into a 10000x magnification of the centre pixel. Same
+        // rule as floorWarpZoomDivisor (warp-sample-transform.ts).
+        float signedZoomDivisor(float zoomValue) {
+          return zoomValue < 0.0 ? min(zoomValue, -0.0001) : max(zoomValue, 0.0001);
+        }
+
         vec4 sampleAuxTexture2d(float source, vec2 uv) {
           if (source < 0.5) {
             return vec4(0.5, 0.5, 0.5, 1.0);
@@ -762,7 +770,7 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
             centeredUv.x * rotCos - centeredUv.y * rotSin,
             centeredUv.x * rotSin + centeredUv.y * rotCos
           );
-          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+          vec2 transformedUv = rotatedUv / signedZoomDivisor(zoomMul) + vec2(offsetX, offsetY);
 
           vec2 currentUv = hasDirectWarp > 0.5
             ? transformedUv + 0.5
@@ -1220,7 +1228,7 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
           float rotSin = -sin(rotation);
           float rotCos = cos(rotation);
           vec2 rotatedUv = vec2(centeredUv.x * rotCos - centeredUv.y * rotSin, centeredUv.x * rotSin + centeredUv.y * rotCos);
-          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+          vec2 transformedUv = rotatedUv / signedZoomDivisor(zoomMul) + vec2(offsetX, offsetY);
 
           vec2 uv = transformedUv + 0.5;
           vec2 uv_orig = vUv;
@@ -1242,9 +1250,9 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
             ? transformedUv + 0.5
             : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
           vec2 prevUv = hasDirectWarp > 0.5
-            ? (currentUv - 0.5) / max(zoom, 0.0001) + 0.5
+            ? (currentUv - 0.5) / signedZoomDivisor(zoom) + 0.5
             : applyFeedbackWarp(
-                (currentUv - 0.5) / max(zoom, 0.0001) + 0.5,
+                (currentUv - 0.5) / signedZoomDivisor(zoom) + 0.5,
                 warpScale * 0.8,
                 rotation * 0.6
               );

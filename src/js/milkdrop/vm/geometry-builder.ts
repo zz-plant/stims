@@ -526,10 +526,21 @@ function transformMeshPoint(
   // the exponent to `zoom ** 1 === zoom` (exact in IEEE), and zoom === 1 folds
   // `1 ** finite === 1` (exact). Both skip the hypot, the radius-normalization
   // and the pow — the single most expensive call in this loop.
+  // The zoom's sign survives the magnitude clamp. MilkDrop evaluates
+  // zoom^(zoomexp^(2r-1)) with powf, and with zoomexp at its default of 1 the
+  // exponent is exactly 1, so `zoom = -1` is a legal point mirror through the
+  // centre (`zoom = -1.02 + 10*rad` flips only the middle) — 23 bundled
+  // presets rely on it. Clamping the signed value to [0.02, 50] turned every
+  // one of them into a collapse onto the centre pixel: eos-ether-posession-
+  // phat-edit-v3 rendered black, shifter-swarm a flat grey (2026-09-15).
+  // A non-integer exponent of a negative base is NaN in both C and JS; the
+  // magnitude is raised instead and the sign reapplied, which is exact for
+  // zoomexp == 1 and a finite, mirrored curve otherwise where MilkDrop's own
+  // math yields NaN.
   let zx: number;
   let zy: number;
   if (zoomExponent === 1) {
-    const zoomScale = clamp(zoom, 0.02, 50);
+    const zoomScale = signedZoomScale(zoom, 1);
     zx = centerX + (rx - centerX) * zoomScale;
     zy = centerY + (ry - centerY) * zoomScale;
   } else if (zoom === 1) {
@@ -542,10 +553,9 @@ function transformMeshPoint(
     // zoom=100 with zoomexp=100); unclamped, zoom^(zoomexp^(2r-1)) overflows
     // float32 at the edges and NaN-poisons the warp into a black frame.
     // MilkDrop's own math saturates instead of exploding, so bound the scale.
-    const zoomScale = clamp(
-      zoom === 0 ? 0 : zoom ** (zoomExponent ** (radiusNormalized * 2 - 1)),
-      0.02,
-      50,
+    const zoomScale = signedZoomScale(
+      zoom,
+      zoomExponent ** (radiusNormalized * 2 - 1),
     );
     zx = centerX + (rx - centerX) * zoomScale;
     zy = centerY + (ry - centerY) * zoomScale;
@@ -598,8 +608,7 @@ function transformMeshPoint(
   // the uniform path already rendered correctly.
   const gatherRelX = rendererX - centerX;
   const gatherRelY = rendererY - centerY;
-  const gatherZoom = zoomExponent === 1 ? zoom : zoom ** zoomExponent;
-  const gatherScale = 1 / clamp(gatherZoom, 0.02, 50);
+  const gatherScale = 1 / signedZoomScale(zoom, zoomExponent);
   const unrotX = gatherRelX * cosRot + gatherRelY * sinRot;
   const unrotY = -gatherRelX * sinRot + gatherRelY * cosRot;
   transientGatherResult.x =
@@ -607,6 +616,19 @@ function transformMeshPoint(
   transientGatherResult.y =
     centerY + (unrotY * gatherScale) / (scaleY || 1) - translateY;
   return transformed;
+}
+
+/**
+ * MilkDrop's per-vertex zoom factor, `|zoom|^exponent` bounded to
+ * [0.02, 50] with the sign of `zoom` reapplied. `zoom === 0` maps to the
+ * lower bound rather than a collapse to one point.
+ */
+export function signedZoomScale(zoom: number, exponent: number) {
+  const magnitude = Math.abs(zoom);
+  const scaled =
+    exponent === 1 ? magnitude : magnitude === 0 ? 0 : magnitude ** exponent;
+  const bounded = clamp(scaled, 0.02, 50);
+  return zoom < 0 ? -bounded : bounded;
 }
 
 export function getMeshDensity(state: MutableState, detailScale: number) {
