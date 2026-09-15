@@ -117,7 +117,7 @@ describe('copyRemixLinkAction', () => {
     expect(messages).toEqual([]);
   });
 
-  it('points at the address bar when there is no clipboard', async () => {
+  it('offers file export when there is no clipboard', async () => {
     const { share } = captureShare('unavailable');
     const messages: string[] = [];
 
@@ -129,8 +129,21 @@ describe('copyRemixLinkAction', () => {
       href: HREF,
     });
 
-    // The address bar genuinely holds the same URL (App.tsx keeps the hash in
-    // sync), so this is a route to the link, not a consolation message.
-    expect(messages[0]).toContain('address bar');
+    expect(messages[0]).toContain('.milk');
+    expect(messages[0]).not.toContain('address bar');
+  });
+  it('refuses an oversized draft and explains how to preserve the edits', async () => {
+    const { calls, share } = captureShare('copied');
+    const messages: string[] = [];
+    await copyRemixLinkAction({
+      source: SOURCE.repeat(1000),
+      dirty: true,
+      announce: (message) => messages.push(message),
+      share,
+      href: `${HREF}#code=stale`,
+    });
+    expect(calls).toEqual([]);
+    expect(messages[0]).toContain('too long');
+    expect(messages[0]).toContain('.milk');
   });
 });
