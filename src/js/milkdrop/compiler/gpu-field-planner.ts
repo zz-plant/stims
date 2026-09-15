@@ -28,7 +28,12 @@ import type {
 } from '../compiler-types.ts';
 import { GPU_FIELD_FUNCTION_NAMES } from './eel-function-table.ts';
 
-const GPU_FIELD_STATE_IDENTIFIERS = new Set([
+/**
+ * State the per-pixel (mesh warp) function declares before the program runs:
+ * the vertex's position plus MilkDrop's warp-transform outputs. Writes land in
+ * those slots instead of a fresh local.
+ */
+export const GPU_FIELD_MESH_STATE_IDENTIFIERS: ReadonlySet<string> = new Set([
   'x',
   'y',
   'rad',
@@ -44,6 +49,24 @@ const GPU_FIELD_STATE_IDENTIFIERS = new Set([
   'sy',
   'dx',
   'dy',
+]);
+
+/**
+ * State a custom wave's per-point function declares: only the point's
+ * position (the caller adds sample/value/colour via
+ * `additionalStateIdentifiers`). The warp-transform names above are NOT state
+ * here — `dx`, `dy`, `zoom` in a per-point block are the preset's own locals.
+ * When the mesh set was applied to every program, a wave writing `dx` lowered
+ * to an assignment of `fieldTranslateX`, a name the point function never
+ * declares, and the WGSL module failed to parse ("unresolved value
+ * 'fieldTranslateX'"): 50 corpus presets (31 bundled) lost that wave's whole
+ * render pipeline — measured 2026-09-15.
+ */
+export const GPU_FIELD_POINT_STATE_IDENTIFIERS: ReadonlySet<string> = new Set([
+  'x',
+  'y',
+  'rad',
+  'ang',
 ]);
 
 const GPU_FIELD_SIGNAL_ALIAS_MAP = new Map<string, string>([
@@ -83,6 +106,13 @@ const GPU_FIELD_FUNCTIONS = GPU_FIELD_FUNCTION_NAMES;
 const CARRIED_REGISTER_PATTERN = /^t\d+$/;
 
 type LowerGpuFieldProgramOptions = {
+  /**
+   * Names the emitted function declares as writable state before the program
+   * runs. Defaults to the mesh-warp set; a custom wave passes
+   * {@link GPU_FIELD_POINT_STATE_IDENTIFIERS} so warp-transform names stay
+   * ordinary locals.
+   */
+  stateIdentifiers?: ReadonlySet<string>;
   additionalStateIdentifiers?: Iterable<string>;
   additionalAllowedIdentifiers?: Iterable<string>;
   /**
@@ -287,6 +317,7 @@ function lowerGpuFieldExpression(
 export function lowerGpuFieldProgram(
   program: MilkdropProgramBlock,
   {
+    stateIdentifiers: baseStateIdentifiers = GPU_FIELD_MESH_STATE_IDENTIFIERS,
     additionalStateIdentifiers = [],
     additionalAllowedIdentifiers = [],
     registerInputs = [],
@@ -301,7 +332,7 @@ export function lowerGpuFieldProgram(
     Array.from(registerInputs ?? [], (name) => lowerGpuFieldIdentifier(name)),
   );
   const stateIdentifiers = new Set<string>([
-    ...GPU_FIELD_STATE_IDENTIFIERS,
+    ...baseStateIdentifiers,
     ...Array.from(additionalStateIdentifiers, (identifier) =>
       lowerGpuFieldIdentifier(identifier),
     ),

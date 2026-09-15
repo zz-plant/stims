@@ -143,6 +143,58 @@ describe('milkdrop WebGPU TSL extended intrinsics', () => {
     expect(refractValue?.kind).toBe('vec3');
   });
 
+  test('lowers normalize() of a scalar to sign(), never a WGSL vector normalize', () => {
+    // martin-adrift-on-a-dead-planet-* normalize a float; WGSL has no
+    // normalize(f32) overload, so the module used to fail to parse.
+    const scalarValue = compileExpression('x = normalize(0.5)');
+    expect(scalarValue?.kind).toBe('scalar');
+    // shaderFloat wraps the MathNode in a VarNode; the method is what
+    // reaches the WGSL.
+    expect(sampledNodeType(scalarValue)).toBe('MathNode');
+    const node = (
+      scalarValue as { node?: { node?: { method?: string } } } | null
+    )?.node?.node;
+    expect(node?.method).toBe('sign');
+  });
+
+  test('builds the NS-EEL predicates a per_pixel block uses', () => {
+    // equal/sqr/bnot/band/bor are MilkDrop expression functions, not HLSL.
+    // Unknown to this compiler, every per-pixel statement using one was
+    // dropped (aderrasi-potion-of-spirits' dx_r/dy_r, eos-phat-vacuum-
+    // deification's rd), so the GPU warp silently differed from MilkDrop.
+    for (const source of [
+      'x = equal(0.5, 0.5)',
+      'x = sqr(0.5)',
+      'x = bnot(0.5)',
+      'x = band(0.5, 1.0)',
+      'x = bor(0.0, 1.0)',
+    ]) {
+      const value = compileExpression(source);
+      expect(value, source).not.toBeNull();
+      expect(value?.kind, source).toBe('scalar');
+    }
+  });
+
+  test('bool() casts to a numeric truthiness the rest of the executor can operate on', () => {
+    // `float(!(bool(sw1)))` (martin-sphery-tales) ran abs() on a WGSL bool
+    // and the module failed to parse; every executor value is numeric.
+    const value = compileExpression('x = float(!(bool(sw1)))');
+    expect(value?.kind).toBe('scalar');
+    const cast = compileExpression('x = bool(0.5)');
+    expect(sampledNodeType(cast)).not.toBe('ConvertNode');
+  });
+
+  test('names the call that sank a statement instead of dropping it silently', () => {
+    const statement = parseMilkdropShaderStatement('x = nosuchfn(0.5)');
+    if (!statement) {
+      throw new Error('Failed to parse');
+    }
+    const env = buildShaderEnv() as unknown as ShaderNodeEnv;
+    env.unresolvedNames = new Set<string>();
+    expect(compileShaderExpressionNode(statement.expression, env)).toBeNull();
+    expect([...env.unresolvedNames]).toEqual(['nosuchfn()']);
+  });
+
   test('builds a vec3 node for sampleNoiseVolume volume sampling', () => {
     const value = compileExpression(
       'x = sampleNoiseVolume(vec3(0.1, 0.2, 0.3))',
