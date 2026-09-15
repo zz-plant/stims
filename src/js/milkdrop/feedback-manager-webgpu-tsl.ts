@@ -75,6 +75,7 @@ import {
   getFeedbackBackendProfile,
   WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
 } from './backend-behavior';
+import { MILKDROP_EEL_CLOSE_FACTOR } from './compiler/eel-function-table.ts';
 import {
   MILKDROP_BLEND_DISSOLVE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
@@ -107,7 +108,6 @@ const {
   acos,
   asin,
   atan,
-  bool,
   ceil,
   clamp,
   cos,
@@ -2264,6 +2264,56 @@ export function compileShaderExpressionNode(
           createComparisonNode('<', args[0].node, args[1].node),
         );
       }
+      // NS-EEL predicates and sqr() reach this compiler through per_pixel
+      // blocks (runPerPixelProgram), never through HLSL bodies. They were
+      // unknown here, so every statement using one was dropped and the warp
+      // silently differed from MilkDrop — 306 bundled presets carry such
+      // code, 128 of them `equal()` alone (2026-09-15). Same close-factor
+      // semantics as the CPU tiers in compiler/eel-function-table.ts.
+      const allScalar = args.every((entry) => entry.kind === 'scalar');
+      if (name === 'equal' && args.length >= 2 && allScalar) {
+        return shaderFloat(
+          select(
+            abs(args[0].node.sub(args[1].node)).lessThanEqual(
+              MILKDROP_EEL_CLOSE_FACTOR,
+            ),
+            float(1),
+            float(0),
+          ),
+        );
+      }
+      if (name === 'sqr' && args.length >= 1 && allScalar) {
+        const operand = float(args[0].node).toVar();
+        return shaderFloat(operand.mul(operand));
+      }
+      if (name === 'bnot' && args.length >= 1 && allScalar) {
+        return shaderFloat(
+          select(
+            abs(args[0].node).greaterThan(MILKDROP_EEL_CLOSE_FACTOR),
+            float(0),
+            float(1),
+          ),
+        );
+      }
+      if (
+        (name === 'band' || name === 'bor') &&
+        args.length >= 2 &&
+        allScalar
+      ) {
+        const leftTrue = abs(args[0].node).greaterThan(
+          MILKDROP_EEL_CLOSE_FACTOR,
+        );
+        const rightTrue = abs(args[1].node).greaterThan(
+          MILKDROP_EEL_CLOSE_FACTOR,
+        );
+        return shaderFloat(
+          select(
+            name === 'band' ? leftTrue.and(rightTrue) : leftTrue.or(rightTrue),
+            float(1),
+            float(0),
+          ),
+        );
+      }
       if (
         (name === 'greaterthanequal' ||
           name === 'greaterthan' ||
@@ -2421,6 +2471,15 @@ export function compileShaderExpressionNode(
         );
       }
       if (name === 'normalize' && args.length >= 1) {
+        // HLSL accepts normalize(float) — x / |x|, i.e. ±1 — but WGSL's
+        // normalize only takes vectors, so forwarding a scalar produced
+        // "no matching call to 'normalize(f32)'" and the whole module failed
+        // to parse (martin-adrift-on-a-dead-planet-*, martin-sphery-tales*,
+        // 2026-09-15). sign() matches everywhere except exactly 0, where
+        // HLSL yields NaN and MilkDrop's clamp would zero it anyway.
+        if (args[0].kind === 'scalar') {
+          return shaderFloat(sign(args[0].node));
+        }
         return shaderValueFromNode(normalize(args[0].node), args[0].kind);
       }
       if (name === 'reflect' && args.length >= 2) {
@@ -2488,8 +2547,23 @@ export function compileShaderExpressionNode(
         return shaderValueFromNode(int(args[0].node), args[0].kind);
       }
       if (name === 'bool' && args.length >= 1) {
-        return shaderValueFromNode(bool(args[0].node), args[0].kind);
+        // Truthiness as a float 0/1, not a WGSL bool: every value in this
+        // executor is numeric, so `!(bool(sw1))` ran toShaderBool's abs() on
+        // a bool and the module failed to parse ("no matching call to
+        // 'abs(bool)'", martin-sphery-tales, 2026-09-15). HLSL's bool(x) is
+        // x != 0, which is exactly the step below on a scalar; a vector
+        // keeps its per-component truthiness.
+        if (args[0].kind === 'scalar') {
+          return shaderFloat(toShaderBool(args[0]));
+        }
+        return shaderValueFromNode(
+          step(0.0001, abs(args[0].node)),
+          args[0].kind,
+        );
       }
+      // Named so the "Dropped N/M per-pixel statement(s)" log can say which
+      // call sank the statement, not just which target vanished.
+      env.unresolvedNames?.add(`${name}()`);
       return null;
     }
   }
