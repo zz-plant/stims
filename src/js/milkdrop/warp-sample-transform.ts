@@ -173,8 +173,24 @@ function clampNumber(value: number, low: number, high: number): number {
 }
 
 /**
+ * The divisor floor with the divisor's sign kept. MilkDrop's `zoom = -1`
+ * (zoomexp 1) is a point mirror through the centre — powf(-1, 1) is exactly
+ * -1 — and 23 bundled presets use it. `Math.max(divisor, floor)` turned every
+ * negative zoom into the floor, i.e. a 10000x magnification of the centre
+ * pixel: eos-ether-posession-phat-edit-v3 rendered black (2026-09-15).
+ */
+export function floorWarpZoomDivisor(divisor: number): number {
+  return divisor < 0
+    ? Math.min(divisor, -ZOOM_DIVISOR_FLOOR)
+    : Math.max(divisor, ZOOM_DIVISOR_FLOOR);
+}
+
+/**
  * The zoom divisor: zoom ^ (zoomexp ^ (rad*2 - 1)), with the zoomexp == 1 fast
  * path returning `zoom` untouched so nothing shifts under a no-op exponent.
+ * A negative zoom raises its magnitude and keeps its sign: a non-integer
+ * power of a negative base is NaN in C and JS alike, so this is the finite
+ * continuation of the mirror the zoomexp == 1 branch performs exactly.
  */
 export function computeWarpZoomDivisor(
   zoom: number,
@@ -190,11 +206,13 @@ export function computeWarpZoomDivisor(
     ZOOM_POW_CLAMP_MIN,
     ZOOM_POW_CLAMP_MAX,
   );
-  return clampNumber(
-    clampNumber(zoom, ZOOM_POW_CLAMP_MIN, ZOOM_POW_CLAMP_MAX) ** exponent,
+  const magnitude = clampNumber(
+    clampNumber(Math.abs(zoom), ZOOM_POW_CLAMP_MIN, ZOOM_POW_CLAMP_MAX) **
+      exponent,
     ZOOM_POW_CLAMP_MIN,
     ZOOM_POW_CLAMP_MAX,
   );
+  return zoom < 0 ? -magnitude : magnitude;
 }
 
 /**
@@ -240,9 +258,11 @@ export function computeWarpSampleUv(input: WarpSampleTransformInput): {
   const centreX = (cx - 0.5) / aspectX;
   const centreY = -(cy - 0.5) / aspectY;
 
-  const divisor = computeWarpZoomDivisor(zoom, zoomexp, rad);
-  const zoomedX = centeredX / Math.max(divisor, ZOOM_DIVISOR_FLOOR);
-  const zoomedY = centeredY / Math.max(divisor, ZOOM_DIVISOR_FLOOR);
+  const divisor = floorWarpZoomDivisor(
+    computeWarpZoomDivisor(zoom, zoomexp, rad),
+  );
+  const zoomedX = centeredX / divisor;
+  const zoomedY = centeredY / divisor;
 
   const safeSx = Math.abs(sx) < SCALE_EPSILON ? 1 : sx;
   const safeSy = Math.abs(sy) < SCALE_EPSILON ? 1 : sy;
@@ -282,7 +302,7 @@ export function computeLegacyWarpSampleUv(
   const rotationCos = Math.cos(rot);
   const rotatedX = centeredX * rotationCos - centeredY * rotationSin;
   const rotatedY = centeredX * rotationSin + centeredY * rotationCos;
-  const divisor = Math.max(zoom, ZOOM_DIVISOR_FLOOR);
+  const divisor = floorWarpZoomDivisor(zoom);
   return {
     x: rotatedX / divisor + dx + 0.5,
     y: rotatedY / divisor + dy + 0.5,
