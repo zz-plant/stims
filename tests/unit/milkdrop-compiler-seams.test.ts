@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { buildWebGpuDescriptorPlan } from '../../src/js/milkdrop/compiler/gpu-descriptor-plan.ts';
 import {
+  GPU_FIELD_POINT_STATE_IDENTIFIERS,
   lowerGpuFieldProgram,
   PER_FRAME_FIELD_REGISTER_INPUTS,
 } from '../../src/js/milkdrop/compiler/gpu-field-planner.ts';
@@ -591,6 +592,43 @@ describe('milkdrop compiler seams', () => {
         sourceLines: ['zoom = log10(rad)'],
       });
       expect(lowered).not.toBeNull();
+    });
+
+    test('keeps warp-transform names as state for the mesh program only', () => {
+      // `dx = …` is a warp output in a per-pixel block but a preset local in a
+      // custom wave's per-point block. Lowered with the mesh state set, the
+      // wave emitter assigned `fieldTranslateX` — a name the point function
+      // never declares — and the WGSL module failed to parse
+      // (adamfx-2-geiss-mash-up-angelic-staine-glass-chapters-6, 2026-09-15).
+      const program = {
+        statements: [
+          statement('dx', 'dx = x * 0.5', {
+            type: 'binary',
+            operator: '*',
+            left: { type: 'identifier', name: 'x' },
+            right: { type: 'literal', value: 0.5 },
+          }),
+          statement('x', 'x = x + dx', {
+            type: 'binary',
+            operator: '+',
+            left: { type: 'identifier', name: 'x' },
+            right: { type: 'identifier', name: 'dx' },
+          }),
+        ],
+        sourceLines: ['dx = x * 0.5', 'x = x + dx'],
+      };
+
+      const mesh = lowerGpuFieldProgram(program);
+      expect(mesh?.temporaries).toEqual([]);
+
+      const point = lowerGpuFieldProgram(program, {
+        stateIdentifiers: GPU_FIELD_POINT_STATE_IDENTIFIERS,
+      });
+      expect(point?.temporaries).toEqual(['dx']);
+      expect(point?.statements.map((entry) => entry.target)).toEqual([
+        'dx',
+        'x',
+      ]);
     });
 
     test('does not reclassify a caller-injected read-only binding as a local', () => {

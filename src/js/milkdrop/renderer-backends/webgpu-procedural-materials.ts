@@ -1003,7 +1003,7 @@ export function createProceduralMotionVectorMaterial(
  * duplicated run is a vertex-stage cost over a wave's samples (512 at most),
  * next to nothing beside the per-pixel work it feeds.
  */
-function buildCustomWaveProgramWgslCode(
+export function buildCustomWaveProgramWgslCode(
   program: MilkdropGpuFieldProgramDescriptor,
   output: 'point' | 'color',
 ) {

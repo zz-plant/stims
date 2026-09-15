@@ -31,6 +31,7 @@ import {
 import { createMilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-adapter-factory.ts';
 import { createWebGPUBatchingLayer } from '../../src/js/milkdrop/renderer-adapter-webgpu-batching.ts';
 import {
+  buildCustomWaveProgramWgslCode,
   buildMilkdropTransformWgslCode,
   MILKDROP_FIELD_WGSL_HELPERS_SOURCE,
 } from '../../src/js/milkdrop/renderer-backends/webgpu-procedural-materials.ts';
@@ -1883,6 +1884,41 @@ per_pixel_1=dx=(x-mx)*0.01*wavescale;
       'let fieldRegisterIn_wavescale = registersA.y;',
     );
     expect(transformWgsl).toContain('fieldRegisterIn_mx');
+  });
+
+  test("declares a custom wave's dx/dy/zoom locals in the point WGSL instead of writing mesh state", () => {
+    // A per-point block that writes `dx` used to lower to an assignment of
+    // `fieldTranslateX` — mesh-warp state the point function never declares —
+    // so the WGSL module failed to parse and the wave's pipeline was never
+    // created (31 bundled presets, 2026-09-15).
+    const preset = compileMilkdropPresetSource(
+      `
+title=Wave Local Named Like Warp State
+wavecode_0_enabled=1
+wavecode_0_samples=64
+wave_0_per_point1=dx=sin(sample*6.283)*0.1;
+wave_0_per_point2=dy=cos(sample*6.283)*0.1;
+wave_0_per_point3=zoom=1;
+wave_0_per_point4=x=0.5+dx*zoom;
+wave_0_per_point5=y=0.5+dy*zoom;
+      `.trim(),
+      { id: 'wave-local-named-like-warp-state' },
+    );
+    const wave =
+      preset.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralWaves.find(
+        (entry) => entry.target === 'custom-wave',
+      );
+    const program = wave?.fieldProgram ?? null;
+    expect(program).not.toBeNull();
+    expect(program?.temporaries).toEqual(['dx', 'dy', 'zoom']);
+
+    const pointWgsl = buildCustomWaveProgramWgslCode(
+      program as NonNullable<typeof program>,
+      'point',
+    );
+    for (const local of ['fieldTranslateX', 'fieldTranslateY', 'fieldZoom']) {
+      expect(pointWgsl).toContain(`var ${local}: f32 = 0.0;`);
+    }
   });
 
   test('binds viewport/mesh builtins and overwritten pi in transform WGSL', () => {
