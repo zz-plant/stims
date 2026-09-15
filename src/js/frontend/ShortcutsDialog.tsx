@@ -158,7 +158,16 @@ export function ShortcutsDialog({
                     <div
                       className="stims-shell__shortcut-row"
                       key={shortcut.id}
+                      // A group heading rides on the first row of its run,
+                      // so the grid's column rhythm is not interrupted by a
+                      // full-width element.
+                      data-group={shortcut.group}
                     >
+                      {shortcut.group ? (
+                        <span className="stims-shell__shortcut-group">
+                          {shortcut.group}
+                        </span>
+                      ) : null}
                       <kbd>
                         {getShortcutKeys(shortcut.id, overrides).join(' / ')}
                       </kbd>

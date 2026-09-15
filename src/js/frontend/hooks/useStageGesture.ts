@@ -2,10 +2,12 @@ import { type RefObject, useEffect, useRef } from 'react';
 import { pulseHaptic } from '../haptics.ts';
 
 const WHEEL_DEBOUNCE_MS = 400;
-/** Accumulated scroll distance that counts as "change the preset". */
+/** Accumulated Shift+scroll distance that counts as "change the preset". */
 const WHEEL_STEP_PX = 120;
 /** A pause this long ends the current scroll gesture and drops its total. */
 const WHEEL_IDLE_RESET_MS = 220;
+/** A press that travels this far is a drag, not a tap. */
+const DRAG_MIN_DISTANCE_PX = 24;
 const SWIPE_MIN_DISTANCE_PX = 64;
 const SWIPE_MAX_OFF_AXIS_PX = 72;
 const SWIPE_DEBOUNCE_MS = 450;
@@ -17,13 +19,22 @@ const TAP_MOVE_TOLERANCE_PX = 14;
 const DOUBLE_TAP_MS = 320;
 const DOUBLE_TAP_DISTANCE_PX = 24;
 
-/** Normalize a wheel delta to pixels; Firefox reports lines, not pixels. */
+/**
+ * Normalize a wheel delta to pixels; Firefox reports lines, not pixels.
+ *
+ * With Shift held, browsers on some platforms report the same wheel as
+ * horizontal motion (deltaX) — so whichever axis moved is the delta.
+ */
 function wheelDeltaPx(event: WheelEvent) {
-  if (event.deltaMode === 1) return event.deltaY * 16;
+  const raw =
+    Math.abs(event.deltaY) >= Math.abs(event.deltaX)
+      ? event.deltaY
+      : event.deltaX;
+  if (event.deltaMode === 1) return raw * 16;
   if (event.deltaMode === 2) {
-    return event.deltaY * (typeof window === 'undefined' ? 800 : innerHeight);
+    return raw * (typeof window === 'undefined' ? 800 : innerHeight);
   }
-  return event.deltaY;
+  return raw;
 }
 
 /**
@@ -80,10 +91,12 @@ export const STAGE_GESTURES: { gesture: string; label: string }[] = [
   { gesture: 'Press and hold', label: 'Save the playing preset' },
   { gesture: 'Pinch / twist', label: 'Warp and rotate the visuals' },
   { gesture: 'Drag', label: 'Push the visuals around' },
-  {
-    gesture: 'Scroll',
-    label: 'Nudge the visuals; keep going to change preset',
-  },
+  { gesture: 'Scroll', label: 'Nudge the visuals' },
+  // Behind a modifier on purpose. A plain scroll used to change the preset
+  // once 120px had accumulated, which a trackpad flick with momentum clears
+  // without meaning to — so an idle scroll over the stage swapped the visual
+  // out from under the person watching it.
+  { gesture: 'Shift + scroll', label: 'Change preset' },
 ];
 
 function isInteractiveTarget(target: EventTarget | null) {
@@ -114,6 +127,7 @@ export function useStageGesture({
   setStatusMessage,
   hapticsEnabled = true,
   longPressMs = LONG_PRESS_MS,
+  onFirstDrag,
 }: {
   enabled: boolean;
   stageRef?: RefObject<HTMLElement | null>;
@@ -126,6 +140,11 @@ export function useStageGesture({
   setStatusMessage?: (message: string | null) => void;
   hapticsEnabled?: boolean;
   longPressMs?: number;
+  /**
+   * Fires once per mount on the first press that travels far enough to be a
+   * drag, mouse or touch: the moment to say that dragging moves the visuals.
+   */
+  onFirstDrag?: () => void;
 }) {
   const shuffleRef = useRef(handleShufflePreset);
   shuffleRef.current = handleShufflePreset;
@@ -141,6 +160,8 @@ export function useStageGesture({
   toggleFullscreenRef.current = handleToggleFullscreen;
   const statusRef = useRef(setStatusMessage);
   statusRef.current = setStatusMessage;
+  const onFirstDragRef = useRef(onFirstDrag);
+  onFirstDragRef.current = onFirstDrag;
   const lastWheelRef = useRef(0);
   const lastSwipeRef = useRef(0);
   const lastTapTimeRef = useRef(0);
@@ -155,6 +176,9 @@ export function useStageGesture({
 
     const handleWheel = (event: WheelEvent) => {
       if (isInteractiveTarget(event.target)) return;
+      // Without Shift the notch belongs to the runtime, which reads it off
+      // the canvas as the wheel_delta/wheel_accum preset signals.
+      if (!event.shiftKey) return;
 
       const now = performance.now();
       const delta = wheelDeltaPx(event);
@@ -172,10 +196,9 @@ export function useStageGesture({
       lastWheelAt = now;
       accumulated += delta;
 
-      // Under the threshold the notch belongs to the runtime, which reads it
-      // off the canvas as the wheel_delta/wheel_accum preset signals. Only a
-      // deliberate scroll is a preset change, and when it is, this consumes
-      // the event so the same flick doesn't also nudge the visuals.
+      // Only a sustained Shift+scroll is a preset change, and when it is,
+      // this consumes the event so the same motion doesn't also nudge the
+      // visuals.
       if (Math.abs(accumulated) < WHEEL_STEP_PX) return;
       accumulated = 0;
       if (now - lastWheelRef.current < WHEEL_DEBOUNCE_MS) return;
@@ -205,6 +228,59 @@ export function useStageGesture({
         stage.removeEventListener('wheel', handleWheel as EventListener, {
           capture: true,
         });
+    });
+  }, [enabled, stageRef]);
+
+  // Any pointer type, unlike the swipe/tap tracking below, which is touch
+  // only: a mouse drag moves the visuals just the same, and the hint this
+  // feeds exists because nothing on screen ever said so.
+  useEffect(() => {
+    if (!enabled) return;
+
+    return whenStageReady(stageRef, (stage) => {
+      let fired = false;
+      let startX = 0;
+      let startY = 0;
+      let pointerId: number | null = null;
+
+      const handlePointerDown = (event: PointerEvent) => {
+        if (fired || isInteractiveTarget(event.target)) return;
+        pointerId = event.pointerId;
+        startX = event.clientX;
+        startY = event.clientY;
+      };
+      const handlePointerMove = (event: PointerEvent) => {
+        if (fired || pointerId !== event.pointerId) return;
+        if (
+          Math.hypot(event.clientX - startX, event.clientY - startY) <
+          DRAG_MIN_DISTANCE_PX
+        ) {
+          return;
+        }
+        fired = true;
+        pointerId = null;
+        onFirstDragRef.current?.();
+      };
+      const handlePointerEnd = (event: PointerEvent) => {
+        if (pointerId === event.pointerId) pointerId = null;
+      };
+
+      stage.addEventListener('pointerdown', handlePointerDown, {
+        passive: true,
+      });
+      stage.addEventListener('pointermove', handlePointerMove, {
+        passive: true,
+      });
+      stage.addEventListener('pointerup', handlePointerEnd, { passive: true });
+      stage.addEventListener('pointercancel', handlePointerEnd, {
+        passive: true,
+      });
+      return () => {
+        stage.removeEventListener('pointerdown', handlePointerDown);
+        stage.removeEventListener('pointermove', handlePointerMove);
+        stage.removeEventListener('pointerup', handlePointerEnd);
+        stage.removeEventListener('pointercancel', handlePointerEnd);
+      };
     });
   }, [enabled, stageRef]);
 

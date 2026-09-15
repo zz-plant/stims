@@ -772,6 +772,8 @@ html.light .stims-shell {
   }
 
   .ctl-preset__art {
+    /* Anchors the quick-select digit badge. */
+    position: relative;
     overflow: hidden;
     width: 56px;
     height: 36px;

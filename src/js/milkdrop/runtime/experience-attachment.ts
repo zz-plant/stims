@@ -35,7 +35,6 @@ export function createMilkdropExperienceAttachmentController({
   emitChange,
   setOverlayStatus,
   webgpuOptimizationFlags,
-  ensureKeyboardShortcuts,
 }: {
   lifetime: {
     isActive: () => boolean;
@@ -84,7 +83,6 @@ export function createMilkdropExperienceAttachmentController({
   emitChange: () => void;
   setOverlayStatus: (message: string) => void;
   webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags;
-  ensureKeyboardShortcuts: () => void;
 }) {
   const resolveAdaptiveQualityController =
     createAdaptiveController ?? createAdaptiveQualityController;
@@ -96,7 +94,6 @@ export function createMilkdropExperienceAttachmentController({
       }
       setRuntime(nextRuntime);
       const attachmentRevision = lifetime.beginAttachment();
-      ensureKeyboardShortcuts();
       nextRuntime.toy.rendererReady.then(async (handle) => {
         if (
           !lifetime.isCurrentAttachment(attachmentRevision) ||
