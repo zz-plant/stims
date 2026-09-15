@@ -68,6 +68,8 @@ export interface EngineContextValue {
     deviceId?: string,
   ) => Promise<void>;
   handleAudioStop: () => void;
+  /** Holds or releases the stage without ending the session (Space). */
+  handleTogglePlayback: () => void;
   loadRecentYouTubeVideo: (videoId: string, onLoaded?: () => void) => void;
   loadYouTubePreview: (requestedUrl?: string, onLoaded?: () => void) => void;
   clearRecentYouTubeVideos: () => void;

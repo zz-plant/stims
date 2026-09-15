@@ -57,8 +57,8 @@ type MenuItem = {
   label: string;
   action: () => void;
   active?: boolean;
-  separatorBefore?: boolean;
-  // Short group header rendered above the item (implies a separator).
+  // Short group header rendered above the item. Separators between groups
+  // are placed by the column layout, not by the items.
   sectionLabel?: string;
   // Stable automation id, matching the command-palette action id where one
   // exists — labels are copy and may change; data-action must not.
@@ -80,6 +80,11 @@ const TRANSITION_STEPS = [
 
 function describeTransitionStep(step: (typeof TRANSITION_STEPS)[number]) {
   return step.mode === 'cut' ? 'Instant cut' : `Blend ${step.seconds}s`;
+}
+
+/** 2 -> "2", 2.5 -> "2.5", 0.3 -> "0.3": trailing zeros dropped. */
+function formatSeconds(seconds: number): string {
+  return Number(seconds.toFixed(2)).toString();
 }
 
 /** Nearest ladder rung to what the engine currently holds, so the marked
@@ -126,10 +131,20 @@ export function StageControls({
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
   const panel = ui.routeState.panel;
+  const transitionMode = engineSnapshot?.transitionMode ?? 'blend';
+  const blendDuration = engineSnapshot?.blendDuration ?? 2;
   const transitionStepIndex = findTransitionStepIndex(
-    engineSnapshot?.transitionMode ?? 'blend',
-    engineSnapshot?.blendDuration ?? 2,
+    transitionMode,
+    blendDuration,
   );
+  // What the engine actually holds, not the nearest rung: Settings can set
+  // 2.5s or 8s, and the bar must not claim "2s" for either.
+  const transitionShortLabel =
+    transitionMode === 'cut' ? 'Cut' : `${formatSeconds(blendDuration)}s`;
+  const transitionLabel =
+    transitionMode === 'cut'
+      ? 'Instant cut'
+      : `Blend ${formatSeconds(blendDuration)}s`;
 
   // MilkDrop titles carry the author chain inline ("Krash & Rovastar -
   // Cerebral Demons"), so 93% of the catalog would print the credit twice in
@@ -190,25 +205,54 @@ export function StageControls({
       : null;
 
   const [showMenu, setShowMenu] = useState(false);
-  // An open menu holds the bar up. The menu renders as a sibling of the bar,
-  // so the bar's own `:focus-within` reprieve cannot see focus inside it.
-  const { visible, signalActivity } = useAutoHideActivity(3000, true, showMenu);
+  const [showTransitionMenu, setShowTransitionMenu] = useState(false);
+  // A pointer resting on the bar, or focus inside it. Measured before this
+  // existed: hover the pill, hold still for the 3s timer, and the bar faded
+  // out from under the cursor (`:hover` true, `data-visible` false) — the
+  // first click after a pause to read the title landed on the stage. Focus
+  // had a CSS `:focus-within` reprieve, but that kept the bar painted while
+  // the JS flag said hidden, so the reveal handle rendered on top of the
+  // title at the same time. Holding through the timer makes the flag and
+  // the picture agree; the CSS rule stays as the hard a11y guarantee.
+  const [pointerOnBar, setPointerOnBar] = useState(false);
+  const [focusOnBar, setFocusOnBar] = useState(false);
+  // An open menu holds the bar up. The menus render as siblings of the bar,
+  // so the bar's own `:focus-within` reprieve cannot see focus inside them.
+  const { visible, signalActivity } = useAutoHideActivity(
+    3000,
+    true,
+    showMenu || showTransitionMenu || pointerOnBar || focusOnBar,
+  );
   const transition = usePresetTransition();
   const pip = usePictureInPicture(ui.stageRef);
   const energyRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const transitionMenuRef = useRef<HTMLDivElement>(null);
+  const transitionBtnRef = useRef<HTMLButtonElement>(null);
+  // Where the popover sits: centred over its trigger, measured on open. The
+  // pill is centred and its width follows the title, so the trigger has no
+  // fixed x to style against.
+  const [transitionAnchor, setTransitionAnchor] = useState<{
+    left: number;
+    bottom: number;
+  } | null>(null);
+  const playbackPaused = engineSnapshot?.playbackPaused ?? false;
 
   // Toasts render above every overlay, so they have to know when something
   // occupies the bottom of the screen and move out of its way. Sheets publish
   // that from the shell as data-sheet-open; this menu is bottom-anchored too.
-  useBottomOverlaySignal(showMenu);
+  useBottomOverlaySignal(showMenu || showTransitionMenu);
 
   // A stable registration: the menu must keep Escape while it is open, even
   // as the shell re-renders around it.
   useEscapeHandler(showMenu, () => {
     setShowMenu(false);
     menuBtnRef.current?.focus();
+  });
+  useEscapeHandler(showTransitionMenu, () => {
+    setShowTransitionMenu(false);
+    transitionBtnRef.current?.focus();
   });
 
   // ARIA already promises menu semantics (role="menu"/"menuitem"); this
@@ -229,6 +273,76 @@ export function StageControls({
       menuRef.current?.querySelector<HTMLElement>('[role^="menuitem"]');
     firstItem?.focus();
   }, [showMenu]);
+
+  useListKeyboardNav(transitionMenuRef, {
+    itemSelector: '[role="menuitemradio"]',
+    orientation: 'horizontal',
+    deps: [showTransitionMenu],
+  });
+
+  // Land on the rung that is active, not the first one: the popover exists
+  // to move one step from where you are, and a keyboard user should start
+  // there.
+  useEffect(() => {
+    if (!showTransitionMenu) return;
+    const current =
+      transitionMenuRef.current?.querySelector<HTMLElement>(
+        '[role="menuitemradio"][aria-checked="true"]',
+      ) ??
+      transitionMenuRef.current?.querySelector<HTMLElement>(
+        '[role="menuitemradio"]',
+      );
+    current?.focus();
+  }, [showTransitionMenu]);
+
+  useEffect(() => {
+    if (!showTransitionMenu) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        event.target instanceof Element &&
+        (transitionMenuRef.current?.contains(event.target) ||
+          transitionBtnRef.current?.contains(event.target))
+      ) {
+        return;
+      }
+      setShowTransitionMenu(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Tab') setShowTransitionMenu(false);
+    };
+    document.addEventListener('pointerdown', handlePointerDown, {
+      passive: true,
+    });
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showTransitionMenu]);
+
+  // One popover at a time.
+  useEffect(() => {
+    if (showMenu) setShowTransitionMenu(false);
+  }, [showMenu]);
+
+  useEffect(() => {
+    if (!showTransitionMenu) {
+      setTransitionAnchor(null);
+      return;
+    }
+    const measure = () => {
+      const rect = transitionBtnRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setTransitionAnchor({
+        left: rect.left + rect.width / 2,
+        bottom: window.innerHeight - rect.top + 8,
+      });
+    };
+    measure();
+    const handleResize = () => setShowTransitionMenu(false);
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, [showTransitionMenu]);
 
   // Opening this menu is the strongest signal of intent the UI gets before a
   // click: nearly every item in it opens a code-split panel, and the download
@@ -446,6 +560,20 @@ export function StageControls({
       actionId: 'queue-add',
       action: () => run(() => queueCurrentPreset()),
     },
+    // Listed here as well as on the bar: on phones the bar drops the star to
+    // give the title room to be read, and press-and-hold on the stage is a
+    // gesture nobody can see. This row is the one place it is always named.
+    ...(currentPresetId
+      ? [
+          {
+            icon: 'star' as const,
+            label: presetSaved ? 'Remove from saved' : 'Save preset',
+            actionId: 'save-preset',
+            action: () => run(() => handleToggleSave()),
+            active: presetSaved,
+          } satisfies MenuItem,
+        ]
+      : []),
   ];
 
   const studioItems: MenuItem[] = [
@@ -455,7 +583,6 @@ export function StageControls({
       actionId: 'open-generate',
       action: () => run(() => togglePanel(menuSurface, 'synthesize')),
       active: panel === 'synthesize',
-      separatorBefore: true,
       sectionLabel: 'Studio & Create',
     },
     {
@@ -491,8 +618,17 @@ export function StageControls({
     ...(engineSnapshot?.audioSource
       ? [
           {
+            icon: playbackPaused ? ('play' as const) : ('pause' as const),
+            label: playbackPaused ? 'Resume' : 'Pause',
+            actionId: 'toggle-playback',
+            action: () => run(() => engine.handleTogglePlayback()),
+          } satisfies MenuItem,
+          {
             icon: 'volume-off' as const,
-            label: 'Stop audio',
+            // Says where it goes. This unmounts the engine and shows the
+            // start page; as "Stop audio" it sat behind a mute glyph and
+            // read as pause — the thing above it is pause.
+            label: 'Stop audio and go back to start',
             actionId: 'stop-audio',
             action: () => run(() => engine.handleAudioStop()),
           } satisfies MenuItem,
@@ -506,7 +642,6 @@ export function StageControls({
       label: isFullscreen ? 'Exit full screen' : 'Full screen',
       actionId: 'toggle-fullscreen',
       action: () => run(() => onToggleFullscreen()),
-      separatorBefore: true,
       sectionLabel: 'Display & Streaming',
     },
     ...(pip.supported
@@ -537,7 +672,28 @@ export function StageControls({
     },
   ];
 
+  // Settings and the palette lead this group. They are the two routes to
+  // everything the menu does not list, and as the last two of 26 items they
+  // sat below the fold of a menu that scrolled at every common height.
   const workspaceItems: MenuItem[] = [
+    {
+      icon: 'sliders' as const,
+      label: 'Settings',
+      actionId: 'open-settings',
+      action: () => run(() => togglePanel(menuSurface, 'settings')),
+      active: panel === 'settings',
+      sectionLabel: 'Workspace & System',
+    },
+    ...(onOpenPalette
+      ? [
+          {
+            icon: 'sparkles' as const,
+            label: 'Command palette',
+            actionId: 'open-palette',
+            action: () => run(onOpenPalette),
+          } satisfies MenuItem,
+        ]
+      : []),
     {
       icon: 'link' as const,
       label: engineSnapshot?.sessionState?.dirty
@@ -545,8 +701,6 @@ export function StageControls({
         : 'Share link',
       actionId: 'share-link',
       action: () => run(() => void ui.handleShowCurrentLink()),
-      separatorBefore: true,
-      sectionLabel: 'Workspace & System',
     },
     {
       icon: 'pulse' as const,
@@ -561,23 +715,6 @@ export function StageControls({
             label: 'End watch party',
             actionId: 'end-watch-party',
             action: () => run(() => endWatchParty(ui.setStatusMessage)),
-          } satisfies MenuItem,
-        ]
-      : []),
-    {
-      icon: 'sliders' as const,
-      label: 'Settings',
-      actionId: 'open-settings',
-      action: () => run(() => togglePanel(menuSurface, 'settings')),
-      active: panel === 'settings',
-    },
-    ...(onOpenPalette
-      ? [
-          {
-            icon: 'sparkles' as const,
-            label: 'Command palette',
-            actionId: 'open-palette',
-            action: () => run(onOpenPalette),
           } satisfies MenuItem,
         ]
       : []),
@@ -602,7 +739,6 @@ export function StageControls({
 
   const renderMenuItem = (item: MenuItem) => (
     <div key={item.label}>
-      {item.separatorBefore ? <div className={styles.menuSep} /> : null}
       {item.sectionLabel ? (
         <div className={styles.menuLabel} aria-hidden="true">
           {item.sectionLabel}
@@ -640,17 +776,31 @@ export function StageControls({
 
   return (
     <>
-      <div
-        className={styles.bar}
-        data-visible={String(visible)}
-        onPointerEnter={() => signalActivity()}
-      >
+      <div className={styles.bar} data-visible={String(visible)}>
+        {/* Hover and focus are tracked on the pill, the element the pointer
+            can actually hit — the bar around it is pointer-events: none. */}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: these handlers only note that a pointer or focus is inside the container of buttons, to keep it from auto-hiding; the buttons themselves are the interactions */}
         <div
           ref={energyRef}
           className={styles.pill}
           data-transition={
             transition.phase !== 'idle' ? transition.phase : undefined
           }
+          data-paused={playbackPaused ? 'true' : undefined}
+          onPointerEnter={() => {
+            setPointerOnBar(true);
+            signalActivity();
+          }}
+          onPointerLeave={() => setPointerOnBar(false)}
+          onFocus={() => setFocusOnBar(true)}
+          onBlur={(event) => {
+            if (
+              !(event.relatedTarget instanceof Node) ||
+              !event.currentTarget.contains(event.relatedTarget)
+            ) {
+              setFocusOnBar(false);
+            }
+          }}
         >
           {transition.phase === 'blending' ? (
             <span
@@ -715,30 +865,28 @@ export function StageControls({
             />
           </button>
 
+          {/* Opens the ladder rather than cycling it. A four-state cycle
+              needed up to three clicks to reach a rung, could not go back,
+              and printed the nearest rung — "2s" while the engine held 2.5s.
+              The trigger now prints the engine's actual value and the popover
+              is the same radio row the overflow menu already draws. */}
           <button
+            ref={transitionBtnRef}
             type="button"
             className={styles.transitionBtn}
-            data-action="cycle-transition"
-            aria-label={`Transition: ${describeTransitionStep(TRANSITION_STEPS[transitionStepIndex])}. Click to cycle.`}
-            title={`Transition: ${describeTransitionStep(TRANSITION_STEPS[transitionStepIndex])}\nClick to cycle`}
+            data-action="transition-menu"
+            aria-haspopup="menu"
+            aria-expanded={showTransitionMenu}
+            aria-label={`Transition: ${transitionLabel}. Choose a duration.`}
+            title={`Transition: ${transitionLabel}`}
             onClick={() => {
-              const nextIndex =
-                (transitionStepIndex + 1) % TRANSITION_STEPS.length;
-              const nextStep = TRANSITION_STEPS[nextIndex];
               signalActivity();
               pulseHaptic(10);
-              setTransition(
-                engine,
-                ui.setStatusMessage,
-                nextStep.mode,
-                nextStep.seconds,
-              );
+              setShowTransitionMenu((open) => !open);
             }}
           >
             <span className={styles.transitionBtnText}>
-              {TRANSITION_STEPS[transitionStepIndex].mode === 'cut'
-                ? 'Cut'
-                : `${TRANSITION_STEPS[transitionStepIndex].seconds}s`}
+              {transitionShortLabel}
             </span>
           </button>
 
@@ -765,7 +913,11 @@ export function StageControls({
             onClick={handleBrowse}
           >
             <span className={styles.titleText}>{presetTitle}</span>
-            {transition.phase === 'loading' ? (
+            {playbackPaused ? (
+              <span className={styles.statusText} data-static="true">
+                Paused
+              </span>
+            ) : transition.phase === 'loading' ? (
               <span className={styles.statusText}>Loading…</span>
             ) : transition.phase === 'blending' ? (
               <span className={styles.statusText}>Blending…</span>
@@ -807,30 +959,32 @@ export function StageControls({
             </button>
           ) : null}
 
-          {/* Promoted out of the overflow menu, not duplicated for taste.
-              That menu is 24 items and 90% of viewport height, so it scrolls:
-              at 1280x720 its last 396px sit below the fold, and Stop audio is
-              the second-to-last item. The one control that ends what the page
-              is doing, and the one every visualizer is expected to have, were
-              both unreachable without scrolling a menu that covers the stage.
-              They stay in the menu too, so the keyboard hints and the palette
-              still have one place that lists everything. */}
+          {/* The transport control every visualizer is expected to have.
+              This slot used to hold "Stop audio" behind a mute glyph, and
+              stopping audio unmounts the engine and returns to the start
+              page — so the button that looked like mute was the exit. Pause
+              holds the frame and keeps the session; stopping lives in the
+              menu under a label that says where it goes. */}
           {engineSnapshot?.audioSource ? (
             <button
               type="button"
               className={styles.navBtn}
-              data-action="stop-audio"
-              aria-label="Stop audio"
-              title={withHint('Stop audio', 'stop-audio')}
-              aria-keyshortcuts={ariaKeyShortcutsFor('stop-audio')}
+              data-action="toggle-playback"
+              data-paused={String(playbackPaused)}
+              aria-label={playbackPaused ? 'Resume' : 'Pause'}
+              title={withHint(
+                playbackPaused ? 'Resume' : 'Pause',
+                'toggle-playback',
+              )}
+              aria-keyshortcuts={ariaKeyShortcutsFor('toggle-playback')}
               onClick={() => {
                 signalActivity();
                 pulseHaptic(10);
-                void engine.handleAudioStop();
+                engine.handleTogglePlayback();
               }}
             >
               <UiIcon
-                name="volume-off"
+                name={playbackPaused ? 'play' : 'pause'}
                 className="stims-icon-slot stims-icon-slot--sm"
               />
             </button>
@@ -881,6 +1035,67 @@ export function StageControls({
         </div>
       </div>
 
+      {showTransitionMenu ? (
+        <div
+          ref={transitionMenuRef}
+          className={styles.popover}
+          role="menu"
+          aria-label="Transition"
+          data-menu="transition"
+          style={
+            transitionAnchor
+              ? {
+                  left: `${transitionAnchor.left}px`,
+                  bottom: `${transitionAnchor.bottom}px`,
+                }
+              : undefined
+          }
+        >
+          <span className={styles.menuGroupLabel} aria-hidden="true">
+            Transition
+          </span>
+          <div className={styles.menuGroupOptions}>
+            {TRANSITION_STEPS.map((step) => {
+              // Exact, not nearest: an off-ladder value from Settings marks
+              // nothing here, and the trigger already prints it.
+              const checked =
+                transitionMode === step.mode &&
+                (step.mode === 'cut' || step.seconds === blendDuration);
+              return (
+                <button
+                  key={describeTransitionStep(step)}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={checked}
+                  aria-label={`Transition: ${describeTransitionStep(step)}`}
+                  className={styles.menuOption}
+                  data-action={
+                    step.mode === 'cut'
+                      ? 'transition-cut'
+                      : `transition-${step.seconds}s`
+                  }
+                  data-active={String(checked)}
+                  onClick={() => {
+                    signalActivity();
+                    pulseHaptic(10);
+                    setShowTransitionMenu(false);
+                    transitionBtnRef.current?.focus();
+                    setTransition(
+                      engine,
+                      ui.setStatusMessage,
+                      step.mode,
+                      step.seconds,
+                    );
+                  }}
+                >
+                  {step.mode === 'cut' ? 'Cut' : `${step.seconds}s`}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
       {showMenu ? (
         // Presentational only: the document pointerdown listener above already
         // closes the menu on any press outside it, and this sits underneath.
@@ -894,92 +1109,104 @@ export function StageControls({
           role="menu"
           aria-label="More actions"
         >
-          {presetItems.map(renderMenuItem)}
-          {studioItems.map(renderMenuItem)}
+          {/* Two columns from 640px up, one below. As a single column of 26
+              items the menu was 1186px tall in a 694px viewport: it scrolled
+              at every common desktop height, and the two routes to everything
+              it does not list — Settings and the palette — were the last two
+              items. Reading order is the same in both layouts: what to play,
+              how it plays, then the workspace, display, and studio tools. */}
+          <div className={styles.menuColumn}>
+            {presetItems.map(renderMenuItem)}
 
-          <div className={styles.menuSep} />
-          <div className={styles.menuLabel} aria-hidden="true">
-            Live VJ & Audio
-          </div>
-          {/* Direct picks, not a cycle: mid-set there is no time to click
+            <div className={styles.menuSep} />
+            <div className={styles.menuLabel} aria-hidden="true">
+              Live VJ & Audio
+            </div>
+            {/* Direct picks, not a cycle: mid-set there is no time to click
               through the ladder to reach the rung you want. The active rung
               is the nearest one to what the engine holds, so an off-ladder
               Settings duration still shows a sensible mark. */}
-          {/* biome-ignore lint/a11y/useSemanticElements: role=group is the ARIA menu pattern for menuitemradio sets; fieldset carries form semantics a menu must not have */}
-          <div
-            className={styles.menuGroup}
-            role="group"
-            aria-label="Transition"
-          >
-            <span className={styles.menuGroupLabel} aria-hidden="true">
-              Transition
-            </span>
-            <div className={styles.menuGroupOptions}>
-              {TRANSITION_STEPS.map((step, index) => (
-                <button
-                  key={describeTransitionStep(step)}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={index === transitionStepIndex}
-                  aria-label={`Transition: ${describeTransitionStep(step)}`}
-                  className={styles.menuOption}
-                  data-action={
-                    step.mode === 'cut'
-                      ? 'transition-cut'
-                      : `transition-${step.seconds}s`
-                  }
-                  data-active={String(index === transitionStepIndex)}
-                  onClick={() =>
-                    run(() =>
-                      setTransition(
-                        engine,
-                        ui.setStatusMessage,
-                        step.mode,
-                        step.seconds,
-                      ),
-                    )
-                  }
-                >
-                  {step.mode === 'cut' ? 'Cut' : `${step.seconds}s`}
-                </button>
-              ))}
+            {/* biome-ignore lint/a11y/useSemanticElements: role=group is the ARIA menu pattern for menuitemradio sets; fieldset carries form semantics a menu must not have */}
+            <div
+              className={styles.menuGroup}
+              role="group"
+              aria-label="Transition"
+            >
+              <span className={styles.menuGroupLabel} aria-hidden="true">
+                Transition
+              </span>
+              <div className={styles.menuGroupOptions}>
+                {TRANSITION_STEPS.map((step, index) => (
+                  <button
+                    key={describeTransitionStep(step)}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={index === transitionStepIndex}
+                    aria-label={`Transition: ${describeTransitionStep(step)}`}
+                    className={styles.menuOption}
+                    data-action={
+                      step.mode === 'cut'
+                        ? 'transition-cut'
+                        : `transition-${step.seconds}s`
+                    }
+                    data-active={String(index === transitionStepIndex)}
+                    onClick={() =>
+                      run(() =>
+                        setTransition(
+                          engine,
+                          ui.setStatusMessage,
+                          step.mode,
+                          step.seconds,
+                        ),
+                      )
+                    }
+                  >
+                    {step.mode === 'cut' ? 'Cut' : `${step.seconds}s`}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          {/* biome-ignore lint/a11y/useSemanticElements: role=group is the ARIA menu pattern for menuitemradio sets; fieldset carries form semantics a menu must not have */}
-          <div
-            className={styles.menuGroup}
-            role="group"
-            aria-label="Audio source"
-          >
-            <span className={styles.menuGroupLabel} aria-hidden="true">
-              Audio source
-            </span>
-            <div className={styles.menuGroupOptions}>
-              {AUDIO_SOURCE_OPTIONS.map((option) => (
-                <button
-                  key={option.source}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={engineSnapshot?.audioSource === option.source}
-                  aria-label={option.name}
-                  className={styles.menuOption}
-                  data-action={`audio-${option.source}`}
-                  data-active={String(
-                    engineSnapshot?.audioSource === option.source,
-                  )}
-                  onClick={() =>
-                    run(() => startAudioSource(engine, option.source))
-                  }
-                >
-                  {option.shortLabel}
-                </button>
-              ))}
+            {/* biome-ignore lint/a11y/useSemanticElements: role=group is the ARIA menu pattern for menuitemradio sets; fieldset carries form semantics a menu must not have */}
+            <div
+              className={styles.menuGroup}
+              role="group"
+              aria-label="Audio source"
+            >
+              <span className={styles.menuGroupLabel} aria-hidden="true">
+                Audio source
+              </span>
+              <div className={styles.menuGroupOptions}>
+                {AUDIO_SOURCE_OPTIONS.map((option) => (
+                  <button
+                    key={option.source}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={engineSnapshot?.audioSource === option.source}
+                    aria-label={option.name}
+                    className={styles.menuOption}
+                    data-action={`audio-${option.source}`}
+                    data-active={String(
+                      engineSnapshot?.audioSource === option.source,
+                    )}
+                    onClick={() =>
+                      run(() => startAudioSource(engine, option.source))
+                    }
+                  >
+                    {option.shortLabel}
+                  </button>
+                ))}
+              </div>
             </div>
+            {vjItems.map(renderMenuItem)}
           </div>
-          {vjItems.map(renderMenuItem)}
 
-          {displayItems.map(renderMenuItem)}
-          {workspaceItems.map(renderMenuItem)}
+          <div className={styles.menuColumn}>
+            {workspaceItems.map(renderMenuItem)}
+            <div className={styles.menuSep} />
+            {displayItems.map(renderMenuItem)}
+            <div className={styles.menuSep} />
+            {studioItems.map(renderMenuItem)}
+          </div>
         </div>
       ) : null}
 

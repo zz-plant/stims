@@ -57,6 +57,7 @@ export type AgentEventType =
   | 'preset'
   | 'panel'
   | 'audio-source'
+  | 'playback'
   | 'transition'
   | 'autoplay'
   | 'backend'
@@ -83,6 +84,8 @@ export interface AgentCoreSnapshot {
    * then, so wait for this rather than for readiness alone. */
   catalogSize: number;
   audioSource: string | null;
+  /** Stage held at the user's request (Space / dock pause). */
+  playbackPaused: boolean;
   audioEnergy: number | null;
   autoplay: boolean | null;
   transition: { mode: string | null; blendDuration: number | null };
@@ -169,6 +172,14 @@ export const CORE_SNAPSHOT_DIFF_DESCRIPTORS: readonly CoreDiffDescriptor[] = [
     event: (p, n) => ({
       type: 'audio-source',
       data: { from: p.audioSource, to: n.audioSource },
+    }),
+  },
+  {
+    fields: ['playbackPaused'],
+    changed: (p, n) => p.playbackPaused !== n.playbackPaused,
+    event: (_p, n) => ({
+      type: 'playback',
+      data: { paused: n.playbackPaused },
     }),
   },
   {

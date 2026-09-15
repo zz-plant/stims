@@ -10,6 +10,7 @@
 
 import { afterEach, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   availableStageKeyDocs,
   availableStageSignalKeys,
@@ -210,33 +211,46 @@ describe('hints are derived, not copied', () => {
   test('aria-keyshortcuts publishes both platform modifiers', () => {
     expect(ariaKeyShortcutsFor('open-palette', {})).toBe('Meta+K Control+K');
     expect(ariaKeyShortcutsFor('open-browse', {})).toBe('B');
-    expect(ariaKeyShortcutsFor('previous-preset', {})).toBe('P ArrowLeft');
+    expect(ariaKeyShortcutsFor('previous-preset', {})).toBe(
+      'P ArrowLeft Backspace',
+    );
   });
 });
 
 describe('bindings land on keys that actually reach the shell', () => {
-  // Three layers consume keys before useKeyboardShortcuts runs, and only the
-  // registry is visible from shortcut-registry.ts. A binding on a consumed
-  // key is not a conflict that surfaces anywhere — it is a dead key.
-  const OVERLAY_CLAIMED = new Set([
-    'r',
-    'backspace',
-    'h',
-    'w',
-    'l',
-    'i',
-    'j',
-    'o',
-    'q',
-  ]);
+  // The focused canvas consumes keys before useKeyboardShortcuts runs, and
+  // only the registry is visible from shortcut-registry.ts. A binding on a
+  // consumed key is not a conflict that surfaces anywhere — it is a dead key.
+  //
+  // The MilkDrop runtime used to be a second such layer, a document-level
+  // handler for H, L, R, W and an I/J/O/Q nudge map that preventDefault()ed
+  // before the shell saw the key. It is gone: those bindings live in this
+  // registry now, so a regression would be that handler coming back.
   const dispatched = SHORTCUT_REGISTRY.filter((e) => e.dispatchViaPalette);
 
-  test.each(dispatched.map((e) => [e.id, e.defaultKeys[0]] as const))(
-    '%s (%s) is not swallowed by the MilkDrop overlay',
-    (_id, spec) => {
-      expect(OVERLAY_CLAIMED.has(parseShortcut(spec).key)).toBe(false);
-    },
-  );
+  test('the runtime no longer installs its own document key handler', () => {
+    const uiBridge = readFileSync(
+      join(import.meta.dir, '../../src/js/milkdrop/runtime/ui-bridge.ts'),
+      'utf8',
+    );
+    expect(uiBridge).not.toContain("addEventListener('keydown'");
+  });
+
+  test('every default binding is unique across the registry', () => {
+    const seen = new Map<string, string>();
+    for (const entry of SHORTCUT_REGISTRY) {
+      for (const spec of entry.defaultKeys) {
+        if (spec === '1–9') continue;
+        const parsed = parseShortcut(spec);
+        const signature = `${parsed.mod ? 'mod+' : ''}${parsed.alt ? 'alt+' : ''}${parsed.shift ? 'shift+' : ''}${parsed.key}`;
+        const owner = seen.get(signature);
+        expect(
+          owner ? `${signature} bound to both ${owner} and ${entry.id}` : null,
+        ).toBeNull();
+        seen.set(signature, entry.id);
+      }
+    }
+  });
 
   test.each(dispatched.map((e) => [e.id, e.defaultKeys[0]] as const))(
     '%s (%s) is not swallowed by the focused canvas',

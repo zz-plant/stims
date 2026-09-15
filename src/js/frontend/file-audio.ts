@@ -166,3 +166,22 @@ export function disposeActiveFileAudio(): void {
 export function getActiveFileAudioName(): string | null {
   return activeFileAudio?.name ?? null;
 }
+
+/**
+ * Pauses or resumes the playing file in step with the stage's pause. A file
+ * is the one source whose sound this page produces, so holding the picture
+ * while the track played on would read as the visuals having died.
+ */
+export function setActiveFileAudioPaused(paused: boolean): void {
+  const element = activeFileAudio?.element;
+  if (!element) return;
+  if (paused) {
+    element.pause();
+    return;
+  }
+  void element.play().catch(() => {
+    // Autoplay policy can refuse a play() that is not inside a gesture; the
+    // stage resumes regardless and the next gesture retries through the
+    // audio-handler's own resume path.
+  });
+}

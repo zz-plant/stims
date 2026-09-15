@@ -38,6 +38,7 @@ __stims_agent.getState().statusLog.at(-1);              // {at, message}
 | `presetId`, `presetTitle` | active preset |
 | `catalogSize` | presets the shell can pick from; `0` until the deferred catalog load lands, which is later than `ready`, so `next-preset` is a no-op before then — `waitFor((s) => s.catalogSize > 0)` before choosing presets |
 | `audioSource`, `audioEnergy` | current source and live RMS energy |
+| `playbackPaused` | the stage is holding its frame at the user's request (Space, the dock's pause button, `toggle-playback`); everything stays mounted, unlike `stop-audio`, which unmounts the engine and returns to the start page |
 | `autoplay`, `transition` | playback settings (`transition.mode`, `transition.blendDuration`) |
 | `shaderExecution` | is the preset rendering as authored on the active backend? `'direct'` yes; `'none'` the preset has no shader text; `'translated'` / `'unsupported'` the backend cannot run the shader text and the renderer is substituting a **uniform-only approximation** — a plausible frame that is not the preset; `null` nothing compiled yet (never read null as "fine") |
 | `fps`, `quality` | measured frame rate and adaptive-quality diagnostics (from the agent telemetry feed) |
@@ -55,8 +56,9 @@ read-immediately-after-write.
   commit (or a 1s settle window — `settled: false` is normal for actions
   with no snapshot effect, e.g. `share-link`).
 - `listActions()` → `[{id, label}]` — the current palette registry
-  (~21 actions: panels, preset moves, transitions, audio sources, save,
-  share, watch party, autoplay, fullscreen).
+  (~50 actions: panels, preset moves, transitions, audio sources,
+  pause/resume, save, share, watch party, autoplay, fullscreen, and the
+  preset-tuning nudges `nudge-*` / `wave-mode-*` / `toggle-transition-mode`).
 - Targeted verbs beyond the palette:
   - `run('select-preset', { id })` — play a specific catalog preset.
   - `run('set-field', { key, value })` — live-set a preset variable

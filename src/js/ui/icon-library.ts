@@ -199,6 +199,14 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'm22 9-6 6' } },
     { tag: 'path', attrs: { d: 'm16 9 6 6' } },
   ],
+  /* Transport pair for the dock's hold/release toggle. Drawn as outlines
+     like every other glyph here, so the pause bars and the play wedge read
+     at the same weight as the arrows beside them. */
+  pause: [
+    { tag: 'rect', attrs: { x: 6, y: 5, width: 4, height: 14 } },
+    { tag: 'rect', attrs: { x: 14, y: 5, width: 4, height: 14 } },
+  ],
+  play: [{ tag: 'path', attrs: { d: 'M7 4.5v15l12-7.5z' } }],
   star: [
     {
       tag: 'path',

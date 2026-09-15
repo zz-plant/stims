@@ -22,6 +22,13 @@ export type EngineSnapshot = {
   runtimeReady: boolean;
   audioActive: boolean;
   audioSource: AudioSource | null;
+  /**
+   * The stage is holding its frame at the user's request (Space, the dock's
+   * pause button). Everything stays mounted — preset, history, audio
+   * session — which is what separates this from stopping audio, which
+   * unmounts the engine and returns to the start page.
+   */
+  playbackPaused: boolean;
   audioEnergy: number;
   audioBass: number;
   audioMid: number;
@@ -64,6 +71,7 @@ export function createEmptyEngineSnapshot(): EngineSnapshot {
     runtimeReady: false,
     audioActive: false,
     audioSource: null,
+    playbackPaused: false,
     audioEnergy: 0,
     audioBass: 0,
     audioMid: 0,
@@ -90,6 +98,7 @@ function shallowEqual(a: EngineSnapshot, b: EngineSnapshot): boolean {
     a.runtimeReady === b.runtimeReady &&
     a.audioActive === b.audioActive &&
     a.audioSource === b.audioSource &&
+    a.playbackPaused === b.playbackPaused &&
     a.audioEnergy === b.audioEnergy &&
     a.audioBass === b.audioBass &&
     a.audioMid === b.audioMid &&
@@ -108,6 +117,7 @@ export function buildEngineSnapshot({
   runtime,
   audioActive,
   audioSource,
+  playbackPaused = false,
   audioEndedAt,
   previousSnapshot,
 }: {
@@ -115,6 +125,7 @@ export function buildEngineSnapshot({
   runtime: ToyRuntimeInstance | null;
   audioActive: boolean;
   audioSource: AudioSource | null;
+  playbackPaused?: boolean;
   audioEndedAt?: number | null;
   previousSnapshot?: EngineSnapshot | null;
 }): EngineSnapshot {
@@ -130,6 +141,7 @@ export function buildEngineSnapshot({
     runtimeReady: Boolean(runtime),
     audioActive,
     audioSource,
+    playbackPaused,
     audioEnergy: snapshot?.audioEnergy ?? 0,
     audioBass: snapshot?.audioBass ?? 0,
     audioMid: snapshot?.audioMid ?? 0,
