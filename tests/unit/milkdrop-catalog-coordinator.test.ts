@@ -273,6 +273,45 @@ describe('milkdrop catalog coordinator', () => {
     );
   });
 
+  test('seedSelection lets the first "previous" return to the startup preset without persisting it', async () => {
+    let persistedStack: string[] = [];
+    const coordinator = createMilkdropCatalogCoordinator({
+      catalogStore: {
+        async recordRecent() {},
+        async pushHistory(id: string) {
+          persistedStack = [
+            id,
+            ...persistedStack.filter((entry) => entry !== id),
+          ].slice(0, 32);
+        },
+        async getHistory() {
+          return persistedStack;
+        },
+      } as never,
+      onCatalogChanged() {},
+    });
+
+    // A fresh profile: the startup preset is mounted, nothing is persisted.
+    coordinator.seedSelection('startup');
+    expect(persistedStack).toEqual([]);
+
+    // One forward selection, then "previous" must land on the startup
+    // preset rather than falling through to a persisted stack that only
+    // holds the preset just switched to.
+    await coordinator.rememberSelection('preset-a');
+    expect(persistedStack).toEqual(['preset-a']);
+    expect(await coordinator.consumePreviousSelection('preset-a')).toBe(
+      'startup',
+    );
+
+    // Seeding after a real selection must not rewrite history.
+    coordinator.seedSelection('late');
+    await coordinator.rememberSelection('preset-b');
+    expect(await coordinator.consumePreviousSelection('preset-b')).toBe(
+      'startup',
+    );
+  });
+
   test('patches cached catalog entries without refetching the full catalog', async () => {
     const requestedStates: Array<{ presetId: string; backend: string }> = [];
     let listCalls = 0;

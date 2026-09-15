@@ -352,4 +352,25 @@ describe('frontend url state', () => {
 
     expect(decodePresetCodeFromHash(new URL(shared).hash)).toBe(source);
   });
+  test('rejects impractical URLs instead of returning a stale draft', () => {
+    expect(() =>
+      buildRemixShareUrl(
+        'https://toil.fyi/?preset=signal-bloom#code=stale',
+        '// 🎛'.repeat(5000),
+      ),
+    ).toThrow('too long');
+  });
+
+  test('counts the complete escaped URL against the sharing budget', () => {
+    const base = buildRemixShareUrl('https://toil.fyi/', 'abc');
+    const atLimit = `https://toil.fyi/?pad=${'x'.repeat(16000 - base.length - 5)}`;
+    expect(buildRemixShareUrl(atLimit, 'abc').length).toBe(16000);
+    expect(() => buildRemixShareUrl(`${atLimit}x`, 'abc')).toThrow('too long');
+  });
+
+  test('rejects malformed versioned UTF-8 and preserves legacy Latin-1', () => {
+    expect(decodePresetCodeFromHash('#code=u1~%2Fw%3D%3D')).toBeNull();
+    expect(decodePresetCodeFromHash('#code=%2Fw%3D%3D')).toBe('ÿ');
+    expect(decodePresetCodeFromHash('#code=%%%')).toBeNull();
+  });
 });

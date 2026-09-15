@@ -50,6 +50,8 @@ type AgentWindow = typeof window & {
     getState: () => {
       engineState: 'booting' | 'ready' | 'live';
       backend: string | null;
+      presetId: string | null;
+      catalogSize: number;
       lastError: string | null;
     };
     waitFor: (
@@ -177,6 +179,46 @@ async function runBootSmoke(renderer: 'webgl' | 'webgpu') {
       () => (window as AgentWindow).__stims_agent !== undefined,
       undefined,
       { timeout: 5000 },
+    );
+
+    // Before anything else touches the shell: palette actions must work on a
+    // freshly booted page. `next-preset` used to be a silent no-op here
+    // because the memoized action list had captured the shuffle handler
+    // while the catalog was still empty, and only an unrelated state change
+    // (starting audio, below) rebuilt it, so a test that started audio first
+    // never saw it. `previous-preset` then has to lead back to the startup
+    // preset in this fresh profile, where nothing is persisted yet.
+    // `ready` precedes both the first engine snapshot and the deferred
+    // catalog load, and a preset move needs both.
+    await page.waitForFunction(
+      () => {
+        const state = (window as AgentWindow).__stims_agent?.getState();
+        return Boolean(state?.presetId) && (state?.catalogSize ?? 0) > 0;
+      },
+      undefined,
+      { timeout: 30000 },
+    );
+    const startupPresetId = await page.evaluate(
+      () => (window as AgentWindow).__stims_agent?.getState().presetId,
+    );
+    expect(startupPresetId).toBeTruthy();
+    const nextResult = await page.evaluate(() =>
+      (window as AgentWindow).__stims_agent?.run('next-preset'),
+    );
+    expect(nextResult?.ok).toBe(true);
+    await page.waitForFunction(
+      (id) => (window as AgentWindow).__stims_agent?.getState().presetId !== id,
+      startupPresetId,
+      { timeout: 15000 },
+    );
+    const previousResult = await page.evaluate(() =>
+      (window as AgentWindow).__stims_agent?.run('previous-preset'),
+    );
+    expect(previousResult?.ok).toBe(true);
+    await page.waitForFunction(
+      (id) => (window as AgentWindow).__stims_agent?.getState().presetId === id,
+      startupPresetId,
+      { timeout: 15000 },
     );
 
     const startResult = await page.evaluate(() =>

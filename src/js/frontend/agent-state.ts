@@ -77,6 +77,11 @@ export interface AgentCoreSnapshot {
   panel: string | null;
   presetId: string | null;
   presetTitle: string | null;
+  /** Catalog entries the shell can pick from. 0 until the deferred catalog
+   * load lands, which is later than `engineState === 'ready'`; actions that
+   * choose a preset (`next-preset`, collection shuffles) are no-ops before
+   * then, so wait for this rather than for readiness alone. */
+  catalogSize: number;
   audioSource: string | null;
   audioEnergy: number | null;
   autoplay: boolean | null;
@@ -220,6 +225,10 @@ export const CORE_SNAPSHOT_INTENTIONALLY_SKIPPED: ReadonlySet<
   // engineState transitions, already emitted as 'engine-state' events.
   'engineReady',
   'liveMode',
+  // Grows once, when the deferred catalog load lands; that load is a
+  // readiness fact, not a transition worth an event. Automation waits on
+  // getState().catalogSize instead.
+  'catalogSize',
 ] as const);
 
 function pushEvent(type: AgentEventType, data: Record<string, unknown>): void {
