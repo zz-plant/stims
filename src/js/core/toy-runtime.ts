@@ -136,6 +136,16 @@ export type ToyRuntimeInstance = ToyInstance & {
   /** Stop every render driver until `resumePreview()`. Capture harnesses. */
   freezeRendering?: () => void;
   /**
+   * Hold the picture where it is: while held, neither the audio-driven loop
+   * nor the idle preview advances the simulation clock or renders a frame,
+   * so the canvas keeps its last frame and `frameState.time` stands still.
+   * Releasing resumes from that frame with a fresh delta, not a jump. The
+   * user-facing pause — `freezeRendering` is the capture harness's version,
+   * which tears the loop down and needs `resumePreview()` to rebuild it.
+   */
+  setFrameHold?: (held: boolean) => void;
+  isFrameHeld?: () => boolean;
+  /**
    * Synchronously pump N frames through the plugin pipeline with synthetic
    * time and audio data, decoupling simulation time from wall-clock time.
    * Built for headless capture harnesses: presets that need seconds of
@@ -496,6 +506,9 @@ export function createToyRuntime({
   // (visibility changes, stopAudio, React effects) from rendering over a
   // frame a capture harness is about to read.
   let deterministicHold = false;
+  // The user's pause. Checked at the top of both frame drivers rather than
+  // by unhooking them, so release costs nothing and cannot race a restart.
+  let frameHeld = false;
 
   const stopPreviewLoop = () => {
     if (!previewActive) return;
@@ -530,6 +543,13 @@ export function createToyRuntime({
     const tick = (now: number) => {
       if (!previewActive) return;
       const currentTime = virtualTimeSource ? virtualTimeSource() : now;
+      if (frameHeld) {
+        // Keep the anchor moving so the first frame after release measures
+        // a normal delta instead of the whole pause.
+        previewLastFrame = currentTime;
+        previewAnimationId = requestAnimationFrame(tick);
+        return;
+      }
       if (!previewFrameGate.shouldRenderFrame(currentTime)) {
         previewAnimationId = requestAnimationFrame(tick);
         return;
@@ -608,6 +628,10 @@ export function createToyRuntime({
       (ctx) => {
         analyser = ctx.analyser;
         const now = ctx.time;
+        if (frameHeld) {
+          lastFrameTime = now;
+          return;
+        }
         const rawDeltaMs = lastFrameTime
           ? Math.min(100, Math.max(0, (now - lastFrameTime) * 1000))
           : 1000 / 60;
@@ -663,6 +687,10 @@ export function createToyRuntime({
       deterministicHold = false;
       startPreviewLoop();
     },
+    setFrameHold: (held) => {
+      frameHeld = held;
+    },
+    isFrameHeld: () => frameHeld,
     renderFrames: (options) => {
       const frames = Math.max(1, Math.floor(options?.frames ?? 1));
       const deltaMs = options?.deltaMs ?? 1000 / 60;

@@ -184,6 +184,7 @@ export function coarseEngineSnapshotEqual(
     prev.runtimeReady === snap.runtimeReady &&
     prev.audioActive === snap.audioActive &&
     prev.audioSource === snap.audioSource &&
+    prev.playbackPaused === snap.playbackPaused &&
     prev.audioEndedAt === snap.audioEndedAt &&
     prev.adaptiveQuality === snap.adaptiveQuality &&
     prev.catalogEntries === snap.catalogEntries &&
@@ -214,6 +215,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     importPresetFiles: sessionState.importPresetFiles,
     routeState,
     setStatusMessage: sessionState.setStatusMessage,
+    setPlaybackPaused: sessionState.setPlaybackPaused,
     startAudioSource: sessionState.startAudioSource,
     youtubePreviewRef: sessionState.youtubePreviewRef,
     updateEditorSource: sessionState.updateEditorSource,
@@ -281,6 +283,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       starterPresets: shellOrchestration.starterPresets,
       handleAudioStart: shellOrchestration.handleAudioStart,
       handleAudioStop: shellOrchestration.handleAudioStop,
+      handleTogglePlayback: shellOrchestration.handleTogglePlayback,
       handlePresetSelection: shellOrchestration.handlePresetSelection,
       handlePreviousPreset: shellOrchestration.handlePreviousPreset,
       handlePlayPreset: shellOrchestration.handlePlayPreset,
@@ -335,6 +338,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       shellOrchestration.audioActive,
       shellOrchestration.handleAudioStart,
       shellOrchestration.handleAudioStop,
+      shellOrchestration.handleTogglePlayback,
       shellOrchestration.handlePresetSelection,
       shellOrchestration.handlePreviousPreset,
       shellOrchestration.handlePlayPreset,

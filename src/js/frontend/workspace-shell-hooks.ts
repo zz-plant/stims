@@ -85,6 +85,8 @@ type WorkspaceShellOrchestrationArgs = {
   importPresetFiles: (files: FileList | File[] | null) => Promise<void>;
   routeState: SessionRouteState;
   setStatusMessage: (message: string | null) => void;
+  /** Holds or releases the stage; returns the state actually applied. */
+  setPlaybackPaused: (paused: boolean) => boolean;
   startAudioSource: (request: {
     cropTarget?: HTMLElement | null;
     launchState?: SessionRouteState;
@@ -109,6 +111,7 @@ export function useWorkspaceShellOrchestration({
   importPresetFiles,
   routeState,
   setStatusMessage,
+  setPlaybackPaused,
   startAudioSource,
   updateEditorSource,
   stageRef: _stageRef,
@@ -621,6 +624,24 @@ export function useWorkspaceShellOrchestration({
     setStatusMessage('Audio stopped.');
   };
 
+  /**
+   * Space, and the dock's pause button. Holds the picture where it is and
+   * keeps everything else — preset, history, the audio session — so a second
+   * press carries on from the same frame. Stopping audio is a different verb
+   * (it unmounts the engine and returns to the start page) and lives in the
+   * menu under its own name.
+   */
+  const handleTogglePlayback = () => {
+    const paused = !(engineSnapshot?.playbackPaused ?? false);
+    const applied = setPlaybackPaused(paused);
+    if (paused && !applied) {
+      // Nothing is live to hold: before playback starts the stage is the
+      // idle preview, which has no pause.
+      return;
+    }
+    setStatusMessage(applied ? 'Paused. Press Space to resume.' : 'Resumed.');
+  };
+
   const handleImport = async (files: FileList | File[] | null) => {
     try {
       await importPresetFiles(files);
@@ -699,6 +720,7 @@ export function useWorkspaceShellOrchestration({
     ...shellState,
     handleAudioStart,
     handleAudioStop,
+    handleTogglePlayback,
     handleBrowseRecovery,
     handleFeaturedPresetSelection,
     handleImport,

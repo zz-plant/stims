@@ -299,44 +299,72 @@ describe('useStageGesture wheel', () => {
     return { callbacks, stage };
   }
 
-  function wheel(stage: HTMLElement, deltaY: number) {
+  function wheel(
+    stage: HTMLElement,
+    deltaY: number,
+    { shift = false, deltaX = 0 } = {},
+  ) {
     const event = new Event('wheel', { bubbles: true, cancelable: true });
     Object.defineProperties(event, {
       deltaY: { configurable: true, value: deltaY },
+      deltaX: { configurable: true, value: deltaX },
       deltaMode: { configurable: true, value: 0 },
+      shiftKey: { configurable: true, value: shift },
     });
     stage.dispatchEvent(event);
     return event;
   }
 
-  test('a small scroll belongs to the runtime, not the preset list', () => {
+  test('a plain scroll belongs to the runtime, however far it goes', () => {
     const { callbacks, stage } = mountStage();
 
-    const event = wheel(stage, 40);
+    // A trackpad flick with momentum: well past the old 120px threshold.
+    const first = wheel(stage, 40);
+    wheel(stage, 400);
+    wheel(stage, 400);
 
     expect(callbacks.shuffle).not.toHaveBeenCalled();
+    expect(callbacks.previous).not.toHaveBeenCalled();
     // Left alive so it reaches the canvas as a wheel_delta preset signal.
+    expect(first.defaultPrevented).toBe(false);
+  });
+
+  test('a small Shift+scroll is still a nudge, not a preset change', () => {
+    const { callbacks, stage } = mountStage();
+
+    const event = wheel(stage, 40, { shift: true });
+
+    expect(callbacks.shuffle).not.toHaveBeenCalled();
     expect(event.defaultPrevented).toBe(false);
   });
 
-  test('a deliberate scroll changes the preset and is consumed', () => {
+  test('a sustained Shift+scroll changes the preset and is consumed', () => {
     const { callbacks, stage } = mountStage();
 
-    wheel(stage, 40);
-    wheel(stage, 40);
-    const crossing = wheel(stage, 60);
+    wheel(stage, 40, { shift: true });
+    wheel(stage, 40, { shift: true });
+    const crossing = wheel(stage, 60, { shift: true });
 
     expect(callbacks.shuffle).toHaveBeenCalledTimes(1);
-    // Consumed, so the same flick cannot also nudge the visuals.
+    // Consumed, so the same motion cannot also nudge the visuals.
     expect(crossing.defaultPrevented).toBe(true);
   });
 
-  test('scrolling the other way goes back', () => {
+  test('Shift+scrolling the other way goes back', () => {
     const { callbacks, stage } = mountStage();
 
-    wheel(stage, -130);
+    wheel(stage, -130, { shift: true });
 
     expect(callbacks.previous).toHaveBeenCalledTimes(1);
     expect(callbacks.shuffle).not.toHaveBeenCalled();
+  });
+
+  test('a Shift+scroll the browser reports on the x axis still counts', () => {
+    const { callbacks, stage } = mountStage();
+
+    // Some platforms turn Shift+wheel into horizontal motion.
+    wheel(stage, 0, { shift: true, deltaX: 130 });
+
+    expect(callbacks.shuffle).toHaveBeenCalledTimes(1);
   });
 });

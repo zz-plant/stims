@@ -142,6 +142,7 @@ export function makeEngineValue(
     handleShufflePreset: noop,
     handleAudioStart: asyncNoop,
     handleAudioStop: noop,
+    handleTogglePlayback: noop,
     loadRecentYouTubeVideo: noop,
     loadYouTubePreview: noop,
     clearRecentYouTubeVideos: noop,

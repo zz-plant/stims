@@ -52,7 +52,6 @@ import {
   type ThemeChoice,
 } from '../core/theme-preferences.ts';
 import { parseURLParams } from '../core/url-params.ts';
-import { presetReadsInteractionSignals } from '../milkdrop/runtime/interaction-response.ts';
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import {
@@ -102,6 +101,7 @@ const NewHomePage = lazy(() =>
 
 import { togglePresetLock } from '../core/preset-lock.ts';
 import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
+import { cyclePresetWaveMode, nudgePresetField } from './preset-nudges.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { readStored, writeStored } from './safe-storage.ts';
@@ -473,12 +473,11 @@ function StimsWorkspaceAppShell() {
     liveMode,
     engineReady: engine.engineReady,
     panel: ui.routeState.panel,
-    filteredCatalog: engine.filteredCatalog,
     updatePanel: ui.updatePanel,
     handlePresetSelection: engine.handlePresetSelection,
     handleShufflePreset: engine.handleShufflePreset,
     handlePreviousPreset: engine.handlePreviousPreset,
-    handleAudioStop: engine.handleAudioStop,
+    handleTogglePlayback: engine.handleTogglePlayback,
     handleVisualSearch: engine.handleVisualSearch,
     handleToggleFullscreen,
     toggleFavoritePreset: toggleFavoriteCurrentPreset,
@@ -514,6 +513,7 @@ function StimsWorkspaceAppShell() {
   // action's label depends on it: a link copied mid-edit carries the draft,
   // and the row is the only place that fact is ever stated.
   const editorDirty = engineSnapshot?.sessionState?.dirty ?? false;
+  const playbackPaused = engineSnapshot?.playbackPaused ?? false;
 
   // Behavior bodies live in workspace-actions.ts, shared with the stage
   // dock menu — a verb must not do different things depending on which
@@ -838,6 +838,26 @@ function StimsWorkspaceAppShell() {
           ),
       },
       {
+        // The runtime's old H key. Blend keeps whatever duration is set;
+        // this only flips which of the two the next switch uses.
+        id: 'toggle-transition-mode',
+        group: 'Playback',
+        label: 'Switch between blend and cut',
+        keywords: ['transition', 'blend', 'cut', 'mode'],
+        run: () => {
+          const next =
+            (engineSnapshotRef.current?.transitionMode ?? 'blend') === 'blend'
+              ? 'cut'
+              : 'blend';
+          setTransition(
+            engineRef.current,
+            uiRef.current.setStatusMessage,
+            next,
+            engineSnapshotRef.current?.blendDuration ?? 2,
+          );
+        },
+      },
+      {
         id: 'transition-cut',
         group: 'Playback',
         label: 'Transition: instant cut',
@@ -886,43 +906,6 @@ function StimsWorkspaceAppShell() {
           ),
       },
       {
-        id: 'cycle-transition',
-        group: 'Playback',
-        label: 'Cycle transition duration',
-        keywords: ['transition', 'blend', 'cut', 'duration'],
-        run: () => {
-          const currentMode =
-            engineSnapshotRef.current?.transitionMode ?? 'blend';
-          const currentDuration = engineSnapshotRef.current?.blendDuration ?? 2;
-          const steps = [
-            { mode: 'cut' as const, seconds: 0 },
-            { mode: 'blend' as const, seconds: 1 },
-            { mode: 'blend' as const, seconds: 2 },
-            { mode: 'blend' as const, seconds: 5 },
-          ];
-          let best = 1;
-          if (currentMode === 'cut') {
-            best = 0;
-          } else {
-            for (let i = 1; i < steps.length; i += 1) {
-              if (
-                Math.abs(steps[i].seconds - currentDuration) <
-                Math.abs(steps[best].seconds - currentDuration)
-              ) {
-                best = i;
-              }
-            }
-          }
-          const next = steps[(best + 1) % steps.length];
-          setTransition(
-            engineRef.current,
-            uiRef.current.setStatusMessage,
-            next.mode,
-            next.seconds,
-          );
-        },
-      },
-      {
         id: 'audio-demo',
         group: 'Audio',
         label: 'Play demo audio',
@@ -946,15 +929,163 @@ function StimsWorkspaceAppShell() {
       ...(liveMode
         ? [
             {
+              id: 'toggle-playback',
+              group: 'Audio',
+              label: playbackPaused ? 'Resume' : 'Pause',
+              keywords: ['pause', 'resume', 'play', 'hold', 'freeze'],
+              run: () => engineRef.current.handleTogglePlayback(),
+            } satisfies CommandAction,
+            {
               id: 'stop-audio',
               group: 'Audio',
-              label: 'Stop audio',
+              // Named for what it does: the engine unmounts and the start
+              // page comes back. "Stop audio" alone read as mute.
+              label: 'Stop audio and go back to start',
+              keywords: ['quit', 'exit', 'leave', 'home'],
               run: () => engineRef.current.handleAudioStop(),
             } satisfies CommandAction,
           ]
         : []),
+      // Tuning the playing preset. Bound to the runtime's old nudge letters
+      // (shortcut-registry.ts); each step edits the preset's source the way
+      // an editor drag does and reports the value it landed on.
+      {
+        id: 'wave-mode-next',
+        group: 'Tune',
+        label: 'Next waveform',
+        keywords: ['wave', 'mode', 'shape'],
+        run: () =>
+          void cyclePresetWaveMode(
+            engineBridgeRef.current,
+            1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'wave-mode-previous',
+        group: 'Tune',
+        label: 'Previous waveform',
+        keywords: ['wave', 'mode', 'shape'],
+        run: () =>
+          void cyclePresetWaveMode(
+            engineBridgeRef.current,
+            -1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-zoom-in',
+        group: 'Tune',
+        label: 'Zoom in',
+        keywords: ['nudge', 'adjust', 'zoom'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'zoom',
+            1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-zoom-out',
+        group: 'Tune',
+        label: 'Zoom out',
+        keywords: ['nudge', 'adjust', 'zoom'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'zoom',
+            -1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-warp-up',
+        group: 'Tune',
+        label: 'More warp',
+        keywords: ['nudge', 'adjust', 'warp'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'warp',
+            1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-warp-down',
+        group: 'Tune',
+        label: 'Less warp',
+        keywords: ['nudge', 'adjust', 'warp'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'warp',
+            -1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-wave-scale-up',
+        group: 'Tune',
+        label: 'Bigger waveform',
+        keywords: ['nudge', 'adjust', 'waveScale'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'waveScale',
+            1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-wave-scale-down',
+        group: 'Tune',
+        label: 'Smaller waveform',
+        keywords: ['nudge', 'adjust', 'waveScale'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'waveScale',
+            -1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-rotate-right',
+        group: 'Tune',
+        label: 'Rotate clockwise',
+        keywords: ['nudge', 'adjust', 'rotation'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'rotation',
+            1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-rotate-left',
+        group: 'Tune',
+        label: 'Rotate counter-clockwise',
+        keywords: ['nudge', 'adjust', 'rotation'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'rotation',
+            -1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
     ],
-    [liveMode, isFullscreen, hostingWatchParty, themeChoice, editorDirty],
+    [
+      liveMode,
+      isFullscreen,
+      hostingWatchParty,
+      themeChoice,
+      editorDirty,
+      playbackPaused,
+    ],
   );
 
   // Machine-readable state for automation: window.__stims_agent (snapshot,
@@ -980,6 +1111,7 @@ function StimsWorkspaceAppShell() {
       presetTitle: engineBridgeRef.current.selectedPreset?.title ?? null,
       catalogSize: snap?.catalogEntries.length ?? 0,
       audioSource: snap?.audioSource ?? null,
+      playbackPaused: snap?.playbackPaused ?? false,
       audioEnergy: getAudioEnergy(),
       autoplay: snap?.autoplay ?? null,
       transition: {
@@ -1086,6 +1218,12 @@ function StimsWorkspaceAppShell() {
     handleToggleFullscreen,
     setStatusMessage: ui.setStatusMessage,
     hapticsEnabled,
+    // The drag itself is the moment to say what dragging does. Not stacked
+    // on another hint: showing one marks it seen, so the loser would be
+    // burned silently.
+    onFirstDrag: () => {
+      if (!visibleHintRef.current) showHint('interactive-preset');
+    },
   });
 
   // Agent bridge is only needed for MCP/automation sessions; defer to idle
@@ -1553,19 +1691,6 @@ function StimsWorkspaceAppShell() {
     if (ui.routeState.panel !== 'editor') return;
     showHint('editor-dirty-link');
   }, [editorDirty, visibleHint, ui.routeState.panel, showHint]);
-
-  // Presets that read the interaction signals are the minority, and nothing
-  // marked them: the stage keys and drag gestures did nothing on most of the
-  // catalog, which reads as broken rather than as "this one doesn't listen".
-  // So the layer is taught once, on the first preset that actually rewards
-  // it — and never on top of another hint, since showing one marks it seen.
-  useEffect(() => {
-    if (!liveMode || visibleHint) return;
-    if (!presetReadsInteractionSignals(engineSnapshot?.currentSource ?? '')) {
-      return;
-    }
-    showHint('interactive-preset');
-  }, [liveMode, visibleHint, engineSnapshot?.currentSource, showHint]);
 
   // NOTE: temporal-memory frame recording was removed here deliberately.
   // It sampled the live stage canvas (2D drawImage + getImageData) on every
