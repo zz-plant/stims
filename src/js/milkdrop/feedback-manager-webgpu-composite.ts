@@ -814,44 +814,24 @@ export function createSampleAuxTextureNode(
       TslNode<'float'>,
     ]) => {
       const wrappedUv = fract(sampleUv);
-      const wrappedZ = fract(sliceZ);
-      const flat = vec4(0.5, 0.5, 0.5, 1);
-      const native3dSample = selectBySourceId(
-        source,
-        {
-          noise: tex3DNodes.noise.sample(vec3(wrappedUv, wrappedZ)),
-          simplex: tex3DNodes.simplex.sample(vec3(wrappedUv, wrappedZ)),
-          voronoi: tex3DNodes.voronoi.sample(vec3(wrappedUv, wrappedZ)),
-          aura: tex3DNodes.aura.sample(vec3(wrappedUv, wrappedZ)),
-          caustics: tex3DNodes.caustics.sample(vec3(wrappedUv, wrappedZ)),
-          pattern: tex3DNodes.pattern.sample(vec3(wrappedUv, wrappedZ)),
-          fractal: tex3DNodes.fractal.sample(vec3(wrappedUv, wrappedZ)),
-          perlin: tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
-          // noise_lq is 2D in projectM, but presets do call tex3D on it, so
-          // ids 10 and 11 both read the generated volume rather than the flat
-          // grey that left 261-compshader-noisevol_lq blank. video/glyph/
-          // organic/blur have no volume and fall to flat by omission.
-          noise_lq: tex3DNodes.noisevol.sample(vec3(wrappedUv, wrappedZ)),
-          noisevol: tex3DNodes.noisevol.sample(vec3(wrappedUv, wrappedZ)),
-        },
-        flat,
-      );
-      // `video` has no real 3D texture (a video frame isn't a volume) so it
-      // always needs the 2D-atlas emulation. `simplex` used to be force-
-      // routed here too with no comment explaining why; its native
-      // Data3DTexture is wired up the same way as every other volume type
-      // (see the constructor's getShared3dAuxTexture(name).then(...) loop)
-      // and there is no evidence the swap doesn't take effect, so it now
-      // takes the native-3D path like noise/voronoi/aura/etc.
-      const isVideo = source.greaterThanEqual(7.5).and(source.lessThan(8.5));
+      // The 3D branch reads the 2D atlas emulation (atlasTrilinearSample),
+      // never the native volumes. `dynamic` is inlined into every blend and
+      // composite pipeline for the runtime-selected warp/overlay texture
+      // controls, and referencing the eight native volumes here bound eight
+      // texture_3d + sampler pairs into every pipeline once the volumes had
+      // loaded (they dedupe to two while they are still placeholders). With
+      // the 2D set, blur and the three feedback targets that is 17 sampled
+      // textures — over the 16 that WebGPU guarantees and that Metal caps
+      // samplers at — so bind-group-layout creation failed and 14 bundled
+      // presets composited nothing (2026-09-15). Exactly one preset in the
+      // 2679-preset corpus selects a 3D overlay texture through these
+      // controls and none a 3D warp texture; shader bodies, the real
+      // consumers of the volumes, resolve their sampler at build time and
+      // still take the native path through `sampleStatic`.
       return select(
         sampleDimension.lessThan(0.5),
         sampleAuxTexture2dNode(source, wrappedUv),
-        select(
-          isVideo,
-          atlasTrilinearSample(source, wrappedUv, sliceZ),
-          native3dSample,
-        ),
+        atlasTrilinearSample(source, wrappedUv, sliceZ),
       );
     },
   );

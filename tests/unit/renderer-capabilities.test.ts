@@ -499,6 +499,32 @@ describe('renderer capabilities', () => {
     expect(replay.shouldRetryWebGPU).toBe(true);
   });
 
+  test('raises the per-stage texture and sampler limits the adapter can give', async () => {
+    // The composite pass binds 17 sampled textures for presets that read
+    // the main texture's point-sampled variant, two blur levels and a noise
+    // texture; at WebGPU's default of 16 the bind-group layout failed and
+    // 14 bundled presets composited nothing (2026-09-15). Apple Metal
+    // reports 48 sampled textures but keeps samplers at 16, so only the
+    // former can be raised — never above what the adapter offers.
+    await resetRenderPreferenceStore();
+    const { requestDevice } = mockNavigatorWithGPU({
+      device: { label: 'device' },
+      adapter: {
+        limits: {
+          maxSampledTexturesPerShaderStage: 48,
+          maxSamplersPerShaderStage: 16,
+        },
+      },
+    });
+
+    await getRendererCapabilities({ forceRetry: true });
+
+    expect(requestDevice).toHaveBeenCalledWith({
+      requiredFeatures: [],
+      requiredLimits: { maxSampledTexturesPerShaderStage: 32 },
+    });
+  });
+
   test('captures high-end WebGPU feature support for richer defaults', async () => {
     await resetRenderPreferenceStore();
     const { requestDevice } = mockNavigatorWithGPU({
