@@ -22,7 +22,7 @@ import {
   setSyncUrlParam,
   startOrCopyWatchParty,
 } from './sync-session.ts';
-import { buildRemixShareUrl } from './url-state.ts';
+import { buildRemixShareUrl, REMIX_URL_FAILED } from './url-state.ts';
 import { recentlyOpenedPresetIds } from './workspace-helpers.ts';
 
 export interface PanelSurface {
@@ -139,13 +139,14 @@ export async function copyRemixLinkAction({
   href?: string;
 }): Promise<void> {
   if (!href) return;
-  const url = buildRemixShareUrl(href, dirty && source ? source : null);
-  // Whether the draft actually made it into the link, rather than whether we
-  // asked for it. `buildRemixShareUrl` returns the URL unchanged if the hash
-  // cannot be built, and announcing "carries your unsaved edits" over a link
-  // that carries none sends the recipient to an empty editor, or to whatever
-  // stale draft the old hash held.
-  const carriesDraft = Boolean(dirty && source) && url.includes('#code=');
+  let url: string;
+  try {
+    url = buildRemixShareUrl(href, dirty ? source : null);
+  } catch (error) {
+    announce(error instanceof Error ? error.message : REMIX_URL_FAILED);
+    return;
+  }
+  const carriesDraft = dirty;
   const result = await share(url, {
     title: 'Stims preset',
     text: dirty
@@ -165,11 +166,11 @@ export async function copyRemixLinkAction({
     return;
   }
 
-  // No clipboard and no native share: the address bar is the fallback, and
-  // it already holds the same URL, so say that rather than reporting failure.
+  // URL synchronization can lag behind the latest keystroke; do not claim
+  // the address bar already contains this draft.
   announce(
     carriesDraft
-      ? 'Could not reach the clipboard. The address bar already holds this link, edits included.'
+      ? 'Could not share this link or reach the clipboard. Export the .milk file to share your edits.'
       : 'Could not reach the clipboard. Copy the link from the address bar.',
   );
 }

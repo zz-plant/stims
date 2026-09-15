@@ -231,6 +231,19 @@ export function createMilkdropCatalogCoordinator({
     ]);
   };
 
+  /** Anchors the in-memory history on the preset already showing when the
+   * session began, without persisting it. Startup is not a selection the
+   * user made, so it must not reorder the stored recent/history stacks, but
+   * "Previous" after the first switch still has to lead back to it: with an
+   * empty history the first press fell through to persisted history, which
+   * in a fresh profile holds only the preset just switched to, and did
+   * nothing. No-op once any selection has been remembered. */
+  const seedSelection = (id: string) => {
+    if (selectionHistory.length > 0) return;
+    selectionHistory = [id];
+    selectionCursor = 0;
+  };
+
   const consumePreviousSelection = async (activePresetId?: string) => {
     if (selectionCursor > 0) {
       selectionCursor -= 1;
@@ -259,6 +272,7 @@ export function createMilkdropCatalogCoordinator({
     scheduleCatalogSync,
     patchCatalogEntry,
     rememberSelection,
+    seedSelection,
     consumePreviousSelection,
     getCatalogEntries: () => catalogEntries,
     getCatalogEntry: (id: string) =>
