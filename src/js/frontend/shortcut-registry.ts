@@ -164,9 +164,11 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   },
   {
     // The digits pick the numbered cards while Browse is open; the cards
-    // wear their numbers, so the mapping is visible rather than guessed.
+    // wear their numbers, so the mapping is visible rather than guessed. The
+    // numbers are only worn while the search field is not focused — a digit
+    // typed there is a search — so the label says when they answer.
     id: 'quick-select',
-    label: 'Play a numbered preset while Browse is open',
+    label: 'Play a numbered preset in Browse (once you leave the search box)',
     defaultKeys: ['1–9'],
     configurable: false,
   },

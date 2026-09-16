@@ -108,7 +108,7 @@ non-degenerate histogram assert "the visuals are actually animating".
 ## DOM vocabulary
 
 Stage dock controls and menu items carry `data-action` attributes matching
-palette ids (`data-action="transition-2s"`, `"audio-microphone"`,
+palette ids (`data-action="transition-2.5s"`, `"audio-microphone"`,
 `"save-preset"`, …). Prefer them over `aria-label` selectors — labels are
 copy and may change; ids must not.
 

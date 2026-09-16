@@ -21,6 +21,24 @@ import { join } from 'node:path';
 
 const REPO_ROOT = process.cwd();
 const APP_PATH = join(REPO_ROOT, 'src/js/frontend/App.tsx');
+const FIRST_RUN_PRESET_PATH = join(
+  REPO_ROOT,
+  'src/js/milkdrop/runtime/first-run-preset.ts',
+);
+
+/** The product default crossfade, as its declaration spells it ("2.5"). */
+function readDefaultBlendDurationSeconds(): string {
+  const source = readFileSync(FIRST_RUN_PRESET_PATH, 'utf8');
+  const match = source.match(
+    /export const DEFAULT_BLEND_DURATION_SECONDS = ([\d.]+);/,
+  );
+  if (!match) {
+    throw new Error(
+      `Could not read DEFAULT_BLEND_DURATION_SECONDS from ${FIRST_RUN_PRESET_PATH}; the dock's transition ladder names it as a rung.`,
+    );
+  }
+  return match[1];
+}
 const STAGE_CONTROLS_PATH = join(
   REPO_ROOT,
   'src/js/frontend/StageControls.tsx',
@@ -99,7 +117,7 @@ const PALETTE_ONLY_EXEMPT = new Set([
  * - 'open-palette': the dock's "open command palette" button — a palette
  *   action to open the palette from within itself would be meaningless.
  * - 'transition-menu': the trigger that opens the transition ladder. The
- *   rungs inside it carry the palette ids (transition-cut / -1s / -2s /
+ *   rungs inside it carry the palette ids (transition-cut / -1s / -2.5s /
  *   -5s); the trigger itself only discloses them.
  */
 const DOCK_ONLY_EXEMPT = new Set([
@@ -132,7 +150,7 @@ function extractPaletteActionIds(source: string): string[] {
   const block = rest.slice(0, depsMatch.index);
 
   const ids: string[] = [];
-  const idPattern = /id:\s*'([a-z0-9-]+)'/g;
+  const idPattern = /id:\s*'([a-z0-9.-]+)'/g;
   let match: RegExpExecArray | null;
   // biome-ignore lint/suspicious/noAssignInExpressions: standard regex exec loop
   while ((match = idPattern.exec(block)) !== null) {
@@ -154,17 +172,25 @@ function resolveTemplateDockActionIds(source: string): {
   const warnings: string[] = [];
 
   // TRANSITION_STEPS: { mode: 'cut' | 'blend', seconds: number }[], rendered
-  // via data-action={step.mode === 'cut' ? 'transition-cut' : `transition-${step.seconds}s`}
+  // via data-action={transitionActionId(step)} — 'transition-cut' or
+  // `transition-${seconds}s`. One rung is spelled by name
+  // (DEFAULT_BLEND_DURATION_SECONDS) so the default is on the ladder by
+  // construction; it is resolved from its declaration.
   const transitionBlockMatch = source.match(
     /const TRANSITION_STEPS = \[([\s\S]*?)\];/,
   );
   if (transitionBlockMatch) {
     const stepPattern =
-      /\{\s*mode:\s*'(cut|blend)'\s*as const,\s*seconds:\s*(\d+)\s*\}/g;
+      /\{\s*mode:\s*'(cut|blend)'\s*as const,\s*seconds:\s*([\d.]+|DEFAULT_BLEND_DURATION_SECONDS)\s*\}/g;
+    const defaultSeconds = readDefaultBlendDurationSeconds();
     let m: RegExpExecArray | null;
     // biome-ignore lint/suspicious/noAssignInExpressions: standard regex exec loop
     while ((m = stepPattern.exec(transitionBlockMatch[1])) !== null) {
-      const [, mode, seconds] = m;
+      const [, mode, secondsSource] = m;
+      const seconds =
+        secondsSource === 'DEFAULT_BLEND_DURATION_SECONDS'
+          ? defaultSeconds
+          : secondsSource;
       ids.push(mode === 'cut' ? 'transition-cut' : `transition-${seconds}s`);
     }
     if (ids.length === 0) {
@@ -212,7 +238,7 @@ function extractDockActionIds(source: string): {
   const warnings: string[] = [];
 
   // `data-action="literal-id"` — static string attribute
-  const staticAttrPattern = /data-action="([a-z0-9-]+)"/g;
+  const staticAttrPattern = /data-action="([a-z0-9.-]+)"/g;
   let m: RegExpExecArray | null;
   // biome-ignore lint/suspicious/noAssignInExpressions: standard regex exec loop
   while ((m = staticAttrPattern.exec(source)) !== null) {
@@ -225,15 +251,16 @@ function extractDockActionIds(source: string): {
   // collect every `actionId: '...'` literal directly, since every
   // data-action={item.actionId} usage in this file is fed exclusively by
   // MenuItem objects with a literal actionId string.
-  const actionIdFieldPattern = /actionId:\s*'([a-z0-9-]+)'/g;
+  const actionIdFieldPattern = /actionId:\s*'([a-z0-9.-]+)'/g;
   // biome-ignore lint/suspicious/noAssignInExpressions: standard regex exec loop
   while ((m = actionIdFieldPattern.exec(source)) !== null) {
     ids.push(m[1]);
   }
 
   // Confirm every `data-action={...}` computed usage is one we resolved
-  // above (either `item.actionId` or a template literal handled by
-  // resolveTemplateDockActionIds), otherwise warn instead of silently
+  // above (`item.actionId`, the transition ladder's `transitionActionId(step)`
+  // — resolved from TRANSITION_STEPS by resolveTemplateDockActionIds — or an
+  // audio-source template literal), otherwise warn instead of silently
   // missing coverage.
   const computedAttrPattern = /data-action=\{([^}]+)\}/g;
   // biome-ignore lint/suspicious/noAssignInExpressions: standard regex exec loop
@@ -241,7 +268,7 @@ function extractDockActionIds(source: string): {
     const expr = m[1].trim();
     const isKnownShape =
       expr === 'item.actionId' ||
-      expr.includes("'transition-cut'") ||
+      expr === 'transitionActionId(step)' ||
       expr.startsWith('`audio-');
     if (!isKnownShape) {
       warnings.push(

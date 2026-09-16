@@ -47,3 +47,66 @@ describe('gamepad navigation focus initialization and restoration', () => {
     cleanup();
   });
 });
+
+describe('keyboard-as-remote gating', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    document.body.classList.remove('gamepad-active');
+    sessionStorage.clear();
+  });
+
+  const arrowRight = () =>
+    new window.KeyboardEvent('keydown', {
+      key: 'ArrowRight',
+      bubbles: true,
+      cancelable: true,
+    });
+
+  test('by default an arrow key neither moves focus nor claims the event', () => {
+    // The shell owns the arrow keys on a desktop (they change preset). With
+    // this layer also handling them, every → walked focus one element along
+    // and left the skip link sitting visible on the stage.
+    const stage = document.createElement('div');
+    stage.tabIndex = -1;
+    const skip = document.createElement('a');
+    skip.href = '#stage';
+    skip.textContent = 'Skip';
+    document.body.append(skip, stage);
+    stage.focus();
+
+    const cleanup = initGamepadNavigation({ restoreFocus: false });
+    const event = arrowRight();
+    stage.dispatchEvent(event);
+
+    expect(document.activeElement).toBe(stage);
+    expect(event.defaultPrevented).toBeFalse();
+    expect(document.body.classList.contains('gamepad-active')).toBeFalse();
+    cleanup();
+  });
+
+  test('on a leanback device the same key moves focus like a D-pad', () => {
+    const stage = document.createElement('div');
+    stage.tabIndex = -1;
+    const skip = document.createElement('a');
+    skip.href = '#stage';
+    skip.textContent = 'Skip';
+    document.body.append(skip, stage);
+    stage.focus();
+
+    const cleanup = initGamepadNavigation({
+      restoreFocus: false,
+      keyboardNavigation: true,
+    });
+    const event = arrowRight();
+    stage.dispatchEvent(event);
+
+    expect(document.activeElement).toBe(skip);
+    expect(event.defaultPrevented).toBeTrue();
+    cleanup();
+  });
+});
