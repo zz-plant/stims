@@ -100,6 +100,7 @@ const NewHomePage = lazy(() =>
 );
 
 import { togglePresetLock } from '../core/preset-lock.ts';
+import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
 import { cyclePresetWaveMode, nudgePresetField } from './preset-nudges.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
@@ -853,7 +854,8 @@ function StimsWorkspaceAppShell() {
             engineRef.current,
             uiRef.current.setStatusMessage,
             next,
-            engineSnapshotRef.current?.blendDuration ?? 2,
+            engineSnapshotRef.current?.blendDuration ??
+              DEFAULT_BLEND_DURATION_SECONDS,
           );
         },
       },
@@ -882,15 +884,17 @@ function StimsWorkspaceAppShell() {
           ),
       },
       {
-        id: 'transition-2s',
+        // The product default (DEFAULT_BLEND_DURATION_SECONDS); the dock
+        // ladder carries the same four ids.
+        id: 'transition-2.5s',
         group: 'Playback',
-        label: 'Transition: 2s blend',
+        label: 'Transition: 2.5s blend',
         run: () =>
           setTransition(
             engineRef.current,
             uiRef.current.setStatusMessage,
             'blend',
-            2,
+            DEFAULT_BLEND_DURATION_SECONDS,
           ),
       },
       {
@@ -1968,7 +1972,7 @@ function StimsWorkspaceAppShell() {
               onPresetChosen={dismissBrowseHint}
               sessionHistory={sessionHistory}
               onCollectionTagChange={(collectionTag) =>
-                ui.commitRoute({ ...ui.routeState, collectionTag })
+                ui.commitRoute((current) => ({ ...current, collectionTag }))
               }
               onImport={(files) => {
                 void ui.handleImport(files);

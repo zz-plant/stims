@@ -285,7 +285,17 @@ export function BrowseSheetPanel({
 
   // In list view this panel is what the digit keys index; in grid view the
   // grid publishes its own (variant-collapsed) order. Only one is mounted.
-  const showQuickSelectKeys = !isMobileDevice();
+  //
+  // The digits are shown only while they would work. Opening the panel puts
+  // focus in the search field, and a digit typed there is a search — the
+  // shell's shortcut layer hands every keystroke in a text field to the
+  // field. With the badges up at that moment, pressing 1 wrote "1" into the
+  // query (and filtered the list to titles containing a 1) instead of playing
+  // card 1. Hidden while the field has focus, they reappear the moment
+  // focus leaves it — Tab, Enter on the query, a click on a chip — which is
+  // also when the keys start answering.
+  const [searchFocused, setSearchFocused] = useState(false);
+  const showQuickSelectKeys = !isMobileDevice() && !searchFocused;
   useEffect(() => {
     if (gridView) return;
     publishQuickSelectEntries(sorted.map((entry) => entry.id));
@@ -530,6 +540,8 @@ export function BrowseSheetPanel({
             spellCheck={false}
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 ui.setSearchQuery(localSearch);
@@ -975,6 +987,7 @@ export function BrowseSheetPanel({
               browseScrollMemory.grid = top;
             }}
             filterEpoch={filterEpoch}
+            showQuickSelectKeys={showQuickSelectKeys}
           />
         ) : null}
 

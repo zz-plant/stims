@@ -101,7 +101,7 @@ browserTest(
       await page.waitForTimeout(3000);
 
       await page.evaluate(() =>
-        (window as AgentWindow).__stims_agent?.run('transition-2s'),
+        (window as AgentWindow).__stims_agent?.run('transition-2.5s'),
       );
 
       const before = await page.evaluate(

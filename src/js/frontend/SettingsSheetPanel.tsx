@@ -41,6 +41,7 @@ import {
   subscribeToThemePreference,
   type ThemeChoice,
 } from '../core/theme-preferences.ts';
+import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import { PerformanceHardwareSection } from './PerformanceHardwareSection.tsx';
@@ -121,11 +122,14 @@ const TEXT_SCALE_STEPS: Array<{ value: TextScale; label: string }> = [
   { value: 2, label: '200%' },
 ];
 
-/** Crossfade duration steps, seconds. */
+/** Crossfade duration steps, seconds. The product default is one of them;
+ * it was not, and `nearestStep` showed a fresh visitor "2s" for a 2.5s
+ * crossfade. */
 const BLEND_DURATION_STEPS: Array<{ value: number; label: string }> = [
   { value: 0.5, label: '0.5s' },
   { value: 1, label: '1s' },
   { value: 2, label: '2s' },
+  { value: DEFAULT_BLEND_DURATION_SECONDS, label: '2.5s' },
   { value: 3, label: '3s' },
   { value: 5, label: '5s' },
   { value: 8, label: '8s' },

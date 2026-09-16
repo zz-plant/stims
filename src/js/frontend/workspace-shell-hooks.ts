@@ -3,7 +3,13 @@
  * permissions, link sharing, and canonical state transitions across the top-level visualizer shell.
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import {
   acquireMicrophoneStream,
   describeInputProcessingWarning,
@@ -73,7 +79,7 @@ function buildHealedPresetRoute(
 }
 
 type WorkspaceShellOrchestrationArgs = {
-  commitRoute: (nextState: SessionRouteState) => void;
+  commitRoute: (nextState: SetStateAction<SessionRouteState>) => void;
   deferredSearch: string;
   engineSnapshot: EngineSnapshot | null;
   fallbackCatalog: PresetCatalogEntry[];
@@ -286,12 +292,16 @@ export function useWorkspaceShellOrchestration({
     ],
   );
 
+  // Functional update on purpose: this runs from Escape handlers and
+  // shortcuts that can land in the same keystroke as a preset change, and
+  // spreading the captured `routeState` here reverted that change.
   const updatePanel = useCallback(
     (panel: PanelState) => {
-      if (panel === routeState.panel) return;
-      commitRoute({ ...routeState, panel });
+      commitRoute((current) =>
+        current.panel === panel ? current : { ...current, panel },
+      );
     },
-    [commitRoute, routeState],
+    [commitRoute],
   );
 
   const handleVisualSearch = useCallback(async () => {
@@ -299,11 +309,11 @@ export function useWorkspaceShellOrchestration({
   }, [updatePanel, routeState.panel]);
 
   const handlePresetSelection = (presetId: string) => {
-    commitRoute({ ...routeState, presetId, panel: null });
+    commitRoute((current) => ({ ...current, presetId, panel: null }));
   };
 
   const handleBrowseRecovery = () => {
-    commitRoute({ ...routeState, presetId: null, panel: 'browse' });
+    commitRoute((current) => ({ ...current, presetId: null, panel: 'browse' }));
   };
 
   const handleFeaturedPresetSelection = () => {
@@ -620,7 +630,7 @@ export function useWorkspaceShellOrchestration({
     // ours: it is an <audio> element with `loop = true`, so leaving it alone
     // meant the track carried on audibly after the UI said audio had stopped.
     disposeActiveFileAudio();
-    commitRoute({ ...routeState, audioSource: null });
+    commitRoute((current) => ({ ...current, audioSource: null }));
     setStatusMessage('Audio stopped.');
   };
 

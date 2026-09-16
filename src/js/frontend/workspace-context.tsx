@@ -40,7 +40,7 @@ import { useWorkspaceShellOrchestration } from './workspace-shell-hooks.ts';
 
 export interface WorkspaceContextValue {
   routeState: SessionRouteState;
-  commitRoute: (nextState: SessionRouteState) => void;
+  commitRoute: (nextState: React.SetStateAction<SessionRouteState>) => void;
   setRouteState: React.Dispatch<React.SetStateAction<SessionRouteState>>;
 
   deferredSearch: string;

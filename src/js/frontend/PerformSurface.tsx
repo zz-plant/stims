@@ -6,7 +6,6 @@ import {
   useSyncExternalStore,
 } from 'react';
 import styles from '../../css/PerformSurface.module.css';
-import { getBrowserStorage } from '../core/state/browser-storage.ts';
 import { hadSessionBeforeBoot } from '../core/state/last-session-store.ts';
 import { readMilkdropField } from '../milkdrop/formatter.ts';
 import { listModulators } from './live-modulation.ts';
@@ -23,6 +22,7 @@ import {
   subscribeToPinnedTargets,
   unpinTarget,
 } from './perform-pins.ts';
+import { dismissStageHint, useStageHintDismissed } from './stage-hint-cards.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
 /**
@@ -38,9 +38,6 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
  * returning-visitor hint (see below) that introduces the surface.
  */
 
-/** The one-time empty-state hint shows once, then stays gone once dismissed. */
-const PERFORM_HINT_DISMISSED_KEY = 'stims:perform-empty-hint-dismissed';
-
 export function PerformSurface() {
   const { engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -54,13 +51,13 @@ export function PerformSurface() {
   const [picking, setPicking] = useState(false);
   const [values, setValues] = useState<Record<string, number>>({});
   const [modulated, setModulated] = useState<string[]>([]);
-  const [hintDismissed, setHintDismissed] = useState(() => {
-    try {
-      return getBrowserStorage()?.getItem(PERFORM_HINT_DISMISSED_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
+  // The one-time empty-state hint shows once, then stays gone once dismissed
+  // — or once something is pinned, which answers the same question. Shared
+  // with the cue deck's hint so the two cards take turns (stage-hint-cards).
+  const hintDismissed = useStageHintDismissed('perform');
+  useEffect(() => {
+    if (pinned.length > 0) dismissStageHint('perform');
+  }, [pinned.length]);
 
   const activeSource = engineSnapshot?.currentSource ?? '';
   const activePresetId = engineSnapshot?.activePresetId ?? null;
@@ -167,14 +164,7 @@ export function PerformSurface() {
           <button
             type="button"
             className={styles.dismiss}
-            onClick={() => {
-              setHintDismissed(true);
-              try {
-                getBrowserStorage()?.setItem(PERFORM_HINT_DISMISSED_KEY, '1');
-              } catch {
-                console.debug('Unable to persist perform hint dismissal');
-              }
-            }}
+            onClick={() => dismissStageHint('perform')}
             aria-label="Dismiss perform surface hint"
           >
             Dismiss

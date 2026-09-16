@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/CueMonitor.module.css';
-import { getBrowserStorage } from '../core/state/browser-storage.ts';
 import { hadSessionBeforeBoot } from '../core/state/last-session-store.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
+import { useBottomOverlaySignal } from './hooks/use-escape-handler.ts';
 import { useLivePresetTile } from './hooks/use-live-preset-tile.ts';
+import { dismissStageHint, useStageHintDismissed } from './stage-hint-cards.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
 /**
@@ -17,13 +18,6 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
  * giving up on it. Generous enough for a cold compile, short enough that a
  * switch that never lands does not strand the panel. */
 const ARM_TIMEOUT_MS = 6000;
-
-/**
- * The empty-state affordance shows once and stays gone once dismissed, so the
- * cue deck surfaces its existence to a first-time visitor without permanently
- * squatting on the stage the way a pinned (non-empty) deck must.
- */
-const CUE_HINT_DISMISSED_KEY = 'stims:cue-empty-hint-dismissed';
 
 function CueScreen({ entry }: { entry: PresetCatalogEntry }) {
   // `audition: true` opts this one tile into the live pool without the global
@@ -72,13 +66,12 @@ export function CueMonitor() {
   // gap, taking the last queued preset emptied the queue and unmounted this
   // panel — taking the fader with it — before the fade ever began.
   const [arming, setArming] = useState(false);
-  const [hintDismissed, setHintDismissed] = useState(() => {
-    try {
-      return getBrowserStorage()?.getItem(CUE_HINT_DISMISSED_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
+  // The empty-state affordance shows once and stays gone once dismissed, so
+  // the cue deck surfaces its existence to a returning visitor without
+  // permanently squatting on the stage the way a pinned (non-empty) deck
+  // must. It waits its turn behind the Perform card (stage-hint-cards).
+  const hintDismissed = useStageHintDismissed('cue');
+  const performHintPending = !useStageHintDismissed('perform');
   useEffect(() => {
     if (!arming) return;
     // Bounded: if the switch never lands (an already-active preset, a failed
@@ -108,6 +101,17 @@ export function CueMonitor() {
   const queue = ui.presetQueue;
   const next = queue.entries[0] ?? null;
   const activePresetId = engineSnapshot?.activePresetId ?? null;
+
+  // Whether anything below renders — the deck or its hint. Both sit in the
+  // bottom-right corner, where the status toast also lands: "Loaded <preset>."
+  // painted over the deck's header on every preset change. Toasts already
+  // dodge whatever announces it holds the bottom; this announces.
+  const showsHint =
+    !hintDismissed &&
+    !performHintPending &&
+    hadSessionBeforeBoot() &&
+    !window.matchMedia('(max-width: 719px)').matches;
+  useBottomOverlaySignal(Boolean(next) || fading || arming || showsHint);
 
   const take = useCallback(() => {
     const presetId = queue.popNext();
@@ -157,14 +161,14 @@ export function CueMonitor() {
     // empty queue renders nothing — except the one-time hint below, whose job
     // is to tell a visitor the deck exists at all. Once dismissed (or once
     // the user actually queues something) it stays gone.
-    if (hintDismissed) return null;
+    //
     // Not on the very first visit: someone who just clicked "Play demo" came
     // for the visuals, and a cue-deck card covering them is chrome before
     // content. The hint waits for the second session — the same signal the
     // landing page's "Welcome back" uses — and never shows on narrow screens,
     // where it collided with the swipe hint and there is no room for a deck.
-    if (!hadSessionBeforeBoot()) return null;
-    if (window.matchMedia('(max-width: 719px)').matches) return null;
+    // Nor while the Perform card is still up in the other corner.
+    if (!showsHint) return null;
     return (
       <aside className={styles.cue} aria-label="Cue monitor">
         <div className={styles.header}>
@@ -172,14 +176,7 @@ export function CueMonitor() {
           <button
             type="button"
             className={styles.dismiss}
-            onClick={() => {
-              setHintDismissed(true);
-              try {
-                getBrowserStorage()?.setItem(CUE_HINT_DISMISSED_KEY, '1');
-              } catch {
-                console.debug('Unable to persist cue hint dismissal');
-              }
-            }}
+            onClick={() => dismissStageHint('cue')}
             aria-label="Dismiss cue deck hint"
           >
             ×
