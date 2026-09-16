@@ -480,6 +480,12 @@
   color: var(--ctl-ink-3);
 }
 
+/* The engine's actual value, printed only when no rung below is it. */
+.menuGroupValue {
+  color: var(--ctl-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
 .menuGroupOptions {
   display: flex;
   gap: 4px;

@@ -159,6 +159,32 @@ describe('stage dock transport', () => {
     rendered.dispose();
   });
 
+  test('a paused stage does not claim the visuals are reacting', () => {
+    const rendered = mount(liveSnapshot({ playbackPaused: true }));
+
+    const status = rendered.container.querySelector<HTMLElement>(
+      '[data-action="audio-status"]',
+    );
+    expect(status?.getAttribute('aria-label')).toBe(
+      'Audio status. Paused. The picture is held where it was. Press Space or Resume to carry on.',
+    );
+
+    rendered.dispose();
+  });
+
+  test('a paused stage keeps the bar up past the idle timer', () => {
+    // Otherwise a pause was a frozen frame under a "Controls" handle three
+    // seconds later — indistinguishable from a hung renderer.
+    jest.useFakeTimers();
+    const rendered = mount(liveSnapshot({ playbackPaused: true }));
+
+    elapse(AUTO_HIDE_MS * 2);
+    expect(bar(rendered)?.dataset.visible).toBe('true');
+    expect(rendered.byLabel('Show controls')?.dataset.visible).toBe('false');
+
+    rendered.dispose();
+  });
+
   test('stopping audio is in the menu under a label that says where it goes', () => {
     const rendered = renderWorkspace(
       createElement(StageControls, {
@@ -210,13 +236,15 @@ describe('stage dock transition control', () => {
   test('opens the ladder as a popover with the current rung checked', () => {
     const setTransitionMode = jest.fn();
     const setBlendDuration = jest.fn();
+    // The product default. It used to be off the ladder, so a fresh visitor
+    // opened this popover to four rungs with none of them marked.
     const rendered = renderWorkspace(
       createElement(StageControls, {
         isFullscreen: false,
         onToggleFullscreen: () => {},
       }),
       {
-        snapshot: liveSnapshot({ blendDuration: 2 }),
+        snapshot: liveSnapshot({ blendDuration: 2.5 }),
         engine: { setTransitionMode, setBlendDuration },
       },
     );
@@ -237,7 +265,7 @@ describe('stage dock transition control', () => {
     expect(options.map((option) => option.textContent)).toEqual([
       'Cut',
       '1s',
-      '2s',
+      '2.5s',
       '5s',
     ]);
     expect(
@@ -252,5 +280,31 @@ describe('stage dock transition control', () => {
     ).toBeNull();
 
     rendered.dispose();
+  });
+
+  test('the overflow menu marks the same rung as the popover, and names an off-ladder value', () => {
+    // The menu's copy of the ladder marked the *nearest* rung while the
+    // popover marked an exact one: three answers for one state.
+    const checkedIn = (blendDuration: number) => {
+      const rendered = mount(liveSnapshot({ blendDuration }));
+      rendered.click(rendered.byLabel('More actions'));
+      const group = rendered.container.querySelector<HTMLElement>(
+        '[role="menu"] [role="group"][aria-label^="Transition"]',
+      );
+      const checked = [
+        ...(group?.querySelectorAll('[role="menuitemradio"]') ?? []),
+      ]
+        .filter((option) => option.getAttribute('aria-checked') === 'true')
+        .map((option) => option.textContent);
+      const label = group?.getAttribute('aria-label');
+      rendered.dispose();
+      return { checked, label };
+    };
+
+    expect(checkedIn(2.5)).toEqual({ checked: ['2.5s'], label: 'Transition' });
+    expect(checkedIn(3)).toEqual({
+      checked: [],
+      label: 'Transition, currently Blend 3s',
+    });
   });
 });

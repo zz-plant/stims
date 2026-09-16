@@ -80,7 +80,7 @@ export function NewHomePage() {
     }
     if (!lastSession || !resumeEntry) return;
     appliedResumeRef.current = true;
-    ui.commitRoute({ ...ui.routeState, presetId: resumeEntry.id });
+    ui.commitRoute((current) => ({ ...current, presetId: resumeEntry.id }));
   }, [resumeEntry, lastSession]);
 
   // A `?preset=` link is a request to watch that preset, not to configure an

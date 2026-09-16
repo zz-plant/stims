@@ -14,7 +14,6 @@ import {
   useState,
 } from 'react';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
-import { isMobileDevice } from '../utils/browser/device-detect.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { PresetIdentity } from './PresetIdentity.tsx';
 import {
@@ -198,6 +197,7 @@ export function PresetGrid({
   initialScrollTop = 0,
   onScrollTopChange,
   filterEpoch = 0,
+  showQuickSelectKeys,
 }: {
   catalogEntries: PresetCatalogEntry[];
   presetPreviews: Record<string, MilkdropPresetRenderPreview>;
@@ -216,6 +216,9 @@ export function PresetGrid({
    * top in step with the list instead of holding an offset into a result
    * set that no longer exists. */
   filterEpoch?: number;
+  /** Whether the first nine cards wear the digit that plays them. The panel
+   * decides: the digits only answer while its search field is not focused. */
+  showQuickSelectKeys: boolean;
 }) {
   // The context request function changes identity on every session render;
   // keep the latest behind a ref so observers never re-subscribe over it.
@@ -244,10 +247,8 @@ export function PresetGrid({
   }, [catalogEntries]);
 
   // The digit keys play the first nine cards in this order, so the cards
-  // wear their digits — decided by device rather than input event so the
-  // badges do not flicker in and out, and skipped on phones, where there is
-  // no keyboard to press them on.
-  const showQuickSelectKeys = !isMobileDevice();
+  // wear their digits (when the panel says they are live — see
+  // `showQuickSelectKeys` on the prop).
   useEffect(() => {
     publishQuickSelectEntries(visibleEntries.map((entry) => entry.id));
     return clearQuickSelectEntries;

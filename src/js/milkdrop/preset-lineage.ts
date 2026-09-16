@@ -151,6 +151,44 @@ export function findPresetFamily(
     familiesCache.set(entries, families);
   }
   const family = families.get(key);
-  if (!family || family.members.length < 2) return null;
-  return family;
+  if (!family) return null;
+  const members = collapseSameWork(family.members, presetId);
+  if (members.length < 2) return null;
+  return members === family.members ? family : { ...family, members };
+}
+
+/**
+ * One entry per distinct work. The catalog ships some presets twice — the
+ * bundled set and a library pack both carry "Goody - Need" — and by title
+ * those are the same work, not a relative. Left in, the family read
+ * "1 more in the Need family" and listed a second, identical "the original"
+ * row. The copy the viewer is looking at is the one kept, so the current
+ * preset never turns up as its own relative under another id.
+ */
+function collapseSameWork(
+  members: PresetLineageMember[],
+  currentId: string,
+): PresetLineageMember[] {
+  const byWork = new Map<string, PresetLineageMember>();
+  for (const member of members) {
+    const work = workKeyOf(member);
+    const kept = byWork.get(work);
+    if (!kept || member.id === currentId) byWork.set(work, member);
+  }
+  if (byWork.size === members.length) return members;
+  return members.filter((member) => byWork.get(workKeyOf(member)) === member);
+}
+
+/** Everything a lineage row shows; two members with the same key render
+ * identically. */
+function workKeyOf(member: PresetLineageMember): string {
+  return [
+    member.label,
+    member.mixName ?? '',
+    member.editNote ?? '',
+    member.shaderModel ?? '',
+    member.authors.join('+'),
+  ]
+    .join('\u0000')
+    .toLowerCase();
 }

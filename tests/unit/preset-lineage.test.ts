@@ -101,4 +101,28 @@ describe('findPresetFamily', () => {
   test('an unknown preset id resolves to null', () => {
     expect(findPresetFamily(airhandler, 'nope')).toBeNull();
   });
+
+  test('a second copy of the same work is not a relative', () => {
+    // The bundled set and a library pack both ship "Goody - Need". By title
+    // they are one work; the family used to list the other copy as
+    // "1 more", as a second identical "the original" row.
+    const twice = [
+      { id: 'goody-need', title: 'Goody - Need' },
+      { id: 'cotc-goody-need', title: 'Goody - Need' },
+    ];
+    expect(findPresetFamily(twice, 'goody-need')).toBeNull();
+    expect(findPresetFamily(twice, 'cotc-goody-need')).toBeNull();
+
+    // With a real remix in the family, the copy the viewer is on is the one
+    // kept, so it never appears as its own relative under the other id.
+    const withRemix = [
+      ...twice,
+      { id: 'goody-need-gloam', title: 'Goody - Need (Gloam Mix)' },
+    ];
+    const family = findPresetFamily(withRemix, 'cotc-goody-need');
+    expect(family?.members.map((member) => member.id)).toEqual([
+      'cotc-goody-need',
+      'goody-need-gloam',
+    ]);
+  });
 });

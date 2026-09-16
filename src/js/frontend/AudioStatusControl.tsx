@@ -106,8 +106,20 @@ export function AudioStatusControl({
   const audioSource = engineSnapshot?.audioSource ?? null;
   const state = useAudioSignalState(Boolean(audioSource));
   const sourceName = audioSource ? (SOURCE_NAMES[audioSource] ?? null) : null;
-  const { label, detail } = describeAudioSignal(state, sourceName);
-  const nextStep = nextStepFor(state, audioSource);
+  const described = describeAudioSignal(state, sourceName);
+  const label = described.label;
+  // A held stage is not "reacting" to anything, whatever the meter says: the
+  // frame is frozen, and for a file or YouTube track the sound is too.
+  const detail = engineSnapshot?.playbackPaused
+    ? `Paused. The picture is held where it was${
+        audioSource === 'file' || audioSource === 'youtube'
+          ? ', and the track with it'
+          : ''
+      }. Press Space or Resume to carry on.`
+    : described.detail;
+  const nextStep = engineSnapshot?.playbackPaused
+    ? null
+    : nextStepFor(state, audioSource);
 
   const [open, setOpen] = useState(false);
   const meterRef = useRef<HTMLSpanElement>(null);
