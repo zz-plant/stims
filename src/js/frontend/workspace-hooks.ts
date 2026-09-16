@@ -117,7 +117,14 @@ export function useWorkspaceRouteState() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  const commitRoute = (nextState: SessionRouteState) => {
+  // Takes an updater as well as a whole state. Handlers that spread the
+  // `routeState` their render captured (`{ ...routeState, panel: null }`)
+  // silently rewrite every other field to that render's values: a Backspace
+  // that went to the previous preset and, in the same keystroke, closed the
+  // Browse sheet committed the close with the *old* presetId and put the
+  // preset straight back — a 2.5s blend of a preset into itself. Anything
+  // that owns one field should change only that field.
+  const commitRoute = (nextState: SetStateAction<SessionRouteState>) => {
     setRouteState(nextState);
   };
 

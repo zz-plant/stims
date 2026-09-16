@@ -46,7 +46,10 @@ const HINTS: HelpHintDef[] = [
   },
   {
     id: 'browse-open',
-    message: 'Tap a card to play it',
+    // Same split as first-play: "tap" is a touch verb, and this hint shows on
+    // laptops too.
+    message: () =>
+      isMobileDevice() ? 'Tap a card to play it' : 'Click a card to play it',
     autoHideMs: 5000,
     anchor: 'panel',
   },

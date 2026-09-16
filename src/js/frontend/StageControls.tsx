@@ -17,6 +17,7 @@ import {
   togglePresetLock,
 } from '../core/preset-lock.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
+import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import { describeShaderApproximation } from '../milkdrop/shader-execution-mode.ts';
 import type { UiIconName } from '../ui/icon-library.ts';
 import { AudioStatusControl } from './AudioStatusControl.tsx';
@@ -70,16 +71,24 @@ type MenuItem = {
  * A subset of the durations Settings offers, chosen so every rung is
  * meaningfully different mid-set rather than eight near-identical values.
  * Settings keeps the full list for when precision matters.
+ *
+ * The product default (DEFAULT_BLEND_DURATION_SECONDS, 2.5s) is a rung. It
+ * was not, and the same state was then reported three ways at once: the
+ * trigger printed "2.5s", this ladder marked nothing (exact match), and the
+ * overflow menu's copy of it marked "2s" (nearest match) — for every visitor
+ * who had never touched the setting.
  */
 const TRANSITION_STEPS = [
   { mode: 'cut' as const, seconds: 0 },
   { mode: 'blend' as const, seconds: 1 },
-  { mode: 'blend' as const, seconds: 2 },
+  { mode: 'blend' as const, seconds: DEFAULT_BLEND_DURATION_SECONDS },
   { mode: 'blend' as const, seconds: 5 },
 ];
 
 function describeTransitionStep(step: (typeof TRANSITION_STEPS)[number]) {
-  return step.mode === 'cut' ? 'Instant cut' : `Blend ${step.seconds}s`;
+  return step.mode === 'cut'
+    ? 'Instant cut'
+    : `Blend ${formatSeconds(step.seconds)}s`;
 }
 
 /** 2 -> "2", 2.5 -> "2.5", 0.3 -> "0.3": trailing zeros dropped. */
@@ -87,25 +96,26 @@ function formatSeconds(seconds: number): string {
   return Number(seconds.toFixed(2)).toString();
 }
 
-/** Nearest ladder rung to what the engine currently holds, so the marked
- * option reflects where the user actually is even when Settings set an
- * off-ladder duration like 3s or 8s. */
-function findTransitionStepIndex(
+/**
+ * Whether a rung is the engine's current transition. Exact, not nearest, in
+ * both ladders: an off-ladder value from Settings (3s, 8s) marks nothing,
+ * and the ladder's group label prints the real value instead.
+ */
+function isTransitionStep(
+  step: (typeof TRANSITION_STEPS)[number],
   mode: 'blend' | 'cut',
   seconds: number,
-): number {
-  if (mode === 'cut') return 0;
-  let best = 1;
-  for (let i = 1; i < TRANSITION_STEPS.length; i += 1) {
-    const step = TRANSITION_STEPS[i];
-    if (
-      Math.abs(step.seconds - seconds) <
-      Math.abs(TRANSITION_STEPS[best].seconds - seconds)
-    ) {
-      best = i;
-    }
-  }
-  return best;
+): boolean {
+  return (
+    mode === step.mode && (step.mode === 'cut' || step.seconds === seconds)
+  );
+}
+
+/** The palette id a rung dispatches: transition-cut, transition-2.5s, … */
+function transitionActionId(step: (typeof TRANSITION_STEPS)[number]) {
+  return step.mode === 'cut'
+    ? 'transition-cut'
+    : `transition-${formatSeconds(step.seconds)}s`;
 }
 
 /**
@@ -132,15 +142,15 @@ export function StageControls({
   const { engineSnapshot } = useEngineSnapshot();
   const panel = ui.routeState.panel;
   const transitionMode = engineSnapshot?.transitionMode ?? 'blend';
-  const blendDuration = engineSnapshot?.blendDuration ?? 2;
-  const transitionStepIndex = findTransitionStepIndex(
-    transitionMode,
-    blendDuration,
-  );
+  const blendDuration =
+    engineSnapshot?.blendDuration ?? DEFAULT_BLEND_DURATION_SECONDS;
   // What the engine actually holds, not the nearest rung: Settings can set
-  // 2.5s or 8s, and the bar must not claim "2s" for either.
+  // 3s or 8s, and the bar must not claim "2.5s" for either.
   const transitionShortLabel =
     transitionMode === 'cut' ? 'Cut' : `${formatSeconds(blendDuration)}s`;
+  const transitionOnLadder = TRANSITION_STEPS.some((step) =>
+    isTransitionStep(step, transitionMode, blendDuration),
+  );
   const transitionLabel =
     transitionMode === 'cut'
       ? 'Instant cut'
@@ -218,10 +228,21 @@ export function StageControls({
   const [focusOnBar, setFocusOnBar] = useState(false);
   // An open menu holds the bar up. The menus render as siblings of the bar,
   // so the bar's own `:focus-within` reprieve cannot see focus inside them.
+  //
+  // So does a pause. Three seconds after Space the bar faded and a paused
+  // stage was a frozen frame under a "Controls" handle — the same picture as
+  // a hung renderer, with the only "Paused" anywhere in a toast that had
+  // already gone. Every video player keeps its transport up while paused;
+  // the bar's status slot is where this one says "Paused".
+  const playbackPaused = engineSnapshot?.playbackPaused ?? false;
   const { visible, signalActivity } = useAutoHideActivity(
     3000,
     true,
-    showMenu || showTransitionMenu || pointerOnBar || focusOnBar,
+    showMenu ||
+      showTransitionMenu ||
+      pointerOnBar ||
+      focusOnBar ||
+      playbackPaused,
   );
   const transition = usePresetTransition();
   const pip = usePictureInPicture(ui.stageRef);
@@ -237,7 +258,6 @@ export function StageControls({
     left: number;
     bottom: number;
   } | null>(null);
-  const playbackPaused = engineSnapshot?.playbackPaused ?? false;
 
   // Toasts render above every overlay, so they have to know when something
   // occupies the bottom of the screen and move out of its way. Sheets publish
@@ -1056,11 +1076,11 @@ export function StageControls({
           </span>
           <div className={styles.menuGroupOptions}>
             {TRANSITION_STEPS.map((step) => {
-              // Exact, not nearest: an off-ladder value from Settings marks
-              // nothing here, and the trigger already prints it.
-              const checked =
-                transitionMode === step.mode &&
-                (step.mode === 'cut' || step.seconds === blendDuration);
+              const checked = isTransitionStep(
+                step,
+                transitionMode,
+                blendDuration,
+              );
               return (
                 <button
                   key={describeTransitionStep(step)}
@@ -1069,11 +1089,7 @@ export function StageControls({
                   aria-checked={checked}
                   aria-label={`Transition: ${describeTransitionStep(step)}`}
                   className={styles.menuOption}
-                  data-action={
-                    step.mode === 'cut'
-                      ? 'transition-cut'
-                      : `transition-${step.seconds}s`
-                  }
+                  data-action={transitionActionId(step)}
                   data-active={String(checked)}
                   onClick={() => {
                     signalActivity();
@@ -1088,7 +1104,9 @@ export function StageControls({
                     );
                   }}
                 >
-                  {step.mode === 'cut' ? 'Cut' : `${step.seconds}s`}
+                  {step.mode === 'cut'
+                    ? 'Cut'
+                    : `${formatSeconds(step.seconds)}s`}
                 </button>
               );
             })}
@@ -1123,47 +1141,63 @@ export function StageControls({
               Live VJ & Audio
             </div>
             {/* Direct picks, not a cycle: mid-set there is no time to click
-              through the ladder to reach the rung you want. The active rung
-              is the nearest one to what the engine holds, so an off-ladder
-              Settings duration still shows a sensible mark. */}
+              through the ladder to reach the rung you want. Marked by the
+              same exact rule as the popover; when Settings holds a value
+              off this ladder the label carries it, because on a phone this
+              menu is the only place the transition is shown at all. */}
             {/* biome-ignore lint/a11y/useSemanticElements: role=group is the ARIA menu pattern for menuitemradio sets; fieldset carries form semantics a menu must not have */}
             <div
               className={styles.menuGroup}
               role="group"
-              aria-label="Transition"
+              aria-label={
+                transitionOnLadder
+                  ? 'Transition'
+                  : `Transition, currently ${transitionLabel}`
+              }
             >
               <span className={styles.menuGroupLabel} aria-hidden="true">
                 Transition
+                {transitionOnLadder ? null : (
+                  <span className={styles.menuGroupValue}>
+                    {' '}
+                    · {transitionShortLabel}
+                  </span>
+                )}
               </span>
               <div className={styles.menuGroupOptions}>
-                {TRANSITION_STEPS.map((step, index) => (
-                  <button
-                    key={describeTransitionStep(step)}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={index === transitionStepIndex}
-                    aria-label={`Transition: ${describeTransitionStep(step)}`}
-                    className={styles.menuOption}
-                    data-action={
-                      step.mode === 'cut'
-                        ? 'transition-cut'
-                        : `transition-${step.seconds}s`
-                    }
-                    data-active={String(index === transitionStepIndex)}
-                    onClick={() =>
-                      run(() =>
-                        setTransition(
-                          engine,
-                          ui.setStatusMessage,
-                          step.mode,
-                          step.seconds,
-                        ),
-                      )
-                    }
-                  >
-                    {step.mode === 'cut' ? 'Cut' : `${step.seconds}s`}
-                  </button>
-                ))}
+                {TRANSITION_STEPS.map((step) => {
+                  const checked = isTransitionStep(
+                    step,
+                    transitionMode,
+                    blendDuration,
+                  );
+                  return (
+                    <button
+                      key={describeTransitionStep(step)}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={checked}
+                      aria-label={`Transition: ${describeTransitionStep(step)}`}
+                      className={styles.menuOption}
+                      data-action={transitionActionId(step)}
+                      data-active={String(checked)}
+                      onClick={() =>
+                        run(() =>
+                          setTransition(
+                            engine,
+                            ui.setStatusMessage,
+                            step.mode,
+                            step.seconds,
+                          ),
+                        )
+                      }
+                    >
+                      {step.mode === 'cut'
+                        ? 'Cut'
+                        : `${formatSeconds(step.seconds)}s`}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             {/* biome-ignore lint/a11y/useSemanticElements: role=group is the ARIA menu pattern for menuitemradio sets; fieldset carries form semantics a menu must not have */}
