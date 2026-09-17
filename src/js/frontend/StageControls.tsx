@@ -245,7 +245,14 @@ export function StageControls({
       playbackPaused,
   );
   const transition = usePresetTransition();
-  const pip = usePictureInPicture(ui.stageRef);
+  // Handed the transport so the popout can carry real controls where the
+  // browser supports a document-based one; see usePictureInPicture.
+  const pip = usePictureInPicture(ui.stageRef, {
+    paused: playbackPaused,
+    previousPreset: () => void engine.handlePreviousPreset(),
+    nextPreset: () => void engine.handleShufflePreset(),
+    togglePlayback: () => engine.handleTogglePlayback(),
+  });
   const energyRef = useRef<HTMLSpanElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);

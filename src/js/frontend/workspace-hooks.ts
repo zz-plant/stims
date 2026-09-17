@@ -52,7 +52,9 @@ import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
 import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
 import { reportLoadStatus } from './load-status.ts';
+import { warmFavoriteForOffline } from './offline-favorites.ts';
 import { decidePresetRoutePush } from './preset-route-push.ts';
+import { ensurePersistentStorage } from './storage-persistence.ts';
 import {
   buildSessionRouteSearch,
   parsePlainSearch,
@@ -798,6 +800,9 @@ export function useWorkspaceSessionState({
       }
       const adapter = await ensureEngineMounted();
       await adapter.importPreset(files);
+      // An imported preset is a file the user brought from somewhere else,
+      // and this app has no account to re-sync it from.
+      void ensurePersistentStorage();
     },
     loadYouTubePreview,
     loadRecentYouTubeVideo,
@@ -893,6 +898,16 @@ export function useWorkspaceSessionState({
     toggleFavoritePreset: async (presetId: string, favorite: boolean) => {
       const store = await ensureCatalogStore();
       await store.setFavorite(presetId, favorite);
+      // Saving something is the moment that earns a persistence grant: there
+      // is now something here worth not losing, and asking before that would
+      // be a permission prompt (Firefox shows one) about nothing. It is also
+      // what makes the shell's offline-mode promise about saved presets true
+      // — until now only presets that happened to have been played were
+      // actually cached.
+      if (favorite) {
+        void ensurePersistentStorage();
+        warmFavoriteForOffline(presetId, (id) => store.getPresetSource(id));
+      }
       await refreshCatalogActivity();
     },
     toggleExtendedSources: () => setShowExtendedSources((current) => !current),
