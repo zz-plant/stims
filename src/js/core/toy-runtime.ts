@@ -654,6 +654,10 @@ export function createToyRuntime({
         ...audio?.options,
       }),
     );
+    // The callback above also records the analyser, but only from its first
+    // frame; `resumePreview` reads it to tell the two loops apart, so it has
+    // to be set before this resolves and a preset load can follow.
+    analyser = context.analyser ?? analyser;
     stopPreviewLoop();
     return context;
   };
@@ -683,9 +687,22 @@ export function createToyRuntime({
       toy.renderer?.setAnimationLoop?.(null);
     },
     pausePreview: stopPreviewLoop,
+    /**
+     * Only restarts the idle loop when the audio-driven loop is not running:
+     * `startAudio` hands frame driving to its own callback, and an idle loop
+     * started on top of it ran `pluginManager.update` twice per frame with
+     * two different frameStates (synthetic idle signal, then live audio).
+     * The shell calls this on every preset load, so one preset switch while
+     * playing doubled the frame cost for the rest of the session and, with
+     * the waveform arrays swapping every frame, leaked ~48 GPU buffers a
+     * frame until the GPU process was killed (measured on a 4GB RK3576
+     * handheld: 1.4GB per process after a dozen switches).
+     */
     resumePreview: () => {
       deterministicHold = false;
-      startPreviewLoop();
+      if (!analyser) {
+        startPreviewLoop();
+      }
     },
     setFrameHold: (held) => {
       frameHeld = held;

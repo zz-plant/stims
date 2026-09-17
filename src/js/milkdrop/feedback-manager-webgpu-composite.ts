@@ -749,7 +749,22 @@ export function createSampleAuxTextureNode(
       },
       flat,
     );
-  });
+  })
+    // A layout makes TSL emit this once as a WGSL function instead of
+    // inlining the 16-branch chain at every call. `dynamic` reaches it from
+    // 25 sites in the generic composite pipeline, which inlined came to a
+    // 333KB fragment shader with 407 textureSample calls — 3.8s of GPU-process
+    // shader compile on an RK3576 (Mali-G52), during which the whole browser
+    // froze on every preset switch. As a function the same shader is ~10x
+    // smaller with identical semantics.
+    .setLayout({
+      name: 'milkdropSampleAuxTexture2d',
+      type: 'vec4',
+      inputs: [
+        { name: 'source', type: 'float' },
+        { name: 'sampleUv', type: 'vec2' },
+      ],
+    });
 
   const atlasSliceUvNode = Fn(([sampleUv, sliceIndex]: [any, any]) => {
     const tileScale = float(1 / AUX_TEXTURE_ATLAS_GRID_SIZE);

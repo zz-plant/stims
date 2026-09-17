@@ -84,9 +84,10 @@
   transform-origin: 50% 100%;
   transform: scaleY(calc(0.08 + var(--meter, 0) * 0.92));
   opacity: calc(0.5 + var(--meter, 0) * 0.5);
-  transition:
-    transform 0.1s ease,
-    opacity 0.1s ease;
+  /* No transition here: --meter is written every animation frame with the
+     easing already applied (subscribeEasedAudioEnergy). A transition on a
+     per-frame property restarts every frame, which costs more than the
+     whole render on a weak CPU. */
 }
 
 /* Nothing is running, so the meter must not imply a floor of signal. */
