@@ -100,8 +100,6 @@ export interface WorkspaceContextValue {
     popNext: () => string | null;
   };
 
-  handleBrowseRecovery: () => void;
-  handleFeaturedPresetSelection: () => void;
   handleImport: (files: FileList | File[] | null) => Promise<void>;
   handleShowCurrentLink: () => Promise<void>;
   updatePanel: (panel: PanelState) => void;
@@ -411,9 +409,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       fallbackCatalogReady: sessionState.fallbackCatalogReady,
       activityCatalog: sessionState.activityCatalog,
       presetQueue,
-      handleBrowseRecovery: shellOrchestration.handleBrowseRecovery,
-      handleFeaturedPresetSelection:
-        shellOrchestration.handleFeaturedPresetSelection,
       handleImport: shellOrchestration.handleImport,
       handleShowCurrentLink: shellOrchestration.handleShowCurrentLink,
       updatePanel: shellOrchestration.updatePanel,
@@ -451,8 +446,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.fallbackCatalogReady,
       sessionState.activityCatalog,
       presetQueue,
-      shellOrchestration.handleBrowseRecovery,
-      shellOrchestration.handleFeaturedPresetSelection,
       shellOrchestration.handleImport,
       shellOrchestration.handleShowCurrentLink,
       shellOrchestration.updatePanel,
