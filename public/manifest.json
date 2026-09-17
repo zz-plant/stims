@@ -66,5 +66,30 @@
         }
       ]
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "media",
+          "accept": [
+            "audio/*",
+            ".mp3",
+            ".wav",
+            ".flac",
+            ".ogg",
+            ".m4a",
+            ".aac",
+            ".opus"
+          ]
+        }
+      ]
+    }
+  }
 }

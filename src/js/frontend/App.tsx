@@ -77,6 +77,7 @@ import {
 } from './engine-audio-energy-store.ts';
 import { HudOverlay } from './HudOverlay.tsx';
 import { useMediaSession } from './hooks/use-media-session.ts';
+import { useSharedLaunch } from './hooks/use-shared-launch.ts';
 import { useAgentFrameRate } from './hooks/useAgentFrameRate';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useFullscreen } from './hooks/useFullscreen';
@@ -1149,6 +1150,16 @@ function StimsWorkspaceAppShell() {
         ? 'ready'
         : 'booting';
   }, [liveMode, engine.engineReady]);
+
+  // A track or link shared into the installed app from another app. Runs
+  // once on arrival; see the hook for why a shared link re-enters through
+  // the app's own deep link rather than a second start path.
+  useSharedLaunch({
+    routeState: ui.routeState,
+    commitRoute: ui.commitRoute,
+    startAudioSource: engine.startAudioSource,
+    setStatusMessage: ui.setStatusMessage,
+  });
 
   // Tell the OS what is on the stage: lock-screen artwork and title, and
   // hardware media keys that move through presets. See the hook for why the

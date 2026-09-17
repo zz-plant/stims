@@ -146,10 +146,75 @@ async function networkFirst(event, request) {
   }
 }
 
+// Share target. An installed Stims can receive audio files and links from
+// other apps; the browser POSTs the payload to this path, and since it is a
+// static site with nothing serving that route, the worker has to answer it.
+const SHARE_TARGET_PATH = '/share-target';
+/** Where a shared file waits for the page to pick it up. */
+const SHARED_AUDIO_KEY = '/__stims-shared-audio';
+/** Its own cache, so clearing the shell cache on upgrade cannot drop a
+    share that arrived seconds earlier. */
+const SHARE_CACHE_NAME = 'stims-share-inbox-v1';
+
+function redirectTo(path) {
+  return Response.redirect(new URL(path, self.location.origin).href, 303);
+}
+
+async function handleSharedPayload(request) {
+  let formData;
+  try {
+    formData = await request.formData();
+  } catch (_error) {
+    // A malformed share is still a launch: open the app rather than an error.
+    return redirectTo('/');
+  }
+
+  const file = formData.get('media');
+  if (file && typeof file !== 'string' && file.size > 0) {
+    const cache = await caches.open(SHARE_CACHE_NAME);
+    // The name travels as a header because a Response body carries none, and
+    // the picker's status copy ("Playing <name>") is the same copy here.
+    await cache.put(
+      SHARED_AUDIO_KEY,
+      new Response(file, {
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+          'X-Stims-Shared-Name': encodeURIComponent(
+            file.name || 'Shared audio',
+          ),
+        },
+      }),
+    );
+    return redirectTo('/?share=audio');
+  }
+
+  // Deliberately not parsed here. The app already owns a YouTube reference
+  // parser, and this worker is plain unbundled JS that cannot import it — so
+  // the raw text is handed over intact rather than growing a second copy of
+  // that regex to drift against the first.
+  const shared = ['url', 'text', 'title']
+    .map((field) => formData.get(field))
+    .filter((value) => typeof value === 'string' && value.trim() !== '')
+    .join(' ');
+  if (shared) {
+    return redirectTo(`/?share=link&u=${encodeURIComponent(shared)}`);
+  }
+  return redirectTo('/');
+}
+
 self.addEventListener('fetch', (event) => {
   // Only handle GET requests for http(s)
   const { request } = event;
   const url = new URL(request.url);
+
+  if (
+    request.method === 'POST' &&
+    url.origin === self.location.origin &&
+    url.pathname === SHARE_TARGET_PATH
+  ) {
+    event.respondWith(handleSharedPayload(request));
+    return;
+  }
 
   if (request.method !== 'GET') return;
   if (!url.protocol.startsWith('http')) return;
@@ -161,6 +226,39 @@ self.addEventListener('fetch', (event) => {
 
   // Bypass service worker for API calls
   if (url.pathname.startsWith('/api/')) return;
+
+  // The stashed share only ever exists in the inbox cache; a miss must read
+  // as "nothing shared" rather than falling through to the network and
+  // returning the SPA shell as if it were an audio file.
+  //
+  // Taking it empties it. Someone else's audio file has no business sitting
+  // in this origin's storage after the one launch it was shared for, and a
+  // share that fails to arrive must not replay the previous one instead.
+  if (url.pathname === SHARED_AUDIO_KEY) {
+    event.respondWith(
+      (async () => {
+        try {
+          const cache = await caches.open(SHARE_CACHE_NAME);
+          const hit = await cache.match(SHARED_AUDIO_KEY);
+          if (!hit) return new Response(null, { status: 404 });
+          // Delete after the body is read, not before: deleting a cache entry
+          // whose Response is still streaming can abort the read.
+          const taken = new Response(await hit.blob(), {
+            headers: hit.headers,
+          });
+          if (event.waitUntil) {
+            event.waitUntil(cache.delete(SHARED_AUDIO_KEY).catch(() => {}));
+          } else {
+            await cache.delete(SHARED_AUDIO_KEY).catch(() => {});
+          }
+          return taken;
+        } catch (_error) {
+          return new Response(null, { status: 404 });
+        }
+      })(),
+    );
+    return;
+  }
 
   if (
     STALE_WHILE_REVALIDATE_PREFIXES.some((prefix) =>
