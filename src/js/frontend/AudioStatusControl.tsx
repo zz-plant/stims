@@ -20,10 +20,7 @@ import {
   describeAudioSignal,
   useAudioSignalState,
 } from './audio-signal-state.ts';
-import {
-  getAudioEnergy,
-  subscribeAudioEnergy,
-} from './engine-audio-energy-store.ts';
+import { subscribeEasedAudioEnergy } from './engine-audio-energy-store.ts';
 import { pulseHaptic } from './haptics.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { UiIcon } from './UiIcon.tsx';
@@ -128,14 +125,12 @@ export function AudioStatusControl({
 
   // Written straight to a custom property rather than through state: this
   // updates at audio rate, and a re-render per frame would cost the whole
-  // dock for one bar's height.
+  // dock for one bar's height. The value arrives pre-eased; the bar must not
+  // carry a CSS transition of its own (see subscribeEasedAudioEnergy).
   useEffect(() => {
-    const update = () => {
-      const energy = Math.min(1, Math.max(0, getAudioEnergy()));
+    return subscribeEasedAudioEnergy((energy) => {
       meterRef.current?.style.setProperty('--meter', String(energy));
-    };
-    update();
-    return subscribeAudioEnergy(update);
+    });
   }, []);
 
   useListKeyboardNav(popoverRef, {

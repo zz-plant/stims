@@ -67,11 +67,21 @@
   background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   pointer-events: auto;
-  /* The second shadow is audio-reactive, not decoration — it is the "lit edge"
-     signature echoing the dock energy bar, so it stays. */
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.4),
-    0 0 calc(var(--energy, 0) * 16px)
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+}
+
+/* The audio-reactive "lit edge" echoing the dock energy bar. It lives on its
+   own childless span rather than on .pill because `--energy` is written every
+   animation frame, and a custom property inherits: changing it on the pill
+   restyled all ~50 descendants each frame — 45ms per recalc on an RK3576
+   handheld, which held the stage at 10fps while the GPU sat idle. On a leaf
+   the recalc touches one element. */
+.glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 calc(var(--energy, 0) * 16px)
     rgba(119, 201, 255, calc(var(--energy, 0) * 0.25));
 }
 
