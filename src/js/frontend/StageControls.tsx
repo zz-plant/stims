@@ -246,7 +246,7 @@ export function StageControls({
   );
   const transition = usePresetTransition();
   const pip = usePictureInPicture(ui.stageRef);
-  const energyRef = useRef<HTMLDivElement>(null);
+  const energyRef = useRef<HTMLSpanElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const transitionMenuRef = useRef<HTMLDivElement>(null);
@@ -801,7 +801,6 @@ export function StageControls({
             can actually hit — the bar around it is pointer-events: none. */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: these handlers only note that a pointer or focus is inside the container of buttons, to keep it from auto-hiding; the buttons themselves are the interactions */}
         <div
-          ref={energyRef}
           className={styles.pill}
           data-transition={
             transition.phase !== 'idle' ? transition.phase : undefined
@@ -822,6 +821,7 @@ export function StageControls({
             }
           }}
         >
+          <span ref={energyRef} className={styles.glow} aria-hidden="true" />
           {transition.phase === 'blending' ? (
             <span
               key={transition.blendNonce}

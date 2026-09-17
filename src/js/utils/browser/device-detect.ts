@@ -110,6 +110,8 @@ let cachedIsMobile: boolean | null = null;
 export function resetDeviceDetectCache(): void {
   cachedIsMobile = null;
   cachedEnvironment = null;
+  cachedIsSmartTv = null;
+  cachedIsInAppBrowser = null;
 }
 
 export function isMobileDevice(): boolean {
@@ -233,7 +235,25 @@ export function getDeviceEnvironmentProfile(): DeviceEnvironmentProfile {
   return cachedEnvironment;
 }
 
+/**
+ * Memoised like `cachedIsMobile`: the verdict is a function of the user
+ * agent, the tv-mode override and the primary pointer, none of which change
+ * while a document lives. Uncached, every animation frame re-parsed the URL,
+ * read localStorage, evaluated two media queries and ran four regexes on the
+ * way to buildParticleFieldVisual — 2% of the frame on an RK3576 handheld.
+ */
+let cachedIsSmartTv: boolean | null = null;
+let cachedIsInAppBrowser: boolean | null = null;
+
 export function isSmartTvDevice() {
+  if (cachedIsSmartTv !== null) {
+    return cachedIsSmartTv;
+  }
+  cachedIsSmartTv = detectSmartTvDevice();
+  return cachedIsSmartTv;
+}
+
+function detectSmartTvDevice(): boolean {
   if (typeof navigator === 'undefined') return false;
 
   const override = getSmartTvModeOverride();
@@ -275,10 +295,14 @@ const IN_APP_BROWSER_PATTERN =
   /(instagram|fbav|fban|tiktok|musical_ly|twitter|micromessenger|line\/|slack|snapchat|gsa\/)/i;
 
 export function isInAppBrowser(): boolean {
+  if (cachedIsInAppBrowser !== null) {
+    return cachedIsInAppBrowser;
+  }
   if (typeof navigator === 'undefined') return false;
   const nav = navigator as NavigatorWithUserAgentData;
   const userAgent = nav.userAgent ?? '';
-  return IN_APP_BROWSER_PATTERN.test(userAgent);
+  cachedIsInAppBrowser = IN_APP_BROWSER_PATTERN.test(userAgent);
+  return cachedIsInAppBrowser;
 }
 
 export function openExternalBrowserIntent(): boolean {
