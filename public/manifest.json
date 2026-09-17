@@ -40,7 +40,7 @@
   "prefer_related_applications": false,
   "dir": "ltr",
   "lang": "en-US",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": ["standalone", "minimal-ui"],
   "shortcuts": [
     {
       "name": "Start visualizer",
