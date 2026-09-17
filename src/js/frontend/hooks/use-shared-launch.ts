@@ -1,10 +1,17 @@
 /**
- * Consumes a payload shared into the installed app from another app.
+ * Consumes whatever the OS hands the installed app: a share, or a file the
+ * user opened with it.
  *
  * The service worker answers the `share_target` POST and hands the page a
  * marker in the query string — a file waits in the share inbox cache, a link
  * rides along as text. This runs once on arrival, picks it up, and clears the
  * marker so a reload is not a second share.
+ *
+ * Presets opened from the OS arrive separately, through `launchQueue`. That
+ * one is not a one-shot: with `launch_handler: focus-existing` in the
+ * manifest — one window, because a second one would play a second demo track
+ * over the first — opening another `.milk` reuses the running app and fires
+ * the consumer again.
  *
  * Links are parsed here rather than in the worker on purpose: the app already
  * owns a YouTube reference parser, and `public/service-worker.js` is plain
@@ -20,6 +27,16 @@ import { startFileAudio } from '../file-audio.ts';
 /** Must match `SHARED_AUDIO_KEY` in public/service-worker.js. */
 const SHARED_AUDIO_KEY = '/__stims-shared-audio';
 const SHARE_PARAMS = ['share', 'u'] as const;
+
+/**
+ * `launchQueue` is not in every TypeScript DOM lib yet, and the app must not
+ * assume it exists at runtime either.
+ */
+type LaunchQueue = {
+  setConsumer: (
+    consumer: (params: { files?: FileSystemFileHandle[] }) => void,
+  ) => void;
+};
 
 type SharedLaunchOptions = {
   routeState: SessionRouteState;
@@ -149,5 +166,62 @@ export function useSharedLaunch({
         );
       }
     })();
+  }, []);
+}
+
+/**
+ * Receives `.milk` presets opened from the OS.
+ *
+ * Split from the share arrival above because the two have opposite
+ * lifetimes: a share is consumed once from the launch URL, while this
+ * consumer stays registered for the life of the window and fires again every
+ * time another preset is opened into the already-running app.
+ */
+export function useFileHandlerLaunch(
+  importPresetFiles: (files: File[]) => Promise<void>,
+  setStatusMessage: (message: string) => void,
+): void {
+  const importRef = useRef(importPresetFiles);
+  importRef.current = importPresetFiles;
+  const setStatusRef = useRef(setStatusMessage);
+  setStatusRef.current = setStatusMessage;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const queue = (window as unknown as { launchQueue?: LaunchQueue })
+      .launchQueue;
+    if (!queue?.setConsumer) return;
+
+    queue.setConsumer((params) => {
+      const handles = params?.files ?? [];
+      if (handles.length === 0) return;
+      void (async () => {
+        try {
+          const files = await Promise.all(
+            handles.map((handle) => handle.getFile()),
+          );
+          // Say so before awaiting the import. Importing waits on the engine
+          // being mounted, and on the cold start this path exists for — the
+          // app was closed until the file was opened — that is seconds of a
+          // launch page showing no sign the file arrived at all. Measured at
+          // ~20s on a dev build, which is a long time to wonder whether
+          // double-clicking did anything.
+          setStatusRef.current(
+            files.length === 1
+              ? `Opening ${files[0].name}…`
+              : `Opening ${files.length} presets…`,
+          );
+          await importRef.current(files);
+        } catch (error) {
+          setStatusRef.current(
+            error instanceof Error
+              ? error.message
+              : 'That preset file could not be opened.',
+          );
+        }
+      })();
+    });
+    // No teardown: `setConsumer` has no matching remove, and the queue is
+    // per-window, so the consumer dies with the window it was set on.
   }, []);
 }

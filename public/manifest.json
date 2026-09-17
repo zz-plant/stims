@@ -91,5 +91,25 @@
         }
       ]
     }
-  }
+  },
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/plain": [".milk"],
+        "application/octet-stream": [".milk"]
+      },
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ],
+      "launch_type": "single-client"
+    }
+  ]
 }

@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { useSharedLaunch } from '../../src/js/frontend/hooks/use-shared-launch.ts';
+import {
+  useFileHandlerLaunch,
+  useSharedLaunch,
+} from '../../src/js/frontend/hooks/use-shared-launch.ts';
 
 /**
  * What the page does with a payload the service worker has already accepted.
@@ -163,5 +166,130 @@ describe('shared launch', () => {
     expect(replaced).toEqual([]);
     expect(messages).toEqual([]);
     expect(started).toEqual([]);
+  });
+
+  test('acknowledges a preset opened from the OS before importing it', async () => {
+    // Importing waits on the engine being mounted, which on the cold start
+    // this path exists for is seconds of a launch page showing no sign the
+    // file arrived — measured around twenty of them on a dev build.
+    stubLocation('https://toil.fyi/');
+    const consumers: Array<(params: { files?: unknown[] }) => void> = [];
+    const prior = Object.getOwnPropertyDescriptor(window, 'launchQueue');
+    Object.defineProperty(window, 'launchQueue', {
+      configurable: true,
+      value: {
+        setConsumer: (fn: (p: { files?: unknown[] }) => void) =>
+          consumers.push(fn),
+      },
+    });
+    restore.push(() => {
+      if (prior) Object.defineProperty(window, 'launchQueue', prior);
+      else
+        Reflect.deleteProperty(
+          window as unknown as Record<string, unknown>,
+          'launchQueue',
+        );
+    });
+
+    const messages: string[] = [];
+    const imported: string[][] = [];
+    // Initialised rather than left null: control-flow analysis cannot see
+    // that a Promise executor runs synchronously, so the null form narrows
+    // this to `never` by the time it is called.
+    let releaseImport: () => void = () => {};
+    const importBlocked = new Promise<void>((resolve) => {
+      releaseImport = resolve;
+    });
+
+    function FileHarness() {
+      useFileHandlerLaunch(
+        async (files) => {
+          imported.push(files.map((file) => file.name));
+          await importBlocked;
+        },
+        (message) => messages.push(message),
+      );
+      return null;
+    }
+
+    (
+      globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => {
+      root?.render(<FileHarness />);
+    });
+
+    expect(consumers).not.toHaveLength(0);
+    act(() => {
+      consumers[consumers.length - 1]({
+        files: [{ getFile: async () => new File(['x'], 'my preset.milk') }],
+      });
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+
+    // Said while the import is still in flight, which is the whole point.
+    expect(messages).toEqual(['Opening my preset.milk…']);
+    expect(imported).toEqual([['my preset.milk']]);
+    releaseImport();
+  });
+
+  test('reports a handle it cannot read', async () => {
+    stubLocation('https://toil.fyi/');
+    const consumers: Array<(params: { files?: unknown[] }) => void> = [];
+    const prior = Object.getOwnPropertyDescriptor(window, 'launchQueue');
+    Object.defineProperty(window, 'launchQueue', {
+      configurable: true,
+      value: {
+        setConsumer: (fn: (p: { files?: unknown[] }) => void) =>
+          consumers.push(fn),
+      },
+    });
+    restore.push(() => {
+      if (prior) Object.defineProperty(window, 'launchQueue', prior);
+      else
+        Reflect.deleteProperty(
+          window as unknown as Record<string, unknown>,
+          'launchQueue',
+        );
+    });
+
+    const messages: string[] = [];
+    function FileHarness() {
+      useFileHandlerLaunch(
+        async () => {},
+        (message) => messages.push(message),
+      );
+      return null;
+    }
+    (
+      globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => {
+      root?.render(<FileHarness />);
+    });
+    act(() => {
+      consumers[consumers.length - 1]({
+        files: [
+          {
+            getFile: async () => {
+              throw new Error('permission denied');
+            },
+          },
+        ],
+      });
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+
+    expect(messages).toEqual(['permission denied']);
   });
 });

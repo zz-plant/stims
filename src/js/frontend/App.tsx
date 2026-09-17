@@ -77,7 +77,10 @@ import {
 } from './engine-audio-energy-store.ts';
 import { HudOverlay } from './HudOverlay.tsx';
 import { useMediaSession } from './hooks/use-media-session.ts';
-import { useSharedLaunch } from './hooks/use-shared-launch.ts';
+import {
+  useFileHandlerLaunch,
+  useSharedLaunch,
+} from './hooks/use-shared-launch.ts';
 import { useAgentFrameRate } from './hooks/useAgentFrameRate';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useFullscreen } from './hooks/useFullscreen';
@@ -1160,6 +1163,13 @@ function StimsWorkspaceAppShell() {
     startAudioSource: engine.startAudioSource,
     setStatusMessage: ui.setStatusMessage,
   });
+
+  // A `.milk` opened from the OS. Routed through the same import the panel's
+  // own button uses, so it lands in the editor with the same error handling.
+  useFileHandlerLaunch(
+    (files) => ui.handleImport(files),
+    (message) => ui.setStatusMessage(message),
+  );
 
   // Tell the OS what is on the stage: lock-screen artwork and title, and
   // hardware media keys that move through presets. See the hook for why the
