@@ -1396,13 +1396,14 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   /* Amplitude follows live audio energy (set on the container by
-     LaunchSignalTrace). Quiet idle trace at rest; up to ~1.7x with music,
-     so the page starts moving to the sound before the stage takes over. */
+     LaunchSignalTrace, already eased — no transition here, since one that
+     restarts every frame is what a weak CPU spends its frame budget on).
+     Quiet idle trace at rest; up to ~1.7x with music, so the page starts
+     moving to the sound before the stage takes over. */
   .stims-shell__launch-trace-amp {
     transform-box: view-box;
     transform-origin: 50% 50%;
     transform: scaleY(calc(0.65 + var(--stims-energy, 0) * 1.05));
-    transition: transform 140ms ease-out;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1412,7 +1413,6 @@ body[data-page="workspace"][data-live="true"] {
 
     .stims-shell__launch-trace-amp {
       transform: none;
-      transition: none;
     }
   }
 
@@ -1477,6 +1477,23 @@ body[data-page="workspace"][data-live="true"] {
     color: var(--stims-muted);
     font-size: 0.8125rem;
     line-height: 1.4;
+  }
+
+  /* Landscape handhelds (an RG Vita Pro in Chrome is 809x375): the stacked
+     card put Resume below the fold, so a returning visitor saw a title and
+     artwork and no way to start. Art beside the copy keeps the card short
+     enough for the whole decision to fit the screen. */
+  @media (orientation: landscape) and (max-height: 480px) {
+    .stims-shell__launch-resume-card {
+      display: grid;
+      grid-template-columns: 128px 1fr;
+      align-items: center;
+    }
+
+    .stims-shell__launch-resume-card .stims-shell__preset-art {
+      height: 72px;
+      min-height: 72px;
+    }
   }
 
   /* Demo audio under Resume: an escape hatch for someone without their usual

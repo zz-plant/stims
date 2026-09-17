@@ -48,3 +48,58 @@ export function subscribeAudioEnergy(callback: () => void): () => void {
     subscribers.delete(callback);
   };
 }
+
+/**
+ * Energy eased toward the live value with a first-order lag, for UI that
+ * pulses with the music (the dock meter, the launch trace). Each consumer
+ * used to get this easing from a CSS `transition` on the property the energy
+ * drives, but a transition restarted every animation frame is pathological
+ * in Blink: on an RK3576 handheld the two transitions on the dock meter
+ * (transform and opacity) cost ~30ms a frame in animation bookkeeping and
+ * held the stage at 20fps with the GPU idle. Easing here means the consumer
+ * writes a plain, untransitioned value.
+ *
+ * The store only notifies on change, so once the live value settles a rAF
+ * tail keeps easing until the callback has converged on it.
+ */
+export function subscribeEasedAudioEnergy(
+  callback: (energy: number) => void,
+  timeConstantMs = 100,
+): () => void {
+  let eased = clampUnit(currentEnergy);
+  let lastAt = performance.now();
+  let tailFrame = 0;
+  let disposed = false;
+
+  const step = () => {
+    tailFrame = 0;
+    if (disposed) return;
+    const now = performance.now();
+    const target = clampUnit(currentEnergy);
+    const alpha = 1 - Math.exp(-(now - lastAt) / timeConstantMs);
+    lastAt = now;
+    eased += (target - eased) * alpha;
+    if (Math.abs(target - eased) < 0.002) {
+      eased = target;
+    } else if (typeof requestAnimationFrame === 'function') {
+      tailFrame = requestAnimationFrame(step);
+    }
+    callback(eased);
+  };
+
+  callback(eased);
+  const unsubscribe = subscribeAudioEnergy(() => {
+    if (tailFrame === 0) step();
+  });
+  return () => {
+    disposed = true;
+    unsubscribe();
+    if (tailFrame !== 0 && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(tailFrame);
+    }
+  };
+}
+
+function clampUnit(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
