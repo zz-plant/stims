@@ -213,6 +213,34 @@ export function matchesPreset(
 }
 
 /**
+ * The catalog entry for whatever is on the stage right now, or null.
+ *
+ * Autoplay moves the stage on without moving `selectedPreset`, so those two
+ * ids drift apart routinely and the selection alone is not an answer. Every
+ * caller that asks "what is playing" needs the same three-source lookup, so
+ * it lives here rather than being re-derived at each one — the version that
+ * fell back to null on a drift made "save what's playing" read as
+ * not-a-favorite forever, so it could only ever add.
+ */
+export function findActivePresetEntry(
+  activePresetId: string | null | undefined,
+  sources: {
+    selectedPreset?: PresetCatalogEntry | null;
+    catalog?: readonly PresetCatalogEntry[];
+    favoritePresets?: readonly PresetCatalogEntry[];
+  },
+): PresetCatalogEntry | null {
+  if (!activePresetId) return null;
+  const { selectedPreset, catalog, favoritePresets } = sources;
+  if (selectedPreset?.id === activePresetId) return selectedPreset;
+  return (
+    catalog?.find((entry) => entry.id === activePresetId) ??
+    favoritePresets?.find((entry) => entry.id === activePresetId) ??
+    null
+  );
+}
+
+/**
  * Relevance score for one catalog entry, or null when it does not match.
  * Same tiers the command palette ranks with.
  */

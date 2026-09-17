@@ -196,6 +196,7 @@ export async function runSeoChecks(rootDir = repoRoot) {
   const manifest = JSON.parse(manifestRaw) as {
     icons?: Array<{ src: string }>;
     screenshots?: Array<{ src: string }>;
+    display_override?: string[];
   };
 
   const { files } = await buildSeoArtifacts(rootDir, {
@@ -389,6 +390,32 @@ export async function runSeoChecks(rootDir = repoRoot) {
         (screenshot) => screenshot.src === '/screenshots/hero-narrow.png',
       ) === true,
     details: 'public/manifest.json',
+  });
+
+  // Window Controls Overlay is not a declaration you can make alone. The
+  // browser picks the first supported mode in `display_override`, so listing
+  // it hands an installed desktop window a layout with no title bar — and
+  // unless the app reserves `env(titlebar-area-*)` and marks something
+  // `-webkit-app-region: drag`, the content renders under the window controls
+  // and the window cannot be moved at all. It shipped listed and unbuilt
+  // once; this fails the build rather than the user's window.
+  const wcoDeclared =
+    manifest.display_override?.includes('window-controls-overlay') === true;
+  const cssFiles = await fs.readdir(path.join(rootDir, 'src/css'));
+  const cssSources = await Promise.all(
+    cssFiles
+      .filter((file) => file.endsWith('.css'))
+      .map((file) => fs.readFile(path.join(rootDir, 'src/css', file), 'utf8')),
+  );
+  const wcoSupported =
+    cssSources.some((css) => css.includes('titlebar-area')) &&
+    cssSources.some((css) => css.includes('app-region'));
+  results.push({
+    name: wcoDeclared
+      ? 'Manifest declares window-controls-overlay and the CSS supports it'
+      : 'Manifest does not declare window-controls-overlay it cannot support',
+    passed: !wcoDeclared || wcoSupported,
+    details: 'public/manifest.json + src/css',
   });
 
   const oembedExists = await fs

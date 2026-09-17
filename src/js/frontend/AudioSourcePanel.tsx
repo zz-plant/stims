@@ -14,10 +14,9 @@ import {
 import {
   AUDIO_FILE_ACCEPT,
   canProbablyPlay,
-  createFileAudioStream,
   disposeActiveFileAudio,
   getActiveFileAudioName,
-  setActiveFileAudio,
+  startFileAudio,
 } from './file-audio.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
@@ -143,20 +142,11 @@ export function AudioSourcePanel({
       return;
     }
     setFileState({ name: file.name, error: null, loading: true });
-    disposeActiveFileAudio();
     try {
-      const handle = await createFileAudioStream(file);
-      setActiveFileAudio(handle);
-      // Commit the route *and* pass it as launchState, the same way the
-      // Strudel bridge starts a stream source. Calling startAudioSource
-      // alone leaves routeState.audioSource null, so the engine snapshot
-      // never reports the source and nothing downstream reacts to it.
-      const nextRoute = { ...ui.routeState, audioSource: 'file' as const };
-      ui.commitRoute(nextRoute);
-      await engine.startAudioSource({
-        source: 'file',
-        stream: handle.stream,
-        launchState: nextRoute,
+      const handle = await startFileAudio(file, {
+        routeState: ui.routeState,
+        commitRoute: ui.commitRoute,
+        startAudioSource: engine.startAudioSource,
       });
       setFileState({ name: handle.name, error: null, loading: false });
       ui.setStatusMessage(`Playing ${handle.name}`);

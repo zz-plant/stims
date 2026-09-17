@@ -18,6 +18,8 @@
  * for the rest of the app.
  */
 
+import type { SessionRouteState } from './contracts.ts';
+
 export type FileAudioHandle = {
   stream: MediaStream;
   element: HTMLAudioElement;
@@ -184,4 +186,45 @@ export function setActiveFileAudioPaused(paused: boolean): void {
     // stage resumes regardless and the next gesture retries through the
     // audio-handler's own resume path.
   });
+}
+
+/**
+ * Start playing `file` as the live audio source.
+ *
+ * Shared because there are now two ways in — the audio panel's picker and
+ * drop zone, and a file shared into the installed app from another app — and
+ * the sequence is not obvious enough to retype: the route has to be committed
+ * *and* handed on as `launchState`. Calling `startAudioSource` alone leaves
+ * `routeState.audioSource` null, so the engine snapshot never reports the
+ * source and nothing downstream reacts to it.
+ *
+ * Tears down whichever file was playing first: two handles feeding the
+ * analyser at once is two tracks playing at once.
+ */
+export async function startFileAudio(
+  file: File,
+  deps: {
+    routeState: SessionRouteState;
+    commitRoute: (route: SessionRouteState) => void;
+    startAudioSource: (request: {
+      source: 'file';
+      stream: MediaStream;
+      launchState: SessionRouteState;
+    }) => Promise<void>;
+  },
+): Promise<FileAudioHandle> {
+  disposeActiveFileAudio();
+  const handle = await createFileAudioStream(file);
+  setActiveFileAudio(handle);
+  const nextRoute: SessionRouteState = {
+    ...deps.routeState,
+    audioSource: 'file',
+  };
+  deps.commitRoute(nextRoute);
+  await deps.startAudioSource({
+    source: 'file',
+    stream: handle.stream,
+    launchState: nextRoute,
+  });
+  return handle;
 }
