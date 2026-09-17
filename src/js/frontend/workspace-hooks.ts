@@ -52,6 +52,7 @@ import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
 import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
 import { reportLoadStatus } from './load-status.ts';
+import { warmFavoriteForOffline } from './offline-favorites.ts';
 import { decidePresetRoutePush } from './preset-route-push.ts';
 import { ensurePersistentStorage } from './storage-persistence.ts';
 import {
@@ -899,8 +900,14 @@ export function useWorkspaceSessionState({
       await store.setFavorite(presetId, favorite);
       // Saving something is the moment that earns a persistence grant: there
       // is now something here worth not losing, and asking before that would
-      // be a permission prompt (Firefox shows one) about nothing.
-      if (favorite) void ensurePersistentStorage();
+      // be a permission prompt (Firefox shows one) about nothing. It is also
+      // what makes the shell's offline-mode promise about saved presets true
+      // — until now only presets that happened to have been played were
+      // actually cached.
+      if (favorite) {
+        void ensurePersistentStorage();
+        warmFavoriteForOffline(presetId, (id) => store.getPresetSource(id));
+      }
       await refreshCatalogActivity();
     },
     toggleExtendedSources: () => setShowExtendedSources((current) => !current),
