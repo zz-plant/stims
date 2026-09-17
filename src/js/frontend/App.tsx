@@ -76,6 +76,7 @@ import {
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
 import { HudOverlay } from './HudOverlay.tsx';
+import { useMediaSession } from './hooks/use-media-session.ts';
 import { useAgentFrameRate } from './hooks/useAgentFrameRate';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useFullscreen } from './hooks/useFullscreen';
@@ -131,7 +132,7 @@ import {
   useWorkspace,
   WorkspaceProvider,
 } from './workspace-context.tsx';
-import { getToolLabel } from './workspace-helpers.ts';
+import { findActivePresetEntry, getToolLabel } from './workspace-helpers.ts';
 import {
   BROWSE_PANEL_FOCUS_SELECTOR,
   WorkspaceStagePanel,
@@ -397,6 +398,13 @@ function StimsWorkspaceAppShell() {
   const liveMode = engine.audioActive;
   const currentAudioSource =
     engineSnapshot?.audioSource ?? ui.routeState.audioSource;
+  // What the OS is told is playing. Same three-source lookup the save-current
+  // gesture uses, because autoplay moves the stage without moving the
+  // selection and only the catalog knows what is actually up.
+  const activePresetEntry = useMemo(
+    () => findActivePresetEntry(engineSnapshot?.activePresetId, engine),
+    [engineSnapshot?.activePresetId, engine],
+  );
   const quietAtRef = useRef<number | null>(null);
   const quietDemoSuggestedRef = useRef(false);
   const autoPlayedRef = useRef(false);
@@ -446,17 +454,7 @@ function StimsWorkspaceAppShell() {
       ui.setStatusMessage('Load a preset before saving it.');
       return;
     }
-    // Autoplay moves the stage on without moving `selectedPreset`, so the two
-    // ids drift apart routinely. Falling back to null there made every press
-    // in that state read "not a favorite": the gesture could only ever add,
-    // and un-saving whatever was playing was impossible until you re-selected
-    // it. The catalog knows the real state — ask it before assuming.
-    const activePreset =
-      engine.selectedPreset?.id === activePresetId
-        ? engine.selectedPreset
-        : (engine.catalog.find((entry) => entry.id === activePresetId) ??
-          engine.favoritePresets.find((entry) => entry.id === activePresetId) ??
-          null);
+    const activePreset = findActivePresetEntry(activePresetId, engine);
     void engine.toggleFavoritePreset(activePresetId, !activePreset?.isFavorite);
     ui.setStatusMessage(
       activePreset?.isFavorite
@@ -1151,6 +1149,21 @@ function StimsWorkspaceAppShell() {
         ? 'ready'
         : 'booting';
   }, [liveMode, engine.engineReady]);
+
+  // Tell the OS what is on the stage: lock-screen artwork and title, and
+  // hardware media keys that move through presets. See the hook for why the
+  // preset — not a track — is what next/previous move through here.
+  useMediaSession({
+    active: liveMode,
+    paused: playbackPaused,
+    presetId: engineSnapshot?.activePresetId ?? null,
+    presetTitle: activePresetEntry?.title ?? null,
+    presetAuthor: activePresetEntry?.author ?? null,
+    onTogglePlayback: () => engine.handleTogglePlayback(),
+    onNextPreset: () => void engine.handleShufflePreset(),
+    onPreviousPreset: () => void engine.handlePreviousPreset(),
+    onStop: () => engine.handleAudioStop(),
+  });
 
   // Going live unmounts the launch page, and with it the button that was
   // pressed to get here. Whatever is focused inside a removed subtree falls
