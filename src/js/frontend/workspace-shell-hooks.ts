@@ -3,13 +3,7 @@
  * permissions, link sharing, and canonical state transitions across the top-level visualizer shell.
  */
 
-import {
-  type SetStateAction,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from 'react';
+import { type SetStateAction, useCallback, useMemo, useRef } from 'react';
 import {
   acquireMicrophoneStream,
   describeInputProcessingWarning,
@@ -124,7 +118,6 @@ export function useWorkspaceShellOrchestration({
   youtubePreviewRef,
 }: WorkspaceShellOrchestrationArgs) {
   const audioStartInProgressRef = useRef(false);
-  const fileAudioContextRef = useRef<AudioContext | null>(null);
 
   // Dep on the narrow snapshot fields, never the snapshot object: while audio
   // plays the snapshot is rebuilt every frame (audioEnergy changes), and a
@@ -312,18 +305,6 @@ export function useWorkspaceShellOrchestration({
     commitRoute((current) => ({ ...current, presetId, panel: null }));
   };
 
-  const handleBrowseRecovery = () => {
-    commitRoute((current) => ({ ...current, presetId: null, panel: 'browse' }));
-  };
-
-  const handleFeaturedPresetSelection = () => {
-    if (!shellState.featuredPreset) {
-      return;
-    }
-
-    handlePresetSelection(shellState.featuredPreset.id);
-  };
-
   const handleShufflePreset = () => {
     const activePresetId =
       routeState.presetId ?? engineSnapshot?.activePresetId;
@@ -387,53 +368,6 @@ export function useWorkspaceShellOrchestration({
 
   const handlePreviousPreset = () => {
     void goBackPreset();
-  };
-
-  const handleAudioFile = async (file: File) => {
-    if (
-      !file.type.startsWith('audio/') &&
-      !file.name.match(/\.(mp3|wav|flac|ogg|m4a|aac|opus|webm)$/i)
-    ) {
-      return;
-    }
-    try {
-      setStatusMessage(null);
-
-      fileAudioContextRef.current?.close();
-      const audioContext = new AudioContext();
-      fileAudioContextRef.current = audioContext;
-      const arrayBuffer = await file.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      const destination = audioContext.createMediaStreamDestination();
-      source.connect(destination);
-      source.connect(audioContext.destination);
-      source.start(0);
-
-      const { nextRouteState, healMessage } = buildHealedPresetRoute(
-        routeState,
-        shellState.missingRequestedPreset,
-        shellState.featuredPreset,
-        'file',
-      );
-
-      if (healMessage) {
-        setStatusMessage(healMessage);
-      }
-
-      commitRoute(nextRouteState);
-      await startAudioSource({
-        source: 'file',
-        stream: destination.stream,
-        launchState: nextRouteState,
-      });
-      setStatusMessage(`Playing: ${file.name}`);
-    } catch (error) {
-      setStatusMessage(
-        error instanceof Error ? error.message : 'Unable to play audio file.',
-      );
-    }
   };
 
   const handlePlayPreset = async (presetId: string) => {
@@ -720,25 +654,16 @@ export function useWorkspaceShellOrchestration({
     );
   };
 
-  useEffect(() => {
-    return () => {
-      fileAudioContextRef.current?.close();
-    };
-  }, []);
-
   return {
     ...shellState,
     handleAudioStart,
     handleAudioStop,
     handleTogglePlayback,
-    handleBrowseRecovery,
-    handleFeaturedPresetSelection,
     handleImport,
     handlePlayPreset,
     handlePresetSelection,
     handlePreviousPreset,
     handleShowCurrentLink,
-    handleAudioFile,
     handleShufflePreset,
     handleVisualSearch,
     updatePanel,

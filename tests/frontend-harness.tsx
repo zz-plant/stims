@@ -95,8 +95,6 @@ export function makeUiValue(
       popNext: () => null,
     },
 
-    handleBrowseRecovery: noop,
-    handleFeaturedPresetSelection: noop,
     handleImport: asyncNoop,
     handleShowCurrentLink: asyncNoop,
     updatePanel: noop,
