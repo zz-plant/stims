@@ -21,6 +21,14 @@ export type AccessibilityPreference = {
    * they multiply.
    */
   stageBrightness: number;
+  /**
+   * How much of the preset's camera motion — zoom, rotation, drift, warp —
+   * reaches the screen, 0–1. Waveforms, shapes and colour still react to
+   * the audio at 0; only the picture stops travelling. Defaults below 1
+   * when the OS asks for reduced motion, for the same reason as
+   * `reduceFlashing`.
+   */
+  motionScale: number;
 };
 
 /** Below this the stage is effectively black, which is not a comfort setting. */
@@ -31,6 +39,18 @@ export function clampStageBrightness(value: unknown): number {
   return Math.min(1, Math.max(MIN_STAGE_BRIGHTNESS, value));
 }
 
+/**
+ * Where the motion slider rests when the OS asks for reduced motion and the
+ * user has not touched it: most of the travel gone, enough left that a
+ * preset still reads as alive rather than as a stuck frame.
+ */
+export const REDUCED_MOTION_DEFAULT_SCALE = 0.4;
+
+export function clampMotionScale(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 1;
+  return Math.min(1, Math.max(0, value));
+}
+
 type AccessibilitySubscriber = (preference: AccessibilityPreference) => void;
 
 const ACCESSIBILITY_PREFERENCE_KEY = 'stims:accessibility';
@@ -38,6 +58,7 @@ const ACCESSIBILITY_PREFERENCE_KEY = 'stims:accessibility';
 const subscribers = new Set<AccessibilitySubscriber>();
 let activePreference: AccessibilityPreference | null = null;
 let freezeFrameFlag = false;
+let motionScaleFlag = 1;
 
 function getStorage(): Storage | null {
   try {
@@ -73,6 +94,10 @@ function prefersMoreContrast(): boolean {
   }
 }
 
+function defaultMotionScale(): number {
+  return prefersReducedMotion() ? REDUCED_MOTION_DEFAULT_SCALE : 1;
+}
+
 function readFromStorage(): AccessibilityPreference {
   const storage = getStorage();
   const raw = storage?.getItem(ACCESSIBILITY_PREFERENCE_KEY);
@@ -83,6 +108,7 @@ function readFromStorage(): AccessibilityPreference {
       freezeFrame: false,
       reduceFlashing: prefersReducedMotion(),
       stageBrightness: 1,
+      motionScale: defaultMotionScale(),
     };
   }
   try {
@@ -98,6 +124,10 @@ function readFromStorage(): AccessibilityPreference {
           ? parsed.reduceFlashing
           : prefersReducedMotion(),
       stageBrightness: clampStageBrightness(parsed.stageBrightness),
+      motionScale:
+        typeof parsed.motionScale === 'number'
+          ? clampMotionScale(parsed.motionScale)
+          : defaultMotionScale(),
     };
   } catch {
     return {
@@ -106,6 +136,7 @@ function readFromStorage(): AccessibilityPreference {
       freezeFrame: false,
       reduceFlashing: prefersReducedMotion(),
       stageBrightness: 1,
+      motionScale: defaultMotionScale(),
     };
   }
 }
@@ -125,6 +156,7 @@ export function getActiveAccessibilityPreference(): AccessibilityPreference {
   if (!activePreference) {
     activePreference = readFromStorage();
     freezeFrameFlag = activePreference.freezeFrame;
+    motionScaleFlag = activePreference.motionScale;
   }
   return activePreference;
 }
@@ -136,6 +168,7 @@ export function setAccessibilityPreference(
   const next = { ...current, ...update };
   activePreference = next;
   freezeFrameFlag = next.freezeFrame;
+  motionScaleFlag = next.motionScale;
   persistToStorage(next);
   applyAccessibility(next);
   subscribers.forEach((subscriber) => subscriber(next));
@@ -158,6 +191,14 @@ export function isFreezeFrameActive(): boolean {
   return freezeFrameFlag;
 }
 
+/** Read once per frame by the runtime; a flag, not a storage read. */
+export function getMotionScale(): number {
+  if (!activePreference) {
+    getActiveAccessibilityPreference();
+  }
+  return motionScaleFlag;
+}
+
 export function applyAccessibility(preference: AccessibilityPreference) {
   if (typeof document === 'undefined') return;
   const html = document.documentElement;
@@ -172,5 +213,6 @@ export function applyAccessibility(preference: AccessibilityPreference) {
 export function resetAccessibilityPreferenceState() {
   activePreference = null;
   freezeFrameFlag = false;
+  motionScaleFlag = 1;
   subscribers.clear();
 }
