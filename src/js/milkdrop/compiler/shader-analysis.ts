@@ -1666,9 +1666,9 @@ export function clearShaderAnalysisCaches() {
 const MATRIX_DECLARATION_PATTERN =
   /^(?:const\s+)?(mat[234])\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)/u;
 
-/** The same declaration with no initializer: `mat3 a` or `mat2 a, b`. */
-const BARE_MATRIX_DECLARATION_PATTERN =
-  /^(mat[234])\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*$/u;
+/** A bare type declaration with no initializer: `mat3 a`, `vec3 ret_1`, `float x`, etc. */
+const BARE_TYPED_DECLARATION_PATTERN =
+  /^(mat[234]|vec[234]|float[234]|float|int|bool)\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*$/u;
 
 type MatrixLocalKind = 'mat2' | 'mat3' | 'mat4';
 
@@ -1888,21 +1888,28 @@ export function extractShaderControls(
       /^(?:(?:const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
     );
     if (!fallbackAssignment) {
-      // A bare matrix declaration (`mat3 tmpvar_1`) is the one declaration
-      // that has to leave a statement behind. Its element writes come next
-      // (`tmpvar_1[int(0)].x = q20`, nine of them for a rotation), and the
-      // WebGPU node executor needs to know the matrix's size before the first
-      // of those to pick the right column layout — nothing about
-      // `M[int(0)].x` says whether M has two, three or four rows. Seeding
-      // `tmpvar_1 = mat3(0.0)` is also what GLSL's raw path effectively does:
-      // every corpus body writes all elements before reading any.
-      const matrixDeclaration = nativeShaderBody
-        ? line.match(BARE_MATRIX_DECLARATION_PATTERN)
+      // A bare typed declaration (`mat3 tmpvar_1`, `vec3 ret_1`) has to leave a
+      // statement behind. For matrices, its element writes come next
+      // (`tmpvar_1[int(0)].x = q20`), and the WebGPU node executor needs to
+      // know the matrix's size before the first of those to pick the right column
+      // layout. For vectors, uninitialized reads (like `mix(ret_1, ...)`) or
+      // swizzle writes must not be misidentified as unbound per-frame scalar
+      // registers. Seeding `tmpvar_1 = kind(0.0)` or `ret_1 = vec3(0.0)` gives
+      // them their declared types and initial values.
+      const typedDeclaration = nativeShaderBody
+        ? line.match(BARE_TYPED_DECLARATION_PATTERN)
         : null;
-      if (matrixDeclaration) {
-        const kind = matrixDeclaration[1];
-        for (const name of (matrixDeclaration[2] ?? '').split(',')) {
-          const seeded = `${name.trim()} = ${kind}(0.0)`;
+      if (typedDeclaration) {
+        const rawKind = typedDeclaration[1] ?? 'float';
+        const kind =
+          rawKind.startsWith('float') && rawKind.length === 6
+            ? `vec${rawKind.slice(5)}`
+            : rawKind;
+        for (const name of (typedDeclaration[2] ?? '').split(',')) {
+          const seeded =
+            kind === 'float' || kind === 'int' || kind === 'bool'
+              ? `${name.trim()} = 0.0`
+              : `${name.trim()} = ${kind}(0.0)`;
           const seededStatement = parseShaderStatementCached(seeded);
           if (seededStatement) {
             // Both lists, so the direct program still covers every parsed
