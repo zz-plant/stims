@@ -537,8 +537,8 @@ export function AudioSourcePanel({
             name="video"
             className="stims-shell__source-card-icon stims-icon-slot"
           />
-          <strong>This tab</strong>
-          {chips ? null : <span>Audio playing in this browser tab</span>}
+          <strong>{chips ? 'Tab / System' : 'Tab or System audio'}</strong>
+          {chips ? null : <span>Any tab, Spotify, or your system audio</span>}
         </button>
       ) : null}
       {chips && offersYouTube ? (

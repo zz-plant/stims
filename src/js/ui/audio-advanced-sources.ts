@@ -30,10 +30,10 @@ function describeMissingAudio(
   fallbackMessage: string,
 ): string {
   if (surface === 'monitor') {
-    return 'You shared a whole screen, which carries no tab audio on most systems. Re-share and pick this browser tab instead.';
+    return 'You shared a whole screen without audio. Re-share and check "Also share system audio", or pick a browser tab.';
   }
   if (surface === 'window') {
-    return 'You shared an application window. Window shares carry no audio — re-share and pick this browser tab instead.';
+    return 'You shared an application window. Window shares carry no audio — re-share and pick a browser tab or share system audio.';
   }
   return fallbackMessage;
 }
@@ -43,13 +43,17 @@ function describeMissingAudio(
  * single pre-selected entry for this tab, which is the difference between a
  * three-choice dialog and one click. Chrome rejects `selfBrowserSurface`
  * alongside it, so the two are mutually exclusive.
+ *
+ * For external/tab capture, `systemAudio: 'include'` allows Chromium browsers
+ * on supported platforms (Windows, macOS, Linux) to offer system-wide audio
+ * capture (e.g. Spotify desktop, media players) alongside tab audio.
  */
 function buildDisplayConstraints(preferCurrentTab: boolean) {
   const base = { video: true, audio: true };
   if (preferCurrentTab) {
     return { ...base, preferCurrentTab: true, systemAudio: 'exclude' };
   }
-  return { ...base, selfBrowserSurface: 'include', systemAudio: 'exclude' };
+  return { ...base, selfBrowserSurface: 'include', systemAudio: 'include' };
 }
 
 export async function captureDisplayAudioStream({
