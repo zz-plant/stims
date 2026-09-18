@@ -6,6 +6,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import {
   applyAccessibility,
+  clampMotionScale,
   clampStageBrightness,
   getActiveAccessibilityPreference,
   MIN_STAGE_BRIGHTNESS,
@@ -202,14 +203,16 @@ function AccessibilitySection({
           setAccessibilityPreference({ highContrast });
         }}
       />
-      {/* The three stage-comfort controls, gathered and labelled by what
-          they actually promise. They were previously interleaved with the
-          chrome settings above, which put a hard limit and a best-effort
-          mitigation side by side with nothing distinguishing them. */}
+      {/* The stage-comfort controls, gathered and labelled by what they
+          actually promise. They were previously interleaved with the chrome
+          settings above, which put a hard limit and a best-effort mitigation
+          side by side with nothing distinguishing them. */}
       <p className="ctl-row__hint" id="comfort-note">
         Brightness is a hard ceiling: it applies over every preset, on either
-        renderer. Reduce flashing is a mitigation, not a guarantee — it filters
-        the presets that have been measured and dims strobing as it is detected.
+        renderer. Motion scales the camera — zoom, spin, drift — and leaves the
+        audio reaction alone. Reduce flashing is a mitigation, not a guarantee —
+        it filters the presets that have been measured and dims strobing as it
+        is detected.
       </p>
       <div className="ctl-row">
         <span className="ctl-row__text">
@@ -236,6 +239,31 @@ function AccessibilitySection({
             );
             setPrefs((p) => ({ ...p, stageBrightness }));
             setAccessibilityPreference({ stageBrightness });
+          }}
+        />
+      </div>
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <label className="ctl-row__label" htmlFor="a11y-motion-scale">
+            Motion
+          </label>
+          <span className="ctl-row__hint">
+            At 0% the picture holds still and the waveforms keep dancing.
+          </span>
+        </span>
+        <input
+          id="a11y-motion-scale"
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={prefs.motionScale}
+          aria-describedby="comfort-note"
+          aria-valuetext={`${Math.round(prefs.motionScale * 100)} percent`}
+          onChange={(event) => {
+            const motionScale = clampMotionScale(Number(event.target.value));
+            setPrefs((p) => ({ ...p, motionScale }));
+            setAccessibilityPreference({ motionScale });
           }}
         />
       </div>
