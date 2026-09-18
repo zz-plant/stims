@@ -1182,9 +1182,15 @@ function coerceShaderValue(
     if (value.kind === 'scalar') {
       return makeShaderValue('vec3', vec3(value.node, value.node, value.node));
     }
+    if (value.kind === 'vec2') {
+      return makeShaderValue(
+        'vec3',
+        vec3(value.node.x, value.node.y, float(0)),
+      );
+    }
     return makeShaderValue(
       'vec3',
-      vec3(value.node.x, value.node.y, value.node.z ?? 0),
+      vec3(value.node.x, value.node.y, value.node.z),
     );
   }
   if (value.kind === 'scalar') {
@@ -1194,12 +1200,15 @@ function coerceShaderValue(
     );
   }
   if (value.kind === 'vec2') {
-    return makeShaderValue('vec4', vec4(value.node.x, value.node.y, 0, 0));
+    return makeShaderValue(
+      'vec4',
+      vec4(value.node.x, value.node.y, float(0), float(0)),
+    );
   }
   if (value.kind === 'vec3') {
     return makeShaderValue(
       'vec4',
-      vec4(value.node.x, value.node.y, value.node.z, 0),
+      vec4(value.node.x, value.node.y, value.node.z, float(0)),
     );
   }
   return value;
@@ -1402,7 +1411,11 @@ function isPerFrameVariableCandidate(name: string): boolean {
   return (
     /^[a-z][a-z0-9_]*$/u.test(name) &&
     !name.endsWith('tex') &&
-    !name.startsWith('sampler_')
+    !name.startsWith('sampler_') &&
+    !name.startsWith('tmpvar_') &&
+    !name.startsWith('ret_') &&
+    !name.startsWith('xlv_') &&
+    !/^x_\d+$/u.test(name)
   );
 }
 
