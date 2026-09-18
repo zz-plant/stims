@@ -118,7 +118,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(audioSourcePanelSource).toContain('No permission needed');
     expect(audioSourcePanelSource).toContain('Whatever is playing in the room');
     expect(audioSourcePanelSource).toContain(
-      'Audio playing in this browser tab',
+      'Any tab, Spotify, or your system audio',
     );
     // The section heading names the whole section, never one of its children.
     expect(audioSourcePanelSource).not.toContain(

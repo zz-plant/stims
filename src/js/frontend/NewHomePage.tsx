@@ -20,7 +20,7 @@ import { describePresetMood, STIMS_REPO_URL } from './workspace-helpers.ts';
 const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
   demo: 'demo audio',
   microphone: 'your mic',
-  tab: "this tab's audio",
+  tab: 'tab or system audio',
   youtube: 'YouTube audio',
 };
 
@@ -509,7 +509,7 @@ function AudioSources({ resume }: { resume: ResumeState }) {
   return (
     <details className="stims-shell__launch-source-minimal">
       <summary className="stims-shell__launch-sources-summary">
-        Or use your own audio — YouTube, mic, a file, or this tab
+        Or use your own audio — YouTube, mic, a file, a tab, or Spotify
       </summary>
       <div className="stims-shell__launch-sources-body">
         <AudioSourcePanel showHelp={false} />
