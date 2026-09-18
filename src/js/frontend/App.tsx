@@ -371,9 +371,20 @@ function StimsWorkspaceAppShell() {
   const [showCredits, setShowCredits] = useState(false);
   const [audioMatch, setAudioMatch] = useState<{
     presetId: string;
-    name: string;
     score: number;
   } | null>(null);
+  // The match usually lands while only the 20 KB starter catalog is loaded,
+  // so the title is resolved at render time against whatever catalog is
+  // current: the toast re-labels itself when the full catalog arrives
+  // instead of freezing the raw id it was born with.
+  const audioMatchWithName = useMemo(() => {
+    if (!audioMatch) return null;
+    const preset = engine.catalog.find((e) => e.id === audioMatch.presetId);
+    return {
+      ...audioMatch,
+      name: preset?.title ?? audioMatch.presetId.replace(/-/g, ' '),
+    };
+  }, [audioMatch, engine.catalog]);
   const [thumbMode, setThumbMode] = useState(() => {
     try {
       const stored = localStorage.getItem('stims:mobile-thumb-mode');
@@ -658,13 +669,15 @@ function StimsWorkspaceAppShell() {
         // a preset is chugging and Settings is three interactions away.
         id: 'use-webgl',
         group: 'View',
-        label: 'Switch renderer to WebGL',
+        label: 'Switch renderer to WebGL (reloads)',
         keywords: ['backend', 'webgpu', 'compatibility', 'slow', 'performance'],
         run: () => {
           setCompatibilityMode(true);
-          uiRef.current.setStatusMessage(
-            'Renderer set to WebGL. Reload to apply.',
-          );
+          // The choice only takes effect on the next load, and the person
+          // reached for this because the current one is chugging — do the
+          // reload here instead of naming it in a toast. A dirty editor
+          // still gets the beforeunload prompt below.
+          window.location.reload();
         },
       },
       {
@@ -1828,12 +1841,7 @@ function StimsWorkspaceAppShell() {
         if (results.length === 0) return;
         const top = results[0];
         if (top.score < 0.75) return;
-        const preset = engine.catalog.find((e) => e.id === top.presetId);
-        setAudioMatch({
-          presetId: top.presetId,
-          name: preset?.title ?? top.presetId,
-          score: top.score,
-        });
+        setAudioMatch({ presetId: top.presetId, score: top.score });
       });
     };
 
@@ -2070,7 +2078,7 @@ function StimsWorkspaceAppShell() {
         <SilentAudioNotice active={liveMode} />
         <ContextualHelp hint={visibleHint} anchor="stage" />
         <AudioMatchToast
-          match={audioMatch}
+          match={audioMatchWithName}
           onSelect={engine.handlePresetSelection}
           onDismiss={() => setAudioMatch(null)}
         />

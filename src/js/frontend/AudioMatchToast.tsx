@@ -23,14 +23,17 @@ export function AudioMatchToast({
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
 
+  // Keyed on the preset, not the match object: the label is re-derived when
+  // the catalog fills in, and a re-derived object must not restart the clock.
+  const matchPresetId = match?.presetId ?? null;
   useEffect(() => {
-    if (!match || held) return;
+    if (matchPresetId === null || held) return;
     const timer = window.setTimeout(
       () => onDismissRef.current(),
       AUTO_DISMISS_MS,
     );
     return () => window.clearTimeout(timer);
-  }, [match, held]);
+  }, [matchPresetId, held]);
 
   if (!match) return null;
 

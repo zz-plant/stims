@@ -54,6 +54,13 @@ describe('arrival URL snapshot', () => {
     expect(arrival.getArrivalPresetId()).toBe('from-a-social-card');
   });
 
+  test('reports the audio source a copied link carried', async () => {
+    const arrival = await load('?preset=one&audio=microphone');
+    expect(arrival.getArrivalAudioSource()).toBe('microphone');
+    window.history.replaceState(null, '', '?preset=one&audio=demo');
+    expect(arrival.getArrivalAudioSource()).toBe('microphone');
+  });
+
   test('reads other arrival parameters from the same snapshot', async () => {
     const arrival = await load('?preset=one&collection=hall-of-fame');
     expect(arrival.getArrivalParam('collection')).toBe('hall-of-fame');

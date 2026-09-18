@@ -40,3 +40,12 @@ export function getArrivalParam(name: string): string | null {
 export function getArrivalPresetId(): string | null {
   return getArrivalParam('preset');
 }
+
+/**
+ * `?audio=` as the visitor arrived. A copied link carries the sender's
+ * source (`url-state.ts` writes it), so a recipient can be offered the same
+ * one instead of silently landing on the demo track.
+ */
+export function getArrivalAudioSource(): string | null {
+  return getArrivalParam('audio');
+}
