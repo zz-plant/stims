@@ -284,12 +284,18 @@ export function createCompositeGlslEmitter(
           : null;
       }
 
-      // Math functions
+      // Math functions. mix/max/min/pow/dot go through the milkdrop*
+      // overload sets in feedback-manager-shared.ts rather than the GLSL
+      // builtins: HLSL promotes a scalar argument to the other arguments'
+      // width (lerp(float3, float, t), max(float, float3), pow(float,
+      // float3)) and GLSL does not, and this emitter has no type
+      // information to do the promotion itself. GLSL's compile-time
+      // overload resolution does it instead.
       if (lower === 'mix' || lower === 'lerp') {
         const a = args[0] ?? '0.0';
         const b = args[1] ?? '0.0';
         const t = args[2] ?? '0.0';
-        return `mix(${a}, ${b}, ${t})`;
+        return `milkdropLerp(${a}, ${b}, ${t})`;
       }
       if (lower === 'saturate') {
         return `clamp(${args[0] ?? '0.0'}, 0.0, 1.0)`;
@@ -316,16 +322,18 @@ export function createCompositeGlslEmitter(
         const cond = args[0] ?? '0.0';
         const thenVal = args[1] ?? '0.0';
         const elseVal = args[2] ?? '0.0';
-        return `mix(${elseVal}, ${thenVal}, step(0.0001, abs(${cond})))`;
+        return `milkdropLerp(${elseVal}, ${thenVal}, step(0.0001, abs(${cond})))`;
       }
       if (lower === 'abs') {
         return `abs(${args[0] ?? '0.0'})`;
       }
       if (lower === 'pow') {
-        return `pow(max(0.0, ${args[0] ?? '0.0'}), ${args[1] ?? '2.0'})`;
+        return `milkdropPow(${args[0] ?? '0.0'}, ${args[1] ?? '2.0'})`;
       }
       if (lower === 'sqrt') {
-        return `sqrt(max(0.0, ${args[0] ?? '0.0'}))`;
+        // Vector first: GLSL has max(genType, float) but not max(float,
+        // genType), and MilkDrop bodies take sqrt of colour vectors.
+        return `sqrt(max(${args[0] ?? '0.0'}, 0.0))`;
       }
       if (lower === 'rsqrt') {
         return `inversesqrt(max(${args[0] ?? '1.0'}, 0.000001))`;
@@ -355,10 +363,10 @@ export function createCompositeGlslEmitter(
         return `round(${args[0] ?? '0.0'})`;
       }
       if (lower === 'min') {
-        return `min(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+        return `milkdropMin(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
       }
       if (lower === 'max') {
-        return `max(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+        return `milkdropMax(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
       }
       if (lower === 'clamp') {
         return `clamp(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'}, ${args[2] ?? '1.0'})`;
@@ -373,7 +381,7 @@ export function createCompositeGlslEmitter(
         return `length(${args[0] ?? '0.0'})`;
       }
       if (lower === 'dot') {
-        return `dot(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+        return `milkdropDot(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
       }
       if (lower === 'cross') {
         return `cross(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;

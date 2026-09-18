@@ -517,6 +517,88 @@ const MILKDROP_VIDEO_ECHO_HELPER = `
         }
 `;
 
+// HLSL intrinsics promote a scalar argument to the vector width of the
+// other arguments — lerp(float3, float, float), max(float, float3),
+// pow(float, float3), dot(float3, float) are all legal there and mean
+// "splat the scalar first". GLSL's mix/max/pow/dot have no such overloads
+// and reject the call, which took the whole program down: the largest
+// classes in the offline GLSL corpus scan (mix 70 presets, max 56, pow 18)
+// were exactly this. The emitter has no type inference, but GLSL has
+// function overloading, so these helpers let the GLSL compiler resolve the
+// promotion at compile time instead. The vector/vector and vector/scalar
+// forms GLSL already accepts are included so the emitter can call the
+// helper unconditionally.
+const MILKDROP_HLSL_PROMOTION_HELPERS = `
+        float milkdropLerp(float a, float b, float t) { return mix(a, b, t); }
+        vec2 milkdropLerp(vec2 a, vec2 b, float t) { return mix(a, b, t); }
+        vec2 milkdropLerp(vec2 a, vec2 b, vec2 t) { return mix(a, b, t); }
+        vec2 milkdropLerp(vec2 a, float b, float t) { return mix(a, vec2(b), t); }
+        vec2 milkdropLerp(float a, vec2 b, float t) { return mix(vec2(a), b, t); }
+        vec2 milkdropLerp(vec2 a, float b, vec2 t) { return mix(a, vec2(b), t); }
+        vec2 milkdropLerp(float a, vec2 b, vec2 t) { return mix(vec2(a), b, t); }
+        vec2 milkdropLerp(float a, float b, vec2 t) { return mix(vec2(a), vec2(b), t); }
+        vec3 milkdropLerp(vec3 a, vec3 b, float t) { return mix(a, b, t); }
+        vec3 milkdropLerp(vec3 a, vec3 b, vec3 t) { return mix(a, b, t); }
+        vec3 milkdropLerp(vec3 a, float b, float t) { return mix(a, vec3(b), t); }
+        vec3 milkdropLerp(float a, vec3 b, float t) { return mix(vec3(a), b, t); }
+        vec3 milkdropLerp(vec3 a, float b, vec3 t) { return mix(a, vec3(b), t); }
+        vec3 milkdropLerp(float a, vec3 b, vec3 t) { return mix(vec3(a), b, t); }
+        vec3 milkdropLerp(float a, float b, vec3 t) { return mix(vec3(a), vec3(b), t); }
+        vec4 milkdropLerp(vec4 a, vec4 b, float t) { return mix(a, b, t); }
+        vec4 milkdropLerp(vec4 a, vec4 b, vec4 t) { return mix(a, b, t); }
+        vec4 milkdropLerp(vec4 a, float b, float t) { return mix(a, vec4(b), t); }
+        vec4 milkdropLerp(float a, vec4 b, float t) { return mix(vec4(a), b, t); }
+        vec4 milkdropLerp(vec4 a, float b, vec4 t) { return mix(a, vec4(b), t); }
+        vec4 milkdropLerp(float a, vec4 b, vec4 t) { return mix(vec4(a), b, t); }
+        vec4 milkdropLerp(float a, float b, vec4 t) { return mix(vec4(a), vec4(b), t); }
+
+        float milkdropMax(float a, float b) { return max(a, b); }
+        vec2 milkdropMax(vec2 a, vec2 b) { return max(a, b); }
+        vec2 milkdropMax(vec2 a, float b) { return max(a, b); }
+        vec2 milkdropMax(float a, vec2 b) { return max(vec2(a), b); }
+        vec3 milkdropMax(vec3 a, vec3 b) { return max(a, b); }
+        vec3 milkdropMax(vec3 a, float b) { return max(a, b); }
+        vec3 milkdropMax(float a, vec3 b) { return max(vec3(a), b); }
+        vec4 milkdropMax(vec4 a, vec4 b) { return max(a, b); }
+        vec4 milkdropMax(vec4 a, float b) { return max(a, b); }
+        vec4 milkdropMax(float a, vec4 b) { return max(vec4(a), b); }
+
+        float milkdropMin(float a, float b) { return min(a, b); }
+        vec2 milkdropMin(vec2 a, vec2 b) { return min(a, b); }
+        vec2 milkdropMin(vec2 a, float b) { return min(a, b); }
+        vec2 milkdropMin(float a, vec2 b) { return min(vec2(a), b); }
+        vec3 milkdropMin(vec3 a, vec3 b) { return min(a, b); }
+        vec3 milkdropMin(vec3 a, float b) { return min(a, b); }
+        vec3 milkdropMin(float a, vec3 b) { return min(vec3(a), b); }
+        vec4 milkdropMin(vec4 a, vec4 b) { return min(a, b); }
+        vec4 milkdropMin(vec4 a, float b) { return min(a, b); }
+        vec4 milkdropMin(float a, vec4 b) { return min(vec4(a), b); }
+
+        // The base is floored at zero: pow() of a negative base is undefined
+        // in GLSL, and MilkDrop bodies feed it signal values that dip below.
+        float milkdropPow(float a, float b) { return pow(max(0.0, a), b); }
+        vec2 milkdropPow(vec2 a, vec2 b) { return pow(max(vec2(0.0), a), b); }
+        vec2 milkdropPow(vec2 a, float b) { return pow(max(vec2(0.0), a), vec2(b)); }
+        vec2 milkdropPow(float a, vec2 b) { return pow(vec2(max(0.0, a)), b); }
+        vec3 milkdropPow(vec3 a, vec3 b) { return pow(max(vec3(0.0), a), b); }
+        vec3 milkdropPow(vec3 a, float b) { return pow(max(vec3(0.0), a), vec3(b)); }
+        vec3 milkdropPow(float a, vec3 b) { return pow(vec3(max(0.0, a)), b); }
+        vec4 milkdropPow(vec4 a, vec4 b) { return pow(max(vec4(0.0), a), b); }
+        vec4 milkdropPow(vec4 a, float b) { return pow(max(vec4(0.0), a), vec4(b)); }
+        vec4 milkdropPow(float a, vec4 b) { return pow(vec4(max(0.0, a)), b); }
+
+        float milkdropDot(float a, float b) { return a * b; }
+        float milkdropDot(vec2 a, vec2 b) { return dot(a, b); }
+        float milkdropDot(vec2 a, float b) { return dot(a, vec2(b)); }
+        float milkdropDot(float a, vec2 b) { return dot(vec2(a), b); }
+        float milkdropDot(vec3 a, vec3 b) { return dot(a, b); }
+        float milkdropDot(vec3 a, float b) { return dot(a, vec3(b)); }
+        float milkdropDot(float a, vec3 b) { return dot(vec3(a), b); }
+        float milkdropDot(vec4 a, vec4 b) { return dot(a, b); }
+        float milkdropDot(vec4 a, float b) { return dot(a, vec4(b)); }
+        float milkdropDot(float a, vec4 b) { return dot(vec4(a), b); }
+`;
+
 // Aux-texture sampling and the control-driven feedback warp are needed by
 // both the feedback-blend pass (warp-texture displacement, legacy warp) and
 // the composite pass (overlay/comp-body sampling), so they live in one
@@ -617,6 +699,7 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
           vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
           return mix(sliceA, sliceB, sliceBlend);
         }
+${MILKDROP_HLSL_PROMOTION_HELPERS}
 `;
 
 // The control-driven feedback warp is shared by the warp pass and the
