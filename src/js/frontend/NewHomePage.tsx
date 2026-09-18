@@ -8,10 +8,11 @@ import type { ResumableAudioSource } from '../core/state/last-session-store.ts';
 import { getLastSession } from '../core/state/last-session-store.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
-import { getArrivalPresetId } from './arrival-url.ts';
+import { getArrivalAudioSource, getArrivalPresetId } from './arrival-url.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { LaunchSignalTrace } from './SignalField.tsx';
+import { resolveSharedArrival } from './shared-arrival.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 import { describePresetMood, STIMS_REPO_URL } from './workspace-helpers.ts';
@@ -58,6 +59,13 @@ export function NewHomePage() {
   // those writes indistinguishable from a real `?preset=` arrival: a bare "/"
   // visit could auto-start demo audio with no click.
   const [deepLinkPresetId] = useState(getArrivalPresetId);
+  // The source the link was copied from (see shared-arrival.ts). Only read
+  // alongside a preset: a bare `?audio=` is the app's own route state.
+  const [sharedArrival] = useState(() =>
+    deepLinkPresetId
+      ? resolveSharedArrival(getArrivalAudioSource())
+      : resolveSharedArrival(null),
+  );
 
   // Memoized: resolution of an id the catalog does NOT contain costs two
   // full catalog scans, and this component re-renders with workspace state.
@@ -119,14 +127,23 @@ export function NewHomePage() {
     // results) stranded the arrival on the generic launch form with no
     // feedback at all.
     if (!deepLinkEntry && !engine.missingRequestedPreset) return;
+    // A link copied from a mic, tab or YouTube session is offered as the
+    // launch button instead (see `shared` below): those sources need the
+    // recipient's gesture, and starting the demo over them said nothing.
+    if (sharedArrival.kind === 'offer') return;
     autoStartedRef.current = true;
     void engine.handleAudioStart('demo');
+    if (sharedArrival.notice) {
+      ui.setStatusMessage(sharedArrival.notice);
+    }
   }, [
     deepLinkPresetId,
     deepLinkEntry,
     engine.engineReady,
     engine.missingRequestedPreset,
     engine.handleAudioStart,
+    sharedArrival,
+    ui.setStatusMessage,
   ]);
 
   // Without attract mode (mobile, low-power) the engine only boots when this
@@ -143,16 +160,33 @@ export function NewHomePage() {
     );
   };
   const handlePlayDemo = () => startWithFeedback('demo');
-  const handleResume = () => {
-    if (!lastSession) return;
-    startWithFeedback(lastSession.source);
-  };
   const handleBrowsePresets = () => ui.updatePanel('browse');
 
-  const resume =
-    lastSession && resumeEntry
-      ? { session: lastSession, entry: resumeEntry }
-      : null;
+  // A shared source outranks the visitor's own last session: they followed
+  // a link to this preset with this source, and the sender's preset is what
+  // the card should show. The entry can still be null while the catalog
+  // loads (or for a stale id); the card then carries the prettified slug
+  // and no artwork rather than reverting to the generic pitch.
+  const resume: ResumeState =
+    sharedArrival.kind === 'offer' && deepLinkPresetId
+      ? {
+          session: { source: sharedArrival.source },
+          entry: deepLinkEntry,
+          title: deepLinkEntry?.title ?? prettifyPresetSlug(deepLinkPresetId),
+          shared: true,
+        }
+      : lastSession && resumeEntry
+        ? {
+            session: lastSession,
+            entry: resumeEntry,
+            title: resumeEntry.title,
+            shared: false,
+          }
+        : null;
+  const handleResume = () => {
+    if (!resume) return;
+    startWithFeedback(resume.session.source);
+  };
 
   // A `?preset=` arrival came for one specific preset; while the engine and
   // catalog get ready (up to a few seconds on mid devices), name it instead
@@ -190,8 +224,8 @@ export function NewHomePage() {
         {resume ? null : (
           <p className="stims-shell__launch-explainer">
             Every scene is a preset — a small visual program from the MilkDrop
-            community. Switch presets while the music plays, or generate your
-            own.
+            community. The demo is a built-in synth loop, not a song; switch
+            presets while it plays, or generate your own.
           </p>
         )}
         <AudioSources resume={resume} />
@@ -215,7 +249,10 @@ export function NewHomePage() {
 
 type ResumeState = {
   session: { source: ResumableAudioSource };
-  entry: PresetCatalogEntry;
+  entry: PresetCatalogEntry | null;
+  title: string;
+  /** True for a link that carried its sender's source, false for the visitor's own last session. */
+  shared: boolean;
 } | null;
 
 type DeepLinkState = {
@@ -265,17 +302,21 @@ function Header({
     return (
       <>
         <h1 id="stims-launch-title" className="stims-shell__launch-title">
-          Welcome back
+          {resume.shared ? 'Shared with you' : 'Welcome back'}
         </h1>
         <div className="stims-shell__launch-resume-card">
-          <PresetArtwork entry={entry} compact />
+          {entry ? <PresetArtwork entry={entry} compact /> : null}
           <div className="stims-shell__launch-resume-card-copy">
             <p className="stims-shell__launch-resume-card-title">
-              {entry.title}
+              {resume.title}
             </p>
-            <p className="stims-shell__launch-resume-card-meta">
-              {entry.author ? `by ${entry.author}` : describePresetMood(entry)}
-            </p>
+            {entry ? (
+              <p className="stims-shell__launch-resume-card-meta">
+                {entry.author
+                  ? `by ${entry.author}`
+                  : describePresetMood(entry)}
+              </p>
+            ) : null}
           </div>
         </div>
       </>
@@ -365,7 +406,7 @@ function Actions({
         >
           {isStarting
             ? 'Starting…'
-            : `Resume with ${RESUME_SOURCE_LABEL[resume.session.source]}`}
+            : `${resume.shared ? 'Start' : 'Resume'} with ${RESUME_SOURCE_LABEL[resume.session.source]}`}
         </button>
       ) : (
         <button
