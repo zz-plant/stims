@@ -176,10 +176,11 @@ export function BrowseSheetPanel({
     // the default browse view and a tile click is the "tap a card" this
     // panel's first-use hint is about.
     if (next.presetId) onPresetChosen?.(next.presetId);
-    ui.commitRoute({
-      ...ui.routeState,
+    ui.commitRoute((current) => ({
+      ...current,
       ...next,
-    });
+      panel: null,
+    }));
   };
   const setView = (next: boolean) => {
     setGridView(next);
