@@ -9,6 +9,7 @@ Stims is building a browser-native studio around audio-reactive, MilkDrop-inspir
 3. **One coherent studio.** Discovery, playback, editing, inspection, and recording should share one session.
 4. **Foundations are not features.** A service class, reserved signal, or API route is not shipped until it is connected, usable, and verified.
 5. **Direct formats and portable state.** Preserve `.milk` authoring and shareable session URLs rather than hiding the source format.
+6. **Frictionless audio & sensory comfort are core, not afterthoughts.** Listening to music and sensory regulation are why people open Stims; audio routing and photosensitive safety must never be hidden behind external setup hoops or buried configuration.
 
 ## Current baseline
 
@@ -23,36 +24,60 @@ See [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) for file-level stat
 
 ## Now: studio loop first, proof loop as a maintained floor
 
-The proof loop below is a floor, not a frontier: it stays green and does not grow. New evidence infrastructure ships only when a studio workflow needs it. The immediate work is the studio loop — browse → edit → compare → save → share → record.
+The proof loop below is a floor, not a frontier: it stays green and does not grow. New evidence infrastructure ships only when a studio workflow needs it. The immediate work is the studio loop — **browse → listen → edit → compare → save → share → record**.
 
-### Remix studio
+### Zero-friction audio routing (Closing the capture gap)
+
+Audio capture friction is the single largest hurdle for music listeners and creators.
+
+- Streamline system audio capture via browser `getDisplayMedia({ audio: true })` to capture desktop, Spotify, and streaming audio with zero third-party virtual cable drivers.
+- Direct URL audio streaming for YouTube and SoundCloud streams where CORS and browser permissions permit.
+- Enhanced local audio player: folder drag-and-drop playlist ingestion, ID3 metadata/artwork display, waveform seek bar with beat markers, and shuffle/repeat modes.
+- Visual microphone calibrator: live input VU meter, adjustable gain, noise gate, and ambient room frequency profile compensation.
+
+Exit criteria:
+
+- a user can start visualizing their system audio or a local playlist within 2 clicks from first visit without external software.
+
+### Remix studio & shader live-coding
 
 - Add dependable undo/redo and named snapshots.
-- Provide side-by-side or rapid A/B comparison against the source preset.
+- Provide side-by-side or rapid A/B comparison against the source preset (`Cmd/Ctrl+Shift+B`).
+- Live variable watcher HUD: real-time oscilloscope plotting for selected variables (`q1-q32`, `warp`, `zoom`, `rot`, `dx`, `dy`, custom vars).
+- Direct WGSL/GLSL shader tab allowing modern compute/fragment shader authoring alongside classic EEL2 equations.
+- Custom texture drag-and-drop: import user PNG/JPG sprites and feedback textures directly into the preset workspace.
 - Record remix provenance and retain source in exported `.milk` files or companion metadata.
 - Make generated or assisted edits inspectable as source diffs before application.
 - Add a share format that preserves the preset or a stable community identifier without requiring an account for local work.
 
 Exit criteria:
 
-- browse → edit → compare → save → share works without leaving the running session.
+- browse → edit → compare → save → share works without leaving the running session; and
+- variable watch graphs update at delivered display frame rates without hitching the main JS thread.
 
-### Creator-grade export
+### Creator-grade export & vertical formats
 
 - Harden the native renderer-resize and active-audio composition paths now implemented for recording.
+- Portrait and social aspect ratios: one-click render modes for 9:16 (1080×1920 for TikTok/Reels/Shorts) and 1:1 square with non-distorting coordinate projection.
+- Transparent background alpha channel export (`WebM with alpha` / `ProRes 4444`) for video editors overlaying visualizers on DJ footage.
+- On-screen track title & artwork overlay: customizable lower-third typography badge rendered directly into video frames.
+- Seamless video loop generator: export exact 15s and 30s seamless looping clips for Spotify Canvas and VJ banks.
 - Add deterministic frame pacing and loop-duration controls.
 - Verify codec, aspect-ratio, duration, and frame-count output in browser-backed tests.
 - Keep the existing `MediaRecorder` path as a clearly labeled compatibility fallback.
 
 Exit criteria:
 
-- "1080p" and "4K" describe measured render output rather than canvas container dimensions; and
-- exported audio-video files remain synchronized over a documented test duration.
+- "1080p", "4K", and "9:16 Vertical" describe measured render output rather than canvas container dimensions; and
+- exported audio-video files remain synchronized over a documented test duration without dropped frames.
 
 ### Make the large catalog useful
 
 - Improve preview reliability and cold-load behavior.
 - Rank by visual quality, evidence, performance, author, mood, and session relevance instead of relying on preset count.
+- Smart playlists & mood tagging: "Chill Ambient", "Hypnotic Fractals", "High-Energy DnB", "90s Cyber Retro".
+- Visual similarity search: find presets that match color distribution and motion dynamics using frame embeddings.
+- Community feedback: user upvoting, bookmarks with personal notes, and one-click glitch reporting.
 - Make queue, favorites, recent history, and shareable filtered views coherent on desktop and mobile.
 - Treat semantic and audio-profile matching as optional enhancements, never as blockers for local search.
 
@@ -74,19 +99,39 @@ Exit criteria:
 - public compatibility wording is generated or guarded against tracked sources of truth; and
 - unsupported or fallback behavior is visible rather than silent.
 
-### Flash-safety measurement
+### Sensory safety shield & comfort controls
 
-The bundled preset corpus was imported from the community without any photosensitive-seizure safety review. A real WCAG 2.3.1-grounded measurement tool now exists (`scripts/flash-analysis.ts` + `scripts/analyze-preset-flash.ts`, unit-tested, corpus-sampling built in) alongside the earlier placeholder-threshold tool (`bun run lab:flash-risk`). Sample runs report zero presets over threshold, and that zero has since been *explained* rather than left ambiguous: stage-by-stage measurement on rendered output confirmed capture sees full-amplitude change, the area floor is genuinely crossed (26.8–29.7% of a 10° window), and what stops a flash registering is directional incoherence — ~14% of the field brightening while ~13% darkens in the same frame. MilkDrop's texture-in-motion aesthetic does not produce the coherent field-wide oscillation WCAG's general flash threshold describes. The WCAG red-flash criterion is now implemented and unit-tested (`flash-analysis.ts`), but not yet run at corpus scale. One gate remains before this is a safety claim: every measurement used the synthetic preview waveform rather than real high-energy audio. See [`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete).
+The bundled preset corpus was imported from the community without any photosensitive-seizure safety review. Stims' core commitment to neurodivergent stimmers requires active protection, not just passive reporting. A real WCAG 2.3.1-grounded measurement tool now exists (`scripts/flash-analysis.ts` + `scripts/analyze-preset-flash.ts`, unit-tested, corpus-sampling built in) alongside the earlier placeholder-threshold tool (`bun run lab:flash-risk`). Sample runs report zero presets over threshold, and that zero has since been *explained* rather than left ambiguous: stage-by-stage measurement on rendered output confirmed capture sees full-amplitude change, the area floor is genuinely crossed (26.8–29.7% of a 10° window), and what stops a flash registering is directional incoherence — ~14% of the field brightening while ~13% darkens in the same frame. MilkDrop's texture-in-motion aesthetic does not produce the coherent field-wide oscillation WCAG's general flash threshold describes. The WCAG red-flash criterion is now implemented and unit-tested (`flash-analysis.ts`), but not yet run at corpus scale. One gate remains before this is a safety claim: every measurement used the synthetic preview waveform rather than real high-energy audio. See [`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete).
+
+- Active real-time photosensitive seizure shield: post-processing shader clamp that suppresses luminance oscillation faster than 3Hz, guaranteeing WCAG 2.3.1 compliance across any preset.
+- Universal motion & velocity dampener slider (0%–100%) to scale down rotation, zoom, and warp speed for motion-sickness or vestibular sensitivity.
+- Curated "Calm Stimming" catalog filter: smooth fluid dynamics, soft pastel transitions, and zero rapid strobing.
+- Dark-room viewing controls: global canvas brightness, gamma, and contrast dimmers.
+- Default-on flash-rate cap surfaced as a visible, persistent safety control, not a buried setting.
 
 Exit criteria:
 
 - the audit tool's apparent resource-exhaustion pattern (timeouts clustering late in a long run) is fixed and a full-corpus run completes without a large unmeasured tail;
-- a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape; and
-- a default-on flash-rate cap ships as a visible safety control, not a buried setting.
+- a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape;
+- real-time luminance clamp passes synthetic 15Hz square-wave flash torture test with zero frames exceeding WCAG 2.3.1 thresholds; and
+- motion dampener scales camera transforms down to full stillness without halting audio-reactive shape generation.
 
 ## Next: compatibility depth & runtime compiler milestones
 
-These deepen the compatibility lane and compiler runtime. Each item names the measurement it moves; where a count appears, it is the one the cited test or data file reports today.
+These deepen the compatibility lane, compiler runtime, and live-performance capabilities. Each item names the measurement it moves; where a count appears, it is the one the cited test or data file reports today.
+
+### Live performance, VJing & hardware control
+
+- WebMIDI controller mapping with interactive "MIDI Learn" mode: map physical knobs, faders, and pads to preset variables (`zoom`, `warp`, `decay`, `rot`).
+- Dedicated projector / external display window: pop out a clean, borderless fullscreen canvas window for secondary monitors or projectors while retaining controls and editor on primary display.
+- Live BPM tap tempo and manual phase nudge keys (`+`/`-`) to synchronize visual pulsing to live drummers or DJs.
+- DJ-style preset crossfader (A/B deck blending) with customizable transition shaders (wipe, blend, glitch, dissolve).
+- Emergency stage utilities: single-key Blackout (`B`), White Flash (`W`), and Visual Freeze (`F`).
+
+Exit criteria:
+
+- WebMIDI bindings persist across browser restarts and respond with sub-10ms latency; and
+- pop-out projector window maintains display-rate frame synchronization with zero UI chrome or cursor leaks.
 
 ### Dual-backend differential evidence (Closing the WebGL2 gap)
 
@@ -135,26 +180,30 @@ Exit criteria:
 Exit criteria:
 - Deterministic frame export completes 60 seconds of 4K 60fps video matching audio waveforms sample-for-sample.
 
-## Later: platform expansion
+## Later: platform expansion & ecosystem
 
 These workstreams begin only after their prerequisite user flows and proof contracts are stable.
 
-| Workstream | Prerequisite |
-| --- | --- |
-| Stims-native WebGPU preset lane | Stable backend contract, performance telemetry, and a format that produces visuals unavailable to the classic compatibility lane. |
-| Embeddable package or Web Component | Lifecycle, audio, preset, resize, and cleanup APIs proven inside the product and integration tests. |
-| Real stem-aware reactivity | On-device separation with measured latency, resource budgets, privacy posture, and populated runtime signals. |
-| Community catalog and sync | Stable preset identity, provenance, moderation, versioning, and local-first failure behavior. |
-| Multi-display or venue output | Deterministic timing, remote recovery, and a supported transport contract. |
+| Workstream | Prerequisite | User Value |
+| :--- | :--- | :--- |
+| **Progressive Web App (PWA) Offline App** | Service worker caching, local database preset store, offline audio synthesis | Installable desktop/mobile app running anywhere with complete offline preset access. |
+| **Community Catalog & Cloud Hub** | Stable preset identity, provenance, moderation, versioning, local-first storage | Public gallery to publish, discover, rate, and fork presets without filing GitHub PRs. |
+| **Embeddable NPM Package (`@stims/core`)** | Decoupled renderer engine, Web Component `<stims-player>`, clean lifecycle API | Drop-in visualizer library for musicians, portfolio sites, and web audio apps. |
+| **Real Stem-Aware Reactivity** | On-device WebGPU Demucs-lite or multi-band spectral isolation with fixed memory budget | Visuals reacting independently to isolated vocals, drums, basslines, and melody. |
+| **Standalone Desktop Builds (Tauri)** | Native audio loopback, multi-monitor window management, local file association | Lightweight `.dmg`/`.exe` with double-click `.milk` file associations and system audio loopback. |
+| **Stims-Native WebGPU Preset Lane** | Stable backend contract, performance telemetry, format validation | Next-generation preset format leveraging compute shaders, storage buffers, and 3D meshes. |
+| **Multi-Display or Venue Output** | Deterministic timing, remote recovery, and a supported transport contract | Multi-screen synchronized canvases spanning broad venue projection rigs. |
 
 ## Research, not roadmap commitments
 
-- neural audio-to-visual generation;
-- Gaussian-splat or latent rendering;
-- DMX, Art-Net, NDI, or Syphon bridges; and
-- a general plugin marketplace.
+Research code may exist for these areas, but it remains labeled as scaffolding until an end-to-end product workflow and verification plan exist:
 
-Research code may exist for these areas, but it should remain labeled as scaffolding until an end-to-end product workflow and verification plan exist.
+- **Syphon (macOS), Spout (Windows) & NDI Video Output**: Zero-latency GPU texture streaming into Resolume, TouchDesigner, and OBS via native sidecar or WebRTC bridges;
+- **Ableton Link Protocol Sync**: Low-latency local network tempo and phase sync over WebSockets/WebRTC;
+- **Art-Net / DMX Stage Lighting Bridge**: Real-time extraction of dominant color palettes and beat transients transmitted to stage DMX fixtures;
+- **WebXR 360° Immersive VR Dome**: Virtual reality celestial dome projection for Meta Quest and Apple Vision Pro;
+- **Neural audio-to-visual generation & Gaussian-splat rendering**; and
+- **General plugin marketplace**.
 
 AI-assisted authoring — text/image-to-preset generation, blending, and diff-inspectable assisted edits in the editor — is studio scope and already wired to the Remix workflow. It is distinct from "neural audio-to-visual generation" above, which is the unbuilt research direction.
 

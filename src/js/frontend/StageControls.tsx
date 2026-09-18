@@ -126,7 +126,7 @@ function transitionActionId(step: (typeof TRANSITION_STEPS)[number]) {
 const AUDIO_SOURCE_OPTIONS = [
   { source: 'demo' as const, shortLabel: 'Demo', name: 'Demo audio' },
   { source: 'microphone' as const, shortLabel: 'Mic', name: 'Microphone' },
-  { source: 'tab' as const, shortLabel: 'Tab', name: 'This tab' },
+  { source: 'tab' as const, shortLabel: 'Tab', name: 'Tab or system audio' },
 ];
 
 export function StageControls({

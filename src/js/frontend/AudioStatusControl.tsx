@@ -36,7 +36,7 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 const QUICK_SOURCES = [
   { source: 'demo' as const, label: 'Demo track' },
   { source: 'microphone' as const, label: 'Microphone' },
-  { source: 'tab' as const, label: 'This tab' },
+  { source: 'tab' as const, label: 'Tab or system audio' },
 ] satisfies ReadonlyArray<{
   source: 'demo' | 'microphone' | 'tab';
   label: string;
@@ -45,7 +45,7 @@ const QUICK_SOURCES = [
 const SOURCE_NAMES: Record<string, string> = {
   demo: 'Demo track',
   microphone: 'Microphone',
-  tab: 'Tab audio',
+  tab: 'Tab / System audio',
   file: 'Audio file',
   youtube: 'YouTube',
 };
@@ -79,7 +79,7 @@ function nextStepFor(
     return 'Check the input device and that your mic is not muted.';
   }
   if (source === 'tab') {
-    return 'Check the shared tab is playing, and that you ticked "Share tab audio".';
+    return 'Check the shared tab or system audio is playing, and that you ticked "Share audio".';
   }
   if (source === 'youtube' || source === 'file') {
     return 'Check playback is running and the volume is up.';

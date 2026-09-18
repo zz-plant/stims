@@ -529,13 +529,13 @@ export function useWorkspaceShellOrchestration({
       );
       const stream = await captureDisplayAudioStream({
         unavailableMessage:
-          'Tab and YouTube capture need a desktop browser. Use the microphone instead.',
+          'Tab, system, and YouTube capture need a desktop browser. Use the microphone instead.',
         missingAudioMessage:
           source === 'youtube'
             ? 'No YouTube audio track was captured. Re-share and enable Share tab audio.'
-            : 'No tab audio track was captured. Re-share and enable Share tab audio.',
+            : 'No tab or system audio track was captured. Re-share and enable Share audio.',
         // For YouTube the player lives in this tab, so pre-select it. For a
-        // plain tab capture the user is reaching for a different tab.
+        // plain tab/system capture the user is reaching for a different tab or desktop audio.
         preferCurrentTab: source === 'youtube',
         onEnded: () => {
           setStatusMessage(
