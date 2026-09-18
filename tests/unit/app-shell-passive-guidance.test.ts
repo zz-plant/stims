@@ -57,7 +57,7 @@ describe('passive first-use guidance', () => {
       act(() =>
         root.render(
           createElement(AudioMatchToast, {
-            match: { presetId: 'p', name: 'Match', score: 0.9 },
+            match: { presetId: 'p', name: 'Match' },
             onSelect: () => {},
             onDismiss: () => {
               dismissed += 1;
