@@ -22,7 +22,7 @@ import {
   Vector2,
   Vector4,
 } from 'three';
-import { RenderTarget, TSL } from 'three/webgpu';
+import { type NodeBuilder, RenderTarget, TSL } from 'three/webgpu';
 import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
 import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
 import {
@@ -722,7 +722,7 @@ export function createSampleAuxTextureNode(
     noisevol: ReturnType<typeof texture3D>;
   },
 ) {
-  const sampleAuxTexture2dNode = Fn(([source, sampleUv]: [any, any]) => {
+  const sampleAuxTexture2dBody = ([source, sampleUv]: [any, any]) => {
     const flat = vec4(0.5, 0.5, 0.5, 1);
     // Source ids and names both come from MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS;
     // an id with no entry here falls to the flat neutral, never into a
@@ -749,22 +749,57 @@ export function createSampleAuxTextureNode(
       },
       flat,
     );
-  })
-    // A layout makes TSL emit this once as a WGSL function instead of
-    // inlining the 16-branch chain at every call. `dynamic` reaches it from
-    // 25 sites in the generic composite pipeline, which inlined came to a
-    // 333KB fragment shader with 407 textureSample calls — 3.8s of GPU-process
-    // shader compile on an RK3576 (Mali-G52), during which the whole browser
-    // froze on every preset switch. As a function the same shader is ~10x
-    // smaller with identical semantics.
-    .setLayout({
-      name: 'milkdropSampleAuxTexture2d',
-      type: 'vec4',
-      inputs: [
-        { name: 'source', type: 'float' },
-        { name: 'sampleUv', type: 'vec2' },
-      ],
-    });
+  };
+  // A layout makes TSL emit this once as a WGSL function instead of
+  // inlining the 16-branch chain at every call. `dynamic` reaches it from
+  // 25 sites in the generic composite pipeline, which inlined came to a
+  // 333KB fragment shader with 407 textureSample calls — 3.8s of GPU-process
+  // shader compile on an RK3576 (Mali-G52), during which the whole browser
+  // froze on every preset switch. As a function the same shader is ~10x
+  // smaller with identical semantics.
+  const SAMPLE_AUX_TEXTURE_2D_LAYOUT = {
+    name: 'milkdropSampleAuxTexture2d',
+    type: 'vec4',
+    inputs: [
+      { name: 'source', type: 'float' },
+      { name: 'sampleUv', type: 'vec2' },
+    ],
+  };
+  // One layout Fn per NodeBuilder, not one for the module. Three caches a
+  // layout function's generated WGSL per Fn instance for the life of the
+  // backend (NodeBuilder.buildFunctionNode), which is sound only for a pure
+  // function of its inputs. This one captures sixteen texture bindings and
+  // their uv-matrix uniforms, and those are named per builder
+  // (`nodeUniform0`, `object.nodeUniform1`) and registered by whichever
+  // builder generates the code. The progressive-apply warm-up compiles
+  // throwaway materials over the same output nodes first, so the live
+  // material's builder inherited code naming the warm builder's uniforms
+  // and never registered its own — "struct member nodeUniform1 not found",
+  // "unresolved value 'nodeUniform0'", and a composite pipeline that failed
+  // to build on every preset switch after the first (prod telemetry,
+  // 2026-09-17). `builder.uniforms` is the per-builder naming scope itself,
+  // assigned once in the NodeBuilder constructor, so keying on it gives each
+  // builder a Fn whose code it generated. The code strings are identical
+  // across builders, so the renderer's code-keyed program cache still hits.
+  const createLayoutFn = () =>
+    Fn(sampleAuxTexture2dBody).setLayout(SAMPLE_AUX_TEXTURE_2D_LAYOUT);
+  const layoutFnByUniformScope = new WeakMap<
+    object,
+    ReturnType<typeof createLayoutFn>
+  >();
+  const sampleAuxTexture2dNode = Fn(
+    ([source, sampleUv]: [any, any], builder: NodeBuilder) => {
+      // `uniforms` is the builder's per-stage uniform table; the typings
+      // leave it out, but it is public and lives for the builder's lifetime.
+      const scope = (builder as NodeBuilder & { uniforms: object }).uniforms;
+      let layoutFn = layoutFnByUniformScope.get(scope);
+      if (!layoutFn) {
+        layoutFn = createLayoutFn();
+        layoutFnByUniformScope.set(scope, layoutFn);
+      }
+      return layoutFn(source, sampleUv);
+    },
+  );
 
   const atlasSliceUvNode = Fn(([sampleUv, sliceIndex]: [any, any]) => {
     const tileScale = float(1 / AUX_TEXTURE_ATLAS_GRID_SIZE);
