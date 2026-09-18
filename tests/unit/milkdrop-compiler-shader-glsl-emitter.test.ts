@@ -270,14 +270,19 @@ describe('milkdrop compiler shader GLSL emitter — member access', () => {
 // ─── Math Function Calls ───────────────────────────────────────────
 
 describe('milkdrop compiler shader GLSL emitter — math functions', () => {
-  test('mix emits GLSL mix', () => {
+  // mix/lerp, min/max, pow and dot go through the milkdrop* overload
+  // sets from feedback-manager-shared.ts, not the GLSL builtins: HLSL
+  // promotes a scalar argument to the other arguments' width and GLSL
+  // does not, and the emitter has no types to promote with, so the
+  // GLSL compiler's overload resolution does it.
+  test('mix emits the promoting lerp helper', () => {
     const glsl = emitShaderExpression('x = mix(0, 1, 0.5)');
-    expect(glsl).toBe('x = mix(0.0, 1.0, 0.5000000000);');
+    expect(glsl).toBe('x = milkdropLerp(0.0, 1.0, 0.5000000000);');
   });
 
-  test('lerp aliases to mix', () => {
+  test('lerp aliases to the same helper', () => {
     const glsl = emitShaderExpression('x = lerp(0, 1, 0.5)');
-    expect(glsl).toBe('x = mix(0.0, 1.0, 0.5000000000);');
+    expect(glsl).toBe('x = milkdropLerp(0.0, 1.0, 0.5000000000);');
   });
 
   test('sin/cos/tan emit directly', () => {
@@ -291,14 +296,15 @@ describe('milkdrop compiler shader GLSL emitter — math functions', () => {
     expect(glsl).toBe('x = abs(-(0.5000000000));');
   });
 
-  test('pow emits GLSL pow', () => {
+  test('pow emits the promoting helper, which floors the base at zero', () => {
     const glsl = emitShaderExpression('x = pow(2, 3)');
-    expect(glsl).toBe('x = pow(max(0.0, 2.0), 3.0);');
+    expect(glsl).toBe('x = milkdropPow(2.0, 3.0);');
   });
 
   test('sqrt emits GLSL sqrt', () => {
     const glsl = emitShaderExpression('x = sqrt(4)');
-    expect(glsl).toBe('x = sqrt(max(0.0, 4.0));');
+    // Vector-first so max() also accepts a vector radicand.
+    expect(glsl).toBe('x = sqrt(max(4.0, 0.0));');
   });
 
   test('clamp emits GLSL clamp', () => {
@@ -316,14 +322,18 @@ describe('milkdrop compiler shader GLSL emitter — math functions', () => {
     expect(glsl).toBe('x = smoothstep(0.0, 1.0, 0.5000000000);');
   });
 
-  test('min/max emit directly', () => {
-    expect(emitShaderExpression('x = min(0, 1)')).toBe('x = min(0.0, 1.0);');
-    expect(emitShaderExpression('x = max(0, 1)')).toBe('x = max(0.0, 1.0);');
+  test('min/max emit the promoting helpers', () => {
+    expect(emitShaderExpression('x = min(0, 1)')).toBe(
+      'x = milkdropMin(0.0, 1.0);',
+    );
+    expect(emitShaderExpression('x = max(0, 1)')).toBe(
+      'x = milkdropMax(0.0, 1.0);',
+    );
   });
 
-  test('if emits mix + step pattern', () => {
+  test('if emits lerp + step pattern', () => {
     const glsl = emitShaderExpression('x = if(cond, a, b)');
-    expect(glsl).toContain('mix(');
+    expect(glsl).toContain('milkdropLerp(');
     expect(glsl).toContain('step(0.0001,');
   });
 
@@ -618,7 +628,7 @@ describe('milkdrop compiler shader GLSL emitter — round-trip', () => {
     // Should contain both main and noise samples
     expect(glsl).toContain('currentTex');
     expect(glsl).toContain('sampleAuxTexture');
-    expect(glsl).toContain('mix(');
+    expect(glsl).toContain('milkdropLerp(');
     expect(glsl).toContain('signalBass');
   });
 
