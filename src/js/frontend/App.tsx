@@ -37,6 +37,7 @@ import {
   buildAudioProfile,
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
+import { setCrashTelemetryPreset } from '../core/services/crash-telemetry.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import {
   VIRTUAL_CLAUDE_DEVICE_ID,
@@ -459,6 +460,13 @@ function StimsWorkspaceAppShell() {
     liveMode,
     engineReady: engine.engineReady,
   });
+
+  // Crash rows are attributed to the preset on screen; without this the
+  // telemetry dataset could say a shader failed to compile but not on which
+  // preset.
+  useEffect(() => {
+    setCrashTelemetryPreset(engineSnapshot?.activePresetId ?? null);
+  }, [engineSnapshot?.activePresetId]);
 
   // Shared between the touch long-press gesture and the "L" keyboard
   // shortcut — one definition of "favorite whatever's currently playing"
