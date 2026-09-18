@@ -17,7 +17,10 @@
  * something still on screen. Failing loudly here means a black canvas, which
  * users read as the app being broken.
  */
-import { isFreezeFrameActive } from '../core/accessibility-preferences.ts';
+import {
+  getMotionScale,
+  isFreezeFrameActive,
+} from '../core/accessibility-preferences.ts';
 import { isAgentMode, setDebugSnapshot } from '../core/agent-api.ts';
 import {
   isLivePerformanceModeActive,
@@ -860,6 +863,7 @@ export function createMilkdropExperience({
     },
     capturedVideoOverlay,
     getFreezeFrame: () => isFreezeFrameActive(),
+    getMotionScale,
     traceRecorder,
   });
 

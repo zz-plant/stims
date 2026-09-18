@@ -46,6 +46,7 @@ import {
   shouldAutoAdvancePreset,
   shouldPrepareNextPreset,
 } from './lifecycle.ts';
+import { applyMotionDampening } from './motion-dampener.ts';
 import { estimateFrameBlendWorkload, MAX_BLEND_WORKLOAD } from './session.ts';
 import type { MilkdropTraceRecorder } from './trace-recorder.ts';
 import type { MilkdropTransitionController } from './transition-controller.ts';
@@ -94,6 +95,7 @@ export function createMilkdropExperienceFrameLoop({
   setPostprocessingPipeline,
   capturedVideoOverlay,
   getFreezeFrame,
+  getMotionScale,
   traceRecorder,
   beatClock,
 }: {
@@ -188,6 +190,8 @@ export function createMilkdropExperienceFrameLoop({
     }) => void;
   };
   getFreezeFrame: () => boolean;
+  /** Comfort preference, 0–1; below 1 the frame's motion is scaled toward rest. */
+  getMotionScale: () => number;
   /** Agent-mode live trace capture; absent outside agent mode. */
   traceRecorder?: MilkdropTraceRecorder | null;
   /** Tempo/bar tracking. Owned by the runtime so its snapshot can publish
@@ -376,10 +380,15 @@ export function createMilkdropExperienceFrameLoop({
             detailScale: detailScale * adaptiveDensityMultiplier,
           });
         }
-        const currentFrameState = applyMilkdropInteractionResponse(
-          rawFrameState,
-          frame.input,
-          activeBackend,
+        // After the interaction response, so a viewer's own drag or pinch
+        // is dampened by the same amount as the preset's motion.
+        const currentFrameState = applyMotionDampening(
+          applyMilkdropInteractionResponse(
+            rawFrameState,
+            frame.input,
+            activeBackend,
+          ),
+          getMotionScale(),
         );
         setCurrentFrameState(currentFrameState);
         blendWorkloadFrameState = currentFrameState;
