@@ -13,7 +13,7 @@ export function AudioMatchToast({
   onSelect,
   onDismiss,
 }: {
-  match: { presetId: string; name: string; score: number } | null;
+  match: { presetId: string; name: string } | null;
   onSelect: (presetId: string) => void;
   onDismiss: () => void;
 }) {
@@ -23,14 +23,17 @@ export function AudioMatchToast({
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
 
+  // Keyed on the preset, not the match object: the label is re-derived when
+  // the catalog fills in, and a re-derived object must not restart the clock.
+  const matchPresetId = match?.presetId ?? null;
   useEffect(() => {
-    if (!match || held) return;
+    if (matchPresetId === null || held) return;
     const timer = window.setTimeout(
       () => onDismissRef.current(),
       AUTO_DISMISS_MS,
     );
     return () => window.clearTimeout(timer);
-  }, [match, held]);
+  }, [matchPresetId, held]);
 
   if (!match) return null;
 
@@ -49,13 +52,18 @@ export function AudioMatchToast({
         }
       }}
     >
-      <span className="stims-shell__eyebrow">Audio match</span>
+      <span className="stims-shell__eyebrow">Suggested for this audio</span>
+      {/* No percentage: the score is embedding similarity between a
+          three-clause description of the audio ("vibrant red-centered
+          palette, dense edges, high motion") and a preset's description.
+          Dozens of presets tie near 1.0 on the same clauses, so "100%
+          match" claimed a precision the search does not have. */}
       <button
         type="button"
         className="stims-shell__text-button"
         onClick={() => onSelect(match.presetId)}
       >
-        {match.name} — {(match.score * 100).toFixed(0)}% match
+        {match.name}
       </button>
     </div>
   );

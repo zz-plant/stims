@@ -623,6 +623,10 @@ export function SettingsSheetPanel({
     : null;
   // Read once per panel open — the value only changes on a renderer probe,
   // which only happens on page load.
+  // The renderer choice only applies on the next page load, so the row
+  // offers the reload itself once a change is pending — "Reload to apply"
+  // in a four-second toast left people to find the browser's own button.
+  const [rendererReloadPending, setRendererReloadPending] = useState(false);
   const [rendererFallbackReason] = useState(() =>
     getLastRendererFallbackReason(),
   );
@@ -875,7 +879,7 @@ export function SettingsSheetPanel({
                     onCompatibilityModeChange(false);
                     setWebGPUCompatibilityGapOverride(false);
                   }
-                  ui.setStatusMessage('Renderer changed. Reload to apply.');
+                  setRendererReloadPending(true);
                 }}
               >
                 <option value="auto">Auto</option>
@@ -883,6 +887,22 @@ export function SettingsSheetPanel({
                 <option value="webgl">WebGL</option>
               </select>
             </div>
+            {rendererReloadPending ? (
+              <div className="ctl-row">
+                <span className="ctl-row__text">
+                  <span className="ctl-row__hint">
+                    The new renderer starts on the next load.
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="ctl-btn"
+                  onClick={() => window.location.reload()}
+                >
+                  Reload now
+                </button>
+              </div>
+            ) : null}
           </section>
 
           <section className="ctl-section">

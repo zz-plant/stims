@@ -714,21 +714,6 @@ export function isDocumentAudioActive(): boolean {
   return document.body.dataset.audioActive === 'true';
 }
 
-export function formatAudioSourceLabel(source: AudioSource | undefined | null) {
-  switch (source) {
-    case 'demo':
-      return 'Demo audio';
-    case 'microphone':
-      return 'Mic';
-    case 'tab':
-      return 'Tab audio';
-    case 'youtube':
-      return 'YouTube tab';
-    default:
-      return 'Waiting for sound';
-  }
-}
-
 export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
   const visualCertification = entry.visualCertification;
   const fidelityTier = entry.fidelityTier;
