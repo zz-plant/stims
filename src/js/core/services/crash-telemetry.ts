@@ -55,6 +55,15 @@ export type CrashTelemetryReport = {
 
 const entries: CrashTelemetryEntry[] = [];
 let installed = false;
+// The preset on screen when a crash entry is transmitted. Crash rows in the
+// telemetry dataset carried no preset for weeks, which turned "which presets
+// fail to compile on WebGPU" into a day of reproduction instead of one query.
+let activePresetId: string | null = null;
+
+/** Names the preset later crash entries are attributed to; null clears it. */
+export function setCrashTelemetryPreset(presetId: string | null) {
+  activePresetId = presetId;
+}
 
 function sanitizeMessage(value: unknown): string {
   if (typeof value === 'string') {
@@ -101,6 +110,7 @@ export function buildCrashTelemetryTransmitPayload(
     event: `crash:${entry.type}`,
     error: entry.message.slice(0, 256),
     renderer: entry.renderer,
+    presetId: activePresetId ?? undefined,
     userAgent:
       typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
   };
@@ -312,6 +322,7 @@ export function resetCrashTelemetryForTests() {
   installed = false;
   entries.length = 0;
   transmittedCount = 0;
+  activePresetId = null;
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {

@@ -8,6 +8,7 @@ import {
   recordWebGpuDeviceLost,
   recordWebGpuUncapturedError,
   resetCrashTelemetryForTests,
+  setCrashTelemetryPreset,
 } from '../../src/js/core/services/crash-telemetry.ts';
 
 describe('crash telemetry', () => {
@@ -78,6 +79,28 @@ describe('crash telemetry', () => {
 
     expect(payload.event).toBe('crash:webgl-context-lost');
     expect(payload.error).toBe('WebGL context lost: power saving');
+    expect(payload.presetId).toBeUndefined();
+  });
+
+  test('attributes a crash to the preset on screen when one is named', () => {
+    setCrashTelemetryPreset('geiss-brain-zoom-4');
+    const payload = buildCrashTelemetryTransmitPayload({
+      type: 'webgpu-uncaptured-error',
+      timestamp: 1,
+      iso: '1970-01-01T00:00:00.001Z',
+      message: 'Error while parsing WGSL',
+    });
+    expect(payload.presetId).toBe('geiss-brain-zoom-4');
+
+    setCrashTelemetryPreset(null);
+    expect(
+      buildCrashTelemetryTransmitPayload({
+        type: 'manual',
+        timestamp: 2,
+        iso: '1970-01-01T00:00:00.002Z',
+        message: 'after unload',
+      }).presetId,
+    ).toBeUndefined();
   });
 
   test('does not transmit when no optional API endpoint is configured', () => {
