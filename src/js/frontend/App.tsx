@@ -474,7 +474,7 @@ function StimsWorkspaceAppShell() {
     ui.setStatusMessage(
       activePreset?.isFavorite
         ? 'Removed from saved presets.'
-        : 'Saved preset.',
+        : 'Saved on this device.',
     );
   };
 
@@ -941,8 +941,8 @@ function StimsWorkspaceAppShell() {
       {
         id: 'audio-tab',
         group: 'Audio',
-        label: "Use this tab's audio",
-        keywords: ['source', 'capture'],
+        label: 'Use tab or system audio',
+        keywords: ['source', 'capture', 'spotify', 'system', 'screen'],
         run: () => startAudioSource(engineRef.current, 'tab'),
       },
       ...(liveMode
