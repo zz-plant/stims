@@ -439,8 +439,12 @@ describe('branch flattening for direct shader execution', () => {
     const targets = analysis.directProgramStatements.map(
       (statement) => statement.target,
     );
-    // Both branches survive as assignments to the same variable...
-    expect(targets.filter((target) => target === 'ret_2')).toHaveLength(3);
+    // The bare `vec3 ret_2` declaration seeds a zero write (so a later
+    // swizzle write or read never meets an undefined name), then the
+    // unconditional write, then both branches survive as assignments to
+    // the same variable...
+    expect(targets.filter((target) => target === 'ret_2')).toHaveLength(4);
+    expect(analysis.directProgramLines[0]).toBe('ret_2 = vec3(0.0)');
     // ...and the else arm is the complement of the then arm, not a second
     // unconditional write.
     const lines = analysis.directProgramLines.join('\n');
