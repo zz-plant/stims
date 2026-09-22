@@ -587,6 +587,13 @@ const MILKDROP_HLSL_PROMOTION_HELPERS = `
         vec4 milkdropPow(vec4 a, float b) { return pow(max(vec4(0.0), a), vec4(b)); }
         vec4 milkdropPow(float a, vec4 b) { return pow(vec4(max(0.0, a)), b); }
 
+        // HLSL truncates a vector assigned to a float to its first
+        // component (\`float bl = GetBlur2(uv);\`); GLSL rejects it.
+        float milkdropScalar(float v) { return v; }
+        float milkdropScalar(vec2 v) { return v.x; }
+        float milkdropScalar(vec3 v) { return v.x; }
+        float milkdropScalar(vec4 v) { return v.x; }
+
         float milkdropDot(float a, float b) { return a * b; }
         float milkdropDot(vec2 a, vec2 b) { return dot(a, b); }
         float milkdropDot(vec2 a, float b) { return dot(a, vec2(b)); }
@@ -1616,19 +1623,30 @@ function classifyPerFrameVariable(
       if (/^\s*(?:-?\d+|int\s*\(.*\))\s*$/u.test(rhs)) {
         integerAssignments += 1;
       }
+      // A constructor sizes the variable only when it is the whole RHS:
+      // `d = vec4(1.0 / texelSize, texelSize).zw` is a vec2.
       const constructorMatch = rhs.match(/^\s*vec([234])\s*\(/u);
-      if (constructorMatch) {
+      if (
+        constructorMatch &&
+        rhs
+          .slice(closingParenIndex(rhs, constructorMatch[0].length - 1) + 1)
+          .trim() === ''
+      ) {
         constructorSize = Math.max(
           constructorSize ?? 0,
           Number(constructorMatch[1]),
         );
         continue;
       }
+      // Only a swizzle at the RHS's top level sizes the variable: in
+      // `l2 = lum(texture2D(…).xyz * scale1 + bias1)` the `.xyz` is an
+      // argument, and the result is lum()'s float. Counting it declared l2
+      // vec3 and failed the scalar assignment.
       for (const knownMatch of rhs.matchAll(
         /\b([a-zA-Z_][a-zA-Z0-9_]*)\.([xyzwrgba]{1,4})\b/gu,
       )) {
         const knownSize = MILKDROP_KNOWN_VECTOR_SIZES[knownMatch[1]];
-        if (knownSize) {
+        if (knownSize && parenDepthAt(rhs, knownMatch.index ?? 0) === 0) {
           widestComponentIndex = Math.max(
             widestComponentIndex,
             knownMatch[2].length - 1,
@@ -1641,6 +1659,9 @@ function classifyPerFrameVariable(
       // signal as a named-identifier swizzle but the regex above requires a
       // bare identifier before the dot, so it won't match a `)` there.
       for (const inlineMatch of rhs.matchAll(/\)\.([xyzwrgba]{1,4})\b/gu)) {
+        // Depth after the closing paren: 0 means the swizzled call is not
+        // itself an argument to another call.
+        if (parenDepthAt(rhs, (inlineMatch.index ?? 0) + 1) !== 0) continue;
         widestComponentIndex = Math.max(
           widestComponentIndex,
           inlineMatch[1].length - 1,
@@ -1669,6 +1690,37 @@ function classifyPerFrameVariable(
           ? 'vec2'
           : 'float';
   return { name, isLocalScratch: true, type };
+}
+
+/** Index of the `)` closing the `(` at `open`, or the text's end. */
+function closingParenIndex(text: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < text.length; i += 1) {
+    if (text[i] === '(') depth += 1;
+    else if (text[i] === ')') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return text.length;
+}
+
+/**
+ * Unclosed *call* parens before `index` in `text` — a `(` directly after an
+ * identifier. Grouping parens don't count: `(tex.xyz * s + b)` is still the
+ * vector, `lum(tex.xyz)` is not.
+ */
+function parenDepthAt(text: string, index: number): number {
+  const stack: boolean[] = [];
+  for (let i = 0; i < index; i += 1) {
+    const char = text[i];
+    if (char === '(') {
+      stack.push(/[A-Za-z0-9_]\s*$/u.test(text.slice(0, i)));
+    } else if (char === ')') {
+      stack.pop();
+    }
+  }
+  return stack.filter(Boolean).length;
 }
 
 function buildPerFrameVariableDeclarations(
