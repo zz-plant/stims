@@ -8,7 +8,7 @@
     />
     <meta
       name="description"
-      content="Compatibility and performance guide for Stims, including browser support, lighter rendering fallback, and what to expect before you press play."
+      content="Which browsers and devices run Stims well, what it does when frames start dropping, and which settings to change if a preset stutters."
     />
     <meta name="application-name" content="Stims" />
     <meta name="robots" content="index,follow" />
@@ -33,7 +33,7 @@
     />
     <meta
       property="og:description"
-      content="See what runs best in Stims, how lighter rendering behaves, and what to expect before you start."
+      content="Which browsers and devices run Stims well, and what to change if a preset stutters."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://toil.fyi/performance/" />
@@ -48,7 +48,7 @@
     />
     <meta
       name="twitter:description"
-      content="See what runs best in Stims, how lighter rendering behaves, and what to expect before you start."
+      content="Which browsers and devices run Stims well, and what to change if a preset stutters."
     />
     <meta name="twitter:image" content="https://toil.fyi/og/performance.png" />
     <script type="application/ld+json">
@@ -58,10 +58,10 @@
         "mainEntity": [
           {
             "@type": "Question",
-            "name": "What browser setup is best for Stims music visualizer?",
+            "name": "What does Stims need to run?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "A recent laptop or desktop browser with WebGL or WebGPU hardware acceleration yields the richest motion, color, and rendering detail."
+              "text": "A browser with WebGL2 and hardware acceleration turned on. Stims uses WebGPU where the browser supports it and falls back to WebGL2 otherwise."
             }
           },
           {
@@ -69,7 +69,7 @@
             "name": "Does Stims work on mobile phones and tablets?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes. Stims provides touch-friendly controls and can reduce rendering resolution, feedback-buffer size, and visual density when measured frame cadence misses the device budget."
+              "text": "Yes. The controls work by touch, and when a phone cannot keep up Stims lowers resolution, feedback-buffer size, and particle density so the preset keeps moving."
             }
           },
           {
@@ -77,7 +77,7 @@
             "name": "How do I play audio in Stims?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "You can start immediately with built-in demo audio without granting permissions, or optionally connect your microphone, room audio, browser tab, or YouTube playback."
+              "text": "Press Play demo to start with built-in audio that needs no permission. You can also use a microphone, a local file, a browser tab, or a YouTube link."
             }
           }
         ]
@@ -91,15 +91,16 @@
         <p class="stims-performance__eyebrow">Before you start</p>
         <h1>Compatibility and performance</h1>
         <p class="stims-performance__lede">
-          Stims starts fast with demo audio, then adjusts to your browser and
-          hardware. This page tells you what to expect before you dive in.
+          Stims runs in any browser with WebGL2. It uses WebGPU where the
+          browser supports it, and lowers its own detail when frames start
+          dropping.
         </p>
         <div class="stims-performance__hero-actions">
           <a class="stims-performance__button stims-performance__button--primary" href="/">
             Open Stims
           </a>
           <a class="stims-performance__button" href="/?panel=browse">
-            Browse looks first
+            Browse presets
           </a>
         </div>
       </section>
@@ -107,62 +108,66 @@
       <section class="stims-performance__grid">
         <article class="stims-performance__card">
           <p class="stims-performance__label">Best case</p>
-          <h2>Recent laptop or desktop browser</h2>
+          <h2>A recent laptop or desktop</h2>
           <p>
-            This is where the richest motion, color, and layering tend to show
-            up, especially on newer hardware with stable graphics drivers.
+            Heavy presets need a discrete or recent integrated GPU and
+            up-to-date graphics drivers to run at full resolution.
           </p>
         </article>
         <article class="stims-performance__card">
-          <p class="stims-performance__label">Expected fallback</p>
-          <h2>The same preset with less rendering pressure</h2>
+          <p class="stims-performance__label">When frames drop</p>
+          <h2>Same preset, less detail</h2>
           <p>
-            If Stims eases back on rendering load, the preset keeps running
-            while resolution, feedback buffers, or visual density may become
-            lighter.
+            Stims lowers resolution, feedback-buffer size, and particle
+            density. The preset's equations and its response to audio do
+            not change.
           </p>
         </article>
         <article class="stims-performance__card">
-          <p class="stims-performance__label">Fastest first run</p>
+          <p class="stims-performance__label">First run</p>
           <h2>Start with demo audio</h2>
           <p>
-            Demo audio avoids permission friction and gets everything moving
-            immediately. Microphone and tab capture are optional upgrades.
+            Play demo needs no microphone or tab permission. Switch to your own
+            audio once a preset is running.
           </p>
         </article>
       </section>
 
       <section class="stims-performance__section">
         <div class="stims-performance__section-copy">
-          <p class="stims-performance__eyebrow">What to expect</p>
-          <h2>Browser and device guidance</h2>
+          <p class="stims-performance__eyebrow">By device</p>
+          <h2>What to expect</h2>
         </div>
         <table class="stims-performance__table">
           <caption class="sr-only">
-            Browser guidance
+            Expected behavior by device
           </caption>
           <thead>
             <tr>
-              <th scope="col">Setup</th>
-              <th scope="col">Expectation</th>
+              <th scope="col">Device</th>
+              <th scope="col">Expect</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <th scope="row">Newer desktop browser</th>
-              <td>Richest detail and the best shot at the heaviest rendering stack.</td>
+              <th scope="row">Recent desktop or laptop</th>
+              <td>Full resolution on most presets, including the heaviest shaders.</td>
             </tr>
             <tr>
               <th scope="row">Older laptop or integrated graphics</th>
-              <td>Stims may ease back to keep motion stable.</td>
+              <td>Detail drops on heavy presets to hold the frame rate.</td>
+            </tr>
+            <tr>
+              <th scope="row">Laptop on battery</th>
+              <td>Capped at 60fps, and at 30fps below 35% charge. Settings can turn this off.</td>
             </tr>
             <tr>
               <th scope="row">Phone or tablet</th>
-              <td>Expect a cleaner, lighter run with touch-friendly controls.</td>
+              <td>Starts at a lower quality step. Touch gestures change and steer presets.</td>
             </tr>
             <tr>
-              <th scope="row">TV-style browser</th>
-              <td>Use the default quick looks first and keep extra tuning minimal.</td>
+              <th scope="row">TV browser</th>
+              <td>Choose TV balanced in Settings and leave the other options alone.</td>
             </tr>
           </tbody>
         </table>
@@ -170,46 +175,45 @@
 
       <section class="stims-performance__section stims-performance__section--split">
         <article class="stims-performance__card">
-          <p class="stims-performance__label">When things look simpler</p>
-          <h2>What fallback really means</h2>
+          <p class="stims-performance__label">Automatic</p>
+          <h2>What Stims changes on its own</h2>
           <ul>
-            <li>Stims may reduce resolution, feedback buffers, or visual density.</li>
-            <li>The preset equations and audio-reactive behavior keep running.</li>
-            <li>You can keep using the app without digging through technical settings.</li>
+            <li>Resolution, feedback-buffer size, and particle density.</li>
+            <li>Detail steps back up once frames have room again.</li>
+            <li>Settings shows whether detail is currently below what you chose.</li>
           </ul>
         </article>
         <article class="stims-performance__card">
-          <p class="stims-performance__label">Quick fixes</p>
-          <h2>If the first run feels rough</h2>
+          <p class="stims-performance__label">Manual</p>
+          <h2>If a preset stutters</h2>
           <ul>
-            <li>Use demo audio first instead of microphone or tab capture.</li>
-            <li>Open Look and try Battery saver or TV balanced.</li>
-            <li>Enable the steadier-hardware toggle inside Advanced tuning.</li>
+            <li>In Settings → Visuals &amp; Display, pick Battery saver.</li>
+            <li>Lower Resolution limit or Particle density under Performance.</li>
+            <li>Set Renderer to WebGL if WebGPU misbehaves on your machine.</li>
           </ul>
         </article>
       </section>
 
       <section class="stims-performance__section">
         <div class="stims-performance__section-copy">
-          <p class="stims-performance__eyebrow">Measured, not universal</p>
+          <p class="stims-performance__eyebrow">One measurement</p>
           <h2>How performance changes are checked</h2>
           <p>
-            Stims compares code changes in a real browser while holding the
-            preset, audio, viewport, renderer, and quality step constant. In
-            one equation-heavy WebGPU stress case on an Apple M1 Max, a JIT
-            hot-loop change reduced average frame work from 17.56 ms to
-            15.31 ms at 4× CPU throttling, while median delivered FPS moved
-            from 58.14 to 59.88.
+            A code change is benchmarked in a real browser with the preset,
+            audio, viewport, renderer, and quality step held constant. In one
+            equation-heavy WebGPU case on an Apple M1 Max, a JIT change cut
+            average frame work from 17.56 ms to 15.31 ms at 4× CPU throttling,
+            and median FPS went from 58.14 to 59.88.
           </p>
           <p>
-            That result is evidence for one preset on one host, not an FPS
-            promise for every device. The full method and the noisy tier that
-            was not promoted are documented in the repository's
+            That is one preset on one machine, not a promise about yours. The
+            method, and the noisier tier that was left out, are in the
+            repository's
             <a
               class="stims-performance__text-link"
               href="https://github.com/zz-plant/stims/blob/main/docs/RUNTIME_PERFORMANCE.md"
             >
-              runtime performance evidence
+              runtime performance notes
             </a>.
           </p>
         </div>
@@ -218,12 +222,12 @@
       <section class="stims-performance__section">
         <div class="stims-performance__section-copy">
           <p class="stims-performance__eyebrow">First steps</p>
-          <h2>The easiest way in</h2>
+          <h2>Getting started</h2>
         </div>
         <ol class="stims-performance__steps">
-          <li>Open Stims and press <strong>Play with demo audio</strong>.</li>
-          <li>Switch through a few looks until you find one you want to stay with.</li>
-          <li>Only then move to your own mic, room, tab, or YouTube audio.</li>
+          <li>Open Stims and press <strong>Play demo</strong>.</li>
+          <li>Press → or swipe to try other presets.</li>
+          <li>Then switch to your own audio: a microphone, a file, a tab, or a YouTube link.</li>
         </ol>
       </section>
     </main>

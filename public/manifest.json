@@ -1,7 +1,7 @@
 {
   "name": "Stims",
   "short_name": "Stims",
-  "description": "Browser-native MilkDrop-inspired visualizer with curated favorites, live editing, and preset import/export. Open-source, no accounts required.",
+  "description": "MilkDrop in the browser: play and edit the original .milk presets against any audio. Open source, no account.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b1014",
@@ -45,7 +45,7 @@
     {
       "name": "Start visualizer",
       "short_name": "Play",
-      "description": "Open Stims ready to play visuals.",
+      "description": "Open Stims on the start screen.",
       "url": "/?source=pwa",
       "icons": [
         {
