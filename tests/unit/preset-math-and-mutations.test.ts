@@ -63,8 +63,17 @@ per_pixel=warp = warp + 0.05 * sin(ang * 4.0);
     expect(analysis.motion.hasRotation).toBe(true);
     expect(analysis.motion.hasWarp).toBe(true);
     expect(analysis.audioReactivity.reactsToBass).toBe(true);
-    expect(analysis.colors.primaryHueHint).toContain('Neon synthwave');
-    expect(analysis.summary).toContain('preset');
+    expect(analysis.colors.primaryHueHint).toBe('Magenta');
+    expect(analysis.summary).toContain('Audio: reacts to bass.');
+  });
+
+  it('reads the numbered equation lines real .milk files use', () => {
+    const analysis = analyzePresetMath(
+      'per_frame_1=rot = 0.1 * treb;\nper_pixel_1=zoom = zoom + 0.01 * bass;',
+    );
+    expect(analysis.motion.hasRotation).toBe(true);
+    expect(analysis.audioReactivity.reactsToBass).toBe(true);
+    expect(analysis.audioReactivity.reactsToTreble).toBe(true);
   });
 });
 

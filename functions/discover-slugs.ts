@@ -16,7 +16,7 @@ export const DISCOVER_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Audio-Reactive',
     collectionTag: 'collection:audio-reactive',
     description:
-      'Explore audio-reactive MilkDrop presets that turn music into motion in your browser.',
+      'MilkDrop presets that react to the audio you play, in your browser.',
   },
   {
     kind: 'topic',
@@ -24,7 +24,7 @@ export const DISCOVER_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Ambient',
     searchQuery: 'ambient',
     description:
-      'Explore ambient MilkDrop presets for slow, atmospheric music visualization.',
+      'Slow, atmospheric MilkDrop presets, playing live in your browser.',
   },
   {
     kind: 'topic',
@@ -32,39 +32,35 @@ export const DISCOVER_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Fractal',
     searchQuery: 'fractal',
     description:
-      'Explore recursive and fractal MilkDrop presets running live in your browser.',
+      'Recursive and fractal MilkDrop presets, playing live in your browser.',
   },
   {
     kind: 'topic',
     slug: 'geometric',
     label: 'Geometric',
     searchQuery: 'geometric',
-    description:
-      'Explore geometric MilkDrop presets built from lines, shapes, symmetry, and motion.',
+    description: 'MilkDrop presets built from lines, shapes, and symmetry.',
   },
   {
     kind: 'topic',
     slug: 'hall-of-fame',
     label: 'Hall of Fame',
     collectionTag: 'collection:hall-of-fame',
-    description:
-      'Explore standout MilkDrop presets selected from the Stims catalog.',
+    description: 'Hand-picked MilkDrop presets from the Stims catalog.',
   },
   {
     kind: 'topic',
     slug: 'neon',
     label: 'Neon',
     searchQuery: 'neon',
-    description:
-      'Explore neon MilkDrop presets with luminous color and high-contrast motion.',
+    description: 'Bright, high-contrast neon MilkDrop presets.',
   },
   {
     kind: 'topic',
     slug: 'particles',
     label: 'Particle',
     searchQuery: 'particles',
-    description:
-      'Explore particle-driven MilkDrop presets that react live to music.',
+    description: 'Particle-based MilkDrop presets that react to music.',
   },
   {
     kind: 'topic',
@@ -72,7 +68,7 @@ export const DISCOVER_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Psychedelic',
     searchQuery: 'psychedelic',
     description:
-      'Explore psychedelic MilkDrop presets with fluid color, feedback, and motion.',
+      'Psychedelic MilkDrop presets built on color feedback and warping.',
   },
   {
     kind: 'topic',
@@ -80,15 +76,14 @@ export const DISCOVER_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Retro',
     searchQuery: 'retro',
     description:
-      'Explore retro MilkDrop presets inspired by classic music visualizers.',
+      'Retro MilkDrop presets in the style of early music visualizers.',
   },
   {
     kind: 'topic',
     slug: 'space',
     label: 'Space',
     searchQuery: 'space',
-    description:
-      'Explore space-themed MilkDrop presets with stars, tunnels, and cosmic motion.',
+    description: 'Space-themed MilkDrop presets: stars, tunnels, and nebulae.',
   },
   {
     kind: 'topic',
@@ -96,7 +91,7 @@ export const DISCOVER_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Trippy',
     searchQuery: 'trippy',
     description:
-      'Explore trippy MilkDrop presets with animated feedback and shifting geometry.',
+      'Trippy MilkDrop presets with feedback trails and shifting geometry.',
   },
   {
     kind: 'topic',
@@ -104,23 +99,21 @@ export const DISCOVER_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Tunnel',
     searchQuery: 'tunnel',
     description:
-      'Explore tunnel MilkDrop presets that turn music into forward motion.',
+      'MilkDrop presets that fly you down a tunnel in time with the music.',
   },
   {
     kind: 'topic',
     slug: 'waveform',
     label: 'Waveform',
     searchQuery: 'waveform',
-    description:
-      'Explore MilkDrop presets that make the live audio waveform part of the artwork.',
+    description: 'MilkDrop presets built around the live audio waveform.',
   },
   {
     kind: 'topic',
     slug: 'webgpu-showcase',
     label: 'WebGPU Showcase',
     collectionTag: 'collection:webgpu-showcase',
-    description:
-      'Explore MilkDrop presets available through Stims guarded WebGPU renderer path.',
+    description: "MilkDrop presets that run on Stims' WebGPU renderer.",
   },
 ];
 
@@ -131,7 +124,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Geiss',
     author: 'Geiss',
     description:
-      'Explore MilkDrop presets credited to Geiss and run them live in your browser.',
+      'MilkDrop presets credited to Geiss, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -139,7 +132,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Flexi',
     author: 'Flexi',
     description:
-      'Explore MilkDrop presets credited to Flexi and run them live in your browser.',
+      'MilkDrop presets credited to Flexi, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -147,7 +140,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Martin',
     author: 'Martin',
     description:
-      'Explore MilkDrop presets credited to Martin and run them live in your browser.',
+      'MilkDrop presets credited to Martin, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -155,7 +148,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Rovastar',
     author: 'Rovastar',
     description:
-      'Explore MilkDrop presets credited to Rovastar and run them live in your browser.',
+      'MilkDrop presets credited to Rovastar, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -163,7 +156,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Eo.S.',
     author: 'Eo.S.',
     description:
-      'Explore MilkDrop presets credited to Eo.S. and run them live in your browser.',
+      'MilkDrop presets credited to Eo.S., playing live in your browser.',
   },
   {
     kind: 'author',
@@ -171,7 +164,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Phat',
     author: 'Phat',
     description:
-      'Explore MilkDrop presets credited to Phat and run them live in your browser.',
+      'MilkDrop presets credited to Phat, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -179,7 +172,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Stahlregen',
     author: 'Stahlregen',
     description:
-      'Explore MilkDrop presets credited to Stahlregen and run them live in your browser.',
+      'MilkDrop presets credited to Stahlregen, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -187,7 +180,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Unchained',
     author: 'Unchained',
     description:
-      'Explore MilkDrop presets credited to Unchained and run them live in your browser.',
+      'MilkDrop presets credited to Unchained, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -195,7 +188,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Fishbrain',
     author: 'Fishbrain',
     description:
-      'Explore MilkDrop presets credited to Fishbrain and run them live in your browser.',
+      'MilkDrop presets credited to Fishbrain, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -203,7 +196,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Aderrasi',
     author: 'Aderrasi',
     description:
-      'Explore MilkDrop presets credited to Aderrasi and run them live in your browser.',
+      'MilkDrop presets credited to Aderrasi, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -211,7 +204,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Zylot',
     author: 'Zylot',
     description:
-      'Explore MilkDrop presets credited to Zylot and run them live in your browser.',
+      'MilkDrop presets credited to Zylot, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -219,7 +212,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Shifter',
     author: 'Shifter',
     description:
-      'Explore MilkDrop presets credited to Shifter and run them live in your browser.',
+      'MilkDrop presets credited to Shifter, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -227,7 +220,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Mig',
     author: 'Mig',
     description:
-      'Explore MilkDrop presets credited to Mig and run them live in your browser.',
+      'MilkDrop presets credited to Mig, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -235,7 +228,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'ORB',
     author: 'ORB',
     description:
-      'Explore MilkDrop presets credited to ORB and run them live in your browser.',
+      'MilkDrop presets credited to ORB, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -243,7 +236,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Suksma',
     author: 'suksma',
     description:
-      'Explore MilkDrop presets credited to Suksma and run them live in your browser.',
+      'MilkDrop presets credited to Suksma, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -251,7 +244,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Cope',
     author: 'cope',
     description:
-      'Explore MilkDrop presets credited to Cope and run them live in your browser.',
+      'MilkDrop presets credited to Cope, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -259,7 +252,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Goody',
     author: 'Goody',
     description:
-      'Explore MilkDrop presets credited to Goody and run them live in your browser.',
+      'MilkDrop presets credited to Goody, playing live in your browser.',
   },
   {
     kind: 'author',
@@ -267,7 +260,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Krash',
     author: 'Krash',
     description:
-      'Explore MilkDrop presets credited to Krash and run them live in your browser.',
+      'MilkDrop presets credited to Krash, playing live in your browser.',
   },
 ];
 

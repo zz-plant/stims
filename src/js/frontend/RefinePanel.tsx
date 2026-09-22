@@ -5,22 +5,15 @@ import {
 } from '../milkdrop/preset-math-analyzer.ts';
 import {
   mutatePresetStyle,
+  PRESET_MUTATION_STYLES,
   type PresetMutationStyle,
 } from '../milkdrop/preset-mutations.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
-const MUTATION_STYLES: Array<{
-  id: PresetMutationStyle;
-  label: string;
-  emoji: string;
-}> = [
-  { id: 'cyberpunk', label: 'Cyberpunk Neon', emoji: '⚡' },
-  { id: 'hyperspace', label: 'Hyperspace Warp', emoji: '🚀' },
-  { id: 'ambient-glow', label: 'Ambient Glow', emoji: '🌿' },
-  { id: 'kaleidoscope', label: 'Kaleidoscope', emoji: '🔮' },
-  { id: 'bass-surge', label: 'Bass Surge', emoji: '💥' },
-];
+function restyleLabel(style: PresetMutationStyle) {
+  return PRESET_MUTATION_STYLES.find((m) => m.id === style)?.label ?? style;
+}
 
 export function RefinePanel() {
   const [instruction, setInstruction] = useState('');
@@ -37,15 +30,16 @@ export function RefinePanel() {
     async (style: PresetMutationStyle) => {
       if (!currentSource) return;
       setState('refining');
-      ui.setStatusMessage(`Applying ${style} mutation…`);
+      const label = restyleLabel(style);
+      ui.setStatusMessage(`Applying ${label}…`);
       try {
         const mutatedSource = mutatePresetStyle(currentSource, style);
         await engine.updateEditorSource(mutatedSource);
-        setResponse(`Applied instant ${style} style transformation.`);
+        setResponse(`Applied ${label}.`);
         setAnalysis(null);
       } catch (err) {
         const error = err as Error;
-        setResponse(`Mutation error: ${error.message}`);
+        setResponse(`Could not apply ${label}: ${error.message}`);
       } finally {
         setState('idle');
         ui.setStatusMessage(null);
@@ -71,14 +65,15 @@ export function RefinePanel() {
       const data = await res.json();
       if (data.milkSource) {
         await engine.updateEditorSource(data.milkSource);
-        setResponse(`Refined: ${data.title || 'New Preset'}`);
+        setResponse(`Refined: ${data.title || 'untitled preset'}`);
         setAnalysis(null);
       } else {
         throw new Error('No source returned');
       }
     } catch (err) {
       const error = err as Error;
-      // Graceful offline fallback: if edge API is not configured, apply keyword heuristics
+      // Without the refine API (dev server, or AI not configured), map a few
+      // keywords onto the matching one-click restyle.
       const lower = instruction.toLowerCase();
       if (
         lower.includes('blue') ||
@@ -87,7 +82,7 @@ export function RefinePanel() {
       ) {
         const mutated = mutatePresetStyle(currentSource, 'cyberpunk');
         await engine.updateEditorSource(mutated);
-        setResponse('Offline Mode: Applied neon color mutation.');
+        setResponse('AI is unavailable, so the Neon restyle was applied.');
       } else if (
         lower.includes('warp') ||
         lower.includes('fast') ||
@@ -95,14 +90,18 @@ export function RefinePanel() {
       ) {
         const mutated = mutatePresetStyle(currentSource, 'hyperspace');
         await engine.updateEditorSource(mutated);
-        setResponse('Offline Mode: Applied hyperspace motion mutation.');
+        setResponse(
+          'AI is unavailable, so the Zoom tunnel restyle was applied.',
+        );
       } else if (lower.includes('bass') || lower.includes('beat')) {
         const mutated = mutatePresetStyle(currentSource, 'bass-surge');
         await engine.updateEditorSource(mutated);
-        setResponse('Offline Mode: Applied bass reactivity mutation.');
+        setResponse(
+          'AI is unavailable, so the Bass pulse restyle was applied.',
+        );
       } else {
         setResponse(
-          `API not available: ${error.message}. Try the instant mutation buttons above!`,
+          `AI is unavailable (${error.message}). The restyle buttons above still work.`,
         );
       }
     } finally {
@@ -114,7 +113,7 @@ export function RefinePanel() {
   const handleExplain = useCallback(async () => {
     if (!currentSource) return;
     setState('explaining');
-    ui.setStatusMessage('Analyzing mathematical AST…');
+    ui.setStatusMessage('Reading the equations…');
     try {
       // 1. Try remote model if configured
       const res = await fetch('/api/refine-preset', {
@@ -136,7 +135,7 @@ export function RefinePanel() {
         'Remote explain failed, falling back to local AST analysis:',
         err,
       );
-      // 2. Instant client-side mathematical analysis fallback
+      // 2. Local fallback: a summary read from the equations themselves
       const mathAnalysis = analyzePresetMath(currentSource);
       setAnalysis(mathAnalysis);
       setResponse(mathAnalysis.summary);
@@ -149,8 +148,8 @@ export function RefinePanel() {
   return (
     <div className="stims-shell__refine-panel">
       <p className="stims-shell__meta-copy">
-        Instant AI style mutations, AST equation breakdown, or natural language
-        refinement.
+        Restyle the preset in one click, describe a change for the AI to make,
+        or get a summary of what its equations do.
       </p>
 
       <div
@@ -162,7 +161,7 @@ export function RefinePanel() {
           marginBottom: '12px',
         }}
       >
-        {MUTATION_STYLES.map((m) => (
+        {PRESET_MUTATION_STYLES.map((m) => (
           <button
             key={m.id}
             type="button"
@@ -171,7 +170,7 @@ export function RefinePanel() {
             disabled={state !== 'idle' || !currentSource}
             style={{ fontSize: '0.82rem', padding: '4px 8px' }}
           >
-            <span>{m.emoji}</span> {m.label}
+            {m.label}
           </button>
         ))}
       </div>
@@ -206,7 +205,7 @@ export function RefinePanel() {
           onClick={() => void handleExplain()}
           disabled={state !== 'idle' || !currentSource}
         >
-          {state === 'explaining' ? 'Analyzing…' : 'Explain Math'}
+          {state === 'explaining' ? 'Reading…' : 'Explain'}
         </button>
       </div>
 
@@ -233,7 +232,7 @@ export function RefinePanel() {
           }}
         >
           <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-            📐 Equation Breakdown:
+            What the equations do
           </div>
           <div>
             • <b>Motion:</b> {analysis.motion.description}
