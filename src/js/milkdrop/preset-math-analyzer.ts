@@ -1,9 +1,11 @@
 /**
- * Preset Math Analyzer
+ * A plain-language summary of a preset read from its source text: which
+ * motion fields its equations touch, its base wave color and trail length,
+ * which audio bands it reads, and how many custom waves and shapes it enables.
  *
- * Performs structural and semantic analysis over MilkDrop EEL2 equations,
- * breaking down cryptic mathematical code into structured visual insights:
- * motion vectors, color dynamics, audio-reactive bindings, and geometric complexity.
+ * It is a keyword scan, not an evaluation — `zoom` appearing in an equation
+ * counts as dynamic zoom — so the summary says what the code mentions, not
+ * what a frame will look like.
  */
 
 import { readMilkdropField } from './formatter.ts';
@@ -49,10 +51,14 @@ export function analyzePresetMath(source: string): PresetMathAnalysis {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.startsWith('per_frame=')) {
-      perFrameCode += ` ${trimmed.slice('per_frame='.length)}`;
-    } else if (trimmed.startsWith('per_pixel=')) {
-      perPixelCode += ` ${trimmed.slice('per_pixel='.length)}`;
+    // `.milk` files number their equation lines (`per_frame_1=`); the
+    // editor's own drafts may not.
+    const perFrame = /^per_frame(?:_\d+)?=(.*)$/u.exec(trimmed);
+    const perPixel = /^per_pixel(?:_\d+)?=(.*)$/u.exec(trimmed);
+    if (perFrame) {
+      perFrameCode += ` ${perFrame[1]}`;
+    } else if (perPixel) {
+      perPixelCode += ` ${perPixel[1]}`;
     } else if (/^wavecode_\d+_enabled=1/u.test(trimmed)) {
       customWaveCount += 1;
     } else if (/^shapecode_\d+_enabled=1/u.test(trimmed)) {
@@ -85,27 +91,27 @@ export function analyzePresetMath(source: string): PresetMathAnalysis {
   if (hasDynamicZoom || zoomVal !== 1.0) {
     motionParts.push(
       zoomVal > 1.02
-        ? 'forward zoom vortex'
+        ? 'zooms in'
         : zoomVal < 0.98
-          ? 'tunnel zoom-out'
-          : 'pulsing zoom',
+          ? 'zooms out'
+          : 'zoom changes over time',
     );
   }
   if (hasDynamicRot || Math.abs(rotVal) > 0.01) {
     motionParts.push(
-      rotVal < 0 ? 'counter-clockwise spiral' : 'clockwise rotation',
+      rotVal < 0 ? 'rotates counter-clockwise' : 'rotates clockwise',
     );
   }
   if (hasDynamicWarp) {
-    motionParts.push('non-linear spatial warp');
+    motionParts.push('warps');
   }
   if (hasTranslation) {
-    motionParts.push('coordinate panning');
+    motionParts.push('pans');
   }
   const motionDesc =
     motionParts.length > 0
       ? motionParts.join(', ')
-      : 'static geometric framing with neutral camera';
+      : 'no zoom, rotation, warp, or panning';
 
   // Color analysis
   const hasDynamicColors =
@@ -114,22 +120,20 @@ export function analyzePresetMath(source: string): PresetMathAnalysis {
     allEquations.includes('wave_b') ||
     allEquations.includes('q');
 
-  let primaryHueHint = 'Balanced spectrum';
-  if (waveR > 0.7 && waveG < 0.3 && waveB < 0.4)
-    primaryHueHint = 'Warm crimson / amber';
-  else if (waveB > 0.7 && waveR < 0.3) primaryHueHint = 'Deep oceanic / cyan';
-  else if (waveG > 0.7 && waveR < 0.4)
-    primaryHueHint = 'Emerald bioluminescence';
+  let primaryHueHint = 'Mixed';
+  if (waveR > 0.7 && waveG < 0.3 && waveB < 0.4) primaryHueHint = 'Red';
+  else if (waveB > 0.7 && waveR < 0.3) primaryHueHint = 'Blue';
+  else if (waveG > 0.7 && waveR < 0.4) primaryHueHint = 'Green';
   else if (waveR > 0.6 && waveB > 0.6 && waveG < 0.3)
-    primaryHueHint = 'Neon synthwave magenta';
+    primaryHueHint = 'Magenta';
 
-  const colorDesc = `${primaryHueHint} with ${
+  const colorDesc = `${primaryHueHint} wave, ${
     decayVal > 0.98
-      ? 'long atmospheric trails'
+      ? 'long trails'
       : decayVal < 0.93
-        ? 'sharp crisp transients'
-        : 'moderate feedback decay'
-  }${hasDynamicColors ? ' and dynamic color oscillators' : ''}`;
+        ? 'short trails'
+        : 'medium trails'
+  }${hasDynamicColors ? ', colors change over time' : ''}`;
 
   // Reactivity analysis
   const reactsToBass =
@@ -140,25 +144,29 @@ export function analyzePresetMath(source: string): PresetMathAnalysis {
     allEquations.includes('mid') || allEquations.includes('mid_att');
 
   const reactiveBands: string[] = [];
-  if (reactsToBass) reactiveBands.push('punchy bass kicks');
-  if (reactsToTreble) reactiveBands.push('high-frequency treble shimmer');
-  if (reactsToMids) reactiveBands.push('harmonic mid-tones');
+  if (reactsToBass) reactiveBands.push('bass');
+  if (reactsToMids) reactiveBands.push('mids');
+  if (reactsToTreble) reactiveBands.push('treble');
 
   const reactivityDesc =
     reactiveBands.length > 0
-      ? `Responds dynamically to ${reactiveBands.join(' and ')}`
-      : 'Driven primarily by steady-state procedural oscillators';
+      ? `Reacts to ${reactiveBands.join(', ')}`
+      : 'No bass, mid, or treble terms in the equations';
 
-  // Overall Narrative Summary
-  const summary = `This preset generates ${
-    customShapeCount > 0
-      ? `${customShapeCount} layered custom shape(s) and `
-      : ''
-  }${
-    customWaveCount > 0 ? `${customWaveCount} procedural waveform(s) with ` : ''
-  }${motionDesc}. ${reactivityDesc}, painted in ${colorDesc.toLowerCase()}.`;
+  const extras = [
+    customShapeCount > 0 ? plural(customShapeCount, 'custom shape') : null,
+    customWaveCount > 0 ? plural(customWaveCount, 'custom wave') : null,
+  ].filter(Boolean);
+  const summary = [
+    `Motion: ${motionDesc}.`,
+    `Audio: ${reactivityDesc.charAt(0).toLowerCase()}${reactivityDesc.slice(1)}.`,
+    `Color: ${colorDesc.toLowerCase()}.`,
+    extras.length > 0 ? `This preset also draws ${extras.join(' and ')}.` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
-  // Semantic Tag extraction
+  // Tags
   const tags: string[] = [];
   if (hasDynamicRot) tags.push('vortex', 'spiral');
   if (hasDynamicWarp) tags.push('warped', 'fluid');
@@ -198,4 +206,8 @@ export function analyzePresetMath(source: string): PresetMathAnalysis {
     },
     tags,
   };
+}
+
+function plural(count: number, noun: string) {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
 }

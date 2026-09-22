@@ -114,20 +114,11 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
   }
 }
 
-export function getToolDescription(tool: Exclude<PanelState, null>) {
-  switch (tool) {
-    case 'settings':
-      return 'Choose a quality preset, then adjust performance and motion options.';
-    default:
-      return '';
-  }
-}
-
 const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
   'collection:favorites': 'Saved Presets',
-  'collection:hall-of-fame': 'Hall of Fame Masterpieces',
-  'collection:webgpu-showcase': 'WebGPU Ultra Showcase',
-  'collection:audio-reactive': 'Audio-Reactive Masterpieces',
+  'collection:hall-of-fame': 'Hall of Fame',
+  'collection:webgpu-showcase': 'WebGPU showcase',
+  'collection:audio-reactive': 'Audio-reactive',
   'collection:butterchurn': 'Butterchurn',
   'collection:cream-of-the-crop': 'Cream of the Crop',
   'collection:classic-milkdrop': 'Classic MilkDrop',
@@ -143,14 +134,14 @@ const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
   'collection:author-suksma': 'Author: Suksma',
   'collection:author-amandio-c': 'Author: Amandio C',
   'collection:author-stahlregen': 'Author: Stahlregen',
-  'collection:vj-high-intensity': 'VJ: High Intensity Rave',
-  'collection:vj-ambient-glow': 'VJ: Ambient & Chill Glow',
-  'collection:vj-tunnel-geometry': 'VJ: 3D Tunnel & Geometry',
+  'collection:vj-high-intensity': 'VJ: High intensity',
+  'collection:vj-ambient-glow': 'VJ: Ambient',
+  'collection:vj-tunnel-geometry': 'VJ: Tunnels & geometry',
   'collection:vj-reaction-diffusion': 'VJ: Reaction-Diffusion',
   'collection:mood-deep-space': 'Mood: Deep Space',
   'collection:mood-psychedelic': 'Mood: Psychedelic',
-  'collection:mood-rave': 'Mood: Rave Lightshow',
-  'collection:mood-ambient': 'Mood: Ambient Glow',
+  'collection:mood-rave': 'Mood: Rave',
+  'collection:mood-ambient': 'Mood: Ambient',
   'collection:touch-friendly': 'Touch Friendly',
 };
 
@@ -662,27 +653,27 @@ export function buildStarterPresets(entries: PresetCatalogEntry[]) {
     {
       key: 'popular',
       label: 'Popular pick',
-      summary: 'A community favorite with broad appeal.',
+      summary: 'A well-known MilkDrop favorite.',
       tagPredicate: (tag: string) => tag === 'popular',
     },
     {
       key: 'classic',
       label: 'Classic MilkDrop',
-      summary: 'A grounded first pick from the classic MilkDrop lineage.',
+      summary: 'From the Classic MilkDrop collection.',
       tagPredicate: (tag: string) =>
         /^collection:/.test(tag) && /classic/i.test(tag),
     },
     {
       key: 'lasers',
       label: 'Bright & sharp',
-      summary: 'Glowing motion with clean contrast and geometry.',
+      summary: 'Bright lines and sharp geometry.',
       tagPredicate: (tag: string) =>
         ['glowsticks', 'lasers', 'bright', 'geometry'].includes(tag),
     },
     {
       key: 'space',
       label: 'Space drift',
-      summary: 'Slower cosmic motion with more room to breathe.',
+      summary: 'Slow, spacious motion.',
       tagPredicate: (tag: string) =>
         ['space', 'moody', 'atmospheric'].includes(tag) ||
         /space|cosmos/i.test(tag),
@@ -702,7 +693,7 @@ export function buildStarterPresets(entries: PresetCatalogEntry[]) {
     starterPresets.push({
       key: 'start-here',
       label: 'Start here',
-      summary: 'A great preset to begin with.',
+      summary: 'The first preset in the catalog.',
       preset: entries[0],
     });
   }

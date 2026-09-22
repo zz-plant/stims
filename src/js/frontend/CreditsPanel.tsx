@@ -58,15 +58,13 @@ export function CreditsPanel() {
 
       <CreditsSection title="What is Stims?">
         <p>
-          Stims is an independent browser-native visualizer built in the lineage
-          of Ryan Geiss's MilkDrop. It provides a complete authoring and
-          discovery environment for audio-reactive presets—with compatibility
-          claims tied to measured evidence.
+          Stims is an independent browser visualizer descended from Ryan Geiss's
+          MilkDrop, built for finding, editing, and sharing audio-reactive
+          presets. Its compatibility labels come from measurement.
         </p>
         <p className="stims-credits-disclaimer">
           Stims is not affiliated with or endorsed by MilkDrop, Winamp,
-          projectM, or Butterchurn. Each project is independent, and this
-          lineage is acknowledged with respect.
+          projectM, or Butterchurn.
         </p>
       </CreditsSection>
 
@@ -78,11 +76,11 @@ export function CreditsPanel() {
         />
         <CreditEntry
           name="Winamp & Nullsoft"
-          creditRole="Original public product context"
+          creditRole="Where MilkDrop first shipped"
         />
         <p className="stims-credits-disclaimer">
-          MilkDrop defined the preset language, visual vocabulary, and real-time
-          visualization paradigm that audio-reactive presets are built on today.
+          MilkDrop defined the preset language and the rendering model that
+          every preset in this catalog is written for.
         </p>
       </CreditsSection>
 
@@ -98,9 +96,9 @@ export function CreditsPanel() {
           url="https://butterchurnviz.com/"
         />
         <p className="stims-credits-disclaimer">
-          These projects maintain the format, expand the tooling, and preserve
-          the preset ecosystem. Stims compatibility testing references projectM
-          captures and code.
+          projectM and Butterchurn keep the format and its preset collections in
+          use. Stims' compatibility tests compare against projectM captures and
+          code.
         </p>
       </CreditsSection>
 
@@ -117,7 +115,7 @@ export function CreditsPanel() {
         />
         <CreditEntry
           name="Krash"
-          creditRole="Classic-era author; his beat-detection routine circulated scene-wide, credited inline in preset titles"
+          creditRole="Classic-era author; the beat-detection routine credited inline in many preset titles"
         />
         <p>Curation decided which presets most people ever saw:</p>
         <CreditEntry
@@ -140,10 +138,9 @@ export function CreditsPanel() {
 
       <CreditsSection title="This Implementation">
         <p>
-          Stims is maintained as an independent project. The codebase references
-          and builds upon decades of preset format research, demoscene
-          innovation, and open-source visualization work—all of which is honored
-          through code comments, test fixtures, and this credit page.
+          Stims is an independent project. It builds on decades of preset-format
+          research, demoscene work, and open-source visualization code, credited
+          on this page and in the code comments and test fixtures.
         </p>
         <p className="stims-credits-disclaimer">
           The full source lives at{' '}

@@ -20,7 +20,7 @@
   <path d="M0,500 Q60,438 120,500 T240,502 T360,462 T480,522 T600,480 T720,538 T840,470 T960,512 T1080,458 T1200,500" fill="none" stroke="rgba(119,201,255,0.4)" stroke-width="3" />
 
   <circle cx="92" cy="91" r="4" fill="#f47a54" />
-  <text x="108" y="96" font-size="15" font-weight="700" fill="#77c9ff" font-family="Space Mono, monospace" letter-spacing="2">INSTANT VISUALS</text>
+  <text x="108" y="96" font-size="15" font-weight="700" fill="#77c9ff" font-family="Space Mono, monospace" letter-spacing="2">NO INSTALL</text>
   <text x="88" y="176" font-size="28" font-weight="600" fill="#77c9ff" font-family="Space Grotesk, Arial, sans-serif">Music-reactive in the browser</text>
   <text x="88" y="258" font-size="62" font-weight="700" fill="#f7f4eb" font-family="Space Grotesk, Arial, sans-serif">Stims</text>
   <text x="88" y="314" font-size="26" fill="rgba(247,244,235,0.76)" font-family="Space Grotesk, Arial, sans-serif">MilkDrop-inspired visuals for your music</text>
