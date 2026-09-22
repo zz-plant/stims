@@ -303,7 +303,7 @@ function describeAdaptiveQualityStatus(
   adaptiveQuality: EngineSnapshot['adaptiveQuality'],
 ) {
   if (!adaptiveQuality) {
-    return 'Adaptive quality keeps frame rate steady once playback starts — no need to babysit it.';
+    return 'Detail adjusts on its own to hold the frame rate once playback starts.';
   }
   switch (adaptiveQuality.adaptation) {
     case 'degraded':

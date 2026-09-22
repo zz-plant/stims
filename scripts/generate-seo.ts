@@ -739,18 +739,18 @@ export async function buildSeoArtifacts(
     title: 'Stims',
     subtitle: 'MilkDrop-inspired visuals for your music',
     eyebrow: 'Music-reactive in the browser',
-    chip: 'Instant visuals',
+    chip: 'No install',
   });
   const milkdropOgSvg = buildOgSvg({
     title: milkdrop.title,
-    subtitle: 'Demo audio, presets, and your own music',
+    subtitle: 'The original presets, reacting to your music',
     eyebrow: 'Browser music visualizer',
-    chip: 'Start fast',
+    chip: 'No account',
   });
   const performanceOgSvg = buildOgSvg({
     title: 'Compatibility and Performance',
-    subtitle: 'Browser support, lighter modes, and first-run guidance',
-    eyebrow: 'What to expect before you start',
+    subtitle: 'Browser support, automatic quality, and what to change',
+    eyebrow: 'Before you start',
     chip: 'Performance guide',
   });
   const iconSvg = buildAppIconSvg();
@@ -762,14 +762,14 @@ export async function buildSeoArtifacts(
     width: 1280,
     height: 720,
     title: 'MilkDrop Visualizer',
-    subtitle: 'Browser-native audio-reactive play',
+    subtitle: 'MilkDrop presets, reacting to your audio',
     mode: 'wide',
   });
   const heroNarrowSvg = buildManifestScreenshotSvg({
     width: 720,
     height: 1280,
     title: 'Stims',
-    subtitle: 'Music-reactive visuals on the go',
+    subtitle: 'MilkDrop presets on your phone',
     mode: 'narrow',
   });
 

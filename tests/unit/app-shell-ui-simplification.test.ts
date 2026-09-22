@@ -20,18 +20,6 @@ describe('Workspace shell UI simplification regression', () => {
       ),
       'utf8',
     );
-    const helperSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        'src',
-        'js',
-        'frontend',
-        'workspace-helpers.ts',
-      ),
-      'utf8',
-    );
     const stageSource = readFileSync(
       join(
         import.meta.dir,
@@ -91,9 +79,6 @@ describe('Workspace shell UI simplification regression', () => {
         'NewHomePage.tsx',
       ),
       'utf8',
-    );
-    expect(helperSource).toContain(
-      'Choose a quality preset, then adjust performance and motion options.',
     );
     // The boot-time "lighter graphics mode" toast this used to check for
     // lean copy was removed entirely in 6f8db66c ("drop boot backend

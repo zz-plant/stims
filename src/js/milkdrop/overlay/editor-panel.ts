@@ -112,7 +112,7 @@ import {
 import {
   blendPresetSources,
   mutatePresetStyle,
-  type PresetMutationStyle,
+  PRESET_MUTATION_STYLES,
 } from '../preset-mutations.ts';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { createMilkdropLanguage } from './editor-language';
@@ -1789,7 +1789,7 @@ export class EditorPanel {
     });
     const mutationsHeading = document.createElement('h3');
     mutationsHeading.className = 'stims-editor__section-heading';
-    mutationsHeading.textContent = 'Instant Style Morphs';
+    mutationsHeading.textContent = 'Quick restyles';
 
     const mutationsGrid = document.createElement('div');
     mutationsGrid.className = 'stims-editor__assist-actions';
@@ -1798,15 +1798,7 @@ export class EditorPanel {
     mutationsGrid.style.gap = '6px';
     mutationsGrid.style.marginTop = '8px';
 
-    const mutationStyles: Array<{ id: PresetMutationStyle; label: string }> = [
-      { id: 'cyberpunk', label: '⚡ Cyberpunk' },
-      { id: 'hyperspace', label: '🚀 Hyperspace' },
-      { id: 'ambient-glow', label: '🌿 Ambient' },
-      { id: 'kaleidoscope', label: '🔮 Kaleidoscope' },
-      { id: 'bass-surge', label: '💥 Bass Surge' },
-    ];
-
-    mutationStyles.forEach(({ id, label }) => {
+    PRESET_MUTATION_STYLES.forEach(({ id, label }) => {
       const btn = this.createButton(label, {
         onClick: () => {
           if (this.aiPending) return;
