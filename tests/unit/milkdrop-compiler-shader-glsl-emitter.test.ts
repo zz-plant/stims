@@ -867,7 +867,78 @@ describe('preset-declared locals', () => {
     const glsl = emitProgram(['float3 acc = 0.5', 'acc = 0.25']);
 
     expect(glsl.match(/vec3 acc =/g)).toHaveLength(1);
-    expect(glsl).toContain('acc = 0.25');
+    // The later write is promoted like the declaration was: HLSL splats a
+    // scalar into a float3, GLSL rejects the assignment.
+    expect(glsl).toContain('acc = vec3(0.2500000000)');
+  });
+
+  // Every later write to a known vector target gets the same vecN() wrap the
+  // declaration gets: HLSL promotes a scalar (`c = lum(c)` means grey) and
+  // truncates a wider vector (`uv *= 1 + 0.1 * GetPixel(uv)` applies the
+  // float3's leading components to the float2); GLSL rejects both.
+  // Targets are lowercased at parse time; reads kept the author's case, so
+  // `float L = …; … L` wrote `l` and read an undeclared `L` that the
+  // assembler hoisted as a zero uniform (cotc-geiss-tadpole-hunter).
+  test('a read of a written name follows the target spelling', () => {
+    const glsl = emitProgram(['float L = lum(ret)', 'ret = ret * L']);
+    expect(glsl).toContain('float l = milkdropScalar(lum(ret));');
+    expect(glsl).toContain('(ret * l)');
+    expect(glsl).not.toMatch(/\bL\b/u);
+  });
+
+  // `float bl = GetBlur2(uv)` is legal HLSL: the float3 truncates to its
+  // first component. milkdropScalar has an overload per width.
+  test('a vector written to a float target is truncated, not rejected', () => {
+    const glsl = emitProgram(['float bl = GetBlur2(uv)', 'bl = GetPixel(uv)']);
+    expect(glsl).toMatch(/^ {2}float bl = milkdropScalar\(/mu);
+    expect(glsl).toMatch(/^ {2}bl = milkdropScalar\(/mu);
+  });
+
+  // `b`, `zoom`, `rot` are not MilkDrop shader builtins; a body that assigns
+  // one is using its own variable, so reads must not become the alias.
+  test('an assigned name shadows the alias table even undeclared', () => {
+    const glsl = emitProgram(['b = 0.5', 'ret = b']);
+    expect(glsl).not.toContain('colorScale.b');
+    expect(glsl).toContain('ret = vec3(b);');
+  });
+
+  describe('assignment width promotion', () => {
+    test('a scalar written to a declared vector target is broadcast', () => {
+      const glsl = emitProgram(['float3 c = GetPixel(uv)', 'c = lum(c)']);
+      expect(glsl).toContain('c = vec3(lum(c));');
+    });
+
+    test('a compound write to a vector target is wrapped too', () => {
+      const glsl = emitProgram(['uv *= 1 + 0.1 * GetPixel(uv)']);
+      expect(glsl).toMatch(/uv \*= vec2\(\(1\.0 \+ .*\)\);/u);
+    });
+
+    test('a swizzle write takes the width of the swizzle', () => {
+      const glsl = emitProgram(['float4 d = 0', 'd.xy = 0.5', 'd.z = 1']);
+      expect(glsl).toContain('d.xy = vec2(0.5000000000);');
+      // A single component is a scalar: no wrap.
+      expect(glsl).toContain('d.z = 1.0;');
+    });
+
+    test('an undeclared name seeded from a constructor is sized by it', () => {
+      // The hoister in feedback-manager-shared.ts declares this name vec3
+      // from the same constructor, so the later scalar write must broadcast.
+      const glsl = emitProgram(['l2 = float3(0, 0, 0)', 'l2 = lum(ret)']);
+      expect(glsl).toContain('l2 = vec3(0.0, 0.0, 0.0);');
+      expect(glsl).toContain('l2 = vec3(lum(ret));');
+    });
+
+    test('a target of unknown width is left alone', () => {
+      const glsl = emitProgram(['k = 0.5', 'k = k * 2']);
+      expect(glsl).toContain('k = 0.5000000000;');
+      expect(glsl).toContain('k = (k * 2.0);');
+    });
+
+    test('an already-constructed RHS is not wrapped twice', () => {
+      const glsl = emitProgram(['float3 c = 0', 'c = float3(1, 2, 3)']);
+      expect(glsl).toContain('c = vec3(1.0, 2.0, 3.0);');
+      expect(glsl).not.toContain('vec3(vec3(1.0');
+    });
   });
 
   // `ret` and `uv` are declared by the stage templates and read back after the
