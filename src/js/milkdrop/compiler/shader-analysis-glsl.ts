@@ -96,25 +96,25 @@ function emitExpression(
  * Creates a GLSL emitter that maps MilkDrop sampler/texture names to GLSL
  * functions in the composite shader.
  *
- * `shadowedIdentifiers` are names the preset declares for itself. The alias
+ * `shadowedIdentifiers` are the lowercased names the preset writes. The alias
  * table below would otherwise rewrite every read of such a name to a shader
- * uniform: a preset writing `float3 b = …; ret = b;` would assign its own
- * local and then read `colorScale.b`, which is not a compile error — it is a
- * silently wrong picture. A declaration in the preset wins over the alias, the
- * same way it would in HLSL.
- *
- * No bundled preset currently reaches this (measured: zero declare a local
- * whose name collides with an alias), so it guards authored presets and the
- * editor rather than fixing a corpus failure. It is here because the
- * alternative failure mode is invisible.
+ * uniform: a preset writing `b = …; ret = b;` would assign its own variable
+ * and then read `colorScale.b` — a silently wrong picture, or, in a warp body
+ * where `colorScale` is not declared, a compile error (27 presets in the
+ * offline scan). A written name wins over the alias, the way a local would in
+ * HLSL.
  */
 export function createCompositeGlslEmitter(
   shadowedIdentifiers: ReadonlySet<string> = new Set(),
 ): GlslEmitter {
   return {
     emitIdentifier(name: string): string {
-      if (shadowedIdentifiers.has(name)) return name;
       const lower = name.toLowerCase();
+      // Statement targets are lowercased at parse time but reads keep the
+      // author's case, so `float L = lum(ret); … L * 27` wrote `l` and read
+      // an undeclared `L` — hoisted as a zero uniform, a silently wrong
+      // picture. Reads of a written name follow the target's spelling.
+      if (shadowedIdentifiers.has(lower)) return lower;
       // Signal aliases come from the shared table; only the non-signal
       // composite uniforms and literal constants live in this map.
       const uniformMap: Record<string, string> = {
@@ -768,9 +768,9 @@ const TEMPLATE_OWNED_TARGETS = new Set(['ret', 'uv']);
  * left the assembled shader to infer it from the assignment text downstream —
  * and that inference only recognises a bare `vecN(` constructor, so
  * `float2 uv_y = uv - 0.25 * float2(a, b);` was declared `float uv_y;` and
- * every later use failed to compile. Vector and matrix declarations are the
- * only ones emitted: `float` already matches what the fallback infers, so
- * restating it would add shadowing risk for no gain.
+ * every later use failed to compile. `float` is emitted too: the fallback
+ * infers a width from the assignment text, and `float bl = GetBlur2(uv);`
+ * reads as a vec3 there, which HLSL truncates to its first component.
  */
 function localDeclarationType(
   statement: MilkdropShaderStatement,
@@ -780,7 +780,7 @@ function localDeclarationType(
   const declaration = statement.declaration;
   if (
     !declaration ||
-    !/^(?:vec[234]|mat[234])$/u.test(declaration) ||
+    !/^(?:float|vec[234]|mat[234])$/u.test(declaration) ||
     TEMPLATE_OWNED_TARGETS.has(target) ||
     declaredLocals.has(target)
   ) {
@@ -797,18 +797,21 @@ export function generateGlslFromShaderStatements(
   if (statements.length === 0) return null;
 
   // Collected before emission, not during: a preset may read one of its own
-  // locals on a line the emitter has not walked yet, and the declaration has
-  // to beat the alias on every line rather than only later ones. Every
-  // declared name counts, not just the vector ones emitted below — `float b`
-  // collides with the alias table exactly as `float3 b` does.
+  // locals on a line the emitter has not walked yet, and the name has to beat
+  // the alias on every line rather than only later ones. Every name the body
+  // writes counts, declared or not — `float b` and a bare `b = …` both make
+  // `b` the preset's own variable, since `b`, `zoom`, `rot` and the rest of
+  // the alias table are not MilkDrop shader builtins. `ret` and `uv` stay
+  // with the template.
   const presetDeclaredNames = new Set(
     statements
-      .filter((statement) => statement.declaration !== null)
-      .map((statement) => statement.target),
+      .map((statement) => statement.target.split('.')[0] ?? '')
+      .filter((name) => name !== '' && !TEMPLATE_OWNED_TARGETS.has(name)),
   );
   const emitter = createCompositeGlslEmitter(presetDeclaredNames);
   const lines: string[] = [];
   const declaredLocals = new Set<string>();
+  const targetWidths = collectTargetWidths(statements);
 
   for (const statement of statements) {
     const expressionGlsl = emitExpression(statement.expression, emitter);
@@ -819,50 +822,107 @@ export function generateGlslFromShaderStatements(
 
     const target = statement.target;
     const operator = statement.operator;
+    const declaration =
+      operator === '='
+        ? localDeclarationType(statement, target, declaredLocals)
+        : null;
 
-    if (operator === '=') {
+    if (declaration) {
       // HLSL promotes a scalar to every component on assignment, so
-      // `ret = GetPixel(uv).x * k;` is legal there and means grey. GLSL has no
-      // such promotion and rejects the assignment outright, taking the whole
-      // program down with it. `ret` is declared vec3 in both stage templates,
-      // and vec3(...) is a valid copy constructor for a vec3 RHS as well as a
-      // broadcast for a scalar one, so wrapping restores HLSL's meaning for
-      // both. Compound operators need no help: GLSL already defines
-      // vector-op-scalar component-wise.
-      const declaration = localDeclarationType(
-        statement,
-        target,
-        declaredLocals,
-      );
-      if (target === 'ret') {
-        lines.push(`  ${target} = vec3(${expressionGlsl});`);
-      } else if (declaration) {
-        // Same HLSL promotion `ret` needs, at the declaration: `float3 dots =
-        // <scalar>;` splats there, and vecN(...) is both a broadcast for a
-        // scalar RHS and a copy constructor for a matching one. Matrices are
-        // left alone — matN(scalar) is a diagonal in GLSL but a full splat in
-        // HLSL, so wrapping would quietly change the value.
-        const wrapped = declaration.startsWith('vec')
-          ? `${declaration}(${expressionGlsl})`
+      // `float3 dots = <scalar>;` splats. vecN(...) is both a broadcast for a
+      // scalar RHS and a copy constructor for a matching one. Matrices are
+      // left alone — matN(scalar) is a diagonal in GLSL but a full splat in
+      // HLSL, so wrapping would quietly change the value.
+      const wrapped = declaration.startsWith('vec')
+        ? `${declaration}(${expressionGlsl})`
+        : declaration === 'float'
+          ? `milkdropScalar(${expressionGlsl})`
           : expressionGlsl;
-        lines.push(`  ${declaration} ${target} = ${wrapped};`);
-      } else {
-        lines.push(`  ${target} = ${expressionGlsl};`);
-      }
-    } else if (operator === '+=') {
-      lines.push(`  ${target} += ${expressionGlsl};`);
-    } else if (operator === '-=') {
-      lines.push(`  ${target} -= ${expressionGlsl};`);
-    } else if (operator === '*=') {
-      lines.push(`  ${target} *= ${expressionGlsl};`);
-    } else if (operator === '/=') {
-      lines.push(`  ${target} /= ${expressionGlsl};`);
-    } else {
-      lines.push(`  ${target} = ${expressionGlsl};`);
+      lines.push(`  ${declaration} ${target} = ${wrapped};`);
+      continue;
     }
+
+    // The same promotion on every later write to a vector: `ret = lum(ret)`
+    // means grey in HLSL, and `uv *= 1.0 + 0.1 * GetPixel(uv)` truncates the
+    // float3 to the float2 it is applied to. GLSL rejects both outright and
+    // takes the whole program down. vecN(...) restores HLSL's meaning for a
+    // scalar (broadcast), a matching width (copy) and a wider RHS
+    // (truncation to the leading components). A too-narrow RHS is an error
+    // in HLSL as well, and stays one.
+    const width = targetWidths.get(target);
+    const rhs =
+      width === 1
+        ? `milkdropScalar(${expressionGlsl})`
+        : width && !new RegExp(`^vec${width}\\(`, 'u').test(expressionGlsl)
+          ? `vec${width}(${expressionGlsl})`
+          : expressionGlsl;
+    const glslOperator = COMPOUND_OPERATORS.has(operator) ? operator : '=';
+    lines.push(`  ${target} ${glslOperator} ${rhs};`);
   }
 
   return lines.join('\n');
+}
+
+const COMPOUND_OPERATORS = new Set(['+=', '-=', '*=', '/=']);
+
+/**
+ * The vector width of every assignment target the program writes, where it
+ * can be known without type inference. In priority order: the stage
+ * template's own `ret` (vec3) and `uv` (vec2); the preset's declared
+ * `float`/`float2`/`float3`/`float4` locals (width 1 is a scalar, written
+ * through `milkdropScalar`, HLSL's first-component truncation); a swizzle write's own width
+ * (`v.xy = …` assigns two components whatever `v` is); and, for a name never
+ * declared, a first bare assignment from a `vecN(...)` constructor — the same
+ * signal `classifyPerFrameVariable` in feedback-manager-shared.ts uses to
+ * hoist that name as `vecN`, so the two stay in agreement about what the
+ * variable is. A name written only through swizzles is left to the hoister,
+ * which sizes it from the widest component; its bare writes, if any, are not
+ * wrapped here because the width is not this pass's to guess.
+ */
+function collectTargetWidths(
+  statements: MilkdropShaderStatement[],
+): Map<string, 1 | 2 | 3 | 4> {
+  const widths = new Map<string, 1 | 2 | 3 | 4>([
+    ['ret', 3],
+    ['uv', 2],
+  ]);
+  const swizzleWrites = new Set<string>();
+  for (const statement of statements) {
+    const target = statement.target;
+    const dot = target.indexOf('.');
+    if (dot !== -1) {
+      const swizzle = target.slice(dot + 1);
+      if (swizzle.length >= 2 && swizzle.length <= 4) {
+        widths.set(target, swizzle.length as 2 | 3 | 4);
+      }
+      swizzleWrites.add(target.slice(0, dot));
+      continue;
+    }
+    if (statement.declaration === 'float') {
+      widths.set(target, 1);
+      continue;
+    }
+    const declared = statement.declaration?.match(/^vec([234])$/u);
+    if (declared) {
+      widths.set(target, Number(declared[1]) as 2 | 3 | 4);
+      continue;
+    }
+    if (widths.has(target) || statement.operator !== '=') continue;
+    const seededWidth = constructorWidth(statement.expression);
+    if (seededWidth && !swizzleWrites.has(target)) {
+      widths.set(target, seededWidth);
+    }
+  }
+  return widths;
+}
+
+/** `vecN(...)` / `floatN(...)` at the root of an expression, else null. */
+function constructorWidth(
+  expression: MilkdropShaderStatement['expression'],
+): 2 | 3 | 4 | null {
+  if (expression.type !== 'call') return null;
+  const match = /^(?:vec|float)([234])$/iu.exec(expression.name);
+  return match ? (Number(match[1]) as 2 | 3 | 4) : null;
 }
 
 /**
