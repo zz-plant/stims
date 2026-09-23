@@ -170,7 +170,11 @@ export function createCompositeGlslEmitter(
         tint_r: 'tint.r',
         tint_g: 'tint.g',
         tint_b: 'tint.b',
-        uv: 'vUv',
+        // Deliberately absent: \`uv\`. Both stage templates declare their own
+        // \`vec2 uv\` — in the warp stage it is the warped coordinate, the one
+        // the preset's motion lives in — and rewriting reads to \`vUv\` made
+        // every emitted warp body sample the previous frame unwarped, while
+        // its writes (\`uv *= …\`) still went to the template's copy.
       };
       const mapped = uniformMap[lower];
       if (mapped !== undefined) return mapped;
@@ -541,12 +545,12 @@ export function createCompositeGlslEmitter(
 // The GLSL emitter works on already-stringified expressions with no type
 // information attached, so detecting a 2-component argument (to decide
 // whether a vec3(...) 2-arg call needs 0.0-padding) is necessarily a
-// heuristic. `vUv` is the one 2-component symbol this shader DSL's
-// identifier resolution ever produces for a bare coordinate reference, and
-// `vec2(...)` calls are unambiguous by construction.
+// heuristic. `uv` (the stage template's own coordinate) and `vUv` are the
+// 2-component symbols identifier resolution produces for a bare coordinate
+// reference, and `vec2(...)` calls are unambiguous by construction.
 function isKnownVec2Expression(expression: string): boolean {
   const trimmed = expression.trim();
-  return trimmed === 'vUv' || /^vec2\s*\(/iu.test(trimmed);
+  return trimmed === 'uv' || trimmed === 'vUv' || /^vec2\s*\(/iu.test(trimmed);
 }
 
 /**
@@ -929,6 +933,19 @@ function constructorWidth(
  * Injects generated warp/comp GLSL into the composite shader source.
  * Uses placeholder markers to identify insertion points.
  */
+/**
+ * The injected body runs inline in the template's main(), and the template
+ * keeps going after it — so a preset local named like a template variable
+ * shadowed it for the rest of main(). `vec2 zoom = vec2(1.85);` in a
+ * cotc-suksma warp turned the template's later `signedZoomDivisor(zoom)`
+ * into a vec2 call that does not exist. Its own block keeps the preset's
+ * locals to the preset; writes to the template's `ret`/`uv` still land,
+ * because the body assigns them rather than declaring them.
+ */
+function scopeInjectedBody(body: string): string {
+  return `{\n${body}\n}`;
+}
+
 export function injectDirectShaderGlsl(
   source: string,
   warpGlsl: string | null,
@@ -969,7 +986,7 @@ export function injectDirectShaderGlsl(
         warpStartIndex + warpStartMarker.length,
       );
       const after = modified.substring(warpEndIndex);
-      modified = `${before}\n${warpGlsl}\n${after}`;
+      modified = `${before}\n${scopeInjectedBody(warpGlsl)}\n${after}`;
     }
   }
 
@@ -986,7 +1003,7 @@ export function injectDirectShaderGlsl(
         compStartIndex + compStartMarker.length,
       );
       const after = modified.substring(compEndIndex);
-      modified = `${before}\n${compGlsl}\n${after}`;
+      modified = `${before}\n${scopeInjectedBody(compGlsl)}\n${after}`;
     }
   }
 

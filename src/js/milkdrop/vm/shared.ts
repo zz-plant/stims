@@ -132,6 +132,7 @@ export type GeometryBuilderState = {
   /** Reused warp-field vertex buffers; see buildWarpField. */
   warpFieldPositions?: Float32Array;
   warpFieldUvs?: Float32Array;
+  warpFieldSampleUvs?: Float32Array;
   warpFieldIndices?: Uint32Array;
   lattice?: StaticMeshLattice;
 };
