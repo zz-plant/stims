@@ -32,4 +32,25 @@ describe('direct-shader scratch hoisting', () => {
       declarationOf('uv1 = uv - vec2(0.5, q5);\nret = vec3(uv1, 0.0);', 'uv1'),
     ).toBe('vec2');
   });
+
+  test('a copy of another scratch variable takes its width', () => {
+    const body =
+      'product = uv * 2.0;\ndenominator = product;\nret = vec3(denominator, 0.0);';
+    expect(declarationOf(body, 'denominator')).toBe('vec2');
+  });
+
+  test('width-preserving calls and compound writes size the variable', () => {
+    expect(
+      declarationOf(
+        'uvn = uv;\nrs = clamp(tan(z) * uvn, -5.0, 5.0);\nret = vec3(rs, 0.0);',
+        'rs',
+      ),
+    ).toBe('vec2');
+    expect(
+      declarationOf(
+        'mus = 1.0;\nmus *= vec3(1.1, 1.0, 0.95);\nret = mus;',
+        'mus',
+      ),
+    ).toBe('vec3');
+  });
 });

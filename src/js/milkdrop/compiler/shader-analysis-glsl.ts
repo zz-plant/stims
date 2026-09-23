@@ -104,6 +104,33 @@ function emitExpression(
  * offline scan). A written name wins over the alias, the way a local would in
  * HLSL.
  */
+/** `+ - * /` → the width-truncating overload sets in the preamble. */
+const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
+  '+': 'milkdropAdd',
+  '-': 'milkdropSub',
+  '*': 'milkdropMul',
+  '/': 'milkdropDiv',
+};
+
+/** Emitted names that are always float: signal and control uniforms, the q
+ * registers, the blur ranges and MilkDrop's math constants. */
+const SCALAR_GLSL_IDENTIFIER =
+  /^(?:signal[A-Z]\w*|q\d+|scale[123]|bias[123]|zoomMul|rotation|warpScale|offsetX|offsetY|decay|M_PI|M_PI_2|M_INV_PI_2)$/u;
+
+/**
+ * True when an emitted operand is certainly a float — a numeric literal
+ * (possibly negated or parenthesised), or a scalar uniform. Arithmetic with
+ * such an operand is already valid GLSL for any other operand width, so it
+ * stays a plain operator. Anything else might be a vector and goes through
+ * the overload set.
+ */
+function isProvablyScalarGlsl(expression: string): boolean {
+  const trimmed = expression.trim();
+  if (/^-?\(?-?\d+(?:\.\d+)?\)?$/u.test(trimmed)) return true;
+  if (/^-\((?:-?\d+(?:\.\d+)?)\)$/u.test(trimmed)) return true;
+  return SCALAR_GLSL_IDENTIFIER.test(trimmed);
+}
+
 /** Relational operators → the component-wise overload sets in the preamble. */
 const COMPARISON_HELPERS: Readonly<Record<string, string>> = {
   '<': 'milkdropLt',
@@ -120,6 +147,9 @@ export function createCompositeGlslEmitter(
   return {
     emitIdentifier(name: string): string {
       const lower = name.toLowerCase();
+      // Reserved in GLSL; a preset local by that name is renamed, matching
+      // the target rename in generateGlslFromShaderStatements.
+      if (lower === 'output') return 'milkdropOutput';
       // Statement targets are lowercased at parse time but reads keep the
       // author's case, so `float L = lum(ret); … L * 27` wrote `l` and read
       // an undeclared `L` — hoisted as a zero uniform, a silently wrong
@@ -243,6 +273,17 @@ export function createCompositeGlslEmitter(
       if (op === '|') {
         // See '&' above: avoid passing a float bitwise expression through.
         return `float(int(${left}) | int(${right}))`;
+      }
+      const arithmetic = ARITHMETIC_HELPERS[op];
+      if (
+        arithmetic &&
+        !isProvablyScalarGlsl(left) &&
+        !isProvablyScalarGlsl(right)
+      ) {
+        // Possibly two vectors of different widths, which HLSL truncates
+        // and GLSL rejects; the overload set in the preamble handles every
+        // pairing (and the matrix products mul() lowers to).
+        return `${arithmetic}(${left}, ${right})`;
       }
       return `(${left} ${op} ${right})`;
     },
@@ -831,7 +872,7 @@ export function generateGlslFromShaderStatements(
       return null;
     }
 
-    const target = statement.target;
+    const target = statement.target.replace(/^output\b/u, 'milkdropOutput');
     const operator = statement.operator;
     const declaration =
       operator === '='
