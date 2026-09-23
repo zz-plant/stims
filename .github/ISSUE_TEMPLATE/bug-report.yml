@@ -1,0 +1,23 @@
+name: Something else is broken
+description: The app misbehaves outside of a single preset — audio, controls, sharing, the editor, performance.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link to the session (optional)
+      description: The address bar holds the current session; it often reproduces the problem on its own.
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Firefox 142 on Windows 11, integrated graphics
+    validations:
+      required: true

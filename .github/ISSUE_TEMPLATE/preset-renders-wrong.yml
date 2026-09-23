@@ -1,0 +1,36 @@
+name: A preset looks wrong
+description: A preset renders differently from MilkDrop or projectM, fails to load, or goes blank.
+title: "Preset: "
+labels: ["bug", "renderer"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks — rendering reports are the most useful thing anyone can send. The link in your address bar reproduces the exact session (preset, audio source, edits), so it is usually all we need.
+  - type: input
+    id: link
+    attributes:
+      label: Link to the session
+      description: Copy it from the address bar, or use Share in the app.
+      placeholder: https://toil.fyi/?preset=...
+    validations:
+      required: true
+  - type: textarea
+    id: difference
+    attributes:
+      label: What looks wrong?
+      description: What you see, and what you expected. "Blank", "frozen", "colours inverted", "too slow" are all fine.
+    validations:
+      required: true
+  - type: textarea
+    id: reference
+    attributes:
+      label: Reference (optional)
+      description: A screenshot or clip of the same preset in MilkDrop or projectM makes a difference measurable. Drag files in.
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 139 on a 2021 MacBook Pro
+    validations:
+      required: true
