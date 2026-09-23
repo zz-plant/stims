@@ -7,6 +7,7 @@ import { parseURLParams } from '../core/url-params.ts';
 import { CueMonitor } from './CueMonitor.tsx';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { PerformSurface } from './PerformSurface.tsx';
+import { PresetTitleCard } from './PresetTitleCard.tsx';
 import { StageControls } from './StageControls.tsx';
 import { StageWarpGizmo } from './StageWarpGizmo.tsx';
 import { StimsStageFrame } from './StimsStageFrame.tsx';
@@ -84,6 +85,7 @@ export function WorkspaceStagePanel({
             session stays free of stage chrome. */}
         {liveMode && !missingRequestedPreset ? <CueMonitor /> : null}
         {liveMode && !missingRequestedPreset ? <PerformSurface /> : null}
+        {liveMode && !missingRequestedPreset ? <PresetTitleCard /> : null}
         {/* inert: the hero is pointer-events:none in live mode but its
             buttons stay in the tab order and accessibility tree without it.
             Also inert whenever a panel is open — on the home screen the hero

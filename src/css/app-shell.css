@@ -761,7 +761,14 @@ body[data-page="workspace"][data-live="true"] {
      0.82-0.9 wash bought contrast for a column of text by dimming the whole
      stage to 10-18% of whatever was behind it, which is most of why a working
      attract render still read as a black rectangle. The vertical pass keeps
-     the top edge (wordmark, and the frame chrome above it) covered. */
+     the top edge (wordmark, and the frame chrome above it) covered.
+
+     Spent even more tightly now: the ink is an ellipse hugging the copy
+     column and reaches zero well before the right edge, so the right half of
+     the landing page is the preset at full brightness — the product, shown
+     rather than described. The copy still sits on 0.8-0.92 ink everywhere it
+     runs (the core of the ellipse covers the paragraph's right edge at ~46%
+     of the frame width). */
   .stims-shell__stage-frame[data-mode="home"]::after {
     content: "";
     position: absolute;
@@ -770,30 +777,26 @@ body[data-page="workspace"][data-live="true"] {
     pointer-events: none;
     background:
       radial-gradient(
-        86% 78% at 24% 46%,
-        rgba(3, 5, 11, 0.94) 0%,
-        rgba(3, 5, 11, 0.88) 40%,
-        rgba(3, 5, 11, 0.38) 76%,
-        rgba(3, 5, 11, 0.2) 100%
+        ellipse 54% 64% at 22% 50%,
+        rgba(3, 5, 11, 0.92) 0%,
+        rgba(3, 5, 11, 0.82) 48%,
+        rgba(3, 5, 11, 0.34) 76%,
+        rgba(3, 5, 11, 0) 100%
       ),
-      linear-gradient(
-        180deg,
-        rgba(3, 5, 11, 0.46) 0%,
-        rgba(3, 5, 11, 0.12) 26%,
-        rgba(3, 5, 11, 0.12) 76%,
-        rgba(3, 5, 11, 0.4) 100%
-      );
+      linear-gradient(180deg, rgba(3, 5, 11, 0.36) 0%, rgba(3, 5, 11, 0) 18%);
   }
 
   /* One column wide, the copy needs its floor everywhere; the steered scrim
      above assumes the copy is off to one side. */
   @media (max-width: 900px) {
     .stims-shell__stage-frame[data-mode="home"]::after {
+      /* Held under the copy, then released: the bottom quarter of a phone
+         screen is the preset, not a darker shade of the page. */
       background: linear-gradient(
         180deg,
-        rgba(3, 5, 11, 0.88) 0%,
-        rgba(3, 5, 11, 0.8) 62%,
-        rgba(3, 5, 11, 0.58) 100%
+        rgba(3, 5, 11, 0.86) 0%,
+        rgba(3, 5, 11, 0.76) 70%,
+        rgba(3, 5, 11, 0.08) 100%
       );
     }
   }
@@ -2261,9 +2264,43 @@ body[data-page="workspace"][data-live="true"] {
     /* Local to the tile, as above. */
     z-index: 1;
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    text-align: left;
+    overflow: hidden;
+  }
+
+  /* The preset's name, set as a poster: large, heavy, tight, clamped. Type
+     only — nothing drawn — so it cannot be mistaken for a frame. */
+  .stims-shell__preset-art-placeholder-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    /* The art slot is a dark surface in both themes (it stands in for a
+       frame of the stage), so this takes the unflipped on-stage ink — the
+       light theme's --ctl-ink is dark and vanished against it. */
+    color: var(--stims-on-stage-ink-strong);
+    /* Hyphenate rather than snap a word at an arbitrary letter: at seven
+       columns a tile is ~145px, narrower than "Glowsticks" at this size. */
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  /* Only centred when it is the whole slot (no title to lead with). */
+  .stims-shell__preset-art-placeholder:not(
+    :has(.stims-shell__preset-art-placeholder-title)
+  ) {
     align-items: center;
     justify-content: center;
-    padding: var(--space-sm);
     text-align: center;
   }
 
@@ -2278,6 +2315,119 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__preset-art-placeholder[data-state="capturing"]
     .stims-shell__preset-art-placeholder-label {
     color: var(--stims-muted-35);
+  }
+
+  /* Preset title card (PresetTitleCard.tsx): the playing preset's name set as
+     display type over the stage for a few seconds after each switch. Sits on
+     the stage in every theme, so it uses the on-stage inks, and carries its
+     own soft ink pool rather than a panel — a slab would read as a dialog.
+     Top-left: the bottom of the stage belongs to the dock, the first-run hint
+     toast above it and the status toasts beside it, and a card down there
+     collided with the hint on the very first play. */
+  .stims-shell__title-card {
+    position: absolute;
+    left: clamp(16px, 4vw, 56px);
+    top: calc(clamp(16px, 5vh, 56px) + env(safe-area-inset-top, 0px));
+    z-index: var(--z-overlay);
+    isolation: isolate;
+    display: grid;
+    gap: var(--space-xs);
+    max-width: min(72vw, 52rem);
+    padding: var(--space-md) var(--space-lg) var(--space-md) 0;
+    pointer-events: none;
+    color: var(--stims-on-stage-ink-strong);
+    text-shadow:
+      0 2px 24px rgba(3, 5, 11, 0.7),
+      0 1px 3px rgba(3, 5, 11, 0.8);
+    animation: title-card-enter 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    transition:
+      opacity 0.45s ease,
+      transform 0.45s ease;
+  }
+
+  /* The ink pool: presets go white without warning, and text-shadow alone
+     left the byline at well under AA on a bright frame. Feathered on every
+     side so it reads as shade, not a box. */
+  .stims-shell__title-card::before {
+    content: "";
+    position: absolute;
+    inset: -40% -24% -48% -32%;
+    z-index: -1;
+    background: radial-gradient(
+      closest-side,
+      rgba(3, 5, 11, 0.78),
+      rgba(3, 5, 11, 0.58) 60%,
+      rgba(3, 5, 11, 0)
+    );
+    pointer-events: none;
+  }
+
+  .stims-shell__title-card[data-leaving="true"] {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  .stims-shell__title-card-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    font-size: clamp(var(--text-3xl), 5.2vw, 4.5rem);
+    font-weight: var(--font-weight-bold);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+  }
+
+  .stims-shell__title-card-byline {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.01em;
+    color: var(--stims-on-stage-muted);
+  }
+
+  @keyframes title-card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(-14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .stims-shell__title-card {
+      right: 16px;
+      left: 16px;
+      max-width: none;
+    }
+
+    .stims-shell__title-card-byline {
+      font-size: var(--text-sm);
+    }
+  }
+
+  /* Reduced motion: the card still arrives and leaves — it is information —
+     but as a fade with no travel. */
+  @media (prefers-reduced-motion: reduce) {
+    .stims-shell__title-card {
+      animation-name: title-card-fade;
+    }
+
+    .stims-shell__title-card[data-leaving="true"] {
+      transform: none;
+    }
+  }
+
+  @keyframes title-card-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .stims-parametric-identicon {
