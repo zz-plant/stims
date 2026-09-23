@@ -529,6 +529,13 @@ const MILKDROP_VIDEO_ECHO_HELPER = `
 // forms GLSL already accepts are included so the emitter can call the
 // helper unconditionally.
 const MILKDROP_HLSL_PROMOTION_HELPERS = `
+        // MilkDrop 2's shader preamble (include.fx) defines these, so preset
+        // bodies use them undeclared. Note M_PI_2 is 2*pi, not C's pi/2.
+        // Missing, they were hoisted as zero uniforms and angle math such as
+        // cotc-royal-mashup-59's \`ang * M_INV_PI_2\` collapsed to a constant.
+        #define M_PI 3.14159265359
+        #define M_PI_2 6.28318530718
+        #define M_INV_PI_2 0.159154943091895
         float milkdropLerp(float a, float b, float t) { return mix(a, b, t); }
         vec2 milkdropLerp(vec2 a, vec2 b, float t) { return mix(a, b, t); }
         vec2 milkdropLerp(vec2 a, vec2 b, vec2 t) { return mix(a, b, t); }
@@ -938,7 +945,15 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
           vec3 color = hasDirectWarp > 0.5
             ? previousColor + current.rgb
             : previousColor * (1.0 - coverage) + current.rgb;
-          gl_FragColor = vec4(color, 1.0);
+          // MilkDrop's internal buffer is 8-bit, so every frame it carries is
+          // implicitly clamped to [0,1]. Ours is half-float for decay
+          // precision, which removed that clamp: a sharpening warp such as
+          // Geiss's reaction-diffusion \`ret += (ret - GetBlur1(uv)) * 0.3\`
+          // is bounded in MilkDrop but grew without limit here, and the blur
+          // spread it until six cotc presets rendered solid white. Clamping
+          // the value that feeds the next frame restores the bound without
+          // giving up half-float's sub-1/255 decay steps.
+          gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
         }
       `;
 
