@@ -220,6 +220,11 @@ Working backwards from state to patterns:
 6. **CSS view transitions API** — `@view-transition` for preset changes,
    panel open/close. Replaces custom animation classes.
 
+   > **Superseded (2026-08-31, #1162; guarded since 2026-09-23).** Tried and
+   > removed: the View Transitions API snapshots the page, freezing the live
+   > visualizer canvas for ~0.4s. `scripts/check-guard-registry.ts` now blocks
+   > it; animate specific elements with the `--spring-*` tokens instead.
+
 ---
 
 ## Gap Analysis: Current → Ideal
@@ -279,6 +284,10 @@ Working backwards from state to patterns:
 4. Measure: reduce React commit cycles from 60fps to 1-5fps for non-visual UI
 
 ### Phase 6: View Transitions + Polish (low risk, high polish)
+
+> **Superseded:** items 1–2 below were tried and removed (#1162) — see the
+> note under proposal 6 above.
+
 1. Add `@view-transition` to preset change animation
 2. Add `@view-transition` to sheet open/close
 3. Make all transitions continuous (morph, not cut)

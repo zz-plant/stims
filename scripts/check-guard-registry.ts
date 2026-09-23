@@ -3,9 +3,11 @@
  *
  * Scans staged files (falling back to unstaged edits) for whole-file TypeScript
  * suppression directives, silent empty catch blocks, hardcoded hex colors in
- * frontend JSX, `console.log`, and un-themed color literals in component
- * `src/css/*.module.css` stylesheets, pointing offenders at the design tokens
- * and debug-snapshot systems instead. Exits non-zero on any hit.
+ * frontend JSX, `console.log`, un-themed color literals in component
+ * `src/css/*.module.css` stylesheets, the View Transitions API, and
+ * hard-coded overshoot easing curves, pointing offenders at the design and
+ * motion tokens and the debug-snapshot systems instead. Exits non-zero on any
+ * hit.
  */
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -55,6 +57,51 @@ export function checkGuardRegistry(): boolean {
   for (const relPath of files) {
     const absPath = path.join(REPO_ROOT, relPath);
     if (!fs.existsSync(absPath)) continue;
+
+    // 00. Page-level transition machinery and template springs.
+    //
+    // The View Transitions API was removed on 2026-08-31 (#1162): it snapshots
+    // the page, which freezes the visualizer canvas for ~0.4s at exactly the
+    // moment the user is watching it start. Over a live render, the canvas is
+    // the product; anything that snapshots it pays with the main surface.
+    // Motion here goes through the --spring-*/--transition-* tokens, which
+    // also collapse under prefers-reduced-motion.
+    //
+    // Overshoot curves (a cubic-bezier y outside 0..1, e.g. the stock
+    // "easeOutBack" 0.34, 1.56, 0.64, 1) read as a template default and skip
+    // the reduced-motion override when hard-coded. A deliberate one opts out
+    // with a `guard-allow-overshoot: <reason>` comment.
+    if (/^src\/(?:css\/.+\.css|js\/.+\.(?:ts|tsx))$/.test(relPath)) {
+      const motionLines = fs.readFileSync(absPath, 'utf8').split('\n');
+      for (let i = 0; i < motionLines.length; i += 1) {
+        const raw = motionLines[i] ?? '';
+        const trimmed = raw.trim();
+        if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
+        if (
+          /\bstartViewTransition\b|view-transition-name|::view-transition|@view-transition/.test(
+            raw,
+          )
+        ) {
+          logError(
+            `File "${relPath}" line ${i + 1} uses the View Transitions API: "${trimmed}". It snapshots the page and freezes the visualizer canvas (removed in #1162); animate the specific element with the --spring-* tokens instead.`,
+          );
+          failed = true;
+        }
+        for (const curve of raw.matchAll(/cubic-bezier\(([^)]*)\)/g)) {
+          const [, y1, , y2] = (curve[1] ?? '').split(',').map(Number);
+          const overshoots = [y1, y2].some(
+            (y) => y !== undefined && (y > 1 || y < 0),
+          );
+          if (!overshoots) continue;
+          const scope = motionLines.slice(Math.max(0, i - 6), i + 1).join('\n');
+          if (scope.includes('guard-allow-overshoot')) continue;
+          logError(
+            `File "${relPath}" line ${i + 1} hard-codes an overshoot curve ${curve[0]}: "${trimmed}". Use var(--spring-enter) / var(--spring-exit), or annotate with "guard-allow-overshoot: <reason>".`,
+          );
+          failed = true;
+        }
+      }
+    }
 
     // 0. Component stylesheets: bare color literals that no theme can reach.
     //
