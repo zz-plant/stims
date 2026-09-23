@@ -24,6 +24,8 @@ export type OgPresetOptions = {
   fidelity?: string;
   tweak?: string;
   previewImageUri?: string;
+  /** Blurred Stims frame wall, used only when there is no preview frame. */
+  backdropImageUri?: string;
 };
 
 // The card is preview-forward: the preset's own rendered frame fills the
@@ -60,6 +62,9 @@ const BYLINE_GAP = 40;
 const BYLINE_FONT_SIZE = 25;
 const BYLINE_CHAR_RATIO = 0.52;
 const BYLINE_PREFIX = 'by ';
+// The collection label over the title. At 14px it was a smudge once a feed
+// scaled the card to ~500px wide; 18px is the smallest that survives that.
+const LABEL_FONT_SIZE = 18;
 
 export function fitByline(author: string): string {
   const available = CARD_W - MARGIN * 2 - BRAND_WIDTH - BYLINE_GAP;
@@ -140,6 +145,7 @@ export function buildPresetOgSvg({
   tags = [],
   tweak,
   previewImageUri,
+  backdropImageUri,
 }: OgPresetOptions): string {
   void id;
   const display = presentTitle(title, author);
@@ -154,7 +160,7 @@ export function buildPresetOgSvg({
   const titleBaseline = safeAuthor ? 498 : 528;
   const lineHeight = Math.round(titleSize * 1.1);
   const firstBaseline = titleBaseline - (safeLines.length - 1) * lineHeight;
-  const labelBaseline = firstBaseline - titleSize - 22;
+  const labelBaseline = firstBaseline - titleSize - 24;
 
   // Every MilkDrop frame is a different image — the corpus runs from
   // near-black to near-white. A flat overlay would grey out the bright ones,
@@ -163,7 +169,15 @@ export function buildPresetOgSvg({
   const backdrop = previewImageUri
     ? `<image href="${previewImageUri}" x="0" y="0" width="${CARD_W}" height="${CARD_H}" preserveAspectRatio="xMidYMid slice"/>
   <rect x="0" y="230" width="${CARD_W}" height="400" fill="url(#caption-scrim)"/>`
-    : `<rect width="${CARD_W}" height="${CARD_H}" fill="url(#empty-cool)"/>
+    : backdropImageUri
+      ? // No frame of this preset exists. The blurred wall of other presets
+        // (public/og/backdrop.png) is blurred past recognition so it reads as
+        // the brand, not as a picture of the preset named on top of it —
+        // and a feed tile of colour gets clicked where a flat gradient does
+        // not.
+        `<image href="${backdropImageUri}" x="0" y="0" width="${CARD_W}" height="${CARD_H}" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="0" y="230" width="${CARD_W}" height="400" fill="url(#caption-scrim)"/>`
+      : `<rect width="${CARD_W}" height="${CARD_H}" fill="url(#empty-cool)"/>
   <rect width="${CARD_W}" height="${CARD_H}" fill="url(#empty-warm)"/>`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_W}" height="${CARD_H}" viewBox="0 0 ${CARD_W} ${CARD_H}" role="img" aria-label="${escapeXml(display)}${safeAuthor ? ` by ${safeAuthor}` : ''} — a MilkDrop preset running on Stims">
@@ -185,7 +199,7 @@ export function buildPresetOgSvg({
 
   ${backdrop}
 
-  <text x="${MARGIN}" y="${labelBaseline}" font-size="14" font-weight="700" fill="rgba(247,244,235,0.62)" font-family="Space Mono, monospace" letter-spacing="2.8">${label}</text>
+  <text x="${MARGIN}" y="${labelBaseline}" font-size="${LABEL_FONT_SIZE}" font-weight="700" fill="rgba(247,244,235,0.78)" font-family="Space Mono, monospace" letter-spacing="3">${label}</text>
 
   ${safeLines
     .map(
@@ -243,6 +257,8 @@ let wasmReady: Promise<void> | null = null;
 async function ensureWasm(wasm: RenderAssets['wasm']): Promise<void> {
   if (!wasmReady) {
     wasmReady = initWasm(wasm).catch((error: unknown) => {
+      // The SEO generator shares this process-wide instance in tests.
+      if (String(error).includes('Already initialized')) return;
       wasmReady = null;
       throw error;
     });
@@ -433,6 +449,32 @@ async function loadPresetPreviewDataUri(
   return undefined;
 }
 
+// Same content-type guard as the preview: a miss on ASSETS is the SPA shell.
+let backdropPromise: Promise<string | undefined> | null = null;
+function loadBackdropDataUri(
+  env: OgPresetContext['env'],
+  origin: string,
+): Promise<string | undefined> {
+  const assets = env?.ASSETS;
+  if (!assets) return Promise.resolve(undefined);
+  backdropPromise ??= (async () => {
+    try {
+      const response = await assets.fetch(new URL('/og/backdrop.png', origin));
+      if (
+        response.ok &&
+        response.headers.get('content-type')?.startsWith('image/')
+      ) {
+        return toDataUri(await response.arrayBuffer());
+      }
+    } catch {
+      // backdrop unavailable
+    }
+    backdropPromise = null;
+    return undefined;
+  })();
+  return backdropPromise;
+}
+
 // preset-meta.json is the same table the OG middleware reads for <title> and
 // og:description, so the card and the unfurl text name the preset identically.
 // Without it the card can only guess from the slug ("Eo.S. + Phat" becomes
@@ -473,6 +515,9 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
     loadPresetMeta(context.env, url.origin),
     loadPresetPreviewDataUri(context.env, url.origin, presetId),
   ]);
+  const backdropImageUri = previewImageUri
+    ? undefined
+    : await loadBackdropDataUri(context.env, url.origin);
   const entry = meta?.[presetId];
   const { title, author } = entry
     ? { title: entry[0], author: entry[1] || undefined }
@@ -483,6 +528,7 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
     author,
     tweak,
     previewImageUri,
+    backdropImageUri,
   });
 
   if (format === 'svg') {
