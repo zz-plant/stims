@@ -334,14 +334,14 @@ warp_texture_scale = bass_att * 0.5
     const body = extractNativeShaderBody(
       'shader_body { ret = tex2d(sampler_main, uv).rgb; } dx = 0.5;',
     );
-    expect(body).toBe('ret = tex2d(currentTex, uv).rgb;');
+    expect(body).toBe('ret = texture2D(currentTex, uv).rgb;');
   });
 
   test('extracts only the first shader_body block when presets carry several', () => {
     const body = extractNativeShaderBody(
       'shader_body { ret = tex2d(sampler_main, uv).rgb; } shader_body { ret = vec3(1.0); }',
     );
-    expect(body).toBe('ret = tex2d(currentTex, uv).rgb;');
+    expect(body).toBe('ret = texture2D(currentTex, uv).rgb;');
     expect(body).not.toContain('vec3(1.0)');
     expect(body).not.toContain('}');
   });
@@ -351,7 +351,9 @@ warp_texture_scale = bass_att * 0.5
       'shader_body { if (a > 0.5) { ret = tex2d(sampler_main, uv).rgb; } else { ret = vec3(0.0); } }\n// trailing comment',
     );
     expect(body).not.toBeNull();
-    expect(body).toContain('if (a > 0.5) { ret = tex2d(currentTex, uv).rgb;');
+    expect(body).toContain(
+      'if (a > 0.5) { ret = texture2D(currentTex, uv).rgb;',
+    );
     expect(body).not.toContain('// trailing comment');
     expect(body?.split('{').length).toBe(body?.split('}').length);
   });
@@ -402,7 +404,9 @@ test('keeps native shader-body aspect as a runtime uniform', () => {
 
   expect(
     compiled.ir.shaderText.warpProgram?.normalizedLines.join(' '),
-  ).toContain('float x = aspect');
+    // `aspect` is a vec4 uniform; HLSL truncates it into a float
+    // declaration, which milkdropScalar reproduces.
+  ).toContain('float x = milkdropScalar(aspect)');
 });
 
 describe('branch flattening for direct shader execution', () => {

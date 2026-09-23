@@ -528,6 +528,54 @@ const MILKDROP_VIDEO_ECHO_HELPER = `
 // promotion at compile time instead. The vector/vector and vector/scalar
 // forms GLSL already accepts are included so the emitter can call the
 // helper unconditionally.
+/**
+ * HLSL arithmetic truncates the wider vector operand to the narrower one's
+ * width (`roam_sin * roam_cos.yzx` is float4 * float3 → float3, a MilkDrop
+ * 2 idiom); GLSL rejects mixed widths. The emitter routes `+ - * /` here
+ * whenever neither operand is provably scalar, so every width pairing needs
+ * a form: same width, vector/scalar, the six mismatched pairs, and the
+ * matrix products `mul()` lowers to.
+ */
+function buildMilkdropArithmeticHelpers(): string {
+  const ops = [
+    ['milkdropAdd', '+'],
+    ['milkdropSub', '-'],
+    ['milkdropMul', '*'],
+    ['milkdropDiv', '/'],
+  ] as const;
+  const swizzle = ['', '', 'xy', 'xyz', 'xyzw'];
+  const lines: string[] = [];
+  for (const [name, op] of ops) {
+    lines.push(`float ${name}(float a, float b) { return a ${op} b; }`);
+    for (const n of [2, 3, 4]) {
+      const v = `vec${n}`;
+      lines.push(`${v} ${name}(${v} a, ${v} b) { return a ${op} b; }`);
+      lines.push(`${v} ${name}(${v} a, float b) { return a ${op} b; }`);
+      lines.push(`${v} ${name}(float a, ${v} b) { return a ${op} b; }`);
+      for (const m of [2, 3, 4]) {
+        if (m === n) continue;
+        const k = Math.min(n, m);
+        lines.push(
+          `vec${k} ${name}(${v} a, vec${m} b) { return a.${swizzle[k]} ${op} b.${swizzle[k]}; }`,
+        );
+      }
+      const mat = `mat${n}`;
+      if (op === '*') {
+        lines.push(`${mat} ${name}(${mat} a, ${mat} b) { return a * b; }`);
+        lines.push(`${v} ${name}(${mat} a, ${v} b) { return a * b; }`);
+        lines.push(`${v} ${name}(${v} a, ${mat} b) { return a * b; }`);
+        lines.push(`${mat} ${name}(${mat} a, float b) { return a * b; }`);
+        lines.push(`${mat} ${name}(float a, ${mat} b) { return a * b; }`);
+      } else if (op === '+' || op === '-') {
+        lines.push(`${mat} ${name}(${mat} a, ${mat} b) { return a ${op} b; }`);
+      } else {
+        lines.push(`${mat} ${name}(${mat} a, float b) { return a / b; }`);
+      }
+    }
+  }
+  return lines.map((line) => `        ${line}`).join('\n');
+}
+
 const MILKDROP_HLSL_PROMOTION_HELPERS = `
         // MilkDrop 2's shader preamble (include.fx) defines these, so preset
         // bodies use them undeclared. Note M_PI_2 is 2*pi, not C's pi/2.
@@ -692,6 +740,8 @@ const MILKDROP_HLSL_PROMOTION_HELPERS = `
         vec4 milkdropVec4(float a, vec2 b, float c) { return vec4(a, b, c); }
         vec4 milkdropVec4(float a, float b, vec2 c) { return vec4(a, b, c); }
         vec4 milkdropVec4(float a, float b, float c) { return vec4(a, b, c, 0.0); }
+
+${buildMilkdropArithmeticHelpers()}
 `;
 
 // Aux-texture sampling and the control-driven feedback warp are needed by
@@ -1697,10 +1747,13 @@ type MilkdropPerFrameDeclaration = {
 function classifyPerFrameVariable(
   name: string,
   fragments: Array<string | null>,
+  hoistedSizes: ReadonlyMap<string, number> = new Map(),
 ): MilkdropPerFrameDeclaration {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  // Compound writes (`mus *= vec3(1.1, 1.0, 0.95)`) are sizing evidence
+  // too; they only never count as the variable's *first* use being a read.
   const occurrence = new RegExp(
-    `\\b${escaped}\\b(?:\\.([xyzwrgba]{1,4}))?\\s*(=(?!=))?`,
+    `\\b${escaped}\\b(?:\\.([xyzwrgba]{1,4}))?\\s*([-+*/]?=(?!=))?`,
     'gu',
   );
   let firstIsAssignment: boolean | null = null;
@@ -1726,11 +1779,26 @@ function classifyPerFrameVariable(
     const clean = stripShaderComments(fragment);
     for (const match of clean.matchAll(occurrence)) {
       const swizzle = match[1];
-      const isAssignment = match[2] === '=';
+      const operator = match[2];
+      const isAssignment = operator === '=';
       if (firstIsAssignment === null) {
         firstIsAssignment = isAssignment;
       }
+      if (!operator) {
+        continue;
+      }
       if (!isAssignment) {
+        // Compound write: size from a depth-0 vector constructor only.
+        const restFrom = match.index + match[0].length;
+        const end = clean.indexOf(';', restFrom);
+        const rhs = clean.slice(restFrom, end === -1 ? undefined : end);
+        for (const ctorMatch of rhs.matchAll(/\bvec([234])\s*\(/gu)) {
+          if (widthPreservingDepthAt(rhs, ctorMatch.index ?? 0) !== 0) continue;
+          widestComponentIndex = Math.max(
+            widestComponentIndex,
+            Number(ctorMatch[1]) - 1,
+          );
+        }
         continue;
       }
       if (swizzle) {
@@ -1798,8 +1866,9 @@ function classifyPerFrameVariable(
       )) {
         const size =
           MILKDROP_BARE_VECTOR_SIZES[bareMatch[1]] ??
-          MILKDROP_KNOWN_VECTOR_SIZES[bareMatch[1]];
-        if (size && parenDepthAt(rhs, bareMatch.index ?? 0) === 0) {
+          MILKDROP_KNOWN_VECTOR_SIZES[bareMatch[1]] ??
+          hoistedSizes.get(bareMatch[1]);
+        if (size && widthPreservingDepthAt(rhs, bareMatch.index ?? 0) === 0) {
           widestComponentIndex = Math.max(widestComponentIndex, size - 1);
         }
       }
@@ -1847,6 +1916,63 @@ function classifyPerFrameVariable(
   return { name, isLocalScratch: true, type };
 }
 
+/** Calls whose result has the width of their (first) argument. */
+const WIDTH_PRESERVING_CALLS = new Set([
+  'abs',
+  'sign',
+  'floor',
+  'ceil',
+  'fract',
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan',
+  'exp',
+  'exp2',
+  'log',
+  'log2',
+  'sqrt',
+  'inversesqrt',
+  'normalize',
+  'clamp',
+  'min',
+  'max',
+  'mix',
+  'step',
+  'smoothstep',
+  'mod',
+  'pow',
+  'saturate',
+  'milkdropLerp',
+  'milkdropMax',
+  'milkdropMin',
+  'milkdropPow',
+  'milkdropAdd',
+  'milkdropSub',
+  'milkdropMul',
+  'milkdropDiv',
+]);
+
+/**
+ * parenDepthAt, but a width-preserving call is transparent: `uvn` inside
+ * `clamp(tan(z) * uvn, -5.0, 5.0)` still decides the result's width.
+ */
+function widthPreservingDepthAt(text: string, index: number): number {
+  const stack: boolean[] = [];
+  for (let i = 0; i < index; i += 1) {
+    const char = text[i];
+    if (char === '(') {
+      const callee = /([A-Za-z_]\w*)\s*$/u.exec(text.slice(0, i))?.[1];
+      stack.push(Boolean(callee) && !WIDTH_PRESERVING_CALLS.has(callee ?? ''));
+    } else if (char === ')') {
+      stack.pop();
+    }
+  }
+  return stack.filter(Boolean).length;
+}
+
 /** Template-owned vectors a body reads bare: the stage coordinate and output. */
 const MILKDROP_BARE_VECTOR_SIZES: Readonly<Record<string, number>> = {
   uv: 2,
@@ -1890,13 +2016,32 @@ function buildPerFrameVariableDeclarations(
   names: string[],
   fragments: Array<string | null>,
 ): string {
-  return names
-    .map((name) => {
-      const decl = classifyPerFrameVariable(name, fragments);
-      return decl.isLocalScratch
+  // A scratch variable copied from another (`denominator = product;`) takes
+  // that one's width, so classify to a fixed point: each pass can size
+  // names whose sources the previous pass sized. Bounded by the chain
+  // length; four passes cover every chain in the corpus.
+  const sizes = new Map<string, number>();
+  let decls = names.map((name) => classifyPerFrameVariable(name, fragments));
+  for (let pass = 0; pass < 4; pass += 1) {
+    let changed = false;
+    for (const decl of decls) {
+      const size = { float: 1, int: 1, vec2: 2, vec3: 3, vec4: 4 }[decl.type];
+      if (decl.isLocalScratch && size > 1 && sizes.get(decl.name) !== size) {
+        sizes.set(decl.name, size);
+        changed = true;
+      }
+    }
+    if (!changed) break;
+    decls = names.map((name) =>
+      classifyPerFrameVariable(name, fragments, sizes),
+    );
+  }
+  return decls
+    .map((decl) =>
+      decl.isLocalScratch
         ? `${decl.type} ${decl.name};\n`
-        : `uniform float ${decl.name};\n`;
-    })
+        : `uniform float ${decl.name};\n`,
+    )
     .join('');
 }
 
