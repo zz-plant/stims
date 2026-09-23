@@ -16,6 +16,7 @@ import sharp from 'sharp';
 import {
   buildSeoArtifacts,
   DEFAULT_BASE_URL,
+  GENERATED_GITHUB_SOCIAL_PREVIEW_PATH,
   GENERATED_ICON_192_PATH,
   GENERATED_ICON_512_PATH,
   GENERATED_ICON_FAVICON_32_PATH,
@@ -262,6 +263,12 @@ export async function runSeoChecks(rootDir = repoRoot) {
     rootDir,
     GENERATED_OG_PERFORMANCE_PNG_PATH,
     expectedFiles.get(GENERATED_OG_PERFORMANCE_PNG_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_GITHUB_SOCIAL_PREVIEW_PATH,
+    expectedFiles.get(GENERATED_GITHUB_SOCIAL_PREVIEW_PATH) ?? '',
     results,
   );
   await compareGeneratedFile(
