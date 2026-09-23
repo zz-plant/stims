@@ -90,6 +90,12 @@ export type MilkdropWarpFieldVisual = {
   density: number;
   positions: Float32Array;
   uvs: Float32Array;
+  /**
+   * Per lattice vertex (at `uvs`), the [0,1] coordinate MilkDrop samples the
+   * previous frame from — the gather form of the same transform `positions`
+   * scatters. A warp shader reads this as its `uv`.
+   */
+  sampleUvs: Float32Array;
   indices: Uint32Array;
 };
 

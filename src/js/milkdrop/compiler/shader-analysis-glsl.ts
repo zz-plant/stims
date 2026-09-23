@@ -170,7 +170,11 @@ export function createCompositeGlslEmitter(
         tint_r: 'tint.r',
         tint_g: 'tint.g',
         tint_b: 'tint.b',
-        uv: 'vUv',
+        // Deliberately absent: \`uv\`. Both stage templates declare their own
+        // \`vec2 uv\` — in the warp stage it is the warped coordinate, the one
+        // the preset's motion lives in — and rewriting reads to \`vUv\` made
+        // every emitted warp body sample the previous frame unwarped, while
+        // its writes (\`uv *= …\`) still went to the template's copy.
       };
       const mapped = uniformMap[lower];
       if (mapped !== undefined) return mapped;
@@ -541,12 +545,12 @@ export function createCompositeGlslEmitter(
 // The GLSL emitter works on already-stringified expressions with no type
 // information attached, so detecting a 2-component argument (to decide
 // whether a vec3(...) 2-arg call needs 0.0-padding) is necessarily a
-// heuristic. `vUv` is the one 2-component symbol this shader DSL's
-// identifier resolution ever produces for a bare coordinate reference, and
-// `vec2(...)` calls are unambiguous by construction.
+// heuristic. `uv` (the stage template's own coordinate) and `vUv` are the
+// 2-component symbols identifier resolution produces for a bare coordinate
+// reference, and `vec2(...)` calls are unambiguous by construction.
 function isKnownVec2Expression(expression: string): boolean {
   const trimmed = expression.trim();
-  return trimmed === 'vUv' || /^vec2\s*\(/iu.test(trimmed);
+  return trimmed === 'uv' || trimmed === 'vUv' || /^vec2\s*\(/iu.test(trimmed);
 }
 
 /**
