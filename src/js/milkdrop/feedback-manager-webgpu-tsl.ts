@@ -1475,6 +1475,11 @@ function getShaderEnvValue(
     weighted_energy: () => shaderFloat(env.uniforms.signalEnergy),
     pi: () => shaderFloat(Math.PI),
     e: () => shaderFloat(Math.E),
+    // MilkDrop 2 include.fx constants; M_PI_2 is 2*pi. Lookups are
+    // lowercased. See MILKDROP_HLSL_PROMOTION_HELPERS for the GLSL side.
+    m_pi: () => shaderFloat(Math.PI),
+    m_pi_2: () => shaderFloat(Math.PI * 2),
+    m_inv_pi_2: () => shaderFloat(1 / (Math.PI * 2)),
     warp: () => shaderFloat(env.uniforms.warpScale),
     warp_scale: () => shaderFloat(env.uniforms.warpScale),
     dx: () => shaderFloat(env.uniforms.offsetX),
@@ -3315,7 +3320,9 @@ function createFeedbackBlendOutputNode(
         uniforms.previousTex.sample(sampleUvNode(sceneUv, uniforms.textureWrap))
           .rgb
       ).mul(uniforms.decay);
-      return vec4(previousColor.add(current.rgb), 1);
+      // Clamped like MilkDrop's 8-bit internal buffer; see the WebGL blend in
+      // feedback-manager-shared.ts for why half-float needs it.
+      return vec4(clamp(previousColor.add(current.rgb), vec3(0), vec3(1)), 1);
     }
 
     const currentUv = applyFeedbackWarpNode(
@@ -3377,7 +3384,7 @@ function createFeedbackBlendOutputNode(
     const coverage = clamp(current.a, 0, 1);
     const color = previousColor.mul(float(1).sub(coverage)).add(current.rgb);
 
-    return vec4(color, 1);
+    return vec4(clamp(color, vec3(0), vec3(1)), 1);
   })();
 }
 

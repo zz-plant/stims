@@ -1810,6 +1810,15 @@ export function extractShaderControls(
   const directProgramStatements: MilkdropShaderStatement[] = [];
   const directProgramLines: string[] = [];
   let directProgramRequired = false;
+  // Names the body declares for itself (`float3 dx = …`). A declaration makes
+  // the name a shader local, so when it collides with a per-frame control
+  // name (dx, dy, zoom, rot, r/g/b) its statements go to the direct program
+  // and not to the controls. Consuming them as controls dropped the local
+  // from the program, and every later `dx.y` read the scalar offsetX uniform
+  // instead: a "scalar swizzle" compile error on WebGL, ~70 presets. Other
+  // declared locals keep the normal path, which also tracks their values
+  // for control expressions that read them.
+  const declaredLocalNames = new Set<string>();
 
   // When processing a native shader_body, parse failures don't make the
   // raw GLSL invalid — WebGL can still execute it. Unparseable lines only
@@ -1850,6 +1859,43 @@ export function extractShaderControls(
         return;
       }
       statements.push(parsedStatement);
+      const localBaseName =
+        parsedStatement.target.toLowerCase().split('.')[0] ?? '';
+      // A vector or matrix declaration is always a local: controls are
+      // scalars. A scalar declaration is a local only inside shader_body —
+      // in the control dialect `float dx = 0.02; dx += …` is how an author
+      // sets the dx control. (The compiler strips shader_body from preset
+      // text before this point, so for .milk shaders the type is what
+      // decides: `float3 dx` is caught, `float zoom = …` is not.)
+      const declaration = parsedStatement.declaration;
+      if (
+        declaration !== null &&
+        (nativeShaderBody || /^(?:vec|mat)[234]$/u.test(declaration))
+      ) {
+        declaredLocalNames.add(localBaseName);
+      }
+      if (
+        declaredLocalNames.has(localBaseName) &&
+        !shouldRetainDirectProgramContextStatement(localBaseName)
+      ) {
+        // Still evaluated, so later control expressions that read the local
+        // (`ret = tex * scale` deriving colorScale from `vec3 scale`) see its
+        // value — but into throwaway control objects, because a local never
+        // writes the per-frame control it happens to share a name with.
+        applyShaderAstStatement({
+          statement: parsedStatement,
+          controls: structuredClone(controls),
+          expressions: structuredClone(expressions),
+          shaderEnv,
+          shaderValueEnv,
+          shaderExpressionEnv,
+          hasNativeBody: Boolean(nativeShaderBody),
+        });
+        directProgramStatements.push(parsedStatement);
+        directProgramLines.push(line);
+        supportedLineCount += 1;
+        return;
+      }
       const requiresDirectProgram = shouldEmitDirectProgramStatement(
         parsedStatement.target,
       );

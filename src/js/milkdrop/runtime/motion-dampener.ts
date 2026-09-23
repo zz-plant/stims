@@ -115,12 +115,21 @@ export function applyMotionDampening(
   const { warpField, gpuGeometry, post } = frameState;
 
   if (warpField) {
-    const { positions, uvs } = warpField;
+    const { positions, uvs, sampleUvs } = warpField;
     const count = Math.min(positions.length, uvs.length);
     for (let index = 0; index < count; index += 1) {
       // uvs are the lattice in [0,1]; positions are its transform in [-1,1].
       const lattice = (uvs[index] ?? 0) * 2 - 1;
       positions[index] = toward(lattice, positions[index] ?? lattice, scale);
+      // The gather form a warp shader samples through: same pull, [0,1].
+      if (sampleUvs) {
+        const latticeUv = uvs[index] ?? 0;
+        sampleUvs[index] = toward(
+          latticeUv,
+          sampleUvs[index] ?? latticeUv,
+          scale,
+        );
+      }
     }
   }
 
