@@ -20,6 +20,7 @@ import {
   GENERATED_ICON_512_PATH,
   GENERATED_ICON_FAVICON_32_PATH,
   GENERATED_ICON_FAVICON_SVG_PATH,
+  GENERATED_OG_BACKDROP_PNG_PATH,
   GENERATED_OG_DEFAULT_PATH,
   GENERATED_OG_DEFAULT_PNG_PATH,
   GENERATED_OG_MILKDROP_PATH,
@@ -261,6 +262,12 @@ export async function runSeoChecks(rootDir = repoRoot) {
     rootDir,
     GENERATED_OG_PERFORMANCE_PNG_PATH,
     expectedFiles.get(GENERATED_OG_PERFORMANCE_PNG_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_OG_BACKDROP_PNG_PATH,
+    expectedFiles.get(GENERATED_OG_BACKDROP_PNG_PATH) ?? '',
     results,
   );
   await compareGeneratedFile(

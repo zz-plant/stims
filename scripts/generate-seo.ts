@@ -3,7 +3,8 @@
  * images, and the preset-meta map.
  *
  * Sitemap chunk 1 holds the hand-written app routes and presets start at chunk
- * 2, 1000 URLs apiece. Also renders the OG/icon PNGs via sharp, the hero
+ * 2, 1000 URLs apiece. Also renders the OG cards via resvg (with the bundled
+ * fonts), the icon PNGs via sharp, the hero
  * screenshots, and the generated route pages under public/toys, tags, moods,
  * capabilities, and discover. Idempotent — rerun after catalog changes.
  */
@@ -19,6 +20,7 @@ import {
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
+import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import sharp from 'sharp';
 import { AUTHOR_ROUTES, DISCOVER_ROUTES } from '../functions/discover-slugs.ts';
 
@@ -47,6 +49,7 @@ export const GENERATED_OG_PERFORMANCE_PATH = 'public/og/performance.svg';
 export const GENERATED_OG_DEFAULT_PNG_PATH = 'public/og/default.png';
 export const GENERATED_OG_MILKDROP_PNG_PATH = 'public/og/milkdrop.png';
 export const GENERATED_OG_PERFORMANCE_PNG_PATH = 'public/og/performance.png';
+export const GENERATED_OG_BACKDROP_PNG_PATH = 'public/og/backdrop.png';
 export const GENERATED_ICON_FAVICON_SVG_PATH = 'public/icons/favicon.svg';
 export const GENERATED_ICON_FAVICON_32_PATH = 'public/icons/favicon-32.png';
 export const GENERATED_ICON_192_PATH = 'public/icons/icon-192.png';
@@ -122,78 +125,310 @@ const escapeXml = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
-// A row of VU-meter bars, echoing the app's own level meter — a real
-// instrument reading, not a decorative logo mark. Heights are fixed (not
-// randomized) so output is reproducible.
-const VU_BAR_HEIGHTS = [26, 46, 78, 54, 88, 38, 64, 44];
-const buildVuMeter = (x: number, y: number) => {
-  const barWidth = 11;
-  const gap = 7;
-  const peakIndex = VU_BAR_HEIGHTS.indexOf(Math.max(...VU_BAR_HEIGHTS));
-  const bars = VU_BAR_HEIGHTS.map((h, i) => {
-    const bx = i * (barWidth + gap);
-    const fill = i === peakIndex ? '#f47a54' : 'rgba(119,201,255,0.55)';
-    return `<rect x="${bx}" y="${-h}" width="${barWidth}" height="${h}" fill="${fill}" />`;
-  }).join('');
-  return `<g transform="translate(${x},${y})">${bars}</g>`;
-};
+// ── Social cards ────────────────────────────────────────────────────────
+// A link preview is a thumbnail in a feed, competing with photos. The cards
+// these replaced were a headline over a drawn oscilloscope line and a VU
+// meter — a picture of a developer tool, not of the product — and rendered
+// through sharp, which cannot see the bundled fonts, so every one shipped in
+// Arial. They now lead with real MilkDrop frames: a wall of them, bleeding off
+// the right edge, with the words on a dark ground that fades into it.
+//
+// The frames are stills of bundled presets, taken from the same preview
+// renders the browse grid shows (public/og/frames, one file per preset id).
+// Chosen for bright structure on a dark field: they read at thumbnail size
+// and leave the headline its contrast.
+export const OG_FRAME_DIR = 'public/og/frames';
+const FRAME = {
+  cosmicDust: 'geiss-cosmic-dust-2-quasistatic-noise-dual-pane-window',
+  threeLayers: 'geiss-3-layers-tunnel-mix',
+  atomSmasher: 'benski-atom-smasher',
+  strangelyDynamic: 'flexi-strangely-dynamic-world',
+  babyFlower: 'stahlregen-geiss-old-school-baby-flower-v2-1',
+  glowsticks:
+    'eo-s-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2i2-feat-flexi-phat',
+  polyevolution: 'empr-random-changing-polyevolution',
+  eightySix: '86',
+  astral: 'flexi-martin-astral-projection',
+  starburst: 'eos-starburst-05-phasing',
+} as const;
+export const OG_FRAMES: readonly string[] = Object.values(FRAME);
 
-// A scope trace spanning the full canvas width, kept within a fixed vertical
-// band so it never runs into the footer or corner meter.
-const SCOPE_TRACE_PATH =
-  'M0,500 Q60,438 120,500 T240,502 T360,462 T480,522 T600,480 T720,538 T840,470 T960,512 T1080,458 T1200,500';
+const OG_GROUND = '#070a0e';
+const OG_INK = '#f7f4eb';
+const OG_CORAL = '#f47a54';
+const OG_MARGIN = 64;
+
+// Tiles are 16:9 like the previews. Three columns from x=560, the last one
+// bleeding off the card; each column is nudged vertically so the wall reads
+// as a stack of screens rather than a spreadsheet. Frames are placed by hand:
+// the middle column is the only one seen whole, so it carries the four
+// strongest; the left one sits under the fade and the right one is cropped,
+// and neither repeats a neighbour.
+const TILE_W = 272;
+const TILE_H = 153;
+const TILE_GAP = 10;
+type OgColumn = { x: number; offset: number; frames: readonly string[] };
+const TILE_COLUMNS: OgColumn[] = [
+  {
+    x: 560,
+    offset: -58,
+    frames: [
+      FRAME.cosmicDust,
+      FRAME.babyFlower,
+      FRAME.astral,
+      FRAME.atomSmasher,
+      FRAME.starburst,
+    ],
+  },
+  {
+    x: 560 + TILE_W + TILE_GAP,
+    offset: 24,
+    frames: [
+      FRAME.strangelyDynamic,
+      FRAME.eightySix,
+      FRAME.threeLayers,
+      FRAME.glowsticks,
+    ],
+  },
+  {
+    x: 560 + (TILE_W + TILE_GAP) * 2,
+    offset: -96,
+    frames: [
+      FRAME.polyevolution,
+      // Only this column's left 76px shows, so it needs frames that fill to
+      // the edge; the starburst is centred and read as a black tile here.
+      FRAME.atomSmasher,
+      FRAME.cosmicDust,
+      FRAME.astral,
+      FRAME.babyFlower,
+    ],
+  },
+];
+
+type OgTile = { x: number; y: number; frame: string };
+
+export function layoutOgTiles(columns: OgColumn[] = TILE_COLUMNS): OgTile[] {
+  const tiles: OgTile[] = [];
+  for (const column of columns) {
+    for (
+      let y = column.offset, row = 0;
+      y < ogHeight;
+      y += TILE_H + TILE_GAP, row += 1
+    ) {
+      tiles.push({
+        x: column.x,
+        y,
+        frame: column.frames[row % column.frames.length],
+      });
+    }
+  }
+  return tiles;
+}
+
+export type OgFrameHref = (frameId: string) => string;
+
+/** The committed SVG points at the frame files beside it in /og/. */
+export const relativeOgFrameHref: OgFrameHref = (frameId) =>
+  `frames/${encodeURIComponent(frameId)}.jpg`;
+
+function buildOgTileWall(tiles: OgTile[], frameHref: OgFrameHref) {
+  return tiles
+    .map(
+      (
+        { x, y, frame },
+        index,
+      ) => `<clipPath id="tile-${index}"><rect x="${x}" y="${y}" width="${TILE_W}" height="${TILE_H}" rx="6" /></clipPath>
+    <image href="${escapeXml(frameHref(frame))}" x="${x}" y="${y}" width="${TILE_W}" height="${TILE_H}" preserveAspectRatio="xMidYMid slice" clip-path="url(#tile-${index})" />
+    <rect x="${x + 0.5}" y="${y + 0.5}" width="${TILE_W - 1}" height="${TILE_H - 1}" rx="6" fill="none" stroke="rgba(255,255,255,0.1)" />`,
+    )
+    .join('\n    ');
+}
 
 export const buildOgSvg = ({
-  title,
-  subtitle,
+  headline,
+  headlineSize = 84,
+  subline,
+  eyebrowLead,
   eyebrow,
-  chip,
+  ariaLabel,
+  frameHref = relativeOgFrameHref,
 }: {
-  title: string;
-  subtitle: string;
+  /** One entry per line. Two lines at 84px is the design size. */
+  headline: string[];
+  headlineSize?: number;
+  subline: string[];
+  /** Coral lead-in of the eyebrow, e.g. the brand. Optional. */
+  eyebrowLead?: string;
   eyebrow: string;
-  chip?: string;
+  ariaLabel: string;
+  frameHref?: OgFrameHref;
 }) => {
-  const labelY = chip ? 96 : 60;
-  const eyebrowY = chip ? 176 : 140;
-  const titleY = chip ? 258 : 222;
-  const subtitleY = chip ? 314 : 278;
+  const headlineLeading = Math.round(headlineSize * 1.04);
+  const eyebrowY = 118;
+  const firstHeadlineY = eyebrowY + 38 + headlineSize * 0.86;
+  const lastHeadlineY =
+    firstHeadlineY + (headline.length - 1) * headlineLeading;
+  const firstSublineY = lastHeadlineY + 70;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}" role="img" aria-label="${escapeHtml(title)}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}" role="img" aria-label="${escapeHtml(ariaLabel)}">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#12191f" />
-      <stop offset="100%" stop-color="#0b1014" />
+    <linearGradient id="ground-fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="${OG_GROUND}" />
+      <stop offset="0.5" stop-color="${OG_GROUND}" />
+      <stop offset="0.64" stop-color="${OG_GROUND}" stop-opacity="0.82" />
+      <stop offset="0.8" stop-color="${OG_GROUND}" stop-opacity="0.22" />
+      <stop offset="1" stop-color="${OG_GROUND}" stop-opacity="0" />
     </linearGradient>
-    <radialGradient id="glow" cx="82%" cy="16%" r="55%">
-      <stop offset="0%" stop-color="rgba(119, 201, 255, 0.18)" />
-      <stop offset="100%" stop-color="rgba(119, 201, 255, 0)" />
+    <radialGradient id="warm" cx="0.1" cy="1" r="0.7">
+      <stop offset="0" stop-color="${OG_CORAL}" stop-opacity="0.18" />
+      <stop offset="1" stop-color="${OG_CORAL}" stop-opacity="0" />
     </radialGradient>
   </defs>
-  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#bg)" />
-  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#glow)" />
-
-  <!-- Scope graticule + trace, full-bleed — reads as a live signal, not decoration -->
-  <g stroke="rgba(119,201,255,0.14)" stroke-width="1">
-    ${Array.from({ length: 11 }, (_, i) => `<line x1="${i * 120}" y1="560" x2="${i * 120}" y2="570" />`).join('')}
+  <rect width="${ogWidth}" height="${ogHeight}" fill="${OG_GROUND}" />
+  <g>
+    ${buildOgTileWall(layoutOgTiles(), frameHref)}
   </g>
-  <path d="${SCOPE_TRACE_PATH}" fill="none" stroke="rgba(244,122,84,0.16)" stroke-width="2" transform="translate(0,12)" />
-  <path d="${SCOPE_TRACE_PATH}" fill="none" stroke="rgba(119,201,255,0.4)" stroke-width="3" />
+  <rect width="1000" height="${ogHeight}" fill="url(#ground-fade)" />
+  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#warm)" />
 
-  ${
-    chip
-      ? `<circle cx="92" cy="${labelY - 5}" r="4" fill="#f47a54" />
-  <text x="108" y="${labelY}" font-size="15" font-weight="700" fill="#77c9ff" font-family="Space Mono, monospace" letter-spacing="2">${escapeHtml(chip.toUpperCase())}</text>`
+  <text x="${OG_MARGIN}" y="${eyebrowY}" font-size="20" font-weight="700" font-family="Space Mono, monospace" letter-spacing="3">${
+    eyebrowLead
+      ? `<tspan fill="${OG_CORAL}">${escapeHtml(eyebrowLead.toUpperCase())}</tspan><tspan fill="rgba(247,244,235,0.62)"> · </tspan>`
       : ''
-  }
-  <text x="88" y="${eyebrowY}" font-size="28" font-weight="600" fill="#77c9ff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(eyebrow)}</text>
-  <text x="88" y="${titleY}" font-size="62" font-weight="700" fill="#f7f4eb" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(title)}</text>
-  <text x="88" y="${subtitleY}" font-size="26" fill="rgba(247,244,235,0.76)" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(subtitle)}</text>
+  }<tspan fill="rgba(247,244,235,0.72)">${escapeHtml(eyebrow.toUpperCase())}</tspan></text>
+  ${headline
+    .map(
+      (line, index) =>
+        `<text x="${OG_MARGIN - 4}" y="${Math.round(firstHeadlineY + index * headlineLeading)}" font-size="${headlineSize}" font-weight="700" fill="${OG_INK}" font-family="Space Grotesk, sans-serif" letter-spacing="-2">${escapeHtml(line)}</text>`,
+    )
+    .join('\n  ')}
+  ${subline
+    .map(
+      (line, index) =>
+        `<text x="${OG_MARGIN}" y="${Math.round(firstSublineY + index * 40)}" font-size="30" font-weight="500" fill="rgba(247,244,235,0.82)" font-family="Space Grotesk, sans-serif">${escapeHtml(line)}</text>`,
+    )
+    .join('\n  ')}
 
-  ${buildVuMeter(996, 560)}
-  <text x="88" y="602" font-size="20" font-weight="700" fill="#f47a54" font-family="Space Mono, monospace">toil.fyi</text>
+  <text x="${OG_MARGIN}" y="566" font-size="24" font-weight="700" fill="${OG_CORAL}" font-family="Space Mono, monospace" letter-spacing="1">toil.fyi</text>
 </svg>`;
 };
+
+/**
+ * The same wall, full-bleed, blurred and darkened: the backdrop the dynamic
+ * preset card (functions/api/og-preset.ts) falls back to when a preset has
+ * no preview frame. Blurred past recognition on purpose — it must read as
+ * "Stims", never as a picture of the preset named on top of it.
+ */
+export const buildOgBackdropSvg = ({
+  frameHref = relativeOgFrameHref,
+}: {
+  frameHref?: OgFrameHref;
+} = {}) => {
+  const columns = [-150, 132, 414, 696, 978].map((x, index) => ({
+    x,
+    offset: [-40, -120, -10, -90, -60][index],
+    // Rotate the frame list per column so no two neighbours match.
+    frames: OG_FRAMES.map(
+      (_, row) => OG_FRAMES[(index * 3 + row * 4) % OG_FRAMES.length],
+    ),
+  }));
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}">
+  <defs>
+    <filter id="soften" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="22" />
+    </filter>
+  </defs>
+  <rect width="${ogWidth}" height="${ogHeight}" fill="${OG_GROUND}" />
+  <g filter="url(#soften)">
+    ${buildOgTileWall(layoutOgTiles(columns), frameHref)}
+  </g>
+  <rect width="${ogWidth}" height="${ogHeight}" fill="${OG_GROUND}" fill-opacity="0.45" />
+</svg>`;
+};
+
+let resvgReady: Promise<void> | null = null;
+let ogFonts: Promise<Uint8Array[]> | null = null;
+
+async function loadOgFonts(rootDir: string) {
+  ogFonts ??= Promise.all(
+    [
+      'SpaceGrotesk-Regular.ttf',
+      'SpaceGrotesk-Medium.ttf',
+      'SpaceGrotesk-Bold.ttf',
+      'SpaceMono-Regular.ttf',
+      'SpaceMono-Bold.ttf',
+    ].map(
+      async (name) =>
+        new Uint8Array(
+          await readFile(path.join(rootDir, 'public/og/fonts', name)),
+        ),
+    ),
+  );
+  return ogFonts;
+}
+
+/** Frames inlined as data URIs: resvg does not fetch relative hrefs. */
+async function loadInlineFrameHref(rootDir: string): Promise<OgFrameHref> {
+  const entries = await Promise.all(
+    OG_FRAMES.map(async (frame) => {
+      const bytes = await readFile(
+        path.join(rootDir, OG_FRAME_DIR, `${frame}.jpg`),
+      );
+      return [frame, `data:image/jpeg;base64,${bytes.toString('base64')}`];
+    }),
+  );
+  const table = new Map(entries as Array<[string, string]>);
+  return (frame) => table.get(frame) ?? '';
+}
+
+/**
+ * Rasterizes a social card with resvg and the bundled Space Grotesk / Space
+ * Mono — the renderer and fonts the dynamic preset card uses at the edge, so
+ * the static and dynamic cards set type identically.
+ */
+export async function renderOgPng(
+  svg: string,
+  rootDir = repoRoot,
+  { width = ogWidth }: { width?: number } = {},
+) {
+  resvgReady ??= readFile(
+    path.join(rootDir, 'node_modules/@resvg/resvg-wasm/index_bg.wasm'),
+  ).then((wasm) =>
+    initWasm(wasm).catch((error: unknown) => {
+      // One wasm instance per process: the edge card (og-preset.ts) may have
+      // initialized it first when both are loaded together, as in tests.
+      if (!String(error).includes('Already initialized')) throw error;
+    }),
+  );
+  await resvgReady;
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: 'width', value: width },
+    background: OG_GROUND,
+    font: {
+      fontBuffers: await loadOgFonts(rootDir),
+      loadSystemFonts: false,
+      defaultFontFamily: 'Space Grotesk',
+      sansSerifFamily: 'Space Grotesk',
+      monospaceFamily: 'Space Mono',
+    },
+  });
+  let png: Buffer;
+  try {
+    png = Buffer.from(resvg.render().asPng());
+  } finally {
+    resvg.free();
+  }
+  // A truecolor card of real frames is ~1MB, and WhatsApp (among others)
+  // silently drops a preview image much past 300KB. A 256-colour palette
+  // with dithering is indistinguishable at feed size and lands well under.
+  return sharp(png)
+    .png({ palette: true, quality: 90, effort: 10, compressionLevel: 9 })
+    .toBuffer();
+}
+
+/** Presets on offer, floored to the hundred so the card ages gracefully. */
+export const formatPresetCountClaim = (count: number) =>
+  `${(Math.floor(count / 100) * 100).toLocaleString('en-US')}+`;
 
 // The app mark: a square tunnel receding to a hot core — MilkDrop's warp/zoom
 // feedback, which is what the product actually does. Drawn on the Signal Panel
@@ -446,7 +681,7 @@ export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
     },
     {
       path: '/milkdrop/',
-      imagePath: '/og/milkdrop.svg',
+      imagePath: '/og/milkdrop.png',
       imageTitle: `${milkdrop.title} | Stims`,
       imageCaption:
         'Compatibility alias that immediately redirects to the canonical Stims route.',
@@ -735,24 +970,42 @@ export async function buildSeoArtifacts(
   const presetChunks = chunkSitemapEntries(
     await buildPresetSitemapEntries(rootDir, { baseUrl }),
   );
-  const defaultOgSvg = buildOgSvg({
-    title: 'Stims',
-    subtitle: 'MilkDrop-inspired visuals for your music',
-    eyebrow: 'Music-reactive in the browser',
-    chip: 'No install',
-  });
-  const milkdropOgSvg = buildOgSvg({
-    title: milkdrop.title,
-    subtitle: 'The original presets, reacting to your music',
+  const presetMeta = await buildPresetMetaMap(rootDir);
+  const presetCount = formatPresetCountClaim(Object.keys(presetMeta).length);
+  const homeSubline = [
+    `${presetCount} MilkDrop visuals that react`,
+    'to your music. Free, in your browser.',
+  ];
+  const defaultOgCard = {
+    headline: ['Stims'],
+    headlineSize: 128,
+    subline: homeSubline,
     eyebrow: 'Browser music visualizer',
-    chip: 'No account',
-  });
-  const performanceOgSvg = buildOgSvg({
-    title: 'Compatibility and Performance',
-    subtitle: 'Browser support, automatic quality, and what to change',
-    eyebrow: 'Before you start',
-    chip: 'Performance guide',
-  });
+    ariaLabel: `Stims: ${presetCount} MilkDrop visuals that react to your music, free in your browser`,
+  };
+  const milkdropOgCard = {
+    headline: ['Your music,', 'visualized.'],
+    subline: homeSubline,
+    eyebrowLead: 'Stims',
+    eyebrow: 'MilkDrop visualizer',
+    ariaLabel: `Your music, visualized. ${presetCount} MilkDrop visuals that react to your music, free in your browser.`,
+  };
+  const performanceOgCard = {
+    headline: ['Will it run', 'on your machine?'],
+    headlineSize: 72,
+    subline: [
+      'Browser support, automatic quality,',
+      'and what to change for smooth visuals.',
+    ],
+    eyebrowLead: 'Stims',
+    eyebrow: 'Performance guide',
+    ariaLabel:
+      'Will Stims run on your machine? Browser support, automatic quality, and what to change.',
+  };
+  const inlineFrames = await loadInlineFrameHref(rootDir);
+  const defaultOgSvg = buildOgSvg(defaultOgCard);
+  const milkdropOgSvg = buildOgSvg(milkdropOgCard);
+  const performanceOgSvg = buildOgSvg(performanceOgCard);
   const iconSvg = buildAppIconSvg();
   const maskIconSvg = buildMaskIconSvg();
   // Only consumed by the .ico below; nothing links a standalone 16px PNG.
@@ -782,10 +1035,10 @@ export async function buildSeoArtifacts(
       },
       {
         relativePath: GENERATED_OG_DEFAULT_PNG_PATH,
-        contents: await renderSvgPng(defaultOgSvg, {
-          width: ogWidth,
-          height: ogHeight,
-        }),
+        contents: await renderOgPng(
+          buildOgSvg({ ...defaultOgCard, frameHref: inlineFrames }),
+          rootDir,
+        ),
       },
       {
         relativePath: GENERATED_OG_MILKDROP_PATH,
@@ -793,10 +1046,10 @@ export async function buildSeoArtifacts(
       },
       {
         relativePath: GENERATED_OG_MILKDROP_PNG_PATH,
-        contents: await renderSvgPng(milkdropOgSvg, {
-          width: ogWidth,
-          height: ogHeight,
-        }),
+        contents: await renderOgPng(
+          buildOgSvg({ ...milkdropOgCard, frameHref: inlineFrames }),
+          rootDir,
+        ),
       },
       {
         relativePath: GENERATED_OG_PERFORMANCE_PATH,
@@ -804,10 +1057,19 @@ export async function buildSeoArtifacts(
       },
       {
         relativePath: GENERATED_OG_PERFORMANCE_PNG_PATH,
-        contents: await renderSvgPng(performanceOgSvg, {
-          width: ogWidth,
-          height: ogHeight,
-        }),
+        contents: await renderOgPng(
+          buildOgSvg({ ...performanceOgCard, frameHref: inlineFrames }),
+          rootDir,
+        ),
+      },
+      {
+        relativePath: GENERATED_OG_BACKDROP_PNG_PATH,
+        // Half size: it is blurred, and the edge upscales it under the card.
+        contents: await renderOgPng(
+          buildOgBackdropSvg({ frameHref: inlineFrames }),
+          rootDir,
+          { width: ogWidth / 2 },
+        ),
       },
       {
         relativePath: GENERATED_ICON_FAVICON_SVG_PATH,
@@ -872,7 +1134,7 @@ export async function buildSeoArtifacts(
         // on every preset route, so the ~33KB over a pretty-printed copy is
         // real. biome.json exempts it (and the rest of the generated JSON under
         // public/) from the formatter so the two cannot fight over the shape.
-        contents: JSON.stringify(await buildPresetMetaMap(rootDir)),
+        contents: JSON.stringify(presetMeta),
       },
       {
         relativePath: GENERATED_ROBOTS_PATH,

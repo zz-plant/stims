@@ -1,12 +1,20 @@
 import { describe, expect, test } from 'bun:test';
+import { existsSync, statSync } from 'node:fs';
 import {
   isAllowedAuthorSlug,
   isAllowedDiscoverSlug,
 } from '../../functions/discover-slugs.ts';
 import {
+  buildOgBackdropSvg,
+  buildOgSvg,
   buildSitemapChunk,
   buildSitemapEntries,
+  formatPresetCountClaim,
   getSitemapRouteSpecs,
+  layoutOgTiles,
+  OG_FRAME_DIR,
+  OG_FRAMES,
+  renderOgPng,
 } from '../../scripts/generate-seo.ts';
 
 const milkdrop = {
@@ -100,5 +108,54 @@ describe('generate-seo sitemap routes', () => {
       '<image:title>Compatibility and Performance | Stims</image:title>',
     );
     expect(xml).not.toContain('https://toil.fyi/milkdrop/');
+  });
+});
+
+describe('generate-seo social cards', () => {
+  test('every frame on the card wall exists on disk', () => {
+    for (const frame of OG_FRAMES) {
+      expect(existsSync(`${OG_FRAME_DIR}/${frame}.jpg`)).toBe(true);
+    }
+  });
+
+  // Two copies of one frame side by side read as a rendering glitch.
+  test('no tile repeats the frame of a neighbour beside or below it', () => {
+    const tiles = layoutOgTiles();
+    for (const a of tiles) {
+      for (const b of tiles) {
+        if (a === b || a.frame !== b.frame) continue;
+        const adjacent =
+          Math.abs(a.x - b.x) <= 300 && Math.abs(a.y - b.y) <= 200;
+        expect(adjacent).toBe(false);
+      }
+    }
+  });
+
+  test('the committed SVG points at the frame files beside it', () => {
+    const svg = buildOgSvg({
+      headline: ['Your music,', 'visualized.'],
+      subline: ['2,600+ MilkDrop visuals'],
+      eyebrow: 'MilkDrop visualizer',
+      ariaLabel: 'Your music, visualized.',
+    });
+    expect(svg).toContain('href="frames/');
+    expect(svg).not.toContain('data:image');
+    expect(svg).toContain('>Your music,<');
+    expect(svg).toContain('toil.fyi');
+  });
+
+  test('floors the preset count so the card does not overclaim', () => {
+    expect(formatPresetCountClaim(2679)).toBe('2,600+');
+    expect(formatPresetCountClaim(900)).toBe('900+');
+  });
+
+  // WhatsApp and some other scrapers drop preview images much past 300KB.
+  test('rendered cards stay small enough for every unfurler', async () => {
+    const svg = buildOgBackdropSvg({ frameHref: () => '' });
+    const png = await renderOgPng(svg);
+    expect(png.length).toBeLessThan(300 * 1024);
+    for (const file of ['milkdrop', 'default', 'performance']) {
+      expect(statSync(`public/og/${file}.png`).size).toBeLessThan(300 * 1024);
+    }
   });
 });
