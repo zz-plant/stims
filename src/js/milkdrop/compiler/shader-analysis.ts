@@ -255,7 +255,10 @@ export function extractNativeShaderBody(shaderText: string) {
         line,
       ),
     )
-    .map((line) => `  ${line};`);
+    // Through the same normaliser as the body: these are HLSL too, and a
+    // raw \`float2 rs;\` hoisted above the body was a GLSL syntax error that
+    // failed the whole program (15 cream-of-the-crop presets).
+    .map((line) => `  ${normalizeHlslToGlsl(line)};`);
   const rawBody =
     extractShaderBodyBlock(shaderText, openBrace) ??
     shaderText.slice(openBrace + 1);

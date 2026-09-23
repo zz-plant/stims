@@ -104,6 +104,16 @@ function emitExpression(
  * offline scan). A written name wins over the alias, the way a local would in
  * HLSL.
  */
+/** Relational operators → the component-wise overload sets in the preamble. */
+const COMPARISON_HELPERS: Readonly<Record<string, string>> = {
+  '<': 'milkdropLt',
+  '<=': 'milkdropLe',
+  '>': 'milkdropGt',
+  '>=': 'milkdropGe',
+  '==': 'milkdropEq',
+  '!=': 'milkdropNe',
+};
+
 export function createCompositeGlslEmitter(
   shadowedIdentifiers: ReadonlySet<string> = new Set(),
 ): GlslEmitter {
@@ -210,8 +220,12 @@ export function createCompositeGlslEmitter(
       if (op === '&&' || op === '||') {
         return `((abs(${left}) > 0.000001 ${op} abs(${right}) > 0.000001) ? 1.0 : 0.0)`;
       }
-      if (['<', '<=', '>', '>=', '==', '!='].includes(op)) {
-        return `((${left} ${op} ${right}) ? 1.0 : 0.0)`;
+      // Through overload sets, not a ternary: HLSL compares vectors
+      // component-wise (`left > 0.5` on a float3 is a float3 mask), and GLSL
+      // only allows scalar operands to relational operators.
+      const comparison = COMPARISON_HELPERS[op];
+      if (comparison) {
+        return `${comparison}(${left}, ${right})`;
       }
       if (op === '%') {
         return `milkdropIntMod(${left}, ${right})`;
@@ -482,17 +496,10 @@ export function createCompositeGlslEmitter(
       if (constructorName === 'vec3') {
         const x = args[0] ?? '0.0';
         if (args.length === 2) {
-          const y = args[1] ?? x;
-          // HLSL's float3(scalar, scalar) needs a padded third component to
-          // become valid GLSL vec3(...). But when the first arg is already a
-          // 2-component expression (e.g. the `uv`/`vUv` texture coordinate,
-          // as in `float3(uv, time / 10.0)` for a tex3D() call), it already
-          // supplies 2 of the 3 components — padding a third on top produces
-          // 4 total components, which GLSL rejects as "too many arguments".
-          if (isKnownVec2Expression(x)) {
-            return `vec3(${x}, ${y})`;
-          }
-          return `vec3(${x}, ${y}, 0.0)`;
+          // Which argument is the vector is a type question this emitter
+          // cannot answer from text, so GLSL's overload resolution does:
+          // milkdropVec3 has a form for each split (see the preamble).
+          return `milkdropVec3(${x}, ${args[1] ?? x})`;
         }
         const y = args[1] ?? x;
         const z = args[2] ?? x;
@@ -500,10 +507,19 @@ export function createCompositeGlslEmitter(
       }
       if (constructorName === 'vec4' || constructorName === 'float4') {
         const x = args[0] ?? '0.0';
+        // Same split problem as vec3: `float4(uv, 0, 1)` is three arguments
+        // for four components. Padding with x used to emit vec4(uv, 0, 1, uv).
+        if (args.length === 2 || args.length === 3) {
+          return `milkdropVec4(${args.join(', ')})`;
+        }
         const y = args[1] ?? x;
         const z = args[2] ?? x;
         const w = args[3] ?? x;
         return `vec4(${x}, ${y}, ${z}, ${w})`;
+      }
+      const matrixMatch = /^float([234])x([234])$/u.exec(constructorName);
+      if (matrixMatch && matrixMatch[1] === matrixMatch[2]) {
+        return `mat${matrixMatch[1]}(${args.join(', ')})`;
       }
       if (constructorName === 'float') {
         return `float(${args[0] ?? '0.0'})`;
@@ -540,17 +556,6 @@ export function createCompositeGlslEmitter(
       return `${object}_${lowerProp}`;
     },
   };
-}
-
-// The GLSL emitter works on already-stringified expressions with no type
-// information attached, so detecting a 2-component argument (to decide
-// whether a vec3(...) 2-arg call needs 0.0-padding) is necessarily a
-// heuristic. `uv` (the stage template's own coordinate) and `vUv` are the
-// 2-component symbols identifier resolution produces for a bare coordinate
-// reference, and `vec2(...)` calls are unambiguous by construction.
-function isKnownVec2Expression(expression: string): boolean {
-  const trimmed = expression.trim();
-  return trimmed === 'uv' || trimmed === 'vUv' || /^vec2\s*\(/iu.test(trimmed);
 }
 
 /**
@@ -644,7 +649,9 @@ function emitTextureSample(
 
 function splitGlslConstructorArgs(expression: string): string[] | null {
   const trimmed = expression.trim();
-  const match = trimmed.match(/^(?:vec[234]|float[234])\((.*)\)$/s);
+  const match = trimmed.match(
+    /^(?:vec[234]|float[234]|milkdropVec[34])\((.*)\)$/s,
+  );
   if (!match) {
     return null;
   }
@@ -857,7 +864,10 @@ export function generateGlslFromShaderStatements(
     const rhs =
       width === 1
         ? `milkdropScalar(${expressionGlsl})`
-        : width && !new RegExp(`^vec${width}\\(`, 'u').test(expressionGlsl)
+        : width &&
+            !new RegExp(`^(?:vec|milkdropVec)${width}\\(`, 'u').test(
+              expressionGlsl,
+            )
           ? `vec${width}(${expressionGlsl})`
           : expressionGlsl;
     const glslOperator = COMPOUND_OPERATORS.has(operator) ? operator : '=';
@@ -896,8 +906,10 @@ function collectTargetWidths(
     const dot = target.indexOf('.');
     if (dot !== -1) {
       const swizzle = target.slice(dot + 1);
-      if (swizzle.length >= 2 && swizzle.length <= 4) {
-        widths.set(target, swizzle.length as 2 | 3 | 4);
+      if (swizzle.length >= 1 && swizzle.length <= 4) {
+        // One component is a scalar write: HLSL truncates a vector RHS to
+        // its first component (`ret.y = GetPixel(uv) - …`), GLSL rejects it.
+        widths.set(target, swizzle.length as 1 | 2 | 3 | 4);
       }
       swizzleWrites.add(target.slice(0, dot));
       continue;
