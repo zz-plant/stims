@@ -938,6 +938,14 @@ export function SettingsSheetPanel({
               <h3 className="ctl-section__title">Stage overlays</h3>
             </div>
             <SwitchRow
+              label="Preset title card"
+              hint="Shows the preset's name large on the stage for a moment each time it changes."
+              checked={overlays.presetTitleCard}
+              onChange={(next) =>
+                setStageOverlayPreference({ presetTitleCard: next })
+              }
+            />
+            <SwitchRow
               label="Strudel live-coding lab"
               hint="Code music patterns on the stage and drive the visuals with them."
               checked={overlays.strudelLab}

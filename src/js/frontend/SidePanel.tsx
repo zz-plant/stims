@@ -66,6 +66,10 @@ type SidePanelProps = {
   // body let CodeMirror render its whole document at full height, pushing
   // every tool below the code thousands of pixels out of reach.
   fillBody?: boolean;
+  // When true, the sheet takes most of a desktop viewport instead of a
+  // 560px rail. Browse wants this: a catalog of visual programs read three
+  // tiles across is a filing cabinet, not a gallery.
+  wide?: boolean;
 };
 
 export function SidePanel({
@@ -76,6 +80,7 @@ export function SidePanel({
   onOpen,
   stageAnchored = false,
   fillBody = false,
+  wide = false,
 }: SidePanelProps) {
   const [exiting, setExiting] = useState(false);
   const closeTimerRef = useRef<number | null>(null);
@@ -362,6 +367,7 @@ export function SidePanel({
         className={styles.panel}
         data-exiting={String(exiting)}
         data-stage-anchored={stageAnchored ? 'true' : undefined}
+        data-wide={wide ? 'true' : undefined}
         role="dialog"
         aria-modal={stageAnchored ? undefined : 'true'}
         aria-label={title}

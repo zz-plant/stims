@@ -157,6 +157,32 @@ describe('PresetArtwork', () => {
     dispose();
   });
 
+  // The slot is typographic, not empty: the preset's own name (a true fact
+  // about it, with the author chain peeled off for the card's byline) set as
+  // display type, still with no drawn depiction of any kind.
+  test('sets the preset name as type in the empty slot', async () => {
+    const { container, dispose } = createToyContainer('artwork-title');
+    const rendered = await renderArtwork(container, {
+      entry: {
+        ...makeEntry('titled-no-thumb'),
+        title: 'Geiss - Swirlie',
+        author: 'Geiss',
+      },
+      preview: null,
+    });
+    await failThumbnail(container);
+
+    const title = container.querySelector(
+      '.stims-shell__preset-art-placeholder-title',
+    );
+    expect(title?.textContent).toBe('Swirlie');
+    expect(container.querySelector('svg')).toBeNull();
+    expect(container.textContent).toContain('No preview');
+
+    rendered.dispose();
+    dispose();
+  });
+
   test('shows a frame the preset actually rendered once one exists', async () => {
     setPresetStillEncoderForTests(() => 'data:image/webp;base64,real');
     // Stands in for a live tile — hover audition, or the ?liveTiles flag —

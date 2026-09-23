@@ -2006,6 +2006,7 @@ function StimsWorkspaceAppShell() {
         title={getToolLabel(ui.routeState.panel ?? 'browse')}
         stageAnchored={stageAnchoredToolOpen}
         fillBody={sidePanelFillBody}
+        wide={ui.routeState.panel === 'browse'}
         onOpen={handleSidePanelOpen}
       >
         {/* Panel-anchored hints render inside the panel they describe, not in
