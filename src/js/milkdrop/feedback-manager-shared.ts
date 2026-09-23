@@ -611,6 +611,87 @@ const MILKDROP_HLSL_PROMOTION_HELPERS = `
         float milkdropDot(vec4 a, vec4 b) { return dot(a, b); }
         float milkdropDot(vec4 a, float b) { return dot(a, vec4(b)); }
         float milkdropDot(float a, vec4 b) { return dot(vec4(a), b); }
+        // HLSL relational operators work component-wise and yield a mask of
+        // the operands' width (\`left > 0.5\` on a float3 is a float3); GLSL
+        // only defines them on scalars. The emitter sends every comparison
+        // here, and a scalar pair still gives the old 1.0/0.0.
+        float milkdropLt(float a, float b) { return (a < b) ? 1.0 : 0.0; }
+        vec2 milkdropLt(vec2 a, vec2 b) { return vec2(lessThan(a, b)); }
+        vec2 milkdropLt(vec2 a, float b) { return vec2(lessThan(a, vec2(b))); }
+        vec2 milkdropLt(float a, vec2 b) { return vec2(lessThan(vec2(a), b)); }
+        vec3 milkdropLt(vec3 a, vec3 b) { return vec3(lessThan(a, b)); }
+        vec3 milkdropLt(vec3 a, float b) { return vec3(lessThan(a, vec3(b))); }
+        vec3 milkdropLt(float a, vec3 b) { return vec3(lessThan(vec3(a), b)); }
+        vec4 milkdropLt(vec4 a, vec4 b) { return vec4(lessThan(a, b)); }
+        vec4 milkdropLt(vec4 a, float b) { return vec4(lessThan(a, vec4(b))); }
+        vec4 milkdropLt(float a, vec4 b) { return vec4(lessThan(vec4(a), b)); }
+        float milkdropLe(float a, float b) { return (a <= b) ? 1.0 : 0.0; }
+        vec2 milkdropLe(vec2 a, vec2 b) { return vec2(lessThanEqual(a, b)); }
+        vec2 milkdropLe(vec2 a, float b) { return vec2(lessThanEqual(a, vec2(b))); }
+        vec2 milkdropLe(float a, vec2 b) { return vec2(lessThanEqual(vec2(a), b)); }
+        vec3 milkdropLe(vec3 a, vec3 b) { return vec3(lessThanEqual(a, b)); }
+        vec3 milkdropLe(vec3 a, float b) { return vec3(lessThanEqual(a, vec3(b))); }
+        vec3 milkdropLe(float a, vec3 b) { return vec3(lessThanEqual(vec3(a), b)); }
+        vec4 milkdropLe(vec4 a, vec4 b) { return vec4(lessThanEqual(a, b)); }
+        vec4 milkdropLe(vec4 a, float b) { return vec4(lessThanEqual(a, vec4(b))); }
+        vec4 milkdropLe(float a, vec4 b) { return vec4(lessThanEqual(vec4(a), b)); }
+        float milkdropGt(float a, float b) { return (a > b) ? 1.0 : 0.0; }
+        vec2 milkdropGt(vec2 a, vec2 b) { return vec2(greaterThan(a, b)); }
+        vec2 milkdropGt(vec2 a, float b) { return vec2(greaterThan(a, vec2(b))); }
+        vec2 milkdropGt(float a, vec2 b) { return vec2(greaterThan(vec2(a), b)); }
+        vec3 milkdropGt(vec3 a, vec3 b) { return vec3(greaterThan(a, b)); }
+        vec3 milkdropGt(vec3 a, float b) { return vec3(greaterThan(a, vec3(b))); }
+        vec3 milkdropGt(float a, vec3 b) { return vec3(greaterThan(vec3(a), b)); }
+        vec4 milkdropGt(vec4 a, vec4 b) { return vec4(greaterThan(a, b)); }
+        vec4 milkdropGt(vec4 a, float b) { return vec4(greaterThan(a, vec4(b))); }
+        vec4 milkdropGt(float a, vec4 b) { return vec4(greaterThan(vec4(a), b)); }
+        float milkdropGe(float a, float b) { return (a >= b) ? 1.0 : 0.0; }
+        vec2 milkdropGe(vec2 a, vec2 b) { return vec2(greaterThanEqual(a, b)); }
+        vec2 milkdropGe(vec2 a, float b) { return vec2(greaterThanEqual(a, vec2(b))); }
+        vec2 milkdropGe(float a, vec2 b) { return vec2(greaterThanEqual(vec2(a), b)); }
+        vec3 milkdropGe(vec3 a, vec3 b) { return vec3(greaterThanEqual(a, b)); }
+        vec3 milkdropGe(vec3 a, float b) { return vec3(greaterThanEqual(a, vec3(b))); }
+        vec3 milkdropGe(float a, vec3 b) { return vec3(greaterThanEqual(vec3(a), b)); }
+        vec4 milkdropGe(vec4 a, vec4 b) { return vec4(greaterThanEqual(a, b)); }
+        vec4 milkdropGe(vec4 a, float b) { return vec4(greaterThanEqual(a, vec4(b))); }
+        vec4 milkdropGe(float a, vec4 b) { return vec4(greaterThanEqual(vec4(a), b)); }
+        float milkdropEq(float a, float b) { return (a == b) ? 1.0 : 0.0; }
+        vec2 milkdropEq(vec2 a, vec2 b) { return vec2(equal(a, b)); }
+        vec2 milkdropEq(vec2 a, float b) { return vec2(equal(a, vec2(b))); }
+        vec2 milkdropEq(float a, vec2 b) { return vec2(equal(vec2(a), b)); }
+        vec3 milkdropEq(vec3 a, vec3 b) { return vec3(equal(a, b)); }
+        vec3 milkdropEq(vec3 a, float b) { return vec3(equal(a, vec3(b))); }
+        vec3 milkdropEq(float a, vec3 b) { return vec3(equal(vec3(a), b)); }
+        vec4 milkdropEq(vec4 a, vec4 b) { return vec4(equal(a, b)); }
+        vec4 milkdropEq(vec4 a, float b) { return vec4(equal(a, vec4(b))); }
+        vec4 milkdropEq(float a, vec4 b) { return vec4(equal(vec4(a), b)); }
+        float milkdropNe(float a, float b) { return (a != b) ? 1.0 : 0.0; }
+        vec2 milkdropNe(vec2 a, vec2 b) { return vec2(notEqual(a, b)); }
+        vec2 milkdropNe(vec2 a, float b) { return vec2(notEqual(a, vec2(b))); }
+        vec2 milkdropNe(float a, vec2 b) { return vec2(notEqual(vec2(a), b)); }
+        vec3 milkdropNe(vec3 a, vec3 b) { return vec3(notEqual(a, b)); }
+        vec3 milkdropNe(vec3 a, float b) { return vec3(notEqual(a, vec3(b))); }
+        vec3 milkdropNe(float a, vec3 b) { return vec3(notEqual(vec3(a), b)); }
+        vec4 milkdropNe(vec4 a, vec4 b) { return vec4(notEqual(a, b)); }
+        vec4 milkdropNe(vec4 a, float b) { return vec4(notEqual(a, vec4(b))); }
+        vec4 milkdropNe(float a, vec4 b) { return vec4(notEqual(vec4(a), b)); }
+
+        // HLSL constructors take any split of components across arguments
+        // (\`float3(uv, z)\`, \`float4(uv, 0, 1)\`); which argument is the
+        // vector is a type question the emitter cannot answer from text, so
+        // these overloads let the GLSL compiler pick. An all-scalar short
+        // call pads with zeros, as the emitter used to.
+        vec3 milkdropVec3(vec2 a, float b) { return vec3(a, b); }
+        vec3 milkdropVec3(float a, vec2 b) { return vec3(a, b); }
+        vec3 milkdropVec3(float a, float b) { return vec3(a, b, 0.0); }
+        vec4 milkdropVec4(vec2 a, vec2 b) { return vec4(a, b); }
+        vec4 milkdropVec4(vec3 a, float b) { return vec4(a, b); }
+        vec4 milkdropVec4(float a, vec3 b) { return vec4(a, b); }
+        vec4 milkdropVec4(float a, float b) { return vec4(a, b, 0.0, 0.0); }
+        vec4 milkdropVec4(vec2 a, float b, float c) { return vec4(a, b, c); }
+        vec4 milkdropVec4(float a, vec2 b, float c) { return vec4(a, b, c); }
+        vec4 milkdropVec4(float a, float b, vec2 c) { return vec4(a, b, c); }
+        vec4 milkdropVec4(float a, float b, float c) { return vec4(a, b, c, 0.0); }
 `;
 
 // Aux-texture sampling and the control-driven feedback warp are needed by
@@ -633,6 +714,12 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
         vec2 sampleUv(vec2 uv, float wrapMode) {
           return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
         }
+        // tex2D(sampler, float3/float4) reads the coordinate's .xy in HLSL
+        // (\`tex2D(sampler_main, ret)\` with a float3 ret is common in
+        // feedback presets); GLSL has no such truncation.
+        vec2 sampleUv(vec3 uv, float wrapMode) { return sampleUv(uv.xy, wrapMode); }
+        vec2 sampleUv(vec4 uv, float wrapMode) { return sampleUv(uv.xy, wrapMode); }
+        vec2 sampleUv(float uv, float wrapMode) { return sampleUv(vec2(uv), wrapMode); }
 
         // Zoom divisor floor that keeps the sign: zoom = -1 (zoomexp 1) is
         // MilkDrop's point mirror through the centre, and max(zoom, 0.0001)
@@ -1702,6 +1789,30 @@ function classifyPerFrameVariable(
       // `vec4(1.0 / texelSize, texelSize).zw` — carries the same size
       // signal as a named-identifier swizzle but the regex above requires a
       // bare identifier before the dot, so it won't match a `)` there.
+      // A bare vector at call depth 0 carries its width into the result —
+      // `d_uv = uv;`, `uv1 = uv - vec2(0.5, q5);` — as does a constructor
+      // there that no swizzle narrows. Without this those were hoisted as
+      // float and the assignment failed to compile.
+      for (const bareMatch of rhs.matchAll(
+        /\b([a-zA-Z_][a-zA-Z0-9_]*)\b(?!\s*[.(])/gu,
+      )) {
+        const size =
+          MILKDROP_BARE_VECTOR_SIZES[bareMatch[1]] ??
+          MILKDROP_KNOWN_VECTOR_SIZES[bareMatch[1]];
+        if (size && parenDepthAt(rhs, bareMatch.index ?? 0) === 0) {
+          widestComponentIndex = Math.max(widestComponentIndex, size - 1);
+        }
+      }
+      for (const ctorMatch of rhs.matchAll(/\bvec([234])\s*\(/gu)) {
+        const start = ctorMatch.index ?? 0;
+        if (parenDepthAt(rhs, start) !== 0) continue;
+        const close = closingParenIndex(rhs, start + ctorMatch[0].length - 1);
+        if (/^\s*\./u.test(rhs.slice(close + 1))) continue;
+        widestComponentIndex = Math.max(
+          widestComponentIndex,
+          Number(ctorMatch[1]) - 1,
+        );
+      }
       for (const inlineMatch of rhs.matchAll(/\)\.([xyzwrgba]{1,4})\b/gu)) {
         // Depth after the closing paren: 0 means the swizzled call is not
         // itself an argument to another call.
@@ -1735,6 +1846,14 @@ function classifyPerFrameVariable(
           : 'float';
   return { name, isLocalScratch: true, type };
 }
+
+/** Template-owned vectors a body reads bare: the stage coordinate and output. */
+const MILKDROP_BARE_VECTOR_SIZES: Readonly<Record<string, number>> = {
+  uv: 2,
+  vUv: 2,
+  uv_orig: 2,
+  ret: 3,
+};
 
 /** Index of the `)` closing the `(` at `open`, or the text's end. */
 function closingParenIndex(text: string, open: number): number {
