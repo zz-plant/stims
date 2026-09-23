@@ -157,8 +157,10 @@ export function normalizeHlslToGlsl(shaderText: string): string {
       'sampleNoiseVolume(',
     )
     .replace(/\btexture\s*\(/giu, 'texture2D(')
+    .replace(/\btex2D\s*\(/giu, 'texture2D(')
     .replace(/\buint\s*\(([^)]+)\)/giu, 'int($1)')
     .replace(/\b(\d+)u\b/giu, '$1')
+    .replace(/\bfloat([234])x\1\b/giu, 'mat$1')
     .replace(/\bfloat2\b/giu, 'vec2')
     .replace(/\bfloat3\b/giu, 'vec3')
     .replace(/\bfloat4\b/giu, 'vec4')
@@ -199,7 +201,123 @@ export function normalizeHlslToGlsl(shaderText: string): string {
   // (MILKDROP_SIGNAL_NAME_ALIASES) so this chain and the composite emitter
   // cannot drift. `\b` word boundaries keep `bass` from matching inside
   // `bass_att`; longest-first ordering keeps the more specific alias winning.
-  return buildMilkdropSignalNameReplacements(result);
+  return rewriteRawHlslStatements(buildMilkdropSignalNameReplacements(result));
+}
+
+/**
+ * Statement-level HLSL→GLSL fixes the token rewrites above cannot express,
+ * applied per `;`-delimited statement of a raw body:
+ *
+ * - Integer literals become float literals. HLSL converts `1/z` and
+ *   `rs0.x * 1` implicitly; GLSL ES has no int→float conversion and rejects
+ *   both. Statements that plausibly need ints — array indexing, loops, int
+ *   or bool declarations, preprocessor lines — are left alone.
+ * - `float x = <vector expr>` truncates to the first component in HLSL
+ *   (`float corr = texsize.xy * texsize_noise_lq.zw;`), so the initialiser
+ *   goes through milkdropScalar, which is the identity on a float.
+ * - `output` is reserved in GLSL; preset locals by that name are renamed.
+ */
+/**
+ * HLSL `mul(x, y)` → GLSL `milkdropMul(y, x)`. An HLSL float2x2(a,b,c,d)
+ * fills rows where GLSL's mat2(a,b,c,d) fills columns, so the GLSL matrix
+ * is the transpose — and with that, mul(v, M), mul(M, v) and mul(A, B) all
+ * become the operands swapped. milkdropMul (the preamble's arithmetic set)
+ * covers every width pairing.
+ */
+function rewriteRawMul(text: string): string {
+  let out = text;
+  const pattern = /\bmul\s*\(/gu;
+  let match = pattern.exec(out);
+  while (match) {
+    const argStart = match.index + match[0].length;
+    let depth = 1;
+    let comma = -1;
+    let index = argStart;
+    for (; index < out.length && depth > 0; index += 1) {
+      const char = out[index];
+      if (char === '(') depth += 1;
+      else if (char === ')') depth -= 1;
+      else if (char === ',' && depth === 1 && comma === -1) comma = index;
+    }
+    if (depth !== 0 || comma === -1) break;
+    const left = out.slice(argStart, comma).trim();
+    const right = out.slice(comma + 1, index - 1).trim();
+    out = `${out.slice(0, match.index)}milkdropMul(${right}, ${left})${out.slice(index)}`;
+    pattern.lastIndex = match.index + 'milkdropMul('.length;
+    match = pattern.exec(out);
+  }
+  return out;
+}
+
+function rewriteRawHlslStatements(text: string): string {
+  text = rewriteRawMul(text);
+  // Names the body declares as int keep their integer literals: `n = 0`
+  // and `n < 6` on an `int n` are valid GLSL as written and invalid with
+  // float literals.
+  const intNames = new Set<string>();
+  for (const match of text.matchAll(
+    /\bint\s+([A-Za-z_]\w*(?:\s*(?:=[^,;]*)?,\s*[A-Za-z_]\w*)*)/gu,
+  )) {
+    for (const name of (match[1] ?? '').split(',')) {
+      const bare = name.split('=')[0]?.trim();
+      if (bare) intNames.add(bare);
+    }
+  }
+  // hlsl2glsl drops some `int` declarations (loop counters); the scratch
+  // hoister in feedback-manager-shared.ts then declares a name int when
+  // every bare assignment to it is an integer literal. Same rule here, so
+  // the rewrite does not erase that signal.
+  const literalOnly = new Map<string, boolean>();
+  for (const match of text.matchAll(
+    /(?:^|[;{}])\s*([A-Za-z_]\w*)\s*=(?!=)\s*([^;{}]+)/gu,
+  )) {
+    const name = match[1] ?? '';
+    const isIntLiteral = /^-?\d+\s*$|^int\s*\(/u.test(match[2] ?? '');
+    literalOnly.set(name, (literalOnly.get(name) ?? true) && isIntLiteral);
+  }
+  for (const [name, onlyInts] of literalOnly) {
+    if (onlyInts) intNames.add(name);
+  }
+  const touchesInt = (segment: string) => {
+    for (const name of intNames) {
+      if (new RegExp(`\\b${name}\\b`, 'u').test(segment)) return true;
+    }
+    return false;
+  };
+  return text
+    .split(/(;)/u)
+    .map((segment) => {
+      if (segment === ';') return segment;
+      const braceIndex = Math.max(
+        segment.lastIndexOf('{'),
+        segment.lastIndexOf('}'),
+      );
+      let out = segment.replace(/\boutput\b/gu, 'milkdropOutput');
+      if (
+        !/\bint\b|\bbool\b|\bfor\s*\(|\bwhile\b|\[|#/u.test(out) &&
+        !touchesInt(out)
+      ) {
+        out = out.replace(/(?<![\w.])(?<![eE][-+])(\d+)(?![\w.])/gu, '$1.0');
+      }
+      const head = out.slice(0, braceIndex + 1);
+      const statement = out.slice(braceIndex + 1);
+      const scalarDecl = statement.match(
+        /^(\s*(?:const\s+)?float\s+[A-Za-z_]\w*\s*=\s*)([\s\S]+?)(\s*)$/u,
+      );
+      if (scalarDecl) {
+        return `${head}${scalarDecl[1]}milkdropScalar(${scalarDecl[2]})${scalarDecl[3]}`;
+      }
+      // `float3 noise = tex2D(…) + 1` narrows a float4 in HLSL. GLSL allows
+      // constructing a vector from a wider one (and splatting a scalar), so
+      // wrapping the initialiser in the declared type restores that.
+      const vectorDecl = statement.match(
+        /^(\s*(?:const\s+)?(vec[234])\s+[A-Za-z_]\w*\s*=\s*)([\s\S]+?)(\s*)$/u,
+      );
+      return vectorDecl
+        ? `${head}${vectorDecl[1]}${vectorDecl[2]}(${vectorDecl[3]})${vectorDecl[4]}`
+        : out;
+    })
+    .join('');
 }
 
 // Slices the body of a `shader_body { … }` block by scanning to the closing
@@ -251,7 +369,7 @@ export function extractNativeShaderBody(shaderText: string) {
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith('uniform '))
     .filter((line) =>
-      /^(?:const\s+)?(?:float|int|uint|bool|vec[234]|mat[234]|float[234])\s+[a-z_][a-z0-9_]*(?:\s*=.+)?$/iu.test(
+      /^(?:const\s+)?(?:float|int|uint|bool|vec[234]|mat[234]|float[234])\s+[a-z_][a-z0-9_]*(?:\s*\[\s*\d+\s*\])?(?:\s*=.+)?$/iu.test(
         line,
       ),
     )
