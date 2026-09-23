@@ -3320,7 +3320,9 @@ function createFeedbackBlendOutputNode(
         uniforms.previousTex.sample(sampleUvNode(sceneUv, uniforms.textureWrap))
           .rgb
       ).mul(uniforms.decay);
-      return vec4(previousColor.add(current.rgb), 1);
+      // Clamped like MilkDrop's 8-bit internal buffer; see the WebGL blend in
+      // feedback-manager-shared.ts for why half-float needs it.
+      return vec4(clamp(previousColor.add(current.rgb), vec3(0), vec3(1)), 1);
     }
 
     const currentUv = applyFeedbackWarpNode(
@@ -3382,7 +3384,7 @@ function createFeedbackBlendOutputNode(
     const coverage = clamp(current.a, 0, 1);
     const color = previousColor.mul(float(1).sub(coverage)).add(current.rgb);
 
-    return vec4(color, 1);
+    return vec4(clamp(color, vec3(0), vec3(1)), 1);
   })();
 }
 
