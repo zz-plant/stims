@@ -929,6 +929,19 @@ function constructorWidth(
  * Injects generated warp/comp GLSL into the composite shader source.
  * Uses placeholder markers to identify insertion points.
  */
+/**
+ * The injected body runs inline in the template's main(), and the template
+ * keeps going after it — so a preset local named like a template variable
+ * shadowed it for the rest of main(). `vec2 zoom = vec2(1.85);` in a
+ * cotc-suksma warp turned the template's later `signedZoomDivisor(zoom)`
+ * into a vec2 call that does not exist. Its own block keeps the preset's
+ * locals to the preset; writes to the template's `ret`/`uv` still land,
+ * because the body assigns them rather than declaring them.
+ */
+function scopeInjectedBody(body: string): string {
+  return `{\n${body}\n}`;
+}
+
 export function injectDirectShaderGlsl(
   source: string,
   warpGlsl: string | null,
@@ -969,7 +982,7 @@ export function injectDirectShaderGlsl(
         warpStartIndex + warpStartMarker.length,
       );
       const after = modified.substring(warpEndIndex);
-      modified = `${before}\n${warpGlsl}\n${after}`;
+      modified = `${before}\n${scopeInjectedBody(warpGlsl)}\n${after}`;
     }
   }
 
@@ -986,7 +999,7 @@ export function injectDirectShaderGlsl(
         compStartIndex + compStartMarker.length,
       );
       const after = modified.substring(compEndIndex);
-      modified = `${before}\n${compGlsl}\n${after}`;
+      modified = `${before}\n${scopeInjectedBody(compGlsl)}\n${after}`;
     }
   }
 
