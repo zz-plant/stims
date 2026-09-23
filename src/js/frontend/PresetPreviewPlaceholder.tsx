@@ -16,6 +16,12 @@
  * anything drawn here would be read as the preset. The two states it can
  * report are both true statements — the renderer is working on it, or the
  * preset could not produce a frame.
+ *
+ * "Typographic" does not have to mean timid. The slot sets the preset's own
+ * name as display type — a true fact about the preset, not a picture of it —
+ * with the missing-preview status as a small tag underneath, so a grid of
+ * un-thumbnailed presets reads as a wall of titles rather than a wall of
+ * identical "No preview" captions.
  */
 import { memo } from 'react';
 
@@ -32,8 +38,11 @@ export type PresetPreviewPlaceholderState = 'capturing' | 'unavailable';
 
 export const PresetPreviewPlaceholder = memo(function PresetPreviewPlaceholder({
   state,
+  title,
 }: {
   state: PresetPreviewPlaceholderState;
+  /** The preset's work title (author chain already dropped). */
+  title?: string;
 }) {
   return (
     <div
@@ -41,6 +50,11 @@ export const PresetPreviewPlaceholder = memo(function PresetPreviewPlaceholder({
       data-state={state}
       aria-hidden="true"
     >
+      {title ? (
+        <span className="stims-shell__preset-art-placeholder-title">
+          {title}
+        </span>
+      ) : null}
       <span className="stims-shell__preset-art-placeholder-label">
         {state === 'capturing' ? 'Rendering preview…' : 'No preview'}
       </span>

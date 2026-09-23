@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useLivePresetTile } from './hooks/use-live-preset-tile.ts';
@@ -169,6 +170,11 @@ export function PresetArtwork({
       ) : (
         <PresetPreviewPlaceholder
           state={previewStatus === 'unavailable' ? 'unavailable' : 'capturing'}
+          title={
+            compact
+              ? undefined
+              : splitPresetDisplay(entry.title || entry.id, entry.author).title
+          }
         />
       )}
       {liveTile.enabled ? (

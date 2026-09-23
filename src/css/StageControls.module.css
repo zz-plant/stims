@@ -780,3 +780,63 @@
   color: var(--stims-accent, #ff8a65);
   white-space: nowrap;
 }
+
+/* ── Desktop scale ───────────────────────────────────────────────────
+   The phone sizes above are set by what fits a 375px pill; on a desktop
+   there is no such constraint, and the same 32px buttons and 14px title
+   made the one piece of chrome on a full-screen visualizer look like a
+   status bar. With room to spare the dock is sized as a transport: larger
+   targets, larger glyphs, and the playing preset's name set as the
+   headline it is. Phones keep the compact geometry untouched. */
+@media (min-width: 768px) {
+  .pill {
+    padding: 5px;
+    gap: 2px;
+  }
+
+  .navBtn,
+  .menuBtn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .navBtn[data-primary="true"] {
+    width: 48px;
+    height: 48px;
+  }
+
+  .navBtn :global(.stims-icon-slot--sm),
+  .menuBtn :global(.stims-icon-slot--sm) {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .navBtn[data-primary="true"] :global(.stims-icon-slot--sm) {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .transitionBtn {
+    height: 40px;
+    padding: 0 12px;
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .titleBtn {
+    height: 48px;
+    padding: 0 16px;
+    gap: 8px;
+    font-size: var(--text-lg, 1.125rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    max-width: min(34rem, 44vw);
+  }
+
+  .authorText {
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .statusText {
+    font-size: var(--text-xs, 0.75rem);
+  }
+}

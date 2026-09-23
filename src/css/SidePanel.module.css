@@ -59,6 +59,14 @@
   }
 }
 
+/* Wide (browse): the catalog gets most of the screen, leaving a strip of
+   live stage on the left so the preset that's playing stays in view. */
+@media (min-width: 1024px) {
+  .panel[data-wide="true"] {
+    width: min(1120px, calc(100vw - max(240px, 22vw)));
+  }
+}
+
 /* Mobile: full-height bottom sheet (portrait and landscape phones) */
 @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .panel {
