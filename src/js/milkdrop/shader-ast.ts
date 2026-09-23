@@ -954,6 +954,13 @@ function mapShaderComponents(
   return fromComponents(result);
 }
 
+/** MilkDrop 2 include.fx constants; M_PI_2 is 2*pi, not C's pi/2. */
+const MILKDROP_SHADER_MATH_CONSTANTS: Readonly<Record<string, number>> = {
+  m_pi: Math.PI,
+  m_pi_2: Math.PI * 2,
+  m_inv_pi_2: 1 / (Math.PI * 2),
+};
+
 export function evaluateMilkdropShaderExpression(
   node: MilkdropShaderExpressionNode,
   env: Record<string, ShaderValue>,
@@ -968,6 +975,11 @@ export function evaluateMilkdropShaderExpression(
       }
       if (node.name.toLowerCase() === 'e') {
         return scalar(Math.E);
+      }
+      {
+        const constant =
+          MILKDROP_SHADER_MATH_CONSTANTS[node.name.toLowerCase()];
+        if (constant !== undefined) return scalar(constant);
       }
       return (
         env[node.name] ??
