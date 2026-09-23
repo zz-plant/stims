@@ -1,1592 +1,1297 @@
 {
   "version": 1,
-  "capturedAt": "2026-09-23T03:55:01.502Z",
+  "capturedAt": "2026-09-23T15:24:54.513Z",
   "validatorVersion": "Glslang Version: 11:16.5.0",
   "failures": [
     {
       "id": "martin-adrift-on-a-dead-planet-lard-mix",
       "stage": "warp",
-      "detail": "ERROR: 0:622: 'dot' : no matching overloaded function found"
+      "detail": "ERROR: 0:725: 'dot' : no matching overloaded function found"
     },
     {
       "id": "martin-adrift-on-a-dead-planet-lite",
       "stage": "warp",
-      "detail": "ERROR: 0:622: 'dot' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-suksma-passive-probabilistic-roaming-coin-gods",
-      "stage": "warp",
-      "detail": "ERROR: 0:370: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:725: 'dot' : no matching overloaded function found"
     },
     {
       "id": "cotc-suksma-passive-probabilistic-roaming-coin-gods",
       "stage": "composite",
-      "detail": "ERROR: 0:484: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 3-compon"
+      "detail": "ERROR: 0:579: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-suksma-daryl-feels-my-hellish-lonliness",
       "stage": "warp",
-      "detail": "ERROR: 0:379: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:484: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-suksma-daryl-feels-my-hellish-lonliness",
       "stage": "composite",
-      "detail": "ERROR: 0:490: 'tex2D' : can't use function syntax on variable"
+      "detail": "ERROR: 0:584: 'tex2D' : can't use function syntax on variable"
     },
     {
       "id": "cotc-suksma-adam-martin-geiss-come-into-my-closet-of-rot",
       "stage": "composite",
-      "detail": "ERROR: 0:488: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
-    },
-    {
-      "id": "cotc-halfbreak-flexi-and-goody-geiss-benski-sparkly-lsb-feedback",
-      "stage": "composite",
-      "detail": "ERROR: 0:490: 'constructor' : too many arguments"
+      "detail": "ERROR: 0:584: '=' :  cannot convert from ' const int' to ' temp mediump float'"
     },
     {
       "id": "cotc-royal-mashup-157",
       "stage": "composite",
-      "detail": "ERROR: 0:487: 'assign' :  cannot convert from ' smooth in mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:583: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-tripgnosis-acid-astralmatics",
       "stage": "warp",
-      "detail": "ERROR: 0:374: 'colorScale' : undeclared identifier"
-    },
-    {
-      "id": "cotc-suksma-hypnocinagenic-drift",
-      "stage": "warp",
-      "detail": "ERROR: 0:374: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
-    },
-    {
-      "id": "cotc-fishbrain-geiss-witchcraft-glow-mix",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'constructor' : too many arguments"
-    },
-    {
-      "id": "cotc-suksma-fig-leaves-can-t-cover-that-much",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'constructor' : too many arguments"
-    },
-    {
-      "id": "cotc-tripgnosis-diffused-mana-pattern-2",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'constructor' : too many arguments"
+      "detail": "ERROR: 0:477: 'colorScale' : undeclared identifier"
     },
     {
       "id": "cotc-tripgnosis-astral-calculations-5",
       "stage": "warp",
-      "detail": "ERROR: 0:373: 'colorScale' : undeclared identifier"
+      "detail": "ERROR: 0:477: 'colorScale' : undeclared identifier"
     },
     {
       "id": "cotc-suksma-indecision-about-how-to-die-decision-made",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-including-adam-fx-2-flexi-fishbrain-operation-fatcap-fishbrain-and-witchcraft",
       "stage": "warp",
-      "detail": "ERROR: 0:370: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
+      "detail": "ERROR: 0:474: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
     },
     {
       "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-01",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
+      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-03",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
+      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-05",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
+      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-02",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
+      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-disruptor-wolfram-s-rule-90",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
+      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-04",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
+      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-on",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
-    },
-    {
-      "id": "cotc-amandio-c-sierpinsky-s-triangle",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-wolfram-s-rule-110-rise-of-the-log-attack",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
+      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-disruptor-wolfram-s-rule-110-so-call-the-police",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
+      "detail": "ERROR: 0:483: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
+      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-wolfram-s-rule-90-rise-of-the-log-attack",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
+      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-disruptor-wolfram-s-rule-110-satanic-teleprompter-05",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '>' :  wrong operand types: no operation '>' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const float' (or ther"
-    },
-    {
-      "id": "cotc-suksma-now-for-only-19-95-you-can-pray-to-a-whole-array-of-saviors2",
-      "stage": "warp",
-      "detail": "ERROR: 0:376: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-suksma-enough-strange-candles-to-lay",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
-    },
-    {
-      "id": "cotc-suksma-now-for-only-19-95-you-can-pray-to-a-whole-array-of-saviors",
-      "stage": "warp",
-      "detail": "ERROR: 0:376: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-aaron-funcking-god-and-his-mod-file-savvy2",
       "stage": "warp",
-      "detail": "ERROR: 0:373: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:476: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-suksma-squasm-minor-plot-frugal-koonut-kalifee",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-camden-defib-lancaster-tucker-s-neck",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-aaron-funcking-god-and-his-mod-file-savvy",
       "stage": "warp",
-      "detail": "ERROR: 0:373: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:476: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-suksma-estrangedaholic-grandfather-cloques",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-nothing-to-remember-you-by-logsmeltitdealtit",
       "stage": "composite",
-      "detail": "ERROR: 0:498: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:593: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-suksma-gapes-to-spelunkcide-dada-hate-art-isn-t-art",
       "stage": "composite",
-      "detail": "ERROR: 0:486: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' uniform mediump 4-component vector of float' and a right operand of type ' temp mediump 2-com"
+      "detail": "ERROR: 0:581: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' uniform mediump 4-component vector of float' and a right operand of type ' temp mediump 2-com"
     },
     {
       "id": "cotc-starz-in-milkhdfx-stahlregen-aderrasi-eos-geiss-unchained-zylot-flexi-martin-adamfx-j",
       "stage": "warp",
-      "detail": "ERROR: 0:377: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:481: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-suksma-movement-within-the-trout-i-love-you-i-thank-you-it-meant-everything-don-t-forget",
       "stage": "warp",
-      "detail": "ERROR: 0:375: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:479: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-new-creation-sensation-adamfx-flexi-amandio-c-n-martin-star-to-another-world-ft-hexocollie-",
       "stage": "warp",
-      "detail": "ERROR: 0:376: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:480: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-evet-esotic-krash-rolly-poly",
       "stage": "warp",
-      "detail": "ERROR: 0:374: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:478: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-nicklepenultim-roam",
       "stage": "warp",
-      "detail": "ERROR: 0:375: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:479: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-nicklepenultim-roam",
       "stage": "composite",
-      "detail": "ERROR: 0:493: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 3-compon"
+      "detail": "ERROR: 0:587: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-nicklepenultim",
       "stage": "warp",
-      "detail": "ERROR: 0:375: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:479: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-nicklepenultim-the-skuzzmuppet",
       "stage": "warp",
-      "detail": "ERROR: 0:375: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:479: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-camel-llama",
       "stage": "warp",
-      "detail": "ERROR: 0:374: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:478: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-suksma-at-the-root-of-open-the-graves",
       "stage": "warp",
-      "detail": "ERROR: 0:375: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:479: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-suksma-truth-rarity-isosceles-edit09",
       "stage": "composite",
-      "detail": "ERROR: 0:497: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:607: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-cope-flexi-strange-attractor-jewellery-tile-mix-spher",
       "stage": "warp",
-      "detail": "ERROR: 0:378: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:482: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-cope-flexi-strange-attractor-jewellery-tile-mix-spher",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:588: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' uniform mediump float' and a right operand of type ' const int' (or there is no acceptable co"
     },
     {
       "id": "cotc-inside-a-black-whole-adamfx-2-martin-another-kind-of-groove-ati-fix-ft-raron-flexi-and-rova",
       "stage": "warp",
-      "detail": "ERROR: 0:370: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:473: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-royal-mashup-162",
       "stage": "composite",
-      "detail": "ERROR: 0:483: 'GetPixel' : no matching overloaded function found"
+      "detail": "ERROR: 0:578: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-evet-waterrgate",
       "stage": "warp",
-      "detail": "ERROR: 0:382: 'ofs' :  left of '[' is not of type array, matrix, or vector"
-    },
-    {
-      "id": "cotc-royal-mashup-29",
-      "stage": "warp",
-      "detail": "ERROR: 0:369: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:485: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-suksma-foolish-mash",
       "stage": "composite",
-      "detail": "ERROR: 0:487: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:580: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-royal-mashup-395",
       "stage": "composite",
-      "detail": "ERROR: 0:502: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:597: 'MinDistB' : no matching overloaded function found"
     },
     {
       "id": "cotc-royal-mashup-377",
       "stage": "composite",
-      "detail": "ERROR: 0:501: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:596: 'MinDistB' : no matching overloaded function found"
     },
     {
       "id": "cotc-suksma-dark-one-clouds-das-yi-hyper-phosphene-ejaculate",
       "stage": "warp",
-      "detail": "ERROR: 0:370: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:473: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-yin-314-ocean-of-light-ascending-nadi-mix-spher",
       "stage": "warp",
-      "detail": "ERROR: 0:378: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:482: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-yin-314-ocean-of-light-ascending-nadi-mix-spher",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-goody-lights-in-the-sky",
-      "stage": "warp",
-      "detail": "ERROR: 0:375: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:588: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' uniform mediump float' and a right operand of type ' const int' (or there is no acceptable co"
     },
     {
       "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-maps-of-hell-roams-saucy",
       "stage": "warp",
-      "detail": "ERROR: 0:381: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+      "detail": "ERROR: 0:484: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-maps-of-hell-roams-saucy",
       "stage": "composite",
-      "detail": "ERROR: 0:496: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 4-compon"
+      "detail": "ERROR: 0:590: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 4-compon"
     },
     {
       "id": "cotc-skipper-skipper-kiss-me-hard-slut-warm-spher",
       "stage": "warp",
-      "detail": "ERROR: 0:378: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:482: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-skipper-skipper-kiss-me-hard-slut-warm-spher",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:588: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' uniform mediump float' and a right operand of type ' const int' (or there is no acceptable co"
     },
     {
       "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-maps-of-hell",
       "stage": "warp",
-      "detail": "ERROR: 0:381: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+      "detail": "ERROR: 0:484: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami",
       "stage": "warp",
-      "detail": "ERROR: 0:381: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+      "detail": "ERROR: 0:484: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-a-rip-in-mommy-s-underwear",
       "stage": "warp",
-      "detail": "ERROR: 0:382: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+      "detail": "ERROR: 0:485: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-suksma-phairess-weale-mrt-flx",
       "stage": "warp",
-      "detail": "ERROR: 0:373: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:476: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-undulate-harque-auto-thef",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-undulate-harque-zing",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
-    },
-    {
-      "id": "cotc-undulate-harque-zing",
-      "stage": "composite",
-      "detail": "ERROR: 0:487: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-suksma-circle-of-the-taeyrunts-phairess-imbularse-deign-offal",
       "stage": "composite",
-      "detail": "ERROR: 0:489: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:593: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-geite-spooksville-roams",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-undulate-harque-pain-tthe",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
-    },
-    {
-      "id": "cotc-gentlekid-cosmic-dust-2-digital-data-loss",
-      "stage": "warp",
-      "detail": "ERROR: 0:381: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-fishbrain-geiss-witchcraft-grow-mix-2-a-a",
       "stage": "warp",
-      "detail": "ERROR: 0:378: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:483: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-tonymilkdrop-this-is-a-painting-flexi-let-s-trade-techstyle-isosceles-edit",
       "stage": "warp",
-      "detail": "ERROR: 0:376: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:480: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-tonymilkdrop-this-is-a-painting-flexi-let-s-trade-techstyle-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:487: 'scalar swizzle' : not supported with this profile: es"
-    },
-    {
-      "id": "cotc-geiss-cosmic-dust-2-tiny-reaction-diffusion-mix",
-      "stage": "warp",
-      "detail": "ERROR: 0:381: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:582: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-suksma-race-for-hot-dog-log-smell-2",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-race-for-hot-dog-log-smell-2",
       "stage": "composite",
-      "detail": "ERROR: 0:499: 'scalar swizzle' : not supported with this profile: es"
-    },
-    {
-      "id": "cotc-stahlregen-geiss-orb-etheral-waves-mashup-20",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'sampleUv' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-goody-vertigo-revisited",
-      "stage": "warp",
-      "detail": "ERROR: 0:369: 'sampleUv' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-geiss-cosmic-dust-2-laplacian-mix-maalol-mix",
-      "stage": "composite",
-      "detail": "ERROR: 0:485: 'constructor' : too many arguments"
-    },
-    {
-      "id": "cotc-suksma-deconstrue-orbaet",
-      "stage": "warp",
-      "detail": "ERROR: 0:370: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:593: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-martin-another-kind-of-groove",
       "stage": "warp",
-      "detail": "ERROR: 0:370: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:473: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-g-martin-m-m-w-mu-wp-m-c-m-getting-beat-isn-t-embarrassing-it-s-no-one-cares",
       "stage": "warp",
-      "detail": "ERROR: 0:370: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:473: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-xtramartin-3",
       "stage": "warp",
-      "detail": "ERROR: 0:370: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:473: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-shifter-flashburn-roams-use-fishing-line-to-keep-the-spiral-plates-from-touching",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-luxxx-absinthe-with-mc-escher",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
-    },
-    {
-      "id": "cotc-luxxx-badballz",
-      "stage": "warp",
-      "detail": "ERROR: 0:381: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-never-throck",
       "stage": "composite",
-      "detail": "ERROR: 0:490: 'milkdropIntMod' : no matching overloaded function found"
+      "detail": "ERROR: 0:585: 'milkdropIntMod' : no matching overloaded function found"
     },
     {
       "id": "cotc-serge-circles007b",
       "stage": "warp",
-      "detail": "ERROR: 0:369: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:472: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-serge-martin-crystal-palace000",
       "stage": "warp",
-      "detail": "ERROR: 0:381: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:485: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' const int' and a right operand of type ' global mediump float' (or there is no acceptable con"
     },
     {
       "id": "cotc-serge-martin-crystal-palace001",
       "stage": "warp",
-      "detail": "ERROR: 0:381: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:485: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' const int' and a right operand of type ' global mediump float' (or there is no acceptable con"
     },
     {
       "id": "cotc-serge-158-002",
       "stage": "warp",
-      "detail": "ERROR: 0:381: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:485: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' const int' and a right operand of type ' global mediump float' (or there is no acceptable con"
     },
     {
       "id": "cotc-martin-pendulum-in-brass-ps2",
       "stage": "warp",
-      "detail": "ERROR: 0:376: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:480: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' const int' and a right operand of type ' global mediump float' (or there is no acceptable con"
     },
     {
       "id": "cotc-martin-pendulum-in-brass-ps3",
       "stage": "warp",
-      "detail": "ERROR: 0:378: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:482: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' const int' and a right operand of type ' global mediump float' (or there is no acceptable con"
     },
     {
       "id": "cotc-serge-martin-crystal-palace001b",
       "stage": "warp",
-      "detail": "ERROR: 0:381: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:485: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' const int' and a right operand of type ' global mediump float' (or there is no acceptable con"
     },
     {
       "id": "cotc-starz-in-milkhdfx-stahlregen-aderrasi-eos-geiss-unchained-zylot-flexi-martin-adamfx-e",
       "stage": "warp",
-      "detail": "ERROR: 0:382: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:486: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' const int' and a right operand of type ' global mediump float' (or there is no acceptable con"
     },
     {
       "id": "cotc-serge-martin-crystal-palace001c",
       "stage": "warp",
-      "detail": "ERROR: 0:381: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:485: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' const int' and a right operand of type ' global mediump float' (or there is no acceptable con"
     },
     {
       "id": "cotc-suksma-as-for-me-i-take-medicines2",
       "stage": "composite",
-      "detail": "ERROR: 0:489: 'sampleUv' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-goody-aurora-totalis",
-      "stage": "composite",
-      "detail": "ERROR: 0:491: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:593: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-royal-mashup-215",
       "stage": "warp",
-      "detail": "ERROR: 0:379: 'colorScale' : undeclared identifier"
+      "detail": "ERROR: 0:481: 'colorScale' : undeclared identifier"
     },
     {
       "id": "cotc-orb-blade",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' smooth in mediump 2-component vector of float' and a right operand of type ' temp mediump 3-c"
-    },
-    {
-      "id": "cotc-geiss-reaction-diffusion-3-janky-ripple-effect-again",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:475: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-3",
       "stage": "composite",
-      "detail": "ERROR: 0:490: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:586: 'assign' :  cannot convert from ' temp mediump float' to ' global mediump 3-component vector of float'"
     },
     {
       "id": "cotc-geiss-reaction-diffusion-3-rippling-leopard-skin",
       "stage": "composite",
-      "detail": "ERROR: 0:486: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:580: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-luxxx-inhale-this-golden-rate-tax-stamp-for-025-credits-off",
       "stage": "composite",
-      "detail": "ERROR: 0:489: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:584: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-suksma-lackstastique-j4",
       "stage": "composite",
-      "detail": "ERROR: 0:497: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:592: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-a-hd-adamfx-creation-ft-martin-flexi-rovastar-mdropfx-collaboration-e-adam-hd-infectionfx-a",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
+      "detail": "ERROR: 0:476: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
     },
     {
       "id": "cotc-luxxx-my-soul-i",
       "stage": "warp",
-      "detail": "ERROR: 0:373: 'constructor' : too many arguments"
+      "detail": "ERROR: 0:486: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-leaving-colors-crazy-cogitations-centrifuge-collapsing-cosmos-creation-oh-thats-still",
       "stage": "composite",
-      "detail": "ERROR: 0:484: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:579: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-loading-doctor",
       "stage": "composite",
-      "detail": "ERROR: 0:492: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:586: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-suksma-moistened-gills-in-latent-galaxy-raggy",
       "stage": "composite",
-      "detail": "ERROR: 0:484: 'output' : Reserved word."
+      "detail": "ERROR: 0:579: 'output' : Reserved word."
     },
     {
       "id": "cotc-suksma-daryl-feels-my-hellish-lonliness-creamy-layers-of-junk-mail-drips-with-soul",
       "stage": "warp",
-      "detail": "ERROR: 0:377: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
-    },
-    {
-      "id": "cotc-suksma-daryl-feels-my-hellish-lonliness-creamy-layers-of-junk-mail-drips-with-soul",
-      "stage": "composite",
-      "detail": "ERROR: 0:485: 'constructor' : too many arguments"
+      "detail": "ERROR: 0:485: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-414",
       "stage": "warp",
-      "detail": "ERROR: 0:381: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-414",
-      "stage": "composite",
-      "detail": "ERROR: 0:499: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:485: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-like-me-who-indulge-in-crying-wo",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
-    },
-    {
-      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-like-me-who-indulge-in-crying-wo",
-      "stage": "composite",
-      "detail": "ERROR: 0:488: 'sampleUv' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-423",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:475: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
     },
     {
       "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
-    },
-    {
-      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
-      "stage": "composite",
-      "detail": "ERROR: 0:488: 'sampleUv' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-flexi-identity-killing-petting-colon-gonad-type8",
-      "stage": "composite",
-      "detail": "ERROR: 0:489: 'constructor' : too many arguments"
+      "detail": "ERROR: 0:475: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
     },
     {
       "id": "cotc-suksma-rechivalrizing-tents",
       "stage": "composite",
-      "detail": "ERROR: 0:489: 'milkdropIntMod' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-429",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:584: 'milkdropIntMod' : no matching overloaded function found"
     },
     {
       "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-who-don-t-think-things-are-going",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
-    },
-    {
-      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-who-don-t-think-things-are-going",
-      "stage": "composite",
-      "detail": "ERROR: 0:488: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:475: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
     },
     {
       "id": "cotc-suksma-g-martin-m-m-w-fishbrain-wp-m-c-m-tanked-on-pure-neoepinephrine",
       "stage": "warp",
-      "detail": "ERROR: 0:370: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:473: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
-    },
-    {
-      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus",
-      "stage": "composite",
-      "detail": "ERROR: 0:488: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:475: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
     },
     {
       "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-veracruz",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
-    },
-    {
-      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-veracruz",
-      "stage": "composite",
-      "detail": "ERROR: 0:488: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:475: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
     },
     {
       "id": "cotc-tripgnosis-astralacid",
       "stage": "warp",
-      "detail": "ERROR: 0:375: 'colorScale' : undeclared identifier"
-    },
-    {
-      "id": "cotc-suksma-her-sideways-crawl-through-your-bank-accounts",
-      "stage": "composite",
-      "detail": "ERROR: 0:485: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:479: 'colorScale' : undeclared identifier"
     },
     {
       "id": "cotc-midgitstraights-of-majillaen-gunthree-spher",
       "stage": "warp",
-      "detail": "ERROR: 0:378: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:482: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-midgitstraights-of-majillaen-gunthree-spher",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:588: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' uniform mediump float' and a right operand of type ' const int' (or there is no acceptable co"
     },
     {
       "id": "cotc-suksma-twist-fiber-wrap-cut-circulation",
       "stage": "warp",
-      "detail": "ERROR: 0:373: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:476: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-suksma-fishbrain-witchcraft-phugly-megalopolish-remix",
       "stage": "composite",
-      "detail": "ERROR: 0:489: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' uniform mediump 4-component vector of float' and a right operand of type ' temp mediump 2-com"
+      "detail": "ERROR: 0:584: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' uniform mediump 4-component vector of float' and a right operand of type ' temp mediump 2-com"
     },
     {
       "id": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-multiverse-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:490: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:589: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-tricolors-flexi-true-meaning-alien-complex-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-tonymilkdrop-tricolors-flexi-the-touch-and-the-tough-alien-complex-isosceles-edit",
-      "stage": "warp",
-      "detail": "ERROR: 0:383: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-tricolors-flexi-the-touch-and-the-tough-alien-complex-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-alien-complex",
       "stage": "composite",
-      "detail": "ERROR: 0:491: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:590: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-tricolors-flexi-the-psyched-out-about-loop-alien-complex-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-tricolors-flexi-gettogether-alien-complex-isosceles-edit",
       "stage": "warp",
-      "detail": "ERROR: 0:385: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:488: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-tonymilkdrop-tricolors-flexi-gettogether-alien-complex-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:496: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-tonymilkdrop-angels-of-glory-flexi-don-t-play-with-those-kids-multiverse-isosceles-edit",
-      "stage": "warp",
-      "detail": "ERROR: 0:382: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:595: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-angels-of-glory-flexi-don-t-play-with-those-kids-multiverse-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:492: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:591: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-angels-of-glory-flexi-an-excuse-taken-back-alien-complex-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:492: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit2",
-      "stage": "warp",
-      "detail": "ERROR: 0:386: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:591: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit2",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-flexi-bdrv-ultramix-05-alien-complex-mix-not-roaring-at-all",
-      "stage": "warp",
-      "detail": "ERROR: 0:386: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-flexi-bdrv-ultramix-05-alien-complex-mix-not-roaring-at-all",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-tricolors-flexi-have-you-listened-anyway-alien-complex-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:492: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-alien-complex-isosceles-edit",
-      "stage": "warp",
-      "detail": "ERROR: 0:386: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:591: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-alien-complex-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit1",
-      "stage": "warp",
-      "detail": "ERROR: 0:386: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit1",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-tricolors-flexi-priming-alien-complex-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-alien-complex-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:491: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:590: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-multiverse",
       "stage": "composite",
-      "detail": "ERROR: 0:490: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:589: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-the-ng-flexi-bdrv-ultramix-05-alien-complex-mix-underground",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-multiverse-isosceles-edit",
-      "stage": "warp",
-      "detail": "ERROR: 0:385: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-multiverse-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:492: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:591: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-tricolors-flexi-gettogether-multiverse-isosceles-edit",
       "stage": "warp",
-      "detail": "ERROR: 0:384: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:487: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-tonymilkdrop-tricolors-flexi-gettogether-multiverse-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:495: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:594: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-evet-flexi-geiss-tokamak-fractal-2",
       "stage": "warp",
-      "detail": "ERROR: 0:383: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:486: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-evet-flexi-geiss-tokamak-fractal-2",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-multiverse-isosceles-edit",
-      "stage": "warp",
-      "detail": "ERROR: 0:385: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-multiverse-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:492: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex",
-      "stage": "warp",
-      "detail": "ERROR: 0:386: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:591: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-alien-complex-isosceles-edit",
-      "stage": "warp",
-      "detail": "ERROR: 0:386: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-alien-complex-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
-    },
-    {
-      "id": "cotc-suksma-nothing-to-remember-you-by-logsmeltitdealtit2",
-      "stage": "composite",
-      "detail": "ERROR: 0:496: 'constructor' : too many arguments"
+      "detail": "ERROR: 0:592: 'assign' :  cannot convert from ' global mediump 2-component vector of float' to ' global mediump float'"
     },
     {
       "id": "cotc-suksma-this-pain-was-saved-for-you-maggot-filigree-isosceles-edit",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-distort-crops-of-horror-torture-blackode",
       "stage": "warp",
-      "detail": "ERROR: 0:380: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:484: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-suksma-distort-crops-of-horror-torture-blackode",
       "stage": "composite",
-      "detail": "ERROR: 0:495: 'lum' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-suksma-distort-crops-of-horror-torture",
-      "stage": "warp",
-      "detail": "ERROR: 0:370: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:590: 'lum' : no matching overloaded function found"
     },
     {
       "id": "cotc-suksma-distort-crops-of-horror-torture",
       "stage": "composite",
-      "detail": "ERROR: 0:489: 'sampleUv' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-shifter-geiss-neon-pulse-glow-mix",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'constructor' : too many arguments"
-    },
-    {
-      "id": "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar-orb-mstress",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'constructor' : too many arguments"
-    },
-    {
-      "id": "cotc-flexi-stahlregen-jewelry-tiles",
-      "stage": "warp",
-      "detail": "ERROR: 0:377: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:593: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-flexi-stahlregen-jewelry-tiles",
       "stage": "composite",
-      "detail": "ERROR: 0:500: 'scalar swizzle' : not supported with this profile: es"
-    },
-    {
-      "id": "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar-orb-mstress-mash0000-prismatic-spec",
-      "stage": "composite",
-      "detail": "ERROR: 0:488: 'constructor' : too many arguments"
-    },
-    {
-      "id": "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'constructor' : too many arguments"
+      "detail": "ERROR: 0:594: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-bdrv-aderrasi-accelerator-orbital-migraine-bdrv-et-al-rmx8-sorry-to-hear-you-re-not-liking-",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself",
       "stage": "warp",
-      "detail": "ERROR: 0:396: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:499: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself",
       "stage": "composite",
-      "detail": "ERROR: 0:512: 'float2x2' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-flexi-shifter-n-fishbrain",
-      "stage": "warp",
-      "detail": "ERROR: 0:401: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:606: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-flexi-shifter-n-fishbrain",
       "stage": "composite",
-      "detail": "ERROR: 0:512: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:606: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-ac",
       "stage": "warp",
-      "detail": "ERROR: 0:397: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:499: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-ac",
       "stage": "composite",
-      "detail": "ERROR: 0:513: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:606: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-martin-tunnel-race-meta-mash-for-rats",
       "stage": "composite",
-      "detail": "ERROR: 0:512: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:607: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-xtramartin-459",
       "stage": "warp",
-      "detail": "ERROR: 0:397: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
+      "detail": "ERROR: 0:500: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-xtramartin-459",
       "stage": "composite",
-      "detail": "ERROR: 0:511: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:605: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-martin-hardcore-mix-2-2",
       "stage": "warp",
-      "detail": "ERROR: 0:397: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
+      "detail": "ERROR: 0:500: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-martin-hardcore-mix-2-2",
       "stage": "composite",
-      "detail": "ERROR: 0:511: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:605: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-stahlregen-aderrasi-geiss-unchained-zyl",
       "stage": "composite",
-      "detail": "ERROR: 0:511: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:605: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-martin-tunnel-race-meta-mash-disciple",
       "stage": "warp",
-      "detail": "ERROR: 0:402: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:505: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-martin-tunnel-race-meta-mash-disciple",
       "stage": "composite",
-      "detail": "ERROR: 0:512: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:607: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-martin-hardcore-mix-2",
       "stage": "warp",
-      "detail": "ERROR: 0:397: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
+      "detail": "ERROR: 0:500: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-martin-hardcore-mix-2",
       "stage": "composite",
-      "detail": "ERROR: 0:511: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:605: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-stahlregen",
       "stage": "warp",
-      "detail": "ERROR: 0:394: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:497: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-stahlregen",
       "stage": "composite",
-      "detail": "ERROR: 0:510: 'float2x2' : no matching overloaded function found"
+      "detail": "ERROR: 0:604: 'float2x2' : no matching overloaded function found"
     },
     {
       "id": "cotc-sewn-to-slavish-memes",
       "stage": "warp",
-      "detail": "ERROR: 0:373: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:475: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-sewn-to-slavish-memes",
       "stage": "composite",
-      "detail": "ERROR: 0:489: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' uniform mediump 4-component vector of float' and a right operand of type ' temp mediump 2-com"
+      "detail": "ERROR: 0:582: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' uniform mediump 4-component vector of float' and a right operand of type ' temp mediump 2-com"
     },
     {
       "id": "cotc-goody-ego-decontructor",
       "stage": "composite",
-      "detail": "ERROR: 0:486: 'sampleUv' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-goody-woven-beads-ps2-0",
-      "stage": "composite",
-      "detail": "ERROR: 0:493: 'sampleUv' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-goody-woven-beads",
-      "stage": "composite",
-      "detail": "ERROR: 0:493: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:586: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-amandio-c-moving-ripple-reproducing-the-end-feeling-of-doing-anything-in-the-mind",
       "stage": "composite",
-      "detail": "ERROR: 0:498: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 3-compon"
-    },
-    {
-      "id": "cotc-royal-mashup-524",
-      "stage": "composite",
-      "detail": "ERROR: 0:497: 'constructor' : too many arguments"
+      "detail": "ERROR: 0:593: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-evet-mindmelt-responsive-mix",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-royal-mashup-276",
       "stage": "warp",
-      "detail": "ERROR: 0:380: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+      "detail": "ERROR: 0:483: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-orb-cloud-burst",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' smooth in mediump 2-component vector of float' and a right operand of type ' temp mediump 3-c"
+      "detail": "ERROR: 0:475: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-suksma-rovaster-eos-phat-gastly-geiss-stahlgren-copper-mine-shaft-fall",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-royal-mashup-444",
       "stage": "composite",
-      "detail": "ERROR: 0:502: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:597: 'MinDistB' : no matching overloaded function found"
     },
     {
       "id": "cotc-evet-fishbrain-betelguese-hyperdrive-remix",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:475: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-time-is-a-prison",
       "stage": "warp",
-      "detail": "ERROR: 0:377: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:480: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-apparitions-tear-at-your-b",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:475: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-var-eos-geiss-goody-god-parasite-dissonance-palms-your-soul",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-royal-mashup-276-isosceles-edit",
       "stage": "warp",
-      "detail": "ERROR: 0:380: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+      "detail": "ERROR: 0:483: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-suksma-dark-one-clouds-i-forcibly-shoved-the-crowbar-down-my-skeletal-remain",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-fishbrain-david-bowie-cpe",
       "stage": "composite",
-      "detail": "ERROR: 0:493: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' global mediump 3-component vector of float' and a right operand of type ' smooth in mediump 2"
+      "detail": "ERROR: 0:587: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' global mediump 3-component vector of float' and a right operand of type ' temp mediump 2-comp"
     },
     {
       "id": "cotc-royal-mashup-85",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-royal-mashup-405",
       "stage": "composite",
-      "detail": "ERROR: 0:485: 'GetPixel' : no matching overloaded function found"
+      "detail": "ERROR: 0:580: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-royal-mashup-83",
       "stage": "composite",
-      "detail": "ERROR: 0:484: 'GetPixel' : no matching overloaded function found"
+      "detail": "ERROR: 0:579: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-royal-mashup-96",
       "stage": "composite",
-      "detail": "ERROR: 0:484: 'GetPixel' : no matching overloaded function found"
+      "detail": "ERROR: 0:579: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' const int' and a right operand of type ' temp mediump float' (or there is no acceptable conve"
     },
     {
       "id": "cotc-rovastar-geiss-hyperkaleidoscope-glow-2-multitonal",
       "stage": "composite",
-      "detail": "ERROR: 0:486: 'assign' :  cannot convert from ' global mediump float' to ' temp mediump 3-component vector of float'"
+      "detail": "ERROR: 0:581: 'assign' :  cannot convert from ' global mediump float' to ' temp mediump 3-component vector of float'"
     },
     {
       "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-a-rip-in-mommy-s-underwear-roams",
       "stage": "warp",
-      "detail": "ERROR: 0:382: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+      "detail": "ERROR: 0:485: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-a-rip-in-mommy-s-underwear-roams",
       "stage": "composite",
-      "detail": "ERROR: 0:498: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 4-compon"
+      "detail": "ERROR: 0:592: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 4-compon"
     },
     {
       "id": "cotc-suksma-as-for-me-i-take-medicines",
       "stage": "composite",
-      "detail": "ERROR: 0:489: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:593: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-undulate-harque-amaz-inge",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-suksma-circle-of-the-taeyrunts",
       "stage": "composite",
-      "detail": "ERROR: 0:489: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:593: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-undulate-harque-brit-tlee",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-undulate-harque-brit-tlee",
       "stage": "composite",
-      "detail": "ERROR: 0:486: 'output' : Reserved word."
+      "detail": "ERROR: 0:580: 'output' : Reserved word."
     },
     {
       "id": "cotc-suksma-log-smell-via-gandalf-pipeweed-taint-flashies",
       "stage": "composite",
-      "detail": "ERROR: 0:497: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:592: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-suksma-actually-i-didn-t-eat-last-night",
       "stage": "composite",
-      "detail": "ERROR: 0:484: 'output' : Reserved word."
+      "detail": "ERROR: 0:579: 'output' : Reserved word."
     },
     {
       "id": "cotc-suksma-log-smell-via-gandalf-pipeweed-taint",
       "stage": "composite",
-      "detail": "ERROR: 0:497: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:592: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-waltra-galactic-super-perspective",
       "stage": "composite",
-      "detail": "ERROR: 0:485: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' smooth in mediump 2-component vector of float' and a right operand of type ' temp mediump 3-c"
+      "detail": "ERROR: 0:580: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-martin-soma-in-pink",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
-    },
-    {
-      "id": "cotc-suksma-passive-probabilistic-roaming",
-      "stage": "warp",
-      "detail": "ERROR: 0:370: 'sampleUv' : no matching overloaded function found"
-    },
-    {
-      "id": "cotc-suksma-ritually-invoking-the-irrational-slaves",
-      "stage": "warp",
-      "detail": "ERROR: 0:370: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-royal-mashup-62",
       "stage": "warp",
-      "detail": "ERROR: 0:380: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:481: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-flexi-space-voyage-organic-aftermath-1",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-waltra-time-travel",
       "stage": "composite",
-      "detail": "ERROR: 0:484: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' smooth in mediump 2-component vector of float' and a right operand of type ' temp mediump 3-c"
+      "detail": "ERROR: 0:579: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-170",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-rovastar-stahlregen-touchdown-on-jelly-planet-bccn-v4",
       "stage": "composite",
-      "detail": "ERROR: 0:499: 'scalar swizzle' : not supported with this profile: es"
-    },
-    {
-      "id": "cotc-royal-mashup-270",
-      "stage": "warp",
-      "detail": "ERROR: 0:379: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:594: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-shifter-flexi-american-pie-artifactory-never-contribute-given-7-inches-to-bath-with",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-orb-lazer-ride",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' smooth in mediump 2-component vector of float' and a right operand of type ' temp mediump 3-c"
-    },
-    {
-      "id": "cotc-orb-lazer-ride",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:476: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-martin-sphery-tales-slow-version",
       "stage": "warp",
-      "detail": "ERROR: 0:378: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:482: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-martin-sphery-tales-slow-version",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:588: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' uniform mediump float' and a right operand of type ' const int' (or there is no acceptable co"
     },
     {
       "id": "cotc-martin-sphery-tales",
       "stage": "warp",
-      "detail": "ERROR: 0:378: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:482: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-martin-sphery-tales",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:588: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' uniform mediump float' and a right operand of type ' const int' (or there is no acceptable co"
     },
     {
       "id": "cotc-martin-lock-and-release",
       "stage": "warp",
-      "detail": "ERROR: 0:382: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+      "detail": "ERROR: 0:485: 'mul' : no matching overloaded function found"
     },
     {
       "id": "cotc-martin-lock-and-release",
       "stage": "composite",
-      "detail": "ERROR: 0:497: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:590: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' const int' (or there "
     },
     {
       "id": "cotc-evet-ball-lightning-1",
       "stage": "warp",
-      "detail": "ERROR: 0:383: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:487: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-evet-ball-lightning-1",
       "stage": "composite",
-      "detail": "ERROR: 0:498: 'GetPixel' : no matching overloaded function found"
+      "detail": "ERROR: 0:597: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-evet-ball-lightning-1-isosceles-edit1",
       "stage": "warp",
-      "detail": "ERROR: 0:383: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:487: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-evet-ball-lightning-1-isosceles-edit1",
       "stage": "composite",
-      "detail": "ERROR: 0:498: 'GetPixel' : no matching overloaded function found"
+      "detail": "ERROR: 0:597: 'saturate' : no matching overloaded function found"
     },
     {
       "id": "cotc-martin-diabolo-isosceles-edit",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:475: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-martin-diabolo-isosceles-edit",
       "stage": "composite",
-      "detail": "ERROR: 0:487: 'GetPixel' : no matching overloaded function found"
+      "detail": "ERROR: 0:586: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-martin-diabolo",
       "stage": "warp",
-      "detail": "ERROR: 0:372: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:475: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-martin-diabolo",
       "stage": "composite",
-      "detail": "ERROR: 0:487: 'GetPixel' : no matching overloaded function found"
+      "detail": "ERROR: 0:586: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-mrt-ei-cynical-engineers-working-for-a-backward-system-unite-in-circle-jerk",
       "stage": "warp",
-      "detail": "ERROR: 0:382: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:486: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-mrt-ei-cynical-engineers-working-for-a-backward-system-unite-in-circle-jerk-oink",
       "stage": "warp",
-      "detail": "ERROR: 0:381: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+      "detail": "ERROR: 0:484: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-evet-ball-lightning-1-isosceles-edit2",
       "stage": "warp",
-      "detail": "ERROR: 0:383: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:487: 'ofs' :  left of '[' is not of type array, matrix, or vector"
     },
     {
       "id": "cotc-evet-ball-lightning-1-isosceles-edit2",
       "stage": "composite",
-      "detail": "ERROR: 0:498: 'GetPixel' : no matching overloaded function found"
+      "detail": "ERROR: 0:595: 'saturate' : no matching overloaded function found"
     },
     {
       "id": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2e-feat-martin-flexi-phat",
       "stage": "composite",
-      "detail": "ERROR: 0:487: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' smooth in mediump 2-c"
+      "detail": "ERROR: 0:581: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-eos-glowsticks-v2-04-music-minimal-oscilloscope-vomit-mix-keylontic",
       "stage": "warp",
-      "detail": "ERROR: 0:378: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:482: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-eos-glowsticks-v2-04-music-minimal-oscilloscope-vomit-mix-keylontic",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:588: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' uniform mediump float' and a right operand of type ' const int' (or there is no acceptable co"
     },
     {
       "id": "cotc-tripgnosis-firesticks-isosceles-edit04",
       "stage": "warp",
-      "detail": "ERROR: 0:376: 'colorScale' : undeclared identifier"
-    },
-    {
-      "id": "cotc-455",
-      "stage": "composite",
-      "detail": "ERROR: 0:486: 'sampleUv' : no matching overloaded function found"
+      "detail": "ERROR: 0:480: 'colorScale' : undeclared identifier"
     },
     {
       "id": "cotc-royal-mashup-21",
       "stage": "warp",
-      "detail": "ERROR: 0:370: 'GetPixel' : no matching overloaded function found"
+      "detail": "ERROR: 0:473: 'saturate' : no matching overloaded function found"
     },
     {
       "id": "cotc-hexcollie-ti-n-suksma-n-zylot-blarffff-isosceles-edit",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:473: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-water-cooled-red-uranium-vs-dotes-here-have-a-hoho-flacc-grey-budget-never-ending-ba",
       "stage": "warp",
-      "detail": "ERROR: 0:370: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:473: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-ed-geining-hateops-flx-if-it-is-selfish-to-have-your-focus-then-i-am-an-ever-unsatis",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc",
       "stage": "warp",
-      "detail": "ERROR: 0:380: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:484: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc",
       "stage": "composite",
-      "detail": "ERROR: 0:495: 'lum' : no matching overloaded function found"
+      "detail": "ERROR: 0:590: 'lum' : no matching overloaded function found"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-offx-flacc",
       "stage": "composite",
-      "detail": "ERROR: 0:486: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' uniform mediump 4-component vector of float' and a right operand of type ' temp mediump 2-com"
+      "detail": "ERROR: 0:581: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' uniform mediump 4-component vector of float' and a right operand of type ' temp mediump 2-com"
     },
     {
       "id": "cotc-suksma-mtn-flx-flacc-roam3",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-j4-flacc",
       "stage": "composite",
-      "detail": "ERROR: 0:497: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:592: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-hexcollie-ti-n-suksma-n-zylot-blarffff",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:473: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-geiss-dotes-orb",
       "stage": "composite",
-      "detail": "ERROR: 0:489: 'constructor' : too many arguments"
+      "detail": "ERROR: 0:587: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-autoclayve-flacc-das-yi",
       "stage": "warp",
-      "detail": "ERROR: 0:370: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:473: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-hexcollie-ti-n-suksma-zylot-n-orb-blarffff-fire",
       "stage": "warp",
-      "detail": "ERROR: 0:374: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:478: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-suksma-mtn-flx-flacc-choilan-stenter-phi",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:473: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-j4-2",
       "stage": "composite",
-      "detail": "ERROR: 0:497: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:592: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-hexcollie-ti-n-suksma-zylot-n-orb-blarffff-fire-isosceles-edit",
       "stage": "warp",
-      "detail": "ERROR: 0:374: 'assign' :  cannot convert from ' temp mediump 3-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:478: '-' :  wrong operand types: no operation '-' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-autoclayve-flacc-das-yi-roam",
       "stage": "warp",
-      "detail": "ERROR: 0:370: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:473: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-autoclayve-flacc-das-yi-roam",
       "stage": "composite",
-      "detail": "ERROR: 0:493: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 3-compon"
+      "detail": "ERROR: 0:587: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' temp mediump 3-compon"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-yada-yaka-yada-flacc-spher",
       "stage": "warp",
-      "detail": "ERROR: 0:378: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:482: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-yada-yaka-yada-flacc-spher",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:588: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' uniform mediump float' and a right operand of type ' const int' (or there is no acceptable co"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc-roam",
       "stage": "warp",
-      "detail": "ERROR: 0:380: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:484: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc-roam",
       "stage": "composite",
-      "detail": "ERROR: 0:495: 'lum' : no matching overloaded function found"
+      "detail": "ERROR: 0:590: 'lum' : no matching overloaded function found"
     },
     {
       "id": "cotc-suksma-mtn-flx-flacc-choilan-collapsar",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-fleekus-flokus-violent-and-insane-homicidal-air-molecules-beat-code-experiment2-gss",
       "stage": "composite",
-      "detail": "ERROR: 0:490: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:586: 'assign' :  cannot convert from ' temp mediump float' to ' global mediump 3-component vector of float'"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-painterly-oil-reflection-flacc-spher",
       "stage": "warp",
-      "detail": "ERROR: 0:378: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:482: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
     },
     {
       "id": "cotc-suksma-dotes-hostile-undertake-painterly-oil-reflection-flacc-spher",
       "stage": "composite",
-      "detail": "ERROR: 0:493: 'assign' :  cannot convert from ' temp mediump 2-component vector of float' to ' global mediump float'"
+      "detail": "ERROR: 0:588: '/' :  wrong operand types: no operation '/' exists that takes a left-hand operand of type ' uniform mediump float' and a right operand of type ' const int' (or there is no acceptable co"
     },
     {
       "id": "cotc-suksma-question-authority-take-what-you-want-be-a-nihilist",
       "stage": "warp",
-      "detail": "ERROR: 0:373: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:475: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-mtn-flx-flacc",
       "stage": "warp",
-      "detail": "ERROR: 0:371: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+      "detail": "ERROR: 0:474: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
     },
     {
       "id": "cotc-suksma-ed-geining-hateops-flx-maggotillion-flacc",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
-    },
-    {
-      "id": "cotc-suksma-ed-geining-hateops-flx-maggotillion-flacc",
-      "stage": "composite",
-      "detail": "ERROR: 0:487: 'constructor' : too many arguments"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted-roam2",
       "stage": "warp",
-      "detail": "ERROR: 0:376: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 4-compon"
+      "detail": "ERROR: 0:479: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 4-compon"
     },
     {
       "id": "cotc-stahlregen-flexi-geiss-liquidity-dynamic-swirls-mess-flout-tessed",
       "stage": "warp",
-      "detail": "ERROR: 0:378: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:481: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     },
     {
       "id": "cotc-stahlregen-flexi-geiss-liquidity-dynamic-swirls-mess-flout-tessed",
       "stage": "composite",
-      "detail": "ERROR: 0:489: 'scalar swizzle' : not supported with this profile: es"
+      "detail": "ERROR: 0:583: 'scalar swizzle' : not supported with this profile: es"
     },
     {
       "id": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted-roam3",
       "stage": "composite",
-      "detail": "ERROR: 0:487: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 4-compon"
+      "detail": "ERROR: 0:581: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 4-compon"
     },
     {
       "id": "cotc-suksma-gss-sth-hogwoman-style-incantation-onward-to-golgotha-christening-the-afterbirth-fla",
       "stage": "composite",
-      "detail": "ERROR: 0:485: 'output' : Reserved word."
+      "detail": "ERROR: 0:580: 'output' : Reserved word."
     },
     {
       "id": "cotc-orb-inferno-burnt-to-a-crisp-ngdbthzs-avoid-homozoidne",
       "stage": "warp",
-      "detail": "ERROR: 0:375: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
+      "detail": "ERROR: 0:478: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 2-compon"
     }
   ]
 }
