@@ -114,36 +114,39 @@ describe('milkdrop compiler shader GLSL emitter — binary operators', () => {
     expect(glsl).toBe('x = milkdropIntMod(7.5000000000, 0.7000000000);');
   });
 
-  test('< emits comparison', () => {
+  // Comparisons go through the milkdrop* overload sets: HLSL compares
+  // vectors component-wise, GLSL only allows scalar relational operands.
+  // A scalar pair still evaluates to 1.0/0.0 (see the preamble).
+  test('< emits the component-wise comparison helper', () => {
     const glsl = emitShaderExpression('x = bass < 0.5');
-    expect(glsl).toBe('x = ((signalBass < 0.5000000000) ? 1.0 : 0.0);');
+    expect(glsl).toBe('x = milkdropLt(signalBass, 0.5000000000);');
   });
 
   test('<= emits a numeric comparison', () => {
     expect(emitShaderExpression('x = bass <= 0.5')).toBe(
-      'x = ((signalBass <= 0.5000000000) ? 1.0 : 0.0);',
+      'x = milkdropLe(signalBass, 0.5000000000);',
     );
   });
 
   test('> emits a numeric comparison', () => {
     expect(emitShaderExpression('x = bass > 0.5')).toBe(
-      'x = ((signalBass > 0.5000000000) ? 1.0 : 0.0);',
+      'x = milkdropGt(signalBass, 0.5000000000);',
     );
   });
 
   test('>= emits comparison', () => {
     const glsl = emitShaderExpression('x = mid >= 0.3');
-    expect(glsl).toBe('x = ((signalMid >= 0.3000000000) ? 1.0 : 0.0);');
+    expect(glsl).toBe('x = milkdropGe(signalMid, 0.3000000000);');
   });
 
   test('== emits equality', () => {
     const glsl = emitShaderExpression('x = bass == beat');
-    expect(glsl).toBe('x = ((signalBass == signalBeat) ? 1.0 : 0.0);');
+    expect(glsl).toBe('x = milkdropEq(signalBass, signalBeat);');
   });
 
   test('!= emits inequality', () => {
     const glsl = emitShaderExpression('x = bass != treb');
-    expect(glsl).toBe('x = ((signalBass != signalTreb) ? 1.0 : 0.0);');
+    expect(glsl).toBe('x = milkdropNe(signalBass, signalTreb);');
   });
 });
 
@@ -736,8 +739,10 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
     expect(emitShaderExpression('x = half2(bass, 1)')).toContain(
       'vec2(signalBass, 1.0)',
     );
+    // A two-argument float3 splits its components across a vector and a
+    // scalar; milkdropVec3 lets GLSL overloading decide which is which.
     expect(emitShaderExpression('x = half3(uv, 1.0)')).toContain(
-      'vec3(uv, 1.0)',
+      'milkdropVec3(uv, 1.0)',
     );
     expect(emitShaderExpression('x = int(bass)')).toContain('int(signalBass)');
     expect(emitShaderExpression('x = bool(bass)')).toContain(
@@ -920,8 +925,9 @@ describe('preset-declared locals', () => {
     test('a swizzle write takes the width of the swizzle', () => {
       const glsl = emitProgram(['float4 d = 0', 'd.xy = 0.5', 'd.z = 1']);
       expect(glsl).toContain('d.xy = vec2(0.5000000000);');
-      // A single component is a scalar: no wrap.
-      expect(glsl).toContain('d.z = 1.0;');
+      // A single component is a scalar write: HLSL truncates a vector RHS
+      // to its first component, which milkdropScalar does for GLSL.
+      expect(glsl).toContain('d.z = milkdropScalar(1.0);');
     });
 
     test('an undeclared name seeded from a constructor is sized by it', () => {
@@ -970,5 +976,35 @@ describe('preset-declared locals', () => {
     const glsl = emitProgram(['ret = b']);
 
     expect(glsl).toContain('colorScale.b');
+  });
+});
+
+// Shapes GLSL rejects but HLSL accepts. Each goes through an overload set in
+// the preamble (feedback-manager-shared.ts) so GLSL's own overload
+// resolution supplies the type information this text emitter lacks.
+describe('milkdrop compiler shader GLSL emitter — HLSL-only shapes', () => {
+  test('a vector comparison emits the component-wise helper', () => {
+    expect(emitShaderExpression('x = ret > 0.5')).toBe(
+      'x = milkdropGt(ret, 0.5000000000);',
+    );
+  });
+
+  test('short vector constructors let GLSL pick the split', () => {
+    expect(emitShaderExpression('x = float3(texsize.zw, 0)')).toContain(
+      'milkdropVec3(',
+    );
+    expect(emitShaderExpression('x = float4(uv, 0, 1)')).toBe(
+      'x = milkdropVec4(uv, 0.0, 1.0);',
+    );
+    // Full-arity constructors stay plain.
+    expect(emitShaderExpression('x = float4(1, 2, 3, 4)')).toBe(
+      'x = vec4(1.0, 2.0, 3.0, 4.0);',
+    );
+  });
+
+  test('HLSL matrix type names lower to GLSL', () => {
+    expect(emitShaderExpression('x = float2x2(q1, q2, q3, q4)')).toBe(
+      'x = mat2(q1, q2, q3, q4);',
+    );
   });
 });

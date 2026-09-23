@@ -23,4 +23,13 @@ describe('direct-shader scratch hoisting', () => {
     const body = 'd = vec4(1.0 / texelSize, texelSize).zw;\nret = vec3(d.x);';
     expect(declarationOf(body, 'd')).toBe('vec2');
   });
+
+  test('a bare vector on the right-hand side sizes the scratch variable', () => {
+    expect(declarationOf('d_uv = uv;\nret = vec3(d_uv, 0.0);', 'd_uv')).toBe(
+      'vec2',
+    );
+    expect(
+      declarationOf('uv1 = uv - vec2(0.5, q5);\nret = vec3(uv1, 0.0);', 'uv1'),
+    ).toBe('vec2');
+  });
 });
