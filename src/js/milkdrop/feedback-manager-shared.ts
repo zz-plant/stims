@@ -529,6 +529,13 @@ const MILKDROP_VIDEO_ECHO_HELPER = `
 // forms GLSL already accepts are included so the emitter can call the
 // helper unconditionally.
 const MILKDROP_HLSL_PROMOTION_HELPERS = `
+        // MilkDrop 2's shader preamble (include.fx) defines these, so preset
+        // bodies use them undeclared. Note M_PI_2 is 2*pi, not C's pi/2.
+        // Missing, they were hoisted as zero uniforms and angle math such as
+        // cotc-royal-mashup-59's \`ang * M_INV_PI_2\` collapsed to a constant.
+        #define M_PI 3.14159265359
+        #define M_PI_2 6.28318530718
+        #define M_INV_PI_2 0.159154943091895
         float milkdropLerp(float a, float b, float t) { return mix(a, b, t); }
         vec2 milkdropLerp(vec2 a, vec2 b, float t) { return mix(a, b, t); }
         vec2 milkdropLerp(vec2 a, vec2 b, vec2 t) { return mix(a, b, t); }

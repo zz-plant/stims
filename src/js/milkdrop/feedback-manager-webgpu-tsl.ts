@@ -1475,6 +1475,11 @@ function getShaderEnvValue(
     weighted_energy: () => shaderFloat(env.uniforms.signalEnergy),
     pi: () => shaderFloat(Math.PI),
     e: () => shaderFloat(Math.E),
+    // MilkDrop 2 include.fx constants; M_PI_2 is 2*pi. Lookups are
+    // lowercased. See MILKDROP_HLSL_PROMOTION_HELPERS for the GLSL side.
+    m_pi: () => shaderFloat(Math.PI),
+    m_pi_2: () => shaderFloat(Math.PI * 2),
+    m_inv_pi_2: () => shaderFloat(1 / (Math.PI * 2)),
     warp: () => shaderFloat(env.uniforms.warpScale),
     warp_scale: () => shaderFloat(env.uniforms.warpScale),
     dx: () => shaderFloat(env.uniforms.offsetX),
