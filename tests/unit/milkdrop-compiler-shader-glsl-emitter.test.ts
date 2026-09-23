@@ -891,7 +891,9 @@ describe('preset-declared locals', () => {
   test('a read of a written name follows the target spelling', () => {
     const glsl = emitProgram(['float L = lum(ret)', 'ret = ret * L']);
     expect(glsl).toContain('float l = milkdropScalar(lum(ret));');
-    expect(glsl).toContain('(ret * l)');
+    // `l` is a local, not provably scalar, so the product goes through the
+    // width-truncating milkdropMul set.
+    expect(glsl).toContain('milkdropMul(ret, l)');
     expect(glsl).not.toMatch(/\bL\b/u);
   });
 
@@ -1006,5 +1008,23 @@ describe('milkdrop compiler shader GLSL emitter — HLSL-only shapes', () => {
     expect(emitShaderExpression('x = float2x2(q1, q2, q3, q4)')).toBe(
       'x = mat2(q1, q2, q3, q4);',
     );
+  });
+});
+
+// HLSL arithmetic truncates mixed vector widths; GLSL rejects them. The
+// emitter routes `+ - * /` through the width-truncating milkdropAdd/Sub/
+// Mul/Div overloads unless an operand is provably a float.
+describe('milkdrop compiler shader GLSL emitter — mixed-width arithmetic', () => {
+  test('two possibly-vector operands go through the overload set', () => {
+    expect(emitShaderExpression('ret = ret * uv.xyy')).toContain(
+      'milkdropMul(ret, uv.xyy)',
+    );
+  });
+
+  test('a provably scalar operand keeps the plain operator', () => {
+    expect(emitShaderExpression('x = bass * 2')).toBe(
+      'x = (signalBass * 2.0);',
+    );
+    expect(emitShaderExpression('ret = ret * q1')).toContain('(ret * q1)');
   });
 });

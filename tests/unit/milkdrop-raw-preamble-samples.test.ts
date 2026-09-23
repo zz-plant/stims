@@ -22,6 +22,8 @@ describe('raw shader preamble samples', () => {
     const glsl = normalizeHlslToGlsl(
       'ret = GetBlur1(fract(uv * float2(2, 3)));',
     );
-    expect(glsl).toContain('sampleUv(fract(uv * vec2(2, 3)), textureWrap)');
+    // Integer literals become float literals on the raw path (GLSL ES has
+    // no implicit int→float conversion).
+    expect(glsl).toContain('sampleUv(fract(uv * vec2(2.0, 3.0)), textureWrap)');
   });
 });
