@@ -157,6 +157,28 @@ describe('preset social sharing', () => {
       );
     });
 
+    // A preset with no frame gets the blurred Stims wall rather than a flat
+    // gradient; a frame, when there is one, always wins.
+    test('falls back to the blurred backdrop only when there is no preview', () => {
+      const withoutPreview = buildPresetOgSvg({
+        id: 'rovastar-parallel-universe',
+        title: 'Parallel Universe',
+        backdropImageUri: 'data:image/png;base64,BACKDROP',
+      });
+      expect(withoutPreview).toContain(
+        '<image href="data:image/png;base64,BACKDROP"',
+      );
+
+      const withPreview = buildPresetOgSvg({
+        id: 'rovastar-parallel-universe',
+        title: 'Parallel Universe',
+        previewImageUri: 'data:image/png;base64,FRAME',
+        backdropImageUri: 'data:image/png;base64,BACKDROP',
+      });
+      expect(withPreview).toContain('data:image/png;base64,FRAME');
+      expect(withPreview).not.toContain('BACKDROP');
+    });
+
     test('carries no animation the rasterizer cannot draw', () => {
       const svg = buildPresetOgSvg({
         id: 'rovastar-parallel-universe',
