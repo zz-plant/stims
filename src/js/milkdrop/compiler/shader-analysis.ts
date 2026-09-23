@@ -101,8 +101,53 @@ export {
 } from './shader-analysis-evaluation';
 export { buildUnsupportedVolumeSamplerWarnings } from './shader-analysis-helpers';
 
+/**
+ * MilkDrop 2's preamble helpers, expanded in raw hlsl2glsl bodies the way
+ * the statement emitter expands them (shader-analysis-glsl.ts): GetPixel
+ * and GetBlur0 read sampler_main, GetBlurN a blur level through its
+ * scale/bias. The raw path left the calls as-is, and GLSL has no such
+ * functions — 10 cream-of-the-crop presets failed to compile on it.
+ */
+const RAW_PREAMBLE_SAMPLES: ReadonlyArray<[RegExp, (coord: string) => string]> =
+  [
+    [
+      /\b(?:GetPixel|GetBlur0)\s*\(/gu,
+      (coord) => `texture2D(currentTex, sampleUv(${coord}, textureWrap)).xyz`,
+    ],
+    ...([1, 2, 3] as const).map(
+      (level): [RegExp, (coord: string) => string] => [
+        new RegExp(`\\bGetBlur${level}\\s*\\(`, 'gu'),
+        (coord) =>
+          `(texture2D(blur${level}Tex, sampleUv(${coord}, textureWrap)).xyz * scale${level} + bias${level})`,
+      ],
+    ),
+  ];
+
+function expandRawPreambleSamples(text: string): string {
+  let out = text;
+  for (const [pattern, expand] of RAW_PREAMBLE_SAMPLES) {
+    let match = pattern.exec(out);
+    while (match) {
+      const argStart = match.index + match[0].length;
+      let depth = 1;
+      let index = argStart;
+      for (; index < out.length && depth > 0; index += 1) {
+        if (out[index] === '(') depth += 1;
+        else if (out[index] === ')') depth -= 1;
+      }
+      if (depth !== 0) break;
+      const coord = out.slice(argStart, index - 1);
+      out = out.slice(0, match.index) + expand(coord) + out.slice(index);
+      pattern.lastIndex = match.index;
+      match = pattern.exec(out);
+    }
+    pattern.lastIndex = 0;
+  }
+  return out;
+}
+
 export function normalizeHlslToGlsl(shaderText: string): string {
-  const result = shaderText
+  const result = expandRawPreambleSamples(shaderText)
     // Volume-noise samples take a vec3 coordinate; route them to the
     // sampleNoiseVolume helper (atlas-sliced 3D emulation) instead of
     // texture2D, which has no vec3 overload. Must run before the generic
