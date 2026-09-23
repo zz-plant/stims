@@ -355,9 +355,11 @@ Blocks banned patterns in changed source files before they land.
 
 Scans staged files (falling back to unstaged edits) for whole-file TypeScript
 suppression directives, silent empty catch blocks, hardcoded hex colors in
-frontend JSX, `console.log`, and un-themed color literals in component
-`src/css/*.module.css` stylesheets, pointing offenders at the design tokens
-and debug-snapshot systems instead. Exits non-zero on any hit.
+frontend JSX, `console.log`, un-themed color literals in component
+`src/css/*.module.css` stylesheets, the View Transitions API, and
+hard-coded overshoot easing curves, pointing offenders at the design and
+motion tokens and the debug-snapshot systems instead. Exits non-zero on any
+hit.
 
 Run it directly: `bun run check:guard-registry`
 
