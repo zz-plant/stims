@@ -1239,11 +1239,19 @@ export function buildWarpField(
   const vertexCount = density * density;
   let positions = geometryState.warpFieldPositions;
   let uvs = geometryState.warpFieldUvs;
-  if (!positions || positions.length !== vertexCount * 2) {
+  let sampleUvs = geometryState.warpFieldSampleUvs;
+  if (
+    !positions ||
+    positions.length !== vertexCount * 2 ||
+    !sampleUvs ||
+    sampleUvs.length !== vertexCount * 2
+  ) {
     positions = new Float32Array(vertexCount * 2);
     uvs = new Float32Array(vertexCount * 2);
+    sampleUvs = new Float32Array(vertexCount * 2);
     geometryState.warpFieldPositions = positions;
     geometryState.warpFieldUvs = uvs;
+    geometryState.warpFieldSampleUvs = sampleUvs;
     geometryState.warpFieldIndices = undefined;
   }
   const uvBuffer = uvs ?? new Float32Array(vertexCount * 2);
@@ -1265,6 +1273,10 @@ export function buildWarpField(
     // stands until the gather's sign and aspect conventions are pinned down.
     uvBuffer[index * 2] = (point.sourceX + 1) * 0.5;
     uvBuffer[index * 2 + 1] = (point.sourceY + 1) * 0.5;
+    // The gather coordinate transformMeshPoint computed for this vertex, in
+    // the same [0,1] texture space as uvBuffer.
+    sampleUvs[index * 2] = ((point.warpU ?? point.sourceX) + 1) * 0.5;
+    sampleUvs[index * 2 + 1] = ((point.warpV ?? point.sourceY) + 1) * 0.5;
   }
 
   let indices = geometryState.warpFieldIndices;
@@ -1290,7 +1302,7 @@ export function buildWarpField(
     geometryState.warpFieldIndices = indices;
   }
 
-  return { density, positions, uvs: uvBuffer, indices };
+  return { density, positions, uvs: uvBuffer, sampleUvs, indices };
 }
 
 export function buildMotionVectors({

@@ -222,8 +222,8 @@ describe('milkdrop compiler shader GLSL emitter — sampler calls', () => {
     const glsl = emitShaderExpression(
       'ret = tex3D(sampler_simplex, float3(uv, time / 10.0)).xyz',
     );
-    expect(glsl).not.toContain('vUv, (signalTime / 10.0), 0.0');
-    expect(glsl).toContain('sampleUv(vUv, textureWrap)');
+    expect(glsl).not.toContain('uv, (signalTime / 10.0), 0.0');
+    expect(glsl).toContain('sampleUv(uv, textureWrap)');
     expect(glsl).toContain('sampleAuxTexture(');
   });
 
@@ -238,12 +238,12 @@ describe('milkdrop compiler shader GLSL emitter — sampler calls', () => {
 describe('milkdrop compiler shader GLSL emitter — member access', () => {
   test('.x component access passes through', () => {
     const glsl = emitShaderExpression('x = uv.x');
-    expect(glsl).toContain('vUv.x');
+    expect(glsl).toContain('uv.x');
   });
 
   test('.y component access passes through', () => {
     const glsl = emitShaderExpression('x = uv.y');
-    expect(glsl).toContain('vUv.y');
+    expect(glsl).toContain('uv.y');
   });
 
   test('.r component access passes through', () => {
@@ -258,7 +258,7 @@ describe('milkdrop compiler shader GLSL emitter — member access', () => {
   });
 
   test('accepts repeated and reordered GLSL swizzles', () => {
-    expect(emitShaderExpression('x = uv.yx')).toContain('vUv.yx');
+    expect(emitShaderExpression('x = uv.yx')).toContain('uv.yx');
     expect(emitShaderExpression('x = vec3(1, 2, 3).zxy')).toContain('.zxy');
     expect(emitShaderExpression('x = vec3(1, 2, 3).xxx')).toContain('.xxx');
     expect(emitShaderExpression('x = vec4(1, 2, 3, 4).bgra')).toContain(
@@ -476,9 +476,13 @@ describe('milkdrop compiler shader GLSL emitter — identifier resolution', () =
     expect(glsl).toContain('2.71828182846');
   });
 
-  test('uv maps to vUv', () => {
+  // `uv` reads the stage template's own coordinate. In the warp stage that
+  // is the warped one — the preset's motion — and rewriting it to the
+  // unwarped `vUv` made every emitted warp body sample the previous frame
+  // without that motion.
+  test('uv reads the template coordinate, not the unwarped vUv', () => {
     const glsl = emitShaderExpression('x = uv');
-    expect(glsl).toBe('x = vUv;');
+    expect(glsl).toBe('x = uv;');
   });
 
   test('warp maps to warpScale', () => {
@@ -662,7 +666,7 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
       'ret = tex2Dlod(sampler_main, float4(uv, 0.0, 0.0, 2.0)).rgb',
     );
     expect(glsl).toContain(
-      'textureLod(currentTex, sampleUv(vec2(vUv, 0.0), textureWrap), 2.0).rgb',
+      'textureLod(currentTex, sampleUv(vec2(uv, 0.0), textureWrap), 2.0).rgb',
     );
   });
 
@@ -671,7 +675,7 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
       'ret = tex2Dbias(sampler_noise, float4(uv, 0.0, 0.0, 0.5)).rgb',
     );
     expect(glsl).toContain(
-      'texture(noiseTex, sampleUv(vec2(vUv, 0.0), textureWrap), 0.5000000000)',
+      'texture(noiseTex, sampleUv(vec2(uv, 0.0), textureWrap), 0.5000000000)',
     );
   });
 
@@ -680,7 +684,7 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
       'ret = tex2Dgrad(sampler_main, uv, dFdx(vUv), dFdy(vUv)).rgb',
     );
     expect(glsl).toContain(
-      'textureGrad(currentTex, sampleUv(vUv, textureWrap), dFdx(vUv), dFdy(vUv))',
+      'textureGrad(currentTex, sampleUv(uv, textureWrap), dFdx(vUv), dFdy(vUv))',
     );
   });
 
@@ -733,7 +737,7 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
       'vec2(signalBass, 1.0)',
     );
     expect(emitShaderExpression('x = half3(uv, 1.0)')).toContain(
-      'vec3(vUv, 1.0)',
+      'vec3(uv, 1.0)',
     );
     expect(emitShaderExpression('x = int(bass)')).toContain('int(signalBass)');
     expect(emitShaderExpression('x = bool(bass)')).toContain(
@@ -756,7 +760,7 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
   test('keeps blur samplers on their dedicated blur textures', () => {
     expect(
       emitShaderExpression('ret = tex2d(sampler_blur1, uv).rgb'),
-    ).toContain('texture2D(blur1Tex, sampleUv(vUv, textureWrap)).rgb');
+    ).toContain('texture2D(blur1Tex, sampleUv(uv, textureWrap)).rgb');
   });
 });
 
@@ -769,19 +773,19 @@ describe('milkdrop compiler shader GLSL emitter — MilkDrop 2 helpers', () => {
   // 511 presets, the entire projectm-cream-of-the-crop library.
   test('GetPixel samples the main texture', () => {
     expect(emitShaderExpression('ret = GetPixel(uv)')).toBe(
-      'ret = vec3(texture2D(currentTex, sampleUv(vUv, textureWrap)).xyz);',
+      'ret = vec3(texture2D(currentTex, sampleUv(uv, textureWrap)).xyz);',
     );
   });
 
   test('GetBlur1/2/3 sample their blur texture through scale and bias', () => {
     expect(emitShaderExpression('ret = GetBlur1(uv)')).toContain(
-      '(texture2D(blur1Tex, sampleUv(vUv, textureWrap)).xyz * scale1 + bias1)',
+      '(texture2D(blur1Tex, sampleUv(uv, textureWrap)).xyz * scale1 + bias1)',
     );
     expect(emitShaderExpression('ret = GetBlur2(uv)')).toContain(
-      '(texture2D(blur2Tex, sampleUv(vUv, textureWrap)).xyz * scale2 + bias2)',
+      '(texture2D(blur2Tex, sampleUv(uv, textureWrap)).xyz * scale2 + bias2)',
     );
     expect(emitShaderExpression('ret = GetBlur3(uv)')).toContain(
-      '(texture2D(blur3Tex, sampleUv(vUv, textureWrap)).xyz * scale3 + bias3)',
+      '(texture2D(blur3Tex, sampleUv(uv, textureWrap)).xyz * scale3 + bias3)',
     );
   });
 
@@ -805,7 +809,7 @@ describe('milkdrop compiler shader GLSL emitter — scalar promotion', () => {
   // rejects it outright. `ret` is vec3 in both stage templates.
   test('a scalar assigned to ret is broadcast, not rejected', () => {
     expect(emitShaderExpression('ret = GetPixel(uv).x')).toBe(
-      'ret = vec3(texture2D(currentTex, sampleUv(vUv, textureWrap)).xyz.x);',
+      'ret = vec3(texture2D(currentTex, sampleUv(uv, textureWrap)).xyz.x);',
     );
   });
 });

@@ -802,6 +802,26 @@ const MILKDROP_FEEDBACK_WARP_HELPER = `
  * warp is expressed by the geometry rather than by uniforms the fragment
  * shader would have to re-derive. This is how MilkDrop itself warps.
  */
+// The gather lattice: each vertex sits at its own lattice position and
+// carries the coordinate MilkDrop samples the previous frame from there.
+// Rasterised, that is a per-pixel "where does this pixel read from" map — the
+// \`uv\` a warp shader sees. The scatter mesh below serves presets without one.
+const MILKDROP_WARP_UV_VERTEX_SHADER = `
+        attribute vec2 sampleUvAttr;
+        varying vec2 vSampleUv;
+        void main() {
+          vSampleUv = sampleUvAttr;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `;
+
+const MILKDROP_WARP_UV_FRAGMENT_SHADER = `
+        varying vec2 vSampleUv;
+        void main() {
+          gl_FragColor = vec4(vSampleUv, 0.0, 1.0);
+        }
+      `;
+
 const MILKDROP_WARP_MESH_VERTEX_SHADER = `
         attribute vec2 warpUvAttr;
         varying vec2 vWarpUv;
@@ -1280,6 +1300,8 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform vec2 warpTextureOffset;
         uniform float warpTextureVolumeSliceZ;
         uniform float hasDirectWarp;
+        uniform sampler2D warpUvTex;
+        uniform float hasWarpUvField;
         uniform float signalBass;
         uniform float signalMid;
         uniform float signalTreb;
@@ -1335,7 +1357,14 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
           vec2 rotatedUv = vec2(centeredUv.x * rotCos - centeredUv.y * rotSin, centeredUv.x * rotSin + centeredUv.y * rotCos);
           vec2 transformedUv = rotatedUv / signedZoomDivisor(zoomMul) + vec2(offsetX, offsetY);
 
-          vec2 uv = transformedUv + 0.5;
+          // MilkDrop's warp-shader \`uv\` is the per-vertex warped coordinate:
+          // per-frame and per-pixel zoom/rot/dx/dy/sx/sy, interpolated across
+          // the mesh. When the preset has per-pixel motion the gather mesh
+          // was rasterised into warpUvTex; otherwise the per-frame uniforms
+          // are the whole transform.
+          vec2 uv = hasWarpUvField > 0.5
+            ? texture2D(warpUvTex, vUv).xy
+            : transformedUv + 0.5;
           vec2 uv_orig = vUv;
           vec3 ret = texture2D(currentTex, sampleUv(uv, textureWrap)).rgb;
           float rad = length(vec2((uv.x - 0.5) * aspect.x, (uv.y - 0.5) * aspect.y)) * 2.0;
@@ -1897,6 +1926,11 @@ class SharedMilkdropFeedbackManager
   readonly warpMeshMaterial: ShaderMaterial;
   readonly warpMeshGeometry: BufferGeometry;
   readonly warpMeshScene: Scene;
+  /** The gather lattice rasterised to per-pixel sample coordinates, for warp
+   * shaders. See MILKDROP_WARP_UV_FRAGMENT_SHADER. */
+  readonly warpUvTarget: WebGLRenderTarget;
+  readonly warpUvGeometry: BufferGeometry;
+  readonly warpUvScene: Scene;
   private warpFieldDensity = 0;
   private warpFieldReady = false;
 
@@ -1918,6 +1952,13 @@ class SharedMilkdropFeedbackManager
     this.warpTarget = createWebGLFeedbackRenderTarget(width, height, {
       resolutionScale: this.currentFeedbackResolutionScale,
       useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+      samples: 1,
+    });
+    // Half-float regardless of the feedback format: these are coordinates,
+    // and 8 bits would quantise them to 1/255 of the frame.
+    this.warpUvTarget = createWebGLFeedbackRenderTarget(width, height, {
+      resolutionScale: this.currentFeedbackResolutionScale,
+      useHalfFloatFeedback: true,
       samples: 1,
     });
     this.targets = [
@@ -2047,6 +2088,8 @@ class SharedMilkdropFeedbackManager
         currentTex: { value: this.targets[0].texture },
         previousTex: { value: this.targets[0].texture },
         warpTex: { value: this.targets[0].texture },
+        warpUvTex: { value: null },
+        hasWarpUvField: { value: 0 },
         blur1Tex: { value: this.blurTargets[0].texture },
         blur2Tex: { value: this.blurTargets[1].texture },
         blur3Tex: { value: this.blurTargets[2].texture },
@@ -2147,6 +2190,21 @@ class SharedMilkdropFeedbackManager
     this.warpMeshScene = new Scene();
     this.warpMeshScene.add(warpMesh);
     this.warpMeshScene.matrixAutoUpdate = false;
+    this.warpUvGeometry = new BufferGeometry();
+    const warpUvMesh = new Mesh(
+      this.warpUvGeometry,
+      new ShaderMaterial({
+        vertexShader: MILKDROP_WARP_UV_VERTEX_SHADER,
+        fragmentShader: MILKDROP_WARP_UV_FRAGMENT_SHADER,
+        depthTest: false,
+        depthWrite: false,
+        side: DoubleSide,
+      }),
+    );
+    warpUvMesh.frustumCulled = false;
+    this.warpUvScene = new Scene();
+    this.warpUvScene.add(warpUvMesh);
+    this.warpUvScene.matrixAutoUpdate = false;
     this.feedbackBlendMaterial = new ShaderMaterial({
       uniforms: {
         currentTex: { value: this.sceneTarget.texture },
@@ -2344,8 +2402,37 @@ class SharedMilkdropFeedbackManager
     }
     positions.needsUpdate = true;
     uvs.needsUpdate = true;
+    const uvGeometry = this.warpUvGeometry;
+    const latticeAttr = uvGeometry.getAttribute('position');
+    if (!latticeAttr || latticeAttr.count !== vertexCount) {
+      uvGeometry.setAttribute(
+        'position',
+        new BufferAttribute(new Float32Array(vertexCount * 3), 3),
+      );
+      uvGeometry.setAttribute(
+        'sampleUvAttr',
+        new BufferAttribute(new Float32Array(vertexCount * 2), 2),
+      );
+    }
+    const latticePositions = (
+      uvGeometry.getAttribute('position') as BufferAttribute
+    ).array as Float32Array;
+    const sampleUvAttr = uvGeometry.getAttribute(
+      'sampleUvAttr',
+    ) as BufferAttribute;
+    const sampleUvArray = sampleUvAttr.array as Float32Array;
+    for (let index = 0; index < vertexCount; index += 1) {
+      latticePositions[index * 3] = (field.uvs[index * 2] ?? 0) * 2 - 1;
+      latticePositions[index * 3 + 1] = (field.uvs[index * 2 + 1] ?? 0) * 2 - 1;
+      latticePositions[index * 3 + 2] = 0;
+      sampleUvArray[index * 2] = field.sampleUvs[index * 2] ?? 0;
+      sampleUvArray[index * 2 + 1] = field.sampleUvs[index * 2 + 1] ?? 0;
+    }
+    (uvGeometry.getAttribute('position') as BufferAttribute).needsUpdate = true;
+    sampleUvAttr.needsUpdate = true;
     if (this.warpFieldDensity !== field.density) {
       geometry.setIndex(new BufferAttribute(field.indices, 1));
+      uvGeometry.setIndex(new BufferAttribute(field.indices, 1));
       this.warpFieldDensity = field.density;
     }
     this.warpFieldReady = true;
@@ -3021,9 +3108,18 @@ class SharedMilkdropFeedbackManager
       this.sceneTarget,
     );
 
-    renderer.setRenderTarget(this.warpTarget);
     const warpShaderOwnsTransform =
       (this.warpMaterial.uniforms.hasDirectWarp.value as number) > 0.5;
+    const warpShaderReadsField = this.warpFieldReady && warpShaderOwnsTransform;
+    if (warpShaderReadsField) {
+      renderer.setRenderTarget(this.warpUvTarget);
+      renderer.render(this.warpUvScene, this.camera);
+    }
+    this.warpMaterial.uniforms.warpUvTex.value = this.warpUvTarget.texture;
+    this.warpMaterial.uniforms.hasWarpUvField.value = warpShaderReadsField
+      ? 1
+      : 0;
+    renderer.setRenderTarget(this.warpTarget);
     if (this.warpFieldReady && !warpShaderOwnsTransform) {
       // The grid already carries the preset's whole transform, per-pixel code
       // included; re-deriving it from uniforms here would apply it twice.
@@ -3130,6 +3226,7 @@ class SharedMilkdropFeedbackManager
     );
     this.sceneTarget.setSize(sceneWidth, sceneHeight);
     this.warpTarget.setSize(feedbackWidth, feedbackHeight);
+    this.warpUvTarget.setSize(feedbackWidth, feedbackHeight);
     this.targets.forEach((target) =>
       target.setSize(feedbackWidth, feedbackHeight),
     );
@@ -3175,6 +3272,8 @@ class SharedMilkdropFeedbackManager
     }
     this.sceneTarget.dispose();
     this.warpTarget.dispose();
+    this.warpUvTarget.dispose();
+    this.warpUvGeometry.dispose();
     this.targets.forEach((target) => target.dispose());
     this.displayTarget.dispose();
     this.blurTargets.forEach((target) => target.dispose());
