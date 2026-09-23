@@ -50,6 +50,10 @@ export const GENERATED_OG_DEFAULT_PNG_PATH = 'public/og/default.png';
 export const GENERATED_OG_MILKDROP_PNG_PATH = 'public/og/milkdrop.png';
 export const GENERATED_OG_PERFORMANCE_PNG_PATH = 'public/og/performance.png';
 export const GENERATED_OG_BACKDROP_PNG_PATH = 'public/og/backdrop.png';
+// Uploaded by hand in the repo's Settings -> Social preview (GitHub has no API
+// for it); generated here so it stays in step with the site's cards.
+export const GENERATED_GITHUB_SOCIAL_PREVIEW_PATH =
+  'public/og/github-social-preview.png';
 export const GENERATED_ICON_FAVICON_SVG_PATH = 'public/icons/favicon.svg';
 export const GENERATED_ICON_FAVICON_32_PATH = 'public/icons/favicon-32.png';
 export const GENERATED_ICON_192_PATH = 'public/icons/icon-192.png';
@@ -425,6 +429,18 @@ export async function renderOgPng(
     .png({ palette: true, quality: 90, effort: 10, compressionLevel: 9 })
     .toBuffer();
 }
+
+/**
+ * GitHub's social preview is 2:1 at 1280x640, not the 1.9:1 of og:image. The
+ * same card is re-framed rather than re-laid-out: a 1200x600 window through
+ * its middle (y 15-615) keeps the eyebrow and footer and trims only the
+ * bleeding tile wall, scaled up to 1280 wide.
+ */
+export const toGithubSocialPreviewSvg = (cardSvg: string) =>
+  cardSvg.replace(
+    `width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}"`,
+    'width="1280" height="640" viewBox="0 15 1200 600"',
+  );
 
 /** Presets on offer, floored to the hundred so the card ages gracefully. */
 export const formatPresetCountClaim = (count: number) =>
@@ -1002,6 +1018,17 @@ export async function buildSeoArtifacts(
     ariaLabel:
       'Will Stims run on your machine? Browser support, automatic quality, and what to change.',
   };
+  const githubSocialCard = {
+    headline: ['MilkDrop,', 'in your browser.'],
+    headlineSize: 80,
+    subline: [
+      `Play and live-edit ${presetCount} original presets`,
+      'against any audio. Open source.',
+    ],
+    eyebrowLead: 'Stims',
+    eyebrow: 'Music visualizer',
+    ariaLabel: `Stims: MilkDrop in your browser. Play and live-edit ${presetCount} original presets against any audio.`,
+  };
   const inlineFrames = await loadInlineFrameHref(rootDir);
   const defaultOgSvg = buildOgSvg(defaultOgCard);
   const milkdropOgSvg = buildOgSvg(milkdropOgCard);
@@ -1060,6 +1087,16 @@ export async function buildSeoArtifacts(
         contents: await renderOgPng(
           buildOgSvg({ ...performanceOgCard, frameHref: inlineFrames }),
           rootDir,
+        ),
+      },
+      {
+        relativePath: GENERATED_GITHUB_SOCIAL_PREVIEW_PATH,
+        contents: await renderOgPng(
+          toGithubSocialPreviewSvg(
+            buildOgSvg({ ...githubSocialCard, frameHref: inlineFrames }),
+          ),
+          rootDir,
+          { width: 1280 },
         ),
       },
       {
