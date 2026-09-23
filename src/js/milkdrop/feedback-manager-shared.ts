@@ -918,7 +918,15 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
           vec3 color = hasDirectWarp > 0.5
             ? previousColor + current.rgb
             : previousColor * (1.0 - coverage) + current.rgb;
-          gl_FragColor = vec4(color, 1.0);
+          // MilkDrop's internal buffer is 8-bit, so every frame it carries is
+          // implicitly clamped to [0,1]. Ours is half-float for decay
+          // precision, which removed that clamp: a sharpening warp such as
+          // Geiss's reaction-diffusion \`ret += (ret - GetBlur1(uv)) * 0.3\`
+          // is bounded in MilkDrop but grew without limit here, and the blur
+          // spread it until six cotc presets rendered solid white. Clamping
+          // the value that feeds the next frame restores the bound without
+          // giving up half-float's sub-1/255 decay steps.
+          gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
         }
       `;
 
