@@ -431,10 +431,16 @@ Run it directly: `bun run check:no-ts-nocheck`
 
 Verifies the deployed site's edge is reachable and not gated behind a Cloudflare challenge.
 
-Fetches / and /milkdrop/ on the base URL (first argument, default
-https://toil.fyi) and fails on cf-mitigated challenges, interstitial bodies,
-or 4xx/5xx. DNS-only failures warn instead of failing unless
-STRICT_DNS_FAILURES=1.
+Fetches the unfurler-facing routes on the base URL (first argument,
+default https://toil.fyi) and fails on cf-mitigated challenges,
+interstitial bodies, or 4xx/5xx. DNS-only failures warn instead of
+failing unless STRICT_DNS_FAILURES=1.
+
+The list is the social-card surface, not the app's navigation: a share
+link is unfurled by a crawler, not a browser, so these four are what a
+challenge or a 404 actually breaks. /milkdrop/ used to be here and went
+stale silently when the app routes changed, which is why this check also
+asserts on the card endpoints rather than a human-browsed page.
 
 Run it directly: `bun run check:production-edge`
 
