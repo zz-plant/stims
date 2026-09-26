@@ -4,45 +4,36 @@
 // Enables native interactive embeds in Notion, Medium, Discord, Reddit, Ghost, and Slack.
 
 import type { OEmbedResponse } from '../../src/js/core/edge-contracts.ts';
+import { loadPresetMeta } from '../shared/preset-meta.ts';
 
 interface EventContext {
   request: Request;
   env?: { ASSETS?: { fetch: (request: Request) => Promise<Response> } };
 }
 
-type PresetMeta = Record<string, [title: string, author: string]>;
+// Preset titles come from the MilkDrop corpus and carry raw quotes and angle
+// brackets ('martin - "wtf" track'); they must be escaped before landing in
+// the iframe's HTML attribute, or the embed HTML breaks — and a hostile
+// title becomes an injection vector in every embedding page.
+const escapeHtmlAttribute = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
-let presetMetaPromise: Promise<PresetMeta | null> | null = null;
-
-function loadPresetMeta(
-  context: EventContext,
-  origin: string,
-): Promise<PresetMeta | null> {
-  presetMetaPromise ??= (async () => {
-    const assets = context.env?.ASSETS;
-    if (!assets) return null;
-    try {
-      const response = await assets.fetch(
-        new Request(new URL('/preset-meta.json', origin).toString()),
-      );
-      if (!response.ok) return null;
-      return (await response.json()) as PresetMeta;
-    } catch {
-      return null;
-    }
-  })().then(
-    (val) => {
-      if (val === null) presetMetaPromise = null;
-      return val;
-    },
-    () => {
-      presetMetaPromise = null;
-      return null;
-    },
-  );
-
-  return presetMetaPromise;
-}
+// parseInt('abc') is NaN, and Math.max/min pass it straight through — a
+// garbage maxwidth used to emit width="NaN" into embed HTML.
+const clampEmbedDimension = (
+  raw: string | null,
+  fallback: number,
+  min: number,
+  max: number,
+) => {
+  const parsed = Number.parseInt(raw ?? '', 10);
+  const value = Number.isFinite(parsed) ? parsed : fallback;
+  return Math.min(max, Math.max(min, value));
+};
 
 export async function onRequest(context: EventContext): Promise<Response> {
   const { request } = context;
@@ -96,26 +87,27 @@ export async function onRequest(context: EventContext): Promise<Response> {
       targetUrl.pathname.slice('/preset/'.length).split('/')[0] || null;
   }
 
-  const presetMeta = await loadPresetMeta(context, requestUrl.origin);
+  const presetMeta = await loadPresetMeta(
+    context.env?.ASSETS,
+    requestUrl.origin,
+  );
   const entry = presetId ? presetMeta?.[presetId] : null;
 
   const title = entry ? entry[0] : 'Stims — MilkDrop-Inspired Audio Visualizer';
   const author = entry?.[1];
   const authorCredit = author ? ` by ${author}` : '';
 
-  const embedWidth = Math.min(
+  const embedWidth = clampEmbedDimension(
+    requestUrl.searchParams.get('maxwidth'),
+    800,
+    320,
     1280,
-    Math.max(
-      320,
-      parseInt(requestUrl.searchParams.get('maxwidth') || '800', 10),
-    ),
   );
-  const embedHeight = Math.min(
+  const embedHeight = clampEmbedDimension(
+    requestUrl.searchParams.get('maxheight'),
+    450,
+    240,
     720,
-    Math.max(
-      240,
-      parseInt(requestUrl.searchParams.get('maxheight') || '450', 10),
-    ),
   );
 
   const iframeSrc = presetId
@@ -140,7 +132,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
     thumbnail_url: ogImageUrl,
     thumbnail_width: 1200,
     thumbnail_height: 630,
-    html: `<iframe src="${iframeSrc}" width="${embedWidth}" height="${embedHeight}" style="border:0;border-radius:12px;overflow:hidden;" allow="autoplay; microphone; display-capture" allowfullscreen title="${title}"></iframe>`,
+    html: `<iframe src="${escapeHtmlAttribute(iframeSrc)}" width="${embedWidth}" height="${embedHeight}" style="border:0;border-radius:12px;overflow:hidden;" allow="autoplay; microphone; display-capture" allowfullscreen title="${escapeHtmlAttribute(`${title}${authorCredit}`)}"></iframe>`,
     width: embedWidth,
     height: embedHeight,
   } satisfies OEmbedResponse;
