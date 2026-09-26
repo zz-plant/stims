@@ -262,7 +262,11 @@ export async function onRequest(context: EventContext): Promise<Response> {
 
   // Crawlers require absolute image URLs; /api/og-preset rasterizes the
   // per-preset card to PNG via resvg-wasm (SVG is refused by every major
-  // unfurler) and falls back to the static card if rendering fails.
+  // unfurler) and falls back to the static card if rendering fails. The index
+  // shell ships og:image:url and og:image:secure_url aliases pointed at the
+  // static card; per the OG spec those are the same image struct as og:image,
+  // so they must be rewritten too — parsers that prefer secure_url (Facebook,
+  // LinkedIn) would otherwise show the generic card for every preset.
   const imageUrl = new URL(
     `/api/og-preset?id=${encodeURIComponent(presetId)}`,
     url.origin,
@@ -357,6 +361,8 @@ export async function onRequest(context: EventContext): Promise<Response> {
     .on('meta[property="og:description"]', setContent(description))
     .on('meta[property="og:url"]', setContent(canonical))
     .on('meta[property="og:image"]', setContent(imageUrl))
+    .on('meta[property="og:image:url"]', setContent(imageUrl))
+    .on('meta[property="og:image:secure_url"]', setContent(imageUrl))
     .on('meta[property="og:image:alt"]', setContent(imageAlt))
     .on('meta[name="twitter:card"]', setContent('summary_large_image'))
     .on('meta[name="twitter:title"]', setContent(fullTitle))
@@ -366,7 +372,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
     .on('head', {
       element(el) {
         el.append(
-          `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><meta property="og:image:url" content="${escapeAttribute(imageUrl)}" /><meta property="og:image:secure_url" content="${escapeAttribute(imageUrl)}" /><script type="application/ld+json">${jsonLd}</script><script type="speculationrules">${speculationRulesJson}</script>`,
+          `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><script type="application/ld+json">${jsonLd}</script><script type="speculationrules">${speculationRulesJson}</script>`,
           {
             html: true,
           },
