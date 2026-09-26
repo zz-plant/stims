@@ -214,9 +214,30 @@ describe('/?preset=<id> middleware', () => {
       'https://toil.fyi/?preset=test-preset',
     );
 
+    const ogImage = applyHandlers('meta[property="og:image"]');
+    expect(ogImage.attributes.get('content')).toBe(
+      'https://toil.fyi/api/og-preset?id=test-preset',
+    );
+
+    // og:image:url and og:image:secure_url are the same image struct as
+    // og:image. Leaving the static aliases in place would make
+    // secure_url-preferring unfurlers (Facebook, LinkedIn) show the generic
+    // card, so the middleware must rewrite them, not append duplicates.
+    for (const alias of ['og:image:url', 'og:image:secure_url']) {
+      const aliasEl = applyHandlers(`meta[property="${alias}"]`);
+      expect(aliasEl.attributes.get('content')).toBe(
+        'https://toil.fyi/api/og-preset?id=test-preset',
+      );
+    }
+
+    const twitterImage = applyHandlers('meta[name="twitter:image"]');
+    expect(twitterImage.attributes.get('content')).toBe(
+      'https://toil.fyi/api/og-preset?id=test-preset',
+    );
+
     const head = applyHandlers('head');
-    expect(head.appended[0]).toContain('property="og:image:url"');
-    expect(head.appended[0]).toContain('property="og:image:secure_url"');
+    expect(head.appended[0]).not.toContain('og:image:url');
+    expect(head.appended[0]).not.toContain('og:image:secure_url');
     expect(head.appended[0]).not.toContain('twitter:player');
     expect(head.appended[0]).not.toContain('property="og:video"');
   });
