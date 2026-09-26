@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { onRequest as middlewareRequest } from '../../functions/_middleware.ts';
@@ -6,10 +6,12 @@ import {
   buildPresetOgSvg,
   fitByline,
   fitTitle,
+  loadFonts,
   normalizePresetId,
   onRequest as ogPresetRequest,
   type RenderAssets,
 } from '../../functions/api/og-preset.ts';
+import { __resetPresetMetaForTest } from '../../functions/shared/preset-meta.ts';
 import { presentTitle } from '../../functions/shared/preset-title.ts';
 import {
   buildPresetLink,
@@ -17,6 +19,10 @@ import {
 } from '../../src/js/utils/media/share-link.ts';
 
 describe('preset social sharing', () => {
+  // bun shares one process across test files; without this the preset-meta
+  // memo carries another suite's mocked table into these tests.
+  beforeEach(__resetPresetMetaForTest);
+
   describe('share link copy formatting', () => {
     test('formats share copy with title and author', () => {
       const copy = formatPresetShareCopy({
@@ -420,6 +426,46 @@ describe('preset social sharing', () => {
 
       const res = await middlewareRequest(context);
       expect(res.status).toBe(400);
+    });
+  });
+
+  // A font subrequest failing used to abort the render and serve the generic
+  // card — which X caches for that preset URL indefinitely. Fonts must fail
+  // soft: the frame is the part that cannot be wrong.
+  describe('OG card font loading fails soft', () => {
+    const fontAssets = (failing: (path: string) => boolean) => ({
+      fetch: (input: URL | Request | string) => {
+        const target = input instanceof URL ? input.pathname : String(input);
+        if (failing(target)) {
+          return Promise.resolve(new Response('missing', { status: 404 }));
+        }
+        return Promise.resolve(
+          new Response(new Uint8Array([1, 2, 3]), {
+            headers: { 'content-type': 'font/ttf' },
+          }),
+        );
+      },
+    });
+
+    test('keeps the fonts that loaded when one subrequest fails', async () => {
+      const fonts = await loadFonts(
+        fontAssets((path) => path.endsWith('SpaceMono-Bold.ttf')),
+        'https://toil.fyi',
+      );
+      expect(fonts).toHaveLength(4);
+    });
+
+    test('returns an empty set rather than throwing when every font fails', async () => {
+      const fonts = await loadFonts(
+        fontAssets(() => true),
+        'https://toil.fyi',
+      );
+      expect(fonts).toHaveLength(0);
+    });
+
+    test('degrades to caption-less rendering when the binding is absent', async () => {
+      const fonts = await loadFonts(undefined, 'https://toil.fyi');
+      expect(fonts).toHaveLength(0);
     });
   });
 });

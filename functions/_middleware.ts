@@ -9,55 +9,13 @@
 //      social share collapsed onto `/`.
 
 import { resolveSemanticRoute } from './discover-slugs.ts';
+import { loadPresetMeta } from './shared/preset-meta.ts';
 import { presentTitle } from './shared/preset-title.ts';
 
 interface EventContext {
   request: Request;
   next: () => Promise<Response>;
   env?: { ASSETS?: { fetch: (request: Request) => Promise<Response> } };
-}
-
-type PresetMeta = Record<string, [title: string, author: string]>;
-
-// Per-isolate memo. Workers reuse isolates across requests, so the metadata
-// file is fetched once per isolate rather than once per request. A failed
-// fetch is not cached, so a transient error does not poison the isolate.
-let presetMetaPromise: Promise<PresetMeta | null> | null = null;
-
-function loadPresetMeta(
-  context: EventContext,
-  origin: string,
-): Promise<PresetMeta | null> {
-  presetMetaPromise ??= (async () => {
-    const assets = context.env?.ASSETS;
-    if (!assets) {
-      return null;
-    }
-    try {
-      const response = await assets.fetch(
-        new Request(new URL('/preset-meta.json', origin).toString()),
-      );
-      if (!response.ok) {
-        return null;
-      }
-      return (await response.json()) as PresetMeta;
-    } catch {
-      return null;
-    }
-  })().then(
-    (value) => {
-      if (value === null) {
-        presetMetaPromise = null;
-      }
-      return value;
-    },
-    () => {
-      presetMetaPromise = null;
-      return null;
-    },
-  );
-
-  return presetMetaPromise;
 }
 
 function escapeAttribute(value: string) {
@@ -242,7 +200,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
     return allowExternalFraming(response, embedRequest);
   }
 
-  const presetMeta = await loadPresetMeta(context, url.origin);
+  const presetMeta = await loadPresetMeta(context.env?.ASSETS, url.origin);
   const entry = presetMeta?.[presetId];
 
   // Unknown ids are left with the site's default metadata. Generating a unique
