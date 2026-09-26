@@ -5,6 +5,7 @@
 // Discord, and iMessage all refuse SVG in link previews. `?format=svg`
 // returns the source SVG for debugging the template.
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
+import { loadPresetMeta } from '../shared/preset-meta.ts';
 import { presentTitle } from '../shared/preset-title.ts';
 import resvgWasm from './resvg.wasm';
 
@@ -320,25 +321,34 @@ type OgPresetContext = {
   renderAssets?: RenderAssets;
 };
 
+// Fonts fail soft: resvg renders the preset frame even when no font buffer
+// loads (the caption is simply absent). Aborting the render on a font
+// subrequest failure would serve the generic card — which X then caches for
+// that URL indefinitely. A caption-less card showing the right preset beats
+// that every time.
 let fontsReady: Promise<Uint8Array[]> | null = null;
-function loadFonts(
-  assetsBinding: StaticAssetFetcher,
+export function loadFonts(
+  assetsBinding: StaticAssetFetcher | undefined,
   origin: string,
 ): Promise<Uint8Array[]> {
-  if (!fontsReady) {
-    fontsReady = Promise.all(
-      FONT_PATHS.map(async (path) => {
-        const response = await assetsBinding.fetch(new URL(path, origin));
-        if (!response.ok) {
-          throw new Error(`Font asset ${path} returned ${response.status}`);
-        }
-        return new Uint8Array(await response.arrayBuffer());
-      }),
-    ).catch((error: unknown) => {
-      fontsReady = null;
-      throw error;
-    });
-  }
+  if (!assetsBinding) return Promise.resolve([]);
+  fontsReady ??= Promise.allSettled(
+    FONT_PATHS.map(async (path) => {
+      const response = await assetsBinding.fetch(new URL(path, origin));
+      if (!response.ok) {
+        throw new Error(`Font asset ${path} returned ${response.status}`);
+      }
+      return new Uint8Array(await response.arrayBuffer());
+    }),
+  ).then((settled) => {
+    const fonts = settled.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : [],
+    );
+    // Only a complete set is memoized for the isolate; a partial or empty
+    // set re-fetches on the next request and gets a chance to heal.
+    if (fonts.length !== FONT_PATHS.length) fontsReady = null;
+    return fonts;
+  });
   return fontsReady;
 }
 
@@ -352,13 +362,11 @@ async function resolveRenderAssets(
       'resvg.wasm resolved to a path string; PNG rendering requires the Workers runtime or injected renderAssets',
     );
   }
-  const assetsBinding = context.env?.ASSETS;
-  if (!assetsBinding) {
-    throw new Error('ASSETS binding unavailable; cannot load font buffers');
-  }
+  // A missing ASSETS binding degrades to caption-less rendering via the
+  // fail-soft loadFonts above; the preset frame is what must not be lost.
   return {
     wasm: resvgWasm,
-    fonts: await loadFonts(assetsBinding, origin),
+    fonts: await loadFonts(context.env?.ASSETS, origin),
   };
 }
 
@@ -475,32 +483,9 @@ function loadBackdropDataUri(
   return backdropPromise;
 }
 
-// preset-meta.json is the same table the OG middleware reads for <title> and
-// og:description, so the card and the unfurl text name the preset identically.
-// Without it the card can only guess from the slug ("Eo.S. + Phat" becomes
-// "Eos").
-type PresetMetaTable = Record<string, [string, string]>;
-let presetMetaPromise: Promise<PresetMetaTable | null> | null = null;
-
-async function loadPresetMeta(
-  env: OgPresetContext['env'],
-  origin: string,
-): Promise<PresetMetaTable | null> {
-  const assets = env?.ASSETS;
-  if (!assets) return null;
-  presetMetaPromise ??= (async () => {
-    try {
-      const response = await assets.fetch(new URL('/preset-meta.json', origin));
-      if (!response.ok) throw new Error(`status ${response.status}`);
-      return (await response.json()) as PresetMetaTable;
-    } catch {
-      presetMetaPromise = null;
-      return null;
-    }
-  })();
-  return presetMetaPromise;
-}
-
+// preset-meta.json comes from the shared per-isolate loader, so the card and
+// the unfurl text name the preset identically. Without it the card can only
+// guess from the slug ("Eo.S. + Phat" becomes "Eos").
 export async function onRequest(context: OgPresetContext): Promise<Response> {
   const url = new URL(context.request.url);
   const presetId = normalizePresetId(
@@ -512,7 +497,7 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
   const format = url.searchParams.get('format') === 'svg' ? 'svg' : 'png';
 
   const [meta, previewImageUri] = await Promise.all([
-    loadPresetMeta(context.env, url.origin),
+    loadPresetMeta(context.env?.ASSETS, url.origin),
     loadPresetPreviewDataUri(context.env, url.origin, presetId),
   ]);
   const backdropImageUri = previewImageUri

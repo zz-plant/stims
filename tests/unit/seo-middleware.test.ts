@@ -6,6 +6,7 @@ import {
   isAllowedAuthorSlug,
   isAllowedDiscoverSlug,
 } from '../../functions/discover-slugs.ts';
+import { __resetPresetMetaForTest } from '../../functions/shared/preset-meta.ts';
 
 // The edge middleware is the only thing standing between 1,787 preset URLs
 // and a collapsed root canonical — and until now it had zero test coverage,
@@ -107,6 +108,9 @@ beforeEach(() => {
   transformCalls = 0;
   originalRewriter = globalWithRewriter.HTMLRewriter;
   globalWithRewriter.HTMLRewriter = MockHTMLRewriter;
+  // The preset-meta memo is per-isolate in production; bun shares one
+  // process across test files, so each test needs a clean table.
+  __resetPresetMetaForTest();
 });
 
 afterEach(() => {
