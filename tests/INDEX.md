@@ -114,9 +114,16 @@ runtime-starter, viewport-session, sample-toy) · `shared-initializer.test.ts` �
 
 `check-architecture.test.ts` · `check-ci-config.test.ts` · `check-commit-msg.test.ts` ·
 `check-duplicate-css.test.ts` · `run-quality-gate.test.ts` · `check-catalog-integrity.test.ts` ·
-`codex-*.test.ts` (model-route, session-script, setup-script) · `generate-seo.test.ts` ·
+`codex-*.test.ts` (model-route, session-script, setup-script) ·
 `seo-canonical-intent.test.ts` · `check-no-ts-nocheck` (script) · `check-doc-references` (script) ·
 `check-readme-claims` (script) · `check-cache-bounds.test.ts`
+
+## Served-card pipeline (previews + OG cards)
+
+`frame-stats.test.ts` (what counts as an unusable capture) ·
+`audit-production-previews.test.ts` (served-vs-repo: upload vs recapture) ·
+`warm-og-cards.test.ts` (edge warm: retries, fallback detection, exit status) ·
+`preview-failure-report.test.ts` · `generate-seo.test.ts` (cards + sitemap)
 
 ## Visual / regression / accessibility
 
