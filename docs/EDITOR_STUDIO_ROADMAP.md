@@ -17,7 +17,7 @@ as its own PR.
 |---|-------|--------|
 | 1 | Make equations visible: Inspect tab (live variables, pins, sparklines) | **Inspect tab and parameter knobs shipped** (`preset-knobs.ts`: constants set once in init become Tune sliders); reactivity meter and frame stepping next |
 | 2 | Structured editing: per-section outline, shape/wave solo, shader translation view | **Outline tab and shader translation view shipped** (`shader-translation.ts`, in the Outline's shader rows); shape/wave solo next |
-| 3 | Formats: Format round-trip guarantee (**shipped**, `milkdrop-formatter-roundtrip.test.ts`), packs, unknown-key preservation | in progress |
+| 3 | Formats: Format round-trip guarantee (**shipped**, `milkdrop-formatter-roundtrip.test.ts`), packs (**shipped** as import: a `.zip` pack from the editor or Browse file picker, or the OS file handler; `preset-archive.test.ts`), unknown-key preservation | in progress |
 | 4 | Named versions, arbitrary diff, fork tree | **Named versions shipped**, with compare against the buffer or another saved version; fork tree next |
 | 5 | Live compatibility checklist | **Compat tab shipped** (`compat-checklist.ts`): what will not run as written on Stims, worst first, jump to line. A per-engine (MilkDrop 2 / projectM / Butterchurn) view is still planned |
 | 6 | Publish-from-editor, gallery browse + remix, short share links, archive rescue | planned; confirm the client is wired to `/api/presets` first |

@@ -100,7 +100,8 @@
       "action": "/",
       "accept": {
         "text/plain": [".milk"],
-        "application/octet-stream": [".milk"]
+        "application/octet-stream": [".milk"],
+        "application/zip": [".zip"]
       },
       "icons": [
         {

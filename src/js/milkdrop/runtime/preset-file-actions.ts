@@ -1,4 +1,5 @@
 import { compileMilkdropPresetSource } from '../compiler';
+import { expandPresetSelection } from '../preset-archive';
 import {
   deriveRemixCredit,
   formatPresetCredit,
@@ -40,7 +41,13 @@ export function createMilkdropPresetFileActions({
       const skipped: Array<{ name: string; reason: string }> = [];
       let importedCount = 0;
       let lastImportedId: string | null = null;
-      for (const file of Array.from(files)) {
+      // `.zip` packs expand to the presets inside them; unreadable or empty
+      // archives land in the same skipped summary as a bad .milk file.
+      const presetFiles = await expandPresetSelection(
+        Array.from(files),
+        (name, reason) => skipped.push({ name, reason }),
+      );
+      for (const file of presetFiles) {
         try {
           if (file.size > MAX_PRESET_FILE_BYTES) {
             throw new Error(
