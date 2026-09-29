@@ -1782,3 +1782,23 @@ button.stims-editor__compat-row:focus-visible {
   max-height: 18rem;
   overflow: auto;
 }
+
+/* ── Outline: wave/shape solo and mute ────────────────────────────── */
+
+.stims-editor__outline-slot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.stims-editor__outline-isolate {
+  min-height: 26px;
+  padding: 0 8px;
+}
+
+.stims-editor__outline-isolate[aria-pressed="true"] {
+  border-color: var(--stims-accent);
+  color: var(--stims-ink);
+  background: var(--stims-control-fill-hover);
+}

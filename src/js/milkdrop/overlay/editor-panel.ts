@@ -145,6 +145,13 @@ import {
 import { buildPresetOutline } from '../preset-outline.ts';
 import { searchReference } from '../reference-search.ts';
 import {
+  getRenderIsolation,
+  type IsolatedElement,
+  type IsolationKind,
+  toggleMute,
+  toggleSolo,
+} from '../render-isolation.ts';
+import {
   describeExecutionMode,
   describeShaderTranslations,
   type ShaderStage,
@@ -980,6 +987,8 @@ export class EditorPanel {
   /** Shader stages whose translation is expanded in the Outline; kept across
    * repaints so typing does not collapse it. */
   private readonly expandedShaderStages = new Set<ShaderStage>();
+  /** The preset the Outline's solo/mute toggles act on. */
+  private outlinePresetId: string | null = null;
   private knobsWrap: HTMLElement | null = null;
   private knobsSignature = '';
   private readonly knobInputs = new Map<
@@ -1988,7 +1997,8 @@ export class EditorPanel {
     const pane = document.createElement('div');
     const hint = document.createElement('p');
     hint.className = 'stims-editor__hint';
-    hint.textContent = 'The parts of this preset. Click one to jump to it.';
+    hint.textContent =
+      'The parts of this preset. Click one to jump to it; solo or mute a wave or shape to see what it draws.';
     this.outlineList = document.createElement('div');
     this.outlineList.className = 'stims-editor__outline';
     this.outlineList.setAttribute('role', 'list');
@@ -2004,6 +2014,8 @@ export class EditorPanel {
     if (!list) return;
     const entries = buildPresetOutline(source);
     const translations = compiled ? describeShaderTranslations(compiled) : [];
+    const isolatedSlots = new Set<string>();
+    this.outlinePresetId = compiled?.source.id ?? null;
     if (entries.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'stims-editor__hint';
@@ -2046,10 +2058,76 @@ export class EditorPanel {
         const translation = stage
           ? translations.find((t) => t.stage === stage)
           : undefined;
-        if (!stage || !translation) return row;
-        return this.renderShaderOutlineEntry(row, translation);
+        if (stage && translation) {
+          return this.renderShaderOutlineEntry(row, translation);
+        }
+        const slot = /^(wave|shape)_(\d+)\b/u.exec(entry.label);
+        const presetId = compiled?.source.id;
+        if (!slot || !presetId) return row;
+        // One set of toggles per slot, on its first part (settings or code).
+        const slotKey = `${slot[1]}_${slot[2]}`;
+        if (isolatedSlots.has(slotKey)) return row;
+        isolatedSlots.add(slotKey);
+        return this.renderIsolationEntry(row, presetId, {
+          kind: slot[1] as IsolationKind,
+          // The file counts slots from 0; the renderer from 1.
+          index: Number(slot[2]) + 1,
+        });
       }),
     );
+    this.syncIsolationToggles();
+  }
+
+  /** A wave or shape Outline row plus Solo and Mute toggles. */
+  private renderIsolationEntry(
+    row: HTMLElement,
+    presetId: string,
+    element: IsolatedElement,
+  ): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'stims-editor__outline-slot';
+    const makeToggle = (label: string, action: 'solo' | 'mute') => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'stims-editor__btn stims-editor__outline-isolate';
+      button.textContent = label;
+      button.dataset.isolate = action;
+      button.dataset.isolateKind = element.kind;
+      button.dataset.isolateIndex = String(element.index);
+      button.setAttribute(
+        'aria-label',
+        `${label} ${element.kind}_${element.index - 1}`,
+      );
+      button.addEventListener('click', () => {
+        if (action === 'solo') toggleSolo(presetId, element);
+        else toggleMute(presetId, element);
+        this.syncIsolationToggles();
+      });
+      return button;
+    };
+    wrap.append(row, makeToggle('Solo', 'solo'), makeToggle('Mute', 'mute'));
+    return wrap;
+  }
+
+  /** Reflect the current solo/mute state on every Outline toggle. */
+  private syncIsolationToggles() {
+    const isolation = getRenderIsolation();
+    const presetId = this.outlinePresetId;
+    this.outlineList
+      ?.querySelectorAll<HTMLButtonElement>('[data-isolate]')
+      .forEach((button) => {
+        const kind = button.dataset.isolateKind;
+        const index = Number(button.dataset.isolateIndex);
+        const active =
+          isolation !== null && isolation.presetId === presetId
+            ? button.dataset.isolate === 'solo'
+              ? isolation.solo?.kind === kind && isolation.solo?.index === index
+              : isolation.muted.some(
+                  (entry) => entry.kind === kind && entry.index === index,
+                )
+            : false;
+        button.setAttribute('aria-pressed', String(active));
+      });
   }
 
   /** A shader's Outline row plus a toggle showing what the GPU compiles. */

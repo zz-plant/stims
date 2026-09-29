@@ -3,6 +3,7 @@
  * and custom per-point waveform samples driven by EEL2 equations and audio signal spectrum buffers.
  */
 
+import { isElementHidden } from '../render-isolation';
 import type {
   MilkdropCompiledPreset,
   MilkdropGpuFieldSignalInputs,
@@ -210,7 +211,12 @@ export function buildCustomWaves({
     );
     waveState.customWaveLocals[index] = frameLocals;
 
-    if ((frameLocals.enabled ?? 0) < 0.5) {
+    // Solo/mute from the editor: skipped exactly as `enabled=0` would be, after
+    // its per-frame code has run.
+    if (
+      (frameLocals.enabled ?? 0) < 0.5 ||
+      isElementHidden(preset.source.id, 'wave', wave.index)
+    ) {
       continue;
     }
 

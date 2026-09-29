@@ -1,6 +1,10 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { EditorPanel } from '../../src/js/milkdrop/overlay/editor-panel.ts';
+import {
+  clearRenderIsolation,
+  getRenderIsolation,
+} from '../../src/js/milkdrop/render-isolation.ts';
 
 describe('editor panel Outline tab', () => {
   let OriginalMutationObserver: typeof globalThis.MutationObserver;
@@ -154,6 +158,54 @@ describe('editor panel Outline tab', () => {
     expect(
       panel.element.querySelector('.stims-editor__outline-glsl'),
     ).toBeNull();
+    panel.dispose();
+  });
+
+  test('wave and shape rows can be soloed and muted, once per slot', () => {
+    const source = [
+      'title=Isolate',
+      'wavecode_0_enabled=1',
+      'wave_0_per_frame1=r = 1;',
+      'shapecode_1_enabled=1',
+      '',
+    ].join('\n');
+    const panel = mount(source);
+    const compiled = compileMilkdropPresetSource(source, {
+      id: 'outline-isolate',
+    });
+    panel.setSessionState({
+      source,
+      diagnostics: [],
+      latestCompiled: compiled,
+      activeCompiled: compiled,
+      dirty: false,
+    });
+    const toggle = (action: string, kind: string, index: number) =>
+      panel.element.querySelectorAll<HTMLButtonElement>(
+        `[data-isolate="${action}"][data-isolate-kind="${kind}"][data-isolate-index="${index}"]`,
+      );
+    // wave_0 has a settings row and a code row; it still gets one pair.
+    expect(toggle('solo', 'wave', 1)).toHaveLength(1);
+    expect(toggle('mute', 'shape', 2)).toHaveLength(1);
+
+    toggle('solo', 'wave', 1)[0]?.click();
+    expect(getRenderIsolation()?.solo).toEqual({ kind: 'wave', index: 1 });
+    expect(toggle('solo', 'wave', 1)[0]?.getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+
+    toggle('mute', 'shape', 2)[0]?.click();
+    expect(getRenderIsolation()?.muted).toEqual([{ kind: 'shape', index: 2 }]);
+    expect(toggle('mute', 'shape', 2)[0]?.getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+
+    toggle('solo', 'wave', 1)[0]?.click();
+    expect(getRenderIsolation()?.solo ?? null).toBeNull();
+    expect(toggle('solo', 'wave', 1)[0]?.getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+    clearRenderIsolation();
     panel.dispose();
   });
 });

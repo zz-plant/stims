@@ -16,7 +16,7 @@ as its own PR.
 | # | Phase | Status |
 |---|-------|--------|
 | 1 | Make equations visible: Inspect tab (live variables, pins, sparklines) | **Inspect tab and parameter knobs shipped** (`preset-knobs.ts`: constants set once in init become Tune sliders); reactivity meter and frame stepping next |
-| 2 | Structured editing: per-section outline, shape/wave solo, shader translation view | **Outline tab and shader translation view shipped** (`shader-translation.ts`, in the Outline's shader rows); shape/wave solo next |
+| 2 | Structured editing: per-section outline, shape/wave solo, shader translation view | **Shipped.** Outline tab, shader translation view (`shader-translation.ts`), and Solo/Mute per custom wave and shape on the Outline (`render-isolation.ts`: hides the element as `enabled=0` would, without touching the source; `milkdrop-render-isolation.test.ts`) |
 | 3 | Formats: Format round-trip guarantee, packs, unknown-key preservation, MilkDrop 2 export | **Shipped.** Format is lossless (`lab:format-roundtrip` fingerprints shader text as written, equation comments and fields Stims ignores; `milkdrop-lossless-format.test.ts`). Export writes the file MilkDrop 2 saves — `[preset00]`, its key names, backtick shader lines — and every corpus preset comes back unchanged (`milkdrop2-export.test.ts`). Packs import from `.zip` (`preset-archive.test.ts`) |
 | 4 | Named versions, arbitrary diff, fork tree | **Named versions shipped**, with compare against the buffer or another saved version; fork tree next |
 | 5 | Live compatibility checklist | **Compat tab shipped** (`compat-checklist.ts`): what will not run as written on Stims, worst first, jump to line. A per-engine (MilkDrop 2 / projectM / Butterchurn) view is still planned |
