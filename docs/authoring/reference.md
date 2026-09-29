@@ -49,7 +49,7 @@ The equation language is NS-EEL, inherited from Winamp:
 | `int(x)` | truncate toward zero |
 | `ceil(x)` | round up |
 | `sqr(x)` | x*x |
-| `clamp(x, min, max)` | clamp(x, min, max) |
+| `clamp(x, min, max)` | x limited to the range min..max |
 | `step(threshold, x)` | 0 when x is below threshold, else 1 |
 | `smoothstep(min, max, x)` | smooth 0..1 ramp of x between min and max |
 | `log(x)` | natural logarithm |
@@ -61,7 +61,7 @@ The equation language is NS-EEL, inherited from Winamp:
 | `band(a, b)` | logical AND, returns 1 or 0 |
 | `bnot(x)` | logical NOT, returns 1 or 0 |
 | `frac(x)` | fractional part |
-| `if(cond, then, else)` | if(cond, then, else) |
+| `if(cond, then, else)` | then when cond is nonzero, otherwise else; only the chosen branch runs |
 | `above(a, b)` | 1 when a > b |
 | `below(a, b)` | 1 when a < b |
 | `equal(a, b)` | 1 when a and b are (almost) equal |

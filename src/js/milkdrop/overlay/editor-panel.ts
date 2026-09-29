@@ -128,6 +128,11 @@ import {
 export { computeAstDiagnostics, mergeDiagnostics };
 
 import { buildCompatChecklist } from '../compat-checklist.ts';
+import {
+  browserVersionStorage,
+  createVersionStore,
+  type VersionStorage,
+} from '../named-versions.ts';
 import { buildPresetOutline } from '../preset-outline.ts';
 import { searchReference } from '../reference-search.ts';
 import { createVariableHistory } from '../variable-history.ts';
@@ -136,7 +141,7 @@ import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
 } from './preset-row';
-import { computeSourceDiff } from './source-diff.ts';
+import { computeSourceDiff, type SourceDiffLine } from './source-diff.ts';
 
 /**
  * Kept as the module's public names because tests, the MIDI layer and the MCP
@@ -946,6 +951,11 @@ export class EditorPanel {
     label: string;
   }> = [];
   private historyList: HTMLElement | null = null;
+  private readonly versions: ReturnType<typeof createVersionStore>;
+  private versionsList: HTMLElement | null = null;
+  private versionNameInput: HTMLInputElement | null = null;
+  private versionSaveButton: HTMLButtonElement | null = null;
+  private versionStatus: HTMLElement | null = null;
   private readonly variableHistory = createVariableHistory();
   private inspectList: HTMLElement | null = null;
   private compatHeadline: HTMLElement | null = null;
@@ -1041,8 +1051,16 @@ export class EditorPanel {
   private snapshotSourceB: string | null = null;
   private abButton: HTMLButtonElement | null = null;
 
-  constructor(callbacks: EditorPanelCallbacks) {
+  constructor(
+    callbacks: EditorPanelCallbacks,
+    options: { versionStorage?: VersionStorage | null } = {},
+  ) {
     this.callbacks = callbacks;
+    this.versions = createVersionStore(
+      'versionStorage' in options
+        ? (options.versionStorage ?? null)
+        : browserVersionStorage(),
+    );
     this.element = document.createElement('section');
     this.element.className = 'stims-editor';
     this.element.setAttribute('aria-label', 'Preset code editor');
@@ -2333,15 +2351,174 @@ export class EditorPanel {
 
   private renderHistoryPane(): HTMLElement {
     const pane = document.createElement('div');
+
+    // Named versions: the author's own bookmarks, kept per preset in the
+    // browser. Unlike the automatic checkpoints below, they survive a reload.
+    const versionsHeading = document.createElement('p');
+    versionsHeading.className = 'stims-editor__hint';
+    versionsHeading.textContent =
+      'Save a named version to come back to, diff against, or restore. Kept in this browser.';
+    const form = document.createElement('div');
+    form.className = 'stims-editor__version-form';
+    this.versionNameInput = document.createElement('input');
+    this.versionNameInput.type = 'text';
+    this.versionNameInput.className = 'stims-editor__version-name';
+    this.versionNameInput.placeholder = 'Name this version';
+    this.versionNameInput.maxLength = 60;
+    this.versionNameInput.setAttribute('aria-label', 'Version name');
+    this.versionSaveButton = document.createElement('button');
+    this.versionSaveButton.type = 'button';
+    this.versionSaveButton.className = 'stims-editor__btn';
+    this.versionSaveButton.textContent = 'Save version';
+    this.versionSaveButton.addEventListener('click', () =>
+      this.saveNamedVersion(),
+    );
+    this.versionNameInput.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      this.saveNamedVersion();
+    });
+    form.append(this.versionNameInput, this.versionSaveButton);
+    this.versionStatus = document.createElement('p');
+    this.versionStatus.className = 'stims-editor__hint';
+    this.versionStatus.setAttribute('aria-live', 'polite');
+    this.versionsList = document.createElement('div');
+    this.versionsList.className = 'stims-editor__versions';
+
     const hint = document.createElement('p');
     hint.className = 'stims-editor__hint';
     hint.textContent =
-      'A checkpoint is taken before each applied AI edit and before each restore.';
+      'Automatic checkpoints: taken before each applied AI edit and before each restore. Not kept after a reload.';
     this.historyList = document.createElement('div');
     this.historyList.className = 'stims-editor__history';
-    pane.append(hint, this.historyList);
+    pane.append(
+      versionsHeading,
+      form,
+      this.versionStatus,
+      this.versionsList,
+      hint,
+      this.historyList,
+    );
+    this.paintVersions();
     this.renderHistorySnapshots();
     return pane;
+  }
+
+  private saveNamedVersion() {
+    const presetKey = this.lastPresetId;
+    if (!presetKey || !this.versionStatus) return;
+    const result = this.versions.save(
+      presetKey,
+      this.versionNameInput?.value ?? '',
+      this.editor.state.doc.toString(),
+    );
+    if (result.ok) {
+      if (this.versionNameInput) this.versionNameInput.value = '';
+      this.versionStatus.textContent = `Saved \u201c${result.version.name}\u201d.`;
+    } else {
+      this.versionStatus.textContent =
+        result.reason === 'too-large'
+          ? 'This preset is too large to keep as a version.'
+          : result.reason === 'empty-source'
+            ? 'There is nothing to save yet.'
+            : 'Could not save: this browser is blocking or has filled its storage.';
+    }
+    this.paintVersions();
+  }
+
+  /** Replace the buffer with `source`, checkpointing what was there first. */
+  private restoreSource(source: string) {
+    const currentSource = this.editor.state.doc.toString();
+    if (currentSource === source) return;
+    this.pushSnapshot(currentSource, 'Before restore');
+    this.editor.dispatch({
+      changes: { from: 0, to: this.editor.state.doc.length, insert: source },
+    });
+    this.callbacks.onEditorSourceChange(source);
+    this.editor.focus();
+  }
+
+  private paintVersions() {
+    const list = this.versionsList;
+    if (!list) return;
+    const presetKey = this.lastPresetId;
+    if (this.versionSaveButton) this.versionSaveButton.disabled = !presetKey;
+    if (!presetKey) {
+      const none = document.createElement('p');
+      none.className = 'stims-editor__hint';
+      none.textContent = 'Open a preset to save versions of it.';
+      list.replaceChildren(none);
+      return;
+    }
+    const saved = this.versions.list(presetKey);
+    if (saved.length === 0) {
+      const none = document.createElement('p');
+      none.className = 'stims-editor__hint';
+      none.textContent = 'No saved versions of this preset yet.';
+      list.replaceChildren(none);
+      return;
+    }
+    list.replaceChildren(
+      ...saved.map((version) => {
+        const row = document.createElement('div');
+        row.className = 'stims-editor__version';
+        row.dataset.versionId = version.id;
+        const head = document.createElement('div');
+        head.className = 'stims-editor__history-row';
+        const meta = document.createElement('span');
+        meta.className = 'stims-editor__history-meta';
+        meta.textContent = `${version.name} \u00b7 ${formatRelativeTime(version.savedAt)}`;
+        const compare = document.createElement('button');
+        compare.type = 'button';
+        compare.className = 'stims-editor__btn';
+        compare.textContent = 'Compare';
+        compare.setAttribute('aria-expanded', 'false');
+        const restore = document.createElement('button');
+        restore.type = 'button';
+        restore.className = 'stims-editor__btn';
+        restore.textContent = 'Restore';
+        restore.addEventListener('click', () =>
+          this.restoreSource(version.source),
+        );
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'stims-editor__btn';
+        remove.textContent = 'Delete';
+        remove.setAttribute('aria-label', `Delete version ${version.name}`);
+        remove.addEventListener('click', () => {
+          this.versions.remove(presetKey, version.id);
+          this.paintVersions();
+        });
+        head.append(meta, compare, restore, remove);
+        row.appendChild(head);
+
+        let diffEl: HTMLElement | null = null;
+        compare.addEventListener('click', () => {
+          if (diffEl) {
+            diffEl.remove();
+            diffEl = null;
+            compare.setAttribute('aria-expanded', 'false');
+            return;
+          }
+          const diff = computeSourceDiff(
+            version.source,
+            this.editor.state.doc.toString(),
+          );
+          diffEl =
+            diff.length === 0
+              ? document.createElement('p')
+              : buildDiffElement(diff);
+          if (diff.length === 0) {
+            diffEl.className = 'stims-editor__hint';
+            diffEl.textContent = 'Identical to the current source.';
+          }
+          diffEl.dataset.versionDiff = version.id;
+          row.appendChild(diffEl);
+          compare.setAttribute('aria-expanded', 'true');
+        });
+        return row;
+      }),
+    );
   }
 
   setSessionState(state: MilkdropEditorSessionState) {
@@ -2367,7 +2544,12 @@ export class EditorPanel {
       this.clearEditorDebounce();
     }
     if (nextPresetId !== null) {
+      const changed = nextPresetId !== this.lastPresetId;
       this.lastPresetId = nextPresetId;
+      if (changed) {
+        if (this.versionStatus) this.versionStatus.textContent = '';
+        this.paintVersions();
+      }
     }
 
     const preserveBufferedDraft =
@@ -3885,22 +4067,9 @@ export class EditorPanel {
     const heading = document.createElement('div');
     heading.className = 'stims-editor__proposal-head';
     heading.textContent = `${label} — review the proposed change`;
-    const lines = document.createElement('pre');
-    lines.className = 'stims-editor__proposal-lines';
-    for (const line of computeSourceDiff(currentSource, nextSource)) {
-      const row = document.createElement('span');
-      row.className = `stims-editor__proposal-line stims-editor__proposal-line--${line.kind}`;
-      const prefix =
-        line.kind === 'add'
-          ? '+ '
-          : line.kind === 'del'
-            ? '- '
-            : line.kind === 'gap'
-              ? '\u22EF '
-              : '  ';
-      row.textContent = `${prefix}${line.text}`;
-      lines.append(row, document.createTextNode('\n'));
-    }
+    const lines = buildDiffElement(
+      computeSourceDiff(currentSource, nextSource),
+    );
 
     const actions = document.createElement('div');
     actions.className = 'stims-editor__proposal-actions';
@@ -4082,25 +4251,35 @@ export class EditorPanel {
       restoreBtn.type = 'button';
       restoreBtn.className = 'stims-editor__btn';
       restoreBtn.textContent = 'Restore';
-      restoreBtn.addEventListener('click', () => {
-        const currentSource = this.editor.state.doc.toString();
-        if (currentSource === snapshot.source) return;
-        this.pushSnapshot(currentSource, 'Before restore');
-        this.editor.dispatch({
-          changes: {
-            from: 0,
-            to: this.editor.state.doc.length,
-            insert: snapshot.source,
-          },
-        });
-        this.callbacks.onEditorSourceChange(snapshot.source);
-        this.editor.focus();
-      });
+      restoreBtn.addEventListener('click', () =>
+        this.restoreSource(snapshot.source),
+      );
 
       row.append(meta, restoreBtn);
       this.historyList?.appendChild(row);
     });
   }
+}
+
+/** A `<pre>` of diff lines: `+` added, `-` removed, `\u22ef` a skipped run. */
+function buildDiffElement(diff: SourceDiffLine[]): HTMLElement {
+  const lines = document.createElement('pre');
+  lines.className = 'stims-editor__proposal-lines';
+  for (const line of diff) {
+    const row = document.createElement('span');
+    row.className = `stims-editor__proposal-line stims-editor__proposal-line--${line.kind}`;
+    const prefix =
+      line.kind === 'add'
+        ? '+ '
+        : line.kind === 'del'
+          ? '- '
+          : line.kind === 'gap'
+            ? '\u22EF '
+            : '  ';
+    row.textContent = `${prefix}${line.text}`;
+    lines.append(row, document.createTextNode('\n'));
+  }
+  return lines;
 }
 
 function formatRelativeTime(timestamp: number): string {

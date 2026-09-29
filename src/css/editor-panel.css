@@ -1732,3 +1732,28 @@ button.stims-editor__compat-row:focus-visible {
   flex: none;
   white-space: nowrap;
 }
+
+/* ── Named versions ───────────────────────────────────────────────── */
+
+.stims-editor__version-form {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.stims-editor__version-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.stims-editor__versions {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.stims-editor__version .stims-editor__proposal-lines {
+  margin: 4px 0 8px;
+  max-height: 14rem;
+  overflow: auto;
+}

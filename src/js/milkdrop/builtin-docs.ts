@@ -123,7 +123,7 @@ const FUNCTION_DOCS: readonly MilkdropBuiltinDoc[] = [
     name: 'clamp',
     kind: 'function',
     params: ['x', 'min', 'max'],
-    doc: 'clamp(x, min, max)',
+    doc: 'x limited to the range min..max',
   },
   {
     name: 'step',
@@ -170,7 +170,7 @@ const FUNCTION_DOCS: readonly MilkdropBuiltinDoc[] = [
     name: 'if',
     kind: 'function',
     params: ['cond', 'then', 'else'],
-    doc: 'if(cond, then, else)',
+    doc: 'then when cond is nonzero, otherwise else; only the chosen branch runs',
   },
   { name: 'above', kind: 'function', params: ['a', 'b'], doc: '1 when a > b' },
   { name: 'below', kind: 'function', params: ['a', 'b'], doc: '1 when a < b' },
