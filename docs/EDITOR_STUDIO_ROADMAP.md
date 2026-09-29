@@ -15,7 +15,7 @@ as its own PR.
 
 | # | Phase | Status |
 |---|-------|--------|
-| 1 | Make equations visible: Inspect tab (live variables, pins, sparklines) | **Inspect tab and parameter knobs shipped** (`preset-knobs.ts`: constants set once in init become Tune sliders); reactivity meter and frame stepping next |
+| 1 | Make equations visible: Inspect tab (live variables, pins, sparklines) | **Shipped.** Inspect tab; parameter knobs (`preset-knobs.ts`); reactivity meter (each variable tagged with the audio band it follows, and a one-line "follows the audio" summary — `variable-history.ts`); Freeze and Step to hold the stage and advance one frame at a time (`milkdrop-reactivity-meter.test.ts`, `toy-runtime-preview-loop.test.ts`) |
 | 2 | Structured editing: per-section outline, shape/wave solo, shader translation view | **Shipped.** Outline tab, shader translation view (`shader-translation.ts`), and Solo/Mute per custom wave and shape on the Outline (`render-isolation.ts`: hides the element as `enabled=0` would, without touching the source; `milkdrop-render-isolation.test.ts`) |
 | 3 | Formats: Format round-trip guarantee, packs, unknown-key preservation, MilkDrop 2 export | **Shipped.** Format is lossless (`lab:format-roundtrip` fingerprints shader text as written, equation comments and fields Stims ignores; `milkdrop-lossless-format.test.ts`). Export writes the file MilkDrop 2 saves — `[preset00]`, its key names, backtick shader lines — and every corpus preset comes back unchanged (`milkdrop2-export.test.ts`). Packs import from `.zip` (`preset-archive.test.ts`) |
 | 4 | Named versions, arbitrary diff, fork tree | **Named versions shipped**, with compare against the buffer or another saved version; fork tree next |

@@ -8,7 +8,15 @@
  * on its side. Kept dependency-free so the editor chunk can import it without
  * pulling in the runtime.
  */
-type VariableListener = (variables: Readonly<Record<string, number>>) => void;
+type AudioLevels = Readonly<
+  Record<'bass' | 'mid' | 'treb' | 'bass_att' | 'mid_att' | 'treb_att', number>
+>;
+
+/** A frame's variables, and the audio levels it was rendered with. */
+type VariableListener = (
+  variables: Readonly<Record<string, number>>,
+  levels?: AudioLevels,
+) => void;
 
 const listeners = new Set<VariableListener>();
 
@@ -23,7 +31,10 @@ export function hasVariableListeners(): boolean {
   return listeners.size > 0;
 }
 
-export function publishVariables(variables: Readonly<Record<string, number>>) {
+export function publishVariables(
+  variables: Readonly<Record<string, number>>,
+  levels?: AudioLevels,
+) {
   if (listeners.size === 0) return;
-  for (const listener of listeners) listener(variables);
+  for (const listener of listeners) listener(variables, levels);
 }

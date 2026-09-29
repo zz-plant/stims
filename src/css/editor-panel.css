@@ -1523,7 +1523,7 @@ html.light .stims-editor {
 
 .stims-editor__inspect-row {
   display: grid;
-  grid-template-columns: 1.5rem minmax(3rem, 1fr) 5.5rem 80px;
+  grid-template-columns: 1.5rem minmax(3rem, 1fr) 5.5rem 4.25rem 80px;
   align-items: center;
   gap: 6px;
   padding: 2px 0;
@@ -1547,6 +1547,34 @@ html.light .stims-editor {
 
 .stims-editor__inspect-value {
   text-align: right;
+}
+
+/* Which audio band a variable follows; blank when none. */
+.stims-editor__inspect-reacts {
+  justify-self: start;
+  padding: 0 5px;
+  border-radius: var(--stims-radius-control);
+  color: var(--stims-accent);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stims-editor__inspect-reacts:empty {
+  padding: 0;
+}
+
+.stims-editor__inspect-reactivity {
+  margin: 0 0 6px;
+}
+
+.stims-editor__inspect-note {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.stims-editor__inspect-note:empty {
+  display: none;
 }
 
 .stims-editor__inspect-spark {

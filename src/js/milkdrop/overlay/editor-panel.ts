@@ -356,6 +356,11 @@ export type EditorPanelCallbacks = {
    * (on release), so the runtime staying absent only degrades to the old
    * compile-only behavior. */
   onLiveFieldChange?: (key: string, value: number) => void;
+  /** Hold or release the stage; returns the state actually applied (holding
+   * needs live audio). */
+  onSetStageFrozen?: (frozen: boolean) => boolean;
+  /** Render exactly one frame while the stage is held. */
+  onStepFrame?: () => boolean;
   onRevertToActive: () => void;
   onDuplicatePreset: () => void;
   onExport: () => void;
@@ -999,6 +1004,11 @@ export class EditorPanel {
   private inspectFilter = '';
   private inspectOnlyChanging = false;
   private inspectPaused = false;
+  /** Mirrors the stage's hold state (Freeze here, Space, or the dock). */
+  private stageFrozen = false;
+  private freezeButton: HTMLButtonElement | null = null;
+  private stepButton: HTMLButtonElement | null = null;
+  private inspectReactivity: HTMLElement | null = null;
   private inspectLastPaint = 0;
   private disposeVariableFeed: (() => void) | null = null;
   private assistPane: HTMLElement | null = null;
@@ -2421,7 +2431,43 @@ export class EditorPanel {
       this.variableHistory.reset();
       this.paintInspect(true);
     });
-    bar.append(filter, changingLabel, pause, reset);
+    pause.title = 'Stop updating this list; the visuals keep running';
+    const freeze = document.createElement('button');
+    freeze.type = 'button';
+    freeze.className = 'stims-editor__inspect-btn';
+    freeze.textContent = 'Freeze';
+    freeze.title = 'Hold the visuals on this frame';
+    freeze.setAttribute('aria-pressed', 'false');
+    freeze.addEventListener('click', () => {
+      const wanted = !this.stageFrozen;
+      const applied = this.callbacks.onSetStageFrozen?.(wanted) ?? false;
+      this.setStageFrozen(applied);
+      freezeNote.textContent =
+        wanted && !applied
+          ? 'Start audio to freeze \u2014 before that the stage is a preview.'
+          : '';
+    });
+    const step = document.createElement('button');
+    step.type = 'button';
+    step.className = 'stims-editor__inspect-btn';
+    step.textContent = 'Step \u25B8';
+    step.title = 'Render one frame';
+    step.setAttribute('aria-label', 'Step one frame');
+    step.disabled = true;
+    step.addEventListener('click', () => {
+      this.callbacks.onStepFrame?.();
+    });
+    const freezeNote = document.createElement('span');
+    freezeNote.className = 'stims-editor__hint stims-editor__inspect-note';
+    freezeNote.setAttribute('aria-live', 'polite');
+    this.freezeButton = freeze;
+    this.stepButton = step;
+    bar.append(filter, changingLabel, freeze, step, pause, reset, freezeNote);
+
+    this.inspectReactivity = document.createElement('p');
+    this.inspectReactivity.className =
+      'stims-editor__hint stims-editor__inspect-reactivity';
+    this.inspectReactivity.setAttribute('aria-live', 'polite');
 
     this.inspectEmpty = document.createElement('p');
     this.inspectEmpty.className = 'stims-editor__hint';
@@ -2439,8 +2485,24 @@ export class EditorPanel {
       this.variableHistory.togglePin(target.dataset.pin);
       this.paintInspect(true);
     });
-    pane.append(hint, bar, this.inspectEmpty, this.inspectList);
+    pane.append(
+      hint,
+      bar,
+      this.inspectReactivity,
+      this.inspectEmpty,
+      this.inspectList,
+    );
     return pane;
+  }
+
+  /** Reflect the stage's hold state; called by the host whenever it changes. */
+  setStageFrozen(frozen: boolean) {
+    this.stageFrozen = frozen;
+    if (this.freezeButton) {
+      this.freezeButton.textContent = frozen ? 'Unfreeze' : 'Freeze';
+      this.freezeButton.setAttribute('aria-pressed', String(frozen));
+    }
+    if (this.stepButton) this.stepButton.disabled = !frozen;
   }
 
   private setInspectActive(active: boolean) {
@@ -2450,10 +2512,12 @@ export class EditorPanel {
       return;
     }
     if (this.disposeVariableFeed) return;
-    this.disposeVariableFeed = subscribeVariables((variables) => {
+    this.disposeVariableFeed = subscribeVariables((variables, levels) => {
       if (this.inspectPaused) return;
-      this.variableHistory.push(variables);
-      this.paintInspect(false);
+      this.variableHistory.push(variables, levels);
+      // While the stage is frozen, frames only arrive one Step at a time;
+      // each one must show rather than fall inside the repaint throttle.
+      this.paintInspect(this.stageFrozen);
     });
   }
 
@@ -2498,15 +2562,49 @@ export class EditorPanel {
       value.textContent = formatInspectNumber(row.value);
       value.title = `min ${formatInspectNumber(row.min)} · max ${formatInspectNumber(row.max)}`;
 
-      el.append(
-        pin,
-        name,
-        value,
-        buildSparkline(row.history, row.min, row.max),
-      );
+      el.append(pin, name, value);
+      // Always present (empty when nothing is followed) so the grid lines up.
+      const tag = document.createElement('span');
+      tag.className = 'stims-editor__inspect-reacts';
+      if (row.reacts) {
+        tag.dataset.band = row.reacts.band;
+        tag.textContent = `${row.reacts.r < 0 ? '\u2212' : ''}${row.reacts.band}`;
+        tag.title = `Follows ${row.reacts.band} (r = ${row.reacts.r.toFixed(2)})${
+          row.reacts.r < 0 ? ', inverted' : ''
+        }`;
+      }
+      el.appendChild(tag);
+      el.appendChild(buildSparkline(row.history, row.min, row.max));
       fragment.appendChild(el);
     }
     list.replaceChildren(fragment);
+    this.paintReactivitySummary();
+  }
+
+  /** One line answering "does this preset react to the music, and how?" */
+  private paintReactivitySummary() {
+    const line = this.inspectReactivity;
+    if (!line) return;
+    const summary = this.variableHistory.reactivitySummary();
+    if (summary.state === 'measuring') {
+      line.textContent = 'Measuring what follows the audio\u2026';
+      return;
+    }
+    if (summary.state === 'silent') {
+      line.textContent =
+        'The audio is flat, so nothing can follow it yet \u2014 play some music.';
+      return;
+    }
+    if (summary.followers.length === 0) {
+      line.textContent =
+        'Nothing in this preset\u2019s equations follows the audio. Try driving a q-var or zoom from bass_att.';
+      return;
+    }
+    const shown = summary.followers.slice(0, 6);
+    const rest = summary.followers.length - shown.length;
+    line.textContent = `Follows the audio: ${shown
+      .map((entry) => `${entry.name} (${entry.band})`)
+      .join(', ')}${rest > 0 ? ` and ${rest} more` : ''}.`;
   }
 
   private renderHistoryPane(): HTMLElement {

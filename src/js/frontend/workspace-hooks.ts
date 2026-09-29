@@ -846,6 +846,8 @@ export function useWorkspaceSessionState({
     updateFieldLive: (key: string, value: number) => {
       engineRef.current?.updateFieldLive(key, value);
     },
+    stepPlaybackFrame: (): boolean =>
+      engineRef.current?.stepPlaybackFrame() ?? false,
     applyEditorSourceAwaited: async (source: string) =>
       (await engineRef.current?.applyEditorSourceAwaited(source)) ?? null,
     applyEditorFieldsAwaited: async (

@@ -154,6 +154,8 @@ export function makeEngineValue(
     setBlendDuration: noop,
     updateEditorSource: noop,
     updateFieldLive: noop,
+    setPlaybackPaused: () => false,
+    stepPlaybackFrame: () => false,
     applyEditorSourceAwaited: async () => null,
     applyEditorFieldsAwaited: async () => null,
     getEditorSessionState: () => null,
