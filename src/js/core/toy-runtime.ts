@@ -144,6 +144,8 @@ export type ToyRuntimeInstance = ToyInstance & {
    * which tears the loop down and needs `resumePreview()` to rebuild it.
    */
   setFrameHold?: (held: boolean) => void;
+  /** While held, render exactly one more frame; false when not held. */
+  stepHeldFrame?: () => boolean;
   isFrameHeld?: () => boolean;
   /**
    * Synchronously pump N frames through the plugin pipeline with synthetic
@@ -509,6 +511,10 @@ export function createToyRuntime({
   // The user's pause. Checked at the top of both frame drivers rather than
   // by unhooking them, so release costs nothing and cannot race a restart.
   let frameHeld = false;
+  // Frames to let through while held (the editor's Step). Capped so a burst
+  // of clicks cannot queue a run of frames the author did not ask to see.
+  let heldStepsPending = 0;
+  const MAX_HELD_STEPS = 4;
 
   const stopPreviewLoop = () => {
     if (!previewActive) return;
@@ -543,7 +549,7 @@ export function createToyRuntime({
     const tick = (now: number) => {
       if (!previewActive) return;
       const currentTime = virtualTimeSource ? virtualTimeSource() : now;
-      if (frameHeld) {
+      if (frameHeld && heldStepsPending === 0) {
         // Keep the anchor moving so the first frame after release measures
         // a normal delta instead of the whole pause.
         previewLastFrame = currentTime;
@@ -554,6 +560,7 @@ export function createToyRuntime({
         previewAnimationId = requestAnimationFrame(tick);
         return;
       }
+      if (frameHeld) heldStepsPending -= 1;
       const rawDeltaMs = previewLastFrame
         ? Math.min(100, Math.max(0, currentTime - previewLastFrame))
         : 1000 / 60;
@@ -628,10 +635,11 @@ export function createToyRuntime({
       (ctx) => {
         analyser = ctx.analyser;
         const now = ctx.time;
-        if (frameHeld) {
+        if (frameHeld && heldStepsPending === 0) {
           lastFrameTime = now;
           return;
         }
+        if (frameHeld) heldStepsPending -= 1;
         const rawDeltaMs = lastFrameTime
           ? Math.min(100, Math.max(0, (now - lastFrameTime) * 1000))
           : 1000 / 60;
@@ -706,8 +714,14 @@ export function createToyRuntime({
     },
     setFrameHold: (held) => {
       frameHeld = held;
+      heldStepsPending = 0;
     },
     isFrameHeld: () => frameHeld,
+    stepHeldFrame: () => {
+      if (!frameHeld) return false;
+      heldStepsPending = Math.min(MAX_HELD_STEPS, heldStepsPending + 1);
+      return true;
+    },
     renderFrames: (options) => {
       const frames = Math.max(1, Math.floor(options?.frames ?? 1));
       const deltaMs = options?.deltaMs ?? 1000 / 60;

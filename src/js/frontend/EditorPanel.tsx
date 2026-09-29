@@ -13,6 +13,7 @@ export function EditorPanel() {
   const panelRef = useRef<{
     dispose: () => void;
     setSessionState: (state: MilkdropEditorSessionState) => void;
+    setStageFrozen: (frozen: boolean) => void;
     element: HTMLElement;
   } | null>(null);
   const { engine, ui } = useWorkspace();
@@ -52,6 +53,9 @@ export function EditorPanel() {
         onLiveFieldChange: (key: string, value: number) => {
           engineRef.current.updateFieldLive(key, value);
         },
+        onSetStageFrozen: (frozen: boolean) =>
+          engineRef.current.setPlaybackPaused(frozen),
+        onStepFrame: () => engineRef.current.stepPlaybackFrame(),
         onRevertToActive: () => {
           engineRef.current.revertEditorSource();
         },
@@ -84,6 +88,7 @@ export function EditorPanel() {
       if (sessionStateRef.current) {
         panel.setSessionState(sessionStateRef.current);
       }
+      panel.setStageFrozen(playbackPausedRef.current);
     });
 
     return () => {
@@ -98,6 +103,14 @@ export function EditorPanel() {
       panelRef.current.setSessionState(sessionState);
     }
   }, [sessionState]);
+
+  // Space and the dock hold the stage too; keep Inspect's Freeze truthful.
+  const playbackPaused = engineSnapshot?.playbackPaused ?? false;
+  const playbackPausedRef = useRef(playbackPaused);
+  playbackPausedRef.current = playbackPaused;
+  useEffect(() => {
+    panelRef.current?.setStageFrozen(playbackPaused);
+  }, [playbackPaused]);
 
   return (
     <div ref={hostRef} className="stims-shell__editor-host">

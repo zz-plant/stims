@@ -1239,49 +1239,54 @@ html.light .stims-editor {
 
 /* ── Insert pane ──────────────────────────────────────────────────── */
 
-.stims-editor__inserts {
+.stims-editor__recipes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 6px;
 }
 
-.stims-editor__insert {
+.stims-editor__recipe {
   display: grid;
   gap: 2px;
-  padding: 7px 9px;
+  padding: 8px 10px;
   border: 1px solid var(--stims-line-soft);
-  border-radius: var(--stims-radius);
-  background: var(--ed-tint-2);
-  color: var(--ed-muted);
-  font: inherit;
-  text-align: left;
+  border-radius: var(--stims-radius-control);
+}
+
+.stims-editor__recipe-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--text-xs-plus);
+}
+
+.stims-editor__recipe-add {
+  min-height: 26px;
+  padding: 0 10px;
+}
+
+.stims-editor__recipe-summary {
+  margin: 0;
+  font-size: var(--text-xs);
+  opacity: 0.85;
+}
+
+.stims-editor__recipe-more {
+  font-size: var(--text-xs);
+}
+
+.stims-editor__recipe-more summary {
   cursor: pointer;
-  transition:
-    border-color 0.12s ease,
-    background 0.12s ease;
+  opacity: 0.75;
 }
 
-.stims-editor__insert:hover {
-  border-color: var(--stims-cool);
-  background: var(--ed-tint-5);
+.stims-editor__recipe-more p {
+  margin: 4px 0;
 }
 
-.stims-editor__insert:focus-visible {
-  outline: 2px solid var(--ed-focus);
-  outline-offset: 1px;
-}
-
-.stims-editor__insert strong {
-  font-family: var(--font-family-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--stims-ink);
-}
-
-.stims-editor__insert span {
-  font-size: 0.6875rem;
-  line-height: 1.35;
-  color: var(--ed-dim);
+.stims-editor__recipe-more .stims-editor__proposal-lines {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 /* ── Assist pane ──────────────────────────────────────────────────── */
@@ -1523,7 +1528,7 @@ html.light .stims-editor {
 
 .stims-editor__inspect-row {
   display: grid;
-  grid-template-columns: 1.5rem minmax(3rem, 1fr) 5.5rem 80px;
+  grid-template-columns: 1.5rem minmax(3rem, 1fr) 5.5rem 4.25rem 80px;
   align-items: center;
   gap: 6px;
   padding: 2px 0;
@@ -1547,6 +1552,34 @@ html.light .stims-editor {
 
 .stims-editor__inspect-value {
   text-align: right;
+}
+
+/* Which audio band a variable follows; blank when none. */
+.stims-editor__inspect-reacts {
+  justify-self: start;
+  padding: 0 5px;
+  border-radius: var(--stims-radius-control);
+  color: var(--stims-accent);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stims-editor__inspect-reacts:empty {
+  padding: 0;
+}
+
+.stims-editor__inspect-reactivity {
+  margin: 0 0 6px;
+}
+
+.stims-editor__inspect-note {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.stims-editor__inspect-note:empty {
+  display: none;
 }
 
 .stims-editor__inspect-spark {
@@ -1647,6 +1680,24 @@ button.stims-editor__compat-row:focus-visible {
 
 .stims-editor__compat-row[data-severity="approximation"] {
   border-left-color: var(--stims-warning, #f5a524);
+}
+
+.stims-editor__compat-row[data-severity="breaks"] {
+  border-left-color: var(--stims-danger, #e5484d);
+}
+
+.stims-editor__compat-row[data-severity="differs"],
+.stims-editor__compat-row[data-severity="needs"] {
+  border-left-color: var(--stims-warning, #f5a524);
+}
+
+.stims-editor__compat-section {
+  margin: 16px 0 4px;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.8;
 }
 
 .stims-editor__compat-head {
@@ -1781,4 +1832,24 @@ button.stims-editor__compat-row:focus-visible {
   max-width: 100%;
   max-height: 18rem;
   overflow: auto;
+}
+
+/* ── Outline: wave/shape solo and mute ────────────────────────────── */
+
+.stims-editor__outline-slot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.stims-editor__outline-isolate {
+  min-height: 26px;
+  padding: 0 8px;
+}
+
+.stims-editor__outline-isolate[aria-pressed="true"] {
+  border-color: var(--stims-accent);
+  color: var(--stims-ink);
+  background: var(--stims-control-fill-hover);
 }

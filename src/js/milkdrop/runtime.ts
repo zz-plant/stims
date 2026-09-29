@@ -1133,6 +1133,9 @@ function buildExperienceController(
       deps.emitChange();
     },
 
+    exportUserPresets() {
+      return deps.presetFileActions.exportUserPresets();
+    },
     exportPreset() {
       deps.presetFileActions.exportPreset();
     },

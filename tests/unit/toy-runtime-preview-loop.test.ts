@@ -126,4 +126,59 @@ describe('toy runtime preview loop', () => {
     expect(update.mock.calls.length).toBeGreaterThan(0);
     expect(update.mock.calls[0]?.[0]).toMatchObject({ analyser: null });
   });
+
+  test('a held stage renders nothing until stepped, then exactly one frame per step', async () => {
+    const { createToyRuntime } = await freshImport();
+    const update = mock((_frame: { analyser: unknown }) => {});
+    const runtime = createToyRuntime({
+      container: document.createElement('div'),
+      performance: { applyRendererSettings: false },
+      plugins: [{ update }],
+    });
+    await runtime.startAudio();
+    update.mockClear();
+    const tick = (time: number) =>
+      audioAnimate?.({
+        toy: {},
+        analyser: fakeAnalyser,
+        time,
+        realTimeMs: time * 1000,
+      });
+
+    expect(runtime.stepHeldFrame?.()).toBe(false);
+    runtime.setFrameHold?.(true);
+    tick(1);
+    tick(1.02);
+    expect(update).toHaveBeenCalledTimes(0);
+
+    expect(runtime.stepHeldFrame?.()).toBe(true);
+    tick(1.04);
+    tick(1.06);
+    tick(1.08);
+    expect(update).toHaveBeenCalledTimes(1);
+
+    // A burst of clicks queues a few frames, not an unbounded run.
+    for (let i = 0; i < 20; i += 1) runtime.stepHeldFrame?.();
+    for (let i = 0; i < 20; i += 1) tick(1.1 + i * 0.02);
+    expect(update.mock.calls.length).toBeLessThanOrEqual(1 + 4);
+
+    // Releasing drops anything still queued and resumes normal frames.
+    runtime.stepHeldFrame?.();
+    runtime.setFrameHold?.(false);
+    update.mockClear();
+    tick(2);
+    tick(2.02);
+    expect(update).toHaveBeenCalledTimes(2);
+
+    // Steps queued before a release do not leak into the next hold.
+    runtime.setFrameHold?.(true);
+    runtime.stepHeldFrame?.();
+    runtime.stepHeldFrame?.();
+    runtime.setFrameHold?.(false);
+    runtime.setFrameHold?.(true);
+    update.mockClear();
+    tick(3);
+    tick(3.02);
+    expect(update).toHaveBeenCalledTimes(0);
+  });
 });

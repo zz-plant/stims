@@ -771,6 +771,8 @@ export function useWorkspaceSessionState({
     deferredSearch,
     dismissToast,
     engineSnapshot,
+    exportUserPresets: async (): Promise<number> =>
+      (await engineRef.current?.exportUserPresets()) ?? 0,
     exportPreset: () => {
       engineRef.current?.exportPreset();
     },
@@ -846,6 +848,8 @@ export function useWorkspaceSessionState({
     updateFieldLive: (key: string, value: number) => {
       engineRef.current?.updateFieldLive(key, value);
     },
+    stepPlaybackFrame: (): boolean =>
+      engineRef.current?.stepPlaybackFrame() ?? false,
     applyEditorSourceAwaited: async (source: string) =>
       (await engineRef.current?.applyEditorSourceAwaited(source)) ?? null,
     applyEditorFieldsAwaited: async (

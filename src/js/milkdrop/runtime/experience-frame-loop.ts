@@ -415,7 +415,10 @@ export function createMilkdropExperienceFrameLoop({
         }
         // Editor Inspect tab: every mode, free when nobody is listening.
         if (hasVariableListeners()) {
-          publishVariables(renderFrameState.variables);
+          publishVariables(
+            renderFrameState.variables,
+            renderFrameState.signals,
+          );
         }
         if (capturedVideoReady) {
           capturedVideoOverlay.update({
