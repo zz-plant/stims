@@ -61,6 +61,7 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 | Measure preset audio reactivity (no browser) | `bun run lab:reactivity -- --preset <id>` | ~15s |
 | Measure preset visuals + pixel reactivity | `bun run lab:visual -- --preset <id>` | 1–3 min |
 | Sweep whole corpus for NaN/compile/step failures (no browser) | `bun run lab:nan-sweep` | ~5–10 min |
+| Check the editor's Format button changes no preset in the corpus (no browser) | `bun run lab:format-roundtrip` | ~40s |
 | Record/replay a deterministic VM trace, bisect semantic drift | `bun run lab:replay -- --preset <id> --record t.json` | seconds |
 | Diff a trace's compute-VM (GPU) replay against CPU, first divergent frame | `bun run lab:replay -- --replay t.json --tier gpu` | ~1 min |
 | Capture a live-session trace for headless replay (agent mode) | `__milkdropRuntimeDebug.startTraceCapture()` / `stopTraceCapture()` in `?agent=true` | — |
@@ -76,6 +77,7 @@ Don't scrape the DOM or hand-roll sleep-and-poll loops — there is a first-clas
 | Read engine/preset/audio/fps state as one JSON snapshot | `__stims_agent.getState()` |
 | Wait for a condition instead of sleeping | `await __stims_agent.waitFor((s) => s.engineState === 'live')` |
 | Run a command-palette action by stable id | `await __stims_agent.run('audio-demo')` — `listActions()` lists every action and the targeted verbs (`select-preset`, `set-field`, …) with their params |
+| Read/await a preset's equation variables (q1…, zoom…) | `await __stims_agent.getVariables()` / `waitForVariables((v) => v.q1 > 0.5)` |
 | Verify an effect after a transient toast vanished | `getState().statusLog` / `getEvents(sinceSeq)` |
 | Assert the canvas is actually animating | `__stims_agent.captureStats()` twice, check `motionEstimate` |
 | Drive a session from the shell, no MCP client | `bun run ctl` |
