@@ -14,6 +14,12 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import {
+  findStaleLearnFiles,
+  LEARN_PAGES,
+  learnPageOutFile,
+  learnPagePath,
+} from './generate-learn-pages.ts';
+import {
   buildSeoArtifacts,
   DEFAULT_BASE_URL,
   GENERATED_GITHUB_SOCIAL_PREVIEW_PATH,
@@ -452,7 +458,75 @@ export async function runSeoChecks(rootDir = repoRoot) {
     details: 'functions/api/feed.ts',
   });
 
+  await pushLearnPageChecks(rootDir, String(sitemapChunk), results);
+
   return results;
+}
+
+/**
+ * The /learn/ guides are the site's only crawlable prose. A stale page, a
+ * missing canonical, a second H1, unparseable JSON-LD, a page absent from the
+ * sitemap, or an internal link to a /learn/ URL that does not exist would each
+ * quietly cost search visibility, so each is checked here.
+ */
+async function pushLearnPageChecks(
+  rootDir: string,
+  sitemapChunk: string,
+  results: CheckResult[],
+) {
+  const stale = findStaleLearnFiles();
+  results.push({
+    name: 'Learn pages match generate:learn output',
+    passed: stale.length === 0,
+    details:
+      stale.length > 0
+        ? `stale: ${stale.join(', ')} — run bun run generate:learn`
+        : `${LEARN_PAGES.length} pages`,
+  });
+
+  const knownPaths = new Set(LEARN_PAGES.map(learnPagePath));
+  for (const page of LEARN_PAGES) {
+    const file = learnPageOutFile(page);
+    const html = await fs
+      .readFile(path.join(rootDir, file), 'utf8')
+      .catch(() => '');
+    const url = `${DEFAULT_BASE_URL}${learnPagePath(page)}`;
+    const jsonLd = html.match(
+      /<script type="application\/ld\+json">\n([\s\S]*?)\n<\/script>/u,
+    )?.[1];
+    let jsonLdOk = false;
+    try {
+      jsonLdOk = Boolean(jsonLd && JSON.parse(jsonLd)['@graph']?.length >= 2);
+    } catch {
+      jsonLdOk = false;
+    }
+    const brokenLinks = [...html.matchAll(/href="(\/learn\/[^"#]*)/gu)]
+      .map((match) => match[1] as string)
+      .filter((href) => !knownPaths.has(href));
+    const problems = [
+      html.includes(`<link rel="canonical" href="${url}" />`)
+        ? null
+        : 'canonical',
+      (html.match(/<h1[ >]/gu) ?? []).length === 1 ? null : 'exactly one h1',
+      /<title>[^<]+ \| Stims<\/title>/u.test(html) ? null : 'title',
+      html.includes('<meta name="description" content="')
+        ? null
+        : 'description',
+      html.includes('<meta name="robots" content="index,follow" />')
+        ? null
+        : 'robots',
+      jsonLdOk ? null : 'json-ld',
+      sitemapChunk.includes(`<loc>${url}</loc>`) ? null : 'sitemap entry',
+      brokenLinks.length === 0
+        ? null
+        : `broken links ${brokenLinks.join(', ')}`,
+    ].filter((problem): problem is string => problem !== null);
+    results.push({
+      name: `Learn page ${learnPagePath(page)} is indexable and well-formed`,
+      passed: problems.length === 0,
+      details: problems.length > 0 ? problems.join('; ') : file,
+    });
+  }
 }
 
 async function main() {

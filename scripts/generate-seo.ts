@@ -28,6 +28,7 @@ import { promisify } from 'node:util';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import sharp from 'sharp';
 import { AUTHOR_ROUTES, DISCOVER_ROUTES } from '../functions/discover-slugs.ts';
+import { LEARN_PAGES, learnPagePath } from './generate-learn-pages.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -711,6 +712,18 @@ export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
       sourcePaths: ['milkdrop/index.html'],
       includeInSitemap: false,
     },
+    // Static guides rendered by scripts/generate-learn-pages.ts. They are the
+    // site's only crawlable prose, so they carry the highest hub priority.
+    ...LEARN_PAGES.map((page) => ({
+      path: learnPagePath(page),
+      imagePath: '/og/milkdrop.png',
+      imageTitle: `${page.seoTitle} | Stims`,
+      imageCaption: page.description,
+      changefreq: 'monthly' as const,
+      priority: page.kind === 'track' ? '0.6' : '0.8',
+      sourcePaths: [page.source],
+      includeInSitemap: true,
+    })),
     // Curated /discover/ topic hubs, served by functions/_middleware.ts
     // against the allowlist in functions/discover-slugs.ts. Listing them here
     // gives the preset corpus an internal-linking entry path — without it the

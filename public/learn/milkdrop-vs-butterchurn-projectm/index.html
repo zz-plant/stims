@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Stims vs Butterchurn vs projectM | Stims</title>
+<meta name="description" content="How Stims, Butterchurn and projectM differ: browser app, embeddable renderer and native library, and which one fits what you want to do." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="canonical" href="https://toil.fyi/learn/milkdrop-vs-butterchurn-projectm/" />
+<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<meta property="og:site_name" content="Stims" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Stims vs Butterchurn vs projectM | Stims" />
+<meta property="og:description" content="How Stims, Butterchurn and projectM differ: browser app, embeddable renderer and native library, and which one fits what you want to do." />
+<meta property="og:url" content="https://toil.fyi/learn/milkdrop-vs-butterchurn-projectm/" />
+<meta property="og:image" content="https://toil.fyi/og/milkdrop.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Stims vs Butterchurn vs projectM | Stims" />
+<meta name="twitter:description" content="How Stims, Butterchurn and projectM differ: browser app, embeddable renderer and native library, and which one fits what you want to do." />
+<meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "headline": "Stims vs Butterchurn vs projectM",
+      "name": "Stims vs Butterchurn vs projectM",
+      "description": "How Stims, Butterchurn and projectM differ: browser app, embeddable renderer and native library, and which one fits what you want to do.",
+      "url": "https://toil.fyi/learn/milkdrop-vs-butterchurn-projectm/",
+      "mainEntityOfPage": "https://toil.fyi/learn/milkdrop-vs-butterchurn-projectm/",
+      "inLanguage": "en",
+      "image": "https://toil.fyi/og/milkdrop.png",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Stims",
+          "item": "https://toil.fyi/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Learn",
+          "item": "https://toil.fyi/learn/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Stims vs Butterchurn vs projectM",
+          "item": "https://toil.fyi/learn/milkdrop-vs-butterchurn-projectm/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is Stims a Butterchurn alternative?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "For watching and editing presets in a browser, yes. If you need an embeddable renderer inside your own site, Butterchurn is the purpose-built option, and Stims does not replace it for that."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does Stims use projectM?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Stims is its own browser implementation. It uses projectM as the reference it compares against, and labels presets by how closely they match it."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use the same presets in all three?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": ".milk presets are the common format. projectM reads them directly, Stims imports and exports them as-is, and Butterchurn expects them converted to its JSON format first."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>:root{color-scheme:dark light;--bg:#0b0f1a;--fg:#e8ecf3;--muted:#a9b3c4;--line:rgba(255,255,255,.12);--code:#121a2a;--accent:#5fc0b5;--accent-fg:#0a0f19}@media(prefers-color-scheme:light){:root{--bg:#f7f8fb;--fg:#141a26;--muted:#4a5568;--line:rgba(0,0,0,.14);--code:#eaeef5;--accent:#0f766e;--accent-fg:#fff}}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:1rem/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}a{color:var(--accent)}.site-header,.site-footer,main{max-width:48rem;margin:0 auto;padding:0 16px}.site-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 20px;padding-top:16px;padding-bottom:16px;border-bottom:1px solid var(--line)}.site-header .brand{font-weight:700;font-size:1.15rem;text-decoration:none;color:var(--fg)}.site-header nav{display:flex;flex-wrap:wrap;gap:4px 18px}main{padding-top:24px;padding-bottom:32px}h1{font-size:2rem;line-height:1.2;margin:.4em 0}h2{font-size:1.4rem;margin:1.8em 0 .5em;line-height:1.3}h3{font-size:1.15rem;margin:1.5em 0 .4em}code{font:.9em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.1em .35em;border-radius:4px}pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto}pre code{background:none;padding:0}table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%}th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}blockquote{margin:1em 0;padding:.1em 1em;border-left:3px solid var(--accent);color:var(--muted)}details{margin:1em 0}.toc{border:1px solid var(--line);border-radius:8px;padding:8px 16px;margin:1em 0}.toc ul{margin:.3em 0;padding-left:1.2em}.cta{display:inline-block;background:var(--accent);color:var(--accent-fg);padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600}.pager{display:flex;justify-content:space-between;gap:16px;margin:2em 0;flex-wrap:wrap}.related,.site-footer{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}.related{margin-top:2em;padding-top:1em}.site-footer{padding-top:16px;padding-bottom:40px}.site-footer h2{font-size:.95rem;margin:1em 0 .3em;color:var(--fg)}.site-footer ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:2px 16px}</style>
+</head>
+<body>
+<header class="site-header">
+<a class="brand" href="/">Stims</a>
+<nav aria-label="Site"><a href="/">Open the visualizer</a><a href="/learn/">Learn</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/performance/">Compatibility</a></nav>
+</header>
+<main>
+<article>
+<h1 id="stims-vs-butterchurn-vs-projectm">Stims vs Butterchurn vs projectM</h1>
+<p><a class="cta" href="/">Open Stims — it plays with nothing to install</a></p>
+
+<p>Stims is an independent browser visualizer in the line of Ryan Geiss&#39;s MilkDrop, Butterchurn and projectM. It is not affiliated with any of them.</p>
+<p>Butterchurn and projectM are the projects most people arrive from, and both are good at what they were built for. They occupy a different slot from Stims: they are renderers you embed or run, while Stims is the workflow around one.</p>
+<h2 id="side-by-side">Side by side</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Stims</th>
+<th>Butterchurn</th>
+<th>projectM</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Primary form</strong></td>
+<td>A hosted browser app you use directly</td>
+<td>An embeddable JS renderer</td>
+<td>A native library and desktop/plugin player</td>
+</tr>
+<tr>
+<td><strong>Preset input</strong></td>
+<td><code>.milk</code> source, imported and exported as-is</td>
+<td>Presets converted to a Butterchurn JSON format ahead of time</td>
+<td><code>.milk</code> source</td>
+</tr>
+<tr>
+<td><strong>Authoring</strong></td>
+<td>In-session editor with completions, compiler diagnostics, and live <code>zoom</code>/<code>warp</code>/<code>rot</code>/<code>decay</code> controls</td>
+<td>No built-in editor; authoring happens elsewhere</td>
+<td>No built-in editor; authoring happens elsewhere</td>
+</tr>
+<tr>
+<td><strong>Discovery</strong></td>
+<td>Search, filters, collections, previews, favorites, queues, history, deep links</td>
+<td>Preset list supplied by the embedding app</td>
+<td>Playlist files</td>
+</tr>
+<tr>
+<td><strong>Fidelity claims</strong></td>
+<td>Per-preset labels that separate &quot;compiles and runs&quot; from &quot;diffed against a projectM reference&quot;</td>
+<td>Broad practical compatibility, established over years of use</td>
+<td>The reference implementation Stims diffs against</td>
+</tr>
+</tbody></table>
+<h2 id="which-should-you-use">Which should you use?</h2>
+<ul>
+<li><strong>You want to embed a visualizer in your own web app:</strong> Butterchurn is built for exactly that.</li>
+<li><strong>You want a native visualizer inside a desktop player or your own C++ application:</strong> projectM is the reference implementation and the right choice.</li>
+<li><strong>You want to open a page, watch presets, and edit them:</strong> that is what Stims is for.</li>
+<li><strong>You want to write presets and see the result immediately:</strong> the Stims editor gives live feedback with no build step.</li>
+</ul>
+<h2 id="faq">FAQ</h2>
+<h3 id="is-stims-a-butterchurn-alternative">Is Stims a Butterchurn alternative?</h3>
+<p>For watching and editing presets in a browser, yes. If you need an embeddable renderer inside your own site, Butterchurn is the purpose-built option, and Stims does not replace it for that.</p>
+<h3 id="does-stims-use-projectm">Does Stims use projectM?</h3>
+<p>Stims is its own browser implementation. It uses projectM as the reference it compares against, and labels presets by how closely they match it.</p>
+<h3 id="can-i-use-the-same-presets-in-all-three">Can I use the same presets in all three?</h3>
+<p><code>.milk</code> presets are the common format. projectM reads them directly, Stims imports and exports them as-is, and Butterchurn expects them converted to its JSON format first.</p>
+
+</article>
+
+<aside class="related" aria-label="Related pages"><strong>Keep going</strong><ul><li><a href="/">Open the Stims visualizer</a></li><li><a href="/learn/">Learn to write MilkDrop presets</a></li><li><a href="/learn/milkdrop-online/">MilkDrop online, in your browser</a></li><li><a href="/performance/">Compatibility and performance</a></li></ul></aside>
+</main>
+<footer class="site-footer">
+<h2>Stims</h2>
+<ul><li><a href="/">Visualizer</a></li><li><a href="/learn/">Learn to write presets</a></li><li><a href="/learn/milkdrop-online/">MilkDrop online</a></li><li><a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a></li><li><a href="/performance/">Compatibility and performance</a></li><li><a href="https://github.com/zz-plant/stims">Source on GitHub</a></li></ul>
+<h2>Browse presets by look</h2>
+<ul><li><a href="/discover/audio-reactive">Audio-Reactive</a></li><li><a href="/discover/ambient">Ambient</a></li><li><a href="/discover/fractal">Fractal</a></li><li><a href="/discover/geometric">Geometric</a></li><li><a href="/discover/hall-of-fame">Hall of Fame</a></li><li><a href="/discover/neon">Neon</a></li><li><a href="/discover/particles">Particle</a></li><li><a href="/discover/psychedelic">Psychedelic</a></li><li><a href="/discover/retro">Retro</a></li><li><a href="/discover/space">Space</a></li><li><a href="/discover/trippy">Trippy</a></li><li><a href="/discover/tunnel">Tunnel</a></li><li><a href="/discover/waveform">Waveform</a></li><li><a href="/discover/webgpu-showcase">WebGPU Showcase</a></li></ul>
+<h2>Browse presets by author</h2>
+<ul><li><a href="/author/geiss">Geiss</a></li><li><a href="/author/flexi">Flexi</a></li><li><a href="/author/martin">Martin</a></li><li><a href="/author/rovastar">Rovastar</a></li><li><a href="/author/eo-s">Eo.S.</a></li><li><a href="/author/phat">Phat</a></li><li><a href="/author/stahlregen">Stahlregen</a></li><li><a href="/author/unchained">Unchained</a></li><li><a href="/author/fishbrain">Fishbrain</a></li><li><a href="/author/aderrasi">Aderrasi</a></li><li><a href="/author/zylot">Zylot</a></li><li><a href="/author/shifter">Shifter</a></li><li><a href="/author/mig">Mig</a></li><li><a href="/author/orb">ORB</a></li><li><a href="/author/suksma">Suksma</a></li><li><a href="/author/cope">Cope</a></li><li><a href="/author/goody">Goody</a></li><li><a href="/author/krash">Krash</a></li></ul>
+</footer>
+</body>
+</html>

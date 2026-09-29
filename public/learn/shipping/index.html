@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Publishing MilkDrop Presets and Engine Compatibility — Track 8 | Stims</title>
+<meta name="description" content="What works in MilkDrop, projectM, Butterchurn and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="canonical" href="https://toil.fyi/learn/shipping/" />
+<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<meta property="og:site_name" content="Stims" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Publishing MilkDrop Presets and Engine Compatibility — Track 8 | Stims" />
+<meta property="og:description" content="What works in MilkDrop, projectM, Butterchurn and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset." />
+<meta property="og:url" content="https://toil.fyi/learn/shipping/" />
+<meta property="og:image" content="https://toil.fyi/og/milkdrop.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Publishing MilkDrop Presets and Engine Compatibility — Track 8 | Stims" />
+<meta name="twitter:description" content="What works in MilkDrop, projectM, Butterchurn and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset." />
+<meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "TechArticle",
+      "headline": "Track 8 — Shipping",
+      "name": "Publishing MilkDrop Presets and Engine Compatibility — Track 8",
+      "description": "What works in MilkDrop, projectM, Butterchurn and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset.",
+      "url": "https://toil.fyi/learn/shipping/",
+      "mainEntityOfPage": "https://toil.fyi/learn/shipping/",
+      "inLanguage": "en",
+      "image": "https://toil.fyi/og/milkdrop.png",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Stims",
+          "item": "https://toil.fyi/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Learn",
+          "item": "https://toil.fyi/learn/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Track 8 — Shipping",
+          "item": "https://toil.fyi/learn/shipping/"
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>:root{color-scheme:dark light;--bg:#0b0f1a;--fg:#e8ecf3;--muted:#a9b3c4;--line:rgba(255,255,255,.12);--code:#121a2a;--accent:#5fc0b5;--accent-fg:#0a0f19}@media(prefers-color-scheme:light){:root{--bg:#f7f8fb;--fg:#141a26;--muted:#4a5568;--line:rgba(0,0,0,.14);--code:#eaeef5;--accent:#0f766e;--accent-fg:#fff}}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:1rem/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}a{color:var(--accent)}.site-header,.site-footer,main{max-width:48rem;margin:0 auto;padding:0 16px}.site-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 20px;padding-top:16px;padding-bottom:16px;border-bottom:1px solid var(--line)}.site-header .brand{font-weight:700;font-size:1.15rem;text-decoration:none;color:var(--fg)}.site-header nav{display:flex;flex-wrap:wrap;gap:4px 18px}main{padding-top:24px;padding-bottom:32px}h1{font-size:2rem;line-height:1.2;margin:.4em 0}h2{font-size:1.4rem;margin:1.8em 0 .5em;line-height:1.3}h3{font-size:1.15rem;margin:1.5em 0 .4em}code{font:.9em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.1em .35em;border-radius:4px}pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto}pre code{background:none;padding:0}table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%}th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}blockquote{margin:1em 0;padding:.1em 1em;border-left:3px solid var(--accent);color:var(--muted)}details{margin:1em 0}.toc{border:1px solid var(--line);border-radius:8px;padding:8px 16px;margin:1em 0}.toc ul{margin:.3em 0;padding-left:1.2em}.cta{display:inline-block;background:var(--accent);color:var(--accent-fg);padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600}.pager{display:flex;justify-content:space-between;gap:16px;margin:2em 0;flex-wrap:wrap}.related,.site-footer{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}.related{margin-top:2em;padding-top:1em}.site-footer{padding-top:16px;padding-bottom:40px}.site-footer h2{font-size:.95rem;margin:1em 0 .3em;color:var(--fg)}.site-footer ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:2px 16px}</style>
+</head>
+<body>
+<header class="site-header">
+<a class="brand" href="/">Stims</a>
+<nav aria-label="Site"><a href="/">Open the visualizer</a><a href="/learn/">Learn</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/performance/">Compatibility</a></nav>
+</header>
+<main>
+<article>
+<h1 id="track-8--shipping">Track 8 — Shipping</h1>
+<p><a class="cta" href="/">Open Stims — it plays with nothing to install</a></p>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#compatibility-matrix">Compatibility matrix</a></li><li><a href="#performance-and-quality">Performance and quality</a></li><li><a href="#publishing">Publishing</a></li><li><a href="#what-you-can-now-do">What you can now do</a></li></ul></nav>
+<p>You can now write a preset from nothing. This track covers what happens after: knowing where it will and won&#39;t run correctly, keeping it fast, and publishing it.</p>
+<h2 id="compatibility-matrix">Compatibility matrix</h2>
+<p>MilkDrop presets travel between five active engines — the original Winamp MilkDrop 2, projectM, Butterchurn, and Stims on both its WebGL and WebGPU backends — and until now, no single place documented where a given feature actually works across all of them. This is that matrix, built directly from the Stims compiler&#39;s own compatibility/parity code and shader-support inventory.</p>
+<p><strong>Read the labels carefully.</strong> Cells for Stims are sourced from code (<code>compatibility.ts</code>, <code>parity.ts</code>, <code>shader-execution-classification.ts</code>, the <a href="https://github.com/zz-plant/stims/blob/main/docs/architecture/shader-support-inventory.md">shader support inventory</a>) and are exact. Cells for Winamp MilkDrop 2, projectM, and Butterchurn are marked <strong>[inferred]</strong> — reasoned from the format spec and public documentation, not verified by running those engines. Treat an inferred cell as &quot;should work, unconfirmed,&quot; not as tested fact.</p>
+<h3 id="registers-buffers-control-flow">Registers, buffers, control flow</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Winamp MD2</th>
+<th>projectM</th>
+<th>Butterchurn</th>
+<th>Stims WebGL</th>
+<th>Stims WebGPU</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>q1</code>–<code>q32</code>, <code>t1</code>–<code>t32</code></td>
+<td>Full [inferred]</td>
+<td>Full [inferred]</td>
+<td>Full [inferred]</td>
+<td>Full</td>
+<td>Full</td>
+</tr>
+<tr>
+<td><code>megabuf(i)</code> / <code>gmegabuf(i)</code></td>
+<td>Full [inferred]</td>
+<td>Full [inferred]</td>
+<td>Full [inferred]</td>
+<td>Full in EEL; <strong>partial</strong> when referenced directly inside shader text</td>
+<td>Same partial caveat</td>
+</tr>
+<tr>
+<td><code>loop()</code> / <code>while()</code></td>
+<td>Full [inferred]</td>
+<td>Full [inferred]</td>
+<td>Full [inferred]</td>
+<td>Full — bounded to ~2M iterations per block as a hang guard</td>
+<td>Full</td>
+</tr>
+</tbody></table>
+<h3 id="shaders">Shaders</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Winamp MD2</th>
+<th>projectM</th>
+<th>Butterchurn</th>
+<th>Stims WebGL</th>
+<th>Stims WebGPU</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>warp_shader</code>/<code>comp_shader</code> as <strong>separate GPU passes</strong></td>
+<td>Full [inferred]</td>
+<td>Full [inferred]</td>
+<td>Full [inferred]</td>
+<td><strong>Diverges: single-pass fusion.</strong> <code>sampler_pw_main</code>/<code>sampler_pc_main</code> both resolve to the same <code>previousTex</code>, an approximation of the original two-pass output</td>
+<td>Same fusion</td>
+</tr>
+<tr>
+<td>Direct shader-text execution (scalar controls, sample-blend patterns)</td>
+<td>Full [inferred]</td>
+<td>Full [inferred]</td>
+<td>Full [inferred]</td>
+<td>Full for the enumerated pattern set (see <a href="/learn/shaders/">Track 6</a>)</td>
+<td>Full via WGSL/TSL emission</td>
+</tr>
+<tr>
+<td><code>^</code>, `</td>
+<td><code>, </code>&amp;` operators</td>
+<td>Full [inferred]</td>
+<td>Full [inferred]</td>
+<td>Unverified</td>
+<td>Full — lowered to <code>pow()</code>/int-cast bitwise ops</td>
+</tr>
+<tr>
+<td><code>&amp;&amp;</code>/`</td>
+<td></td>
+<td><code>/</code>!` precision</td>
+<td>Reference semantics [inferred]</td>
+<td>Matches reference [inferred]</td>
+<td>Unverified</td>
+</tr>
+</tbody></table>
+<h3 id="shader-language-dialect">Shader-language dialect</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Stims WebGL / WebGPU</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Source language</td>
+<td><strong>GLSL 1.20</strong>, not HLSL — see <a href="/learn/shaders/#lesson-0--a-language-note-stated-plainly">Track 6, Lesson 0</a></td>
+</tr>
+<tr>
+<td><code>texture2D()</code> with explicit LOD</td>
+<td>Unsupported</td>
+</tr>
+<tr>
+<td>Matrix uniforms (<code>mat2</code>/<code>mat3</code>/<code>mat4</code>)</td>
+<td>Unsupported</td>
+</tr>
+<tr>
+<td><code>gl_FragCoord</code></td>
+<td>Unsupported</td>
+</tr>
+</tbody></table>
+<h3 id="textures">Textures</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Winamp MD2</th>
+<th>Stims (both backends)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>External/custom textures (<code>textures.ini</code>, arbitrary PNGs)</td>
+<td>Full [inferred]</td>
+<td><strong>Unsupported by design</strong> — every texture is pre-authored and shipped with the app</td>
+</tr>
+<tr>
+<td>Standard samplers (<code>main</code>, <code>noise</code>, <code>perlin</code>, <code>voronoi</code>, <code>pattern</code>, …)</td>
+<td>Full [inferred]</td>
+<td>Full — 16 total</td>
+</tr>
+<tr>
+<td>Non-standard/legacy sampler names (~7.5% of the bundled catalog)</td>
+<td>Full, resolve to real distinct textures [inferred]</td>
+<td><strong>Aliased to the nearest of the 16 standard samplers</strong> — visually similar, not identical (e.g. <code>seaweed</code>/<code>lichen</code>/<code>moss1</code> → <code>organic</code>)</td>
+</tr>
+<tr>
+<td>3D noise volume sampling</td>
+<td>Full, native volume textures [inferred]</td>
+<td>WebGL: 2D-atlas approximation. <strong>WebGPU: native <code>Data3DTexture</code></strong> — the one row where WebGPU is measurably more faithful than WebGL, not less</td>
+</tr>
+</tbody></table>
+<h3 id="milkdrop3-extensions">MilkDrop3 extensions</h3>
+<p>MilkDrop3 (a separate, actively developed fork) extends the format with <code>.milk2</code> double presets, <code>q33</code>–<code>q64</code>, and shader-side FFT data. <strong>None of this is supported anywhere in Stims</strong> — confirmed by source search, not just omission. If you&#39;re targeting MilkDrop3 specifically, this curriculum and the Stims engine are not the right tool; everything here targets the MilkDrop2-era format MilkDrop3 itself still ships alongside its extensions.</p>
+<h3 id="the-five-things-worth-remembering">The five things worth remembering</h3>
+<ol>
+<li><strong>Single-pass fusion</strong> is Stims&#39;s biggest structural divergence — anything depending on a genuinely separate warp-pass buffer gets an approximation.</li>
+<li><strong>GLSL 1.20, not HLSL</strong> — stated plainly, not glossed over, in <a href="/learn/shaders/#lesson-0--a-language-note-stated-plainly">Track 6</a>.</li>
+<li><strong>No external textures, period.</strong></li>
+<li><strong>Sampler aliasing</strong> covers roughly 1 in 13 bundled presets — check the <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#engine-limitations">coding guide&#39;s alias table</a> if a preset references an unfamiliar sampler name.</li>
+<li><strong>&quot;Supported&quot; here means compiles and renders through Stims&#39;s own pipeline — not &quot;measured pixel-identical to a native MilkDrop render.&quot;</strong> Stims&#39;s own compatibility system deliberately keeps those two claims separate; so should you when describing your own preset&#39;s portability.</li>
+</ol>
+<h2 id="performance-and-quality">Performance and quality</h2>
+<ul>
+<li><strong>Frame-rate correction is not optional.</strong> Any accumulator advanced by a fixed amount per frame (<code>mtime</code>, custom clocks) needs an <code>fps</code>-relative term — <code>x*(75/fps)</code> for anything calibrated against 75fps, or derive your own factor as Track 3&#39;s RC filter does (<code>1/fps*k</code>). Skip it and the same preset runs at different speeds on different machines.</li>
+</ul>
+<ol start="2">
+<li><strong>Neighbor sampling in a shader costs more than a single sample.</strong> Track 6&#39;s edge-detection example reads five texture samples per pixel (four neighbors plus itself); that&#39;s a real, measurable cost multiplier over a one-sample shader, paid by every pixel on screen every frame. Reach for it when the effect needs it — not by default.</li>
+<li><strong>Fewer <code>per_pixel</code> lines beats more.</strong> Every line runs once per mesh point; a preset with a dozen <code>per_pixel</code> equations is doing that work at every vertex, every frame. The <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#professional-vs-amateur-checklist">coding guide&#39;s checklist</a> treats &quot;at least 3 meaningful per_pixel lines&quot; as a floor for depth, not a target to maximize.</li>
+<li><strong><code>warp=1</code> with high <code>decay</code></strong> is the single most common performance-adjacent mistake — not because it&#39;s slow, but because it saturates into a smear that makes every other effect illegible. <a href="/learn/motion/#lesson-5--warp--the-wobble">Track 2</a> covers why.</li>
+<li><strong>Measure instead of guessing.</strong> <a href="/learn/listening/#lesson-5--measuring-it">Track 3, Lesson 5</a> covers <code>bun run lab:reactivity</code>. Its sibling <code>bun run lab:visual</code> (catalog presets only, currently) adds pixel-level checks — luminance, contrast, colorfulness, and whether the render is blank or static — the same instrument the Stims project uses on its own bundled catalog.</li>
+</ol>
+<h2 id="publishing">Publishing</h2>
+<ol>
+<li>Export your preset (or copy its <code>#code=</code> URL — see <a href="/learn/play/#6--share-it">Track 0</a>).</li>
+<li>Run it through <code>bun run lab:reactivity -- --file your.milk</code> and aim for a <code>reactive</code> verdict on the variables meant to respond to audio.</li>
+<li>Open a PR adding the <code>.milk</code> file to <code>public/milkdrop-presets/</code>, or share the link directly — both paths are covered in the <a href="https://github.com/zz-plant/stims/blob/main/CONTRIBUTING.md#contributing-presets">contributing guide</a>.</li>
+<li>If you remixed someone else&#39;s work anywhere along the way, keep the credit chain — the editor&#39;s Remix button does this automatically, and the multi-author filename convention (<code>&quot;Author A + Author B — Title&quot;</code>) is how the whole community has tracked lineage for over twenty years. It&#39;s not paperwork; it&#39;s the reason this hobby has a history at all.</li>
+</ol>
+<h2 id="what-you-can-now-do">What you can now do</h2>
+<p>Write a preset from the mental model up, wire it to the music, give it depth and shape, reach for a shader when equations aren&#39;t enough, know honestly where it will and won&#39;t run the same elsewhere, and ship it back into the same catalog you started by browsing in Track 0.</p>
+<p>If you want to go further — the essays on palette, pacing, and restraint that turn a technically correct preset into a good one — that&#39;s <a href="/learn/taste/">Track 7 — Taste</a>.</p>
+
+</article>
+<nav class="pager" aria-label="Course navigation"><span>← <a href="/learn/taste/">MilkDrop Masterworks Dissected — Track 7</a></span><span><a href="/learn/technique-glossary/">MilkDrop Technique Glossary</a> →</span></nav>
+<aside class="related" aria-label="Related pages"><strong>Keep going</strong><ul><li><a href="/">Open the Stims visualizer</a></li><li><a href="/learn/">Learn to write MilkDrop presets</a></li><li><a href="/learn/milkdrop-online/">MilkDrop online, in your browser</a></li><li><a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a></li><li><a href="/performance/">Compatibility and performance</a></li></ul></aside>
+</main>
+<footer class="site-footer">
+<h2>Stims</h2>
+<ul><li><a href="/">Visualizer</a></li><li><a href="/learn/">Learn to write presets</a></li><li><a href="/learn/milkdrop-online/">MilkDrop online</a></li><li><a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a></li><li><a href="/performance/">Compatibility and performance</a></li><li><a href="https://github.com/zz-plant/stims">Source on GitHub</a></li></ul>
+<h2>Browse presets by look</h2>
+<ul><li><a href="/discover/audio-reactive">Audio-Reactive</a></li><li><a href="/discover/ambient">Ambient</a></li><li><a href="/discover/fractal">Fractal</a></li><li><a href="/discover/geometric">Geometric</a></li><li><a href="/discover/hall-of-fame">Hall of Fame</a></li><li><a href="/discover/neon">Neon</a></li><li><a href="/discover/particles">Particle</a></li><li><a href="/discover/psychedelic">Psychedelic</a></li><li><a href="/discover/retro">Retro</a></li><li><a href="/discover/space">Space</a></li><li><a href="/discover/trippy">Trippy</a></li><li><a href="/discover/tunnel">Tunnel</a></li><li><a href="/discover/waveform">Waveform</a></li><li><a href="/discover/webgpu-showcase">WebGPU Showcase</a></li></ul>
+<h2>Browse presets by author</h2>
+<ul><li><a href="/author/geiss">Geiss</a></li><li><a href="/author/flexi">Flexi</a></li><li><a href="/author/martin">Martin</a></li><li><a href="/author/rovastar">Rovastar</a></li><li><a href="/author/eo-s">Eo.S.</a></li><li><a href="/author/phat">Phat</a></li><li><a href="/author/stahlregen">Stahlregen</a></li><li><a href="/author/unchained">Unchained</a></li><li><a href="/author/fishbrain">Fishbrain</a></li><li><a href="/author/aderrasi">Aderrasi</a></li><li><a href="/author/zylot">Zylot</a></li><li><a href="/author/shifter">Shifter</a></li><li><a href="/author/mig">Mig</a></li><li><a href="/author/orb">ORB</a></li><li><a href="/author/suksma">Suksma</a></li><li><a href="/author/cope">Cope</a></li><li><a href="/author/goody">Goody</a></li><li><a href="/author/krash">Krash</a></li></ul>
+</footer>
+</body>
+</html>

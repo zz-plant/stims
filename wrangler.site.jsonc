@@ -19,6 +19,9 @@
       "!/icons/*",
       "!/screenshots/*",
       "!/og/*",
+      // Static, prerendered guides (scripts/generate-learn-pages.ts): plain
+      // HTML that needs no OG rewrite, so it skips the Worker.
+      "!/learn/*",
       "!/textures/*",
       // Previews are served from R2 by the Worker; the rest of the preset
       // corpus (.milk sources, catalogs, engine libraries) stays on assets.
