@@ -27,6 +27,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { hostname } from 'node:os';
 import { dirname, join } from 'node:path';
 import { chromium } from 'playwright';
+import { warnIfSoftwareRendering } from './browser-launch.ts';
 import { ensureDevServer } from './dev-server.ts';
 
 const DEFAULT_PORT = 5198;
@@ -100,6 +101,7 @@ async function profilePreset(
     const context = await browser.newContext({
       viewport: { width: 1280, height: 720 },
     });
+    await warnIfSoftwareRendering(context);
     const page = await context.newPage();
     const pageErrors: string[] = [];
     page.on('pageerror', (error) => pageErrors.push(String(error)));

@@ -9,6 +9,7 @@
  * browser). Exits non-zero when any counted check fails.
  */
 import { $ } from 'bun';
+import { isSoftwareRenderer } from './browser-launch.ts';
 
 console.log('🩺 Running Stims Dev Environment Doctor...\n');
 
@@ -179,9 +180,9 @@ if (pwOk) {
     });
     await browser.close();
     if (renderer) {
-      const isSoftware = /swiftshader|llvmpipe|software/i.test(renderer);
+      const isSoftware = isSoftwareRenderer(renderer);
       visualTier = isSoftware
-        ? `headless Chromium + software rendering (${renderer}) — bun run lab:visual / ctl / mcp work, set STIMS_GPU_RENDER=1 to try hardware`
+        ? `headless Chromium + software rendering (${renderer}) — bun run lab:visual / ctl / mcp work, set STIMS_GPU_RENDER=1 to try hardware. Frame-time tools (lab:profile, profile:frame, perf:*, bench:*) are NOT meaningful here: they time the CPU rasterizer`
         : `headless Chromium + GPU (${renderer}) — full lab:visual / ctl / mcp / sweep tooling available`;
     } else {
       visualTier =
