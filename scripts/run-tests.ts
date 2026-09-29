@@ -4,6 +4,8 @@
  *
  * `--profile <name>` selects a profile (default `fast`), `--changed` runs only
  * tests affected by uncommitted changes, and `--watch` re-runs on edit.
+ * `--no-bail` (or STIMS_NO_BAIL=1) keeps running past the first failing file so
+ * one run reports every failure instead of stopping at the first.
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -132,6 +134,12 @@ async function assertNoUncategorizedTests(): Promise<void> {
   }
 }
 
+// Dev runs stop at the first failing file for fast feedback, which hides the
+// rest of a broken suite (an agent then needs a second run per failure).
+// `--no-bail` / STIMS_NO_BAIL=1 opts out for a full failure list.
+const NO_BAIL =
+  process.argv.includes('--no-bail') || process.env.STIMS_NO_BAIL === '1';
+
 type ParsedArgs = {
   profile: string;
   watch: boolean;
@@ -158,6 +166,10 @@ function parseArgs(argv: string[]): ParsedArgs {
       changed = true;
       continue;
     }
+
+    // Read at command-build time (see NO_BAIL); consumed here so it is not
+    // mistaken for a test file path.
+    if (arg === '--no-bail') continue;
 
     if (arg === '--profile') {
       profile = argv[index + 1] ?? profile;
@@ -210,7 +222,7 @@ function buildBunTestCmd({
   // Dev feedback stops at the first failing test file; CI keeps running so a
   // single failure cannot mask the rest of a suite. `--bail` is inert under
   // `--watch`, which must keep running after a failure.
-  const bailEnabled = (bail ?? true) && !watch && !process.env.CI;
+  const bailEnabled = (bail ?? true) && !watch && !process.env.CI && !NO_BAIL;
 
   return [
     'bun',

@@ -6,6 +6,17 @@ const freshImport = async () =>
     `../../src/js/core/toy-runtime-starter.ts?ts=${Date.now()}-${Math.random()}`
   );
 
+// `mock.restore()` does not undo `mock.module()`: the stub below outlives this
+// file and is served to any later test in the same worker that imports
+// `toy-runtime` (toy-runtime-preview-loop then got `{ runtime: true }` for a
+// real runtime and failed with "startAudio is not a function", but only when
+// the runner happened to put the two files in one worker). Capture the real
+// module before the first mock and put it back afterwards.
+const TOY_RUNTIME_PATH = '../../src/js/core/toy-runtime';
+// Bun patches an already-imported module's exports in place, so the namespace
+// object itself would be overwritten by the stub: copy the values.
+const realToyRuntime = { ...(await import(`${TOY_RUNTIME_PATH}.ts`)) };
+
 describe('toy runtime starter', () => {
   const createToyRuntime = mock(() => ({ runtime: true }));
   const configureQualityPresets = mock(() => panel);
@@ -25,6 +36,7 @@ describe('toy runtime starter', () => {
 
   afterEach(() => {
     mock.restore();
+    mock.module(TOY_RUNTIME_PATH, () => realToyRuntime);
   });
 
   test('configures the shared settings panel when starter settings are provided', async () => {
