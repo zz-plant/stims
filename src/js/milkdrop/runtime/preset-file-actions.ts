@@ -1,4 +1,5 @@
 import { compileMilkdropPresetSource } from '../compiler';
+import { exportMilkdrop2Preset } from '../milkdrop2-export';
 import { expandPresetSelection } from '../preset-archive';
 import {
   deriveRemixCredit,
@@ -185,7 +186,9 @@ export function createMilkdropPresetFileActions({
 
     exportPreset() {
       const compiled = getActiveCompiled();
-      downloadPresetFile(compiled.source.id, compiled.formattedSource);
+      // The file MilkDrop 2 writes, not the editor's dialect: an export is
+      // for other engines as much as for coming back here.
+      downloadPresetFile(compiled.source.id, exportMilkdrop2Preset(compiled));
     },
   };
 }
