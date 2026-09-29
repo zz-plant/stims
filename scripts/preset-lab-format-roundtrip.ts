@@ -5,12 +5,15 @@
  * the compiler understood but the formatter did not emit is silently lost, and
  * the author only finds out when the preset looks different. This compiles
  * every bundled .milk, formats it, recompiles the result, and reports each
- * field whose value changed, grouped by field so one formatter bug shows up as
+ * field whose value changed — including shader text as written and fields
+ * Stims ignores but keeps — grouped by field so one formatter bug shows up as
  * one line with a count rather than thousands of presets.
  *
  *   bun run lab:format-roundtrip                    # whole corpus
  *   bun run lab:format-roundtrip -- --only <substr> # files whose path matches
  *   bun run lab:format-roundtrip -- --json          # machine-readable
+ *
+ * The same check runs through MilkDrop 2 export (keys prefixed `export:`).
  *
  * Exits 1 when any preset changes, so it can gate a formatter change.
  */
@@ -19,6 +22,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
 import { formatMilkdropPreset } from '../src/js/milkdrop/formatter.ts';
+import { exportMilkdrop2Preset } from '../src/js/milkdrop/milkdrop2-export.ts';
+import { ensureShaderBody } from '../src/js/milkdrop/shader-source.ts';
 
 const normalizeLines = (lines: readonly string[]) =>
   lines.map((line) => line.replace(/\s+/gu, ' ').trim()).filter(Boolean);
@@ -37,16 +42,60 @@ export function fingerprintPreset(source: string): Record<string, unknown> {
     'count:shapes': ir.customShapes.length,
     'shader:warp': ir.shaderText.warp?.trim() ?? null,
     'shader:comp': ir.shaderText.comp?.trim() ?? null,
+    // What the author wrote, not just what renders: comments and layout in a
+    // shader, and fields Stims ignores but another engine may read.
+    'source:warp': ir.shaderSource?.warp ?? null,
+    'source:comp': ir.shaderSource?.comp ?? null,
+    preserved: ir.preservedFields ?? [],
+    comments: [
+      ir.programs.init,
+      ir.programs.perFrame,
+      ir.programs.perPixel,
+      ...ir.customWaves.flatMap((wave) => Object.values(wave.programs)),
+      ...ir.customShapes.flatMap((shape) => Object.values(shape.programs)),
+    ].map((block) => block.comments ?? []),
   };
 }
 
-/** Keys whose value differs after format → recompile. */
-export function roundTripDiff(source: string): string[] {
+const EXPORT_REWRITTEN_KEYS = [
+  'field:milkdrop_preset_version',
+  'field:psversion',
+  'field:psversion_warp',
+  'field:psversion_comp',
+];
+
+/**
+ * Keys whose value differs after format → recompile, or (`via: 'export'`)
+ * after MilkDrop 2 export → recompile: an exported file must come back into
+ * Stims as the same preset.
+ */
+export function roundTripDiff(
+  source: string,
+  via: 'format' | 'export' = 'format',
+): string[] {
   const before = fingerprintPreset(source);
-  const formatted = formatMilkdropPreset(
-    compileMilkdropPresetSource(source, { id: 'roundtrip' }),
-  );
-  const after = fingerprintPreset(formatted);
+  const compiled = compileMilkdropPresetSource(source, { id: 'roundtrip' });
+  const written =
+    via === 'export'
+      ? exportMilkdrop2Preset(compiled)
+      : formatMilkdropPreset(compiled);
+  const after = fingerprintPreset(written);
+  // Export writes the version header MilkDrop 2 needs (201, and a shader
+  // version only for a stage that has a shader); Stims renders from neither.
+  // A shader written without `shader_body` (Stims accepts bare statements) is
+  // wrapped in one, since MilkDrop 2 splices its header in there.
+  if (via === 'export') {
+    for (const key of EXPORT_REWRITTEN_KEYS) {
+      delete before[key];
+      delete after[key];
+    }
+    for (const key of ['source:warp', 'source:comp']) {
+      const text = before[key];
+      if (typeof text === 'string') {
+        before[key] = ensureShaderBody(text);
+      }
+    }
+  }
   return [...new Set([...Object.keys(before), ...Object.keys(after)])]
     .filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
     .sort();
@@ -76,7 +125,11 @@ function main() {
   let changed = 0;
   for (const file of files) {
     try {
-      const keys = roundTripDiff(readFileSync(file, 'utf8'));
+      const source = readFileSync(file, 'utf8');
+      const keys = [
+        ...roundTripDiff(source),
+        ...roundTripDiff(source, 'export').map((key) => `export:${key}`),
+      ];
       if (keys.length > 0) changed += 1;
       for (const key of keys) {
         const list = byKey.get(key) ?? [];
@@ -98,7 +151,7 @@ function main() {
     );
   } else {
     console.log(
-      `${files.length} presets, ${changed} changed by Format, ${errors.length} threw`,
+      `${files.length} presets, ${changed} changed by Format or Export, ${errors.length} threw`,
     );
     for (const g of groups.slice(0, 40)) {
       console.log(

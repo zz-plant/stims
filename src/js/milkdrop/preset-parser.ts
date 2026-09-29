@@ -4,7 +4,8 @@ import type {
   MilkdropPresetField,
 } from './types';
 
-function stripInlineComment(line: string) {
+/** Splits a trailing `//` comment off a line, ignoring `//` inside quotes. */
+function splitInlineComment(line: string): { code: string; comment: string } {
   let quote: '"' | "'" | null = null;
 
   for (let index = 0; index < line.length; index += 1) {
@@ -32,11 +33,14 @@ function stripInlineComment(line: string) {
     }
 
     if (current === '/' && next === '/') {
-      return line.slice(0, index).trimEnd();
+      return {
+        code: line.slice(0, index).trimEnd(),
+        comment: line.slice(index).trim(),
+      };
     }
   }
 
-  return line;
+  return { code: line, comment: '' };
 }
 
 const MAX_SOURCE_BYTES = 5 * 1024 * 1024; // 5MB
@@ -92,16 +96,16 @@ export function parseMilkdropPreset(source: string): {
       continue;
     }
 
-    // `#` starts a comment in the key=value body, but inside a shader section
-    // it is a preprocessor directive (`#define`, `#if`) — shader text that
-    // Format writes back out as a bare line. Skipping it silently deleted the
-    // whole section whenever the shader began with a directive.
+    // `#` and `;` start a comment in the key=value body, but inside a shader
+    // section they are shader text — a preprocessor directive (`#define`,
+    // `#if`) or an empty statement — that Format writes back out as a bare
+    // line. Skipping a directive silently deleted the whole section whenever
+    // the shader began with one.
     const inShaderSection =
       currentSection === 'warp_shader' || currentSection === 'comp_shader';
     if (
       trimmed.startsWith('//') ||
-      (trimmed.startsWith('#') && !inShaderSection) ||
-      trimmed.startsWith(';')
+      ((trimmed.startsWith('#') || trimmed.startsWith(';')) && !inShaderSection)
     ) {
       continue;
     }
@@ -114,7 +118,8 @@ export function parseMilkdropPreset(source: string): {
       continue;
     }
 
-    const withoutComments = stripInlineComment(line).trim();
+    const { code, comment } = splitInlineComment(line);
+    const withoutComments = code.trim();
     if (!withoutComments) {
       continue;
     }
@@ -167,6 +172,9 @@ export function parseMilkdropPreset(source: string): {
       rawValue,
       line: number,
       section: currentSection,
+      // Shader comments are recovered verbatim by shader-source.ts; this
+      // carries the equation comments Format would otherwise delete.
+      ...(comment && !inShaderSection ? { comment } : {}),
     });
   }
 

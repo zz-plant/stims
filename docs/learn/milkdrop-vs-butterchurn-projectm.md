@@ -9,7 +9,7 @@ Butterchurn and projectM are the projects most people arrive from, and both are 
 | | Stims | Butterchurn | projectM |
 | --- | --- | --- | --- |
 | **Primary form** | A hosted browser app you use directly | An embeddable JS renderer | A native library and desktop/plugin player |
-| **Preset input** | `.milk` source, imported and exported as-is | Presets converted to a Butterchurn JSON format ahead of time | `.milk` source |
+| **Preset input** | `.milk` source, imported as-is and exported in MilkDrop 2's own format | Presets converted to a Butterchurn JSON format ahead of time | `.milk` source |
 | **Authoring** | In-session editor with completions, compiler diagnostics, and live `zoom`/`warp`/`rot`/`decay` controls | No built-in editor; authoring happens elsewhere | No built-in editor; authoring happens elsewhere |
 | **Discovery** | Search, filters, collections, previews, favorites, queues, history, deep links | Preset list supplied by the embedding app | Playlist files |
 | **Fidelity claims** | Per-preset labels that separate "compiles and runs" from "diffed against a projectM reference" | Broad practical compatibility, established over years of use | The reference implementation Stims diffs against |
@@ -33,4 +33,4 @@ Stims is its own browser implementation. It uses projectM as the reference it co
 
 ### Can I use the same presets in all three?
 
-`.milk` presets are the common format. projectM reads them directly, Stims imports and exports them as-is, and Butterchurn expects them converted to its JSON format first.
+`.milk` presets are the common format. projectM reads them directly, Stims imports them as-is and exports them in the format MilkDrop 2 saves, and Butterchurn expects them converted to its JSON format first.

@@ -10,7 +10,7 @@ MilkDrop is the music visualizer Ryan Geiss wrote for Winamp. A MilkDrop *preset
 - **Play your own music.** Start audio from a browser tab, a YouTube link, or your microphone, and the presets react to it.
 - **Browse.** The catalog has well over 1,700 presets, searchable by description, with collections, previews and favorites. The [discover hubs](/discover/audio-reactive) group them by look and by author.
 - **Edit and remix.** Open the editor to see the real `.milk` source, drag live sliders, or change the equations. A remix keeps the credit of whoever you built on.
-- **Bring your own presets.** Import `.milk` files, export them again unchanged, or share a link that carries your edited preset inside the address.
+- **Bring your own presets.** Import `.milk` files (or a `.zip` pack), export them in the format MilkDrop 2 itself saves — comments, shader code and fields Stims does not use kept intact — or share a link that carries your edited preset inside the address.
 
 ## Winamp visualizer, without Winamp
 
