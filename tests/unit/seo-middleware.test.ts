@@ -100,6 +100,33 @@ function makeContext(url: string, presetMeta?: Record<string, unknown>) {
   };
 }
 
+/**
+ * How the deployed Worker actually behaves: static assets have a file at `/`
+ * and nothing at /discover/* or /author/*, and there is no SPA fallback, so
+ * `next()` answers 404 with an empty body. Tests using `makeContext` above
+ * mock `next()` as always returning the shell (the old Pages behaviour), which
+ * is how a live outage of every curated hub page went unnoticed.
+ */
+function makeWorkerAssetsContext(url: string) {
+  const assetsFetched: string[] = [];
+  const context = {
+    request: new Request(url),
+    next: () => Promise.resolve(new Response(null, { status: 404 })),
+    env: {
+      ASSETS: {
+        fetch: (request: Request) => {
+          const path = new URL(request.url).pathname;
+          assetsFetched.push(path);
+          return Promise.resolve(
+            path === '/' ? htmlResponse() : new Response(null, { status: 404 }),
+          );
+        },
+      },
+    },
+  };
+  return { context, assetsFetched };
+}
+
 const globalWithRewriter = globalThis as { HTMLRewriter?: unknown };
 let originalRewriter: unknown;
 
@@ -166,6 +193,39 @@ describe('/discover/<slug> middleware', () => {
     expect(recordedHandlers).toHaveLength(0);
     expect(response.status).toBe(200);
   });
+});
+
+describe('curated routes on Worker static assets (no SPA fallback)', () => {
+  test.each([
+    'https://toil.fyi/discover/fractal',
+    'https://toil.fyi/author/geiss',
+  ])('%s serves the app shell with 200 and its own metadata', async (url) => {
+    const { context, assetsFetched } = makeWorkerAssetsContext(url);
+    const response = await onRequest(context);
+
+    expect(response.status).toBe(200);
+    expect(assetsFetched).toEqual(['/']);
+    expect(transformCalls).toBe(1);
+    expect(applyHandlers('link[rel="canonical"]').attributes.get('href')).toBe(
+      url,
+    );
+  });
+
+  test.each([
+    'https://toil.fyi/discover/some-random-invented-slug',
+    'https://toil.fyi/author/made-up-author',
+    'https://toil.fyi/anything-else',
+  ])(
+    '%s stays a 404 so arbitrary paths cannot become doorway pages',
+    async (url) => {
+      const { context, assetsFetched } = makeWorkerAssetsContext(url);
+      const response = await onRequest(context);
+
+      expect(response.status).toBe(404);
+      expect(assetsFetched).toEqual([]);
+      expect(transformCalls).toBe(0);
+    },
+  );
 });
 
 describe('/author/<slug> middleware', () => {
@@ -244,6 +304,45 @@ describe('/?preset=<id> middleware', () => {
     expect(head.appended[0]).not.toContain('og:image:secure_url');
     expect(head.appended[0]).not.toContain('twitter:player');
     expect(head.appended[0]).not.toContain('property="og:video"');
+  });
+
+  test('server-renders an indexable body: image, author link, sibling presets', async () => {
+    await onRequest(
+      makeContext('https://toil.fyi/?preset=geiss-one', {
+        'geiss-one': ['Geiss - One', 'Geiss'],
+        'geiss-two': ['Geiss - Two', 'Geiss'],
+        'geiss-three': ['Geiss - Three', 'Geiss'],
+        'flexi-one': ['Flexi - One', 'Flexi'],
+      }),
+    );
+
+    const body = applyHandlers('noscript').appended.join('');
+    expect(body).toContain('<h1>');
+    expect(body).toContain(
+      '<img src="https://toil.fyi/api/og-preset?id=geiss-one"',
+    );
+    // Byline links the curated author page, whose route knows the author.
+    expect(body).toContain('href="/author/geiss"');
+    // Siblings by the same author are linked; other authors' presets are not.
+    expect(body).toContain('href="/?preset=geiss-two"');
+    expect(body).toContain('href="/?preset=geiss-three"');
+    expect(body).not.toContain('flexi-one');
+    // ...and the preset never links to itself.
+    expect(body).not.toContain('href="/?preset=geiss-one"');
+  });
+
+  test('escapes titles in the server-rendered body', async () => {
+    await onRequest(
+      makeContext('https://toil.fyi/?preset=xss', {
+        xss: ['<script>alert(1)</script>', 'Geiss'],
+        sibling: ['"><img src=x onerror=alert(1)>', 'Geiss'],
+      }),
+    );
+
+    const body = applyHandlers('noscript').appended.join('');
+    expect(body).not.toContain('<script>');
+    expect(body).not.toContain('<img src=x');
+    expect(body).toContain('&lt;script&gt;');
   });
 
   test('leaves unknown preset ids with the default metadata', async () => {
