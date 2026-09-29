@@ -1757,3 +1757,28 @@ button.stims-editor__compat-row:focus-visible {
   max-height: 14rem;
   overflow: auto;
 }
+
+/* ── Outline: shader translation ──────────────────────────────────── */
+
+.stims-editor__outline-shader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+
+/* Long GLSL lines scroll inside the code box instead of widening the pane
+   (a grid item's min-width defaults to its content). */
+.stims-editor__shader-translation {
+  min-width: 0;
+}
+
+.stims-editor__outline-glsl {
+  justify-self: start;
+  margin-left: 8px;
+}
+
+.stims-editor__shader-translation .stims-editor__proposal-lines {
+  max-width: 100%;
+  max-height: 18rem;
+  overflow: auto;
+}

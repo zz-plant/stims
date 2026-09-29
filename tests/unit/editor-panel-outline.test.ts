@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { EditorPanel } from '../../src/js/milkdrop/overlay/editor-panel.ts';
 
 describe('editor panel Outline tab', () => {
@@ -101,6 +102,58 @@ describe('editor panel Outline tab', () => {
       '[role="tab"][aria-selected="true"]',
     );
     expect((selected as HTMLElement | null)?.dataset.pane).toBe('tune');
+    panel.dispose();
+  });
+
+  test('a shader part can show the GLSL it becomes, and stays open while you type', () => {
+    const shaderSource = [
+      'title=T',
+      'zoom=1.01',
+      '[warp_shader]',
+      'shader_body {',
+      '  ret = tex2D(sampler_main, uv).xyz * 0.97;',
+      '}',
+    ].join('\n');
+    const panel = mount(shaderSource);
+    const setCompiled = (source: string) => {
+      const compiled = compileMilkdropPresetSource(source, {
+        id: 'outline-shader',
+      });
+      panel.setSessionState({
+        source,
+        diagnostics: [],
+        latestCompiled: compiled,
+        activeCompiled: compiled,
+        dirty: false,
+      });
+    };
+    setCompiled(shaderSource);
+
+    const toggle = () =>
+      panel.element.querySelector<HTMLButtonElement>(
+        '[data-shader-stage="warp"] .stims-editor__outline-glsl',
+      );
+    const detail = () =>
+      panel.element.querySelector<HTMLElement>(
+        '[data-shader-stage="warp"] .stims-editor__shader-translation',
+      );
+    expect(detail()?.hidden).toBe(true);
+    toggle()?.click();
+    expect(detail()?.hidden).toBe(false);
+    expect(detail()?.textContent).toContain('WebGL runs it as written');
+    expect(detail()?.querySelector('pre')?.textContent).not.toContain('tex2D(');
+
+    // A repaint (the next keystroke's compile) keeps it open.
+    setCompiled(`${shaderSource}\n`);
+    expect(detail()?.hidden).toBe(false);
+    panel.dispose();
+  });
+
+  test('parts that are not shaders get no GLSL toggle', () => {
+    const panel = mount(SOURCE);
+    expect(
+      panel.element.querySelector('.stims-editor__outline-glsl'),
+    ).toBeNull();
     panel.dispose();
   });
 });

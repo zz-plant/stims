@@ -114,7 +114,11 @@ import {
   mutatePresetStyle,
   PRESET_MUTATION_STYLES,
 } from '../preset-mutations.ts';
-import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
+import type {
+  MilkdropCompiledPreset,
+  MilkdropDiagnostic,
+  MilkdropEditorSessionState,
+} from '../types';
 import { createMilkdropLanguage } from './editor-language';
 import { numberScrubExtension } from './editor-number-scrub.ts';
 import { computeAstDiagnostics, mergeDiagnostics } from './editor-parser';
@@ -140,6 +144,11 @@ import {
 } from '../preset-knobs.ts';
 import { buildPresetOutline } from '../preset-outline.ts';
 import { searchReference } from '../reference-search.ts';
+import {
+  describeExecutionMode,
+  describeShaderTranslations,
+  type ShaderStage,
+} from '../shader-translation.ts';
 import { createVariableHistory } from '../variable-history.ts';
 import { subscribeVariables } from '../variable-probe.ts';
 import {
@@ -968,6 +977,9 @@ export class EditorPanel {
   private compatList: HTMLElement | null = null;
   private compatTab: HTMLButtonElement | null = null;
   private outlineList: HTMLElement | null = null;
+  /** Shader stages whose translation is expanded in the Outline; kept across
+   * repaints so typing does not collapse it. */
+  private readonly expandedShaderStages = new Set<ShaderStage>();
   private knobsWrap: HTMLElement | null = null;
   private knobsSignature = '';
   private readonly knobInputs = new Map<
@@ -1984,10 +1996,14 @@ export class EditorPanel {
     return pane;
   }
 
-  private paintOutline(source: string) {
+  private paintOutline(
+    source: string,
+    compiled: MilkdropCompiledPreset | null = null,
+  ) {
     const list = this.outlineList;
     if (!list) return;
     const entries = buildPresetOutline(source);
+    const translations = compiled ? describeShaderTranslations(compiled) : [];
     if (entries.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'stims-editor__hint';
@@ -2021,9 +2037,64 @@ export class EditorPanel {
           });
           this.editor.focus();
         });
-        return row;
+        const stage: ShaderStage | null =
+          entry.kind === 'warp-shader'
+            ? 'warp'
+            : entry.kind === 'comp-shader'
+              ? 'comp'
+              : null;
+        const translation = stage
+          ? translations.find((t) => t.stage === stage)
+          : undefined;
+        if (!stage || !translation) return row;
+        return this.renderShaderOutlineEntry(row, translation);
       }),
     );
+  }
+
+  /** A shader's Outline row plus a toggle showing what the GPU compiles. */
+  private renderShaderOutlineEntry(
+    row: HTMLElement,
+    translation: ReturnType<typeof describeShaderTranslations>[number],
+  ): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'stims-editor__outline-shader';
+    wrap.dataset.shaderStage = translation.stage;
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'stims-editor__btn stims-editor__outline-glsl';
+    toggle.textContent = 'Show GLSL';
+    const detail = document.createElement('div');
+    detail.className = 'stims-editor__shader-translation';
+    const note = document.createElement('p');
+    note.className = 'stims-editor__hint';
+    note.textContent = `${
+      translation.path === 'body'
+        ? 'Your shader body, converted from HLSL to GLSL as a whole.'
+        : translation.path === 'statements'
+          ? 'Rebuilt in GLSL from your shader\u2019s parsed statements.'
+          : 'No GLSL was produced for this stage.'
+    } WebGL ${describeExecutionMode(translation.execution.webgl)}; WebGPU ${describeExecutionMode(translation.execution.webgpu)}.`;
+    detail.appendChild(note);
+    if (translation.glsl) {
+      const code = document.createElement('pre');
+      code.className = 'stims-editor__proposal-lines';
+      code.textContent = translation.glsl;
+      detail.appendChild(code);
+    }
+    let isOpen = false;
+    const setOpen = (open: boolean) => {
+      isOpen = open;
+      detail.hidden = !open;
+      toggle.textContent = open ? 'Hide GLSL' : 'Show GLSL';
+      toggle.setAttribute('aria-expanded', String(open));
+      if (open) this.expandedShaderStages.add(translation.stage);
+      else this.expandedShaderStages.delete(translation.stage);
+    };
+    toggle.addEventListener('click', () => setOpen(!isOpen));
+    setOpen(this.expandedShaderStages.has(translation.stage));
+    wrap.append(row, toggle, detail);
+    return wrap;
   }
 
   /** Assist pane: every AI-backed action in one place. They share a single
@@ -2717,7 +2788,7 @@ export class EditorPanel {
     // problems strip's job — this flag reports the one thing neither can:
     // the stage is rendering a simplified version of what compiled.
     this.paintCompat(state);
-    this.paintOutline(state.source);
+    this.paintOutline(state.source, state.latestCompiled);
     this.paintKnobs(state.source);
     this.safetyFlag.hidden = !isDegraded;
     this.safetyFlag.textContent = 'Simplified';
