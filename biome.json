@@ -61,6 +61,7 @@
         "public/preset-meta.json",
         "public/milkdrop-presets/**/*.json",
         "public/vendor/**",
+        "public/learn/**",
         "screenshots/parity/**",
         "tests/accessibility/**"
       ],
