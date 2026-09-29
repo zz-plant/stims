@@ -114,7 +114,11 @@ import {
   mutatePresetStyle,
   PRESET_MUTATION_STYLES,
 } from '../preset-mutations.ts';
-import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
+import type {
+  MilkdropCompiledPreset,
+  MilkdropDiagnostic,
+  MilkdropEditorSessionState,
+} from '../types';
 import { createMilkdropLanguage } from './editor-language';
 import { numberScrubExtension } from './editor-number-scrub.ts';
 import { computeAstDiagnostics, mergeDiagnostics } from './editor-parser';
@@ -133,8 +137,18 @@ import {
   createVersionStore,
   type VersionStorage,
 } from '../named-versions.ts';
+import {
+  findPresetKnobs,
+  formatKnobValue,
+  type PresetKnob,
+} from '../preset-knobs.ts';
 import { buildPresetOutline } from '../preset-outline.ts';
 import { searchReference } from '../reference-search.ts';
+import {
+  describeExecutionMode,
+  describeShaderTranslations,
+  type ShaderStage,
+} from '../shader-translation.ts';
 import { createVariableHistory } from '../variable-history.ts';
 import { subscribeVariables } from '../variable-probe.ts';
 import {
@@ -963,6 +977,15 @@ export class EditorPanel {
   private compatList: HTMLElement | null = null;
   private compatTab: HTMLButtonElement | null = null;
   private outlineList: HTMLElement | null = null;
+  /** Shader stages whose translation is expanded in the Outline; kept across
+   * repaints so typing does not collapse it. */
+  private readonly expandedShaderStages = new Set<ShaderStage>();
+  private knobsWrap: HTMLElement | null = null;
+  private knobsSignature = '';
+  private readonly knobInputs = new Map<
+    string,
+    { input: HTMLInputElement; display: HTMLElement }
+  >();
   private inspectEmpty: HTMLElement | null = null;
   private inspectFilter = '';
   private inspectOnlyChanging = false;
@@ -1973,10 +1996,14 @@ export class EditorPanel {
     return pane;
   }
 
-  private paintOutline(source: string) {
+  private paintOutline(
+    source: string,
+    compiled: MilkdropCompiledPreset | null = null,
+  ) {
     const list = this.outlineList;
     if (!list) return;
     const entries = buildPresetOutline(source);
+    const translations = compiled ? describeShaderTranslations(compiled) : [];
     if (entries.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'stims-editor__hint';
@@ -2010,9 +2037,64 @@ export class EditorPanel {
           });
           this.editor.focus();
         });
-        return row;
+        const stage: ShaderStage | null =
+          entry.kind === 'warp-shader'
+            ? 'warp'
+            : entry.kind === 'comp-shader'
+              ? 'comp'
+              : null;
+        const translation = stage
+          ? translations.find((t) => t.stage === stage)
+          : undefined;
+        if (!stage || !translation) return row;
+        return this.renderShaderOutlineEntry(row, translation);
       }),
     );
+  }
+
+  /** A shader's Outline row plus a toggle showing what the GPU compiles. */
+  private renderShaderOutlineEntry(
+    row: HTMLElement,
+    translation: ReturnType<typeof describeShaderTranslations>[number],
+  ): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'stims-editor__outline-shader';
+    wrap.dataset.shaderStage = translation.stage;
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'stims-editor__btn stims-editor__outline-glsl';
+    toggle.textContent = 'Show GLSL';
+    const detail = document.createElement('div');
+    detail.className = 'stims-editor__shader-translation';
+    const note = document.createElement('p');
+    note.className = 'stims-editor__hint';
+    note.textContent = `${
+      translation.path === 'body'
+        ? 'Your shader body, converted from HLSL to GLSL as a whole.'
+        : translation.path === 'statements'
+          ? 'Rebuilt in GLSL from your shader\u2019s parsed statements.'
+          : 'No GLSL was produced for this stage.'
+    } WebGL ${describeExecutionMode(translation.execution.webgl)}; WebGPU ${describeExecutionMode(translation.execution.webgpu)}.`;
+    detail.appendChild(note);
+    if (translation.glsl) {
+      const code = document.createElement('pre');
+      code.className = 'stims-editor__proposal-lines';
+      code.textContent = translation.glsl;
+      detail.appendChild(code);
+    }
+    let isOpen = false;
+    const setOpen = (open: boolean) => {
+      isOpen = open;
+      detail.hidden = !open;
+      toggle.textContent = open ? 'Hide GLSL' : 'Show GLSL';
+      toggle.setAttribute('aria-expanded', String(open));
+      if (open) this.expandedShaderStages.add(translation.stage);
+      else this.expandedShaderStages.delete(translation.stage);
+    };
+    toggle.addEventListener('click', () => setOpen(!isOpen));
+    setOpen(this.expandedShaderStages.has(translation.stage));
+    wrap.append(row, toggle, detail);
+    return wrap;
   }
 
   /** Assist pane: every AI-backed action in one place. They share a single
@@ -2492,28 +2574,60 @@ export class EditorPanel {
         head.append(meta, compare, restore, remove);
         row.appendChild(head);
 
-        let diffEl: HTMLElement | null = null;
+        // Compare opens a panel: a picker for the other side (the current
+        // source, or any other saved version) above the diff from this
+        // version to it.
+        let panel: HTMLElement | null = null;
         compare.addEventListener('click', () => {
-          if (diffEl) {
-            diffEl.remove();
-            diffEl = null;
+          if (panel) {
+            panel.remove();
+            panel = null;
             compare.setAttribute('aria-expanded', 'false');
             return;
           }
-          const diff = computeSourceDiff(
-            version.source,
-            this.editor.state.doc.toString(),
-          );
-          diffEl =
-            diff.length === 0
-              ? document.createElement('p')
-              : buildDiffElement(diff);
-          if (diff.length === 0) {
-            diffEl.className = 'stims-editor__hint';
-            diffEl.textContent = 'Identical to the current source.';
+          panel = document.createElement('div');
+          panel.className = 'stims-editor__version-compare';
+          panel.dataset.versionDiff = version.id;
+          const pickerLabel = document.createElement('label');
+          pickerLabel.className = 'stims-editor__hint';
+          pickerLabel.textContent = 'Changes from this version to ';
+          const picker = document.createElement('select');
+          picker.className = 'stims-editor__version-target';
+          picker.setAttribute('aria-label', `Compare ${version.name} with`);
+          const current = document.createElement('option');
+          current.value = '';
+          current.textContent = 'the current source';
+          picker.appendChild(current);
+          for (const other of saved) {
+            if (other.id === version.id) continue;
+            const option = document.createElement('option');
+            option.value = other.id;
+            option.textContent = `\u201c${other.name}\u201d`;
+            picker.appendChild(option);
           }
-          diffEl.dataset.versionDiff = version.id;
-          row.appendChild(diffEl);
+          pickerLabel.appendChild(picker);
+          const output = document.createElement('div');
+          const paintDiff = () => {
+            const target = saved.find((other) => other.id === picker.value);
+            const diff = computeSourceDiff(
+              version.source,
+              target ? target.source : this.editor.state.doc.toString(),
+            );
+            if (diff.length === 0) {
+              const same = document.createElement('p');
+              same.className = 'stims-editor__hint';
+              same.textContent = target
+                ? `Identical to \u201c${target.name}\u201d.`
+                : 'Identical to the current source.';
+              output.replaceChildren(same);
+            } else {
+              output.replaceChildren(buildDiffElement(diff));
+            }
+          };
+          picker.addEventListener('change', paintDiff);
+          paintDiff();
+          panel.append(pickerLabel, output);
+          row.appendChild(panel);
           compare.setAttribute('aria-expanded', 'true');
         });
         return row;
@@ -2674,7 +2788,8 @@ export class EditorPanel {
     // problems strip's job — this flag reports the one thing neither can:
     // the stage is rendering a simplified version of what compiled.
     this.paintCompat(state);
-    this.paintOutline(state.source);
+    this.paintOutline(state.source, state.latestCompiled);
+    this.paintKnobs(state.source);
     this.safetyFlag.hidden = !isDegraded;
     this.safetyFlag.textContent = 'Simplified';
     this.safetyFlag.dataset.tone = 'warning';
@@ -3123,11 +3238,116 @@ export class EditorPanel {
     this.modulationRows.clear();
     this.fieldStateCells = [];
 
+    // The preset's own parameters come first: they are what its author
+    // meant to be tuned. Empty (and hidden) for presets without any.
+    this.knobsWrap = document.createElement('section');
+    this.knobsWrap.className = 'stims-editor__section';
+    this.knobsWrap.dataset.section = 'knobs';
+    this.knobsWrap.setAttribute('aria-label', 'Preset parameters');
+    this.knobsWrap.hidden = true;
+    panel.appendChild(this.knobsWrap);
+
     for (const section of CONTROL_SECTIONS) {
       panel.appendChild(this.renderSection(section));
     }
 
     return panel;
+  }
+
+  /**
+   * Sliders for the preset's own parameters: constants set once in
+   * per_frame_init and only read afterwards (see preset-knobs.ts). Rebuilt
+   * only when the set of parameters changes, so a drag is never torn down
+   * by the recompile it causes.
+   */
+  private paintKnobs(source: string) {
+    const wrap = this.knobsWrap;
+    if (!wrap) return;
+    const knobs = findPresetKnobs(source);
+    const signature = knobs.map((k) => `${k.name}@${k.line}`).join('|');
+    if (signature === this.knobsSignature) {
+      for (const knob of knobs) {
+        const entry = this.knobInputs.get(knob.name);
+        if (!entry || entry.input === document.activeElement) continue;
+        entry.input.value = String(knob.value);
+        entry.display.textContent = formatKnobValue(knob.value);
+      }
+      return;
+    }
+    this.knobsSignature = signature;
+    this.knobInputs.clear();
+    wrap.replaceChildren();
+    wrap.hidden = knobs.length === 0;
+    if (knobs.length === 0) return;
+
+    const heading = this.createSubhead('Preset parameters');
+    heading.title =
+      'Values this preset sets once in per_frame_init and only reads afterwards. Moving one rewrites that line.';
+    wrap.appendChild(heading);
+    for (const knob of knobs) wrap.appendChild(this.renderKnob(knob));
+  }
+
+  private renderKnob(knob: PresetKnob): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'stims-editor__slider';
+    row.dataset.knob = knob.name;
+    const label = document.createElement('label');
+    label.className = 'stims-editor__slider-label';
+    label.textContent = knob.name;
+    label.title = `per_frame_init, line ${knob.line}`;
+    const display = document.createElement('span');
+    display.className = 'stims-editor__slider-value';
+    display.textContent = formatKnobValue(knob.value);
+    const controls = document.createElement('div');
+    controls.className = 'stims-editor__slider-row';
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.className = 'stims-editor__slider-input';
+    input.min = String(knob.min);
+    input.max = String(knob.max);
+    input.step = String((knob.max - knob.min) / 500);
+    input.value = String(knob.value);
+    input.setAttribute('aria-label', `Preset parameter ${knob.name}`);
+    input.addEventListener('input', () => {
+      const value = Number(formatKnobValue(Number.parseFloat(input.value)));
+      display.textContent = formatKnobValue(value);
+      input.setAttribute('aria-valuetext', formatKnobValue(value));
+      this.callbacks.onLiveFieldChange?.(knob.name, value);
+      this.writeKnobToEditor(knob.name, value);
+    });
+    controls.appendChild(input);
+    // Same shape as every other Tune row: label and value on one line, the
+    // fader under them.
+    const head = document.createElement('div');
+    head.className = 'stims-editor__control-head';
+    head.append(label, display);
+    row.append(head, controls);
+    this.knobInputs.set(knob.name, { input, display });
+    return row;
+  }
+
+  /** Rewrite one parameter's literal, found fresh in the current buffer. */
+  private writeKnobToEditor(name: string, value: number) {
+    const doc = this.editor.state.doc;
+    const knob = findPresetKnobs(doc.toString()).find((k) => k.name === name);
+    if (!knob || knob.line > doc.lines) return;
+    const line = doc.line(knob.line);
+    this.editor.dispatch({
+      changes: {
+        from: line.from + knob.from,
+        to: line.from + knob.to,
+        insert: formatKnobValue(value),
+      },
+      scrollIntoView: false,
+    });
+    // Same commit path as every other Tune control: mark the draft queued,
+    // repaint, and flush to the engine at the control rate rather than the
+    // typing debounce, so a drag recompiles steadily instead of in bursts.
+    this.hasBufferedEdits = true;
+    if (this.lastSessionState) {
+      this.renderSessionState(this.lastSessionState);
+    }
+    this.scheduleControlFlush();
   }
 
   /**

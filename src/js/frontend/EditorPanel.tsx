@@ -104,10 +104,10 @@ export function EditorPanel() {
       <input
         ref={importInputRef}
         type="file"
-        accept=".milk,text/plain"
+        accept=".milk,.zip,text/plain,application/zip"
         multiple
         hidden
-        aria-label="Import preset file"
+        aria-label="Import preset files or a .zip pack"
         onChange={(event) => {
           void handleImportRef.current(event.target.files);
           event.target.value = '';

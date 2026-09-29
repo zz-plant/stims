@@ -69,3 +69,24 @@ describe('formatter round-trip', () => {
     expect(roundTripDiff(source)).toEqual([]);
   });
 });
+
+describe('formatter output interoperates with other engines', () => {
+  test('init code is written as per_frame_init_N, the key MilkDrop 2 and projectM read', () => {
+    const source =
+      'title=T\nper_frame_init_1=q1 = 0.4;\nper_frame_1=zoom = zoom + q1*0.01;\n';
+    const formatted = formatMilkdropPreset(
+      compileMilkdropPresetSource(source, { id: 'init-key' }),
+    );
+    expect(formatted).toMatch(/^per_frame_init_1=q1 = 0.4;?$/mu);
+    expect(formatted).not.toMatch(/^init_\d+=/mu);
+  });
+
+  test('the older init_N spelling still reads, and formats to the standard key', () => {
+    const formatted = formatMilkdropPreset(
+      compileMilkdropPresetSource('title=T\ninit_1=q1 = 0.4;\n', {
+        id: 'init-old',
+      }),
+    );
+    expect(formatted).toMatch(/^per_frame_init_1=q1 = 0.4;?$/mu);
+  });
+});

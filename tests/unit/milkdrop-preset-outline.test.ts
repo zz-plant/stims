@@ -97,4 +97,8 @@ describe('preset outline', () => {
       );
     }
   });
+
+  test('init_N lines (the older Stims spelling) are the init part', () => {
+    expect(buildPresetOutline('init_1=a=1;')[0]?.kind).toBe('init');
+  });
 });
