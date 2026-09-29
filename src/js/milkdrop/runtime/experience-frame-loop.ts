@@ -3,7 +3,7 @@
  * orchestrating VM simulation steps, GPU phase timings, postprocessing passes, and video capture.
  */
 
-import { isLivePerformanceModeActive } from '../../core/live-performance-mode.ts';
+import { isHiddenTabSuspendingFrames } from '../../core/hidden-tab-policy.ts';
 import {
   createMilkdropPostprocessingComposer,
   type PostprocessingPipeline,
@@ -235,24 +235,10 @@ export function createMilkdropExperienceFrameLoop({
         return;
       }
 
-      // Hidden tabs skip frames to spare the GPU — with three exceptions:
-      // agent mode, where automation (headless capture, browser-pane QA)
-      // drives frames deliberately and a silent skip reads as a frozen/black
-      // canvas; and an open picture-in-picture window, which is a LIVE
-      // `canvas.captureStream()` of the stage (picture-in-picture-service.ts).
-      // Switching tabs is precisely when PiP earns its keep, and that is also
-      // exactly when `document.hidden` flips — so pausing here froze the one
-      // surface the user had deliberately popped out to keep watching. And
-      // live performance mode, where this tab is driving a projector: the
-      // operator flipping to another tab to line up the next preset must
-      // not black out the room.
-      if (
-        typeof document !== 'undefined' &&
-        document.hidden &&
-        document.documentElement.dataset.agentMode !== 'true' &&
-        !isLivePerformanceModeActive() &&
-        document.pictureInPictureElement === null
-      ) {
+      // Hidden tabs skip frames to spare the GPU unless agent mode, PiP, or live
+      // performance mode says otherwise; see core/hidden-tab-policy.ts, which
+      // also feeds __stims_agent.getState().renderingSuspended.
+      if (isHiddenTabSuspendingFrames()) {
         setCurrentFrameState(null);
         return;
       }

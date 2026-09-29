@@ -106,6 +106,7 @@ const NewHomePage = lazy(() =>
 );
 
 import { togglePresetLock } from '../core/preset-lock.ts';
+import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
 import { cyclePresetWaveMode, nudgePresetField } from './preset-nudges.ts';
@@ -1156,6 +1157,17 @@ function StimsWorkspaceAppShell() {
       getTelemetry: getAgentTelemetry,
       selectPreset: (presetId) =>
         engineBridgeRef.current.handlePresetSelection(presetId),
+      // Same resolver and catalog the route sync uses, so the agent verb
+      // accepts exactly the ids the app would (aliases, slugs) and no others.
+      resolvePresetId: (candidate) =>
+        resolvePresetId(
+          engineSnapshotRef.current?.catalogEntries ?? [],
+          candidate,
+        ),
+      getPresetIds: () =>
+        (engineSnapshotRef.current?.catalogEntries ?? []).map(
+          (entry) => entry.id,
+        ),
       setField: (key, value) =>
         engineBridgeRef.current.updateFieldLive(key, value),
       setCrossfade: (position) =>
