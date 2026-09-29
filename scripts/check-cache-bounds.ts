@@ -43,6 +43,8 @@ const ALLOWED: Record<string, string> = {
     'WARP_TRANSFORM_TARGETS is a five-element literal of MilkDrop variable names (cx/cy/sx/sy/zoomexp) fixed at module load — a lookup table for the per-pixel gate, not a cache.',
   'src/js/milkdrop/preset-knobs.ts':
     'RESERVED is the fixed set of built-in field and input names, built once at module load from builtin-docs and the default state table; the per-call maps in findPresetKnobs are bounded by the source being scanned.',
+  'src/js/milkdrop/preset-lineage.ts':
+    'buildForkTree builds per-call Maps/Sets over one family (bounded by its members) and discards them on return; familiesCache is a WeakMap keyed by the catalog array.',
   'src/js/milkdrop/milkdrop2-export.ts':
     'MILKDROP2_STIMS_KEYS is a fixed set built once at module load from the MilkDrop 2 field table, and `known` is a per-call Set over one slot-order table — lookup tables, not caches.',
   'src/js/milkdrop/compiler/shader-analysis-glsl.ts':
