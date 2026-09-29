@@ -133,6 +133,11 @@ import {
   createVersionStore,
   type VersionStorage,
 } from '../named-versions.ts';
+import {
+  findPresetKnobs,
+  formatKnobValue,
+  type PresetKnob,
+} from '../preset-knobs.ts';
 import { buildPresetOutline } from '../preset-outline.ts';
 import { searchReference } from '../reference-search.ts';
 import { createVariableHistory } from '../variable-history.ts';
@@ -963,6 +968,12 @@ export class EditorPanel {
   private compatList: HTMLElement | null = null;
   private compatTab: HTMLButtonElement | null = null;
   private outlineList: HTMLElement | null = null;
+  private knobsWrap: HTMLElement | null = null;
+  private knobsSignature = '';
+  private readonly knobInputs = new Map<
+    string,
+    { input: HTMLInputElement; display: HTMLElement }
+  >();
   private inspectEmpty: HTMLElement | null = null;
   private inspectFilter = '';
   private inspectOnlyChanging = false;
@@ -2707,6 +2718,7 @@ export class EditorPanel {
     // the stage is rendering a simplified version of what compiled.
     this.paintCompat(state);
     this.paintOutline(state.source);
+    this.paintKnobs(state.source);
     this.safetyFlag.hidden = !isDegraded;
     this.safetyFlag.textContent = 'Simplified';
     this.safetyFlag.dataset.tone = 'warning';
@@ -3155,11 +3167,116 @@ export class EditorPanel {
     this.modulationRows.clear();
     this.fieldStateCells = [];
 
+    // The preset's own parameters come first: they are what its author
+    // meant to be tuned. Empty (and hidden) for presets without any.
+    this.knobsWrap = document.createElement('section');
+    this.knobsWrap.className = 'stims-editor__section';
+    this.knobsWrap.dataset.section = 'knobs';
+    this.knobsWrap.setAttribute('aria-label', 'Preset parameters');
+    this.knobsWrap.hidden = true;
+    panel.appendChild(this.knobsWrap);
+
     for (const section of CONTROL_SECTIONS) {
       panel.appendChild(this.renderSection(section));
     }
 
     return panel;
+  }
+
+  /**
+   * Sliders for the preset's own parameters: constants set once in
+   * per_frame_init and only read afterwards (see preset-knobs.ts). Rebuilt
+   * only when the set of parameters changes, so a drag is never torn down
+   * by the recompile it causes.
+   */
+  private paintKnobs(source: string) {
+    const wrap = this.knobsWrap;
+    if (!wrap) return;
+    const knobs = findPresetKnobs(source);
+    const signature = knobs.map((k) => `${k.name}@${k.line}`).join('|');
+    if (signature === this.knobsSignature) {
+      for (const knob of knobs) {
+        const entry = this.knobInputs.get(knob.name);
+        if (!entry || entry.input === document.activeElement) continue;
+        entry.input.value = String(knob.value);
+        entry.display.textContent = formatKnobValue(knob.value);
+      }
+      return;
+    }
+    this.knobsSignature = signature;
+    this.knobInputs.clear();
+    wrap.replaceChildren();
+    wrap.hidden = knobs.length === 0;
+    if (knobs.length === 0) return;
+
+    const heading = this.createSubhead('Preset parameters');
+    heading.title =
+      'Values this preset sets once in per_frame_init and only reads afterwards. Moving one rewrites that line.';
+    wrap.appendChild(heading);
+    for (const knob of knobs) wrap.appendChild(this.renderKnob(knob));
+  }
+
+  private renderKnob(knob: PresetKnob): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'stims-editor__slider';
+    row.dataset.knob = knob.name;
+    const label = document.createElement('label');
+    label.className = 'stims-editor__slider-label';
+    label.textContent = knob.name;
+    label.title = `per_frame_init, line ${knob.line}`;
+    const display = document.createElement('span');
+    display.className = 'stims-editor__slider-value';
+    display.textContent = formatKnobValue(knob.value);
+    const controls = document.createElement('div');
+    controls.className = 'stims-editor__slider-row';
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.className = 'stims-editor__slider-input';
+    input.min = String(knob.min);
+    input.max = String(knob.max);
+    input.step = String((knob.max - knob.min) / 500);
+    input.value = String(knob.value);
+    input.setAttribute('aria-label', `Preset parameter ${knob.name}`);
+    input.addEventListener('input', () => {
+      const value = Number(formatKnobValue(Number.parseFloat(input.value)));
+      display.textContent = formatKnobValue(value);
+      input.setAttribute('aria-valuetext', formatKnobValue(value));
+      this.callbacks.onLiveFieldChange?.(knob.name, value);
+      this.writeKnobToEditor(knob.name, value);
+    });
+    controls.appendChild(input);
+    // Same shape as every other Tune row: label and value on one line, the
+    // fader under them.
+    const head = document.createElement('div');
+    head.className = 'stims-editor__control-head';
+    head.append(label, display);
+    row.append(head, controls);
+    this.knobInputs.set(knob.name, { input, display });
+    return row;
+  }
+
+  /** Rewrite one parameter's literal, found fresh in the current buffer. */
+  private writeKnobToEditor(name: string, value: number) {
+    const doc = this.editor.state.doc;
+    const knob = findPresetKnobs(doc.toString()).find((k) => k.name === name);
+    if (!knob || knob.line > doc.lines) return;
+    const line = doc.line(knob.line);
+    this.editor.dispatch({
+      changes: {
+        from: line.from + knob.from,
+        to: line.from + knob.to,
+        insert: formatKnobValue(value),
+      },
+      scrollIntoView: false,
+    });
+    // Same commit path as every other Tune control: mark the draft queued,
+    // repaint, and flush to the engine at the control rate rather than the
+    // typing debounce, so a drag recompiles steadily instead of in bursts.
+    this.hasBufferedEdits = true;
+    if (this.lastSessionState) {
+      this.renderSessionState(this.lastSessionState);
+    }
+    this.scheduleControlFlush();
   }
 
   /**
