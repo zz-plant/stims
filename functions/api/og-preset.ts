@@ -130,8 +130,13 @@ export function fitTitle(title: string): { size: number; lines: string[] } {
   return { size, lines };
 }
 
+// `tweak` is drawn on the card and seeds the edge-cache key, so it is capped
+// where it is read: characters past the drawn label would otherwise mint a
+// distinct cache entry that renders an identical card.
+const TWEAK_MAX_LENGTH = 24;
+
 function eyebrowLabel(tags: string[], tweak?: string): string {
-  if (tweak) return `EDITED · ${tweak.slice(0, 24)}`;
+  if (tweak) return `EDITED · ${tweak.slice(0, TWEAK_MAX_LENGTH)}`;
   const collection = tags
     .find((t) => t.startsWith('collection:'))
     ?.replace('collection:', '')
@@ -493,13 +498,36 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
       url.searchParams.get('preset') ||
       url.searchParams.get('name'),
   );
-  const tweak = url.searchParams.get('tweak') || undefined;
+  const tweak =
+    url.searchParams.get('tweak')?.slice(0, TWEAK_MAX_LENGTH) || undefined;
   const format = url.searchParams.get('format') === 'svg' ? 'svg' : 'png';
 
-  const [meta, previewImageUri] = await Promise.all([
-    loadPresetMeta(context.env?.ASSETS, url.origin),
-    loadPresetPreviewDataUri(context.env, url.origin, presetId),
-  ]);
+  const meta = await loadPresetMeta(context.env?.ASSETS, url.origin);
+  // Only catalogued presets get a rendered card. Rendering is ~0.7s of wasm
+  // rasterization plus a 7-day edge-cache entry per distinct URL, so an
+  // unchecked `id` lets anyone mint unlimited renders and put a
+  // stims-branded card on any slug. Fail open only when the table itself is
+  // unavailable (`meta` null): a transient asset failure must not blank the
+  // cards of real presets. The page middleware already unfurls unknown ids
+  // with the generic card, so nothing links here for them.
+  if (meta && !Object.hasOwn(meta, presetId)) {
+    if (format === 'svg') {
+      return new Response('Unknown preset', {
+        status: 404,
+        headers: {
+          'Content-Type': 'text/plain',
+          'Cache-Control': 'public, max-age=300',
+        },
+      });
+    }
+    return fallbackPngResponse(context, url.origin);
+  }
+
+  const previewImageUri = await loadPresetPreviewDataUri(
+    context.env,
+    url.origin,
+    presetId,
+  );
   const backdropImageUri = previewImageUri
     ? undefined
     : await loadBackdropDataUri(context.env, url.origin);
