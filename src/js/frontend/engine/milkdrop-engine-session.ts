@@ -573,6 +573,9 @@ export function createMilkdropEngineAdapter() {
       emit();
     },
 
+    async exportUserPresets(): Promise<number> {
+      return (await experience?.exportUserPresets()) ?? 0;
+    },
     exportPreset() {
       experience?.exportPreset();
     },

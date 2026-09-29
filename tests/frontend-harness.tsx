@@ -123,6 +123,7 @@ export function makeEngineValue(
     starterPresets: [],
 
     exportPreset: noop,
+    exportUserPresets: async () => 0,
     revertEditorSource: noop,
     duplicatePreset: asyncNoop,
     deleteActivePreset: asyncNoop,

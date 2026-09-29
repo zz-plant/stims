@@ -771,6 +771,8 @@ export function useWorkspaceSessionState({
     deferredSearch,
     dismissToast,
     engineSnapshot,
+    exportUserPresets: async (): Promise<number> =>
+      (await engineRef.current?.exportUserPresets()) ?? 0,
     exportPreset: () => {
       engineRef.current?.exportPreset();
     },

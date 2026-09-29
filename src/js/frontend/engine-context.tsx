@@ -43,6 +43,8 @@ export interface EngineContextValue {
   starterPresets: StarterPreset[];
 
   exportPreset: () => void;
+  /** Every preset of the user's own, as one `.zip`; resolves to the count. */
+  exportUserPresets: () => Promise<number>;
   revertEditorSource: () => void;
   duplicatePreset: () => Promise<void>;
   deleteActivePreset: () => Promise<void>;
