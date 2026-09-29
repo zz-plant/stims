@@ -123,6 +123,7 @@ export function makeEngineValue(
     starterPresets: [],
 
     exportPreset: noop,
+    exportUserPresets: async () => 0,
     revertEditorSource: noop,
     duplicatePreset: asyncNoop,
     deleteActivePreset: asyncNoop,
@@ -154,6 +155,8 @@ export function makeEngineValue(
     setBlendDuration: noop,
     updateEditorSource: noop,
     updateFieldLive: noop,
+    setPlaybackPaused: () => false,
+    stepPlaybackFrame: () => false,
     applyEditorSourceAwaited: async () => null,
     applyEditorFieldsAwaited: async () => null,
     getEditorSessionState: () => null,

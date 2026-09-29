@@ -623,6 +623,23 @@ export function BrowseSheetPanel({
               aria-hidden="true"
             />
           </button>
+          {/* The presets you made or imported live only in this browser;
+              this is their backup, as MilkDrop 2 files in one pack. */}
+          <button
+            type="button"
+            className="ctl-btn ctl-btn--icon"
+            onClick={() => {
+              void engine.exportUserPresets();
+            }}
+            aria-label="Export my presets as a .zip"
+            title="Export the presets you made or imported, as a .zip of MilkDrop 2 files"
+          >
+            <UiIcon
+              name="download"
+              className="stims-icon-slot stims-icon-slot--sm"
+              aria-hidden="true"
+            />
+          </button>
           <input
             ref={importInputRef}
             type="file"

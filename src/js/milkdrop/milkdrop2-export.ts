@@ -108,7 +108,7 @@ const MILKDROP2_FIELDS: ReadonlyArray<readonly [string, string]> = [
 ];
 
 /** Stims keys the header or the MilkDrop 2 block already accounts for. */
-const HANDLED_KEYS = new Set([
+export const MILKDROP2_STIMS_KEYS: ReadonlySet<string> = new Set([
   ...MILKDROP2_FIELDS.map(([, stimsKey]) => stimsKey),
   'milkdrop_preset_version',
   'psversion',
@@ -243,7 +243,7 @@ export function exportMilkdrop2Preset(
   Object.keys(values)
     .filter(
       (key) =>
-        !HANDLED_KEYS.has(key) &&
+        !MILKDROP2_STIMS_KEYS.has(key) &&
         !key.startsWith('shape_') &&
         !key.startsWith('custom_wave_') &&
         values[key] !== DEFAULT_MILKDROP_STATE[key],

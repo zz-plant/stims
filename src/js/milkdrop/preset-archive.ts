@@ -121,3 +121,38 @@ export async function expandPresetSelection(
   }
   return expanded;
 }
+
+/** A file name for a preset title that every OS and zip tool accepts. */
+export function presetFileName(title: string): string {
+  const cleaned = title
+    .normalize('NFKD')
+    .replace(/[\\/:*?"<>|\p{Cc}]+/gu, ' ')
+    .replace(/\s+/gu, ' ')
+    .trim()
+    .slice(0, 120);
+  return `${cleaned || 'preset'}.milk`;
+}
+
+/**
+ * The reverse of `readPresetArchive`: presets packed as a `.zip` of `.milk`
+ * files, the form packs are shared in. Names are made unique the way a file
+ * manager would (`Name (2).milk`), so two presets with one title both survive.
+ */
+export async function writePresetArchive(
+  presets: ReadonlyArray<{ title: string; source: string }>,
+): Promise<Uint8Array> {
+  const { strToU8, zipSync } = await import('fflate');
+  const files: Record<string, Uint8Array> = {};
+  // Case-insensitive, as on the file systems these zips get unpacked onto.
+  const taken: Record<string, true> = {};
+  for (const preset of presets) {
+    const base = presetFileName(preset.title).replace(/\.milk$/u, '');
+    let name = `${base}.milk`;
+    for (let n = 2; taken[name.toLowerCase()]; n += 1) {
+      name = `${base} (${n}).milk`;
+    }
+    taken[name.toLowerCase()] = true;
+    files[name] = strToU8(preset.source);
+  }
+  return zipSync(files, { level: 6 });
+}

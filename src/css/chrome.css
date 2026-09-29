@@ -1121,6 +1121,13 @@ html.light .stims-shell {
     color: var(--ctl-accent);
   }
 
+  /* A remix nests under what it came from; the rule shows the branch. */
+  .ctl-lineage__children {
+    margin-left: 10px;
+    padding-left: 8px;
+    border-left: 1px solid var(--ctl-line);
+  }
+
   .ctl-lineage__note {
     margin: 0;
     color: var(--ctl-ink-3);

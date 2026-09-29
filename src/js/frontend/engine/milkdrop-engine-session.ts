@@ -367,6 +367,14 @@ export function createMilkdropEngineAdapter() {
       return playbackPaused;
     },
 
+    /** Render one frame while the picture is held (the editor's Step). */
+    stepPlaybackFrame(): boolean {
+      if (!runtime || !playbackPaused) {
+        return false;
+      }
+      return runtime.stepHeldFrame?.() ?? false;
+    },
+
     async setAudioSource(request: EngineAudioRequest) {
       if (audioActive && audioSource === request.source) {
         return;
@@ -565,6 +573,9 @@ export function createMilkdropEngineAdapter() {
       emit();
     },
 
+    async exportUserPresets(): Promise<number> {
+      return (await experience?.exportUserPresets()) ?? 0;
+    },
     exportPreset() {
       experience?.exportPreset();
     },

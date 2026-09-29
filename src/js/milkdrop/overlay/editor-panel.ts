@@ -132,11 +132,13 @@ import {
 export { computeAstDiagnostics, mergeDiagnostics };
 
 import { buildCompatChecklist } from '../compat-checklist.ts';
+import { applyRecipe, COOKBOOK, type Recipe } from '../cookbook.ts';
 import {
   browserVersionStorage,
   createVersionStore,
   type VersionStorage,
 } from '../named-versions.ts';
+import { checkPortability } from '../portability.ts';
 import {
   findPresetKnobs,
   formatKnobValue,
@@ -144,6 +146,13 @@ import {
 } from '../preset-knobs.ts';
 import { buildPresetOutline } from '../preset-outline.ts';
 import { searchReference } from '../reference-search.ts';
+import {
+  getRenderIsolation,
+  type IsolatedElement,
+  type IsolationKind,
+  toggleMute,
+  toggleSolo,
+} from '../render-isolation.ts';
 import {
   describeExecutionMode,
   describeShaderTranslations,
@@ -166,132 +175,6 @@ export type SliderConfig = ScalarControlConfig;
 export const DEFAULT_EDITOR_SLIDERS: ScalarControlConfig[] = SCALAR_CONTROLS;
 export const DEFAULT_EDITOR_COLOR_GROUPS: ColorGroupConfig[] = COLOR_GROUPS;
 export type { ColorGroupConfig };
-
-type EditorSnippet = {
-  label: string;
-  description: string;
-  snippet: string;
-};
-
-type EditorCue = {
-  label: string;
-  description: string;
-  snippet: string;
-};
-
-const EDITOR_SNIPPETS: EditorSnippet[] = [
-  {
-    label: 'Pulse zoom',
-    description: 'Drop in a breathing zoom curve.',
-    snippet: 'zoom=1.01 + 0.035*sin(time*0.82)\n',
-  },
-  {
-    label: 'Hue drift',
-    description: 'Animate the waveform palette.',
-    snippet:
-      'wave_r=0.5 + 0.35*sin(time*0.31)\nwave_g=0.5 + 0.35*sin(time*0.47)\nwave_b=0.5 + 0.35*sin(time*0.63)\n',
-  },
-  {
-    label: 'Warp sway',
-    description: 'Add a gentle audio-reactive bend.',
-    snippet: 'warp=0.01 + bass_att*0.018 + 0.004*sin(time*0.5)\n',
-  },
-  {
-    label: 'Bass zoom',
-    description: 'Zoom pulses with bass energy.',
-    snippet: 'zoom=1.0 + bass*0.12\n',
-  },
-  {
-    label: 'Mid warp',
-    description: 'Warp bends with midrange signal.',
-    snippet: 'warp=1.0 + mid_att*0.025\n',
-  },
-  {
-    label: 'Beat flash',
-    description: 'Outer border pulses on beat.',
-    snippet:
-      'ob_size=0.01 + beat_pulse*0.04\nob_r=0.9; ob_g=0.5; ob_b=1;\nob_a=0.6 + beat_pulse*0.4\n',
-  },
-  {
-    label: 'Time spin',
-    description: 'Slow rotation from time phase.',
-    snippet: 'rot=time*0.15\n',
-  },
-  {
-    label: '3D projection',
-    description: 'Project XY from XYZ with perspective.',
-    snippet: 'x=xp/zp+0.5;\ny=yp/zp*1.3+0.5\n',
-  },
-  {
-    label: 'Color pulse',
-    description: 'Wave color modulated by treble.',
-    snippet:
-      'wave_r=0.5 + treb_att*0.5;\nwave_g=0.3 + mid_att*0.5;\nwave_b=0.9 + bass*0.3\n',
-  },
-  {
-    label: 'Decay trail',
-    description: 'Longer trail = softer motion.',
-    snippet: 'decay=0.935\n',
-  },
-  {
-    label: 'State toggle',
-    description: 'Flip between two values each frame.',
-    snippet: 'q1=above(bass, 0.1);\nzoom=1.0 + q1*0.2\n',
-  },
-];
-
-const EDITOR_CUES: EditorCue[] = [
-  {
-    label: 'bass_att',
-    description: 'Low-end zoom lift',
-    snippet: 'zoom=1.0 + bass_att*0.08\n',
-  },
-  {
-    label: 'mid_att',
-    description: 'Midrange rotation',
-    snippet: 'rot = rot + mid_att*0.01\n',
-  },
-  {
-    label: 'treb_att',
-    description: 'Treble brightness',
-    snippet: 'wave_a=0.4 + treb_att*0.4\n',
-  },
-  {
-    label: 'beat_pulse',
-    description: 'Beat gate',
-    snippet: 'ob_size=0.01 + beat_pulse*0.02\n',
-  },
-  {
-    label: 'time',
-    description: 'Continuous phase',
-    snippet: 'wave_y=0.5 + sin(time*0.35)*0.08\n',
-  },
-  {
-    label: 'frame',
-    description: 'Frame drift',
-    snippet: 'warp=0.01 + sin(frame*0.02)*0.01\n',
-  },
-  {
-    label: 'q1-q8',
-    description: 'Persistent globals',
-    snippet: 'q1=bass*0.5 + q1*0.95\nzoom=1.0 + q1*0.1\n',
-  },
-  {
-    label: 'rad',
-    description: 'Per-point radius',
-    snippet: 'rad=0.02 + bass*0.04\n',
-  },
-  {
-    label: 'r/g/b/a',
-    description: 'Per-point color',
-    snippet: 'r=0.4 + bass*0.3;\ng=0.2 + mid*0.3;\nb=1;\na=0.8\n',
-  },
-  {
-    label: 'decay',
-    description: 'Motion trail length',
-    snippet: 'decay=0.92 + bass_att*0.06\n',
-  },
-];
 
 const defaultEditorKeymap = defaultKeymap as readonly KeyBinding[];
 const historyEditorKeymap = historyKeymap as readonly KeyBinding[];
@@ -349,6 +232,11 @@ export type EditorPanelCallbacks = {
    * (on release), so the runtime staying absent only degrades to the old
    * compile-only behavior. */
   onLiveFieldChange?: (key: string, value: number) => void;
+  /** Hold or release the stage; returns the state actually applied (holding
+   * needs live audio). */
+  onSetStageFrozen?: (frozen: boolean) => boolean;
+  /** Render exactly one frame while the stage is held. */
+  onStepFrame?: () => boolean;
   onRevertToActive: () => void;
   onDuplicatePreset: () => void;
   onExport: () => void;
@@ -980,6 +868,10 @@ export class EditorPanel {
   /** Shader stages whose translation is expanded in the Outline; kept across
    * repaints so typing does not collapse it. */
   private readonly expandedShaderStages = new Set<ShaderStage>();
+  private portabilityHeadline: HTMLElement | null = null;
+  private portabilityList: HTMLElement | null = null;
+  /** The preset the Outline's solo/mute toggles act on. */
+  private outlinePresetId: string | null = null;
   private knobsWrap: HTMLElement | null = null;
   private knobsSignature = '';
   private readonly knobInputs = new Map<
@@ -990,6 +882,11 @@ export class EditorPanel {
   private inspectFilter = '';
   private inspectOnlyChanging = false;
   private inspectPaused = false;
+  /** Mirrors the stage's hold state (Freeze here, Space, or the dock). */
+  private stageFrozen = false;
+  private freezeButton: HTMLButtonElement | null = null;
+  private stepButton: HTMLButtonElement | null = null;
+  private inspectReactivity: HTMLElement | null = null;
   private inspectLastPaint = 0;
   private disposeVariableFeed: (() => void) | null = null;
   private assistPane: HTMLElement | null = null;
@@ -1754,59 +1651,73 @@ export class EditorPanel {
    * separate rail sections with identical affordances — one grid of
    * insertable code, grouped by whether it is a single reactive term or a
    * whole move. */
+  /** Insert pane: the technique cookbook. Each recipe explains itself and is
+   * added to the block it belongs in — a bare line pasted at the cursor is a
+   * base value, evaluated once, and does nothing. */
   private renderInsertPane(): HTMLElement {
     const pane = document.createElement('div');
-
-    const build = (
-      legend: string,
-      hint: string,
-      entries: ReadonlyArray<{
-        label: string;
-        description: string;
-        snippet: string;
-      }>,
-    ) => {
-      const heading = document.createElement('span');
-      heading.className = 'stims-editor__legend';
-      heading.textContent = legend;
-      const copy = document.createElement('p');
-      copy.className = 'stims-editor__hint';
-      copy.textContent = hint;
-      const grid = document.createElement('div');
-      grid.className = 'stims-editor__inserts';
-      entries.forEach((entry) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'stims-editor__insert';
-        button.dataset.insert = entry.label;
-        const label = document.createElement('strong');
-        label.textContent = entry.label;
-        const description = document.createElement('span');
-        description.textContent = entry.description;
-        button.append(label, description);
-        button.addEventListener('click', () =>
-          this.insertSnippet(entry.snippet),
-        );
-        grid.appendChild(button);
-      });
-      pane.append(heading, copy, grid);
-    };
-
-    build(
-      'Signals',
-      'Reactive terms, inserted at the cursor as a working line.',
-      EDITOR_CUES,
-    );
-    const spacer = document.createElement('div');
-    spacer.style.height = '12px';
-    pane.appendChild(spacer);
-    build(
-      'Patterns',
-      'Complete moves you can shape from there.',
-      EDITOR_SNIPPETS,
-    );
-
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent =
+      'Techniques MilkDrop authors use, added to the right part of your preset. Each uses only what MilkDrop 2 has, so it works everywhere.';
+    const list = document.createElement('div');
+    list.className = 'stims-editor__recipes';
+    list.setAttribute('role', 'list');
+    for (const recipe of COOKBOOK) {
+      const card = document.createElement('div');
+      card.className = 'stims-editor__recipe';
+      card.setAttribute('role', 'listitem');
+      card.dataset.recipe = recipe.id;
+      const head = document.createElement('div');
+      head.className = 'stims-editor__recipe-head';
+      const title = document.createElement('strong');
+      title.textContent = recipe.title;
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'stims-editor__btn stims-editor__recipe-add';
+      add.dataset.recipe = recipe.id;
+      add.textContent = 'Add';
+      add.setAttribute('aria-label', `Add ${recipe.title}`);
+      add.addEventListener('click', () => this.addRecipe(recipe));
+      head.append(title, add);
+      const summary = document.createElement('p');
+      summary.className = 'stims-editor__recipe-summary';
+      summary.textContent = recipe.summary;
+      const more = document.createElement('details');
+      more.className = 'stims-editor__recipe-more';
+      const label = document.createElement('summary');
+      label.textContent = 'How it works';
+      const how = document.createElement('p');
+      how.textContent = recipe.how;
+      const code = document.createElement('pre');
+      code.className = 'stims-editor__proposal-lines';
+      code.textContent = applyRecipe('', recipe).source.trim();
+      more.append(label, how, code);
+      card.append(head, summary, more);
+      list.appendChild(card);
+    }
+    pane.append(hint, list);
     return pane;
+  }
+
+  /** Append a recipe to its blocks and select what was added. */
+  private addRecipe(recipe: Recipe) {
+    const before = this.editor.state.doc.toString();
+    const { source, firstLine } = applyRecipe(before, recipe);
+    const doc = this.editor.state.doc;
+    this.editor.dispatch({
+      changes: { from: 0, to: doc.length, insert: source },
+      scrollIntoView: true,
+    });
+    const next = this.editor.state.doc;
+    if (firstLine <= next.lines) {
+      const line = next.line(firstLine);
+      this.editor.dispatch({
+        selection: { anchor: line.from, head: line.to },
+        scrollIntoView: true,
+      });
+    }
+    this.editor.focus();
   }
 
   /** Reference pane: every builtin the compiler accepts, searchable by name
@@ -1869,8 +1780,7 @@ export class EditorPanel {
     return pane;
   }
 
-  /** Replace the selection with `text` in place, unlike {@link insertSnippet},
-   * which puts a whole line of code on its own line. */
+  /** Replace the selection with `text` in place. */
   private insertInline(text: string) {
     const selection = this.editor.state.selection.main;
     this.editor.dispatch({
@@ -1879,6 +1789,84 @@ export class EditorPanel {
       scrollIntoView: true,
     });
     this.editor.focus();
+  }
+
+  /** One Compat row; a row with a line jumps to it. */
+  private buildCompatRow(
+    item: {
+      severity: string;
+      title: string;
+      detail: string;
+      line: number | null;
+    },
+    label: string,
+  ): HTMLElement {
+    const line = item.line;
+    const row = document.createElement(line ? 'button' : 'div');
+    if (row instanceof HTMLButtonElement) row.type = 'button';
+    row.className = 'stims-editor__compat-row';
+    row.setAttribute('role', 'listitem');
+    row.dataset.severity = item.severity;
+    const head = document.createElement('span');
+    head.className = 'stims-editor__compat-head';
+    const badge = document.createElement('span');
+    badge.className = 'stims-editor__compat-badge';
+    badge.textContent = label;
+    const title = document.createElement('strong');
+    // Titles wrap identifiers in backticks; render them as code.
+    item.title.split('`').forEach((part, index) => {
+      if (index % 2 === 1) {
+        const code = document.createElement('code');
+        code.textContent = part;
+        title.appendChild(code);
+      } else if (part) {
+        title.appendChild(document.createTextNode(part));
+      }
+    });
+    head.append(badge, title);
+    if (line) {
+      const where = document.createElement('span');
+      where.className = 'stims-editor__compat-line';
+      where.textContent = `line ${line}`;
+      head.appendChild(where);
+    }
+    const detail = document.createElement('span');
+    detail.className = 'stims-editor__compat-detail';
+    detail.textContent = item.detail;
+    row.append(head, detail);
+    if (line) {
+      row.addEventListener('click', () => {
+        if (line < 1 || line > this.editor.state.doc.lines) return;
+        const target = this.editor.state.doc.line(line);
+        this.editor.dispatch({
+          selection: { anchor: target.from, head: target.to },
+          scrollIntoView: true,
+        });
+        this.editor.focus();
+      });
+    }
+    return row;
+  }
+
+  /** Beyond Stims: what will not carry over to MilkDrop 2 and its kin. */
+  private paintPortability(compiled: MilkdropCompiledPreset, source: string) {
+    const list = this.portabilityList;
+    if (!list || !this.portabilityHeadline) return;
+    const items = checkPortability(compiled, source);
+    this.portabilityHeadline.textContent =
+      items.length === 0
+        ? 'Nothing here stops this preset running in MilkDrop 2.'
+        : items.some((item) => item.severity === 'breaks')
+          ? 'Will not run as-is in MilkDrop 2.'
+          : 'Runs in MilkDrop 2, with differences.';
+    const labels = {
+      breaks: 'Breaks',
+      differs: 'Differs',
+      needs: 'Needs file',
+    } as const;
+    list.replaceChildren(
+      ...items.map((item) => this.buildCompatRow(item, labels[item.severity])),
+    );
   }
 
   /** Compat pane: everything about this preset that will not run the way
@@ -1893,7 +1881,28 @@ export class EditorPanel {
     this.compatList = document.createElement('div');
     this.compatList.className = 'stims-editor__compat';
     this.compatList.setAttribute('role', 'list');
-    pane.append(this.compatHeadline, this.compatEngines, this.compatList);
+    const beyond = document.createElement('h3');
+    beyond.className = 'stims-editor__compat-section';
+    beyond.textContent = 'Beyond Stims';
+    const beyondHint = document.createElement('p');
+    beyondHint.className = 'stims-editor__hint';
+    beyondHint.textContent =
+      'Checked against MilkDrop 2\u2019s own functions, variables, settings and textures. projectM and Butterchurn read the same format; where they differ from MilkDrop 2 is not checked.';
+    this.portabilityHeadline = document.createElement('p');
+    this.portabilityHeadline.className = 'stims-editor__compat-headline';
+    this.portabilityList = document.createElement('div');
+    this.portabilityList.className = 'stims-editor__compat';
+    this.portabilityList.setAttribute('role', 'list');
+    this.portabilityList.dataset.scope = 'portability';
+    pane.append(
+      this.compatHeadline,
+      this.compatEngines,
+      this.compatList,
+      beyond,
+      this.portabilityHeadline,
+      beyondHint,
+      this.portabilityList,
+    );
     return pane;
   }
 
@@ -1905,6 +1914,8 @@ export class EditorPanel {
       this.compatHeadline.textContent = 'Nothing compiled yet.';
       this.compatEngines.textContent = '';
       list.replaceChildren();
+      this.portabilityList?.replaceChildren();
+      if (this.portabilityHeadline) this.portabilityHeadline.textContent = '';
       return;
     }
     const checklist = buildCompatChecklist(compiled, state.source);
@@ -1931,54 +1942,11 @@ export class EditorPanel {
       note: 'Note',
     } as const;
     list.replaceChildren(
-      ...checklist.items.map((item) => {
-        const line = item.line;
-        const row = document.createElement(line ? 'button' : 'div');
-        if (row instanceof HTMLButtonElement) row.type = 'button';
-        row.className = 'stims-editor__compat-row';
-        row.setAttribute('role', 'listitem');
-        row.dataset.severity = item.severity;
-        const head = document.createElement('span');
-        head.className = 'stims-editor__compat-head';
-        const badge = document.createElement('span');
-        badge.className = 'stims-editor__compat-badge';
-        badge.textContent = labels[item.severity];
-        const title = document.createElement('strong');
-        // Titles wrap identifiers in backticks; render them as code.
-        item.title.split('`').forEach((part, index) => {
-          if (index % 2 === 1) {
-            const code = document.createElement('code');
-            code.textContent = part;
-            title.appendChild(code);
-          } else if (part) {
-            title.appendChild(document.createTextNode(part));
-          }
-        });
-        head.append(badge, title);
-        if (line) {
-          const where = document.createElement('span');
-          where.className = 'stims-editor__compat-line';
-          where.textContent = `line ${line}`;
-          head.appendChild(where);
-        }
-        const detail = document.createElement('span');
-        detail.className = 'stims-editor__compat-detail';
-        detail.textContent = item.detail;
-        row.append(head, detail);
-        if (line) {
-          row.addEventListener('click', () => {
-            if (line < 1 || line > this.editor.state.doc.lines) return;
-            const target = this.editor.state.doc.line(line);
-            this.editor.dispatch({
-              selection: { anchor: target.from, head: target.to },
-              scrollIntoView: true,
-            });
-            this.editor.focus();
-          });
-        }
-        return row;
-      }),
+      ...checklist.items.map((item) =>
+        this.buildCompatRow(item, labels[item.severity]),
+      ),
     );
+    this.paintPortability(compiled, state.source);
   }
 
   /** Outline pane: the buffer's editable parts (settings, equations, each
@@ -1988,7 +1956,8 @@ export class EditorPanel {
     const pane = document.createElement('div');
     const hint = document.createElement('p');
     hint.className = 'stims-editor__hint';
-    hint.textContent = 'The parts of this preset. Click one to jump to it.';
+    hint.textContent =
+      'The parts of this preset. Click one to jump to it; solo or mute a wave or shape to see what it draws.';
     this.outlineList = document.createElement('div');
     this.outlineList.className = 'stims-editor__outline';
     this.outlineList.setAttribute('role', 'list');
@@ -2004,6 +1973,8 @@ export class EditorPanel {
     if (!list) return;
     const entries = buildPresetOutline(source);
     const translations = compiled ? describeShaderTranslations(compiled) : [];
+    const isolatedSlots = new Set<string>();
+    this.outlinePresetId = compiled?.source.id ?? null;
     if (entries.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'stims-editor__hint';
@@ -2046,10 +2017,76 @@ export class EditorPanel {
         const translation = stage
           ? translations.find((t) => t.stage === stage)
           : undefined;
-        if (!stage || !translation) return row;
-        return this.renderShaderOutlineEntry(row, translation);
+        if (stage && translation) {
+          return this.renderShaderOutlineEntry(row, translation);
+        }
+        const slot = /^(wave|shape)_(\d+)\b/u.exec(entry.label);
+        const presetId = compiled?.source.id;
+        if (!slot || !presetId) return row;
+        // One set of toggles per slot, on its first part (settings or code).
+        const slotKey = `${slot[1]}_${slot[2]}`;
+        if (isolatedSlots.has(slotKey)) return row;
+        isolatedSlots.add(slotKey);
+        return this.renderIsolationEntry(row, presetId, {
+          kind: slot[1] as IsolationKind,
+          // The file counts slots from 0; the renderer from 1.
+          index: Number(slot[2]) + 1,
+        });
       }),
     );
+    this.syncIsolationToggles();
+  }
+
+  /** A wave or shape Outline row plus Solo and Mute toggles. */
+  private renderIsolationEntry(
+    row: HTMLElement,
+    presetId: string,
+    element: IsolatedElement,
+  ): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'stims-editor__outline-slot';
+    const makeToggle = (label: string, action: 'solo' | 'mute') => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'stims-editor__btn stims-editor__outline-isolate';
+      button.textContent = label;
+      button.dataset.isolate = action;
+      button.dataset.isolateKind = element.kind;
+      button.dataset.isolateIndex = String(element.index);
+      button.setAttribute(
+        'aria-label',
+        `${label} ${element.kind}_${element.index - 1}`,
+      );
+      button.addEventListener('click', () => {
+        if (action === 'solo') toggleSolo(presetId, element);
+        else toggleMute(presetId, element);
+        this.syncIsolationToggles();
+      });
+      return button;
+    };
+    wrap.append(row, makeToggle('Solo', 'solo'), makeToggle('Mute', 'mute'));
+    return wrap;
+  }
+
+  /** Reflect the current solo/mute state on every Outline toggle. */
+  private syncIsolationToggles() {
+    const isolation = getRenderIsolation();
+    const presetId = this.outlinePresetId;
+    this.outlineList
+      ?.querySelectorAll<HTMLButtonElement>('[data-isolate]')
+      .forEach((button) => {
+        const kind = button.dataset.isolateKind;
+        const index = Number(button.dataset.isolateIndex);
+        const active =
+          isolation !== null && isolation.presetId === presetId
+            ? button.dataset.isolate === 'solo'
+              ? isolation.solo?.kind === kind && isolation.solo?.index === index
+              : isolation.muted.some(
+                  (entry) => entry.kind === kind && entry.index === index,
+                )
+            : false;
+        button.setAttribute('aria-pressed', String(active));
+      });
   }
 
   /** A shader's Outline row plus a toggle showing what the GPU compiles. */
@@ -2343,7 +2380,43 @@ export class EditorPanel {
       this.variableHistory.reset();
       this.paintInspect(true);
     });
-    bar.append(filter, changingLabel, pause, reset);
+    pause.title = 'Stop updating this list; the visuals keep running';
+    const freeze = document.createElement('button');
+    freeze.type = 'button';
+    freeze.className = 'stims-editor__inspect-btn';
+    freeze.textContent = 'Freeze';
+    freeze.title = 'Hold the visuals on this frame';
+    freeze.setAttribute('aria-pressed', 'false');
+    freeze.addEventListener('click', () => {
+      const wanted = !this.stageFrozen;
+      const applied = this.callbacks.onSetStageFrozen?.(wanted) ?? false;
+      this.setStageFrozen(applied);
+      freezeNote.textContent =
+        wanted && !applied
+          ? 'Start audio to freeze \u2014 before that the stage is a preview.'
+          : '';
+    });
+    const step = document.createElement('button');
+    step.type = 'button';
+    step.className = 'stims-editor__inspect-btn';
+    step.textContent = 'Step \u25B8';
+    step.title = 'Render one frame';
+    step.setAttribute('aria-label', 'Step one frame');
+    step.disabled = true;
+    step.addEventListener('click', () => {
+      this.callbacks.onStepFrame?.();
+    });
+    const freezeNote = document.createElement('span');
+    freezeNote.className = 'stims-editor__hint stims-editor__inspect-note';
+    freezeNote.setAttribute('aria-live', 'polite');
+    this.freezeButton = freeze;
+    this.stepButton = step;
+    bar.append(filter, changingLabel, freeze, step, pause, reset, freezeNote);
+
+    this.inspectReactivity = document.createElement('p');
+    this.inspectReactivity.className =
+      'stims-editor__hint stims-editor__inspect-reactivity';
+    this.inspectReactivity.setAttribute('aria-live', 'polite');
 
     this.inspectEmpty = document.createElement('p');
     this.inspectEmpty.className = 'stims-editor__hint';
@@ -2361,8 +2434,24 @@ export class EditorPanel {
       this.variableHistory.togglePin(target.dataset.pin);
       this.paintInspect(true);
     });
-    pane.append(hint, bar, this.inspectEmpty, this.inspectList);
+    pane.append(
+      hint,
+      bar,
+      this.inspectReactivity,
+      this.inspectEmpty,
+      this.inspectList,
+    );
     return pane;
+  }
+
+  /** Reflect the stage's hold state; called by the host whenever it changes. */
+  setStageFrozen(frozen: boolean) {
+    this.stageFrozen = frozen;
+    if (this.freezeButton) {
+      this.freezeButton.textContent = frozen ? 'Unfreeze' : 'Freeze';
+      this.freezeButton.setAttribute('aria-pressed', String(frozen));
+    }
+    if (this.stepButton) this.stepButton.disabled = !frozen;
   }
 
   private setInspectActive(active: boolean) {
@@ -2372,10 +2461,12 @@ export class EditorPanel {
       return;
     }
     if (this.disposeVariableFeed) return;
-    this.disposeVariableFeed = subscribeVariables((variables) => {
+    this.disposeVariableFeed = subscribeVariables((variables, levels) => {
       if (this.inspectPaused) return;
-      this.variableHistory.push(variables);
-      this.paintInspect(false);
+      this.variableHistory.push(variables, levels);
+      // While the stage is frozen, frames only arrive one Step at a time;
+      // each one must show rather than fall inside the repaint throttle.
+      this.paintInspect(this.stageFrozen);
     });
   }
 
@@ -2420,15 +2511,49 @@ export class EditorPanel {
       value.textContent = formatInspectNumber(row.value);
       value.title = `min ${formatInspectNumber(row.min)} · max ${formatInspectNumber(row.max)}`;
 
-      el.append(
-        pin,
-        name,
-        value,
-        buildSparkline(row.history, row.min, row.max),
-      );
+      el.append(pin, name, value);
+      // Always present (empty when nothing is followed) so the grid lines up.
+      const tag = document.createElement('span');
+      tag.className = 'stims-editor__inspect-reacts';
+      if (row.reacts) {
+        tag.dataset.band = row.reacts.band;
+        tag.textContent = `${row.reacts.r < 0 ? '\u2212' : ''}${row.reacts.band}`;
+        tag.title = `Follows ${row.reacts.band} (r = ${row.reacts.r.toFixed(2)})${
+          row.reacts.r < 0 ? ', inverted' : ''
+        }`;
+      }
+      el.appendChild(tag);
+      el.appendChild(buildSparkline(row.history, row.min, row.max));
       fragment.appendChild(el);
     }
     list.replaceChildren(fragment);
+    this.paintReactivitySummary();
+  }
+
+  /** One line answering "does this preset react to the music, and how?" */
+  private paintReactivitySummary() {
+    const line = this.inspectReactivity;
+    if (!line) return;
+    const summary = this.variableHistory.reactivitySummary();
+    if (summary.state === 'measuring') {
+      line.textContent = 'Measuring what follows the audio\u2026';
+      return;
+    }
+    if (summary.state === 'silent') {
+      line.textContent =
+        'The audio is flat, so nothing can follow it yet \u2014 play some music.';
+      return;
+    }
+    if (summary.followers.length === 0) {
+      line.textContent =
+        'Nothing in this preset\u2019s equations follows the audio. Try driving a q-var or zoom from bass_att.';
+      return;
+    }
+    const shown = summary.followers.slice(0, 6);
+    const rest = summary.followers.length - shown.length;
+    line.textContent = `Follows the audio: ${shown
+      .map((entry) => `${entry.name} (${entry.band})`)
+      .join(', ')}${rest > 0 ? ` and ${rest} more` : ''}.`;
   }
 
   private renderHistoryPane(): HTMLElement {
@@ -3153,34 +3278,6 @@ export class EditorPanel {
       sourceA: this.snapshotSourceA,
       sourceB: this.snapshotSourceB,
     };
-  }
-
-  private insertSnippet(snippet: string) {
-    const selection = this.editor.state.selection.main;
-    const prefix =
-      selection.from > 0 &&
-      this.editor.state.doc.sliceString(selection.from - 1, selection.from) !==
-        '\n'
-        ? '\n'
-        : '';
-    const suffix =
-      selection.to < this.editor.state.doc.length &&
-      this.editor.state.doc.sliceString(selection.to, selection.to + 1) !== '\n'
-        ? '\n'
-        : '';
-    const text = `${prefix}${snippet}${suffix}`;
-    this.editor.dispatch({
-      changes: {
-        from: selection.from,
-        to: selection.to,
-        insert: text,
-      },
-      selection: {
-        anchor: selection.from + text.length,
-      },
-      scrollIntoView: true,
-    });
-    this.editor.focus();
   }
 
   /**
