@@ -47,6 +47,7 @@ import path from 'node:path';
 import type { Page } from 'playwright';
 import type { FrameStats } from '../../src/js/core/services/visual-embedding.ts';
 import type {
+  AgentActionInfo,
   AgentEvent,
   AgentEventType,
   AgentRunResult,
@@ -110,9 +111,7 @@ export async function runAgentAction(
 }
 
 /** Mirrors `AgentGlobal.listActions()`. */
-export async function listAgentActions(
-  page: Page,
-): Promise<Array<{ id: string; label: string }>> {
+export async function listAgentActions(page: Page): Promise<AgentActionInfo[]> {
   await assertInstalled(page, 'listAgentActions');
   // biome-ignore lint/style/noNonNullAssertion: assertInstalled above confirmed window.__stims_agent exists
   return page.evaluate(() => window.__stims_agent!.listActions());

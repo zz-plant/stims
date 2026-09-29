@@ -76,7 +76,7 @@ Don't scrape the DOM or hand-roll sleep-and-poll loops — there is a first-clas
 |--------|-------------|
 | Read engine/preset/audio/fps state as one JSON snapshot | `__stims_agent.getState()` |
 | Wait for a condition instead of sleeping | `await __stims_agent.waitFor((s) => s.engineState === 'live')` |
-| Run a command-palette action by stable id | `await __stims_agent.run('audio-demo')` — `listActions()` enumerates ~21 |
+| Run a command-palette action by stable id | `await __stims_agent.run('audio-demo')` — `listActions()` lists every action and the targeted verbs (`select-preset`, `set-field`, …) with their params |
 | Read/await a preset's equation variables (q1…, zoom…) | `await __stims_agent.getVariables()` / `waitForVariables((v) => v.q1 > 0.5)` |
 | Verify an effect after a transient toast vanished | `getState().statusLog` / `getEvents(sinceSeq)` |
 | Assert the canvas is actually animating | `__stims_agent.captureStats()` twice, check `motionEstimate` |
