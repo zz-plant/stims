@@ -90,6 +90,19 @@ describe('validation mirrors CI', () => {
     expect(errors.join()).toContain('how you know');
   });
 
+  test('mentioning TODO: in prose is not an unfinished marker', () => {
+    const body =
+      'Adds a leftover-`TODO:` rule.\n\n## Testing\n\n- `bun run test tests/unit/a.test.ts` → 3 pass\n';
+    expect(validatePrBody(body)).toEqual([]);
+  });
+
+  test('a marker at the start of a line or list item is still caught', () => {
+    const base = '## Testing\n\n- `bun run test x` passed\n\n';
+    expect(validatePrBody(`${base}TODO: fill in`).join()).toContain('TODO');
+    expect(validatePrBody(`${base}- TODO: fill in`).join()).toContain('TODO');
+    expect(validatePrBody(`${base}  * TODO: fill in`).join()).toContain('TODO');
+  });
+
   test('a measurement alone counts as evidence, as in CI', () => {
     expect(validatePrBody('Cut the frame from 40 ms to 12 ms.')).toEqual([]);
   });

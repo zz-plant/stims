@@ -108,7 +108,11 @@ export function validatePrBody(body: string): string[] {
     }
   }
 
-  const todos = body.split('\n').filter((line) => /\bTODO:/.test(line));
+  // Only markers this script emits: a line (or list item) that STARTS with
+  // `TODO:`. A body that merely mentions the word in prose must pass.
+  const todos = body
+    .split('\n')
+    .filter((line) => /^\s*(?:[-*]\s+)?TODO:/.test(line));
   if (todos.length > 0) {
     errors.push(
       `${todos.length} unfinished TODO line(s):\n${todos
