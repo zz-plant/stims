@@ -60,15 +60,7 @@ function signals(frame: number): MilkdropRuntimeSignals {
   } as unknown as MilkdropRuntimeSignals;
 }
 
-// The title makes each source unique: the compile cache is keyed on the text
-// and would otherwise hand back the first test's preset id.
-const compile = (id: string) =>
-  compileMilkdropPresetSource(
-    SOURCE.replace('title=Isolation', `title=${id}`),
-    {
-      id,
-    },
-  );
+const compile = (id: string) => compileMilkdropPresetSource(SOURCE, { id });
 
 function frameOf(id: string, frames = 1) {
   const vm = createMilkdropVM(compile(id));
