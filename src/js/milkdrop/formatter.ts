@@ -4,6 +4,7 @@
  */
 
 import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
+import { editorFieldKey } from './field-table.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropProgramBlock,
@@ -130,28 +131,6 @@ export function formatNumber(value: number) {
   return String(Number(value.toFixed(6)));
 }
 
-function canonicalKey(key: string) {
-  if (key === 'decay') {
-    return 'fDecay';
-  }
-  if (key === 'brighten') {
-    return 'bBrighten';
-  }
-  if (key === 'darken') {
-    return 'bDarken';
-  }
-  if (key === 'darken_center') {
-    return 'bDarkenCenter';
-  }
-  if (key === 'solarize') {
-    return 'bSolarize';
-  }
-  if (key === 'invert') {
-    return 'bInvert';
-  }
-  return key;
-}
-
 function orderedKeys(
   values: Record<string, number>,
   preferredOrder: readonly string[],
@@ -171,7 +150,7 @@ function emitNumericSection(
   preferredOrder: readonly string[],
 ) {
   orderedKeys(values, preferredOrder).forEach((key) => {
-    lines.push(`${canonicalKey(key)}=${formatNumber(values[key] as number)}`);
+    lines.push(`${editorFieldKey(key)}=${formatNumber(values[key] as number)}`);
   });
 }
 
@@ -436,9 +415,9 @@ function readAssignmentKey(line: string): string | null {
  * case-sensitive about any of them, so the literal comparison left knob writes
  * landing beside the line they meant to replace.
  *
- * The alias table is the compiler's own (field-normalization), so a control
- * addressing `ob_r` finds the `fOuterBorderR=` line the preset actually
- * carries. Before that, only the six names canonicalKey knows collapsed:
+ * The alias table is the compiler's own (field-normalization, built from
+ * field-table), so a control addressing `ob_r` finds the `fOuterBorderR=`
+ * line the preset actually carries. Before that, only six names collapsed:
  * everything else — the whole border, motion-vector, video-echo and main-wave
  * blocks, which real .milk files always spell the long way — got a second
  * assignment appended instead of an in-place rewrite.
