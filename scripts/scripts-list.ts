@@ -245,8 +245,13 @@ const ROUTES: Array<{ when: string[]; run: string[]; note: string }> = [
   },
   {
     when: ['slow', 'fps', 'performance', 'frame', 'budget', 'jank', 'stutter'],
-    run: ['perf:certification-corpus', 'profile:frame', 'bench:butterchurn'],
-    note: 'Measure before optimising; intuition about which loop dominates a frame is usually wrong.',
+    run: [
+      'lab:profile',
+      'perf:certification-corpus',
+      'profile:frame',
+      'bench:butterchurn',
+    ],
+    note: 'Measure before optimising; intuition about which loop dominates a frame is usually wrong. lab:profile runs a real rAF loop and is the one whose numbers reflect a user frame; profile:frame steps synthetic frames, so use it only for controlled A/B micro-comparisons.',
   },
   {
     when: ['flash', 'seizure', 'photosensitive', 'strobe', 'wcag', 'safety'],
