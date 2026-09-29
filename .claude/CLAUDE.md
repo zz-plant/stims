@@ -11,7 +11,7 @@ bun run setup:codex             # install + quick-check if not
 
 ## Finding a command
 
-This repo has **127 scripts**. The tables below are a shortlist, not an inventory — never conclude a capability is missing because it isn't listed here.
+This repo has **159 scripts**. The tables below are a shortlist, not an inventory — never conclude a capability is missing because it isn't listed here.
 
 ```bash
 bun run help                 # every script, grouped by namespace, with a one-line purpose
@@ -25,6 +25,14 @@ the right one. Reach for it before hand-rolling a measurement.
 Each purpose line is generated from the docblock atop the script's file, so the index cannot drift from the code. `bun run check` fails if a script has no docblock summary (`bun run check:script-docs`).
 
 Namespaces worth knowing before you hand-roll something: `lab:` (preset measurement), `parity:` (MilkDrop reference capture → diff → promote), `sweep:` (batch corpus runs), `perf:` / `bench:` / `profile:` (performance), `catalog:` (preset curation), `check:` (guards), `generate:` (idempotent artifacts, most take `--check`), `site:` / `preview:` (deploy).
+
+## Ergonomics notes (from the last ~500 commits)
+
+- **Hot spots**: `fix(milkdrop)` (shader/GLSL/HLSL translation) and `fix(webgpu)` dominate. Reproduce with `lab:replay` / `lab:nan-sweep`, fix the *class* across the corpus (not one preset), add a fixture, and check both backends with `lab:backend-diff`.
+- **Search noise**: `.ignore` hides `public/milkdrop-presets/`, `output/`, `screenshots/`, and the parity fixtures from ripgrep. Use `rg --no-ignore <pat> <path>` to search them on purpose.
+- **Generators**: most `generate:*` scripts take `--check`, but `generate:seo` has no check mode and rewrites tracked files (icons, sitemaps) — `git checkout -- public` after running it if you didn't mean to change them; use `check:seo` to verify.
+- **Flakes**: never assert on timing. Use `__stims_agent.waitFor`; recent history removed several timing flakes from the gate suite.
+- **Duplicate PRs**: check for an open PR on the branch before pushing (#1209/#1210 and #1234/#1236 were re-pushes).
 
 ## Daily commands
 

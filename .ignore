@@ -1,0 +1,11 @@
+# Read by ripgrep (and so by Grep/Glob tooling) but not by git.
+# These trees are bulk data or run output that dominate churn in the history
+# (thousands of preset files, screenshots, playwright output) and bury real
+# source hits. Search them explicitly with `rg --no-ignore <pattern> <path>`.
+public/milkdrop-presets/
+output/
+screenshots/
+.playwright-cli/
+tests/fixtures/milkdrop/parity-corpus/
+tests/fixtures/milkdrop/projectm-upstream/
+tests/fixtures/milkdrop/projectm-reference/
