@@ -58,7 +58,7 @@ Export produces a `.milk` file you can hand to anyone with a copy of Winamp, pro
 
 | Technique | Glossary entry | Example presets |
 |-----------|----------------|-----------------|
-| Credit lineage | [Track 9 — Technique glossary](09-technique-glossary.md#component-credits) | `Aderrasi + Geiss - Airhandler (Painterly Relief Mix)` |
+| Credit lineage | [Track 9 — Technique glossary](09-technique-glossary.md#the-glossary) | `Aderrasi + Geiss - Airhandler (Painterly Relief Mix)` |
 | Remix culture | [Track 9 — Technique glossary](09-technique-glossary.md#the-glossary) | `Jelly V2` → `V3` → `V4` → `V5.5` version discipline |
 
 ---

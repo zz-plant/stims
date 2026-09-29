@@ -5,6 +5,10 @@ import {
   isAllowedDiscoverSlug,
 } from '../../functions/discover-slugs.ts';
 import {
+  LEARN_PAGES,
+  learnPagePath,
+} from '../../scripts/generate-learn-pages.ts';
+import {
   buildOgBackdropSvg,
   buildOgSvg,
   buildSitemapChunk,
@@ -35,12 +39,15 @@ describe('generate-seo sitemap routes', () => {
     expect(canonicalPaths.slice(0, 2)).toEqual(['/', '/performance/']);
     // Curated /discover/ hubs join the sitemap; every one must be on the
     // middleware allowlist so the sitemap never advertises a slug the edge
-    // won't rewrite.
+    // won't rewrite. /learn/ routes must each be a generated static page.
+    const learnPaths = new Set(LEARN_PAGES.map(learnPagePath));
     for (const path of canonicalPaths.slice(2)) {
-      const allowed = path.startsWith('/discover/')
-        ? isAllowedDiscoverSlug(path.slice('/discover/'.length))
-        : path.startsWith('/author/') &&
-          isAllowedAuthorSlug(path.slice('/author/'.length));
+      const allowed = path.startsWith('/learn/')
+        ? learnPaths.has(path)
+        : path.startsWith('/discover/')
+          ? isAllowedDiscoverSlug(path.slice('/discover/'.length))
+          : path.startsWith('/author/') &&
+            isAllowedAuthorSlug(path.slice('/author/'.length));
       expect(allowed).toBe(true);
     }
   });

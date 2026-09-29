@@ -133,7 +133,21 @@
         "operatingSystem": "Web",
         "url": "https://toil.fyi/",
         "image": "https://toil.fyi/og/milkdrop.png",
-        "isAccessibleForFree": true
+        "screenshot": "https://toil.fyi/screenshots/hero-wide.png",
+        "isAccessibleForFree": true,
+        "featureList": [
+          "Plays MilkDrop .milk presets in the browser with WebGL or WebGPU",
+          "Live editor with compiler diagnostics and sliders",
+          "Reacts to demo audio, microphone, a browser tab, a YouTube link or a local file",
+          "Imports and exports .milk files",
+          "Shares the exact preset and edits as a link"
+        ],
+        "softwareHelp": {
+          "@type": "CreativeWork",
+          "name": "Learn to write MilkDrop presets",
+          "url": "https://toil.fyi/learn/"
+        },
+        "sameAs": ["https://github.com/zz-plant/stims"]
       }
     </script>
   </head>
@@ -159,11 +173,14 @@
 
 
     <!-- inert: these exist for crawlers reading the HTML source; without it
-         they are 8 invisible tab stops in front of the app, and Enter on one
+         they are invisible tab stops in front of the app, and Enter on one
          navigates the page away. -->
     <nav class="stims-crawl-links" aria-label="Crawlable site links" inert>
       <a href="/">Visualizer</a>
       <a href="/performance/">Compatibility and performance</a>
+      <a href="/learn/">Learn to write MilkDrop presets</a>
+      <a href="/learn/milkdrop-online/">MilkDrop online</a>
+      <a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a>
       <a href="/discover/audio-reactive">Audio-reactive visualizers</a>
       <a href="/discover/hall-of-fame">Hall of fame presets</a>
       <a href="/discover/fractal">Fractal visualizers</a>
