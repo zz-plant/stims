@@ -127,6 +127,8 @@ import {
 
 export { computeAstDiagnostics, mergeDiagnostics };
 
+import { createVariableHistory } from '../variable-history.ts';
+import { subscribeVariables } from '../variable-probe.ts';
 import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
@@ -278,6 +280,44 @@ function escapeHtml(value: string): string {
     .replace(/&/gu, '&amp;')
     .replace(/</gu, '&lt;')
     .replace(/>/gu, '&gt;');
+}
+
+function formatInspectNumber(value: number): string {
+  if (value === 0) return '0';
+  const abs = Math.abs(value);
+  if (abs >= 1000 || abs < 0.001) return value.toExponential(2);
+  return value.toFixed(abs >= 100 ? 1 : 3);
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function buildSparkline(
+  history: readonly number[],
+  min: number,
+  max: number,
+): SVGElement {
+  const width = 80;
+  const height = 18;
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svg.setAttribute('class', 'stims-editor__inspect-spark');
+  svg.setAttribute('aria-hidden', 'true');
+  if (history.length < 2) return svg;
+  const span = max - min || 1;
+  const step = width / (history.length - 1);
+  const points = history
+    .map((v, i) => {
+      const y = height - 1 - ((v - min) / span) * (height - 2);
+      return `${(i * step).toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+  const line = document.createElementNS(SVG_NS, 'polyline');
+  line.setAttribute('points', points);
+  line.setAttribute('fill', 'none');
+  line.setAttribute('stroke', 'currentColor');
+  line.setAttribute('stroke-width', '1');
+  svg.appendChild(line);
+  return svg;
 }
 
 export type EditorPanelCallbacks = {
@@ -903,6 +943,14 @@ export class EditorPanel {
     label: string;
   }> = [];
   private historyList: HTMLElement | null = null;
+  private readonly variableHistory = createVariableHistory();
+  private inspectList: HTMLElement | null = null;
+  private inspectEmpty: HTMLElement | null = null;
+  private inspectFilter = '';
+  private inspectOnlyChanging = false;
+  private inspectPaused = false;
+  private inspectLastPaint = 0;
+  private disposeVariableFeed: (() => void) | null = null;
   private assistPane: HTMLElement | null = null;
   private assistedEditContainer: HTMLElement | null = null;
   // True while any AI-backed action (Refine, Explain, Quick-fix, Batch,
@@ -1342,6 +1390,7 @@ export class EditorPanel {
       { id: 'tune', label: 'Tune', content: this.renderSliders() },
       { id: 'insert', label: 'Insert', content: this.renderInsertPane() },
       { id: 'assist', label: 'Assist', content: this.renderAssistPane() },
+      { id: 'inspect', label: 'Inspect', content: this.renderInspectPane() },
       { id: 'history', label: 'History', content: this.renderHistoryPane() },
     ];
     const tabButtons: HTMLButtonElement[] = [];
@@ -1357,6 +1406,9 @@ export class EditorPanel {
         other.setAttribute('aria-selected', String(selected));
         other.tabIndex = selected ? 0 : -1;
         panes[otherIndex].content.hidden = !selected;
+        if (panes[otherIndex].id === 'inspect') {
+          this.setInspectActive(selected);
+        }
       });
     };
     panes.forEach((pane, index) => {
@@ -1898,6 +1950,142 @@ export class EditorPanel {
     this.assistPane.appendChild(card);
   }
 
+  /** Inspect pane: every variable the preset's equations touch, live. The
+   * feed only runs while this tab is showing, so it costs nothing otherwise. */
+  private renderInspectPane(): HTMLElement {
+    const pane = document.createElement('div');
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent =
+      'Live values of q1–q32 and every variable your equations set. Pin the ones you are tuning.';
+
+    const bar = document.createElement('div');
+    bar.className = 'stims-editor__inspect-bar';
+    const filter = document.createElement('input');
+    filter.type = 'search';
+    filter.placeholder = 'Filter variables';
+    filter.setAttribute('aria-label', 'Filter variables');
+    filter.className = 'stims-editor__inspect-filter';
+    filter.addEventListener('input', () => {
+      this.inspectFilter = filter.value;
+      this.paintInspect(true);
+    });
+    const changingLabel = document.createElement('label');
+    changingLabel.className = 'stims-editor__inspect-toggle';
+    const changing = document.createElement('input');
+    changing.type = 'checkbox';
+    changing.addEventListener('change', () => {
+      this.inspectOnlyChanging = changing.checked;
+      this.paintInspect(true);
+    });
+    changingLabel.append(changing, ' Only changing');
+    const pause = document.createElement('button');
+    pause.type = 'button';
+    pause.className = 'stims-editor__inspect-btn';
+    pause.textContent = 'Pause';
+    pause.setAttribute('aria-pressed', 'false');
+    pause.addEventListener('click', () => {
+      this.inspectPaused = !this.inspectPaused;
+      pause.textContent = this.inspectPaused ? 'Resume' : 'Pause';
+      pause.setAttribute('aria-pressed', String(this.inspectPaused));
+    });
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'stims-editor__inspect-btn';
+    reset.textContent = 'Reset';
+    reset.title = 'Clear min/max and history';
+    reset.addEventListener('click', () => {
+      this.variableHistory.reset();
+      this.paintInspect(true);
+    });
+    bar.append(filter, changingLabel, pause, reset);
+
+    this.inspectEmpty = document.createElement('p');
+    this.inspectEmpty.className = 'stims-editor__hint';
+    this.inspectEmpty.textContent = 'Waiting for the first frame…';
+    this.inspectList = document.createElement('div');
+    this.inspectList.className = 'stims-editor__inspect';
+    // pointerdown, not click: the list repaints several times a second, and a
+    // repaint between press and release would swallow the click.
+    this.inspectList.addEventListener('pointerdown', (event) => {
+      const target = (event.target as HTMLElement).closest<HTMLElement>(
+        '[data-pin]',
+      );
+      if (!target?.dataset.pin) return;
+      event.preventDefault();
+      this.variableHistory.togglePin(target.dataset.pin);
+      this.paintInspect(true);
+    });
+    pane.append(hint, bar, this.inspectEmpty, this.inspectList);
+    return pane;
+  }
+
+  private setInspectActive(active: boolean) {
+    if (!active) {
+      this.disposeVariableFeed?.();
+      this.disposeVariableFeed = null;
+      return;
+    }
+    if (this.disposeVariableFeed) return;
+    this.disposeVariableFeed = subscribeVariables((variables) => {
+      if (this.inspectPaused) return;
+      this.variableHistory.push(variables);
+      this.paintInspect(false);
+    });
+  }
+
+  private paintInspect(force: boolean) {
+    const list = this.inspectList;
+    if (!list) return;
+    const now = performance.now();
+    if (!force && now - this.inspectLastPaint < 150) return;
+    this.inspectLastPaint = now;
+
+    const rows = this.variableHistory
+      .rows({
+        onlyChanging: this.inspectOnlyChanging,
+        filter: this.inspectFilter,
+      })
+      .slice(0, 200);
+    if (this.inspectEmpty) this.inspectEmpty.hidden = rows.length > 0;
+
+    const fragment = document.createDocumentFragment();
+    for (const row of rows) {
+      const el = document.createElement('div');
+      el.className = 'stims-editor__inspect-row';
+      el.dataset.name = row.name;
+
+      const pin = document.createElement('button');
+      pin.type = 'button';
+      pin.className = 'stims-editor__inspect-pin';
+      pin.dataset.pin = row.name;
+      pin.textContent = row.pinned ? '★' : '☆';
+      pin.setAttribute(
+        'aria-label',
+        `${row.pinned ? 'Unpin' : 'Pin'} ${row.name}`,
+      );
+      pin.setAttribute('aria-pressed', String(row.pinned));
+
+      const name = document.createElement('span');
+      name.className = 'stims-editor__inspect-name';
+      name.textContent = row.name;
+
+      const value = document.createElement('span');
+      value.className = 'stims-editor__inspect-value';
+      value.textContent = formatInspectNumber(row.value);
+      value.title = `min ${formatInspectNumber(row.min)} · max ${formatInspectNumber(row.max)}`;
+
+      el.append(
+        pin,
+        name,
+        value,
+        buildSparkline(row.history, row.min, row.max),
+      );
+      fragment.appendChild(el);
+    }
+    list.replaceChildren(fragment);
+  }
+
   private renderHistoryPane(): HTMLElement {
     const pane = document.createElement('div');
     const hint = document.createElement('p');
@@ -1928,6 +2116,8 @@ export class EditorPanel {
       this.lastPresetId !== null &&
       nextPresetId !== this.lastPresetId;
     if (presetChanged) {
+      // Old preset's variables, min/max and sparklines would mislead.
+      this.variableHistory.reset();
       this.hasBufferedEdits = false;
       this.clearEditorDebounce();
     }
@@ -2298,6 +2488,8 @@ export class EditorPanel {
   }
 
   dispose() {
+    this.disposeVariableFeed?.();
+    this.disposeVariableFeed = null;
     this.closeVariableJump();
     this.disposeDiagnosticsListener?.();
     this.disposeDiagnosticsListener = null;
