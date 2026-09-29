@@ -117,11 +117,11 @@ const customShapeFieldOrder = [
   'thickoutline',
 ] as const;
 
-function serializeString(value: string) {
+export function serializeString(value: string) {
   return /\s/u.test(value) ? JSON.stringify(value) : value;
 }
 
-function formatNumber(value: number) {
+export function formatNumber(value: number) {
   if (!Number.isFinite(value)) {
     return '0';
   }
@@ -175,14 +175,39 @@ function emitNumericSection(
   });
 }
 
-function emitProgramLines(
+export function emitProgramLines(
   lines: string[],
   prefix: string,
   block: MilkdropProgramBlock,
 ) {
+  const comments = block.comments ?? [];
+  let number = 0;
+  const push = (text: string) => {
+    number += 1;
+    lines.push(`${prefix}${number}=${text}`);
+  };
+  const emitStandalone = (index: number) => {
+    comments
+      .filter((comment) => !comment.trailing && comment.index === index)
+      .forEach((comment) => {
+        push(comment.text);
+      });
+  };
   block.sourceLines.forEach((statement, index) => {
-    lines.push(`${prefix}${index + 1}=${statement}`);
+    emitStandalone(index);
+    const trailing = comments
+      .filter((comment) => comment.trailing && comment.index === index)
+      .map((comment) => comment.text);
+    // Terminated, as MilkDrop writes them: it joins a block's numbered lines
+    // before compiling, so a statement without its `;` runs into the next.
+    const terminated = statement.trimEnd().endsWith(';')
+      ? statement
+      : `${statement};`;
+    push(
+      trailing.length > 0 ? `${terminated} ${trailing.join(' ')}` : terminated,
+    );
   });
+  emitStandalone(block.sourceLines.length);
 }
 
 function emitWaveDefinition(lines: string[], wave: MilkdropWaveDefinition) {
@@ -222,9 +247,9 @@ function emitShapeDefinition(lines: string[], shape: MilkdropShapeDefinition) {
   );
 }
 
-const FALLBACK_TITLE = 'MilkDrop Session';
+export const FALLBACK_TITLE = 'MilkDrop Session';
 
-function resolveFormattedTitle(compiled: MilkdropCompiledPreset) {
+export function resolveFormattedTitle(compiled: MilkdropCompiledPreset) {
   const { ir } = compiled;
   if (ir.title && ir.title !== FALLBACK_TITLE) {
     return ir.title;
@@ -285,6 +310,16 @@ export function formatMilkdropPreset(compiled: MilkdropCompiledPreset) {
   ) as Record<string, number>;
   emitNumericSection(lines, postFields, postOrder);
 
+  // Keys Stims does not use still belong to the preset: another engine (or a
+  // newer MilkDrop) may read them, so Format hands them back as written.
+  const preservedFields = ir.preservedFields ?? [];
+  if (preservedFields.length > 0) {
+    lines.push('');
+    preservedFields.forEach(({ key, rawValue }) => {
+      lines.push(`${key}=${rawValue}`);
+    });
+  }
+
   if (ir.customWaves.length > 0) {
     lines.push('');
     ir.customWaves.forEach((wave, index) => {
@@ -314,22 +349,43 @@ export function formatMilkdropPreset(compiled: MilkdropCompiledPreset) {
     ['per_pixel_', ir.programs.perPixel],
   ] as const;
 
-  if (rootPrograms.some(([, block]) => block.sourceLines.length > 0)) {
+  if (
+    rootPrograms.some(
+      ([, block]) =>
+        block.sourceLines.length > 0 || (block.comments?.length ?? 0) > 0,
+    )
+  ) {
     lines.push('');
     rootPrograms.forEach(([prefix, block]) => {
       emitProgramLines(lines, prefix, block);
     });
   }
 
-  // Shader sections must come last: the parser treats every line after a
-  // [warp_shader]/[comp_shader] header as shader text until the next header.
-  emitShaderSection(lines, 'warp_shader', ir.shaderText.warp);
-  emitShaderSection(lines, 'comp_shader', ir.shaderText.comp);
-
-  return `${lines
+  const head = lines
     .join('\n')
     .replace(/\n{3,}/gu, '\n\n')
-    .trim()}\n`;
+    .trim();
+
+  // Shader sections must come last: the parser treats every line after a
+  // [warp_shader]/[comp_shader] header as shader text until the next header.
+  // They are written as the author wrote them, not from the normalised
+  // `shaderText`, and kept out of the blank-line collapse above, so Format
+  // leaves comments, braces and layout alone.
+  const shaderLines: string[] = [];
+  emitShaderSection(shaderLines, 'warp_shader', resolveShaderText(ir, 'warp'));
+  emitShaderSection(shaderLines, 'comp_shader', resolveShaderText(ir, 'comp'));
+
+  return `${[head, ...shaderLines].join('\n')}\n`;
+}
+
+export function resolveShaderText(
+  ir: MilkdropCompiledPreset['ir'],
+  stage: 'warp' | 'comp',
+): string | null {
+  if (!ir.shaderText[stage]) {
+    return null;
+  }
+  return ir.shaderSource?.[stage] ?? ir.shaderText[stage];
 }
 
 const shaderSectionHeaderPattern = /^\[\s*(?:warp_shader|comp_shader)\s*\]$/iu;

@@ -16,6 +16,8 @@
  * wild routinely use constructs no backend supports, and refusing to load them
  * would be worse than rendering them imperfectly.
  */
+
+import { extractShaderSource } from '../shader-source.ts';
 import type {
   MilkdropDegradationReason,
   MilkdropDiagnostic,
@@ -364,6 +366,21 @@ export function createMilkdropIr({
   const customWaveMap = new Map<number, MilkdropWaveDefinition>();
   const customShapeMap = new Map<number, MilkdropShapeDefinition>();
   const softUnknownKeys = new Set<string>();
+  // Keyed by lower-cased raw key so a repeated field keeps its first position
+  // but its last value, the same rule the compiler applies to known fields.
+  const preservedFields = new Map<string, { key: string; rawValue: string }>();
+  const preserveField = (field: MilkdropPresetField) => {
+    const id = field.key.trim().toLowerCase();
+    const existing = preservedFields.get(id);
+    if (existing) {
+      existing.rawValue = field.rawValue;
+      return;
+    }
+    preservedFields.set(id, {
+      key: field.key.trim(),
+      rawValue: field.rawValue,
+    });
+  };
   const hardUnsupportedFields = new Map<string, HardUnsupportedFieldSpec>();
   const pendingHardUnsupportedFields = new Map<
     string,
@@ -394,6 +411,7 @@ export function createMilkdropIr({
 
     const normalizedKey = fieldHelpers.normalizeFieldKey(field);
     if (normalizedKey === null) {
+      preserveField(field);
       return;
     }
 
@@ -446,6 +464,7 @@ export function createMilkdropIr({
       const suffix = customWaveFieldMatch[2] ?? '';
       if (index < 1 || index > maxCustomWaves) {
         softUnknownKeys.add(normalizedKey);
+        preserveField(field);
         return;
       }
       const compiledScalar = fieldHelpers.compileScalarField(
@@ -480,6 +499,7 @@ export function createMilkdropIr({
       const suffix = customShapeFieldMatch[2] ?? '';
       if (index < 1 || index > maxCustomShapes) {
         softUnknownKeys.add(normalizedKey);
+        preserveField(field);
         return;
       }
       if (!(normalizedKey in defaultState)) {
@@ -490,9 +510,11 @@ export function createMilkdropIr({
             message: hardUnsupportedField.message,
             line: field.line,
           });
+          preserveField(field);
           return;
         }
         softUnknownKeys.add(normalizedKey);
+        preserveField(field);
         fieldHelpers.addDiagnostic(
           diagnostics,
           'warning',
@@ -547,9 +569,11 @@ export function createMilkdropIr({
           message: hardUnsupportedField.message,
           line: field.line,
         });
+        preserveField(field);
         return;
       }
       softUnknownKeys.add(normalizedKey);
+      preserveField(field);
       fieldHelpers.addDiagnostic(
         diagnostics,
         'warning',
@@ -1129,5 +1153,10 @@ export function createMilkdropIr({
     },
     post,
     compatibility,
+    preservedFields: [...preservedFields.values()],
+    shaderSource:
+      warpShaderText || compShaderText
+        ? extractShaderSource(ast.source)
+        : { warp: null, comp: null },
   } satisfies MilkdropPresetIR;
 }

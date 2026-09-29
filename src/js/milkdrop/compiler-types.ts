@@ -15,6 +15,7 @@ import type {
   MilkdropProgramBlock,
   MilkdropRenderBackend,
 } from './common-types.ts';
+import type { MilkdropShaderSource } from './shader-source.ts';
 
 export type MilkdropGpuDescriptorRouting =
   | 'generic-frame-payload'
@@ -469,6 +470,20 @@ export type MilkdropPresetIR = {
   };
   post: MilkdropPostEffects;
   compatibility: MilkdropCompatibilityReport;
+  /**
+   * Fields Stims does not use, exactly as the preset spelled them (`b1ed`,
+   * `nWrapMode_x`, a key from a newer engine). Nothing renders from these;
+   * they are carried so Format and Export hand them back instead of silently
+   * deleting what another engine may read. Last assignment wins, in first
+   * appearance order.
+   */
+  preservedFields?: Array<{ key: string; rawValue: string }>;
+  /**
+   * Shader text as written (see `shader-source.ts`). `shaderText` is the
+   * normalised form the translator reads; this is what Format and Export
+   * write back so comments and structure survive.
+   */
+  shaderSource?: MilkdropShaderSource;
 };
 
 export type MilkdropCompiledPreset = {
