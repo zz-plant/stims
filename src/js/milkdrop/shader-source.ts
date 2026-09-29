@@ -13,6 +13,7 @@
  * one leading backtick removed) and Stims' `[warp_shader]` section (every line
  * up to the next `[section]` header, the same boundary the parser uses).
  */
+import { isShaderSection, parsePresetSyntax } from './preset-syntax.ts';
 
 export type MilkdropShaderSource = {
   warp: string | null;
@@ -21,10 +22,9 @@ export type MilkdropShaderSource = {
 
 type Stage = 'warp' | 'comp';
 
-const numberedLinePattern = /^\s*(warp|comp)_\d+\s*=(.*)$/iu;
-const namedFieldPattern =
-  /^\s*(warp_shader|comp_shader|warp_code|comp_code|shader_text)\s*=(.*)$/iu;
-const sectionHeaderPattern = /^\s*\[([^\]]*)\]\s*$/u;
+const numberedKeyPattern = /^(warp|comp)_\d+$/iu;
+const namedKeyPattern =
+  /^(warp_shader|comp_shader|warp_code|comp_code|shader_text)$/iu;
 
 function stageForName(name: string): Stage {
   return name.toLowerCase().startsWith('warp') ? 'warp' : 'comp';
@@ -40,34 +40,21 @@ function finish(lines: string[]): string | null {
 
 export function extractShaderSource(source: string): MilkdropShaderSource {
   const collected: Record<Stage, string[]> = { warp: [], comp: [] };
-  let section: Stage | null = null;
 
-  for (const rawLine of source.split(/\r?\n/u)) {
-    const header = rawLine.trim().startsWith('[')
-      ? rawLine.match(sectionHeaderPattern)
-      : null;
-    if (header) {
-      const name = (header[1] ?? '').trim().toLowerCase();
-      section =
-        name === 'warp_shader' || name === 'comp_shader'
-          ? stageForName(name)
-          : null;
+  for (const line of parsePresetSyntax(source).lines) {
+    if (line.kind === 'section') {
       continue;
     }
-    if (section) {
-      collected[section].push(rawLine.trimEnd());
+    // Inside a shader section every line is kept, comments and blanks too.
+    if (isShaderSection(line.section)) {
+      collected[stageForName(line.section as string)].push(line.text.trimEnd());
       continue;
     }
-    const numbered = rawLine.match(numberedLinePattern);
-    if (numbered) {
-      const stage = stageForName(numbered[1] ?? '');
-      collected[stage].push((numbered[2] ?? '').replace(/^`/u, '').trimEnd());
-      continue;
-    }
-    const named = rawLine.match(namedFieldPattern);
-    if (named) {
-      const stage = stageForName(named[1] ?? '');
-      collected[stage].push((named[2] ?? '').replace(/^`/u, '').trimEnd());
+    const key = line.kind === 'assignment' ? (line.key ?? '') : '';
+    if (numberedKeyPattern.test(key) || namedKeyPattern.test(key)) {
+      collected[stageForName(key)].push(
+        (line.rawValue ?? '').replace(/^`/u, '').trimEnd(),
+      );
     }
   }
 
