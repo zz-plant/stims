@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>MilkDrop Online — Winamp’s Visualizer in Your Browser | Stims</title>
+<meta name="description" content="Run MilkDrop presets in your browser with nothing to install. Watch, play your own music, edit the equations, and import or export .milk files." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="canonical" href="https://toil.fyi/learn/milkdrop-online/" />
+<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<meta property="og:site_name" content="Stims" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="MilkDrop Online — Winamp’s Visualizer in Your Browser | Stims" />
+<meta property="og:description" content="Run MilkDrop presets in your browser with nothing to install. Watch, play your own music, edit the equations, and import or export .milk files." />
+<meta property="og:url" content="https://toil.fyi/learn/milkdrop-online/" />
+<meta property="og:image" content="https://toil.fyi/og/milkdrop.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="MilkDrop Online — Winamp’s Visualizer in Your Browser | Stims" />
+<meta name="twitter:description" content="Run MilkDrop presets in your browser with nothing to install. Watch, play your own music, edit the equations, and import or export .milk files." />
+<meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "headline": "MilkDrop in your browser",
+      "name": "MilkDrop Online — Winamp’s Visualizer in Your Browser",
+      "description": "Run MilkDrop presets in your browser with nothing to install. Watch, play your own music, edit the equations, and import or export .milk files.",
+      "url": "https://toil.fyi/learn/milkdrop-online/",
+      "mainEntityOfPage": "https://toil.fyi/learn/milkdrop-online/",
+      "inLanguage": "en",
+      "image": "https://toil.fyi/og/milkdrop.png",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Stims",
+          "item": "https://toil.fyi/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Learn",
+          "item": "https://toil.fyi/learn/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "MilkDrop in your browser",
+          "item": "https://toil.fyi/learn/milkdrop-online/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Do I need to install anything to run MilkDrop in a browser?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Stims runs in the browser tab using WebGL or WebGPU. The compatibility and performance guide lists which browsers and devices run it well."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is it free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. The visualizer is free to use."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Will it make sound as soon as I open it?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Stims is silent until you start some audio, and one action stops everything. Motion also follows your operating system's reduce-motion setting."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use my existing .milk preset files?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Import .milk files into the editor, and export them back out as .milk. Some presets use features that are approximated, and each preset is labelled with how faithfully it runs."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I make my own MilkDrop presets here?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. The editor shows the real preset source with completions and error messages, and the authoring curriculum teaches the format step by step."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>:root{color-scheme:dark light;--bg:#0b0f1a;--fg:#e8ecf3;--muted:#a9b3c4;--line:rgba(255,255,255,.12);--code:#121a2a;--accent:#5fc0b5;--accent-fg:#0a0f19}@media(prefers-color-scheme:light){:root{--bg:#f7f8fb;--fg:#141a26;--muted:#4a5568;--line:rgba(0,0,0,.14);--code:#eaeef5;--accent:#0f766e;--accent-fg:#fff}}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:1rem/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}a{color:var(--accent)}.site-header,.site-footer,main{max-width:48rem;margin:0 auto;padding:0 16px}.site-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 20px;padding-top:16px;padding-bottom:16px;border-bottom:1px solid var(--line)}.site-header .brand{font-weight:700;font-size:1.15rem;text-decoration:none;color:var(--fg)}.site-header nav{display:flex;flex-wrap:wrap;gap:4px 18px}main{padding-top:24px;padding-bottom:32px}h1{font-size:2rem;line-height:1.2;margin:.4em 0}h2{font-size:1.4rem;margin:1.8em 0 .5em;line-height:1.3}h3{font-size:1.15rem;margin:1.5em 0 .4em}code{font:.9em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.1em .35em;border-radius:4px}pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto}pre code{background:none;padding:0}table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%}th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}blockquote{margin:1em 0;padding:.1em 1em;border-left:3px solid var(--accent);color:var(--muted)}details{margin:1em 0}.toc{border:1px solid var(--line);border-radius:8px;padding:8px 16px;margin:1em 0}.toc ul{margin:.3em 0;padding-left:1.2em}.cta{display:inline-block;background:var(--accent);color:var(--accent-fg);padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600}.pager{display:flex;justify-content:space-between;gap:16px;margin:2em 0;flex-wrap:wrap}.related,.site-footer{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}.related{margin-top:2em;padding-top:1em}.site-footer{padding-top:16px;padding-bottom:40px}.site-footer h2{font-size:.95rem;margin:1em 0 .3em;color:var(--fg)}.site-footer ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:2px 16px}</style>
+</head>
+<body>
+<header class="site-header">
+<a class="brand" href="/">Stims</a>
+<nav aria-label="Site"><a href="/">Open the visualizer</a><a href="/learn/">Learn</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/performance/">Compatibility</a></nav>
+</header>
+<main>
+<article>
+<h1 id="milkdrop-in-your-browser">MilkDrop in your browser</h1>
+<p><a class="cta" href="/">Open Stims — it plays with nothing to install</a></p>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#what-you-can-do-with-it">What you can do with it</a></li><li><a href="#winamp-visualizer-without-winamp">Winamp visualizer, without Winamp</a></li><li><a href="#learn-to-make-your-own">Learn to make your own</a></li><li><a href="#how-stims-compares-to-butterchurn-and-projectm">How Stims compares to Butterchurn and projectM</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
+<p>Stims plays MilkDrop presets in a browser tab. There is nothing to install: open <a href="https://toil.fyi">toil.fyi</a> and a preset is already animating, silently, until you start some audio.</p>
+<p>MilkDrop is the music visualizer Ryan Geiss wrote for Winamp. A MilkDrop <em>preset</em> is a small text file of equations that decides how the picture moves, and it reacts to whatever is playing. People have been trading and remixing those files for more than two decades, and Stims runs them on the web.</p>
+<h2 id="what-you-can-do-with-it">What you can do with it</h2>
+<ul>
+<li><strong>Watch.</strong> Pick a preset from the catalog, or follow a link like <a href="https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars">toil.fyi/?preset=krash-rovastar-cerebral-demons-stars</a> and it plays with demo audio straight away.</li>
+<li><strong>Play your own music.</strong> Start audio from a browser tab, a YouTube link, or your microphone, and the presets react to it.</li>
+<li><strong>Browse.</strong> The catalog has well over 1,700 presets, searchable by description, with collections, previews and favorites. The <a href="/discover/audio-reactive">discover hubs</a> group them by look and by author.</li>
+<li><strong>Edit and remix.</strong> Open the editor to see the real <code>.milk</code> source, drag live sliders, or change the equations. A remix keeps the credit of whoever you built on.</li>
+<li><strong>Bring your own presets.</strong> Import <code>.milk</code> files, export them again unchanged, or share a link that carries your edited preset inside the address.</li>
+</ul>
+<h2 id="winamp-visualizer-without-winamp">Winamp visualizer, without Winamp</h2>
+<p>If you remember MilkDrop from Winamp, this is the same kind of preset file running in a web page, so there is no player to install and no plugin to hunt down. Stims is an independent project. It is not made by, or affiliated with, Winamp or Ryan Geiss, and it credits the preset authors on every entry.</p>
+<h2 id="learn-to-make-your-own">Learn to make your own</h2>
+<p>The <a href="/learn/">Learn section</a> is a free curriculum for writing presets, from dragging sliders to writing shaders. <a href="/learn/play/">Track 0 — Play</a> needs no code and takes about fifteen minutes.</p>
+<h2 id="how-stims-compares-to-butterchurn-and-projectm">How Stims compares to Butterchurn and projectM</h2>
+<p>Butterchurn and projectM are the projects most people arrive from. See <a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a> for an honest side-by-side.</p>
+<h2 id="faq">FAQ</h2>
+<h3 id="do-i-need-to-install-anything-to-run-milkdrop-in-a-browser">Do I need to install anything to run MilkDrop in a browser?</h3>
+<p>No. Stims runs in the browser tab using WebGL or WebGPU. The <a href="/performance/">compatibility and performance guide</a> lists which browsers and devices run it well.</p>
+<h3 id="is-it-free">Is it free?</h3>
+<p>Yes. The visualizer is free to use.</p>
+<h3 id="will-it-make-sound-as-soon-as-i-open-it">Will it make sound as soon as I open it?</h3>
+<p>No. Stims is silent until you start some audio, and one action stops everything. Motion also follows your operating system&#39;s reduce-motion setting.</p>
+<h3 id="can-i-use-my-existing-milk-preset-files">Can I use my existing .milk preset files?</h3>
+<p>Yes. Import <code>.milk</code> files into the editor, and export them back out as <code>.milk</code>. Some presets use features that are approximated, and each preset is labelled with how faithfully it runs.</p>
+<h3 id="can-i-make-my-own-milkdrop-presets-here">Can I make my own MilkDrop presets here?</h3>
+<p>Yes. The editor shows the real preset source with completions and error messages, and the <a href="/learn/">authoring curriculum</a> teaches the format step by step.</p>
+
+</article>
+
+<aside class="related" aria-label="Related pages"><strong>Keep going</strong><ul><li><a href="/">Open the Stims visualizer</a></li><li><a href="/learn/">Learn to write MilkDrop presets</a></li><li><a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a></li><li><a href="/performance/">Compatibility and performance</a></li></ul></aside>
+</main>
+<footer class="site-footer">
+<h2>Stims</h2>
+<ul><li><a href="/">Visualizer</a></li><li><a href="/learn/">Learn to write presets</a></li><li><a href="/learn/milkdrop-online/">MilkDrop online</a></li><li><a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a></li><li><a href="/performance/">Compatibility and performance</a></li><li><a href="https://github.com/zz-plant/stims">Source on GitHub</a></li></ul>
+<h2>Browse presets by look</h2>
+<ul><li><a href="/discover/audio-reactive">Audio-Reactive</a></li><li><a href="/discover/ambient">Ambient</a></li><li><a href="/discover/fractal">Fractal</a></li><li><a href="/discover/geometric">Geometric</a></li><li><a href="/discover/hall-of-fame">Hall of Fame</a></li><li><a href="/discover/neon">Neon</a></li><li><a href="/discover/particles">Particle</a></li><li><a href="/discover/psychedelic">Psychedelic</a></li><li><a href="/discover/retro">Retro</a></li><li><a href="/discover/space">Space</a></li><li><a href="/discover/trippy">Trippy</a></li><li><a href="/discover/tunnel">Tunnel</a></li><li><a href="/discover/waveform">Waveform</a></li><li><a href="/discover/webgpu-showcase">WebGPU Showcase</a></li></ul>
+<h2>Browse presets by author</h2>
+<ul><li><a href="/author/geiss">Geiss</a></li><li><a href="/author/flexi">Flexi</a></li><li><a href="/author/martin">Martin</a></li><li><a href="/author/rovastar">Rovastar</a></li><li><a href="/author/eo-s">Eo.S.</a></li><li><a href="/author/phat">Phat</a></li><li><a href="/author/stahlregen">Stahlregen</a></li><li><a href="/author/unchained">Unchained</a></li><li><a href="/author/fishbrain">Fishbrain</a></li><li><a href="/author/aderrasi">Aderrasi</a></li><li><a href="/author/zylot">Zylot</a></li><li><a href="/author/shifter">Shifter</a></li><li><a href="/author/mig">Mig</a></li><li><a href="/author/orb">ORB</a></li><li><a href="/author/suksma">Suksma</a></li><li><a href="/author/cope">Cope</a></li><li><a href="/author/goody">Goody</a></li><li><a href="/author/krash">Krash</a></li></ul>
+</footer>
+</body>
+</html>

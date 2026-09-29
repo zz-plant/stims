@@ -9,6 +9,13 @@
 - **Preset Catalog**: https://toil.fyi/milkdrop-presets/catalog.json
 - **Source Code**: https://github.com/zz-plant/stims
 
+## Guides (static pages)
+- **Learn to write MilkDrop presets** (10-track course): https://toil.fyi/learn/
+- **MilkDrop online, in your browser**: https://toil.fyi/learn/milkdrop-online/
+- **Stims vs Butterchurn vs projectM**: https://toil.fyi/learn/milkdrop-vs-butterchurn-projectm/
+- **MilkDrop language reference**: https://toil.fyi/learn/reference/
+- **Compatibility and performance**: https://toil.fyi/performance/
+
 ## Key URL Parameters for AI Agents
 - `?agent=true`: Enables low-overhead, automation-friendly mode.
 - `?preset=<id>`: Loads a specific preset by ID (e.g. `?preset=shifter-snakeskin`).

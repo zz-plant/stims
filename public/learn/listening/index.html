@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Audio-Reactive MilkDrop: Bass, Beats, Smoothing — Track 3 | Stims</title>
+<meta name="description" content="Make a MilkDrop preset react to music: audio bands, smoothing, beat detection without a beat detector, and measuring how reactive it really is." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="canonical" href="https://toil.fyi/learn/listening/" />
+<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<meta property="og:site_name" content="Stims" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Audio-Reactive MilkDrop: Bass, Beats, Smoothing — Track 3 | Stims" />
+<meta property="og:description" content="Make a MilkDrop preset react to music: audio bands, smoothing, beat detection without a beat detector, and measuring how reactive it really is." />
+<meta property="og:url" content="https://toil.fyi/learn/listening/" />
+<meta property="og:image" content="https://toil.fyi/og/milkdrop.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Audio-Reactive MilkDrop: Bass, Beats, Smoothing — Track 3 | Stims" />
+<meta name="twitter:description" content="Make a MilkDrop preset react to music: audio bands, smoothing, beat detection without a beat detector, and measuring how reactive it really is." />
+<meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "TechArticle",
+      "headline": "Track 3 — Listening",
+      "name": "Audio-Reactive MilkDrop: Bass, Beats, Smoothing — Track 3",
+      "description": "Make a MilkDrop preset react to music: audio bands, smoothing, beat detection without a beat detector, and measuring how reactive it really is.",
+      "url": "https://toil.fyi/learn/listening/",
+      "mainEntityOfPage": "https://toil.fyi/learn/listening/",
+      "inLanguage": "en",
+      "image": "https://toil.fyi/og/milkdrop.png",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Stims",
+          "item": "https://toil.fyi/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Learn",
+          "item": "https://toil.fyi/learn/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Track 3 — Listening",
+          "item": "https://toil.fyi/learn/listening/"
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>:root{color-scheme:dark light;--bg:#0b0f1a;--fg:#e8ecf3;--muted:#a9b3c4;--line:rgba(255,255,255,.12);--code:#121a2a;--accent:#5fc0b5;--accent-fg:#0a0f19}@media(prefers-color-scheme:light){:root{--bg:#f7f8fb;--fg:#141a26;--muted:#4a5568;--line:rgba(0,0,0,.14);--code:#eaeef5;--accent:#0f766e;--accent-fg:#fff}}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:1rem/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}a{color:var(--accent)}.site-header,.site-footer,main{max-width:48rem;margin:0 auto;padding:0 16px}.site-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 20px;padding-top:16px;padding-bottom:16px;border-bottom:1px solid var(--line)}.site-header .brand{font-weight:700;font-size:1.15rem;text-decoration:none;color:var(--fg)}.site-header nav{display:flex;flex-wrap:wrap;gap:4px 18px}main{padding-top:24px;padding-bottom:32px}h1{font-size:2rem;line-height:1.2;margin:.4em 0}h2{font-size:1.4rem;margin:1.8em 0 .5em;line-height:1.3}h3{font-size:1.15rem;margin:1.5em 0 .4em}code{font:.9em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.1em .35em;border-radius:4px}pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto}pre code{background:none;padding:0}table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%}th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}blockquote{margin:1em 0;padding:.1em 1em;border-left:3px solid var(--accent);color:var(--muted)}details{margin:1em 0}.toc{border:1px solid var(--line);border-radius:8px;padding:8px 16px;margin:1em 0}.toc ul{margin:.3em 0;padding-left:1.2em}.cta{display:inline-block;background:var(--accent);color:var(--accent-fg);padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600}.pager{display:flex;justify-content:space-between;gap:16px;margin:2em 0;flex-wrap:wrap}.related,.site-footer{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}.related{margin-top:2em;padding-top:1em}.site-footer{padding-top:16px;padding-bottom:40px}.site-footer h2{font-size:.95rem;margin:1em 0 .3em;color:var(--fg)}.site-footer ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:2px 16px}</style>
+</head>
+<body>
+<header class="site-header">
+<a class="brand" href="/">Stims</a>
+<nav aria-label="Site"><a href="/">Open the visualizer</a><a href="/learn/">Learn</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/performance/">Compatibility</a></nav>
+</header>
+<main>
+<article>
+<h1 id="track-3--listening">Track 3 — Listening</h1>
+<p><a class="cta" href="/">Open Stims — it plays with nothing to install</a></p>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#lesson-1--raw-audio-is-jittery">Lesson 1 · Raw audio is jittery</a></li><li><a href="#lesson-2--rolling-your-own-smoothing">Lesson 2 · Rolling your own smoothing</a></li><li><a href="#lesson-3--the-volume-clock-pattern">Lesson 3 · The volume-clock pattern</a></li><li><a href="#lesson-4--detecting-a-beat-without-a-beat-detector">Lesson 4 · Detecting a beat without a beat detector</a></li><li><a href="#lesson-5--measuring-it">Lesson 5 · Measuring it</a></li><li><a href="#lesson-6--signals-only-stims-has">Lesson 6 · Signals only Stims has</a></li><li><a href="#what-you-can-now-build">What you can now build</a></li></ul></nav>
+<p>Every knob so far has moved on its own clock (<code>sin(time*k)</code>). Now the music takes the wheel. This track covers the audio registers, the smoothing idiom every serious preset uses, how to detect a beat without a beat detector, and how to measure whether any of it actually worked.</p>
+<h2 id="lesson-1--raw-audio-is-jittery">Lesson 1 · Raw audio is jittery</h2>
+<p>The simplest possible link: read a band, drive a knob.</p>
+<pre><code class="language-text">per_frame_1=zoom = 1.01 + bass*0.15;</code></pre>
+<p><a href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBTYW1lIGJlbmNoLCBkcml2ZW4gc3RyYWlnaHQgb2ZmIHJhdyBiYXNzIOKAlCB0aGUgaml0dGVyeSBiYXNlbGluZSBUcmFjayAzCi8vIG9wZW5zIHdpdGguIENvbXBhcmUgYWdhaW5zdCAzMS1hdHRhY2stc21vb3RoZWQubWlsay4KZlJhdGluZz01CmZEZWNheT0wLjk2CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEuMDEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MApwZXJfZnJhbWVfMT16b29tID0gMS4wMSArIGJhc3MqMC4xNTsK" title="examples/30-raw-jitter.milk"><strong>▶ Run raw bass → zoom</strong></a></p>
+<p>Watch it for a few seconds. It twitches — <code>bass</code> is close to instantaneous, so every sample-level flicker in the low end shows up as a visible jolt. This is the single most common beginner tell: a preset that shudders instead of breathes.</p>
+<p>Swap in the attack-smoothed register:</p>
+<pre><code class="language-text">per_frame_1=zoom = 1.01 + bass_att*0.15;</code></pre>
+<p><a href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBTYW1lIGFzIDMwLXJhdy1qaXR0ZXIubWlsayBidXQgcmVhZGluZyBiYXNzX2F0dCBpbnN0ZWFkIG9mIGJhc3Mg4oCUIHRoZQovLyBhdHRhY2stc21vb3RoZWQgcmVnaXN0ZXIsIG5vdCBhIGhhbmQtcm9sbGVkIGZpbHRlci4KZlJhdGluZz01CmZEZWNheT0wLjk2CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEuMDEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MApwZXJfZnJhbWVfMT16b29tID0gMS4wMSArIGJhc3NfYXR0KjAuMTU7Cg%3D%3D" title="examples/31-attack-smoothed.milk"><strong>▶ Run bass_att → zoom</strong></a></p>
+<p>Same music, calmer motion. <code>bass_att</code>/<code>mid_att</code>/<code>treb_att</code> are envelope-followed versions of <code>bass</code>/<code>mid</code>/<code>treb</code> — they still rise fast on a hit, but they don&#39;t chatter. Default to the <code>_att</code> versions for anything continuous; reach for the raw bands only when you deliberately want the jitter (texture, noise).</p>
+<h2 id="lesson-2--rolling-your-own-smoothing">Lesson 2 · Rolling your own smoothing</h2>
+<p><code>_att</code> isn&#39;t the only tool. The RC low-pass filter — one line, tunable — is the idiom you&#39;ll see in nearly every hand-written preset that predates or ignores the <code>_att</code> registers:</p>
+<pre><code class="language-text">per_frame_1=ra = 1/fps*0.1;
+per_frame_2=bass_avg = bass_avg*(1-ra) + ra*bass;
+per_frame_3=zoom = 1.01 + bass_avg*0.15;</code></pre>
+<p><a href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBSQyBsb3ctcGFzcyBmaWx0ZXIgb3ZlciBiYXNzLCBoYW5kLXJvbGxlZCB3aXRoIGEgcGVyc2lzdGVudCBnbG9iYWwKLy8gKGJhc3NfYXZnIGtlZXBzIGl0cyB2YWx1ZSBmcmFtZSB0byBmcmFtZSBiZWNhdXNlIGV2ZXJ5IEVFTCB2YXJpYWJsZSBkb2VzKS4KZlJhdGluZz01CmZEZWNheT0wLjk2CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEuMDEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MApwZXJfZnJhbWVfMT1yYSA9IDEvZnBzKjAuMTsKcGVyX2ZyYW1lXzI9YmFzc19hdmcgPSBiYXNzX2F2ZyooMS1yYSkgKyByYSpiYXNzOwpwZXJfZnJhbWVfMz16b29tID0gMS4wMSArIGJhc3NfYXZnKjAuMTU7Cg%3D%3D" title="examples/32-rc-smoothed.milk"><strong>▶ Run the RC filter</strong></a></p>
+<p><code>bass_avg</code> isn&#39;t a built-in — it&#39;s an ordinary variable. In NS-EEL, any name you assign persists from frame to frame automatically (there&#39;s no declaration step), so <code>bass_avg*(1-ra) + ra*bass</code> is a proper exponential moving average: each frame, <code>bass_avg</code> drifts 10% of the way from where it was toward the current <code>bass</code>. <code>ra</code> in the <code>0.05–0.15</code> range is the useful cutoff — smaller is smoother and laggier, larger snaps closer to raw. The <code>1/fps</code> term keeps the cutoff frequency the same regardless of frame rate, the same correction you saw as <code>75/fps</code> in Track 2 — here it&#39;s derived directly instead of against a 75fps reference, which is the more common form when a preset builds its own filter.</p>
+<p>Why bother when <code>_att</code> already exists? Control. You choose the exact cutoff, and the same technique smooths <em>anything</em> — not just the three built-in bands, but <code>vol</code>, a derived signal, even another filter&#39;s output.</p>
+<h2 id="lesson-3--the-volume-clock-pattern">Lesson 3 · The volume-clock pattern</h2>
+<p>The highest-leverage idiom in the whole language: don&#39;t drive a knob from audio directly — drive an accumulating clock, and drive the knob from the clock. This is Pattern 1 from the <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#pattern-1-volume-squaring--mtime">coding guide</a>:</p>
+<pre><code class="language-text">per_frame_1=vol = (bass+mid+treb)*0.333;
+per_frame_2=vol = vol*vol;
+per_frame_3=mtime = mtime + vol*0.02*(75/fps);
+per_frame_4=rot = sin(mtime)*0.03;
+per_frame_5=zoom = 1 + 0.03*vol;</code></pre>
+<p><a href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBQYXR0ZXJuIDEgZnJvbSB0aGUgY29kaW5nIGd1aWRlOiBzcXVhcmVkIHZvbHVtZSBkcml2aW5nIGFuIGFjY3VtdWxhdGluZwovLyBjbG9jaywgaW5zdGVhZCBvZiBkcml2aW5nIHpvb20gZGlyZWN0bHkuIFF1aWV0IHBhc3NhZ2VzIG5lYXJseSBmcmVlemUKLy8gdGhlIGNsb2NrOyBsb3VkIG9uZXMgc3BpbiBpdC4KZlJhdGluZz01CmZEZWNheT0wLjk3CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MApwZXJfZnJhbWVfMT12b2wgPSAoYmFzcyttaWQrdHJlYikqMC4zMzM7CnBlcl9mcmFtZV8yPXZvbCA9IHZvbCp2b2w7CnBlcl9mcmFtZV8zPW10aW1lID0gbXRpbWUgKyB2b2wqMC4wMiooNzUvZnBzKTsKcGVyX2ZyYW1lXzQ9cm90ID0gc2luKG10aW1lKSowLjAzOwpwZXJfZnJhbWVfNT16b29tID0gMSArIDAuMDMqdm9sOwo%3D" title="examples/33-vol-clock.milk"><strong>▶ Run the volume clock</strong></a></p>
+<p>Two ideas stacked:</p>
+<ul>
+<li><strong>Squaring compresses quiet and amplifies loud.</strong> <code>vol*vol</code> on a 0–1ish range pushes background hiss toward zero while barely touching a loud passage — the preset visibly <em>rests</em> between hits instead of humming continuously.</li>
+<li><strong><code>mtime</code> accumulates instead of following.</strong> <code>rot</code> doesn&#39;t read <code>vol</code> directly — it reads <code>sin(mtime)</code>, and <code>mtime</code> only advances when there&#39;s volume to advance it. During a quiet bridge the clock nearly stops and the whole preset holds its pose; during a loud chorus it races. This is why energetic presets still feel <em>composed</em> rather than nervous: the music controls tempo, not just amplitude.</li>
+</ul>
+<h2 id="lesson-4--detecting-a-beat-without-a-beat-detector">Lesson 4 · Detecting a beat without a beat detector</h2>
+<p>MilkDrop has no <code>on_beat()</code> callback. Beats are inferred from a threshold that adapts to the track, <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#pattern-6-beat-detection-with-adaptive-threshold">Pattern 6 in the coding guide</a>:</p>
+<pre><code class="language-text">per_frame_1=bass_thresh = above(bass_att,bass_thresh)*2 + (1-above(bass_att,bass_thresh))*((bass_thresh-1.3)*0.96+1.3);
+per_frame_2=beat_fired = above(bass_att,bass_thresh);
+per_frame_3=wave_r = 0.2 + beat_fired*0.7;
+per_frame_4=wave_g = 0.85 - beat_fired*0.3;</code></pre>
+<p><a href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBQYXR0ZXJuIDYgZnJvbSB0aGUgY29kaW5nIGd1aWRlOiBhbiBhZGFwdGl2ZSBiZWF0IHRocmVzaG9sZC4gYmFzc190aHJlc2gKLy8ganVtcHMgdG8gMi4wIHRoZSBpbnN0YW50IGEgYmVhdCBmaXJlcyAoc28gaXQgY2FuJ3QgcmV0cmlnZ2VyIG5leHQgZnJhbWUpLAovLyB0aGVuIGRlY2F5cyBiYWNrIHRvd2FyZCAxLjMg4oCUIHNlbGYtdHVuaW5nIHRvIGxvdWQgb3IgcXVpZXQgdHJhY2tzLgpmUmF0aW5nPTUKZkRlY2F5PTAuOTYKZldhdmVBbHBoYT0xLjIKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MS4wMQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wLjIKd2F2ZV9nPTAuODUKd2F2ZV9iPTEKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wCnBlcl9mcmFtZV8xPWJhc3NfdGhyZXNoID0gYWJvdmUoYmFzc19hdHQsYmFzc190aHJlc2gpKjIgKyAoMS1hYm92ZShiYXNzX2F0dCxiYXNzX3RocmVzaCkpKigoYmFzc190aHJlc2gtMS4zKSowLjk2KzEuMyk7CnBlcl9mcmFtZV8yPWJlYXRfZmlyZWQgPSBhYm92ZShiYXNzX2F0dCxiYXNzX3RocmVzaCk7CnBlcl9mcmFtZV8zPXdhdmVfciA9IDAuMiArIGJlYXRfZmlyZWQqMC43OwpwZXJfZnJhbWVfND13YXZlX2cgPSAwLjg1IC0gYmVhdF9maXJlZCowLjM7Cg%3D%3D" title="examples/34-beat-flash.milk"><strong>▶ Run the beat flash</strong></a></p>
+<p>Read it as a state machine with two states, chosen by <code>above(bass_att, bass_thresh)</code> (1 if a beat just cleared the bar, else 0):</p>
+<ul>
+<li><strong>Beat fired</strong> (<code>above</code> is 1): the whole right-hand expression collapses to <code>1*2 + 0*(...)</code> — <code>bass_thresh</code> snaps to <code>2.0</code>. The bar is now so high that next frame&#39;s <code>bass_att</code> almost certainly can&#39;t clear it, which is exactly the point: one hit can&#39;t retrigger itself for several frames.</li>
+<li><strong>No beat</strong> (<code>above</code> is 0): it collapses to <code>0*2 + 1*((bass_thresh-1.3)*0.96+1.3)</code> — <code>bass_thresh</code> decays 4% of the way back toward a <code>1.3</code> floor every frame. Give it enough quiet frames and the bar is low again, ready for the next hit.</li>
+</ul>
+<p>No branch, no <code>if</code> even used here — <code>above()</code> returning exactly 1 or 0 is what lets both terms be written as one line that only one half of ever survives. This self-tuning bar is why the same threshold code works on a whisper-quiet ambient track and a wall-of-noise one: it&#39;s relative to recent loudness, not an absolute number picked for one song.</p>
+<p><code>beat_fired</code> itself is reusable — Track 5 uses the identical pattern to advance a shape&#39;s state machine.</p>
+<h2 id="lesson-5--measuring-it">Lesson 5 · Measuring it</h2>
+<p>Everything above is a claim about what the preset does. Stims ships the same instrument its own agents use to check that claim — point it at a file and it reports, per variable, whether audio actually explains the motion:</p>
+<pre><code class="language-bash">bun run lab:reactivity -- --file docs/authoring/examples/35-reactive-vortex.milk</code></pre>
+<p><a href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgbGFiLW1lYXN1cmVkIGV4YW1wbGU6IFJDLXNtb290aGVkIGJhc3MgZHJpdmVzIHJvdGF0aW9uIHNwZWVkLCBhbgovLyBhZGFwdGl2ZSBiZWF0IHRocmVzaG9sZCBkcml2ZXMgYSBjb2xvciBmbGFzaCwgYW5kIHZvbCBkcml2ZXMgem9vbS4KLy8gUnVuIHRocm91Z2g6IGJ1biBydW4gbGFiOnJlYWN0aXZpdHkgLS0gLS1maWxlIGRvY3MvYXV0aG9yaW5nL2V4YW1wbGVzLzM1LXJlYWN0aXZlLXZvcnRleC5taWxrCmZSYXRpbmc9NQpmRGVjYXk9MC45NwpmV2F2ZUFscGhhPTEuMgpmV2F2ZVNjYWxlPTEKbldhdmVNb2RlPTAKYldhdmVUaGljaz0xCmJNYXhpbWl6ZVdhdmVDb2xvcj0xCmJUZXhXcmFwPTEKem9vbT0xCnJvdD0wCmN4PTAuNQpjeT0wLjUKZHg9MApkeT0wCnN4PTEKc3k9MQp3YXJwPTAKd2F2ZV9yPTAuMgp3YXZlX2c9MC44NQp3YXZlX2I9MQp3YXZlX3g9MC41CndhdmVfeT0wLjUKb2JfYT0wCmliX2E9MAptdl9hPTAKcGVyX2ZyYW1lXzE9cmEgPSAxL2ZwcyowLjE7CnBlcl9mcmFtZV8yPWJhc3NfYXZnID0gYmFzc19hdmcqKDEtcmEpICsgcmEqYmFzczsKcGVyX2ZyYW1lXzM9dm9sID0gKGJhc3MrbWlkK3RyZWIpKjAuMzMzOwpwZXJfZnJhbWVfND12b2wgPSB2b2wqdm9sOwpwZXJfZnJhbWVfNT16b29tID0gMS4wMDUgKyAwLjAzKnZvbDsKcGVyX2ZyYW1lXzY9cm90ID0gMC4wMSArIGJhc3NfYXZnKjAuMDQ7CnBlcl9mcmFtZV83PWJhc3NfdGhyZXNoID0gYWJvdmUoYmFzc19hdHQsYmFzc190aHJlc2gpKjIgKyAoMS1hYm92ZShiYXNzX2F0dCxiYXNzX3RocmVzaCkpKigoYmFzc190aHJlc2gtMS4zKSowLjk2KzEuMyk7CnBlcl9mcmFtZV84PWJlYXRfZmlyZWQgPSBhYm92ZShiYXNzX2F0dCxiYXNzX3RocmVzaCk7CnBlcl9mcmFtZV85PXdhdmVfciA9IHdhdmVfciArIDAuMypiZWF0X2ZpcmVkKigxLXdhdmVfcik7Cg%3D%3D" title="examples/35-reactive-vortex.milk"><strong>▶ Run the reactive vortex</strong></a> — RC-smoothed bass drives rotation speed, the volume-clock pattern drives zoom, and the adaptive threshold drives a color flash: everything in this lesson, combined.</p>
+<p>The report gives each variable a verdict:</p>
+<table>
+<thead>
+<tr>
+<th>Verdict</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>reactive</code></td>
+<td>measurably correlated with audio — the number you want</td>
+</tr>
+<tr>
+<td><code>autonomous</code></td>
+<td>moves, but on its own clock (<code>sin(time)</code>), not audio</td>
+</tr>
+<tr>
+<td><code>weak</code></td>
+<td>some correlation, but faint</td>
+</tr>
+<tr>
+<td><code>static</code></td>
+<td>never changes — not necessarily wrong (most variables in a preset should be)</td>
+</tr>
+</tbody></table>
+<p>For <code>zoom</code>, <code>rot</code>, and <code>wave_r</code> in the vortex you should see <code>reactive</code>, with the strongest correlation usually on the waveform&#39;s own deviation (<code>mainWave.deviation</code>) — the tool is measuring the same thing your eyes were doing in Lesson 1, just with a number attached. This is the loop real authors use: write, measure, adjust the coupling strength until the verdict — not just the vibe — says reactive. It&#39;s also exactly what <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md"><code>bun run lab:visual</code></a> checks on the pixel side, and what the <a href="https://github.com/zz-plant/stims/blob/main/CONTRIBUTING.md#contributing-presets">contributing guide</a> asks for before a preset is submitted.</p>
+<h2 id="lesson-6--signals-only-stims-has">Lesson 6 · Signals only Stims has</h2>
+<p>Everything above is standard MilkDrop, portable to Winamp, projectM, and Butterchurn. Stims also feeds presets what the person watching is doing — where the pointer is, how hard it is being dragged, pinch and twist, and a set of key pulses — plus device motion. Every name is in the <a href="/learn/reference/#signals-read-only-inputs">reference</a>, completed and hover-documented in the editor:</p>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Names</th>
+<th>What it carries</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Pointer</td>
+<td><code>input_x</code> <code>input_y</code> <code>input_dx</code> <code>input_dy</code> <code>input_speed</code> <code>input_pressed</code> <code>input_count</code></td>
+<td>position (-1..1), per-frame movement, and whether anything is held</td>
+</tr>
+<tr>
+<td>Hover</td>
+<td><code>hover_active</code> <code>hover_x</code> <code>hover_y</code></td>
+<td>a mouse over the stage that is <em>not</em> pressing</td>
+</tr>
+<tr>
+<td>Force</td>
+<td><code>drag_intensity</code> <code>drag_angle</code> <code>wheel_delta</code> <code>wheel_accum</code></td>
+<td>how hard, which way, and the scroll wheel</td>
+</tr>
+<tr>
+<td>Gesture</td>
+<td><code>gesture_scale</code> <code>gesture_rotation</code> <code>gesture_translate_x</code> <code>gesture_translate_y</code></td>
+<td>pinch and twist — <code>=</code>/<code>-</code> and <code>,</code>/<code>.</code> on a keyboard</td>
+</tr>
+<tr>
+<td>Keys</td>
+<td><code>action_remix</code> <code>action_accent</code> <code>action_mode_next</code> <code>action_mode_previous</code> <code>action_quick_look_1..3</code></td>
+<td>R, Enter, X, Q/Z, 1/2/3 as pulses that decay over ~220ms</td>
+</tr>
+</tbody></table>
+<p>The keys only reach the preset while the stage has focus — click the visuals first. Shift and an arrow key steers the pointer without a mouse.</p>
+<p><strong>None of the 2,686 bundled presets read any of them</strong>, which cuts both ways: there is no prior art to copy, and a preset that answers the person watching is instantly unlike everything else in the catalog.</p>
+<p><a href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBTdGltcy1vbmx5OiB0aGUgcGljdHVyZSBhbnN3ZXJzIHRoZSBwZXJzb24gd2F0Y2hpbmcgaXQuCi8vIERyYWcgdGhlIHN0YWdlIChvciBob2xkIFNoaWZ0IGFuZCBhbiBhcnJvdyBrZXkpIHRvIHB1c2ggdGhlIGRyaWZ0IGFyb3VuZCwKLy8gdHdpc3QgdHdvIGZpbmdlcnMg4oCUIG9yIHByZXNzICwgYW5kIC4g4oCUIHRvIHNwaW4gaXQsIGFuZCBwcmVzcyBSIHRvIHNuYXAKLy8gdGhlIGNvbG91ci4gV2l0aCBubyBoYW5kcyBvbiBpdCwgZXZlcnkgb25lIG9mIHRoZXNlIHJlYWRzIDAgYW5kIHRoZSBwcmVzZXQKLy8gYmVoYXZlcyBsaWtlIGFuIG9yZGluYXJ5IHNsb3cgZHJpZnQsIHdoaWNoIGlzIHRoZSBwb2ludDogaW50ZXJhY3Rpb24gaXMgYQovLyBsYXllciBvbiB0b3Agb2YgYSBwcmVzZXQgdGhhdCBhbHJlYWR5IHdvcmtzLgpmUmF0aW5nPTUKZkRlY2F5PTAuOTgKZldhdmVBbHBoYT0yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTAKYlRleFdyYXA9MQp6b29tPTEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC41NQp3YXZlX2c9MC43NQp3YXZlX2I9MQp3YXZlX3g9MC41CndhdmVfeT0wLjUKb2JfYT0wCmliX2E9MAptdl9hPTAKcGVyX2ZyYW1lXzE9dm9sID0gKGJhc3MrbWlkK3RyZWIpKjAuMzMzOwpwZXJfZnJhbWVfMj16b29tID0gMS4wMTIgKyAwLjAyKnZvbCp2b2w7Ci8vIERyYWcgcHVzaGVzIHRoZSBmaWVsZDogaW5wdXRfZHgvaW5wdXRfZHkgYXJlIHBlci1mcmFtZSBwb2ludGVyIG1vdmVtZW50LAovLyBzbyB0aGlzIGlzIGEgc2hvdmUgcmF0aGVyIHRoYW4gYSBwb3NpdGlvbi4KcGVyX2ZyYW1lXzM9ZHggPSBkeCowLjkgKyBpbnB1dF9keCowLjM1OwpwZXJfZnJhbWVfND1keSA9IGR5KjAuOSAtIGlucHV0X2R5KjAuMzU7Ci8vIFdoZXJlIHRoZSBoYW5kIGlzIGRlY2lkZXMgd2hlcmUgdGhlIHpvb20gcHVsbHMgZnJvbS4gaW5wdXRfeC9pbnB1dF95IGFyZQovLyAtMS4uMSBhY3Jvc3MgdGhlIHN0YWdlLCBhbmQgY3gvY3kgd2FudCAwLi4xLgpwZXJfZnJhbWVfNT1jeCA9IDAuNSArIGlucHV0X3gqMC4yNSppbnB1dF9wcmVzc2VkOwpwZXJfZnJhbWVfNj1jeSA9IDAuNSAtIGlucHV0X3kqMC4yNSppbnB1dF9wcmVzc2VkOwovLyBQaW5jaCBhbmQgdHdpc3QgcmlkZSBvbiB0b3Agb2Ygd2hhdGV2ZXIgdGhlIGF1ZGlvIGlzIGFscmVhZHkgZG9pbmcuCnBlcl9mcmFtZV83PXJvdCA9IDAuMDIgKyBnZXN0dXJlX3JvdGF0aW9uKjAuMjUgKyBiYXNzKjAuMDE7CnBlcl9mcmFtZV84PXdhcnAgPSAwLjIgKyBkcmFnX2ludGVuc2l0eSoxLjU7Ci8vIFIgaXMgYSBwdWxzZSB0aGF0IGRlY2F5cyBvdmVyIH4yMjBtcywgc28gdGhpcyByZWFkcyBhcyBhIHNuYXAsIG5vdCBhIGhvbGQuCnBlcl9mcmFtZV85PXdhdmVfciA9IDAuNTUgKyBhY3Rpb25fcmVtaXgqMC40NTsKcGVyX2ZyYW1lXzEwPXdhdmVfZyA9IDAuNzUgLSBhY3Rpb25fcmVtaXgqMC41Owo%3D" title="examples/36-interactive-drift.milk"><strong>▶ Run the interactive drift</strong></a> — drag the stage to shove the field, twist to spin it, press R to snap the colour; with no hands on it, it is an ordinary slow drift.</p>
+<p><strong>These are not standard MilkDrop.</strong> A preset that reads them will still compile and run fine elsewhere (unknown identifiers just evaluate to 0), but the interactivity silently disappears. Use them freely for Stims-native work; if portability matters, keep them behind a variable you can zero out, or skip them. The full contract, including the device-motion signals (<code>motion_x</code>/<code>motion_y</code>/<code>motion_z</code>), is in the <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_PRESET_RUNTIME.md">signal contract</a>.</p>
+<h2 id="what-you-can-now-build">What you can now build</h2>
+<p>Any preset whose personality comes from audio — which is most of them — is now legible: find the smoothing, find whether it&#39;s driving a knob directly or a clock, find the threshold logic if there&#39;s a beat effect, and measure instead of guessing.</p>
+<p><strong>Next: <a href="/learn/warp-fields/">Track 4 — Warp fields</a></strong>, where knobs stop being one number for the whole screen and start varying per pixel.</p>
+
+</article>
+<nav class="pager" aria-label="Course navigation"><span>← <a href="/learn/motion/">MilkDrop Motion: zoom, rot, dx, sx, warp — Track 2</a></span><span><a href="/learn/warp-fields/">MilkDrop Per-Pixel Warp Fields — Track 4</a> →</span></nav>
+<aside class="related" aria-label="Related pages"><strong>Keep going</strong><ul><li><a href="/">Open the Stims visualizer</a></li><li><a href="/learn/">Learn to write MilkDrop presets</a></li><li><a href="/learn/milkdrop-online/">MilkDrop online, in your browser</a></li><li><a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a></li><li><a href="/performance/">Compatibility and performance</a></li></ul></aside>
+</main>
+<footer class="site-footer">
+<h2>Stims</h2>
+<ul><li><a href="/">Visualizer</a></li><li><a href="/learn/">Learn to write presets</a></li><li><a href="/learn/milkdrop-online/">MilkDrop online</a></li><li><a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a></li><li><a href="/performance/">Compatibility and performance</a></li><li><a href="https://github.com/zz-plant/stims">Source on GitHub</a></li></ul>
+<h2>Browse presets by look</h2>
+<ul><li><a href="/discover/audio-reactive">Audio-Reactive</a></li><li><a href="/discover/ambient">Ambient</a></li><li><a href="/discover/fractal">Fractal</a></li><li><a href="/discover/geometric">Geometric</a></li><li><a href="/discover/hall-of-fame">Hall of Fame</a></li><li><a href="/discover/neon">Neon</a></li><li><a href="/discover/particles">Particle</a></li><li><a href="/discover/psychedelic">Psychedelic</a></li><li><a href="/discover/retro">Retro</a></li><li><a href="/discover/space">Space</a></li><li><a href="/discover/trippy">Trippy</a></li><li><a href="/discover/tunnel">Tunnel</a></li><li><a href="/discover/waveform">Waveform</a></li><li><a href="/discover/webgpu-showcase">WebGPU Showcase</a></li></ul>
+<h2>Browse presets by author</h2>
+<ul><li><a href="/author/geiss">Geiss</a></li><li><a href="/author/flexi">Flexi</a></li><li><a href="/author/martin">Martin</a></li><li><a href="/author/rovastar">Rovastar</a></li><li><a href="/author/eo-s">Eo.S.</a></li><li><a href="/author/phat">Phat</a></li><li><a href="/author/stahlregen">Stahlregen</a></li><li><a href="/author/unchained">Unchained</a></li><li><a href="/author/fishbrain">Fishbrain</a></li><li><a href="/author/aderrasi">Aderrasi</a></li><li><a href="/author/zylot">Zylot</a></li><li><a href="/author/shifter">Shifter</a></li><li><a href="/author/mig">Mig</a></li><li><a href="/author/orb">ORB</a></li><li><a href="/author/suksma">Suksma</a></li><li><a href="/author/cope">Cope</a></li><li><a href="/author/goody">Goody</a></li><li><a href="/author/krash">Krash</a></li></ul>
+</footer>
+</body>
+</html>
