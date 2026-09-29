@@ -128,6 +128,7 @@ import {
 export { computeAstDiagnostics, mergeDiagnostics };
 
 import { buildCompatChecklist } from '../compat-checklist.ts';
+import { buildPresetOutline } from '../preset-outline.ts';
 import { searchReference } from '../reference-search.ts';
 import { createVariableHistory } from '../variable-history.ts';
 import { subscribeVariables } from '../variable-probe.ts';
@@ -951,6 +952,7 @@ export class EditorPanel {
   private compatEngines: HTMLElement | null = null;
   private compatList: HTMLElement | null = null;
   private compatTab: HTMLButtonElement | null = null;
+  private outlineList: HTMLElement | null = null;
   private inspectEmpty: HTMLElement | null = null;
   private inspectFilter = '';
   private inspectOnlyChanging = false;
@@ -1394,6 +1396,7 @@ export class EditorPanel {
 
     const panes: Array<{ id: string; label: string; content: HTMLElement }> = [
       { id: 'tune', label: 'Tune', content: this.renderSliders() },
+      { id: 'outline', label: 'Outline', content: this.renderOutlinePane() },
       { id: 'insert', label: 'Insert', content: this.renderInsertPane() },
       {
         id: 'reference',
@@ -1937,6 +1940,63 @@ export class EditorPanel {
     );
   }
 
+  /** Outline pane: the buffer's editable parts (settings, equations, each
+   * custom wave and shape, both shaders) with line ranges. Real presets run
+   * to hundreds of lines; this is the way to move around one. */
+  private renderOutlinePane(): HTMLElement {
+    const pane = document.createElement('div');
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent = 'The parts of this preset. Click one to jump to it.';
+    this.outlineList = document.createElement('div');
+    this.outlineList.className = 'stims-editor__outline';
+    this.outlineList.setAttribute('role', 'list');
+    pane.append(hint, this.outlineList);
+    return pane;
+  }
+
+  private paintOutline(source: string) {
+    const list = this.outlineList;
+    if (!list) return;
+    const entries = buildPresetOutline(source);
+    if (entries.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'stims-editor__hint';
+      empty.textContent = 'Nothing to outline yet.';
+      list.replaceChildren(empty);
+      return;
+    }
+    list.replaceChildren(
+      ...entries.map((entry) => {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'stims-editor__outline-row';
+        row.setAttribute('role', 'listitem');
+        row.dataset.kind = entry.kind;
+        row.dataset.firstLine = String(entry.firstLine);
+        const label = document.createElement('code');
+        label.textContent = entry.label;
+        const range = document.createElement('span');
+        range.className = 'stims-editor__outline-range';
+        range.textContent =
+          entry.firstLine === entry.lastLine
+            ? `line ${entry.firstLine}`
+            : `lines ${entry.firstLine}\u2013${entry.lastLine}`;
+        row.append(label, range);
+        row.addEventListener('click', () => {
+          if (entry.firstLine > this.editor.state.doc.lines) return;
+          const target = this.editor.state.doc.line(entry.firstLine);
+          this.editor.dispatch({
+            selection: { anchor: target.from },
+            scrollIntoView: true,
+          });
+          this.editor.focus();
+        });
+        return row;
+      }),
+    );
+  }
+
   /** Assist pane: every AI-backed action in one place. They share a single
    * proposal slot and a single pending flag, so grouping them makes the
    * mutual exclusion visible instead of surprising. */
@@ -2432,6 +2492,7 @@ export class EditorPanel {
     // problems strip's job — this flag reports the one thing neither can:
     // the stage is rendering a simplified version of what compiled.
     this.paintCompat(state);
+    this.paintOutline(state.source);
     this.safetyFlag.hidden = !isDegraded;
     this.safetyFlag.textContent = 'Simplified';
     this.safetyFlag.dataset.tone = 'warning';

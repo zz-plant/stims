@@ -16,7 +16,7 @@ as its own PR.
 | # | Phase | Status |
 |---|-------|--------|
 | 1 | Make equations visible: Inspect tab (live variables, pins, sparklines) | **Inspect tab shipped**; q-var knobs, reactivity meter, frame stepping next |
-| 2 | Structured editing: per-section outline, shape/wave solo, shader translation view | planned |
+| 2 | Structured editing: per-section outline, shape/wave solo, shader translation view | **Outline tab shipped** (`preset-outline.ts`); solo/mute and the shader translation view are next |
 | 3 | Formats: Format round-trip guarantee (**shipped**, `milkdrop-formatter-roundtrip.test.ts`), packs, unknown-key preservation | in progress |
 | 4 | Named versions, arbitrary diff, fork tree | planned |
 | 5 | Live compatibility checklist | **Compat tab shipped** (`compat-checklist.ts`): what will not run as written on Stims, worst first, jump to line. A per-engine (MilkDrop 2 / projectM / Butterchurn) view is still planned |

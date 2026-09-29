@@ -610,7 +610,7 @@ html.light .stims-editor {
 }
 
 .stims-editor__tab {
-  padding: 8px 9px 7px;
+  padding: 8px 7px 7px;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
@@ -618,7 +618,7 @@ html.light .stims-editor {
   font: inherit;
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   cursor: pointer;
   transition: color 0.12s ease;
@@ -1674,4 +1674,61 @@ button.stims-editor__compat-row:focus-visible {
 .stims-editor__compat-detail {
   font-size: var(--text-xs);
   opacity: 0.85;
+}
+
+/* ── Outline pane ─────────────────────────────────────────────────── */
+
+.stims-editor__outline {
+  display: grid;
+  gap: 2px;
+}
+
+.stims-editor__outline-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-xs-plus);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stims-editor__outline-row:hover,
+.stims-editor__outline-row:focus-visible {
+  border-color: var(--stims-line-soft);
+  background: var(--stims-surface-2, rgba(255, 255, 255, 0.05));
+}
+
+.stims-editor__outline-range {
+  font-size: var(--text-2xs);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+/* Eight tabs no longer fit beside the collapse toggle in a narrow dock: let
+   the strip scroll sideways and keep the toggle in place. */
+.stims-editor__tabrow {
+  min-width: 0;
+}
+
+.stims-editor__tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.stims-editor__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.stims-editor__tab {
+  flex: none;
+  white-space: nowrap;
 }
