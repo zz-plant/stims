@@ -132,6 +132,7 @@ import {
 export { computeAstDiagnostics, mergeDiagnostics };
 
 import { buildCompatChecklist } from '../compat-checklist.ts';
+import { applyRecipe, COOKBOOK, type Recipe } from '../cookbook.ts';
 import {
   browserVersionStorage,
   createVersionStore,
@@ -174,132 +175,6 @@ export type SliderConfig = ScalarControlConfig;
 export const DEFAULT_EDITOR_SLIDERS: ScalarControlConfig[] = SCALAR_CONTROLS;
 export const DEFAULT_EDITOR_COLOR_GROUPS: ColorGroupConfig[] = COLOR_GROUPS;
 export type { ColorGroupConfig };
-
-type EditorSnippet = {
-  label: string;
-  description: string;
-  snippet: string;
-};
-
-type EditorCue = {
-  label: string;
-  description: string;
-  snippet: string;
-};
-
-const EDITOR_SNIPPETS: EditorSnippet[] = [
-  {
-    label: 'Pulse zoom',
-    description: 'Drop in a breathing zoom curve.',
-    snippet: 'zoom=1.01 + 0.035*sin(time*0.82)\n',
-  },
-  {
-    label: 'Hue drift',
-    description: 'Animate the waveform palette.',
-    snippet:
-      'wave_r=0.5 + 0.35*sin(time*0.31)\nwave_g=0.5 + 0.35*sin(time*0.47)\nwave_b=0.5 + 0.35*sin(time*0.63)\n',
-  },
-  {
-    label: 'Warp sway',
-    description: 'Add a gentle audio-reactive bend.',
-    snippet: 'warp=0.01 + bass_att*0.018 + 0.004*sin(time*0.5)\n',
-  },
-  {
-    label: 'Bass zoom',
-    description: 'Zoom pulses with bass energy.',
-    snippet: 'zoom=1.0 + bass*0.12\n',
-  },
-  {
-    label: 'Mid warp',
-    description: 'Warp bends with midrange signal.',
-    snippet: 'warp=1.0 + mid_att*0.025\n',
-  },
-  {
-    label: 'Beat flash',
-    description: 'Outer border pulses on beat.',
-    snippet:
-      'ob_size=0.01 + beat_pulse*0.04\nob_r=0.9; ob_g=0.5; ob_b=1;\nob_a=0.6 + beat_pulse*0.4\n',
-  },
-  {
-    label: 'Time spin',
-    description: 'Slow rotation from time phase.',
-    snippet: 'rot=time*0.15\n',
-  },
-  {
-    label: '3D projection',
-    description: 'Project XY from XYZ with perspective.',
-    snippet: 'x=xp/zp+0.5;\ny=yp/zp*1.3+0.5\n',
-  },
-  {
-    label: 'Color pulse',
-    description: 'Wave color modulated by treble.',
-    snippet:
-      'wave_r=0.5 + treb_att*0.5;\nwave_g=0.3 + mid_att*0.5;\nwave_b=0.9 + bass*0.3\n',
-  },
-  {
-    label: 'Decay trail',
-    description: 'Longer trail = softer motion.',
-    snippet: 'decay=0.935\n',
-  },
-  {
-    label: 'State toggle',
-    description: 'Flip between two values each frame.',
-    snippet: 'q1=above(bass, 0.1);\nzoom=1.0 + q1*0.2\n',
-  },
-];
-
-const EDITOR_CUES: EditorCue[] = [
-  {
-    label: 'bass_att',
-    description: 'Low-end zoom lift',
-    snippet: 'zoom=1.0 + bass_att*0.08\n',
-  },
-  {
-    label: 'mid_att',
-    description: 'Midrange rotation',
-    snippet: 'rot = rot + mid_att*0.01\n',
-  },
-  {
-    label: 'treb_att',
-    description: 'Treble brightness',
-    snippet: 'wave_a=0.4 + treb_att*0.4\n',
-  },
-  {
-    label: 'beat_pulse',
-    description: 'Beat gate',
-    snippet: 'ob_size=0.01 + beat_pulse*0.02\n',
-  },
-  {
-    label: 'time',
-    description: 'Continuous phase',
-    snippet: 'wave_y=0.5 + sin(time*0.35)*0.08\n',
-  },
-  {
-    label: 'frame',
-    description: 'Frame drift',
-    snippet: 'warp=0.01 + sin(frame*0.02)*0.01\n',
-  },
-  {
-    label: 'q1-q8',
-    description: 'Persistent globals',
-    snippet: 'q1=bass*0.5 + q1*0.95\nzoom=1.0 + q1*0.1\n',
-  },
-  {
-    label: 'rad',
-    description: 'Per-point radius',
-    snippet: 'rad=0.02 + bass*0.04\n',
-  },
-  {
-    label: 'r/g/b/a',
-    description: 'Per-point color',
-    snippet: 'r=0.4 + bass*0.3;\ng=0.2 + mid*0.3;\nb=1;\na=0.8\n',
-  },
-  {
-    label: 'decay',
-    description: 'Motion trail length',
-    snippet: 'decay=0.92 + bass_att*0.06\n',
-  },
-];
 
 const defaultEditorKeymap = defaultKeymap as readonly KeyBinding[];
 const historyEditorKeymap = historyKeymap as readonly KeyBinding[];
@@ -1776,59 +1651,73 @@ export class EditorPanel {
    * separate rail sections with identical affordances — one grid of
    * insertable code, grouped by whether it is a single reactive term or a
    * whole move. */
+  /** Insert pane: the technique cookbook. Each recipe explains itself and is
+   * added to the block it belongs in — a bare line pasted at the cursor is a
+   * base value, evaluated once, and does nothing. */
   private renderInsertPane(): HTMLElement {
     const pane = document.createElement('div');
-
-    const build = (
-      legend: string,
-      hint: string,
-      entries: ReadonlyArray<{
-        label: string;
-        description: string;
-        snippet: string;
-      }>,
-    ) => {
-      const heading = document.createElement('span');
-      heading.className = 'stims-editor__legend';
-      heading.textContent = legend;
-      const copy = document.createElement('p');
-      copy.className = 'stims-editor__hint';
-      copy.textContent = hint;
-      const grid = document.createElement('div');
-      grid.className = 'stims-editor__inserts';
-      entries.forEach((entry) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'stims-editor__insert';
-        button.dataset.insert = entry.label;
-        const label = document.createElement('strong');
-        label.textContent = entry.label;
-        const description = document.createElement('span');
-        description.textContent = entry.description;
-        button.append(label, description);
-        button.addEventListener('click', () =>
-          this.insertSnippet(entry.snippet),
-        );
-        grid.appendChild(button);
-      });
-      pane.append(heading, copy, grid);
-    };
-
-    build(
-      'Signals',
-      'Reactive terms, inserted at the cursor as a working line.',
-      EDITOR_CUES,
-    );
-    const spacer = document.createElement('div');
-    spacer.style.height = '12px';
-    pane.appendChild(spacer);
-    build(
-      'Patterns',
-      'Complete moves you can shape from there.',
-      EDITOR_SNIPPETS,
-    );
-
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent =
+      'Techniques MilkDrop authors use, added to the right part of your preset. Each uses only what MilkDrop 2 has, so it works everywhere.';
+    const list = document.createElement('div');
+    list.className = 'stims-editor__recipes';
+    list.setAttribute('role', 'list');
+    for (const recipe of COOKBOOK) {
+      const card = document.createElement('div');
+      card.className = 'stims-editor__recipe';
+      card.setAttribute('role', 'listitem');
+      card.dataset.recipe = recipe.id;
+      const head = document.createElement('div');
+      head.className = 'stims-editor__recipe-head';
+      const title = document.createElement('strong');
+      title.textContent = recipe.title;
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'stims-editor__btn stims-editor__recipe-add';
+      add.dataset.recipe = recipe.id;
+      add.textContent = 'Add';
+      add.setAttribute('aria-label', `Add ${recipe.title}`);
+      add.addEventListener('click', () => this.addRecipe(recipe));
+      head.append(title, add);
+      const summary = document.createElement('p');
+      summary.className = 'stims-editor__recipe-summary';
+      summary.textContent = recipe.summary;
+      const more = document.createElement('details');
+      more.className = 'stims-editor__recipe-more';
+      const label = document.createElement('summary');
+      label.textContent = 'How it works';
+      const how = document.createElement('p');
+      how.textContent = recipe.how;
+      const code = document.createElement('pre');
+      code.className = 'stims-editor__proposal-lines';
+      code.textContent = applyRecipe('', recipe).source.trim();
+      more.append(label, how, code);
+      card.append(head, summary, more);
+      list.appendChild(card);
+    }
+    pane.append(hint, list);
     return pane;
+  }
+
+  /** Append a recipe to its blocks and select what was added. */
+  private addRecipe(recipe: Recipe) {
+    const before = this.editor.state.doc.toString();
+    const { source, firstLine } = applyRecipe(before, recipe);
+    const doc = this.editor.state.doc;
+    this.editor.dispatch({
+      changes: { from: 0, to: doc.length, insert: source },
+      scrollIntoView: true,
+    });
+    const next = this.editor.state.doc;
+    if (firstLine <= next.lines) {
+      const line = next.line(firstLine);
+      this.editor.dispatch({
+        selection: { anchor: line.from, head: line.to },
+        scrollIntoView: true,
+      });
+    }
+    this.editor.focus();
   }
 
   /** Reference pane: every builtin the compiler accepts, searchable by name
@@ -1891,8 +1780,7 @@ export class EditorPanel {
     return pane;
   }
 
-  /** Replace the selection with `text` in place, unlike {@link insertSnippet},
-   * which puts a whole line of code on its own line. */
+  /** Replace the selection with `text` in place. */
   private insertInline(text: string) {
     const selection = this.editor.state.selection.main;
     this.editor.dispatch({
@@ -3390,34 +3278,6 @@ export class EditorPanel {
       sourceA: this.snapshotSourceA,
       sourceB: this.snapshotSourceB,
     };
-  }
-
-  private insertSnippet(snippet: string) {
-    const selection = this.editor.state.selection.main;
-    const prefix =
-      selection.from > 0 &&
-      this.editor.state.doc.sliceString(selection.from - 1, selection.from) !==
-        '\n'
-        ? '\n'
-        : '';
-    const suffix =
-      selection.to < this.editor.state.doc.length &&
-      this.editor.state.doc.sliceString(selection.to, selection.to + 1) !== '\n'
-        ? '\n'
-        : '';
-    const text = `${prefix}${snippet}${suffix}`;
-    this.editor.dispatch({
-      changes: {
-        from: selection.from,
-        to: selection.to,
-        insert: text,
-      },
-      selection: {
-        anchor: selection.from + text.length,
-      },
-      scrollIntoView: true,
-    });
-    this.editor.focus();
   }
 
   /**

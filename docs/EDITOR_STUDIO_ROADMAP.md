@@ -21,7 +21,7 @@ as its own PR.
 | 4 | Named versions, arbitrary diff, fork tree | **Named versions shipped**, with compare against the buffer or another saved version; fork tree next |
 | 5 | Live compatibility checklist | **Shipped.** Compat tab (`compat-checklist.ts`): what will not run as written on Stims. "Beyond Stims" (`portability.ts`): what will not carry over to MilkDrop 2 — Stims-only functions with a rewrite, Stims-only signals, Stims settings, textures to ship, GLSL in shaders. projectM and Butterchurn are assumed to follow MilkDrop 2 and are not checked separately. 1,484 of the 1,750 bundled presets translated from Butterchurn are flagged (GLSL shaders, `mod()`, `randint()`); 6 of the 936 MilkDrop 2/projectM presets are, mostly for texture files. Next: have Export rewrite the fixable ones |
 | 6 | Publish-from-editor, gallery browse + remix, short share links, archive rescue | planned; confirm the client is wired to `/api/presets` first |
-| 7 | Searchable in-app function reference and technique cookbook | **Reference tab shipped** (`reference-search.ts`); cookbook next |
+| 7 | Searchable in-app function reference and technique cookbook | **Shipped.** Reference tab (`reference-search.ts`); the Insert tab is now a cookbook (`cookbook.ts`): ten techniques, each explained and added to the block it belongs in with the next line number. The old Insert snippets pasted bare lines, which are base values evaluated once — every one compiled and did nothing. Each recipe is tested to compile, stay MilkDrop 2-portable and change the picture (`milkdrop-cookbook.test.ts`) |
 
 ## Inspect tab
 

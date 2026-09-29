@@ -1239,49 +1239,54 @@ html.light .stims-editor {
 
 /* ── Insert pane ──────────────────────────────────────────────────── */
 
-.stims-editor__inserts {
+.stims-editor__recipes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 6px;
 }
 
-.stims-editor__insert {
+.stims-editor__recipe {
   display: grid;
   gap: 2px;
-  padding: 7px 9px;
+  padding: 8px 10px;
   border: 1px solid var(--stims-line-soft);
-  border-radius: var(--stims-radius);
-  background: var(--ed-tint-2);
-  color: var(--ed-muted);
-  font: inherit;
-  text-align: left;
+  border-radius: var(--stims-radius-control);
+}
+
+.stims-editor__recipe-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--text-xs-plus);
+}
+
+.stims-editor__recipe-add {
+  min-height: 26px;
+  padding: 0 10px;
+}
+
+.stims-editor__recipe-summary {
+  margin: 0;
+  font-size: var(--text-xs);
+  opacity: 0.85;
+}
+
+.stims-editor__recipe-more {
+  font-size: var(--text-xs);
+}
+
+.stims-editor__recipe-more summary {
   cursor: pointer;
-  transition:
-    border-color 0.12s ease,
-    background 0.12s ease;
+  opacity: 0.75;
 }
 
-.stims-editor__insert:hover {
-  border-color: var(--stims-cool);
-  background: var(--ed-tint-5);
+.stims-editor__recipe-more p {
+  margin: 4px 0;
 }
 
-.stims-editor__insert:focus-visible {
-  outline: 2px solid var(--ed-focus);
-  outline-offset: 1px;
-}
-
-.stims-editor__insert strong {
-  font-family: var(--font-family-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--stims-ink);
-}
-
-.stims-editor__insert span {
-  font-size: 0.6875rem;
-  line-height: 1.35;
-  color: var(--ed-dim);
+.stims-editor__recipe-more .stims-editor__proposal-lines {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 /* ── Assist pane ──────────────────────────────────────────────────── */
