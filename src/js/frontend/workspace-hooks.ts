@@ -31,6 +31,7 @@ import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { recordStatusMessage } from './agent-state.ts';
 import type { LaunchIntent, SessionRouteState } from './contracts.ts';
+import { createForwardedEngineActions } from './engine/engine-forwarding.ts';
 import type {
   EngineSnapshot,
   MilkdropEngineAdapter,
@@ -167,6 +168,9 @@ export function useWorkspaceSessionState({
   const deferredSearch = useDeferredValue(searchQuery);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
+  const [forwardedEngineActions] = useState(() =>
+    createForwardedEngineActions(() => engineRef.current),
+  );
   const engineSnapshotRef = useRef<EngineSnapshot | null>(null);
   const sessionDisposedRef = useRef(false);
   const engineAdapterPromiseRef = useRef<Promise<MilkdropEngineAdapter> | null>(
@@ -768,28 +772,13 @@ export function useWorkspaceSessionState({
   });
 
   return {
+    // Pure engine forwards (see engine-forwarding.ts): one stable object,
+    // spread so each action is still reachable by name.
+    ...forwardedEngineActions,
+    forwardedEngineActions,
     deferredSearch,
     dismissToast,
     engineSnapshot,
-    exportUserPresets: async (): Promise<number> =>
-      (await engineRef.current?.exportUserPresets()) ?? 0,
-    exportPreset: () => {
-      engineRef.current?.exportPreset();
-    },
-    goBackPreset: async () => {
-      await engineRef.current?.goBackPreset();
-    },
-    revertEditorSource: () => {
-      engineRef.current?.revertEditorSource();
-    },
-    duplicatePreset: async () => {
-      await engineRef.current?.duplicatePreset();
-    },
-    deleteActivePreset: async () => {
-      await engineRef.current?.deleteActivePreset();
-    },
-    getVideoExportRuntime: () =>
-      engineRef.current?.getVideoExportRuntime() ?? null,
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
@@ -826,42 +815,9 @@ export function useWorkspaceSessionState({
         storageKey: QUALITY_STORAGE_KEY,
       });
     },
-    setAutoplay: (enabled: boolean) => {
-      engineRef.current?.setAutoplay(enabled);
-    },
-    setTransitionMode: (mode: 'blend' | 'cut') => {
-      engineRef.current?.setTransitionMode(mode);
-    },
-    startManualCrossfade: () => {
-      engineRef.current?.startManualCrossfade();
-    },
-    setCrossfade: (position: number) => {
-      engineRef.current?.setCrossfade(position);
-    },
-    getCrossfade: () => engineRef.current?.getCrossfade() ?? null,
-    setBlendDuration: (value: number) => {
-      engineRef.current?.setBlendDuration(value);
-    },
-    updateEditorSource: (source: string) => {
-      engineRef.current?.updateEditorSource(source);
-    },
-    updateFieldLive: (key: string, value: number) => {
-      engineRef.current?.updateFieldLive(key, value);
-    },
-    stepPlaybackFrame: (): boolean =>
-      engineRef.current?.stepPlaybackFrame() ?? false,
-    applyEditorSourceAwaited: async (source: string) =>
-      (await engineRef.current?.applyEditorSourceAwaited(source)) ?? null,
-    applyEditorFieldsAwaited: async (
-      updates: Record<string, string | number>,
-    ) => (await engineRef.current?.applyEditorFieldsAwaited(updates)) ?? null,
-    getEditorSessionState: () =>
-      engineRef.current?.getEditorSessionState() ?? null,
     updateInspectorField: (key: string, value: number) => {
       engineRef.current?.updateInspectorField?.(key, value);
     },
-    getActiveCompiledPreset: () =>
-      engineRef.current?.getActiveCompiledPreset() ?? null,
     setSearchQuery,
     setShowExtendedSources,
     setStatusMessage,
@@ -926,12 +882,6 @@ export function useWorkspaceSessionState({
     youtubeTransportControls,
     youtubeUrl,
     clearRecentYouTubeVideos,
-    pausePreview: () => {
-      engineRef.current?.pausePreview();
-    },
-    resumePreview: () => {
-      engineRef.current?.resumePreview();
-    },
     /**
      * Hold or release the whole stage. The engine holds the picture; the two
      * sources whose sound this page itself produces — a file's <audio>

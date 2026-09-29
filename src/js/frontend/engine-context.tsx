@@ -1,9 +1,7 @@
 import { createContext, type ReactNode, useContext } from 'react';
-import type { MilkdropCompiledPreset } from '../milkdrop/compiler-types.ts';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
-import type { MilkdropEditorSessionState } from '../milkdrop/runtime-types.ts';
-import type { CanvasVideoExportRuntime } from '../utils/media/canvas-video-exporter.ts';
 import type { PresetCatalogEntry, SessionRouteState } from './contracts.ts';
+import type { ForwardedEngineActions } from './engine/engine-forwarding.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { StarterPreset } from './workspace-helpers.ts';
 
@@ -25,7 +23,14 @@ export function useEngineSnapshot(): EngineSnapshotValue {
 
 /* ── Engine Data + Actions (stable between user actions / preset switches) ─── */
 
-export interface EngineContextValue {
+/**
+ * Everything components can do or read through the engine. Actions the
+ * workspace passes straight through (export, crossfade, live edits, …) come
+ * from `ForwardedEngineActions`, typed from the engine adapter itself — add
+ * one in engine-forwarding.ts and it is here. The members below carry state
+ * or do workspace work of their own.
+ */
+export interface EngineContextValue extends ForwardedEngineActions {
   presetPreviews: Record<string, MilkdropPresetRenderPreview>;
   catalog: PresetCatalogEntry[];
   catalogError: string | null;
@@ -42,17 +47,8 @@ export interface EngineContextValue {
   selectedPreset: PresetCatalogEntry | null;
   starterPresets: StarterPreset[];
 
-  exportPreset: () => void;
-  /** Every preset of the user's own, as one `.zip`; resolves to the count. */
-  exportUserPresets: () => Promise<number>;
-  revertEditorSource: () => void;
-  duplicatePreset: () => Promise<void>;
-  deleteActivePreset: () => Promise<void>;
-  getVideoExportRuntime: () => CanvasVideoExportRuntime | null;
   importPresetFiles: (files: FileList | File[] | null) => Promise<void>;
   requestPresetPreviews: (presetIds: string[]) => Promise<void>;
-  pausePreview: () => void;
-  resumePreview: () => void;
   refreshPresetPreviews: (presetIds: string[]) => Promise<void>;
   startAudioSource: (request: {
     cropTarget?: HTMLElement | null;
@@ -80,38 +76,10 @@ export interface EngineContextValue {
     onLoaded?: () => void,
   ) => void;
   setQualityPreset: (presetId: string) => void;
-  setAutoplay: (enabled: boolean) => void;
-  setTransitionMode: (mode: 'blend' | 'cut') => void;
-  /** Arms the next preset switch to be crossfaded by hand, then driven with
-   * `setCrossfade`. One switch only — it is a gesture, not a mode. */
-  startManualCrossfade: () => void;
-  setCrossfade: (position: number) => void;
-  getCrossfade: () => number | null;
-  setBlendDuration: (value: number) => void;
-  updateEditorSource: (source: string) => void;
-  /** Applies a field to the live VM without recompiling (instant drag
-   * feedback); the editor commits to source on release. */
-  updateFieldLive: (key: string, value: number) => void;
   /** Hold or release the stage; returns the state applied (needs audio). */
   setPlaybackPaused: (paused: boolean) => boolean;
-  /** One frame while the stage is held; false when it is not. */
-  stepPlaybackFrame: () => boolean;
-  /** Awaitable live-edit surface used by the agent bridge: resolves with the
-   * resulting compile so a caller can see diagnostics instead of guessing. */
-  applyEditorSourceAwaited: (
-    source: string,
-  ) => Promise<MilkdropEditorSessionState | null>;
-  applyEditorFieldsAwaited: (
-    updates: Record<string, string | number>,
-  ) => Promise<MilkdropEditorSessionState | null>;
-  getEditorSessionState: () => MilkdropEditorSessionState | null;
   handleVisualSearch: () => Promise<void>;
   updateInspectorField: (key: string, value: number) => void;
-  /**
-   * The active preset's compiled IR, or null before the engine mounts.
-   * Read-only debug surface (see HudOverlay) — not a render path.
-   */
-  getActiveCompiledPreset: () => MilkdropCompiledPreset | null;
 }
 
 export const EngineCtx = createContext<EngineContextValue | null>(null);

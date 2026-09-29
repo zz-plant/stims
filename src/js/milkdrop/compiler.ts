@@ -21,12 +21,22 @@ export {
 const MAX_COMPILED_PRESET_CACHE = 50;
 const compiledPresetCache = new Map<string, MilkdropCompiledPreset>();
 
+/**
+ * The compiled preset carries its source (id, title), so the cache is keyed on
+ * the id as well as the text. Keyed on text alone, two presets with identical
+ * text shared one entry and the second got the first one's id back, which
+ * anything keyed by preset id (solo/mute, drafts, lineage) then mixed up.
+ */
+function cacheKey(raw: string, id: string | undefined) {
+  return `${id ?? ''}\u0000${raw}`;
+}
+
 function insertCompiledPresetCacheEntry(
-  raw: string,
+  key: string,
   compiled: MilkdropCompiledPreset,
 ) {
-  compiledPresetCache.delete(raw);
-  compiledPresetCache.set(raw, compiled);
+  compiledPresetCache.delete(key);
+  compiledPresetCache.set(key, compiled);
 
   while (compiledPresetCache.size > MAX_COMPILED_PRESET_CACHE) {
     const oldestKey = compiledPresetCache.keys().next().value;
@@ -61,10 +71,11 @@ export function compileMilkdropPresetSource(
     isSimpleCall ||
     (options.cacheCompile === true && Object.keys(options).length === 1);
 
+  const key = cacheKey(raw, source.id);
   if (cacheable) {
-    const cached = compiledPresetCache.get(raw);
+    const cached = compiledPresetCache.get(key);
     if (cached) {
-      insertCompiledPresetCacheEntry(raw, cached);
+      insertCompiledPresetCacheEntry(key, cached);
       return cached;
     }
   }
@@ -87,7 +98,7 @@ export function compileMilkdropPresetSource(
   compiled.formattedSource = formatMilkdropPreset(compiled);
 
   if (cacheable) {
-    insertCompiledPresetCacheEntry(raw, compiled);
+    insertCompiledPresetCacheEntry(key, compiled);
   }
 
   return compiled;
@@ -96,7 +107,10 @@ export function compileMilkdropPresetSource(
 export function warmupCompiledPresetCache(presets: MilkdropCompiledPreset[]) {
   presets.slice(-MAX_COMPILED_PRESET_CACHE).forEach((compiled) => {
     if (compiled.source?.raw) {
-      insertCompiledPresetCacheEntry(compiled.source.raw, compiled);
+      insertCompiledPresetCacheEntry(
+        cacheKey(compiled.source.raw, compiled.source.id),
+        compiled,
+      );
     }
   });
 }
