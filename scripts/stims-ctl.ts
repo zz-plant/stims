@@ -15,6 +15,10 @@
  * Usage:
  *   bun run scripts/stims-ctl.ts [options]
  *
+ * The summary also carries `agent`: the full `__stims_agent.getState()` snapshot
+ * (engineState, presetId, catalogSize, shaderExecution, lastError, statusLog…).
+ * The process exits non-zero if any --run / --wait-for step failed.
+ *
  * Options:
  *   --preset <id>              Preset to load
  *   --backend <webgl|webgpu|auto>  Renderer backend (forces a fresh load)
@@ -23,6 +27,18 @@
  *   --shortcut <id>            Trigger a keyboard shortcut by id (repeatable) —
  *                              see SHORTCUT_KEYS below for supported ids; source
  *                              of truth is src/js/frontend/shortcut-registry.ts
+ *   --run <id>[=<json>]        Run a command-palette action or targeted verb via
+ *                              window.__stims_agent.run (repeatable, in order),
+ *                              e.g. --run next-preset
+ *                                   --run 'select-preset={"id":"martin-skywards"}'
+ *                              select-preset waits for the catalog and set-field
+ *                              for the engine first (the API rejects them until
+ *                              then). The JSON summary's `steps` has each result,
+ *                              including the events the action caused.
+ *   --wait-for <expr>          Wait until a JS expression over the agent state
+ *                              `s` is true, e.g. --wait-for 's.catalogSize > 0'
+ *                              (repeatable; runs in order with --run)
+ *   --step-timeout <ms>        Budget per --wait-for / precondition (default 15000)
  *   --screenshot <path>        Capture a PNG after all actions apply
  *   --wait <ms>                Extra wait before the final screenshot/summary
  *   --port <number>            Dev server port (default: 5173)
@@ -32,12 +48,17 @@
 
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { chromium } from 'playwright';
+import { chromium, type Page } from 'playwright';
 import { resolveAgentChromiumArgs } from './browser-launch.ts';
 import { ensureDevServer } from './dev-server.ts';
 
 type Backend = 'webgl' | 'webgpu' | 'auto';
 type AudioSource = 'demo' | 'microphone';
+
+/** One ordered action against `window.__stims_agent`. */
+export type CtlStep =
+  | { kind: 'run'; id: string; params?: Record<string, unknown> }
+  | { kind: 'wait'; expr: string };
 
 type CliOptions = {
   preset: string | null;
@@ -50,6 +71,8 @@ type CliOptions = {
   port: number;
   headless: boolean;
   timeoutMs: number;
+  steps: CtlStep[];
+  stepTimeoutMs: number;
 };
 
 /**
@@ -77,6 +100,32 @@ const SHORTCUT_KEYS: Record<string, string> = {
   help: '?',
 };
 
+/**
+ * `next-preset` or `select-preset={"id":"x"}`. Ids never contain `=`, so the
+ * first `=` splits the id from the JSON params.
+ */
+export function parseRunSpec(
+  raw: string,
+): { id: string; params?: Record<string, unknown> } | { error: string } {
+  const eq = raw.indexOf('=');
+  const id = (eq === -1 ? raw : raw.slice(0, eq)).trim();
+  if (!id) return { error: 'expected <id> or <id>=<json params>' };
+  if (eq === -1) return { id };
+  try {
+    const params: unknown = JSON.parse(raw.slice(eq + 1));
+    if (
+      params === null ||
+      typeof params !== 'object' ||
+      Array.isArray(params)
+    ) {
+      return { error: 'params must be a JSON object' };
+    }
+    return { id, params: params as Record<string, unknown> };
+  } catch (error) {
+    return { error: `params are not valid JSON (${(error as Error).message})` };
+  }
+}
+
 function printUsageAndExit(): never {
   console.error('Usage: bun run scripts/stims-ctl.ts [options]');
   console.error('Options:');
@@ -90,6 +139,15 @@ function printUsageAndExit(): never {
   );
   console.error(
     `  --shortcut <id>            Trigger a keyboard shortcut (repeatable): ${Object.keys(SHORTCUT_KEYS).join(', ')}`,
+  );
+  console.error(
+    '  --run <id>[=<json>]        Run a palette action or verb (repeatable, ordered), e.g. --run next-preset',
+  );
+  console.error(
+    '  --wait-for <expr>          Wait until an expression over the agent state `s` is true (repeatable)',
+  );
+  console.error(
+    '  --step-timeout <ms>        Budget per --wait-for / precondition (default: 15000)',
   );
   console.error(
     '  --screenshot <path>        Capture a PNG after all actions apply',
@@ -117,6 +175,8 @@ function parseArgs(argv: string[]): CliOptions {
     port: 5173,
     headless: !argv.includes('--no-headless'),
     timeoutMs: 15000,
+    steps: [],
+    stepTimeoutMs: 15000,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -174,6 +234,31 @@ function parseArgs(argv: string[]): CliOptions {
         options.shortcuts.push(id);
         break;
       }
+      case '--run': {
+        const raw = argv[++i] ?? '';
+        const spec = parseRunSpec(raw);
+        if ('error' in spec) {
+          console.error(`Invalid --run "${raw}": ${spec.error}`);
+          printUsageAndExit();
+        }
+        options.steps.push({ kind: 'run', ...spec });
+        break;
+      }
+      case '--wait-for': {
+        const expr = (argv[++i] ?? '').trim();
+        if (!expr) {
+          console.error(
+            'Invalid --wait-for: expected a JS expression over `s`',
+          );
+          printUsageAndExit();
+        }
+        options.steps.push({ kind: 'wait', expr });
+        break;
+      }
+      case '--step-timeout':
+        options.stepTimeoutMs =
+          Number.parseInt(argv[++i] ?? '15000', 10) || 15000;
+        break;
       case '--screenshot':
         options.screenshot = argv[++i] ?? null;
         break;
@@ -199,6 +284,83 @@ function parseArgs(argv: string[]): CliOptions {
   }
 
   return options;
+}
+
+type StepResult = { kind: 'run' | 'wait'; ok: boolean; [key: string]: unknown };
+
+/**
+ * Runs one step inside the page against `window.__stims_agent`. Push-based
+ * (`waitFor` wakes on each state commit), so nothing here sleeps.
+ */
+async function executeStep(
+  page: Page,
+  step: CtlStep,
+  timeoutMs: number,
+): Promise<StepResult> {
+  if (step.kind === 'wait') {
+    return page.evaluate(
+      async ({ expr, timeoutMs }) => {
+        const agent = window.__stims_agent;
+        if (!agent) {
+          return {
+            kind: 'wait' as const,
+            expr,
+            ok: false,
+            error: 'window.__stims_agent is not installed (needs ?agent=true).',
+          };
+        }
+        let predicate: (state: unknown) => unknown;
+        try {
+          predicate = new Function('s', `return (${expr});`) as never;
+        } catch (error) {
+          return {
+            kind: 'wait' as const,
+            expr,
+            ok: false,
+            error: `invalid expression: ${(error as Error).message}`,
+          };
+        }
+        try {
+          await agent.waitFor((state) => Boolean(predicate(state)), timeoutMs);
+          return { kind: 'wait' as const, expr, ok: true };
+        } catch (error) {
+          return {
+            kind: 'wait' as const,
+            expr,
+            ok: false,
+            error: (error as Error).message,
+          };
+        }
+      },
+      { expr: step.expr, timeoutMs },
+    );
+  }
+  return page.evaluate(
+    async ({ id, params, timeoutMs }) => {
+      const agent = window.__stims_agent;
+      if (!agent) {
+        return {
+          kind: 'run' as const,
+          id,
+          ok: false,
+          error: 'window.__stims_agent is not installed (needs ?agent=true).',
+        };
+      }
+      // The API rejects these until their precondition holds; waiting here is
+      // what a caller would otherwise have to script by hand.
+      if (id === 'select-preset') {
+        await agent
+          .waitFor((s) => s.catalogSize > 0, timeoutMs)
+          .catch(() => {});
+      }
+      if (id === 'set-field') {
+        await agent.waitFor((s) => s.engineReady, timeoutMs).catch(() => {});
+      }
+      const result = await agent.run(id, params);
+      return { kind: 'run' as const, id, params, ...result };
+    },
+    { id: step.id, params: step.params, timeoutMs },
+  );
 }
 
 async function run(options: CliOptions) {
@@ -271,6 +433,11 @@ async function run(options: CliOptions) {
       await page.waitForTimeout(150);
     }
 
+    const stepResults: StepResult[] = [];
+    for (const step of options.steps) {
+      stepResults.push(await executeStep(page, step, options.stepTimeoutMs));
+    }
+
     if (options.waitMs > 0) {
       await page.waitForTimeout(options.waitMs);
     }
@@ -282,6 +449,7 @@ async function run(options: CliOptions) {
 
     const summary = await page.evaluate(() => ({
       state: window.stimState?.getState() ?? null,
+      agent: window.__stims_agent?.getState() ?? null,
       backend: document.body.dataset.activeBackend ?? null,
       midiBindings: window.__STIMS_AGENT_BRIDGE__?.getMidiBindings?.() ?? null,
     }));
@@ -305,11 +473,19 @@ async function run(options: CliOptions) {
           screenshot: options.screenshot,
           fieldsSet: options.setFields,
           shortcutsTriggered: options.shortcuts,
+          steps: stepResults,
         },
         null,
         2,
       ),
     );
+    const failed = stepResults.filter((result) => !result.ok);
+    for (const result of failed) {
+      console.error(
+        `Step failed: ${result.kind === 'run' ? `--run ${String(result.id)}` : `--wait-for ${String(result.expr)}`}: ${String(result.error)}`,
+      );
+    }
+    if (failed.length > 0) process.exitCode = 1;
   } finally {
     await browser.close();
     server.close();

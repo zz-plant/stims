@@ -57,7 +57,7 @@ read-immediately-after-write.
 
 ## Actions
 
-- `run(actionId, params?)` → `Promise<{ok, settled, error?, suggestions?}>`.
+- `run(actionId, params?)` → `Promise<{ok, settled, events?, error?, suggestions?}>`.
   Executes a command-palette action by stable id, resolving after the next
   state commit (or a 1s settle window — `settled: false` is normal for
   actions with no snapshot effect, e.g. `share-link`). **`ok: false` means
@@ -70,8 +70,13 @@ read-immediately-after-write.
     (`waitFor((s) => s.engineReady)` first).
 
   `ok: true` means the action was applied, not that it had the effect you
-  hoped for: `settled` only says a state commit followed, so confirm an effect
-  with `waitFor` or `getEvents`.
+  hoped for: `settled` only says a state commit followed. So an `ok: true`
+  result carries `events`: the typed events recorded while it settled, i.e.
+  what the action changed. `run('next-preset')` returns
+  `[{type: 'preset', data: {from, to, title}}]` with the new id, with no second
+  `getState()` needed. An empty `events` means it changed nothing observable
+  (also true of `share-link`); it can occasionally include an unrelated change
+  that landed in the same window.
 - `listActions()` → `[{id, label, params?}]` — every palette action (panels,
   preset moves, transitions, audio sources, pause/resume, save, share, watch
   party, autoplay, fullscreen, the preset-tuning nudges `nudge-*` /
@@ -87,6 +92,29 @@ read-immediately-after-write.
     or not the active preset reads it, so `ok: true` means "written".
   - `run('crossfade', { position })`, `run('pin-parameter', { field })`,
     `run('unpin-parameter', { field })`.
+
+## From the shell: `bun run ctl`
+
+`stims-ctl` opens one headless session, applies its options in order, prints a
+JSON summary and exits — no MCP client needed. Besides the preset, backend,
+audio, field and shortcut options it drives this same API:
+
+```bash
+bun run ctl -- --step-timeout 90000 \
+  --run 'select-preset={"id":"martin-skywards"}' \
+  --wait-for 's.presetId === "martin-skywards"' \
+  --run next-preset
+```
+
+- `--run <id>[=<json params>]` runs a palette action or targeted verb, in the
+  order given with `--wait-for`. `select-preset` waits for the catalog and
+  `set-field` for the engine first, the two preconditions `run()` rejects.
+- `--wait-for '<expr>'` waits (push-based, no sleeping) until a JS expression
+  over the state `s` is true.
+- The summary's `agent` is the full `getState()` snapshot and `steps` has each
+  step's result, including `events`. The process **exits non-zero** if any step
+  failed, and prints `Step failed: …` to stderr, so a shell script can branch
+  on it.
 
 ## Events
 
