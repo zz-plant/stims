@@ -11,7 +11,7 @@ bun run setup:codex             # install + quick-check if not
 
 ## Finding a command
 
-This repo has **159 scripts**. The tables below are a shortlist, not an inventory — never conclude a capability is missing because it isn't listed here.
+This repo has **160 scripts**. The tables below are a shortlist, not an inventory — never conclude a capability is missing because it isn't listed here.
 
 ```bash
 bun run help                 # every script, grouped by namespace, with a one-line purpose
@@ -32,6 +32,7 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 - **Search noise**: `.ignore` hides `public/milkdrop-presets/`, `output/`, `screenshots/`, and the parity fixtures from ripgrep. Use `rg --no-ignore <pat> <path>` to search them on purpose.
 - **Generators**: most `generate:*` scripts take `--check`, including `generate:seo` (delegates to `check:seo`, writes nothing). Running `generate:seo` without it rewrites tracked icons/sitemaps — `git checkout -- public` if that was unintended.
 - **Tests**: write behavioural tests that can fail (render via the workspace harness; mutate the behaviour once and watch the test go red) — see `.agent/skills/review-test-harness/SKILL.md`. Do not add source-text greps (`check:test-source-greps` blocks them).
+- **Seeing every failure**: local `bun run test:gate` bails at the first failing file (CI does not). Add `-- --no-bail` (or `STIMS_TEST_BAIL=0`) when you need the whole picture; the run prints a hint when it bailed.
 - **Flakes**: never assert on timing. Use `__stims_agent.waitFor`; recent history removed several timing flakes from the gate suite.
 - **Duplicate PRs**: check for an open PR on the branch before pushing (#1209/#1210 and #1234/#1236 were re-pushes).
 
@@ -55,6 +56,7 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 | Measure preset audio reactivity (no browser) | `bun run lab:reactivity -- --preset <id>` | ~15s |
 | Measure preset visuals + pixel reactivity | `bun run lab:visual -- --preset <id>` | 1–3 min |
 | Sweep whole corpus for NaN/compile/step failures (no browser) | `bun run lab:nan-sweep` | ~5–10 min |
+| Check the editor's Format button changes no preset in the corpus (no browser) | `bun run lab:format-roundtrip` | ~40s |
 | Record/replay a deterministic VM trace, bisect semantic drift | `bun run lab:replay -- --preset <id> --record t.json` | seconds |
 | Diff a trace's compute-VM (GPU) replay against CPU, first divergent frame | `bun run lab:replay -- --replay t.json --tier gpu` | ~1 min |
 | Capture a live-session trace for headless replay (agent mode) | `__milkdropRuntimeDebug.startTraceCapture()` / `stopTraceCapture()` in `?agent=true` | — |
@@ -70,6 +72,7 @@ Don't scrape the DOM or hand-roll sleep-and-poll loops — there is a first-clas
 | Read engine/preset/audio/fps state as one JSON snapshot | `__stims_agent.getState()` |
 | Wait for a condition instead of sleeping | `await __stims_agent.waitFor((s) => s.engineState === 'live')` |
 | Run a command-palette action by stable id | `await __stims_agent.run('audio-demo')` — `listActions()` enumerates ~21 |
+| Read/await a preset's equation variables (q1…, zoom…) | `await __stims_agent.getVariables()` / `waitForVariables((v) => v.q1 > 0.5)` |
 | Verify an effect after a transient toast vanished | `getState().statusLog` / `getEvents(sinceSeq)` |
 | Assert the canvas is actually animating | `__stims_agent.captureStats()` twice, check `motionEstimate` |
 | Drive a session from the shell, no MCP client | `bun run ctl` |

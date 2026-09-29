@@ -4,6 +4,7 @@
  *
  * `--profile <name>` selects a profile (default `fast`), `--changed` runs only
  * tests affected by uncommitted changes, and `--watch` re-runs on edit.
+ * Local runs stop at the first failing file; `--no-bail` reports them all.
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -159,6 +160,11 @@ function parseArgs(argv: string[]): ParsedArgs {
       continue;
     }
 
+    if (arg === '--no-bail') {
+      noBailRequested = true;
+      continue;
+    }
+
     if (arg === '--profile') {
       profile = argv[index + 1] ?? profile;
       index += 1;
@@ -192,6 +198,14 @@ function resolveProfileCategories(profile: string): Category[] {
   );
 }
 
+/**
+ * `--no-bail` (or STIMS_TEST_BAIL=0) keeps a local run going past the first
+ * failing file. Bailing is right for a human iterating, but it hides every
+ * later failure from an agent that needs the whole picture in one pass — a
+ * single pre-existing red file once masked ~800 tests behind it.
+ */
+let noBailRequested = process.env.STIMS_TEST_BAIL === '0';
+
 function buildBunTestCmd({
   files,
   watch,
@@ -210,7 +224,8 @@ function buildBunTestCmd({
   // Dev feedback stops at the first failing test file; CI keeps running so a
   // single failure cannot mask the rest of a suite. `--bail` is inert under
   // `--watch`, which must keep running after a failure.
-  const bailEnabled = (bail ?? true) && !watch && !process.env.CI;
+  const bailEnabled =
+    (bail ?? true) && !watch && !process.env.CI && !noBailRequested;
 
   return [
     'bun',
@@ -246,7 +261,14 @@ async function runBunTest(options: {
     stderr: 'inherit',
   });
 
-  return proc.exited;
+  const exitCode = await proc.exited;
+  if (exitCode !== 0 && buildBunTestCmd(options).includes('--bail')) {
+    console.error(
+      '\n[run-tests] Stopped at the first failing file, so later files did not run. ' +
+        'Re-run with --no-bail (or STIMS_TEST_BAIL=0) to see every failure.',
+    );
+  }
+  return exitCode;
 }
 
 /**

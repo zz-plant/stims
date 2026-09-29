@@ -105,6 +105,15 @@ stall the main thread for seconds on mobile; never call it per frame.
 Call twice a few hundred ms apart: a nonzero `motionEstimate` and a
 non-degenerate histogram assert "the visuals are actually animating".
 
+## Equation variables
+
+`await __stims_agent.getVariables()` → `{q1, q2, …, zoom, rot, …}` as of the
+next rendered frame (null on timeout). `await __stims_agent.waitForVariables(
+(v) => v.q1 > 0.5)` resolves with the first frame that satisfies the
+predicate — use it instead of sleeping and re-reading. It is the same feed the
+editor's Inspect tab shows, and it only runs while a call is pending. In a
+hidden tab, pass `?agent=true` or no frame will arrive.
+
 ## DOM vocabulary
 
 Stage dock controls and menu items carry `data-action` attributes matching

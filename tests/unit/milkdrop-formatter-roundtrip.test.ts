@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import {
+  fingerprintPreset,
+  roundTripDiff,
+} from '../../scripts/preset-lab-format-roundtrip.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { formatMilkdropPreset } from '../../src/js/milkdrop/formatter.ts';
 
@@ -18,22 +22,7 @@ const files = dirs.flatMap((dir) =>
     .map((name) => join(dir, name)),
 );
 
-const normalizeLines = (lines: readonly string[]) =>
-  lines.map((line) => line.replace(/\s+/gu, ' ').trim()).filter(Boolean);
-
-const fingerprint = (source: string) => {
-  const { ir } = compileMilkdropPresetSource(source, { id: 'roundtrip' });
-  return {
-    numericFields: ir.numericFields,
-    init: normalizeLines(ir.programs.init.sourceLines),
-    perFrame: normalizeLines(ir.programs.perFrame.sourceLines),
-    perPixel: normalizeLines(ir.programs.perPixel.sourceLines),
-    waves: ir.customWaves.length,
-    shapes: ir.customShapes.length,
-    warp: ir.shaderText.warp?.trim() ?? null,
-    comp: ir.shaderText.comp?.trim() ?? null,
-  };
-};
+const fingerprint = fingerprintPreset;
 
 describe('formatter round-trip', () => {
   test('corpus is not empty', () => {
@@ -57,5 +46,26 @@ describe('formatter round-trip', () => {
       compileMilkdropPresetSource(source, { id: 'roundtrip' }),
     ).replace(/^per_frame_2=.*\n/mu, '');
     expect(fingerprint(formatted)).not.toEqual(fingerprint(source));
+  });
+
+  test('keeps a shader that opens with a preprocessor directive', () => {
+    // `#` is a comment in the key=value body but a directive in a shader
+    // section; Format writes shader text as bare lines, so a leading #define
+    // used to make the parser drop the whole section on the next load.
+    const source = [
+      'title=T',
+      'comp_1=`shader_body',
+      'comp_2=`{',
+      'comp_3=`  ret = tex2D(sampler_main, uv).xyz;',
+      'comp_4=`}',
+      '',
+    ]
+      .join('\n')
+      .replace(
+        'comp_1=`shader_body',
+        'comp_1=`#define sat saturate\ncomp_1=`shader_body',
+      );
+    expect(fingerprint(source)['shader:comp']).toBeTruthy();
+    expect(roundTripDiff(source)).toEqual([]);
   });
 });
