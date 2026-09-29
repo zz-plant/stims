@@ -79,23 +79,32 @@
 
 ## Open bottlenecks (verified against current code)
 
-### 1. Blend-state cloning during preset transitions — measured, not a bottleneck
+### 1. Blend-state cloning during preset transitions — bounded, cheap except on the densest frames
 
 `cloneBlendState()` deep-copies wave positions, custom waves, and motion
-vectors once when a blend transition begins (never per frame). Measured in
-isolation on synthetic frames (bun, 5000 iterations after 2000 warmup, 2026-09-29):
+vectors once when a blend transition begins (never per frame). It runs once
+per accepted transition, so cold-call and tail latency matter more than a
+warmed average. Measured in isolation on synthetic frames under Bun
+(JavaScriptCore, not V8, so treat the shape as indicative), 3 fresh-process
+runs per row, 3000 individually timed calls, 2026-09-29:
 
-| Frame density | Cost per clone |
-| --- | --- |
-| 4 custom waves × 512 pts | ~84 µs |
-| 8 waves × 1024 pts, 200 motion vectors | ~245 µs |
-| 16 waves × 2048 pts, 1000 motion vectors | ~566 µs |
+| Frame density | Cold first call | p50 | p95 | Worst (max) |
+| --- | --- | --- | --- | --- |
+| 4 custom waves × 512 pts | ~0.2 ms | 0.01 ms | 0.06 ms | 1.6–2.8 ms |
+| 8 waves × 1024 pts, 200 motion vectors | ~0.6 ms | 0.06 ms | 0.27 ms | 3.0–5.4 ms |
+| 16 waves × 2048 pts, 1000 motion vectors | ~2.5 ms | 0.33 ms | 1.0 ms | 5.4–7.8 ms |
 
-The densest case is ~3% of a 16.7 ms frame, paid once per transition, and the
-blend gate (`evaluateBlendGate`) already refuses crossfades above the workload
-ceiling. The copy is required: the frame state's buffers are reused every
-frame, so aliasing them would corrupt the fading-out preset. Do not optimise
-this without a measurement showing a real transition spike.
+Typical frames are well under a millisecond. On the densest synthetic case the
+cold call is ~15% of a 16.7 ms frame and the worst observed tail (allocation/GC
+in the microbenchmark) is 5–8 ms, so a single transition frame on a very dense
+preset could plausibly miss budget. Those frames are also the ones
+`evaluateBlendGate` already refuses to crossfade above the workload ceiling.
+The copy itself is required: the frame state's buffers are reused every frame,
+so aliasing them would corrupt the fading-out preset.
+
+Not measured: a real browser transition (V8, real GC, real frame timing). This
+container has no GPU, so that needs a hardware run before any optimisation.
+Until then this is a bounded, unproven concern, not a confirmed spike.
 
 ## Deliberate boundaries and remaining approximations
 
