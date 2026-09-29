@@ -11,7 +11,7 @@ bun run setup:codex             # install + quick-check if not
 
 ## Finding a command
 
-This repo has **159 scripts**. The tables below are a shortlist, not an inventory — never conclude a capability is missing because it isn't listed here.
+This repo has **well over a hundred scripts** (the exact count drifts; `bun run help` is the source of truth). The tables below are a shortlist, not an inventory — never conclude a capability is missing because it isn't listed here.
 
 ```bash
 bun run help                 # every script, grouped by namespace, with a one-line purpose
