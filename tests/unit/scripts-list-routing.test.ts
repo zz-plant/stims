@@ -50,6 +50,16 @@ describe('bun run help --for', () => {
     expect(out).toContain('synthetic');
   });
 
+  test('routes a share-card symptom to the SEO and served-preview instruments', () => {
+    const out = run('--for', 'og image social preview');
+    expect(out).toContain('check:seo');
+    expect(out).toContain('previews:audit');
+  });
+
+  test('routes a no-GPU or live-URL symptom to preview:deploy', () => {
+    expect(run('--for', 'gpu-less live url')).toContain('preview:deploy');
+  });
+
   test('routes a backend-divergence symptom to the differential lab', () => {
     expect(run('--for', 'webgpu and webgl differ')).toContain(
       'lab:gpu-differential',
