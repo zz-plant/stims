@@ -30,6 +30,7 @@ import {
   SHORTCUT_REGISTRY,
   shortcutHintFor,
 } from '../../src/js/frontend/shortcut-registry.ts';
+import { buildTestPaletteActions } from '../frontend-harness.tsx';
 
 type Mods = {
   metaKey?: boolean;
@@ -154,10 +155,7 @@ describe('registry integrity', () => {
 });
 
 describe('palette-dispatched bindings', () => {
-  const APP_SOURCE = readFileSync(
-    new URL('../../src/js/frontend/App.tsx', import.meta.url),
-    'utf8',
-  );
+  const paletteIds = buildTestPaletteActions().map((action) => action.id);
   const dispatched = SHORTCUT_REGISTRY.filter((e) => e.dispatchViaPalette);
 
   test('there is at least one, so the wiring is exercised', () => {
@@ -167,7 +165,7 @@ describe('palette-dispatched bindings', () => {
   test.each(
     dispatched.map((e) => [e.id, e.paletteActionId as string] as const),
   )('%s targets a palette action that exists (%s)', (_id, paletteActionId) => {
-    expect(APP_SOURCE).toContain(`id: '${paletteActionId}',`);
+    expect(paletteIds).toContain(paletteActionId);
   });
 
   // Bindings gated in the hook must not also be reachable through the generic
@@ -183,15 +181,13 @@ describe('palette-dispatched bindings', () => {
 });
 
 describe('hints are derived, not copied', () => {
-  const APP_SOURCE = readFileSync(
-    new URL('../../src/js/frontend/App.tsx', import.meta.url),
-    'utf8',
-  );
-
-  test('no surface hardcodes a shortcut hint', () => {
+  test('no palette action hardcodes a shortcut hint', () => {
     // Every literal here was a copy of a registry default that went stale the
     // moment the user rebound the key.
-    expect(APP_SOURCE).not.toMatch(/shortcutHint: '/);
+    const hinted = buildTestPaletteActions().filter(
+      (action) => 'shortcutHint' in action,
+    );
+    expect(hinted.map((action) => action.id)).toEqual([]);
   });
 
   test('a bound action resolves to its key', () => {
