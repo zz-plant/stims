@@ -2492,28 +2492,60 @@ export class EditorPanel {
         head.append(meta, compare, restore, remove);
         row.appendChild(head);
 
-        let diffEl: HTMLElement | null = null;
+        // Compare opens a panel: a picker for the other side (the current
+        // source, or any other saved version) above the diff from this
+        // version to it.
+        let panel: HTMLElement | null = null;
         compare.addEventListener('click', () => {
-          if (diffEl) {
-            diffEl.remove();
-            diffEl = null;
+          if (panel) {
+            panel.remove();
+            panel = null;
             compare.setAttribute('aria-expanded', 'false');
             return;
           }
-          const diff = computeSourceDiff(
-            version.source,
-            this.editor.state.doc.toString(),
-          );
-          diffEl =
-            diff.length === 0
-              ? document.createElement('p')
-              : buildDiffElement(diff);
-          if (diff.length === 0) {
-            diffEl.className = 'stims-editor__hint';
-            diffEl.textContent = 'Identical to the current source.';
+          panel = document.createElement('div');
+          panel.className = 'stims-editor__version-compare';
+          panel.dataset.versionDiff = version.id;
+          const pickerLabel = document.createElement('label');
+          pickerLabel.className = 'stims-editor__hint';
+          pickerLabel.textContent = 'Changes from this version to ';
+          const picker = document.createElement('select');
+          picker.className = 'stims-editor__version-target';
+          picker.setAttribute('aria-label', `Compare ${version.name} with`);
+          const current = document.createElement('option');
+          current.value = '';
+          current.textContent = 'the current source';
+          picker.appendChild(current);
+          for (const other of saved) {
+            if (other.id === version.id) continue;
+            const option = document.createElement('option');
+            option.value = other.id;
+            option.textContent = `\u201c${other.name}\u201d`;
+            picker.appendChild(option);
           }
-          diffEl.dataset.versionDiff = version.id;
-          row.appendChild(diffEl);
+          pickerLabel.appendChild(picker);
+          const output = document.createElement('div');
+          const paintDiff = () => {
+            const target = saved.find((other) => other.id === picker.value);
+            const diff = computeSourceDiff(
+              version.source,
+              target ? target.source : this.editor.state.doc.toString(),
+            );
+            if (diff.length === 0) {
+              const same = document.createElement('p');
+              same.className = 'stims-editor__hint';
+              same.textContent = target
+                ? `Identical to \u201c${target.name}\u201d.`
+                : 'Identical to the current source.';
+              output.replaceChildren(same);
+            } else {
+              output.replaceChildren(buildDiffElement(diff));
+            }
+          };
+          picker.addEventListener('change', paintDiff);
+          paintDiff();
+          panel.append(pickerLabel, output);
+          row.appendChild(panel);
           compare.setAttribute('aria-expanded', 'true');
         });
         return row;
