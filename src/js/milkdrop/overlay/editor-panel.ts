@@ -137,6 +137,7 @@ import {
   createVersionStore,
   type VersionStorage,
 } from '../named-versions.ts';
+import { checkPortability } from '../portability.ts';
 import {
   findPresetKnobs,
   formatKnobValue,
@@ -992,6 +993,8 @@ export class EditorPanel {
   /** Shader stages whose translation is expanded in the Outline; kept across
    * repaints so typing does not collapse it. */
   private readonly expandedShaderStages = new Set<ShaderStage>();
+  private portabilityHeadline: HTMLElement | null = null;
+  private portabilityList: HTMLElement | null = null;
   /** The preset the Outline's solo/mute toggles act on. */
   private outlinePresetId: string | null = null;
   private knobsWrap: HTMLElement | null = null;
@@ -1900,6 +1903,84 @@ export class EditorPanel {
     this.editor.focus();
   }
 
+  /** One Compat row; a row with a line jumps to it. */
+  private buildCompatRow(
+    item: {
+      severity: string;
+      title: string;
+      detail: string;
+      line: number | null;
+    },
+    label: string,
+  ): HTMLElement {
+    const line = item.line;
+    const row = document.createElement(line ? 'button' : 'div');
+    if (row instanceof HTMLButtonElement) row.type = 'button';
+    row.className = 'stims-editor__compat-row';
+    row.setAttribute('role', 'listitem');
+    row.dataset.severity = item.severity;
+    const head = document.createElement('span');
+    head.className = 'stims-editor__compat-head';
+    const badge = document.createElement('span');
+    badge.className = 'stims-editor__compat-badge';
+    badge.textContent = label;
+    const title = document.createElement('strong');
+    // Titles wrap identifiers in backticks; render them as code.
+    item.title.split('`').forEach((part, index) => {
+      if (index % 2 === 1) {
+        const code = document.createElement('code');
+        code.textContent = part;
+        title.appendChild(code);
+      } else if (part) {
+        title.appendChild(document.createTextNode(part));
+      }
+    });
+    head.append(badge, title);
+    if (line) {
+      const where = document.createElement('span');
+      where.className = 'stims-editor__compat-line';
+      where.textContent = `line ${line}`;
+      head.appendChild(where);
+    }
+    const detail = document.createElement('span');
+    detail.className = 'stims-editor__compat-detail';
+    detail.textContent = item.detail;
+    row.append(head, detail);
+    if (line) {
+      row.addEventListener('click', () => {
+        if (line < 1 || line > this.editor.state.doc.lines) return;
+        const target = this.editor.state.doc.line(line);
+        this.editor.dispatch({
+          selection: { anchor: target.from, head: target.to },
+          scrollIntoView: true,
+        });
+        this.editor.focus();
+      });
+    }
+    return row;
+  }
+
+  /** Beyond Stims: what will not carry over to MilkDrop 2 and its kin. */
+  private paintPortability(compiled: MilkdropCompiledPreset, source: string) {
+    const list = this.portabilityList;
+    if (!list || !this.portabilityHeadline) return;
+    const items = checkPortability(compiled, source);
+    this.portabilityHeadline.textContent =
+      items.length === 0
+        ? 'Nothing here stops this preset running in MilkDrop 2.'
+        : items.some((item) => item.severity === 'breaks')
+          ? 'Will not run as-is in MilkDrop 2.'
+          : 'Runs in MilkDrop 2, with differences.';
+    const labels = {
+      breaks: 'Breaks',
+      differs: 'Differs',
+      needs: 'Needs file',
+    } as const;
+    list.replaceChildren(
+      ...items.map((item) => this.buildCompatRow(item, labels[item.severity])),
+    );
+  }
+
   /** Compat pane: everything about this preset that will not run the way
    * its source says, worst first, each pointing at a line. The dock used to
    * show one "Simplified" flag with a single reason. */
@@ -1912,7 +1993,28 @@ export class EditorPanel {
     this.compatList = document.createElement('div');
     this.compatList.className = 'stims-editor__compat';
     this.compatList.setAttribute('role', 'list');
-    pane.append(this.compatHeadline, this.compatEngines, this.compatList);
+    const beyond = document.createElement('h3');
+    beyond.className = 'stims-editor__compat-section';
+    beyond.textContent = 'Beyond Stims';
+    const beyondHint = document.createElement('p');
+    beyondHint.className = 'stims-editor__hint';
+    beyondHint.textContent =
+      'Checked against MilkDrop 2\u2019s own functions, variables, settings and textures. projectM and Butterchurn read the same format; where they differ from MilkDrop 2 is not checked.';
+    this.portabilityHeadline = document.createElement('p');
+    this.portabilityHeadline.className = 'stims-editor__compat-headline';
+    this.portabilityList = document.createElement('div');
+    this.portabilityList.className = 'stims-editor__compat';
+    this.portabilityList.setAttribute('role', 'list');
+    this.portabilityList.dataset.scope = 'portability';
+    pane.append(
+      this.compatHeadline,
+      this.compatEngines,
+      this.compatList,
+      beyond,
+      this.portabilityHeadline,
+      beyondHint,
+      this.portabilityList,
+    );
     return pane;
   }
 
@@ -1924,6 +2026,8 @@ export class EditorPanel {
       this.compatHeadline.textContent = 'Nothing compiled yet.';
       this.compatEngines.textContent = '';
       list.replaceChildren();
+      this.portabilityList?.replaceChildren();
+      if (this.portabilityHeadline) this.portabilityHeadline.textContent = '';
       return;
     }
     const checklist = buildCompatChecklist(compiled, state.source);
@@ -1950,54 +2054,11 @@ export class EditorPanel {
       note: 'Note',
     } as const;
     list.replaceChildren(
-      ...checklist.items.map((item) => {
-        const line = item.line;
-        const row = document.createElement(line ? 'button' : 'div');
-        if (row instanceof HTMLButtonElement) row.type = 'button';
-        row.className = 'stims-editor__compat-row';
-        row.setAttribute('role', 'listitem');
-        row.dataset.severity = item.severity;
-        const head = document.createElement('span');
-        head.className = 'stims-editor__compat-head';
-        const badge = document.createElement('span');
-        badge.className = 'stims-editor__compat-badge';
-        badge.textContent = labels[item.severity];
-        const title = document.createElement('strong');
-        // Titles wrap identifiers in backticks; render them as code.
-        item.title.split('`').forEach((part, index) => {
-          if (index % 2 === 1) {
-            const code = document.createElement('code');
-            code.textContent = part;
-            title.appendChild(code);
-          } else if (part) {
-            title.appendChild(document.createTextNode(part));
-          }
-        });
-        head.append(badge, title);
-        if (line) {
-          const where = document.createElement('span');
-          where.className = 'stims-editor__compat-line';
-          where.textContent = `line ${line}`;
-          head.appendChild(where);
-        }
-        const detail = document.createElement('span');
-        detail.className = 'stims-editor__compat-detail';
-        detail.textContent = item.detail;
-        row.append(head, detail);
-        if (line) {
-          row.addEventListener('click', () => {
-            if (line < 1 || line > this.editor.state.doc.lines) return;
-            const target = this.editor.state.doc.line(line);
-            this.editor.dispatch({
-              selection: { anchor: target.from, head: target.to },
-              scrollIntoView: true,
-            });
-            this.editor.focus();
-          });
-        }
-        return row;
-      }),
+      ...checklist.items.map((item) =>
+        this.buildCompatRow(item, labels[item.severity]),
+      ),
     );
+    this.paintPortability(compiled, state.source);
   }
 
   /** Outline pane: the buffer's editable parts (settings, equations, each

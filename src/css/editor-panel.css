@@ -1677,6 +1677,24 @@ button.stims-editor__compat-row:focus-visible {
   border-left-color: var(--stims-warning, #f5a524);
 }
 
+.stims-editor__compat-row[data-severity="breaks"] {
+  border-left-color: var(--stims-danger, #e5484d);
+}
+
+.stims-editor__compat-row[data-severity="differs"],
+.stims-editor__compat-row[data-severity="needs"] {
+  border-left-color: var(--stims-warning, #f5a524);
+}
+
+.stims-editor__compat-section {
+  margin: 16px 0 4px;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
 .stims-editor__compat-head {
   display: flex;
   align-items: baseline;

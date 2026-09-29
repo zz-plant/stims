@@ -44,7 +44,7 @@ const ALLOWED: Record<string, string> = {
   'src/js/milkdrop/preset-knobs.ts':
     'RESERVED is the fixed set of built-in field and input names, built once at module load from builtin-docs and the default state table; the per-call maps in findPresetKnobs are bounded by the source being scanned.',
   'src/js/milkdrop/milkdrop2-export.ts':
-    'HANDLED_KEYS is a fixed set built once at module load from the MilkDrop 2 field table, and `known` is a per-call Set over one slot-order table — lookup tables, not caches.',
+    'MILKDROP2_STIMS_KEYS is a fixed set built once at module load from the MilkDrop 2 field table, and `known` is a per-call Set over one slot-order table — lookup tables, not caches.',
   'src/js/milkdrop/compiler/shader-analysis-glsl.ts':
     'TEMPLATE_OWNED_TARGETS is a two-element literal fixed at module load, and declaredLocals is a per-call Set scoped to one shader program — both are bounded by the source they read, not by runtime accumulation.',
 };
