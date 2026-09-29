@@ -436,9 +436,11 @@ default https://toil.fyi) and fails on cf-mitigated challenges,
 interstitial bodies, or 4xx/5xx. DNS-only failures warn instead of
 failing unless STRICT_DNS_FAILURES=1.
 
-The list is the social-card surface, not the app's navigation: a share
-link is unfurled by a crawler, not a browser, so these four are what a
-challenge or a 404 actually breaks. /milkdrop/ used to be here and went
+The list is the social-card surface plus one page of each kind the sitemap
+advertises: a share link is unfurled by a crawler, not a browser, so these
+are what a challenge or a 404 actually breaks. The sitemap routes are here
+because every /discover/ and /author/ page 404ed in production, with an
+empty body, and nothing noticed until an audit curled one. /milkdrop/ used to be here and went
 stale silently when the app routes changed, which is why this check also
 asserts on the card endpoints rather than a human-browsed page.
 
