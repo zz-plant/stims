@@ -338,6 +338,15 @@ export interface AgentRunResult {
   error?: string;
   /** Close matches when `error` is an unknown action or preset id. */
   suggestions?: string[];
+  /**
+   * The typed events recorded between the call and the settle (present on
+   * `ok: true`). A commit's events are pushed before the listener that settles
+   * `run()` fires, so this is what the action changed: `run('next-preset')`
+   * returns the `preset` event with the new id. It can also include an
+   * unrelated change that landed in the same window; empty means the action
+   * changed nothing observable.
+   */
+  events?: AgentEvent[];
 }
 
 /** One entry of `listActions()`. Targeted verbs carry `params`. */
@@ -704,11 +713,16 @@ export function installAgentStateGlobal(
     getState: buildState,
     getEvents: (sinceSeq = 0) => events.filter((e) => e.seq > sinceSeq),
     run: async (actionId, params) => {
+      const seqBefore = eventSeq;
       const settlePromise = nextCommit(RUN_SETTLE_TIMEOUT_MS);
       const failure = runAction(actionId, params);
       if (failure) return failure;
       const settled = await settlePromise;
-      return { ok: true, settled };
+      return {
+        ok: true,
+        settled,
+        events: events.filter((event) => event.seq > seqBefore),
+      };
     },
     listActions: () => [
       ...providers
