@@ -145,6 +145,7 @@
     "perf:low-resource": "bun run scripts/run-certification-corpus-perf-suite.ts --cpu-throttle 4 --renderer compatibility --viewport-width 1280 --viewport-height 720 --output ./screenshots/low-resource-perf",
     "play:toy": "bun run scripts/play-toy.ts",
     "postinstall": "bun run scripts/postinstall.mjs",
+    "pr:body": "bun run scripts/pr-body.ts",
     "preview": "vite preview --host",
     "preview:deploy": "bun run scripts/deploy-preview.ts",
     "previews:sync": "bun run scripts/sync-previews-r2.ts",
