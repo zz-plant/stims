@@ -1494,3 +1494,63 @@ html.light .stims-editor {
   color: var(--ed-muted, rgba(232, 236, 244, 0.55));
   font-size: 0.75rem;
 }
+
+/* ── Inspect pane ─────────────────────────────────────────────────── */
+
+.stims-editor__inspect-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.stims-editor__inspect-filter {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.stims-editor__inspect-toggle {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.stims-editor__inspect {
+  display: grid;
+  gap: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stims-editor__inspect-row {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(3rem, 1fr) 5.5rem 80px;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--stims-line-soft);
+  font-size: 0.75rem;
+}
+
+.stims-editor__inspect-pin {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+  padding: 0;
+}
+
+.stims-editor__inspect-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, monospace;
+}
+
+.stims-editor__inspect-value {
+  text-align: right;
+}
+
+.stims-editor__inspect-spark {
+  width: 80px;
+  height: 18px;
+  opacity: 0.8;
+}
