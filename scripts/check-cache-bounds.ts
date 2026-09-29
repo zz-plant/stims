@@ -41,6 +41,8 @@ const ALLOWED: Record<string, string> = {
     'The only container is a Set derived inside a render/poll callback to de-duplicate the current modulator targets; it is rebuilt from scratch each time and never accumulates.',
   'src/js/milkdrop/warp-sample-transform.ts':
     'WARP_TRANSFORM_TARGETS is a five-element literal of MilkDrop variable names (cx/cy/sx/sy/zoomexp) fixed at module load — a lookup table for the per-pixel gate, not a cache.',
+  'src/js/milkdrop/preset-knobs.ts':
+    'RESERVED is the fixed set of built-in field and input names, built once at module load from builtin-docs and the default state table; the per-call maps in findPresetKnobs are bounded by the source being scanned.',
   'src/js/milkdrop/compiler/shader-analysis-glsl.ts':
     'TEMPLATE_OWNED_TARGETS is a two-element literal fixed at module load, and declaredLocals is a per-call Set scoped to one shader program — both are bounded by the source they read, not by runtime accumulation.',
 };

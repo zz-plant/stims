@@ -597,7 +597,8 @@ export function BrowseSheetPanel({
                     if (
                       entry.kind === 'file' &&
                       (entry.name.endsWith('.milk') ||
-                        entry.name.endsWith('.txt'))
+                        entry.name.endsWith('.txt') ||
+                        entry.name.endsWith('.zip'))
                     ) {
                       const file = await entry.getFile();
                       files.push(file);
@@ -625,7 +626,7 @@ export function BrowseSheetPanel({
           <input
             ref={importInputRef}
             type="file"
-            accept=".milk,text/plain"
+            accept=".milk,.zip,text/plain,application/zip"
             multiple
             hidden
             aria-label="Import preset file"

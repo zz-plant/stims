@@ -179,4 +179,41 @@ describe('editor panel named versions', () => {
     expect(button(panel.element, 'Save version').disabled).toBe(true);
     panel.dispose();
   });
+
+  test('Compare can diff one saved version against another', () => {
+    const { panel, src } = mount(memoryStorage());
+    save(panel, 'first');
+    load(panel, src.v2, src.id);
+    save(panel, 'second');
+
+    const first = versionRows(panel).find((r) =>
+      r.textContent?.includes('first'),
+    ) as HTMLElement;
+    button(first, 'Compare').click();
+    const picker = first.querySelector<HTMLSelectElement>(
+      '.stims-editor__version-target',
+    );
+    // The other version is offered; this one is not.
+    expect(Array.from(picker?.options ?? []).map((o) => o.textContent)).toEqual(
+      ['the current source', '\u201csecond\u201d'],
+    );
+
+    button(first, 'Compare').click(); // close
+    // Edit the buffer so "current source" and "second" differ.
+    load(panel, `${src.v2}warp=0.5\n`, src.id);
+    const reopened = versionRows(panel).find((r) =>
+      r.textContent?.includes('first'),
+    ) as HTMLElement;
+    button(reopened, 'Compare').click();
+    const select = reopened.querySelector<HTMLSelectElement>(
+      '.stims-editor__version-target',
+    ) as HTMLSelectElement;
+    expect(reopened.textContent).toContain('+ warp=0.5');
+
+    select.value = select.options[1]?.value ?? '';
+    select.dispatchEvent(new Event('change'));
+    expect(reopened.textContent).toContain('+ zoom=1.05');
+    expect(reopened.textContent).not.toContain('+ warp=0.5');
+    panel.dispose();
+  });
 });

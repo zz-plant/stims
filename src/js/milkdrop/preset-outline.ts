@@ -46,7 +46,8 @@ const CODE_PART_LABEL: Record<string, string> = {
 };
 
 function classifyKey(key: string): Classified {
-  if (/^per_frame_init_\d+$/u.test(key)) {
+  // `init_N` is an older Stims spelling of `per_frame_init_N`.
+  if (/^(?:per_frame_)?init_\d+$/u.test(key)) {
     return { label: 'Init (per_frame_init)', kind: 'init' };
   }
   if (/^per_frame_\d+$/u.test(key)) {

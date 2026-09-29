@@ -306,7 +306,10 @@ export function formatMilkdropPreset(compiled: MilkdropCompiledPreset) {
   }
 
   const rootPrograms = [
-    ['init_', ir.programs.init],
+    // `per_frame_init_`, not the shorter `init_` the compiler also accepts:
+    // MilkDrop 2 and projectM only read the long key, so an export spelled
+    // `init_1=` silently lost its init code in every other engine.
+    ['per_frame_init_', ir.programs.init],
     ['per_frame_', ir.programs.perFrame],
     ['per_pixel_', ir.programs.perPixel],
   ] as const;
