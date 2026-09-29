@@ -4,6 +4,7 @@ import {
   type AgentCoreSnapshot,
   type AgentStateProviders,
   describeAgentState,
+  emitAgentCommit,
   installAgentStateGlobal,
   resetAgentStateForTests,
   suggestIds,
@@ -131,6 +132,64 @@ describe('run(): honest results for the targeted verbs', () => {
   });
 });
 
+describe('run(): the events it caused', () => {
+  const installWithAction = (run: () => void) => {
+    const { providers } = makeProviders();
+    providers.getActions = () =>
+      [{ id: 'next-preset', label: 'Next preset', run }] as never;
+    cleanup = installAgentStateGlobal(providers);
+    const agent = window.__stims_agent;
+    if (!agent) throw new Error('global not installed');
+    // The first commit only records the baseline; diffs need a previous one.
+    emitAgentCommit(CORE);
+    return agent;
+  };
+
+  test('returns the preset event the action produced', async () => {
+    const agent = installWithAction(() =>
+      emitAgentCommit({
+        ...CORE,
+        presetId: 'preset-b',
+        presetTitle: 'Preset B',
+      }),
+    );
+    const result = await agent.run('next-preset');
+    expect(result.ok).toBe(true);
+    expect(result.settled).toBe(true);
+    expect(result.events).toHaveLength(1);
+    expect(result.events?.[0]).toMatchObject({
+      type: 'preset',
+      data: { from: 'preset-a', to: 'preset-b' },
+    });
+  });
+
+  test('does not include events recorded before the call', async () => {
+    const agent = installWithAction(() =>
+      emitAgentCommit({
+        ...CORE,
+        presetId: 'preset-b',
+        presetTitle: 'Preset B',
+      }),
+    );
+    // An earlier, unrelated change: it is in the log but not this run's effect.
+    emitAgentCommit({ ...CORE, presetId: 'preset-z', presetTitle: 'Preset Z' });
+    const result = await agent.run('next-preset');
+    expect(agent.getEvents()).toHaveLength(2);
+    expect(result.events).toHaveLength(1);
+    expect(result.events?.[0]?.data).toMatchObject({
+      from: 'preset-z',
+      to: 'preset-b',
+    });
+  });
+
+  test('a failed run has no events to report', async () => {
+    const agent = installWithAction(() => {});
+    const result = await agent.run('does-not-exist');
+    expect(result.ok).toBe(false);
+    expect(result.events).toBeUndefined();
+  });
+});
+
 describe('unknown actions', () => {
   test('a typo points at the real id', async () => {
     const { agent } = install();
@@ -240,6 +299,15 @@ describe('getState(): hidden-tab visibility', () => {
     const state = agent.getState();
     expect(state.agentMode).toBe(true);
     expect(state.renderingSuspended).toBe(false);
+  });
+
+  test('a browser without the picture-in-picture API is treated as having no window open', () => {
+    const { agent } = install();
+    hidden(true);
+    // undefined, not null: the property does not exist there. Comparing to null
+    // read that as an open window and never suspended the hidden tab.
+    pictureInPicture(undefined);
+    expect(agent.getState().renderingSuspended).toBe(true);
   });
 
   test('an open picture-in-picture window keeps a hidden tab rendering', () => {
