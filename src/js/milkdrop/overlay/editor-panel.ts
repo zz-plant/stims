@@ -127,6 +127,9 @@ import {
 
 export { computeAstDiagnostics, mergeDiagnostics };
 
+import { buildCompatChecklist } from '../compat-checklist.ts';
+import { buildPresetOutline } from '../preset-outline.ts';
+import { searchReference } from '../reference-search.ts';
 import { createVariableHistory } from '../variable-history.ts';
 import { subscribeVariables } from '../variable-probe.ts';
 import {
@@ -945,6 +948,11 @@ export class EditorPanel {
   private historyList: HTMLElement | null = null;
   private readonly variableHistory = createVariableHistory();
   private inspectList: HTMLElement | null = null;
+  private compatHeadline: HTMLElement | null = null;
+  private compatEngines: HTMLElement | null = null;
+  private compatList: HTMLElement | null = null;
+  private compatTab: HTMLButtonElement | null = null;
+  private outlineList: HTMLElement | null = null;
   private inspectEmpty: HTMLElement | null = null;
   private inspectFilter = '';
   private inspectOnlyChanging = false;
@@ -1388,9 +1396,16 @@ export class EditorPanel {
 
     const panes: Array<{ id: string; label: string; content: HTMLElement }> = [
       { id: 'tune', label: 'Tune', content: this.renderSliders() },
+      { id: 'outline', label: 'Outline', content: this.renderOutlinePane() },
       { id: 'insert', label: 'Insert', content: this.renderInsertPane() },
+      {
+        id: 'reference',
+        label: 'Reference',
+        content: this.renderReferencePane(),
+      },
       { id: 'assist', label: 'Assist', content: this.renderAssistPane() },
       { id: 'inspect', label: 'Inspect', content: this.renderInspectPane() },
+      { id: 'compat', label: 'Compat', content: this.renderCompatPane() },
       { id: 'history', label: 'History', content: this.renderHistoryPane() },
     ];
     const tabButtons: HTMLButtonElement[] = [];
@@ -1422,6 +1437,7 @@ export class EditorPanel {
       tab.setAttribute('aria-controls', `stims-editor-pane-${pane.id}`);
       tab.tabIndex = index === 0 ? 0 : -1;
       tab.dataset.pane = pane.id;
+      if (pane.id === 'compat') this.compatTab = tab;
       pane.content.classList.add('stims-editor__pane');
       pane.content.id = `stims-editor-pane-${pane.id}`;
       pane.content.setAttribute('role', 'tabpanel');
@@ -1750,6 +1766,235 @@ export class EditorPanel {
     );
 
     return pane;
+  }
+
+  /** Reference pane: every builtin the compiler accepts, searchable by name
+   * or by what it does, inserted at the cursor. Built from the same table
+   * that drives highlighting and autocomplete, so it cannot list a function
+   * the compiler would reject. */
+  private renderReferencePane(): HTMLElement {
+    const pane = document.createElement('div');
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent =
+      'Search functions and variables by name or by what they do. Click one to insert it at the cursor.';
+    const search = document.createElement('input');
+    search.type = 'search';
+    search.className = 'stims-editor__ref-search';
+    search.placeholder = 'e.g. clamp, absolute value, bass';
+    search.setAttribute('aria-label', 'Search functions and variables');
+    const results = document.createElement('div');
+    results.className = 'stims-editor__ref-results';
+    results.setAttribute('role', 'list');
+
+    const paint = () => {
+      const entries = searchReference(search.value);
+      if (entries.length === 0) {
+        const none = document.createElement('p');
+        none.className = 'stims-editor__hint';
+        none.textContent = 'Nothing matches. Try a shorter word.';
+        results.replaceChildren(none);
+        return;
+      }
+      results.replaceChildren(
+        ...entries.map((entry) => {
+          const row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'stims-editor__ref-row';
+          row.setAttribute('role', 'listitem');
+          row.dataset.ref = entry.name;
+          const head = document.createElement('span');
+          head.className = 'stims-editor__ref-head';
+          const name = document.createElement('code');
+          name.textContent = entry.insertText;
+          const badge = document.createElement('span');
+          badge.className = 'stims-editor__ref-badge';
+          badge.textContent = entry.category;
+          head.append(name, badge);
+          const doc = document.createElement('span');
+          doc.className = 'stims-editor__ref-doc';
+          doc.textContent = entry.doc;
+          row.append(head, doc);
+          row.addEventListener('click', () =>
+            this.insertInline(entry.insertText),
+          );
+          return row;
+        }),
+      );
+    };
+    search.addEventListener('input', paint);
+    paint();
+    pane.append(hint, search, results);
+    return pane;
+  }
+
+  /** Replace the selection with `text` in place, unlike {@link insertSnippet},
+   * which puts a whole line of code on its own line. */
+  private insertInline(text: string) {
+    const selection = this.editor.state.selection.main;
+    this.editor.dispatch({
+      changes: { from: selection.from, to: selection.to, insert: text },
+      selection: { anchor: selection.from + text.length },
+      scrollIntoView: true,
+    });
+    this.editor.focus();
+  }
+
+  /** Compat pane: everything about this preset that will not run the way
+   * its source says, worst first, each pointing at a line. The dock used to
+   * show one "Simplified" flag with a single reason. */
+  private renderCompatPane(): HTMLElement {
+    const pane = document.createElement('div');
+    this.compatHeadline = document.createElement('p');
+    this.compatHeadline.className = 'stims-editor__compat-headline';
+    this.compatEngines = document.createElement('p');
+    this.compatEngines.className = 'stims-editor__hint';
+    this.compatList = document.createElement('div');
+    this.compatList.className = 'stims-editor__compat';
+    this.compatList.setAttribute('role', 'list');
+    pane.append(this.compatHeadline, this.compatEngines, this.compatList);
+    return pane;
+  }
+
+  private paintCompat(state: MilkdropEditorSessionState) {
+    const list = this.compatList;
+    if (!list || !this.compatHeadline || !this.compatEngines) return;
+    const compiled = state.latestCompiled;
+    if (!compiled) {
+      this.compatHeadline.textContent = 'Nothing compiled yet.';
+      this.compatEngines.textContent = '';
+      list.replaceChildren();
+      return;
+    }
+    const checklist = buildCompatChecklist(compiled, state.source);
+    this.compatHeadline.textContent = checklist.headline;
+    this.compatHeadline.dataset.fidelity = checklist.fidelity;
+    this.compatEngines.textContent = checklist.engines
+      .map((entry) => `${entry.engine}: ${entry.status}`)
+      .join(' · ');
+    if (this.compatTab) {
+      const count = checklist.items.length;
+      this.compatTab.textContent = count > 0 ? `Compat · ${count}` : 'Compat';
+      this.compatTab.dataset.tone = checklist.items.some(
+        (item) => item.severity === 'blocker',
+      )
+        ? 'danger'
+        : count > 0
+          ? 'warning'
+          : 'muted';
+    }
+    const labels = {
+      blocker: 'Won\u2019t work',
+      approximation: 'Approximated',
+      ignored: 'Ignored',
+      note: 'Note',
+    } as const;
+    list.replaceChildren(
+      ...checklist.items.map((item) => {
+        const line = item.line;
+        const row = document.createElement(line ? 'button' : 'div');
+        if (row instanceof HTMLButtonElement) row.type = 'button';
+        row.className = 'stims-editor__compat-row';
+        row.setAttribute('role', 'listitem');
+        row.dataset.severity = item.severity;
+        const head = document.createElement('span');
+        head.className = 'stims-editor__compat-head';
+        const badge = document.createElement('span');
+        badge.className = 'stims-editor__compat-badge';
+        badge.textContent = labels[item.severity];
+        const title = document.createElement('strong');
+        // Titles wrap identifiers in backticks; render them as code.
+        item.title.split('`').forEach((part, index) => {
+          if (index % 2 === 1) {
+            const code = document.createElement('code');
+            code.textContent = part;
+            title.appendChild(code);
+          } else if (part) {
+            title.appendChild(document.createTextNode(part));
+          }
+        });
+        head.append(badge, title);
+        if (line) {
+          const where = document.createElement('span');
+          where.className = 'stims-editor__compat-line';
+          where.textContent = `line ${line}`;
+          head.appendChild(where);
+        }
+        const detail = document.createElement('span');
+        detail.className = 'stims-editor__compat-detail';
+        detail.textContent = item.detail;
+        row.append(head, detail);
+        if (line) {
+          row.addEventListener('click', () => {
+            if (line < 1 || line > this.editor.state.doc.lines) return;
+            const target = this.editor.state.doc.line(line);
+            this.editor.dispatch({
+              selection: { anchor: target.from, head: target.to },
+              scrollIntoView: true,
+            });
+            this.editor.focus();
+          });
+        }
+        return row;
+      }),
+    );
+  }
+
+  /** Outline pane: the buffer's editable parts (settings, equations, each
+   * custom wave and shape, both shaders) with line ranges. Real presets run
+   * to hundreds of lines; this is the way to move around one. */
+  private renderOutlinePane(): HTMLElement {
+    const pane = document.createElement('div');
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent = 'The parts of this preset. Click one to jump to it.';
+    this.outlineList = document.createElement('div');
+    this.outlineList.className = 'stims-editor__outline';
+    this.outlineList.setAttribute('role', 'list');
+    pane.append(hint, this.outlineList);
+    return pane;
+  }
+
+  private paintOutline(source: string) {
+    const list = this.outlineList;
+    if (!list) return;
+    const entries = buildPresetOutline(source);
+    if (entries.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'stims-editor__hint';
+      empty.textContent = 'Nothing to outline yet.';
+      list.replaceChildren(empty);
+      return;
+    }
+    list.replaceChildren(
+      ...entries.map((entry) => {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'stims-editor__outline-row';
+        row.setAttribute('role', 'listitem');
+        row.dataset.kind = entry.kind;
+        row.dataset.firstLine = String(entry.firstLine);
+        const label = document.createElement('code');
+        label.textContent = entry.label;
+        const range = document.createElement('span');
+        range.className = 'stims-editor__outline-range';
+        range.textContent =
+          entry.firstLine === entry.lastLine
+            ? `line ${entry.firstLine}`
+            : `lines ${entry.firstLine}\u2013${entry.lastLine}`;
+        row.append(label, range);
+        row.addEventListener('click', () => {
+          if (entry.firstLine > this.editor.state.doc.lines) return;
+          const target = this.editor.state.doc.line(entry.firstLine);
+          this.editor.dispatch({
+            selection: { anchor: target.from },
+            scrollIntoView: true,
+          });
+          this.editor.focus();
+        });
+        return row;
+      }),
+    );
   }
 
   /** Assist pane: every AI-backed action in one place. They share a single
@@ -2246,6 +2491,8 @@ export class EditorPanel {
     // Fidelity degradation only. Error counts are the status label's and the
     // problems strip's job — this flag reports the one thing neither can:
     // the stage is rendering a simplified version of what compiled.
+    this.paintCompat(state);
+    this.paintOutline(state.source);
     this.safetyFlag.hidden = !isDegraded;
     this.safetyFlag.textContent = 'Simplified';
     this.safetyFlag.dataset.tone = 'warning';
