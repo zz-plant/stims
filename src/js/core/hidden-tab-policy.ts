@@ -9,6 +9,10 @@
  * performance mode, where this tab is driving a projector and flipping to
  * another tab to line up the next preset must not black out the room.
  *
+ * `pictureInPictureElement` is `null` when no window is open and `undefined` in
+ * browsers without the API, so "no PiP" is a falsy check: comparing to `null`
+ * treated an absent API as an open window and never suspended a hidden tab.
+ *
  * It lives here, not inline in the frame loop, so `__stims_agent.getState()`
  * can report the same answer the frame loop acts on instead of a copy that
  * drifts: a black canvas with no error is otherwise indistinguishable from a
@@ -22,6 +26,6 @@ export function isHiddenTabSuspendingFrames(): boolean {
     document.hidden &&
     document.documentElement.dataset.agentMode !== 'true' &&
     !isLivePerformanceModeActive() &&
-    document.pictureInPictureElement === null
+    !document.pictureInPictureElement
   );
 }
