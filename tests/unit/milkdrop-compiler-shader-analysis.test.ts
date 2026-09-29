@@ -268,16 +268,16 @@ warp_texture_scale = bass_att * 0.5
     );
 
     expect(glsl).not.toBeNull();
-    expect(glsl).toContain('sampleUv(vUv, textureWrap), (signalTime / 10.0)');
+    expect(glsl).toContain('sampleUv(uv, textureWrap), (signalTime / 10.0)');
     expect(glsl).toContain(
-      'sampleUv(vec2(vUv.x, vUv.y), textureWrap), (signalTime / 5.0)',
+      'sampleUv(vec2(uv.x, uv.y), textureWrap), (signalTime / 5.0)',
     );
     // Source id 10 is `noise_lq`, projectM's generated 256x256 white noise —
     // no longer sharing the smooth `noise` PNG slot (id 1). It keeps its z
     // slice: presets do call tex3D on it, and dropping the volume treatment
     // made those shader lines read as unsupported outright.
     expect(glsl).toContain(
-      'sampleAuxTexture(vec4(10.0, 0, 0, 0).x, 1.0, sampleUv(vUv, textureWrap), (signalTime / 20.0))',
+      'sampleAuxTexture(vec4(10.0, 0, 0, 0).x, 1.0, sampleUv(uv, textureWrap), (signalTime / 20.0))',
     );
     // Source id 11 is `noisevol`: projectM's generated 32^3 white-noise volume.
     // It used to share the `noise` slot (id 1), whose asset is smooth perlin.
@@ -334,14 +334,14 @@ warp_texture_scale = bass_att * 0.5
     const body = extractNativeShaderBody(
       'shader_body { ret = tex2d(sampler_main, uv).rgb; } dx = 0.5;',
     );
-    expect(body).toBe('ret = tex2d(currentTex, uv).rgb;');
+    expect(body).toBe('ret = texture2D(currentTex, uv).rgb;');
   });
 
   test('extracts only the first shader_body block when presets carry several', () => {
     const body = extractNativeShaderBody(
       'shader_body { ret = tex2d(sampler_main, uv).rgb; } shader_body { ret = vec3(1.0); }',
     );
-    expect(body).toBe('ret = tex2d(currentTex, uv).rgb;');
+    expect(body).toBe('ret = texture2D(currentTex, uv).rgb;');
     expect(body).not.toContain('vec3(1.0)');
     expect(body).not.toContain('}');
   });
@@ -351,7 +351,9 @@ warp_texture_scale = bass_att * 0.5
       'shader_body { if (a > 0.5) { ret = tex2d(sampler_main, uv).rgb; } else { ret = vec3(0.0); } }\n// trailing comment',
     );
     expect(body).not.toBeNull();
-    expect(body).toContain('if (a > 0.5) { ret = tex2d(currentTex, uv).rgb;');
+    expect(body).toContain(
+      'if (a > 0.5) { ret = texture2D(currentTex, uv).rgb;',
+    );
     expect(body).not.toContain('// trailing comment');
     expect(body?.split('{').length).toBe(body?.split('}').length);
   });
@@ -402,7 +404,9 @@ test('keeps native shader-body aspect as a runtime uniform', () => {
 
   expect(
     compiled.ir.shaderText.warpProgram?.normalizedLines.join(' '),
-  ).toContain('float x = aspect');
+    // `aspect` is a vec4 uniform; HLSL truncates it into a float
+    // declaration, which milkdropScalar reproduces.
+  ).toContain('float x = milkdropScalar(aspect)');
 });
 
 describe('branch flattening for direct shader execution', () => {
@@ -439,8 +443,12 @@ describe('branch flattening for direct shader execution', () => {
     const targets = analysis.directProgramStatements.map(
       (statement) => statement.target,
     );
-    // Both branches survive as assignments to the same variable...
-    expect(targets.filter((target) => target === 'ret_2')).toHaveLength(3);
+    // The bare `vec3 ret_2` declaration seeds a zero write (so a later
+    // swizzle write or read never meets an undefined name), then the
+    // unconditional write, then both branches survive as assignments to
+    // the same variable...
+    expect(targets.filter((target) => target === 'ret_2')).toHaveLength(4);
+    expect(analysis.directProgramLines[0]).toBe('ret_2 = vec3(0.0)');
     // ...and the else arm is the complement of the then arm, not a second
     // unconditional write.
     const lines = analysis.directProgramLines.join('\n');

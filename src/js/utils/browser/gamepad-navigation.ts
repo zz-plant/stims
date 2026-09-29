@@ -11,6 +11,19 @@ type GamepadNavigationOptions = {
   repeatIntervalMs?: number;
   restoreFocus?: boolean;
   focusStorageKey?: string;
+  /**
+   * Treat the keyboard as a D-pad: arrows move focus, Enter/OK activates,
+   * Backspace/Escape go back. That is how TV remotes arrive (Tizen and webOS
+   * send key events, not Gamepad API input), and it is wrong everywhere
+   * else. On a desktop the same handler ran on every page: each arrow press
+   * that the shell used to change preset also walked DOM focus one element
+   * along (from the stage, which is not in the focusable list, that meant
+   * element zero — the skip link, which then sat visible at the top of the
+   * stage), and every Backspace re-dispatched a synthetic Escape that closed
+   * whatever panel was open. Off unless the caller says the device is a
+   * leanback one; a real gamepad is polled separately and needs none of it.
+   */
+  keyboardNavigation?: boolean;
 };
 
 type FocusDirection = 'next' | 'prev' | 'up' | 'down' | 'left' | 'right';
@@ -31,6 +44,7 @@ const DEFAULT_OPTIONS: Required<GamepadNavigationOptions> = {
   repeatIntervalMs: 120,
   restoreFocus: true,
   focusStorageKey: 'stims:last-focus',
+  keyboardNavigation: false,
 };
 
 const getGamepads = () => navigator.getGamepads?.() ?? [];
@@ -670,7 +684,9 @@ export const initGamepadNavigation = (
 
   window.addEventListener('gamepadconnected', handleConnect);
   window.addEventListener('gamepaddisconnected', handleDisconnect);
-  window.addEventListener('keydown', handleKeydown);
+  if (resolved.keyboardNavigation) {
+    window.addEventListener('keydown', handleKeydown);
+  }
   document.addEventListener('visibilitychange', handleVisibilityChange);
   doc.addEventListener('focusin', onDocumentFocusIn);
 
@@ -696,7 +712,9 @@ export const initGamepadNavigation = (
   return () => {
     window.removeEventListener('gamepadconnected', handleConnect);
     window.removeEventListener('gamepaddisconnected', handleDisconnect);
-    window.removeEventListener('keydown', handleKeydown);
+    if (resolved.keyboardNavigation) {
+      window.removeEventListener('keydown', handleKeydown);
+    }
     document.removeEventListener('visibilitychange', handleVisibilityChange);
     doc.removeEventListener('focusin', onDocumentFocusIn);
     if (rafId !== null) {

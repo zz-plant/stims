@@ -355,9 +355,11 @@ Blocks banned patterns in changed source files before they land.
 
 Scans staged files (falling back to unstaged edits) for whole-file TypeScript
 suppression directives, silent empty catch blocks, hardcoded hex colors in
-frontend JSX, `console.log`, and un-themed color literals in component
-`src/css/*.module.css` stylesheets, pointing offenders at the design tokens
-and debug-snapshot systems instead. Exits non-zero on any hit.
+frontend JSX, `console.log`, un-themed color literals in component
+`src/css/*.module.css` stylesheets, the View Transitions API, and
+hard-coded overshoot easing curves, pointing offenders at the design and
+motion tokens and the debug-snapshot systems instead. Exits non-zero on any
+hit.
 
 Run it directly: `bun run check:guard-registry`
 
@@ -429,10 +431,18 @@ Run it directly: `bun run check:no-ts-nocheck`
 
 Verifies the deployed site's edge is reachable and not gated behind a Cloudflare challenge.
 
-Fetches / and /milkdrop/ on the base URL (first argument, default
-https://toil.fyi) and fails on cf-mitigated challenges, interstitial bodies,
-or 4xx/5xx. DNS-only failures warn instead of failing unless
-STRICT_DNS_FAILURES=1.
+Fetches the unfurler-facing routes on the base URL (first argument,
+default https://toil.fyi) and fails on cf-mitigated challenges,
+interstitial bodies, or 4xx/5xx. DNS-only failures warn instead of
+failing unless STRICT_DNS_FAILURES=1.
+
+The list is the social-card surface plus one page of each kind the sitemap
+advertises: a share link is unfurled by a crawler, not a browser, so these
+are what a challenge or a 404 actually breaks. The sitemap routes are here
+because every /discover/ and /author/ page 404ed in production, with an
+empty body, and nothing noticed until an audit curled one. /milkdrop/ used to be here and went
+stale silently when the app routes changed, which is why this check also
+asserts on the card endpoints rather than a human-browsed page.
 
 Run it directly: `bun run check:production-edge`
 
@@ -496,7 +506,7 @@ same index as `{name, command, purpose}` records for tooling and agents;
 
 `--for "<symptom>"` answers the question the plain listing cannot: not
 "what scripts exist" but "which one answers what I am actually asking".
-With 131 scripts, knowing an instrument exists is not the same as knowing
+With well over a hundred scripts, knowing an instrument exists is not the same as knowing
 it is the right one, and picking wrong costs an afternoon. Curated routes
 come first because the best answer is often a script whose name shares no
 words with the symptom ("my preset looks wrong" -> `parity:capture`);
@@ -511,7 +521,8 @@ Asserts the shipped SEO surface still matches what `generate:seo` would produce.
 Checks canonical/OG/Twitter/JSON-LD tags and crawlable links in the HTML
 entry points, the milkdrop alias redirect, robots.txt, the sitemap index and
 chunk (including image entries), the web manifest's icons and screenshots,
-the oEmbed and JSON Feed endpoints, and the generated OG/icon PNG dimensions.
+the oEmbed and JSON Feed endpoints, the minified preset-meta map, and the
+generated OG/icon PNG dimensions.
 Failures exit non-zero and point at `bun run generate:seo`.
 
 Run it directly: `bun run check:seo`

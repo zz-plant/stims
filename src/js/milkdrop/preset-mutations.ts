@@ -1,9 +1,8 @@
 /**
- * Preset Mutations & Style Transfer
+ * One-click preset restyles and two-preset blending.
  *
- * Provides intelligent, deterministic client-side preset transformations,
- * applying high-order mathematical style transfers and parametric blending
- * over MilkDrop `.milk` code blocks with zero network overhead.
+ * Deterministic and client-side: each style overwrites a few base fields and
+ * appends per-frame or per-pixel lines. No model is involved.
  */
 
 import { readMilkdropField, upsertMilkdropFields } from './formatter.ts';
@@ -14,6 +13,18 @@ export type PresetMutationStyle =
   | 'ambient-glow'
   | 'kaleidoscope'
   | 'bass-surge';
+
+/** Button labels, in display order, for every surface that offers restyles. */
+export const PRESET_MUTATION_STYLES: ReadonlyArray<{
+  id: PresetMutationStyle;
+  label: string;
+}> = [
+  { id: 'cyberpunk', label: 'Neon' },
+  { id: 'hyperspace', label: 'Zoom tunnel' },
+  { id: 'ambient-glow', label: 'Slow glow' },
+  { id: 'kaleidoscope', label: 'Kaleidoscope' },
+  { id: 'bass-surge', label: 'Bass pulse' },
+];
 
 export function mutatePresetStyle(
   source: string,

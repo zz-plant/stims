@@ -17,7 +17,10 @@
  * something still on screen. Failing loudly here means a black canvas, which
  * users read as the app being broken.
  */
-import { isFreezeFrameActive } from '../core/accessibility-preferences.ts';
+import {
+  getMotionScale,
+  isFreezeFrameActive,
+} from '../core/accessibility-preferences.ts';
 import { isAgentMode, setDebugSnapshot } from '../core/agent-api.ts';
 import {
   isLivePerformanceModeActive,
@@ -25,11 +28,7 @@ import {
 } from '../core/live-performance-mode.ts';
 import { createLogger } from '../core/logger.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
-import {
-  isPresetLocked,
-  setPresetLocked,
-  togglePresetLock,
-} from '../core/preset-lock.ts';
+import { isPresetLocked, setPresetLocked } from '../core/preset-lock.ts';
 import type {
   AdaptiveQualityController,
   AdaptiveQualityState,
@@ -70,7 +69,6 @@ import {
   FIRST_RUN_PRESET_ID,
   FIRST_RUN_PRESET_TITLE,
 } from './runtime/first-run-preset';
-import { createMilkdropRuntimeInteractionPresenter } from './runtime/interaction-presenter';
 import {
   applyMilkdropInteractionResponse as applyMilkdropInteractionResponseImpl,
   buildMilkdropInputSignalOverrides as buildMilkdropInputSignalOverridesImpl,
@@ -214,7 +212,6 @@ export function createMilkdropExperience({
   // until startup selection resolves, and labelling it makes the "why is this
   // preset showing?" question answerable from runtime state alone.
   let presetSelectionReason: MilkdropPresetSelectionReason = 'boot-bundle';
-  let disposeKeyboardShortcuts: (() => void) | null = null;
   let disposeRequestedPresetListener: (() => void) | null = null;
   let adaptiveQualityController: AdaptiveQualityController | null = null;
   // Toggling the mode mid-set has to bite immediately — the performer is
@@ -771,38 +768,6 @@ export function createMilkdropExperience({
     setStatus: setOverlayStatus,
   });
 
-  const interactionPresenter = createMilkdropRuntimeInteractionPresenter({
-    overlay: {
-      isOpen: () => false,
-      toggleOpen: () => {},
-      toggleShortcutHud: () => {},
-    },
-    keybindingActions: {
-      getTransitionMode: () => transitionMode,
-      getBlendDuration: () => blendDuration,
-      selectRandomPreset: () => {
-        void navigation.selectRandomPreset();
-      },
-      goBackPreset: () => {
-        void navigation.goBackPreset();
-      },
-      setTransitionMode,
-      setOverlayStatus,
-      cycleWaveMode: (direction) => {
-        void cycleWaveMode(direction);
-      },
-      nudgeNumericField: (args) => {
-        void nudgeNumericField(args);
-      },
-      togglePresetLock: () => {
-        setOverlayStatus(
-          togglePresetLock() ? 'Staying on this preset.' : 'Auto-advance on.',
-        );
-      },
-      isPresetLocked,
-    },
-  });
-
   if (!previewMode) {
     previewService = createMilkdropPresetPreviewService({
       capturePreview: capturePresetPreview,
@@ -818,12 +783,7 @@ export function createMilkdropExperience({
     console.info('[Stims] Renderer fallback:', fallbackNotice);
   }
 
-  const { applyFieldValues, nudgeNumericField, cycleWaveMode } =
-    createMilkdropEditorActions({
-      session,
-      getCompiled: () => session.getState().activeCompiled ?? activeCompiled,
-      setOverlayStatus,
-    });
+  const { applyFieldValues } = createMilkdropEditorActions({ session });
   const attachmentController = createMilkdropExperienceAttachmentController({
     lifetime,
     getRuntime: () => runtime,
@@ -871,12 +831,6 @@ export function createMilkdropExperience({
     emitChange,
     setOverlayStatus,
     webgpuOptimizationFlags,
-    ensureKeyboardShortcuts: () => {
-      if (!disposeKeyboardShortcuts) {
-        disposeKeyboardShortcuts =
-          interactionPresenter.installKeyboardShortcuts();
-      }
-    },
   });
   const frameLoop = createMilkdropExperienceFrameLoop({
     beatClock,
@@ -909,6 +863,7 @@ export function createMilkdropExperience({
     },
     capturedVideoOverlay,
     getFreezeFrame: () => isFreezeFrameActive(),
+    getMotionScale,
     traceRecorder,
   });
 
@@ -1000,6 +955,11 @@ export function createMilkdropExperience({
           return;
         }
         if (activePresetId === startupPresetId) {
+          // The first-run preset is already on stage and was selected with
+          // recordHistory: false, so nothing has remembered it. Seed the
+          // in-memory history so "Previous" after the first switch can come
+          // back here (catalog-coordinator.seedSelection).
+          catalogCoordinator.seedSelection(startupPresetId);
           return;
         }
       }
@@ -1048,7 +1008,6 @@ export function createMilkdropExperience({
     unsubscribeLivePerformance,
     adaptiveQualityController,
     runtime,
-    getDisposeKeyboardShortcuts: () => disposeKeyboardShortcuts,
     getDisposeRequestedPresetListener: () => disposeRequestedPresetListener,
     catalogCoordinator,
     disposeRuntimeSignalHub,
@@ -1174,6 +1133,9 @@ function buildExperienceController(
       deps.emitChange();
     },
 
+    exportUserPresets() {
+      return deps.presetFileActions.exportUserPresets();
+    },
     exportPreset() {
       deps.presetFileActions.exportPreset();
     },
@@ -1315,7 +1277,6 @@ function buildExperienceController(
       deps.performanceTracker?.reset();
       deps.getAdaptiveQualityUnsubscribe?.()?.();
       deps.unsubscribeLivePerformance?.();
-      deps.getDisposeKeyboardShortcuts?.()?.();
       deps.getDisposeRequestedPresetListener?.()?.();
       deps.catalogCoordinator?.dispose();
       deps.disposeRuntimeSignalHub?.();

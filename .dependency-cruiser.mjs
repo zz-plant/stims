@@ -43,7 +43,7 @@ const config = {
         path: '^src/js/frontend/(?!engine/)',
       },
       to: {
-        path: '^src/js/milkdrop/(?!(catalog-store-analysis|catalog-store|catalog-types|compiler-types|formatter|live-tile-pool|overlay/.*|preset-credit|preset-generator|preset-handles|preset-id-resolution|preset-lineage|preset-math-analyzer|preset-modulation|preset-mutations|preset-preview|reactivity-probe|runtime/first-run-preset|runtime/interaction-response|runtime/preset-preview-service|runtime-types|shader-execution-mode|types)\\.ts$)',
+        path: '^src/js/milkdrop/(?!(catalog-store-analysis|catalog-store|catalog-types|compiler-types|formatter|live-tile-pool|overlay/.*|preset-credit|preset-generator|preset-handles|preset-id-resolution|preset-lineage|preset-math-analyzer|preset-modulation|preset-mutations|preset-preview|reactivity-probe|runtime/first-run-preset|runtime/interaction-response|runtime/preset-preview-service|runtime-types|shader-execution-mode|types|variable-probe)\\.ts$)',
       },
     },
     {

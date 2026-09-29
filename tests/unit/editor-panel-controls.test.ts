@@ -36,6 +36,7 @@ describe('editor panel colour groups and value-source chips', () => {
     onExport: mock(() => {}),
     onDeletePreset: mock(() => {}),
     onRequestImport: mock(() => {}),
+    onCopyShareLink: mock(() => {}),
   });
 
   const stateFor = (source: string): MilkdropEditorSessionState => ({
@@ -211,6 +212,7 @@ describe('editor panel toggles, modes, ranges and modulation', () => {
     onExport: mock(() => {}),
     onDeletePreset: mock(() => {}),
     onRequestImport: mock(() => {}),
+    onCopyShareLink: mock(() => {}),
   });
 
   const stateFor = (source: string): MilkdropEditorSessionState => ({
@@ -433,6 +435,7 @@ describe('editor panel live drag feedback', () => {
     onExport: mock(() => {}),
     onDeletePreset: mock(() => {}),
     onRequestImport: mock(() => {}),
+    onCopyShareLink: mock(() => {}),
   });
 
   const stateFor = (source: string): MilkdropEditorSessionState => ({
@@ -564,6 +567,7 @@ describe('editor panel live overwrite hint', () => {
     onExport: mock(() => {}),
     onDeletePreset: mock(() => {}),
     onRequestImport: mock(() => {}),
+    onCopyShareLink: mock(() => {}),
   });
 
   const stateFor = (source: string): MilkdropEditorSessionState => ({

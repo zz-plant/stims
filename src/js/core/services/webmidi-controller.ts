@@ -81,6 +81,35 @@ export const DEFAULT_MIDI_CC_BINDINGS: MidiBindingMap = {
   10: { target: 'q4', min: 0.0, max: 1.0 },
 };
 
+/**
+ * What a gamepad drives before anyone maps it.
+ *
+ * A hardware MIDI device gets {@link DEFAULT_MIDI_CC_BINDINGS} the moment it
+ * appears, but `virtual:gamepad` was only ever created lazily by the first
+ * injected CC, with an empty binding map — so the gamepad performance source
+ * emitted CC 0-5 into nothing and a plugged-in pad moved no pixels at all.
+ * There is also no note/CC learn path for it in the UI (learn is armed by
+ * moving a knob, and Settings never mentions gamepads), so an unbound pad had
+ * no route back to being useful.
+ *
+ * The CC numbers are the gamepad source's fixed layout, not a MIDI convention:
+ * 0-3 are the two sticks' axes and 4-5 the analog triggers
+ * (`gamepad-performance-source.ts`).
+ *
+ * Every range is chosen so the control's RESTING position is the parameter's
+ * neutral value — sticks self-centre to the midpoint (dx/dy 0, rot 0,
+ * zoom 1.0) and triggers rest at their minimum (q1/q2 0). A pad sitting
+ * untouched on a desk must not bend the visuals; only a hand on it should.
+ */
+export const DEFAULT_GAMEPAD_CC_BINDINGS: MidiBindingMap = {
+  0: { target: 'dx', min: -0.03, max: 0.03 },
+  1: { target: 'dy', min: -0.03, max: 0.03 },
+  2: { target: 'rot', min: -0.2, max: 0.2 },
+  3: { target: 'zoom', min: 0.9, max: 1.1 },
+  4: { target: 'q1', min: 0.0, max: 1.0 },
+  5: { target: 'q2', min: 0.0, max: 1.0 },
+};
+
 export interface MidiDeviceInfo {
   id: string;
   name: string;
@@ -117,6 +146,18 @@ interface DeviceRecord {
   enabled: boolean;
   bindings: MidiBindingMap;
   noteBindings: MidiNoteBindingMap;
+  /**
+   * Set once this device's factory defaults have been installed.
+   *
+   * Emptiness cannot carry that fact on its own. The gamepad's defaults were
+   * originally seeded only for a record with no bindings, on the reasoning
+   * that an empty map could only be the footprint of the bug where the pad
+   * bound to nothing — but a user who removes all six mappings by hand
+   * produces exactly the same state, and would have had every default put
+   * back on the next load, silently. This marker separates "never seeded"
+   * from "seeded, then emptied on purpose".
+   */
+  defaultsSeeded?: boolean;
 }
 
 type PersistedState = Record<string, DeviceRecord>;
@@ -187,6 +228,7 @@ function readStorage(): PersistedState {
       if (value === null || typeof value !== 'object' || Array.isArray(value))
         continue;
       const candidate = value as Partial<DeviceRecord>;
+      const defaultsSeeded = candidate.defaultsSeeded === true;
       const bindings: MidiBindingMap = {};
       if (
         candidate.bindings &&
@@ -249,6 +291,7 @@ function readStorage(): PersistedState {
         enabled: candidate.enabled !== false,
         bindings,
         noteBindings,
+        defaultsSeeded,
       };
     }
     return sanitized;
@@ -296,6 +339,7 @@ export class WebMidiControllerService {
         enabled: rec.enabled ?? true,
         bindings: rec.bindings ?? {},
         noteBindings: rec.noteBindings ?? {},
+        defaultsSeeded: rec.defaultsSeeded === true,
       });
     }
     this.ensureDeviceRecord(VIRTUAL_CLAUDE_DEVICE_ID, {
@@ -303,6 +347,53 @@ export class WebMidiControllerService {
       bindings: {},
       noteBindings: {},
     });
+  }
+
+  /**
+   * Give the gamepad its default mapping, now that one is actually attached.
+   *
+   * Deliberately lazy, and this is the whole reason the method exists rather
+   * than a line in the constructor. `virtual:gamepad` is listed as a device on
+   * every machine, connected or not, so seeding it at construction makes
+   * `getEnabledTargets()` report zoom, rot, dx, dy and q1/q2 as hardware-driven
+   * in every session — and the editor's value-source chips and the live
+   * parameter HUD would tell a user with no controller that a controller is
+   * driving their preset.
+   *
+   * Called by the gamepad performance source the first time it sees a pad, so
+   * the claim is only ever made when it is true.
+   *
+   * Also repairs the empty map persisted by builds where the pad bound to
+   * nothing — but only once, and only for a record that has never been
+   * seeded. Emptiness alone is not the bug's signature: removing all six
+   * mappings by hand leaves the same empty map, and treating that as damage
+   * put every default back on the next load and undid the user's choice
+   * without saying so. The `defaultsSeeded` marker is what tells them apart.
+   */
+  public ensureGamepadDefaults(): void {
+    // Checked before ensureDeviceRecord, not after: that call creates the
+    // record with the defaults already in place, so reading the result cannot
+    // distinguish "just created" from "already mapped" — and taking the
+    // early return on a fresh create would skip the notify, leaving the
+    // Settings bindings table showing "No mappings yet" for a live pad.
+    const existing = this.deviceRecords.get(VIRTUAL_GAMEPAD_DEVICE_ID);
+    if (existing?.defaultsSeeded) return;
+    if (existing && Object.keys(existing.bindings).length > 0) {
+      // Seeded by an older build, which left no marker. Record that now so
+      // this record is never a repair candidate again.
+      existing.defaultsSeeded = true;
+      this.persist();
+      return;
+    }
+    const rec = this.ensureDeviceRecord(VIRTUAL_GAMEPAD_DEVICE_ID, {
+      enabled: true,
+      bindings: { ...DEFAULT_GAMEPAD_CC_BINDINGS },
+      noteBindings: {},
+    });
+    rec.bindings = { ...DEFAULT_GAMEPAD_CC_BINDINGS };
+    rec.defaultsSeeded = true;
+    this.persist();
+    this.notifyDevicesChanged();
   }
 
   public isSupported(): boolean {
@@ -527,6 +618,38 @@ export class WebMidiControllerService {
     // Reused as a general "MIDI state changed" signal — the UI's bindings
     // table re-reads getAllBindings() off the same event rather than
     // needing a second listener type just for this.
+    this.notifyDevicesChanged();
+  }
+
+  /**
+   * Replace a device's whole mapping in one step.
+   *
+   * Exists so applying a factory profile is a single persist and a single
+   * `onDevicesChanged`: looping `bindCc` over sixteen controls would write
+   * storage sixteen times and re-render every bindings table on each one.
+   *
+   * Replaces rather than merges — a profile describes the entire surface of a
+   * known device, so leaving stale bindings from a previous profile behind
+   * would produce a mapping neither one documents.
+   */
+  public applyDeviceProfile(
+    deviceId: string,
+    bindings: MidiBindingMap,
+    noteBindings: MidiNoteBindingMap = {},
+  ): void {
+    const rec = this.ensureDeviceRecord(deviceId, {
+      enabled: true,
+      bindings: {},
+      noteBindings: {},
+    });
+    rec.bindings = { ...bindings };
+    rec.noteBindings = { ...noteBindings };
+    // Latched `toggle` notes are keyed by device+note and would otherwise
+    // survive into a mapping where that note means something else.
+    for (const key of [...this.noteToggleState.keys()]) {
+      if (key.startsWith(`${deviceId}:`)) this.noteToggleState.delete(key);
+    }
+    this.persist();
     this.notifyDevicesChanged();
   }
 

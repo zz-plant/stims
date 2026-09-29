@@ -97,6 +97,7 @@ export function createMilkdropEngineAdapter() {
   let experience: ExperienceController | null = null;
   let audioActive = false;
   let audioSource: AudioSource | null = null;
+  let playbackPaused = false;
   let audioEndedAt: number | null = null;
   let unsubscribeExperience: (() => void) | null = null;
   let lastSnapshot: EngineSnapshot = createEmptyEngineSnapshot();
@@ -120,6 +121,7 @@ export function createMilkdropEngineAdapter() {
       runtime,
       audioActive,
       audioSource,
+      playbackPaused,
       audioEndedAt,
       previousSnapshot: lastSnapshot,
     });
@@ -130,8 +132,21 @@ export function createMilkdropEngineAdapter() {
     subscribers.forEach((subscriber) => subscriber(lastSnapshot));
   };
 
+  /**
+   * Pause is a state of the live session, not of the engine: anything that
+   * ends or replaces the session — stopping audio, switching source, the
+   * runtime going away — releases it, and so does moving to another preset,
+   * which the user would otherwise watch load into a frozen frame.
+   */
+  const releasePlaybackHold = () => {
+    if (!playbackPaused) return;
+    playbackPaused = false;
+    runtime?.setFrameHold?.(false);
+  };
+
   const performStopAudio = async () => {
     if (!audioActive) return;
+    releasePlaybackHold();
 
     if (runtime) {
       runtime.stopAudio();
@@ -180,6 +195,7 @@ export function createMilkdropEngineAdapter() {
     container = null;
     audioActive = false;
     audioSource = null;
+    playbackPaused = false;
     if (capturedVideoModulePromise) {
       void capturedVideoModulePromise.then(
         ({ clearMilkdropCapturedVideoStream }) =>
@@ -312,6 +328,7 @@ export function createMilkdropEngineAdapter() {
       if (runtime?.resumePreview) {
         runtime.resumePreview();
       }
+      releasePlaybackHold();
       await experience.selectPreset(presetId);
       emit();
     },
@@ -323,14 +340,46 @@ export function createMilkdropEngineAdapter() {
       if (runtime?.resumePreview) {
         runtime.resumePreview();
       }
+      releasePlaybackHold();
       await experience.goBackPreset();
       emit();
+    },
+
+    /**
+     * Hold or release the picture. Only meaningful while an audio session is
+     * live — before that the stage is the idle preview, and after stopping
+     * there is no stage. Returns the state actually applied.
+     */
+    setPlaybackPaused(paused: boolean): boolean {
+      if (!runtime || !audioActive) {
+        return false;
+      }
+      if (paused === playbackPaused) {
+        return playbackPaused;
+      }
+      playbackPaused = paused;
+      runtime.setFrameHold?.(paused);
+      emit();
+      return playbackPaused;
+    },
+
+    isPlaybackPaused() {
+      return playbackPaused;
+    },
+
+    /** Render one frame while the picture is held (the editor's Step). */
+    stepPlaybackFrame(): boolean {
+      if (!runtime || !playbackPaused) {
+        return false;
+      }
+      return runtime.stepHeldFrame?.() ?? false;
     },
 
     async setAudioSource(request: EngineAudioRequest) {
       if (audioActive && audioSource === request.source) {
         return;
       }
+      releasePlaybackHold();
 
       const activeRuntime = runtime ?? (await waitForRuntime(() => runtime));
       if (!activeRuntime) {
@@ -391,7 +440,20 @@ export function createMilkdropEngineAdapter() {
       await setMilkdropCapturedVideoStream(request.stream, {
         cropTarget: request.cropTarget ?? container,
       });
-      await activeRuntime.startAudio({ stream: request.stream });
+      // Tab and YouTube capture come from getDisplayMedia, so the tracks are
+      // a live screen share the browser advertises with its own "sharing"
+      // bar. `acquireAudioHandle` defaults `stopStreamOnCleanup` to
+      // `!reuseMicrophone`, i.e. false, so without this the teardown only
+      // unregistered the stream: "Stop audio" said audio had stopped, the
+      // dock showed no source, and the tab went on being captured until the
+      // page was closed. Nothing else stops these tracks —
+      // `clearMilkdropCapturedVideoStream` (called by performStopAudio, and
+      // when switching to any other source) drops the texture and its
+      // listeners but never touches the tracks.
+      await activeRuntime.startAudio({
+        stream: request.stream,
+        stopStreamOnCleanup: true,
+      });
       audioActive = true;
       audioSource = request.source;
       setAudioActive(true, request.source);
@@ -511,6 +573,9 @@ export function createMilkdropEngineAdapter() {
       emit();
     },
 
+    async exportUserPresets(): Promise<number> {
+      return (await experience?.exportUserPresets()) ?? 0;
+    },
     exportPreset() {
       experience?.exportPreset();
     },

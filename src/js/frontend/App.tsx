@@ -37,6 +37,7 @@ import {
   buildAudioProfile,
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
+import { setCrashTelemetryPreset } from '../core/services/crash-telemetry.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import {
   VIRTUAL_CLAUDE_DEVICE_ID,
@@ -52,7 +53,6 @@ import {
   type ThemeChoice,
 } from '../core/theme-preferences.ts';
 import { parseURLParams } from '../core/url-params.ts';
-import { presetReadsInteractionSignals } from '../milkdrop/runtime/interaction-response.ts';
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import {
@@ -72,10 +72,16 @@ import { CreditsDialog } from './CreditsDialog.tsx';
 import type { CommandAction } from './command-palette-registry.ts';
 import { StimsErrorBoundary } from './ErrorBoundary.tsx';
 import {
+  getAudioBands,
   getAudioEnergy,
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
 import { HudOverlay } from './HudOverlay.tsx';
+import { useMediaSession } from './hooks/use-media-session.ts';
+import {
+  useFileHandlerLaunch,
+  useSharedLaunch,
+} from './hooks/use-shared-launch.ts';
 import { useAgentFrameRate } from './hooks/useAgentFrameRate';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useFullscreen } from './hooks/useFullscreen';
@@ -87,6 +93,7 @@ import { reportLoadStatus } from './load-status.ts';
 import { dismissLoadingScreen } from './loading-screen.ts';
 import { prefetchPanelChunk } from './panel-chunks.ts';
 import { openPerformPicker, pinTarget, unpinTarget } from './perform-pins.ts';
+import { watchPerformanceHardware } from './performance-hardware-connect.ts';
 import {
   SilentAudioNotice,
   useAudioAwaitingGesture,
@@ -99,12 +106,19 @@ const NewHomePage = lazy(() =>
 );
 
 import { togglePresetLock } from '../core/preset-lock.ts';
+import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
+import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
+import { cyclePresetWaveMode, nudgePresetField } from './preset-nudges.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { readStored, writeStored } from './safe-storage.ts';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
-import { buildRemixShareUrl, decodePresetCodeFromHash } from './url-state.ts';
+import {
+  buildRemixShareUrl,
+  decodePresetCodeFromHash,
+  REMIX_URL_FAILED,
+} from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
 import {
   endWatchParty,
@@ -124,7 +138,7 @@ import {
   useWorkspace,
   WorkspaceProvider,
 } from './workspace-context.tsx';
-import { getToolLabel } from './workspace-helpers.ts';
+import { findActivePresetEntry, getToolLabel } from './workspace-helpers.ts';
 import {
   BROWSE_PANEL_FOCUS_SELECTOR,
   WorkspaceStagePanel,
@@ -295,6 +309,15 @@ function StimsWorkspaceAppShell() {
   // `ui` directly would rebuild the runtime on every route change.
   const uiRef = useRef(ui);
   uiRef.current = ui;
+  // Same latest-value pattern for the engine handlers: the palette action
+  // list below is memoized on the few inputs that change a row's label or
+  // presence, so anything it calls must be read at run time. Capturing
+  // `engine`/`ui` in the memo froze `handleShufflePreset` with an empty
+  // catalog and `handleShowCurrentLink` with the boot-time route, so the
+  // palette, the agent API and every shortcut bound to a palette id did
+  // nothing (or shared the wrong URL) until an unrelated dep refreshed it.
+  const engineRef = useRef(engine);
+  engineRef.current = engine;
   const { engineSnapshot } = useEngineSnapshot();
   const awaitingAudioGesture = useAudioAwaitingGesture();
   const growthLandingEventsRef = useRef<Set<string>>(new Set());
@@ -350,9 +373,20 @@ function StimsWorkspaceAppShell() {
   const [showCredits, setShowCredits] = useState(false);
   const [audioMatch, setAudioMatch] = useState<{
     presetId: string;
-    name: string;
     score: number;
   } | null>(null);
+  // The match usually lands while only the 20 KB starter catalog is loaded,
+  // so the title is resolved at render time against whatever catalog is
+  // current: the toast re-labels itself when the full catalog arrives
+  // instead of freezing the raw id it was born with.
+  const audioMatchWithName = useMemo(() => {
+    if (!audioMatch) return null;
+    const preset = engine.catalog.find((e) => e.id === audioMatch.presetId);
+    return {
+      ...audioMatch,
+      name: preset?.title ?? audioMatch.presetId.replace(/-/g, ' '),
+    };
+  }, [audioMatch, engine.catalog]);
   const [thumbMode, setThumbMode] = useState(() => {
     try {
       const stored = localStorage.getItem('stims:mobile-thumb-mode');
@@ -381,6 +415,13 @@ function StimsWorkspaceAppShell() {
   const liveMode = engine.audioActive;
   const currentAudioSource =
     engineSnapshot?.audioSource ?? ui.routeState.audioSource;
+  // What the OS is told is playing. Same three-source lookup the save-current
+  // gesture uses, because autoplay moves the stage without moving the
+  // selection and only the catalog knows what is actually up.
+  const activePresetEntry = useMemo(
+    () => findActivePresetEntry(engineSnapshot?.activePresetId, engine),
+    [engineSnapshot?.activePresetId, engine],
+  );
   const quietAtRef = useRef<number | null>(null);
   const quietDemoSuggestedRef = useRef(false);
   const autoPlayedRef = useRef(false);
@@ -421,6 +462,13 @@ function StimsWorkspaceAppShell() {
     engineReady: engine.engineReady,
   });
 
+  // Crash rows are attributed to the preset on screen; without this the
+  // telemetry dataset could say a shader failed to compile but not on which
+  // preset.
+  useEffect(() => {
+    setCrashTelemetryPreset(engineSnapshot?.activePresetId ?? null);
+  }, [engineSnapshot?.activePresetId]);
+
   // Shared between the touch long-press gesture and the "L" keyboard
   // shortcut — one definition of "favorite whatever's currently playing"
   // rather than two copies that could drift.
@@ -430,22 +478,12 @@ function StimsWorkspaceAppShell() {
       ui.setStatusMessage('Load a preset before saving it.');
       return;
     }
-    // Autoplay moves the stage on without moving `selectedPreset`, so the two
-    // ids drift apart routinely. Falling back to null there made every press
-    // in that state read "not a favorite": the gesture could only ever add,
-    // and un-saving whatever was playing was impossible until you re-selected
-    // it. The catalog knows the real state — ask it before assuming.
-    const activePreset =
-      engine.selectedPreset?.id === activePresetId
-        ? engine.selectedPreset
-        : (engine.catalog.find((entry) => entry.id === activePresetId) ??
-          engine.favoritePresets.find((entry) => entry.id === activePresetId) ??
-          null);
+    const activePreset = findActivePresetEntry(activePresetId, engine);
     void engine.toggleFavoritePreset(activePresetId, !activePreset?.isFavorite);
     ui.setStatusMessage(
       activePreset?.isFavorite
         ? 'Removed from saved presets.'
-        : 'Saved preset.',
+        : 'Saved on this device.',
     );
   };
 
@@ -458,12 +496,11 @@ function StimsWorkspaceAppShell() {
     liveMode,
     engineReady: engine.engineReady,
     panel: ui.routeState.panel,
-    filteredCatalog: engine.filteredCatalog,
     updatePanel: ui.updatePanel,
     handlePresetSelection: engine.handlePresetSelection,
     handleShufflePreset: engine.handleShufflePreset,
     handlePreviousPreset: engine.handlePreviousPreset,
-    handleAudioStop: engine.handleAudioStop,
+    handleTogglePlayback: engine.handleTogglePlayback,
     handleVisualSearch: engine.handleVisualSearch,
     handleToggleFullscreen,
     toggleFavoritePreset: toggleFavoriteCurrentPreset,
@@ -495,10 +532,16 @@ function StimsWorkspaceAppShell() {
   const hostingWatchParty =
     syncSession.role === 'host' && syncSession.status !== 'idle';
 
+  // Read here rather than at its use site further down, because the share
+  // action's label depends on it: a link copied mid-edit carries the draft,
+  // and the row is the only place that fact is ever stated.
+  const editorDirty = engineSnapshot?.sessionState?.dirty ?? false;
+  const playbackPaused = engineSnapshot?.playbackPaused ?? false;
+
   // Behavior bodies live in workspace-actions.ts, shared with the stage
   // dock menu — a verb must not do different things depending on which
   // surface invoked it.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers are stable context methods; the list only needs to refresh with live/fullscreen/hosting state
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers are read through uiRef/engineRef when a row runs; the list only needs to rebuild when a label or the row set changes (live/fullscreen/hosting/theme/editor state)
   const paletteActions: CommandAction[] = useMemo(
     () => [
       {
@@ -512,14 +555,14 @@ function StimsWorkspaceAppShell() {
         group: 'Presets',
         label: 'Next preset (random)',
         keywords: ['shuffle', 'surprise'],
-        run: () => void engine.handleShufflePreset(),
+        run: () => void engineRef.current.handleShufflePreset(),
       },
       {
         id: 'previous-preset',
         group: 'Presets',
         label: 'Previous preset',
         keywords: ['back'],
-        run: () => void engine.handlePreviousPreset(),
+        run: () => void engineRef.current.handlePreviousPreset(),
       },
       {
         id: 'save-preset',
@@ -533,7 +576,7 @@ function StimsWorkspaceAppShell() {
         group: 'Presets',
         label: 'Find similar presets',
         keywords: ['match', 'sound', 'look'],
-        run: () => void engine.handleVisualSearch(),
+        run: () => void engineRef.current.handleVisualSearch(),
       },
       {
         // The small step next to next-preset's big one. Shares its body with
@@ -624,7 +667,7 @@ function StimsWorkspaceAppShell() {
           const order: ThemeChoice[] = ['dark', 'light', 'system'];
           const next = order[(order.indexOf(themeChoice) + 1) % order.length];
           setThemePreference({ theme: next });
-          ui.setStatusMessage(
+          uiRef.current.setStatusMessage(
             `Theme: ${next === 'system' ? 'match system' : next}`,
           );
         },
@@ -635,11 +678,15 @@ function StimsWorkspaceAppShell() {
         // a preset is chugging and Settings is three interactions away.
         id: 'use-webgl',
         group: 'View',
-        label: 'Switch renderer to WebGL',
+        label: 'Switch renderer to WebGL (reloads)',
         keywords: ['backend', 'webgpu', 'compatibility', 'slow', 'performance'],
         run: () => {
           setCompatibilityMode(true);
-          ui.setStatusMessage('Renderer set to WebGL. Reload to apply.');
+          // The choice only takes effect on the next load, and the person
+          // reached for this because the current one is chugging — do the
+          // reload here instead of naming it in a toast. A dirty editor
+          // still gets the beforeunload prompt below.
+          window.location.reload();
         },
       },
       {
@@ -653,21 +700,28 @@ function StimsWorkspaceAppShell() {
         group: 'View',
         label: 'Camera as video input',
         keywords: ['webcam', 'video', 'input', 'source'],
-        run: () => toggleCameraAction(ui.setStatusMessage),
+        run: () => toggleCameraAction(uiRef.current.setStatusMessage),
       },
       {
         id: 'external-display',
         group: 'Share',
         label: 'Show on second screen or cast',
         keywords: ['projector', 'monitor', 'chromecast', 'present', 'tv'],
-        run: () => presentToExternalDisplayAction(ui.setStatusMessage),
+        run: () =>
+          presentToExternalDisplayAction(uiRef.current.setStatusMessage),
       },
       {
         id: 'share-link',
         group: 'Share',
-        label: 'Share link',
-        keywords: ['copy', 'url'],
-        run: () => void ui.handleShowCurrentLink(),
+        // The link has carried a `#code=` hash of the live draft since remix
+        // links shipped — `buildCanonicalUrl` rewrites path and query and
+        // leaves the hash alone — but the row said only "Share link", so the
+        // one property that makes it interesting was invisible. Naming it
+        // costs a word and is the difference between a URL and a way to send
+        // someone the preset you are in the middle of writing.
+        label: editorDirty ? 'Share link (carries your edits)' : 'Share link',
+        keywords: ['copy', 'url', 'remix', 'draft'],
+        run: () => void uiRef.current.handleShowCurrentLink(),
       },
       {
         id: 'watch-party',
@@ -676,7 +730,7 @@ function StimsWorkspaceAppShell() {
           ? 'Copy watch party link'
           : 'Start watch party (copy link)',
         keywords: ['sync', 'room', 'host', 'together'],
-        run: () => startOrCopyWatchPartyAction(ui.setStatusMessage),
+        run: () => startOrCopyWatchPartyAction(uiRef.current.setStatusMessage),
       },
       ...(hostingWatchParty
         ? [
@@ -685,7 +739,7 @@ function StimsWorkspaceAppShell() {
               group: 'Share',
               label: 'End watch party',
               keywords: ['sync', 'room', 'leave', 'stop'],
-              run: () => endWatchParty(ui.setStatusMessage),
+              run: () => endWatchParty(uiRef.current.setStatusMessage),
             } satisfies CommandAction,
           ]
         : []),
@@ -722,6 +776,12 @@ function StimsWorkspaceAppShell() {
           const presetId = uiRef.current.presetQueue.popNext();
           if (!presetId) {
             uiRef.current.setStatusMessage('Nothing is cued.');
+            return;
+          }
+          if (presetId === engineSnapshotRef.current?.activePresetId) {
+            uiRef.current.setStatusMessage(
+              'That preset is already on the stage.',
+            );
             return;
           }
           uiRef.current.setRouteState((current) => ({ ...current, presetId }));
@@ -783,7 +843,7 @@ function StimsWorkspaceAppShell() {
         keywords: ['vj', 'show', 'projector', 'gig', 'stage', 'perform'],
         run: () => {
           const live = toggleLivePerformanceMode();
-          ui.setStatusMessage(
+          uiRef.current.setStatusMessage(
             live
               ? 'Live performance mode on — quality held steady, no battery frame cap, keeps drawing in an unfocused window.'
               : 'Live performance mode off — quality adapts again and background tabs pause.',
@@ -797,68 +857,263 @@ function StimsWorkspaceAppShell() {
         keywords: ['shuffle', 'automatic'],
         run: () =>
           toggleAutoplay(
-            engine,
-            ui.setStatusMessage,
+            engineRef.current,
+            uiRef.current.setStatusMessage,
             engineSnapshotRef.current?.autoplay ?? false,
           ),
+      },
+      {
+        // The runtime's old H key. Blend keeps whatever duration is set;
+        // this only flips which of the two the next switch uses.
+        id: 'toggle-transition-mode',
+        group: 'Playback',
+        label: 'Switch between blend and cut',
+        keywords: ['transition', 'blend', 'cut', 'mode'],
+        run: () => {
+          const next =
+            (engineSnapshotRef.current?.transitionMode ?? 'blend') === 'blend'
+              ? 'cut'
+              : 'blend';
+          setTransition(
+            engineRef.current,
+            uiRef.current.setStatusMessage,
+            next,
+            engineSnapshotRef.current?.blendDuration ??
+              DEFAULT_BLEND_DURATION_SECONDS,
+          );
+        },
       },
       {
         id: 'transition-cut',
         group: 'Playback',
         label: 'Transition: instant cut',
-        run: () => setTransition(engine, ui.setStatusMessage, 'cut', 0),
+        run: () =>
+          setTransition(
+            engineRef.current,
+            uiRef.current.setStatusMessage,
+            'cut',
+            0,
+          ),
       },
       {
         id: 'transition-1s',
         group: 'Playback',
         label: 'Transition: 1s blend',
-        run: () => setTransition(engine, ui.setStatusMessage, 'blend', 1),
+        run: () =>
+          setTransition(
+            engineRef.current,
+            uiRef.current.setStatusMessage,
+            'blend',
+            1,
+          ),
       },
       {
-        id: 'transition-2s',
+        // The product default (DEFAULT_BLEND_DURATION_SECONDS); the dock
+        // ladder carries the same four ids.
+        id: 'transition-2.5s',
         group: 'Playback',
-        label: 'Transition: 2s blend',
-        run: () => setTransition(engine, ui.setStatusMessage, 'blend', 2),
+        label: 'Transition: 2.5s blend',
+        run: () =>
+          setTransition(
+            engineRef.current,
+            uiRef.current.setStatusMessage,
+            'blend',
+            DEFAULT_BLEND_DURATION_SECONDS,
+          ),
       },
       {
         id: 'transition-5s',
         group: 'Playback',
         label: 'Transition: 5s blend',
-        run: () => setTransition(engine, ui.setStatusMessage, 'blend', 5),
+        run: () =>
+          setTransition(
+            engineRef.current,
+            uiRef.current.setStatusMessage,
+            'blend',
+            5,
+          ),
       },
       {
         id: 'audio-demo',
         group: 'Audio',
         label: 'Play demo audio',
         keywords: ['source', 'sample'],
-        run: () => startAudioSource(engine, 'demo'),
+        run: () => startAudioSource(engineRef.current, 'demo'),
       },
       {
         id: 'audio-microphone',
         group: 'Audio',
         label: 'Use microphone audio',
         keywords: ['source', 'mic'],
-        run: () => startAudioSource(engine, 'microphone'),
+        run: () => startAudioSource(engineRef.current, 'microphone'),
       },
       {
         id: 'audio-tab',
         group: 'Audio',
-        label: "Use this tab's audio",
-        keywords: ['source', 'capture'],
-        run: () => startAudioSource(engine, 'tab'),
+        label: 'Use tab or system audio',
+        keywords: ['source', 'capture', 'spotify', 'system', 'screen'],
+        run: () => startAudioSource(engineRef.current, 'tab'),
       },
       ...(liveMode
         ? [
             {
+              id: 'toggle-playback',
+              group: 'Audio',
+              label: playbackPaused ? 'Resume' : 'Pause',
+              keywords: ['pause', 'resume', 'play', 'hold', 'freeze'],
+              run: () => engineRef.current.handleTogglePlayback(),
+            } satisfies CommandAction,
+            {
               id: 'stop-audio',
               group: 'Audio',
-              label: 'Stop audio',
-              run: () => engine.handleAudioStop(),
+              // Named for what it does: the engine unmounts and the start
+              // page comes back. "Stop audio" alone read as mute.
+              label: 'Stop audio and go back to start',
+              keywords: ['quit', 'exit', 'leave', 'home'],
+              run: () => engineRef.current.handleAudioStop(),
             } satisfies CommandAction,
           ]
         : []),
+      // Tuning the playing preset. Bound to the runtime's old nudge letters
+      // (shortcut-registry.ts); each step edits the preset's source the way
+      // an editor drag does and reports the value it landed on.
+      {
+        id: 'wave-mode-next',
+        group: 'Tune',
+        label: 'Next waveform',
+        keywords: ['wave', 'mode', 'shape'],
+        run: () =>
+          void cyclePresetWaveMode(
+            engineBridgeRef.current,
+            1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'wave-mode-previous',
+        group: 'Tune',
+        label: 'Previous waveform',
+        keywords: ['wave', 'mode', 'shape'],
+        run: () =>
+          void cyclePresetWaveMode(
+            engineBridgeRef.current,
+            -1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-zoom-in',
+        group: 'Tune',
+        label: 'Zoom in',
+        keywords: ['nudge', 'adjust', 'zoom'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'zoom',
+            1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-zoom-out',
+        group: 'Tune',
+        label: 'Zoom out',
+        keywords: ['nudge', 'adjust', 'zoom'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'zoom',
+            -1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-warp-up',
+        group: 'Tune',
+        label: 'More warp',
+        keywords: ['nudge', 'adjust', 'warp'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'warp',
+            1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-warp-down',
+        group: 'Tune',
+        label: 'Less warp',
+        keywords: ['nudge', 'adjust', 'warp'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'warp',
+            -1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-wave-scale-up',
+        group: 'Tune',
+        label: 'Bigger waveform',
+        keywords: ['nudge', 'adjust', 'waveScale'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'waveScale',
+            1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-wave-scale-down',
+        group: 'Tune',
+        label: 'Smaller waveform',
+        keywords: ['nudge', 'adjust', 'waveScale'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'waveScale',
+            -1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-rotate-right',
+        group: 'Tune',
+        label: 'Rotate clockwise',
+        keywords: ['nudge', 'adjust', 'rotation'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'rotation',
+            1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
+      {
+        id: 'nudge-rotate-left',
+        group: 'Tune',
+        label: 'Rotate counter-clockwise',
+        keywords: ['nudge', 'adjust', 'rotation'],
+        run: () =>
+          void nudgePresetField(
+            engineBridgeRef.current,
+            'rotation',
+            -1,
+            uiRef.current.setStatusMessage,
+          ),
+      },
     ],
-    [liveMode, isFullscreen, hostingWatchParty, themeChoice],
+    [
+      liveMode,
+      isFullscreen,
+      hostingWatchParty,
+      themeChoice,
+      editorDirty,
+      playbackPaused,
+    ],
   );
 
   // Machine-readable state for automation: window.__stims_agent (snapshot,
@@ -882,7 +1137,9 @@ function StimsWorkspaceAppShell() {
       panel: uiRef.current.routeState.panel ?? null,
       presetId: snap?.activePresetId ?? null,
       presetTitle: engineBridgeRef.current.selectedPreset?.title ?? null,
+      catalogSize: snap?.catalogEntries.length ?? 0,
       audioSource: snap?.audioSource ?? null,
+      playbackPaused: snap?.playbackPaused ?? false,
       audioEnergy: getAudioEnergy(),
       autoplay: snap?.autoplay ?? null,
       transition: {
@@ -900,6 +1157,17 @@ function StimsWorkspaceAppShell() {
       getTelemetry: getAgentTelemetry,
       selectPreset: (presetId) =>
         engineBridgeRef.current.handlePresetSelection(presetId),
+      // Same resolver and catalog the route sync uses, so the agent verb
+      // accepts exactly the ids the app would (aliases, slugs) and no others.
+      resolvePresetId: (candidate) =>
+        resolvePresetId(
+          engineSnapshotRef.current?.catalogEntries ?? [],
+          candidate,
+        ),
+      getPresetIds: () =>
+        (engineSnapshotRef.current?.catalogEntries ?? []).map(
+          (entry) => entry.id,
+        ),
       setField: (key, value) =>
         engineBridgeRef.current.updateFieldLive(key, value),
       setCrossfade: (position) =>
@@ -918,6 +1186,67 @@ function StimsWorkspaceAppShell() {
         ? 'ready'
         : 'booting';
   }, [liveMode, engine.engineReady]);
+
+  // A track or link shared into the installed app from another app. Runs
+  // once on arrival; see the hook for why a shared link re-enters through
+  // the app's own deep link rather than a second start path.
+  useSharedLaunch({
+    routeState: ui.routeState,
+    commitRoute: ui.commitRoute,
+    startAudioSource: engine.startAudioSource,
+    setStatusMessage: ui.setStatusMessage,
+  });
+
+  // A `.milk` opened from the OS. Routed through the same import the panel's
+  // own button uses, so it lands in the editor with the same error handling.
+  useFileHandlerLaunch(
+    (files) => ui.handleImport(files),
+    (message) => ui.setStatusMessage(message),
+  );
+
+  // Tell the OS what is on the stage: lock-screen artwork and title, and
+  // hardware media keys that move through presets. See the hook for why the
+  // preset — not a track — is what next/previous move through here.
+  useMediaSession({
+    active: liveMode,
+    paused: playbackPaused,
+    presetId: engineSnapshot?.activePresetId ?? null,
+    presetTitle: activePresetEntry?.title ?? null,
+    presetAuthor: activePresetEntry?.author ?? null,
+    onTogglePlayback: () => engine.handleTogglePlayback(),
+    onNextPreset: () => void engine.handleShufflePreset(),
+    onPreviousPreset: () => void engine.handlePreviousPreset(),
+    onStop: () => engine.handleAudioStop(),
+  });
+
+  // Going live unmounts the launch page, and with it the button that was
+  // pressed to get here. Whatever is focused inside a removed subtree falls
+  // to `<body>`, which for a keyboard user means their place in the page is
+  // gone: the next Tab starts over at the skip link instead of continuing
+  // into the transport dock, and a screen reader is left on nothing while
+  // the stage it just asked for comes up behind it.
+  //
+  // The stage is the honest landing spot — it is what was just launched, it
+  // carries the stage's accessible name, and it sits immediately before the
+  // dock in DOM order, so one more Tab reaches the controls.
+  const wasLiveRef = useRef(liveMode);
+  useEffect(() => {
+    const wasLive = wasLiveRef.current;
+    wasLiveRef.current = liveMode;
+    if (!liveMode || wasLive) return;
+    // Only rescue focus that was actually orphaned. Someone who has already
+    // tabbed on (or opened a panel from a shortcut while audio started) is
+    // interacting somewhere on purpose, and must not be yanked to the stage.
+    const active = document.activeElement;
+    if (
+      active &&
+      active !== document.body &&
+      active !== document.documentElement
+    ) {
+      return;
+    }
+    ui.stageRef.current?.focus();
+  }, [liveMode, ui.stageRef]);
 
   // A hidden tab gets zero requestAnimationFrame callbacks — the browser
   // stops scheduling them, so nothing in the render path can report the
@@ -960,6 +1289,12 @@ function StimsWorkspaceAppShell() {
     handleToggleFullscreen,
     setStatusMessage: ui.setStatusMessage,
     hapticsEnabled,
+    // The drag itself is the moment to say what dragging does. Not stacked
+    // on another hint: showing one marks it seen, so the loser would be
+    // burned silently.
+    onFirstDrag: () => {
+      if (!visibleHintRef.current) showHint('interactive-preset');
+    },
   });
 
   // Agent bridge is only needed for MCP/automation sessions; defer to idle
@@ -1146,10 +1481,18 @@ function StimsWorkspaceAppShell() {
         },
       );
 
+      // Neither of the two lines above used to say anything, so the only way
+      // to find out a controller was live was to move one and watch.
+      const stopHardwareWatch = watchPerformanceHardware({
+        midi: webMidiService,
+        announce: (message) => uiRef.current.setStatusMessage(message),
+      });
+
       return () => {
         uninstallLive();
         unbindMidi();
         stopGamepad?.();
+        stopHardwareWatch();
       };
     });
   }, [engine]);
@@ -1410,18 +1753,15 @@ function StimsWorkspaceAppShell() {
     }
   }, [ui.routeState.panel, showHint]);
 
-  // Presets that read the interaction signals are the minority, and nothing
-  // marked them: the stage keys and drag gestures did nothing on most of the
-  // catalog, which reads as broken rather than as "this one doesn't listen".
-  // So the layer is taught once, on the first preset that actually rewards
-  // it — and never on top of another hint, since showing one marks it seen.
+  // Said at the first keystroke, because that is the moment the claim becomes
+  // checkable: there is now a draft, and the URL already holds it. Guarded on
+  // `visibleHint` like the interaction hint — showing one marks it seen, so
+  // stacking would silently burn whichever lost.
   useEffect(() => {
-    if (!liveMode || visibleHint) return;
-    if (!presetReadsInteractionSignals(engineSnapshot?.currentSource ?? '')) {
-      return;
-    }
-    showHint('interactive-preset');
-  }, [liveMode, visibleHint, engineSnapshot?.currentSource, showHint]);
+    if (!editorDirty || visibleHint) return;
+    if (ui.routeState.panel !== 'editor') return;
+    showHint('editor-dirty-link');
+  }, [editorDirty, visibleHint, ui.routeState.panel, showHint]);
 
   // NOTE: temporal-memory frame recording was removed here deliberately.
   // It sampled the live stage canvas (2D drawImage + getImageData) on every
@@ -1498,7 +1838,14 @@ function StimsWorkspaceAppShell() {
     const tryMatch = () => {
       if (controller.signal.aborted) return;
       const audioEnergy = engineSnapshotRef.current?.audioEnergy;
-      const profile = buildAudioProfile({ audioEnergy });
+      // Real bands, not the fabricated 0.6/0.3/0.1 split of a lone scalar:
+      // the store carries the engine's per-frame balance, and without it a
+      // bassy track and a bright one at equal loudness matched identically.
+      const bands = getAudioBands();
+      const profile = buildAudioProfile({
+        audioEnergy,
+        fftBands: [bands.bass, bands.mid, bands.treble],
+      });
       if (profile.rms < QUIET_AUDIO_RMS_THRESHOLD) {
         if (attempts < AUDIO_MATCH_RETRY_SCHEDULE_MS.length) {
           retryTimer = window.setTimeout(
@@ -1514,12 +1861,7 @@ function StimsWorkspaceAppShell() {
         if (results.length === 0) return;
         const top = results[0];
         if (top.score < 0.75) return;
-        const preset = engine.catalog.find((e) => e.id === top.presetId);
-        setAudioMatch({
-          presetId: top.presetId,
-          name: preset?.title ?? top.presetId,
-          score: top.score,
-        });
+        setAudioMatch({ presetId: top.presetId, score: top.score });
       });
     };
 
@@ -1560,7 +1902,6 @@ function StimsWorkspaceAppShell() {
   // is the one place where losing work is silent and irreversible.
   // Deliberately scoped to the editor being dirty: a beforeunload prompt on
   // an idle visualizer would be pure nuisance.
-  const editorDirty = engineSnapshot?.sessionState?.dirty ?? false;
   useEffect(() => {
     if (!editorDirty) return;
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -1581,14 +1922,31 @@ function StimsWorkspaceAppShell() {
   // history-entry ownership belongs to the route-sync effect (workspace-hooks),
   // and a keystroke must not add an entry.
   const sessionSource = engineSnapshot?.currentSource ?? '';
+  const remixUrlFailure = useRef<string | null>(null);
   useEffect(() => {
     if (!engine.engineReady) return;
-    const nextHref = buildRemixShareUrl(
-      window.location.href,
-      editorDirty && sessionSource ? sessionSource : null,
-    );
-    if (nextHref !== window.location.href) {
-      window.history.replaceState(window.history.state, '', nextHref);
+    try {
+      const nextHref = buildRemixShareUrl(
+        window.location.href,
+        editorDirty ? sessionSource : null,
+      );
+      if (nextHref !== window.location.href) {
+        window.history.replaceState(window.history.state, '', nextHref);
+      }
+      remixUrlFailure.current = null;
+    } catch (error) {
+      // A previous draft in the address bar must not masquerade as this edit.
+      try {
+        const cleanHref = buildRemixShareUrl(window.location.href, null);
+        window.history.replaceState(window.history.state, '', cleanHref);
+      } catch {
+        // History can also be unavailable; keep the editor working.
+      }
+      const message = error instanceof Error ? error.message : REMIX_URL_FAILED;
+      if (remixUrlFailure.current !== message) {
+        uiRef.current.setStatusMessage(message);
+        remixUrlFailure.current = message;
+      }
     }
   }, [engine.engineReady, editorDirty, sessionSource]);
 
@@ -1660,6 +2018,7 @@ function StimsWorkspaceAppShell() {
         title={getToolLabel(ui.routeState.panel ?? 'browse')}
         stageAnchored={stageAnchoredToolOpen}
         fillBody={sidePanelFillBody}
+        wide={ui.routeState.panel === 'browse'}
         onOpen={handleSidePanelOpen}
       >
         {/* Panel-anchored hints render inside the panel they describe, not in
@@ -1676,7 +2035,7 @@ function StimsWorkspaceAppShell() {
               onPresetChosen={dismissBrowseHint}
               sessionHistory={sessionHistory}
               onCollectionTagChange={(collectionTag) =>
-                ui.commitRoute({ ...ui.routeState, collectionTag })
+                ui.commitRoute((current) => ({ ...current, collectionTag }))
               }
               onImport={(files) => {
                 void ui.handleImport(files);
@@ -1740,7 +2099,7 @@ function StimsWorkspaceAppShell() {
         <SilentAudioNotice active={liveMode} />
         <ContextualHelp hint={visibleHint} anchor="stage" />
         <AudioMatchToast
-          match={audioMatch}
+          match={audioMatchWithName}
           onSelect={engine.handlePresetSelection}
           onDismiss={() => setAudioMatch(null)}
         />

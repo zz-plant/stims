@@ -1,7 +1,8 @@
 import { fileOpen, fileSave } from 'browser-fs-access';
 
-const PRESET_EXTENSIONS = ['.milk', '.txt'];
-const PRESET_MIME_TYPES = ['text/plain'];
+// `.zip` packs are expanded to their presets by preset-archive.ts.
+const PRESET_EXTENSIONS = ['.milk', '.txt', '.zip'];
+const PRESET_MIME_TYPES = ['text/plain', 'application/zip'];
 
 function isAbortError(error: unknown) {
   if (!(error instanceof Error || typeof error === 'object') || !error) {

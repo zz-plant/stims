@@ -94,7 +94,7 @@ The newcomer instinct on a fidelity bug is to write a unit test. That instinct i
 
 Corollary: **a preset that "looks right" is not evidence.** `docs/evidence/` and the parity backlog exist because this project has been burned by eyeballing.
 
-### 4. The instrument cabinet — 131 scripts
+### 4. The instrument cabinet — well over a hundred scripts
 
 Discovery is solved. `bun run help` lists every script with a one-line purpose generated from its file's docblock, so the index cannot drift from the code (`bun run check:script-docs` enforces it).
 

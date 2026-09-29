@@ -39,6 +39,27 @@ describe('bun run help --for', () => {
     expect(out).toContain('parity:diff');
   });
 
+  test('routes a slow-frame symptom to the real-loop profiler first', () => {
+    // profile:frame steps synthetic frames, whose costs users never see, so
+    // the symptom lookup must lead with lab:profile and say which is which.
+    const out = run('--for', 'slow frame rate');
+    expect(out).toContain('lab:profile');
+    expect(out.indexOf('lab:profile')).toBeLessThan(
+      out.indexOf('profile:frame'),
+    );
+    expect(out).toContain('synthetic');
+  });
+
+  test('routes a share-card symptom to the SEO and served-preview instruments', () => {
+    const out = run('--for', 'og image social preview');
+    expect(out).toContain('check:seo');
+    expect(out).toContain('previews:audit');
+  });
+
+  test('routes a no-GPU or live-URL symptom to preview:deploy', () => {
+    expect(run('--for', 'gpu-less live url')).toContain('preview:deploy');
+  });
+
   test('routes a backend-divergence symptom to the differential lab', () => {
     expect(run('--for', 'webgpu and webgl differ')).toContain(
       'lab:gpu-differential',

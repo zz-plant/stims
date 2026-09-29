@@ -296,6 +296,9 @@ describe('isInAppBrowser', () => {
     );
     expect(isInAppBrowser()).toBe(true);
 
+    // The verdict is memoised per document; clear it so the second UA is
+    // actually evaluated rather than answered from the first.
+    resetDeviceDetectCache();
     setNavigatorField(
       'userAgent',
       'Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro Build/AP2A) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/145.0.0.0 Mobile Safari/537.36 TikTok/33.0.0',

@@ -1,4 +1,6 @@
 import { compileMilkdropPresetSource } from '../compiler';
+import { exportMilkdrop2Preset } from '../milkdrop2-export';
+import { expandPresetSelection, writePresetArchive } from '../preset-archive';
 import {
   deriveRemixCredit,
   formatPresetCredit,
@@ -9,7 +11,7 @@ import type {
   MilkdropCatalogStore,
   MilkdropCompiledPreset,
 } from '../types';
-import { downloadPresetFile } from './persistence';
+import { downloadPresetArchive, downloadPresetFile } from './persistence';
 import { isEditablePreset } from './session';
 
 const MAX_PRESET_FILE_BYTES = 2 * 1024 * 1024;
@@ -40,7 +42,13 @@ export function createMilkdropPresetFileActions({
       const skipped: Array<{ name: string; reason: string }> = [];
       let importedCount = 0;
       let lastImportedId: string | null = null;
-      for (const file of Array.from(files)) {
+      // `.zip` packs expand to the presets inside them; unreadable or empty
+      // archives land in the same skipped summary as a bad .milk file.
+      const presetFiles = await expandPresetSelection(
+        Array.from(files),
+        (name, reason) => skipped.push({ name, reason }),
+      );
+      for (const file of presetFiles) {
         try {
           if (file.size > MAX_PRESET_FILE_BYTES) {
             throw new Error(
@@ -176,9 +184,51 @@ export function createMilkdropPresetFileActions({
       }
     },
 
+    /**
+     * Every preset the user made or imported, as MilkDrop 2 files in one
+     * `.zip` — the backup those presets otherwise lack, since they live only
+     * in this browser. A preset's unsaved draft is what gets exported: it is
+     * the latest version of the work. Returns how many were written.
+     */
+    async exportUserPresets(): Promise<number> {
+      const entries = (await catalogStore.listPresets()).filter(
+        (entry) => entry.origin !== 'bundled',
+      );
+      const presets: Array<{ title: string; source: string }> = [];
+      for (const entry of entries) {
+        const saved = await catalogStore.getPresetSource(entry.id);
+        if (!saved) continue;
+        const raw = (await catalogStore.getDraft(entry.id)) ?? saved.raw;
+        const compiled = compileMilkdropPresetSource(raw, {
+          ...saved,
+          raw,
+        });
+        presets.push({
+          title: entry.title,
+          source: exportMilkdrop2Preset(compiled),
+        });
+      }
+      if (presets.length === 0) {
+        setStatus?.(
+          'Nothing of yours to export yet \u2014 remix or import a preset first.',
+        );
+        return 0;
+      }
+      downloadPresetArchive(
+        'stims-my-presets.zip',
+        await writePresetArchive(presets),
+      );
+      setStatus?.(
+        `Exported ${presets.length} preset${presets.length === 1 ? '' : 's'} as a .zip.`,
+      );
+      return presets.length;
+    },
+
     exportPreset() {
       const compiled = getActiveCompiled();
-      downloadPresetFile(compiled.source.id, compiled.formattedSource);
+      // The file MilkDrop 2 writes, not the editor's dialect: an export is
+      // for other engines as much as for coming back here.
+      downloadPresetFile(compiled.source.id, exportMilkdrop2Preset(compiled));
     },
   };
 }

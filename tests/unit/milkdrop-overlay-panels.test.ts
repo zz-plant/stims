@@ -148,6 +148,7 @@ describe('editor panel change propagation', () => {
       onExport: mock(),
       onDeletePreset: mock(),
       onRequestImport: mock(),
+      onCopyShareLink: mock(),
     });
     document.body.appendChild(panel.element);
 
@@ -173,7 +174,7 @@ describe('editor panel change propagation', () => {
   test('debounces editor changes before reporting source updates', async () => {
     const harness = createEditorPanelHarness();
     const snippetButton = document.querySelector(
-      '.stims-editor__insert[data-insert="Pulse zoom"]',
+      '.stims-editor__recipe-add[data-recipe="bass-zoom"]',
     ) as HTMLButtonElement | null;
     if (!snippetButton) {
       throw new Error('Expected a snippet button to exist.');
@@ -186,7 +187,7 @@ describe('editor panel change propagation', () => {
 
     expect(harness.onEditorSourceChange).toHaveBeenCalledTimes(1);
     expect(harness.onEditorSourceChange.mock.calls[0]?.[0]).toContain(
-      'zoom=1.01',
+      'per_frame_1=zoom = zoom + 0.06*(bass_att - 1);',
     );
 
     harness.restore();
@@ -196,7 +197,7 @@ describe('editor panel change propagation', () => {
     const harness = createEditorPanelHarness();
 
     const snippetButton = document.querySelector(
-      '.stims-editor__insert[data-insert="Pulse zoom"]',
+      '.stims-editor__recipe-add[data-recipe="bass-zoom"]',
     ) as HTMLButtonElement | null;
     const applyButton = document.querySelector(
       '.stims-editor__btn[data-action="apply"]',
@@ -222,7 +223,7 @@ describe('editor panel change propagation', () => {
     const harness = createEditorPanelHarness();
 
     const snippetButton = document.querySelector(
-      '.stims-editor__insert[data-insert="Pulse zoom"]',
+      '.stims-editor__recipe-add[data-recipe="bass-zoom"]',
     ) as HTMLButtonElement | null;
     if (!snippetButton) {
       throw new Error('Expected a snippet button to exist.');
@@ -234,12 +235,12 @@ describe('editor panel change propagation', () => {
     const editorText = document.querySelector(
       '.cm-content',
     ) as HTMLElement | null;
-    expect(editorText?.textContent).toContain('zoom=1.01');
+    expect(editorText?.textContent).toContain('bass_att - 1');
 
     await waitForCalls(harness.onEditorSourceChange, 1);
     expect(harness.onEditorSourceChange).toHaveBeenCalledTimes(1);
     expect(harness.onEditorSourceChange.mock.calls[0]?.[0]).toContain(
-      'zoom=1.01',
+      'per_frame_1=zoom = zoom + 0.06*(bass_att - 1);',
     );
 
     harness.restore();

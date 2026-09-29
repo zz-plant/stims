@@ -18,6 +18,8 @@
  * for the rest of the app.
  */
 
+import type { SessionRouteState } from './contracts.ts';
+
 export type FileAudioHandle = {
   stream: MediaStream;
   element: HTMLAudioElement;
@@ -116,4 +118,113 @@ export async function createFileAudioStream(
       URL.revokeObjectURL(objectUrl);
     },
   };
+}
+
+/**
+ * The file currently feeding the engine, owned here rather than by a
+ * component.
+ *
+ * It used to live in a ref inside `AudioSourcePanel`, disposed on unmount.
+ * But that panel mounts twice — once in the home hero, which stays mounted
+ * all session, and once in the Settings sheet, which is conditionally
+ * rendered — so closing Settings tore down the graph and the context while
+ * the engine's audio session, `routeState.audioSource` and `audioActive` all
+ * carried on: the music stopped and the analyser flatlined, while the dock
+ * still showed the file chip and the stage kept animating on silence.
+ *
+ * The mirror case was worse. From the home copy, which never unmounts,
+ * "Stop audio" tore down the engine side and left this handle untouched — and
+ * the element loops, so the track played on, audibly, forever, after the UI
+ * said audio had stopped.
+ *
+ * Playback belongs to the audio session, so its lifetime is tied to the
+ * session's: `setActiveFileAudio` on play, `disposeActiveFileAudio` when the
+ * session stops or switches to another source.
+ */
+let activeFileAudio: FileAudioHandle | null = null;
+
+/**
+ * Adopts `handle` as the playing file, disposing whichever one it replaces.
+ * One at a time: two live graphs would both feed the analyser and both be
+ * audible.
+ */
+export function setActiveFileAudio(handle: FileAudioHandle | null): void {
+  if (activeFileAudio && activeFileAudio !== handle) {
+    activeFileAudio.dispose();
+  }
+  activeFileAudio = handle;
+}
+
+/** Stops and tears down the playing file, if any. Safe to call repeatedly. */
+export function disposeActiveFileAudio(): void {
+  setActiveFileAudio(null);
+}
+
+/**
+ * The playing file's name, or null. Lets a freshly mounted copy of the audio
+ * panel report what is actually playing instead of offering to pick a track
+ * that is already playing.
+ */
+export function getActiveFileAudioName(): string | null {
+  return activeFileAudio?.name ?? null;
+}
+
+/**
+ * Pauses or resumes the playing file in step with the stage's pause. A file
+ * is the one source whose sound this page produces, so holding the picture
+ * while the track played on would read as the visuals having died.
+ */
+export function setActiveFileAudioPaused(paused: boolean): void {
+  const element = activeFileAudio?.element;
+  if (!element) return;
+  if (paused) {
+    element.pause();
+    return;
+  }
+  void element.play().catch(() => {
+    // Autoplay policy can refuse a play() that is not inside a gesture; the
+    // stage resumes regardless and the next gesture retries through the
+    // audio-handler's own resume path.
+  });
+}
+
+/**
+ * Start playing `file` as the live audio source.
+ *
+ * Shared because there are now two ways in — the audio panel's picker and
+ * drop zone, and a file shared into the installed app from another app — and
+ * the sequence is not obvious enough to retype: the route has to be committed
+ * *and* handed on as `launchState`. Calling `startAudioSource` alone leaves
+ * `routeState.audioSource` null, so the engine snapshot never reports the
+ * source and nothing downstream reacts to it.
+ *
+ * Tears down whichever file was playing first: two handles feeding the
+ * analyser at once is two tracks playing at once.
+ */
+export async function startFileAudio(
+  file: File,
+  deps: {
+    routeState: SessionRouteState;
+    commitRoute: (route: SessionRouteState) => void;
+    startAudioSource: (request: {
+      source: 'file';
+      stream: MediaStream;
+      launchState: SessionRouteState;
+    }) => Promise<void>;
+  },
+): Promise<FileAudioHandle> {
+  disposeActiveFileAudio();
+  const handle = await createFileAudioStream(file);
+  setActiveFileAudio(handle);
+  const nextRoute: SessionRouteState = {
+    ...deps.routeState,
+    audioSource: 'file',
+  };
+  deps.commitRoute(nextRoute);
+  await deps.startAudioSource({
+    source: 'file',
+    stream: handle.stream,
+    launchState: nextRoute,
+  });
+  return handle;
 }

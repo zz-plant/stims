@@ -22,6 +22,8 @@ import {
   MILKDROP_MEGABUF_SIZE,
 } from './expression-jit.ts';
 import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
+import { inspectableVariableNames } from './inspectable-variables.ts';
+import { isElementHidden } from './render-isolation.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -295,7 +297,40 @@ class MilkdropPresetVM implements MilkdropVM {
 
   setPreset(preset: MilkdropCompiledPreset) {
     this.preset = preset;
+    this.inspectableNames = null;
     this.reset();
+  }
+
+  private inspectableNames: string[] | null = null;
+
+  /**
+   * The variables this preset's equations own, read straight from the live
+   * state (see inspectable-variables.ts). Enumerating the frame's `variables`
+   * proxy instead snapshots the entire VM state on every call.
+   */
+  getInspectableVariables(): Record<string, number> {
+    this.inspectableNames ??= inspectableVariableNames(this.preset);
+    const out: Record<string, number> = {};
+    for (const name of this.inspectableNames) {
+      const value = this.readInspectable(name);
+      if (typeof value === 'number') out[name] = value;
+    }
+    return out;
+  }
+
+  /** Same precedence as the full snapshot: registers over state, and a
+   * wave/shape frame name resolves to that slot's locals. */
+  private readInspectable(name: string): number | undefined {
+    if (name.startsWith('wave') || name.startsWith('shape')) {
+      const parsed = this.parseFrameLocalKey(name);
+      if (parsed) {
+        return parsed.localKey in parsed.locals
+          ? (parsed.locals[parsed.localKey] ?? 0)
+          : undefined;
+      }
+    }
+    if (name in this.registers) return this.registers[name];
+    return this.state[name];
   }
 
   setDetailScale(scale: number) {
@@ -768,6 +803,14 @@ class MilkdropPresetVM implements MilkdropVM {
       waveState: this.waveState,
       supportsProceduralWave: this.frameCallbacks.supportsProceduralWave,
     });
+    // An element soloed from the editor hides the main waveform too. Its alpha
+    // is rebuilt every frame, so zeroing it here lasts exactly one frame.
+    if (isElementHidden(this.preset.source.id, 'main-wave')) {
+      mainWave.alpha = 0;
+      if (proceduralMainWave) {
+        proceduralMainWave.alpha = 0;
+      }
+    }
     commitMainWaveFrame({
       waveState: this.waveState,
       mainWave,

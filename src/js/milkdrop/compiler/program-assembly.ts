@@ -390,6 +390,43 @@ export function pushProgramStatementWithContinuation(
     MilkdropProgramBlock,
     { sourceLine: string; line: number }
   >,
+  comment?: string,
+) {
+  const before = block.sourceLines.length;
+  pushProgramSource(
+    block,
+    sourceLine,
+    line,
+    diagnostics,
+    pendingProgramSources,
+  );
+  if (!comment) {
+    return;
+  }
+  const after = block.sourceLines.length;
+  // Trailing only when this line completed a statement of its own; otherwise
+  // the comment stands alone before whatever statement comes next.
+  const trailing =
+    sourceLine.trim().length > 0 &&
+    after > before &&
+    !pendingProgramSources.has(block);
+  block.comments ??= [];
+  block.comments.push({
+    index: trailing ? after - 1 : after,
+    text: comment,
+    trailing,
+  });
+}
+
+function pushProgramSource(
+  block: MilkdropProgramBlock,
+  sourceLine: string,
+  line: number,
+  diagnostics: MilkdropDiagnostic[],
+  pendingProgramSources: Map<
+    MilkdropProgramBlock,
+    { sourceLine: string; line: number }
+  >,
 ) {
   const trimmedValue = sourceLine.trim();
   const pending = pendingProgramSources.get(block);
@@ -471,6 +508,7 @@ export function compileProgramsFromField(
       field.line,
       diagnostics,
       pendingProgramSources,
+      field.comment,
     );
     return true;
   }
@@ -482,6 +520,7 @@ export function compileProgramsFromField(
       field.line,
       diagnostics,
       pendingProgramSources,
+      field.comment,
     );
     return true;
   }
@@ -493,6 +532,7 @@ export function compileProgramsFromField(
       field.line,
       diagnostics,
       pendingProgramSources,
+      field.comment,
     );
     return true;
   }
@@ -520,6 +560,7 @@ export function compileProgramsFromField(
         field.line,
         diagnostics,
         pendingProgramSources,
+        field.comment,
       );
       return true;
     }
@@ -555,6 +596,7 @@ export function compileProgramsFromField(
           field.line,
           diagnostics,
           pendingProgramSources,
+          field.comment,
         );
         return true;
       }
@@ -585,6 +627,7 @@ export function compileProgramsFromField(
           field.line,
           diagnostics,
           pendingProgramSources,
+          field.comment,
         );
         return true;
       }

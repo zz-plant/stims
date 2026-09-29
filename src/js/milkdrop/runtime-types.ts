@@ -313,6 +313,7 @@ export interface MilkdropExperienceController {
   setBlendDuration(value: number): void;
   importPresetFiles(files: FileList | File[]): Promise<void>;
   exportPreset(): void;
+  exportUserPresets(): Promise<number>;
   resizeForVideoExport(width: number, height: number): void;
   duplicatePreset(): Promise<void>;
   deleteActivePreset(): Promise<void>;

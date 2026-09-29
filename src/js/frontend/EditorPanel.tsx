@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import '../../css/editor-panel.css';
 import type { MilkdropEditorSessionState } from '../milkdrop/types.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
+import { copyRemixLinkAction } from './workspace-actions.ts';
 import { useWorkspace } from './workspace-context.tsx';
 
 export function EditorPanel() {
@@ -12,6 +13,7 @@ export function EditorPanel() {
   const panelRef = useRef<{
     dispose: () => void;
     setSessionState: (state: MilkdropEditorSessionState) => void;
+    setStageFrozen: (frozen: boolean) => void;
     element: HTMLElement;
   } | null>(null);
   const { engine, ui } = useWorkspace();
@@ -22,6 +24,9 @@ export function EditorPanel() {
 
   const handleImportRef = useRef(ui.handleImport);
   handleImportRef.current = ui.handleImport;
+
+  const uiRef = useRef(ui);
+  uiRef.current = ui;
 
   const sessionState = engineSnapshot?.sessionState ?? null;
   // The panel is code-split, so it appends itself a tick or two after this
@@ -48,6 +53,9 @@ export function EditorPanel() {
         onLiveFieldChange: (key: string, value: number) => {
           engineRef.current.updateFieldLive(key, value);
         },
+        onSetStageFrozen: (frozen: boolean) =>
+          engineRef.current.setPlaybackPaused(frozen),
+        onStepFrame: () => engineRef.current.stepPlaybackFrame(),
         onRevertToActive: () => {
           engineRef.current.revertEditorSource();
         },
@@ -64,12 +72,23 @@ export function EditorPanel() {
         onRequestImport: () => {
           importInputRef.current?.click();
         },
+        // Reads the session through refs rather than closing over the render's
+        // values: this callback is handed to the panel once, on mount, and a
+        // captured source would freeze at whatever was on screen then.
+        onCopyShareLink: () => {
+          void copyRemixLinkAction({
+            source: sessionStateRef.current?.source ?? '',
+            dirty: sessionStateRef.current?.dirty ?? false,
+            announce: (message) => uiRef.current.setStatusMessage(message),
+          });
+        },
       });
       panelRef.current = panel;
       host.appendChild(panel.element);
       if (sessionStateRef.current) {
         panel.setSessionState(sessionStateRef.current);
       }
+      panel.setStageFrozen(playbackPausedRef.current);
     });
 
     return () => {
@@ -85,15 +104,23 @@ export function EditorPanel() {
     }
   }, [sessionState]);
 
+  // Space and the dock hold the stage too; keep Inspect's Freeze truthful.
+  const playbackPaused = engineSnapshot?.playbackPaused ?? false;
+  const playbackPausedRef = useRef(playbackPaused);
+  playbackPausedRef.current = playbackPaused;
+  useEffect(() => {
+    panelRef.current?.setStageFrozen(playbackPaused);
+  }, [playbackPaused]);
+
   return (
     <div ref={hostRef} className="stims-shell__editor-host">
       <input
         ref={importInputRef}
         type="file"
-        accept=".milk,text/plain"
+        accept=".milk,.zip,text/plain,application/zip"
         multiple
         hidden
-        aria-label="Import preset file"
+        aria-label="Import preset files or a .zip pack"
         onChange={(event) => {
           void handleImportRef.current(event.target.files);
           event.target.value = '';

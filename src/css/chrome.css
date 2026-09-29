@@ -772,6 +772,8 @@ html.light .stims-shell {
   }
 
   .ctl-preset__art {
+    /* Anchors the quick-select digit badge. */
+    position: relative;
     overflow: hidden;
     width: 56px;
     height: 36px;
@@ -1117,6 +1119,13 @@ html.light .stims-shell {
      of an accretive byline, so it gets the accent rather than the muted ink. */
   .ctl-lineage__added {
     color: var(--ctl-accent);
+  }
+
+  /* A remix nests under what it came from; the rule shows the branch. */
+  .ctl-lineage__children {
+    margin-left: 10px;
+    padding-left: 8px;
+    border-left: 1px solid var(--ctl-line);
   }
 
   .ctl-lineage__note {

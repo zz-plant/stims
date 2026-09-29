@@ -112,7 +112,7 @@ import {
 import {
   blendPresetSources,
   mutatePresetStyle,
-  type PresetMutationStyle,
+  PRESET_MUTATION_STYLES,
 } from '../preset-mutations.ts';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { createMilkdropLanguage } from './editor-language';
@@ -128,10 +128,25 @@ import {
 export { computeAstDiagnostics, mergeDiagnostics };
 
 import {
+  browserVersionStorage,
+  createVersionStore,
+  type VersionStorage,
+} from '../named-versions.ts';
+import {
+  findPresetKnobs,
+  formatKnobValue,
+  type PresetKnob,
+} from '../preset-knobs.ts';
+import { CompatPane } from './editor-pane-compat.ts';
+import { InsertPane } from './editor-pane-insert.ts';
+import { InspectPane } from './editor-pane-inspect.ts';
+import { OutlinePane } from './editor-pane-outline.ts';
+import { ReferencePane } from './editor-pane-reference.ts';
+import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
 } from './preset-row';
-import { computeSourceDiff } from './source-diff.ts';
+import { computeSourceDiff, type SourceDiffLine } from './source-diff.ts';
 
 /**
  * Kept as the module's public names because tests, the MIDI layer and the MCP
@@ -142,132 +157,6 @@ export type SliderConfig = ScalarControlConfig;
 export const DEFAULT_EDITOR_SLIDERS: ScalarControlConfig[] = SCALAR_CONTROLS;
 export const DEFAULT_EDITOR_COLOR_GROUPS: ColorGroupConfig[] = COLOR_GROUPS;
 export type { ColorGroupConfig };
-
-type EditorSnippet = {
-  label: string;
-  description: string;
-  snippet: string;
-};
-
-type EditorCue = {
-  label: string;
-  description: string;
-  snippet: string;
-};
-
-const EDITOR_SNIPPETS: EditorSnippet[] = [
-  {
-    label: 'Pulse zoom',
-    description: 'Drop in a breathing zoom curve.',
-    snippet: 'zoom=1.01 + 0.035*sin(time*0.82)\n',
-  },
-  {
-    label: 'Hue drift',
-    description: 'Animate the waveform palette.',
-    snippet:
-      'wave_r=0.5 + 0.35*sin(time*0.31)\nwave_g=0.5 + 0.35*sin(time*0.47)\nwave_b=0.5 + 0.35*sin(time*0.63)\n',
-  },
-  {
-    label: 'Warp sway',
-    description: 'Add a gentle audio-reactive bend.',
-    snippet: 'warp=0.01 + bass_att*0.018 + 0.004*sin(time*0.5)\n',
-  },
-  {
-    label: 'Bass zoom',
-    description: 'Zoom pulses with bass energy.',
-    snippet: 'zoom=1.0 + bass*0.12\n',
-  },
-  {
-    label: 'Mid warp',
-    description: 'Warp bends with midrange signal.',
-    snippet: 'warp=1.0 + mid_att*0.025\n',
-  },
-  {
-    label: 'Beat flash',
-    description: 'Outer border pulses on beat.',
-    snippet:
-      'ob_size=0.01 + beat_pulse*0.04\nob_r=0.9; ob_g=0.5; ob_b=1;\nob_a=0.6 + beat_pulse*0.4\n',
-  },
-  {
-    label: 'Time spin',
-    description: 'Slow rotation from time phase.',
-    snippet: 'rot=time*0.15\n',
-  },
-  {
-    label: '3D projection',
-    description: 'Project XY from XYZ with perspective.',
-    snippet: 'x=xp/zp+0.5;\ny=yp/zp*1.3+0.5\n',
-  },
-  {
-    label: 'Color pulse',
-    description: 'Wave color modulated by treble.',
-    snippet:
-      'wave_r=0.5 + treb_att*0.5;\nwave_g=0.3 + mid_att*0.5;\nwave_b=0.9 + bass*0.3\n',
-  },
-  {
-    label: 'Decay trail',
-    description: 'Longer trail = softer motion.',
-    snippet: 'decay=0.935\n',
-  },
-  {
-    label: 'State toggle',
-    description: 'Flip between two values each frame.',
-    snippet: 'q1=above(bass, 0.1);\nzoom=1.0 + q1*0.2\n',
-  },
-];
-
-const EDITOR_CUES: EditorCue[] = [
-  {
-    label: 'bass_att',
-    description: 'Low-end zoom lift',
-    snippet: 'zoom=1.0 + bass_att*0.08\n',
-  },
-  {
-    label: 'mid_att',
-    description: 'Midrange rotation',
-    snippet: 'rot = rot + mid_att*0.01\n',
-  },
-  {
-    label: 'treb_att',
-    description: 'Treble brightness',
-    snippet: 'wave_a=0.4 + treb_att*0.4\n',
-  },
-  {
-    label: 'beat_pulse',
-    description: 'Beat gate',
-    snippet: 'ob_size=0.01 + beat_pulse*0.02\n',
-  },
-  {
-    label: 'time',
-    description: 'Continuous phase',
-    snippet: 'wave_y=0.5 + sin(time*0.35)*0.08\n',
-  },
-  {
-    label: 'frame',
-    description: 'Frame drift',
-    snippet: 'warp=0.01 + sin(frame*0.02)*0.01\n',
-  },
-  {
-    label: 'q1-q8',
-    description: 'Persistent globals',
-    snippet: 'q1=bass*0.5 + q1*0.95\nzoom=1.0 + q1*0.1\n',
-  },
-  {
-    label: 'rad',
-    description: 'Per-point radius',
-    snippet: 'rad=0.02 + bass*0.04\n',
-  },
-  {
-    label: 'r/g/b/a',
-    description: 'Per-point color',
-    snippet: 'r=0.4 + bass*0.3;\ng=0.2 + mid*0.3;\nb=1;\na=0.8\n',
-  },
-  {
-    label: 'decay',
-    description: 'Motion trail length',
-    snippet: 'decay=0.92 + bass_att*0.06\n',
-  },
-];
 
 const defaultEditorKeymap = defaultKeymap as readonly KeyBinding[];
 const historyEditorKeymap = historyKeymap as readonly KeyBinding[];
@@ -287,11 +176,26 @@ export type EditorPanelCallbacks = {
    * (on release), so the runtime staying absent only degrades to the old
    * compile-only behavior. */
   onLiveFieldChange?: (key: string, value: number) => void;
+  /** Hold or release the stage; returns the state actually applied (holding
+   * needs live audio). */
+  onSetStageFrozen?: (frozen: boolean) => boolean;
+  /** Render exactly one frame while the stage is held. */
+  onStepFrame?: () => boolean;
   onRevertToActive: () => void;
   onDuplicatePreset: () => void;
   onExport: () => void;
   onDeletePreset: () => void;
   onRequestImport: () => void;
+  /**
+   * Copy a link that carries the editor's live source in a `#code=` hash.
+   *
+   * The shell has written that hash into the address bar on every keystroke
+   * since remix links shipped, so the link already existed — it just had no
+   * name, no button, and nothing anywhere saying an unsaved draft travels in
+   * a URL. Sharing work in progress was a feature you could only use if you
+   * had read the router.
+   */
+  onCopyShareLink: () => void;
 };
 
 const MILKDROP_TO_CM_SEVERITY: Record<
@@ -683,7 +587,15 @@ function createEditorView({
         // field (axe: aria-input-field-name). The dialog title does not
         // carry over — the control needs its own name.
         EditorView.contentAttributes.of({
-          'aria-label': 'MilkDrop preset code',
+          // Tab indents in here (indentWithTabKeybinding, below), so it
+          // cannot also move focus out — this is the one control in the app
+          // Tab will not leave. WCAG 2.1.2 permits that only where the way
+          // out is told to the user, and the way out (Escape, handled on
+          // contentDOM further down) was documented nowhere. The name
+          // carries it, and `aria-keyshortcuts` publishes it as a binding.
+          'aria-label':
+            'MilkDrop preset code. Tab indents; press Escape to leave the editor.',
+          'aria-keyshortcuts': 'Escape',
         }),
         lineNumbers(),
         highlightActiveLine(),
@@ -849,6 +761,11 @@ function liveHintForFields(doc: string, keys: string[]): string {
 export class EditorPanel {
   readonly element: HTMLElement;
 
+  private readonly referencePane: ReferencePane;
+  private readonly insertPane: InsertPane;
+  private readonly compatPane: CompatPane;
+  private readonly outlinePane: OutlinePane;
+  private readonly inspectPane: InspectPane;
   private readonly callbacks: EditorPanelCallbacks;
   private readonly note: HTMLElement;
   private readonly stateEl: HTMLElement;
@@ -859,6 +776,8 @@ export class EditorPanel {
   private readonly problemsCount: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly deleteButton: HTMLButtonElement;
+  /** Relabelled per compile: what the link carries depends on `state.dirty`. */
+  private readonly shareLinkItem: HTMLButtonElement;
   private readonly editor: EditorView;
   private readonly clearEditorDebounce: () => void;
   private readonly unsubscribeTheme: () => void;
@@ -883,6 +802,17 @@ export class EditorPanel {
     label: string;
   }> = [];
   private historyList: HTMLElement | null = null;
+  private readonly versions: ReturnType<typeof createVersionStore>;
+  private versionsList: HTMLElement | null = null;
+  private versionNameInput: HTMLInputElement | null = null;
+  private versionSaveButton: HTMLButtonElement | null = null;
+  private versionStatus: HTMLElement | null = null;
+  private knobsWrap: HTMLElement | null = null;
+  private knobsSignature = '';
+  private readonly knobInputs = new Map<
+    string,
+    { input: HTMLInputElement; display: HTMLElement }
+  >();
   private assistPane: HTMLElement | null = null;
   private assistedEditContainer: HTMLElement | null = null;
   // True while any AI-backed action (Refine, Explain, Quick-fix, Batch,
@@ -965,8 +895,16 @@ export class EditorPanel {
   private snapshotSourceB: string | null = null;
   private abButton: HTMLButtonElement | null = null;
 
-  constructor(callbacks: EditorPanelCallbacks) {
+  constructor(
+    callbacks: EditorPanelCallbacks,
+    options: { versionStorage?: VersionStorage | null } = {},
+  ) {
     this.callbacks = callbacks;
+    this.versions = createVersionStore(
+      'versionStorage' in options
+        ? (options.versionStorage ?? null)
+        : browserVersionStorage(),
+    );
     this.element = document.createElement('section');
     this.element.className = 'stims-editor';
     this.element.setAttribute('aria-label', 'Preset code editor');
@@ -1143,6 +1081,12 @@ export class EditorPanel {
       'danger',
     );
     this.deleteButton.hidden = true;
+    // Sits with Export because they answer the same question — "how do I get
+    // this out of here" — and a link is the answer people reach for first.
+    this.shareLinkItem = menuItem('Copy link to this preset', () =>
+      this.callbacks.onCopyShareLink(),
+    );
+    this.shareLinkItem.dataset.action = 'editor-copy-share-link';
     menu.append(
       menuItem('Remix', () => this.callbacks.onDuplicatePreset()),
       menuItem('Snapshot as Slot A', () => this.snapshotSlotA()),
@@ -1150,6 +1094,7 @@ export class EditorPanel {
       menuItem('Clear snapshots', () => this.clearSnapshots()),
       menuItem('Import…', () => this.callbacks.onRequestImport()),
       menuItem('Export', () => this.callbacks.onExport()),
+      this.shareLinkItem,
       menuSeparator,
       this.deleteButton,
     );
@@ -1311,10 +1256,28 @@ export class EditorPanel {
     const dockBody = document.createElement('div');
     dockBody.className = 'stims-editor__dock-body';
 
+    const host = { editor: this.editor };
+    this.referencePane = new ReferencePane(host);
+    this.insertPane = new InsertPane(host);
+    this.compatPane = new CompatPane(host);
+    this.outlinePane = new OutlinePane(host);
+    this.inspectPane = new InspectPane(host, {
+      onSetStageFrozen: callbacks.onSetStageFrozen,
+      onStepFrame: callbacks.onStepFrame,
+    });
+
     const panes: Array<{ id: string; label: string; content: HTMLElement }> = [
       { id: 'tune', label: 'Tune', content: this.renderSliders() },
-      { id: 'insert', label: 'Insert', content: this.renderInsertPane() },
+      { id: 'outline', label: 'Outline', content: this.outlinePane.element },
+      { id: 'insert', label: 'Insert', content: this.insertPane.element },
+      {
+        id: 'reference',
+        label: 'Reference',
+        content: this.referencePane.element,
+      },
       { id: 'assist', label: 'Assist', content: this.renderAssistPane() },
+      { id: 'inspect', label: 'Inspect', content: this.inspectPane.element },
+      { id: 'compat', label: 'Compat', content: this.compatPane.element },
       { id: 'history', label: 'History', content: this.renderHistoryPane() },
     ];
     const tabButtons: HTMLButtonElement[] = [];
@@ -1330,6 +1293,9 @@ export class EditorPanel {
         other.setAttribute('aria-selected', String(selected));
         other.tabIndex = selected ? 0 : -1;
         panes[otherIndex].content.hidden = !selected;
+        if (panes[otherIndex].id === 'inspect') {
+          this.inspectPane.setInspectActive(selected);
+        }
       });
     };
     panes.forEach((pane, index) => {
@@ -1343,6 +1309,7 @@ export class EditorPanel {
       tab.setAttribute('aria-controls', `stims-editor-pane-${pane.id}`);
       tab.tabIndex = index === 0 ? 0 : -1;
       tab.dataset.pane = pane.id;
+      if (pane.id === 'compat') this.compatPane.bindTab(tab);
       pane.content.classList.add('stims-editor__pane');
       pane.content.id = `stims-editor-pane-${pane.id}`;
       pane.content.setAttribute('role', 'tabpanel');
@@ -1431,6 +1398,11 @@ export class EditorPanel {
       this.refreshSliderMidiState();
     });
     this.refreshSliderMidiState();
+  }
+
+  /** Reflect the stage's hold state; called by the host whenever it changes. */
+  setStageFrozen(frozen: boolean) {
+    this.inspectPane.setStageFrozen(frozen);
   }
 
   setVisible(visible: boolean) {
@@ -1618,60 +1590,6 @@ export class EditorPanel {
    * separate rail sections with identical affordances — one grid of
    * insertable code, grouped by whether it is a single reactive term or a
    * whole move. */
-  private renderInsertPane(): HTMLElement {
-    const pane = document.createElement('div');
-
-    const build = (
-      legend: string,
-      hint: string,
-      entries: ReadonlyArray<{
-        label: string;
-        description: string;
-        snippet: string;
-      }>,
-    ) => {
-      const heading = document.createElement('span');
-      heading.className = 'stims-editor__legend';
-      heading.textContent = legend;
-      const copy = document.createElement('p');
-      copy.className = 'stims-editor__hint';
-      copy.textContent = hint;
-      const grid = document.createElement('div');
-      grid.className = 'stims-editor__inserts';
-      entries.forEach((entry) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'stims-editor__insert';
-        button.dataset.insert = entry.label;
-        const label = document.createElement('strong');
-        label.textContent = entry.label;
-        const description = document.createElement('span');
-        description.textContent = entry.description;
-        button.append(label, description);
-        button.addEventListener('click', () =>
-          this.insertSnippet(entry.snippet),
-        );
-        grid.appendChild(button);
-      });
-      pane.append(heading, copy, grid);
-    };
-
-    build(
-      'Signals',
-      'Reactive terms, inserted at the cursor as a working line.',
-      EDITOR_CUES,
-    );
-    const spacer = document.createElement('div');
-    spacer.style.height = '12px';
-    pane.appendChild(spacer);
-    build(
-      'Patterns',
-      'Complete moves you can shape from there.',
-      EDITOR_SNIPPETS,
-    );
-
-    return pane;
-  }
 
   /** Assist pane: every AI-backed action in one place. They share a single
    * proposal slot and a single pending flag, so grouping them makes the
@@ -1762,7 +1680,7 @@ export class EditorPanel {
     });
     const mutationsHeading = document.createElement('h3');
     mutationsHeading.className = 'stims-editor__section-heading';
-    mutationsHeading.textContent = 'Instant Style Morphs';
+    mutationsHeading.textContent = 'Quick restyles';
 
     const mutationsGrid = document.createElement('div');
     mutationsGrid.className = 'stims-editor__assist-actions';
@@ -1771,15 +1689,7 @@ export class EditorPanel {
     mutationsGrid.style.gap = '6px';
     mutationsGrid.style.marginTop = '8px';
 
-    const mutationStyles: Array<{ id: PresetMutationStyle; label: string }> = [
-      { id: 'cyberpunk', label: '⚡ Cyberpunk' },
-      { id: 'hyperspace', label: '🚀 Hyperspace' },
-      { id: 'ambient-glow', label: '🌿 Ambient' },
-      { id: 'kaleidoscope', label: '🔮 Kaleidoscope' },
-      { id: 'bass-surge', label: '💥 Bass Surge' },
-    ];
-
-    mutationStyles.forEach(({ id, label }) => {
+    PRESET_MUTATION_STYLES.forEach(({ id, label }) => {
       const btn = this.createButton(label, {
         onClick: () => {
           if (this.aiPending) return;
@@ -1881,15 +1791,206 @@ export class EditorPanel {
 
   private renderHistoryPane(): HTMLElement {
     const pane = document.createElement('div');
+
+    // Named versions: the author's own bookmarks, kept per preset in the
+    // browser. Unlike the automatic checkpoints below, they survive a reload.
+    const versionsHeading = document.createElement('p');
+    versionsHeading.className = 'stims-editor__hint';
+    versionsHeading.textContent =
+      'Save a named version to come back to, diff against, or restore. Kept in this browser.';
+    const form = document.createElement('div');
+    form.className = 'stims-editor__version-form';
+    this.versionNameInput = document.createElement('input');
+    this.versionNameInput.type = 'text';
+    this.versionNameInput.className = 'stims-editor__version-name';
+    this.versionNameInput.placeholder = 'Name this version';
+    this.versionNameInput.maxLength = 60;
+    this.versionNameInput.setAttribute('aria-label', 'Version name');
+    this.versionSaveButton = document.createElement('button');
+    this.versionSaveButton.type = 'button';
+    this.versionSaveButton.className = 'stims-editor__btn';
+    this.versionSaveButton.textContent = 'Save version';
+    this.versionSaveButton.addEventListener('click', () =>
+      this.saveNamedVersion(),
+    );
+    this.versionNameInput.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      this.saveNamedVersion();
+    });
+    form.append(this.versionNameInput, this.versionSaveButton);
+    this.versionStatus = document.createElement('p');
+    this.versionStatus.className = 'stims-editor__hint';
+    this.versionStatus.setAttribute('aria-live', 'polite');
+    this.versionsList = document.createElement('div');
+    this.versionsList.className = 'stims-editor__versions';
+
     const hint = document.createElement('p');
     hint.className = 'stims-editor__hint';
     hint.textContent =
-      'A checkpoint is taken before each applied AI edit and before each restore.';
+      'Automatic checkpoints: taken before each applied AI edit and before each restore. Not kept after a reload.';
     this.historyList = document.createElement('div');
     this.historyList.className = 'stims-editor__history';
-    pane.append(hint, this.historyList);
+    pane.append(
+      versionsHeading,
+      form,
+      this.versionStatus,
+      this.versionsList,
+      hint,
+      this.historyList,
+    );
+    this.paintVersions();
     this.renderHistorySnapshots();
     return pane;
+  }
+
+  private saveNamedVersion() {
+    const presetKey = this.lastPresetId;
+    if (!presetKey || !this.versionStatus) return;
+    const result = this.versions.save(
+      presetKey,
+      this.versionNameInput?.value ?? '',
+      this.editor.state.doc.toString(),
+    );
+    if (result.ok) {
+      if (this.versionNameInput) this.versionNameInput.value = '';
+      this.versionStatus.textContent = `Saved \u201c${result.version.name}\u201d.`;
+    } else {
+      this.versionStatus.textContent =
+        result.reason === 'too-large'
+          ? 'This preset is too large to keep as a version.'
+          : result.reason === 'empty-source'
+            ? 'There is nothing to save yet.'
+            : 'Could not save: this browser is blocking or has filled its storage.';
+    }
+    this.paintVersions();
+  }
+
+  /** Replace the buffer with `source`, checkpointing what was there first. */
+  private restoreSource(source: string) {
+    const currentSource = this.editor.state.doc.toString();
+    if (currentSource === source) return;
+    this.pushSnapshot(currentSource, 'Before restore');
+    this.editor.dispatch({
+      changes: { from: 0, to: this.editor.state.doc.length, insert: source },
+    });
+    this.callbacks.onEditorSourceChange(source);
+    this.editor.focus();
+  }
+
+  private paintVersions() {
+    const list = this.versionsList;
+    if (!list) return;
+    const presetKey = this.lastPresetId;
+    if (this.versionSaveButton) this.versionSaveButton.disabled = !presetKey;
+    if (!presetKey) {
+      const none = document.createElement('p');
+      none.className = 'stims-editor__hint';
+      none.textContent = 'Open a preset to save versions of it.';
+      list.replaceChildren(none);
+      return;
+    }
+    const saved = this.versions.list(presetKey);
+    if (saved.length === 0) {
+      const none = document.createElement('p');
+      none.className = 'stims-editor__hint';
+      none.textContent = 'No saved versions of this preset yet.';
+      list.replaceChildren(none);
+      return;
+    }
+    list.replaceChildren(
+      ...saved.map((version) => {
+        const row = document.createElement('div');
+        row.className = 'stims-editor__version';
+        row.dataset.versionId = version.id;
+        const head = document.createElement('div');
+        head.className = 'stims-editor__history-row';
+        const meta = document.createElement('span');
+        meta.className = 'stims-editor__history-meta';
+        meta.textContent = `${version.name} \u00b7 ${formatRelativeTime(version.savedAt)}`;
+        const compare = document.createElement('button');
+        compare.type = 'button';
+        compare.className = 'stims-editor__btn';
+        compare.textContent = 'Compare';
+        compare.setAttribute('aria-expanded', 'false');
+        const restore = document.createElement('button');
+        restore.type = 'button';
+        restore.className = 'stims-editor__btn';
+        restore.textContent = 'Restore';
+        restore.addEventListener('click', () =>
+          this.restoreSource(version.source),
+        );
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'stims-editor__btn';
+        remove.textContent = 'Delete';
+        remove.setAttribute('aria-label', `Delete version ${version.name}`);
+        remove.addEventListener('click', () => {
+          this.versions.remove(presetKey, version.id);
+          this.paintVersions();
+        });
+        head.append(meta, compare, restore, remove);
+        row.appendChild(head);
+
+        // Compare opens a panel: a picker for the other side (the current
+        // source, or any other saved version) above the diff from this
+        // version to it.
+        let panel: HTMLElement | null = null;
+        compare.addEventListener('click', () => {
+          if (panel) {
+            panel.remove();
+            panel = null;
+            compare.setAttribute('aria-expanded', 'false');
+            return;
+          }
+          panel = document.createElement('div');
+          panel.className = 'stims-editor__version-compare';
+          panel.dataset.versionDiff = version.id;
+          const pickerLabel = document.createElement('label');
+          pickerLabel.className = 'stims-editor__hint';
+          pickerLabel.textContent = 'Changes from this version to ';
+          const picker = document.createElement('select');
+          picker.className = 'stims-editor__version-target';
+          picker.setAttribute('aria-label', `Compare ${version.name} with`);
+          const current = document.createElement('option');
+          current.value = '';
+          current.textContent = 'the current source';
+          picker.appendChild(current);
+          for (const other of saved) {
+            if (other.id === version.id) continue;
+            const option = document.createElement('option');
+            option.value = other.id;
+            option.textContent = `\u201c${other.name}\u201d`;
+            picker.appendChild(option);
+          }
+          pickerLabel.appendChild(picker);
+          const output = document.createElement('div');
+          const paintDiff = () => {
+            const target = saved.find((other) => other.id === picker.value);
+            const diff = computeSourceDiff(
+              version.source,
+              target ? target.source : this.editor.state.doc.toString(),
+            );
+            if (diff.length === 0) {
+              const same = document.createElement('p');
+              same.className = 'stims-editor__hint';
+              same.textContent = target
+                ? `Identical to \u201c${target.name}\u201d.`
+                : 'Identical to the current source.';
+              output.replaceChildren(same);
+            } else {
+              output.replaceChildren(buildDiffElement(diff));
+            }
+          };
+          picker.addEventListener('change', paintDiff);
+          paintDiff();
+          panel.append(pickerLabel, output);
+          row.appendChild(panel);
+          compare.setAttribute('aria-expanded', 'true');
+        });
+        return row;
+      }),
+    );
   }
 
   setSessionState(state: MilkdropEditorSessionState) {
@@ -1909,11 +2010,18 @@ export class EditorPanel {
       this.lastPresetId !== null &&
       nextPresetId !== this.lastPresetId;
     if (presetChanged) {
+      // Old preset's variables, min/max and sparklines would mislead.
+      this.inspectPane.resetHistory();
       this.hasBufferedEdits = false;
       this.clearEditorDebounce();
     }
     if (nextPresetId !== null) {
+      const changed = nextPresetId !== this.lastPresetId;
       this.lastPresetId = nextPresetId;
+      if (changed) {
+        if (this.versionStatus) this.versionStatus.textContent = '';
+        this.paintVersions();
+      }
     }
 
     const preserveBufferedDraft =
@@ -2016,6 +2124,15 @@ export class EditorPanel {
         : state.dirty
           ? 'dirty'
           : 'synced';
+    // Says out loud that the draft rides along, at the one moment the claim
+    // is checkable: the reader has unsaved edits in front of them.
+    this.shareLinkItem.textContent = state.dirty
+      ? 'Copy link to this edit'
+      : 'Copy link to this preset';
+    this.shareLinkItem.title = state.dirty
+      ? 'Copies a link carrying your unsaved source, so it opens in their editor exactly as it is here.'
+      : 'Copies a link to this preset. Edit anything and the link carries your draft too.';
+
     this.stateEl.dataset.state = state_;
     this.stateLabel.textContent = hasErrors
       ? 'Holding last good frame'
@@ -2028,6 +2145,9 @@ export class EditorPanel {
     // Fidelity degradation only. Error counts are the status label's and the
     // problems strip's job — this flag reports the one thing neither can:
     // the stage is rendering a simplified version of what compiled.
+    this.compatPane.update(state);
+    this.outlinePane.update(state);
+    this.paintKnobs(state.source);
     this.safetyFlag.hidden = !isDegraded;
     this.safetyFlag.textContent = 'Simplified';
     this.safetyFlag.dataset.tone = 'warning';
@@ -2270,6 +2390,7 @@ export class EditorPanel {
   }
 
   dispose() {
+    this.inspectPane.dispose();
     this.closeVariableJump();
     this.disposeDiagnosticsListener?.();
     this.disposeDiagnosticsListener = null;
@@ -2391,34 +2512,6 @@ export class EditorPanel {
     };
   }
 
-  private insertSnippet(snippet: string) {
-    const selection = this.editor.state.selection.main;
-    const prefix =
-      selection.from > 0 &&
-      this.editor.state.doc.sliceString(selection.from - 1, selection.from) !==
-        '\n'
-        ? '\n'
-        : '';
-    const suffix =
-      selection.to < this.editor.state.doc.length &&
-      this.editor.state.doc.sliceString(selection.to, selection.to + 1) !== '\n'
-        ? '\n'
-        : '';
-    const text = `${prefix}${snippet}${suffix}`;
-    this.editor.dispatch({
-      changes: {
-        from: selection.from,
-        to: selection.to,
-        insert: text,
-      },
-      selection: {
-        anchor: selection.from + text.length,
-      },
-      scrollIntoView: true,
-    });
-    this.editor.focus();
-  }
-
   /**
    * A control's state cell. Any MilkDrop field is either a literal the buffer
    * owns or a value the preset's own equations rewrite every frame, and a
@@ -2474,11 +2567,116 @@ export class EditorPanel {
     this.modulationRows.clear();
     this.fieldStateCells = [];
 
+    // The preset's own parameters come first: they are what its author
+    // meant to be tuned. Empty (and hidden) for presets without any.
+    this.knobsWrap = document.createElement('section');
+    this.knobsWrap.className = 'stims-editor__section';
+    this.knobsWrap.dataset.section = 'knobs';
+    this.knobsWrap.setAttribute('aria-label', 'Preset parameters');
+    this.knobsWrap.hidden = true;
+    panel.appendChild(this.knobsWrap);
+
     for (const section of CONTROL_SECTIONS) {
       panel.appendChild(this.renderSection(section));
     }
 
     return panel;
+  }
+
+  /**
+   * Sliders for the preset's own parameters: constants set once in
+   * per_frame_init and only read afterwards (see preset-knobs.ts). Rebuilt
+   * only when the set of parameters changes, so a drag is never torn down
+   * by the recompile it causes.
+   */
+  private paintKnobs(source: string) {
+    const wrap = this.knobsWrap;
+    if (!wrap) return;
+    const knobs = findPresetKnobs(source);
+    const signature = knobs.map((k) => `${k.name}@${k.line}`).join('|');
+    if (signature === this.knobsSignature) {
+      for (const knob of knobs) {
+        const entry = this.knobInputs.get(knob.name);
+        if (!entry || entry.input === document.activeElement) continue;
+        entry.input.value = String(knob.value);
+        entry.display.textContent = formatKnobValue(knob.value);
+      }
+      return;
+    }
+    this.knobsSignature = signature;
+    this.knobInputs.clear();
+    wrap.replaceChildren();
+    wrap.hidden = knobs.length === 0;
+    if (knobs.length === 0) return;
+
+    const heading = this.createSubhead('Preset parameters');
+    heading.title =
+      'Values this preset sets once in per_frame_init and only reads afterwards. Moving one rewrites that line.';
+    wrap.appendChild(heading);
+    for (const knob of knobs) wrap.appendChild(this.renderKnob(knob));
+  }
+
+  private renderKnob(knob: PresetKnob): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'stims-editor__slider';
+    row.dataset.knob = knob.name;
+    const label = document.createElement('label');
+    label.className = 'stims-editor__slider-label';
+    label.textContent = knob.name;
+    label.title = `per_frame_init, line ${knob.line}`;
+    const display = document.createElement('span');
+    display.className = 'stims-editor__slider-value';
+    display.textContent = formatKnobValue(knob.value);
+    const controls = document.createElement('div');
+    controls.className = 'stims-editor__slider-row';
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.className = 'stims-editor__slider-input';
+    input.min = String(knob.min);
+    input.max = String(knob.max);
+    input.step = String((knob.max - knob.min) / 500);
+    input.value = String(knob.value);
+    input.setAttribute('aria-label', `Preset parameter ${knob.name}`);
+    input.addEventListener('input', () => {
+      const value = Number(formatKnobValue(Number.parseFloat(input.value)));
+      display.textContent = formatKnobValue(value);
+      input.setAttribute('aria-valuetext', formatKnobValue(value));
+      this.callbacks.onLiveFieldChange?.(knob.name, value);
+      this.writeKnobToEditor(knob.name, value);
+    });
+    controls.appendChild(input);
+    // Same shape as every other Tune row: label and value on one line, the
+    // fader under them.
+    const head = document.createElement('div');
+    head.className = 'stims-editor__control-head';
+    head.append(label, display);
+    row.append(head, controls);
+    this.knobInputs.set(knob.name, { input, display });
+    return row;
+  }
+
+  /** Rewrite one parameter's literal, found fresh in the current buffer. */
+  private writeKnobToEditor(name: string, value: number) {
+    const doc = this.editor.state.doc;
+    const knob = findPresetKnobs(doc.toString()).find((k) => k.name === name);
+    if (!knob || knob.line > doc.lines) return;
+    const line = doc.line(knob.line);
+    this.editor.dispatch({
+      changes: {
+        from: line.from + knob.from,
+        to: line.from + knob.to,
+        insert: formatKnobValue(value),
+      },
+      scrollIntoView: false,
+    });
+    // Same commit path as every other Tune control: mark the draft queued,
+    // repaint, and flush to the engine at the control rate rather than the
+    // typing debounce, so a drag recompiles steadily instead of in bursts.
+    this.hasBufferedEdits = true;
+    if (this.lastSessionState) {
+      this.renderSessionState(this.lastSessionState);
+    }
+    this.scheduleControlFlush();
   }
 
   /**
@@ -3418,22 +3616,9 @@ export class EditorPanel {
     const heading = document.createElement('div');
     heading.className = 'stims-editor__proposal-head';
     heading.textContent = `${label} — review the proposed change`;
-    const lines = document.createElement('pre');
-    lines.className = 'stims-editor__proposal-lines';
-    for (const line of computeSourceDiff(currentSource, nextSource)) {
-      const row = document.createElement('span');
-      row.className = `stims-editor__proposal-line stims-editor__proposal-line--${line.kind}`;
-      const prefix =
-        line.kind === 'add'
-          ? '+ '
-          : line.kind === 'del'
-            ? '- '
-            : line.kind === 'gap'
-              ? '\u22EF '
-              : '  ';
-      row.textContent = `${prefix}${line.text}`;
-      lines.append(row, document.createTextNode('\n'));
-    }
+    const lines = buildDiffElement(
+      computeSourceDiff(currentSource, nextSource),
+    );
 
     const actions = document.createElement('div');
     actions.className = 'stims-editor__proposal-actions';
@@ -3615,25 +3800,35 @@ export class EditorPanel {
       restoreBtn.type = 'button';
       restoreBtn.className = 'stims-editor__btn';
       restoreBtn.textContent = 'Restore';
-      restoreBtn.addEventListener('click', () => {
-        const currentSource = this.editor.state.doc.toString();
-        if (currentSource === snapshot.source) return;
-        this.pushSnapshot(currentSource, 'Before restore');
-        this.editor.dispatch({
-          changes: {
-            from: 0,
-            to: this.editor.state.doc.length,
-            insert: snapshot.source,
-          },
-        });
-        this.callbacks.onEditorSourceChange(snapshot.source);
-        this.editor.focus();
-      });
+      restoreBtn.addEventListener('click', () =>
+        this.restoreSource(snapshot.source),
+      );
 
       row.append(meta, restoreBtn);
       this.historyList?.appendChild(row);
     });
   }
+}
+
+/** A `<pre>` of diff lines: `+` added, `-` removed, `\u22ef` a skipped run. */
+function buildDiffElement(diff: SourceDiffLine[]): HTMLElement {
+  const lines = document.createElement('pre');
+  lines.className = 'stims-editor__proposal-lines';
+  for (const line of diff) {
+    const row = document.createElement('span');
+    row.className = `stims-editor__proposal-line stims-editor__proposal-line--${line.kind}`;
+    const prefix =
+      line.kind === 'add'
+        ? '+ '
+        : line.kind === 'del'
+          ? '- '
+          : line.kind === 'gap'
+            ? '\u22EF '
+            : '  ';
+    row.textContent = `${prefix}${line.text}`;
+    lines.append(row, document.createTextNode('\n'));
+  }
+  return lines;
 }
 
 function formatRelativeTime(timestamp: number): string {

@@ -42,7 +42,7 @@
   background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
   border-left: 1px solid var(--ctl-panel-line, rgba(255, 255, 255, 0.08));
   box-shadow: -16px 0 48px rgba(0, 0, 0, 0.3);
-  animation: slide-in-right 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: slide-in-right var(--spring-enter) both;
 }
 
 .panel[data-exiting="true"] {
@@ -59,6 +59,14 @@
   }
 }
 
+/* Wide (browse): the catalog gets most of the screen, leaving a strip of
+   live stage on the left so the preset that's playing stays in view. */
+@media (min-width: 1024px) {
+  .panel[data-wide="true"] {
+    width: min(1120px, calc(100vw - max(240px, 22vw)));
+  }
+}
+
 /* Mobile: full-height bottom sheet (portrait and landscape phones) */
 @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .panel {
@@ -71,7 +79,7 @@
     border-left: none;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    animation: slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation: slide-up var(--spring-enter) both;
   }
 
   .panel[data-exiting="true"] {

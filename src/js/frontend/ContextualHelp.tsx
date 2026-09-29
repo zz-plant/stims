@@ -31,37 +31,60 @@ type HelpHintDef = {
 const HINTS: HelpHintDef[] = [
   {
     id: 'first-play',
+    // "Move the mouse for controls" was the only route this named, which is
+    // a dead end for anyone driving the page from the keyboard — the one
+    // audience that most needs to be told where the controls are, since the
+    // dock is hidden until something asks for it. Tab reaches the same dock.
+    // `?` is named here because nothing else on the stage ever mentions it,
+    // and it is the one key that lists every other one.
     message: () =>
       isMobileDevice()
         ? 'Swipe to change the visuals — double-tap to fill the screen'
-        : 'Press → for a different visual. Move the mouse for controls.',
-    autoHideMs: 6000,
+        : 'Press → for a different visual, Space to pause, ? for every key. Tab (or move the mouse) for the controls.',
+    autoHideMs: 7000,
     anchor: 'stage',
   },
   {
     id: 'browse-open',
-    message: 'Tap a card to play it',
+    // Same split as first-play: "tap" is a touch verb, and this hint shows on
+    // laptops too.
+    message: () =>
+      isMobileDevice() ? 'Tap a card to play it' : 'Click a card to play it',
     autoHideMs: 5000,
     anchor: 'panel',
   },
   {
-    // Interaction-reactive presets were completely silent about being
-    // interactive: the keys and gestures that drive them are documented in
-    // the shortcuts dialog now, but nothing told you *this* visual is one of
-    // the few that listens. Fires once, the first time you land on one.
+    // Taught on the first drag, whatever the preset. This used to fire only
+    // on presets that read the interaction signals — which is 0 of the 2,686
+    // bundled — while drag, pinch and twist move the picture on every one of
+    // them through the runtime's interaction response. So the hint about
+    // dragging never showed, and the drag it described worked everywhere.
     id: 'interactive-preset',
     message: () =>
       isMobileDevice()
-        ? 'This visual reacts to you — drag, pinch and twist it'
-        : 'This visual reacts to you — click it and drag, or press Q, R, [ and ]',
+        ? 'Dragging moves the visuals. Pinch to zoom and warp, twist to rotate.'
+        : 'Dragging moves the visuals. Scroll to nudge them; = and - zoom, , and . rotate.',
     autoHideMs: 7000,
     anchor: 'stage',
   },
   {
     id: 'editor-open',
+    // The Esc half is not trivia: Tab indents inside the code, so it is the
+    // one place in the app Tab does not walk you out of, and nothing said so.
     message:
-      'This is the preset’s source code. Edits show up in the visuals live.',
+      'This is the preset’s source code. Edits show up in the visuals live. Tab indents; Esc steps out.',
     autoHideMs: 6000,
+    anchor: 'panel',
+  },
+  {
+    // The address bar has carried the live draft in a `#code=` hash since
+    // remix links shipped, and nothing said so — so the one way to hand
+    // someone an unfinished preset was known only to people who had read the
+    // router. Taught at the first keystroke that makes the claim true.
+    id: 'editor-dirty-link',
+    message:
+      'Your draft is already in the address bar. Share link sends it exactly as it is here.',
+    autoHideMs: 7000,
     anchor: 'panel',
   },
 ];

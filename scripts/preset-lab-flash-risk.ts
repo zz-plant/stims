@@ -216,36 +216,31 @@ function maxTransitionsInRollingWindow(
   return maxCount;
 }
 
+/**
+ * `?audio=demo` starts demo audio as soon as the runtime is ready, so this
+ * is one bounded wait for the app's own signal.
+ *
+ * It used to fall back, after 5s, to clicking the stage canvas for a user
+ * gesture and posting `toil:set_audio`. Both were dead weight that cost 65s
+ * per failure. In the state the fallback was written for, the page is still
+ * in home mode and the launch overlay covers the canvas, so Playwright's
+ * click spent its full 30s waiting for the canvas to become hit-testable and
+ * never delivered a gesture; the agent bridge has no `onSetAudio` handler,
+ * so the message did nothing; and the 30s wait that followed could only
+ * time out. The autoplay gate that produced that state is now disabled at
+ * browser launch (see resolveLoopSweepChromiumArgs), and if audio still
+ * fails to start the report says so after AUDIO_ACTIVE_TIMEOUT_MS.
+ */
 async function waitForAudioActive(page: Page): Promise<boolean> {
   try {
     await page.waitForFunction(
       () => document.body.dataset.audioActive === 'true',
       undefined,
-      { timeout: 5_000 },
+      { timeout: AUDIO_ACTIVE_TIMEOUT_MS },
     );
     return true;
   } catch {
-    // If audio is delayed or blocked waiting for a user gesture under load,
-    // dispatch a trusted interaction and request demo audio via agent message.
-    try {
-      await page.click(STAGE_CANVAS_SELECTOR).catch(() => {});
-      await page
-        .evaluate(() => {
-          window.postMessage({ type: 'toil:set_audio', source: 'demo' }, '*');
-        })
-        .catch(() => {});
-    } catch {}
-
-    try {
-      await page.waitForFunction(
-        () => document.body.dataset.audioActive === 'true',
-        undefined,
-        { timeout: AUDIO_ACTIVE_TIMEOUT_MS },
-      );
-      return true;
-    } catch {
-      return false;
-    }
+    return false;
   }
 }
 
@@ -323,7 +318,7 @@ export async function runPresetFlashRiskLab({
       );
       audioActive = await waitForAudioActive(page);
       if (!audioActive) {
-        loadError = 'Demo audio did not activate within the timeout';
+        loadError = `Demo audio did not activate within ${AUDIO_ACTIVE_TIMEOUT_MS}ms`;
       }
       captureBackend = await probeCaptureBackend(page);
       series = await collectLuminanceSeries(

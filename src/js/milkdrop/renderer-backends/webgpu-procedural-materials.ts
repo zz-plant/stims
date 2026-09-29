@@ -113,6 +113,16 @@ export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `${MILKDROP_EEL_WGSL_SCALAR_HE
   fn milkdropDenormalizeTransformCenterY(value: f32) -> f32 {
     return 0.5 - value * 0.5;
   }
+
+  // MilkDrop's per-vertex zoom factor: |zoom|^exponent bounded to [0.02, 50]
+  // with zoom's sign reapplied, the same signedZoomScale the CPU mesh path
+  // uses (vm/geometry-builder.ts). A negative zoom with zoomexp 1 is
+  // MilkDrop's point mirror; clamping the signed value collapsed 23 bundled
+  // presets onto the centre pixel.
+  fn milkdropSignedZoomScale(zoom: f32, exponent: f32) -> f32 {
+    let magnitude = clamp(pow(abs(zoom), exponent), 0.02, 50.0);
+    return select(magnitude, -magnitude, zoom < 0.0);
+  }
 `;
 
 const MILKDROP_FIELD_WGSL_HELPERS = wgsl(MILKDROP_FIELD_WGSL_HELPERS_SOURCE);
@@ -472,10 +482,10 @@ export function buildMilkdropTransformWgslCode(
     let radiusNormalized = clamp(radius / 1.41421356237, 0.0, 1.0);
     // Bounded like the CPU path: extreme authored zoom/zoomexp pairs
     // (e.g. orbasonic's 100/100) overflow f32 and NaN the warp otherwise.
-    let zoomScale = clamp(pow(
-      max(paramZoom, 0.0001),
+    let zoomScale = milkdropSignedZoomScale(
+      paramZoom,
       pow(max(paramZoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
-    ), 0.02, 50.0);
+    );
     let warped = vec2<f32>(
       (transformedX + cos(angle * 3.0) * ripple) * zoomScale,
       (transformedY + sin(angle * 4.0) * ripple) * zoomScale
@@ -535,10 +545,10 @@ export function buildMilkdropTransformWgslCode(
       signalTimeValue * (0.6 + signalTrebleAttValue) * (0.35 + fieldWarpScale)
     ) * fieldWarp * 0.08;
     let radiusNormalized = clamp(field_rad / 1.41421356237, 0.0, 1.0);
-    let zoomScale = clamp(pow(
-      max(fieldZoom, 0.0001),
+    let zoomScale = milkdropSignedZoomScale(
+      fieldZoom,
       pow(max(fieldZoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
-    ), 0.02, 50.0);
+    );
     let px = (translatedX + cos(angle * 3.0) * ripple) * zoomScale;
     let py = (translatedY + sin(angle * 4.0) * ripple) * zoomScale;
     let cosRot = cos(fieldRotation);
@@ -1003,7 +1013,7 @@ export function createProceduralMotionVectorMaterial(
  * duplicated run is a vertex-stage cost over a wave's samples (512 at most),
  * next to nothing beside the per-pixel work it feeds.
  */
-function buildCustomWaveProgramWgslCode(
+export function buildCustomWaveProgramWgslCode(
   program: MilkdropGpuFieldProgramDescriptor,
   output: 'point' | 'color',
 ) {

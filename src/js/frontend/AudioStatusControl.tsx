@@ -20,10 +20,7 @@ import {
   describeAudioSignal,
   useAudioSignalState,
 } from './audio-signal-state.ts';
-import {
-  getAudioEnergy,
-  subscribeAudioEnergy,
-} from './engine-audio-energy-store.ts';
+import { subscribeEasedAudioEnergy } from './engine-audio-energy-store.ts';
 import { pulseHaptic } from './haptics.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { UiIcon } from './UiIcon.tsx';
@@ -39,7 +36,7 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 const QUICK_SOURCES = [
   { source: 'demo' as const, label: 'Demo track' },
   { source: 'microphone' as const, label: 'Microphone' },
-  { source: 'tab' as const, label: 'This tab' },
+  { source: 'tab' as const, label: 'Tab or system audio' },
 ] satisfies ReadonlyArray<{
   source: 'demo' | 'microphone' | 'tab';
   label: string;
@@ -48,7 +45,7 @@ const QUICK_SOURCES = [
 const SOURCE_NAMES: Record<string, string> = {
   demo: 'Demo track',
   microphone: 'Microphone',
-  tab: 'Tab audio',
+  tab: 'Tab / System audio',
   file: 'Audio file',
   youtube: 'YouTube',
 };
@@ -82,7 +79,7 @@ function nextStepFor(
     return 'Check the input device and that your mic is not muted.';
   }
   if (source === 'tab') {
-    return 'Check the shared tab is playing, and that you ticked "Share tab audio".';
+    return 'Check the shared tab or system audio is playing, and that you ticked "Share audio".';
   }
   if (source === 'youtube' || source === 'file') {
     return 'Check playback is running and the volume is up.';
@@ -106,8 +103,20 @@ export function AudioStatusControl({
   const audioSource = engineSnapshot?.audioSource ?? null;
   const state = useAudioSignalState(Boolean(audioSource));
   const sourceName = audioSource ? (SOURCE_NAMES[audioSource] ?? null) : null;
-  const { label, detail } = describeAudioSignal(state, sourceName);
-  const nextStep = nextStepFor(state, audioSource);
+  const described = describeAudioSignal(state, sourceName);
+  const label = described.label;
+  // A held stage is not "reacting" to anything, whatever the meter says: the
+  // frame is frozen, and for a file or YouTube track the sound is too.
+  const detail = engineSnapshot?.playbackPaused
+    ? `Paused. The picture is held where it was${
+        audioSource === 'file' || audioSource === 'youtube'
+          ? ', and the track with it'
+          : ''
+      }. Press Space or Resume to carry on.`
+    : described.detail;
+  const nextStep = engineSnapshot?.playbackPaused
+    ? null
+    : nextStepFor(state, audioSource);
 
   const [open, setOpen] = useState(false);
   const meterRef = useRef<HTMLSpanElement>(null);
@@ -116,14 +125,12 @@ export function AudioStatusControl({
 
   // Written straight to a custom property rather than through state: this
   // updates at audio rate, and a re-render per frame would cost the whole
-  // dock for one bar's height.
+  // dock for one bar's height. The value arrives pre-eased; the bar must not
+  // carry a CSS transition of its own (see subscribeEasedAudioEnergy).
   useEffect(() => {
-    const update = () => {
-      const energy = Math.min(1, Math.max(0, getAudioEnergy()));
+    return subscribeEasedAudioEnergy((energy) => {
       meterRef.current?.style.setProperty('--meter', String(energy));
-    };
-    update();
-    return subscribeAudioEnergy(update);
+    });
   }, []);
 
   useListKeyboardNav(popoverRef, {
@@ -152,6 +159,16 @@ export function AudioStatusControl({
       setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
+      // The menu pattern closes on Tab, as the stage overflow menu already
+      // does: Tab means "leave this and carry on through the page". Without
+      // it, Tab walked out of the popover into the transport dock the
+      // popover is sitting on top of, and left the popover open over
+      // whatever the caret had moved to. Focus is left where Tab put it —
+      // pulling it back to the trigger is the one thing Tab did not ask for.
+      if (event.key === 'Tab') {
+        setOpen(false);
+        return;
+      }
       if (event.key !== 'Escape') return;
       event.stopPropagation();
       setOpen(false);
@@ -256,15 +273,29 @@ export function AudioStatusControl({
           </div>
 
           {audioSource ? (
-            <button
-              type="button"
-              role="menuitem"
-              className={styles.item}
-              data-action="stop-audio"
-              onClick={() => run(() => engine.handleAudioStop())}
-            >
-              Stop audio
-            </button>
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                className={styles.item}
+                data-action="toggle-playback"
+                onClick={() => run(() => engine.handleTogglePlayback())}
+              >
+                {engineSnapshot?.playbackPaused ? 'Resume' : 'Pause'}
+              </button>
+              {/* Same verb as the dock menu, same label: this unmounts the
+                  engine and returns to the start page, and as "Stop audio"
+                  it read as mute. */}
+              <button
+                type="button"
+                role="menuitem"
+                className={styles.item}
+                data-action="stop-audio"
+                onClick={() => run(() => engine.handleAudioStop())}
+              >
+                Stop audio and go back to start
+              </button>
+            </>
           ) : null}
 
           <button

@@ -9,7 +9,7 @@
  *
  * `--for "<symptom>"` answers the question the plain listing cannot: not
  * "what scripts exist" but "which one answers what I am actually asking".
- * With 131 scripts, knowing an instrument exists is not the same as knowing
+ * With well over a hundred scripts, knowing an instrument exists is not the same as knowing
  * it is the right one, and picking wrong costs an afternoon. Curated routes
  * come first because the best answer is often a script whose name shares no
  * words with the symptom ("my preset looks wrong" -> `parity:capture`);
@@ -245,8 +245,13 @@ const ROUTES: Array<{ when: string[]; run: string[]; note: string }> = [
   },
   {
     when: ['slow', 'fps', 'performance', 'frame', 'budget', 'jank', 'stutter'],
-    run: ['perf:certification-corpus', 'profile:frame', 'bench:butterchurn'],
-    note: 'Measure before optimising; intuition about which loop dominates a frame is usually wrong.',
+    run: [
+      'lab:profile',
+      'perf:certification-corpus',
+      'profile:frame',
+      'bench:butterchurn',
+    ],
+    note: 'Measure before optimising; intuition about which loop dominates a frame is usually wrong. lab:profile runs a real rAF loop and is the one whose numbers reflect a user frame; profile:frame steps synthetic frames, so use it only for controlled A/B micro-comparisons.',
   },
   {
     when: ['flash', 'seizure', 'photosensitive', 'strobe', 'wcag', 'safety'],
@@ -311,6 +316,48 @@ const ROUTES: Array<{ when: string[]; run: string[]; note: string }> = [
     when: ['benchmark', 'butterchurn', 'speed test', 'fps compare'],
     run: ['bench:butterchurn', 'perf:certification-corpus'],
     note: 'bench:butterchurn benchmarks performance directly against Butterchurn; perf:certification-corpus measures frame rates across presets.',
+  },
+  {
+    when: [
+      'og image',
+      'og card',
+      'social preview',
+      'share card',
+      'unfurl',
+      'oembed',
+      'twitter card',
+      'seo',
+      'sitemap',
+    ],
+    run: ['check:seo', 'previews:audit', 'generate:seo', 'og:warm'],
+    note: 'check:seo verifies the generated OG/sitemap artifacts without writing; previews:audit checks what production actually serves (black/flat frames); generate:seo --check is the same verification, and without --check it rewrites tracked icons and sitemaps; og:warm writes to the production edge cache, so run it deliberately.',
+  },
+  {
+    when: ['live url', 'show a human', 'no gpu', 'gpu-less', 'branch preview'],
+    run: ['preview:deploy'],
+    note: 'A GPU-less session cannot judge rendering itself; preview:deploy prints a real Workers preview URL a human or a GPU machine can open.',
+  },
+  {
+    when: [
+      'catalog',
+      'curate',
+      'duplicate preset',
+      'preset quality',
+      'catalog integrity',
+    ],
+    run: ['catalog:dedup', 'catalog:score', 'check:catalog-integrity'],
+    note: 'catalog:dedup finds near-duplicate presets, catalog:score ranks quality, check:catalog-integrity validates every entry and its preview.',
+  },
+  {
+    when: [
+      'flaky test',
+      'flake',
+      'intermittent',
+      'only fails in ci',
+      'passes locally',
+    ],
+    run: ['test:changed', 'test:gate'],
+    note: 'Never assert on timing: wait on a condition (__stims_agent.waitFor) instead, and never skip a test to get green. Also check mock or global-state leaks by running the file alone and with its neighbours.',
   },
 ];
 

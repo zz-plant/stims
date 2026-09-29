@@ -20,6 +20,7 @@ import {
   subscribeToAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
+import { isMobileDevice } from '../utils/browser/device-detect.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { useScrollerOverflow } from './hooks/use-scroller-overflow.ts';
@@ -28,6 +29,11 @@ import { PresetGrid } from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
 import { PresetSignals } from './PresetSignals.tsx';
 import { runPresetPromoteTransition } from './promote-transition.ts';
+import {
+  clearQuickSelectEntries,
+  publishQuickSelectEntries,
+  quickSelectDigit,
+} from './quick-select.ts';
 import { SkeletonPresetCard } from './SkeletonPresetCard.tsx';
 import { writeStored } from './safe-storage.ts';
 import { UiIcon } from './UiIcon.tsx';
@@ -170,10 +176,11 @@ export function BrowseSheetPanel({
     // the default browse view and a tile click is the "tap a card" this
     // panel's first-use hint is about.
     if (next.presetId) onPresetChosen?.(next.presetId);
-    ui.commitRoute({
-      ...ui.routeState,
+    ui.commitRoute((current) => ({
+      ...current,
       ...next,
-    });
+      panel: null,
+    }));
   };
   const setView = (next: boolean) => {
     setGridView(next);
@@ -247,6 +254,11 @@ export function BrowseSheetPanel({
       : null;
     return catalog.filter((entry) => {
       if (
+        routeState.collectionTag === 'collection:favorites' ||
+        routeState.collectionTag === 'favorites'
+      ) {
+        if (!entry.isFavorite) return false;
+      } else if (
         routeState.collectionTag &&
         routeState.collectionTag !== 'collection:community' &&
         !entry.tags?.includes(routeState.collectionTag)
@@ -271,6 +283,25 @@ export function BrowseSheetPanel({
     () => sortBrowseEntries(browseEntries, sortMode, randomSeed),
     [browseEntries, sortMode, randomSeed],
   );
+
+  // In list view this panel is what the digit keys index; in grid view the
+  // grid publishes its own (variant-collapsed) order. Only one is mounted.
+  //
+  // The digits are shown only while they would work. Opening the panel puts
+  // focus in the search field, and a digit typed there is a search — the
+  // shell's shortcut layer hands every keystroke in a text field to the
+  // field. With the badges up at that moment, pressing 1 wrote "1" into the
+  // query (and filtered the list to titles containing a 1) instead of playing
+  // card 1. Hidden while the field has focus, they reappear the moment
+  // focus leaves it — Tab, Enter on the query, a click on a chip — which is
+  // also when the keys start answering.
+  const [searchFocused, setSearchFocused] = useState(false);
+  const showQuickSelectKeys = !isMobileDevice() && !searchFocused;
+  useEffect(() => {
+    if (gridView) return;
+    publishQuickSelectEntries(sorted.map((entry) => entry.id));
+    return clearQuickSelectEntries;
+  }, [gridView, sorted]);
 
   /**
    * How many presets "Reduce flashing" is holding back.
@@ -510,6 +541,8 @@ export function BrowseSheetPanel({
             spellCheck={false}
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 ui.setSearchQuery(localSearch);
@@ -564,7 +597,8 @@ export function BrowseSheetPanel({
                     if (
                       entry.kind === 'file' &&
                       (entry.name.endsWith('.milk') ||
-                        entry.name.endsWith('.txt'))
+                        entry.name.endsWith('.txt') ||
+                        entry.name.endsWith('.zip'))
                     ) {
                       const file = await entry.getFile();
                       files.push(file);
@@ -589,10 +623,27 @@ export function BrowseSheetPanel({
               aria-hidden="true"
             />
           </button>
+          {/* The presets you made or imported live only in this browser;
+              this is their backup, as MilkDrop 2 files in one pack. */}
+          <button
+            type="button"
+            className="ctl-btn ctl-btn--icon"
+            onClick={() => {
+              void engine.exportUserPresets();
+            }}
+            aria-label="Export my presets as a .zip"
+            title="Export the presets you made or imported, as a .zip of MilkDrop 2 files"
+          >
+            <UiIcon
+              name="download"
+              className="stims-icon-slot stims-icon-slot--sm"
+              aria-hidden="true"
+            />
+          </button>
           <input
             ref={importInputRef}
             type="file"
-            accept=".milk,text/plain"
+            accept=".milk,.zip,text/plain,application/zip"
             multiple
             hidden
             aria-label="Import preset file"
@@ -660,6 +711,28 @@ export function BrowseSheetPanel({
             onClick={() => onCollectionTagChange(null)}
           >
             All
+          </button>
+          <button
+            type="button"
+            className="ctl-chip"
+            data-active={String(
+              routeState.collectionTag === 'collection:favorites',
+            )}
+            aria-pressed={routeState.collectionTag === 'collection:favorites'}
+            onClick={() =>
+              onCollectionTagChange(
+                routeState.collectionTag === 'collection:favorites'
+                  ? null
+                  : 'collection:favorites',
+              )
+            }
+          >
+            ★ Saved
+            {engine.favoritePresets.length > 0 ? (
+              <span className="ctl-chip__count">
+                {engine.favoritePresets.length.toLocaleString()}
+              </span>
+            ) : null}
           </button>
           {featuredTags.map((tag) => (
             <button
@@ -933,6 +1006,7 @@ export function BrowseSheetPanel({
               browseScrollMemory.grid = top;
             }}
             filterEpoch={filterEpoch}
+            showQuickSelectKeys={showQuickSelectKeys}
           />
         ) : null}
 
@@ -1016,6 +1090,11 @@ export function BrowseSheetPanel({
                       aria-current={
                         entry.id === currentPresetId ? 'true' : undefined
                       }
+                      aria-keyshortcuts={
+                        showQuickSelectKeys
+                          ? (quickSelectDigit(virtualRow.index) ?? undefined)
+                          : undefined
+                      }
                       onClick={(event) => {
                         setRovingIndex(virtualRow.index);
                         runPresetPromoteTransition({
@@ -1031,6 +1110,15 @@ export function BrowseSheetPanel({
                           compact
                           preview={presetPreviews[entry.id] ?? null}
                         />
+                        {showQuickSelectKeys &&
+                        quickSelectDigit(virtualRow.index) ? (
+                          <span
+                            className="ctl-preset__quick-key"
+                            aria-hidden="true"
+                          >
+                            {quickSelectDigit(virtualRow.index)}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="ctl-preset__copy">
                         <span className="ctl-preset__title">

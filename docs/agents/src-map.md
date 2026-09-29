@@ -9,7 +9,7 @@ per area; read the file itself for details.
 | --- | --- | --- | --- |
 | Renderer lifecycle | `renderer-*.ts`, `webgl-renderer.ts`, `webgpu-renderer.ts`, `renderer-capabilities.ts`, `renderer-plan.ts`, `renderer-retry-policy.ts`, `renderer-telemetry.ts` | `renderer-capabilities.test.ts`, `renderer-setup.test.ts`, `renderer-retry-policy.test.ts`, `renderer-query-override.test.ts` | `check:architecture`, `check:quick` |
 | Audio | `audio-handler.ts`, `audio-interpolator.ts`, `audio-lifecycle.ts`, `audio-gpu-texture.ts`, `audio-constants.ts` | `audio-handler.test.ts`, `audio-interpolator.test.ts`, `audio-lifecycle.test.ts`, `audio-gpu-texture.test.ts`, `audio-worklet.test.ts`, `audio-transient-dsp.test.ts` | `check:quick` |
-| Quality / perf | `services/adaptive-quality-controller.ts`, `services/continuous-drs.ts`, `services/temporal-memory.ts`, `services/crash-telemetry.ts`, `services/performance-*.ts`, `frame-pacing.ts`, `power-state.ts`, `simulation-accumulator.ts` | `adaptive-quality-controller.test.ts`, `continuous-drs.test.ts`, `temporal-memory.test.ts`, `frame-pacing.test.ts`, `power-state.test.ts` | `check:quick` |
+| Quality / perf | `services/adaptive-quality-controller.ts`, `services/continuous-drs.ts`, `services/crash-telemetry.ts`, `services/performance-*.ts`, `frame-pacing.ts`, `power-state.ts`, `simulation-accumulator.ts` | `adaptive-quality-controller.test.ts`, `continuous-drs.test.ts`, `frame-pacing.test.ts`, `power-state.test.ts` | `check:quick` |
 | State | `state/` (`domain-store`, `browser-storage`, `last-session-store`, `quality-preset-store`, `render-preference-store`, `performance-settings-store`, `power-saver-store`) | `domain-store.test.ts`, `performance-settings-store.test.ts` | `check:quick` |
 | Services | `services/webmidi-controller.ts`, `services/picture-in-picture-service.ts`, `services/microphone-permission-service.ts`, `services/optional-api.ts`, `services/render-service.ts`, `services/visual-embedding.ts`, `services/audio-service.ts`, `services/audio-matcher.ts` | `webmidi-controller.test.ts`, `microphone-permission-service.test.ts`, `optional-api.test.ts`, `render-service-prewarm.test.ts`, `visual-embedding.test.ts`, `services-pool.test.ts` | `check:quick` |
 | Toy / app shell | `toy-*.ts`, `web-toy.ts`, `shared-initializer.ts`, `unified-input.ts`, `animation-loop.ts` | `toy-*.test.ts`, `shared-initializer.test.ts`, `unified-input.test.ts`, `sample-toy.test.ts` | `check:quick` |
@@ -39,7 +39,7 @@ per area; read the file itself for details.
 
 | What lives here | Tests | Guards |
 | --- | --- | --- |
-| Framework-free UI helpers (audio controls, identicons, YouTube), browser/media/audio utilities, lighting-rig toys | `shader-identicon.test.ts`, `youtube-controller.test.ts`, `preset-artwork.test.ts`, `display-audio-capture.test.ts` | `check:quick` |
+| Framework-free UI helpers (audio controls, identicons, YouTube), browser/media/audio utilities, lighting-rig toys | `youtube-controller.test.ts`, `preset-artwork.test.ts`, `display-audio-capture.test.ts` | `check:quick` |
 
 ## Generated artifacts (edit the source, not these)
 

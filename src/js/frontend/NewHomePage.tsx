@@ -8,19 +8,32 @@ import type { ResumableAudioSource } from '../core/state/last-session-store.ts';
 import { getLastSession } from '../core/state/last-session-store.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
-import { getArrivalPresetId } from './arrival-url.ts';
+import { getArrivalAudioSource, getArrivalPresetId } from './arrival-url.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { LaunchSignalTrace } from './SignalField.tsx';
+import { resolveSharedArrival } from './shared-arrival.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
-import { STIMS_REPO_URL } from './workspace-helpers.ts';
+import { describePresetMood, STIMS_REPO_URL } from './workspace-helpers.ts';
 
 const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
   demo: 'demo audio',
   microphone: 'your mic',
-  tab: "this tab's audio",
+  tab: 'tab or system audio',
   youtube: 'YouTube audio',
+};
+
+/**
+ * The automation hook (`core/agent-api.ts`, `scripts/play-toy.ts`) for the
+ * source a button starts. The resume CTA used to carry `data-demo-audio-btn`
+ * whatever it resumed with, so `enableDemoAudio()` on a returning visitor's
+ * page asked for their microphone.
+ */
+const RESUME_SOURCE_HOOK: Partial<Record<ResumableAudioSource, string>> = {
+  demo: 'data-demo-audio-btn',
+  microphone: 'data-mic-audio-btn',
+  tab: 'data-tab-audio-btn',
 };
 
 /**
@@ -46,6 +59,13 @@ export function NewHomePage() {
   // those writes indistinguishable from a real `?preset=` arrival: a bare "/"
   // visit could auto-start demo audio with no click.
   const [deepLinkPresetId] = useState(getArrivalPresetId);
+  // The source the link was copied from (see shared-arrival.ts). Only read
+  // alongside a preset: a bare `?audio=` is the app's own route state.
+  const [sharedArrival] = useState(() =>
+    deepLinkPresetId
+      ? resolveSharedArrival(getArrivalAudioSource())
+      : resolveSharedArrival(null),
+  );
 
   // Memoized: resolution of an id the catalog does NOT contain costs two
   // full catalog scans, and this component re-renders with workspace state.
@@ -68,7 +88,7 @@ export function NewHomePage() {
     }
     if (!lastSession || !resumeEntry) return;
     appliedResumeRef.current = true;
-    ui.commitRoute({ ...ui.routeState, presetId: resumeEntry.id });
+    ui.commitRoute((current) => ({ ...current, presetId: resumeEntry.id }));
   }, [resumeEntry, lastSession]);
 
   // A `?preset=` link is a request to watch that preset, not to configure an
@@ -107,14 +127,23 @@ export function NewHomePage() {
     // results) stranded the arrival on the generic launch form with no
     // feedback at all.
     if (!deepLinkEntry && !engine.missingRequestedPreset) return;
+    // A link copied from a mic, tab or YouTube session is offered as the
+    // launch button instead (see `shared` below): those sources need the
+    // recipient's gesture, and starting the demo over them said nothing.
+    if (sharedArrival.kind === 'offer') return;
     autoStartedRef.current = true;
     void engine.handleAudioStart('demo');
+    if (sharedArrival.notice) {
+      ui.setStatusMessage(sharedArrival.notice);
+    }
   }, [
     deepLinkPresetId,
     deepLinkEntry,
     engine.engineReady,
     engine.missingRequestedPreset,
     engine.handleAudioStart,
+    sharedArrival,
+    ui.setStatusMessage,
   ]);
 
   // Without attract mode (mobile, low-power) the engine only boots when this
@@ -122,22 +151,42 @@ export function NewHomePage() {
   // reads as broken and invites rage-taps; show the in-flight state.
   const [audioStarting, setAudioStarting] = useState(false);
   const startWithFeedback = (source: ResumableAudioSource) => {
+    // The CTAs stay focusable while this runs (see `aria-disabled` below), so
+    // a second Enter can land before the first start resolves.
+    if (audioStarting) return;
     setAudioStarting(true);
     void Promise.resolve(engine.handleAudioStart(source)).finally(() =>
       setAudioStarting(false),
     );
   };
   const handlePlayDemo = () => startWithFeedback('demo');
-  const handleResume = () => {
-    if (!lastSession) return;
-    startWithFeedback(lastSession.source);
-  };
   const handleBrowsePresets = () => ui.updatePanel('browse');
 
-  const resume =
-    lastSession && resumeEntry
-      ? { session: lastSession, entry: resumeEntry }
-      : null;
+  // A shared source outranks the visitor's own last session: they followed
+  // a link to this preset with this source, and the sender's preset is what
+  // the card should show. The entry can still be null while the catalog
+  // loads (or for a stale id); the card then carries the prettified slug
+  // and no artwork rather than reverting to the generic pitch.
+  const resume: ResumeState =
+    sharedArrival.kind === 'offer' && deepLinkPresetId
+      ? {
+          session: { source: sharedArrival.source },
+          entry: deepLinkEntry,
+          title: deepLinkEntry?.title ?? prettifyPresetSlug(deepLinkPresetId),
+          shared: true,
+        }
+      : lastSession && resumeEntry
+        ? {
+            session: lastSession,
+            entry: resumeEntry,
+            title: resumeEntry.title,
+            shared: false,
+          }
+        : null;
+  const handleResume = () => {
+    if (!resume) return;
+    startWithFeedback(resume.session.source);
+  };
 
   // A `?preset=` arrival came for one specific preset; while the engine and
   // catalog get ready (up to a few seconds on mid devices), name it instead
@@ -159,7 +208,10 @@ export function NewHomePage() {
       data-audio-controls
       aria-labelledby="stims-launch-title"
     >
-      <div className="stims-shell__launch-center">
+      <div
+        className="stims-shell__launch-center"
+        data-variant={resume ? 'resume' : deepLink ? 'deep-link' : 'launch'}
+      >
         <Header resume={resume} deepLink={deepLink} />
         <Actions
           resume={resume}
@@ -172,11 +224,23 @@ export function NewHomePage() {
         {resume ? null : (
           <p className="stims-shell__launch-explainer">
             Every scene is a preset — a small visual program from the MilkDrop
-            community. Switch presets while the music plays, or generate your
-            own.
+            community. The demo is a built-in synth loop, not a song; switch
+            presets while it plays, or generate your own.
           </p>
         )}
-        <AudioSources />
+        <AudioSources resume={resume} />
+        {/* Returning visitor: switching preset changes context, it is not
+            a second way to start, so it ranks below the sources as a quiet
+            text action rather than pairing with Resume as an equal. */}
+        {resume ? (
+          <button
+            type="button"
+            className="stims-shell__launch-secondary stims-shell__launch-secondary--quiet"
+            onClick={handleBrowsePresets}
+          >
+            Browse presets
+          </button>
+        ) : null}
         <ProjectMeta />
       </div>
     </section>
@@ -185,7 +249,10 @@ export function NewHomePage() {
 
 type ResumeState = {
   session: { source: ResumableAudioSource };
-  entry: PresetCatalogEntry;
+  entry: PresetCatalogEntry | null;
+  title: string;
+  /** True for a link that carried its sender's source, false for the visitor's own last session. */
+  shared: boolean;
 } | null;
 
 type DeepLinkState = {
@@ -227,16 +294,30 @@ function Header({
     );
   }
   if (resume) {
+    // The preset is one object — its artwork with its name on it — not a
+    // headline, a "Continue with…" sentence and a strip of art each
+    // announcing the same thing. The decision on this page is small (this
+    // preset, or something else) and the layout should look it.
+    const { entry } = resume;
     return (
       <>
         <h1 id="stims-launch-title" className="stims-shell__launch-title">
-          Welcome back
+          {resume.shared ? 'Shared with you' : 'Welcome back'}
         </h1>
-        <p className="stims-shell__launch-tagline">
-          Continue with &ldquo;{resume.entry.title}&rdquo;
-        </p>
-        <div className="stims-shell__launch-resume-art">
-          <PresetArtwork entry={resume.entry} compact />
+        <div className="stims-shell__launch-resume-card">
+          {entry ? <PresetArtwork entry={entry} compact /> : null}
+          <div className="stims-shell__launch-resume-card-copy">
+            <p className="stims-shell__launch-resume-card-title">
+              {resume.title}
+            </p>
+            {entry ? (
+              <p className="stims-shell__launch-resume-card-meta">
+                {entry.author
+                  ? `by ${entry.author}`
+                  : describePresetMood(entry)}
+              </p>
+            ) : null}
+          </div>
         </div>
       </>
     );
@@ -299,23 +380,33 @@ function Actions({
       ctaRef.current?.focus();
     }
   }, [isEngineReady]);
+  const resumeHook = resume ? RESUME_SOURCE_HOOK[resume.session.source] : null;
   return (
     <div className="stims-shell__launch-actions-minimal">
       {resume ? (
         <button
           ref={ctaRef}
           id="use-demo-audio"
-          data-demo-audio-btn="true"
+          {...(resumeHook ? { [resumeHook]: 'true' } : {})}
           type="button"
           className="stims-shell__launch-cta"
-          disabled={!isEngineReady || isStarting}
+          // Disabled only *before* it can be used. Going `disabled` on press
+          // instead — which is what "Starting…" used to do — makes the
+          // browser blur the button the user just activated: focus drops to
+          // `<body>`, the "Starting…"/busy state is never announced because
+          // nothing is focused to announce it, and the next Tab restarts at
+          // the top of the document. `aria-disabled` states the same thing
+          // without taking focus away; `startWithFeedback` ignores the
+          // repeat press that leaves possible.
+          disabled={!isEngineReady}
+          aria-disabled={isStarting || undefined}
           aria-busy={isStarting}
           aria-describedby={!isEngineReady ? engineStatusId : undefined}
           onClick={onResume}
         >
           {isStarting
             ? 'Starting…'
-            : `Resume with ${RESUME_SOURCE_LABEL[resume.session.source]}`}
+            : `${resume.shared ? 'Start' : 'Resume'} with ${RESUME_SOURCE_LABEL[resume.session.source]}`}
         </button>
       ) : (
         <button
@@ -324,7 +415,16 @@ function Actions({
           data-demo-audio-btn="true"
           type="button"
           className="stims-shell__launch-cta"
-          disabled={!isEngineReady || isStarting}
+          // Disabled only *before* it can be used. Going `disabled` on press
+          // instead — which is what "Starting…" used to do — makes the
+          // browser blur the button the user just activated: focus drops to
+          // `<body>`, the "Starting…"/busy state is never announced because
+          // nothing is focused to announce it, and the next Tab restarts at
+          // the top of the document. `aria-disabled` states the same thing
+          // without taking focus away; `startWithFeedback` ignores the
+          // repeat press that leaves possible.
+          disabled={!isEngineReady}
+          aria-disabled={isStarting || undefined}
           aria-busy={isStarting}
           aria-describedby={!isEngineReady ? engineStatusId : undefined}
           onClick={onPlayDemo}
@@ -346,33 +446,70 @@ function Actions({
           Audio engine is starting. This will unlock in a moment.
         </p>
       ) : null}
-      <button
-        type="button"
-        className="stims-shell__launch-secondary"
-        onClick={onBrowsePresets}
-      >
-        Browse presets
-      </button>
+      {/* Demo audio is not the visitor's own audio, so it does not belong
+          among "use a different source". For someone resuming with a real
+          source it is the no-permission escape hatch, and lives here as a
+          small action under Resume. */}
+      {resume && resume.session.source !== 'demo' ? (
+        <button
+          type="button"
+          className="stims-shell__launch-demo-link"
+          data-demo-audio-btn="true"
+          disabled={!isEngineReady}
+          aria-disabled={isStarting || undefined}
+          aria-busy={isStarting}
+          onClick={onPlayDemo}
+        >
+          Try demo audio instead, no permission needed
+        </button>
+      ) : null}
+      {resume ? null : (
+        <button
+          type="button"
+          className="stims-shell__launch-secondary"
+          onClick={onBrowsePresets}
+        >
+          Browse presets
+        </button>
+      )}
     </div>
   );
 }
 
 /**
- * The alternatives to the primary CTA, behind a disclosure.
+ * The alternatives to the primary CTA.
  *
  * The pitch is "press one button and it plays" — but the YouTube field and
  * the four source cards rendered flat underneath the CTA at roughly equal
  * visual weight, so the page offered six ways to start and ranked none of
- * them. Collapsing them restores the ranking without removing anything: the
- * summary names every source inside, so nothing becomes undiscoverable, and
- * a returning visitor's usual source is already the primary button ("Resume
- * with your mic"), which is why this stays closed even for them.
+ * them. On a first visit they collapse behind a disclosure: the summary
+ * names every source inside, so nothing becomes undiscoverable.
+ *
+ * A returning visitor gets them as a row of compact chips instead. Their
+ * usual source is already the primary button ("Resume with your mic"), so
+ * the chips are ranked by size alone and need no disclosure — which also
+ * removes the page-length jump between its closed and open states, and the
+ * second "Microphone" that the open state used to show a few lines under
+ * "Resume with your mic". Demo audio is not their own audio and is offered
+ * under Resume instead (see `Actions`).
  */
-function AudioSources() {
+function AudioSources({ resume }: { resume: ResumeState }) {
+  if (resume) {
+    return (
+      <div className="stims-shell__launch-sources-inline">
+        <AudioSourcePanel
+          showHelp={false}
+          layout="chips"
+          heading="Use a different source"
+          omitSources={['demo', resume.session.source]}
+        />
+      </div>
+    );
+  }
   return (
     <details className="stims-shell__launch-source-minimal">
       <summary className="stims-shell__launch-sources-summary">
-        Or use your own audio — YouTube, mic, a file, or this tab
+        Or use your own audio — YouTube, mic, a file, a tab, or Spotify
       </summary>
       <div className="stims-shell__launch-sources-body">
         <AudioSourcePanel showHelp={false} />

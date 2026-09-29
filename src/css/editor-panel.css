@@ -610,7 +610,7 @@ html.light .stims-editor {
 }
 
 .stims-editor__tab {
-  padding: 8px 9px 7px;
+  padding: 8px 7px 7px;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
@@ -618,7 +618,7 @@ html.light .stims-editor {
   font: inherit;
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   cursor: pointer;
   transition: color 0.12s ease;
@@ -1239,49 +1239,54 @@ html.light .stims-editor {
 
 /* ── Insert pane ──────────────────────────────────────────────────── */
 
-.stims-editor__inserts {
+.stims-editor__recipes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 6px;
 }
 
-.stims-editor__insert {
+.stims-editor__recipe {
   display: grid;
   gap: 2px;
-  padding: 7px 9px;
+  padding: 8px 10px;
   border: 1px solid var(--stims-line-soft);
-  border-radius: var(--stims-radius);
-  background: var(--ed-tint-2);
-  color: var(--ed-muted);
-  font: inherit;
-  text-align: left;
+  border-radius: var(--stims-radius-control);
+}
+
+.stims-editor__recipe-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--text-xs-plus);
+}
+
+.stims-editor__recipe-add {
+  min-height: 26px;
+  padding: 0 10px;
+}
+
+.stims-editor__recipe-summary {
+  margin: 0;
+  font-size: var(--text-xs);
+  opacity: 0.85;
+}
+
+.stims-editor__recipe-more {
+  font-size: var(--text-xs);
+}
+
+.stims-editor__recipe-more summary {
   cursor: pointer;
-  transition:
-    border-color 0.12s ease,
-    background 0.12s ease;
+  opacity: 0.75;
 }
 
-.stims-editor__insert:hover {
-  border-color: var(--stims-cool);
-  background: var(--ed-tint-5);
+.stims-editor__recipe-more p {
+  margin: 4px 0;
 }
 
-.stims-editor__insert:focus-visible {
-  outline: 2px solid var(--ed-focus);
-  outline-offset: 1px;
-}
-
-.stims-editor__insert strong {
-  font-family: var(--font-family-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--stims-ink);
-}
-
-.stims-editor__insert span {
-  font-size: 0.6875rem;
-  line-height: 1.35;
-  color: var(--ed-dim);
+.stims-editor__recipe-more .stims-editor__proposal-lines {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 /* ── Assist pane ──────────────────────────────────────────────────── */
@@ -1493,4 +1498,358 @@ html.light .stims-editor {
   padding: 8px;
   color: var(--ed-muted, rgba(232, 236, 244, 0.55));
   font-size: 0.75rem;
+}
+
+/* ── Inspect pane ─────────────────────────────────────────────────── */
+
+.stims-editor__inspect-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.stims-editor__inspect-filter {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.stims-editor__inspect-toggle {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.stims-editor__inspect {
+  display: grid;
+  gap: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stims-editor__inspect-row {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(3rem, 1fr) 5.5rem 4.25rem 80px;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--stims-line-soft);
+  font-size: 0.75rem;
+}
+
+.stims-editor__inspect-pin {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+  padding: 0;
+}
+
+.stims-editor__inspect-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, monospace;
+}
+
+.stims-editor__inspect-value {
+  text-align: right;
+}
+
+/* Which audio band a variable follows; blank when none. */
+.stims-editor__inspect-reacts {
+  justify-self: start;
+  padding: 0 5px;
+  border-radius: var(--stims-radius-control);
+  color: var(--stims-accent);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stims-editor__inspect-reacts:empty {
+  padding: 0;
+}
+
+.stims-editor__inspect-reactivity {
+  margin: 0 0 6px;
+}
+
+.stims-editor__inspect-note {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.stims-editor__inspect-note:empty {
+  display: none;
+}
+
+.stims-editor__inspect-spark {
+  width: 80px;
+  height: 18px;
+  opacity: 0.8;
+}
+
+/* ── Reference pane ───────────────────────────────────────────────── */
+
+.stims-editor__ref-search {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.stims-editor__ref-results {
+  display: grid;
+  gap: 2px;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.stims-editor__ref-row {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.stims-editor__ref-row:hover,
+.stims-editor__ref-row:focus-visible {
+  border-color: var(--stims-line-soft);
+  background: var(--stims-surface-2, rgba(255, 255, 255, 0.05));
+}
+
+.stims-editor__ref-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--text-xs-plus);
+}
+
+.stims-editor__ref-badge {
+  font-size: var(--text-2xs);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.stims-editor__ref-doc {
+  font-size: var(--text-xs);
+  opacity: 0.8;
+}
+
+/* ── Compat pane ──────────────────────────────────────────────────── */
+
+.stims-editor__compat-headline {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.stims-editor__compat {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.stims-editor__compat-row {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 7px 9px;
+  border: 1px solid var(--stims-line-soft);
+  border-left-width: 3px;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+button.stims-editor__compat-row {
+  cursor: pointer;
+}
+
+button.stims-editor__compat-row:hover,
+button.stims-editor__compat-row:focus-visible {
+  background: var(--stims-surface-2, rgba(255, 255, 255, 0.05));
+}
+
+.stims-editor__compat-row[data-severity="blocker"] {
+  border-left-color: var(--stims-danger, #e5484d);
+}
+
+.stims-editor__compat-row[data-severity="approximation"] {
+  border-left-color: var(--stims-warning, #f5a524);
+}
+
+.stims-editor__compat-row[data-severity="breaks"] {
+  border-left-color: var(--stims-danger, #e5484d);
+}
+
+.stims-editor__compat-row[data-severity="differs"],
+.stims-editor__compat-row[data-severity="needs"] {
+  border-left-color: var(--stims-warning, #f5a524);
+}
+
+.stims-editor__compat-section {
+  margin: 16px 0 4px;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.stims-editor__compat-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--text-xs-plus);
+}
+
+.stims-editor__compat-badge {
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.stims-editor__compat-line {
+  margin-left: auto;
+  font-size: var(--text-2xs);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.stims-editor__compat-detail {
+  font-size: var(--text-xs);
+  opacity: 0.85;
+}
+
+/* ── Outline pane ─────────────────────────────────────────────────── */
+
+.stims-editor__outline {
+  display: grid;
+  gap: 2px;
+}
+
+.stims-editor__outline-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-xs-plus);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stims-editor__outline-row:hover,
+.stims-editor__outline-row:focus-visible {
+  border-color: var(--stims-line-soft);
+  background: var(--stims-surface-2, rgba(255, 255, 255, 0.05));
+}
+
+.stims-editor__outline-range {
+  font-size: var(--text-2xs);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+/* Eight tabs no longer fit beside the collapse toggle in a narrow dock: let
+   the strip scroll sideways and keep the toggle in place. */
+.stims-editor__tabrow {
+  min-width: 0;
+}
+
+.stims-editor__tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.stims-editor__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.stims-editor__tab {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* ── Named versions ───────────────────────────────────────────────── */
+
+.stims-editor__version-form {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.stims-editor__version-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.stims-editor__versions {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.stims-editor__version .stims-editor__proposal-lines {
+  margin: 4px 0 8px;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+/* ── Outline: shader translation ──────────────────────────────────── */
+
+.stims-editor__outline-shader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+
+/* Long GLSL lines scroll inside the code box instead of widening the pane
+   (a grid item's min-width defaults to its content). */
+.stims-editor__shader-translation {
+  min-width: 0;
+}
+
+.stims-editor__outline-glsl {
+  justify-self: start;
+  margin-left: 8px;
+}
+
+.stims-editor__shader-translation .stims-editor__proposal-lines {
+  max-width: 100%;
+  max-height: 18rem;
+  overflow: auto;
+}
+
+/* ── Outline: wave/shape solo and mute ────────────────────────────── */
+
+.stims-editor__outline-slot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.stims-editor__outline-isolate {
+  min-height: 26px;
+  padding: 0 8px;
+}
+
+.stims-editor__outline-isolate[aria-pressed="true"] {
+  border-color: var(--stims-accent);
+  color: var(--stims-ink);
+  background: var(--stims-control-fill-hover);
 }

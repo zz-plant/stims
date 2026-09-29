@@ -11,7 +11,10 @@ function entry(
   return { id, title: id, file: `/milkdrop-presets/${id}.milk`, ...extra };
 }
 
-function renderGrid(entries: PresetCatalogEntry[]) {
+function renderGrid(
+  entries: PresetCatalogEntry[],
+  { showQuickSelectKeys = true }: { showQuickSelectKeys?: boolean } = {},
+) {
   return renderToStaticMarkup(
     createElement(PresetGrid, {
       catalogEntries: entries,
@@ -20,11 +23,27 @@ function renderGrid(entries: PresetCatalogEntry[]) {
       routeState: { presetId: null, audioSource: null },
       setRouteState: () => {},
       onToggleFavorite: () => {},
+      showQuickSelectKeys,
     }),
   );
 }
 
 describe('PresetGrid', () => {
+  test('wears the quick-select digits only when the panel says they answer', () => {
+    // The panel hides them while its search field has focus — a digit typed
+    // there is a search, not a pick — so a badge is never a promise the
+    // keyboard cannot keep.
+    const live = renderGrid([entry('one'), entry('two')]);
+    expect(live).toContain('stims-preset-grid__quick-key');
+    expect(live).toContain('aria-keyshortcuts="1"');
+
+    const typing = renderGrid([entry('one'), entry('two')], {
+      showQuickSelectKeys: false,
+    });
+    expect(typing).not.toContain('stims-preset-grid__quick-key');
+    expect(typing).not.toContain('aria-keyshortcuts');
+  });
+
   test('renders tiles in the order given (sort parity with the list view)', () => {
     const html = renderGrid([entry('zeta'), entry('alpha'), entry('mid')]);
     const order = [...html.matchAll(/data-preset-id="([^"]+)"/gu)].map(

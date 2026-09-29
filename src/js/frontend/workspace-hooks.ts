@@ -31,6 +31,7 @@ import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { recordStatusMessage } from './agent-state.ts';
 import type { LaunchIntent, SessionRouteState } from './contracts.ts';
+import { createForwardedEngineActions } from './engine/engine-forwarding.ts';
 import type {
   EngineSnapshot,
   MilkdropEngineAdapter,
@@ -39,6 +40,7 @@ import {
   setAudioBandScalars,
   setAudioEnergy,
 } from './engine-audio-energy-store.ts';
+import { setActiveFileAudioPaused } from './file-audio.ts';
 import { useAudioSourceSync } from './hooks/use-audio-source-sync.ts';
 import { useCatalogLoading } from './hooks/use-catalog-loading.ts';
 import { useDocumentDatasetSync } from './hooks/use-document-dataset-sync.ts';
@@ -51,7 +53,9 @@ import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
 import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
 import { reportLoadStatus } from './load-status.ts';
+import { warmFavoriteForOffline } from './offline-favorites.ts';
 import { decidePresetRoutePush } from './preset-route-push.ts';
+import { ensurePersistentStorage } from './storage-persistence.ts';
 import {
   buildSessionRouteSearch,
   parsePlainSearch,
@@ -116,7 +120,14 @@ export function useWorkspaceRouteState() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  const commitRoute = (nextState: SessionRouteState) => {
+  // Takes an updater as well as a whole state. Handlers that spread the
+  // `routeState` their render captured (`{ ...routeState, panel: null }`)
+  // silently rewrite every other field to that render's values: a Backspace
+  // that went to the previous preset and, in the same keystroke, closed the
+  // Browse sheet committed the close with the *old* presetId and put the
+  // preset straight back — a 2.5s blend of a preset into itself. Anything
+  // that owns one field should change only that field.
+  const commitRoute = (nextState: SetStateAction<SessionRouteState>) => {
     setRouteState(nextState);
   };
 
@@ -157,6 +168,9 @@ export function useWorkspaceSessionState({
   const deferredSearch = useDeferredValue(searchQuery);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
+  const [forwardedEngineActions] = useState(() =>
+    createForwardedEngineActions(() => engineRef.current),
+  );
   const engineSnapshotRef = useRef<EngineSnapshot | null>(null);
   const sessionDisposedRef = useRef(false);
   const engineAdapterPromiseRef = useRef<Promise<MilkdropEngineAdapter> | null>(
@@ -758,26 +772,13 @@ export function useWorkspaceSessionState({
   });
 
   return {
+    // Pure engine forwards (see engine-forwarding.ts): one stable object,
+    // spread so each action is still reachable by name.
+    ...forwardedEngineActions,
+    forwardedEngineActions,
     deferredSearch,
     dismissToast,
     engineSnapshot,
-    exportPreset: () => {
-      engineRef.current?.exportPreset();
-    },
-    goBackPreset: async () => {
-      await engineRef.current?.goBackPreset();
-    },
-    revertEditorSource: () => {
-      engineRef.current?.revertEditorSource();
-    },
-    duplicatePreset: async () => {
-      await engineRef.current?.duplicatePreset();
-    },
-    deleteActivePreset: async () => {
-      await engineRef.current?.deleteActivePreset();
-    },
-    getVideoExportRuntime: () =>
-      engineRef.current?.getVideoExportRuntime() ?? null,
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
@@ -790,6 +791,9 @@ export function useWorkspaceSessionState({
       }
       const adapter = await ensureEngineMounted();
       await adapter.importPreset(files);
+      // An imported preset is a file the user brought from somewhere else,
+      // and this app has no account to re-sync it from.
+      void ensurePersistentStorage();
     },
     loadYouTubePreview,
     loadRecentYouTubeVideo,
@@ -811,40 +815,9 @@ export function useWorkspaceSessionState({
         storageKey: QUALITY_STORAGE_KEY,
       });
     },
-    setAutoplay: (enabled: boolean) => {
-      engineRef.current?.setAutoplay(enabled);
-    },
-    setTransitionMode: (mode: 'blend' | 'cut') => {
-      engineRef.current?.setTransitionMode(mode);
-    },
-    startManualCrossfade: () => {
-      engineRef.current?.startManualCrossfade();
-    },
-    setCrossfade: (position: number) => {
-      engineRef.current?.setCrossfade(position);
-    },
-    getCrossfade: () => engineRef.current?.getCrossfade() ?? null,
-    setBlendDuration: (value: number) => {
-      engineRef.current?.setBlendDuration(value);
-    },
-    updateEditorSource: (source: string) => {
-      engineRef.current?.updateEditorSource(source);
-    },
-    updateFieldLive: (key: string, value: number) => {
-      engineRef.current?.updateFieldLive(key, value);
-    },
-    applyEditorSourceAwaited: async (source: string) =>
-      (await engineRef.current?.applyEditorSourceAwaited(source)) ?? null,
-    applyEditorFieldsAwaited: async (
-      updates: Record<string, string | number>,
-    ) => (await engineRef.current?.applyEditorFieldsAwaited(updates)) ?? null,
-    getEditorSessionState: () =>
-      engineRef.current?.getEditorSessionState() ?? null,
     updateInspectorField: (key: string, value: number) => {
       engineRef.current?.updateInspectorField?.(key, value);
     },
-    getActiveCompiledPreset: () =>
-      engineRef.current?.getActiveCompiledPreset() ?? null,
     setSearchQuery,
     setShowExtendedSources,
     setStatusMessage,
@@ -885,6 +858,16 @@ export function useWorkspaceSessionState({
     toggleFavoritePreset: async (presetId: string, favorite: boolean) => {
       const store = await ensureCatalogStore();
       await store.setFavorite(presetId, favorite);
+      // Saving something is the moment that earns a persistence grant: there
+      // is now something here worth not losing, and asking before that would
+      // be a permission prompt (Firefox shows one) about nothing. It is also
+      // what makes the shell's offline-mode promise about saved presets true
+      // — until now only presets that happened to have been played were
+      // actually cached.
+      if (favorite) {
+        void ensurePersistentStorage();
+        warmFavoriteForOffline(presetId, (id) => store.getPresetSource(id));
+      }
       await refreshCatalogActivity();
     },
     toggleExtendedSources: () => setShowExtendedSources((current) => !current),
@@ -899,11 +882,27 @@ export function useWorkspaceSessionState({
     youtubeTransportControls,
     youtubeUrl,
     clearRecentYouTubeVideos,
-    pausePreview: () => {
-      engineRef.current?.pausePreview();
-    },
-    resumePreview: () => {
-      engineRef.current?.resumePreview();
+    /**
+     * Hold or release the whole stage. The engine holds the picture; the two
+     * sources whose sound this page itself produces — a file's <audio>
+     * element and the embedded YouTube player — pause with it, since a frozen
+     * frame over a track that plays on reads as the visuals having died.
+     * Mic and tab audio belong to something else and keep playing; holding
+     * the frame is all "pause" can mean for them.
+     */
+    setPlaybackPaused: (paused: boolean): boolean => {
+      const applied = engineRef.current?.setPlaybackPaused(paused) ?? false;
+      const source = engineRef.current?.getSnapshot().audioSource ?? null;
+      if (source === 'file') {
+        setActiveFileAudioPaused(applied);
+      } else if (source === 'youtube') {
+        if (applied) {
+          youtubeTransportControls.pause();
+        } else {
+          youtubeTransportControls.play();
+        }
+      }
+      return applied;
     },
     stopAudio: async () => {
       await engineRef.current?.stopAudio().catch((error) => {

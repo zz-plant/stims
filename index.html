@@ -9,7 +9,7 @@
     />
     <meta name="application-name" content="Stims" />
     <meta name="robots" content="index,follow" />
-    <meta name="theme-color" content="#0b0f1a" />
+    <meta name="theme-color" content="#0b1014" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="canonical" href="https://toil.fyi/" />
@@ -59,9 +59,12 @@
       crossorigin
     />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" media="(prefers-color-scheme: light)" />
-    <link rel="icon" type="image/svg+xml" href="/icons/favicon-dark.svg" media="(prefers-color-scheme: dark)" />
-    <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#0891b2" />
+    <!-- One mark for both colour schemes. The tile carries its own dark
+         background, so there is nothing for a scheme-split pair to fix, and
+         splitting it is how the tab and the PWA drifted onto two different
+         logos in the first place. -->
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#f47a54" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="icon" type="image/x-icon" href="/icons/favicon.ico" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -130,7 +133,21 @@
         "operatingSystem": "Web",
         "url": "https://toil.fyi/",
         "image": "https://toil.fyi/og/milkdrop.png",
-        "isAccessibleForFree": true
+        "screenshot": "https://toil.fyi/screenshots/hero-wide.png",
+        "isAccessibleForFree": true,
+        "featureList": [
+          "Plays MilkDrop .milk presets in the browser with WebGL or WebGPU",
+          "Live editor with compiler diagnostics and sliders",
+          "Reacts to demo audio, microphone, a browser tab, a YouTube link or a local file",
+          "Imports and exports .milk files",
+          "Shares the exact preset and edits as a link"
+        ],
+        "softwareHelp": {
+          "@type": "CreativeWork",
+          "name": "Learn to write MilkDrop presets",
+          "url": "https://toil.fyi/learn/"
+        },
+        "sameAs": ["https://github.com/zz-plant/stims"]
       }
     </script>
   </head>
@@ -147,7 +164,7 @@
         <div class="stims-loading__status">
           <div class="stims-loading__spinner" aria-hidden="true"></div>
           <div class="stims-loading__text" id="stims-loading-text">
-            Warming up the visuals
+            Loading
           </div>
         </div>
       </div>
@@ -156,11 +173,14 @@
 
 
     <!-- inert: these exist for crawlers reading the HTML source; without it
-         they are 8 invisible tab stops in front of the app, and Enter on one
+         they are invisible tab stops in front of the app, and Enter on one
          navigates the page away. -->
     <nav class="stims-crawl-links" aria-label="Crawlable site links" inert>
       <a href="/">Visualizer</a>
       <a href="/performance/">Compatibility and performance</a>
+      <a href="/learn/">Learn to write MilkDrop presets</a>
+      <a href="/learn/milkdrop-online/">MilkDrop online</a>
+      <a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a>
       <a href="/discover/audio-reactive">Audio-reactive visualizers</a>
       <a href="/discover/hall-of-fame">Hall of fame presets</a>
       <a href="/discover/fractal">Fractal visualizers</a>

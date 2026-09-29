@@ -6,6 +6,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import {
   applyAccessibility,
+  clampMotionScale,
   clampStageBrightness,
   getActiveAccessibilityPreference,
   MIN_STAGE_BRIGHTNESS,
@@ -41,6 +42,7 @@ import {
   subscribeToThemePreference,
   type ThemeChoice,
 } from '../core/theme-preferences.ts';
+import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import { PerformanceHardwareSection } from './PerformanceHardwareSection.tsx';
@@ -121,11 +123,14 @@ const TEXT_SCALE_STEPS: Array<{ value: TextScale; label: string }> = [
   { value: 2, label: '200%' },
 ];
 
-/** Crossfade duration steps, seconds. */
+/** Crossfade duration steps, seconds. The product default is one of them;
+ * it was not, and `nearestStep` showed a fresh visitor "2s" for a 2.5s
+ * crossfade. */
 const BLEND_DURATION_STEPS: Array<{ value: number; label: string }> = [
   { value: 0.5, label: '0.5s' },
   { value: 1, label: '1s' },
   { value: 2, label: '2s' },
+  { value: DEFAULT_BLEND_DURATION_SECONDS, label: '2.5s' },
   { value: 3, label: '3s' },
   { value: 5, label: '5s' },
   { value: 8, label: '8s' },
@@ -198,14 +203,16 @@ function AccessibilitySection({
           setAccessibilityPreference({ highContrast });
         }}
       />
-      {/* The three stage-comfort controls, gathered and labelled by what
-          they actually promise. They were previously interleaved with the
-          chrome settings above, which put a hard limit and a best-effort
-          mitigation side by side with nothing distinguishing them. */}
+      {/* The stage-comfort controls, gathered and labelled by what they
+          actually promise. They were previously interleaved with the chrome
+          settings above, which put a hard limit and a best-effort mitigation
+          side by side with nothing distinguishing them. */}
       <p className="ctl-row__hint" id="comfort-note">
         Brightness is a hard ceiling: it applies over every preset, on either
-        renderer. Reduce flashing is a mitigation, not a guarantee — it filters
-        the presets that have been measured and dims strobing as it is detected.
+        renderer. Motion scales the camera — zoom, spin, drift — and leaves the
+        audio reaction alone. Reduce flashing is a mitigation, not a guarantee —
+        it filters the presets that have been measured and dims strobing as it
+        is detected.
       </p>
       <div className="ctl-row">
         <span className="ctl-row__text">
@@ -232,6 +239,31 @@ function AccessibilitySection({
             );
             setPrefs((p) => ({ ...p, stageBrightness }));
             setAccessibilityPreference({ stageBrightness });
+          }}
+        />
+      </div>
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <label className="ctl-row__label" htmlFor="a11y-motion-scale">
+            Motion
+          </label>
+          <span className="ctl-row__hint">
+            At 0% the picture holds still and the waveforms keep dancing.
+          </span>
+        </span>
+        <input
+          id="a11y-motion-scale"
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={prefs.motionScale}
+          aria-describedby="comfort-note"
+          aria-valuetext={`${Math.round(prefs.motionScale * 100)} percent`}
+          onChange={(event) => {
+            const motionScale = clampMotionScale(Number(event.target.value));
+            setPrefs((p) => ({ ...p, motionScale }));
+            setAccessibilityPreference({ motionScale });
           }}
         />
       </div>
@@ -271,7 +303,7 @@ function describeAdaptiveQualityStatus(
   adaptiveQuality: EngineSnapshot['adaptiveQuality'],
 ) {
   if (!adaptiveQuality) {
-    return 'Adaptive quality keeps frame rate steady once playback starts — no need to babysit it.';
+    return 'Detail adjusts on its own to hold the frame rate once playback starts.';
   }
   switch (adaptiveQuality.adaptation) {
     case 'degraded':
@@ -619,6 +651,10 @@ export function SettingsSheetPanel({
     : null;
   // Read once per panel open — the value only changes on a renderer probe,
   // which only happens on page load.
+  // The renderer choice only applies on the next page load, so the row
+  // offers the reload itself once a change is pending — "Reload to apply"
+  // in a four-second toast left people to find the browser's own button.
+  const [rendererReloadPending, setRendererReloadPending] = useState(false);
   const [rendererFallbackReason] = useState(() =>
     getLastRendererFallbackReason(),
   );
@@ -668,7 +704,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'playback' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('playback')}
         >
-          Playback
+          Playback & Audio
         </button>
         <button
           id="tab-hardware"
@@ -680,7 +716,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'hardware' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('hardware')}
         >
-          MIDI
+          Hardware & MIDI
         </button>
         <button
           id="tab-graphics"
@@ -692,7 +728,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'graphics' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('graphics')}
         >
-          Graphics
+          Visuals & Display
         </button>
         <button
           id="tab-accessibility"
@@ -704,14 +740,18 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'accessibility' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('accessibility')}
         >
-          Accessibility
+          Appearance & Device
         </button>
       </div>
       {activeTab === 'playback' ? (
         <div role="tabpanel" id="panel-playback" aria-labelledby="tab-playback">
           <section className="ctl-section">
+            <AudioSourcePanel />
+          </section>
+
+          <section className="ctl-section">
             <div className="ctl-section__head">
-              <h3 className="ctl-section__title">Playback</h3>
+              <h3 className="ctl-section__title">Playback & Transitions</h3>
             </div>
             <SwitchRow
               label="Autoplay"
@@ -769,10 +809,6 @@ export function SettingsSheetPanel({
                 </select>
               </div>
             ) : null}
-          </section>
-
-          <section className="ctl-section">
-            <AudioSourcePanel />
           </section>
 
           <SyncSessionSection />
@@ -871,7 +907,7 @@ export function SettingsSheetPanel({
                     onCompatibilityModeChange(false);
                     setWebGPUCompatibilityGapOverride(false);
                   }
-                  ui.setStatusMessage('Renderer changed. Reload to apply.');
+                  setRendererReloadPending(true);
                 }}
               >
                 <option value="auto">Auto</option>
@@ -879,12 +915,36 @@ export function SettingsSheetPanel({
                 <option value="webgl">WebGL</option>
               </select>
             </div>
+            {rendererReloadPending ? (
+              <div className="ctl-row">
+                <span className="ctl-row__text">
+                  <span className="ctl-row__hint">
+                    The new renderer starts on the next load.
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="ctl-btn"
+                  onClick={() => window.location.reload()}
+                >
+                  Reload now
+                </button>
+              </div>
+            ) : null}
           </section>
 
           <section className="ctl-section">
             <div className="ctl-section__head">
               <h3 className="ctl-section__title">Stage overlays</h3>
             </div>
+            <SwitchRow
+              label="Preset title card"
+              hint="Shows the preset's name large on the stage for a moment each time it changes."
+              checked={overlays.presetTitleCard}
+              onChange={(next) =>
+                setStageOverlayPreference({ presetTitleCard: next })
+              }
+            />
             <SwitchRow
               label="Strudel live-coding lab"
               hint="Code music patterns on the stage and drive the visuals with them."
@@ -909,10 +969,6 @@ export function SettingsSheetPanel({
           id="panel-accessibility"
           aria-labelledby="tab-accessibility"
         >
-          <AccessibilitySection
-            onOpenShortcuts={onOpenShortcuts}
-            onOpenCredits={onOpenCredits}
-          />
           <section className="ctl-section">
             <div className="ctl-section__head">
               <h3 className="ctl-section__title">Appearance</h3>
@@ -972,6 +1028,10 @@ export function SettingsSheetPanel({
               </button>
             ) : null}
           </section>
+          <AccessibilitySection
+            onOpenShortcuts={onOpenShortcuts}
+            onOpenCredits={onOpenCredits}
+          />
         </div>
       ) : null}
     </div>

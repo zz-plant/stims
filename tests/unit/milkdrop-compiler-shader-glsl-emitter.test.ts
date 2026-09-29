@@ -114,36 +114,39 @@ describe('milkdrop compiler shader GLSL emitter — binary operators', () => {
     expect(glsl).toBe('x = milkdropIntMod(7.5000000000, 0.7000000000);');
   });
 
-  test('< emits comparison', () => {
+  // Comparisons go through the milkdrop* overload sets: HLSL compares
+  // vectors component-wise, GLSL only allows scalar relational operands.
+  // A scalar pair still evaluates to 1.0/0.0 (see the preamble).
+  test('< emits the component-wise comparison helper', () => {
     const glsl = emitShaderExpression('x = bass < 0.5');
-    expect(glsl).toBe('x = ((signalBass < 0.5000000000) ? 1.0 : 0.0);');
+    expect(glsl).toBe('x = milkdropLt(signalBass, 0.5000000000);');
   });
 
   test('<= emits a numeric comparison', () => {
     expect(emitShaderExpression('x = bass <= 0.5')).toBe(
-      'x = ((signalBass <= 0.5000000000) ? 1.0 : 0.0);',
+      'x = milkdropLe(signalBass, 0.5000000000);',
     );
   });
 
   test('> emits a numeric comparison', () => {
     expect(emitShaderExpression('x = bass > 0.5')).toBe(
-      'x = ((signalBass > 0.5000000000) ? 1.0 : 0.0);',
+      'x = milkdropGt(signalBass, 0.5000000000);',
     );
   });
 
   test('>= emits comparison', () => {
     const glsl = emitShaderExpression('x = mid >= 0.3');
-    expect(glsl).toBe('x = ((signalMid >= 0.3000000000) ? 1.0 : 0.0);');
+    expect(glsl).toBe('x = milkdropGe(signalMid, 0.3000000000);');
   });
 
   test('== emits equality', () => {
     const glsl = emitShaderExpression('x = bass == beat');
-    expect(glsl).toBe('x = ((signalBass == signalBeat) ? 1.0 : 0.0);');
+    expect(glsl).toBe('x = milkdropEq(signalBass, signalBeat);');
   });
 
   test('!= emits inequality', () => {
     const glsl = emitShaderExpression('x = bass != treb');
-    expect(glsl).toBe('x = ((signalBass != signalTreb) ? 1.0 : 0.0);');
+    expect(glsl).toBe('x = milkdropNe(signalBass, signalTreb);');
   });
 });
 
@@ -222,8 +225,8 @@ describe('milkdrop compiler shader GLSL emitter — sampler calls', () => {
     const glsl = emitShaderExpression(
       'ret = tex3D(sampler_simplex, float3(uv, time / 10.0)).xyz',
     );
-    expect(glsl).not.toContain('vUv, (signalTime / 10.0), 0.0');
-    expect(glsl).toContain('sampleUv(vUv, textureWrap)');
+    expect(glsl).not.toContain('uv, (signalTime / 10.0), 0.0');
+    expect(glsl).toContain('sampleUv(uv, textureWrap)');
     expect(glsl).toContain('sampleAuxTexture(');
   });
 
@@ -238,12 +241,12 @@ describe('milkdrop compiler shader GLSL emitter — sampler calls', () => {
 describe('milkdrop compiler shader GLSL emitter — member access', () => {
   test('.x component access passes through', () => {
     const glsl = emitShaderExpression('x = uv.x');
-    expect(glsl).toContain('vUv.x');
+    expect(glsl).toContain('uv.x');
   });
 
   test('.y component access passes through', () => {
     const glsl = emitShaderExpression('x = uv.y');
-    expect(glsl).toContain('vUv.y');
+    expect(glsl).toContain('uv.y');
   });
 
   test('.r component access passes through', () => {
@@ -258,7 +261,7 @@ describe('milkdrop compiler shader GLSL emitter — member access', () => {
   });
 
   test('accepts repeated and reordered GLSL swizzles', () => {
-    expect(emitShaderExpression('x = uv.yx')).toContain('vUv.yx');
+    expect(emitShaderExpression('x = uv.yx')).toContain('uv.yx');
     expect(emitShaderExpression('x = vec3(1, 2, 3).zxy')).toContain('.zxy');
     expect(emitShaderExpression('x = vec3(1, 2, 3).xxx')).toContain('.xxx');
     expect(emitShaderExpression('x = vec4(1, 2, 3, 4).bgra')).toContain(
@@ -270,14 +273,19 @@ describe('milkdrop compiler shader GLSL emitter — member access', () => {
 // ─── Math Function Calls ───────────────────────────────────────────
 
 describe('milkdrop compiler shader GLSL emitter — math functions', () => {
-  test('mix emits GLSL mix', () => {
+  // mix/lerp, min/max, pow and dot go through the milkdrop* overload
+  // sets from feedback-manager-shared.ts, not the GLSL builtins: HLSL
+  // promotes a scalar argument to the other arguments' width and GLSL
+  // does not, and the emitter has no types to promote with, so the
+  // GLSL compiler's overload resolution does it.
+  test('mix emits the promoting lerp helper', () => {
     const glsl = emitShaderExpression('x = mix(0, 1, 0.5)');
-    expect(glsl).toBe('x = mix(0.0, 1.0, 0.5000000000);');
+    expect(glsl).toBe('x = milkdropLerp(0.0, 1.0, 0.5000000000);');
   });
 
-  test('lerp aliases to mix', () => {
+  test('lerp aliases to the same helper', () => {
     const glsl = emitShaderExpression('x = lerp(0, 1, 0.5)');
-    expect(glsl).toBe('x = mix(0.0, 1.0, 0.5000000000);');
+    expect(glsl).toBe('x = milkdropLerp(0.0, 1.0, 0.5000000000);');
   });
 
   test('sin/cos/tan emit directly', () => {
@@ -291,14 +299,15 @@ describe('milkdrop compiler shader GLSL emitter — math functions', () => {
     expect(glsl).toBe('x = abs(-(0.5000000000));');
   });
 
-  test('pow emits GLSL pow', () => {
+  test('pow emits the promoting helper, which floors the base at zero', () => {
     const glsl = emitShaderExpression('x = pow(2, 3)');
-    expect(glsl).toBe('x = pow(max(0.0, 2.0), 3.0);');
+    expect(glsl).toBe('x = milkdropPow(2.0, 3.0);');
   });
 
   test('sqrt emits GLSL sqrt', () => {
     const glsl = emitShaderExpression('x = sqrt(4)');
-    expect(glsl).toBe('x = sqrt(max(0.0, 4.0));');
+    // Vector-first so max() also accepts a vector radicand.
+    expect(glsl).toBe('x = sqrt(max(4.0, 0.0));');
   });
 
   test('clamp emits GLSL clamp', () => {
@@ -316,14 +325,18 @@ describe('milkdrop compiler shader GLSL emitter — math functions', () => {
     expect(glsl).toBe('x = smoothstep(0.0, 1.0, 0.5000000000);');
   });
 
-  test('min/max emit directly', () => {
-    expect(emitShaderExpression('x = min(0, 1)')).toBe('x = min(0.0, 1.0);');
-    expect(emitShaderExpression('x = max(0, 1)')).toBe('x = max(0.0, 1.0);');
+  test('min/max emit the promoting helpers', () => {
+    expect(emitShaderExpression('x = min(0, 1)')).toBe(
+      'x = milkdropMin(0.0, 1.0);',
+    );
+    expect(emitShaderExpression('x = max(0, 1)')).toBe(
+      'x = milkdropMax(0.0, 1.0);',
+    );
   });
 
-  test('if emits mix + step pattern', () => {
+  test('if emits lerp + step pattern', () => {
     const glsl = emitShaderExpression('x = if(cond, a, b)');
-    expect(glsl).toContain('mix(');
+    expect(glsl).toContain('milkdropLerp(');
     expect(glsl).toContain('step(0.0001,');
   });
 
@@ -466,9 +479,13 @@ describe('milkdrop compiler shader GLSL emitter — identifier resolution', () =
     expect(glsl).toContain('2.71828182846');
   });
 
-  test('uv maps to vUv', () => {
+  // `uv` reads the stage template's own coordinate. In the warp stage that
+  // is the warped one — the preset's motion — and rewriting it to the
+  // unwarped `vUv` made every emitted warp body sample the previous frame
+  // without that motion.
+  test('uv reads the template coordinate, not the unwarped vUv', () => {
     const glsl = emitShaderExpression('x = uv');
-    expect(glsl).toBe('x = vUv;');
+    expect(glsl).toBe('x = uv;');
   });
 
   test('warp maps to warpScale', () => {
@@ -618,7 +635,7 @@ describe('milkdrop compiler shader GLSL emitter — round-trip', () => {
     // Should contain both main and noise samples
     expect(glsl).toContain('currentTex');
     expect(glsl).toContain('sampleAuxTexture');
-    expect(glsl).toContain('mix(');
+    expect(glsl).toContain('milkdropLerp(');
     expect(glsl).toContain('signalBass');
   });
 
@@ -652,7 +669,7 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
       'ret = tex2Dlod(sampler_main, float4(uv, 0.0, 0.0, 2.0)).rgb',
     );
     expect(glsl).toContain(
-      'textureLod(currentTex, sampleUv(vec2(vUv, 0.0), textureWrap), 2.0).rgb',
+      'textureLod(currentTex, sampleUv(vec2(uv, 0.0), textureWrap), 2.0).rgb',
     );
   });
 
@@ -661,7 +678,7 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
       'ret = tex2Dbias(sampler_noise, float4(uv, 0.0, 0.0, 0.5)).rgb',
     );
     expect(glsl).toContain(
-      'texture(noiseTex, sampleUv(vec2(vUv, 0.0), textureWrap), 0.5000000000)',
+      'texture(noiseTex, sampleUv(vec2(uv, 0.0), textureWrap), 0.5000000000)',
     );
   });
 
@@ -670,7 +687,7 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
       'ret = tex2Dgrad(sampler_main, uv, dFdx(vUv), dFdy(vUv)).rgb',
     );
     expect(glsl).toContain(
-      'textureGrad(currentTex, sampleUv(vUv, textureWrap), dFdx(vUv), dFdy(vUv))',
+      'textureGrad(currentTex, sampleUv(uv, textureWrap), dFdx(vUv), dFdy(vUv))',
     );
   });
 
@@ -722,8 +739,10 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
     expect(emitShaderExpression('x = half2(bass, 1)')).toContain(
       'vec2(signalBass, 1.0)',
     );
+    // A two-argument float3 splits its components across a vector and a
+    // scalar; milkdropVec3 lets GLSL overloading decide which is which.
     expect(emitShaderExpression('x = half3(uv, 1.0)')).toContain(
-      'vec3(vUv, 1.0)',
+      'milkdropVec3(uv, 1.0)',
     );
     expect(emitShaderExpression('x = int(bass)')).toContain('int(signalBass)');
     expect(emitShaderExpression('x = bool(bass)')).toContain(
@@ -746,7 +765,7 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
   test('keeps blur samplers on their dedicated blur textures', () => {
     expect(
       emitShaderExpression('ret = tex2d(sampler_blur1, uv).rgb'),
-    ).toContain('texture2D(blur1Tex, sampleUv(vUv, textureWrap)).rgb');
+    ).toContain('texture2D(blur1Tex, sampleUv(uv, textureWrap)).rgb');
   });
 });
 
@@ -759,19 +778,19 @@ describe('milkdrop compiler shader GLSL emitter — MilkDrop 2 helpers', () => {
   // 511 presets, the entire projectm-cream-of-the-crop library.
   test('GetPixel samples the main texture', () => {
     expect(emitShaderExpression('ret = GetPixel(uv)')).toBe(
-      'ret = vec3(texture2D(currentTex, sampleUv(vUv, textureWrap)).xyz);',
+      'ret = vec3(texture2D(currentTex, sampleUv(uv, textureWrap)).xyz);',
     );
   });
 
   test('GetBlur1/2/3 sample their blur texture through scale and bias', () => {
     expect(emitShaderExpression('ret = GetBlur1(uv)')).toContain(
-      '(texture2D(blur1Tex, sampleUv(vUv, textureWrap)).xyz * scale1 + bias1)',
+      '(texture2D(blur1Tex, sampleUv(uv, textureWrap)).xyz * scale1 + bias1)',
     );
     expect(emitShaderExpression('ret = GetBlur2(uv)')).toContain(
-      '(texture2D(blur2Tex, sampleUv(vUv, textureWrap)).xyz * scale2 + bias2)',
+      '(texture2D(blur2Tex, sampleUv(uv, textureWrap)).xyz * scale2 + bias2)',
     );
     expect(emitShaderExpression('ret = GetBlur3(uv)')).toContain(
-      '(texture2D(blur3Tex, sampleUv(vUv, textureWrap)).xyz * scale3 + bias3)',
+      '(texture2D(blur3Tex, sampleUv(uv, textureWrap)).xyz * scale3 + bias3)',
     );
   });
 
@@ -795,7 +814,7 @@ describe('milkdrop compiler shader GLSL emitter — scalar promotion', () => {
   // rejects it outright. `ret` is vec3 in both stage templates.
   test('a scalar assigned to ret is broadcast, not rejected', () => {
     expect(emitShaderExpression('ret = GetPixel(uv).x')).toBe(
-      'ret = vec3(texture2D(currentTex, sampleUv(vUv, textureWrap)).xyz.x);',
+      'ret = vec3(texture2D(currentTex, sampleUv(uv, textureWrap)).xyz.x);',
     );
   });
 });
@@ -857,7 +876,81 @@ describe('preset-declared locals', () => {
     const glsl = emitProgram(['float3 acc = 0.5', 'acc = 0.25']);
 
     expect(glsl.match(/vec3 acc =/g)).toHaveLength(1);
-    expect(glsl).toContain('acc = 0.25');
+    // The later write is promoted like the declaration was: HLSL splats a
+    // scalar into a float3, GLSL rejects the assignment.
+    expect(glsl).toContain('acc = vec3(0.2500000000)');
+  });
+
+  // Every later write to a known vector target gets the same vecN() wrap the
+  // declaration gets: HLSL promotes a scalar (`c = lum(c)` means grey) and
+  // truncates a wider vector (`uv *= 1 + 0.1 * GetPixel(uv)` applies the
+  // float3's leading components to the float2); GLSL rejects both.
+  // Targets are lowercased at parse time; reads kept the author's case, so
+  // `float L = …; … L` wrote `l` and read an undeclared `L` that the
+  // assembler hoisted as a zero uniform (cotc-geiss-tadpole-hunter).
+  test('a read of a written name follows the target spelling', () => {
+    const glsl = emitProgram(['float L = lum(ret)', 'ret = ret * L']);
+    expect(glsl).toContain('float l = milkdropScalar(lum(ret));');
+    // `l` is a local, not provably scalar, so the product goes through the
+    // width-truncating milkdropMul set.
+    expect(glsl).toContain('milkdropMul(ret, l)');
+    expect(glsl).not.toMatch(/\bL\b/u);
+  });
+
+  // `float bl = GetBlur2(uv)` is legal HLSL: the float3 truncates to its
+  // first component. milkdropScalar has an overload per width.
+  test('a vector written to a float target is truncated, not rejected', () => {
+    const glsl = emitProgram(['float bl = GetBlur2(uv)', 'bl = GetPixel(uv)']);
+    expect(glsl).toMatch(/^ {2}float bl = milkdropScalar\(/mu);
+    expect(glsl).toMatch(/^ {2}bl = milkdropScalar\(/mu);
+  });
+
+  // `b`, `zoom`, `rot` are not MilkDrop shader builtins; a body that assigns
+  // one is using its own variable, so reads must not become the alias.
+  test('an assigned name shadows the alias table even undeclared', () => {
+    const glsl = emitProgram(['b = 0.5', 'ret = b']);
+    expect(glsl).not.toContain('colorScale.b');
+    expect(glsl).toContain('ret = vec3(b);');
+  });
+
+  describe('assignment width promotion', () => {
+    test('a scalar written to a declared vector target is broadcast', () => {
+      const glsl = emitProgram(['float3 c = GetPixel(uv)', 'c = lum(c)']);
+      expect(glsl).toContain('c = vec3(lum(c));');
+    });
+
+    test('a compound write to a vector target is wrapped too', () => {
+      const glsl = emitProgram(['uv *= 1 + 0.1 * GetPixel(uv)']);
+      expect(glsl).toMatch(/uv \*= vec2\(\(1\.0 \+ .*\)\);/u);
+    });
+
+    test('a swizzle write takes the width of the swizzle', () => {
+      const glsl = emitProgram(['float4 d = 0', 'd.xy = 0.5', 'd.z = 1']);
+      expect(glsl).toContain('d.xy = vec2(0.5000000000);');
+      // A single component is a scalar write: HLSL truncates a vector RHS
+      // to its first component, which milkdropScalar does for GLSL.
+      expect(glsl).toContain('d.z = milkdropScalar(1.0);');
+    });
+
+    test('an undeclared name seeded from a constructor is sized by it', () => {
+      // The hoister in feedback-manager-shared.ts declares this name vec3
+      // from the same constructor, so the later scalar write must broadcast.
+      const glsl = emitProgram(['l2 = float3(0, 0, 0)', 'l2 = lum(ret)']);
+      expect(glsl).toContain('l2 = vec3(0.0, 0.0, 0.0);');
+      expect(glsl).toContain('l2 = vec3(lum(ret));');
+    });
+
+    test('a target of unknown width is left alone', () => {
+      const glsl = emitProgram(['k = 0.5', 'k = k * 2']);
+      expect(glsl).toContain('k = 0.5000000000;');
+      expect(glsl).toContain('k = (k * 2.0);');
+    });
+
+    test('an already-constructed RHS is not wrapped twice', () => {
+      const glsl = emitProgram(['float3 c = 0', 'c = float3(1, 2, 3)']);
+      expect(glsl).toContain('c = vec3(1.0, 2.0, 3.0);');
+      expect(glsl).not.toContain('vec3(vec3(1.0');
+    });
   });
 
   // `ret` and `uv` are declared by the stage templates and read back after the
@@ -885,5 +978,53 @@ describe('preset-declared locals', () => {
     const glsl = emitProgram(['ret = b']);
 
     expect(glsl).toContain('colorScale.b');
+  });
+});
+
+// Shapes GLSL rejects but HLSL accepts. Each goes through an overload set in
+// the preamble (feedback-manager-shared.ts) so GLSL's own overload
+// resolution supplies the type information this text emitter lacks.
+describe('milkdrop compiler shader GLSL emitter — HLSL-only shapes', () => {
+  test('a vector comparison emits the component-wise helper', () => {
+    expect(emitShaderExpression('x = ret > 0.5')).toBe(
+      'x = milkdropGt(ret, 0.5000000000);',
+    );
+  });
+
+  test('short vector constructors let GLSL pick the split', () => {
+    expect(emitShaderExpression('x = float3(texsize.zw, 0)')).toContain(
+      'milkdropVec3(',
+    );
+    expect(emitShaderExpression('x = float4(uv, 0, 1)')).toBe(
+      'x = milkdropVec4(uv, 0.0, 1.0);',
+    );
+    // Full-arity constructors stay plain.
+    expect(emitShaderExpression('x = float4(1, 2, 3, 4)')).toBe(
+      'x = vec4(1.0, 2.0, 3.0, 4.0);',
+    );
+  });
+
+  test('HLSL matrix type names lower to GLSL', () => {
+    expect(emitShaderExpression('x = float2x2(q1, q2, q3, q4)')).toBe(
+      'x = mat2(q1, q2, q3, q4);',
+    );
+  });
+});
+
+// HLSL arithmetic truncates mixed vector widths; GLSL rejects them. The
+// emitter routes `+ - * /` through the width-truncating milkdropAdd/Sub/
+// Mul/Div overloads unless an operand is provably a float.
+describe('milkdrop compiler shader GLSL emitter — mixed-width arithmetic', () => {
+  test('two possibly-vector operands go through the overload set', () => {
+    expect(emitShaderExpression('ret = ret * uv.xyy')).toContain(
+      'milkdropMul(ret, uv.xyy)',
+    );
+  });
+
+  test('a provably scalar operand keeps the plain operator', () => {
+    expect(emitShaderExpression('x = bass * 2')).toBe(
+      'x = (signalBass * 2.0);',
+    );
+    expect(emitShaderExpression('ret = ret * q1')).toContain('(ret * q1)');
   });
 });

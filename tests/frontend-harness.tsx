@@ -1,6 +1,7 @@
 import { act, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { PresetCatalogEntry } from '../src/js/frontend/contracts.ts';
+import { createForwardedEngineActions } from '../src/js/frontend/engine/engine-forwarding.ts';
 import type { EngineSnapshot } from '../src/js/frontend/engine/engine-snapshot.ts';
 import type {
   EngineContextValue,
@@ -95,8 +96,6 @@ export function makeUiValue(
       popNext: () => null,
     },
 
-    handleBrowseRecovery: noop,
-    handleFeaturedPresetSelection: noop,
     handleImport: asyncNoop,
     handleShowCurrentLink: asyncNoop,
     updatePanel: noop,
@@ -108,6 +107,9 @@ export function makeEngineValue(
   overrides: Partial<EngineContextValue> = {},
 ): EngineContextValue {
   return {
+    // Every pure engine forward, answering as it does before the engine
+    // mounts; the entries below override the ones a test cares about.
+    ...createForwardedEngineActions(() => null),
     presetPreviews: {},
     catalog: [],
     catalogError: null,
@@ -125,6 +127,7 @@ export function makeEngineValue(
     starterPresets: [],
 
     exportPreset: noop,
+    exportUserPresets: async () => 0,
     revertEditorSource: noop,
     duplicatePreset: asyncNoop,
     deleteActivePreset: asyncNoop,
@@ -142,6 +145,7 @@ export function makeEngineValue(
     handleShufflePreset: noop,
     handleAudioStart: asyncNoop,
     handleAudioStop: noop,
+    handleTogglePlayback: noop,
     loadRecentYouTubeVideo: noop,
     loadYouTubePreview: noop,
     clearRecentYouTubeVideos: noop,
@@ -155,6 +159,8 @@ export function makeEngineValue(
     setBlendDuration: noop,
     updateEditorSource: noop,
     updateFieldLive: noop,
+    setPlaybackPaused: () => false,
+    stepPlaybackFrame: () => false,
     applyEditorSourceAwaited: async () => null,
     applyEditorFieldsAwaited: async () => null,
     getEditorSessionState: () => null,

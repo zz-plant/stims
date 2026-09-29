@@ -75,6 +75,7 @@ import {
   getFeedbackBackendProfile,
   WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
 } from './backend-behavior';
+import { MILKDROP_EEL_CLOSE_FACTOR } from './compiler/eel-function-table.ts';
 import {
   MILKDROP_BLEND_DISSOLVE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
@@ -107,7 +108,6 @@ const {
   acos,
   asin,
   atan,
-  bool,
   ceil,
   clamp,
   cos,
@@ -1182,9 +1182,15 @@ function coerceShaderValue(
     if (value.kind === 'scalar') {
       return makeShaderValue('vec3', vec3(value.node, value.node, value.node));
     }
+    if (value.kind === 'vec2') {
+      return makeShaderValue(
+        'vec3',
+        vec3(value.node.x, value.node.y, float(0)),
+      );
+    }
     return makeShaderValue(
       'vec3',
-      vec3(value.node.x, value.node.y, value.node.z ?? 0),
+      vec3(value.node.x, value.node.y, value.node.z),
     );
   }
   if (value.kind === 'scalar') {
@@ -1194,12 +1200,15 @@ function coerceShaderValue(
     );
   }
   if (value.kind === 'vec2') {
-    return makeShaderValue('vec4', vec4(value.node.x, value.node.y, 0, 0));
+    return makeShaderValue(
+      'vec4',
+      vec4(value.node.x, value.node.y, float(0), float(0)),
+    );
   }
   if (value.kind === 'vec3') {
     return makeShaderValue(
       'vec4',
-      vec4(value.node.x, value.node.y, value.node.z, 0),
+      vec4(value.node.x, value.node.y, value.node.z, float(0)),
     );
   }
   return value;
@@ -1402,7 +1411,11 @@ function isPerFrameVariableCandidate(name: string): boolean {
   return (
     /^[a-z][a-z0-9_]*$/u.test(name) &&
     !name.endsWith('tex') &&
-    !name.startsWith('sampler_')
+    !name.startsWith('sampler_') &&
+    !name.startsWith('tmpvar_') &&
+    !name.startsWith('ret_') &&
+    !name.startsWith('xlv_') &&
+    !/^x_\d+$/u.test(name)
   );
 }
 
@@ -1462,6 +1475,11 @@ function getShaderEnvValue(
     weighted_energy: () => shaderFloat(env.uniforms.signalEnergy),
     pi: () => shaderFloat(Math.PI),
     e: () => shaderFloat(Math.E),
+    // MilkDrop 2 include.fx constants; M_PI_2 is 2*pi. Lookups are
+    // lowercased. See MILKDROP_HLSL_PROMOTION_HELPERS for the GLSL side.
+    m_pi: () => shaderFloat(Math.PI),
+    m_pi_2: () => shaderFloat(Math.PI * 2),
+    m_inv_pi_2: () => shaderFloat(1 / (Math.PI * 2)),
     warp: () => shaderFloat(env.uniforms.warpScale),
     warp_scale: () => shaderFloat(env.uniforms.warpScale),
     dx: () => shaderFloat(env.uniforms.offsetX),
@@ -2264,6 +2282,56 @@ export function compileShaderExpressionNode(
           createComparisonNode('<', args[0].node, args[1].node),
         );
       }
+      // NS-EEL predicates and sqr() reach this compiler through per_pixel
+      // blocks (runPerPixelProgram), never through HLSL bodies. They were
+      // unknown here, so every statement using one was dropped and the warp
+      // silently differed from MilkDrop — 306 bundled presets carry such
+      // code, 128 of them `equal()` alone (2026-09-15). Same close-factor
+      // semantics as the CPU tiers in compiler/eel-function-table.ts.
+      const allScalar = args.every((entry) => entry.kind === 'scalar');
+      if (name === 'equal' && args.length >= 2 && allScalar) {
+        return shaderFloat(
+          select(
+            abs(args[0].node.sub(args[1].node)).lessThanEqual(
+              MILKDROP_EEL_CLOSE_FACTOR,
+            ),
+            float(1),
+            float(0),
+          ),
+        );
+      }
+      if (name === 'sqr' && args.length >= 1 && allScalar) {
+        const operand = float(args[0].node).toVar();
+        return shaderFloat(operand.mul(operand));
+      }
+      if (name === 'bnot' && args.length >= 1 && allScalar) {
+        return shaderFloat(
+          select(
+            abs(args[0].node).greaterThan(MILKDROP_EEL_CLOSE_FACTOR),
+            float(0),
+            float(1),
+          ),
+        );
+      }
+      if (
+        (name === 'band' || name === 'bor') &&
+        args.length >= 2 &&
+        allScalar
+      ) {
+        const leftTrue = abs(args[0].node).greaterThan(
+          MILKDROP_EEL_CLOSE_FACTOR,
+        );
+        const rightTrue = abs(args[1].node).greaterThan(
+          MILKDROP_EEL_CLOSE_FACTOR,
+        );
+        return shaderFloat(
+          select(
+            name === 'band' ? leftTrue.and(rightTrue) : leftTrue.or(rightTrue),
+            float(1),
+            float(0),
+          ),
+        );
+      }
       if (
         (name === 'greaterthanequal' ||
           name === 'greaterthan' ||
@@ -2421,6 +2489,15 @@ export function compileShaderExpressionNode(
         );
       }
       if (name === 'normalize' && args.length >= 1) {
+        // HLSL accepts normalize(float) — x / |x|, i.e. ±1 — but WGSL's
+        // normalize only takes vectors, so forwarding a scalar produced
+        // "no matching call to 'normalize(f32)'" and the whole module failed
+        // to parse (martin-adrift-on-a-dead-planet-*, martin-sphery-tales*,
+        // 2026-09-15). sign() matches everywhere except exactly 0, where
+        // HLSL yields NaN and MilkDrop's clamp would zero it anyway.
+        if (args[0].kind === 'scalar') {
+          return shaderFloat(sign(args[0].node));
+        }
         return shaderValueFromNode(normalize(args[0].node), args[0].kind);
       }
       if (name === 'reflect' && args.length >= 2) {
@@ -2488,8 +2565,23 @@ export function compileShaderExpressionNode(
         return shaderValueFromNode(int(args[0].node), args[0].kind);
       }
       if (name === 'bool' && args.length >= 1) {
-        return shaderValueFromNode(bool(args[0].node), args[0].kind);
+        // Truthiness as a float 0/1, not a WGSL bool: every value in this
+        // executor is numeric, so `!(bool(sw1))` ran toShaderBool's abs() on
+        // a bool and the module failed to parse ("no matching call to
+        // 'abs(bool)'", martin-sphery-tales, 2026-09-15). HLSL's bool(x) is
+        // x != 0, which is exactly the step below on a scalar; a vector
+        // keeps its per-component truthiness.
+        if (args[0].kind === 'scalar') {
+          return shaderFloat(toShaderBool(args[0]));
+        }
+        return shaderValueFromNode(
+          step(0.0001, abs(args[0].node)),
+          args[0].kind,
+        );
       }
+      // Named so the "Dropped N/M per-pixel statement(s)" log can say which
+      // call sank the statement, not just which target vanished.
+      env.unresolvedNames?.add(`${name}()`);
       return null;
     }
   }
@@ -3108,10 +3200,21 @@ function createFeedbackBlendOutputNode(
         point.x.mul(rotationSin).add(point.y.mul(rotationCos)),
       );
 
+    // Divisor floors keep the zoom's sign (floorWarpZoomDivisor in
+    // warp-sample-transform.ts is the scalar twin): `zoom = -1` with zoomexp
+    // 1 is MilkDrop's point mirror, and `max(zoom, 0.0001)` turned it into a
+    // 10000x magnification of the centre pixel.
+    const floorSignedDivisor = (divisor: any) =>
+      select(
+        divisor.lessThan(0),
+        min(divisor, float(-0.0001)),
+        max(divisor, float(0.0001)),
+      );
+
     let transformedUv: any;
     if (!usesWarpTransformVariables) {
       transformedUv = rotateAboutOrigin(centeredUv)
-        .div(max(activeZoom, 0.0001))
+        .div(floorSignedDivisor(activeZoom))
         .add(vec2(activeOffsetX, activeOffsetY));
     } else {
       // The MilkDrop sampling transform, ordered as butterchurn 2.6.7's
@@ -3156,16 +3259,17 @@ function createFeedbackBlendOutputNode(
         0.0001,
         10000,
       );
+      const zoomMagnitude = clamp(
+        pow(clamp(abs(activeZoom), 0.0001, 10000), zoomPowExponent),
+        0.0001,
+        10000,
+      );
       const zoomDivisor = select(
         abs(activeZoomExp.sub(1)).lessThan(0.000001),
         activeZoom,
-        clamp(
-          pow(clamp(activeZoom, 0.0001, 10000), zoomPowExponent),
-          0.0001,
-          10000,
-        ),
+        select(activeZoom.lessThan(0), zoomMagnitude.mul(-1), zoomMagnitude),
       );
-      const zoomedUv = centeredUv.div(max(zoomDivisor, 0.0001));
+      const zoomedUv = centeredUv.div(floorSignedDivisor(zoomDivisor));
 
       // (u - c)/s + c, emitted as u/s + (c - c/s). At s == 1 the bracket is
       // `c - c` -- exactly zero -- and u/1 is exactly u, so a preset that moves
@@ -3216,7 +3320,9 @@ function createFeedbackBlendOutputNode(
         uniforms.previousTex.sample(sampleUvNode(sceneUv, uniforms.textureWrap))
           .rgb
       ).mul(uniforms.decay);
-      return vec4(previousColor.add(current.rgb), 1);
+      // Clamped like MilkDrop's 8-bit internal buffer; see the WebGL blend in
+      // feedback-manager-shared.ts for why half-float needs it.
+      return vec4(clamp(previousColor.add(current.rgb), vec3(0), vec3(1)), 1);
     }
 
     const currentUv = applyFeedbackWarpNode(
@@ -3225,7 +3331,7 @@ function createFeedbackBlendOutputNode(
       activeRot,
     ).toVar();
     const previousUv = applyFeedbackWarpNode(
-      currentUv.sub(0.5).div(max(uniforms.zoom, 0.0001)).add(0.5),
+      currentUv.sub(0.5).div(floorSignedDivisor(uniforms.zoom)).add(0.5),
       activeWarp.mul(0.8),
       activeRot.mul(0.6),
     ).toVar();
@@ -3278,7 +3384,7 @@ function createFeedbackBlendOutputNode(
     const coverage = clamp(current.a, 0, 1);
     const color = previousColor.mul(float(1).sub(coverage)).add(current.rgb);
 
-    return vec4(color, 1);
+    return vec4(clamp(color, vec3(0), vec3(1)), 1);
   })();
 }
 

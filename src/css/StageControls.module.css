@@ -31,8 +31,12 @@
 }
 
 /* Never hide the bar under a keyboard user: hiding while a control inside
-   holds focus would drop focus to <body> (WCAG 2.4.7). */
-.bar[data-visible="false"]:focus-within {
+   holds focus would drop focus to <body> (WCAG 2.4.7) — nor under a resting
+   pointer, which used to watch the bar fade out from beneath the cursor after
+   three still seconds. The component holds `data-visible` true in both cases;
+   these rules are the guarantee if it ever lags. */
+.bar[data-visible="false"]:focus-within,
+.bar[data-visible="false"]:hover {
   opacity: 1;
   transform: translateY(0);
   visibility: visible;
@@ -63,11 +67,21 @@
   background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   pointer-events: auto;
-  /* The second shadow is audio-reactive, not decoration — it is the "lit edge"
-     signature echoing the dock energy bar, so it stays. */
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.4),
-    0 0 calc(var(--energy, 0) * 16px)
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+}
+
+/* The audio-reactive "lit edge" echoing the dock energy bar. It lives on its
+   own childless span rather than on .pill because `--energy` is written every
+   animation frame, and a custom property inherits: changing it on the pill
+   restyled all ~50 descendants each frame — 45ms per recalc on an RK3576
+   handheld, which held the stage at 10fps while the GPU sat idle. On a leaf
+   the recalc touches one element. */
+.glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 calc(var(--energy, 0) * 16px)
     rgba(119, 201, 255, calc(var(--energy, 0) * 0.25));
 }
 
@@ -104,6 +118,16 @@
    mute, full screen and the overflow menu, so the bar offered six equal
    affordances and no answer to "what do I press?". Bigger, brighter, and
    carrying a resting fill so they read as the bar's primary pair. */
+/* Nearby leaves the dock on phones and lives in the overflow menu instead.
+   The wandering trio is worth its slot on a desktop pill; at 375px its 44px
+   was part of what pushed the menu button off-screen, and swipe already
+   covers previous/next there. */
+@media (max-width: 480px) {
+  .navBtn[data-action="nearby-preset"] {
+    display: none;
+  }
+}
+
 .navBtn[data-primary="true"] {
   width: 38px;
   height: 38px;
@@ -119,10 +143,54 @@
   transform: scale(0.92);
 }
 
-/* Saved-state star rides the existing cool = selected convention (warm
-   stays reserved for focus). */
 .navBtn[data-saved="true"] {
   color: var(--stims-cool, #77c9ff);
+}
+
+.transitionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-round);
+  background: var(--ctl-fill, rgba(255, 255, 255, 0.05));
+  color: var(--ctl-ink-2);
+  font: inherit;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.transitionBtn:hover {
+  color: var(--ctl-ink);
+  background: var(--ctl-fill-hover);
+}
+
+.transitionBtn:active {
+  transform: scale(0.92);
+}
+
+.transitionBtn:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+.transitionBtnText {
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 480px) {
+  .transitionBtn {
+    display: none;
+  }
 }
 
 .titleBtn {
@@ -205,6 +273,11 @@
   animation: transition-pulse 1.2s ease-in-out infinite;
 }
 
+/* "Paused" is a resting state, not something in progress: it must not pulse. */
+.statusText[data-static="true"] {
+  animation: none;
+}
+
 /* The incoming title recedes until the canvas actually shows it. */
 .pill[data-transition="loading"] .titleText {
   opacity: 0.55;
@@ -283,6 +356,29 @@
   outline-offset: 1px;
 }
 
+/* Dims the stage behind the open menu.
+
+   The menu is 26 items and, on a phone, most of the screen. Without a scrim
+   it read as a slab dropped on top of live visuals with no indication that
+   the area around it was the way out, and its own translucent background had
+   to fight whatever the preset was doing underneath. */
+.menuScrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-stage-menu) - 1);
+  background: rgba(4, 7, 12, 0.55);
+  animation: menu-scrim-in 0.16s ease-out both;
+}
+
+@keyframes menu-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .menu {
   position: fixed;
   bottom: calc(max(8px, env(safe-area-inset-bottom)) + 48px);
@@ -290,7 +386,9 @@
     max(12px, env(safe-area-inset-right)) +
     var(--stage-tool-inset, 0px)
   );
-  z-index: var(--z-dock);
+  /* Above the toast layer: this is what the user is pointing at, and an
+     ambient toast used to paint over its items. */
+  z-index: var(--z-stage-menu);
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -392,6 +490,12 @@
   color: var(--ctl-ink-3);
 }
 
+/* The engine's actual value, printed only when no rung below is it. */
+.menuGroupValue {
+  color: var(--ctl-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
 .menuGroupOptions {
   display: flex;
   gap: 4px;
@@ -441,6 +545,54 @@
   background: var(--ctl-fill-hover);
 }
 
+.menuColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+/* Two columns once there is room. Below this the menu is one column and
+   scrolls, with Settings now the third group rather than the last. */
+@media (min-width: 640px) {
+  .menu {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .menuColumn {
+    flex: 1 1 0;
+    min-width: 224px;
+  }
+}
+
+/* ── Transition popover ──────────────────────────────────────────────
+   The overflow menu's radio row, on its own, anchored over the pill's
+   transition trigger. Positioned by the component (left/bottom inline),
+   which measures the trigger on open; the pill is centred and sized by its
+   title, so the trigger has no fixed x. */
+.popover {
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: var(--z-stage-menu);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 200px;
+  padding: 8px 10px 10px;
+  border-radius: var(--radius-lg);
+  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  animation: menu-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+.popover .menuOption {
+  min-width: 40px;
+  padding: 7px 8px;
+}
+
 .menuLabel {
   padding: 6px 12px 2px;
   font-size: 0.6875rem;
@@ -476,7 +628,7 @@
   cursor: pointer;
   transition:
     opacity 0.25s ease,
-    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform var(--spring-enter),
     border-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
@@ -501,7 +653,7 @@
   visibility: visible;
   transition:
     opacity 0.25s ease 0.15s,
-    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s,
+    transform var(--spring-enter) 0.15s,
     visibility 0s linear 0.15s;
 }
 
@@ -534,10 +686,19 @@
     max-width: calc(100vw - 16px);
   }
 
-  /* The save star added a fourth 32px control, so the title's budget
-     shrinks accordingly to keep the pill on one row. */
+  /* Measured at 375px with every control on the bar: the title button was
+     45px wide and read "K.." — the one piece of information the bar exists
+     to carry was the least legible thing on it. Save and full screen leave
+     the bar here; both stay one tap away in the menu, and each has a stage
+     gesture (press-and-hold, double-tap). Six 44px controls plus gaps leave
+     the title about 150px. */
+  .navBtn[data-action="save-preset"],
+  .navBtn[data-action="toggle-fullscreen"] {
+    display: none;
+  }
+
   .titleBtn {
-    max-width: calc(100vw - 156px);
+    max-width: none;
   }
 
   .menu {
@@ -545,12 +706,22 @@
     left: max(8px, env(safe-area-inset-left));
     min-width: auto;
     bottom: calc(max(8px, env(safe-area-inset-bottom)) + 52px);
-    max-height: calc(100dvh - 80px);
+    /* Bounded so it reads as a panel over the stage rather than a takeover.
+       At `100dvh - 80px` it rendered 835px tall on a 915px screen, which is a
+       full-screen sheet wearing a menu's clothes — and it still scrolled, so
+       the extra height bought nothing but the impression that the app had
+       navigated somewhere. It stays anchored above the dock either way, so
+       the button that opened it is never covered. */
+    max-height: min(68dvh, calc(100dvh - 120px));
   }
 }
 
 @media (pointer: coarse) {
+  /* The primary pair is listed explicitly: `.navBtn[data-primary]` above
+     outranks a bare `.navBtn` here, which left the two most-pressed buttons
+     at 38px on touch while every other control grew to 44. */
   .navBtn,
+  .navBtn[data-primary="true"],
   .menuBtn {
     width: 44px;
     height: 44px;
@@ -608,4 +779,64 @@
      pulling the eye off the title it annotates. */
   color: var(--stims-accent, #ff8a65);
   white-space: nowrap;
+}
+
+/* ── Desktop scale ───────────────────────────────────────────────────
+   The phone sizes above are set by what fits a 375px pill; on a desktop
+   there is no such constraint, and the same 32px buttons and 14px title
+   made the one piece of chrome on a full-screen visualizer look like a
+   status bar. With room to spare the dock is sized as a transport: larger
+   targets, larger glyphs, and the playing preset's name set as the
+   headline it is. Phones keep the compact geometry untouched. */
+@media (min-width: 768px) {
+  .pill {
+    padding: 5px;
+    gap: 2px;
+  }
+
+  .navBtn,
+  .menuBtn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .navBtn[data-primary="true"] {
+    width: 48px;
+    height: 48px;
+  }
+
+  .navBtn :global(.stims-icon-slot--sm),
+  .menuBtn :global(.stims-icon-slot--sm) {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .navBtn[data-primary="true"] :global(.stims-icon-slot--sm) {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .transitionBtn {
+    height: 40px;
+    padding: 0 12px;
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .titleBtn {
+    height: 48px;
+    padding: 0 16px;
+    gap: 8px;
+    font-size: var(--text-lg, 1.125rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    max-width: min(34rem, 44vw);
+  }
+
+  .authorText {
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .statusText {
+    font-size: var(--text-xs, 0.75rem);
+  }
 }

@@ -1,63 +1,24 @@
 // Edge middleware for preset routes.
 //
-// Two jobs:
+// Three jobs:
 //   1. `/preset/<id>` used to 404 with an empty body even though this file
 //      already parsed that shape. It now redirects to the canonical query form.
 //   2. `/?preset=<id>` gets real per-preset <title>, description, canonical,
 //      og:url and OG image. Before, canonical and og:url stayed pinned to the
 //      site root, so every preset told crawlers it was the same page and every
 //      social share collapsed onto `/`.
+//   3. Curated `/discover/<slug>` and `/author/<slug>` routes get the app
+//      shell plus their own metadata (there is no file behind those paths).
 
-import { resolveSemanticRoute } from './discover-slugs.ts';
+import { AUTHOR_ROUTES, resolveSemanticRoute } from './discover-slugs.ts';
+import { loadPresetMeta } from './shared/preset-meta.ts';
+import { relatedPresetIds } from './shared/preset-related.ts';
 import { presentTitle } from './shared/preset-title.ts';
 
 interface EventContext {
   request: Request;
   next: () => Promise<Response>;
   env?: { ASSETS?: { fetch: (request: Request) => Promise<Response> } };
-}
-
-type PresetMeta = Record<string, [title: string, author: string]>;
-
-// Per-isolate memo. Workers reuse isolates across requests, so the metadata
-// file is fetched once per isolate rather than once per request. A failed
-// fetch is not cached, so a transient error does not poison the isolate.
-let presetMetaPromise: Promise<PresetMeta | null> | null = null;
-
-function loadPresetMeta(
-  context: EventContext,
-  origin: string,
-): Promise<PresetMeta | null> {
-  presetMetaPromise ??= (async () => {
-    const assets = context.env?.ASSETS;
-    if (!assets) {
-      return null;
-    }
-    try {
-      const response = await assets.fetch(
-        new Request(new URL('/preset-meta.json', origin).toString()),
-      );
-      if (!response.ok) {
-        return null;
-      }
-      return (await response.json()) as PresetMeta;
-    } catch {
-      return null;
-    }
-  })().then(
-    (value) => {
-      if (value === null) {
-        presetMetaPromise = null;
-      }
-      return value;
-    },
-    () => {
-      presetMetaPromise = null;
-      return null;
-    },
-  );
-
-  return presetMetaPromise;
 }
 
 function escapeAttribute(value: string) {
@@ -147,7 +108,19 @@ export async function onRequest(context: EventContext): Promise<Response> {
       url.origin,
     ).toString();
 
-    const response = await next();
+    let response = await next();
+    // Worker static assets, unlike the Pages project this site ran on, do not
+    // fall back to index.html for unknown paths, so a curated route such as
+    // /discover/fractal has no file and `next()` answers 404 with an empty
+    // body. These routes are real pages rendered by the app shell (the client
+    // parses the path), so serve the shell for them. Unknown slugs never reach
+    // this branch and keep their 404, which is what stops arbitrary paths
+    // from becoming doorway pages.
+    if (response.status === 404 && context.env?.ASSETS) {
+      response = await context.env.ASSETS.fetch(
+        new Request(new URL('/', url.origin)),
+      );
+    }
     if (
       response.status !== 200 ||
       !response.headers.get('content-type')?.includes('text/html')
@@ -242,7 +215,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
     return allowExternalFraming(response, embedRequest);
   }
 
-  const presetMeta = await loadPresetMeta(context, url.origin);
+  const presetMeta = await loadPresetMeta(context.env?.ASSETS, url.origin);
   const entry = presetMeta?.[presetId];
 
   // Unknown ids are left with the site's default metadata. Generating a unique
@@ -262,7 +235,11 @@ export async function onRequest(context: EventContext): Promise<Response> {
 
   // Crawlers require absolute image URLs; /api/og-preset rasterizes the
   // per-preset card to PNG via resvg-wasm (SVG is refused by every major
-  // unfurler) and falls back to the static card if rendering fails.
+  // unfurler) and falls back to the static card if rendering fails. The index
+  // shell ships og:image:url and og:image:secure_url aliases pointed at the
+  // static card; per the OG spec those are the same image struct as og:image,
+  // so they must be rewritten too — parsers that prefer secure_url (Facebook,
+  // LinkedIn) would otherwise show the generic card for every preset.
   const imageUrl = new URL(
     `/api/og-preset?id=${encodeURIComponent(presetId)}`,
     url.origin,
@@ -341,6 +318,33 @@ export async function onRequest(context: EventContext): Promise<Response> {
     ],
   });
 
+  // What a crawler that reads only the HTML sees for this preset: a heading,
+  // the preview card, a byline linking the author's page, sibling presets by
+  // the same author, and the topic hubs. Before this the page was one
+  // sentence and no outgoing links, so nothing distinguished 1,800 presets
+  // beyond their titles.
+  const authorRoute = author
+    ? AUTHOR_ROUTES.find(
+        (route) =>
+          (route.author ?? route.label).toLowerCase() === author.toLowerCase(),
+      )
+    : undefined;
+  const byline = authorRoute
+    ? `<p>By <a href="/author/${escapeAttribute(authorRoute.slug)}">${escapeAttribute(author)}</a>. See <a href="/author/${escapeAttribute(authorRoute.slug)}">more ${escapeAttribute(author)} presets</a>.</p>`
+    : '';
+  const relatedLinks = relatedPresetIds(presetMeta, presetId)
+    .map((id) => {
+      const [relatedTitle, relatedAuthor] = presetMeta[id] ?? ['', ''];
+      return `<li><a href="/?preset=${encodeURIComponent(id)}">${escapeAttribute(presentTitle(relatedTitle, relatedAuthor))}</a></li>`;
+    })
+    .join('');
+  const relatedSection = relatedLinks
+    ? `<h2>More presets${author ? ` by ${escapeAttribute(author)}` : ''}</h2><ul>${relatedLinks}</ul>`
+    : '';
+  const presetBodyHtml = `<h1>${escapeAttribute(title)}</h1><p>${escapeAttribute(
+    `${title}${authorCredit} is a MilkDrop preset you can run live in your browser on Stims.`,
+  )}</p><p><img src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(imageAlt)}" width="1200" height="630"></p>${byline}${relatedSection}<p><a href="/discover/audio-reactive">Audio-reactive visualizers</a> · <a href="/discover/hall-of-fame">Hall of fame presets</a> · <a href="/learn/">Learn to write MilkDrop presets</a> · <a href="/">Open the visualizer</a></p>`;
+
   const rewritten = new HTMLRewriter()
     .on('title', {
       element(el) {
@@ -357,6 +361,8 @@ export async function onRequest(context: EventContext): Promise<Response> {
     .on('meta[property="og:description"]', setContent(description))
     .on('meta[property="og:url"]', setContent(canonical))
     .on('meta[property="og:image"]', setContent(imageUrl))
+    .on('meta[property="og:image:url"]', setContent(imageUrl))
+    .on('meta[property="og:image:secure_url"]', setContent(imageUrl))
     .on('meta[property="og:image:alt"]', setContent(imageAlt))
     .on('meta[name="twitter:card"]', setContent('summary_large_image'))
     .on('meta[name="twitter:title"]', setContent(fullTitle))
@@ -366,7 +372,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
     .on('head', {
       element(el) {
         el.append(
-          `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><meta property="og:image:url" content="${escapeAttribute(imageUrl)}" /><meta property="og:image:secure_url" content="${escapeAttribute(imageUrl)}" /><script type="application/ld+json">${jsonLd}</script><script type="speculationrules">${speculationRulesJson}</script>`,
+          `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><script type="application/ld+json">${jsonLd}</script><script type="speculationrules">${speculationRulesJson}</script>`,
           {
             html: true,
           },
@@ -378,12 +384,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
     // sentence naming the preset and its author.
     .on('noscript', {
       element(el) {
-        el.append(
-          `<h1>${escapeAttribute(title)}</h1><p>${escapeAttribute(
-            `${title}${authorCredit} is a MilkDrop preset you can run live in your browser on Stims.`,
-          )}</p>`,
-          { html: true },
-        );
+        el.append(presetBodyHtml, { html: true });
       },
     })
     .transform(response);

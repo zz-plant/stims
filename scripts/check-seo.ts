@@ -5,7 +5,8 @@
  * Checks canonical/OG/Twitter/JSON-LD tags and crawlable links in the HTML
  * entry points, the milkdrop alias redirect, robots.txt, the sitemap index and
  * chunk (including image entries), the web manifest's icons and screenshots,
- * the oEmbed and JSON Feed endpoints, and the generated OG/icon PNG dimensions.
+ * the oEmbed and JSON Feed endpoints, the minified preset-meta map, and the
+ * generated OG/icon PNG dimensions.
  * Failures exit non-zero and point at `bun run generate:seo`.
  */
 import fs from 'node:fs/promises';
@@ -13,18 +14,27 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import {
+  findStaleLearnFiles,
+  LEARN_PAGES,
+  learnPageOutFile,
+  learnPagePath,
+} from './generate-learn-pages.ts';
+import {
   buildSeoArtifacts,
   DEFAULT_BASE_URL,
+  GENERATED_GITHUB_SOCIAL_PREVIEW_PATH,
   GENERATED_ICON_192_PATH,
   GENERATED_ICON_512_PATH,
   GENERATED_ICON_FAVICON_32_PATH,
   GENERATED_ICON_FAVICON_SVG_PATH,
+  GENERATED_OG_BACKDROP_PNG_PATH,
   GENERATED_OG_DEFAULT_PATH,
   GENERATED_OG_DEFAULT_PNG_PATH,
   GENERATED_OG_MILKDROP_PATH,
   GENERATED_OG_MILKDROP_PNG_PATH,
   GENERATED_OG_PERFORMANCE_PATH,
   GENERATED_OG_PERFORMANCE_PNG_PATH,
+  GENERATED_PRESET_META_PATH,
   GENERATED_ROBOTS_PATH,
   GENERATED_SCREENSHOT_HERO_NARROW_PATH,
   GENERATED_SCREENSHOT_HERO_WIDE_PATH,
@@ -194,6 +204,7 @@ export async function runSeoChecks(rootDir = repoRoot) {
   const manifest = JSON.parse(manifestRaw) as {
     icons?: Array<{ src: string }>;
     screenshots?: Array<{ src: string }>;
+    display_override?: string[];
   };
 
   const { files } = await buildSeoArtifacts(rootDir, {
@@ -262,6 +273,18 @@ export async function runSeoChecks(rootDir = repoRoot) {
   );
   await compareGeneratedFile(
     rootDir,
+    GENERATED_GITHUB_SOCIAL_PREVIEW_PATH,
+    expectedFiles.get(GENERATED_GITHUB_SOCIAL_PREVIEW_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_OG_BACKDROP_PNG_PATH,
+    expectedFiles.get(GENERATED_OG_BACKDROP_PNG_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
     GENERATED_ICON_FAVICON_SVG_PATH,
     expectedFiles.get(GENERATED_ICON_FAVICON_SVG_PATH) ?? '',
     results,
@@ -294,6 +317,14 @@ export async function runSeoChecks(rootDir = repoRoot) {
     rootDir,
     GENERATED_SCREENSHOT_HERO_NARROW_PATH,
     expectedFiles.get(GENERATED_SCREENSHOT_HERO_NARROW_PATH) ?? '',
+    results,
+  );
+  // Byte-compared, not parse-compared: the map ships minified to the edge, and
+  // a pretty-printed copy is a 33KB regression that reads as equivalent.
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_PRESET_META_PATH,
+    expectedFiles.get(GENERATED_PRESET_META_PATH) ?? '',
     results,
   );
 
@@ -381,6 +412,32 @@ export async function runSeoChecks(rootDir = repoRoot) {
     details: 'public/manifest.json',
   });
 
+  // Window Controls Overlay is not a declaration you can make alone. The
+  // browser picks the first supported mode in `display_override`, so listing
+  // it hands an installed desktop window a layout with no title bar — and
+  // unless the app reserves `env(titlebar-area-*)` and marks something
+  // `-webkit-app-region: drag`, the content renders under the window controls
+  // and the window cannot be moved at all. It shipped listed and unbuilt
+  // once; this fails the build rather than the user's window.
+  const wcoDeclared =
+    manifest.display_override?.includes('window-controls-overlay') === true;
+  const cssFiles = await fs.readdir(path.join(rootDir, 'src/css'));
+  const cssSources = await Promise.all(
+    cssFiles
+      .filter((file) => file.endsWith('.css'))
+      .map((file) => fs.readFile(path.join(rootDir, 'src/css', file), 'utf8')),
+  );
+  const wcoSupported =
+    cssSources.some((css) => css.includes('titlebar-area')) &&
+    cssSources.some((css) => css.includes('app-region'));
+  results.push({
+    name: wcoDeclared
+      ? 'Manifest declares window-controls-overlay and the CSS supports it'
+      : 'Manifest does not declare window-controls-overlay it cannot support',
+    passed: !wcoDeclared || wcoSupported,
+    details: 'public/manifest.json + src/css',
+  });
+
   const oembedExists = await fs
     .stat(path.join(rootDir, 'functions/api/oembed.ts'))
     .then(() => true)
@@ -401,7 +458,75 @@ export async function runSeoChecks(rootDir = repoRoot) {
     details: 'functions/api/feed.ts',
   });
 
+  await pushLearnPageChecks(rootDir, String(sitemapChunk), results);
+
   return results;
+}
+
+/**
+ * The /learn/ guides are the site's only crawlable prose. A stale page, a
+ * missing canonical, a second H1, unparseable JSON-LD, a page absent from the
+ * sitemap, or an internal link to a /learn/ URL that does not exist would each
+ * quietly cost search visibility, so each is checked here.
+ */
+async function pushLearnPageChecks(
+  rootDir: string,
+  sitemapChunk: string,
+  results: CheckResult[],
+) {
+  const stale = findStaleLearnFiles();
+  results.push({
+    name: 'Learn pages match generate:learn output',
+    passed: stale.length === 0,
+    details:
+      stale.length > 0
+        ? `stale: ${stale.join(', ')} — run bun run generate:learn`
+        : `${LEARN_PAGES.length} pages`,
+  });
+
+  const knownPaths = new Set(LEARN_PAGES.map(learnPagePath));
+  for (const page of LEARN_PAGES) {
+    const file = learnPageOutFile(page);
+    const html = await fs
+      .readFile(path.join(rootDir, file), 'utf8')
+      .catch(() => '');
+    const url = `${DEFAULT_BASE_URL}${learnPagePath(page)}`;
+    const jsonLd = html.match(
+      /<script type="application\/ld\+json">\n([\s\S]*?)\n<\/script>/u,
+    )?.[1];
+    let jsonLdOk = false;
+    try {
+      jsonLdOk = Boolean(jsonLd && JSON.parse(jsonLd)['@graph']?.length >= 2);
+    } catch {
+      jsonLdOk = false;
+    }
+    const brokenLinks = [...html.matchAll(/href="(\/learn\/[^"#]*)/gu)]
+      .map((match) => match[1] as string)
+      .filter((href) => !knownPaths.has(href));
+    const problems = [
+      html.includes(`<link rel="canonical" href="${url}" />`)
+        ? null
+        : 'canonical',
+      (html.match(/<h1[ >]/gu) ?? []).length === 1 ? null : 'exactly one h1',
+      /<title>[^<]+ \| Stims<\/title>/u.test(html) ? null : 'title',
+      html.includes('<meta name="description" content="')
+        ? null
+        : 'description',
+      html.includes('<meta name="robots" content="index,follow" />')
+        ? null
+        : 'robots',
+      jsonLdOk ? null : 'json-ld',
+      sitemapChunk.includes(`<loc>${url}</loc>`) ? null : 'sitemap entry',
+      brokenLinks.length === 0
+        ? null
+        : `broken links ${brokenLinks.join(', ')}`,
+    ].filter((problem): problem is string => problem !== null);
+    results.push({
+      name: `Learn page ${learnPagePath(page)} is indexable and well-formed`,
+      passed: problems.length === 0,
+      details: problems.length > 0 ? problems.join('; ') : file,
+    });
+  }
 }
 
 async function main() {

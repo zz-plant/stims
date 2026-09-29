@@ -1,3 +1,4 @@
+import { isElementHidden } from '../render-isolation';
 import type {
   MilkdropBorderVisual,
   MilkdropCompiledPreset,
@@ -235,7 +236,12 @@ export function buildShapes({
       locals.instance = instance;
       locals.num_inst = instanceCount;
       runProgram(shape.programs.perFrame, env, locals);
-      if ((locals.enabled ?? 0) < 0.5) {
+      // Solo/mute from the editor: skipped as `enabled=0` would be, after the
+      // instance's per-frame code has run.
+      if (
+        (locals.enabled ?? 0) < 0.5 ||
+        isElementHidden(preset.source.id, 'shape', shape.index)
+      ) {
         continue;
       }
       built.push(
@@ -255,7 +261,10 @@ export function buildShapes({
       continue;
     }
     const prefix = `shape_${index}`;
-    if ((state[`${prefix}_enabled`] ?? 0) < 0.5) {
+    if (
+      (state[`${prefix}_enabled`] ?? 0) < 0.5 ||
+      isElementHidden(preset.source.id, 'shape', index)
+    ) {
       continue;
     }
     built.push(

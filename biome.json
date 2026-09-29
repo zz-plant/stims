@@ -58,9 +58,10 @@
     },
     {
       "includes": [
-        "public/toys.json",
-        "public/milkdrop-presets/catalog.json",
+        "public/preset-meta.json",
+        "public/milkdrop-presets/**/*.json",
         "public/vendor/**",
+        "public/learn/**",
         "screenshots/parity/**",
         "tests/accessibility/**"
       ],

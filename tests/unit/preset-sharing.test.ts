@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { onRequest as middlewareRequest } from '../../functions/_middleware.ts';
@@ -6,10 +6,12 @@ import {
   buildPresetOgSvg,
   fitByline,
   fitTitle,
+  loadFonts,
   normalizePresetId,
   onRequest as ogPresetRequest,
   type RenderAssets,
 } from '../../functions/api/og-preset.ts';
+import { __resetPresetMetaForTest } from '../../functions/shared/preset-meta.ts';
 import { presentTitle } from '../../functions/shared/preset-title.ts';
 import {
   buildPresetLink,
@@ -17,6 +19,10 @@ import {
 } from '../../src/js/utils/media/share-link.ts';
 
 describe('preset social sharing', () => {
+  // bun shares one process across test files; without this the preset-meta
+  // memo carries another suite's mocked table into these tests.
+  beforeEach(__resetPresetMetaForTest);
+
   describe('share link copy formatting', () => {
     test('formats share copy with title and author', () => {
       const copy = formatPresetShareCopy({
@@ -155,6 +161,28 @@ describe('preset social sharing', () => {
       expect(svg).toContain(
         '<image href="data:image/png;base64,AAAA" x="0" y="0" width="1200" height="630"',
       );
+    });
+
+    // A preset with no frame gets the blurred Stims wall rather than a flat
+    // gradient; a frame, when there is one, always wins.
+    test('falls back to the blurred backdrop only when there is no preview', () => {
+      const withoutPreview = buildPresetOgSvg({
+        id: 'rovastar-parallel-universe',
+        title: 'Parallel Universe',
+        backdropImageUri: 'data:image/png;base64,BACKDROP',
+      });
+      expect(withoutPreview).toContain(
+        '<image href="data:image/png;base64,BACKDROP"',
+      );
+
+      const withPreview = buildPresetOgSvg({
+        id: 'rovastar-parallel-universe',
+        title: 'Parallel Universe',
+        previewImageUri: 'data:image/png;base64,FRAME',
+        backdropImageUri: 'data:image/png;base64,BACKDROP',
+      });
+      expect(withPreview).toContain('data:image/png;base64,FRAME');
+      expect(withPreview).not.toContain('BACKDROP');
     });
 
     test('carries no animation the rasterizer cannot draw', () => {
@@ -355,6 +383,149 @@ describe('preset social sharing', () => {
       expect(putKeys).toHaveLength(2);
       expect(new Set(putKeys).size).toBe(2);
     });
+
+    describe('renders only catalogued presets', () => {
+      const staticPng = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+      const makeEnv = (
+        meta: Record<string, [string, string]> | null,
+        r2Keys: string[] = [],
+      ) => ({
+        ASSETS: {
+          fetch: async (input: Request | URL | string) => {
+            const target = input instanceof Request ? input.url : String(input);
+            if (target.endsWith('/preset-meta.json')) {
+              return meta
+                ? Response.json(meta)
+                : new Response('unavailable', { status: 503 });
+            }
+            if (target.endsWith('/og/milkdrop.png')) {
+              return new Response(staticPng, {
+                headers: { 'content-type': 'image/png' },
+              });
+            }
+            return new Response('not found', { status: 404 });
+          },
+        },
+        STATIC_R2: {
+          get: async (key: string) => {
+            r2Keys.push(key);
+            return null;
+          },
+        },
+      });
+      const meta = { 'martin-skywards': ['skywards', 'martin'] } as Record<
+        string,
+        [string, string]
+      >;
+
+      test('serves the static card for an id not in preset-meta, without rendering', async () => {
+        const putKeys: string[] = [];
+        const r2Keys: string[] = [];
+        const originalCaches = (globalThis as { caches?: unknown }).caches;
+        (globalThis as { caches?: unknown }).caches = {
+          default: {
+            match: async () => undefined,
+            put: async (request: Request) => {
+              putKeys.push(request.url);
+            },
+          },
+        };
+        try {
+          const response = await ogPresetRequest({
+            request: new Request(
+              'https://toil.fyi/api/og-preset?id=does-not-exist-xyz',
+            ),
+            renderAssets,
+            env: makeEnv(meta, r2Keys),
+          });
+          const bytes = new Uint8Array(await response.arrayBuffer());
+          expect(Array.from(bytes)).toEqual(Array.from(staticPng));
+          expect(response.headers.get('cache-control')).toBe(
+            'public, max-age=300',
+          );
+        } finally {
+          (globalThis as { caches?: unknown }).caches = originalCaches;
+        }
+        // No R2 read and no edge-cache entry minted for a made-up id.
+        expect(r2Keys).toEqual([]);
+        expect(putKeys).toEqual([]);
+      });
+
+      test('answers an unknown id 404 when SVG is requested', async () => {
+        const response = await ogPresetRequest({
+          request: new Request(
+            'https://toil.fyi/api/og-preset?id=does-not-exist-xyz&format=svg',
+          ),
+          env: makeEnv(meta),
+        });
+        expect(response.status).toBe(404);
+        expect(await response.text()).not.toContain('<svg');
+      });
+
+      test('still renders a catalogued preset', async () => {
+        const response = await ogPresetRequest({
+          request: new Request(
+            'https://toil.fyi/api/og-preset?id=martin-skywards&format=svg',
+          ),
+          env: makeEnv(meta),
+        });
+        expect(response.status).toBe(200);
+        expect(await response.text()).toContain('skywards');
+      });
+
+      test('fails open when preset-meta is unavailable, so real cards survive an asset blip', async () => {
+        const response = await ogPresetRequest({
+          request: new Request(
+            'https://toil.fyi/api/og-preset?id=martin-skywards&format=svg',
+          ),
+          env: makeEnv(null),
+        });
+        expect(response.status).toBe(200);
+        expect(await response.text()).toContain('Skywards');
+      });
+
+      test('does not treat Object.prototype keys as presets', async () => {
+        const response = await ogPresetRequest({
+          request: new Request(
+            'https://toil.fyi/api/og-preset?id=constructor&format=svg',
+          ),
+          env: makeEnv(meta),
+        });
+        expect(response.status).toBe(404);
+      });
+
+      test('caps tweak so characters past the drawn label share one cache entry', async () => {
+        const putKeys: string[] = [];
+        const originalCaches = (globalThis as { caches?: unknown }).caches;
+        (globalThis as { caches?: unknown }).caches = {
+          default: {
+            match: async () => undefined,
+            put: async (request: Request) => {
+              putKeys.push(request.url);
+            },
+          },
+        };
+        try {
+          const base =
+            'https://toil.fyi/api/og-preset?id=martin-skywards&tweak=';
+          const head = 'a'.repeat(24);
+          await ogPresetRequest({
+            request: new Request(`${base}${head}X`),
+            renderAssets,
+            env: makeEnv(meta),
+          });
+          await ogPresetRequest({
+            request: new Request(`${base}${head}Y`),
+            renderAssets,
+            env: makeEnv(meta),
+          });
+        } finally {
+          (globalThis as { caches?: unknown }).caches = originalCaches;
+        }
+        expect(putKeys).toHaveLength(2);
+        expect(new Set(putKeys).size).toBe(1);
+      });
+    });
   });
 
   describe('edge middleware unfurling', () => {
@@ -398,6 +569,46 @@ describe('preset social sharing', () => {
 
       const res = await middlewareRequest(context);
       expect(res.status).toBe(400);
+    });
+  });
+
+  // A font subrequest failing used to abort the render and serve the generic
+  // card — which X caches for that preset URL indefinitely. Fonts must fail
+  // soft: the frame is the part that cannot be wrong.
+  describe('OG card font loading fails soft', () => {
+    const fontAssets = (failing: (path: string) => boolean) => ({
+      fetch: (input: URL | Request | string) => {
+        const target = input instanceof URL ? input.pathname : String(input);
+        if (failing(target)) {
+          return Promise.resolve(new Response('missing', { status: 404 }));
+        }
+        return Promise.resolve(
+          new Response(new Uint8Array([1, 2, 3]), {
+            headers: { 'content-type': 'font/ttf' },
+          }),
+        );
+      },
+    });
+
+    test('keeps the fonts that loaded when one subrequest fails', async () => {
+      const fonts = await loadFonts(
+        fontAssets((path) => path.endsWith('SpaceMono-Bold.ttf')),
+        'https://toil.fyi',
+      );
+      expect(fonts).toHaveLength(4);
+    });
+
+    test('returns an empty set rather than throwing when every font fails', async () => {
+      const fonts = await loadFonts(
+        fontAssets(() => true),
+        'https://toil.fyi',
+      );
+      expect(fonts).toHaveLength(0);
+    });
+
+    test('degrades to caption-less rendering when the binding is absent', async () => {
+      const fonts = await loadFonts(undefined, 'https://toil.fyi');
+      expect(fonts).toHaveLength(0);
     });
   });
 });

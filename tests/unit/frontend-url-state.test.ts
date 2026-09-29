@@ -333,9 +333,44 @@ describe('frontend url state', () => {
     expect(parsed.search).toBe('?preset=signal-bloom');
   });
 
-  test('leaves the url untouched when a source cannot be latin-1 encoded', () => {
+  test('reads a link from before the encoder as the latin-1 it was', () => {
+    // `btoa('\u00C3\u00A9')` — what an older build wrote for source
+    // containing 'Ã©'. Those bytes, C3 A9, are also valid UTF-8 for 'é', so
+    // a decoder that infers the encoding from UTF-8 validity opens this link
+    // with source its author never typed. The marker on new payloads is what
+    // keeps the two apart.
+    expect(decodePresetCodeFromHash('#code=w6k%3D')).toBe('\u00C3\u00A9');
+  });
+
+  test('carries source that is not latin-1 encodable', () => {
     const href = 'https://toil.fyi/?preset=signal-bloom';
-    // btoa throws on non-Latin-1 text; the remix must not wipe the session.
-    expect(buildRemixShareUrl(href, '\u{1F600}')).toBe(href);
+    // `btoa` throws on anything outside Latin-1, so an emoji or a CJK
+    // comment used to drop the whole hash and share a link that silently
+    // omitted the edits it claimed to carry. The bytes are UTF-8 now.
+    const source = 'warp = 1; // \u{1F600} \u6E29\u5EA6';
+    const shared = buildRemixShareUrl(href, source);
+
+    expect(decodePresetCodeFromHash(new URL(shared).hash)).toBe(source);
+  });
+  test('rejects impractical URLs instead of returning a stale draft', () => {
+    expect(() =>
+      buildRemixShareUrl(
+        'https://toil.fyi/?preset=signal-bloom#code=stale',
+        '// 🎛'.repeat(5000),
+      ),
+    ).toThrow('too long');
+  });
+
+  test('counts the complete escaped URL against the sharing budget', () => {
+    const base = buildRemixShareUrl('https://toil.fyi/', 'abc');
+    const atLimit = `https://toil.fyi/?pad=${'x'.repeat(16000 - base.length - 5)}`;
+    expect(buildRemixShareUrl(atLimit, 'abc').length).toBe(16000);
+    expect(() => buildRemixShareUrl(`${atLimit}x`, 'abc')).toThrow('too long');
+  });
+
+  test('rejects malformed versioned UTF-8 and preserves legacy Latin-1', () => {
+    expect(decodePresetCodeFromHash('#code=u1~%2Fw%3D%3D')).toBeNull();
+    expect(decodePresetCodeFromHash('#code=%2Fw%3D%3D')).toBe('ÿ');
+    expect(decodePresetCodeFromHash('#code=%%%')).toBeNull();
   });
 });

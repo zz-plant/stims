@@ -40,7 +40,7 @@ import { useWorkspaceShellOrchestration } from './workspace-shell-hooks.ts';
 
 export interface WorkspaceContextValue {
   routeState: SessionRouteState;
-  commitRoute: (nextState: SessionRouteState) => void;
+  commitRoute: (nextState: React.SetStateAction<SessionRouteState>) => void;
   setRouteState: React.Dispatch<React.SetStateAction<SessionRouteState>>;
 
   deferredSearch: string;
@@ -55,6 +55,8 @@ export interface WorkspaceContextValue {
   toast: {
     message: string;
     tone: 'info' | 'warn' | 'error';
+    /** True while the exit animation plays, just before it unmounts. */
+    exiting?: boolean;
   } | null;
   dismissToast: () => void;
   toggleExtendedSources: () => void;
@@ -98,8 +100,6 @@ export interface WorkspaceContextValue {
     popNext: () => string | null;
   };
 
-  handleBrowseRecovery: () => void;
-  handleFeaturedPresetSelection: () => void;
   handleImport: (files: FileList | File[] | null) => Promise<void>;
   handleShowCurrentLink: () => Promise<void>;
   updatePanel: (panel: PanelState) => void;
@@ -182,6 +182,7 @@ export function coarseEngineSnapshotEqual(
     prev.runtimeReady === snap.runtimeReady &&
     prev.audioActive === snap.audioActive &&
     prev.audioSource === snap.audioSource &&
+    prev.playbackPaused === snap.playbackPaused &&
     prev.audioEndedAt === snap.audioEndedAt &&
     prev.adaptiveQuality === snap.adaptiveQuality &&
     prev.catalogEntries === snap.catalogEntries &&
@@ -212,6 +213,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     importPresetFiles: sessionState.importPresetFiles,
     routeState,
     setStatusMessage: sessionState.setStatusMessage,
+    setPlaybackPaused: sessionState.setPlaybackPaused,
     startAudioSource: sessionState.startAudioSource,
     youtubePreviewRef: sessionState.youtubePreviewRef,
     updateEditorSource: sessionState.updateEditorSource,
@@ -279,20 +281,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       starterPresets: shellOrchestration.starterPresets,
       handleAudioStart: shellOrchestration.handleAudioStart,
       handleAudioStop: shellOrchestration.handleAudioStop,
+      handleTogglePlayback: shellOrchestration.handleTogglePlayback,
       handlePresetSelection: shellOrchestration.handlePresetSelection,
       handlePreviousPreset: shellOrchestration.handlePreviousPreset,
       handlePlayPreset: shellOrchestration.handlePlayPreset,
       handleShufflePreset: shellOrchestration.handleShufflePreset,
-      exportPreset: sessionState.exportPreset,
-      revertEditorSource: sessionState.revertEditorSource,
-      duplicatePreset: sessionState.duplicatePreset,
-      deleteActivePreset: sessionState.deleteActivePreset,
-      getVideoExportRuntime: sessionState.getVideoExportRuntime,
+      // Pure engine forwards, one stable object (engine-forwarding.ts).
+      ...sessionState.forwardedEngineActions,
       importPresetFiles: sessionState.importPresetFiles,
       requestPresetPreviews: sessionState.requestPresetPreviews,
       refreshPresetPreviews: sessionState.refreshPresetPreviews,
-      pausePreview: sessionState.pausePreview,
-      resumePreview: sessionState.resumePreview,
       startAudioSource: sessionState.startAudioSource,
       toggleFavoritePreset: sessionState.toggleFavoritePreset,
       loadRecentYouTubeVideo: sessionState.loadRecentYouTubeVideo,
@@ -300,19 +298,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       clearRecentYouTubeVideos: sessionState.clearRecentYouTubeVideos,
       handleYoutubeUrlKeyDown: sessionState.handleYoutubeUrlKeyDown,
       setQualityPreset: sessionState.setQualityPreset,
-      setAutoplay: sessionState.setAutoplay,
-      setTransitionMode: sessionState.setTransitionMode,
-      startManualCrossfade: sessionState.startManualCrossfade,
-      setCrossfade: sessionState.setCrossfade,
-      getCrossfade: sessionState.getCrossfade,
-      setBlendDuration: sessionState.setBlendDuration,
-      updateEditorSource: sessionState.updateEditorSource,
-      updateFieldLive: sessionState.updateFieldLive,
-      applyEditorSourceAwaited: sessionState.applyEditorSourceAwaited,
-      applyEditorFieldsAwaited: sessionState.applyEditorFieldsAwaited,
-      getEditorSessionState: sessionState.getEditorSessionState,
+      setPlaybackPaused: sessionState.setPlaybackPaused,
       updateInspectorField: sessionState.updateInspectorField,
-      getActiveCompiledPreset: sessionState.getActiveCompiledPreset,
       handleVisualSearch: shellOrchestration.handleVisualSearch,
     }),
     [
@@ -333,20 +320,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       shellOrchestration.audioActive,
       shellOrchestration.handleAudioStart,
       shellOrchestration.handleAudioStop,
+      shellOrchestration.handleTogglePlayback,
       shellOrchestration.handlePresetSelection,
       shellOrchestration.handlePreviousPreset,
       shellOrchestration.handlePlayPreset,
       shellOrchestration.handleShufflePreset,
-      sessionState.exportPreset,
-      sessionState.revertEditorSource,
-      sessionState.duplicatePreset,
-      sessionState.deleteActivePreset,
-      sessionState.getVideoExportRuntime,
+      sessionState.forwardedEngineActions,
       sessionState.importPresetFiles,
       sessionState.requestPresetPreviews,
       sessionState.refreshPresetPreviews,
-      sessionState.pausePreview,
-      sessionState.resumePreview,
       sessionState.startAudioSource,
       sessionState.toggleFavoritePreset,
       sessionState.loadRecentYouTubeVideo,
@@ -354,19 +336,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.clearRecentYouTubeVideos,
       sessionState.handleYoutubeUrlKeyDown,
       sessionState.setQualityPreset,
-      sessionState.setAutoplay,
-      sessionState.setTransitionMode,
-      sessionState.startManualCrossfade,
-      sessionState.setCrossfade,
-      sessionState.getCrossfade,
-      sessionState.setBlendDuration,
-      sessionState.updateEditorSource,
-      sessionState.updateFieldLive,
-      sessionState.applyEditorSourceAwaited,
-      sessionState.applyEditorFieldsAwaited,
-      sessionState.getEditorSessionState,
+      sessionState.setPlaybackPaused,
       sessionState.updateInspectorField,
-      sessionState.getActiveCompiledPreset,
       shellOrchestration.handleVisualSearch,
     ],
   );
@@ -405,9 +376,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       fallbackCatalogReady: sessionState.fallbackCatalogReady,
       activityCatalog: sessionState.activityCatalog,
       presetQueue,
-      handleBrowseRecovery: shellOrchestration.handleBrowseRecovery,
-      handleFeaturedPresetSelection:
-        shellOrchestration.handleFeaturedPresetSelection,
       handleImport: shellOrchestration.handleImport,
       handleShowCurrentLink: shellOrchestration.handleShowCurrentLink,
       updatePanel: shellOrchestration.updatePanel,
@@ -445,8 +413,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.fallbackCatalogReady,
       sessionState.activityCatalog,
       presetQueue,
-      shellOrchestration.handleBrowseRecovery,
-      shellOrchestration.handleFeaturedPresetSelection,
       shellOrchestration.handleImport,
       shellOrchestration.handleShowCurrentLink,
       shellOrchestration.updatePanel,

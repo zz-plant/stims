@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Discussions
+  - name: Ideas, questions and preset finds
     url: https://github.com/zz-plant/stims/discussions
-    about: Ask questions, share presets, and discuss ideas
+    about: Suggest a feature, ask how something works, or share a preset worth a listen.

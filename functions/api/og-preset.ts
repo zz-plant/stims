@@ -5,6 +5,7 @@
 // Discord, and iMessage all refuse SVG in link previews. `?format=svg`
 // returns the source SVG for debugging the template.
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
+import { loadPresetMeta } from '../shared/preset-meta.ts';
 import { presentTitle } from '../shared/preset-title.ts';
 import resvgWasm from './resvg.wasm';
 
@@ -24,6 +25,8 @@ export type OgPresetOptions = {
   fidelity?: string;
   tweak?: string;
   previewImageUri?: string;
+  /** Blurred Stims frame wall, used only when there is no preview frame. */
+  backdropImageUri?: string;
 };
 
 // The card is preview-forward: the preset's own rendered frame fills the
@@ -60,6 +63,9 @@ const BYLINE_GAP = 40;
 const BYLINE_FONT_SIZE = 25;
 const BYLINE_CHAR_RATIO = 0.52;
 const BYLINE_PREFIX = 'by ';
+// The collection label over the title. At 14px it was a smudge once a feed
+// scaled the card to ~500px wide; 18px is the smallest that survives that.
+const LABEL_FONT_SIZE = 18;
 
 export function fitByline(author: string): string {
   const available = CARD_W - MARGIN * 2 - BRAND_WIDTH - BYLINE_GAP;
@@ -124,8 +130,13 @@ export function fitTitle(title: string): { size: number; lines: string[] } {
   return { size, lines };
 }
 
+// `tweak` is drawn on the card and seeds the edge-cache key, so it is capped
+// where it is read: characters past the drawn label would otherwise mint a
+// distinct cache entry that renders an identical card.
+const TWEAK_MAX_LENGTH = 24;
+
 function eyebrowLabel(tags: string[], tweak?: string): string {
-  if (tweak) return `EDITED · ${tweak.slice(0, 24)}`;
+  if (tweak) return `EDITED · ${tweak.slice(0, TWEAK_MAX_LENGTH)}`;
   const collection = tags
     .find((t) => t.startsWith('collection:'))
     ?.replace('collection:', '')
@@ -140,6 +151,7 @@ export function buildPresetOgSvg({
   tags = [],
   tweak,
   previewImageUri,
+  backdropImageUri,
 }: OgPresetOptions): string {
   void id;
   const display = presentTitle(title, author);
@@ -154,7 +166,7 @@ export function buildPresetOgSvg({
   const titleBaseline = safeAuthor ? 498 : 528;
   const lineHeight = Math.round(titleSize * 1.1);
   const firstBaseline = titleBaseline - (safeLines.length - 1) * lineHeight;
-  const labelBaseline = firstBaseline - titleSize - 22;
+  const labelBaseline = firstBaseline - titleSize - 24;
 
   // Every MilkDrop frame is a different image — the corpus runs from
   // near-black to near-white. A flat overlay would grey out the bright ones,
@@ -163,7 +175,15 @@ export function buildPresetOgSvg({
   const backdrop = previewImageUri
     ? `<image href="${previewImageUri}" x="0" y="0" width="${CARD_W}" height="${CARD_H}" preserveAspectRatio="xMidYMid slice"/>
   <rect x="0" y="230" width="${CARD_W}" height="400" fill="url(#caption-scrim)"/>`
-    : `<rect width="${CARD_W}" height="${CARD_H}" fill="url(#empty-cool)"/>
+    : backdropImageUri
+      ? // No frame of this preset exists. The blurred wall of other presets
+        // (public/og/backdrop.png) is blurred past recognition so it reads as
+        // the brand, not as a picture of the preset named on top of it —
+        // and a feed tile of colour gets clicked where a flat gradient does
+        // not.
+        `<image href="${backdropImageUri}" x="0" y="0" width="${CARD_W}" height="${CARD_H}" preserveAspectRatio="xMidYMid slice"/>
+  <rect x="0" y="230" width="${CARD_W}" height="400" fill="url(#caption-scrim)"/>`
+      : `<rect width="${CARD_W}" height="${CARD_H}" fill="url(#empty-cool)"/>
   <rect width="${CARD_W}" height="${CARD_H}" fill="url(#empty-warm)"/>`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_W}" height="${CARD_H}" viewBox="0 0 ${CARD_W} ${CARD_H}" role="img" aria-label="${escapeXml(display)}${safeAuthor ? ` by ${safeAuthor}` : ''} — a MilkDrop preset running on Stims">
@@ -185,7 +205,7 @@ export function buildPresetOgSvg({
 
   ${backdrop}
 
-  <text x="${MARGIN}" y="${labelBaseline}" font-size="14" font-weight="700" fill="rgba(247,244,235,0.62)" font-family="Space Mono, monospace" letter-spacing="2.8">${label}</text>
+  <text x="${MARGIN}" y="${labelBaseline}" font-size="${LABEL_FONT_SIZE}" font-weight="700" fill="rgba(247,244,235,0.78)" font-family="Space Mono, monospace" letter-spacing="3">${label}</text>
 
   ${safeLines
     .map(
@@ -243,6 +263,8 @@ let wasmReady: Promise<void> | null = null;
 async function ensureWasm(wasm: RenderAssets['wasm']): Promise<void> {
   if (!wasmReady) {
     wasmReady = initWasm(wasm).catch((error: unknown) => {
+      // The SEO generator shares this process-wide instance in tests.
+      if (String(error).includes('Already initialized')) return;
       wasmReady = null;
       throw error;
     });
@@ -304,25 +326,34 @@ type OgPresetContext = {
   renderAssets?: RenderAssets;
 };
 
+// Fonts fail soft: resvg renders the preset frame even when no font buffer
+// loads (the caption is simply absent). Aborting the render on a font
+// subrequest failure would serve the generic card — which X then caches for
+// that URL indefinitely. A caption-less card showing the right preset beats
+// that every time.
 let fontsReady: Promise<Uint8Array[]> | null = null;
-function loadFonts(
-  assetsBinding: StaticAssetFetcher,
+export function loadFonts(
+  assetsBinding: StaticAssetFetcher | undefined,
   origin: string,
 ): Promise<Uint8Array[]> {
-  if (!fontsReady) {
-    fontsReady = Promise.all(
-      FONT_PATHS.map(async (path) => {
-        const response = await assetsBinding.fetch(new URL(path, origin));
-        if (!response.ok) {
-          throw new Error(`Font asset ${path} returned ${response.status}`);
-        }
-        return new Uint8Array(await response.arrayBuffer());
-      }),
-    ).catch((error: unknown) => {
-      fontsReady = null;
-      throw error;
-    });
-  }
+  if (!assetsBinding) return Promise.resolve([]);
+  fontsReady ??= Promise.allSettled(
+    FONT_PATHS.map(async (path) => {
+      const response = await assetsBinding.fetch(new URL(path, origin));
+      if (!response.ok) {
+        throw new Error(`Font asset ${path} returned ${response.status}`);
+      }
+      return new Uint8Array(await response.arrayBuffer());
+    }),
+  ).then((settled) => {
+    const fonts = settled.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : [],
+    );
+    // Only a complete set is memoized for the isolate; a partial or empty
+    // set re-fetches on the next request and gets a chance to heal.
+    if (fonts.length !== FONT_PATHS.length) fontsReady = null;
+    return fonts;
+  });
   return fontsReady;
 }
 
@@ -336,13 +367,11 @@ async function resolveRenderAssets(
       'resvg.wasm resolved to a path string; PNG rendering requires the Workers runtime or injected renderAssets',
     );
   }
-  const assetsBinding = context.env?.ASSETS;
-  if (!assetsBinding) {
-    throw new Error('ASSETS binding unavailable; cannot load font buffers');
-  }
+  // A missing ASSETS binding degrades to caption-less rendering via the
+  // fail-soft loadFonts above; the preset frame is what must not be lost.
   return {
     wasm: resvgWasm,
-    fonts: await loadFonts(assetsBinding, origin),
+    fonts: await loadFonts(context.env?.ASSETS, origin),
   };
 }
 
@@ -433,32 +462,35 @@ async function loadPresetPreviewDataUri(
   return undefined;
 }
 
-// preset-meta.json is the same table the OG middleware reads for <title> and
-// og:description, so the card and the unfurl text name the preset identically.
-// Without it the card can only guess from the slug ("Eo.S. + Phat" becomes
-// "Eos").
-type PresetMetaTable = Record<string, [string, string]>;
-let presetMetaPromise: Promise<PresetMetaTable | null> | null = null;
-
-async function loadPresetMeta(
+// Same content-type guard as the preview: a miss on ASSETS is the SPA shell.
+let backdropPromise: Promise<string | undefined> | null = null;
+function loadBackdropDataUri(
   env: OgPresetContext['env'],
   origin: string,
-): Promise<PresetMetaTable | null> {
+): Promise<string | undefined> {
   const assets = env?.ASSETS;
-  if (!assets) return null;
-  presetMetaPromise ??= (async () => {
+  if (!assets) return Promise.resolve(undefined);
+  backdropPromise ??= (async () => {
     try {
-      const response = await assets.fetch(new URL('/preset-meta.json', origin));
-      if (!response.ok) throw new Error(`status ${response.status}`);
-      return (await response.json()) as PresetMetaTable;
+      const response = await assets.fetch(new URL('/og/backdrop.png', origin));
+      if (
+        response.ok &&
+        response.headers.get('content-type')?.startsWith('image/')
+      ) {
+        return toDataUri(await response.arrayBuffer());
+      }
     } catch {
-      presetMetaPromise = null;
-      return null;
+      // backdrop unavailable
     }
+    backdropPromise = null;
+    return undefined;
   })();
-  return presetMetaPromise;
+  return backdropPromise;
 }
 
+// preset-meta.json comes from the shared per-isolate loader, so the card and
+// the unfurl text name the preset identically. Without it the card can only
+// guess from the slug ("Eo.S. + Phat" becomes "Eos").
 export async function onRequest(context: OgPresetContext): Promise<Response> {
   const url = new URL(context.request.url);
   const presetId = normalizePresetId(
@@ -466,13 +498,39 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
       url.searchParams.get('preset') ||
       url.searchParams.get('name'),
   );
-  const tweak = url.searchParams.get('tweak') || undefined;
+  const tweak =
+    url.searchParams.get('tweak')?.slice(0, TWEAK_MAX_LENGTH) || undefined;
   const format = url.searchParams.get('format') === 'svg' ? 'svg' : 'png';
 
-  const [meta, previewImageUri] = await Promise.all([
-    loadPresetMeta(context.env, url.origin),
-    loadPresetPreviewDataUri(context.env, url.origin, presetId),
-  ]);
+  const meta = await loadPresetMeta(context.env?.ASSETS, url.origin);
+  // Only catalogued presets get a rendered card. Rendering is ~0.7s of wasm
+  // rasterization plus a 7-day edge-cache entry per distinct URL, so an
+  // unchecked `id` lets anyone mint unlimited renders and put a
+  // stims-branded card on any slug. Fail open only when the table itself is
+  // unavailable (`meta` null): a transient asset failure must not blank the
+  // cards of real presets. The page middleware already unfurls unknown ids
+  // with the generic card, so nothing links here for them.
+  if (meta && !Object.hasOwn(meta, presetId)) {
+    if (format === 'svg') {
+      return new Response('Unknown preset', {
+        status: 404,
+        headers: {
+          'Content-Type': 'text/plain',
+          'Cache-Control': 'public, max-age=300',
+        },
+      });
+    }
+    return fallbackPngResponse(context, url.origin);
+  }
+
+  const previewImageUri = await loadPresetPreviewDataUri(
+    context.env,
+    url.origin,
+    presetId,
+  );
+  const backdropImageUri = previewImageUri
+    ? undefined
+    : await loadBackdropDataUri(context.env, url.origin);
   const entry = meta?.[presetId];
   const { title, author } = entry
     ? { title: entry[0], author: entry[1] || undefined }
@@ -483,6 +541,7 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
     author,
     tweak,
     previewImageUri,
+    backdropImageUri,
   });
 
   if (format === 'svg') {

@@ -16,6 +16,11 @@ import {
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { PresetIdentity } from './PresetIdentity.tsx';
+import {
+  clearQuickSelectEntries,
+  publishQuickSelectEntries,
+  quickSelectDigit,
+} from './quick-select.ts';
 
 /** Column sizing. Rows carry their own inline `grid-template-columns` built
  * from the count derived here, so this — not the CSS — is the single source
@@ -67,6 +72,7 @@ const GridTile = memo(function GridTile({
   onOpen,
   onFocusIndex,
   onToggleFavorite,
+  quickSelectKey,
 }: {
   entry: PresetCatalogEntry;
   preview: MilkdropPresetRenderPreview | null;
@@ -81,6 +87,8 @@ const GridTile = memo(function GridTile({
   onOpen: (id: string) => void;
   onFocusIndex: (index: number) => void;
   onToggleFavorite: (entry: PresetCatalogEntry) => void;
+  /** The digit that plays this card from the keyboard, or null. */
+  quickSelectKey: string | null;
 }) {
   return (
     // List semantics, matching the list view, rather than listbox/option.
@@ -109,6 +117,7 @@ const GridTile = memo(function GridTile({
             ? `${entry.title || entry.id} (+${variants} near-identical variant${variants === 1 ? '' : 's'})`
             : entry.title || entry.id
         }
+        aria-keyshortcuts={quickSelectKey ?? undefined}
         onPointerEnter={() => onAudition(entry.id)}
         onPointerLeave={() => onAuditionEnd(entry.id)}
         onFocus={() => {
@@ -119,6 +128,13 @@ const GridTile = memo(function GridTile({
         onClick={() => onOpen(entry.id)}
       >
         <PresetIdentity entry={entry} preview={preview} audition={audition} />
+        {quickSelectKey ? (
+          // The digit that plays this card. aria-keyshortcuts above carries
+          // it for assistive tech; the visible badge is for everyone else.
+          <span className="stims-preset-grid__quick-key" aria-hidden="true">
+            {quickSelectKey}
+          </span>
+        ) : null}
         {variants > 0 ? (
           <span
             className="stims-preset-grid__variants"
@@ -181,6 +197,7 @@ export function PresetGrid({
   initialScrollTop = 0,
   onScrollTopChange,
   filterEpoch = 0,
+  showQuickSelectKeys,
 }: {
   catalogEntries: PresetCatalogEntry[];
   presetPreviews: Record<string, MilkdropPresetRenderPreview>;
@@ -199,6 +216,9 @@ export function PresetGrid({
    * top in step with the list instead of holding an offset into a result
    * set that no longer exists. */
   filterEpoch?: number;
+  /** Whether the first nine cards wear the digit that plays them. The panel
+   * decides: the digits only answer while its search field is not focused. */
+  showQuickSelectKeys: boolean;
 }) {
   // The context request function changes identity on every session render;
   // keep the latest behind a ref so observers never re-subscribe over it.
@@ -225,6 +245,14 @@ export function PresetGrid({
     }
     return { visibleEntries: kept, variantCounts: counts };
   }, [catalogEntries]);
+
+  // The digit keys play the first nine cards in this order, so the cards
+  // wear their digits (when the panel says they are live — see
+  // `showQuickSelectKeys` on the prop).
+  useEffect(() => {
+    publishQuickSelectEntries(visibleEntries.map((entry) => entry.id));
+    return clearQuickSelectEntries;
+  }, [visibleEntries]);
 
   // Column count has to track the container width the same way `auto-fill`
   // does, so a resized panel re-lays-out rows instead of leaving gaps.
@@ -589,6 +617,9 @@ export function PresetGrid({
                     onOpen={handleOpen}
                     onFocusIndex={handleFocusIndex}
                     onToggleFavorite={onToggleFavorite}
+                    quickSelectKey={
+                      showQuickSelectKeys ? quickSelectDigit(index) : null
+                    }
                   />
                 );
               })}
