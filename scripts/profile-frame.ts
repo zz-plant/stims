@@ -7,6 +7,12 @@
  *  - gl.finish() so queued GPU work does not leak across the timed region
  */
 import { chromium } from 'playwright';
+import {
+  hardwareAngleArgs,
+  isSoftwareRenderer,
+  probeChromiumRendererString,
+  softwareTimingWarning,
+} from './browser-launch.ts';
 import { ensureDevServer } from './dev-server.ts';
 
 /**
@@ -27,7 +33,10 @@ const PRESET = arg('preset', 'rovastar-parallel-universe');
 const RENDERER = arg('renderer', 'webgl');
 const QUALITY = arg('quality-step', '0');
 const WARMUP = Number(arg('warmup', '60'));
-const FRAMES = Number(arg('frames', '200'));
+const FRAMES_REQUESTED = arg('frames', '');
+let FRAMES = Number(FRAMES_REQUESTED || '200');
+/** Wall-clock budget for the timed loop when --frames is not given. */
+const TARGET_LOOP_MS = 20_000;
 const TOP = Number(arg('top', '30'));
 
 type Node = {
@@ -49,8 +58,7 @@ async function main() {
   console.log(`Profiling ${PRESET} on ${RENDERER} (${FRAMES} frames)...`);
   const browser = await chromium.launch({
     args: [
-      '--use-gl=angle',
-      '--use-angle=metal',
+      ...hardwareAngleArgs(),
       '--enable-unsafe-webgpu',
       '--ignore-gpu-blocklist',
     ],
@@ -58,7 +66,15 @@ async function main() {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 720 },
   });
+  const gpuRenderer = await probeChromiumRendererString(context).catch(
+    () => null,
+  );
+  const softwareRendering = isSoftwareRenderer(gpuRenderer);
+  if (softwareRendering && gpuRenderer) {
+    console.warn(`\n${softwareTimingWarning(gpuRenderer)}\n`);
+  }
   const page = await context.newPage();
+  console.log('Loading page...');
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
 
   await page.waitForFunction(
@@ -86,15 +102,31 @@ async function main() {
       ).__milkdropRuntimeDebug?.getState?.().backend ?? 'unknown',
   );
 
-  // Warm up outside the profiled region.
-  await page.evaluate((w) => {
+  // Warm up outside the profiled region. Timed, because the profiled loop is a
+  // single synchronous evaluate that cannot report progress: the warmup rate
+  // is the only way to know up front whether N frames will take seconds or
+  // minutes on this host.
+  console.log(`Warming up (${WARMUP} frames)...`);
+  const warmupMs = await page.evaluate((w) => {
     const step = window.__STIMS_AGENT_RENDER_FRAMES__;
+    const t0 = performance.now();
     step?.({ frames: w });
     const c = [...document.querySelectorAll('canvas')].sort(
       (a, b) => b.width * b.height - a.width * a.height,
     )[0] as HTMLCanvasElement | undefined;
     (c?.getContext('webgl2') as WebGL2RenderingContext | null)?.finish();
+    return performance.now() - t0;
   }, WARMUP);
+
+  const msPerFrame = warmupMs / Math.max(1, WARMUP);
+  if (!FRAMES_REQUESTED && msPerFrame * FRAMES > TARGET_LOOP_MS) {
+    const scaled = Math.max(10, Math.floor(TARGET_LOOP_MS / msPerFrame));
+    console.log(
+      `Frames are slow here (~${msPerFrame.toFixed(0)} ms/frame), so ${FRAMES} would take ~${Math.round((msPerFrame * FRAMES) / 1000)}s: profiling ${scaled} instead. Pass --frames N to override.`,
+    );
+    FRAMES = scaled;
+  }
+  console.log(`Profiling ${FRAMES} frames (no output until it finishes)...`);
 
   const cdp = await context.newCDPSession(page);
   await cdp.send('Profiler.enable');

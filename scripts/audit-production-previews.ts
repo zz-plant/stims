@@ -14,7 +14,12 @@
  * is minutes-to-hours of browser sim per preset, uploading is one request.
  *
  * Usage:
- *   bun run scripts/audit-production-previews.ts [--sample N] [--concurrency N] [--stale-only]
+ *   bun run scripts/audit-production-previews.ts [--sample N] [--concurrency N] [--stale-only] [--verbose]
+ *
+ * `missing-local` (production serves it, the repo has no capture) is the
+ * expected state wherever previews live only in R2, so by default it is one
+ * summary line, not a list that buries the findings that need action.
+ * `--verbose` lists them.
  * Env: PREVIEW_BASE (default https://toil.fyi), CATALOG_URL
  */
 import { existsSync } from 'node:fs';
@@ -232,16 +237,10 @@ async function main() {
   }
 
   if (findings.length > 0) {
+    const verbose = args.includes('--verbose');
     for (const kind of KIND_ORDER) {
-      const rows = byKind(kind);
-      if (rows.length === 0) continue;
-      console.log(`\n## ${kind} (${rows.length})`);
-      for (const f of rows.slice(0, 40)) {
-        console.log(`  ${f.id}\t${f.detail}`);
-      }
-      if (rows.length > 40) {
-        console.log(`  … ${rows.length - 40} more`);
-      }
+      const lines = renderKindSection(kind, byKind(kind), verbose);
+      if (lines.length > 0) console.log(`\n${lines.join('\n')}`);
     }
     console.log(
       '\nupload: publish the repo capture (bun run previews:sync, or\n' +
@@ -254,6 +253,30 @@ async function main() {
       'regression: the repo capture scores worse; production is left alone.',
     );
   }
+}
+
+/**
+ * The report block for one finding kind. `missing-local` collapses to a single
+ * explanatory line unless `verbose`, because it is not actionable: it means
+ * "nothing to compare against", which is the normal state when preview PNGs
+ * are published only to R2.
+ */
+export function renderKindSection(
+  kind: Finding['kind'],
+  rows: Array<Pick<Finding, 'id' | 'detail'>>,
+  verbose: boolean,
+  limit = 40,
+): string[] {
+  if (rows.length === 0) return [];
+  if (kind === 'missing-local' && !verbose) {
+    return [
+      `## ${kind} (${rows.length}) — served, no repo capture to compare against (expected when previews live only in R2; rerun with --verbose to list)`,
+    ];
+  }
+  const lines = [`## ${kind} (${rows.length})`];
+  for (const f of rows.slice(0, limit)) lines.push(`  ${f.id}\t${f.detail}`);
+  if (rows.length > limit) lines.push(`  … ${rows.length - limit} more`);
+  return lines;
 }
 
 const KIND_ORDER: Finding['kind'][] = [
