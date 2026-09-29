@@ -241,7 +241,13 @@ export function renderLearnMarkdown(
       link({ href, title, tokens }) {
         const target = rewriteLearnHref(href, sourceFile);
         const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
-        return `<a href="${escapeHtml(target)}"${titleAttr}>${this.parser.parseInline(tokens)}</a>`;
+        const inner = this.parser.parseInline(tokens);
+        // "▶ Run …" links open the example in the live editor: style them as
+        // the primary action of the lesson rather than as inline text.
+        const cls = stripTags(inner).trimStart().startsWith('▶')
+          ? ' class="run-link"'
+          : '';
+        return `<a${cls} href="${escapeHtml(target)}"${titleAttr}>${inner}</a>`;
       },
       code({ text, lang }: Tokens.Code) {
         const escaped = escapeHtml(text);
@@ -255,7 +261,14 @@ export function renderLearnMarkdown(
       },
     },
   });
-  const html = marked.parse(markdown, { async: false }) as string;
+  // Wide tables scroll inside a focusable, labelled region with edge shadows
+  // so a phone reader can see there is more to the right.
+  const html = (marked.parse(markdown, { async: false }) as string)
+    .replace(
+      /<table>/gu,
+      '<div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>',
+    )
+    .replace(/<\/table>/gu, '</table></div>');
   const h1 = headings.find((heading) => heading.depth === 1)?.text ?? '';
   return { html, h1, headings };
 }
@@ -275,43 +288,70 @@ export function extractFaq(html: string): Array<{ q: string; a: string }> {
 }
 
 const STYLE = `
-:root{color-scheme:dark light;--bg:#0b0f1a;--fg:#e8ecf3;--muted:#a9b3c4;--line:rgba(255,255,255,.12);--code:#121a2a;--accent:#5fc0b5;--accent-fg:#0a0f19}
-@media(prefers-color-scheme:light){:root{--bg:#f7f8fb;--fg:#141a26;--muted:#4a5568;--line:rgba(0,0,0,.14);--code:#eaeef5;--accent:#0f766e;--accent-fg:#fff}}
+:root{color-scheme:dark light;--bg:#0b0f1a;--fg:#e8ecf3;--muted:#a9b3c4;--line:rgba(255,255,255,.12);--code:#121a2a;--accent:#5fc0b5;--accent-fg:#0a0f19;--glow:rgba(95,192,181,.16);--zebra:rgba(255,255,255,.035);--shadow:rgba(95,192,181,.4)}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fb;--fg:#141a26;--muted:#4a5568;--line:rgba(0,0,0,.14);--code:#eaeef5;--accent:#0f766e;--accent-fg:#fff;--glow:rgba(15,118,110,.09);--zebra:rgba(0,0,0,.035);--shadow:rgba(0,0,0,.22)}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:1rem/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-a{color:var(--accent)}
-.site-header,.site-footer,main{max-width:48rem;margin:0 auto;padding:0 16px}
-.site-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 20px;padding-top:16px;padding-bottom:16px;border-bottom:1px solid var(--line)}
-.site-header .brand{font-weight:700;font-size:1.15rem;text-decoration:none;color:var(--fg)}
-.site-header nav{display:flex;flex-wrap:wrap;gap:4px 18px}
-main{padding-top:24px;padding-bottom:32px}
-h1{font-size:2rem;line-height:1.2;margin:.4em 0}
-h2{font-size:1.4rem;margin:1.8em 0 .5em;line-height:1.3}
-h3{font-size:1.15rem;margin:1.5em 0 .4em}
-code{font:.9em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.1em .35em;border-radius:4px}
-pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto}
-pre code{background:none;padding:0}
-table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%}
-th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
-blockquote{margin:1em 0;padding:.1em 1em;border-left:3px solid var(--accent);color:var(--muted)}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg) radial-gradient(60rem 22rem at 50% -6rem,var(--glow),transparent) no-repeat;color:var(--fg);font:1rem/1.7 "Space Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent);text-underline-offset:.18em;text-decoration-thickness:1px}
+a:focus-visible,[tabindex]:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+img{max-width:100%;height:auto}
+.site-header,.site-footer,main{max-width:48rem;margin:0 auto;padding-left:16px;padding-right:16px}
+.site-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-top:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.brand{display:inline-flex;align-items:center;gap:8px;margin-right:auto;font-weight:700;font-size:1.2rem;letter-spacing:-.01em;text-decoration:none;color:var(--fg)}
+.brand:before{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+.links{display:flex;flex-wrap:wrap;gap:2px 16px;order:3;flex-basis:100%}
+.links a{color:var(--muted);text-decoration:none;font-size:.95rem;padding:4px 0}
+.links a:hover{color:var(--fg);text-decoration:underline}
+.nav-cta{order:2;background:var(--accent);color:var(--accent-fg);text-decoration:none;font-weight:600;font-size:.95rem;padding:8px 16px;border-radius:999px}
+.nav-cta:hover{filter:brightness(1.08)}
+@media(min-width:640px){.links{order:1;flex-basis:auto;gap:2px 20px}.brand{order:0}}
+main{padding-top:28px;padding-bottom:32px}
+h1{font-size:clamp(1.9rem,6vw,2.7rem);line-height:1.15;letter-spacing:-.02em;margin:.3em 0 .5em}
+h2{font-size:1.5rem;line-height:1.3;letter-spacing:-.01em;margin:2em 0 .5em;padding-top:.6em;border-top:1px solid var(--line);scroll-margin-top:16px}
+h3{font-size:1.15rem;margin:1.6em 0 .4em;scroll-margin-top:16px}
+p,li{max-width:42rem}
+code{font:.88em "Space Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.12em .38em;border-radius:5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;border:1px solid var(--line);overflow-x:auto;line-height:1.55}
+pre code{background:none;padding:0;font-size:.85rem}
+.table-wrap{margin:1.2em 0;border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:linear-gradient(to right,var(--bg) 30%,transparent) 0 0/40px 100% no-repeat local,linear-gradient(to left,var(--bg) 30%,transparent) 100% 0/40px 100% no-repeat local,radial-gradient(farthest-side at 0 50%,var(--shadow),transparent) 0 0/14px 100% no-repeat scroll,radial-gradient(farthest-side at 100% 50%,var(--shadow),transparent) 100% 0/14px 100% no-repeat scroll}
+table{border-collapse:collapse;min-width:100%;font-size:.95rem}
+th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{font-weight:700;background:var(--zebra);white-space:nowrap}
+tbody tr:nth-child(even){background:var(--zebra)}
+td:first-child{min-width:7rem}
+blockquote{margin:1.2em 0;padding:.2em 1.1em;border-left:3px solid var(--accent);background:var(--zebra);border-radius:0 8px 8px 0;color:var(--muted)}
 details{margin:1em 0}
-.toc{border:1px solid var(--line);border-radius:8px;padding:8px 16px;margin:1em 0}
-.toc ul{margin:.3em 0;padding-left:1.2em}
-.cta{display:inline-block;background:var(--accent);color:var(--accent-fg);padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600}
-.pager{display:flex;justify-content:space-between;gap:16px;margin:2em 0;flex-wrap:wrap}
-.related,.site-footer{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
-.related{margin-top:2em;padding-top:1em}
-.site-footer{padding-top:16px;padding-bottom:40px}
-.site-footer h2{font-size:.95rem;margin:1em 0 .3em;color:var(--fg)}
-.site-footer ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:2px 16px}
+summary{cursor:pointer;color:var(--muted)}
+.toc{border:1px solid var(--line);border-radius:12px;padding:10px 18px;margin:1.2em 0;background:var(--zebra)}
+.toc ul{margin:.4em 0;padding-left:1.2em}
+.toc a{text-decoration:none}
+.toc a:hover{text-decoration:underline}
+.run-link{display:inline-block;padding:.3em 1em;border:1px solid var(--accent);border-radius:999px;font-weight:600;text-decoration:none;line-height:1.5}
+.run-link:hover{background:var(--accent);color:var(--accent-fg)}
+.cta{display:inline-block;background:var(--accent);color:var(--accent-fg);padding:11px 22px;border-radius:12px;text-decoration:none;font-weight:600}
+.cta:hover{filter:brightness(1.08)}
+.try{margin:2.5em 0 1em;padding:20px 22px;border:1px solid var(--line);border-radius:14px;background:var(--zebra)}
+.try p{margin:.2em 0 .8em}
+.pager{display:grid;gap:12px;margin:1.5em 0}
+@media(min-width:640px){.pager{grid-template-columns:1fr 1fr}.pager .next{grid-column:2}}
+.pager a{display:block;padding:10px 14px;border:1px solid var(--line);border-radius:10px;text-decoration:none;max-width:100%}
+.pager a:hover{border-color:var(--accent)}
+.pager .next{text-align:right}
+.site-footer{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem;padding-top:8px;padding-bottom:48px}
+.site-footer h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;margin:1.4em 0 .5em;padding:0;border:0;color:var(--fg)}
+.site-footer ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 18px}
+.site-footer a{color:var(--muted)}
+.site-footer a:hover{color:var(--accent)}
 `
   .replace(/\s*\n\s*/gu, '')
   .trim();
 
 const NAV_LINKS: Array<[string, string]> = [
-  ['/', 'Open the visualizer'],
   ['/learn/', 'Learn'],
   ['/learn/milkdrop-online/', 'MilkDrop online'],
+  ['/learn/milkdrop-vs-butterchurn-projectm/', 'Compare'],
   ['/performance/', 'Compatibility'],
 ];
 
@@ -427,32 +467,27 @@ export function renderLearnPage(page: LearnPage): string {
   const next = index >= 0 ? PAGER_ORDER[index + 1] : undefined;
   const pager =
     prev || next
-      ? `<nav class="pager" aria-label="Course navigation"><span>${
-          prev ? `← ${anchor(learnPagePath(prev), prev.seoTitle)}` : ''
-        }</span><span>${next ? `${anchor(learnPagePath(next), next.seoTitle)} →` : ''}</span></nav>`
+      ? `<nav class="pager" aria-label="Course navigation">${
+          prev
+            ? `<a rel="prev" href="${escapeHtml(learnPagePath(prev))}">← ${escapeHtml(prev.seoTitle)}</a>`
+            : ''
+        }${
+          next
+            ? `<a class="next" rel="next" href="${escapeHtml(learnPagePath(next))}">${escapeHtml(next.seoTitle)} →</a>`
+            : ''
+        }</nav>`
       : '';
 
-  const related = `<aside class="related" aria-label="Related pages"><strong>Keep going</strong><ul>${[
-    ['/', 'Open the Stims visualizer'],
-    ['/learn/', 'Learn to write MilkDrop presets'],
-    ['/learn/milkdrop-online/', 'MilkDrop online, in your browser'],
-    [
-      '/learn/milkdrop-vs-butterchurn-projectm/',
-      'Stims vs Butterchurn vs projectM',
-    ],
-    ['/performance/', 'Compatibility and performance'],
-  ]
-    .filter(([href]) => href !== learnPagePath(page))
-    .map(
-      ([href, label]) => `<li>${anchor(href as string, label as string)}</li>`,
-    )
-    .join('')}</ul></aside>`;
-
-  // Insert the table of contents and the visualizer call to action right
-  // after the H1 so they sit above the fold.
+  // The header already carries an "Open Stims" button, so a second one under
+  // every track title was noise. Landing pages, where the visitor may not know
+  // what Stims is, keep the hero button; every page ends with a try-it card.
   const cta =
-    '<p><a class="cta" href="/">Open Stims — it plays with nothing to install</a></p>';
+    page.kind === 'track'
+      ? ''
+      : '<p><a class="cta" href="/">Open Stims — no install needed</a></p>';
   const body = html.replace(/(<h1[^>]*>.*?<\/h1>\n?)/su, `$1${cta}\n${toc}\n`);
+  const tryIt =
+    '<aside class="try" aria-label="Try Stims"><p><strong>Try it now.</strong> Stims plays MilkDrop presets in your browser, with nothing to install.</p><p><a class="cta" href="/">Open Stims</a></p></aside>';
 
   return `<!doctype html>
 <html lang="en">
@@ -466,6 +501,9 @@ export function renderLearnPage(page: LearnPage): string {
 <link rel="canonical" href="${url}" />
 <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <meta property="og:site_name" content="Stims" />
 <meta property="og:type" content="article" />
 <meta property="og:title" content="${escapeHtml(title)}" />
@@ -487,14 +525,15 @@ ${jsonLd}
 <body>
 <header class="site-header">
 <a class="brand" href="/">Stims</a>
-<nav aria-label="Site">${NAV_LINKS.map(([href, label]) => anchor(href, label)).join('')}</nav>
+<nav class="links" aria-label="Site">${NAV_LINKS.map(([href, label]) => anchor(href, label)).join('')}</nav>
+<a class="nav-cta" href="/">Open Stims</a>
 </header>
 <main>
 <article>
 ${body}
+${tryIt}
 </article>
 ${pager}
-${related}
 </main>
 ${renderFooter()}
 </body>
