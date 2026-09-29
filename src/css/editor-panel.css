@@ -1605,3 +1605,73 @@ html.light .stims-editor {
   font-size: var(--text-xs);
   opacity: 0.8;
 }
+
+/* ── Compat pane ──────────────────────────────────────────────────── */
+
+.stims-editor__compat-headline {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.stims-editor__compat {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.stims-editor__compat-row {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 7px 9px;
+  border: 1px solid var(--stims-line-soft);
+  border-left-width: 3px;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+button.stims-editor__compat-row {
+  cursor: pointer;
+}
+
+button.stims-editor__compat-row:hover,
+button.stims-editor__compat-row:focus-visible {
+  background: var(--stims-surface-2, rgba(255, 255, 255, 0.05));
+}
+
+.stims-editor__compat-row[data-severity="blocker"] {
+  border-left-color: var(--stims-danger, #e5484d);
+}
+
+.stims-editor__compat-row[data-severity="approximation"] {
+  border-left-color: var(--stims-warning, #f5a524);
+}
+
+.stims-editor__compat-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--text-xs-plus);
+}
+
+.stims-editor__compat-badge {
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.stims-editor__compat-line {
+  margin-left: auto;
+  font-size: var(--text-2xs);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.stims-editor__compat-detail {
+  font-size: var(--text-xs);
+  opacity: 0.85;
+}

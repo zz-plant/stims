@@ -127,6 +127,7 @@ import {
 
 export { computeAstDiagnostics, mergeDiagnostics };
 
+import { buildCompatChecklist } from '../compat-checklist.ts';
 import { searchReference } from '../reference-search.ts';
 import { createVariableHistory } from '../variable-history.ts';
 import { subscribeVariables } from '../variable-probe.ts';
@@ -946,6 +947,10 @@ export class EditorPanel {
   private historyList: HTMLElement | null = null;
   private readonly variableHistory = createVariableHistory();
   private inspectList: HTMLElement | null = null;
+  private compatHeadline: HTMLElement | null = null;
+  private compatEngines: HTMLElement | null = null;
+  private compatList: HTMLElement | null = null;
+  private compatTab: HTMLButtonElement | null = null;
   private inspectEmpty: HTMLElement | null = null;
   private inspectFilter = '';
   private inspectOnlyChanging = false;
@@ -1397,6 +1402,7 @@ export class EditorPanel {
       },
       { id: 'assist', label: 'Assist', content: this.renderAssistPane() },
       { id: 'inspect', label: 'Inspect', content: this.renderInspectPane() },
+      { id: 'compat', label: 'Compat', content: this.renderCompatPane() },
       { id: 'history', label: 'History', content: this.renderHistoryPane() },
     ];
     const tabButtons: HTMLButtonElement[] = [];
@@ -1428,6 +1434,7 @@ export class EditorPanel {
       tab.setAttribute('aria-controls', `stims-editor-pane-${pane.id}`);
       tab.tabIndex = index === 0 ? 0 : -1;
       tab.dataset.pane = pane.id;
+      if (pane.id === 'compat') this.compatTab = tab;
       pane.content.classList.add('stims-editor__pane');
       pane.content.id = `stims-editor-pane-${pane.id}`;
       pane.content.setAttribute('role', 'tabpanel');
@@ -1828,6 +1835,106 @@ export class EditorPanel {
       scrollIntoView: true,
     });
     this.editor.focus();
+  }
+
+  /** Compat pane: everything about this preset that will not run the way
+   * its source says, worst first, each pointing at a line. The dock used to
+   * show one "Simplified" flag with a single reason. */
+  private renderCompatPane(): HTMLElement {
+    const pane = document.createElement('div');
+    this.compatHeadline = document.createElement('p');
+    this.compatHeadline.className = 'stims-editor__compat-headline';
+    this.compatEngines = document.createElement('p');
+    this.compatEngines.className = 'stims-editor__hint';
+    this.compatList = document.createElement('div');
+    this.compatList.className = 'stims-editor__compat';
+    this.compatList.setAttribute('role', 'list');
+    pane.append(this.compatHeadline, this.compatEngines, this.compatList);
+    return pane;
+  }
+
+  private paintCompat(state: MilkdropEditorSessionState) {
+    const list = this.compatList;
+    if (!list || !this.compatHeadline || !this.compatEngines) return;
+    const compiled = state.latestCompiled;
+    if (!compiled) {
+      this.compatHeadline.textContent = 'Nothing compiled yet.';
+      this.compatEngines.textContent = '';
+      list.replaceChildren();
+      return;
+    }
+    const checklist = buildCompatChecklist(compiled, state.source);
+    this.compatHeadline.textContent = checklist.headline;
+    this.compatHeadline.dataset.fidelity = checklist.fidelity;
+    this.compatEngines.textContent = checklist.engines
+      .map((entry) => `${entry.engine}: ${entry.status}`)
+      .join(' · ');
+    if (this.compatTab) {
+      const count = checklist.items.length;
+      this.compatTab.textContent = count > 0 ? `Compat · ${count}` : 'Compat';
+      this.compatTab.dataset.tone = checklist.items.some(
+        (item) => item.severity === 'blocker',
+      )
+        ? 'danger'
+        : count > 0
+          ? 'warning'
+          : 'muted';
+    }
+    const labels = {
+      blocker: 'Won\u2019t work',
+      approximation: 'Approximated',
+      ignored: 'Ignored',
+      note: 'Note',
+    } as const;
+    list.replaceChildren(
+      ...checklist.items.map((item) => {
+        const line = item.line;
+        const row = document.createElement(line ? 'button' : 'div');
+        if (row instanceof HTMLButtonElement) row.type = 'button';
+        row.className = 'stims-editor__compat-row';
+        row.setAttribute('role', 'listitem');
+        row.dataset.severity = item.severity;
+        const head = document.createElement('span');
+        head.className = 'stims-editor__compat-head';
+        const badge = document.createElement('span');
+        badge.className = 'stims-editor__compat-badge';
+        badge.textContent = labels[item.severity];
+        const title = document.createElement('strong');
+        // Titles wrap identifiers in backticks; render them as code.
+        item.title.split('`').forEach((part, index) => {
+          if (index % 2 === 1) {
+            const code = document.createElement('code');
+            code.textContent = part;
+            title.appendChild(code);
+          } else if (part) {
+            title.appendChild(document.createTextNode(part));
+          }
+        });
+        head.append(badge, title);
+        if (line) {
+          const where = document.createElement('span');
+          where.className = 'stims-editor__compat-line';
+          where.textContent = `line ${line}`;
+          head.appendChild(where);
+        }
+        const detail = document.createElement('span');
+        detail.className = 'stims-editor__compat-detail';
+        detail.textContent = item.detail;
+        row.append(head, detail);
+        if (line) {
+          row.addEventListener('click', () => {
+            if (line < 1 || line > this.editor.state.doc.lines) return;
+            const target = this.editor.state.doc.line(line);
+            this.editor.dispatch({
+              selection: { anchor: target.from, head: target.to },
+              scrollIntoView: true,
+            });
+            this.editor.focus();
+          });
+        }
+        return row;
+      }),
+    );
   }
 
   /** Assist pane: every AI-backed action in one place. They share a single
@@ -2324,6 +2431,7 @@ export class EditorPanel {
     // Fidelity degradation only. Error counts are the status label's and the
     // problems strip's job — this flag reports the one thing neither can:
     // the stage is rendering a simplified version of what compiled.
+    this.paintCompat(state);
     this.safetyFlag.hidden = !isDegraded;
     this.safetyFlag.textContent = 'Simplified';
     this.safetyFlag.dataset.tone = 'warning';
