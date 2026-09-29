@@ -25,6 +25,7 @@ import {
   type FrameStats,
 } from '../core/services/visual-embedding.ts';
 import type { MilkdropShaderExecutionMode } from '../milkdrop/shader-execution-mode.ts';
+import { subscribeVariables } from '../milkdrop/variable-probe.ts';
 import type { AgentTelemetry } from './agent-bridge.ts';
 import type { CommandAction } from './command-palette-registry.ts';
 
@@ -355,6 +356,22 @@ export interface AgentGlobal {
    * transparent and every stat comes back zero on the default backend.
    */
   captureStats: () => Promise<FrameStats | null>;
+  /**
+   * The preset's equation variables (q1–q32, zoom, rot, anything the
+   * per-frame code assigns) as of the next rendered frame; null if no frame
+   * arrives within `timeoutMs` (engine not live, or the tab is hidden and
+   * `?agent=true` is missing). Same feed as the editor's Inspect tab.
+   */
+  getVariables: (timeoutMs?: number) => Promise<Record<string, number> | null>;
+  /**
+   * Resolve with the variables of the first frame for which
+   * `predicate(vars)` is true; reject on timeout. The replacement for
+   * sleep-and-poll on "wait until q1 goes above 0.5 on the beat".
+   */
+  waitForVariables: (
+    predicate: (variables: Readonly<Record<string, number>>) => boolean,
+    timeoutMs?: number,
+  ) => Promise<Record<string, number>>;
 }
 
 declare global {
@@ -468,6 +485,24 @@ export function installAgentStateGlobal(
     return null;
   };
 
+  const waitForVariables: AgentGlobal['waitForVariables'] = (
+    predicate,
+    timeoutMs = 5_000,
+  ) =>
+    new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        unsubscribe();
+        reject(new Error(`waitForVariables timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+      const unsubscribe = subscribeVariables((variables) => {
+        if (!predicate(variables)) return;
+        clearTimeout(timer);
+        unsubscribe();
+        // The feed reuses one object per frame; detach before handing it out.
+        resolve({ ...variables });
+      });
+    });
+
   const agentGlobal: AgentGlobal = {
     getState: buildState,
     getEvents: (sinceSeq = 0) => events.filter((e) => e.seq > sinceSeq),
@@ -499,6 +534,9 @@ export function installAgentStateGlobal(
         commitListeners.add(check);
         check();
       }),
+    waitForVariables,
+    getVariables: (timeoutMs = 2_000) =>
+      waitForVariables(() => true, timeoutMs).catch(() => null),
     captureStats: () => {
       const canvas = providers.getStageCanvas();
       if (!canvas) return Promise.resolve(null);
