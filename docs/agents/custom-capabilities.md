@@ -21,7 +21,7 @@ In practice:
 
 ## Before either: check the script index
 
-Skills and workflows are curated, so they name only the commands their author needed. The repo ships **127 scripts**, and the tables on this page are not an inventory of them.
+Skills and workflows are curated, so they name only the commands their author needed. The repo ships **159 scripts**, and the tables on this page are not an inventory of them.
 
 ```bash
 bun run help          # every script, grouped by namespace, with a one-line purpose
