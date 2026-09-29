@@ -1,6 +1,7 @@
 import { act, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { PresetCatalogEntry } from '../src/js/frontend/contracts.ts';
+import { createForwardedEngineActions } from '../src/js/frontend/engine/engine-forwarding.ts';
 import type { EngineSnapshot } from '../src/js/frontend/engine/engine-snapshot.ts';
 import type {
   EngineContextValue,
@@ -106,6 +107,9 @@ export function makeEngineValue(
   overrides: Partial<EngineContextValue> = {},
 ): EngineContextValue {
   return {
+    // Every pure engine forward, answering as it does before the engine
+    // mounts; the entries below override the ones a test cares about.
+    ...createForwardedEngineActions(() => null),
     presetPreviews: {},
     catalog: [],
     catalogError: null,
