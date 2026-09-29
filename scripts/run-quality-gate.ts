@@ -37,7 +37,7 @@ type GatePlan = {
   postflight: GateStep[];
 };
 
-type GateStepResult = {
+export type GateStepResult = {
   step: GateStep;
   exitCode: number;
   stdout: string;
@@ -72,11 +72,27 @@ export function parseSkipTests(argv: string[]): boolean {
   return argv.includes('--no-tests');
 }
 
-export type OutputMode = 'text' | 'json';
+export type OutputMode = 'text' | 'json' | 'quiet';
 
-export function parseOutputMode(argv: string[]): OutputMode {
-  return argv.includes('--json') ? 'json' : 'text';
+/**
+ * `quiet` prints one line per passing step and full output only for a failing
+ * one: a green gate is ~200 lines of mostly check marks, which costs an agent
+ * context and buries the one line that says whether it passed. It is chosen by
+ * `--quiet`, `STIMS_QUIET=1`, or automatically inside a Claude Code session
+ * (`CLAUDECODE=1`); `--verbose` (or `STIMS_QUIET=0`) restores full output. Humans and CI
+ * keep the full text by default.
+ */
+export function parseOutputMode(
+  argv: string[],
+  env: Record<string, string | undefined> = process.env,
+): OutputMode {
+  if (argv.includes('--json')) return 'json';
+  if (argv.includes('--verbose') || env.STIMS_QUIET === '0') return 'text';
+  if (argv.includes('--quiet') || env.STIMS_QUIET === '1') return 'quiet';
+  return env.CLAUDECODE === '1' ? 'quiet' : 'text';
 }
+
+const gateProgress = { passed: 0, totalMs: 0 };
 
 export function buildGatePlan(
   mode: GateMode,
@@ -285,7 +301,10 @@ async function runStep(step: GateStep): Promise<GateStepResult> {
   };
 }
 
-function printStepResult(result: GateStepResult, outputMode: OutputMode) {
+export function printStepResult(
+  result: GateStepResult,
+  outputMode: OutputMode,
+) {
   if (outputMode === 'json') {
     console.log(
       JSON.stringify({
@@ -297,7 +316,20 @@ function printStepResult(result: GateStepResult, outputMode: OutputMode) {
     return;
   }
 
-  console.log(`\n==> ${result.step.label} (${result.ms}ms)`);
+  gateProgress.totalMs += result.ms;
+  if (result.exitCode === 0) gateProgress.passed += 1;
+
+  if (outputMode === 'quiet') {
+    if (result.exitCode === 0) {
+      console.log(`✓ ${result.step.label} (${result.ms}ms)`);
+      return;
+    }
+    // A failure keeps its full output below; only the header changes so the
+    // failing step is the first thing a reader sees.
+    console.log(`\n✖ ${result.step.label} FAILED (${result.ms}ms)`);
+  } else {
+    console.log(`\n==> ${result.step.label} (${result.ms}ms)`);
+  }
   if (result.stdout) {
     console.log(result.stdout);
   }
@@ -401,6 +433,12 @@ async function main() {
   }
 
   await runStepListSerial(plan.postflight, outputMode);
+
+  if (outputMode === 'quiet') {
+    console.log(
+      `\n✅ Quality gate passed: ${gateProgress.passed} steps (${(gateProgress.totalMs / 1000).toFixed(1)}s of step time)`,
+    );
+  }
 }
 
 if (import.meta.main) {

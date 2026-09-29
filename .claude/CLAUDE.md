@@ -11,7 +11,7 @@ bun run setup:codex             # install + quick-check if not
 
 ## Finding a command
 
-This repo has **160 scripts**. The tables below are a shortlist, not an inventory — never conclude a capability is missing because it isn't listed here.
+This repo has **well over a hundred scripts** (the exact count drifts; `bun run help` is the source of truth). The tables below are a shortlist, not an inventory — never conclude a capability is missing because it isn't listed here.
 
 ```bash
 bun run help                 # every script, grouped by namespace, with a one-line purpose
@@ -32,9 +32,11 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 - **Search noise**: `.ignore` hides `public/milkdrop-presets/`, `output/`, `screenshots/`, and the parity fixtures from ripgrep. Use `rg --no-ignore <pat> <path>` to search them on purpose.
 - **Generators**: most `generate:*` scripts take `--check`, including `generate:seo` (delegates to `check:seo`, writes nothing). Running `generate:seo` without it rewrites tracked icons/sitemaps — `git checkout -- public` if that was unintended.
 - **Tests**: write behavioural tests that can fail (render via the workspace harness; mutate the behaviour once and watch the test go red) — see `.agent/skills/review-test-harness/SKILL.md`. Do not add source-text greps (`check:test-source-greps` blocks them).
-- **Seeing every failure**: local `bun run test:gate` bails at the first failing file (CI does not). Add `-- --no-bail` (or `STIMS_TEST_BAIL=0`) when you need the whole picture; the run prints a hint when it bailed.
 - **Flakes**: never assert on timing. Use `__stims_agent.waitFor`; recent history removed several timing flakes from the gate suite.
 - **Duplicate PRs**: check for an open PR on the branch before pushing (#1209/#1210 and #1234/#1236 were re-pushes).
+- **PR workflow**: read `.claude/skills/steward/SKILL.md` (what CI's shapes mean, which bot comments are noise, how to verify on the branch preview). Scaffold and check the body with `bun run pr:body`; after a squash-merge use `bun run branch:restart`.
+- **Quiet gate**: inside a Claude Code session `check:quick` prints one line per passing step and a summary; `--verbose` (or `STIMS_QUIET=0`) restores full output, and a failing step always prints in full.
+- **Software rendering**: on a GPU-less host (`bun run doctor` says so) correctness tools work but frame-time tools (`lab:profile`, `profile:frame`, `perf:*`, `bench:*`) time the CPU rasterizer and warn; do not draw performance conclusions from them.
 
 ## Daily commands
 
@@ -48,6 +50,9 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 | Full quality gate | `bun run check` | 2–5 min |
 | Run specific test | `bun run test tests/path/to/spec.test.ts` | varies |
 | Run only tests affected by uncommitted changes | `bun run test:changed` | seconds |
+| See every failing test in one run, not just the first | `bun run test -- --no-bail <files>` | varies |
+| Scaffold / check a PR description | `bun run pr:body` / `bun run pr:body -- --check body.md` | < 2s |
+| Restart a branch after its PR was squash-merged | `bun run branch:restart` | < 5s |
 | Integration tests | `bun run test:integration` | 1–2 min |
 | Compatibility tests | `bun run test:compat` | 1–2 min |
 | Warm long-lived session | `bun run session:codex -- --profile review` | — |

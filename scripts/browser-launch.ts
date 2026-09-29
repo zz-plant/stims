@@ -49,3 +49,58 @@ export async function probeChromiumRendererString(
     await page.close();
   }
 }
+
+/**
+ * True when the WebGL renderer string names a CPU rasterizer. Frame times
+ * measured on one describe the host's CPU, not the visualizer, so timing
+ * instruments must not treat them as evidence about real hardware.
+ */
+export function isSoftwareRenderer(renderer: string | null): boolean {
+  return renderer !== null && /swiftshader|llvmpipe|software/i.test(renderer);
+}
+
+/** The one-line caveat printed wherever a timing number could be misread. */
+export function softwareTimingWarning(renderer: string): string {
+  return (
+    `⚠️  Software rendering detected (${renderer}). Frame times below measure ` +
+    "this host's CPU rasterizer, not a real GPU — do not use them to judge " +
+    'performance. Correctness tools (lab:visual, lab:replay, lab:nan-sweep) are ' +
+    'unaffected; for timing, run on a machine with a GPU or `bun run preview:deploy`.'
+  );
+}
+
+let warnedSoftwareTiming = false;
+
+/**
+ * Probes the renderer and prints the software-rendering caveat once per
+ * process, so a per-preset loop does not repeat it. Never throws: a failed
+ * probe must not break the measurement it is annotating.
+ */
+export async function warnIfSoftwareRendering(
+  context: import('playwright').BrowserContext,
+): Promise<string | null> {
+  try {
+    const renderer = await probeChromiumRendererString(context);
+    if (renderer && isSoftwareRenderer(renderer) && !warnedSoftwareTiming) {
+      warnedSoftwareTiming = true;
+      console.warn(`\n${softwareTimingWarning(renderer)}\n`);
+    }
+    return renderer;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Chromium flags for measuring on real hardware. `--use-angle=metal` exists
+ * only on macOS; passing it elsewhere is silently ignored and leaves a Linux
+ * run on whatever Chromium falls back to, so it is scoped to darwin and other
+ * platforms keep the default ANGLE backend.
+ */
+export function hardwareAngleArgs(
+  platform: NodeJS.Platform = process.platform,
+): string[] {
+  return platform === 'darwin'
+    ? ['--use-gl=angle', '--use-angle=metal']
+    : ['--use-gl=angle'];
+}

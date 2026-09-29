@@ -15,6 +15,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   classifyPreview,
+  renderKindSection,
   selectPreviewIds,
 } from '../../scripts/audit-production-previews.ts';
 import type { FrameStats } from '../../scripts/frame-stats.ts';
@@ -188,5 +189,38 @@ describe('selectPreviewIds', () => {
   test('a sample at or above the catalog size audits everything', () => {
     expect(selectPreviewIds(presets, 10)).toHaveLength(10);
     expect(selectPreviewIds(presets, 25)).toHaveLength(10);
+  });
+});
+
+describe('report sections', () => {
+  const rows = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ id: `p${i}`, detail: 'd' }));
+
+  test('missing-local collapses to one line by default so actionable kinds stay visible', () => {
+    const lines = renderKindSection('missing-local', rows(1746), false);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain('1746');
+    expect(lines[0]).toContain('--verbose');
+  });
+
+  test('--verbose lists missing-local rows', () => {
+    const lines = renderKindSection('missing-local', rows(3), true);
+    expect(lines).toEqual([
+      '## missing-local (3)',
+      '  p0\td',
+      '  p1\td',
+      '  p2\td',
+    ]);
+  });
+
+  test('actionable kinds always list their rows, capped with a remainder count', () => {
+    const lines = renderKindSection('recapture', rows(45), false);
+    expect(lines[0]).toBe('## recapture (45)');
+    expect(lines).toHaveLength(1 + 40 + 1);
+    expect(lines.at(-1)).toBe('  … 5 more');
+  });
+
+  test('an empty kind prints nothing', () => {
+    expect(renderKindSection('upload', [], false)).toEqual([]);
   });
 });
