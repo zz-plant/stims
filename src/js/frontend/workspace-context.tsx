@@ -40,7 +40,7 @@ import { useWorkspaceShellOrchestration } from './workspace-shell-hooks.ts';
 
 export interface WorkspaceContextValue {
   routeState: SessionRouteState;
-  commitRoute: (nextState: SessionRouteState) => void;
+  commitRoute: (nextState: React.SetStateAction<SessionRouteState>) => void;
   setRouteState: React.Dispatch<React.SetStateAction<SessionRouteState>>;
 
   deferredSearch: string;
@@ -55,6 +55,8 @@ export interface WorkspaceContextValue {
   toast: {
     message: string;
     tone: 'info' | 'warn' | 'error';
+    /** True while the exit animation plays, just before it unmounts. */
+    exiting?: boolean;
   } | null;
   dismissToast: () => void;
   toggleExtendedSources: () => void;
@@ -98,8 +100,6 @@ export interface WorkspaceContextValue {
     popNext: () => string | null;
   };
 
-  handleBrowseRecovery: () => void;
-  handleFeaturedPresetSelection: () => void;
   handleImport: (files: FileList | File[] | null) => Promise<void>;
   handleShowCurrentLink: () => Promise<void>;
   updatePanel: (panel: PanelState) => void;
@@ -182,6 +182,7 @@ export function coarseEngineSnapshotEqual(
     prev.runtimeReady === snap.runtimeReady &&
     prev.audioActive === snap.audioActive &&
     prev.audioSource === snap.audioSource &&
+    prev.playbackPaused === snap.playbackPaused &&
     prev.audioEndedAt === snap.audioEndedAt &&
     prev.adaptiveQuality === snap.adaptiveQuality &&
     prev.catalogEntries === snap.catalogEntries &&
@@ -212,6 +213,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     importPresetFiles: sessionState.importPresetFiles,
     routeState,
     setStatusMessage: sessionState.setStatusMessage,
+    setPlaybackPaused: sessionState.setPlaybackPaused,
     startAudioSource: sessionState.startAudioSource,
     youtubePreviewRef: sessionState.youtubePreviewRef,
     updateEditorSource: sessionState.updateEditorSource,
@@ -279,11 +281,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       starterPresets: shellOrchestration.starterPresets,
       handleAudioStart: shellOrchestration.handleAudioStart,
       handleAudioStop: shellOrchestration.handleAudioStop,
+      handleTogglePlayback: shellOrchestration.handleTogglePlayback,
       handlePresetSelection: shellOrchestration.handlePresetSelection,
       handlePreviousPreset: shellOrchestration.handlePreviousPreset,
       handlePlayPreset: shellOrchestration.handlePlayPreset,
       handleShufflePreset: shellOrchestration.handleShufflePreset,
       exportPreset: sessionState.exportPreset,
+      exportUserPresets: sessionState.exportUserPresets,
       revertEditorSource: sessionState.revertEditorSource,
       duplicatePreset: sessionState.duplicatePreset,
       deleteActivePreset: sessionState.deleteActivePreset,
@@ -308,6 +312,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setBlendDuration: sessionState.setBlendDuration,
       updateEditorSource: sessionState.updateEditorSource,
       updateFieldLive: sessionState.updateFieldLive,
+      setPlaybackPaused: sessionState.setPlaybackPaused,
+      stepPlaybackFrame: sessionState.stepPlaybackFrame,
       applyEditorSourceAwaited: sessionState.applyEditorSourceAwaited,
       applyEditorFieldsAwaited: sessionState.applyEditorFieldsAwaited,
       getEditorSessionState: sessionState.getEditorSessionState,
@@ -333,11 +339,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       shellOrchestration.audioActive,
       shellOrchestration.handleAudioStart,
       shellOrchestration.handleAudioStop,
+      shellOrchestration.handleTogglePlayback,
       shellOrchestration.handlePresetSelection,
       shellOrchestration.handlePreviousPreset,
       shellOrchestration.handlePlayPreset,
       shellOrchestration.handleShufflePreset,
       sessionState.exportPreset,
+      sessionState.exportUserPresets,
       sessionState.revertEditorSource,
       sessionState.duplicatePreset,
       sessionState.deleteActivePreset,
@@ -362,6 +370,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.setBlendDuration,
       sessionState.updateEditorSource,
       sessionState.updateFieldLive,
+      sessionState.setPlaybackPaused,
+      sessionState.stepPlaybackFrame,
       sessionState.applyEditorSourceAwaited,
       sessionState.applyEditorFieldsAwaited,
       sessionState.getEditorSessionState,
@@ -405,9 +415,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       fallbackCatalogReady: sessionState.fallbackCatalogReady,
       activityCatalog: sessionState.activityCatalog,
       presetQueue,
-      handleBrowseRecovery: shellOrchestration.handleBrowseRecovery,
-      handleFeaturedPresetSelection:
-        shellOrchestration.handleFeaturedPresetSelection,
       handleImport: shellOrchestration.handleImport,
       handleShowCurrentLink: shellOrchestration.handleShowCurrentLink,
       updatePanel: shellOrchestration.updatePanel,
@@ -445,8 +452,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.fallbackCatalogReady,
       sessionState.activityCatalog,
       presetQueue,
-      shellOrchestration.handleBrowseRecovery,
-      shellOrchestration.handleFeaturedPresetSelection,
       shellOrchestration.handleImport,
       shellOrchestration.handleShowCurrentLink,
       shellOrchestration.updatePanel,

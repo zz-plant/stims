@@ -1,3 +1,12 @@
+/**
+ * Factory mappings for controllers common enough to be worth knowing by name.
+ *
+ * These shipped, were unit-tested for existence, and were imported by nothing
+ * — so plugging in a nanoKONTROL2 gave you the same eight generic CC defaults
+ * as any anonymous device, and its sixteen labelled controls had to be
+ * MIDI-learned one at a time. {@link matchMidiProfile} is the join that was
+ * missing; `midi-profile-autobind.ts` applies it on connect.
+ */
 import type {
   MidiBindingMap,
   MidiNoteBindingMap,
@@ -8,6 +17,16 @@ export interface MidiDeviceProfile {
   name: string;
   manufacturer: string;
   description: string;
+  /**
+   * Lowercase fragments identifying this device in the strings WebMIDI
+   * reports, matched against `name + manufacturer`.
+   *
+   * Needed because those strings are nothing like the marketing name: a
+   * nanoKONTROL2 announces itself as "nanoKONTROL2 SLIDER/KNOB" from "KORG
+   * INC.", and a MiniLab 3 as "Minilab3 MIDI". Matching is done on a
+   * punctuation-stripped form, so write fragments without spaces or dashes.
+   */
+  match?: string[];
   ccBindings: MidiBindingMap;
   noteBindings?: MidiNoteBindingMap;
 }
@@ -17,6 +36,7 @@ export const MIDI_CONTROLLER_PROFILES: MidiDeviceProfile[] = [
     id: 'korg-nanokontrol2',
     name: 'Korg nanoKONTROL2',
     manufacturer: 'Korg',
+    match: ['nanokontrol2'],
     description:
       '8 knobs mapped to zoom, warp, rot, decay, and q1..q4; 8 faders mapped to motion dx/dy and video mixers.',
     ccBindings: {
@@ -44,6 +64,9 @@ export const MIDI_CONTROLLER_PROFILES: MidiDeviceProfile[] = [
     id: 'novation-launch-control-xl',
     name: 'Novation Launch Control XL',
     manufacturer: 'Novation',
+    // Focusrite owns Novation, and some drivers report the parent company as
+    // the manufacturer, so the device name is what has to carry the match.
+    match: ['launchcontrolxl'],
     description:
       '24 knobs (3 rows) and 8 faders for deep real-time parameter tweaking.',
     ccBindings: {
@@ -70,6 +93,7 @@ export const MIDI_CONTROLLER_PROFILES: MidiDeviceProfile[] = [
   {
     id: 'arturia-minilab-3',
     name: 'Arturia MiniLab 3',
+    match: ['minilab3'],
     manufacturer: 'Arturia',
     description:
       '8 rotary encoders and 4 faders mapped to primary visual parameters.',
@@ -111,4 +135,41 @@ export const MIDI_CONTROLLER_PROFILES: MidiDeviceProfile[] = [
 
 export function getMidiProfileById(id: string): MidiDeviceProfile | null {
   return MIDI_CONTROLLER_PROFILES.find((p) => p.id === id) ?? null;
+}
+
+/**
+ * Reduce a WebMIDI name/manufacturer to the form {@link MidiDeviceProfile.match}
+ * fragments are written in: lowercase, letters and digits only.
+ *
+ * Drivers disagree about spacing and punctuation for the same hardware
+ * ("Launch Control XL", "Launch_Control_XL", "LaunchControlXL"), and matching
+ * the raw strings makes the profile depend on which OS the performer is on.
+ */
+function normalizeDeviceIdentity(...parts: Array<string | undefined>): string {
+  return parts
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * The factory profile for a connected device, or null when it is not one we
+ * ship a mapping for.
+ *
+ * `generic-dj-mixer` is deliberately unmatchable: it describes a CC layout
+ * ("whatever sends CC 1-8"), not a device, and returning it for every unknown
+ * controller would overwrite the service's own defaults with a guess.
+ */
+export function matchMidiProfile(
+  name: string | undefined,
+  manufacturer?: string,
+): MidiDeviceProfile | null {
+  const identity = normalizeDeviceIdentity(name, manufacturer);
+  if (!identity) return null;
+  return (
+    MIDI_CONTROLLER_PROFILES.find((profile) =>
+      profile.match?.some((fragment) => identity.includes(fragment)),
+    ) ?? null
+  );
 }

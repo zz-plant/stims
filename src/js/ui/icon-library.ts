@@ -29,6 +29,11 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'm17 8-5-5-5 5' } },
     { tag: 'path', attrs: { d: 'M12 3v12' } },
   ],
+  download: [
+    { tag: 'path', attrs: { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' } },
+    { tag: 'path', attrs: { d: 'm7 10 5 5 5-5' } },
+    { tag: 'path', attrs: { d: 'M12 15V3' } },
+  ],
   error: [
     { tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } },
     { tag: 'path', attrs: { d: 'm15 9-6 6' } },
@@ -199,6 +204,14 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'm22 9-6 6' } },
     { tag: 'path', attrs: { d: 'm16 9 6 6' } },
   ],
+  /* Transport pair for the dock's hold/release toggle. Drawn as outlines
+     like every other glyph here, so the pause bars and the play wedge read
+     at the same weight as the arrows beside them. */
+  pause: [
+    { tag: 'rect', attrs: { x: 6, y: 5, width: 4, height: 14 } },
+    { tag: 'rect', attrs: { x: 14, y: 5, width: 4, height: 14 } },
+  ],
+  play: [{ tag: 'path', attrs: { d: 'M7 4.5v15l12-7.5z' } }],
   star: [
     {
       tag: 'path',

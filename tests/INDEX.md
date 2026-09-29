@@ -83,12 +83,11 @@ skip-flow, stage-tools, toast-regression, ui-simplification) · `frontend-url-st
 `split-view-browse.test.ts` · `workspace-activity.test.ts` · `workspace-first-fold-actions.test.ts` ·
 `workspace-youtube-preview.test.ts` · `stage-gestures.test.tsx` ·
 `stage-warp-gizmo.test.tsx` · `preflight-mobile-visibility.test.ts` · `mobile-viewport-matrix.test.ts` ·
-`use-auto-hide-activity.test.tsx` · `use-focus-trap.test.tsx` · `use-lazy-factory.test.ts` ·
-`shader-identicon-component.test.tsx`
+`use-auto-hide-activity.test.tsx` · `use-focus-trap.test.tsx` · `use-lazy-factory.test.ts`
 
 ## Services / state / quality
 
-`adaptive-quality-controller.test.ts` · `continuous-drs.test.ts` · `temporal-memory.test.ts` ·
+`adaptive-quality-controller.test.ts` · `continuous-drs.test.ts` ·
 `frame-pacing.test.ts` · `power-state.test.ts` · `simulation-accumulator.test.ts` ·
 `device-profile.test.ts` · `device-refresh-rate.test.ts` · `performance-hardware-controls.test.ts` ·
 `performance-settings-store.test.ts` · `domain-store.test.ts` · `crash-telemetry.test.ts` ·
@@ -115,9 +114,16 @@ runtime-starter, viewport-session, sample-toy) · `shared-initializer.test.ts` �
 
 `check-architecture.test.ts` · `check-ci-config.test.ts` · `check-commit-msg.test.ts` ·
 `check-duplicate-css.test.ts` · `run-quality-gate.test.ts` · `check-catalog-integrity.test.ts` ·
-`codex-*.test.ts` (model-route, session-script, setup-script) · `generate-seo.test.ts` ·
+`codex-*.test.ts` (model-route, session-script, setup-script) ·
 `seo-canonical-intent.test.ts` · `check-no-ts-nocheck` (script) · `check-doc-references` (script) ·
 `check-readme-claims` (script) · `check-cache-bounds.test.ts`
+
+## Served-card pipeline (previews + OG cards)
+
+`frame-stats.test.ts` (what counts as an unusable capture) ·
+`audit-production-previews.test.ts` (served-vs-repo: upload vs recapture) ·
+`warm-og-cards.test.ts` (edge warm: retries, fallback detection, exit status) ·
+`preview-failure-report.test.ts` · `generate-seo.test.ts` (cards + sitemap)
 
 ## Visual / regression / accessibility
 

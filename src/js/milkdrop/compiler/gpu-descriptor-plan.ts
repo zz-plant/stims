@@ -13,6 +13,7 @@ import type {
   MilkdropWebGpuDescriptorPlan,
 } from '../types';
 import {
+  GPU_FIELD_POINT_STATE_IDENTIFIERS,
   PER_FRAME_FIELD_REGISTER_INPUTS,
   PER_PIXEL_VIEWPORT_BUILTIN_INPUTS,
 } from './gpu-field-planner.ts';
@@ -103,6 +104,7 @@ export function buildWebGpuDescriptorPlan({
   lowerGpuFieldProgram: (
     program: MilkdropPresetIR['programs']['perPixel'],
     options?: {
+      stateIdentifiers?: ReadonlySet<string>;
       additionalStateIdentifiers?: Iterable<string>;
       additionalAllowedIdentifiers?: Iterable<string>;
       registerInputs?: Iterable<string>;
@@ -168,6 +170,9 @@ export function buildWebGpuDescriptorPlan({
         const loweredPerPointProgram =
           wave.programs.perPoint.statements.length > 0
             ? lowerGpuFieldProgram(wave.programs.perPoint, {
+                // A point function declares x/y/rad/ang, not the mesh-warp
+                // outputs: `dx = …` in a per-point block is a preset local.
+                stateIdentifiers: GPU_FIELD_POINT_STATE_IDENTIFIERS,
                 // Frame constants the per-point block may read: the preset's
                 // q registers plus everything the wave's own init/per-frame
                 // blocks left behind (its t bank and any user variable).

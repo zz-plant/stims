@@ -95,8 +95,6 @@ export function makeUiValue(
       popNext: () => null,
     },
 
-    handleBrowseRecovery: noop,
-    handleFeaturedPresetSelection: noop,
     handleImport: asyncNoop,
     handleShowCurrentLink: asyncNoop,
     updatePanel: noop,
@@ -125,6 +123,7 @@ export function makeEngineValue(
     starterPresets: [],
 
     exportPreset: noop,
+    exportUserPresets: async () => 0,
     revertEditorSource: noop,
     duplicatePreset: asyncNoop,
     deleteActivePreset: asyncNoop,
@@ -142,6 +141,7 @@ export function makeEngineValue(
     handleShufflePreset: noop,
     handleAudioStart: asyncNoop,
     handleAudioStop: noop,
+    handleTogglePlayback: noop,
     loadRecentYouTubeVideo: noop,
     loadYouTubePreview: noop,
     clearRecentYouTubeVideos: noop,
@@ -155,6 +155,8 @@ export function makeEngineValue(
     setBlendDuration: noop,
     updateEditorSource: noop,
     updateFieldLive: noop,
+    setPlaybackPaused: () => false,
+    stepPlaybackFrame: () => false,
     applyEditorSourceAwaited: async () => null,
     applyEditorFieldsAwaited: async () => null,
     getEditorSessionState: () => null,

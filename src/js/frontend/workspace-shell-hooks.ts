@@ -3,7 +3,7 @@
  * permissions, link sharing, and canonical state transitions across the top-level visualizer shell.
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { type SetStateAction, useCallback, useMemo, useRef } from 'react';
 import {
   acquireMicrophoneStream,
   describeInputProcessingWarning,
@@ -23,6 +23,7 @@ import type {
   SessionRouteState,
 } from './contracts.ts';
 import type { EngineSnapshot } from './engine/milkdrop-engine-adapter.ts';
+import { disposeActiveFileAudio } from './file-audio.ts';
 import { buildCanonicalUrl } from './url-state.ts';
 import {
   buildStarterPresets,
@@ -72,7 +73,7 @@ function buildHealedPresetRoute(
 }
 
 type WorkspaceShellOrchestrationArgs = {
-  commitRoute: (nextState: SessionRouteState) => void;
+  commitRoute: (nextState: SetStateAction<SessionRouteState>) => void;
   deferredSearch: string;
   engineSnapshot: EngineSnapshot | null;
   fallbackCatalog: PresetCatalogEntry[];
@@ -84,6 +85,8 @@ type WorkspaceShellOrchestrationArgs = {
   importPresetFiles: (files: FileList | File[] | null) => Promise<void>;
   routeState: SessionRouteState;
   setStatusMessage: (message: string | null) => void;
+  /** Holds or releases the stage; returns the state actually applied. */
+  setPlaybackPaused: (paused: boolean) => boolean;
   startAudioSource: (request: {
     cropTarget?: HTMLElement | null;
     launchState?: SessionRouteState;
@@ -108,13 +111,13 @@ export function useWorkspaceShellOrchestration({
   importPresetFiles,
   routeState,
   setStatusMessage,
+  setPlaybackPaused,
   startAudioSource,
   updateEditorSource,
   stageRef: _stageRef,
   youtubePreviewRef,
 }: WorkspaceShellOrchestrationArgs) {
   const audioStartInProgressRef = useRef(false);
-  const fileAudioContextRef = useRef<AudioContext | null>(null);
 
   // Dep on the narrow snapshot fields, never the snapshot object: while audio
   // plays the snapshot is rebuilt every frame (audioEnergy changes), and a
@@ -282,12 +285,16 @@ export function useWorkspaceShellOrchestration({
     ],
   );
 
+  // Functional update on purpose: this runs from Escape handlers and
+  // shortcuts that can land in the same keystroke as a preset change, and
+  // spreading the captured `routeState` here reverted that change.
   const updatePanel = useCallback(
     (panel: PanelState) => {
-      if (panel === routeState.panel) return;
-      commitRoute({ ...routeState, panel });
+      commitRoute((current) =>
+        current.panel === panel ? current : { ...current, panel },
+      );
     },
-    [commitRoute, routeState],
+    [commitRoute],
   );
 
   const handleVisualSearch = useCallback(async () => {
@@ -295,19 +302,7 @@ export function useWorkspaceShellOrchestration({
   }, [updatePanel, routeState.panel]);
 
   const handlePresetSelection = (presetId: string) => {
-    commitRoute({ ...routeState, presetId, panel: null });
-  };
-
-  const handleBrowseRecovery = () => {
-    commitRoute({ ...routeState, presetId: null, panel: 'browse' });
-  };
-
-  const handleFeaturedPresetSelection = () => {
-    if (!shellState.featuredPreset) {
-      return;
-    }
-
-    handlePresetSelection(shellState.featuredPreset.id);
+    commitRoute((current) => ({ ...current, presetId, panel: null }));
   };
 
   const handleShufflePreset = () => {
@@ -375,53 +370,6 @@ export function useWorkspaceShellOrchestration({
     void goBackPreset();
   };
 
-  const handleAudioFile = async (file: File) => {
-    if (
-      !file.type.startsWith('audio/') &&
-      !file.name.match(/\.(mp3|wav|flac|ogg|m4a|aac|opus|webm)$/i)
-    ) {
-      return;
-    }
-    try {
-      setStatusMessage(null);
-
-      fileAudioContextRef.current?.close();
-      const audioContext = new AudioContext();
-      fileAudioContextRef.current = audioContext;
-      const arrayBuffer = await file.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      const destination = audioContext.createMediaStreamDestination();
-      source.connect(destination);
-      source.connect(audioContext.destination);
-      source.start(0);
-
-      const { nextRouteState, healMessage } = buildHealedPresetRoute(
-        routeState,
-        shellState.missingRequestedPreset,
-        shellState.featuredPreset,
-        'file',
-      );
-
-      if (healMessage) {
-        setStatusMessage(healMessage);
-      }
-
-      commitRoute(nextRouteState);
-      await startAudioSource({
-        source: 'file',
-        stream: destination.stream,
-        launchState: nextRouteState,
-      });
-      setStatusMessage(`Playing: ${file.name}`);
-    } catch (error) {
-      setStatusMessage(
-        error instanceof Error ? error.message : 'Unable to play audio file.',
-      );
-    }
-  };
-
   const handlePlayPreset = async (presetId: string) => {
     commitRoute({
       ...routeState,
@@ -436,6 +384,15 @@ export function useWorkspaceShellOrchestration({
   ) => {
     if (audioStartInProgressRef.current) return;
     audioStartInProgressRef.current = true;
+
+    // Starting any other source replaces file playback, and the file element
+    // loops, so without this it would keep playing underneath the new source.
+    // `'file'` is excluded because that path runs `startAudioSource` directly
+    // after adopting its own handle; disposing here would tear it straight
+    // back down.
+    if (source !== 'file') {
+      disposeActiveFileAudio();
+    }
 
     // Pre-warm the shared Three.js AudioContext while we're still inside
     // the user gesture (click/tap). On iOS Safari, AudioContext.resume()
@@ -572,13 +529,13 @@ export function useWorkspaceShellOrchestration({
       );
       const stream = await captureDisplayAudioStream({
         unavailableMessage:
-          'Tab and YouTube capture need a desktop browser. Use the microphone instead.',
+          'Tab, system, and YouTube capture need a desktop browser. Use the microphone instead.',
         missingAudioMessage:
           source === 'youtube'
             ? 'No YouTube audio track was captured. Re-share and enable Share tab audio.'
-            : 'No tab audio track was captured. Re-share and enable Share tab audio.',
+            : 'No tab or system audio track was captured. Re-share and enable Share audio.',
         // For YouTube the player lives in this tab, so pre-select it. For a
-        // plain tab capture the user is reaching for a different tab.
+        // plain tab/system capture the user is reaching for a different tab or desktop audio.
         preferCurrentTab: source === 'youtube',
         onEnded: () => {
           setStatusMessage(
@@ -603,8 +560,30 @@ export function useWorkspaceShellOrchestration({
   };
 
   const handleAudioStop = () => {
-    commitRoute({ ...routeState, audioSource: null });
+    // The engine side is torn down by the route change, but a playing file is
+    // ours: it is an <audio> element with `loop = true`, so leaving it alone
+    // meant the track carried on audibly after the UI said audio had stopped.
+    disposeActiveFileAudio();
+    commitRoute((current) => ({ ...current, audioSource: null }));
     setStatusMessage('Audio stopped.');
+  };
+
+  /**
+   * Space, and the dock's pause button. Holds the picture where it is and
+   * keeps everything else — preset, history, the audio session — so a second
+   * press carries on from the same frame. Stopping audio is a different verb
+   * (it unmounts the engine and returns to the start page) and lives in the
+   * menu under its own name.
+   */
+  const handleTogglePlayback = () => {
+    const paused = !(engineSnapshot?.playbackPaused ?? false);
+    const applied = setPlaybackPaused(paused);
+    if (paused && !applied) {
+      // Nothing is live to hold: before playback starts the stage is the
+      // idle preview, which has no pause.
+      return;
+    }
+    setStatusMessage(applied ? 'Paused. Press Space to resume.' : 'Resumed.');
   };
 
   const handleImport = async (files: FileList | File[] | null) => {
@@ -675,24 +654,16 @@ export function useWorkspaceShellOrchestration({
     );
   };
 
-  useEffect(() => {
-    return () => {
-      fileAudioContextRef.current?.close();
-    };
-  }, []);
-
   return {
     ...shellState,
     handleAudioStart,
     handleAudioStop,
-    handleBrowseRecovery,
-    handleFeaturedPresetSelection,
+    handleTogglePlayback,
     handleImport,
     handlePlayPreset,
     handlePresetSelection,
     handlePreviousPreset,
     handleShowCurrentLink,
-    handleAudioFile,
     handleShufflePreset,
     handleVisualSearch,
     updatePanel,

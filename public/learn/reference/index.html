@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>MilkDrop Language Reference | Stims</title>
+<meta name="description" content="Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals and the fields a preset can set." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="canonical" href="https://toil.fyi/learn/reference/" />
+<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<meta property="og:site_name" content="Stims" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="MilkDrop Language Reference | Stims" />
+<meta property="og:description" content="Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals and the fields a preset can set." />
+<meta property="og:url" content="https://toil.fyi/learn/reference/" />
+<meta property="og:image" content="https://toil.fyi/og/milkdrop.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="MilkDrop Language Reference | Stims" />
+<meta name="twitter:description" content="Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals and the fields a preset can set." />
+<meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "TechArticle",
+      "headline": "MilkDrop language reference (Stims)",
+      "name": "MilkDrop Language Reference",
+      "description": "Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals and the fields a preset can set.",
+      "url": "https://toil.fyi/learn/reference/",
+      "mainEntityOfPage": "https://toil.fyi/learn/reference/",
+      "inLanguage": "en",
+      "image": "https://toil.fyi/og/milkdrop.png",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Stims",
+          "item": "https://toil.fyi/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Learn",
+          "item": "https://toil.fyi/learn/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "MilkDrop language reference (Stims)",
+          "item": "https://toil.fyi/learn/reference/"
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>:root{color-scheme:dark light;--bg:#0b0f1a;--fg:#e8ecf3;--muted:#a9b3c4;--line:rgba(255,255,255,.12);--code:#121a2a;--accent:#5fc0b5;--accent-fg:#0a0f19;--glow:rgba(95,192,181,.16);--zebra:rgba(255,255,255,.035);--shadow:rgba(95,192,181,.4)}@media(prefers-color-scheme:light){:root{--bg:#f7f8fb;--fg:#141a26;--muted:#4a5568;--line:rgba(0,0,0,.14);--code:#eaeef5;--accent:#0f766e;--accent-fg:#fff;--glow:rgba(15,118,110,.09);--zebra:rgba(0,0,0,.035);--shadow:rgba(0,0,0,.22)}}*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg) radial-gradient(60rem 22rem at 50% -6rem,var(--glow),transparent) no-repeat;color:var(--fg);font:1rem/1.7 "Space Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}a{color:var(--accent);text-underline-offset:.18em;text-decoration-thickness:1px}a:focus-visible,[tabindex]:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}img{max-width:100%;height:auto}.site-header,.site-footer,main{max-width:48rem;margin:0 auto;padding-left:16px;padding-right:16px}.site-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-top:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}.brand{display:inline-flex;align-items:center;gap:8px;margin-right:auto;font-weight:700;font-size:1.2rem;letter-spacing:-.01em;text-decoration:none;color:var(--fg)}.brand:before{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}.links{display:flex;flex-wrap:wrap;gap:2px 16px;order:3;flex-basis:100%}.links a{color:var(--muted);text-decoration:none;font-size:.95rem;padding:4px 0}.links a:hover{color:var(--fg);text-decoration:underline}.nav-cta{order:2;background:var(--accent);color:var(--accent-fg);text-decoration:none;font-weight:600;font-size:.95rem;padding:8px 16px;border-radius:999px}.nav-cta:hover{filter:brightness(1.08)}@media(min-width:640px){.links{order:1;flex-basis:auto;gap:2px 20px}.brand{order:0}}main{padding-top:28px;padding-bottom:32px}h1{font-size:clamp(1.9rem,6vw,2.7rem);line-height:1.15;letter-spacing:-.02em;margin:.3em 0 .5em}h2{font-size:1.5rem;line-height:1.3;letter-spacing:-.01em;margin:2em 0 .5em;padding-top:.6em;border-top:1px solid var(--line);scroll-margin-top:16px}h3{font-size:1.15rem;margin:1.6em 0 .4em;scroll-margin-top:16px}p,li{max-width:42rem}code{font:.88em "Space Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.12em .38em;border-radius:5px}pre{background:var(--code);padding:14px 16px;border-radius:10px;border:1px solid var(--line);overflow-x:auto;line-height:1.55}pre code{background:none;padding:0;font-size:.85rem}.table-wrap{margin:1.2em 0;border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:linear-gradient(to right,var(--bg) 30%,transparent) 0 0/40px 100% no-repeat local,linear-gradient(to left,var(--bg) 30%,transparent) 100% 0/40px 100% no-repeat local,radial-gradient(farthest-side at 0 50%,var(--shadow),transparent) 0 0/14px 100% no-repeat scroll,radial-gradient(farthest-side at 100% 50%,var(--shadow),transparent) 100% 0/14px 100% no-repeat scroll}table{border-collapse:collapse;min-width:100%;font-size:.95rem}th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}th{font-weight:700;background:var(--zebra);white-space:nowrap}tbody tr:nth-child(even){background:var(--zebra)}td:first-child{min-width:7rem}blockquote{margin:1.2em 0;padding:.2em 1.1em;border-left:3px solid var(--accent);background:var(--zebra);border-radius:0 8px 8px 0;color:var(--muted)}details{margin:1em 0}summary{cursor:pointer;color:var(--muted)}.toc{border:1px solid var(--line);border-radius:12px;padding:10px 18px;margin:1.2em 0;background:var(--zebra)}.toc ul{margin:.4em 0;padding-left:1.2em}.toc a{text-decoration:none}.toc a:hover{text-decoration:underline}.run-link{display:inline-block;padding:.3em 1em;border:1px solid var(--accent);border-radius:999px;font-weight:600;text-decoration:none;line-height:1.5}.run-link:hover{background:var(--accent);color:var(--accent-fg)}.cta{display:inline-block;background:var(--accent);color:var(--accent-fg);padding:11px 22px;border-radius:12px;text-decoration:none;font-weight:600}.cta:hover{filter:brightness(1.08)}.try{margin:2.5em 0 1em;padding:20px 22px;border:1px solid var(--line);border-radius:14px;background:var(--zebra)}.try p{margin:.2em 0 .8em}.pager{display:grid;gap:12px;margin:1.5em 0}@media(min-width:640px){.pager{grid-template-columns:1fr 1fr}.pager .next{grid-column:2}}.pager a{display:block;padding:10px 14px;border:1px solid var(--line);border-radius:10px;text-decoration:none;max-width:100%}.pager a:hover{border-color:var(--accent)}.pager .next{text-align:right}.site-footer{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem;padding-top:8px;padding-bottom:48px}.site-footer h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;margin:1.4em 0 .5em;padding:0;border:0;color:var(--fg)}.site-footer ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 18px}.site-footer a{color:var(--muted)}.site-footer a:hover{color:var(--accent)}</style>
+</head>
+<body>
+<header class="site-header">
+<a class="brand" href="/">Stims</a>
+<nav class="links" aria-label="Site"><a href="/learn/">Learn</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/learn/milkdrop-vs-butterchurn-projectm/">Compare</a><a href="/performance/">Compatibility</a></nav>
+<a class="nav-cta" href="/">Open Stims</a>
+</header>
+<main>
+<article>
+<h1 id="milkdrop-language-reference-stims">MilkDrop language reference (Stims)</h1>
+
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#the-expression-language-in-ten-lines">The expression language in ten lines</a></li><li><a href="#functions">Functions</a></li><li><a href="#constants">Constants</a></li><li><a href="#signals-read-only-inputs">Signals (read-only inputs)</a></li><li><a href="#render-state-readwrite-knobs">Render state (read/write knobs)</a></li><li><a href="#registers">Registers</a></li><li><a href="#where-code-runs">Where code runs</a></li></ul></nav>
+<!-- GENERATED FILE — do not edit by hand.
+     Source of truth: src/js/milkdrop/builtin-docs.ts
+     Regenerate: bun run docs:authoring-reference --><p>Every name below is derived from the same table the compiler, syntax
+highlighter, autocomplete, and hover docs use — if it is listed here, it
+compiles. For the guided course, start at <a href="/learn/">the curriculum</a>.</p>
+<h2 id="the-expression-language-in-ten-lines">The expression language in ten lines</h2>
+<p>The equation language is NS-EEL, inherited from Winamp:</p>
+<ul>
+<li>A program is assignments separated by <code>;</code>. Assigning to any name creates it.</li>
+<li>Every value is a number (double). There are no strings or booleans.</li>
+<li>Comparisons and logic return 1 or 0, and any value within
+<code>0.00001</code> of zero is false — <code>if(x, a, b)</code>, <code>above</code>,
+<code>below</code>, <code>equal</code>, <code>band</code>, <code>bor</code>, <code>bnot</code> are the branching toolkit
+(<code>if</code> evaluates both branches; there is no short-circuit).</li>
+<li>Names are case-insensitive. <code>//</code> starts a comment.</li>
+<li>Operators: <code>+ - * / % ^</code> (power), comparisons <code>&lt; &lt;= &gt; &gt;= == !=</code>,
+logic <code>&amp;&amp; || !</code>.</li>
+<li>Numeric literals accept decimals, exponents (<code>1e-3</code>), and hex (<code>0x1f</code>).</li>
+<li><code>megabuf(i)</code> / <code>gmegabuf(i)</code> read indexed storage; assigning to
+<code>megabuf(i) = v</code> writes it (per-preset vs global).</li>
+</ul>
+<h2 id="functions">Functions</h2>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>sin(x)</code></td>
+<td>sine</td>
+</tr>
+<tr>
+<td><code>cos(x)</code></td>
+<td>cosine</td>
+</tr>
+<tr>
+<td><code>tan(x)</code></td>
+<td>tangent</td>
+</tr>
+<tr>
+<td><code>asin(x)</code></td>
+<td>arcsine</td>
+</tr>
+<tr>
+<td><code>acos(x)</code></td>
+<td>arccosine</td>
+</tr>
+<tr>
+<td><code>atan(x)</code></td>
+<td>arctangent</td>
+</tr>
+<tr>
+<td><code>atan2(y, x)</code></td>
+<td>angle of the vector (x, y)</td>
+</tr>
+<tr>
+<td><code>abs(x)</code></td>
+<td>absolute value</td>
+</tr>
+<tr>
+<td><code>sqrt(x)</code></td>
+<td>square root</td>
+</tr>
+<tr>
+<td><code>pow(x, y)</code></td>
+<td>x raised to the power y</td>
+</tr>
+<tr>
+<td><code>mod(x, y)</code></td>
+<td>remainder of x/y (0 when y is 0)</td>
+</tr>
+<tr>
+<td><code>fmod(x, y)</code></td>
+<td>alias of mod</td>
+</tr>
+<tr>
+<td><code>min(a, b)</code></td>
+<td>smaller of a and b</td>
+</tr>
+<tr>
+<td><code>max(a, b)</code></td>
+<td>larger of a and b</td>
+</tr>
+<tr>
+<td><code>mix(a, b, t)</code></td>
+<td>linear blend from a to b by t</td>
+</tr>
+<tr>
+<td><code>lerp(a, b, t)</code></td>
+<td>alias of mix</td>
+</tr>
+<tr>
+<td><code>floor(x)</code></td>
+<td>round down</td>
+</tr>
+<tr>
+<td><code>int(x)</code></td>
+<td>truncate toward zero</td>
+</tr>
+<tr>
+<td><code>ceil(x)</code></td>
+<td>round up</td>
+</tr>
+<tr>
+<td><code>sqr(x)</code></td>
+<td>x*x</td>
+</tr>
+<tr>
+<td><code>clamp(x, min, max)</code></td>
+<td>x limited to the range min..max</td>
+</tr>
+<tr>
+<td><code>step(threshold, x)</code></td>
+<td>0 when x is below threshold, else 1</td>
+</tr>
+<tr>
+<td><code>smoothstep(min, max, x)</code></td>
+<td>smooth 0..1 ramp of x between min and max</td>
+</tr>
+<tr>
+<td><code>log(x)</code></td>
+<td>natural logarithm</td>
+</tr>
+<tr>
+<td><code>log10(x)</code></td>
+<td>base-10 logarithm</td>
+</tr>
+<tr>
+<td><code>exp(x)</code></td>
+<td>e raised to x</td>
+</tr>
+<tr>
+<td><code>sigmoid(x, k)</code></td>
+<td>logistic curve 1/(1+e^(-x*k))</td>
+</tr>
+<tr>
+<td><code>sign(x)</code></td>
+<td>-1, 0, or 1</td>
+</tr>
+<tr>
+<td><code>bor(a, b)</code></td>
+<td>logical OR, returns 1 or 0</td>
+</tr>
+<tr>
+<td><code>band(a, b)</code></td>
+<td>logical AND, returns 1 or 0</td>
+</tr>
+<tr>
+<td><code>bnot(x)</code></td>
+<td>logical NOT, returns 1 or 0</td>
+</tr>
+<tr>
+<td><code>frac(x)</code></td>
+<td>fractional part</td>
+</tr>
+<tr>
+<td><code>if(cond, then, else)</code></td>
+<td>then when cond is nonzero, otherwise else; only the chosen branch runs</td>
+</tr>
+<tr>
+<td><code>above(a, b)</code></td>
+<td>1 when a &gt; b</td>
+</tr>
+<tr>
+<td><code>below(a, b)</code></td>
+<td>1 when a &lt; b</td>
+</tr>
+<tr>
+<td><code>equal(a, b)</code></td>
+<td>1 when a and b are (almost) equal</td>
+</tr>
+<tr>
+<td><code>rand(scale)</code></td>
+<td>random 0-scale</td>
+</tr>
+<tr>
+<td><code>randint(max)</code></td>
+<td>random integer in 0..max-1</td>
+</tr>
+<tr>
+<td><code>megabuf(index)</code></td>
+<td>per-preset shared value buffer</td>
+</tr>
+<tr>
+<td><code>gmegabuf(index)</code></td>
+<td>global value buffer shared across presets</td>
+</tr>
+<tr>
+<td><code>exec2(a, b)</code></td>
+<td>evaluate a then b; returns b</td>
+</tr>
+<tr>
+<td><code>exec3(a, b, c)</code></td>
+<td>evaluate a, b, c; returns c</td>
+</tr>
+</tbody></table></div>
+<h2 id="constants">Constants</h2>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pi</code></td>
+<td>π (3.14159…)</td>
+</tr>
+<tr>
+<td><code>e</code></td>
+<td>Euler&#39;s number (2.71828…)</td>
+</tr>
+</tbody></table></div>
+<h2 id="signals-read-only-inputs">Signals (read-only inputs)</h2>
+<p>Fed by the runtime every frame. Audio bands are the heart of reactivity —
+see Track 3 of the curriculum for how to use them well.</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bass</code></td>
+<td>bass energy</td>
+</tr>
+<tr>
+<td><code>mid</code></td>
+<td>mid energy</td>
+</tr>
+<tr>
+<td><code>treb</code></td>
+<td>treble energy</td>
+</tr>
+<tr>
+<td><code>treble</code></td>
+<td>alias of treb (Stims runtime signal)</td>
+</tr>
+<tr>
+<td><code>bass_att</code></td>
+<td>bass with envelope</td>
+</tr>
+<tr>
+<td><code>mid_att</code></td>
+<td>mid with envelope</td>
+</tr>
+<tr>
+<td><code>treb_att</code></td>
+<td>treble with envelope</td>
+</tr>
+<tr>
+<td><code>beat</code></td>
+<td>beat detector output</td>
+</tr>
+<tr>
+<td><code>beat_pulse</code></td>
+<td>beat intensity pulse (Stims runtime signal)</td>
+</tr>
+<tr>
+<td><code>percussive</code></td>
+<td>transient/broadband spectral energy (HPSS), relative scale like bass</td>
+</tr>
+<tr>
+<td><code>harmonic</code></td>
+<td>sustained/tonal spectral energy (HPSS), relative scale like bass</td>
+</tr>
+<tr>
+<td><code>percussive_low</code></td>
+<td>percussive energy in 20-250 Hz (not a kick detector)</td>
+</tr>
+<tr>
+<td><code>percussive_mid</code></td>
+<td>percussive energy in 250-4000 Hz (not a snare detector)</td>
+</tr>
+<tr>
+<td><code>percussive_high</code></td>
+<td>percussive energy above 4 kHz</td>
+</tr>
+<tr>
+<td><code>percussive_ratio</code></td>
+<td>percussive share of total energy, 0..1 (0.5 in silence)</td>
+</tr>
+<tr>
+<td><code>rms</code></td>
+<td>overall signal level</td>
+</tr>
+<tr>
+<td><code>vol</code></td>
+<td>mean of the relative bands</td>
+</tr>
+<tr>
+<td><code>time</code></td>
+<td>seconds</td>
+</tr>
+<tr>
+<td><code>frame</code></td>
+<td>frame count</td>
+</tr>
+<tr>
+<td><code>fps</code></td>
+<td>frames per second</td>
+</tr>
+<tr>
+<td><code>progress</code></td>
+<td>frame count (ProjectM-compatible alias)</td>
+</tr>
+<tr>
+<td><code>input_x</code></td>
+<td>pointer x while pressed, -1..1 (0 when nothing is touching the stage)</td>
+</tr>
+<tr>
+<td><code>input_y</code></td>
+<td>pointer y while pressed, -1..1</td>
+</tr>
+<tr>
+<td><code>input_dx</code></td>
+<td>pointer movement along x since the last frame</td>
+</tr>
+<tr>
+<td><code>input_dy</code></td>
+<td>pointer movement along y since the last frame</td>
+</tr>
+<tr>
+<td><code>input_speed</code></td>
+<td>magnitude of the per-frame pointer movement</td>
+</tr>
+<tr>
+<td><code>input_pressed</code></td>
+<td>1 while a pointer, Enter, or a steering chord is held</td>
+</tr>
+<tr>
+<td><code>input_just_pressed</code></td>
+<td>1 on the frame the press began</td>
+</tr>
+<tr>
+<td><code>input_just_released</code></td>
+<td>1 on the frame the press ended</td>
+</tr>
+<tr>
+<td><code>input_count</code></td>
+<td>number of pointers currently down</td>
+</tr>
+<tr>
+<td><code>hover_active</code></td>
+<td>1 while a mouse hovers the stage without pressing</td>
+</tr>
+<tr>
+<td><code>hover_x</code></td>
+<td>hover x, -1..1</td>
+</tr>
+<tr>
+<td><code>hover_y</code></td>
+<td>hover y, -1..1</td>
+</tr>
+<tr>
+<td><code>wheel_delta</code></td>
+<td>scroll amount this frame, -2..2</td>
+</tr>
+<tr>
+<td><code>wheel_accum</code></td>
+<td>decaying sum of recent scrolling, -3..3</td>
+</tr>
+<tr>
+<td><code>drag_intensity</code></td>
+<td>how hard the pointer is being dragged, 0..1</td>
+</tr>
+<tr>
+<td><code>drag_angle</code></td>
+<td>direction of the drag in radians</td>
+</tr>
+<tr>
+<td><code>gesture_scale</code></td>
+<td>pinch scale, 1 at rest (= and - on the keyboard)</td>
+</tr>
+<tr>
+<td><code>gesture_rotation</code></td>
+<td>twist angle in radians (, and . on the keyboard)</td>
+</tr>
+<tr>
+<td><code>gesture_translate_x</code></td>
+<td>two-finger pan along x</td>
+</tr>
+<tr>
+<td><code>gesture_translate_y</code></td>
+<td>two-finger pan along y</td>
+</tr>
+<tr>
+<td><code>accent_pulse</code></td>
+<td>decaying pulse from the accent key or tap, 0..1</td>
+</tr>
+<tr>
+<td><code>action_accent</code></td>
+<td>accent pressed: 1, decaying to 0 over ~220ms</td>
+</tr>
+<tr>
+<td><code>action_mode_next</code></td>
+<td>X pressed (decaying pulse) — your preset decides what a mode is</td>
+</tr>
+<tr>
+<td><code>action_mode_previous</code></td>
+<td>Q or Z pressed (decaying pulse)</td>
+</tr>
+<tr>
+<td><code>action_preset_next</code></td>
+<td>] pressed (decaying pulse)</td>
+</tr>
+<tr>
+<td><code>action_preset_previous</code></td>
+<td>[ pressed (decaying pulse)</td>
+</tr>
+<tr>
+<td><code>action_quick_look_1</code></td>
+<td>1 pressed (decaying pulse)</td>
+</tr>
+<tr>
+<td><code>action_quick_look_2</code></td>
+<td>2 pressed (decaying pulse)</td>
+</tr>
+<tr>
+<td><code>action_quick_look_3</code></td>
+<td>3 pressed (decaying pulse)</td>
+</tr>
+<tr>
+<td><code>action_remix</code></td>
+<td>R pressed (decaying pulse)</td>
+</tr>
+<tr>
+<td><code>input_source_pointer</code></td>
+<td>1 when the last input came from a mouse, pen or finger</td>
+</tr>
+<tr>
+<td><code>input_source_keyboard</code></td>
+<td>1 when the last input came from the keyboard</td>
+</tr>
+<tr>
+<td><code>input_source_gamepad</code></td>
+<td>1 when the last input came from a gamepad</td>
+</tr>
+<tr>
+<td><code>input_source_mouse</code></td>
+<td>1 when a mouse specifically is driving</td>
+</tr>
+<tr>
+<td><code>input_source_touch</code></td>
+<td>1 when a finger specifically is driving</td>
+</tr>
+<tr>
+<td><code>input_source_pen</code></td>
+<td>1 when a pen specifically is driving</td>
+</tr>
+</tbody></table></div>
+<p>Stims also exposes interaction and device-motion signals (<code>inputX</code>,
+<code>gestureScale</code>, <code>motionX</code>, …) that are <strong>not standard MilkDrop</strong> — see the
+<a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_PRESET_RUNTIME.md">signal contract</a> before relying on them.</p>
+<h2 id="render-state-readwrite-knobs">Render state (read/write knobs)</h2>
+<p>Written by <code>per_frame</code>/<code>per_pixel</code> code to steer the feedback loop —
+<a href="/learn/how-milkdrop-thinks/">Track 1</a> and <a href="/learn/motion/">Track 2</a> teach these.</p>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>zoom</code></td>
+<td>zoom amount per frame</td>
+</tr>
+<tr>
+<td><code>rot</code></td>
+<td>rotation per frame</td>
+</tr>
+<tr>
+<td><code>warp</code></td>
+<td>warp intensity</td>
+</tr>
+<tr>
+<td><code>sx</code></td>
+<td>stretch along x</td>
+</tr>
+<tr>
+<td><code>sy</code></td>
+<td>stretch along y</td>
+</tr>
+<tr>
+<td><code>dx</code></td>
+<td>translation along x</td>
+</tr>
+<tr>
+<td><code>dy</code></td>
+<td>translation along y</td>
+</tr>
+<tr>
+<td><code>cx</code></td>
+<td>zoom/rotation center x</td>
+</tr>
+<tr>
+<td><code>cy</code></td>
+<td>zoom/rotation center y</td>
+</tr>
+</tbody></table></div>
+<h2 id="registers">Registers</h2>
+<ul>
+<li><code>q1</code>–<code>q32</code> — persistent globals: the bridge
+between variable pools. Set in <code>per_frame</code>, readable in <code>per_pixel</code>,
+custom wave/shape code, and as shader uniforms.</li>
+<li><code>t1</code>–<code>t32</code> — per-slot temporaries for custom
+waves and shapes.</li>
+</ul>
+<h2 id="where-code-runs">Where code runs</h2>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
+<thead>
+<tr>
+<th>Block</th>
+<th>Runs</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>per_frame_init_N</code> / <code>per_frame_N</code></td>
+<td>once per frame</td>
+<td>set knobs, read audio</td>
+</tr>
+<tr>
+<td><code>per_pixel_N</code></td>
+<td>per mesh point</td>
+<td>also reads <code>x</code>, <code>y</code>, <code>rad</code>, <code>ang</code></td>
+</tr>
+<tr>
+<td><code>wavecode_N_*</code> + <code>wave_N_per_point_N</code></td>
+<td>per custom-wave sample</td>
+<td>reads <code>sample</code>, writes <code>x y r g b a</code></td>
+</tr>
+<tr>
+<td><code>shapecode_N_*</code> (<code>init</code>/<code>per_frame</code>)</td>
+<td>per shape instance</td>
+<td>writes <code>x y rad ang sides r g b a …</code></td>
+</tr>
+<tr>
+<td><code>[warp_shader]</code> / <code>[comp_shader]</code></td>
+<td>per pixel on the GPU</td>
+<td>GLSL 1.20 — see the <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#the-glsl-shader-era-2008present">coding guide</a></td>
+</tr>
+</tbody></table></div>
+<p>Shader uniforms, samplers, and engine limits are documented in the
+<a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#engine-limitations">coding guide</a> and the
+<a href="https://github.com/zz-plant/stims/blob/main/docs/architecture/shader-support-inventory.md">shader support inventory</a>.</p>
+
+<aside class="try" aria-label="Try Stims"><p><strong>Try it now.</strong> Stims plays MilkDrop presets in your browser, with nothing to install.</p><p><a class="cta" href="/">Open Stims</a></p></aside>
+</article>
+<nav class="pager" aria-label="Course navigation"><a rel="prev" href="/learn/technique-glossary/">← MilkDrop Technique Glossary</a></nav>
+</main>
+<footer class="site-footer">
+<h2>Stims</h2>
+<ul><li><a href="/">Visualizer</a></li><li><a href="/learn/">Learn to write presets</a></li><li><a href="/learn/milkdrop-online/">MilkDrop online</a></li><li><a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a></li><li><a href="/performance/">Compatibility and performance</a></li><li><a href="https://github.com/zz-plant/stims">Source on GitHub</a></li></ul>
+<h2>Browse presets by look</h2>
+<ul><li><a href="/discover/audio-reactive">Audio-Reactive</a></li><li><a href="/discover/ambient">Ambient</a></li><li><a href="/discover/fractal">Fractal</a></li><li><a href="/discover/geometric">Geometric</a></li><li><a href="/discover/hall-of-fame">Hall of Fame</a></li><li><a href="/discover/neon">Neon</a></li><li><a href="/discover/particles">Particle</a></li><li><a href="/discover/psychedelic">Psychedelic</a></li><li><a href="/discover/retro">Retro</a></li><li><a href="/discover/space">Space</a></li><li><a href="/discover/trippy">Trippy</a></li><li><a href="/discover/tunnel">Tunnel</a></li><li><a href="/discover/waveform">Waveform</a></li><li><a href="/discover/webgpu-showcase">WebGPU Showcase</a></li></ul>
+<h2>Browse presets by author</h2>
+<ul><li><a href="/author/geiss">Geiss</a></li><li><a href="/author/flexi">Flexi</a></li><li><a href="/author/martin">Martin</a></li><li><a href="/author/rovastar">Rovastar</a></li><li><a href="/author/eo-s">Eo.S.</a></li><li><a href="/author/phat">Phat</a></li><li><a href="/author/stahlregen">Stahlregen</a></li><li><a href="/author/unchained">Unchained</a></li><li><a href="/author/fishbrain">Fishbrain</a></li><li><a href="/author/aderrasi">Aderrasi</a></li><li><a href="/author/zylot">Zylot</a></li><li><a href="/author/shifter">Shifter</a></li><li><a href="/author/mig">Mig</a></li><li><a href="/author/orb">ORB</a></li><li><a href="/author/suksma">Suksma</a></li><li><a href="/author/cope">Cope</a></li><li><a href="/author/goody">Goody</a></li><li><a href="/author/krash">Krash</a></li></ul>
+</footer>
+</body>
+</html>

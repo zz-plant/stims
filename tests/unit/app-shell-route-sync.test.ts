@@ -46,6 +46,52 @@ describe('Workspace shell route sync regression', () => {
     expect(host.textContent).toBe('settings');
   });
 
+  test('a panel close committed in the same tick as a preset change keeps the newer preset', () => {
+    // Backspace with Browse open used to do both at once: the shell went to
+    // the previous preset while a synthetic Escape closed the sheet, and the
+    // close was committed as `{ ...routeState, panel: null }` from the
+    // render before the preset moved — putting the old preset straight
+    // back. commitRoute takes an updater so each handler changes only what
+    // it owns.
+    let commit:
+      | ((
+          next:
+            | { presetId: string | null; panel: string | null }
+            | ((current: { presetId: string | null; panel: string | null }) => {
+                presetId: string | null;
+                panel: string | null;
+              }),
+        ) => void)
+      | null = null;
+
+    function Host() {
+      const { commitRoute, routeState } = useWorkspaceRouteState();
+      commit = commitRoute as unknown as typeof commit;
+      return createElement(
+        'output',
+        null,
+        `${routeState.presetId ?? 'none'}/${routeState.panel ?? 'none'}`,
+      );
+    }
+
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    flushSync(() => {
+      root?.render(createElement(Host));
+    });
+    flushSync(() => {
+      commit?.((current) => ({ ...current, presetId: 'a', panel: 'browse' }));
+    });
+    expect(host.textContent).toBe('a/browse');
+
+    flushSync(() => {
+      commit?.((current) => ({ ...current, presetId: 'b' }));
+      commit?.((current) => ({ ...current, panel: null }));
+    });
+    expect(host.textContent).toBe('b/none');
+  });
+
   test('marks the shell when a toast is visible so mobile layouts can reserve space', () => {
     // Cross-artifact presentational contract: the attribute App.tsx sets and
     // the media-query rule that consumes it. jsdom/happy-dom computes neither

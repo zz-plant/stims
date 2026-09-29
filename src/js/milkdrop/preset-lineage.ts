@@ -151,6 +151,123 @@ export function findPresetFamily(
     familiesCache.set(entries, families);
   }
   const family = families.get(key);
-  if (!family || family.members.length < 2) return null;
-  return family;
+  if (!family) return null;
+  const members = collapseSameWork(family.members, presetId);
+  if (members.length < 2) return null;
+  return members === family.members ? family : { ...family, members };
+}
+
+/**
+ * One entry per distinct work. The catalog ships some presets twice — the
+ * bundled set and a library pack both carry "Goody - Need" — and by title
+ * those are the same work, not a relative. Left in, the family read
+ * "1 more in the Need family" and listed a second, identical "the original"
+ * row. The copy the viewer is looking at is the one kept, so the current
+ * preset never turns up as its own relative under another id.
+ */
+function collapseSameWork(
+  members: PresetLineageMember[],
+  currentId: string,
+): PresetLineageMember[] {
+  const byWork = new Map<string, PresetLineageMember>();
+  for (const member of members) {
+    const work = workKeyOf(member);
+    const kept = byWork.get(work);
+    if (!kept || member.id === currentId) byWork.set(work, member);
+  }
+  if (byWork.size === members.length) return members;
+  return members.filter((member) => byWork.get(workKeyOf(member)) === member);
+}
+
+/** Everything a lineage row shows; two members with the same key render
+ * identically. */
+function workKeyOf(member: PresetLineageMember): string {
+  return [
+    member.label,
+    member.mixName ?? '',
+    member.editNote ?? '',
+    member.shaderModel ?? '',
+    member.authors.join('+'),
+  ]
+    .join('\u0000')
+    .toLowerCase();
+}
+
+export type ForkTreeNode = {
+  member: PresetLineageMember;
+  /**
+   * How this node hangs off its parent: `recorded` when Stims wrote the link
+   * down at Remix time (`derivedFrom`), `title` when it is only grouped under
+   * the family's original by name, `root` for a node with no parent.
+   */
+  link: 'recorded' | 'title' | 'root';
+  children: ForkTreeNode[];
+};
+
+/**
+ * A family as a tree: who was remixed from whom.
+ *
+ * A remix made in Stims records its parent (`derivedFrom`), so that edge is
+ * exact and a remix of a remix nests. Everything else — two decades of
+ * published variants — only has its title to go on, and titles say which
+ * work a preset belongs to, not which sibling it came from; those are hung
+ * under the family's original and marked as such rather than guessed at.
+ */
+export function buildForkTree(
+  family: PresetLineageFamily,
+  entries: ReadonlyArray<
+    LineageCatalogEntry & { derivedFrom?: ReadonlyArray<{ id: string }> }
+  >,
+): ForkTreeNode[] {
+  const inFamily = new Map(family.members.map((m) => [m.id, m]));
+  const recordedParent = new Map<string, string>();
+  for (const entry of entries) {
+    const parent = entry.derivedFrom?.[0]?.id;
+    if (parent && inFamily.has(entry.id) && inFamily.has(parent)) {
+      recordedParent.set(entry.id, parent);
+    }
+  }
+  const original = family.members.find((member) => member.isRoot) ?? null;
+
+  const nodes = new Map<string, ForkTreeNode>(
+    family.members.map((member) => [
+      member.id,
+      { member, link: 'root', children: [] },
+    ]),
+  );
+  const parentOf = (id: string): [string, 'recorded' | 'title'] | null => {
+    const recorded = recordedParent.get(id);
+    if (recorded) return [recorded, 'recorded'];
+    const member = inFamily.get(id);
+    if (!member || member.isRoot || !original) return null;
+    return [original.id, 'title'];
+  };
+  // A recorded chain that loops back on itself (hand-edited catalog data)
+  // would hang the tree; such a node falls back to the title rule.
+  const reachesSelf = (id: string, parent: string) => {
+    const seen = new Set([id]);
+    let current: string | undefined = parent;
+    while (current && !seen.has(current)) {
+      seen.add(current);
+      current = recordedParent.get(current);
+    }
+    return current !== undefined;
+  };
+
+  const roots: ForkTreeNode[] = [];
+  for (const member of family.members) {
+    const node = nodes.get(member.id) as ForkTreeNode;
+    let parent = parentOf(member.id);
+    if (parent?.[1] === 'recorded' && reachesSelf(member.id, parent[0])) {
+      recordedParent.delete(member.id);
+      parent = parentOf(member.id);
+    }
+    if (!parent || parent[0] === member.id) {
+      roots.push(node);
+      continue;
+    }
+    node.link = parent[1];
+    nodes.get(parent[0])?.children.push(node);
+  }
+  return roots;
 }

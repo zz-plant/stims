@@ -15,6 +15,7 @@ import {
   useState,
 } from 'react';
 import styles from '../../css/SidePanel.module.css';
+import { useEscapeHandler } from './hooks/use-escape-handler.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import { UiIcon } from './UiIcon.tsx';
 
@@ -65,6 +66,10 @@ type SidePanelProps = {
   // body let CodeMirror render its whole document at full height, pushing
   // every tool below the code thousands of pixels out of reach.
   fillBody?: boolean;
+  // When true, the sheet takes most of a desktop viewport instead of a
+  // 560px rail. Browse wants this: a catalog of visual programs read three
+  // tiles across is a filing cabinet, not a gallery.
+  wide?: boolean;
 };
 
 export function SidePanel({
@@ -75,6 +80,7 @@ export function SidePanel({
   onOpen,
   stageAnchored = false,
   fillBody = false,
+  wide = false,
 }: SidePanelProps) {
   const [exiting, setExiting] = useState(false);
   const closeTimerRef = useRef<number | null>(null);
@@ -307,20 +313,42 @@ export function SidePanel({
     if (open) {
       setExiting(false);
       if (onOpen) requestAnimationFrame(onOpen);
+      return;
+    }
+    // `open` has gone false, so the exit is over however it started: our own
+    // timed close landing, or the panel being dismissed from outside (the
+    // route changing, a shortcut toggling the same panel off). Releasing the
+    // latch here is what lets `!open && !exiting` unmount the panel.
+    //
+    // Without it the panel stayed mounted forever after the first dismissal:
+    // an empty `role="dialog" aria-modal="true"` shell holding its Close
+    // button, so Tab walked into a panel that was no longer there, Escape did
+    // nothing (its handler is gated on `open`), and — because `aria-modal`
+    // hides everything outside the dialog — the rest of the app went silent
+    // to a screen reader. Reopening the panel cleared it, which is why
+    // clicking around never surfaced it.
+    setExiting(false);
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
     }
   }, [open, onOpen]);
 
-  useEffect(() => {
-    if (!open || exiting) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        startClose();
+  // A panel unmounted mid-exit (the route changing under it) must not leave
+  // its timer to call `onClose` afterwards.
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
       }
-    };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [open, exiting, startClose]);
+    },
+    [],
+  );
+
+  // Registered rather than listening directly, so a dialog opened *over* this
+  // panel takes Escape instead of the panel underneath taking it.
+  useEscapeHandler(open && !exiting, startClose);
 
   if (!open && !exiting) return null;
 
@@ -339,6 +367,7 @@ export function SidePanel({
         className={styles.panel}
         data-exiting={String(exiting)}
         data-stage-anchored={stageAnchored ? 'true' : undefined}
+        data-wide={wide ? 'true' : undefined}
         role="dialog"
         aria-modal={stageAnchored ? undefined : 'true'}
         aria-label={title}

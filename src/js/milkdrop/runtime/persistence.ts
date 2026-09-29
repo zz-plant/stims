@@ -38,3 +38,17 @@ export function downloadPresetFile(name: string, contents: string) {
   anchor.click();
   URL.revokeObjectURL(url);
 }
+
+/** Save a `.zip` of presets (see `writePresetArchive`). */
+export function downloadPresetArchive(name: string, bytes: Uint8Array) {
+  const blob = new Blob([bytes as Uint8Array<ArrayBuffer>], {
+    type: 'application/zip',
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = name.endsWith('.zip') ? name : `${name}.zip`;
+  anchor.click();
+  // Revoking in the same tick can cancel the download in some browsers.
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}

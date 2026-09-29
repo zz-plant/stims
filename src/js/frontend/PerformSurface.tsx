@@ -6,7 +6,6 @@ import {
   useSyncExternalStore,
 } from 'react';
 import styles from '../../css/PerformSurface.module.css';
-import { getBrowserStorage } from '../core/state/browser-storage.ts';
 import { hadSessionBeforeBoot } from '../core/state/last-session-store.ts';
 import { readMilkdropField } from '../milkdrop/formatter.ts';
 import { listModulators } from './live-modulation.ts';
@@ -23,6 +22,7 @@ import {
   subscribeToPinnedTargets,
   unpinTarget,
 } from './perform-pins.ts';
+import { dismissStageHint, useStageHintDismissed } from './stage-hint-cards.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
 /**
@@ -38,9 +38,6 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
  * returning-visitor hint (see below) that introduces the surface.
  */
 
-/** The one-time empty-state hint shows once, then stays gone once dismissed. */
-const PERFORM_HINT_DISMISSED_KEY = 'stims:perform-empty-hint-dismissed';
-
 export function PerformSurface() {
   const { engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -54,13 +51,13 @@ export function PerformSurface() {
   const [picking, setPicking] = useState(false);
   const [values, setValues] = useState<Record<string, number>>({});
   const [modulated, setModulated] = useState<string[]>([]);
-  const [hintDismissed, setHintDismissed] = useState(() => {
-    try {
-      return getBrowserStorage()?.getItem(PERFORM_HINT_DISMISSED_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
+  // The one-time empty-state hint shows once, then stays gone once dismissed
+  // — or once something is pinned, which answers the same question. Shared
+  // with the cue deck's hint so the two cards take turns (stage-hint-cards).
+  const hintDismissed = useStageHintDismissed('perform');
+  useEffect(() => {
+    if (pinned.length > 0) dismissStageHint('perform');
+  }, [pinned.length]);
 
   const activeSource = engineSnapshot?.currentSource ?? '';
   const activePresetId = engineSnapshot?.activePresetId ?? null;
@@ -89,18 +86,35 @@ export function PerformSurface() {
   // Re-seed each fader from the incoming preset's own literal on every preset
   // change. Without this the faders keep the outgoing preset's positions and
   // silently misreport where the new preset actually sits.
+  //
+  // A field pinned *during* a preset needs the same treatment, and used not to
+  // get it: the effect listed `pinned` but returned early unless the preset id
+  // had changed, so a newly pinned target stayed absent from `values` and the
+  // row below rendered the range midpoint. Pinning warp on a preset that warps
+  // at 0.01 showed 1.0, and the first nudge jumped the value — a visible lurch
+  // mid-set, which is exactly what this effect exists to prevent. So: reseed
+  // everything on a preset change, and seed only the newly pinned targets
+  // otherwise, leaving positions the performer has already set alone.
   const seededForRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!activeSource || seededForRef.current === activePresetId) return;
+    if (!activeSource) return;
+    const presetChanged = seededForRef.current !== activePresetId;
     seededForRef.current = activePresetId;
-    const seeded: Record<string, number> = {};
-    for (const target of pinned) {
-      const field = describePinnableField(target);
-      if (!field) continue;
-      const literal = readMilkdropField(activeSource, target);
-      seeded[target] = literal ?? (field.min + field.max) / 2;
-    }
-    setValues(seeded);
+    setValues((current) => {
+      const seeded: Record<string, number> = presetChanged
+        ? {}
+        : { ...current };
+      let changed = presetChanged;
+      for (const target of pinned) {
+        if (!presetChanged && seeded[target] !== undefined) continue;
+        const field = describePinnableField(target);
+        if (!field) continue;
+        const literal = readMilkdropField(activeSource, target);
+        seeded[target] = literal ?? (field.min + field.max) / 2;
+        changed = true;
+      }
+      return changed ? seeded : current;
+    });
   }, [activeSource, activePresetId, pinned]);
 
   const move = useCallback(
@@ -150,14 +164,7 @@ export function PerformSurface() {
           <button
             type="button"
             className={styles.dismiss}
-            onClick={() => {
-              setHintDismissed(true);
-              try {
-                getBrowserStorage()?.setItem(PERFORM_HINT_DISMISSED_KEY, '1');
-              } catch {
-                console.debug('Unable to persist perform hint dismissal');
-              }
-            }}
+            onClick={() => dismissStageHint('perform')}
             aria-label="Dismiss perform surface hint"
           >
             Dismiss

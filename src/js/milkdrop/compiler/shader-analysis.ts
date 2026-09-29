@@ -101,8 +101,53 @@ export {
 } from './shader-analysis-evaluation';
 export { buildUnsupportedVolumeSamplerWarnings } from './shader-analysis-helpers';
 
+/**
+ * MilkDrop 2's preamble helpers, expanded in raw hlsl2glsl bodies the way
+ * the statement emitter expands them (shader-analysis-glsl.ts): GetPixel
+ * and GetBlur0 read sampler_main, GetBlurN a blur level through its
+ * scale/bias. The raw path left the calls as-is, and GLSL has no such
+ * functions — 10 cream-of-the-crop presets failed to compile on it.
+ */
+const RAW_PREAMBLE_SAMPLES: ReadonlyArray<[RegExp, (coord: string) => string]> =
+  [
+    [
+      /\b(?:GetPixel|GetBlur0)\s*\(/gu,
+      (coord) => `texture2D(currentTex, sampleUv(${coord}, textureWrap)).xyz`,
+    ],
+    ...([1, 2, 3] as const).map(
+      (level): [RegExp, (coord: string) => string] => [
+        new RegExp(`\\bGetBlur${level}\\s*\\(`, 'gu'),
+        (coord) =>
+          `(texture2D(blur${level}Tex, sampleUv(${coord}, textureWrap)).xyz * scale${level} + bias${level})`,
+      ],
+    ),
+  ];
+
+function expandRawPreambleSamples(text: string): string {
+  let out = text;
+  for (const [pattern, expand] of RAW_PREAMBLE_SAMPLES) {
+    let match = pattern.exec(out);
+    while (match) {
+      const argStart = match.index + match[0].length;
+      let depth = 1;
+      let index = argStart;
+      for (; index < out.length && depth > 0; index += 1) {
+        if (out[index] === '(') depth += 1;
+        else if (out[index] === ')') depth -= 1;
+      }
+      if (depth !== 0) break;
+      const coord = out.slice(argStart, index - 1);
+      out = out.slice(0, match.index) + expand(coord) + out.slice(index);
+      pattern.lastIndex = match.index;
+      match = pattern.exec(out);
+    }
+    pattern.lastIndex = 0;
+  }
+  return out;
+}
+
 export function normalizeHlslToGlsl(shaderText: string): string {
-  const result = shaderText
+  const result = expandRawPreambleSamples(shaderText)
     // Volume-noise samples take a vec3 coordinate; route them to the
     // sampleNoiseVolume helper (atlas-sliced 3D emulation) instead of
     // texture2D, which has no vec3 overload. Must run before the generic
@@ -112,8 +157,10 @@ export function normalizeHlslToGlsl(shaderText: string): string {
       'sampleNoiseVolume(',
     )
     .replace(/\btexture\s*\(/giu, 'texture2D(')
+    .replace(/\btex2D\s*\(/giu, 'texture2D(')
     .replace(/\buint\s*\(([^)]+)\)/giu, 'int($1)')
     .replace(/\b(\d+)u\b/giu, '$1')
+    .replace(/\bfloat([234])x\1\b/giu, 'mat$1')
     .replace(/\bfloat2\b/giu, 'vec2')
     .replace(/\bfloat3\b/giu, 'vec3')
     .replace(/\bfloat4\b/giu, 'vec4')
@@ -154,7 +201,123 @@ export function normalizeHlslToGlsl(shaderText: string): string {
   // (MILKDROP_SIGNAL_NAME_ALIASES) so this chain and the composite emitter
   // cannot drift. `\b` word boundaries keep `bass` from matching inside
   // `bass_att`; longest-first ordering keeps the more specific alias winning.
-  return buildMilkdropSignalNameReplacements(result);
+  return rewriteRawHlslStatements(buildMilkdropSignalNameReplacements(result));
+}
+
+/**
+ * Statement-level HLSL→GLSL fixes the token rewrites above cannot express,
+ * applied per `;`-delimited statement of a raw body:
+ *
+ * - Integer literals become float literals. HLSL converts `1/z` and
+ *   `rs0.x * 1` implicitly; GLSL ES has no int→float conversion and rejects
+ *   both. Statements that plausibly need ints — array indexing, loops, int
+ *   or bool declarations, preprocessor lines — are left alone.
+ * - `float x = <vector expr>` truncates to the first component in HLSL
+ *   (`float corr = texsize.xy * texsize_noise_lq.zw;`), so the initialiser
+ *   goes through milkdropScalar, which is the identity on a float.
+ * - `output` is reserved in GLSL; preset locals by that name are renamed.
+ */
+/**
+ * HLSL `mul(x, y)` → GLSL `milkdropMul(y, x)`. An HLSL float2x2(a,b,c,d)
+ * fills rows where GLSL's mat2(a,b,c,d) fills columns, so the GLSL matrix
+ * is the transpose — and with that, mul(v, M), mul(M, v) and mul(A, B) all
+ * become the operands swapped. milkdropMul (the preamble's arithmetic set)
+ * covers every width pairing.
+ */
+function rewriteRawMul(text: string): string {
+  let out = text;
+  const pattern = /\bmul\s*\(/gu;
+  let match = pattern.exec(out);
+  while (match) {
+    const argStart = match.index + match[0].length;
+    let depth = 1;
+    let comma = -1;
+    let index = argStart;
+    for (; index < out.length && depth > 0; index += 1) {
+      const char = out[index];
+      if (char === '(') depth += 1;
+      else if (char === ')') depth -= 1;
+      else if (char === ',' && depth === 1 && comma === -1) comma = index;
+    }
+    if (depth !== 0 || comma === -1) break;
+    const left = out.slice(argStart, comma).trim();
+    const right = out.slice(comma + 1, index - 1).trim();
+    out = `${out.slice(0, match.index)}milkdropMul(${right}, ${left})${out.slice(index)}`;
+    pattern.lastIndex = match.index + 'milkdropMul('.length;
+    match = pattern.exec(out);
+  }
+  return out;
+}
+
+function rewriteRawHlslStatements(text: string): string {
+  text = rewriteRawMul(text);
+  // Names the body declares as int keep their integer literals: `n = 0`
+  // and `n < 6` on an `int n` are valid GLSL as written and invalid with
+  // float literals.
+  const intNames = new Set<string>();
+  for (const match of text.matchAll(
+    /\bint\s+([A-Za-z_]\w*(?:\s*(?:=[^,;]*)?,\s*[A-Za-z_]\w*)*)/gu,
+  )) {
+    for (const name of (match[1] ?? '').split(',')) {
+      const bare = name.split('=')[0]?.trim();
+      if (bare) intNames.add(bare);
+    }
+  }
+  // hlsl2glsl drops some `int` declarations (loop counters); the scratch
+  // hoister in feedback-manager-shared.ts then declares a name int when
+  // every bare assignment to it is an integer literal. Same rule here, so
+  // the rewrite does not erase that signal.
+  const literalOnly = new Map<string, boolean>();
+  for (const match of text.matchAll(
+    /(?:^|[;{}])\s*([A-Za-z_]\w*)\s*=(?!=)\s*([^;{}]+)/gu,
+  )) {
+    const name = match[1] ?? '';
+    const isIntLiteral = /^-?\d+\s*$|^int\s*\(/u.test(match[2] ?? '');
+    literalOnly.set(name, (literalOnly.get(name) ?? true) && isIntLiteral);
+  }
+  for (const [name, onlyInts] of literalOnly) {
+    if (onlyInts) intNames.add(name);
+  }
+  const touchesInt = (segment: string) => {
+    for (const name of intNames) {
+      if (new RegExp(`\\b${name}\\b`, 'u').test(segment)) return true;
+    }
+    return false;
+  };
+  return text
+    .split(/(;)/u)
+    .map((segment) => {
+      if (segment === ';') return segment;
+      const braceIndex = Math.max(
+        segment.lastIndexOf('{'),
+        segment.lastIndexOf('}'),
+      );
+      let out = segment.replace(/\boutput\b/gu, 'milkdropOutput');
+      if (
+        !/\bint\b|\bbool\b|\bfor\s*\(|\bwhile\b|\[|#/u.test(out) &&
+        !touchesInt(out)
+      ) {
+        out = out.replace(/(?<![\w.])(?<![eE][-+])(\d+)(?![\w.])/gu, '$1.0');
+      }
+      const head = out.slice(0, braceIndex + 1);
+      const statement = out.slice(braceIndex + 1);
+      const scalarDecl = statement.match(
+        /^(\s*(?:const\s+)?float\s+[A-Za-z_]\w*\s*=\s*)([\s\S]+?)(\s*)$/u,
+      );
+      if (scalarDecl) {
+        return `${head}${scalarDecl[1]}milkdropScalar(${scalarDecl[2]})${scalarDecl[3]}`;
+      }
+      // `float3 noise = tex2D(…) + 1` narrows a float4 in HLSL. GLSL allows
+      // constructing a vector from a wider one (and splatting a scalar), so
+      // wrapping the initialiser in the declared type restores that.
+      const vectorDecl = statement.match(
+        /^(\s*(?:const\s+)?(vec[234])\s+[A-Za-z_]\w*\s*=\s*)([\s\S]+?)(\s*)$/u,
+      );
+      return vectorDecl
+        ? `${head}${vectorDecl[1]}${vectorDecl[2]}(${vectorDecl[3]})${vectorDecl[4]}`
+        : out;
+    })
+    .join('');
 }
 
 // Slices the body of a `shader_body { … }` block by scanning to the closing
@@ -206,11 +369,14 @@ export function extractNativeShaderBody(shaderText: string) {
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith('uniform '))
     .filter((line) =>
-      /^(?:const\s+)?(?:float|int|uint|bool|vec[234]|mat[234]|float[234])\s+[a-z_][a-z0-9_]*(?:\s*=.+)?$/iu.test(
+      /^(?:const\s+)?(?:float|int|uint|bool|vec[234]|mat[234]|float[234])\s+[a-z_][a-z0-9_]*(?:\s*\[\s*\d+\s*\])?(?:\s*=.+)?$/iu.test(
         line,
       ),
     )
-    .map((line) => `  ${line};`);
+    // Through the same normaliser as the body: these are HLSL too, and a
+    // raw \`float2 rs;\` hoisted above the body was a GLSL syntax error that
+    // failed the whole program (15 cream-of-the-crop presets).
+    .map((line) => `  ${normalizeHlslToGlsl(line)};`);
   const rawBody =
     extractShaderBodyBlock(shaderText, openBrace) ??
     shaderText.slice(openBrace + 1);
@@ -1666,9 +1832,9 @@ export function clearShaderAnalysisCaches() {
 const MATRIX_DECLARATION_PATTERN =
   /^(?:const\s+)?(mat[234])\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)/u;
 
-/** The same declaration with no initializer: `mat3 a` or `mat2 a, b`. */
-const BARE_MATRIX_DECLARATION_PATTERN =
-  /^(mat[234])\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*$/u;
+/** A bare type declaration with no initializer: `mat3 a`, `vec3 ret_1`, `float x`, etc. */
+const BARE_TYPED_DECLARATION_PATTERN =
+  /^(mat[234]|vec[234]|float[234]|float|int|bool)\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*$/u;
 
 type MatrixLocalKind = 'mat2' | 'mat3' | 'mat4';
 
@@ -1765,6 +1931,15 @@ export function extractShaderControls(
   const directProgramStatements: MilkdropShaderStatement[] = [];
   const directProgramLines: string[] = [];
   let directProgramRequired = false;
+  // Names the body declares for itself (`float3 dx = …`). A declaration makes
+  // the name a shader local, so when it collides with a per-frame control
+  // name (dx, dy, zoom, rot, r/g/b) its statements go to the direct program
+  // and not to the controls. Consuming them as controls dropped the local
+  // from the program, and every later `dx.y` read the scalar offsetX uniform
+  // instead: a "scalar swizzle" compile error on WebGL, ~70 presets. Other
+  // declared locals keep the normal path, which also tracks their values
+  // for control expressions that read them.
+  const declaredLocalNames = new Set<string>();
 
   // When processing a native shader_body, parse failures don't make the
   // raw GLSL invalid — WebGL can still execute it. Unparseable lines only
@@ -1805,6 +1980,43 @@ export function extractShaderControls(
         return;
       }
       statements.push(parsedStatement);
+      const localBaseName =
+        parsedStatement.target.toLowerCase().split('.')[0] ?? '';
+      // A vector or matrix declaration is always a local: controls are
+      // scalars. A scalar declaration is a local only inside shader_body —
+      // in the control dialect `float dx = 0.02; dx += …` is how an author
+      // sets the dx control. (The compiler strips shader_body from preset
+      // text before this point, so for .milk shaders the type is what
+      // decides: `float3 dx` is caught, `float zoom = …` is not.)
+      const declaration = parsedStatement.declaration;
+      if (
+        declaration !== null &&
+        (nativeShaderBody || /^(?:vec|mat)[234]$/u.test(declaration))
+      ) {
+        declaredLocalNames.add(localBaseName);
+      }
+      if (
+        declaredLocalNames.has(localBaseName) &&
+        !shouldRetainDirectProgramContextStatement(localBaseName)
+      ) {
+        // Still evaluated, so later control expressions that read the local
+        // (`ret = tex * scale` deriving colorScale from `vec3 scale`) see its
+        // value — but into throwaway control objects, because a local never
+        // writes the per-frame control it happens to share a name with.
+        applyShaderAstStatement({
+          statement: parsedStatement,
+          controls: structuredClone(controls),
+          expressions: structuredClone(expressions),
+          shaderEnv,
+          shaderValueEnv,
+          shaderExpressionEnv,
+          hasNativeBody: Boolean(nativeShaderBody),
+        });
+        directProgramStatements.push(parsedStatement);
+        directProgramLines.push(line);
+        supportedLineCount += 1;
+        return;
+      }
       const requiresDirectProgram = shouldEmitDirectProgramStatement(
         parsedStatement.target,
       );
@@ -1888,21 +2100,28 @@ export function extractShaderControls(
       /^(?:(?:const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
     );
     if (!fallbackAssignment) {
-      // A bare matrix declaration (`mat3 tmpvar_1`) is the one declaration
-      // that has to leave a statement behind. Its element writes come next
-      // (`tmpvar_1[int(0)].x = q20`, nine of them for a rotation), and the
-      // WebGPU node executor needs to know the matrix's size before the first
-      // of those to pick the right column layout — nothing about
-      // `M[int(0)].x` says whether M has two, three or four rows. Seeding
-      // `tmpvar_1 = mat3(0.0)` is also what GLSL's raw path effectively does:
-      // every corpus body writes all elements before reading any.
-      const matrixDeclaration = nativeShaderBody
-        ? line.match(BARE_MATRIX_DECLARATION_PATTERN)
+      // A bare typed declaration (`mat3 tmpvar_1`, `vec3 ret_1`) has to leave a
+      // statement behind. For matrices, its element writes come next
+      // (`tmpvar_1[int(0)].x = q20`), and the WebGPU node executor needs to
+      // know the matrix's size before the first of those to pick the right column
+      // layout. For vectors, uninitialized reads (like `mix(ret_1, ...)`) or
+      // swizzle writes must not be misidentified as unbound per-frame scalar
+      // registers. Seeding `tmpvar_1 = kind(0.0)` or `ret_1 = vec3(0.0)` gives
+      // them their declared types and initial values.
+      const typedDeclaration = nativeShaderBody
+        ? line.match(BARE_TYPED_DECLARATION_PATTERN)
         : null;
-      if (matrixDeclaration) {
-        const kind = matrixDeclaration[1];
-        for (const name of (matrixDeclaration[2] ?? '').split(',')) {
-          const seeded = `${name.trim()} = ${kind}(0.0)`;
+      if (typedDeclaration) {
+        const rawKind = typedDeclaration[1] ?? 'float';
+        const kind =
+          rawKind.startsWith('float') && rawKind.length === 6
+            ? `vec${rawKind.slice(5)}`
+            : rawKind;
+        for (const name of (typedDeclaration[2] ?? '').split(',')) {
+          const seeded =
+            kind === 'float' || kind === 'int' || kind === 'bool'
+              ? `${name.trim()} = 0.0`
+              : `${name.trim()} = ${kind}(0.0)`;
           const seededStatement = parseShaderStatementCached(seeded);
           if (seededStatement) {
             // Both lists, so the direct program still covers every parsed

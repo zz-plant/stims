@@ -517,6 +517,233 @@ const MILKDROP_VIDEO_ECHO_HELPER = `
         }
 `;
 
+// HLSL intrinsics promote a scalar argument to the vector width of the
+// other arguments — lerp(float3, float, float), max(float, float3),
+// pow(float, float3), dot(float3, float) are all legal there and mean
+// "splat the scalar first". GLSL's mix/max/pow/dot have no such overloads
+// and reject the call, which took the whole program down: the largest
+// classes in the offline GLSL corpus scan (mix 70 presets, max 56, pow 18)
+// were exactly this. The emitter has no type inference, but GLSL has
+// function overloading, so these helpers let the GLSL compiler resolve the
+// promotion at compile time instead. The vector/vector and vector/scalar
+// forms GLSL already accepts are included so the emitter can call the
+// helper unconditionally.
+/**
+ * HLSL arithmetic truncates the wider vector operand to the narrower one's
+ * width (`roam_sin * roam_cos.yzx` is float4 * float3 → float3, a MilkDrop
+ * 2 idiom); GLSL rejects mixed widths. The emitter routes `+ - * /` here
+ * whenever neither operand is provably scalar, so every width pairing needs
+ * a form: same width, vector/scalar, the six mismatched pairs, and the
+ * matrix products `mul()` lowers to.
+ */
+function buildMilkdropArithmeticHelpers(): string {
+  const ops = [
+    ['milkdropAdd', '+'],
+    ['milkdropSub', '-'],
+    ['milkdropMul', '*'],
+    ['milkdropDiv', '/'],
+  ] as const;
+  const swizzle = ['', '', 'xy', 'xyz', 'xyzw'];
+  const lines: string[] = [];
+  for (const [name, op] of ops) {
+    lines.push(`float ${name}(float a, float b) { return a ${op} b; }`);
+    for (const n of [2, 3, 4]) {
+      const v = `vec${n}`;
+      lines.push(`${v} ${name}(${v} a, ${v} b) { return a ${op} b; }`);
+      lines.push(`${v} ${name}(${v} a, float b) { return a ${op} b; }`);
+      lines.push(`${v} ${name}(float a, ${v} b) { return a ${op} b; }`);
+      for (const m of [2, 3, 4]) {
+        if (m === n) continue;
+        const k = Math.min(n, m);
+        lines.push(
+          `vec${k} ${name}(${v} a, vec${m} b) { return a.${swizzle[k]} ${op} b.${swizzle[k]}; }`,
+        );
+      }
+      const mat = `mat${n}`;
+      if (op === '*') {
+        lines.push(`${mat} ${name}(${mat} a, ${mat} b) { return a * b; }`);
+        lines.push(`${v} ${name}(${mat} a, ${v} b) { return a * b; }`);
+        lines.push(`${v} ${name}(${v} a, ${mat} b) { return a * b; }`);
+        lines.push(`${mat} ${name}(${mat} a, float b) { return a * b; }`);
+        lines.push(`${mat} ${name}(float a, ${mat} b) { return a * b; }`);
+      } else if (op === '+' || op === '-') {
+        lines.push(`${mat} ${name}(${mat} a, ${mat} b) { return a ${op} b; }`);
+      } else {
+        lines.push(`${mat} ${name}(${mat} a, float b) { return a / b; }`);
+      }
+    }
+  }
+  return lines.map((line) => `        ${line}`).join('\n');
+}
+
+const MILKDROP_HLSL_PROMOTION_HELPERS = `
+        // MilkDrop 2's shader preamble (include.fx) defines these, so preset
+        // bodies use them undeclared. Note M_PI_2 is 2*pi, not C's pi/2.
+        // Missing, they were hoisted as zero uniforms and angle math such as
+        // cotc-royal-mashup-59's \`ang * M_INV_PI_2\` collapsed to a constant.
+        #define M_PI 3.14159265359
+        #define M_PI_2 6.28318530718
+        #define M_INV_PI_2 0.159154943091895
+        float milkdropLerp(float a, float b, float t) { return mix(a, b, t); }
+        vec2 milkdropLerp(vec2 a, vec2 b, float t) { return mix(a, b, t); }
+        vec2 milkdropLerp(vec2 a, vec2 b, vec2 t) { return mix(a, b, t); }
+        vec2 milkdropLerp(vec2 a, float b, float t) { return mix(a, vec2(b), t); }
+        vec2 milkdropLerp(float a, vec2 b, float t) { return mix(vec2(a), b, t); }
+        vec2 milkdropLerp(vec2 a, float b, vec2 t) { return mix(a, vec2(b), t); }
+        vec2 milkdropLerp(float a, vec2 b, vec2 t) { return mix(vec2(a), b, t); }
+        vec2 milkdropLerp(float a, float b, vec2 t) { return mix(vec2(a), vec2(b), t); }
+        vec3 milkdropLerp(vec3 a, vec3 b, float t) { return mix(a, b, t); }
+        vec3 milkdropLerp(vec3 a, vec3 b, vec3 t) { return mix(a, b, t); }
+        vec3 milkdropLerp(vec3 a, float b, float t) { return mix(a, vec3(b), t); }
+        vec3 milkdropLerp(float a, vec3 b, float t) { return mix(vec3(a), b, t); }
+        vec3 milkdropLerp(vec3 a, float b, vec3 t) { return mix(a, vec3(b), t); }
+        vec3 milkdropLerp(float a, vec3 b, vec3 t) { return mix(vec3(a), b, t); }
+        vec3 milkdropLerp(float a, float b, vec3 t) { return mix(vec3(a), vec3(b), t); }
+        vec4 milkdropLerp(vec4 a, vec4 b, float t) { return mix(a, b, t); }
+        vec4 milkdropLerp(vec4 a, vec4 b, vec4 t) { return mix(a, b, t); }
+        vec4 milkdropLerp(vec4 a, float b, float t) { return mix(a, vec4(b), t); }
+        vec4 milkdropLerp(float a, vec4 b, float t) { return mix(vec4(a), b, t); }
+        vec4 milkdropLerp(vec4 a, float b, vec4 t) { return mix(a, vec4(b), t); }
+        vec4 milkdropLerp(float a, vec4 b, vec4 t) { return mix(vec4(a), b, t); }
+        vec4 milkdropLerp(float a, float b, vec4 t) { return mix(vec4(a), vec4(b), t); }
+
+        float milkdropMax(float a, float b) { return max(a, b); }
+        vec2 milkdropMax(vec2 a, vec2 b) { return max(a, b); }
+        vec2 milkdropMax(vec2 a, float b) { return max(a, b); }
+        vec2 milkdropMax(float a, vec2 b) { return max(vec2(a), b); }
+        vec3 milkdropMax(vec3 a, vec3 b) { return max(a, b); }
+        vec3 milkdropMax(vec3 a, float b) { return max(a, b); }
+        vec3 milkdropMax(float a, vec3 b) { return max(vec3(a), b); }
+        vec4 milkdropMax(vec4 a, vec4 b) { return max(a, b); }
+        vec4 milkdropMax(vec4 a, float b) { return max(a, b); }
+        vec4 milkdropMax(float a, vec4 b) { return max(vec4(a), b); }
+
+        float milkdropMin(float a, float b) { return min(a, b); }
+        vec2 milkdropMin(vec2 a, vec2 b) { return min(a, b); }
+        vec2 milkdropMin(vec2 a, float b) { return min(a, b); }
+        vec2 milkdropMin(float a, vec2 b) { return min(vec2(a), b); }
+        vec3 milkdropMin(vec3 a, vec3 b) { return min(a, b); }
+        vec3 milkdropMin(vec3 a, float b) { return min(a, b); }
+        vec3 milkdropMin(float a, vec3 b) { return min(vec3(a), b); }
+        vec4 milkdropMin(vec4 a, vec4 b) { return min(a, b); }
+        vec4 milkdropMin(vec4 a, float b) { return min(a, b); }
+        vec4 milkdropMin(float a, vec4 b) { return min(vec4(a), b); }
+
+        // The base is floored at zero: pow() of a negative base is undefined
+        // in GLSL, and MilkDrop bodies feed it signal values that dip below.
+        float milkdropPow(float a, float b) { return pow(max(0.0, a), b); }
+        vec2 milkdropPow(vec2 a, vec2 b) { return pow(max(vec2(0.0), a), b); }
+        vec2 milkdropPow(vec2 a, float b) { return pow(max(vec2(0.0), a), vec2(b)); }
+        vec2 milkdropPow(float a, vec2 b) { return pow(vec2(max(0.0, a)), b); }
+        vec3 milkdropPow(vec3 a, vec3 b) { return pow(max(vec3(0.0), a), b); }
+        vec3 milkdropPow(vec3 a, float b) { return pow(max(vec3(0.0), a), vec3(b)); }
+        vec3 milkdropPow(float a, vec3 b) { return pow(vec3(max(0.0, a)), b); }
+        vec4 milkdropPow(vec4 a, vec4 b) { return pow(max(vec4(0.0), a), b); }
+        vec4 milkdropPow(vec4 a, float b) { return pow(max(vec4(0.0), a), vec4(b)); }
+        vec4 milkdropPow(float a, vec4 b) { return pow(vec4(max(0.0, a)), b); }
+
+        // HLSL truncates a vector assigned to a float to its first
+        // component (\`float bl = GetBlur2(uv);\`); GLSL rejects it.
+        float milkdropScalar(float v) { return v; }
+        float milkdropScalar(vec2 v) { return v.x; }
+        float milkdropScalar(vec3 v) { return v.x; }
+        float milkdropScalar(vec4 v) { return v.x; }
+
+        float milkdropDot(float a, float b) { return a * b; }
+        float milkdropDot(vec2 a, vec2 b) { return dot(a, b); }
+        float milkdropDot(vec2 a, float b) { return dot(a, vec2(b)); }
+        float milkdropDot(float a, vec2 b) { return dot(vec2(a), b); }
+        float milkdropDot(vec3 a, vec3 b) { return dot(a, b); }
+        float milkdropDot(vec3 a, float b) { return dot(a, vec3(b)); }
+        float milkdropDot(float a, vec3 b) { return dot(vec3(a), b); }
+        float milkdropDot(vec4 a, vec4 b) { return dot(a, b); }
+        float milkdropDot(vec4 a, float b) { return dot(a, vec4(b)); }
+        float milkdropDot(float a, vec4 b) { return dot(vec4(a), b); }
+        // HLSL relational operators work component-wise and yield a mask of
+        // the operands' width (\`left > 0.5\` on a float3 is a float3); GLSL
+        // only defines them on scalars. The emitter sends every comparison
+        // here, and a scalar pair still gives the old 1.0/0.0.
+        float milkdropLt(float a, float b) { return (a < b) ? 1.0 : 0.0; }
+        vec2 milkdropLt(vec2 a, vec2 b) { return vec2(lessThan(a, b)); }
+        vec2 milkdropLt(vec2 a, float b) { return vec2(lessThan(a, vec2(b))); }
+        vec2 milkdropLt(float a, vec2 b) { return vec2(lessThan(vec2(a), b)); }
+        vec3 milkdropLt(vec3 a, vec3 b) { return vec3(lessThan(a, b)); }
+        vec3 milkdropLt(vec3 a, float b) { return vec3(lessThan(a, vec3(b))); }
+        vec3 milkdropLt(float a, vec3 b) { return vec3(lessThan(vec3(a), b)); }
+        vec4 milkdropLt(vec4 a, vec4 b) { return vec4(lessThan(a, b)); }
+        vec4 milkdropLt(vec4 a, float b) { return vec4(lessThan(a, vec4(b))); }
+        vec4 milkdropLt(float a, vec4 b) { return vec4(lessThan(vec4(a), b)); }
+        float milkdropLe(float a, float b) { return (a <= b) ? 1.0 : 0.0; }
+        vec2 milkdropLe(vec2 a, vec2 b) { return vec2(lessThanEqual(a, b)); }
+        vec2 milkdropLe(vec2 a, float b) { return vec2(lessThanEqual(a, vec2(b))); }
+        vec2 milkdropLe(float a, vec2 b) { return vec2(lessThanEqual(vec2(a), b)); }
+        vec3 milkdropLe(vec3 a, vec3 b) { return vec3(lessThanEqual(a, b)); }
+        vec3 milkdropLe(vec3 a, float b) { return vec3(lessThanEqual(a, vec3(b))); }
+        vec3 milkdropLe(float a, vec3 b) { return vec3(lessThanEqual(vec3(a), b)); }
+        vec4 milkdropLe(vec4 a, vec4 b) { return vec4(lessThanEqual(a, b)); }
+        vec4 milkdropLe(vec4 a, float b) { return vec4(lessThanEqual(a, vec4(b))); }
+        vec4 milkdropLe(float a, vec4 b) { return vec4(lessThanEqual(vec4(a), b)); }
+        float milkdropGt(float a, float b) { return (a > b) ? 1.0 : 0.0; }
+        vec2 milkdropGt(vec2 a, vec2 b) { return vec2(greaterThan(a, b)); }
+        vec2 milkdropGt(vec2 a, float b) { return vec2(greaterThan(a, vec2(b))); }
+        vec2 milkdropGt(float a, vec2 b) { return vec2(greaterThan(vec2(a), b)); }
+        vec3 milkdropGt(vec3 a, vec3 b) { return vec3(greaterThan(a, b)); }
+        vec3 milkdropGt(vec3 a, float b) { return vec3(greaterThan(a, vec3(b))); }
+        vec3 milkdropGt(float a, vec3 b) { return vec3(greaterThan(vec3(a), b)); }
+        vec4 milkdropGt(vec4 a, vec4 b) { return vec4(greaterThan(a, b)); }
+        vec4 milkdropGt(vec4 a, float b) { return vec4(greaterThan(a, vec4(b))); }
+        vec4 milkdropGt(float a, vec4 b) { return vec4(greaterThan(vec4(a), b)); }
+        float milkdropGe(float a, float b) { return (a >= b) ? 1.0 : 0.0; }
+        vec2 milkdropGe(vec2 a, vec2 b) { return vec2(greaterThanEqual(a, b)); }
+        vec2 milkdropGe(vec2 a, float b) { return vec2(greaterThanEqual(a, vec2(b))); }
+        vec2 milkdropGe(float a, vec2 b) { return vec2(greaterThanEqual(vec2(a), b)); }
+        vec3 milkdropGe(vec3 a, vec3 b) { return vec3(greaterThanEqual(a, b)); }
+        vec3 milkdropGe(vec3 a, float b) { return vec3(greaterThanEqual(a, vec3(b))); }
+        vec3 milkdropGe(float a, vec3 b) { return vec3(greaterThanEqual(vec3(a), b)); }
+        vec4 milkdropGe(vec4 a, vec4 b) { return vec4(greaterThanEqual(a, b)); }
+        vec4 milkdropGe(vec4 a, float b) { return vec4(greaterThanEqual(a, vec4(b))); }
+        vec4 milkdropGe(float a, vec4 b) { return vec4(greaterThanEqual(vec4(a), b)); }
+        float milkdropEq(float a, float b) { return (a == b) ? 1.0 : 0.0; }
+        vec2 milkdropEq(vec2 a, vec2 b) { return vec2(equal(a, b)); }
+        vec2 milkdropEq(vec2 a, float b) { return vec2(equal(a, vec2(b))); }
+        vec2 milkdropEq(float a, vec2 b) { return vec2(equal(vec2(a), b)); }
+        vec3 milkdropEq(vec3 a, vec3 b) { return vec3(equal(a, b)); }
+        vec3 milkdropEq(vec3 a, float b) { return vec3(equal(a, vec3(b))); }
+        vec3 milkdropEq(float a, vec3 b) { return vec3(equal(vec3(a), b)); }
+        vec4 milkdropEq(vec4 a, vec4 b) { return vec4(equal(a, b)); }
+        vec4 milkdropEq(vec4 a, float b) { return vec4(equal(a, vec4(b))); }
+        vec4 milkdropEq(float a, vec4 b) { return vec4(equal(vec4(a), b)); }
+        float milkdropNe(float a, float b) { return (a != b) ? 1.0 : 0.0; }
+        vec2 milkdropNe(vec2 a, vec2 b) { return vec2(notEqual(a, b)); }
+        vec2 milkdropNe(vec2 a, float b) { return vec2(notEqual(a, vec2(b))); }
+        vec2 milkdropNe(float a, vec2 b) { return vec2(notEqual(vec2(a), b)); }
+        vec3 milkdropNe(vec3 a, vec3 b) { return vec3(notEqual(a, b)); }
+        vec3 milkdropNe(vec3 a, float b) { return vec3(notEqual(a, vec3(b))); }
+        vec3 milkdropNe(float a, vec3 b) { return vec3(notEqual(vec3(a), b)); }
+        vec4 milkdropNe(vec4 a, vec4 b) { return vec4(notEqual(a, b)); }
+        vec4 milkdropNe(vec4 a, float b) { return vec4(notEqual(a, vec4(b))); }
+        vec4 milkdropNe(float a, vec4 b) { return vec4(notEqual(vec4(a), b)); }
+
+        // HLSL constructors take any split of components across arguments
+        // (\`float3(uv, z)\`, \`float4(uv, 0, 1)\`); which argument is the
+        // vector is a type question the emitter cannot answer from text, so
+        // these overloads let the GLSL compiler pick. An all-scalar short
+        // call pads with zeros, as the emitter used to.
+        vec3 milkdropVec3(vec2 a, float b) { return vec3(a, b); }
+        vec3 milkdropVec3(float a, vec2 b) { return vec3(a, b); }
+        vec3 milkdropVec3(float a, float b) { return vec3(a, b, 0.0); }
+        vec4 milkdropVec4(vec2 a, vec2 b) { return vec4(a, b); }
+        vec4 milkdropVec4(vec3 a, float b) { return vec4(a, b); }
+        vec4 milkdropVec4(float a, vec3 b) { return vec4(a, b); }
+        vec4 milkdropVec4(float a, float b) { return vec4(a, b, 0.0, 0.0); }
+        vec4 milkdropVec4(vec2 a, float b, float c) { return vec4(a, b, c); }
+        vec4 milkdropVec4(float a, vec2 b, float c) { return vec4(a, b, c); }
+        vec4 milkdropVec4(float a, float b, vec2 c) { return vec4(a, b, c); }
+        vec4 milkdropVec4(float a, float b, float c) { return vec4(a, b, c, 0.0); }
+
+${buildMilkdropArithmeticHelpers()}
+`;
+
 // Aux-texture sampling and the control-driven feedback warp are needed by
 // both the feedback-blend pass (warp-texture displacement, legacy warp) and
 // the composite pass (overlay/comp-body sampling), so they live in one
@@ -536,6 +763,20 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
 
         vec2 sampleUv(vec2 uv, float wrapMode) {
           return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
+        }
+        // tex2D(sampler, float3/float4) reads the coordinate's .xy in HLSL
+        // (\`tex2D(sampler_main, ret)\` with a float3 ret is common in
+        // feedback presets); GLSL has no such truncation.
+        vec2 sampleUv(vec3 uv, float wrapMode) { return sampleUv(uv.xy, wrapMode); }
+        vec2 sampleUv(vec4 uv, float wrapMode) { return sampleUv(uv.xy, wrapMode); }
+        vec2 sampleUv(float uv, float wrapMode) { return sampleUv(vec2(uv), wrapMode); }
+
+        // Zoom divisor floor that keeps the sign: zoom = -1 (zoomexp 1) is
+        // MilkDrop's point mirror through the centre, and max(zoom, 0.0001)
+        // turned it into a 10000x magnification of the centre pixel. Same
+        // rule as floorWarpZoomDivisor (warp-sample-transform.ts).
+        float signedZoomDivisor(float zoomValue) {
+          return zoomValue < 0.0 ? min(zoomValue, -0.0001) : max(zoomValue, 0.0001);
         }
 
         vec4 sampleAuxTexture2d(float source, vec2 uv) {
@@ -609,6 +850,7 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
           vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
           return mix(sliceA, sliceB, sliceBlend);
         }
+${MILKDROP_HLSL_PROMOTION_HELPERS}
 `;
 
 // The control-driven feedback warp is shared by the warp pass and the
@@ -697,6 +939,26 @@ const MILKDROP_FEEDBACK_WARP_HELPER = `
  * warp is expressed by the geometry rather than by uniforms the fragment
  * shader would have to re-derive. This is how MilkDrop itself warps.
  */
+// The gather lattice: each vertex sits at its own lattice position and
+// carries the coordinate MilkDrop samples the previous frame from there.
+// Rasterised, that is a per-pixel "where does this pixel read from" map — the
+// \`uv\` a warp shader sees. The scatter mesh below serves presets without one.
+const MILKDROP_WARP_UV_VERTEX_SHADER = `
+        attribute vec2 sampleUvAttr;
+        varying vec2 vSampleUv;
+        void main() {
+          vSampleUv = sampleUvAttr;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `;
+
+const MILKDROP_WARP_UV_FRAGMENT_SHADER = `
+        varying vec2 vSampleUv;
+        void main() {
+          gl_FragColor = vec4(vSampleUv, 0.0, 1.0);
+        }
+      `;
+
 const MILKDROP_WARP_MESH_VERTEX_SHADER = `
         attribute vec2 warpUvAttr;
         varying vec2 vWarpUv;
@@ -762,7 +1024,7 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
             centeredUv.x * rotCos - centeredUv.y * rotSin,
             centeredUv.x * rotSin + centeredUv.y * rotCos
           );
-          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+          vec2 transformedUv = rotatedUv / signedZoomDivisor(zoomMul) + vec2(offsetX, offsetY);
 
           vec2 currentUv = hasDirectWarp > 0.5
             ? transformedUv + 0.5
@@ -820,7 +1082,15 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
           vec3 color = hasDirectWarp > 0.5
             ? previousColor + current.rgb
             : previousColor * (1.0 - coverage) + current.rgb;
-          gl_FragColor = vec4(color, 1.0);
+          // MilkDrop's internal buffer is 8-bit, so every frame it carries is
+          // implicitly clamped to [0,1]. Ours is half-float for decay
+          // precision, which removed that clamp: a sharpening warp such as
+          // Geiss's reaction-diffusion \`ret += (ret - GetBlur1(uv)) * 0.3\`
+          // is bounded in MilkDrop but grew without limit here, and the blur
+          // spread it until six cotc presets rendered solid white. Clamping
+          // the value that feeds the next frame restores the bound without
+          // giving up half-float's sub-1/255 decay steps.
+          gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
         }
       `;
 
@@ -1167,6 +1437,8 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform vec2 warpTextureOffset;
         uniform float warpTextureVolumeSliceZ;
         uniform float hasDirectWarp;
+        uniform sampler2D warpUvTex;
+        uniform float hasWarpUvField;
         uniform float signalBass;
         uniform float signalMid;
         uniform float signalTreb;
@@ -1220,9 +1492,16 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
           float rotSin = -sin(rotation);
           float rotCos = cos(rotation);
           vec2 rotatedUv = vec2(centeredUv.x * rotCos - centeredUv.y * rotSin, centeredUv.x * rotSin + centeredUv.y * rotCos);
-          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+          vec2 transformedUv = rotatedUv / signedZoomDivisor(zoomMul) + vec2(offsetX, offsetY);
 
-          vec2 uv = transformedUv + 0.5;
+          // MilkDrop's warp-shader \`uv\` is the per-vertex warped coordinate:
+          // per-frame and per-pixel zoom/rot/dx/dy/sx/sy, interpolated across
+          // the mesh. When the preset has per-pixel motion the gather mesh
+          // was rasterised into warpUvTex; otherwise the per-frame uniforms
+          // are the whole transform.
+          vec2 uv = hasWarpUvField > 0.5
+            ? texture2D(warpUvTex, vUv).xy
+            : transformedUv + 0.5;
           vec2 uv_orig = vUv;
           vec3 ret = texture2D(currentTex, sampleUv(uv, textureWrap)).rgb;
           float rad = length(vec2((uv.x - 0.5) * aspect.x, (uv.y - 0.5) * aspect.y)) * 2.0;
@@ -1242,9 +1521,9 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
             ? transformedUv + 0.5
             : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
           vec2 prevUv = hasDirectWarp > 0.5
-            ? (currentUv - 0.5) / max(zoom, 0.0001) + 0.5
+            ? (currentUv - 0.5) / signedZoomDivisor(zoom) + 0.5
             : applyFeedbackWarp(
-                (currentUv - 0.5) / max(zoom, 0.0001) + 0.5,
+                (currentUv - 0.5) / signedZoomDivisor(zoom) + 0.5,
                 warpScale * 0.8,
                 rotation * 0.6
               );
@@ -1436,7 +1715,7 @@ const MILKDROP_KNOWN_VECTOR_SIZES: Record<string, number> = {
 type MilkdropPerFrameDeclaration = {
   name: string;
   isLocalScratch: boolean;
-  type: 'float' | 'vec2' | 'vec3' | 'vec4';
+  type: 'float' | 'int' | 'vec2' | 'vec3' | 'vec4';
 };
 
 /**
@@ -1454,22 +1733,34 @@ type MilkdropPerFrameDeclaration = {
  * a direct `name = vecN(...)` constructor; the widest single-component
  * swizzle ever assigned to it (`name.z = …` implies at least vec3); a
  * swizzle applied to a known multi-component builtin on its first
- * assignment's right-hand side (`texsize.zw` implies vec2). Defaults to
- * float, which is always safe for genuinely scalar scratch registers and no
- * worse than the previous "uniform float" default otherwise.
+ * assignment's right-hand side (`texsize.zw` implies vec2). A scalar whose
+ * every bare assignment is an integer literal or an `int(...)` cast is an
+ * `int`: the bundled Butterchurn bodies come from hlsl2glsl, whose output
+ * lost the `int xlat_mutablen;` declarations for loop counters, and GLSL ES
+ * has no implicit int→float conversion — declared float, `n = 0;` and
+ * `n < 6` fail to compile, which blanked amandio-c-fume, flexi-can-t-think-
+ * of-mosaic-cages, lit-claw-explorers-grid-… and martin-elusive-impressions-
+ * mix1 on WebGL (2026-09-15). Defaults to float, which is always safe for
+ * genuinely scalar scratch registers and no worse than the previous
+ * "uniform float" default otherwise.
  */
 function classifyPerFrameVariable(
   name: string,
   fragments: Array<string | null>,
+  hoistedSizes: ReadonlyMap<string, number> = new Map(),
 ): MilkdropPerFrameDeclaration {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  // Compound writes (`mus *= vec3(1.1, 1.0, 0.95)`) are sizing evidence
+  // too; they only never count as the variable's *first* use being a read.
   const occurrence = new RegExp(
-    `\\b${escaped}\\b(?:\\.([xyzwrgba]{1,4}))?\\s*(=(?!=))?`,
+    `\\b${escaped}\\b(?:\\.([xyzwrgba]{1,4}))?\\s*([-+*/]?=(?!=))?`,
     'gu',
   );
   let firstIsAssignment: boolean | null = null;
   let widestComponentIndex = -1;
   let constructorSize: number | null = null;
+  let bareAssignments = 0;
+  let integerAssignments = 0;
   const componentIndex: Record<string, number> = {
     x: 0,
     y: 1,
@@ -1488,11 +1779,26 @@ function classifyPerFrameVariable(
     const clean = stripShaderComments(fragment);
     for (const match of clean.matchAll(occurrence)) {
       const swizzle = match[1];
-      const isAssignment = match[2] === '=';
+      const operator = match[2];
+      const isAssignment = operator === '=';
       if (firstIsAssignment === null) {
         firstIsAssignment = isAssignment;
       }
+      if (!operator) {
+        continue;
+      }
       if (!isAssignment) {
+        // Compound write: size from a depth-0 vector constructor only.
+        const restFrom = match.index + match[0].length;
+        const end = clean.indexOf(';', restFrom);
+        const rhs = clean.slice(restFrom, end === -1 ? undefined : end);
+        for (const ctorMatch of rhs.matchAll(/\bvec([234])\s*\(/gu)) {
+          if (widthPreservingDepthAt(rhs, ctorMatch.index ?? 0) !== 0) continue;
+          widestComponentIndex = Math.max(
+            widestComponentIndex,
+            Number(ctorMatch[1]) - 1,
+          );
+        }
         continue;
       }
       if (swizzle) {
@@ -1512,19 +1818,34 @@ function classifyPerFrameVariable(
         restFrom,
         statementEnd === -1 ? undefined : statementEnd,
       );
+      bareAssignments += 1;
+      if (/^\s*(?:-?\d+|int\s*\(.*\))\s*$/u.test(rhs)) {
+        integerAssignments += 1;
+      }
+      // A constructor sizes the variable only when it is the whole RHS:
+      // `d = vec4(1.0 / texelSize, texelSize).zw` is a vec2.
       const constructorMatch = rhs.match(/^\s*vec([234])\s*\(/u);
-      if (constructorMatch) {
+      if (
+        constructorMatch &&
+        rhs
+          .slice(closingParenIndex(rhs, constructorMatch[0].length - 1) + 1)
+          .trim() === ''
+      ) {
         constructorSize = Math.max(
           constructorSize ?? 0,
           Number(constructorMatch[1]),
         );
         continue;
       }
+      // Only a swizzle at the RHS's top level sizes the variable: in
+      // `l2 = lum(texture2D(…).xyz * scale1 + bias1)` the `.xyz` is an
+      // argument, and the result is lum()'s float. Counting it declared l2
+      // vec3 and failed the scalar assignment.
       for (const knownMatch of rhs.matchAll(
         /\b([a-zA-Z_][a-zA-Z0-9_]*)\.([xyzwrgba]{1,4})\b/gu,
       )) {
         const knownSize = MILKDROP_KNOWN_VECTOR_SIZES[knownMatch[1]];
-        if (knownSize) {
+        if (knownSize && parenDepthAt(rhs, knownMatch.index ?? 0) === 0) {
           widestComponentIndex = Math.max(
             widestComponentIndex,
             knownMatch[2].length - 1,
@@ -1536,7 +1857,35 @@ function classifyPerFrameVariable(
       // `vec4(1.0 / texelSize, texelSize).zw` — carries the same size
       // signal as a named-identifier swizzle but the regex above requires a
       // bare identifier before the dot, so it won't match a `)` there.
+      // A bare vector at call depth 0 carries its width into the result —
+      // `d_uv = uv;`, `uv1 = uv - vec2(0.5, q5);` — as does a constructor
+      // there that no swizzle narrows. Without this those were hoisted as
+      // float and the assignment failed to compile.
+      for (const bareMatch of rhs.matchAll(
+        /\b([a-zA-Z_][a-zA-Z0-9_]*)\b(?!\s*[.(])/gu,
+      )) {
+        const size =
+          MILKDROP_BARE_VECTOR_SIZES[bareMatch[1]] ??
+          MILKDROP_KNOWN_VECTOR_SIZES[bareMatch[1]] ??
+          hoistedSizes.get(bareMatch[1]);
+        if (size && widthPreservingDepthAt(rhs, bareMatch.index ?? 0) === 0) {
+          widestComponentIndex = Math.max(widestComponentIndex, size - 1);
+        }
+      }
+      for (const ctorMatch of rhs.matchAll(/\bvec([234])\s*\(/gu)) {
+        const start = ctorMatch.index ?? 0;
+        if (parenDepthAt(rhs, start) !== 0) continue;
+        const close = closingParenIndex(rhs, start + ctorMatch[0].length - 1);
+        if (/^\s*\./u.test(rhs.slice(close + 1))) continue;
+        widestComponentIndex = Math.max(
+          widestComponentIndex,
+          Number(ctorMatch[1]) - 1,
+        );
+      }
       for (const inlineMatch of rhs.matchAll(/\)\.([xyzwrgba]{1,4})\b/gu)) {
+        // Depth after the closing paren: 0 means the swizzled call is not
+        // itself an argument to another call.
+        if (parenDepthAt(rhs, (inlineMatch.index ?? 0) + 1) !== 0) continue;
         widestComponentIndex = Math.max(
           widestComponentIndex,
           inlineMatch[1].length - 1,
@@ -1549,6 +1898,13 @@ function classifyPerFrameVariable(
     return { name, isLocalScratch: false, type: 'float' };
   }
   const inferredSize = constructorSize ?? widestComponentIndex + 1;
+  if (
+    inferredSize <= 1 &&
+    bareAssignments > 0 &&
+    integerAssignments === bareAssignments
+  ) {
+    return { name, isLocalScratch: true, type: 'int' };
+  }
   const type =
     inferredSize >= 4
       ? 'vec4'
@@ -1560,17 +1916,132 @@ function classifyPerFrameVariable(
   return { name, isLocalScratch: true, type };
 }
 
+/** Calls whose result has the width of their (first) argument. */
+const WIDTH_PRESERVING_CALLS = new Set([
+  'abs',
+  'sign',
+  'floor',
+  'ceil',
+  'fract',
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan',
+  'exp',
+  'exp2',
+  'log',
+  'log2',
+  'sqrt',
+  'inversesqrt',
+  'normalize',
+  'clamp',
+  'min',
+  'max',
+  'mix',
+  'step',
+  'smoothstep',
+  'mod',
+  'pow',
+  'saturate',
+  'milkdropLerp',
+  'milkdropMax',
+  'milkdropMin',
+  'milkdropPow',
+  'milkdropAdd',
+  'milkdropSub',
+  'milkdropMul',
+  'milkdropDiv',
+]);
+
+/**
+ * parenDepthAt, but a width-preserving call is transparent: `uvn` inside
+ * `clamp(tan(z) * uvn, -5.0, 5.0)` still decides the result's width.
+ */
+function widthPreservingDepthAt(text: string, index: number): number {
+  const stack: boolean[] = [];
+  for (let i = 0; i < index; i += 1) {
+    const char = text[i];
+    if (char === '(') {
+      const callee = /([A-Za-z_]\w*)\s*$/u.exec(text.slice(0, i))?.[1];
+      stack.push(Boolean(callee) && !WIDTH_PRESERVING_CALLS.has(callee ?? ''));
+    } else if (char === ')') {
+      stack.pop();
+    }
+  }
+  return stack.filter(Boolean).length;
+}
+
+/** Template-owned vectors a body reads bare: the stage coordinate and output. */
+const MILKDROP_BARE_VECTOR_SIZES: Readonly<Record<string, number>> = {
+  uv: 2,
+  vUv: 2,
+  uv_orig: 2,
+  ret: 3,
+};
+
+/** Index of the `)` closing the `(` at `open`, or the text's end. */
+function closingParenIndex(text: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < text.length; i += 1) {
+    if (text[i] === '(') depth += 1;
+    else if (text[i] === ')') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return text.length;
+}
+
+/**
+ * Unclosed *call* parens before `index` in `text` — a `(` directly after an
+ * identifier. Grouping parens don't count: `(tex.xyz * s + b)` is still the
+ * vector, `lum(tex.xyz)` is not.
+ */
+function parenDepthAt(text: string, index: number): number {
+  const stack: boolean[] = [];
+  for (let i = 0; i < index; i += 1) {
+    const char = text[i];
+    if (char === '(') {
+      stack.push(/[A-Za-z0-9_]\s*$/u.test(text.slice(0, i)));
+    } else if (char === ')') {
+      stack.pop();
+    }
+  }
+  return stack.filter(Boolean).length;
+}
+
 function buildPerFrameVariableDeclarations(
   names: string[],
   fragments: Array<string | null>,
 ): string {
-  return names
-    .map((name) => {
-      const decl = classifyPerFrameVariable(name, fragments);
-      return decl.isLocalScratch
+  // A scratch variable copied from another (`denominator = product;`) takes
+  // that one's width, so classify to a fixed point: each pass can size
+  // names whose sources the previous pass sized. Bounded by the chain
+  // length; four passes cover every chain in the corpus.
+  const sizes = new Map<string, number>();
+  let decls = names.map((name) => classifyPerFrameVariable(name, fragments));
+  for (let pass = 0; pass < 4; pass += 1) {
+    let changed = false;
+    for (const decl of decls) {
+      const size = { float: 1, int: 1, vec2: 2, vec3: 3, vec4: 4 }[decl.type];
+      if (decl.isLocalScratch && size > 1 && sizes.get(decl.name) !== size) {
+        sizes.set(decl.name, size);
+        changed = true;
+      }
+    }
+    if (!changed) break;
+    decls = names.map((name) =>
+      classifyPerFrameVariable(name, fragments, sizes),
+    );
+  }
+  return decls
+    .map((decl) =>
+      decl.isLocalScratch
         ? `${decl.type} ${decl.name};\n`
-        : `uniform float ${decl.name};\n`;
-    })
+        : `uniform float ${decl.name};\n`,
+    )
     .join('');
 }
 
@@ -1719,6 +2190,11 @@ class SharedMilkdropFeedbackManager
   readonly warpMeshMaterial: ShaderMaterial;
   readonly warpMeshGeometry: BufferGeometry;
   readonly warpMeshScene: Scene;
+  /** The gather lattice rasterised to per-pixel sample coordinates, for warp
+   * shaders. See MILKDROP_WARP_UV_FRAGMENT_SHADER. */
+  readonly warpUvTarget: WebGLRenderTarget;
+  readonly warpUvGeometry: BufferGeometry;
+  readonly warpUvScene: Scene;
   private warpFieldDensity = 0;
   private warpFieldReady = false;
 
@@ -1740,6 +2216,13 @@ class SharedMilkdropFeedbackManager
     this.warpTarget = createWebGLFeedbackRenderTarget(width, height, {
       resolutionScale: this.currentFeedbackResolutionScale,
       useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+      samples: 1,
+    });
+    // Half-float regardless of the feedback format: these are coordinates,
+    // and 8 bits would quantise them to 1/255 of the frame.
+    this.warpUvTarget = createWebGLFeedbackRenderTarget(width, height, {
+      resolutionScale: this.currentFeedbackResolutionScale,
+      useHalfFloatFeedback: true,
       samples: 1,
     });
     this.targets = [
@@ -1869,6 +2352,8 @@ class SharedMilkdropFeedbackManager
         currentTex: { value: this.targets[0].texture },
         previousTex: { value: this.targets[0].texture },
         warpTex: { value: this.targets[0].texture },
+        warpUvTex: { value: null },
+        hasWarpUvField: { value: 0 },
         blur1Tex: { value: this.blurTargets[0].texture },
         blur2Tex: { value: this.blurTargets[1].texture },
         blur3Tex: { value: this.blurTargets[2].texture },
@@ -1969,6 +2454,21 @@ class SharedMilkdropFeedbackManager
     this.warpMeshScene = new Scene();
     this.warpMeshScene.add(warpMesh);
     this.warpMeshScene.matrixAutoUpdate = false;
+    this.warpUvGeometry = new BufferGeometry();
+    const warpUvMesh = new Mesh(
+      this.warpUvGeometry,
+      new ShaderMaterial({
+        vertexShader: MILKDROP_WARP_UV_VERTEX_SHADER,
+        fragmentShader: MILKDROP_WARP_UV_FRAGMENT_SHADER,
+        depthTest: false,
+        depthWrite: false,
+        side: DoubleSide,
+      }),
+    );
+    warpUvMesh.frustumCulled = false;
+    this.warpUvScene = new Scene();
+    this.warpUvScene.add(warpUvMesh);
+    this.warpUvScene.matrixAutoUpdate = false;
     this.feedbackBlendMaterial = new ShaderMaterial({
       uniforms: {
         currentTex: { value: this.sceneTarget.texture },
@@ -2166,8 +2666,37 @@ class SharedMilkdropFeedbackManager
     }
     positions.needsUpdate = true;
     uvs.needsUpdate = true;
+    const uvGeometry = this.warpUvGeometry;
+    const latticeAttr = uvGeometry.getAttribute('position');
+    if (!latticeAttr || latticeAttr.count !== vertexCount) {
+      uvGeometry.setAttribute(
+        'position',
+        new BufferAttribute(new Float32Array(vertexCount * 3), 3),
+      );
+      uvGeometry.setAttribute(
+        'sampleUvAttr',
+        new BufferAttribute(new Float32Array(vertexCount * 2), 2),
+      );
+    }
+    const latticePositions = (
+      uvGeometry.getAttribute('position') as BufferAttribute
+    ).array as Float32Array;
+    const sampleUvAttr = uvGeometry.getAttribute(
+      'sampleUvAttr',
+    ) as BufferAttribute;
+    const sampleUvArray = sampleUvAttr.array as Float32Array;
+    for (let index = 0; index < vertexCount; index += 1) {
+      latticePositions[index * 3] = (field.uvs[index * 2] ?? 0) * 2 - 1;
+      latticePositions[index * 3 + 1] = (field.uvs[index * 2 + 1] ?? 0) * 2 - 1;
+      latticePositions[index * 3 + 2] = 0;
+      sampleUvArray[index * 2] = field.sampleUvs[index * 2] ?? 0;
+      sampleUvArray[index * 2 + 1] = field.sampleUvs[index * 2 + 1] ?? 0;
+    }
+    (uvGeometry.getAttribute('position') as BufferAttribute).needsUpdate = true;
+    sampleUvAttr.needsUpdate = true;
     if (this.warpFieldDensity !== field.density) {
       geometry.setIndex(new BufferAttribute(field.indices, 1));
+      uvGeometry.setIndex(new BufferAttribute(field.indices, 1));
       this.warpFieldDensity = field.density;
     }
     this.warpFieldReady = true;
@@ -2843,9 +3372,18 @@ class SharedMilkdropFeedbackManager
       this.sceneTarget,
     );
 
-    renderer.setRenderTarget(this.warpTarget);
     const warpShaderOwnsTransform =
       (this.warpMaterial.uniforms.hasDirectWarp.value as number) > 0.5;
+    const warpShaderReadsField = this.warpFieldReady && warpShaderOwnsTransform;
+    if (warpShaderReadsField) {
+      renderer.setRenderTarget(this.warpUvTarget);
+      renderer.render(this.warpUvScene, this.camera);
+    }
+    this.warpMaterial.uniforms.warpUvTex.value = this.warpUvTarget.texture;
+    this.warpMaterial.uniforms.hasWarpUvField.value = warpShaderReadsField
+      ? 1
+      : 0;
+    renderer.setRenderTarget(this.warpTarget);
     if (this.warpFieldReady && !warpShaderOwnsTransform) {
       // The grid already carries the preset's whole transform, per-pixel code
       // included; re-deriving it from uniforms here would apply it twice.
@@ -2952,6 +3490,7 @@ class SharedMilkdropFeedbackManager
     );
     this.sceneTarget.setSize(sceneWidth, sceneHeight);
     this.warpTarget.setSize(feedbackWidth, feedbackHeight);
+    this.warpUvTarget.setSize(feedbackWidth, feedbackHeight);
     this.targets.forEach((target) =>
       target.setSize(feedbackWidth, feedbackHeight),
     );
@@ -2997,6 +3536,8 @@ class SharedMilkdropFeedbackManager
     }
     this.sceneTarget.dispose();
     this.warpTarget.dispose();
+    this.warpUvTarget.dispose();
+    this.warpUvGeometry.dispose();
     this.targets.forEach((target) => target.dispose());
     this.displayTarget.dispose();
     this.blurTargets.forEach((target) => target.dispose());

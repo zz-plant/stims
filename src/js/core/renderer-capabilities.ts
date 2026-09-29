@@ -625,13 +625,53 @@ const OPTIONAL_WEBGPU_DEVICE_FEATURES = [
   'bgra8unorm-storage',
 ] as const;
 
+/**
+ * Per-stage binding limits the composite pass can exceed at WebGPU's defaults
+ * (16 sampled textures, 16 samplers). A preset that reads the main texture
+ * through its point-sampled variant, two blur levels and a noise texture
+ * binds 17 sampled textures, and bind-group-layout creation then fails for
+ * the whole pipeline — 14 bundled presets composited nothing on WebGPU
+ * (2026-09-15). Ask for what the adapter actually offers, capped so a
+ * generous desktop adapter cannot mask a shader that would fail elsewhere.
+ */
+const RAISED_WEBGPU_DEVICE_LIMITS = {
+  maxSampledTexturesPerShaderStage: 32,
+  maxSamplersPerShaderStage: 32,
+} as const;
+
+function buildWebGpuRequiredLimits(
+  adapter: GPUAdapter,
+): Record<string, number> | undefined {
+  const limits: Record<string, number> = {};
+  // Adapter stubs in tests (and defensive callers) may omit `limits`.
+  const adapterLimits = (adapter.limits ?? {}) as unknown as Record<
+    string,
+    unknown
+  >;
+  for (const [name, wanted] of Object.entries(RAISED_WEBGPU_DEVICE_LIMITS)) {
+    const supported = adapterLimits[name];
+    if (typeof supported !== 'number') {
+      continue;
+    }
+    const requested = Math.min(wanted, supported);
+    // Requesting the default is a no-op; only raise what the adapter can
+    // actually give, since a limit above `adapter.limits` rejects the device.
+    if (requested > 16) {
+      limits[name] = requested;
+    }
+  }
+  return Object.keys(limits).length > 0 ? limits : undefined;
+}
+
 export function buildWebGpuDeviceDescriptor(
   adapter: GPUAdapter,
 ): GPUDeviceDescriptor {
+  const requiredLimits = buildWebGpuRequiredLimits(adapter);
   return {
     requiredFeatures: OPTIONAL_WEBGPU_DEVICE_FEATURES.filter((feature) =>
       hasFeature(adapter.features, feature),
     ),
+    ...(requiredLimits ? { requiredLimits } : {}),
   };
 }
 

@@ -136,6 +136,18 @@ export type ToyRuntimeInstance = ToyInstance & {
   /** Stop every render driver until `resumePreview()`. Capture harnesses. */
   freezeRendering?: () => void;
   /**
+   * Hold the picture where it is: while held, neither the audio-driven loop
+   * nor the idle preview advances the simulation clock or renders a frame,
+   * so the canvas keeps its last frame and `frameState.time` stands still.
+   * Releasing resumes from that frame with a fresh delta, not a jump. The
+   * user-facing pause — `freezeRendering` is the capture harness's version,
+   * which tears the loop down and needs `resumePreview()` to rebuild it.
+   */
+  setFrameHold?: (held: boolean) => void;
+  /** While held, render exactly one more frame; false when not held. */
+  stepHeldFrame?: () => boolean;
+  isFrameHeld?: () => boolean;
+  /**
    * Synchronously pump N frames through the plugin pipeline with synthetic
    * time and audio data, decoupling simulation time from wall-clock time.
    * Built for headless capture harnesses: presets that need seconds of
@@ -496,6 +508,13 @@ export function createToyRuntime({
   // (visibility changes, stopAudio, React effects) from rendering over a
   // frame a capture harness is about to read.
   let deterministicHold = false;
+  // The user's pause. Checked at the top of both frame drivers rather than
+  // by unhooking them, so release costs nothing and cannot race a restart.
+  let frameHeld = false;
+  // Frames to let through while held (the editor's Step). Capped so a burst
+  // of clicks cannot queue a run of frames the author did not ask to see.
+  let heldStepsPending = 0;
+  const MAX_HELD_STEPS = 4;
 
   const stopPreviewLoop = () => {
     if (!previewActive) return;
@@ -530,10 +549,18 @@ export function createToyRuntime({
     const tick = (now: number) => {
       if (!previewActive) return;
       const currentTime = virtualTimeSource ? virtualTimeSource() : now;
+      if (frameHeld && heldStepsPending === 0) {
+        // Keep the anchor moving so the first frame after release measures
+        // a normal delta instead of the whole pause.
+        previewLastFrame = currentTime;
+        previewAnimationId = requestAnimationFrame(tick);
+        return;
+      }
       if (!previewFrameGate.shouldRenderFrame(currentTime)) {
         previewAnimationId = requestAnimationFrame(tick);
         return;
       }
+      if (frameHeld) heldStepsPending -= 1;
       const rawDeltaMs = previewLastFrame
         ? Math.min(100, Math.max(0, currentTime - previewLastFrame))
         : 1000 / 60;
@@ -608,6 +635,11 @@ export function createToyRuntime({
       (ctx) => {
         analyser = ctx.analyser;
         const now = ctx.time;
+        if (frameHeld && heldStepsPending === 0) {
+          lastFrameTime = now;
+          return;
+        }
+        if (frameHeld) heldStepsPending -= 1;
         const rawDeltaMs = lastFrameTime
           ? Math.min(100, Math.max(0, (now - lastFrameTime) * 1000))
           : 1000 / 60;
@@ -630,6 +662,10 @@ export function createToyRuntime({
         ...audio?.options,
       }),
     );
+    // The callback above also records the analyser, but only from its first
+    // frame; `resumePreview` reads it to tell the two loops apart, so it has
+    // to be set before this resolves and a preset load can follow.
+    analyser = context.analyser ?? analyser;
     stopPreviewLoop();
     return context;
   };
@@ -659,9 +695,32 @@ export function createToyRuntime({
       toy.renderer?.setAnimationLoop?.(null);
     },
     pausePreview: stopPreviewLoop,
+    /**
+     * Only restarts the idle loop when the audio-driven loop is not running:
+     * `startAudio` hands frame driving to its own callback, and an idle loop
+     * started on top of it ran `pluginManager.update` twice per frame with
+     * two different frameStates (synthetic idle signal, then live audio).
+     * The shell calls this on every preset load, so one preset switch while
+     * playing doubled the frame cost for the rest of the session and, with
+     * the waveform arrays swapping every frame, leaked ~48 GPU buffers a
+     * frame until the GPU process was killed (measured on a 4GB RK3576
+     * handheld: 1.4GB per process after a dozen switches).
+     */
     resumePreview: () => {
       deterministicHold = false;
-      startPreviewLoop();
+      if (!analyser) {
+        startPreviewLoop();
+      }
+    },
+    setFrameHold: (held) => {
+      frameHeld = held;
+      heldStepsPending = 0;
+    },
+    isFrameHeld: () => frameHeld,
+    stepHeldFrame: () => {
+      if (!frameHeld) return false;
+      heldStepsPending = Math.min(MAX_HELD_STEPS, heldStepsPending + 1);
+      return true;
     },
     renderFrames: (options) => {
       const frames = Math.max(1, Math.floor(options?.frames ?? 1));

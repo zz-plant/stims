@@ -37,6 +37,7 @@ import {
   type PalettePresetResult,
   type PaletteResult,
 } from './command-palette-registry.ts';
+import { useEscapeHandler } from './hooks/use-escape-handler.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import {
   eventMatchesShortcut,
@@ -127,6 +128,15 @@ export function CommandPalette({
     restoreFocusOnUnmount: true,
     initialFocusRef: inputRef,
   });
+
+  // The palette is the innermost overlay while it is open, so the shared
+  // stack closes it and nothing behind it. It used to stop the event itself,
+  // which worked only because React dispatches before the document listener.
+  //
+  // Gated on `open`: this component stays mounted while closed, so
+  // registering unconditionally put a no-op handler permanently on top of the
+  // stack and swallowed Escape for every panel underneath it.
+  useEscapeHandler(open, onClose);
 
   // Fresh palette each open; keyed on `open` so a reopened palette never
   // flashes the previous session's query/highlight.
@@ -223,21 +233,16 @@ export function CommandPalette({
   };
 
   return (
+    // The backdrop is the pointer affordance for dismiss. Keyboard users get
+    // Escape, dispatched to the innermost overlay by registerEscapeHandler
+    // above; focus is trapped in the card, so the backdrop never sees a key.
+    // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard dismiss is Escape, handled above
     <div
       className={styles.backdrop}
       role="dialog"
       aria-modal="true"
       aria-label="Command palette"
       onClick={onClose}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          // Keep it from also reaching any global Escape/close handling —
-          // one press dismisses the palette only.
-          event.preventDefault();
-          event.stopPropagation();
-          onClose();
-        }
-      }}
     >
       {/* biome-ignore lint/a11y/noStaticElementInteractions: card is visual-only; the backdrop handles dismiss */}
       <div

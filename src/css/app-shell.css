@@ -338,17 +338,16 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   /* Toast animations with spring physics */
+  /* A short settle, not a fly-in with a bounce at 60%: the same restrained
+     entrance as the help and silent-audio notices, over a live canvas. */
   @keyframes toast-enter {
-    0% {
+    from {
       opacity: 0;
-      transform: translateX(100%) scale(0.9);
+      transform: translateX(12px);
     }
-    60% {
-      transform: translateX(-8%) scale(1.02);
-    }
-    100% {
+    to {
       opacity: 1;
-      transform: translateX(0) scale(1);
+      transform: translateX(0);
     }
   }
 
@@ -364,7 +363,7 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__toast {
-    animation: toast-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: toast-enter var(--spring-enter);
   }
 
   .stims-shell__toast[data-exit="true"] {
@@ -762,7 +761,14 @@ body[data-page="workspace"][data-live="true"] {
      0.82-0.9 wash bought contrast for a column of text by dimming the whole
      stage to 10-18% of whatever was behind it, which is most of why a working
      attract render still read as a black rectangle. The vertical pass keeps
-     the top edge (wordmark, and the frame chrome above it) covered. */
+     the top edge (wordmark, and the frame chrome above it) covered.
+
+     Spent even more tightly now: the ink is an ellipse hugging the copy
+     column and reaches zero well before the right edge, so the right half of
+     the landing page is the preset at full brightness — the product, shown
+     rather than described. The copy still sits on 0.8-0.92 ink everywhere it
+     runs (the core of the ellipse covers the paragraph's right edge at ~46%
+     of the frame width). */
   .stims-shell__stage-frame[data-mode="home"]::after {
     content: "";
     position: absolute;
@@ -771,30 +777,26 @@ body[data-page="workspace"][data-live="true"] {
     pointer-events: none;
     background:
       radial-gradient(
-        86% 78% at 24% 46%,
-        rgba(3, 5, 11, 0.94) 0%,
-        rgba(3, 5, 11, 0.88) 40%,
-        rgba(3, 5, 11, 0.38) 76%,
-        rgba(3, 5, 11, 0.2) 100%
+        ellipse 54% 64% at 22% 50%,
+        rgba(3, 5, 11, 0.92) 0%,
+        rgba(3, 5, 11, 0.82) 48%,
+        rgba(3, 5, 11, 0.34) 76%,
+        rgba(3, 5, 11, 0) 100%
       ),
-      linear-gradient(
-        180deg,
-        rgba(3, 5, 11, 0.46) 0%,
-        rgba(3, 5, 11, 0.12) 26%,
-        rgba(3, 5, 11, 0.12) 76%,
-        rgba(3, 5, 11, 0.4) 100%
-      );
+      linear-gradient(180deg, rgba(3, 5, 11, 0.36) 0%, rgba(3, 5, 11, 0) 18%);
   }
 
   /* One column wide, the copy needs its floor everywhere; the steered scrim
      above assumes the copy is off to one side. */
   @media (max-width: 900px) {
     .stims-shell__stage-frame[data-mode="home"]::after {
+      /* Held under the copy, then released: the bottom quarter of a phone
+         screen is the preset, not a darker shade of the page. */
       background: linear-gradient(
         180deg,
-        rgba(3, 5, 11, 0.88) 0%,
-        rgba(3, 5, 11, 0.8) 62%,
-        rgba(3, 5, 11, 0.58) 100%
+        rgba(3, 5, 11, 0.86) 0%,
+        rgba(3, 5, 11, 0.76) 70%,
+        rgba(3, 5, 11, 0.08) 100%
       );
     }
   }
@@ -1341,6 +1343,14 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__launch-center {
     display: grid;
     justify-items: start;
+    /* This column sits in a stage panel taller than its content, and
+       `align-content` defaults to stretch, so every auto row silently
+       absorbed an equal share of the leftover height — about 40px onto each
+       of seven rows on the first-visit page, pushing a two-button decision
+       to the bottom of a phone screen. That whitespace was leftover height
+       being redistributed, not spacing anyone chose, so the gap below is
+       the only spacing here and it means what it says. */
+    align-content: start;
     gap: 10px;
     width: min(52rem, 100%);
   }
@@ -1388,13 +1398,14 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   /* Amplitude follows live audio energy (set on the container by
-     LaunchSignalTrace). Quiet idle trace at rest; up to ~1.7x with music,
-     so the page starts moving to the sound before the stage takes over. */
+     LaunchSignalTrace, already eased — no transition here, since one that
+     restarts every frame is what a weak CPU spends its frame budget on).
+     Quiet idle trace at rest; up to ~1.7x with music, so the page starts
+     moving to the sound before the stage takes over. */
   .stims-shell__launch-trace-amp {
     transform-box: view-box;
     transform-origin: 50% 50%;
     transform: scaleY(calc(0.65 + var(--stims-energy, 0) * 1.05));
-    transition: transform 140ms ease-out;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1404,12 +1415,155 @@ body[data-page="workspace"][data-live="true"] {
 
     .stims-shell__launch-trace-amp {
       transform: none;
-      transition: none;
     }
   }
 
   .stims-shell__launch-resume-art {
     width: min(16rem, 100%);
+  }
+
+  /* Returning visitor. The first screen used to spend itself explaining what
+     was being resumed — headline, "Continue with…" sentence, a strip of art —
+     before a decision that is small: this preset, or something else. The
+     preset is one card now, with its name on the artwork, tall enough to
+     establish what it looks like (the old strip was prominent enough to cost
+     space but too shallow to do that) and no taller: title, card, Resume,
+     the other sources and Browse should all fit one phone screen. */
+  .stims-shell__launch-center[data-variant="resume"]
+  .stims-shell__launch-title {
+    font-size: clamp(2.25rem, 5vw, 3.5rem);
+  }
+
+  .stims-shell__launch-center[data-variant="resume"]
+    .stims-shell__launch-actions-minimal {
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .stims-shell__launch-resume-card {
+    /* Clears the display headline, which sets its own optical space. */
+    margin-top: 4px;
+    width: min(24rem, 100%);
+    overflow: hidden;
+    border: 1px solid var(--stims-line-soft);
+    border-radius: var(--radius-xl);
+    background: var(--stims-white-04);
+    box-shadow: var(--stims-shadow-control);
+  }
+
+  .stims-shell__launch-resume-card .stims-shell__preset-art {
+    height: 140px;
+    min-height: 140px;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .stims-shell__launch-resume-card-copy {
+    display: grid;
+    gap: 2px;
+    padding: 10px 14px 12px;
+  }
+
+  .stims-shell__launch-resume-card-title {
+    margin: 0;
+    color: var(--stims-ink-strong);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+
+  .stims-shell__launch-resume-card-meta {
+    margin: 0;
+    color: var(--stims-muted);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  /* Landscape handhelds (an RG Vita Pro in Chrome is 809x375): the stacked
+     card put Resume below the fold, so a returning visitor saw a title and
+     artwork and no way to start. Art beside the copy keeps the card short
+     enough for the whole decision to fit the screen. */
+  @media (orientation: landscape) and (max-height: 480px) {
+    .stims-shell__launch-resume-card {
+      display: grid;
+      grid-template-columns: 128px 1fr;
+      align-items: center;
+    }
+
+    .stims-shell__launch-resume-card .stims-shell__preset-art {
+      height: 72px;
+      min-height: 72px;
+    }
+  }
+
+  /* Demo audio under Resume: an escape hatch for someone without their usual
+     source to hand, sized like one. */
+  .stims-shell__launch-demo-link {
+    align-self: flex-start;
+    padding: 6px 0;
+    border: 0;
+    background: none;
+    color: var(--stims-muted);
+    font: inherit;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: var(--stims-line-strong);
+    text-underline-offset: 3px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color var(--transition-fast);
+  }
+
+  .stims-shell__launch-demo-link:hover:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
+    color: var(--stims-ink-strong);
+  }
+
+  /* `aria-disabled` matches too: the busy "Starting…" state keeps the button
+     focusable on purpose (so the press the user just made is still
+     announced), and must still read as unavailable. */
+  .stims-shell__launch-demo-link:disabled,
+  .stims-shell__launch-demo-link[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .stims-shell__launch-demo-link:focus-visible {
+    outline: 2px solid var(--stims-accent);
+    outline-offset: 3px;
+    border-radius: var(--stims-radius-control);
+  }
+
+  /* The other sources, as chips, directly under Resume — no disclosure. */
+  .stims-shell__launch-sources-inline {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  /* "Browse presets" on the returning-visitor page changes context; it is
+     not a second way to start, so it must not pair with Resume as an equal
+     outlined button. Doubled class: the 480px rule above stretches every
+     launch-secondary to full width. */
+  .stims-shell__launch-secondary.stims-shell__launch-secondary--quiet {
+    width: auto;
+    min-height: 40px;
+    padding: 8px 0;
+    border: 0;
+    background: none;
+    color: var(--stims-muted);
+    text-decoration: underline;
+    text-decoration-color: var(--stims-line-strong);
+    text-underline-offset: 3px;
+  }
+
+  .stims-shell__launch-secondary.stims-shell__launch-secondary--quiet:hover {
+    background: none;
+    color: var(--stims-ink-strong);
   }
 
   .stims-shell__launch-explainer {
@@ -1481,12 +1635,13 @@ body[data-page="workspace"][data-live="true"] {
     color: #14100c;
   }
 
-  .stims-shell__launch-cta:hover:not(:disabled) {
+  .stims-shell__launch-cta:hover:not(:disabled):not([aria-disabled="true"]) {
     background: color-mix(in srgb, var(--stims-accent) 88%, #ffffff);
     transform: translateY(-1px);
   }
 
-  .stims-shell__launch-cta:disabled {
+  .stims-shell__launch-cta:disabled,
+  .stims-shell__launch-cta[aria-disabled="true"] {
     opacity: 0.55;
     cursor: default;
   }
@@ -1778,6 +1933,69 @@ body[data-page="workspace"][data-live="true"] {
     line-height: 1.35;
   }
 
+  /* Chip layout (AudioSourcePanel layout="chips"): one line per source,
+     icon and name, wrapped. For surfaces where a primary button is already
+     on screen and these are its alternatives, so a card each would out-weigh
+     it. Flex, not the card grid: the 148px column minimum is a card's width,
+     and it left a lone chip stretched across the whole row. */
+  .stims-shell__source-grid--chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .stims-shell__source-card--chip {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 14px;
+    border-radius: 999px;
+  }
+
+  .stims-shell__source-card--chip:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .stims-shell__source-card--chip[aria-expanded="true"] {
+    border-color: rgba(119, 201, 255, 0.5);
+  }
+
+  .stims-shell__source-card--chip .stims-shell__source-card-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .stims-shell__source-card--chip strong {
+    font-size: 0.875rem;
+  }
+
+  .stims-shell__source-panel--chips {
+    gap: 8px;
+  }
+
+  .stims-shell__source-panel--chips .stims-shell__section-label {
+    margin: 0;
+  }
+
+  .stims-shell__source-panel--chips .stims-shell__youtube-primary {
+    margin-top: 4px;
+  }
+
+  /* The file card's state line, moved out of the chip (a chip has no second
+     line) to sit under the row. */
+  .stims-shell__source-feedback {
+    margin: 0;
+    color: var(--stims-muted);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .stims-shell__source-feedback[data-state="error"] {
+    color: var(--stims-danger);
+  }
+
   .stims-shell__source-card:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -2046,9 +2264,43 @@ body[data-page="workspace"][data-live="true"] {
     /* Local to the tile, as above. */
     z-index: 1;
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    text-align: left;
+    overflow: hidden;
+  }
+
+  /* The preset's name, set as a poster: large, heavy, tight, clamped. Type
+     only — nothing drawn — so it cannot be mistaken for a frame. */
+  .stims-shell__preset-art-placeholder-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    /* The art slot is a dark surface in both themes (it stands in for a
+       frame of the stage), so this takes the unflipped on-stage ink — the
+       light theme's --ctl-ink is dark and vanished against it. */
+    color: var(--stims-on-stage-ink-strong);
+    /* Hyphenate rather than snap a word at an arbitrary letter: at seven
+       columns a tile is ~145px, narrower than "Glowsticks" at this size. */
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  /* Only centred when it is the whole slot (no title to lead with). */
+  .stims-shell__preset-art-placeholder:not(
+    :has(.stims-shell__preset-art-placeholder-title)
+  ) {
     align-items: center;
     justify-content: center;
-    padding: var(--space-sm);
     text-align: center;
   }
 
@@ -2065,35 +2317,131 @@ body[data-page="workspace"][data-live="true"] {
     color: var(--stims-muted-35);
   }
 
+  /* Preset title card (PresetTitleCard.tsx): the playing preset's name set as
+     display type over the stage for a few seconds after each switch. Sits on
+     the stage in every theme, so it uses the on-stage inks, and carries its
+     own soft ink pool rather than a panel — a slab would read as a dialog.
+     Top-left: the bottom of the stage belongs to the dock, the first-run hint
+     toast above it and the status toasts beside it, and a card down there
+     collided with the hint on the very first play. */
+  .stims-shell__title-card {
+    position: absolute;
+    left: clamp(16px, 4vw, 56px);
+    top: calc(clamp(16px, 5vh, 56px) + env(safe-area-inset-top, 0px));
+    z-index: var(--z-overlay);
+    isolation: isolate;
+    display: grid;
+    gap: var(--space-xs);
+    max-width: min(72vw, 52rem);
+    padding: var(--space-md) var(--space-lg) var(--space-md) 0;
+    pointer-events: none;
+    color: var(--stims-on-stage-ink-strong);
+    text-shadow:
+      0 2px 24px rgba(3, 5, 11, 0.7),
+      0 1px 3px rgba(3, 5, 11, 0.8);
+    animation: title-card-enter 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    transition:
+      opacity 0.45s ease,
+      transform 0.45s ease;
+  }
+
+  /* The ink pool: presets go white without warning, and text-shadow alone
+     left the byline at well under AA on a bright frame. Feathered on every
+     side so it reads as shade, not a box. */
+  .stims-shell__title-card::before {
+    content: "";
+    position: absolute;
+    inset: -40% -24% -48% -32%;
+    z-index: -1;
+    background: radial-gradient(
+      closest-side,
+      rgba(3, 5, 11, 0.78),
+      rgba(3, 5, 11, 0.58) 60%,
+      rgba(3, 5, 11, 0)
+    );
+    pointer-events: none;
+  }
+
+  .stims-shell__title-card[data-leaving="true"] {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  .stims-shell__title-card-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    font-size: clamp(var(--text-3xl), 5.2vw, 4.5rem);
+    font-weight: var(--font-weight-bold);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+  }
+
+  .stims-shell__title-card-byline {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.01em;
+    color: var(--stims-on-stage-muted);
+  }
+
+  @keyframes title-card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(-14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .stims-shell__title-card {
+      right: 16px;
+      left: 16px;
+      max-width: none;
+    }
+
+    .stims-shell__title-card-byline {
+      font-size: var(--text-sm);
+    }
+  }
+
+  /* Reduced motion: the card still arrives and leaves — it is information —
+     but as a fade with no travel. */
+  @media (prefers-reduced-motion: reduce) {
+    .stims-shell__title-card {
+      animation-name: title-card-fade;
+    }
+
+    .stims-shell__title-card[data-leaving="true"] {
+      transform: none;
+    }
+  }
+
+  @keyframes title-card-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   .stims-parametric-identicon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     transition:
-      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+      transform var(--spring-enter),
       filter 0.35s ease;
   }
 
   .stims-parametric-identicon--interactive:hover {
     transform: scale(1.15) rotate(8deg);
     filter: drop-shadow(0 0 12px rgba(124, 137, 255, 0.6));
-  }
-
-  .stims-shader-identicon {
-    border-radius: var(--radius-md);
-    box-shadow:
-      inset 0 0 0 1px var(--stims-white-12),
-      0 4px 12px var(--stims-shadow-22);
-    transition:
-      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-      box-shadow 0.35s ease;
-  }
-
-  .stims-shader-identicon:hover {
-    transform: scale(1.1) translateY(-1px);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.24),
-      0 8px 20px rgba(99, 102, 241, 0.4);
   }
 
   .stims-shell__preset-art[data-compact="true"] {
@@ -2286,6 +2634,14 @@ body[data-page="workspace"][data-live="true"] {
     min-width: 0;
   }
 
+  /* While the stage is live the dock owns the bottom edge, and at laptop
+     widths its right end reaches under a bottom-right toast: "Paused. Press
+     Space to resume." painted over the pause button that had just been
+     pressed. Sit above the dock's band instead. */
+  :scope[data-mode="live"] .stims-shell__toast {
+    bottom: calc(24px + 60px);
+  }
+
   .stims-shell__toast-content {
     display: flex;
     align-items: center;
@@ -2308,15 +2664,27 @@ body[data-page="workspace"][data-live="true"] {
     color: #ffd6d1;
   }
 
-  :scope[data-sheet-open="true"] .stims-shell__toast {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(8px);
-  }
+  /* A sheet no longer hides toasts; it moves them.
 
-  :scope[data-sheet-open="true"] [class*="toast"] {
-    opacity: 0;
-    pointer-events: none;
+     Hiding was the old policy and it failed in both directions. The status
+     toast has an entry animation, and an animation outranks a plain
+     declaration in the cascade, so it faded in over the sheet anyway — landing
+     on top of the sheet's own header. The ambient stack has no such animation,
+     so the rule did apply to it, and an audio match found while browsing was
+     invisible while its dismiss timer ran out.
+
+     Both now sit above the modal layer and dodge upward, because the messages
+     that matter most are raised from inside these panels: a failed preset
+     import is reported from the Browse sheet. */
+  /* `[data-tone]` is on every toast and buys this rule the specificity to
+     beat `:scope[data-mode="live"] .stims-shell__toast`, which sets `bottom`
+     again further down the sheet. Losing that leaves both `top` and `bottom`
+     set on a fixed, auto-height element, and the toast stretches down most of
+     the viewport instead of sitting compactly at the top. */
+  :scope[data-sheet-open="true"] .stims-shell__toast[data-tone],
+  :scope[data-bottom-overlay="true"] .stims-shell__toast[data-tone] {
+    top: calc(max(12px, env(safe-area-inset-top, 0px)) + 12px);
+    bottom: auto;
   }
 
   .cta-button {
@@ -2770,6 +3138,20 @@ body[data-page="workspace"][data-live="true"] {
         env(safe-area-inset-bottom)
       );
     }
+
+    /* The status toast and the notice stack share this anchor on a phone,
+       and both fire at the same moment on arrival ("Loaded …" under "Tap
+       anywhere to turn the sound on"). While a status toast is up, the
+       stack moves above it; 72px clears a two-line toast at this padding. */
+    :scope[data-mode="live"][data-has-toast="true"] .stims-shell__toast-stack {
+      bottom: calc(
+        var(--mobile-control-offset, var(--mobile-bar-height, 86px)) +
+        6px +
+        72px +
+        env(safe-area-inset-bottom)
+      );
+      transition: bottom 0.2s ease;
+    }
   }
   @media (max-width: 420px) {
     :scope[data-mode="live"] {
@@ -2933,7 +3315,10 @@ body[data-page="workspace"][data-live="true"] {
   );
   left: 50%;
   transform: translateX(-50%);
-  z-index: var(--z-toast);
+  /* The same layer as the status toast. At --z-toast this column sat below
+     --z-modal-backdrop, so an audio match found while a panel was open
+     rendered behind it and ran its dismiss timer out unseen. */
+  z-index: var(--z-toast-floating);
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
@@ -3227,13 +3612,51 @@ body[data-page="workspace"][data-live="true"] {
 
 .stims-shell__credits-card {
   max-width: 640px;
-  max-height: min(84vh, 720px);
+  /* dvh, matching the shared card rule above. `vh` is the *largest* viewport
+     on iOS Safari, so with the URL bar showing an 84vh centred card ran past
+     the visible bottom and took its own Close button with it. */
+  max-height: min(84dvh, 720px);
   overflow-y: auto;
   padding: 36px;
 }
 
 .stims-shell__credits-card > .cta-button {
   margin-top: var(--space-lg, 1.5rem);
+}
+
+/* Phone: the two help dialogs become bottom sheets like every other overlay.
+   They were the only surfaces that stayed centred cards — 92% wide with 32px
+   of padding, which at 390px leaves under 300px of content for a three-column
+   shortcut grid — while the eight panels built on SidePanel all present as
+   sheets. Matching them means the dismissal a user has already learned here
+   (reach the bottom edge, or tap the dimmed area above) works on these too. */
+@media (max-width: 640px) {
+  .stims-shell__shortcut-overlay,
+  .stims-shell__credits-overlay {
+    align-items: flex-end;
+  }
+
+  .stims-shell__shortcut-card,
+  .stims-shell__credits-card {
+    width: 100%;
+    max-width: none;
+    max-height: 88dvh;
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    animation: stims-modal-sheet-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes stims-modal-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 @keyframes stims-modal-scale {
@@ -3605,6 +4028,22 @@ body[data-page="workspace"][data-live="true"] {
   border-color: rgba(255, 255, 255, 0.08);
 }
 
+/* A run of related bindings (the preset-tuning keys) opens with a heading
+   that spans the row above its first entry, so the list reads in sections
+   without a second grid. */
+.stims-shell__shortcut-row[data-group] {
+  margin-top: 12px;
+}
+
+.stims-shell__shortcut-row .stims-shell__shortcut-group {
+  grid-column: 1 / -1;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stims-ink-muted);
+}
+
 .stims-shell__shortcut-row form {
   display: flex;
   gap: 8px;
@@ -3617,9 +4056,10 @@ body[data-page="workspace"][data-live="true"] {
   gap: 8px;
 }
 
-main.stims-shell[data-sheet-open="true"] [class*="toast"] {
-  opacity: 0;
-  pointer-events: none;
+main.stims-shell[data-sheet-open="true"] .stims-shell__toast-stack,
+main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
+  top: calc(max(12px, env(safe-area-inset-top, 0px)) + 12px);
+  bottom: auto;
 }
 
 /* ── Error Boundary & Skeleton Utilities ────────────────────────────── */
@@ -4212,6 +4652,29 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   }
 }
 
+@media (pointer: coarse) {
+  /* The star is a 26px disc layered on the full-tile "open preset" button,
+     so a near-miss does not do nothing — it opens and starts playing a
+     different preset, which is a bad surprise mid-set. The 44px bump in
+     chrome.css targets `.ctl-preset__fav`, the list-view star, and never
+     matched this one: the grid button only carries that class on its inner
+     icon span.
+
+     The hit area grows, not the disc. A 44px opaque circle on top of the
+     artwork is a much heavier mark than this needs; the pseudo-element is
+     part of the button's own box, so it takes the taps without changing
+     anything the eye sees. */
+  .stims-preset-grid__fav::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+}
+
 .stims-preset-grid__item {
   position: relative;
   display: flex;
@@ -4306,6 +4769,42 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 
 .stims-preset-grid__spacer {
   grid-column: 1 / -1;
+}
+
+/* The digit that plays this card from the keyboard (1–9, while Browse is
+   open). Same chip language as the variant count and the same corner: the
+   top-left belongs to the save star, which sits above everything else on the
+   card and hid the digit entirely when it lived there. */
+.stims-preset-grid__quick-key,
+.ctl-preset__quick-key {
+  position: absolute;
+  top: var(--space-xs, 4px);
+  right: var(--space-xs, 4px);
+  /* Above the artwork's own positioned layers, level with the save star. */
+  z-index: 1;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--stims-panel-strong) 82%, transparent);
+  border: 1px solid var(--stims-line);
+  color: var(--stims-ink-soft, var(--stims-ink));
+  font-family: var(--font-family-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  text-align: center;
+  pointer-events: none;
+}
+
+.ctl-preset__quick-key {
+  top: 2px;
+  right: 2px;
+}
+
+/* Both chips in the same corner: the rarer variant count steps left. */
+.stims-preset-grid__item:has(.stims-preset-grid__quick-key)
+.stims-preset-grid__variants {
+  right: calc(var(--space-xs, 4px) + 26px);
 }
 
 .stims-preset-grid__variants {

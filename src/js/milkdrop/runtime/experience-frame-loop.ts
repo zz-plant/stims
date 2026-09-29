@@ -3,7 +3,7 @@
  * orchestrating VM simulation steps, GPU phase timings, postprocessing passes, and video capture.
  */
 
-import { isLivePerformanceModeActive } from '../../core/live-performance-mode.ts';
+import { isHiddenTabSuspendingFrames } from '../../core/hidden-tab-policy.ts';
 import {
   createMilkdropPostprocessingComposer,
   type PostprocessingPipeline,
@@ -27,6 +27,7 @@ import type {
   MilkdropFrameState,
   MilkdropRuntimeSignals,
 } from '../types';
+import { hasVariableListeners, publishVariables } from '../variable-probe.ts';
 import type { MilkdropBeatClock } from './beat-clock.ts';
 import { applyMilkdropCapturedVideoFrameState } from './captured-video-frame.ts';
 import {
@@ -46,6 +47,7 @@ import {
   shouldAutoAdvancePreset,
   shouldPrepareNextPreset,
 } from './lifecycle.ts';
+import { applyMotionDampening } from './motion-dampener.ts';
 import { estimateFrameBlendWorkload, MAX_BLEND_WORKLOAD } from './session.ts';
 import type { MilkdropTraceRecorder } from './trace-recorder.ts';
 import type { MilkdropTransitionController } from './transition-controller.ts';
@@ -94,6 +96,7 @@ export function createMilkdropExperienceFrameLoop({
   setPostprocessingPipeline,
   capturedVideoOverlay,
   getFreezeFrame,
+  getMotionScale,
   traceRecorder,
   beatClock,
 }: {
@@ -188,6 +191,8 @@ export function createMilkdropExperienceFrameLoop({
     }) => void;
   };
   getFreezeFrame: () => boolean;
+  /** Comfort preference, 0–1; below 1 the frame's motion is scaled toward rest. */
+  getMotionScale: () => number;
   /** Agent-mode live trace capture; absent outside agent mode. */
   traceRecorder?: MilkdropTraceRecorder | null;
   /** Tempo/bar tracking. Owned by the runtime so its snapshot can publish
@@ -230,24 +235,10 @@ export function createMilkdropExperienceFrameLoop({
         return;
       }
 
-      // Hidden tabs skip frames to spare the GPU — with three exceptions:
-      // agent mode, where automation (headless capture, browser-pane QA)
-      // drives frames deliberately and a silent skip reads as a frozen/black
-      // canvas; and an open picture-in-picture window, which is a LIVE
-      // `canvas.captureStream()` of the stage (picture-in-picture-service.ts).
-      // Switching tabs is precisely when PiP earns its keep, and that is also
-      // exactly when `document.hidden` flips — so pausing here froze the one
-      // surface the user had deliberately popped out to keep watching. And
-      // live performance mode, where this tab is driving a projector: the
-      // operator flipping to another tab to line up the next preset must
-      // not black out the room.
-      if (
-        typeof document !== 'undefined' &&
-        document.hidden &&
-        document.documentElement.dataset.agentMode !== 'true' &&
-        !isLivePerformanceModeActive() &&
-        document.pictureInPictureElement === null
-      ) {
+      // Hidden tabs skip frames to spare the GPU unless agent mode, PiP, or live
+      // performance mode says otherwise; see core/hidden-tab-policy.ts, which
+      // also feeds __stims_agent.getState().renderingSuspended.
+      if (isHiddenTabSuspendingFrames()) {
         setCurrentFrameState(null);
         return;
       }
@@ -376,10 +367,15 @@ export function createMilkdropExperienceFrameLoop({
             detailScale: detailScale * adaptiveDensityMultiplier,
           });
         }
-        const currentFrameState = applyMilkdropInteractionResponse(
-          rawFrameState,
-          frame.input,
-          activeBackend,
+        // After the interaction response, so a viewer's own drag or pinch
+        // is dampened by the same amount as the preset's motion.
+        const currentFrameState = applyMotionDampening(
+          applyMilkdropInteractionResponse(
+            rawFrameState,
+            frame.input,
+            activeBackend,
+          ),
+          getMotionScale(),
         );
         setCurrentFrameState(currentFrameState);
         blendWorkloadFrameState = currentFrameState;
@@ -416,6 +412,13 @@ export function createMilkdropExperienceFrameLoop({
         });
         if (agentModeEnabled) {
           updateAgentDebugSnapshot(false, renderFrameState);
+        }
+        // Editor Inspect tab: every mode, free when nobody is listening.
+        if (hasVariableListeners()) {
+          publishVariables(
+            renderFrameState.variables,
+            renderFrameState.signals,
+          );
         }
         if (capturedVideoReady) {
           capturedVideoOverlay.update({

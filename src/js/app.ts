@@ -75,7 +75,12 @@ async function startPostPaintServices() {
       installAgentDriver();
     }),
     import('./utils/browser/gamepad-navigation.ts').then(
-      ({ initGamepadNavigation }) => initGamepadNavigation(),
+      ({ initGamepadNavigation }) =>
+        // Keyboard-as-remote only where the keyboard *is* a remote. On a
+        // desktop the shell owns the arrow keys (preset navigation) and
+        // Backspace (previous preset); see the option's doc for what
+        // happened when this layer handled them too.
+        initGamepadNavigation({ keyboardNavigation: isSmartTvDevice() }),
     ),
   ]);
 }
@@ -137,9 +142,17 @@ const appReady = new Promise<void>((resolve) => {
 (globalThis as StimsAppGlobals).__stimsAppReady = appReady;
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js').then((reg) => {
-    void reg.update();
-  });
+  navigator.serviceWorker
+    .register('/service-worker.js')
+    .then((reg) => {
+      void reg.update();
+    })
+    .catch(() => {
+      // Registration is refused in private windows, embedded browser panes
+      // and behind some content policies. Offline caching is the only thing
+      // lost, and an unhandled rejection here is the first error a fresh
+      // session logs, which reads as a boot failure.
+    });
 }
 
 window.addEventListener('pagehide', () => {

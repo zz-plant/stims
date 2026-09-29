@@ -58,9 +58,11 @@ jobs:
             // Any sign the author said how they know it works: a heading that
             // names verification, a test or gate command, or a measurement.
             const evidence = [
-              /^#{1,6}\s*(testing|tests?|verification|evidence|how i tested|validation|proof|measured)\b/im,
+              /^#{1,6}\s*(testing|tests?|verification|verified|evidence|how i tested|validation|proof|measured)\b/im,
               /\b(bun run|npm run|pnpm|yarn|pytest|cargo|make)\s+[\w:.-]+/i,
-              /\b(test|tests|suite|gate|check|ci)\b[^.\n]{0,80}\b(pass|passes|passed|green|fail|red)\b/i,
+              // A period only ends the window when it ends a sentence: a
+              // list of `*.test.ts` files followed by "pass" is evidence.
+              /\b(test|tests|suite|gate|check|ci)\b(?:[^.\n]|\.(?=\S)){0,120}\b(pass|passes|passed|green|fail|red)\b/i,
               /\b\d+(\.\d+)?\s*(%|ms|fps|px|kb|mb)\b/i,
               /\bbefore\b[^.\n]{0,60}\bafter\b/i,
             ].some((pattern) => pattern.test(body));

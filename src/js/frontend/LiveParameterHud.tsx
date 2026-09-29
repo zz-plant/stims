@@ -117,11 +117,7 @@ export function LiveParameterHud() {
   }
 
   return (
-    <div
-      className="stims-shell__midi-hud"
-      role="status"
-      aria-label="Live parameter status"
-    >
+    <aside className="stims-shell__midi-hud" aria-label="Live parameter status">
       {targets.map((target) => {
         const state = describeParameterState({
           target,
@@ -153,13 +149,15 @@ export function LiveParameterHud() {
             </span>
             {/* `title` is hover-only, and these chips are deliberately not
                 focusable — they are a status readout, not controls — so a
-                tooltip would reach nobody using a screen reader. The wrapper
-                is role="status", so text placed here is announced as part of
-                it. */}
+                tooltip would reach nobody using a screen reader. This text
+                carries the same detail for anyone reading the region. It is
+                deliberately NOT inside a live region: the values retick on
+                every incoming MIDI CC, so announcing each change made a
+                swept knob talk over everything else. */}
             <span className="stims-shell__sr-only">{state.summary}</span>
           </span>
         );
       })}
-    </div>
+    </aside>
   );
 }

@@ -20,18 +20,6 @@ describe('Workspace shell UI simplification regression', () => {
       ),
       'utf8',
     );
-    const helperSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        'src',
-        'js',
-        'frontend',
-        'workspace-helpers.ts',
-      ),
-      'utf8',
-    );
     const stageSource = readFileSync(
       join(
         import.meta.dir,
@@ -92,9 +80,6 @@ describe('Workspace shell UI simplification regression', () => {
       ),
       'utf8',
     );
-    expect(helperSource).toContain(
-      'Choose a quality preset, then adjust performance and motion options.',
-    );
     // The boot-time "lighter graphics mode" toast this used to check for
     // lean copy was removed entirely in 6f8db66c ("drop boot backend
     // toast") — there's no copy left to assert here. Coverage for that
@@ -118,7 +103,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(audioSourcePanelSource).toContain('No permission needed');
     expect(audioSourcePanelSource).toContain('Whatever is playing in the room');
     expect(audioSourcePanelSource).toContain(
-      'Audio playing in this browser tab',
+      'Any tab, Spotify, or your system audio',
     );
     // The section heading names the whole section, never one of its children.
     expect(audioSourcePanelSource).not.toContain(

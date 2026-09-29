@@ -22,6 +22,7 @@ import {
   MILKDROP_MEGABUF_SIZE,
 } from './expression-jit.ts';
 import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
+import { isElementHidden } from './render-isolation.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -768,6 +769,14 @@ class MilkdropPresetVM implements MilkdropVM {
       waveState: this.waveState,
       supportsProceduralWave: this.frameCallbacks.supportsProceduralWave,
     });
+    // An element soloed from the editor hides the main waveform too. Its alpha
+    // is rebuilt every frame, so zeroing it here lasts exactly one frame.
+    if (isElementHidden(this.preset.source.id, 'main-wave')) {
+      mainWave.alpha = 0;
+      if (proceduralMainWave) {
+        proceduralMainWave.alpha = 0;
+      }
+    }
     commitMainWaveFrame({
       waveState: this.waveState,
       mainWave,

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>MilkDrop Custom Waves and Shapes — Track 5 | Stims</title>
+<meta name="description" content="Draw with MilkDrop custom waves and custom shapes, and pass values from per-frame equations into them with the q-variable bridge." />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="canonical" href="https://toil.fyi/learn/waves-and-shapes/" />
+<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<meta property="og:site_name" content="Stims" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="MilkDrop Custom Waves and Shapes — Track 5 | Stims" />
+<meta property="og:description" content="Draw with MilkDrop custom waves and custom shapes, and pass values from per-frame equations into them with the q-variable bridge." />
+<meta property="og:url" content="https://toil.fyi/learn/waves-and-shapes/" />
+<meta property="og:image" content="https://toil.fyi/og/milkdrop.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="MilkDrop Custom Waves and Shapes — Track 5 | Stims" />
+<meta name="twitter:description" content="Draw with MilkDrop custom waves and custom shapes, and pass values from per-frame equations into them with the q-variable bridge." />
+<meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "TechArticle",
+      "headline": "Track 5 — Waves and shapes",
+      "name": "MilkDrop Custom Waves and Shapes — Track 5",
+      "description": "Draw with MilkDrop custom waves and custom shapes, and pass values from per-frame equations into them with the q-variable bridge.",
+      "url": "https://toil.fyi/learn/waves-and-shapes/",
+      "mainEntityOfPage": "https://toil.fyi/learn/waves-and-shapes/",
+      "inLanguage": "en",
+      "image": "https://toil.fyi/og/milkdrop.png",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Stims",
+        "url": "https://toil.fyi/"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Stims",
+          "item": "https://toil.fyi/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Learn",
+          "item": "https://toil.fyi/learn/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Track 5 — Waves and shapes",
+          "item": "https://toil.fyi/learn/waves-and-shapes/"
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>:root{color-scheme:dark light;--bg:#0b0f1a;--fg:#e8ecf3;--muted:#a9b3c4;--line:rgba(255,255,255,.12);--code:#121a2a;--accent:#5fc0b5;--accent-fg:#0a0f19;--glow:rgba(95,192,181,.16);--zebra:rgba(255,255,255,.035);--shadow:rgba(95,192,181,.4)}@media(prefers-color-scheme:light){:root{--bg:#f7f8fb;--fg:#141a26;--muted:#4a5568;--line:rgba(0,0,0,.14);--code:#eaeef5;--accent:#0f766e;--accent-fg:#fff;--glow:rgba(15,118,110,.09);--zebra:rgba(0,0,0,.035);--shadow:rgba(0,0,0,.22)}}*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg) radial-gradient(60rem 22rem at 50% -6rem,var(--glow),transparent) no-repeat;color:var(--fg);font:1rem/1.7 "Space Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}a{color:var(--accent);text-underline-offset:.18em;text-decoration-thickness:1px}a:focus-visible,[tabindex]:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}img{max-width:100%;height:auto}.site-header,.site-footer,main{max-width:48rem;margin:0 auto;padding-left:16px;padding-right:16px}.site-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-top:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}.brand{display:inline-flex;align-items:center;gap:8px;margin-right:auto;font-weight:700;font-size:1.2rem;letter-spacing:-.01em;text-decoration:none;color:var(--fg)}.brand:before{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}.links{display:flex;flex-wrap:wrap;gap:2px 16px;order:3;flex-basis:100%}.links a{color:var(--muted);text-decoration:none;font-size:.95rem;padding:4px 0}.links a:hover{color:var(--fg);text-decoration:underline}.nav-cta{order:2;background:var(--accent);color:var(--accent-fg);text-decoration:none;font-weight:600;font-size:.95rem;padding:8px 16px;border-radius:999px}.nav-cta:hover{filter:brightness(1.08)}@media(min-width:640px){.links{order:1;flex-basis:auto;gap:2px 20px}.brand{order:0}}main{padding-top:28px;padding-bottom:32px}h1{font-size:clamp(1.9rem,6vw,2.7rem);line-height:1.15;letter-spacing:-.02em;margin:.3em 0 .5em}h2{font-size:1.5rem;line-height:1.3;letter-spacing:-.01em;margin:2em 0 .5em;padding-top:.6em;border-top:1px solid var(--line);scroll-margin-top:16px}h3{font-size:1.15rem;margin:1.6em 0 .4em;scroll-margin-top:16px}p,li{max-width:42rem}code{font:.88em "Space Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.12em .38em;border-radius:5px}pre{background:var(--code);padding:14px 16px;border-radius:10px;border:1px solid var(--line);overflow-x:auto;line-height:1.55}pre code{background:none;padding:0;font-size:.85rem}.table-wrap{margin:1.2em 0;border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:linear-gradient(to right,var(--bg) 30%,transparent) 0 0/40px 100% no-repeat local,linear-gradient(to left,var(--bg) 30%,transparent) 100% 0/40px 100% no-repeat local,radial-gradient(farthest-side at 0 50%,var(--shadow),transparent) 0 0/14px 100% no-repeat scroll,radial-gradient(farthest-side at 100% 50%,var(--shadow),transparent) 100% 0/14px 100% no-repeat scroll}table{border-collapse:collapse;min-width:100%;font-size:.95rem}th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}th{font-weight:700;background:var(--zebra);white-space:nowrap}tbody tr:nth-child(even){background:var(--zebra)}td:first-child{min-width:7rem}blockquote{margin:1.2em 0;padding:.2em 1.1em;border-left:3px solid var(--accent);background:var(--zebra);border-radius:0 8px 8px 0;color:var(--muted)}details{margin:1em 0}summary{cursor:pointer;color:var(--muted)}.toc{border:1px solid var(--line);border-radius:12px;padding:10px 18px;margin:1.2em 0;background:var(--zebra)}.toc ul{margin:.4em 0;padding-left:1.2em}.toc a{text-decoration:none}.toc a:hover{text-decoration:underline}.run-link{display:inline-block;padding:.3em 1em;border:1px solid var(--accent);border-radius:999px;font-weight:600;text-decoration:none;line-height:1.5}.run-link:hover{background:var(--accent);color:var(--accent-fg)}.cta{display:inline-block;background:var(--accent);color:var(--accent-fg);padding:11px 22px;border-radius:12px;text-decoration:none;font-weight:600}.cta:hover{filter:brightness(1.08)}.try{margin:2.5em 0 1em;padding:20px 22px;border:1px solid var(--line);border-radius:14px;background:var(--zebra)}.try p{margin:.2em 0 .8em}.pager{display:grid;gap:12px;margin:1.5em 0}@media(min-width:640px){.pager{grid-template-columns:1fr 1fr}.pager .next{grid-column:2}}.pager a{display:block;padding:10px 14px;border:1px solid var(--line);border-radius:10px;text-decoration:none;max-width:100%}.pager a:hover{border-color:var(--accent)}.pager .next{text-align:right}.site-footer{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem;padding-top:8px;padding-bottom:48px}.site-footer h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;margin:1.4em 0 .5em;padding:0;border:0;color:var(--fg)}.site-footer ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 18px}.site-footer a{color:var(--muted)}.site-footer a:hover{color:var(--accent)}</style>
+</head>
+<body>
+<header class="site-header">
+<a class="brand" href="/">Stims</a>
+<nav class="links" aria-label="Site"><a href="/learn/">Learn</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/learn/milkdrop-vs-butterchurn-projectm/">Compare</a><a href="/performance/">Compatibility</a></nav>
+<a class="nav-cta" href="/">Open Stims</a>
+</header>
+<main>
+<article>
+<h1 id="track-5--waves-and-shapes">Track 5 — Waves and shapes</h1>
+
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#lesson-1--a-second-waveform">Lesson 1 · A second waveform</a></li><li><a href="#lesson-2--shaping-every-sample-point">Lesson 2 · Shaping every sample point</a></li><li><a href="#lesson-3--a-shape-sitting-still">Lesson 3 · A shape, sitting still</a></li><li><a href="#lesson-4--giving-a-shape-a-per_frame">Lesson 4 · Giving a shape a per_frame</a></li><li><a href="#lesson-5--morphing-instead-of-moving">Lesson 5 · Morphing instead of moving</a></li><li><a href="#lesson-6--wired-to-the-music">Lesson 6 · Wired to the music</a></li><li><a href="#what-you-can-now-build">What you can now build</a></li></ul></nav>
+<p>Everything so far distorts the feedback loop — the paint already on screen. Waves and shapes are the <em>new</em> ink laid on top each frame, before the loop&#39;s distortion is applied to it next time around. They&#39;re not a minor feature: <strong>88% of the bundled catalog uses custom waves, and 99% uses custom shapes</strong> — this is the layer most presets actually draw with.</p>
+<h2 id="lesson-1--a-second-waveform">Lesson 1 · A second waveform</h2>
+<p>Every preset has one built-in waveform (<code>wave_r</code>/<code>wave_g</code>/<code>wave_b</code>, the one you&#39;ve been coloring since Track 1). Custom waves are additional ones, up to eight, each fully independent:</p>
+<pre><code class="language-text">wavecode_0_enabled=1
+wavecode_0_samples=200
+wavecode_0_scaling=1
+wavecode_0_smoothing=0.5
+wavecode_0_r=1
+wavecode_0_g=0.7
+wavecode_0_b=0.2
+wavecode_0_a=1</code></pre>
+<p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBBIHNlY29uZCB3YXZlZm9ybSwgZHJhd24gaW5kZXBlbmRlbnRseSBvZiB0aGUgbWFpbiBvbmUsIHdpdGggbm8KLy8gZXF1YXRpb25zIGF0IGFsbCB5ZXQg4oCUIGp1c3Qgc3RhdGljIHBhcmFtcy4gQmFzZWxpbmUgZm9yIFRyYWNrIDUuCmZSYXRpbmc9NQpmRGVjYXk9MC45NwpmV2F2ZUFscGhhPTAuNgpmV2F2ZVNjYWxlPTEKbldhdmVNb2RlPTAKYldhdmVUaGljaz0xCmJNYXhpbWl6ZVdhdmVDb2xvcj0xCmJUZXhXcmFwPTEKem9vbT0xCnJvdD0wCmN4PTAuNQpjeT0wLjUKZHg9MApkeT0wCnN4PTEKc3k9MQp3YXJwPTAKd2F2ZV9yPTAuMQp3YXZlX2c9MC4yCndhdmVfYj0wLjMKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wCndhdmVjb2RlXzBfZW5hYmxlZD0xCndhdmVjb2RlXzBfc2FtcGxlcz0yMDAKd2F2ZWNvZGVfMF9zZXA9MAp3YXZlY29kZV8wX3NjYWxpbmc9MQp3YXZlY29kZV8wX3Ntb290aGluZz0wLjUKd2F2ZWNvZGVfMF9yPTEKd2F2ZWNvZGVfMF9nPTAuNwp3YXZlY29kZV8wX2I9MC4yCndhdmVjb2RlXzBfYT0xCg%3D%3D" title="examples/50-static-wave.milk"><strong>▶ Run a static custom wave</strong></a></p>
+<p><code>wavecode_0_*</code> are static parameters — enable it, give it 200 sample points, an amber color. On its own it draws the audio waveform again, just as a second colored line. The interesting part is next.</p>
+<h2 id="lesson-2--shaping-every-sample-point">Lesson 2 · Shaping every sample point</h2>
+<p><code>wave_N_per_point</code> equations run once <em>per sample point</em> of the wave — the finest-grained code in the whole language, potentially hundreds of times a frame for one wave:</p>
+<pre><code class="language-text">wave_0_per_point1=t=sample*6.283185+time*0.3;
+wave_0_per_point2=x=0.5+0.3*sin(t*3)*(1+0.3*value);
+wave_0_per_point3=y=0.5+0.3*cos(t*2)*(1+0.3*value);</code></pre>
+<p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBTYW1lIGN1c3RvbSB3YXZlLCBub3cgc2hhcGVkIGJ5IGEgcGVyLXBvaW50IGVxdWF0aW9uIGluc3RlYWQgb2YgdGhlCi8vIGF1ZGlvIHNhbXBsZSBkaXJlY3RseS4gd2F2ZV8wX3Blcl9wb2ludDEgcnVucyBvbmNlIHBlciBzYW1wbGUgcG9pbnQKLy8gKHNhbXBsZSBydW5zIDAuLjEgYWNyb3NzIHRoZSB3YXZlKTsgeCx5IGFyZSB3aGF0IGl0IG11c3Qgc2V0LgpmUmF0aW5nPTUKZkRlY2F5PTAuOTcKZldhdmVBbHBoYT0wLjYKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wLjEKd2F2ZV9nPTAuMgp3YXZlX2I9MC4zCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MAp3YXZlY29kZV8wX2VuYWJsZWQ9MQp3YXZlY29kZV8wX3NhbXBsZXM9MjAwCndhdmVjb2RlXzBfc2VwPTAKd2F2ZWNvZGVfMF9zY2FsaW5nPTEKd2F2ZWNvZGVfMF9zbW9vdGhpbmc9MC41CndhdmVjb2RlXzBfcj0xCndhdmVjb2RlXzBfZz0wLjcKd2F2ZWNvZGVfMF9iPTAuMgp3YXZlY29kZV8wX2E9MQp3YXZlXzBfcGVyX3BvaW50MT10PXNhbXBsZSo2LjI4MzE4NSt0aW1lKjAuMzsKd2F2ZV8wX3Blcl9wb2ludDI9eD0wLjUrMC4zKnNpbih0KjMpKigxKzAuMyp2YWx1ZSk7CndhdmVfMF9wZXJfcG9pbnQzPXk9MC41KzAuMypjb3ModCoyKSooMSswLjMqdmFsdWUpOwo%3D" title="examples/51-wave-lissajous.milk"><strong>▶ Run the Lissajous wave</strong></a></p>
+<p>The two inputs unique to this context:</p>
+<ul>
+<li><code>sample</code> — this point&#39;s position along the wave, <code>0</code> to <code>1</code>. Multiplying by <code>6.283185</code> (2π) turns it into a full angle sweep — the standard move whenever a wave should trace a closed curve instead of a left-to-right line.</li>
+<li><code>value</code> — the actual audio sample at this point, roughly <code>-1..1</code>. Folding it into the radius (<code>1+0.3*value</code>) is how the shape stays a recognizable curve while still visibly responding to the waveform, rather than the waveform being replaced outright.</li>
+</ul>
+<p>You must set <code>x</code>/<code>y</code> yourself here — nothing else positions the point. This is the fundamental deal with per-point code: total control over where every point of the wave lands, in exchange for writing the geometry from scratch.</p>
+<h2 id="lesson-3--a-shape-sitting-still">Lesson 3 · A shape, sitting still</h2>
+<p>Custom shapes (up to four, each with 3–100 sides and up to 1024 instances) are the other half of this layer — solid polygons instead of lines:</p>
+<pre><code class="language-text">shapecode_0_enabled=1
+shapecode_0_sides=5
+shapecode_0_thickoutline=1
+shapecode_0_x=0.5
+shapecode_0_y=0.5
+shapecode_0_rad=0.15
+shapecode_0_r=0.9
+shapecode_0_g=0.6
+shapecode_0_b=0.1</code></pre>
+<p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBBIGN1c3RvbSBzaGFwZSAoYSBwZW50YWdvbiksIHNpdHRpbmcgc3RpbGwsIGNvbG9yZWQsIG5vIGVxdWF0aW9ucyB5ZXQuCmZSYXRpbmc9NQpmRGVjYXk9MC45NwpmV2F2ZUFscGhhPTAKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wCndhdmVfZz0wCndhdmVfYj0wCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MApzaGFwZWNvZGVfMF9lbmFibGVkPTEKc2hhcGVjb2RlXzBfc2lkZXM9NQpzaGFwZWNvZGVfMF9hZGRpdGl2ZT0wCnNoYXBlY29kZV8wX3RoaWNrb3V0bGluZT0xCnNoYXBlY29kZV8wX3RleHR1cmVkPTAKc2hhcGVjb2RlXzBfeD0wLjUKc2hhcGVjb2RlXzBfeT0wLjUKc2hhcGVjb2RlXzBfcmFkPTAuMTUKc2hhcGVjb2RlXzBfYW5nPTAKc2hhcGVjb2RlXzBfcj0wLjkKc2hhcGVjb2RlXzBfZz0wLjYKc2hhcGVjb2RlXzBfYj0wLjEKc2hhcGVjb2RlXzBfYT0xCg%3D%3D" title="examples/52-static-shape.milk"><strong>▶ Run a static pentagon</strong></a></p>
+<p>Static params only — the pentagon just sits there. <code>shapecode_0_*</code> mirrors <code>wavecode_0_*</code>: <code>_enabled</code>, geometry (<code>sides</code>, <code>x</code>, <code>y</code>, <code>rad</code>, <code>ang</code>), color (<code>r</code>/<code>g</code>/<code>b</code>/<code>a</code>).</p>
+<h2 id="lesson-4--giving-a-shape-a-per_frame">Lesson 4 · Giving a shape a per_frame</h2>
+<p><code>shape_N_per_frame</code> runs once per frame for that shape instance — the same rhythm as the root <code>per_frame</code>, just scoped to one shape:</p>
+<pre><code class="language-text">shape_0_per_frame1=x=0.5+0.25*sin(time*0.7);
+shape_0_per_frame2=y=0.5+0.25*cos(time*0.7);
+shape_0_per_frame3=ang=time*0.7;</code></pre>
+<p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgc2FtZSBwZW50YWdvbiwgbm93IG9yYml0aW5nIHRoZSBjZW50ZXIgb24gYSBwZXJfZnJhbWUgZXF1YXRpb24uCi8vIHNoYXBlXzBfcGVyX2ZyYW1lIHJ1bnMgb25jZSBwZXIgZnJhbWUgZm9yIHRoaXMgc2hhcGUgaW5zdGFuY2Ug4oCUIHRoZQovLyBzYW1lIHJoeXRobSBhcyB0aGUgcm9vdCBwZXJfZnJhbWUsIGp1c3Qgc2NvcGVkIHRvIG9uZSBzaGFwZS4KZlJhdGluZz01CmZEZWNheT0wLjk3CmZXYXZlQWxwaGE9MApmV2F2ZVNjYWxlPTEKbldhdmVNb2RlPTAKYldhdmVUaGljaz0xCmJNYXhpbWl6ZVdhdmVDb2xvcj0xCmJUZXhXcmFwPTEKem9vbT0xCnJvdD0wCmN4PTAuNQpjeT0wLjUKZHg9MApkeT0wCnN4PTEKc3k9MQp3YXJwPTAKd2F2ZV9yPTAKd2F2ZV9nPTAKd2F2ZV9iPTAKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wCnNoYXBlY29kZV8wX2VuYWJsZWQ9MQpzaGFwZWNvZGVfMF9zaWRlcz01CnNoYXBlY29kZV8wX2FkZGl0aXZlPTAKc2hhcGVjb2RlXzBfdGhpY2tvdXRsaW5lPTEKc2hhcGVjb2RlXzBfdGV4dHVyZWQ9MApzaGFwZWNvZGVfMF94PTAuNQpzaGFwZWNvZGVfMF95PTAuNQpzaGFwZWNvZGVfMF9yYWQ9MC4xNQpzaGFwZWNvZGVfMF9hbmc9MApzaGFwZWNvZGVfMF9yPTAuOQpzaGFwZWNvZGVfMF9nPTAuNgpzaGFwZWNvZGVfMF9iPTAuMQpzaGFwZWNvZGVfMF9hPTEKc2hhcGVfMF9wZXJfZnJhbWUxPXg9MC41KzAuMjUqc2luKHRpbWUqMC43KTsKc2hhcGVfMF9wZXJfZnJhbWUyPXk9MC41KzAuMjUqY29zKHRpbWUqMC43KTsKc2hhcGVfMF9wZXJfZnJhbWUzPWFuZz10aW1lKjAuNzsK" title="examples/53-orbiting-shape.milk"><strong>▶ Run the orbiting pentagon</strong></a></p>
+<p>Nothing new mechanically — this is Track 1&#39;s <code>sin(time)</code> heartbeat, just steering a shape&#39;s position instead of a screen-wide knob. <code>shape_N_init</code> (unused here) runs once, the first frame only, for one-time setup.</p>
+<h2 id="lesson-5--morphing-instead-of-moving">Lesson 5 · Morphing instead of moving</h2>
+<p>A shape doesn&#39;t have to move to be alive — it can change identity entirely, frame by frame. <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#pattern-12-shape-state-machine-evet">Pattern 12 from the coding guide</a>:</p>
+<pre><code class="language-text">shape_0_per_frame1=s=frame%6+4;
+shape_0_per_frame2=sides=s;
+shape_0_per_frame3=rad=0.08+s*0.01;
+shape_0_per_frame4=ang=s*0.3;
+shape_0_per_frame5=r=sin(s*1.1)*0.5+0.5;
+shape_0_per_frame6=g=sin(s*2.2)*0.5+0.5;
+shape_0_per_frame7=b=sin(s*3.3)*0.5+0.5;</code></pre>
+<p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBQYXR0ZXJuIDEyIGZyb20gdGhlIGNvZGluZyBndWlkZTogYSBzaGFwZSBjeWNsaW5nIHRocm91Z2ggaWRlbnRpdGllcy4KLy8gRXZlcnkgNnRoIGZyYW1lIGl0IGFkdmFuY2VzIHRvIGEgbmV3IHNpZGVzL2NvbG9yL3JhZCBjb21iaW5hdGlvbiDigJQgdGhlCi8vIHNoYXBlIGRvZXNuJ3QgbW92ZSwgaXQgKm1vcnBocyouCmZSYXRpbmc9NQpmRGVjYXk9MC45NwpmV2F2ZUFscGhhPTAKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wCndhdmVfZz0wCndhdmVfYj0wCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MApzaGFwZWNvZGVfMF9lbmFibGVkPTEKc2hhcGVjb2RlXzBfc2lkZXM9NApzaGFwZWNvZGVfMF9hZGRpdGl2ZT0wCnNoYXBlY29kZV8wX3RoaWNrb3V0bGluZT0xCnNoYXBlY29kZV8wX3RleHR1cmVkPTAKc2hhcGVjb2RlXzBfeD0wLjUKc2hhcGVjb2RlXzBfeT0wLjUKc2hhcGVjb2RlXzBfcmFkPTAuMQpzaGFwZWNvZGVfMF9hbmc9MApzaGFwZWNvZGVfMF9yPTEKc2hhcGVjb2RlXzBfZz0xCnNoYXBlY29kZV8wX2I9MQpzaGFwZWNvZGVfMF9hPTEKc2hhcGVfMF9wZXJfZnJhbWUxPXM9ZnJhbWUlNis0OwpzaGFwZV8wX3Blcl9mcmFtZTI9c2lkZXM9czsKc2hhcGVfMF9wZXJfZnJhbWUzPXJhZD0wLjA4K3MqMC4wMTsKc2hhcGVfMF9wZXJfZnJhbWU0PWFuZz1zKjAuMzsKc2hhcGVfMF9wZXJfZnJhbWU1PXI9c2luKHMqMS4xKSowLjUrMC41OwpzaGFwZV8wX3Blcl9mcmFtZTY9Zz1zaW4ocyoyLjIpKjAuNSswLjU7CnNoYXBlXzBfcGVyX2ZyYW1lNz1iPXNpbihzKjMuMykqMC41KzAuNTsK" title="examples/54-shape-state-machine.milk"><strong>▶ Run the shape state machine</strong></a></p>
+<p><code>frame%6+4</code> cycles <code>s</code> through <code>4, 5, 6, 7, 8, 9, 4, 5, …</code> — one step every frame. Every other line reads that same <code>s</code>: sides count, radius, rotation, and all three color channels are just different functions of it. The shape isn&#39;t animating a fixed pentagon — it&#39;s cycling through six entirely different polygon identities, each with its own look, six times a second at 36fps-equivalent stepping. This is the technique behind shapes that seem to &quot;breathe&quot; between forms rather than simply move.</p>
+<h2 id="lesson-6--wired-to-the-music">Lesson 6 · Wired to the music</h2>
+<p>Everything in this track has run on <code>time</code> alone. Bridge it to audio exactly the way Track 4 did — smooth in <code>per_frame</code>, write a q-var, read it wherever it&#39;s needed:</p>
+<pre><code class="language-text">per_frame_1=ra=1/fps*0.1;
+per_frame_2=bass_avg=bass_avg*(1-ra)+ra*bass;
+per_frame_3=q8=bass_avg;
+wave_0_per_point1=t=sample*6.283185+time*0.3;
+wave_0_per_point2=x=0.5+(0.2+0.15*q8)*sin(t*3);
+wave_0_per_point3=y=0.5+(0.2+0.15*q8)*cos(t*2);
+shape_0_per_frame1=rad=0.1+q8*0.15;
+shape_0_per_frame2=ang=time*0.5;</code></pre>
+<p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBFdmVyeXRoaW5nIGluIFRyYWNrIDUgY29tYmluZWQgYW5kIG1hZGUgYXVkaW8tcmVhY3RpdmU6IHE4IGNhcnJpZXMKLy8gc21vb3RoZWQgdm9sdW1lIGZyb20gcGVyX2ZyYW1lIGludG8gYm90aCB0aGUgc2hhcGUgKHJhZGl1cykgYW5kIHRoZQovLyB3YXZlIChhbXBsaXR1ZGUgdmlhIHZhbHVlJ3MgbmF0dXJhbCBzY2FsaW5nKSwgdGhlIHNhbWUgcS12YXIgYnJpZGdlCi8vIFRyYWNrIDQgdXNlZCBmb3IgcGVyX3BpeGVsLgpmUmF0aW5nPTUKZkRlY2F5PTAuOTcKZldhdmVBbHBoYT0wLjUKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wLjEKd2F2ZV9nPTAuMgp3YXZlX2I9MC4zCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MAp3YXZlY29kZV8wX2VuYWJsZWQ9MQp3YXZlY29kZV8wX3NhbXBsZXM9MjAwCndhdmVjb2RlXzBfc2VwPTAKd2F2ZWNvZGVfMF9zY2FsaW5nPTEKd2F2ZWNvZGVfMF9zbW9vdGhpbmc9MC41CndhdmVjb2RlXzBfcj0xCndhdmVjb2RlXzBfZz0wLjcKd2F2ZWNvZGVfMF9iPTAuMgp3YXZlY29kZV8wX2E9MQpzaGFwZWNvZGVfMF9lbmFibGVkPTEKc2hhcGVjb2RlXzBfc2lkZXM9NQpzaGFwZWNvZGVfMF9hZGRpdGl2ZT0wCnNoYXBlY29kZV8wX3RoaWNrb3V0bGluZT0xCnNoYXBlY29kZV8wX3RleHR1cmVkPTAKc2hhcGVjb2RlXzBfeD0wLjUKc2hhcGVjb2RlXzBfeT0wLjUKc2hhcGVjb2RlXzBfcmFkPTAuMTUKc2hhcGVjb2RlXzBfYW5nPTAKc2hhcGVjb2RlXzBfcj0wLjkKc2hhcGVjb2RlXzBfZz0wLjYKc2hhcGVjb2RlXzBfYj0wLjEKc2hhcGVjb2RlXzBfYT0xCnBlcl9mcmFtZV8xPXJhPTEvZnBzKjAuMTsKcGVyX2ZyYW1lXzI9YmFzc19hdmc9YmFzc19hdmcqKDEtcmEpK3JhKmJhc3M7CnBlcl9mcmFtZV8zPXE4PWJhc3NfYXZnOwp3YXZlXzBfcGVyX3BvaW50MT10PXNhbXBsZSo2LjI4MzE4NSt0aW1lKjAuMzsKd2F2ZV8wX3Blcl9wb2ludDI9eD0wLjUrKDAuMiswLjE1KnE4KSpzaW4odCozKTsKd2F2ZV8wX3Blcl9wb2ludDM9eT0wLjUrKDAuMiswLjE1KnE4KSpjb3ModCoyKTsKc2hhcGVfMF9wZXJfZnJhbWUxPXJhZD0wLjErcTgqMC4xNTsKc2hhcGVfMF9wZXJfZnJhbWUyPWFuZz10aW1lKjAuNTsK" title="examples/55-reactive-shape-and-wave.milk"><strong>▶ Run the reactive wave + shape</strong></a></p>
+<p><code>q8</code> is computed exactly once, in the root <code>per_frame</code>, and both the wave&#39;s per-point code and the shape&#39;s per-frame code read the same value that frame. This is the general answer to &quot;how do waves/shapes hear the music&quot;: they don&#39;t read audio directly — <code>per_frame</code> does the listening (Track 3), everything downstream just reads the result.</p>
+<h2 id="what-you-can-now-build">What you can now build</h2>
+<p>Waves and shapes are how a preset draws something recognizable rather than just distorting a blur — lines that trace curves, polygons that orbit or morph, both wired into the same audio pipeline as everything else. Between Tracks 1–5 you can now read the <code>per_frame</code>/<code>per_pixel</code>/wave/shape portion of almost any preset in the catalog.</p>
+<p><strong>Next: <a href="/learn/shaders/">Track 6 — Shaders</a></strong>, the one piece left: the GLSL <code>warp_shader</code>/<code>comp_shader</code> pair that 64% of modern presets use for the effects equations alone can&#39;t reach.</p>
+
+<aside class="try" aria-label="Try Stims"><p><strong>Try it now.</strong> Stims plays MilkDrop presets in your browser, with nothing to install.</p><p><a class="cta" href="/">Open Stims</a></p></aside>
+</article>
+<nav class="pager" aria-label="Course navigation"><a rel="prev" href="/learn/warp-fields/">← MilkDrop Per-Pixel Warp Fields — Track 4</a><a class="next" rel="next" href="/learn/shaders/">MilkDrop Warp and Composite Shaders — Track 6 →</a></nav>
+</main>
+<footer class="site-footer">
+<h2>Stims</h2>
+<ul><li><a href="/">Visualizer</a></li><li><a href="/learn/">Learn to write presets</a></li><li><a href="/learn/milkdrop-online/">MilkDrop online</a></li><li><a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a></li><li><a href="/performance/">Compatibility and performance</a></li><li><a href="https://github.com/zz-plant/stims">Source on GitHub</a></li></ul>
+<h2>Browse presets by look</h2>
+<ul><li><a href="/discover/audio-reactive">Audio-Reactive</a></li><li><a href="/discover/ambient">Ambient</a></li><li><a href="/discover/fractal">Fractal</a></li><li><a href="/discover/geometric">Geometric</a></li><li><a href="/discover/hall-of-fame">Hall of Fame</a></li><li><a href="/discover/neon">Neon</a></li><li><a href="/discover/particles">Particle</a></li><li><a href="/discover/psychedelic">Psychedelic</a></li><li><a href="/discover/retro">Retro</a></li><li><a href="/discover/space">Space</a></li><li><a href="/discover/trippy">Trippy</a></li><li><a href="/discover/tunnel">Tunnel</a></li><li><a href="/discover/waveform">Waveform</a></li><li><a href="/discover/webgpu-showcase">WebGPU Showcase</a></li></ul>
+<h2>Browse presets by author</h2>
+<ul><li><a href="/author/geiss">Geiss</a></li><li><a href="/author/flexi">Flexi</a></li><li><a href="/author/martin">Martin</a></li><li><a href="/author/rovastar">Rovastar</a></li><li><a href="/author/eo-s">Eo.S.</a></li><li><a href="/author/phat">Phat</a></li><li><a href="/author/stahlregen">Stahlregen</a></li><li><a href="/author/unchained">Unchained</a></li><li><a href="/author/fishbrain">Fishbrain</a></li><li><a href="/author/aderrasi">Aderrasi</a></li><li><a href="/author/zylot">Zylot</a></li><li><a href="/author/shifter">Shifter</a></li><li><a href="/author/mig">Mig</a></li><li><a href="/author/orb">ORB</a></li><li><a href="/author/suksma">Suksma</a></li><li><a href="/author/cope">Cope</a></li><li><a href="/author/goody">Goody</a></li><li><a href="/author/krash">Krash</a></li></ul>
+</footer>
+</body>
+</html>

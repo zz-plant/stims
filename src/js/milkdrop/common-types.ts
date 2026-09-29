@@ -59,6 +59,8 @@ export type MilkdropPresetField = {
   rawValue: string;
   line: number;
   section: string | null;
+  /** A `//` comment stripped from the end of the line, including the `//`. */
+  comment?: string;
 };
 
 export type MilkdropPresetAST = {
@@ -130,6 +132,14 @@ export type MilkdropCompiledStatement = {
 export type MilkdropProgramBlock = {
   statements: MilkdropCompiledStatement[];
   sourceLines: string[];
+  /**
+   * `//` comments the author wrote on this block's lines, anchored to
+   * `sourceLines`: a trailing comment follows statement `index` on its line; a
+   * standalone one (a comment-only line, or one inside a statement still
+   * being continued) is written as its own line before statement `index`.
+   * Nothing executes them — they are kept so Format does not delete them.
+   */
+  comments?: Array<{ index: number; text: string; trailing: boolean }>;
 };
 
 export type MilkdropFeatureKey =

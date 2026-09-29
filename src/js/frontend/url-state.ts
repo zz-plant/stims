@@ -173,14 +173,16 @@ export function buildCanonicalUrl(
   return url;
 }
 
-/** Full URL for the current session's share state. Passing `source` adds a
- * `#code=` hash carrying the live-edited `.milk` source; passing `null`
- * removes any hash. Pathname and search are preserved so the preset,
- * collection, audio, and tool state in the query string keeps working.
- * Returns the input unchanged when the source cannot be encoded (`btoa` is
- * Latin-1-only and `.milk` files can carry non-Latin-1 text), so an
- * unencodable remix degrades to the plain view URL instead of wiping the
- * session's other state off the address bar. */
+// Product sharing budget, including the query and percent-escaped payload.
+// Larger drafts can still be edited and exported as .milk files.
+export const MAX_REMIX_URL_LENGTH = 16_000;
+export const REMIX_URL_TOO_LONG =
+  'This remix link is too long to share reliably. Your edits are still in the editor. Export the .milk file to share them.';
+export const REMIX_URL_FAILED =
+  'Could not put your edits in a link. Your edits are still in the editor. Export the .milk file to share them.';
+
+/** Full session URL with the live draft, or no hash when source is null.
+ * Throws on failure so callers cannot mistake a stale URL for the draft. */
 export function buildRemixShareUrl(
   input: string | URL,
   source: string | null,
@@ -191,12 +193,16 @@ export function buildRemixShareUrl(
       : new URL(input.toString());
   if (source !== null) {
     const hash = buildPresetCodeHash(source);
-    if (!hash) return typeof input === 'string' ? input : input.toString();
+    if (!hash) throw new Error(REMIX_URL_FAILED);
     url.hash = hash;
   } else {
     url.hash = '';
   }
-  return url.toString();
+  const result = url.toString();
+  if (source !== null && result.length > MAX_REMIX_URL_LENGTH) {
+    throw new Error(REMIX_URL_TOO_LONG);
+  }
+  return result;
 }
 
 export function decodePresetCodeFromHash(
@@ -210,21 +216,72 @@ export function decodePresetCodeFromHash(
   if (!codeParam) return null;
 
   try {
-    const raw = atob(decodeURIComponent(codeParam));
-    return raw;
+    return decodeBase64ToText(decodeURIComponent(codeParam));
   } catch (_err) {
     try {
-      return atob(codeParam);
+      return decodeBase64ToText(codeParam);
     } catch (_err2) {
       return null;
     }
   }
 }
 
+/**
+ * Marks a payload as UTF-8 bytes rather than the Latin-1 ones links written
+ * before this encoder carry.
+ *
+ * `~` is not in the base64 alphabet and `encodeURIComponent` leaves it
+ * alone, so it cannot appear in a legacy payload and cannot change the shape
+ * of the encoded hash. The digit is there so a third encoding, if one is
+ * ever needed, does not have to guess again.
+ *
+ * The alternative — decoding as UTF-8 and falling back when that throws —
+ * looks equivalent but is not: a Latin-1 source containing `Ã©` was stored
+ * as the bytes `C3 A9`, which are perfectly valid UTF-8 for `é`, so the
+ * strict decode succeeds and hands back source the author never wrote. An
+ * explicit marker is the only way to tell the two apart.
+ */
+const PRESET_CODE_UTF8_PREFIX = 'u1~';
+
+/**
+ * Base64 for arbitrary text, via UTF-8.
+ *
+ * `btoa` takes a Latin-1 byte string, so it throws on any character above
+ * U+00FF — one emoji or one CJK comment in a `.milk` source was enough to
+ * make the whole remix link silently degrade to a plain view URL while the
+ * UI still announced that it carried the draft. Encoding to UTF-8 first
+ * removes the limit; the chunking keeps a large source off the argument
+ * limit of a single spread call.
+ */
+function encodeTextToBase64(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  const CHUNK = 0x8000;
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + CHUNK));
+  }
+  return btoa(binary);
+}
+
+/**
+ * The inverse, reading the marker rather than guessing: a payload written by
+ * this build decodes as UTF-8, and anything without the marker is a link
+ * from an older build and is read back as the Latin-1 bytes it was written
+ * with, exactly as that build read it.
+ */
+function decodeBase64ToText(payload: string): string {
+  if (!payload.startsWith(PRESET_CODE_UTF8_PREFIX)) {
+    return atob(payload);
+  }
+  const binary = atob(payload.slice(PRESET_CODE_UTF8_PREFIX.length));
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+}
+
 export function buildPresetCodeHash(milkSource: string): string {
   try {
-    const base64 = btoa(milkSource);
-    return `#code=${encodeURIComponent(base64)}`;
+    const base64 = encodeTextToBase64(milkSource);
+    return `#code=${encodeURIComponent(`${PRESET_CODE_UTF8_PREFIX}${base64}`)}`;
   } catch (_err) {
     return '';
   }

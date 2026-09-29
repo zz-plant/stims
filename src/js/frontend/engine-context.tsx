@@ -43,6 +43,8 @@ export interface EngineContextValue {
   starterPresets: StarterPreset[];
 
   exportPreset: () => void;
+  /** Every preset of the user's own, as one `.zip`; resolves to the count. */
+  exportUserPresets: () => Promise<number>;
   revertEditorSource: () => void;
   duplicatePreset: () => Promise<void>;
   deleteActivePreset: () => Promise<void>;
@@ -68,6 +70,8 @@ export interface EngineContextValue {
     deviceId?: string,
   ) => Promise<void>;
   handleAudioStop: () => void;
+  /** Holds or releases the stage without ending the session (Space). */
+  handleTogglePlayback: () => void;
   loadRecentYouTubeVideo: (videoId: string, onLoaded?: () => void) => void;
   loadYouTubePreview: (requestedUrl?: string, onLoaded?: () => void) => void;
   clearRecentYouTubeVideos: () => void;
@@ -88,6 +92,10 @@ export interface EngineContextValue {
   /** Applies a field to the live VM without recompiling (instant drag
    * feedback); the editor commits to source on release. */
   updateFieldLive: (key: string, value: number) => void;
+  /** Hold or release the stage; returns the state applied (needs audio). */
+  setPlaybackPaused: (paused: boolean) => boolean;
+  /** One frame while the stage is held; false when it is not. */
+  stepPlaybackFrame: () => boolean;
   /** Awaitable live-edit surface used by the agent bridge: resolves with the
    * resulting compile so a caller can see diagnostics instead of guessing. */
   applyEditorSourceAwaited: (

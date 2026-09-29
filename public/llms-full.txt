@@ -3,6 +3,10 @@
 ## Overview
 Stims is a WebGL and WebGPU MilkDrop audio visualizer engine with built-in preset compilation, live inspector tuning, AI preset generation, and MCP automation tooling.
 
+## Guides
+
+Static, crawlable guides live under https://toil.fyi/learn/: the ten-track authoring course (start at /learn/), /learn/milkdrop-online/, /learn/milkdrop-vs-butterchurn-projectm/ and /learn/reference/ (the language reference).
+
 ## MCP Integration
 The repository provides two MCP server implementations:
 1. **Stdio Server (`scripts/mcp-server.ts`)**: Run via `bun run mcp`. Full session control using Playwright headless browser session (`start_agent_session`, `session_capture_frame`, `session_tweak`, `session_vibe`, `run_quality_gate`).

@@ -15,10 +15,7 @@
  * over static SVG.
  */
 import { useEffect, useRef } from 'react';
-import {
-  getAudioEnergy,
-  subscribeAudioEnergy,
-} from './engine-audio-energy-store.ts';
+import { subscribeEasedAudioEnergy } from './engine-audio-energy-store.ts';
 
 // One period is 150 viewBox units (both component frequencies divide it), so
 // the CSS drift of -25% of the doubled 600-unit strip loops seamlessly.
@@ -43,12 +40,9 @@ export function LaunchSignalTrace() {
   const traceRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const updateEnergy = () => {
-      const energy = Math.min(1, Math.max(0, getAudioEnergy()));
+    return subscribeEasedAudioEnergy((energy) => {
       traceRef.current?.style.setProperty('--stims-energy', String(energy));
-    };
-    updateEnergy();
-    return subscribeAudioEnergy(updateEnergy);
+    }, 140);
   }, []);
 
   return (

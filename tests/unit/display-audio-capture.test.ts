@@ -162,4 +162,33 @@ describe('captureDisplayAudioStream', () => {
     audio.fire('ended');
     expect(endedCount).toBe(1);
   });
+
+  test('requests systemAudio: include and selfBrowserSurface: include when capturing external audio', async () => {
+    const calls = installGetDisplayMedia(async () =>
+      createStream([createTrack('video', 'browser'), createTrack('audio')]),
+    );
+
+    await captureDisplayAudioStream({
+      unavailableMessage: 'unavailable',
+      preferCurrentTab: false,
+    });
+
+    expect(calls[0]).toMatchObject({
+      selfBrowserSurface: 'include',
+      systemAudio: 'include',
+    });
+  });
+
+  test('succeeds when a monitor share carries an audio track (system audio captured)', async () => {
+    const audio = createTrack('audio');
+    const video = createTrack('video', 'monitor');
+    installGetDisplayMedia(async () => createStream([video, audio]));
+
+    const stream = await captureDisplayAudioStream({
+      unavailableMessage: 'unavailable',
+      preferCurrentTab: false,
+    });
+
+    expect(stream.getAudioTracks()).toHaveLength(1);
+  });
 });

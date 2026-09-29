@@ -25,7 +25,7 @@ With a preset playing, open the **Editor** panel. What you're looking at is not 
 
 The editor rail has a dozen **live sliders** — zoom, warp, rot, decay, the pivot (`cx`/`cy`), the axis scales (`sx`/`sy`), the push (`dx`/`dy`), waveform alpha, border size. Drag any of them and watch the visual change instantly; double-click one to reset it. Under the hood, each slider is rewriting the corresponding line in the source text — so if you switch to reading the code after moving a slider, you'll see exactly what changed. This is deliberately the same interface as directly editing the values yourself; the sliders are just a friendlier way to turn knobs whose meaning Tracks 1–2 explain in depth.
 
-If you want to go further than the sliders reach, the panel also has a small library of **cues** and **pattern moves** — named starting points ("Pulse zoom", "Hue drift", "Bass zoom", "Beat flash", …) you can drop straight into the source. Each is one or two lines, the same scale as the lessons in this curriculum.
+If you want to go further than the sliders reach, the editor's **Insert** tab is a cookbook of techniques — "Zoom on the bass", "Trigger on a beat, once", "Tunnel", "A clock that ignores frame rate", … Each says how it works and is added to the right part of the preset (per-frame or per-pixel code), a few lines at a time, the same scale as the lessons in this curriculum.
 
 ## 4 · Remix, not overwrite
 
@@ -58,7 +58,7 @@ Export produces a `.milk` file you can hand to anyone with a copy of Winamp, pro
 
 | Technique | Glossary entry | Example presets |
 |-----------|----------------|-----------------|
-| Credit lineage | [Track 9 — Technique glossary](09-technique-glossary.md#component-credits) | `Aderrasi + Geiss - Airhandler (Painterly Relief Mix)` |
+| Credit lineage | [Track 9 — Technique glossary](09-technique-glossary.md#the-glossary) | `Aderrasi + Geiss - Airhandler (Painterly Relief Mix)` |
 | Remix culture | [Track 9 — Technique glossary](09-technique-glossary.md#the-glossary) | `Jelly V2` → `V3` → `V4` → `V5.5` version discipline |
 
 ---

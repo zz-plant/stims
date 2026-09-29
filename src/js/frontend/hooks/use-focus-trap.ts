@@ -79,10 +79,24 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
       if (restoreFocusOnUnmount) {
         const el = previouslyFocusedRef.current;
         previouslyFocusedRef.current = null;
-        if (
-          el?.isConnected &&
-          !document.activeElement?.closest('[role="dialog"]')
-        ) {
+        // Focus goes back to whatever opened this surface — unless it has
+        // already moved into a *different* dialog stacked over this one, in
+        // which case yanking it back would dismiss the user out of the
+        // overlay they are actually looking at.
+        //
+        // Testing for "in any dialog at all" was too broad: a panel that
+        // plays an exit animation deactivates its trap while still mounted
+        // and still holding focus, so its own container matched, the restore
+        // was skipped, and focus was left on a control that vanished a
+        // moment later — dropping the keyboard user back at `<body>` and the
+        // top of the document.
+        const activeDialog =
+          document.activeElement instanceof HTMLElement
+            ? document.activeElement.closest('[role="dialog"]')
+            : null;
+        const focusHeldByAnotherDialog =
+          activeDialog !== null && activeDialog !== container;
+        if (el?.isConnected && !focusHeldByAnotherDialog) {
           restoreFocusIfPresent(el);
         }
       }

@@ -19,7 +19,8 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
   {
     id: 'performance',
     label: 'Battery saver',
-    description: 'Half-resolution feedback for thermals, fans, and older GPUs.',
+    description:
+      'Draws at 60% resolution with half the particles. For older GPUs, or to keep the fan quiet.',
     maxPixelRatio: 1.0,
     renderScale: 0.6,
     particleScale: 0.5,
@@ -28,7 +29,7 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     id: 'low-motion',
     label: 'Low motion',
     description:
-      'Keep the scene crisp while reducing shimmer and particle churn.',
+      'Fewer particles and less shimmer, without dropping as far as Battery saver.',
     maxPixelRatio: 1.0,
     renderScale: 0.75,
     particleScale: 0.4,
@@ -37,7 +38,7 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     id: 'tv',
     label: 'TV balanced',
     description:
-      'Comfortable 10-foot visuals with softer density and steadier frame pacing.',
+      'For watching from across a room: lighter density, steadier frame pacing.',
     maxPixelRatio: 1.0,
     renderScale: 0.75,
     particleScale: 0.65,
@@ -45,7 +46,7 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
   {
     id: 'balanced',
     label: 'Balanced',
-    description: 'Default quality target for most laptops and desktops.',
+    description: 'The default for most laptops and desktops.',
     // 1.75 preserves the long-standing effective desktop cap now that preset
     // caps actually apply (the performance store used to override them all).
     maxPixelRatio: 1.75,
@@ -63,7 +64,8 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
   {
     id: 'ultra',
     label: 'Ultra visuals',
-    description: 'Maximum supersampling and particle density for SOTA GPUs.',
+    description:
+      'The most supersampling and particle density. Needs a high-end GPU.',
     // 2.5 leaves room for the adaptive controller's 1.25x supersampling step
     // on 2x-DPR displays; the per-backend pixel-ratio cap still bounds it.
     maxPixelRatio: 2.5,

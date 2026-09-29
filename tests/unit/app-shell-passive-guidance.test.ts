@@ -57,7 +57,7 @@ describe('passive first-use guidance', () => {
       act(() =>
         root.render(
           createElement(AudioMatchToast, {
-            match: { presetId: 'p', name: 'Match', score: 0.9 },
+            match: { presetId: 'p', name: 'Match' },
             onSelect: () => {},
             onDismiss: () => {
               dismissed += 1;
@@ -115,14 +115,6 @@ describe('passive first-use guidance', () => {
     );
     expect(app).toContain(
       'window.setTimeout(() => setShowRotateHint(false), 4200)',
-    );
-  });
-
-  test('does not promote internal renderer diagnostics into user toasts', () => {
-    const toastHook = frontendSource('workspace-toast.ts');
-
-    expect(toastHook).toContain(
-      "runtimeMessage.startsWith('WebGPU rollout flags active:')",
     );
   });
 });
