@@ -27,6 +27,7 @@ import type {
   MilkdropFrameState,
   MilkdropRuntimeSignals,
 } from '../types';
+import { hasVariableListeners, publishVariables } from '../variable-probe.ts';
 import type { MilkdropBeatClock } from './beat-clock.ts';
 import { applyMilkdropCapturedVideoFrameState } from './captured-video-frame.ts';
 import {
@@ -425,6 +426,10 @@ export function createMilkdropExperienceFrameLoop({
         });
         if (agentModeEnabled) {
           updateAgentDebugSnapshot(false, renderFrameState);
+        }
+        // Editor Inspect tab: every mode, free when nobody is listening.
+        if (hasVariableListeners()) {
+          publishVariables(renderFrameState.variables);
         }
         if (capturedVideoReady) {
           capturedVideoOverlay.update({

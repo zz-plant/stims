@@ -70,6 +70,7 @@ const postOrder = [
   'video_echo_alpha',
   'video_echo_zoom',
   'video_echo_orientation',
+  'gammaadj',
 ] as const;
 
 const customWaveFieldOrder = [
@@ -124,8 +125,9 @@ function formatNumber(value: number) {
   if (!Number.isFinite(value)) {
     return '0';
   }
-  const rounded = Number(value.toFixed(4));
-  return Number.isInteger(rounded) ? String(rounded) : String(rounded);
+  // Six places is what MilkDrop itself writes (`%.6f`). Fewer silently nudges
+  // values the author never touched: Format must not change the preset.
+  return String(Number(value.toFixed(6)));
 }
 
 function canonicalKey(key: string) {
