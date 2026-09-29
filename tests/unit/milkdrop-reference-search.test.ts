@@ -48,3 +48,14 @@ describe('reference search', () => {
     expect(rot?.category).toBe('you set');
   });
 });
+
+describe('builtin docs', () => {
+  test('no doc just repeats the signature it sits next to', () => {
+    // Autocomplete, hover and the Reference tab all show the signature beside
+    // the doc, so a doc that is only the signature says nothing.
+    const echoes = MILKDROP_BUILTIN_DOCS.filter((entry) =>
+      /^[a-z_0-9]+\(/iu.test(entry.doc.trim()),
+    ).map((entry) => entry.name);
+    expect(echoes).toEqual([]);
+  });
+});
