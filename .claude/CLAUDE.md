@@ -81,7 +81,7 @@ Don't scrape the DOM or hand-roll sleep-and-poll loops — there is a first-clas
 | Read/await a preset's equation variables (q1…, zoom…) | `await __stims_agent.getVariables()` / `waitForVariables((v) => v.q1 > 0.5)` |
 | Verify an effect after a transient toast vanished | `getState().statusLog` / `getEvents(sinceSeq)` |
 | Assert the canvas is actually animating | `__stims_agent.captureStats()` twice, check `motionEstimate` |
-| Drive a session from the shell, no MCP client | `bun run ctl` |
+| Drive a session from the shell, no MCP client | `bun run ctl -- --run next-preset --wait-for 's.presetId !== null'` — ordered `--run` / `--wait-for` steps, summary has `agent` state and per-step `events`, exits non-zero on a failed step |
 | Expose these surfaces to an MCP client | `bun run mcp` |
 
 Full reference: [`docs/agents/browser-automation.md`](../docs/agents/browser-automation.md). Useful URL flags: `?agent=true` (keeps rendering while the tab reports hidden — a Browser-pane tab always does, and without it the canvas goes black and reads as a shader failure), `?renderer=webgl`, `?mockAudio=1`, `?lockQualityStep=`.
