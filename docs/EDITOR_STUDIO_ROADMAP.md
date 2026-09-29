@@ -21,7 +21,7 @@ as its own PR.
 | 4 | Named versions, arbitrary diff, fork tree | planned |
 | 5 | Live per-engine compatibility checklist (MilkDrop 2 / projectM / Butterchurn) | planned |
 | 6 | Publish-from-editor, gallery browse + remix, short share links, archive rescue | planned; confirm the client is wired to `/api/presets` first |
-| 7 | Searchable in-app function reference and technique cookbook | planned |
+| 7 | Searchable in-app function reference and technique cookbook | **Reference tab shipped** (`reference-search.ts`); cookbook next |
 
 ## Inspect tab
 
