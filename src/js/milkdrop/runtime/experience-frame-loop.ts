@@ -134,6 +134,8 @@ export function createMilkdropExperienceFrameLoop({
     /** Re-runs per-frame init and restores base state — see the resetHistory
      * branch in the frame loop. */
     reset: () => void;
+    /** The variables the preset's equations own, for the Inspect tab. */
+    getInspectableVariables: () => Record<string, number>;
   };
   signalTracker: {
     update: (args: {
@@ -416,7 +418,7 @@ export function createMilkdropExperienceFrameLoop({
         // Editor Inspect tab: every mode, free when nobody is listening.
         if (hasVariableListeners()) {
           publishVariables(
-            renderFrameState.variables,
+            vm.getInspectableVariables(),
             renderFrameState.signals,
           );
         }
