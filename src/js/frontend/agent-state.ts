@@ -20,6 +20,7 @@
  * Full usage guide: docs/agents/browser-automation.md.
  */
 
+import { isHiddenTabSuspendingFrames } from '../core/hidden-tab-policy.ts';
 import {
   extractFrameStats,
   type FrameStats,
@@ -111,6 +112,18 @@ export interface AgentStateSnapshot extends AgentCoreSnapshot {
   quality: AgentTelemetry['quality'];
   lastError: string | null;
   statusLog: AgentStatusEntry[];
+  /** `document.hidden` right now. */
+  documentHidden: boolean;
+  /** The page was loaded with `?agent=true`. */
+  agentMode: boolean;
+  /**
+   * The frame loop is skipping frames because this tab is hidden. A hidden tab
+   * loaded without `?agent=true` renders nothing and shows a black canvas with
+   * no error, which reads as a shader failure: check this before diagnosing
+   * one. Computed by the same rule the frame loop acts on
+   * (core/hidden-tab-policy.ts), so the two cannot disagree.
+   */
+  renderingSuspended: boolean;
 }
 
 const statusLog: AgentStatusEntry[] = [];
@@ -322,6 +335,124 @@ export interface AgentRunResult {
    * window (normal for e.g. share-link). */
   settled?: boolean;
   error?: string;
+  /** Close matches when `error` is an unknown action or preset id. */
+  suggestions?: string[];
+}
+
+/** One entry of `listActions()`. Targeted verbs carry `params`. */
+export interface AgentActionInfo {
+  id: string;
+  label: string;
+  /** Parameter name -> type and meaning; present only on targeted verbs. */
+  params?: Record<string, string>;
+}
+
+/**
+ * Targeted verbs `run()` accepts beyond the command palette. Listed here, next
+ * to the code that executes them, so `listActions()` can advertise them with
+ * their parameters instead of leaving them discoverable only through an error
+ * message.
+ */
+export const AGENT_VERBS: readonly AgentActionInfo[] = [
+  {
+    id: 'select-preset',
+    label: 'Play a specific catalog preset',
+    params: {
+      id: 'string: a catalog preset id (legacy aliases resolve). Requires catalogSize > 0.',
+    },
+  },
+  {
+    id: 'set-field',
+    label: 'Live-set a preset variable without recompiling',
+    params: {
+      key: 'string: a built-in, q1-q32 or user variable name. Not validated against the preset: ok means it was written, not that the preset reads it.',
+      value: 'number (finite). Requires engineReady.',
+    },
+  },
+  {
+    id: 'crossfade',
+    label: 'Move a hand-driven crossfade',
+    params: { position: 'number: 0 (outgoing) to 1 (incoming)' },
+  },
+  {
+    id: 'pin-parameter',
+    label: 'Pin a parameter on the performance surface',
+    params: { field: 'string: a pinnable parameter name' },
+  },
+  {
+    id: 'unpin-parameter',
+    label: 'Unpin a parameter from the performance surface',
+    params: { field: 'string: a pinnable parameter name' },
+  },
+];
+
+function editDistance(a: string, b: string): number {
+  let previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i += 1) {
+    const current = [i];
+    for (let j = 1; j <= b.length; j += 1) {
+      current[j] = Math.min(
+        (previous[j] ?? 0) + 1,
+        (current[j - 1] ?? 0) + 1,
+        (previous[j - 1] ?? 0) + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+    }
+    previous = current;
+  }
+  return previous[b.length] ?? 0;
+}
+
+/**
+ * Close matches for a mistyped id, best first. A typo (`nxt-preset`) or a
+ * partial (`next`) should point at the real id, so an agent fixes it in one
+ * step instead of listing 46 actions and scanning them.
+ */
+export function suggestIds(
+  input: string,
+  candidates: readonly string[],
+  { limit = 3, maxDistance }: { limit?: number; maxDistance?: number } = {},
+): string[] {
+  const needle = input.trim().toLowerCase();
+  if (!needle) return [];
+  const scored: Array<{ id: string; score: number }> = [];
+  for (const id of candidates) {
+    const candidate = id.toLowerCase();
+    const distance = editDistance(needle, candidate);
+    const allowed =
+      maxDistance ?? Math.max(2, Math.floor(candidate.length / 3));
+    const contains =
+      needle.length >= 3 &&
+      (candidate.includes(needle) || needle.includes(candidate));
+    if (distance <= allowed || contains) {
+      scored.push({ id, score: contains ? Math.min(distance, 1) : distance });
+    }
+  }
+  return scored
+    .sort((x, y) => x.score - y.score || x.id.localeCompare(y.id))
+    .slice(0, limit)
+    .map((entry) => entry.id);
+}
+
+/**
+ * One line of state for an error message. A `waitFor` that times out is
+ * usually followed by a `getState()` to find out why; putting the answer in the
+ * error saves that round trip.
+ */
+export function describeAgentState(state: AgentStateSnapshot): string {
+  const fields: Array<[string, unknown]> = [
+    ['engineState', state.engineState],
+    ['presetId', state.presetId],
+    ['catalogSize', state.catalogSize],
+    ['backend', state.backend],
+    ['panel', state.panel],
+    ['audioSource', state.audioSource],
+    ['fps', state.fps],
+    ['renderingSuspended', state.renderingSuspended],
+    ['lastError', state.lastError],
+  ];
+  return fields
+    .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+    .join(' ');
 }
 
 export interface AgentGlobal {
@@ -339,7 +470,11 @@ export interface AgentGlobal {
     actionId: string,
     params?: Record<string, unknown>,
   ) => Promise<AgentRunResult>;
-  listActions: () => Array<{ id: string; label: string }>;
+  /**
+   * Palette actions (id and label) followed by the targeted verbs, which also
+   * carry `params`.
+   */
+  listActions: () => AgentActionInfo[];
   /** Resolve when predicate(getState()) is true; reject on timeout. */
   waitFor: (
     predicate: (state: AgentStateSnapshot) => boolean,
@@ -368,6 +503,13 @@ export interface AgentStateProviders {
   getActions: () => CommandAction[];
   getTelemetry: () => AgentTelemetry;
   selectPreset: (presetId: string) => void;
+  /**
+   * Resolve a requested id the way the route does (aliases, slugs). `null`
+   * when nothing in the loaded catalog matches.
+   */
+  resolvePresetId: (candidate: string) => string | null;
+  /** Ids in the loaded catalog, for did-you-mean suggestions. */
+  getPresetIds: () => readonly string[];
   setField: (key: string, value: number) => void;
   /** Moves a hand-driven crossfade, 0 (outgoing) to 1 (incoming). */
   setCrossfade: (position: number) => void;
@@ -393,6 +535,11 @@ export function installAgentStateGlobal(
       quality: telemetry.quality,
       lastError: lastErrorMessage,
       statusLog: getStatusLog(),
+      documentHidden: typeof document !== 'undefined' && document.hidden,
+      agentMode:
+        typeof document !== 'undefined' &&
+        document.documentElement.dataset.agentMode === 'true',
+      renderingSuspended: isHiddenTabSuspendingFrames(),
     };
   };
 
@@ -408,7 +555,33 @@ export function installAgentStateGlobal(
           error: 'select-preset requires params.id (string).',
         };
       }
-      providers.selectPreset(id);
+      // The route accepts any string and the shell quietly ignores an id it
+      // cannot resolve, so without this check a typo or a call made before the
+      // catalog loads came back ok:true with the preset unchanged.
+      const { catalogSize } = providers.getSnapshot();
+      if (catalogSize === 0) {
+        return {
+          ok: false,
+          error:
+            'select-preset cannot run yet: the preset catalog has not loaded (catalogSize is 0). Call waitFor((s) => s.catalogSize > 0) first.',
+        };
+      }
+      const resolved = providers.resolvePresetId(id);
+      if (!resolved) {
+        const suggestions = suggestIds(id, providers.getPresetIds(), {
+          maxDistance: 4,
+        });
+        return {
+          ok: false,
+          error: `select-preset: no preset matches "${id}" in the ${catalogSize}-preset catalog.${
+            suggestions.length > 0
+              ? ` Did you mean ${suggestions.map((s) => `"${s}"`).join(', ')}?`
+              : ''
+          }`,
+          ...(suggestions.length > 0 ? { suggestions } : {}),
+        };
+      }
+      providers.selectPreset(resolved);
       return null;
     }
     if (actionId === 'set-field') {
@@ -419,6 +592,21 @@ export function installAgentStateGlobal(
           ok: false,
           error:
             'set-field requires params.key (string) and params.value (number).',
+        };
+      }
+      if (!Number.isFinite(value)) {
+        return {
+          ok: false,
+          error: `set-field requires a finite number; got ${value}.`,
+        };
+      }
+      // The engine drops a live-field write when nothing is mounted, so an
+      // early call used to report ok:true and change nothing.
+      if (!providers.getSnapshot().engineReady) {
+        return {
+          ok: false,
+          error:
+            'set-field cannot run yet: the engine has not mounted (engineReady is false). Call waitFor((s) => s.engineReady) first.',
         };
       }
       providers.setField(key, value);
@@ -459,9 +647,18 @@ export function installAgentStateGlobal(
       .getActions()
       .find((candidate) => candidate.id === actionId);
     if (!action) {
+      const suggestions = suggestIds(actionId, [
+        ...providers.getActions().map((candidate) => candidate.id),
+        ...AGENT_VERBS.map((verb) => verb.id),
+      ]);
       return {
         ok: false,
-        error: `Unknown action "${actionId}". Use listActions() for palette actions; targeted verbs are "select-preset", "set-field", "crossfade", "pin-parameter" and "unpin-parameter".`,
+        error: `Unknown action "${actionId}".${
+          suggestions.length > 0
+            ? ` Did you mean ${suggestions.map((s) => `"${s}"`).join(', ')}?`
+            : ''
+        } listActions() returns every palette action and the targeted verbs (select-preset, set-field, crossfade, pin-parameter, unpin-parameter).`,
+        ...(suggestions.length > 0 ? { suggestions } : {}),
       };
     }
     action.run();
@@ -478,10 +675,16 @@ export function installAgentStateGlobal(
       const settled = await settlePromise;
       return { ok: true, settled };
     },
-    listActions: () =>
-      providers
+    listActions: () => [
+      ...providers
         .getActions()
         .map((action) => ({ id: action.id, label: action.label })),
+      ...AGENT_VERBS.map((verb) => ({
+        id: verb.id,
+        label: verb.label,
+        params: { ...verb.params },
+      })),
+    ],
     waitFor: (predicate, timeoutMs = DEFAULT_WAIT_TIMEOUT_MS) =>
       new Promise((resolve, reject) => {
         const check = () => {
@@ -494,7 +697,14 @@ export function installAgentStateGlobal(
         };
         const timer = window.setTimeout(() => {
           commitListeners.delete(check);
-          reject(new Error(`waitFor timed out after ${timeoutMs}ms`));
+          reject(
+            new Error(
+              `waitFor timed out after ${timeoutMs}ms. Last state: ${describeAgentState(buildState())}. Predicate: ${predicate
+                .toString()
+                .replace(/\s+/g, ' ')
+                .slice(0, 160)}`,
+            ),
+          );
         }, timeoutMs);
         commitListeners.add(check);
         check();

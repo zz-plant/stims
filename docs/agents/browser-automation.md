@@ -24,7 +24,11 @@ __stims_agent.getState().statusLog.at(-1);              // {at, message}
   use it when you only have CSS-selector waits (Playwright, CDP).
 - `__stims_agent.waitFor(predicate, timeoutMs = 5000)` — resolves with the
   matching snapshot; rejects on timeout. Replaces every sleep-and-repoll
-  loop. The predicate sees the full snapshot (below).
+  loop. The predicate sees the full snapshot (below). The timeout error
+  carries the last state and the predicate's source
+  (`waitFor timed out after 300ms. Last state: engineState="ready"
+  presetId="…" catalogSize=2679 … renderingSuspended=false lastError=null.
+  Predicate: (s) => …`), so you can see why without another `getState()`.
 
 ## State
 
@@ -44,6 +48,8 @@ __stims_agent.getState().statusLog.at(-1);              // {at, message}
 | `fps`, `quality` | measured frame rate and adaptive-quality diagnostics (from the agent telemetry feed) |
 | `lastError` | most recent window error / unhandled rejection message, or null |
 | `statusLog` | last 20 status toasts, `{at, message}` — toasts are transient in the UI but durable here |
+| `documentHidden`, `agentMode` | `document.hidden` right now, and whether the page was loaded with `?agent=true` |
+| `renderingSuspended` | the frame loop is **skipping frames because this tab is hidden**. A hidden tab without `?agent=true` renders nothing and shows a black canvas with no error, which looks like a shader failure: check this first. Computed by the same rule the frame loop acts on (`src/js/core/hidden-tab-policy.ts`), so the two cannot disagree |
 
 **Staleness caveat:** a `getState()` read in the same tick as an action can
 predate the React commit. Use `await run(...)` / `waitFor(...)` instead of
@@ -51,18 +57,36 @@ read-immediately-after-write.
 
 ## Actions
 
-- `run(actionId, params?)` → `Promise<{ok, settled, error?}>`. Executes a
-  command-palette action by stable id, resolving after the next state
-  commit (or a 1s settle window — `settled: false` is normal for actions
-  with no snapshot effect, e.g. `share-link`).
-- `listActions()` → `[{id, label}]` — the current palette registry
-  (~50 actions: panels, preset moves, transitions, audio sources,
-  pause/resume, save, share, watch party, autoplay, fullscreen, and the
-  preset-tuning nudges `nudge-*` / `wave-mode-*` / `toggle-transition-mode`).
+- `run(actionId, params?)` → `Promise<{ok, settled, error?, suggestions?}>`.
+  Executes a command-palette action by stable id, resolving after the next
+  state commit (or a 1s settle window — `settled: false` is normal for
+  actions with no snapshot effect, e.g. `share-link`). **`ok: false` means
+  nothing was done** and `error` says why and what to do:
+  - an unknown id lists close matches in `suggestions`
+    (`run('nxt-preset')` → `Did you mean "next-preset"?`);
+  - `select-preset` fails with the preset id unknown, or while the catalog has
+    not loaded (`waitFor((s) => s.catalogSize > 0)` first);
+  - `set-field` fails for a non-finite value or before the engine mounts
+    (`waitFor((s) => s.engineReady)` first).
+
+  `ok: true` means the action was applied, not that it had the effect you
+  hoped for: `settled` only says a state commit followed, so confirm an effect
+  with `waitFor` or `getEvents`.
+- `listActions()` → `[{id, label, params?}]` — every palette action (panels,
+  preset moves, transitions, audio sources, pause/resume, save, share, watch
+  party, autoplay, fullscreen, the preset-tuning nudges `nudge-*` /
+  `wave-mode-*` / `toggle-transition-mode`) followed by the targeted verbs
+  below, which also carry `params` describing what they take. The list is the
+  source of truth for what exists; this page does not count it.
 - Targeted verbs beyond the palette:
-  - `run('select-preset', { id })` — play a specific catalog preset.
+  - `run('select-preset', { id })` — play a specific catalog preset. The id is
+    resolved the way the app's own route resolves it (legacy aliases work).
   - `run('set-field', { key, value })` — live-set a preset variable
-    (e.g. `{key: 'zoom', value: 1.02}`), same path as MIDI.
+    (e.g. `{key: 'zoom', value: 1.02}`), same path as MIDI. The key is **not**
+    validated: a built-in, `q1`–`q32` or user variable name is written whether
+    or not the active preset reads it, so `ok: true` means "written".
+  - `run('crossfade', { position })`, `run('pin-parameter', { field })`,
+    `run('unpin-parameter', { field })`.
 
 ## Events
 
@@ -116,7 +140,8 @@ copy and may change; ids must not.
 
 - `?agent=true` — suppresses autoplay, persists state across reloads,
   keeps rendering while `document.hidden` (browser-pane tabs report
-  hidden; without this the canvas goes black and reads as a failure).
+  hidden; without this the canvas goes black and reads as a failure —
+  `getState().renderingSuspended` tells you when that is what happened).
 - `?renderer=webgl` — force the WebGL backend when WebGPU is suspect.
 - `?mockAudio=1` (+ `?mockFrequency=`) — synthetic audio input.
 - `?lockQualityStep=` — pin adaptive quality for reproducible frames.
