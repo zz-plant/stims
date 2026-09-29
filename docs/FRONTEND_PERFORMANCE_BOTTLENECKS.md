@@ -79,11 +79,23 @@
 
 ## Open bottlenecks (verified against current code)
 
-### 1. Blend-state cloning during preset transitions
+### 1. Blend-state cloning during preset transitions — measured, not a bottleneck
 
-`cloneBlendState()` deep-copies wave positions, custom waves, shapes,
-borders, and motion vectors when a blend transition begins. Not per-frame,
-but it can spike a frame during preset switches on dense presets.
+`cloneBlendState()` deep-copies wave positions, custom waves, and motion
+vectors once when a blend transition begins (never per frame). Measured in
+isolation on synthetic frames (bun, 5000 iterations after 2000 warmup, 2026-09-29):
+
+| Frame density | Cost per clone |
+| --- | --- |
+| 4 custom waves × 512 pts | ~84 µs |
+| 8 waves × 1024 pts, 200 motion vectors | ~245 µs |
+| 16 waves × 2048 pts, 1000 motion vectors | ~566 µs |
+
+The densest case is ~3% of a 16.7 ms frame, paid once per transition, and the
+blend gate (`evaluateBlendGate`) already refuses crossfades above the workload
+ceiling. The copy is required: the frame state's buffers are reused every
+frame, so aliasing them would corrupt the fading-out preset. Do not optimise
+this without a measurement showing a real transition spike.
 
 ## Deliberate boundaries and remaining approximations
 
