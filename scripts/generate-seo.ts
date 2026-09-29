@@ -7,6 +7,11 @@
  * fonts), the icon PNGs via sharp, the hero
  * screenshots, and the generated route pages under public/toys, tags, moods,
  * capabilities, and discover. Idempotent — rerun after catalog changes.
+ *
+ * `--check` writes nothing: it delegates to check-seo.ts, which compares every
+ * generated artifact against a fresh in-memory build and exits non-zero on
+ * drift. Use it (or `bun run check:seo`) to verify without touching tracked
+ * icons, screenshots, or sitemaps.
  */
 import { execFile } from 'node:child_process';
 import {
@@ -1216,6 +1221,18 @@ export async function generateSeo(
 }
 
 async function main() {
+  if (process.argv.includes('--check')) {
+    const checkScript = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      'check-seo.ts',
+    );
+    const proc = Bun.spawn([process.execPath, 'run', checkScript], {
+      stdout: 'inherit',
+      stderr: 'inherit',
+    });
+    process.exitCode = await proc.exited;
+    return;
+  }
   await generateSeo();
 }
 
