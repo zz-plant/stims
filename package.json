@@ -121,6 +121,7 @@
     "lab:nan-sweep": "bun run scripts/preset-lab-nan-sweep.ts",
     "lab:profile": "bun run scripts/preset-lab-profile.ts",
     "lab:reactivity": "bun run scripts/preset-lab-reactivity.ts",
+    "lab:remix-pairs": "bun run scripts/preset-lab-remix-pairs.ts",
     "lab:replay": "bun run scripts/preset-lab-replay.ts",
     "lab:visual": "bun run scripts/preset-lab-visual.ts",
     "lab:vm-tier-bench": "bun run scripts/preset-lab-vm-tier-bench.ts",
