@@ -85,6 +85,11 @@ describe('diffPresets', () => {
     const keys = diffPresets(off, on).scalarChanges.map((change) => change.key);
     expect(keys).toContain('shapecode_0_enabled');
     expect(keys).toContain('shapecode_0_r');
+    // Each change is reported once, under MilkDrop's own 0-based name: the
+    // compiler also mirrors shape settings as shape_<1-based>_<field>.
+    expect(keys.filter((key) => key.endsWith('_enabled'))).toEqual([
+      'shapecode_0_enabled',
+    ]);
   });
 });
 
