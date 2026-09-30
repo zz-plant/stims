@@ -29,6 +29,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { MILKDROP_SIGNAL_NAME_ALIASES } from '../src/js/milkdrop/compiler/shader-analysis-helpers.ts';
 import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
 import type { MilkdropPresetIR } from '../src/js/milkdrop/compiler-types.ts';
 import {
@@ -65,8 +66,14 @@ function analyzeCatalogPreset(
   return analyzePresetDataflow(compileMilkdropPresetSource(raw, { id }).ir);
 }
 
-/** The audio uniforms a MilkDrop warp/comp shader can read. */
-const SHADER_AUDIO = /\b(bass|mid|treb|vol)(_att)?\b/gu;
+/** The audio uniforms a warp/comp shader can read: every identifier the
+ * shader compiler maps to a runtime audio signal (the clock ones aside). */
+const SHADER_AUDIO = new RegExp(
+  `\\b(${Object.keys(MILKDROP_SIGNAL_NAME_ALIASES)
+    .filter((name) => !['time', 'frame', 'progress', 'fps'].includes(name))
+    .join('|')})\\b`,
+  'giu',
+);
 /** The source-text scan score-catalog-quality.ts uses for staticAudio. */
 const SOURCE_AUDIO = /\b(bass|mid|treb|vol)(_att)?\b|\bbeat(_pulse)?\b/u;
 /** Below this alpha the main waveform is not visibly drawn. */
@@ -126,7 +133,9 @@ export function labelPresetAudio(ir: MilkdropPresetIR): PresetAudioLabel {
     .filter((text): text is string => typeof text === 'string')
     .join('\n');
   const shaderSignals = [
-    ...new Set([...shaderText.matchAll(SHADER_AUDIO)].map((m) => m[0])),
+    ...new Set(
+      [...shaderText.matchAll(SHADER_AUDIO)].map((m) => m[0].toLowerCase()),
+    ),
   ].sort();
   const waveAlpha = Number(ir.mainWave?.wave_a ?? 1);
   const waveform =

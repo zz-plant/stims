@@ -225,6 +225,16 @@ describe('analyzePresetDataflow', () => {
     expect(drawnAudio.perPixel).toEqual([]);
   });
 
+  test('a temporary that nothing draws carries nothing', () => {
+    const { drawnAudio } = analyze([
+      'per_pixel_1=unused = bass;',
+      'shapecode_0_enabled=1',
+      'shape_0_per_frame1=wobble = treb;',
+    ]);
+    expect(drawnAudio.perPixel).toEqual([]);
+    expect(drawnAudio.shapes[0]).toEqual([]);
+  });
+
   test('only enabled custom waves and shapes are drawn', () => {
     const { drawnAudio } = analyze([
       'wavecode_0_enabled=1',
