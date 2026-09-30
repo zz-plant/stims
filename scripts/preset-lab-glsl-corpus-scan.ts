@@ -47,7 +47,7 @@ import { loadCatalogEntries } from './preset-lab-reactivity.ts';
 const BASELINE_PATH = 'performance/glsl-corpus-scan-baseline.json';
 const VALIDATOR_BIN = 'glslangValidator';
 
-type ShaderStage = 'warp' | 'composite';
+export type ShaderStage = 'warp' | 'composite';
 
 type PresetFinding = {
   id: string;
@@ -75,7 +75,7 @@ function getValidatorVersion(): string | null {
 }
 
 /** Validates one fragment shader body; returns an error summary or null. */
-function validateFragmentShader(glsl: string): string | null {
+export function validateFragmentShader(glsl: string): string | null {
   const source = `#extension GL_OES_standard_derivatives : enable\nprecision mediump float;\n${glsl}`;
   const result = spawnSync(VALIDATOR_BIN, ['--stdin', '-S', 'frag'], {
     input: source,
@@ -102,7 +102,7 @@ function validateFragmentShader(glsl: string): string | null {
  * derivation exactly: prefer `rawGlsl` (native-GLSL presets), else run the
  * translated-preset statements through the same emitter the runtime uses.
  */
-function deriveStageGlsl(
+export function deriveStageGlsl(
   compiled: ReturnType<typeof compileMilkdropPresetSource>,
   stage: 'warp' | 'comp',
 ): string | null {
@@ -304,4 +304,6 @@ function main() {
   console.log('✔ no new shader compile errors vs baseline.');
 }
 
-main();
+if (import.meta.main) {
+  main();
+}
