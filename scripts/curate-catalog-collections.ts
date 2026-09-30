@@ -176,7 +176,8 @@ const COLLECTIONS: readonly Collection[] = [
   'audio-reactive',
 ];
 const onlyIndex = process.argv.indexOf('--only');
-const only = onlyIndex >= 0 ? process.argv[onlyIndex + 1] : undefined;
+// a bare `--only` (say, from an empty shell variable) must fail, not run all
+const only = onlyIndex >= 0 ? (process.argv[onlyIndex + 1] ?? '') : undefined;
 if (only !== undefined && !COLLECTIONS.includes(only as Collection)) {
   console.error(`--only takes one of: ${COLLECTIONS.join(', ')}`);
   process.exit(1);
