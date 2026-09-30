@@ -1615,8 +1615,6 @@
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/orbasonic.milk",
       "preview": true,
       "tags": [
-        "collection:webgpu-showcase",
-        "collection:hall-of-fame",
         "collection:cream-of-the-crop",
         "preset",
         "ambient",
@@ -4575,6 +4573,8 @@
       "file": "/milkdrop-presets/butterchurn/adamfx-2-geiss-somewhat-distort-me-3-1.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:waveform",
@@ -12127,6 +12127,8 @@
       "file": "/milkdrop-presets/butterchurn/eo-s-phat-eater-v2.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:particles",
@@ -12173,6 +12175,8 @@
       "file": "/milkdrop-presets/butterchurn/eo-s-phat-shipwreaked-v3.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:waveform",
@@ -12219,6 +12223,8 @@
       "file": "/milkdrop-presets/butterchurn/eo-s-phat-cool-bug-v2-krash-s-beat-detection.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "collection:audio-reactive",
@@ -12265,6 +12271,8 @@
       "file": "/milkdrop-presets/butterchurn/eo-s-phat-cool-bug.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:waveform",
@@ -12359,6 +12367,8 @@
       "file": "/milkdrop-presets/butterchurn/eo-s-phat-fractical-dancer-v2d.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:waveform",
@@ -12405,6 +12415,8 @@
       "file": "/milkdrop-presets/butterchurn/eo-s-phat-speak-with-the-orb-rotation-mix-time-mod.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:waveform",
@@ -12451,6 +12463,8 @@
       "file": "/milkdrop-presets/butterchurn/eo-s-phat-trail-of-darkness.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:waveform",
@@ -12497,6 +12511,8 @@
       "file": "/milkdrop-presets/butterchurn/eo-s-phat-technicolor-f-breather-e-god-cock-gaia-pussy.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:particles",
@@ -13406,6 +13422,8 @@
       "file": "/milkdrop-presets/butterchurn/flexi-phat-fractal-star-child-restless.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:fractal",
@@ -37979,6 +37997,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-fishbrain-eo-s-mandala-chasers-remix.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:geometric",
@@ -38213,6 +38233,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-eo-s-eyes-spiral-mix.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:sparkle",
@@ -38259,6 +38281,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-eo-s-rainbow-bubble-mid3-f-me-dood-alt.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "near-duplicate",
@@ -38310,6 +38334,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-eo-s-rainbow-bubble-mid3-fuck-me-dood.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "near-duplicate",
@@ -38457,6 +38483,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-rovastar-eo-s-square-faces-v2.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:geometric",
@@ -38503,6 +38531,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-trippy-rotation-v2-sector-mix-alt-colours.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:geometric",
@@ -38549,6 +38579,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-trippy-rotation-weird-boxs-mix.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:geometric",
@@ -38602,6 +38634,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-rainbow-bubble-mid3-fuck-me-dood-flash.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "near-duplicate",
@@ -38701,6 +38735,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-spiral-movements-beatle.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "collection:audio-reactive",
@@ -38750,6 +38786,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-spiral-movements-beatle-square-mix.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "collection:audio-reactive",
@@ -38801,6 +38839,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-spiral-faces-v2.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:geometric",
@@ -38847,6 +38887,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-square-faces-v2-alt-colours.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:geometric",
@@ -38893,6 +38935,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-strate-lines.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:waveform",
@@ -38939,6 +38983,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-work-with-lines-alt.milk",
       "preview": false,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "near-duplicate",
@@ -38990,6 +39036,8 @@
       "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-krash-i-hope-someone-will-see-this-triping-v2b.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:waveform",
@@ -44828,6 +44876,8 @@
       "file": "/milkdrop-presets/butterchurn/rovastar-studiomusic-morecherish.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "collection:audio-reactive",
@@ -44874,6 +44924,8 @@
       "file": "/milkdrop-presets/butterchurn/rovastar-altarsofmadness-forgottenrea.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:waveform",
@@ -59525,6 +59577,8 @@
       "file": "/milkdrop-presets/butterchurn/geiss-experimental-lsb-bass-cubes.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "collection:audio-reactive",
@@ -59667,6 +59721,8 @@
       "file": "/milkdrop-presets/butterchurn/geiss-experimental-wavefronts.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:waveform",
@@ -60792,6 +60848,8 @@
       "file": "/milkdrop-presets/butterchurn/bdrv-al-phat-and-eo-s-shapes-are-cool-slow-colour-melting-edit-bdrv-et-al-rmxmix32.milk",
       "preview": true,
       "tags": [
+        "collection:webgpu-showcase",
+        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "category:geometric",
@@ -79011,8 +79069,6 @@
       "file": "/milkdrop-presets/butterchurn/niko-radiative-bunchess-i-m-gonna-break-my-rusty-cage-and-run-the-fuck-grunge-isn-t-the-source-of-anarchy.milk",
       "preview": true,
       "tags": [
-        "collection:webgpu-showcase",
-        "collection:hall-of-fame",
         "collection:butterchurn",
         "preset",
         "collection:audio-reactive",

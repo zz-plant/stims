@@ -4,6 +4,9 @@
  *
  *   bun run scripts/curate-catalog-collections.ts                        # all three
  *   bun run scripts/curate-catalog-collections.ts --only audio-reactive  # just one
+ *
+ * `--only` repeats. Each collection is derived from its rule alone: a preset
+ * that stops matching loses the tag.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -81,6 +84,26 @@ const HALL_OF_FAME_TITLES = [
   'hyperion',
 ];
 
+// A name matches only where no letter continues it on either side, so
+// `_Che + Geiss` and `Idiot24-7` count while `bunchess` (che) and the
+// author-less `Orbasonic` (orb), which a substring search let in, do not.
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const HALL_OF_FAME_AUTHOR_PATTERNS = HALL_OF_FAME_AUTHORS.map(
+  (name) => new RegExp(`(?<![a-z])${escapeRegExp(name)}(?![a-z])`),
+);
+
+export function isHallOfFameAuthor(author: string | undefined) {
+  const lower = (author ?? '').toLowerCase();
+  return HALL_OF_FAME_AUTHOR_PATTERNS.some((pattern) => pattern.test(lower));
+}
+
+function setTag(preset: CatalogPresetEntry, tag: string, member: boolean) {
+  const tagged = preset.tags.includes(tag);
+  if (member && !tagged) preset.tags.unshift(tag);
+  if (!member && tagged) preset.tags = preset.tags.filter((t) => t !== tag);
+}
+
 const AUDIO_REACTIVE = 'collection:audio-reactive';
 const PUBLIC_ROOT = path.join(import.meta.dir, '..', 'public');
 
@@ -100,8 +123,9 @@ function audioDriven(preset: CatalogPresetEntry) {
 
 type Collection = 'hall-of-fame' | 'webgpu-showcase' | 'audio-reactive';
 
-function curateCatalog(only: Collection | undefined) {
-  const run = (collection: Collection) => !only || only === collection;
+function curateCatalog(only: readonly Collection[]) {
+  const run = (collection: Collection) =>
+    only.length === 0 || only.includes(collection);
   const raw = fs.readFileSync(CATALOG_PATH, 'utf8');
   const catalog: CatalogDocument = JSON.parse(raw);
 
@@ -110,21 +134,17 @@ function curateCatalog(only: Collection | undefined) {
   let audioReactiveCount = 0;
 
   for (const preset of catalog.presets) {
-    const authorLower = (preset.author ?? '').toLowerCase();
     const titleLower = preset.title.toLowerCase();
 
     // 1. Hall of Fame Tagging
-    const isHallOfFameAuthor = HALL_OF_FAME_AUTHORS.some((a) =>
-      authorLower.includes(a),
-    );
+    const hallOfFameAuthor = isHallOfFameAuthor(preset.author);
     const isHallOfFameTitle = HALL_OF_FAME_TITLES.some((t) =>
       titleLower.includes(t),
     );
-    if (run('hall-of-fame') && (isHallOfFameAuthor || isHallOfFameTitle)) {
-      if (!preset.tags.includes('collection:hall-of-fame')) {
-        preset.tags.unshift('collection:hall-of-fame');
-      }
-      hallOfFameCount++;
+    if (run('hall-of-fame')) {
+      const member = hallOfFameAuthor || isHallOfFameTitle;
+      setTag(preset, 'collection:hall-of-fame', member);
+      if (member) hallOfFameCount++;
     }
 
     // 2. WebGPU Showcase Tagging
@@ -135,15 +155,10 @@ function curateCatalog(only: Collection | undefined) {
       preset.expectedFidelityClass === 'near-exact' ||
       preset.visualCertification?.fidelityClass === 'near-exact';
 
-    if (
-      run('webgpu-showcase') &&
-      isWebGpuCertified &&
-      (isHighFidelity || isHallOfFameAuthor)
-    ) {
-      if (!preset.tags.includes('collection:webgpu-showcase')) {
-        preset.tags.unshift('collection:webgpu-showcase');
-      }
-      webgpuShowcaseCount++;
+    if (run('webgpu-showcase')) {
+      const member = isWebGpuCertified && (isHighFidelity || hallOfFameAuthor);
+      setTag(preset, 'collection:webgpu-showcase', member);
+      if (member) webgpuShowcaseCount++;
     }
 
     // 3. Audio-reactive: the audio drives what the preset draws, read from
@@ -175,11 +190,17 @@ const COLLECTIONS: readonly Collection[] = [
   'webgpu-showcase',
   'audio-reactive',
 ];
-const onlyIndex = process.argv.indexOf('--only');
-// a bare `--only` (say, from an empty shell variable) must fail, not run all
-const only = onlyIndex >= 0 ? (process.argv[onlyIndex + 1] ?? '') : undefined;
-if (only !== undefined && !COLLECTIONS.includes(only as Collection)) {
-  console.error(`--only takes one of: ${COLLECTIONS.join(', ')}`);
-  process.exit(1);
+if (import.meta.main) {
+  // a bare `--only` (say, from an empty shell variable) must fail, not run all
+  const only = process.argv.flatMap((arg, i, argv) =>
+    arg === '--only' ? [argv[i + 1] ?? ''] : [],
+  );
+  const unknown = only.filter(
+    (name) => !COLLECTIONS.includes(name as Collection),
+  );
+  if (unknown.length > 0) {
+    console.error(`--only takes one of: ${COLLECTIONS.join(', ')}`);
+    process.exit(1);
+  }
+  curateCatalog(only as Collection[]);
 }
-curateCatalog(only as Collection | undefined);
