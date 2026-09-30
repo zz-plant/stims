@@ -117,32 +117,11 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
 const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
   'collection:favorites': 'Saved Presets',
   'collection:hall-of-fame': 'Hall of Fame',
-  'collection:webgpu-showcase': 'WebGPU showcase',
   'collection:audio-reactive': 'Audio-reactive',
   'collection:butterchurn': 'Butterchurn',
   'collection:cream-of-the-crop': 'Cream of the Crop',
   'collection:classic-milkdrop': 'Classic MilkDrop',
   'collection:rovastar-and-collaborators': 'Rovastar & Collaborators',
-  'collection:author-geiss': 'Author: Ryan Geiss',
-  'collection:author-rovastar': 'Author: Rovastar',
-  'collection:author-eos': 'Author: Eo.S.',
-  'collection:author-flexi': 'Author: Flexi',
-  'collection:author-martin': 'Author: Martin',
-  'collection:author-fishbrain': 'Author: Fishbrain',
-  'collection:author-cope': 'Author: Cope',
-  'collection:author-unchained': 'Author: Unchained',
-  'collection:author-suksma': 'Author: Suksma',
-  'collection:author-amandio-c': 'Author: Amandio C',
-  'collection:author-stahlregen': 'Author: Stahlregen',
-  'collection:vj-high-intensity': 'VJ: High intensity',
-  'collection:vj-ambient-glow': 'VJ: Ambient',
-  'collection:vj-tunnel-geometry': 'VJ: Tunnels & geometry',
-  'collection:vj-reaction-diffusion': 'VJ: Reaction-Diffusion',
-  'collection:mood-deep-space': 'Mood: Deep Space',
-  'collection:mood-psychedelic': 'Mood: Psychedelic',
-  'collection:mood-rave': 'Mood: Rave',
-  'collection:mood-ambient': 'Mood: Ambient',
-  'collection:touch-friendly': 'Touch Friendly',
 };
 
 /**
@@ -387,19 +366,9 @@ export function getCollectionCounts(
 }
 
 /**
- * Order the collection rail by how much each collection narrows the list.
- *
- * The curated order put the broadest collections first, and they are very
- * broad: hall-of-fame, webgpu-showcase, audio-reactive and butterchurn each
- * hold 77-98% of the 1787 entries, so picking one removes almost nothing.
- * The genuinely selective collections — cream-of-the-crop (42),
- * classic-milkdrop (12), rovastar-and-collaborators (6) — sat past the right
- * edge of a rail that already overflowed by more than 2x, which meant the
- * only chips a user could see without scrolling were the ones that barely
- * filter.
- *
- * Nothing is removed; a collection someone curated stays reachable. This
- * only decides which end of the rail earns the visible seats.
+ * Order the collection rail by how much each collection narrows the list, so
+ * the most selective collections take the seats visible without scrolling.
+ * Ties keep the curated order.
  */
 export function sortCollectionsBySelectivity(
   tags: string[],
@@ -425,34 +394,14 @@ export function getCollectionTags(entries: PresetCatalogEntry[]) {
 }
 
 export function getFeaturedCollectionTags(collectionTags: string[]) {
+  // The rail offers only collections that narrow the list and do not repeat
+  // one another. Butterchurn records where presets came from, not a pick,
+  // and Classic MilkDrop and Rovastar & Collaborators sit inside the hall of
+  // fame; all three stay searchable and reachable by URL.
   const featuredHints = [
     'collection:hall-of-fame',
-    'collection:webgpu-showcase',
-    'collection:audio-reactive',
     'collection:cream-of-the-crop',
-    'collection:classic-milkdrop',
-    'collection:vj-high-intensity',
-    'collection:vj-ambient-glow',
-    'collection:vj-tunnel-geometry',
-    'collection:vj-reaction-diffusion',
-    'collection:author-geiss',
-    'collection:author-rovastar',
-    'collection:author-eos',
-    'collection:author-fishbrain',
-    'collection:author-cope',
-    'collection:author-unchained',
-    'collection:author-suksma',
-    'collection:author-amandio-c',
-    'collection:author-stahlregen',
-    'collection:mood-deep-space',
-    'collection:mood-psychedelic',
-    'collection:mood-rave',
-    'collection:mood-ambient',
-    'collection:rovastar-and-collaborators',
-    'collection:touch-friendly',
-    // Catch-all import (97.6% of the catalog) — listed last so the smaller,
-    // curated collections above stay easy to spot for discovery.
-    'collection:butterchurn',
+    'collection:audio-reactive',
   ];
   const featured = featuredHints.filter((tag) => collectionTags.includes(tag));
   if (featured.length > 0) {
