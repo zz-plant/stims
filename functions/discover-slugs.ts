@@ -108,13 +108,6 @@ export const DISCOVER_ROUTES: readonly SemanticDiscoveryRoute[] = [
     searchQuery: 'waveform',
     description: 'MilkDrop presets built around the live audio waveform.',
   },
-  {
-    kind: 'topic',
-    slug: 'webgpu-showcase',
-    label: 'WebGPU Showcase',
-    collectionTag: 'collection:webgpu-showcase',
-    description: "MilkDrop presets that run on Stims' WebGPU renderer.",
-  },
 ];
 
 export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
@@ -280,6 +273,24 @@ export function isAllowedDiscoverSlug(slug: string): boolean {
 
 export function isAllowedAuthorSlug(slug: string): boolean {
   return AUTHOR_ROUTES_BY_SLUG.has(slug);
+}
+
+/**
+ * Retired discover slugs and the page each now redirects to, so a retired
+ * page keeps its inbound links instead of turning into a 404.
+ */
+const RETIRED_DISCOVER_SLUGS = new Map<string, string>([
+  // Held exactly the hall of fame's presets, because every preset runs on
+  // the WebGPU renderer.
+  ['webgpu-showcase', 'hall-of-fame'],
+]);
+
+/** Where a retired `/discover/<slug>` path now lives, or null. */
+export function retiredDiscoverTarget(pathname: string): string | null {
+  const [, namespace, slug, extra] = pathname.split('/');
+  if (namespace !== 'discover' || !slug || extra) return null;
+  const target = RETIRED_DISCOVER_SLUGS.get(slug);
+  return target ? `/discover/${target}` : null;
 }
 
 export function resolveSemanticRoute(
