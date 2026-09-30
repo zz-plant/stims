@@ -413,7 +413,9 @@ export function runPresetForDataset(
       const name = columns[column] as string;
       const value = frameVariables[name];
       const numeric = typeof value === 'number' ? value : 0;
-      if (!Number.isFinite(numeric)) {
+      // Check the value as stored: a finite float64 beyond ±3.4e38 becomes
+      // Infinity in the Float32Array.
+      if (!Number.isFinite(Math.fround(numeric))) {
         return empty('nan', `frame ${frame}: ${name}=${numeric}`);
       }
       states[rowOffset + column] = numeric;
