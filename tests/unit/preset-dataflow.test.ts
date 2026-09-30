@@ -208,4 +208,35 @@ describe('analyzePresetDataflow', () => {
     ]);
     expect(variable('q1')).toMatchObject({ kind: 'constant', audio: [] });
   });
+  test('audio reaching the per-pixel mesh is reported for that program', () => {
+    const { drawnAudio } = analyze([
+      'per_frame_1=q1 = mid;',
+      'per_pixel_1=zoom = zoom + 0.01*treb_att*rad;',
+      'per_pixel_2=rot = rot + 0.01*q1;',
+    ]);
+    expect(drawnAudio.perPixel).toEqual(['mid', 'treb_att']);
+  });
+
+  test('a per-pixel write overwritten without being read carries nothing', () => {
+    const { drawnAudio } = analyze([
+      'per_pixel_1=rot = rot + 0.005*cos(ang*bass);',
+      'per_pixel_2=rot = 0.1*sin(ang);',
+    ]);
+    expect(drawnAudio.perPixel).toEqual([]);
+  });
+
+  test('only enabled custom waves and shapes are drawn', () => {
+    const { drawnAudio } = analyze([
+      'wavecode_0_enabled=1',
+      'wave_0_per_frame1=t1 = bass;',
+      'wave_0_per_point1=y = t1 + value1*0.1;',
+      'wavecode_1_enabled=0',
+      'wave_1_per_frame1=t1 = treb;',
+      'shapecode_0_enabled=1',
+      'shape_0_per_frame1=rad = 0.1 + 0.1*mid;',
+    ]);
+    expect(drawnAudio.waves[0]).toEqual(['bass', 'value1']);
+    expect(drawnAudio.waves[1]).toEqual([]);
+    expect(drawnAudio.shapes[0]).toEqual(['mid']);
+  });
 });

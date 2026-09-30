@@ -276,7 +276,7 @@ export function rSquared(
 }
 
 /** Columns at least this audio-driven are scored by audio R². */
-const AUDIO_SHARE_MIN = 0.1;
+export const AUDIO_SHARE_MIN = 0.1;
 
 /**
  * Share of a column's variance that differs between runs of the same
