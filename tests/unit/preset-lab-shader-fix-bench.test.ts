@@ -60,6 +60,16 @@ describe('sampledTextures', () => {
     ).toBe(true);
     expect(sampledTextures('ret = vec3(0.0);').size).toBe(0);
   });
+
+  test('ignores reads that are commented out', () => {
+    const commented = [
+      '  vec3 base = texture2D(currentTex, uv).rgb;',
+      '  // vec3 noise = texture2D(sampler_noise_lq, uv).rgb;',
+      '  /* vec3 blur = texture2D(sampler_blur1,',
+      '     uv).rgb; */',
+    ].join('\n');
+    expect([...sampledTextures(commented)]).toEqual(['currentTex']);
+  });
 });
 
 describe('editFraction', () => {

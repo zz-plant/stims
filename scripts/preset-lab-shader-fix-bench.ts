@@ -102,10 +102,16 @@ export function compileStage(
   return validate(stage === 'warp' ? assembled.warp : assembled.composite);
 }
 
-/** Textures a GLSL body samples: the first argument of texture2D/texture/tex2D calls. */
+/**
+ * Textures a GLSL body samples: the first argument of texture2D/texture/tex2D
+ * calls outside comments (a read commented out samples nothing).
+ */
 export function sampledTextures(glsl: string): Set<string> {
   const out = new Set<string>();
-  for (const match of glsl.matchAll(
+  const code = glsl
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/[^\n]*/g, '');
+  for (const match of code.matchAll(
     /\b(?:texture2D|texture|tex2D|textureLod)\s*\(\s*([A-Za-z_]\w*)/g,
   )) {
     out.add(match[1] as string);
