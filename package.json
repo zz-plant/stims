@@ -201,7 +201,7 @@
     "@types/react-dom": "19.2.5",
     "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "6.1.1",
-    "@webgpu/types": "^0.1.72",
+    "@webgpu/types": "^0.1.74",
     "butterchurn": "^2.6.7",
     "butterchurn-presets": "^2.4.7",
     "dependency-cruiser": "^18.2.0",
