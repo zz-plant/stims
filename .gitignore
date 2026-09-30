@@ -42,6 +42,7 @@ opencode.json
 .wrangler/
 
 scratch/
+output/
 thumbnails/
 
 # Regenerable capture-script output. Each of these is the --output target of a
