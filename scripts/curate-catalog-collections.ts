@@ -1,9 +1,9 @@
 /**
- * Curate catalog.json's broad collections: hall of fame, WebGPU showcase and
- * audio-reactive.
+ * Curate catalog.json's collections: the hand-picked hall of fame and the
+ * audio-reactive set read from each preset's equations.
  *
- *   bun run scripts/curate-catalog-collections.ts                        # all three
- *   bun run scripts/curate-catalog-collections.ts --only audio-reactive  # just one
+ *   bun run scripts/curate-catalog-collections.ts                        # both
+ *   bun run scripts/curate-catalog-collections.ts --only hall-of-fame    # just one
  *
  * `--only` repeats. Each collection is derived from its rule alone: a preset
  * that stops matching loses the tag.
@@ -27,14 +27,6 @@ type CatalogPresetEntry = {
   author?: string;
   file: string;
   tags: string[];
-  expectedFidelityClass?: string;
-  visualEvidenceTier?: string;
-  supports?: { webgl: boolean; webgpu: boolean };
-  visualCertification?: {
-    status?: string;
-    fidelityClass?: string;
-    actualBackend?: string;
-  };
 };
 
 type CatalogDocument = {
@@ -45,58 +37,37 @@ type CatalogDocument = {
   presets: CatalogPresetEntry[];
 };
 
-const HALL_OF_FAME_AUTHORS = [
-  'geiss',
-  'rovastar',
-  'zylot',
-  'eo.s.',
-  'martin',
-  'aderrasi',
-  'orb',
-  'flexi',
-  'fishbrain',
-  'cope',
-  'unchained',
-  'suksma',
-  'che',
-  'fsp',
-  'idiot',
-  'unbalanced',
-  'ning',
-  'benski',
-  'telek',
-  'yad',
-  'stahlregen',
-];
+/**
+ * The classics, one preset each, and the only members of the hall of fame.
+ * An author or title rule tagged 1,400 presets (78% of the catalog) as the
+ * hall of fame, so the collection filtered almost nothing. The first twelve
+ * are the hand-picked Classic MilkDrop set; the last four are the original of
+ * each famous title that set did not already cover.
+ */
+export const HALL_OF_FAME = [
+  'eos-glowsticks-v2-03-music',
+  'rovastar-parallel-universe',
+  'eos-phat-cubetrace-v2',
+  'krash-rovastar-cerebral-demons-stars',
+  'aderrasi-potion-of-spirits',
+  'geiss-casino',
+  'shifter-snakeskin',
+  'shifter-swarm',
+  'shifter-curlique',
+  'rovastar-harlequins-liquid-dragon',
+  'eos-heater-core-c',
+  'orb-radiation',
+  'zylot-crosshair-dimension-light-of-ages',
+  'martin-neon-space-ps3',
+  // the original the Filament, beat-dots and rad8 mixes build on
+  'geiss-spiral-artifact',
+  // the Starburst that AdamFX's "Starburst 5" mashup remixes
+  'eos-starburst-05-phasing',
+] as const;
 
-const HALL_OF_FAME_TITLES = [
-  'cerebral demons',
-  'light of ages',
-  'starburst',
-  'neon space',
-  'potion of spirits',
-  'radiation',
-  'crosshair dimension',
-  'glowsticks',
-  'parallel universe',
-  'artifact',
-  'dynamic wave',
-  'hyperion',
-];
-
-// A name matches only where no letter continues it on either side, so
-// `_Che + Geiss` and `Idiot24-7` count while `bunchess` (che) and the
-// author-less `Orbasonic` (orb), which a substring search let in, do not.
-const escapeRegExp = (text: string) =>
-  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const HALL_OF_FAME_AUTHOR_PATTERNS = HALL_OF_FAME_AUTHORS.map(
-  (name) => new RegExp(`(?<![a-z])${escapeRegExp(name)}(?![a-z])`),
-);
-
-export function isHallOfFameAuthor(author: string | undefined) {
-  const lower = (author ?? '').toLowerCase();
-  return HALL_OF_FAME_AUTHOR_PATTERNS.some((pattern) => pattern.test(lower));
-}
+const HALL_OF_FAME_TAG = 'collection:hall-of-fame';
+const AUDIO_REACTIVE = 'collection:audio-reactive';
+const PUBLIC_ROOT = path.join(import.meta.dir, '..', 'public');
 
 function setTag(preset: CatalogPresetEntry, tag: string, member: boolean) {
   const tagged = preset.tags.includes(tag);
@@ -104,8 +75,25 @@ function setTag(preset: CatalogPresetEntry, tag: string, member: boolean) {
   if (!member && tagged) preset.tags = preset.tags.filter((t) => t !== tag);
 }
 
-const AUDIO_REACTIVE = 'collection:audio-reactive';
-const PUBLIC_ROOT = path.join(import.meta.dir, '..', 'public');
+/**
+ * Tag exactly the HALL_OF_FAME presets. A listed id missing from the catalog
+ * throws: a renamed or removed classic has to be replaced on purpose, not
+ * dropped from the collection without anyone noticing.
+ */
+export function curateHallOfFame(presets: CatalogPresetEntry[]) {
+  const present = new Set(presets.map((preset) => preset.id));
+  const missing = HALL_OF_FAME.filter((id) => !present.has(id));
+  if (missing.length > 0) {
+    throw new Error(
+      `hall-of-fame ids not in the catalog: ${missing.join(', ')}`,
+    );
+  }
+  const members = new Set<string>(HALL_OF_FAME);
+  for (const preset of presets) {
+    setTag(preset, HALL_OF_FAME_TAG, members.has(preset.id));
+  }
+  return members.size;
+}
 
 function audioDriven(preset: CatalogPresetEntry) {
   const file = path.join(PUBLIC_ROOT, preset.file.replace(/^\//, ''));
@@ -121,7 +109,7 @@ function audioDriven(preset: CatalogPresetEntry) {
   }
 }
 
-type Collection = 'hall-of-fame' | 'webgpu-showcase' | 'audio-reactive';
+type Collection = 'hall-of-fame' | 'audio-reactive';
 
 function curateCatalog(only: readonly Collection[]) {
   const run = (collection: Collection) =>
@@ -129,49 +117,24 @@ function curateCatalog(only: readonly Collection[]) {
   const raw = fs.readFileSync(CATALOG_PATH, 'utf8');
   const catalog: CatalogDocument = JSON.parse(raw);
 
-  let hallOfFameCount = 0;
-  let webgpuShowcaseCount = 0;
+  const hallOfFameCount = run('hall-of-fame')
+    ? curateHallOfFame(catalog.presets)
+    : 0;
+
+  // Audio-reactive: the audio drives what the preset draws, read from its
+  // equations (lab:dataflow's `driven` tier). This replaced a title keyword
+  // and author heuristic that missed 361 driven presets and tagged 275 whose
+  // audio reaches nothing but, at most, the waveform.
   let audioReactiveCount = 0;
-
-  for (const preset of catalog.presets) {
-    const titleLower = preset.title.toLowerCase();
-
-    // 1. Hall of Fame Tagging
-    const hallOfFameAuthor = isHallOfFameAuthor(preset.author);
-    const isHallOfFameTitle = HALL_OF_FAME_TITLES.some((t) =>
-      titleLower.includes(t),
-    );
-    if (run('hall-of-fame')) {
-      const member = hallOfFameAuthor || isHallOfFameTitle;
-      setTag(preset, 'collection:hall-of-fame', member);
-      if (member) hallOfFameCount++;
+  if (run('audio-reactive')) {
+    for (const preset of catalog.presets) {
+      const reactive = audioDriven(preset);
+      const tagged = preset.tags.includes(AUDIO_REACTIVE);
+      if (reactive && !tagged) preset.tags.push(AUDIO_REACTIVE);
+      if (!reactive && tagged)
+        preset.tags = preset.tags.filter((tag) => tag !== AUDIO_REACTIVE);
+      if (reactive) audioReactiveCount++;
     }
-
-    // 2. WebGPU Showcase Tagging
-    const isWebGpuCertified =
-      preset.visualCertification?.actualBackend === 'webgpu' ||
-      preset.supports?.webgpu === true;
-    const isHighFidelity =
-      preset.expectedFidelityClass === 'near-exact' ||
-      preset.visualCertification?.fidelityClass === 'near-exact';
-
-    if (run('webgpu-showcase')) {
-      const member = isWebGpuCertified && (isHighFidelity || hallOfFameAuthor);
-      setTag(preset, 'collection:webgpu-showcase', member);
-      if (member) webgpuShowcaseCount++;
-    }
-
-    // 3. Audio-reactive: the audio drives what the preset draws, read from
-    //    its equations (lab:dataflow's `driven` tier). This replaced a title
-    //    keyword and author heuristic that missed 361 driven presets and
-    //    tagged 275 whose audio reaches nothing but, at most, the waveform.
-    if (!run('audio-reactive')) continue;
-    const reactive = audioDriven(preset);
-    const tagged = preset.tags.includes(AUDIO_REACTIVE);
-    if (reactive && !tagged) preset.tags.push(AUDIO_REACTIVE);
-    if (!reactive && tagged)
-      preset.tags = preset.tags.filter((tag) => tag !== AUDIO_REACTIVE);
-    if (reactive) audioReactiveCount++;
   }
 
   fs.writeFileSync(
@@ -181,15 +144,10 @@ function curateCatalog(only: readonly Collection[]) {
   );
   console.log(`[curate] Updated catalog.json with curated collections:`);
   console.log(`  - Hall of Fame: ${hallOfFameCount} presets`);
-  console.log(`  - WebGPU Showcase: ${webgpuShowcaseCount} presets`);
   console.log(`  - Audio-Reactive: ${audioReactiveCount} presets`);
 }
 
-const COLLECTIONS: readonly Collection[] = [
-  'hall-of-fame',
-  'webgpu-showcase',
-  'audio-reactive',
-];
+const COLLECTIONS: readonly Collection[] = ['hall-of-fame', 'audio-reactive'];
 if (import.meta.main) {
   // a bare `--only` (say, from an empty shell variable) must fail, not run all
   const only = process.argv.flatMap((arg, i, argv) =>
