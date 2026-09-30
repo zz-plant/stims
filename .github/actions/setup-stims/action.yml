@@ -19,7 +19,7 @@ runs:
   steps:
     - name: Checkout
       if: inputs.checkout == 'true'
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Bun
       uses: oven-sh/setup-bun@v2
