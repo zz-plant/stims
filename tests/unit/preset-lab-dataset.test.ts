@@ -16,7 +16,10 @@ import {
   audioScenarioName,
   CANONICAL_VARIABLES,
   computeSignals,
+  encodeFloats,
   encodeNpy,
+  float32ToFloat16Bits,
+  keepEvery,
   packInputs,
   resolveAudioPaths,
   runPresetForDataset,
@@ -320,5 +323,75 @@ describe('audio-file scenarios', () => {
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('storage options', () => {
+  test('float16 conversion matches the platform Float16Array bit for bit', () => {
+    let seed = 5;
+    const random = () => {
+      seed = (seed * 1103515245 + 12345) % 2 ** 31;
+      return seed / 2 ** 31;
+    };
+    const values = [
+      0,
+      -0,
+      1,
+      -1,
+      0.1,
+      1 / 3,
+      65504,
+      -65504,
+      65519,
+      6.1e-5,
+      5.96e-8,
+      2.98e-8,
+      1e-9,
+      2049,
+      2051,
+      1.0009765625,
+      Number.POSITIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+    ];
+    for (let i = 0; i < 20000; i += 1) {
+      // Spread across the whole float16 range, subnormals included.
+      values.push((random() * 2 - 1) * 2 ** (random() * 40 - 25));
+    }
+    const input = new Float32Array(values);
+    const { bits } = float32ToFloat16Bits(input);
+    const expected = new Uint16Array(new Float16Array(input).buffer);
+    const mismatches = [...bits].filter((b, i) => b !== expected[i]).length;
+    expect(mismatches).toBe(0);
+    const nan = float32ToFloat16Bits(new Float32Array([Number.NaN])).bits[0];
+    expect(
+      ((nan as number) & 0x7c00) === 0x7c00 && (nan as number) & 0x3ff,
+    ).toBeTruthy();
+  });
+
+  test('values beyond float16 range are clamped and counted, not made infinite', () => {
+    const { bits, clamped } = float32ToFloat16Bits(
+      new Float32Array([1e6, -3e5, 12, Number.POSITIVE_INFINITY]),
+    );
+    expect(clamped).toBe(2);
+    expect([...bits]).toEqual([0x7bff, 0xfbff, 0x4a00, 0x7c00]);
+  });
+
+  test('encodeFloats writes <f2 for float16 and <f4 for float32', () => {
+    const header = (bytes: Uint8Array) =>
+      new TextDecoder().decode(bytes.slice(10, 10 + (bytes[8] as number)));
+    const values = new Float32Array([1, 2, 3, 4]);
+    const half = encodeFloats(values, [2, 2], 'float16');
+    expect(header(half.bytes)).toContain("'descr': '<f2'");
+    expect(half.bytes.length - 10 - (half.bytes[8] as number)).toBe(8);
+    expect(header(encodeFloats(values, [2, 2], 'float32').bytes)).toContain(
+      "'descr': '<f4'",
+    );
+  });
+
+  test('keepEvery keeps rows 0, n, 2n and the partial tail', () => {
+    const rows = new Float32Array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
+    expect([...keepEvery(rows, 2, 2)]).toEqual([0, 0, 2, 2, 4, 4]);
+    expect(keepEvery(rows, 2, 1)).toBe(rows);
+    expect([...keepEvery(new Uint8Array([7, 8, 9]), 1, 3)]).toEqual([7]);
   });
 });
