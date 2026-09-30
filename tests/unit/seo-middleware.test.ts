@@ -184,6 +184,18 @@ describe('/discover/<slug> middleware', () => {
     expect(head.appended.join('')).toContain('application/ld+json');
   });
 
+  test('a retired slug redirects permanently to the page that replaced it', async () => {
+    const response = await onRequest(
+      makeContext('https://toil.fyi/discover/webgpu-showcase?audio=demo'),
+    );
+
+    expect(response.status).toBe(301);
+    expect(response.headers.get('location')).toBe(
+      'https://toil.fyi/discover/hall-of-fame?audio=demo',
+    );
+    expect(transformCalls).toBe(0);
+  });
+
   test('leaves non-allowlisted slugs untouched — no doorway-page generation', async () => {
     const response = await onRequest(
       makeContext('https://toil.fyi/discover/some-random-invented-slug'),

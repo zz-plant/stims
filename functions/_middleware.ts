@@ -1,6 +1,6 @@
 // Edge middleware for preset routes.
 //
-// Three jobs:
+// Four jobs:
 //   1. `/preset/<id>` used to 404 with an empty body even though this file
 //      already parsed that shape. It now redirects to the canonical query form.
 //   2. `/?preset=<id>` gets real per-preset <title>, description, canonical,
@@ -9,8 +9,13 @@
 //      social share collapsed onto `/`.
 //   3. Curated `/discover/<slug>` and `/author/<slug>` routes get the app
 //      shell plus their own metadata (there is no file behind those paths).
+//   4. A retired `/discover/<slug>` redirects to the page that replaced it.
 
-import { AUTHOR_ROUTES, resolveSemanticRoute } from './discover-slugs.ts';
+import {
+  AUTHOR_ROUTES,
+  resolveSemanticRoute,
+  retiredDiscoverTarget,
+} from './discover-slugs.ts';
 import { loadPresetMeta } from './shared/preset-meta.ts';
 import { relatedPresetIds } from './shared/preset-related.ts';
 import { presentTitle } from './shared/preset-title.ts';
@@ -91,6 +96,13 @@ export async function onRequest(context: EventContext): Promise<Response> {
       target.searchParams.set('preset', decodedPresetId);
       return Response.redirect(target.toString(), 301);
     }
+  }
+
+  const retiredTarget = retiredDiscoverTarget(url.pathname);
+  if (retiredTarget) {
+    const target = new URL(retiredTarget, url.origin);
+    target.search = url.search;
+    return Response.redirect(target.toString(), 301);
   }
 
   // Curated semantic topic and author pages. Unknown slugs fall through to

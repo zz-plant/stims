@@ -2,7 +2,7 @@
   "presets": [
     {
       "id": "shifter-glassworms-flare",
-      "title": "Shifter - Glassworms - Flare",
+      "title": "Shifter - Glassworms Flare",
       "author": "Shifter",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-glassworms-flare.milk",
       "tags": [
@@ -56,7 +56,6 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/eos-glowsticks-v2-03-music.milk",
       "tags": [
-        "collection:webgpu-showcase",
         "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:rovastar-and-collaborators",
@@ -103,7 +102,6 @@
       "author": "Rovastar",
       "file": "/milkdrop-presets/rovastar-parallel-universe.milk",
       "tags": [
-        "collection:webgpu-showcase",
         "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
@@ -153,7 +151,6 @@
       "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/eos-phat-cubetrace-v2.milk",
       "tags": [
-        "collection:webgpu-showcase",
         "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
@@ -203,7 +200,6 @@
       "author": "Krash & Rovastar",
       "file": "/milkdrop-presets/krash-rovastar-cerebral-demons-stars.milk",
       "tags": [
-        "collection:webgpu-showcase",
         "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
@@ -253,7 +249,6 @@
       "author": "Aderrasi",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/aderrasi-potion-of-spirits.milk",
       "tags": [
-        "collection:webgpu-showcase",
         "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
@@ -299,7 +294,6 @@
       "author": "Geiss",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/geiss-casino.milk",
       "tags": [
-        "collection:webgpu-showcase",
         "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
@@ -345,6 +339,7 @@
       "author": "Shifter",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-snakeskin.milk",
       "tags": [
+        "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
         "preset",
@@ -389,6 +384,7 @@
       "author": "Shifter",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-swarm.milk",
       "tags": [
+        "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
         "preset",
@@ -433,6 +429,7 @@
       "author": "Shifter",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-curlique.milk",
       "tags": [
+        "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
         "preset",
@@ -477,7 +474,6 @@
       "author": "Rovastar",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-harlequins-liquid-dragon.milk",
       "tags": [
-        "collection:webgpu-showcase",
         "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
@@ -524,7 +520,6 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-heater-core-c.milk",
       "tags": [
-        "collection:webgpu-showcase",
         "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
@@ -571,7 +566,6 @@
       "author": "Orb",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/orb-radiation.milk",
       "tags": [
-        "collection:webgpu-showcase",
         "collection:hall-of-fame",
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
@@ -617,8 +611,6 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-apocalypse.milk",
       "tags": [
-        "collection:webgpu-showcase",
-        "collection:hall-of-fame",
         "collection:cream-of-the-crop",
         "geometry",
         "preset",
@@ -659,7 +651,7 @@
     },
     {
       "id": "dbleja-hovering-over-mars",
-      "title": "Dbleja - Hovering - Over - Mars",
+      "title": "Dbleja - Hovering Over Mars",
       "author": "Dbleja",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-hovering-over-mars.milk",
       "tags": [
@@ -701,7 +693,7 @@
     },
     {
       "id": "dbleja-hovering-over-pluto",
-      "title": "Dbleja - Hovering - Over - Pluto",
+      "title": "Dbleja - Hovering Over Pluto",
       "author": "Dbleja",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-hovering-over-pluto.milk",
       "tags": [
@@ -743,7 +735,7 @@
     },
     {
       "id": "dbleja-inside-the-tree-blue-mix",
-      "title": "Dbleja - Inside - The - Tree - Blue - Mix",
+      "title": "Dbleja - Inside The Tree (Blue Mix)",
       "author": "Dbleja",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-inside-the-tree-blue-mix.milk",
       "tags": [
@@ -785,12 +777,10 @@
     },
     {
       "id": "eos-dark-side-of-the-moon-clean-mix",
-      "title": "Eos - Dark - Side - Of - The - Moon - Clean - Mix",
+      "title": "Eo.S. - Dark Side of the Moon (Clean Mix)",
       "author": "Eo.S.",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-dark-side-of-the-moon-clean-mix.milk",
       "tags": [
-        "collection:webgpu-showcase",
-        "collection:hall-of-fame",
         "collection:cream-of-the-crop",
         "preset",
         "collection:audio-reactive",
@@ -830,12 +820,10 @@
     },
     {
       "id": "eos-ether-posession-phat-edit-v3",
-      "title": "Eos - Ether - Posession - Phat - Edit - V3",
-      "author": "Eo.S.",
+      "title": "Eo.S. - Ether Possession (Phat Edit v3)",
+      "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-ether-posession-phat-edit-v3.milk",
       "tags": [
-        "collection:webgpu-showcase",
-        "collection:hall-of-fame",
         "collection:cream-of-the-crop",
         "preset",
         "ambient",
@@ -876,12 +864,10 @@
     },
     {
       "id": "eos-ether",
-      "title": "Eos - Ether",
+      "title": "Eo.S. - Ether",
       "author": "Eo.S.",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-ether.milk",
       "tags": [
-        "collection:webgpu-showcase",
-        "collection:hall-of-fame",
         "collection:cream-of-the-crop",
         "preset",
         "ambient",
@@ -921,12 +907,10 @@
     },
     {
       "id": "eos-matrix-cube-c",
-      "title": "Eos - Matrix - Cube - C",
+      "title": "Eo.S. - Matrix Cube C",
       "author": "Eo.S.",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-matrix-cube-c.milk",
       "tags": [
-        "collection:webgpu-showcase",
-        "collection:hall-of-fame",
         "collection:cream-of-the-crop",
         "preset",
         "geometry",
@@ -967,12 +951,10 @@
     },
     {
       "id": "eos-phat-cat-scan-nirvana",
-      "title": "Eos - Phat - Cat - Scan - Nirvana",
-      "author": "Eo.S.",
+      "title": "Eo.S. + Phat - CAT Scan (Nirvana)",
+      "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-cat-scan-nirvana.milk",
       "tags": [
-        "collection:webgpu-showcase",
-        "collection:hall-of-fame",
         "collection:cream-of-the-crop",
         "preset",
         "collection:audio-reactive",
@@ -1012,12 +994,10 @@
     },
     {
       "id": "eos-phat-dark-heart",
-      "title": "Eos - Phat - Dark - Heart",
-      "author": "Eo.S.",
+      "title": "Eo.S. + Phat - Dark Heart",
+      "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-dark-heart.milk",
       "tags": [
-        "collection:webgpu-showcase",
-        "collection:hall-of-fame",
         "collection:cream-of-the-crop",
         "preset",
         "collection:audio-reactive",
@@ -1057,12 +1037,10 @@
     },
     {
       "id": "eos-phat-linear-clouds-v2",
-      "title": "Eos - Phat - Linear - Clouds - V2",
-      "author": "Eo.S.",
+      "title": "Eo.S. + Phat - Linear Clouds v2",
+      "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-linear-clouds-v2.milk",
       "tags": [
-        "collection:webgpu-showcase",
-        "collection:hall-of-fame",
         "collection:cream-of-the-crop",
         "preset",
         "collection:audio-reactive",
@@ -1102,12 +1080,10 @@
     },
     {
       "id": "eos-phat-magnetosphere-13-pulsar",
-      "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
-      "author": "Eo.S.",
+      "title": "Eo.S. + Phat - Magnetosphere 13 Pulsar",
+      "author": "Eo.S. + Phat",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-magnetosphere-13-pulsar.milk",
       "tags": [
-        "collection:webgpu-showcase",
-        "collection:hall-of-fame",
         "collection:cream-of-the-crop",
         "preset",
         "collection:audio-reactive",
