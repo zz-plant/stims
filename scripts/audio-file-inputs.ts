@@ -26,6 +26,7 @@
  * its phase; and viewport signals (aspect, pixelsx/y) are left unset.
  */
 
+import { resolve as resolvePath } from 'node:path';
 import { plugin } from 'bun';
 import type { FrequencyAnalyser as FrequencyAnalyserType } from '../src/js/core/audio-handler.ts';
 import {
@@ -156,33 +157,61 @@ type LiveAudioStack = {
 
 let liveAudioStack: Promise<LiveAudioStack> | null = null;
 
+/** audio-handler.ts's `?worklet` import, resolved. */
+const WORKLET_SPECIFIER = `${resolvePath(
+  import.meta.dirname,
+  '../src/js/utils/audio/frequency-analyser-processor.ts',
+)}?worklet`;
+
 /**
- * Loads the browser audio modules into this process. audio-handler.ts
- * imports the worklet through Vite's `?worklet` suffix (a bundled source
- * string for addModule); nothing here needs that string, so a Bun plugin
- * resolves it to an empty one. The worklet module also needs its global
- * scope's AudioWorkletProcessor/registerProcessor at import time.
+ * audio-handler.ts imports the worklet through Vite's `?worklet` suffix (a
+ * bundled source string for addModule). Nothing here needs that string, so a
+ * virtual module supplies an empty one, unless something already supplies
+ * it: under `bun test` the preload (tests/setup.ts) mocks this import, and a
+ * module registered here would replace that mock for every later test file
+ * in the process. Without a supplier Bun drops the suffix and loads the
+ * processor module itself, which has no default export.
+ *
+ * A virtual module rather than an onResolve hook: audio-handler.ts is over
+ * the 50KB threshold of Bun's on-disk runtime transpiler cache, and an
+ * onResolve that returns a custom namespace is baked into the cached
+ * transpile as `namespace:specifier`. Later processes read that entry back
+ * with no plugin to resolve it, so one lab run broke `bun test` until
+ * audio-handler.ts next changed. A virtual module is matched at load time and
+ * leaves the cached transpile alone.
+ */
+async function supplyWorkletSource(): Promise<void> {
+  const supplied = await import(WORKLET_SPECIFIER).then(
+    (module) => typeof module.default === 'string',
+    () => false,
+  );
+  if (supplied) {
+    return;
+  }
+  plugin({
+    name: 'stims-lab-worklet-suffix',
+    setup(build) {
+      build.module(WORKLET_SPECIFIER, () => ({
+        contents: 'export default "";',
+        loader: 'js',
+      }));
+    },
+  });
+}
+
+/**
+ * Loads the browser audio modules into this process. The worklet module
+ * needs its global scope's AudioWorkletProcessor/registerProcessor at import
+ * time.
  */
 function loadLiveAudioStack(): Promise<LiveAudioStack> {
   liveAudioStack ??= (async () => {
-    plugin({
-      name: 'stims-lab-worklet-suffix',
-      setup(build) {
-        build.onResolve({ filter: /\?worklet$/ }, (args) => ({
-          path: args.path,
-          namespace: 'stims-lab-worklet-suffix',
-        }));
-        build.onLoad(
-          { filter: /.*/, namespace: 'stims-lab-worklet-suffix' },
-          () => ({ contents: 'export default "";', loader: 'js' }),
-        );
-      },
-    });
     const scope = globalThis as unknown as Record<string, unknown>;
     scope.AudioWorkletProcessor ??= class {
       port = { postMessage: (_message: unknown) => {}, onmessage: null };
     };
     scope.registerProcessor ??= () => {};
+    await supplyWorkletSource();
     const [processorModule, audioHandler, animationLoop, runtimeSignals] =
       await Promise.all([
         import('../src/js/utils/audio/frequency-analyser-processor.ts'),
