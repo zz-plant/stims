@@ -14,6 +14,11 @@
  *   bun run lab:replay -- --replay trace.json          # verified or first-divergence report
  *   bun run lab:replay -- --replay trace.json --dump 5 # also print state at frame 5
  *
+ * Real music: `--record trace.json --audio song.wav [--start 30] [--frames N]`
+ * runs a WAV through the live audio stack offline (scripts/audio-file-inputs.ts)
+ * and records the bytes and merged signals the visualizer would have
+ * produced for it. Without --frames it records the rest of the file.
+ *
  * Live browser captures produce the same TraceFile shape via the agent-mode
  * handle (window.__milkdropRuntimeDebug.startTraceCapture/stopTraceCapture,
  * see src/js/milkdrop/runtime/trace-recorder.ts); those traces carry the
@@ -45,6 +50,7 @@ import {
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   type MilkdropWebGpuOptimizationFlags,
 } from '../src/js/milkdrop/webgpu-optimization-flags.ts';
+import { buildAudioFileInputs, decodeWav } from './audio-file-inputs.ts';
 import { ensureDevServer } from './dev-server.ts';
 import {
   fillScenarioSpectrum,
@@ -540,22 +546,39 @@ async function main() {
       process.exit(1);
     }
     const source = loadPresetSource(repoRoot, { presetId });
-    const inputs = buildScenarioInputs(scenario, frameCount);
+    const audioPath = get('--audio');
+    if (audioPath && compact) {
+      // A compact trace regenerates its inputs from the scenario name, which
+      // an audio file cannot be rebuilt from.
+      console.error('--compact cannot be combined with --audio.');
+      process.exit(1);
+    }
+    const inputs = audioPath
+      ? await buildAudioFileInputs(
+          decodeWav(new Uint8Array(fs.readFileSync(path.resolve(audioPath)))),
+          {
+            fps: FPS,
+            frames: get('--frames') ? frameCount : undefined,
+            startSeconds: Number(get('--start') ?? 0),
+          },
+        )
+      : buildScenarioInputs(scenario, frameCount);
     const frames = runTrace(source.raw, source.id, inputs);
     const trace: TraceFile = {
       version: 1,
       presetId: source.id,
       capturedAt: new Date().toISOString(),
       fps: FPS,
-      scenario,
+      scenario: audioPath ? `audio:${path.basename(audioPath)}` : scenario,
       frameCount: frames.length,
       inputs: compact ? null : inputs,
       frames: compact ? compactFrames(frames) : frames,
+      ...(audioPath ? { source: 'audio-file' as const } : {}),
     };
     fs.mkdirSync(path.dirname(path.resolve(recordPath)), { recursive: true });
     fs.writeFileSync(path.resolve(recordPath), JSON.stringify(trace));
     console.log(
-      `Recorded ${frames.length} frames of ${source.id} (${scenario}) to ${recordPath}.`,
+      `Recorded ${frames.length} frames of ${source.id} (${trace.scenario}) to ${recordPath}.`,
     );
     return;
   }
@@ -682,6 +705,7 @@ async function main() {
   console.error(
     'Usage:\n' +
       '  bun run lab:replay -- --preset <id> --record trace.json [--frames N] [--scenario full-mix]\n' +
+      '  bun run lab:replay -- --preset <id> --record trace.json --audio song.wav [--start <sec>] [--frames N]\n' +
       '  bun run lab:replay -- --replay trace.json [--dump <frame>]\n' +
       '  bun run lab:replay -- --replay trace.json --tier gpu [--tolerance 1e-3]',
   );

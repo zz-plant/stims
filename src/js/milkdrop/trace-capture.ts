@@ -55,6 +55,74 @@ export function reviveInputArrays(
   return out;
 }
 
+/** Typed-array signals (float waveform, stereo spectra…) as JSON arrays. */
+function snapshotSignalArrays(
+  signals: Readonly<Record<string, unknown>>,
+): FrameInputs['arrays'] {
+  let out: FrameInputs['arrays'];
+  for (const key of Object.keys(signals)) {
+    if (key === 'frequencyData' || key === 'waveformData') {
+      continue; // stored as first-class FrameInputs fields
+    }
+    const value = signals[key];
+    if (value instanceof Uint8Array) {
+      out ??= {};
+      out[key] = { type: 'u8', values: Array.from(value) };
+    } else if (value instanceof Float32Array) {
+      out ??= {};
+      out[key] = { type: 'f32', values: Array.from(value) };
+    }
+  }
+  return out;
+}
+
+function snapshotSignals(
+  signals: Readonly<Record<string, unknown>>,
+): Record<string, number | boolean> {
+  const out: Record<string, number | boolean> = {};
+  for (const key of Object.keys(signals)) {
+    const value = signals[key];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      out[key] = value;
+    } else if (typeof value === 'boolean') {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+/**
+ * One frame's replayable inputs: the raw bytes plus the fully merged signal
+ * environment the VM stepped with. Shared by the live recorder and the lab's
+ * audio-file reader, so both write traces the replay treats identically.
+ */
+export function snapshotFrameInputs({
+  time,
+  deltaMs,
+  frequencyData,
+  waveformData,
+  signals,
+  detailScale,
+}: {
+  time: number;
+  deltaMs: number;
+  frequencyData: ArrayLike<number>;
+  waveformData: ArrayLike<number>;
+  signals: object;
+  detailScale?: number;
+}): FrameInputs {
+  const record = signals as Readonly<Record<string, unknown>>;
+  return {
+    time,
+    deltaMs,
+    frequencyData: Array.from(frequencyData),
+    waveformData: Array.from(waveformData),
+    signals: snapshotSignals(record),
+    detailScale,
+    arrays: snapshotSignalArrays(record),
+  };
+}
+
 export type FrameCapture = {
   /** FNV-1a digest over sorted variables + geometry. */
   digest: string;
@@ -76,9 +144,10 @@ export type TraceFile = {
    * captures must always store inputs. */
   inputs: FrameInputs[] | null;
   frames: FrameCapture[];
-  /** 'live' when recorded from a real browser session (frames carry
-   * per-frame `signals`); absent/'synthetic' for lab recordings. */
-  source?: 'synthetic' | 'live';
+  /** 'live' when recorded from a real browser session, 'audio-file' when
+   * lab:replay ran a WAV through the live audio stack offline (both carry
+   * per-frame `signals`); absent/'synthetic' for scenario recordings. */
+  source?: 'synthetic' | 'live' | 'audio-file';
   /**
    * Live captures: the render backend the session ran on. Frame output
    * depends on it — WebGPU sessions emit procedural wave/mesh descriptors
