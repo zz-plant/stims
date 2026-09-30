@@ -80,6 +80,19 @@ describe('standardize', () => {
       expect(Math.abs(row[1] as number)).toBeLessThanOrEqual(5);
     }
   });
+
+  test('columns stay centred after an outlier is clipped', () => {
+    // One huge value in 100: its z-score is ~9.9, clipped to 5, which would
+    // leave the column's mean off zero without recentring.
+    const rows = Array.from(
+      { length: 100 },
+      (_, i) => new Float64Array([i === 0 ? 1000 : i % 2, i]),
+    );
+    const out = standardize(rows, 2);
+    const mean = out.reduce((sum, row) => sum + (row[0] as number), 0) / 100;
+    expect(mean).toBeCloseTo(0, 10);
+    expect(out[0]?.[0]).toBeLessThan(5.1);
+  });
 });
 
 describe('randomizedPca', () => {
@@ -158,6 +171,23 @@ describe('neighbours and family retrieval', () => {
     expect(crossed.hitAt1).toBe(0);
     // Presets with no relatives in the map are not queries.
     expect(familyRetrieval(['a', 'b', 'c', 'd'], neighbours).queries).toBe(0);
+  });
+
+  test('the random baseline draws without replacement', () => {
+    // Four presets, one relative each among three candidates: a random list
+    // of all three candidates always contains it.
+    const neighbours = nearestNeighbours(vectors, 3);
+    const retrieval = familyRetrieval(['a', 'a', 'b', 'b'], neighbours);
+    expect(retrieval.randomAt10).toBeCloseTo(1, 12);
+    // Duplicates are not candidates: with one removed, the relative is one
+    // of two, so a single random pick finds it half the time.
+    const withDuplicate = familyRetrieval(
+      ['a', 'a', 'b', 'c'],
+      [[{ index: 1 }], [{ index: 0 }], [{ index: 0 }], [{ index: 0 }]],
+      [[2], [], [0], []],
+    );
+    expect(withDuplicate.queries).toBe(2);
+    expect(withDuplicate.randomAt1).toBeCloseTo((1 / 2 + 1 / 3) / 2, 12);
   });
 });
 

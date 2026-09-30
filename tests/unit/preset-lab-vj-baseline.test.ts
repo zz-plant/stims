@@ -10,6 +10,7 @@ import {
   clockDesign,
   ridgeSolver,
   rSquared,
+  scenarioFold,
 } from '../../scripts/preset-lab-vj-baseline.ts';
 
 describe('ridgeSolver', () => {
@@ -89,5 +90,28 @@ describe('rSquared', () => {
     expect(
       rSquared(Float64Array.from([3, 3, 3]), Float64Array.from([1, 2, 3])),
     ).toBeNull();
+  });
+});
+
+describe('scenarioFold', () => {
+  test('the held-out scenario does not shape the training rows', () => {
+    const clock = clockDesign(8, 60);
+    const scenario = (scale: number) =>
+      Float32Array.from({ length: 8 }, (_, f) => scale * Math.sin(f));
+    const quiet = scenarioFold(
+      [scenario(1), scenario(2), scenario(0.5)],
+      1,
+      clock,
+      2,
+    );
+    const loud = scenarioFold(
+      [scenario(1), scenario(2), scenario(100)],
+      1,
+      clock,
+      2,
+    );
+    expect(loud.others).toEqual([0, 1]);
+    expect(loud.train).toEqual(quiet.train);
+    expect(loud.heldOut).not.toEqual(quiet.heldOut);
   });
 });
