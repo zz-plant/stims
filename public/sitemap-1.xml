@@ -320,17 +320,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/discover/webgpu-showcase</loc>
-    <lastmod>2026-09-26</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
-      <image:title>WebGPU Showcase Music Visualizers | Stims</image:title>
-      <image:caption>MilkDrop presets that run on Stims&apos; WebGPU renderer.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/author/geiss</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>monthly</changefreq>
