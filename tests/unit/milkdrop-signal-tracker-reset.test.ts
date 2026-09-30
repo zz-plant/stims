@@ -53,6 +53,19 @@ describe('signal tracker reset', () => {
     expect(feed(reused, 120, kicks)).toEqual(fresh);
   });
 
+  test('a loud pump does not change the beats of a quiet one after reset', () => {
+    // The beat tracker scales its sensitivity by a peak energy that decays
+    // over seconds; ending the previous pump loud and starting this one
+    // quiet is what exposes a peak that reset() left behind (it made a kick
+    // at frame 60 register as a beat that a fresh tracker does not see).
+    const quietKicks = (frame: number) => (frame % 30 < 4 ? 40 : 0);
+    const fresh = feed(createMilkdropSignalTracker(), 120, quietKicks);
+    const reused = createMilkdropSignalTracker();
+    feed(reused, 90, () => 255);
+    reused.reset();
+    expect(feed(reused, 120, quietKicks)).toEqual(fresh);
+  });
+
   test('without a reset the history shows (the test can fail)', () => {
     const fresh = feed(createMilkdropSignalTracker(), 120, kicks);
     const reused = createMilkdropSignalTracker();
