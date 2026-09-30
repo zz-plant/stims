@@ -335,11 +335,10 @@ export function analyzePresetDataflow(
         if (!name.startsWith('ext:')) pass.env.set(name, atoms);
       }
       if (block === ir.programs.perPixel) {
-        // The VM measures a vertex's rad and ang from the frame's cx/cy, so
-        // they carry whatever drives the centre.
-        const centre = union(frame.read('cx'), frame.read('cy'));
-        pass.env.set('rad', centre);
-        pass.env.set('ang', centre);
+        // A vertex's rad and ang are fixed by the grid and the aspect, as in
+        // MilkDrop, whatever per-frame code left in variables of those names.
+        pass.env.set('rad', new Set());
+        pass.env.set('ang', new Set());
       }
       pass.run(block.statements, new Set());
       for (const atom of pass.randomGuards) guards.add(atom);

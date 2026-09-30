@@ -201,11 +201,11 @@ describe('analyzePresetDataflow', () => {
     });
   });
 
-  test("per-pixel rad follows the frame's centre", () => {
+  test('per-pixel rad is fixed by the grid, whatever moves the centre', () => {
     const { variable } = analyze([
-      'per_frame_1=cx = 0.5 + 0.1*mid;',
+      'per_frame_1=cx = 0.5 + 0.1*mid; rad = bass;',
       'per_pixel_1=q1 = 0.8*(0.7 - rad);',
     ]);
-    expect(variable('q1')).toMatchObject({ kind: 'audio', audio: ['mid'] });
+    expect(variable('q1')).toMatchObject({ kind: 'constant', audio: [] });
   });
 });
