@@ -52,6 +52,48 @@ describe('createMilkdropSignalTracker with worklet beat detection', () => {
     expect(signals2.beatPulse).toBeCloseTo(0.85, 4);
   });
 
+  test('a worklet beat is one frame, however many frames its message spans', () => {
+    // The analyser returns the same verdict object until the next worklet
+    // message: ~6 frames at 44.1 kHz, ~11 at 22.05 kHz. The beat must be
+    // reported on the first of them only, as the JS tracker reports it.
+    const tracker = createMilkdropSignalTracker();
+    const frequencyData = new Uint8Array(128).fill(120);
+    let verdict = {
+      beatIntensity: 0.9,
+      isBeat: true,
+      beatBass: true,
+      beatMid: true,
+      beatTreble: false,
+    };
+    const analyser = {
+      getFrequencyData: () => frequencyData,
+      getWaveformData: () => frequencyData,
+      getWorkletBeatDetection: () => verdict,
+      getSampleRate: () => 44100,
+      getRmsLevel: () => 0.5,
+    } as unknown as FrequencyAnalyser;
+    const step = (frame: number) =>
+      tracker.update({
+        time: frame / 60,
+        deltaMs: 1000 / 60,
+        analyser,
+        frequencyData,
+      });
+
+    const first = step(0);
+    expect([first.beat, first.beatBass, first.beatMid]).toEqual([1, 1, 1]);
+    for (let frame = 1; frame < 6; frame += 1) {
+      const held = step(frame);
+      expect([held.beat, held.beatBass, held.beatMid]).toEqual([0, 0, 0]);
+      // The intensity envelope is continuous, not an event: it stays.
+      expect(held.beatPulse).toBeCloseTo(0.9, 4);
+    }
+    // The next message detects another beat: reported again, once.
+    verdict = { ...verdict };
+    expect(step(6).beat).toBe(1);
+    expect(step(7).beat).toBe(0);
+  });
+
   test('uses worklet harmonic-percussive levels when the worklet provides them', () => {
     const tracker = createMilkdropSignalTracker();
     const frequencyData = new Uint8Array(128).fill(120);
