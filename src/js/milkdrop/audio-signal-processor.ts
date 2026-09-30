@@ -434,10 +434,12 @@ export function createMilkdropAudioSignalProcessor() {
       bandAttenuation = createBandState();
       bandLongAverage = createBandState();
       relativeAveragesSeeded = false;
-      for (let i = 0; i < BAND_KEYS.length; i += 1) {
-        relativeBands[BAND_KEYS[i]] = 1;
-        relativeAttenuatedBands[BAND_KEYS[i]] = 1;
-      }
+      // Back to exactly where a fresh processor starts. These were set to 1,
+      // while a fresh one starts them at 0: the attenuated bands smooth from
+      // their previous value, so every pump after a reset heard different
+      // bass_att/mid_att/treb_att than the first one did.
+      Object.assign(relativeBands, createBandState());
+      Object.assign(relativeAttenuatedBands, createBandState());
       harmonicPercussiveAnalyser.reset();
       hpLongAverage = createHpState();
       hpAveragesSeeded = false;

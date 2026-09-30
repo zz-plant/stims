@@ -148,6 +148,8 @@ export function createMilkdropExperienceFrameLoop({
       relationshipLock?: boolean;
       bandOverride?: { bass: number; mid: number; treble: number };
     }) => Partial<MilkdropRuntimeSignals>;
+    /** Clears smoothing and beat history; see the resetHistory branch. */
+    reset: () => void;
   };
   capturedVideoReactivityTracker: {
     update: (args: {
@@ -281,6 +283,12 @@ export function createMilkdropExperienceFrameLoop({
           // the transition-settle loop racily pre-pumps frames, so whether
           // the main pump started from a virgin VM was a coin flip.
           vm.reset();
+          // The audio side carries history too: attenuated bands, running
+          // averages and the beat tracker are smoothed over seconds, so the
+          // same synthetic audio produced different bass/treb and beats on
+          // every pump that followed another one.
+          signalTracker.reset();
+          beatWasHigh = false;
         }
         signalTracker.update({
           time: frame.time,
