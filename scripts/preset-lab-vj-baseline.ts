@@ -142,6 +142,32 @@ export function audioDesign(
 }
 
 /**
+ * One leave-one-scenario-out fold's clock + audio rows. Audio is
+ * standardised with the training scenarios' statistics only: the scale sets
+ * how hard the ridge penalty bites, so fitting it on the held-out scenario
+ * too would leak that scenario into the model.
+ */
+export function scenarioFold(
+  signals: readonly Float32Array[],
+  signalWidth: number,
+  clock: readonly Float64Array[],
+  held: number,
+): { others: number[]; train: Float64Array[]; heldOut: Float64Array[] } {
+  const others = signals.map((_, i) => i).filter((i) => i !== held);
+  const frames = clock.length;
+  const stats = signalStats(
+    others.map((i) => signals[i] as Float32Array),
+    signalWidth,
+    frames,
+  );
+  const rows = (scenario: number) =>
+    audioDesign(signals[scenario] as Float32Array, signalWidth, stats).map(
+      (row, f) => concat(clock[f] as Float64Array, row.subarray(1)),
+    );
+  return { others, train: others.flatMap(rows), heldOut: rows(held) };
+}
+
+/**
  * Clock-only rows: bias, and sin/cos of time at periods covering the ones
  * presets use (including 2π s, i.e. sin(time)). No linear time term: a ramp
  * fitted on the training frames extrapolates into the held-out ones, and it
@@ -262,26 +288,18 @@ function main() {
   // Leave one scenario out: every scenario spans the same stretch of time,
   // so the clock model can only explain what they share, and whatever
   // differs between stimuli has to come from the audio.
-  const stats = signalStats(signals, signalWidth, frames);
   const clock = clockDesign(frames, manifest.fps);
-  const full = signals.map((block) =>
-    audioDesign(block, signalWidth, stats).map((row, f) =>
-      concat(clock[f] as Float64Array, row.subarray(1)),
-    ),
-  );
   const folds = scenarios.map((_, held) => {
-    const others = scenarios.map((__, i) => i).filter((i) => i !== held);
+    const fold = scenarioFold(signals, signalWidth, clock, held);
     return {
       held,
-      others,
+      others: fold.others,
+      heldFull: fold.heldOut,
       solveClock: ridgeSolver(
-        others.flatMap(() => clock),
+        fold.others.flatMap(() => clock),
         ridge,
       ),
-      solveFull: ridgeSolver(
-        others.flatMap((i) => full[i] as Float64Array[]),
-        ridge,
-      ),
+      solveFull: ridgeSolver(fold.train, ridge),
     };
   });
 
@@ -330,8 +348,7 @@ function main() {
           const [weights] = (
             model === 'clock' ? fold.solveClock : fold.solveFull
           )([target]);
-          const design =
-            model === 'clock' ? clock : (full[fold.held] as Float64Array[]);
+          const design = model === 'clock' ? clock : fold.heldFull;
           const actual = column(fold.held, c);
           const predicted = predict(design, weights as Float64Array);
           const r2 = rSquared(actual, predicted);

@@ -203,15 +203,24 @@ export function standardize(
     stds[d] = std;
     if (std > 1e-9) keep.push(d);
   }
-  return rows.map((row) => {
-    const out = new Float64Array(keep.length);
+  const out = rows.map((row) => {
+    const z = new Float64Array(keep.length);
     keep.forEach((d, i) => {
-      const z =
+      const value =
         ((row[d] as number) - (means[d] as number)) / (stds[d] as number);
-      out[i] = Math.max(-5, Math.min(5, z));
+      z[i] = Math.max(-5, Math.min(5, value));
     });
-    return out;
+    return z;
   });
+  // Clipping an outlier moves its column's mean off zero, and the PCA
+  // assumes centred input (a leftover mean reads as variance), so recentre.
+  for (let i = 0; i < keep.length; i += 1) {
+    let mean = 0;
+    for (const row of out) mean += row[i] as number;
+    mean /= n;
+    for (const row of out) row[i] = (row[i] as number) - mean;
+  }
+  return out;
 }
 
 function mulberry32(seed: number) {
@@ -487,6 +496,17 @@ export function separateDuplicates(
 }
 
 /**
+ * Chance that `draws` distinct picks from `pool` items miss all `hits` of
+ * them (hypergeometric, zero successes).
+ */
+function missAll(pool: number, hits: number, draws: number): number {
+  let p = 1;
+  for (let d = 0; d < draws; d += 1)
+    p *= Math.max(0, pool - hits - d) / (pool - d);
+  return p;
+}
+
+/**
  * How often a preset's nearest distinct neighbours include its remix
  * family. `duplicates[i]` (optional) lists presets identical in behaviour
  * to i (see duplicateGroups): they are neither hits nor relatives, so a preset whose only
@@ -518,9 +538,11 @@ export function familyRetrieval(
     if (families[list[0]?.index ?? -1] === family) hit1 += 1;
     if (list.slice(0, 10).some((entry) => families[entry.index] === family))
       hit10 += 1;
-    const p = relatives / (n - 1);
-    random1 += p;
-    random10 += 1 - (1 - p) ** Math.min(10, n - 1);
+    // A random list draws without replacement from the presets a real list
+    // could hold: everyone but the query and its duplicates.
+    const pool = n - 1 - (duplicates[i]?.length ?? 0);
+    random1 += relatives / pool;
+    random10 += 1 - missAll(pool, relatives, Math.min(10, pool));
   });
   const rate = (value: number) => (queries ? value / queries : 0);
   return {
@@ -626,11 +648,18 @@ function main() {
   if (presets.length < 3) throw new Error('Need at least 3 usable presets.');
   const standardized = standardize(features, features[0]?.length ?? 0);
   const { scores, explained } = randomizedPca(standardized, dims);
-  // Ask for extra so k distinct neighbours survive removing duplicates.
+  // A preset's duplicates are removed from its list, so ask for enough
+  // extra that k distinct neighbours survive even in the largest group.
+  const groups = duplicateGroups(features);
+  const groupSizes = new Map<number, number>();
+  for (const group of groups) {
+    groupSizes.set(group, (groupSizes.get(group) ?? 0) + 1);
+  }
+  const largestGroup = Math.max(...groupSizes.values());
   const { duplicates, neighbours } = separateDuplicates(
-    nearestNeighbours(scores, k + 25),
+    nearestNeighbours(scores, k + largestGroup - 1),
     k,
-    duplicateGroups(features),
+    groups,
   );
   const retrieval = familyRetrieval(
     presets.map((preset) => preset.family),
