@@ -42,6 +42,18 @@ describe('labelPresetAudio', () => {
     expect(result.shaderSignals).toEqual(['bass_att']);
   });
 
+  test('every audio uniform the shader compiler supports counts, not just the bands', () => {
+    const result = label([
+      'wave_a=0',
+      'warp_1=`shader_body',
+      'warp_2=`{',
+      'warp_3=`ret = tex2D(sampler_main, uv).xyz * (0.9 + 0.1*beat_pulse);',
+      'warp_4=`}',
+    ]);
+    expect(result.tier).toBe('driven');
+    expect(result.shaderSignals).toEqual(['beat_pulse']);
+  });
+
   test('a custom wave drawing only its samples is waveform-only', () => {
     const result = label([
       'wave_a=0',
