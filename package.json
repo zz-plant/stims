@@ -206,7 +206,7 @@
     "butterchurn-presets": "^2.4.7",
     "dependency-cruiser": "^18.2.0",
     "esbuild": "^0.28.1",
-    "happy-dom": "20.11.6",
+    "happy-dom": "20.14.5",
     "knip": "6.34.0",
     "lefthook": "2.1.12",
     "marked": "^18.0.14",
