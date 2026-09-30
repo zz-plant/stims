@@ -113,7 +113,7 @@ Roadmap priorities, QA verification suites, and historical context.
 | Document | Description |
 | --- | --- |
 | 🗺️ [**Project Roadmap**](./ROADMAP.md) | Quarterly milestones, feature roadmap, and active architectural priorities |
-| 🧪 [**Training and Evaluating Models**](./guides/training-models.md) | Headless datasets, baselines, and benchmarks for ML work on the preset corpus: sync pairs, family splits, blind spots, licensing |
+| 🧪 [**Training and Evaluating Models**](./guides/training-models.md) | Headless datasets, baselines, and benchmarks for ML work on the preset corpus: sync pairs, family splits, memory classes, blind spots, licensing |
 | 🤖 [**Generative AI Use Cases**](./GENERATIVE_AI_USE_CASES.md) | Proposal for extending the shipped AI surface: quality gates, new UI surfaces, closed-loop iteration, and benchmarks |
 | 📈 [**Implementation Status**](./IMPLEMENTATION_STATUS.md) | Consolidated tracking of refactor milestones, completed features, and active debt queues |
 | 🧰 [**Tech Stack Modernization (2026-09)**](./TECH_STACK_MODERNIZATION_2026-09.md) | Ranked dependency and toolchain audit: what landed (TS 7, MCP v2, lefthook, knip), what is next, and what to keep |
