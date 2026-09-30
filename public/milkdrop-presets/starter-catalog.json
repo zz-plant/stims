@@ -9,7 +9,8 @@
         "collection:cream-of-the-crop",
         "preset",
         "category:particles",
-        "category:waveform"
+        "category:waveform",
+        "collection:audio-reactive"
       ],
       "preview": true,
       "supports": {
@@ -304,7 +305,6 @@
         "collection:cream-of-the-crop",
         "geiss-original",
         "preset",
-        "collection:audio-reactive",
         "category:waveform",
         "category:particles"
       ],
@@ -331,7 +331,7 @@
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
-          "staticAudio": 0,
+          "staticAudio": 0.5,
           "measuredReactivity": 0.9408086615319529,
           "motion": null,
           "flashPenalty": 0,
@@ -349,7 +349,8 @@
         "collection:cream-of-the-crop",
         "preset",
         "category:waveform",
-        "category:particles"
+        "category:particles",
+        "collection:audio-reactive"
       ],
       "preview": true,
       "supports": {
@@ -392,7 +393,8 @@
         "collection:cream-of-the-crop",
         "preset",
         "category:particles",
-        "category:waveform"
+        "category:waveform",
+        "collection:audio-reactive"
       ],
       "preview": true,
       "supports": {
@@ -435,7 +437,8 @@
         "collection:cream-of-the-crop",
         "preset",
         "category:waveform",
-        "category:particles"
+        "category:particles",
+        "collection:audio-reactive"
       ],
       "preview": true,
       "supports": {
@@ -688,7 +691,7 @@
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
-          "staticAudio": 1,
+          "staticAudio": 0,
           "measuredReactivity": 0.9167559612895001,
           "motion": null,
           "flashPenalty": 0,
@@ -730,7 +733,7 @@
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
-          "staticAudio": 1,
+          "staticAudio": 0,
           "measuredReactivity": 0.9167559612895001,
           "motion": null,
           "flashPenalty": 0,
@@ -772,7 +775,7 @@
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
-          "staticAudio": 1,
+          "staticAudio": 0,
           "measuredReactivity": 0.9167559612895001,
           "motion": null,
           "flashPenalty": 0,
@@ -882,7 +885,6 @@
         "collection:cream-of-the-crop",
         "preset",
         "ambient",
-        "collection:audio-reactive",
         "category:waveform",
         "category:particles"
       ],
@@ -909,7 +911,7 @@
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
-          "staticAudio": 0,
+          "staticAudio": 0.5,
           "measuredReactivity": 0.820097789061796,
           "motion": null,
           "flashPenalty": 0,
