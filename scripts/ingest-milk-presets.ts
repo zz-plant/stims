@@ -89,12 +89,7 @@ export function ingestMilkPresets(sourceDir?: string) {
       order: catalog.presets.length + 1,
       file: relativeFile,
       preview: true,
-      tags: [
-        'collection:community',
-        'collection:hall-of-fame',
-        'community-preset',
-        'milkdrop',
-      ],
+      tags: ['collection:community', 'community-preset', 'milkdrop'],
       expectedFidelityClass: 'compiles',
       visualEvidenceTier: 'runtime',
       supports: {
