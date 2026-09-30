@@ -45,7 +45,7 @@ jobs:
     steps:
       - name: Checkout
         if: github.event_name != 'pull_request'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Classify changed paths
         id: filter
@@ -76,7 +76,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # The base..head range needs real history, not a depth-1 clone.
           fetch-depth: 0
@@ -102,7 +102,7 @@ jobs:
       # checkout (newer runner versions fail the job at action-resolution
       # time otherwise).
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup environment
         uses: ./.github/actions/setup-stims
@@ -165,7 +165,7 @@ jobs:
       # checkout (newer runner versions fail the job at action-resolution
       # time otherwise).
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup environment
         uses: ./.github/actions/setup-stims
@@ -204,7 +204,7 @@ jobs:
       # checkout (newer runner versions fail the job at action-resolution
       # time otherwise).
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup environment
         uses: ./.github/actions/setup-stims
@@ -256,7 +256,7 @@ jobs:
       # checkout (newer runner versions fail the job at action-resolution
       # time otherwise).
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup environment
         uses: ./.github/actions/setup-stims
@@ -315,7 +315,7 @@ jobs:
       # `check` job above for why) — this job skipped it and failed at
       # action-resolution time before this fix.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup environment
         uses: ./.github/actions/setup-stims

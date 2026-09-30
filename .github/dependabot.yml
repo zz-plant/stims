@@ -22,6 +22,20 @@ updates:
           - "playwright"
           - "playwright-core"
           - "@playwright/*"
+      # react and react-dom must be the same version (React refuses to run
+      # mismatched); #1280 bumped react alone and failed CI.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      # The @codemirror packages share one @codemirror/state instance (two
+      # copies break its instanceof checks), and package.json pins them in
+      # "overrides" as well as dependencies.
+      codemirror:
+        patterns:
+          - "@codemirror/*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
