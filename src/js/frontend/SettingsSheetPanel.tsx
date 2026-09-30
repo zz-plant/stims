@@ -1019,8 +1019,7 @@ export function SettingsSheetPanel({
             />
             {offline ? (
               <p className="ctl-section__note">
-                Offline mode is on. Community browsing and AI imports are paused
-                until you reconnect.
+                Offline mode is on. AI imports are paused until you reconnect.
               </p>
             ) : installAvailable ? (
               <button type="button" className="ctl-btn" onClick={onInstallApp}>

@@ -118,6 +118,8 @@ const GridTile = memo(function GridTile({
             : entry.title || entry.id
         }
         aria-keyshortcuts={quickSelectKey ?? undefined}
+        // the caption clips long names; hovering shows the whole one
+        title={entry.title || entry.id}
         onPointerEnter={() => onAudition(entry.id)}
         onPointerLeave={() => onAuditionEnd(entry.id)}
         onFocus={() => {
