@@ -1,6 +1,9 @@
 version: 2
 updates:
-  - package-ecosystem: "npm"
+  # "bun", not "npm": the npm updater edits package.json only, and this repo
+  # has no package-lock.json, so every version bump it opened left bun.lock
+  # behind and failed CI's frozen-lockfile install (#1179, #1178).
+  - package-ecosystem: "bun"
     directory: "/"
     schedule:
       interval: "weekly"
