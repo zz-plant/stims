@@ -1,0 +1,425 @@
+{
+  "kind": "mingru",
+  "rank": 8,
+  "init": null,
+  "test_presets": [
+    "aderrasi-visitor",
+    "cotc-310",
+    "cotc-455",
+    "cotc-amandio-c-ifs-01",
+    "cotc-best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-another-flexi-fishbrain-swellin1",
+    "cotc-bmelgren-morpherous3",
+    "cotc-dark-one-clouds",
+    "cotc-eos-phat-trinary-02-afterlife",
+    "cotc-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+    "cotc-hexcollie-eos-n-phat-just-an-object",
+    "cotc-krash-yin-electric-universe-uncertainty-principle",
+    "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+    "cotc-orb-waaa-lamersass-remix-4",
+    "cotc-serge-adam-eatit-mashup-fx-2-martin001",
+    "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+    "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+    "flexi-amandio-c-organic12-3d-2",
+    "flexi-fishbrain-martin-witchery",
+    "flexi-gold-plated-maelstrom-of-chaos",
+    "flexi-using-jedi-forces",
+    "flexi-what-is-the-matrix",
+    "geiss-3-layers-minefield-mix",
+    "geiss-cosmic-dust-2-reverse-jelly-v3",
+    "geiss-microcheckers-5-brighter",
+    "geiss-myriad-mosaics-test",
+    "geiss-reaction-diffusion-3-lichen-relief-mix",
+    "geiss-ribbons",
+    "goody-sonic-infection",
+    "hexcollie-jacked-on-way-too-much-caffeine",
+    "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+    "new-creation-sensation-adamfx-flexi-amandio-c-n-martin-star-to-another-world-ft-hexocollie-n-shadow-harlequin-n-geiss-b",
+    "pieturp-triptrap-ultimate-trip-mix",
+    "sckephthaeck-nz",
+    "stahlregen-geiss-rovastar-fields-of-flowers-distorted",
+    "stahlregen-unchained-psychedelic-flower-kung-fu-corrupt",
+    "suksma-question-authority-take-what-you-want-be-a-nihilist",
+    "unchained-beat-demo-demonology-mix",
+    "unchained-morat-s-final-voyage"
+  ],
+  "results": {
+    "K=4": {
+      "calibration replay": {
+        "audio_r2": -0.22922348976135254,
+        "groups": {
+          "motion": -0.20982730388641357,
+          "feedback": -0.2273278832435608,
+          "wave": -0.1421108841896057,
+          "borders": -0.18371939659118652,
+          "motion_vectors": -0.3042154312133789,
+          "q": -0.19796863198280334
+        },
+        "vs_ref": {
+          "median_diff": -0.04238907992839813,
+          "ci95": [-0.5814815759658813, 0.12513744831085205],
+          "win_rate": 0.4230769230769231
+        }
+      },
+      "hand calib-ridge (\u03bb=0.1)": {
+        "audio_r2": -0.16514399647712708,
+        "groups": {
+          "motion": -0.3002680540084839,
+          "feedback": -0.7961178421974182,
+          "wave": -0.18708646297454834,
+          "borders": -0.04854583740234375,
+          "motion_vectors": -0.04854583740234375,
+          "q": 0.132966548204422
+        },
+        "vs_ref": {
+          "median_diff": 0.0039205849170684814,
+          "ci95": [0.0, 0.016511142253875732],
+          "win_rate": 0.5769230769230769
+        }
+      },
+      "hand calib-ridge\u2192prior (\u03bb=0.1)": {
+        "audio_r2": -0.12299710512161255,
+        "groups": {
+          "motion": -0.23007690906524658,
+          "feedback": -0.7827715277671814,
+          "wave": -0.22042986750602722,
+          "borders": -0.06969845294952393,
+          "motion_vectors": -0.051943302154541016,
+          "q": 0.14013497531414032
+        }
+      },
+      "hand population (no calibration)": {
+        "audio_r2": -0.47146138548851013,
+        "groups": {
+          "motion": -0.2275155782699585,
+          "feedback": -0.3218967914581299,
+          "wave": -0.4657942056655884,
+          "borders": -0.16171109676361084,
+          "motion_vectors": -0.373446524143219,
+          "q": -0.5748894810676575
+        },
+        "vs_ref": {
+          "median_diff": -0.2537648677825928,
+          "ci95": [-0.747877836227417, -0.018718302249908447],
+          "win_rate": 0.23076923076923078
+        }
+      },
+      "hand ceiling (20 songs)": {
+        "audio_r2": 0.05488693714141846,
+        "groups": {
+          "motion": 0.020727455615997314,
+          "feedback": -0.2238372564315796,
+          "wave": 0.061416566371917725,
+          "borders": 0.14426684379577637,
+          "motion_vectors": 0.14426684379577637,
+          "q": 0.04634329676628113
+        },
+        "vs_ref": {
+          "median_diff": 0.11569865047931671,
+          "ci95": [0.0377313494682312, 0.20484042167663574],
+          "win_rate": 0.8846153846153846
+        }
+      },
+      "bank calib-ridge (\u03bb=0.1)": {
+        "audio_r2": -0.05912649631500244,
+        "groups": {
+          "motion": -0.07788679003715515,
+          "feedback": -0.5804435014724731,
+          "wave": -0.1310114562511444,
+          "borders": 0.015454351902008057,
+          "motion_vectors": 0.015454351902008057,
+          "q": 0.07569803297519684
+        },
+        "vs_ref": {
+          "median_diff": 0.012423157691955566,
+          "ci95": [-0.03648895025253296, 0.07322633266448975],
+          "win_rate": 0.5384615384615384
+        }
+      },
+      "bank calib-ridge\u2192prior (\u03bb=0.1)": {
+        "audio_r2": -0.0031303465366363525,
+        "groups": {
+          "motion": -0.05634009838104248,
+          "feedback": -0.6519600749015808,
+          "wave": -0.14349746704101562,
+          "borders": 0.00040209293365478516,
+          "motion_vectors": -0.052080631256103516,
+          "q": 0.061353445053100586
+        },
+        "vs_ref": {
+          "median_diff": 0.005856513977050781,
+          "ci95": [-0.051717936992645264, 0.1006244421005249],
+          "win_rate": 0.5
+        }
+      },
+      "bank population (no calibration)": {
+        "audio_r2": -0.4302515685558319,
+        "groups": {
+          "motion": -0.23653745651245117,
+          "feedback": -0.3121058940887451,
+          "wave": -0.4322839379310608,
+          "borders": -0.19540083408355713,
+          "motion_vectors": -0.3330591917037964,
+          "q": -0.584588348865509
+        },
+        "vs_ref": {
+          "median_diff": -0.2588803768157959,
+          "ci95": [-0.7514153718948364, -0.021847665309906006],
+          "win_rate": 0.23076923076923078
+        }
+      },
+      "bank ceiling (20 songs)": {
+        "audio_r2": 0.18105173110961914,
+        "groups": {
+          "motion": 0.05319592356681824,
+          "feedback": -0.3787965774536133,
+          "wave": 0.11427202820777893,
+          "borders": 0.25719863176345825,
+          "motion_vectors": 0.25719863176345825,
+          "q": 0.20592038333415985
+        },
+        "vs_ref": {
+          "median_diff": 0.19978061318397522,
+          "ci95": [0.038794875144958496, 0.3075687289237976],
+          "win_rate": 0.7307692307692307
+        }
+      },
+      "bank dictionary (\u03bb=0.1)": {
+        "audio_r2": -0.28715336322784424,
+        "groups": {
+          "motion": -0.07362186908721924,
+          "feedback": -0.28841328620910645,
+          "wave": -0.4162161350250244,
+          "borders": -0.11203241348266602,
+          "motion_vectors": -0.16559112071990967,
+          "q": -0.46507200598716736
+        },
+        "vs_ref": {
+          "median_diff": -0.13785776495933533,
+          "ci95": [-0.877084493637085, 0.054503440856933594],
+          "win_rate": 0.38461538461538464
+        }
+      },
+      "bank dictionary\u2192prior (\u03bb=0.1)": {
+        "audio_r2": -0.29527854919433594,
+        "groups": {
+          "motion": -0.05661892890930176,
+          "feedback": -0.2831779718399048,
+          "wave": -0.4105435013771057,
+          "borders": -0.1168285608291626,
+          "motion_vectors": -0.1699734926223755,
+          "q": -0.4625800848007202
+        },
+        "vs_ref": {
+          "median_diff": -0.1390419602394104,
+          "ci95": [-0.8768203258514404, 0.07150638103485107],
+          "win_rate": 0.38461538461538464
+        }
+      },
+      "ensemble hand+bank": {
+        "audio_r2": 0.10588592290878296,
+        "groups": {
+          "motion": -0.14485180377960205,
+          "feedback": -0.5364921689033508,
+          "wave": -0.07536908984184265,
+          "borders": 0.030329346656799316,
+          "motion_vectors": -0.009644150733947754,
+          "q": 0.2058826982975006
+        },
+        "vs_ref": {
+          "median_diff": 0.05052301287651062,
+          "ci95": [0.004369229078292847, 0.15442949533462524],
+          "win_rate": 0.6923076923076923
+        }
+      }
+    },
+    "K=1": {
+      "calibration replay": {
+        "audio_r2": -0.7063595056533813,
+        "groups": {
+          "motion": -0.7105071544647217,
+          "feedback": -0.8909194469451904,
+          "wave": -0.8589122295379639,
+          "borders": -0.7805217504501343,
+          "motion_vectors": -0.708575963973999,
+          "q": -0.5838896036148071
+        },
+        "vs_ref": {
+          "median_diff": -0.5218491554260254,
+          "ci95": [-0.9184251427650452, -0.27368777990341187],
+          "win_rate": 0.07692307692307693
+        }
+      },
+      "hand calib-ridge (\u03bb=1)": {
+        "audio_r2": -0.19832244515419006,
+        "groups": {
+          "motion": -0.23802465200424194,
+          "feedback": -0.6471874713897705,
+          "wave": -0.05258291959762573,
+          "borders": 0.0676305890083313,
+          "motion_vectors": 0.4459034502506256,
+          "q": -0.22135445475578308
+        }
+      },
+      "hand calib-ridge\u2192prior (\u03bb=1)": {
+        "audio_r2": -0.2739591896533966,
+        "groups": {
+          "motion": -0.2392556071281433,
+          "feedback": -0.616970956325531,
+          "wave": -0.6102582216262817,
+          "borders": -0.009922504425048828,
+          "motion_vectors": 0.3253825008869171,
+          "q": -0.32762205600738525
+        },
+        "vs_ref": {
+          "median_diff": -0.09985235333442688,
+          "ci95": [-0.1287887692451477, -0.015398025512695312],
+          "win_rate": 0.07692307692307693
+        }
+      },
+      "hand population (no calibration)": {
+        "audio_r2": -0.6008880138397217,
+        "groups": {
+          "motion": -0.28926825523376465,
+          "feedback": -0.8005663156509399,
+          "wave": -0.47175467014312744,
+          "borders": -0.15891516208648682,
+          "motion_vectors": -0.34536343812942505,
+          "q": -0.9761722683906555
+        },
+        "vs_ref": {
+          "median_diff": -0.43526989221572876,
+          "ci95": [-0.7637260556221008, -0.12375116348266602],
+          "win_rate": 0.15384615384615385
+        }
+      },
+      "hand ceiling (20 songs)": {
+        "audio_r2": -0.15701070427894592,
+        "groups": {
+          "motion": -0.13632261753082275,
+          "feedback": -0.5056563019752502,
+          "wave": -0.14966359734535217,
+          "borders": 0.007158488035202026,
+          "motion_vectors": 0.5604965686798096,
+          "q": -0.26252204179763794
+        },
+        "vs_ref": {
+          "median_diff": 0.07675769925117493,
+          "ci95": [-0.043092310428619385, 0.1513209342956543],
+          "win_rate": 0.6153846153846154
+        }
+      },
+      "bank calib-ridge (\u03bb=1)": {
+        "audio_r2": -0.20193111896514893,
+        "groups": {
+          "motion": -0.24294233322143555,
+          "feedback": -0.26746535301208496,
+          "wave": 0.012601464986801147,
+          "borders": -0.026908040046691895,
+          "motion_vectors": 0.2975286841392517,
+          "q": -0.20293766260147095
+        },
+        "vs_ref": {
+          "median_diff": -0.004644513130187988,
+          "ci95": [-0.08444947004318237, 0.013168394565582275],
+          "win_rate": 0.38461538461538464
+        }
+      },
+      "bank calib-ridge\u2192prior (\u03bb=1)": {
+        "audio_r2": -0.28495311737060547,
+        "groups": {
+          "motion": -0.28887367248535156,
+          "feedback": -0.3065902590751648,
+          "wave": -0.0898011326789856,
+          "borders": -0.09373128414154053,
+          "motion_vectors": 0.23879534006118774,
+          "q": -0.271798312664032
+        },
+        "vs_ref": {
+          "median_diff": -0.10842838883399963,
+          "ci95": [-0.2004336714744568, -0.02053093910217285],
+          "win_rate": 0.23076923076923078
+        }
+      },
+      "bank population (no calibration)": {
+        "audio_r2": -0.575791597366333,
+        "groups": {
+          "motion": -0.2621399164199829,
+          "feedback": -0.7983428239822388,
+          "wave": -0.437480628490448,
+          "borders": -0.1392502784729004,
+          "motion_vectors": -0.2845148742198944,
+          "q": -0.905663013458252
+        },
+        "vs_ref": {
+          "median_diff": -0.3323989808559418,
+          "ci95": [-0.7126988172531128, -0.12235403060913086],
+          "win_rate": 0.15384615384615385
+        }
+      },
+      "bank ceiling (20 songs)": {
+        "audio_r2": 0.010974690318107605,
+        "groups": {
+          "motion": -0.018760502338409424,
+          "feedback": -0.505492627620697,
+          "wave": 0.07747462391853333,
+          "borders": 0.2355557084083557,
+          "motion_vectors": 0.5865294337272644,
+          "q": 0.1266944259405136
+        },
+        "vs_ref": {
+          "median_diff": 0.14111676812171936,
+          "ci95": [0.045256465673446655, 0.19473567605018616],
+          "win_rate": 0.8076923076923077
+        }
+      },
+      "bank dictionary (\u03bb=0.1)": {
+        "audio_r2": -0.5527642965316772,
+        "groups": {
+          "motion": -0.468461275100708,
+          "feedback": -0.7777678966522217,
+          "wave": -0.3845183253288269,
+          "borders": -0.12347114086151123,
+          "motion_vectors": -0.19197294116020203,
+          "q": -0.6274917125701904
+        },
+        "vs_ref": {
+          "median_diff": -0.3435075283050537,
+          "ci95": [-0.8242554664611816, 0.0],
+          "win_rate": 0.23076923076923078
+        }
+      },
+      "bank dictionary\u2192prior (\u03bb=0.1)": {
+        "audio_r2": -0.5377018451690674,
+        "groups": {
+          "motion": -0.4495478868484497,
+          "feedback": -0.7758916616439819,
+          "wave": -0.38733625411987305,
+          "borders": -0.12778913974761963,
+          "motion_vectors": -0.19623896479606628,
+          "q": -0.617633581161499
+        },
+        "vs_ref": {
+          "median_diff": -0.3233700394630432,
+          "ci95": [-0.8197962045669556, 0.0],
+          "win_rate": 0.23076923076923078
+        }
+      },
+      "ensemble hand+bank": {
+        "audio_r2": -0.1310121715068817,
+        "groups": {
+          "motion": -0.18926453590393066,
+          "feedback": -0.337926983833313,
+          "wave": 0.0008311569690704346,
+          "borders": 0.06400352716445923,
+          "motion_vectors": 0.42470255494117737,
+          "q": -0.11852487921714783
+        },
+        "vs_ref": {
+          "median_diff": 0.0070111751556396484,
+          "ci95": [-0.0025977492332458496, 0.0235232412815094],
+          "win_rate": 0.5384615384615384
+        }
+      }
+    }
+  }
+}

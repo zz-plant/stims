@@ -109,6 +109,52 @@ dataset gives it to you frame-aligned:
    varied songs (`--audio`) to learn or evaluate audio mappings. A learned
    model has to beat the linear rows on the same songs.
 
+## Learned models so far
+
+[`experiments/neural-vj/`](../../experiments/neural-vj/README.md) trains and
+scores models on CPU against the baselines above: 158 presets (115
+audio-reactive) on 24 varied synthetic training songs, scored on 4 held-out
+songs and on 4 songs in styles the song generator never makes. The raw
+results are in `experiments/neural-vj/results/`. Audio R² throughout.
+
+**Known presets, songs they have never heard:**
+
+| Model | Held-out songs | Unfamiliar styles | Per preset vs ridge+ (95% CI) |
+| --- | --- | --- | --- |
+| lagged audio, ridge | 0.19 | 0.15 | −0.04 |
+| ridge+: leaky integrators, spectrum bands, onsets | 0.33 | 0.17 | — |
+| dilated TCN, ridge readout | 0.37 | 0.18 | ≈ 0 |
+| diagonal state space, ridge readout | 0.35 | 0.11 | ≈ 0 |
+| minGRU (selective recurrence), ridge readout, 2 seeds | 0.48 | 0.26 | +0.02 [+0.00, +0.05] |
+| LightGBM on the ridge+ features | 0.60 | 0.46 | +0.05 [+0.03, +0.09] |
+
+Gradient-boosted trees on the same inputs as ridge+ beat every network, most
+of all on unfamiliar music. Scored against another song's audio, they fall to
+−0.63, so the gain is real use of the audio. Presets behave like threshold
+programs (`if(bass > x, …)`), which trees represent and linear readouts
+cannot. Among networks, a selective recurrence (minGRU) does best and
+transfers best. Refitting a network's readout in closed form (per-preset
+ridge) beat the readout trained with it every time. Pretraining the trunk on
+240 audio-only songs added about 0.04. Feedback and border columns stay near 0
+for every model: whatever drives them is not in the audio inputs.
+
+**Presets from families the model never saw**, fitted from a few calibration
+songs (26 audio-reactive of 38):
+
+| Method | 4 calibration songs | 1 calibration song |
+| --- | --- | --- |
+| no calibration (the average preset) | −0.43 | −0.58 |
+| learned features, readout shrunk toward the training presets' mean | −0.00 | −0.29 |
+| average of that and the same on hand features | +0.11 | −0.13 |
+| learned features with all 20 of the preset's songs (ceiling) | 0.18 | — |
+
+A new preset's audio response cannot be predicted from other presets'
+behaviour alone, and four songs of its own only just beat the clock. The
+equations themselves are the obvious better source for new presets.
+
+Caveats: four test songs (the intervals resample presets, not songs),
+synthetic audio, one configuration per model.
+
 ## What the state vectors cannot see
 
 The per-frame states are the VM's equation variables (zoom, rot, warp, decay,
