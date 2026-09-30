@@ -244,6 +244,88 @@ describe('Off-main-thread AudioWorklet DSP processing', () => {
     }
   });
 
+  test('stereo spectra and waveforms survive the buffer recycling', async () => {
+    // The worklet transfers its buffers to the main thread, and the analyser
+    // transfers them back for reuse at the end of each message. Everything
+    // it keeps must be copied out first: a view over a transferred buffer is
+    // detached — zero length, and reading it throws. The L/R arrays were kept
+    // as such views, so on a stereo source every stereo wave silently fell
+    // back to mono and snapshotting the signals (trace capture) threw.
+    const ProcessorClass = registeredProcessors.get('frequency-analyser');
+    if (!ProcessorClass) throw new Error('processor not registered');
+    const processor = new ProcessorClass({
+      processorOptions: { fftSize: 64, sampleRate: 44100, messageEvery: 1 },
+    });
+    const left = new Float32Array(64);
+    const right = new Float32Array(64);
+    for (let i = 0; i < 64; i += 1) {
+      left[i] = 0.5 * Math.sin((2 * Math.PI * 4 * i) / 64);
+      right[i] = 0.25 * Math.sin((2 * Math.PI * 12 * i) / 64);
+    }
+    processor.process([[left, right]], [[new Float32Array(64)]]);
+    const payload = processor.port.postMessage.mock.calls.at(-1)?.[0] as Record<
+      string,
+      ArrayBuffer
+    >;
+    const expected = {
+      frequencyDataL: [...new Uint8Array(payload.frequencyDataL)],
+      frequencyDataR: [...new Uint8Array(payload.frequencyDataR)],
+      waveformDataL: [...new Uint8Array(payload.waveformDataL)],
+      waveformDataR: [...new Uint8Array(payload.waveformDataR)],
+    };
+    expect(expected.frequencyDataL).not.toEqual(expected.frequencyDataR);
+
+    // A port that really transfers, as MessagePort.postMessage does.
+    const fakeWorkletNode = {
+      port: {
+        onmessage: null as ((ev: MessageEvent) => void) | null,
+        postMessage: (message: unknown, transfer: Transferable[] = []) =>
+          structuredClone(message, { transfer }),
+      },
+      connect: mock(),
+      disconnect: mock(),
+    };
+    const context = {
+      state: 'running',
+      sampleRate: 44100,
+      destination: {},
+      audioWorklet: { addModule: mock().mockResolvedValue(undefined) },
+      createMediaStreamSource: mock(() => ({
+        connect: mock(),
+        disconnect: mock(),
+      })),
+      createGain: mock(() => ({
+        gain: { value: 1 },
+        connect: mock(),
+        disconnect: mock(),
+      })),
+      resume: mock().mockResolvedValue(undefined),
+    } as unknown as AudioContext;
+    const stream = {
+      getAudioTracks: () => [{ getSettings: () => ({ channelCount: 2 }) }],
+    } as unknown as MediaStream;
+    const origWorkletNode = globalThis.AudioWorkletNode;
+    (globalThis as unknown as { AudioWorkletNode: unknown }).AudioWorkletNode =
+      mock(() => fakeWorkletNode);
+    try {
+      const analyser = await FrequencyAnalyser.create(context, stream, 64);
+      fakeWorkletNode.port.onmessage?.({ data: payload } as MessageEvent);
+      // The payload's buffers went back to the worklet...
+      expect(payload.frequencyDataR.byteLength).toBe(0);
+      // ...and the analyser still has the data.
+      expect([...(analyser.getFrequencyDataL() ?? [])]).toEqual(
+        expected.frequencyDataL,
+      );
+      expect([...(analyser.getFrequencyDataR() ?? [])]).toEqual(
+        expected.frequencyDataR,
+      );
+      expect([...(analyser.getWaveformDataL() ?? [])]).toHaveLength(64);
+      expect([...(analyser.getWaveformDataR() ?? [])]).toHaveLength(64);
+    } finally {
+      globalThis.AudioWorkletNode = origWorkletNode;
+    }
+  });
+
   test('FrequencyAnalyser falls back to AnalyserNode when AudioWorklet is unsupported or fails', async () => {
     class FallbackContext {
       state = 'running';
