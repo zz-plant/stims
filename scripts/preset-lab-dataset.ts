@@ -12,6 +12,7 @@
  *   bun run lab:dataset -- --vars all                     # every numeric VM variable
  *   bun run lab:dataset -- --shard 0/4 & … --shard 3/4    # four processes, one --out
  *   bun run lab:dataset -- --audio song.wav [--audio more/] [--start 30]
+ *   bun run lab:dataset -- --dtype float16 --every 2      # half the bytes, then half the rows
  *
  * --audio replaces the synthetic scenarios with real music (add --scenarios
  * to keep both). Each WAV, or each .wav in a directory, runs through the live
@@ -30,6 +31,14 @@
  *   signals/<scenario>.npy   float32 [frames, S]    the band levels the VM stepped with
  *   states/<id>__<scenario>.npy float32 [frames, V] per-frame variables (columns in the manifest,
  *                                                   or in the index row with --vars all)
+ *
+ * Storage: --dtype float16 writes signals and states as <f2 (inputs stay
+ * uint8): half the size at ~3 significant digits. float16 tops out at
+ * ±65504; larger values are clamped and counted per row (`float16Clamped`)
+ * rather than silently becoming infinity. --every N keeps every Nth frame of
+ * inputs, signals and states. The VM still steps every frame, so presets
+ * with feedback or accumulators evolve exactly as at full rate; only
+ * storage is thinned. The manifest records both.
  *
  * Splits are assigned per remix family (src/js/milkdrop/preset-lineage.ts),
  * never per preset: a remix and its parent differ by a few lines, so a random
@@ -201,8 +210,10 @@ export function assignFamilySplits(
  * loadable with `numpy.load` and every .npy reader, no Python dependency here.
  */
 export function encodeNpy(
-  data: Float32Array | Uint8Array,
+  data: Float32Array | Uint8Array | Uint16Array,
   shape: readonly number[],
+  /** Overrides the dtype inferred from the array, e.g. '<f2' for float16 bits. */
+  descrOverride?: string,
 ): Uint8Array {
   const expected = shape.reduce((product, size) => product * size, 1);
   if (expected !== data.length) {
@@ -210,7 +221,13 @@ export function encodeNpy(
       `encodeNpy: shape [${shape.join(', ')}] needs ${expected} values, got ${data.length}`,
     );
   }
-  const descr = data instanceof Float32Array ? '<f4' : '|u1';
+  const descr =
+    descrOverride ??
+    (data instanceof Float32Array
+      ? '<f4'
+      : data instanceof Uint16Array
+        ? '<u2'
+        : '|u1');
   const shapeText =
     shape.length === 1 ? `(${shape[0]},)` : `(${shape.join(', ')})`;
   let header = `{'descr': '${descr}', 'fortran_order': False, 'shape': ${shapeText}, }`;
@@ -232,6 +249,100 @@ export function encodeNpy(
     10 + headerBytes.length,
   );
   return out;
+}
+
+/** Largest finite float16. */
+const FLOAT16_MAX = 65504;
+
+/**
+ * IEEE 754 binary16 bit patterns for `values`, rounded to nearest even.
+ * Finite values beyond ±65504 are clamped to it (counted in `clamped`)
+ * instead of overflowing to infinity; NaN stays NaN.
+ */
+export function float32ToFloat16Bits(values: Float32Array): {
+  bits: Uint16Array;
+  clamped: number;
+} {
+  const bits = new Uint16Array(values.length);
+  const scratch = new Float32Array(1);
+  const view = new Uint32Array(scratch.buffer);
+  let clamped = 0;
+  for (let index = 0; index < values.length; index += 1) {
+    let value = values[index] as number;
+    if (Number.isFinite(value) && Math.abs(value) > FLOAT16_MAX) {
+      value = Math.sign(value) * FLOAT16_MAX;
+      clamped += 1;
+    }
+    scratch[0] = value;
+    const x = view[0] as number;
+    const sign = (x >>> 16) & 0x8000;
+    const exponent = (x >>> 23) & 0xff;
+    const mantissa = x & 0x7fffff;
+    let half: number;
+    if (exponent === 0xff) {
+      half = sign | 0x7c00 | (mantissa ? 0x200 : 0); // Inf / NaN
+    } else {
+      const e = exponent - 127 + 15;
+      if (e >= 0x1f) {
+        half = sign | 0x7c00;
+      } else if (e <= 0) {
+        // Subnormal (or zero): shift the implicit-1 mantissa into place.
+        if (e < -10) {
+          half = sign;
+        } else {
+          const m = mantissa | 0x800000;
+          const shift = 14 - e;
+          let h = m >>> shift;
+          const rest = m & ((1 << shift) - 1);
+          const halfway = 1 << (shift - 1);
+          if (rest > halfway || (rest === halfway && h & 1)) h += 1;
+          half = sign | h;
+        }
+      } else {
+        let h = (e << 10) | (mantissa >>> 13);
+        const rest = mantissa & 0x1fff;
+        // Round to nearest even; a carry correctly bumps the exponent.
+        if (rest > 0x1000 || (rest === 0x1000 && h & 1)) h += 1;
+        half = sign | h;
+      }
+    }
+    bits[index] = half;
+  }
+  return { bits, clamped };
+}
+
+/** Rows 0, every, 2·every, … of a row-major [frames, width] array. */
+export function keepEvery<T extends Float32Array | Uint8Array>(
+  rows: T,
+  width: number,
+  every: number,
+): T {
+  if (every === 1) return rows;
+  const frames = Math.floor(rows.length / width);
+  const kept = Math.ceil(frames / every);
+  const out = new (rows.constructor as new (length: number) => T)(kept * width);
+  for (let row = 0; row < kept; row += 1) {
+    out.set(
+      rows.subarray(row * every * width, (row * every + 1) * width),
+      row * width,
+    );
+  }
+  return out;
+}
+
+export type StorageDtype = 'float32' | 'float16';
+
+/** .npy bytes for float data in the requested dtype, plus clamp count. */
+export function encodeFloats(
+  values: Float32Array,
+  shape: readonly number[],
+  dtype: StorageDtype,
+): { bytes: Uint8Array; clamped: number } {
+  if (dtype === 'float32') {
+    return { bytes: encodeNpy(values, shape), clamped: 0 };
+  }
+  const { bits, clamped } = float32ToFloat16Bits(values);
+  return { bytes: encodeNpy(bits, shape, '<f2'), clamped };
 }
 
 export type PresetRunStatus =
@@ -388,6 +499,8 @@ type CliOptions = {
   shard: { index: number; count: number } | null;
   audio: string[];
   startSeconds: number;
+  dtype: StorageDtype;
+  every: number;
 };
 
 function parseArgs(argv: string[]): CliOptions {
@@ -403,6 +516,8 @@ function parseArgs(argv: string[]): CliOptions {
     shard: null,
     audio: [],
     startSeconds: 0,
+    dtype: 'float32',
+    every: 1,
   };
   let scenariosGiven = false;
   const valueAfter = (index: number, flag: string) => {
@@ -460,6 +575,17 @@ function parseArgs(argv: string[]): CliOptions {
       case '--audio':
         options.audio.push(valueAfter(index++, arg));
         break;
+      case '--dtype': {
+        const value = valueAfter(index++, arg);
+        if (value !== 'float32' && value !== 'float16') {
+          throw new Error('--dtype takes float32 or float16');
+        }
+        options.dtype = value;
+        break;
+      }
+      case '--every':
+        options.every = Number(valueAfter(index++, arg));
+        break;
       case '--start':
         options.startSeconds = Number(valueAfter(index++, arg));
         break;
@@ -474,6 +600,9 @@ function parseArgs(argv: string[]): CliOptions {
   }
   if (options.audio.length && !scenariosGiven) {
     options.scenarios = [];
+  }
+  if (!Number.isInteger(options.every) || options.every < 1) {
+    throw new Error('--every must be an integer >= 1');
   }
   if (!(options.startSeconds >= 0)) {
     throw new Error('--start must be a number of seconds >= 0');
@@ -581,6 +710,10 @@ async function buildScenarios(options: CliOptions): Promise<DatasetScenario[]> {
   return scenarios;
 }
 
+function storedFrames(frames: number, every: number): number {
+  return Math.ceil(frames / every);
+}
+
 function safeFileStem(id: string): string {
   return id.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
@@ -624,20 +757,26 @@ async function main() {
   const scenarios = await buildScenarios(options);
   for (const scenario of scenarios) {
     const { spectrumBins, waveformSamples } = inputShape(scenario.inputs);
-    const frames = scenario.inputs.length;
+    const width = spectrumBins + waveformSamples;
+    const stored = storedFrames(scenario.inputs.length, options.every);
     fs.writeFileSync(
       path.join(outRoot, 'inputs', `${scenario.name}.npy`),
-      encodeNpy(packInputs(scenario.inputs), [
-        frames,
-        spectrumBins + waveformSamples,
+      encodeNpy(keepEvery(packInputs(scenario.inputs), width, options.every), [
+        stored,
+        width,
       ]),
     );
     fs.writeFileSync(
       path.join(outRoot, 'signals', `${scenario.name}.npy`),
-      encodeNpy(computeSignals(scenario.inputs), [
-        frames,
-        SIGNAL_COLUMNS.length,
-      ]),
+      encodeFloats(
+        keepEvery(
+          computeSignals(scenario.inputs),
+          SIGNAL_COLUMNS.length,
+          options.every,
+        ),
+        [stored, SIGNAL_COLUMNS.length],
+        options.dtype,
+      ).bytes,
     );
   }
 
@@ -663,12 +802,19 @@ async function main() {
       const run = runPresetForDataset(raw, row.id, scenario.inputs, variables);
       statusCounts[run.status] = (statusCounts[run.status] ?? 0) + 1;
       let file: string | null = null;
+      let clamped = 0;
       if (run.states) {
         file = `states/${safeFileStem(row.id)}__${scenario.name}.npy`;
-        fs.writeFileSync(
-          path.join(outRoot, file),
-          encodeNpy(run.states, [scenario.inputs.length, run.columns.length]),
+        const encoded = encodeFloats(
+          keepEvery(run.states, run.columns.length, options.every),
+          [
+            storedFrames(scenario.inputs.length, options.every),
+            run.columns.length,
+          ],
+          options.dtype,
         );
+        clamped = encoded.clamped;
+        fs.writeFileSync(path.join(outRoot, file), encoded.bytes);
       }
       indexLines.push(
         JSON.stringify({
@@ -684,6 +830,7 @@ async function main() {
             ? { columns: run.columns }
             : {}),
           ...(run.detail ? { detail: run.detail } : {}),
+          ...(clamped ? { float16Clamped: clamped } : {}),
         }),
       );
     }
@@ -702,11 +849,14 @@ async function main() {
     createdAt: new Date().toISOString(),
     fps: FPS,
     frames: options.frames,
+    every: options.every,
+    dtype: options.dtype,
     scenarios: scenarios.map((scenario) => ({
       name: scenario.name,
       source: scenario.source,
       ...(scenario.file ? { file: scenario.file } : {}),
       frames: scenario.inputs.length,
+      storedFrames: storedFrames(scenario.inputs.length, options.every),
       ...inputShape(scenario.inputs),
     })),
     presets: selected.length,
@@ -720,9 +870,9 @@ async function main() {
       columns:
         'spectrum bins then waveform samples; per-scenario sizes under scenarios',
     },
-    signals: { dtype: 'float32', columns: SIGNAL_COLUMNS },
+    signals: { dtype: options.dtype, columns: SIGNAL_COLUMNS },
     states: {
-      dtype: 'float32',
+      dtype: options.dtype,
       columns:
         options.variables === 'all'
           ? 'per index row (--vars all)'
