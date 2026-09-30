@@ -15,23 +15,27 @@
  * This flags presets for review. It is not a medical determination, and a
  * preset under threshold here is not thereby certified safe for anyone.
  *
- * KNOWN: repeated captures of the same preset do not always agree.
+ * FIXED (was KNOWN): repeated captures of the same preset used to disagree
+ * -- `peak=7/s (runs 5/8/7)`, one preset at 13, 8 and 10 flashes/s on three
+ * identical invocations, krash at 0, 48 and 0 -- with heavy-feedback
+ * presets varying most. Two causes, both "the capture did not start from a
+ * clean state":
  *
- * Three back-to-back captures in one process, same preset, same flags:
- * `peak=7/s (runs 5/8/7, red 1/0/0)`. Across separate processes the swing is
- * as wide -- one preset measured 13, 8 and 10 flashes/s on three identical
- * invocations, and another moved its RED peak from 0 to 6, which is enough to
- * cross the `classifyFlashRisk` boundary and change its published risk band.
- * The `motion` figures move too, so the FRAMES differ: something in the
- * render path is not reproducing despite frames being stepped deterministically
- * through the agent hook. Presets with heavy feedback vary most; mig-056 was
- * stable at 6/s across every run.
+ *   1. The warm-up pump passed no `startTime`, so nothing was reset: each
+ *      capture began wherever the page's own animation loop had left the
+ *      clock, the VM and the feedback buffers since the preset loaded.
+ *   2. Even with `startTime`, the reset covered the VM and the feedback
+ *      chain but not the audio signal tracker, whose attenuated bands and
+ *      beat history are smoothed over seconds; and the tracker's own
+ *      reset() restored its attenuated bands to 1 where a fresh tracker
+ *      starts them at 0. The same synthetic audio produced different
+ *      bass_att/treb_att and beats on every pump after the first.
  *
- * Root cause is not yet found. Until it is, `--repeat=N` captures each preset
- * N times, reports the MEDIAN, and carries the spread into both the console
- * line and the report (`repeatPeaks`, `repeatRedPeaks`), so a single unstable
- * number cannot pass as a measurement. Use it for anything that will be
- * merged into the catalog.
+ * With both fixed, repeated reset pumps of the same preset render
+ * identical frames (checked frame by frame on several presets), and krash
+ * measures 0/0/0. `--repeat=N` still captures each preset N times and
+ * reports the median and spread (`repeatPeaks`, `repeatRedPeaks`); a spread
+ * now means something is nondeterministic again, not that it is expected.
  *
  * ALSO KNOWN: measuring at a smaller viewport is not a valid shortcut. The
  * per-frame `gl.readPixels` dominates runtime, so 320x180 with stride 1 --
@@ -414,8 +418,13 @@ async function main() {
                 Math.floor(sampleCount / tileCount),
               );
 
-              // Warm up so feedback presets are measured at steady state.
-              step({ frames: warmup, deltaMs, beatPulse });
+              // Warm up so feedback presets are measured at steady state,
+              // from a reset: startTime pins the clock and re-initialises the
+              // VM and the feedback buffers. Without it the capture began
+              // wherever the page's own animation loop had left them since
+              // the preset loaded -- a wall-clock-dependent state, so the
+              // same preset measured differently on every capture.
+              step({ frames: warmup, deltaMs, beatPulse, startTime: 0 });
 
               // Governed track: the same frames as the viewer would have seen
               // with the runtime governor engaged. Computed alongside the raw
