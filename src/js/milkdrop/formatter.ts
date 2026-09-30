@@ -5,6 +5,11 @@
 
 import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
 import { editorFieldKey } from './field-table.ts';
+import {
+  isShaderSection,
+  type PresetSyntaxLine,
+  parsePresetSyntax,
+} from './preset-syntax.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropProgramBlock,
@@ -367,20 +372,22 @@ export function resolveShaderText(
   return ir.shaderSource?.[stage] ?? ir.shaderText[stage];
 }
 
-const shaderSectionHeaderPattern = /^\[\s*(?:warp_shader|comp_shader)\s*\]$/iu;
-
 /**
  * Inserts new `key=value` lines before the first shader section header (if
  * any) so they stay in the scalar portion of the preset. Appending at the
  * end would place them inside [warp_shader]/[comp_shader], where the parser
  * would swallow them as shader text.
  */
-function insertFieldLines(lines: string[], fieldLines: string[]) {
+function insertFieldLines(
+  syntax: readonly PresetSyntaxLine[],
+  lines: string[],
+  fieldLines: string[],
+) {
   if (fieldLines.length === 0) {
     return lines;
   }
-  const shaderStart = lines.findIndex((line) =>
-    shaderSectionHeaderPattern.test(line.trim()),
+  const shaderStart = syntax.findIndex(
+    (line) => line.kind === 'section' && isShaderSection(line.section),
   );
   if (shaderStart < 0) {
     return [...lines, ...fieldLines];
@@ -394,20 +401,18 @@ function insertFieldLines(lines: string[], fieldLines: string[]) {
 }
 
 /**
- * The key of a `key=value` line, or null when the line is not an assignment.
+ * The preset's `key=value` lines, as the compiler reads them: outside shader
+ * sections — including a field block that follows one — with a key.
  *
- * Prefix matching (`line.startsWith('zoom=')`) missed every assignment a hand
- * edited buffer picks up spaces in — `zoom = 1.0` — and the caller then wrote
- * a *second* `zoom=` line beside it. Since the compiler takes the last
- * assignment, that turned the next write into a silent no-op.
+ * Tolerant of spacing (`zoom = 1.0`): prefix matching (`startsWith('zoom=')`)
+ * missed every assignment a hand-edited buffer picks up spaces in, and the
+ * caller then wrote a *second* `zoom=` line beside it. Since the compiler
+ * takes the last assignment, that turned the next write into a silent no-op.
  */
-function readAssignmentKey(line: string): string | null {
-  const trimmed = line.trim();
-  const separatorIndex = trimmed.indexOf('=');
-  if (separatorIndex <= 0) {
-    return null;
-  }
-  return trimmed.slice(0, separatorIndex).trim();
+function assignmentLines(source: string): PresetSyntaxLine[] {
+  return parsePresetSyntax(source).lines.filter(
+    (line) => line.kind === 'assignment' && Boolean(line.key),
+  );
 }
 
 /**
@@ -507,33 +512,11 @@ export function isFieldShadowedByEquations(
     'iu',
   );
 
-  const lines = source.split(/\r?\n/u);
-  let inShaderSection = false;
-  for (const lineText of lines) {
-    const trimmed = lineText.trim();
-    if (shaderSectionHeaderPattern.test(trimmed)) {
-      inShaderSection = true;
-    }
-    if (inShaderSection) continue;
-    if (
-      trimmed.startsWith('//') ||
-      trimmed.startsWith('#') ||
-      trimmed.startsWith(';')
-    ) {
-      continue;
-    }
-
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx <= 0) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    if (!isEquationKey(key)) continue;
-
-    const valuePart = stripInlineCommentFromLine(trimmed.slice(eqIdx + 1));
-    if (assignPattern.test(valuePart)) {
-      return true;
-    }
-  }
-  return false;
+  return assignmentLines(source).some(
+    (line) =>
+      isEquationKey(line.key as string) &&
+      assignPattern.test(stripInlineCommentFromLine(line.value as string)),
+  );
 }
 
 /**
@@ -554,27 +537,10 @@ export function getFieldOverwriteKind(
     `\\b${escapeRegExpLiteral(normalizedTarget)}\\b`,
     'iu',
   );
-  const lines = source.split(/\r?\n/u);
-  let inShaderSection = false;
   let last: 'absolute' | 'relative' | null = null;
-  for (const lineText of lines) {
-    const trimmed = lineText.trim();
-    if (shaderSectionHeaderPattern.test(trimmed)) {
-      inShaderSection = true;
-    }
-    if (inShaderSection) continue;
-    if (
-      trimmed.startsWith('//') ||
-      trimmed.startsWith('#') ||
-      trimmed.startsWith(';')
-    ) {
-      continue;
-    }
-
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx <= 0) continue;
-    if (!isEquationKey(trimmed.slice(0, eqIdx).trim())) continue;
-    const valuePart = stripInlineCommentFromLine(trimmed.slice(eqIdx + 1));
+  for (const line of assignmentLines(source)) {
+    if (!isEquationKey(line.key as string)) continue;
+    const valuePart = stripInlineCommentFromLine(line.value as string);
     // Statements within one equation line run in order, and the last
     // assignment to the target wins — so classify each and keep the last.
     // The per-statement match mirrors isFieldShadowedByEquations' `(?!=)`
@@ -610,31 +576,12 @@ export function findMilkdropEquationLine(
     'iu',
   );
 
-  const lines = source.split(/\r?\n/u);
-  let inShaderSection = false;
-  for (let i = 0; i < lines.length; i += 1) {
-    const trimmed = lines[i].trim();
-    if (shaderSectionHeaderPattern.test(trimmed)) {
-      inShaderSection = true;
-    }
-    if (inShaderSection) continue;
-    if (
-      trimmed.startsWith('//') ||
-      trimmed.startsWith('#') ||
-      trimmed.startsWith(';')
-    ) {
-      continue;
-    }
-
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx <= 0) continue;
-    if (!isEquationKey(trimmed.slice(0, eqIdx).trim())) continue;
-    const valuePart = stripInlineCommentFromLine(trimmed.slice(eqIdx + 1));
-    if (assignPattern.test(valuePart)) {
-      return i + 1;
-    }
-  }
-  return null;
+  const line = assignmentLines(source).find(
+    (candidate) =>
+      isEquationKey(candidate.key as string) &&
+      assignPattern.test(stripInlineCommentFromLine(candidate.value as string)),
+  );
+  return line?.number ?? null;
 }
 
 /**
@@ -643,38 +590,23 @@ export function findMilkdropEquationLine(
  * agree on what counts as "the" line for a given field — including its alias
  * spelling, so `decay` finds a preset's `fDecay=` line.
  */
+function fieldLineFor(source: string, target: string) {
+  if (!target.trim()) return null;
+  const normalizedTarget = normalizeFieldKey(target);
+  // Last wins in the compiler, so the last line is the one that decides the
+  // value — and therefore the one a gutter marker should point at.
+  return (
+    assignmentLines(source).findLast(
+      (line) => normalizeFieldKey(line.key as string) === normalizedTarget,
+    ) ?? null
+  );
+}
+
 export function findMilkdropFieldLine(
   source: string,
   target: string,
 ): number | null {
-  if (!target.trim()) return null;
-  const normalizedTarget = normalizeFieldKey(target);
-
-  const lines = source.split(/\r?\n/u);
-  let inShaderSection = false;
-  let found: number | null = null;
-  for (let i = 0; i < lines.length; i += 1) {
-    const trimmed = lines[i].trim();
-    if (shaderSectionHeaderPattern.test(trimmed)) {
-      inShaderSection = true;
-    }
-    if (inShaderSection) continue;
-    if (
-      trimmed.startsWith('//') ||
-      trimmed.startsWith('#') ||
-      trimmed.startsWith(';')
-    ) {
-      continue;
-    }
-
-    const lineKey = readAssignmentKey(lines[i]);
-    if (lineKey !== null && normalizeFieldKey(lineKey) === normalizedTarget) {
-      // Last wins in the compiler, so the last line is the one that decides
-      // the value — and therefore the one a gutter marker should point at.
-      found = i + 1;
-    }
-  }
-  return found;
+  return fieldLineFor(source, target)?.number ?? null;
 }
 
 /**
@@ -689,13 +621,10 @@ export function readMilkdropField(
   source: string,
   target: string,
 ): number | null {
-  const line = findMilkdropFieldLine(source, target);
+  const line = fieldLineFor(source, target);
   if (line === null) return null;
 
-  const text = source.split(/\r?\n/u)[line - 1] ?? '';
-  const rawValue = stripInlineCommentFromLine(
-    text.slice(text.indexOf('=') + 1),
-  ).trim();
+  const rawValue = stripInlineCommentFromLine(line.value as string).trim();
   // The whole value has to be the number. `zoom=1.0 + bass` parses to 1.0 if
   // you only look at the front, which would have a control report — and then
   // overwrite — a value the preset never held.
@@ -744,7 +673,7 @@ export function upsertMilkdropFields(
   source: string,
   updates: Record<string, string | number>,
 ) {
-  const lines = source.split(/\r?\n/u);
+  const syntax = parsePresetSyntax(source).lines;
   const pending = new Map(
     Object.entries(updates).map(([key, value]) => [
       normalizeFieldKey(key),
@@ -759,34 +688,25 @@ export function upsertMilkdropFields(
   );
   const applied = new Set<string>();
 
-  let inShaderSection = false;
-  const nextLines = lines.map((line) => {
-    const trimmed = line.trim();
-    if (shaderSectionHeaderPattern.test(trimmed)) {
-      inShaderSection = true;
+  const nextLines = syntax.map((line) => {
+    if (line.kind !== 'assignment' || !line.key) {
+      return line.text;
     }
-    if (inShaderSection) {
-      return line;
-    }
-
-    const lineKey = readAssignmentKey(line);
-    if (lineKey === null) {
-      return line;
-    }
-
-    const update = pending.get(normalizeFieldKey(lineKey));
+    const normalized = normalizeFieldKey(line.key);
+    const update = pending.get(normalized);
     if (update === undefined) {
-      return line;
+      return line.text;
     }
 
-    applied.add(normalizeFieldKey(lineKey));
+    applied.add(normalized);
     // Every occurrence is rewritten, not just the first. The compiler resolves
     // duplicate keys last-wins, so leaving a stale copy behind kept the old
     // value in charge and made the control look dead.
     //
     // The preset's own spelling is preserved (`fDecay` stays `fDecay`) so a
-    // knob turn does not churn the buffer between equivalent names.
-    return `${lineKey}=${update.value}`;
+    // knob turn does not churn the buffer between equivalent names, and so
+    // is the line's trailing comment.
+    return `${line.key}=${update.value}${line.comment ? ` ${line.comment}` : ''}`;
   });
 
   const pendingLines: string[] = [];
@@ -797,5 +717,5 @@ export function upsertMilkdropFields(
     pendingLines.push(`${update.key}=${update.value}`);
   });
 
-  return joinPresetLines(insertFieldLines(nextLines, pendingLines));
+  return joinPresetLines(insertFieldLines(syntax, nextLines, pendingLines));
 }

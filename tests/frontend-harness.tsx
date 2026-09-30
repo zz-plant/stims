@@ -8,6 +8,10 @@ import type {
   EngineSnapshotValue,
 } from '../src/js/frontend/engine-context.tsx';
 import {
+  buildPaletteActions,
+  type PaletteActionContext,
+} from '../src/js/frontend/palette-actions.ts';
+import {
   type WorkspaceContextValue,
   WorkspaceValueProvider,
 } from '../src/js/frontend/workspace-context.tsx';
@@ -235,4 +239,38 @@ export function renderWorkspace(
     },
     text: () => container.textContent ?? '',
   };
+}
+
+/**
+ * A palette-action context with an inert engine and every flag off, for
+ * building the command palette's actions without mounting the shell.
+ */
+export function paletteActionContext(
+  overrides: Partial<PaletteActionContext> = {},
+): PaletteActionContext {
+  const engine = makeEngineValue();
+  return {
+    engineRef: { current: engine },
+    engineBridgeRef: { current: engine },
+    engineSnapshotRef: { current: null },
+    uiRef: { current: {} as unknown as WorkspaceContextValue },
+    paletteSurface: { updatePanel: () => {}, routePanel: () => null },
+    handleToggleFullscreen: () => {},
+    setShowShortcuts: () => {},
+    toggleFavoriteCurrentPreset: () => {},
+    liveMode: false,
+    isFullscreen: false,
+    hostingWatchParty: false,
+    themeChoice: 'dark',
+    editorDirty: false,
+    playbackPaused: false,
+    ...overrides,
+  };
+}
+
+/** The command palette's actions, built from `paletteActionContext`. */
+export function buildTestPaletteActions(
+  overrides: Partial<PaletteActionContext> = {},
+) {
+  return buildPaletteActions(paletteActionContext(overrides));
 }

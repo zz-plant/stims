@@ -8,6 +8,7 @@ import {
   splitMilkdropStatements,
 } from '../expression';
 import { parseMilkdropPreset } from '../preset-parser';
+import { parsePresetSyntax } from '../preset-syntax.ts';
 import type { MilkdropDiagnostic } from '../types';
 
 export function computeAstDiagnostics(source: string): MilkdropDiagnostic[] {
@@ -16,33 +17,13 @@ export function computeAstDiagnostics(source: string): MilkdropDiagnostic[] {
   const presetResult = parseMilkdropPreset(source);
   diagnostics.push(...presetResult.diagnostics);
 
-  const lines = source.split(/\r?\n/u);
-  let inShaderSection = false;
-
-  lines.forEach((lineText, lineIdx) => {
-    const lineNumber = lineIdx + 1;
-    const trimmed = lineText.trim();
-    if (!trimmed) {
-      return;
+  // Blank, comment and header lines, and shader text, have nothing to check.
+  for (const line of parsePresetSyntax(source).lines) {
+    if (line.kind !== 'assignment' && line.kind !== 'text') {
+      continue;
     }
-
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      const section = trimmed.slice(1, -1).trim().toLowerCase();
-      inShaderSection = section === 'warp_shader' || section === 'comp_shader';
-      return;
-    }
-
-    if (inShaderSection) {
-      return;
-    }
-
-    if (
-      trimmed.startsWith('//') ||
-      trimmed.startsWith('#') ||
-      trimmed.startsWith(';')
-    ) {
-      return;
-    }
+    const lineNumber = line.number;
+    const trimmed = line.text.trim();
 
     // Strip inline comments and string literals so comments like "// smile :)" or
     // strings like `title = "Part (1)"` do not trigger false parenthesis errors.
@@ -125,7 +106,7 @@ export function computeAstDiagnostics(source: string): MilkdropDiagnostic[] {
         diagnostics.push(...res.diagnostics);
       }
     }
-  });
+  }
 
   return mergeDiagnostics(diagnostics, []);
 }
