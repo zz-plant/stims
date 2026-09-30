@@ -36,6 +36,9 @@ export function createMilkdropSignalTracker(options?: {
   let frame = 0;
   let rms = 0;
   let spectralAnalyser: FrequencyAnalyser | null = null;
+  // The worklet's beat verdict for the message it last reported, so a beat
+  // is reported once, not on every frame until the next message arrives.
+  let lastWorkletBeat: object | null = null;
   let cachedSpectralFeatures: ReturnType<
     FrequencyAnalyser['getSpectralFeatures']
   > = null;
@@ -220,6 +223,7 @@ export function createMilkdropSignalTracker(options?: {
       frame = 0;
       rms = 0;
       spectralAnalyser = null;
+      lastWorkletBeat = null;
       cachedSpectralFeatures = null;
       lastSpectralAnalysisFrame = Number.NEGATIVE_INFINITY;
       lockedTime = null;
@@ -337,18 +341,26 @@ export function createMilkdropSignalTracker(options?: {
       const workletBeat = analyser?.getWorkletBeatDetection?.() ?? null;
       let update: import('../utils/audio/beat').BeatTrackerUpdate;
       if (workletBeat) {
+        // The analyser keeps returning the same verdict object until the next
+        // worklet message (every 4096 samples: ~6 frames at 44.1 kHz, ~11 at
+        // 22.05 kHz). Beats are events, as the JS tracker's are: report one
+        // on the first frame of the message that detected it, not on every
+        // frame after, or `beat` would last a sample-rate-dependent number
+        // of frames.
+        const fresh = workletBeat !== lastWorkletBeat;
+        lastWorkletBeat = workletBeat;
         workletBeatUpdateCache.smoothedBands.bass = bands.bass;
         workletBeatUpdateCache.smoothedBands.mid = bands.mid;
         workletBeatUpdateCache.smoothedBands.treble = bands.treble;
         workletBeatUpdateCache.beatIntensity = workletBeat.beatIntensity;
-        workletBeatUpdateCache.isBeat = workletBeat.isBeat;
+        workletBeatUpdateCache.isBeat = fresh && workletBeat.isBeat;
         workletBeatUpdateCache.isTransient = workletBeat.beatIntensity > 0.6;
         workletBeatUpdateCache.spectralFlux =
           analyser?.getSpectralFlux?.() ?? 0;
         workletBeatUpdateCache.bandFlux = 0;
-        workletBeatUpdateCache.beatBass = workletBeat.beatBass;
-        workletBeatUpdateCache.beatMid = workletBeat.beatMid;
-        workletBeatUpdateCache.beatTreble = workletBeat.beatTreble;
+        workletBeatUpdateCache.beatBass = fresh && workletBeat.beatBass;
+        workletBeatUpdateCache.beatMid = fresh && workletBeat.beatMid;
+        workletBeatUpdateCache.beatTreble = fresh && workletBeat.beatTreble;
         update = workletBeatUpdateCache;
       } else {
         beatTrackerInputCache.bands.bass = bands.bass;
