@@ -37,6 +37,13 @@ import {
 const MILKDROP_FFT_SIZE = 1024;
 /** AudioWorklet render quantum. */
 const RENDER_QUANTUM = 128;
+/**
+ * The worklet's `currentTime` when the file starts. A live AudioContext's
+ * clock is already running by the time music plays, and the worklet's beat
+ * detector measures its 150 ms refractory period from a last-beat time of 0,
+ * so a clock starting at 0 would suppress beats a live session reports.
+ */
+const CONTEXT_CLOCK_AT_START = 1;
 
 export type DecodedAudio = {
   sampleRate: number;
@@ -259,6 +266,28 @@ export type AudioFileInputOptions = {
   startSeconds?: number;
   /** Requested analyser fftSize; defaults to what the milkdrop engine asks for. */
   fftSize?: number;
+  /**
+   * Explicit frame instants instead of a fixed 1/fps grid: `time` is the
+   * audio position in seconds (relative to startSeconds) and `deltaMs` the
+   * frame delta the tracker sees. lab:audio-fidelity passes the instants a
+   * real browser rendered at, so both sides are evaluated at the same audio
+   * positions. Overrides fps and frames.
+   */
+  timeline?: ReadonlyArray<{ time: number; deltaMs: number }>;
+  /**
+   * Silence fed to the worklet before the file. A browser's worklet starts
+   * analysing when its node starts, not when the music does, so its
+   * 1024-sample blocks land at an arbitrary offset into the file; a lead-in
+   * reproduces a given offset. lab:audio-fidelity measures it. Default 0.
+   */
+  leadInSamples?: number;
+  /**
+   * How far the analysis trails each frame's audio position, in samples: a
+   * browser hears the file through a MediaStream and delivers worklet
+   * messages late, so a frame at position t sees audio up to t - delay.
+   * lab:audio-fidelity measures it. Default 0.
+   */
+  analysisDelaySamples?: number;
 };
 
 /**
@@ -282,8 +311,11 @@ export async function buildAudioFileInputs(
     Math.round((options.startSeconds ?? 0) * sampleRate),
   );
   const available = Math.max(0, left.length - startSample);
+  const { timeline } = options;
   const frameCount =
-    options.frames ?? Math.floor((available / sampleRate) * fps);
+    timeline?.length ??
+    options.frames ??
+    Math.floor((available / sampleRate) * fps);
 
   const stack = await loadLiveAudioStack();
   const { analyser, port, processorOptions } = await createOfflineAnalyser(
@@ -301,26 +333,30 @@ export async function buildAudioFileInputs(
     onmessage: null,
   };
   const tracker = stack.createMilkdropSignalTracker();
+  const leadIn = Math.max(0, Math.round(options.leadInSamples ?? 0));
+  const delay = Math.round(options.analysisDelaySamples ?? 0);
   const scope = globalThis as unknown as Record<string, unknown>;
   const quantumLeft = new Float32Array(RENDER_QUANTUM);
   const quantumRight = new Float32Array(RENDER_QUANTUM);
   const output = [[new Float32Array(RENDER_QUANTUM)]];
   let processed = 0;
 
-  const deltaMs = 1000 / fps;
   const inputs: FrameInputs[] = [];
   for (let frame = 0; frame < frameCount; frame += 1) {
-    const time = frame / fps;
+    const time = timeline ? (timeline[frame]?.time ?? 0) : frame / fps;
+    const deltaMs = timeline ? (timeline[frame]?.deltaMs ?? 0) : 1000 / fps;
     // Run the worklet up to this frame's instant, then hand its messages to
     // the analyser the way the message port would have between two rAFs.
-    const target = Math.round(time * sampleRate);
+    const target = Math.round(time * sampleRate) - delay + leadIn;
     while (processed < target) {
-      const from = startSample + processed;
+      // `processed` counts worklet samples, lead-in included.
+      const from = startSample + processed - leadIn;
       for (let index = 0; index < RENDER_QUANTUM; index += 1) {
-        quantumLeft[index] = left[from + index] ?? 0;
-        quantumRight[index] = right?.[from + index] ?? 0;
+        const at = from + index;
+        quantumLeft[index] = at >= startSample ? (left[at] ?? 0) : 0;
+        quantumRight[index] = at >= startSample ? (right?.[at] ?? 0) : 0;
       }
-      scope.currentTime = from / sampleRate;
+      scope.currentTime = CONTEXT_CLOCK_AT_START + processed / sampleRate;
       processor.process(
         right ? [[quantumLeft, quantumRight]] : [[quantumLeft]],
         output,
