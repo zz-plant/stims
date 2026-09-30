@@ -12,6 +12,16 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - "github"
+    # Playwright's packages share one browser build and one set of types, so
+    # they must move together. Bumped separately, #1262 merged playwright 1.63
+    # beside @playwright/test 1.62: two playwright-core copies, a typecheck
+    # failure, and e2e launching a browser build nothing had installed.
+    groups:
+      playwright:
+        patterns:
+          - "playwright"
+          - "playwright-core"
+          - "@playwright/*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
