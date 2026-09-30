@@ -110,6 +110,7 @@
     "help": "bun run scripts/scripts-list.ts",
     "lab:audio-fidelity": "bun run scripts/lab-audio-fidelity.ts",
     "lab:backend-diff": "bun run scripts/preset-lab-backend-diff.ts",
+    "lab:dataflow": "bun run scripts/preset-lab-dataflow.ts",
     "lab:dataset": "bun run scripts/preset-lab-dataset.ts",
     "lab:blend-gate": "bun run scripts/preset-lab-blend-gate.ts",
     "lab:edit-eval": "bun run scripts/preset-lab-edit-eval.ts",
