@@ -6,13 +6,18 @@
  */
 import { describe, expect, test } from 'bun:test';
 import {
+  type AudioFeatures,
   audioDesign,
   audioR2,
   audioShare,
   clockDesign,
+  memoryGroup,
+  memoryLookup,
+  perFrameChange,
   ridgeSolver,
   rSquared,
   scenarioFold,
+  summariseMemory,
 } from '../../scripts/preset-lab-vj-baseline.ts';
 
 describe('ridgeSolver', () => {
@@ -171,5 +176,107 @@ describe('audioR2', () => {
         },
       ]),
     ).toBe(-1);
+  });
+});
+
+describe('leaky features', () => {
+  test("follow each lag with the standardised signal's leaky integrals", () => {
+    // One signal: 0 on frame 0, then 1. With mean 0 and std 1 the τ=2
+    // integral goes 0, 0.5, 0.75; τ=4 goes 0, 0.25, 0.4375.
+    const rows = audioDesign(
+      Float32Array.from([0, 1, 1]),
+      1,
+      { mean: Float64Array.from([0]), std: Float64Array.from([1]) },
+      'leaky',
+    );
+    // Bias, four lags, then eight time constants.
+    expect(rows[2]).toHaveLength(1 + 4 + 8);
+    expect([...(rows[2] as Float64Array)].slice(5, 7)).toEqual([0.75, 0.4375]);
+    expect([...(rows[1] as Float64Array)].slice(5, 7)).toEqual([0.5, 0.25]);
+  });
+
+  test('let the linear model follow a control that smooths its audio over seconds', () => {
+    // The target is a 64-frame leaky average of the signal: memory the four
+    // lags (up to 30 frames back) cannot hold.
+    const frames = 600;
+    const scenario = (seed: number) =>
+      Float32Array.from({ length: frames }, (_, f) =>
+        Math.max(0, Math.sin(f / (7 + seed)) + Math.sin(f / (23 + 5 * seed))),
+      );
+    const signals = [0, 1, 2, 3].map(scenario);
+    const smoothed = signals.map((signal) => {
+      let level = 0;
+      return Float64Array.from(signal, (x) => (level += (x - level) / 64));
+    });
+    const clock = clockDesign(frames, 60);
+    const heldOutR2 = (features: AudioFeatures) => {
+      const fold = scenarioFold(signals, 1, clock, 3, features);
+      const target = Float64Array.from(
+        fold.others.flatMap((i) => Array.from(smoothed[i] as Float64Array)),
+      );
+      const [weights] = ridgeSolver(fold.train, 1e-4)([target]);
+      const predicted = fold.heldOut.map((row) =>
+        row.reduce((sum, x, i) => sum + x * (weights?.[i] as number), 0),
+      );
+      return rSquared(smoothed[3] as Float64Array, predicted) as number;
+    };
+    expect(heldOutR2('leaky')).toBeGreaterThan(0.95);
+    expect(heldOutR2('leaky') - heldOutR2('lags')).toBeGreaterThan(0.1);
+  });
+});
+
+test('perFrameChange differences a series and starts at 0', () => {
+  expect([...perFrameChange(Float64Array.from([1, 3, 6, 6]))]).toEqual([
+    0, 2, 3, 0,
+  ]);
+});
+
+describe('memory classes from lab:memory-probe', () => {
+  const lookup = memoryLookup([
+    {
+      id: 'probed',
+      status: 'ok',
+      columns: { zoom: { memory: 'instant' }, q1: { memory: 'persistent' } },
+    },
+    { id: 'broken', status: 'nan', columns: {} },
+  ]);
+
+  test('a measured column keeps its class; an unmoved one is gated', () => {
+    expect(lookup('probed', 'zoom')).toBe('instant');
+    expect(lookup('probed', 'q1')).toBe('persistent');
+    expect(lookup('probed', 'q2')).toBe('gated');
+  });
+
+  test('a preset the probe could not run is unprobed, not gated', () => {
+    expect(lookup('broken', 'zoom')).toBe('unprobed');
+    expect(lookup('missing', 'zoom')).toBe('unprobed');
+  });
+
+  test('bounded memory ends within seconds; long, persistent and gated are stateful', () => {
+    expect(
+      (
+        ['instant', 'short', 'seconds', 'long', 'persistent', 'gated'] as const
+      ).map(memoryGroup),
+    ).toEqual([
+      'bounded',
+      'bounded',
+      'bounded',
+      'stateful',
+      'stateful',
+      'stateful',
+    ]);
+    expect(memoryGroup('unprobed')).toBe('unprobed');
+  });
+
+  test("summaries report each group's median audio R² over its cells", () => {
+    const summary = summariseMemory([
+      { id: 'a', column: 'zoom', audioR2: 0.6, memory: 'instant' },
+      { id: 'a', column: 'rot', audioR2: 0.4, memory: 'seconds' },
+      { id: 'a', column: 'q1', audioR2: -0.1, memory: 'persistent' },
+      { id: 'b', column: 'q1', audioR2: 0.9, memory: 'unprobed' },
+    ]);
+    expect(summary.bounded).toEqual({ cells: 2, medianAudioR2: 0.5 });
+    expect(summary.stateful).toEqual({ cells: 1, medianAudioR2: -0.1 });
+    expect(summary.byClass.unprobed).toEqual({ cells: 1, medianAudioR2: 0.9 });
   });
 });
