@@ -109,6 +109,7 @@
     "generate:starter-catalog": "bun run scripts/generate-starter-catalog.ts",
     "help": "bun run scripts/scripts-list.ts",
     "lab:backend-diff": "bun run scripts/preset-lab-backend-diff.ts",
+    "lab:dataset": "bun run scripts/preset-lab-dataset.ts",
     "lab:blend-gate": "bun run scripts/preset-lab-blend-gate.ts",
     "lab:flash-audit": "bun run scripts/analyze-preset-flash.ts",
     "lab:flash-risk": "bun run scripts/preset-lab-flash-risk.ts",
