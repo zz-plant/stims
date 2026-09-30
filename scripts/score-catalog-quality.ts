@@ -4,7 +4,9 @@
  *
  * Signals (each optional; scores degrade gracefully when unmeasured):
  *  - certification: fidelity class + visual evidence tier (all presets)
- *  - static audio-reference scan of the .milk source (all presets)
+ *  - static audio reach from the preset's equations (all presets): 1 when
+ *    the audio drives what it draws, 0.5 when only its waveform shows the
+ *    audio, 0 when nothing drawn depends on it (lab:dataflow's tiers)
  *  - measured reactivity from scratch/preset-lab/<id>/reactivity.json
  *  - flash audit metrics from scratch/flash-audit-*.json (motion, flash risk)
  *  - near-duplicate penalty from dedup-catalog.ts similarity annotations
@@ -15,6 +17,8 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
+import { type AudioTier, labelPresetAudio } from './preset-lab-dataflow.ts';
 
 const REPO_ROOT = path.join(import.meta.dir, '..');
 const CATALOG_PATH = path.join(
@@ -34,8 +38,8 @@ type QualityComponents = {
   motion: number | null;
   flashPenalty: number;
   duplicatePenalty: number;
-  /** 1 - skip rate from live telemetry; null until enough samples exist. */
-  engagement: number | null;
+  /** 1 - skip rate from live telemetry; absent until enough samples exist. */
+  engagement?: number;
 };
 
 type CatalogPresetEntry = {
@@ -56,7 +60,23 @@ type CatalogPresetEntry = {
 
 type CatalogDocument = { presets: CatalogPresetEntry[] };
 
-const AUDIO_VARS = /\b(bass|mid|treb|vol)(_att)?\b|\bbeat(_pulse)?\b/u;
+const STATIC_AUDIO_BY_TIER: Record<AudioTier, number> = {
+  driven: 1,
+  'waveform-only': 0.5,
+  none: 0,
+};
+
+/** How far audio reaches what the preset draws, from its equations alone.
+ * Replaces a text search for audio names, which credited dead code, init
+ * code and disabled waves, and missed waveform samples passed via megabuf. */
+export function staticAudioScore(id: string, source: string): number {
+  try {
+    const { ir } = compileMilkdropPresetSource(source, { id });
+    return STATIC_AUDIO_BY_TIER[labelPresetAudio(ir).tier];
+  } catch {
+    return 0;
+  }
+}
 
 const FIDELITY_SCORES: Record<string, number> = {
   'near-exact': 1,
@@ -162,18 +182,33 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
     let staticAudio = 0;
     const sourcePath = path.join(REPO_ROOT, 'public', entry.file);
     if (fs.existsSync(sourcePath)) {
-      const source = fs.readFileSync(sourcePath, 'utf8');
-      staticAudio = AUDIO_VARS.test(source) ? 1 : 0;
+      staticAudio = staticAudioScore(
+        entry.id,
+        fs.readFileSync(sourcePath, 'latin1'),
+      );
     }
 
-    const measuredReactivity = loadReactivityScore(entry.id);
+    // A measurement recorded in the catalog stays until a new one replaces
+    // it, so a checkout without the scratch/ measurement files re-scores
+    // without discarding them.
+    const previous = entry.quality?.components;
+    const measuredReactivity =
+      loadReactivityScore(entry.id) ?? previous?.measuredReactivity ?? null;
     if (measuredReactivity !== null) measuredCount++;
 
     const flash = flashReports.get(entry.id);
-    const motion = flash ? Math.min(1, flash.motionEnergy * 1000) : null;
-    const flashPenalty = flash?.exceedsThreshold ? 0.5 : 0;
+    const motion = flash
+      ? Math.min(1, flash.motionEnergy * 1000)
+      : (previous?.motion ?? null);
+    const flashPenalty = flash
+      ? flash.exceedsThreshold
+        ? 0.5
+        : 0
+      : (previous?.flashPenalty ?? 0);
     const duplicatePenalty = entry.similarity?.duplicateOf ? 0.3 : 0;
 
+    const engagementScore =
+      engagement.get(entry.id) ?? previous?.engagement ?? undefined;
     const components: QualityComponents = {
       fidelity: FIDELITY_SCORES[fidelityClass] ?? 0.2,
       evidence: EVIDENCE_SCORES[evidenceTier] ?? 0,
@@ -182,7 +217,7 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
       motion,
       flashPenalty,
       duplicatePenalty,
-      engagement: engagement.get(entry.id) ?? null,
+      ...(engagementScore !== undefined ? { engagement: engagementScore } : {}),
     };
 
     // Weighted blend; measured signals substitute for their static proxies
@@ -195,7 +230,7 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
       reactivity * 0.3 +
       (motion ?? 0.5 * components.fidelity) * 0.15 +
       // Real-user keep rate outranks any proxy when we have it.
-      (components.engagement !== null ? components.engagement * 0.25 : 0) -
+      (components.engagement !== undefined ? components.engagement * 0.25 : 0) -
       flashPenalty -
       duplicatePenalty;
 
@@ -221,7 +256,11 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
   }
 
   if (!opts.dry) {
-    fs.writeFileSync(CATALOG_PATH, JSON.stringify(catalog, null, 2), 'utf8');
+    fs.writeFileSync(
+      CATALOG_PATH,
+      `${JSON.stringify(catalog, null, 2)}\n`,
+      'utf8',
+    );
     console.log('[score] catalog.json updated with quality + curatedRank');
   }
 }
