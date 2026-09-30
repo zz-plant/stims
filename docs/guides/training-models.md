@@ -22,7 +22,7 @@ reference.
 | What each human remix changed | `bun run lab:remix-pairs -- --sources` | JSONL of (parent, child, changes) |
 | Score a preset-editing model | `bun run lab:edit-eval -- --export tasks.jsonl`, then `--score answers.jsonl --out edit-report.json` | summary on stdout; report JSON with `--out` |
 | Behaviour embeddings, neighbours, 2-D map | `bun run lab:preset-map -- --dataset <dir>` | `embeddings.npy`, `neighbors.json`, `map2d.json` |
-| The bar an audio → controls model must clear | `bun run lab:vj-baseline -- --dataset <dir>` | per-preset held-out R² |
+| The bar an audio → controls model must clear | `bun run lab:vj-baseline -- --dataset <dir>` | audio R² beyond the clock, plus per-preset held-out R² |
 | Score a shader-fixing model | `bun run lab:shader-fix-bench -- --export tasks.jsonl`, then `--score answers.jsonl --out shader-report.json` | summary on stdout; report JSON with `--out` |
 | Flash risk of rendered output (needs a browser) | `bun run lab:flash-audit` | per-preset WCAG 2.3.1 counts |
 
@@ -85,12 +85,29 @@ dataset gives it to you frame-aligned:
    (`np.load` reads `<f2`); rows whose values exceeded ±65504 carry a
    `float16Clamped` count.
 
-4. Measure a baseline before training. `lab:vj-baseline` fits, per preset,
-   ridge regressions from a clock basis and from clock + lagged audio to the
-   VM controls, scored on a held-out scenario. On the synthetic scenarios
-   the clock alone is the stronger of the two (median R² 0.53 against 0.42):
-   linear audio features fitted on three stimuli do not transfer to a
-   fourth. A learned model has to beat the better of the two per preset.
+4. Measure a baseline before training, and score it on what the audio does.
+   About a third of the corpus is clockwork: those presets run the same
+   function of time on every stimulus, so plain R² rewards memorising the
+   clock (a clock-only model scores near 1 on them). `lab:vj-baseline`
+   therefore reports **audio R²** as its headline. On columns whose variance
+   is at least 10% audio-driven (the part that differs between stimuli at
+   the same frame), it measures the share of a held-out stimulus's departure
+   from the clock oracle (the training stimuli's mean trajectory) that the
+   model predicts: 0 is the clock, 1 is perfect. Clockwork presets are
+   counted and left out.
+
+   Measured so far:
+
+   | Training audio | Model | Audio R² |
+   | --- | --- | --- |
+   | The four built-in probe scenarios (whole corpus, 1714 audio-reactive presets, 787 clockwork) | clock + lagged audio (`lab:vj-baseline`) | −0.04 |
+   | 24 varied synthetic songs, 4 held out (158 presets) | clock + lagged audio | 0.19 |
+   | same | leaky integrators, spectrum bands and onsets, per-preset ridge | 0.33 |
+
+   Each probe isolates one band, so a model fitted on three cannot say
+   anything about the fourth. Use the probes for smoke tests, and many
+   varied songs (`--audio`) to learn or evaluate audio mappings. A learned
+   model has to beat the linear rows on the same songs.
 
 ## What the state vectors cannot see
 

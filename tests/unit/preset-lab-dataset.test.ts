@@ -197,6 +197,19 @@ describe('runPresetForDataset', () => {
     expect(run.states).not.toBeNull();
   });
 
+  test('a value too large for float32 is non-finite, not ok', () => {
+    // 1e39 is a finite float64 but overflows the float32 the states are
+    // stored in: it must not reach the export as Infinity with status ok.
+    const run = runPresetForDataset(
+      `[preset00]\nper_frame_1=q1 = pow(10, 39);\n`,
+      'overflow',
+      inputs,
+      CANONICAL_VARIABLES,
+    );
+    expect(run.status).toBe('nan');
+    expect(run.states).toBeNull();
+  });
+
   test("'all' exports every numeric variable the VM exposes", () => {
     const run = runPresetForDataset(REACTIVE_PRESET, 'reactive', inputs, 'all');
     expect(run.columns.length).toBeGreaterThan(CANONICAL_VARIABLES.length);
