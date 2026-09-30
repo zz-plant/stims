@@ -104,7 +104,9 @@ function flatVolume() {
 
 function createSampler() {
   return createSampleAuxTextureNode(
-    ...(Array.from({ length: 16 }, flatTexture) as Parameters<
+    // Through unknown: @types/three 0.186 types each node by its sample
+    // type, and an array of vec4 nodes no longer converts to the tuple.
+    ...(Array.from({ length: 16 }, flatTexture) as unknown as Parameters<
       typeof createSampleAuxTextureNode
     > extends [...infer Textures, unknown]
       ? Textures

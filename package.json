@@ -47,7 +47,7 @@
     "check:accessibility": "bun run scripts/accessibility-audit.ts",
     "check:agent-action-ids": "bun run scripts/check-agent-action-ids.ts",
     "check:all": "bun run scripts/run-quality-gate.ts --all",
-    "check:architecture": "bun --bun ./node_modules/dependency-cruiser/bin/dependency-cruise.mjs --config .dependency-cruiser.mjs --cache node_modules/.cache/dependency-cruiser src/js scripts tests",
+    "check:architecture": "bun --bun ./node_modules/.bin/depcruise --config .dependency-cruiser.mjs --cache node_modules/.cache/dependency-cruiser src/js scripts tests",
     "check:authoring-docs": "bun run scripts/check-authoring-examples.ts && bun run scripts/generate-authoring-reference.ts --check",
     "check:authoring-examples": "bun run scripts/check-authoring-examples.ts",
     "check:bundle-size": "bun run scripts/check-bundle-size.ts",
@@ -195,6 +195,7 @@
     "@cfworker/json-schema": "^4.1.1",
     "@modelcontextprotocol/server": "2.1.0",
     "@playwright/test": "1.63.0",
+    "@swc/core": "^1.16.12",
     "@types/bun": "^1.4.2",
     "@types/node": "^26.6.3",
     "@types/react": "19.3.0",
@@ -251,6 +252,6 @@
     "@codemirror/view": "6.43.13",
     "@codemirror/state": "6.7.6",
     "@codemirror/autocomplete": "6.20.3",
-    "zod": "4.5.4"
+    "zod": "4.6.5"
   }
 }
