@@ -7,6 +7,8 @@
 import { describe, expect, test } from 'bun:test';
 import {
   audioDesign,
+  audioR2,
+  audioShare,
   clockDesign,
   ridgeSolver,
   rSquared,
@@ -113,5 +115,61 @@ describe('scenarioFold', () => {
     expect(loud.others).toEqual([0, 1]);
     expect(loud.train).toEqual(quiet.train);
     expect(loud.heldOut).not.toEqual(quiet.heldOut);
+  });
+});
+
+describe('audioShare', () => {
+  const t = Array.from({ length: 50 }, (_, f) => f / 10);
+  test('clockwork (the same trajectory in every run) is 0', () => {
+    const run = Float64Array.from(t, Math.sin);
+    expect(audioShare([run, run, run])).toBeCloseTo(0, 12);
+  });
+  test('runs that differ only by a per-run level are fully audio-driven', () => {
+    const runs = [0, 1, 2].map((k) => new Float64Array(50).fill(k));
+    expect(audioShare(runs)).toBeCloseTo(1, 12);
+  });
+  test('a mix scores the between-run part of the variance', () => {
+    // sin(t) shared by every run, plus a per-run offset of ±1
+    const runs = [-1, 1].map((k) =>
+      Float64Array.from(t, (x) => Math.sin(x) + k),
+    );
+    const clock = Float64Array.from(t, Math.sin);
+    const mean = clock.reduce((a, b) => a + b, 0) / clock.length;
+    const clockVar =
+      clock.reduce((a, b) => a + (b - mean) ** 2, 0) / clock.length;
+    expect(audioShare(runs)).toBeCloseTo(1 / (1 + clockVar), 6);
+  });
+});
+
+describe('audioR2', () => {
+  const actual = Float64Array.from({ length: 20 }, (_, f) => Math.sin(f));
+  const oracle = new Float64Array(20);
+  test('is 0 for the clock oracle, 1 for a perfect prediction, null with nothing to explain', () => {
+    expect(audioR2([{ actual, predicted: oracle, oracle }])).toBe(0);
+    expect(audioR2([{ actual, predicted: actual, oracle }])).toBe(1);
+    expect(audioR2([{ actual: oracle, predicted: actual, oracle }])).toBeNull();
+  });
+  test('pools folds, so a quiet held-out scenario cannot dominate', () => {
+    // fold A: the scenario departs strongly from the oracle and is mostly predicted;
+    // fold B: it barely departs, and a small error would be −∞ on its own
+    const quiet = Float64Array.from(actual, (v) => v * 1e-3);
+    const pooled = audioR2([
+      { actual, predicted: Float64Array.from(actual, (v) => v * 0.9), oracle },
+      {
+        actual: quiet,
+        predicted: Float64Array.from(quiet, (v) => v + 0.01),
+        oracle,
+      },
+    ]);
+    expect(pooled).toBeGreaterThan(0.9);
+    expect(
+      audioR2([
+        {
+          actual: quiet,
+          predicted: Float64Array.from(quiet, (v) => v + 0.01),
+          oracle,
+        },
+      ]),
+    ).toBe(-1);
   });
 });

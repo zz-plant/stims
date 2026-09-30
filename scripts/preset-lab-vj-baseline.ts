@@ -24,7 +24,18 @@
  *
  * Reported per preset (report.json) and summarised: median held-out R² for
  * each model, the median gain from audio, and the share of presets where
- * audio adds more than 0.1. Low scores are informative too: they mark
+ * audio adds more than 0.1.
+ *
+ * Plain R² rewards the clock: many presets are clockwork (the same function
+ * of time on every stimulus), and they score near 1 without any audio. So
+ * the headline is audio R² (`audioR2`): on columns whose variance is at
+ * least 10% audio-driven (`audioShare`: the part that differs between
+ * scenarios at the same frame), the share of the held-out scenario's
+ * departure from the clock oracle (the training scenarios' mean trajectory)
+ * that the clock + audio model predicts. 0 is the clock oracle, 1 is
+ * perfect; errors are pooled over folds so a quiet scenario cannot blow up
+ * the ratio. Presets with no audio-driven column are counted as clockwork
+ * and left out of it. Low scores are informative too: they mark
  * presets whose behaviour is not a linear function of time and audio
  * (thresholds, accumulators, feedback), which is what a nonlinear model is
  * for.
@@ -206,6 +217,59 @@ export function rSquared(
   return 1 - residual / total;
 }
 
+/** Columns at least this audio-driven are scored by audio R². */
+const AUDIO_SHARE_MIN = 0.1;
+
+/**
+ * Share of a column's variance that differs between runs of the same
+ * preset at the same frame, i.e. is driven by the stimulus rather than the
+ * clock. runs: one Float64Array per scenario, equal lengths. 0 when flat.
+ */
+export function audioShare(runs: readonly Float64Array[]): number {
+  const frames = runs[0]?.length ?? 0;
+  const n = runs.length * frames;
+  if (n === 0 || runs.length < 2) return 0;
+  let sum = 0;
+  for (const run of runs) for (const value of run) sum += value;
+  const mean = sum / n;
+  let total = 0;
+  for (const run of runs) for (const value of run) total += (value - mean) ** 2;
+  if (total / n < 1e-12) return 0;
+  let between = 0;
+  for (let f = 0; f < frames; f += 1) {
+    let frameMean = 0;
+    for (const run of runs) frameMean += run[f] as number;
+    frameMean /= runs.length;
+    for (const run of runs) between += ((run[f] as number) - frameMean) ** 2;
+  }
+  return between / total;
+}
+
+/**
+ * Audio R², pooled: 1 − Σ(actual − predicted)² / Σ(actual − oracle)² over
+ * every (fold, frame) pair given, where `oracle` is the clock oracle for
+ * that fold. null when the actual never departs from the oracle (nothing
+ * audio-driven to explain). Clamped at −1 like the per-column R².
+ */
+export function audioR2(
+  pairs: ReadonlyArray<{
+    actual: Float64Array;
+    predicted: Float64Array;
+    oracle: Float64Array;
+  }>,
+): number | null {
+  let residual = 0;
+  let departure = 0;
+  for (const { actual, predicted, oracle } of pairs) {
+    for (let f = 0; f < actual.length; f += 1) {
+      residual += ((actual[f] as number) - (predicted[f] as number)) ** 2;
+      departure += ((actual[f] as number) - (oracle[f] as number)) ** 2;
+    }
+  }
+  if (departure < 1e-12) return null;
+  return Math.max(-1, 1 - residual / departure);
+}
+
 function predict(
   design: readonly Float64Array[],
   weights: Float64Array,
@@ -316,6 +380,8 @@ function main() {
     clockR2: number;
     clockAudioR2: number;
     columns: number;
+    audioColumns: number;
+    audioR2: number | null;
   }> = [];
   for (const [id, scenarioFiles] of [...byPreset].sort(([a], [b]) =>
     a.localeCompare(b),
@@ -368,17 +434,51 @@ function main() {
         });
         return perFold.reduce((sum, value) => sum + value, 0) / perFold.length;
       });
+    // Audio R² on the audio-driven columns: the clock + audio model against
+    // each fold's clock oracle, the training scenarios' mean trajectory.
+    const audioScores: number[] = [];
+    for (const c of moving) {
+      const runs = scenarios.map((_, i) => column(i, c));
+      if (audioShare(runs) < AUDIO_SHARE_MIN) continue;
+      const pairs = folds.map((fold) => {
+        const target = Float64Array.from(
+          fold.others.flatMap((i) => Array.from(runs[i] as Float64Array)),
+        );
+        const [weights] = fold.solveFull([target]);
+        const oracle = Float64Array.from({ length: frames }, (_, f) => {
+          let sum = 0;
+          for (const i of fold.others)
+            sum += (runs[i] as Float64Array)[f] as number;
+          return sum / fold.others.length;
+        });
+        return {
+          actual: runs[fold.held] as Float64Array,
+          predicted: predict(fold.heldFull, weights as Float64Array),
+          oracle,
+        };
+      });
+      const score = audioR2(pairs);
+      if (score !== null) audioScores.push(score);
+    }
     perPreset.push({
       id,
       clockR2: median(foldScores('clock')),
       clockAudioR2: median(foldScores('full')),
       columns: moving.length,
+      audioColumns: audioScores.length,
+      audioR2: audioScores.length ? median(audioScores) : null,
     });
   }
 
   const gain = perPreset.map((p) => p.clockAudioR2 - p.clockR2);
+  const reactive = perPreset.filter((p) => p.audioR2 !== null);
   const summary = {
     presets: perPreset.length,
+    audioReactivePresets: reactive.length,
+    clockworkPresets: perPreset.length - reactive.length,
+    medianAudioR2: reactive.length
+      ? median(reactive.map((p) => p.audioR2 as number))
+      : null,
     scenarios,
     split: 'leave one scenario out',
     lags: LAGS,
@@ -399,6 +499,11 @@ function main() {
   );
   console.log(
     `Linear controls baseline on ${summary.presets} presets (${summary.split}, ${scenarios.length} folds)`,
+  );
+  console.log(
+    summary.medianAudioR2 === null
+      ? '  audio R²: no preset has an audio-driven column'
+      : `  audio R² (beyond the clock oracle, ${summary.audioReactivePresets} audio-reactive presets; ${summary.clockworkPresets} clockwork): ${summary.medianAudioR2.toFixed(3)}`,
   );
   console.log(
     `  median held-out R² per preset: clock only ${summary.medianClockR2.toFixed(3)}, clock + audio ${summary.medianClockAudioR2.toFixed(3)} (median gain ${summary.medianAudioGain.toFixed(3)})`,
