@@ -383,7 +383,7 @@ const transientGatherResult = { x: 0, y: 0 };
 
 /**
  * Precomputed lattice constants handed to transformMeshPoint by buildMeshField:
- * the MilkDrop [0,1]-space coordinates and the center-independent radius for
+ * the MilkDrop [0,1]-space coordinates and the center-independent radius and angle for
  * one mesh cell. These are invariant across frames (they depend only on the
  * grid position and aspect), so the per-vertex loop reads them instead of
  * recomputing the sqrt (and the round trip) for every vertex of every frame.
@@ -392,12 +392,14 @@ type LatticeSample = {
   milkdropX: number;
   milkdropY: number;
   rad: number;
+  ang: number;
 };
 
 const transientLatticeSample: LatticeSample = {
   milkdropX: 0,
   milkdropY: 0,
   rad: 0,
+  ang: 0,
 };
 
 function transformMeshPoint(
@@ -444,11 +446,20 @@ function transformMeshPoint(
     local.y = latticeSample
       ? latticeSample.milkdropY
       : -gridY * 0.5 * aspectY + 0.5;
-    const dxFromCenter = (local.x - frame.baseCx) * aspectX;
-    const dyFromCenter = (local.y - frame.baseCy) * aspectY;
-    local.rad =
-      Math.sqrt(dxFromCenter * dxFromCenter + dyFromCenter * dyFromCenter) * 2;
-    local.ang = Math.atan2(dyFromCenter, dxFromCenter);
+    // rad/ang are fixed per vertex, as MilkDrop and projectM precompute them
+    // once per grid: measured from the screen centre over the aspect-scaled
+    // [-1,1] mesh (y up), never from cx/cy — those move the zoom/rot centre.
+    if (latticeSample) {
+      local.rad = latticeSample.rad;
+      local.ang = latticeSample.ang;
+    } else {
+      const aspectGridX = gridX * aspectX;
+      const aspectGridY = gridY * aspectY;
+      local.rad = Math.sqrt(
+        aspectGridX * aspectGridX + aspectGridY * aspectGridY,
+      );
+      local.ang = Math.atan2(aspectGridY, aspectGridX);
+    }
     // Reset every built-in per-pixel variable from the frame bases: per-pixel
     // code may have overwritten them on the previous vertex.
     local.zoom = frame.baseZoom;
@@ -649,8 +660,8 @@ export function getMeshDensity(state: MutableState, detailScale: number) {
  * on the grid position, the density and the aspect — none of them on the
  * frame — so a single build per density/aspect change replaces a per-vertex
  * sqrt (and the renderer-space round trip) in every frame of the preset's run.
- * The `rad` values match transformMeshPoint's non-per-pixel formula exactly;
- * `ang` is populated for parity with the declared StaticMeshLattice contract.
+ * `rad` and `ang` are the per-pixel program's fixed inputs (and `rad` the
+ * non-per-pixel ripple radius), matching MilkDrop's precomputed m_vertinfo.
  */
 function buildStaticMeshLattice(
   density: number,
@@ -924,6 +935,7 @@ export function buildMeshField({
       transientLatticeSample.milkdropY =
         latticeCache.milkdropY[pointIndex] ?? 0;
       transientLatticeSample.rad = latticeCache.rad[pointIndex] ?? 0;
+      transientLatticeSample.ang = latticeCache.ang[pointIndex] ?? 0;
       const point = transformMeshPoint(
         transformFrame,
         x,
