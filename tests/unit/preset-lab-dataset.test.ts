@@ -1,0 +1,221 @@
+/**
+ * lab:dataset's building blocks: family-level splits, the .npy encoder and
+ * the per-preset run that fills each states file.
+ *
+ * The split test is the one that matters most for anyone training on the
+ * output: a remix and its parent must never land on opposite sides, or every
+ * validation score is measured on near-copies of training data.
+ */
+import { describe, expect, test } from 'bun:test';
+import {
+  assignFamilySplits,
+  CANONICAL_VARIABLES,
+  computeSignals,
+  encodeNpy,
+  packInputs,
+  runPresetForDataset,
+  SIGNAL_COLUMNS,
+} from '../../scripts/preset-lab-dataset.ts';
+import { buildScenarioInputs } from '../../scripts/preset-lab-replay.ts';
+import type { LineageCatalogEntry } from '../../src/js/milkdrop/preset-lineage.ts';
+
+const entry = (id: string, title: string, author?: string) => ({
+  id,
+  title,
+  author,
+});
+
+/** Many unrelated two-member families, so every split receives some. */
+function catalogOfFamilies(count: number): LineageCatalogEntry[] {
+  const entries: LineageCatalogEntry[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const work = `Work Number ${index}`;
+    entries.push(entry(`root-${index}`, `Aderrasi - ${work}`, 'Aderrasi'));
+    entries.push(
+      entry(`mix-${index}`, `Aderrasi - ${work} (Kali Mix)`, 'Aderrasi'),
+    );
+  }
+  return entries;
+}
+
+describe('assignFamilySplits', () => {
+  test('puts every member of a remix family in the same split', () => {
+    const entries = catalogOfFamilies(200);
+    const splits = assignFamilySplits(entries, { val: 0.2, test: 0.2 });
+    const seen = new Set<string>();
+    for (let index = 0; index < 200; index += 1) {
+      const root = splits.get(`root-${index}`);
+      const mix = splits.get(`mix-${index}`);
+      expect(mix?.family).toBe(root?.family as string);
+      expect(mix?.split).toBe(root?.split as 'train');
+      seen.add(root?.split as string);
+    }
+    // Families really are spread across splits, not all dumped in train.
+    expect([...seen].sort()).toEqual(['test', 'train', 'val']);
+  });
+
+  test('roughly honours the requested fractions', () => {
+    const splits = assignFamilySplits(catalogOfFamilies(2000), {
+      val: 0.1,
+      test: 0.2,
+    });
+    const counts = { train: 0, val: 0, test: 0 };
+    for (const { split } of splits.values()) counts[split] += 1;
+    expect(counts.test / 4000).toBeGreaterThan(0.15);
+    expect(counts.test / 4000).toBeLessThan(0.25);
+    expect(counts.val / 4000).toBeGreaterThan(0.06);
+    expect(counts.val / 4000).toBeLessThan(0.14);
+  });
+
+  test('is deterministic, independent of catalog order, and seedable', () => {
+    const entries = catalogOfFamilies(300);
+    const fractions = { val: 0.1, test: 0.1 };
+    const first = assignFamilySplits(entries, fractions);
+    const reversed = assignFamilySplits([...entries].reverse(), fractions);
+    for (const [id, value] of first) {
+      expect(reversed.get(id)).toEqual(value);
+    }
+    const reseeded = assignFamilySplits(entries, fractions, 'other-seed');
+    const moved = [...first].filter(
+      ([id, value]) => reseeded.get(id)?.split !== value.split,
+    );
+    expect(moved.length).toBeGreaterThan(0);
+  });
+
+  test('a preset with no parseable credit is its own family', () => {
+    const splits = assignFamilySplits([entry('lonely', '')], {
+      val: 0,
+      test: 0,
+    });
+    expect(splits.get('lonely')).toEqual({
+      family: 'solo:lonely',
+      split: 'train',
+    });
+  });
+});
+
+/** Minimal .npy reader: enough to prove the encoder's bytes are valid. */
+function decodeNpy(bytes: Uint8Array) {
+  expect([...bytes.slice(0, 8)]).toEqual([
+    0x93, 0x4e, 0x55, 0x4d, 0x50, 0x59, 1, 0,
+  ]);
+  const headerLength = bytes[8] | (bytes[9] << 8);
+  const header = new TextDecoder().decode(bytes.slice(10, 10 + headerLength));
+  const dataOffset = 10 + headerLength;
+  return { header, dataOffset, data: bytes.slice(dataOffset) };
+}
+
+describe('encodeNpy', () => {
+  test('writes an aligned v1.0 header and the raw float32 payload', () => {
+    const values = new Float32Array([1.5, -2, 3.25, 0, 7, 1e-3]);
+    const { header, dataOffset, data } = decodeNpy(encodeNpy(values, [2, 3]));
+    expect(dataOffset % 64).toBe(0);
+    expect(header.endsWith('\n')).toBe(true);
+    expect(header).toContain("'descr': '<f4'");
+    expect(header).toContain("'fortran_order': False");
+    expect(header).toContain("'shape': (2, 3)");
+    expect([...new Float32Array(data.buffer.slice(data.byteOffset))]).toEqual([
+      ...values,
+    ]);
+  });
+
+  test('declares uint8 and a one-dimensional shape correctly', () => {
+    const { header, data } = decodeNpy(
+      encodeNpy(new Uint8Array([0, 128, 255]), [3]),
+    );
+    expect(header).toContain("'descr': '|u1'");
+    expect(header).toContain("'shape': (3,)");
+    expect([...data]).toEqual([0, 128, 255]);
+  });
+
+  test('rejects a shape that does not match the data', () => {
+    expect(() => encodeNpy(new Float32Array(5), [2, 3])).toThrow();
+  });
+});
+
+const REACTIVE_PRESET = `[preset00]
+zoom=1.0
+per_frame_1=zoom = 1 + bass*0.1;
+per_frame_2=q1 = time;
+`;
+
+const STATIC_PRESET = `[preset00]
+zoom=1.0
+rot=0.0
+`;
+
+describe('runPresetForDataset', () => {
+  const inputs = buildScenarioInputs('bass-pulse', 60);
+
+  test('records the canonical columns frame by frame', () => {
+    const run = runPresetForDataset(
+      REACTIVE_PRESET,
+      'reactive',
+      inputs,
+      CANONICAL_VARIABLES,
+    );
+    expect(run.status).toBe('ok');
+    expect(run.columns).toEqual([...CANONICAL_VARIABLES]);
+    const states = run.states as Float32Array;
+    expect(states.length).toBe(60 * CANONICAL_VARIABLES.length);
+    const zoomColumn = CANONICAL_VARIABLES.indexOf('zoom');
+    const zooms = Array.from(
+      { length: 60 },
+      (_, frame) => states[frame * CANONICAL_VARIABLES.length + zoomColumn],
+    );
+    // zoom follows the bass pulse, so it must actually vary and stay in the
+    // range the equation allows.
+    expect(Math.max(...zooms) - Math.min(...zooms)).toBeGreaterThan(0.01);
+    for (const zoom of zooms) {
+      expect(zoom).toBeGreaterThanOrEqual(0.99);
+    }
+    const q1Column = CANONICAL_VARIABLES.indexOf('q1');
+    const lastQ1 = states[59 * CANONICAL_VARIABLES.length + q1Column];
+    expect(lastQ1).toBeGreaterThan(states[q1Column] as number);
+  });
+
+  test('flags a preset whose output never changes as static', () => {
+    const run = runPresetForDataset(
+      STATIC_PRESET,
+      'static',
+      inputs,
+      CANONICAL_VARIABLES,
+    );
+    expect(run.status).toBe('static');
+    expect(run.states).not.toBeNull();
+  });
+
+  test("'all' exports every numeric variable the VM exposes", () => {
+    const run = runPresetForDataset(REACTIVE_PRESET, 'reactive', inputs, 'all');
+    expect(run.columns.length).toBeGreaterThan(CANONICAL_VARIABLES.length);
+    expect(run.columns).toContain('zoom');
+    expect(run.columns).toEqual([...run.columns].sort());
+    expect(run.states?.length).toBe(60 * run.columns.length);
+  });
+});
+
+describe('scenario inputs and signals', () => {
+  test('packs spectrum then waveform per frame', () => {
+    const inputs = buildScenarioInputs('full-mix', 4);
+    const packed = packInputs(inputs);
+    expect(packed.length).toBe(4 * 256);
+    expect([...packed.slice(256, 256 + 128)]).toEqual(inputs[1]?.frequencyData);
+    expect([...packed.slice(256 + 128, 512)]).toEqual(inputs[1]?.waveformData);
+  });
+
+  test('signals respond to the scenario: silence is quieter than bass', () => {
+    // Band levels are relative (MilkDrop reads 1.0 as "average"), so silence
+    // reports bass=1; rms is the absolute loudness.
+    const rmsColumn = SIGNAL_COLUMNS.indexOf('rms');
+    const mean = (values: Float32Array) => {
+      let sum = 0;
+      for (let frame = 0; frame < 120; frame += 1) {
+        sum += values[frame * SIGNAL_COLUMNS.length + rmsColumn] as number;
+      }
+      return sum / 120;
+    };
+    const silent = computeSignals(buildScenarioInputs('silence', 120));
+    const bass = computeSignals(buildScenarioInputs('bass-pulse', 120));
+    expect(mean(bass)).toBeGreaterThan(mean(silent));
+  });
+});

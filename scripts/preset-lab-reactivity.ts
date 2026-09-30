@@ -168,11 +168,16 @@ export function loadCatalogEntries(repoRoot: string) {
 
   const entries = new Map<
     string,
-    { id: string; title?: string; file: string }
+    { id: string; title?: string; author?: string; file: string }
   >();
   for (const catalogPath of catalogPaths) {
     const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8')) as {
-      presets: Array<{ id: string; title?: string; file: string }>;
+      presets: Array<{
+        id: string;
+        title?: string;
+        author?: string;
+        file: string;
+      }>;
     };
     for (const preset of catalog.presets) {
       if (!entries.has(preset.id)) {
