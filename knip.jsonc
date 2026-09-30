@@ -43,7 +43,10 @@
     // Loaded by file path into a Playwright page as the parity oracle
     // (scripts/bench-vs-butterchurn.ts, scripts/trace-vs-butterchurn.ts).
     "butterchurn",
-    "butterchurn-presets"
+    "butterchurn-presets",
+    // dependency-cruiser's parser for check:architecture (parser: 'swc' in
+    // .dependency-cruiser.mjs), loaded by name at runtime.
+    "@swc/core"
   ],
   "ignoreBinaries": ["mise", "adb", "rsvg-convert"],
   "rules": {
