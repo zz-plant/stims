@@ -108,6 +108,7 @@
     "generate:seo": "bun run scripts/generate-seo.ts",
     "generate:starter-catalog": "bun run scripts/generate-starter-catalog.ts",
     "help": "bun run scripts/scripts-list.ts",
+    "lab:audio-fidelity": "bun run scripts/lab-audio-fidelity.ts",
     "lab:backend-diff": "bun run scripts/preset-lab-backend-diff.ts",
     "lab:dataset": "bun run scripts/preset-lab-dataset.ts",
     "lab:blend-gate": "bun run scripts/preset-lab-blend-gate.ts",
