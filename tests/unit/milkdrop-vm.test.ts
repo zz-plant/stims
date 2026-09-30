@@ -271,6 +271,33 @@ per_frame_6=q6=meshy
     expect(portrait.q2).toBeCloseTo(1, 6);
   });
 
+  test('per-pixel rad and ang are fixed per vertex, measured from the screen centre in aspect space', () => {
+    // MilkDrop and projectM precompute rad = hypot(x*aspectx, y*aspecty) and
+    // ang = atan2(y*aspecty, x*aspectx) over the [-1,1] mesh (y up), once per
+    // grid: moving cx/cy moves the zoom/rot centre, not rad or ang.
+    const preset = compileMilkdropPresetSource(`
+[preset00]
+title=per-pixel-rad
+mesh_density=24
+per_frame_1=cx = 0.2; cy = 0.8; q1 = 0; q2 = 10; q3 = 0;
+per_pixel_1=q1 = max(q1, rad); q2 = min(q2, rad);
+per_pixel_2=q3 = if(above(x, 0.99)*below(y, 0.3), ang, q3);
+`);
+    const vm = createMilkdropVM(preset);
+
+    const square = vm.step(makeSignals({ frame: 1, aspect: 1 })).variables;
+    expect(square.q1).toBeCloseTo(Math.SQRT2, 5);
+    // an even density has no vertex at the centre; the nearest sits half a cell off
+    expect(square.q2).toBeCloseTo(Math.SQRT2 / 23, 5);
+    // the top-right corner lies up and to the right of the centre
+    expect(square.q3).toBeCloseTo(Math.PI / 4, 5);
+
+    // landscape: y spans aspecty = 9/16 of the height in MilkDrop space
+    const wide = vm.step(makeSignals({ frame: 2, aspect: 16 / 9 })).variables;
+    expect(wide.q1).toBeCloseTo(Math.hypot(1, 9 / 16), 5);
+    expect(wide.q3).toBeCloseTo(Math.atan2(9 / 16, 1), 5);
+  });
+
   test('generates parity-oriented frame state with custom waves, shapes, borders, and post state', () => {
     const preset = compileMilkdropPresetSource(
       `
