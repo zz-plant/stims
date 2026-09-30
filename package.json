@@ -111,6 +111,7 @@
     "lab:backend-diff": "bun run scripts/preset-lab-backend-diff.ts",
     "lab:dataset": "bun run scripts/preset-lab-dataset.ts",
     "lab:blend-gate": "bun run scripts/preset-lab-blend-gate.ts",
+    "lab:edit-eval": "bun run scripts/preset-lab-edit-eval.ts",
     "lab:flash-audit": "bun run scripts/analyze-preset-flash.ts",
     "lab:flash-risk": "bun run scripts/preset-lab-flash-risk.ts",
     "lab:sensitivity": "bun run scripts/preset-lab-sensitivity.ts",

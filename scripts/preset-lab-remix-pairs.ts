@@ -80,7 +80,11 @@ export function splitPresetSource(raw: string, id = 'remix-pair'): PresetParts {
   const { ir } = compileMilkdropPresetSource(raw, { id });
   const scalars = new Map<string, number>();
   for (const [key, value] of Object.entries(ir.numericFields)) {
-    if (!METADATA_KEYS.has(key)) scalars.set(key, value);
+    // numericFields also mirrors every custom shape setting as
+    // shape_<1-based index>_<field>; they are read once, below, from the
+    // shape list, under MilkDrop's 0-based shapecode_<n>_ names.
+    if (METADATA_KEYS.has(key) || /^shape_\d+_/.test(key)) continue;
+    scalars.set(key, value);
   }
   const enabled = new Set<string>();
   for (const [kind, list] of [
