@@ -22,6 +22,8 @@ reference.
 | What each human remix changed | `bun run lab:remix-pairs -- --sources` | JSONL of (parent, child, changes) |
 | Score a preset-editing model | `bun run lab:edit-eval -- --export tasks.jsonl`, then `--score answers.jsonl --out edit-report.json` | summary on stdout; report JSON with `--out` |
 | Behaviour embeddings, neighbours, 2-D map | `bun run lab:preset-map -- --dataset <dir>` | `embeddings.npy`, `neighbors.json`, `map2d.json` |
+| Which audio signals reach each column and drawn program, from the equations alone | `bun run lab:dataflow -- --all --out labels.json` | per-preset labels: tier, audio columns and their signals, history |
+| Check a dataset's measured labels against the equations | `bun run lab:dataflow -- --dataset <dir>` | column and preset confusion tables, soundness violations |
 | How long each preset control remembers the audio | `bun run lab:memory-probe -- --audio song.wav` | `probe.jsonl`: memory class and linearity per (preset, column) |
 | The bar an audio → controls model must clear | `bun run lab:vj-baseline -- --dataset <dir> [--features leaky] [--memory <probe dir>]` | audio R² beyond the clock, per preset and per memory class |
 | Score a shader-fixing model | `bun run lab:shader-fix-bench -- --export tasks.jsonl`, then `--score answers.jsonl --out shader-report.json` | summary on stdout; report JSON with `--out` |
@@ -162,8 +164,35 @@ songs (26 audio-reactive of 38):
 | learned features with all 20 of the preset's songs (ceiling) | 0.18 | — |
 
 A new preset's audio response cannot be predicted from other presets'
-behaviour alone, and four songs of its own only just beat the clock. The
-equations themselves are the obvious better source for new presets.
+behaviour alone, and four songs of its own only just beat the clock.
+
+**Conditioned on the preset's equations.** `run_codecond.py` gives each
+column only the signals `lab:dataflow` says it reads, plus quartile hinges
+and onsets for each, and leaky integrals of them when the column carries
+history. Same split, songs and metric as above:
+
+| Method | 4 calibration songs | 1 calibration song |
+| --- | --- | --- |
+| hand features, all signals (the row above's baseline) | −0.12 | −0.27 |
+| the same new basis over every signal | −0.13 | −0.28 |
+| **the basis restricted to the column's own signals** | −0.03 | −0.23 |
+| average of that and the learned features | **+0.12** | −0.20 |
+| restricted, with all 20 of the preset's songs (ceiling) | 0.10 | — |
+
+Restriction alone gains +0.12 over the hand baseline at four songs, 95% CI
+[+0.05, +0.26], and matches the learned features with no network. The
+basis without the restriction gains nothing. Averaged with the learned
+features it edges the previous best (+0.12 against +0.11). With one song
+every method stays below the clock. A prior averaged over training columns
+with the same dependency signature is worse than the global one with no
+calibration at all (−0.76 against −0.60): the equations say which signals
+matter, not a column's sign or scale.
+
+The larger point: a preset's equations *are* its exact model. Running them
+on the new song (the VM does it in real time) gives audio R² 1. A learned
+model of an unseen preset is useful only where the equations are
+unavailable or too slow, and the structure they expose is worth more than
+the network trained on top.
 
 Caveats: four test songs (the intervals resample presets, not songs),
 synthetic audio, one configuration per model.
