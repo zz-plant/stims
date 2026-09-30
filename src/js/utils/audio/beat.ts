@@ -378,6 +378,7 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
     _previousSpectrum = null;
     spectralFlux = 0;
     bandFlux = 0;
+    peakEnergy = 0.1;
     noiseFloor = 0.004;
     pmRunningAvg = 0;
     pmBeatIntensity = 0;
