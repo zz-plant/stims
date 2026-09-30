@@ -3,11 +3,20 @@
  *
  *   bun run lab:dataflow -- --preset eos-ether
  *   bun run lab:dataflow -- --dataset output/dataset [--out report.json]
+ *   bun run lab:dataflow -- --all [--out labels.json]
  *
  * With --preset it prints, for every canonical column that preset's
  * per-frame program writes, its kind (constant, clockwork, audio, pointer),
  * the audio signals it reads, and whether it has memory (history) or feeds
  * back on itself (accumulates). See src/js/milkdrop/preset-dataflow.ts.
+ *
+ * With --all it labels every catalog preset (bundled and libraries) by how
+ * audio reaches its image, with no rendering: through the equations (which
+ * canonical columns, from which signals), through audio uniforms its shaders
+ * read, or only through a drawn waveform. It then compares those labels with
+ * the catalog's two existing proxies: the source-text audio scan behind the
+ * quality score's staticAudio component, and the title/author heuristic
+ * behind the collection:audio-reactive tag.
  *
  * With --dataset it compares the analysis with behaviour: for every preset
  * and canonical column in a lab:dataset export, the share of variance that
@@ -21,6 +30,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
+import type { MilkdropPresetIR } from '../src/js/milkdrop/compiler-types.ts';
 import {
   analyzePresetDataflow,
   type VariableDataflow,
@@ -28,7 +38,7 @@ import {
 import { CANONICAL_VARIABLES } from './preset-lab-dataset.ts';
 import { decodeNpy } from './preset-lab-map.ts';
 import { loadCatalogEntries } from './preset-lab-reactivity.ts';
-import { audioShare } from './preset-lab-vj-baseline.ts';
+import { AUDIO_SHARE_MIN, audioShare } from './preset-lab-vj-baseline.ts';
 
 type Kind = VariableDataflow['kind'];
 const KINDS: readonly Kind[] = ['constant', 'clockwork', 'audio', 'pointer'];
@@ -53,6 +63,94 @@ function analyzeCatalogPreset(
     'latin1',
   );
   return analyzePresetDataflow(compileMilkdropPresetSource(raw, { id }).ir);
+}
+
+/** The audio uniforms a MilkDrop warp/comp shader can read. */
+const SHADER_AUDIO = /\b(bass|mid|treb|vol)(_att)?\b/gu;
+/** The source-text scan score-catalog-quality.ts uses for staticAudio. */
+const SOURCE_AUDIO = /\b(bass|mid|treb|vol)(_att)?\b|\bbeat(_pulse)?\b/u;
+/** Below this alpha the main waveform is not visibly drawn. */
+const VISIBLE_WAVE_ALPHA = 0.01;
+
+/**
+ * How audio can reach a preset's image:
+ * - `driven`: an equation makes a canonical column, the per-pixel mesh, or an
+ *   enabled custom wave or shape follow the audio, or a shader reads an
+ *   audio uniform.
+ * - `waveform-only`: the only audio on screen is a drawn waveform (the main
+ *   wave, or an enabled custom wave), whose shape is the audio itself.
+ * - `none`: nothing drawn depends on the audio.
+ */
+export type AudioTier = 'driven' | 'waveform-only' | 'none';
+
+export type PresetAudioLabel = {
+  tier: AudioTier;
+  /** Canonical columns whose value follows the audio, with their signals. */
+  audioColumns: Record<string, string[]>;
+  /** The audio columns that also carry memory: they depend on past frames'
+   * audio (an accumulator, a smoothed value), not just the current one. */
+  historyColumns: string[];
+  /** Canonical columns that move, but identically on every song. */
+  clockworkColumns: string[];
+  /** Audio signals reaching the per-pixel mesh, enabled custom waves (beyond
+   * the waveform samples they draw) and enabled custom shapes. */
+  perPixelSignals: string[];
+  waveSignals: string[];
+  shapeSignals: string[];
+  /** Audio uniforms read by the warp/comp shaders. */
+  shaderSignals: string[];
+  waveform: boolean;
+  randomStreamFollowsAudio: boolean;
+};
+
+export function labelPresetAudio(ir: MilkdropPresetIR): PresetAudioLabel {
+  const { variables, randomStreamFollowsAudio, drawnAudio } =
+    analyzePresetDataflow(ir);
+  const merged = (lists: string[][], drop: ReadonlySet<string> = new Set()) =>
+    [...new Set(lists.flat())].filter((signal) => !drop.has(signal)).sort();
+  const perPixelSignals = drawnAudio.perPixel;
+  // a wave's own samples are its waveform, counted below, not a drive
+  const waveSignals = merged(drawnAudio.waves, new Set(['value1', 'value2']));
+  const shapeSignals = merged(drawnAudio.shapes);
+  const audioColumns: Record<string, string[]> = {};
+  const clockworkColumns: string[] = [];
+  const historyColumns: string[] = [];
+  for (const column of CANONICAL_VARIABLES) {
+    const v = variables.get(column);
+    if (v?.kind === 'audio') {
+      audioColumns[column] = v.audio;
+      if (v.history) historyColumns.push(column);
+    } else if (v?.kind === 'clockwork') clockworkColumns.push(column);
+  }
+  const shaderText = [ir.shaderSource?.warp, ir.shaderSource?.comp]
+    .filter((text): text is string => typeof text === 'string')
+    .join('\n');
+  const shaderSignals = [
+    ...new Set([...shaderText.matchAll(SHADER_AUDIO)].map((m) => m[0])),
+  ].sort();
+  const waveAlpha = Number(ir.mainWave?.wave_a ?? 1);
+  const waveform =
+    waveAlpha >= VISIBLE_WAVE_ALPHA ||
+    (variables.get('wave_a')?.kind ?? 'constant') !== 'constant' ||
+    ir.customWaves.some((wave) => Number(wave.fields.enabled ?? 0) > 0);
+  const driven =
+    Object.keys(audioColumns).length > 0 ||
+    perPixelSignals.length > 0 ||
+    waveSignals.length > 0 ||
+    shapeSignals.length > 0 ||
+    shaderSignals.length > 0;
+  return {
+    tier: driven ? 'driven' : waveform ? 'waveform-only' : 'none',
+    audioColumns,
+    historyColumns,
+    clockworkColumns,
+    perPixelSignals,
+    waveSignals,
+    shapeSignals,
+    shaderSignals,
+    waveform,
+    randomStreamFollowsAudio,
+  };
 }
 
 /** Classify what a column did across scenarios: runs[i] is scenario i. */
@@ -90,6 +188,109 @@ function printPreset(id: string) {
       .join(', ');
     console.log(
       `  ${column.padEnd(18)} ${v.kind.padEnd(10)} ${v.audio.join(' ')}${flags ? `  [${flags}]` : ''}`,
+    );
+  }
+}
+
+function catalogTags(): Map<string, string[]> {
+  const tags = new Map<string, string[]>();
+  const catalog = JSON.parse(
+    fs.readFileSync(
+      path.join(repoRoot, 'public', 'milkdrop-presets', 'catalog.json'),
+      'utf8',
+    ),
+  ) as { presets: Array<{ id: string; tags?: string[] }> };
+  for (const entry of catalog.presets) tags.set(entry.id, entry.tags ?? []);
+  return tags;
+}
+
+function labelAll(outPath: string | undefined) {
+  const catalog = loadCatalogEntries(repoRoot);
+  const tags = catalogTags();
+  const labels: Record<string, PresetAudioLabel> = {};
+  const failed: string[] = [];
+  const tiers = new Map<AudioTier, number>();
+  // [tier][proxy says audio?] for the two proxies the catalog uses today
+  const sourceScan = new Map<string, number>();
+  const titleTag = new Map<string, number>();
+  const sourceOnly: string[] = [];
+  const columnCounts = new Map<string, number>();
+  const signalCounts = new Map<string, number>();
+  for (const [id, entry] of [...catalog].sort(([a], [b]) =>
+    a.localeCompare(b),
+  )) {
+    const raw = fs.readFileSync(
+      path.join(repoRoot, 'public', entry.file.replace(/^\//, '')),
+      'latin1',
+    );
+    let label: PresetAudioLabel;
+    try {
+      label = labelPresetAudio(compileMilkdropPresetSource(raw, { id }).ir);
+    } catch {
+      failed.push(id);
+      continue;
+    }
+    labels[id] = label;
+    tiers.set(label.tier, (tiers.get(label.tier) ?? 0) + 1);
+    const scan = SOURCE_AUDIO.test(raw);
+    const scanKey = `${label.tier}|${scan}`;
+    sourceScan.set(scanKey, (sourceScan.get(scanKey) ?? 0) + 1);
+    if (scan && label.tier !== 'driven') sourceOnly.push(id);
+    const presetTags = tags.get(id);
+    if (presetTags) {
+      const key = `${label.tier}|${presetTags.includes('collection:audio-reactive')}`;
+      titleTag.set(key, (titleTag.get(key) ?? 0) + 1);
+    }
+    for (const [column, signals] of Object.entries(label.audioColumns)) {
+      columnCounts.set(column, (columnCounts.get(column) ?? 0) + 1);
+      for (const signal of signals)
+        signalCounts.set(signal, (signalCounts.get(signal) ?? 0) + 1);
+    }
+  }
+  const total = Object.keys(labels).length;
+  const tierOrder: readonly AudioTier[] = ['driven', 'waveform-only', 'none'];
+  const pct = (n: number, of: number) =>
+    `${n}`.padStart(5) +
+    ` (${((100 * n) / Math.max(1, of)).toFixed(0)}%)`.padEnd(7);
+  console.log(
+    `Audio labels from the equations, ${total} presets${failed.length ? ` (${failed.length} failed to compile)` : ''}`,
+  );
+  for (const tier of tierOrder)
+    console.log(`  ${tier.padEnd(14)}${pct(tiers.get(tier) ?? 0, total)}`);
+  const top = (counts: Map<string, number>, n: number) =>
+    [...counts]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, n)
+      .map(([name, count]) => `${name} ${count}`)
+      .join(', ');
+  console.log(`  most-driven columns: ${top(columnCounts, 8)}`);
+  console.log(`  most-read signals:   ${top(signalCounts, 8)}`);
+  const crossTab = (title: string, counts: Map<string, number>) => {
+    console.log(`\n${title}`);
+    console.log(
+      `  ${'labels'.padEnd(14)}${'says audio'.padStart(12)}${'says not'.padStart(12)}`,
+    );
+    for (const tier of tierOrder)
+      console.log(
+        `  ${tier.padEnd(14)}${String(counts.get(`${tier}|true`) ?? 0).padStart(12)}${String(counts.get(`${tier}|false`) ?? 0).padStart(12)}`,
+      );
+  };
+  crossTab(
+    'Source-text scan (score-catalog-quality staticAudio) against the labels',
+    sourceScan,
+  );
+  console.log(
+    `  ${sourceOnly.length} preset(s) mention an audio signal that reaches nothing drawn, e.g. ${sourceOnly.slice(0, 5).join(', ')}`,
+  );
+  crossTab(
+    'collection:audio-reactive tag (title/author heuristic, bundled catalog) against the labels',
+    titleTag,
+  );
+  if (outPath) {
+    fs.mkdirSync(path.dirname(path.resolve(outPath)), { recursive: true });
+    fs.writeFileSync(
+      path.resolve(outPath),
+      JSON.stringify({ presets: labels, failed }, null, 2),
     );
   }
 }
@@ -142,6 +343,11 @@ function checkDataset(datasetDir: string, outPath: string | undefined) {
   }> = [];
   let presets = 0;
   let randomFollowsAudio = 0;
+  // Preset level, as lab:vj-baseline labels presets for its audio R²: a
+  // preset is measured audio-reactive when some column is at least
+  // AUDIO_SHARE_MIN audio-driven, clockwork otherwise.
+  const presetTable = new Map<string, number>();
+  const weakAudio: Array<{ preset: string; maxShare: number }> = [];
   for (const [id, scenarioFiles] of [...byPreset].sort(([a], [b]) =>
     a.localeCompare(b),
   )) {
@@ -160,6 +366,8 @@ function checkDataset(datasetDir: string, outPath: string | undefined) {
     presets += 1;
     if (analysis.randomStreamFollowsAudio) randomFollowsAudio += 1;
     const frames = (states[0]?.length ?? 0) / columns.length;
+    let maxShare = 0;
+    let analysisAudio = false;
     columns.forEach((column, c) => {
       const runs = states.map((run) =>
         Float64Array.from(
@@ -169,6 +377,9 @@ function checkDataset(datasetDir: string, outPath: string | undefined) {
       );
       const observed = observeColumn(runs);
       const kind = analysis.variables.get(column)?.kind ?? 'constant';
+      if (kind === 'audio') analysisAudio = true;
+      if (observed === 'differs by song')
+        maxShare = Math.max(maxShare, audioShare(runs));
       table.set(
         `${kind}|${observed}`,
         (table.get(`${kind}|${observed}`) ?? 0) + 1,
@@ -177,6 +388,10 @@ function checkDataset(datasetDir: string, outPath: string | undefined) {
         violations.push({ preset: id, column, kind, share: audioShare(runs) });
       }
     });
+    const measured = maxShare >= AUDIO_SHARE_MIN;
+    const presetKey = `${analysisAudio}|${measured}`;
+    presetTable.set(presetKey, (presetTable.get(presetKey) ?? 0) + 1);
+    if (analysisAudio && !measured) weakAudio.push({ preset: id, maxShare });
   }
   console.log(
     `Static dataflow vs ${scenarios.length} scenarios, ${presets} presets × ${columns.length} columns`,
@@ -208,6 +423,27 @@ function checkDataset(datasetDir: string, outPath: string | undefined) {
       `    ${v.preset} ${v.column}: ${v.kind}, audio share ${v.share.toFixed(4)}`,
     );
   }
+  const cell = (analysis: boolean, measured: boolean) =>
+    String(presetTable.get(`${analysis}|${measured}`) ?? 0).padStart(22);
+  console.log(
+    `\nPresets: measured audio-reactive (some column ≥ ${AUDIO_SHARE_MIN} audio share) vs the analysis`,
+  );
+  console.log(
+    `  ${''.padEnd(26)}${'measured reactive'.padStart(22)}${'measured clockwork'.padStart(22)}`,
+  );
+  console.log(
+    `  ${'analysis: audio path'.padEnd(26)}${cell(true, true)}${cell(true, false)}`,
+  );
+  console.log(
+    `  ${'analysis: no audio path'.padEnd(26)}${cell(false, true)}${cell(false, false)}`,
+  );
+  weakAudio.sort((a, b) => b.maxShare - a.maxShare);
+  console.log(
+    `  ${weakAudio.length} measured-clockwork preset(s) have an audio path whose effect stays under the threshold here, e.g. ${weakAudio
+      .slice(0, 4)
+      .map((w) => `${w.preset} (${w.maxShare.toFixed(3)})`)
+      .join(', ')}`,
+  );
   if (outPath) {
     fs.mkdirSync(path.dirname(path.resolve(outPath)), { recursive: true });
     fs.writeFileSync(
@@ -219,6 +455,8 @@ function checkDataset(datasetDir: string, outPath: string | undefined) {
           table: Object.fromEntries(table),
           randomFollowsAudio,
           violations,
+          presets_by_label: Object.fromEntries(presetTable),
+          weakAudio,
         },
         null,
         2,
@@ -236,10 +474,11 @@ function main() {
   const preset = get('--preset');
   const dataset = get('--dataset');
   if (preset) printPreset(preset);
+  else if (args.includes('--all')) labelAll(get('--out'));
   else if (dataset) checkDataset(dataset, get('--out'));
   else
     throw new Error(
-      'Usage: bun run lab:dataflow -- --preset <id> | --dataset <lab:dataset dir> [--out report.json]',
+      'Usage: bun run lab:dataflow -- --preset <id> | --all [--out labels.json] | --dataset <lab:dataset dir> [--out report.json]',
     );
 }
 

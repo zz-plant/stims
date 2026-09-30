@@ -23,6 +23,7 @@ about a third of the corpus) are counted and left out.
 | `train_job.py`, `pretrain_job.py` | One network per process (supervised; audio-only future-spectrum pretraining) |
 | `run_known.py` | Phase 1: known presets, held-out songs, the full model ladder plus LightGBM |
 | `run_fewshot.py` | Phase 2: presets from unseen families, fitted from 1 or 4 calibration songs |
+| `run_codecond.py` | Phase 3: the same, with each column's features and prior chosen from the preset's equations (`lab:dataflow --all` labels) |
 | `verify_lgbm.py` | Independent refit of the LightGBM result and a permutation (mismatched-audio) leakage check |
 
 ## Reproduce
@@ -41,6 +42,8 @@ bun run lab:dataset -- --out scratch/nvj/ood  --audio scratch/nvj/ood_songs --fr
 cd experiments/neural-vj
 ../../.venv/bin/python run_known.py ../../scratch/nvj/data --ood ../../scratch/nvj/ood --pre <pretraining export dirs>
 ../../.venv/bin/python run_fewshot.py ../../scratch/nvj/data --kind mingru
+(cd ../.. && bun run lab:dataflow -- --all --out scratch/nvj/labels.json)
+../../.venv/bin/python run_codecond.py ../../scratch/nvj/data ../../scratch/nvj/labels.json --bank jobs_fewshot/trunk.npz
 ```
 
 The published results used 160 randomly sampled presets (seed 7) whose
