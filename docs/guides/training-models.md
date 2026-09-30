@@ -20,12 +20,12 @@ reference.
 | Smaller files | `bun run lab:dataset -- --dtype float16 --every 2` | `<f2` arrays, every 2nd frame |
 | One preset's trace, replayable bit for bit | `bun run lab:replay -- --preset <id> --record t.json [--audio song.wav]` | `TraceFile` JSON |
 | What each human remix changed | `bun run lab:remix-pairs -- --sources` | JSONL of (parent, child, changes) |
-| Score a preset-editing model | `bun run lab:edit-eval -- --export tasks.jsonl`, then `--score answers.jsonl --out edit-report.json` | summary on stdout; report JSON with `--out` |
+| Score a preset-editing model | `bun run lab:edit-eval -- --export tasks.jsonl`, then `--score answers.jsonl --out edit-report.json` | summary on stdout, including audio edits read from the equations (recall of the human remix's audio dependency changes); report JSON with `--out` |
 | Behaviour embeddings, neighbours, 2-D map | `bun run lab:preset-map -- --dataset <dir>` | `embeddings.npy`, `neighbors.json`, `map2d.json` |
 | Which audio signals reach each column and drawn program, from the equations alone | `bun run lab:dataflow -- --all --out labels.json` | per-preset labels: tier, audio columns and their signals, history |
 | Check a dataset's measured labels against the equations | `bun run lab:dataflow -- --dataset <dir>` | column and preset confusion tables, soundness violations |
 | How long each preset control remembers the audio | `bun run lab:memory-probe -- --audio song.wav` | `probe.jsonl`: memory class and linearity per (preset, column) |
-| The bar an audio → controls model must clear | `bun run lab:vj-baseline -- --dataset <dir> [--features leaky] [--memory <probe dir>]` | audio R² beyond the clock, per preset and per memory class |
+| The bar an audio → controls model must clear | `bun run lab:vj-baseline -- --dataset <dir> [--features leaky] [--memory <probe dir>]` | audio R² beyond the clock, per preset and per memory class; event F1 of jumps (model and clock oracle) |
 | Score a shader-fixing model | `bun run lab:shader-fix-bench -- --export tasks.jsonl`, then `--score answers.jsonl --out shader-report.json` | summary on stdout; report JSON with `--out` |
 | Flash risk of rendered output (needs a browser) | `bun run lab:flash-audit` | per-preset WCAG 2.3.1 counts |
 
@@ -246,8 +246,13 @@ What follows:
   than the clock, and every linear variant lands near 0. These are 360 of the
   452 cells scored on value, so they decide any pooled headline. Trees
   represent thresholds, so they are the model to test on these cells, but
-  score them on when the cells change (event timing within a few frames);
-  no tool here does that yet.
+  score them on when the cells change. `lab:vj-baseline` now reports event
+  F1 for every audio-driven cell: a jump over a quarter of the cell's
+  range is an event, a predicted one within 3 frames counts. On the
+  160-preset, 32-song set, 501 cells jump. The linear model times them well
+  (F1 over 0.5) on 108 (the clock oracle on 31): cells that jump with
+  the audio directly. On the other ~340, counters and gated toggles, neither
+  times a single jump. That is the bar for a threshold model.
 - **Ask the probe before sizing a model's memory.** Leaky integrals lift the
   seconds columns (0.34 → 0.45), and their per-frame change is predictable
   (0.74). Neither helps the persistent columns (−0.05, −0.02, −0.04): their
