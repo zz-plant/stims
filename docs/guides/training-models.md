@@ -20,10 +20,10 @@ reference.
 | Smaller files | `bun run lab:dataset -- --dtype float16 --every 2` | `<f2` arrays, every 2nd frame |
 | One preset's trace, replayable bit for bit | `bun run lab:replay -- --preset <id> --record t.json [--audio song.wav]` | `TraceFile` JSON |
 | What each human remix changed | `bun run lab:remix-pairs -- --sources` | JSONL of (parent, child, changes) |
-| Score a preset-editing model | `bun run lab:edit-eval -- --export tasks.jsonl`, then `--score answers.jsonl` | report JSON |
+| Score a preset-editing model | `bun run lab:edit-eval -- --export tasks.jsonl`, then `--score answers.jsonl --out edit-report.json` | summary on stdout; report JSON with `--out` |
 | Behaviour embeddings, neighbours, 2-D map | `bun run lab:preset-map -- --dataset <dir>` | `embeddings.npy`, `neighbors.json`, `map2d.json` |
 | The bar an audio → controls model must clear | `bun run lab:vj-baseline -- --dataset <dir>` | per-preset held-out R² |
-| Score a shader-fixing model | `bun run lab:shader-fix-bench -- --export tasks.jsonl`, then `--score answers.jsonl` | report JSON |
+| Score a shader-fixing model | `bun run lab:shader-fix-bench -- --export tasks.jsonl`, then `--score answers.jsonl --out shader-report.json` | summary on stdout; report JSON with `--out` |
 | Flash risk of rendered output (needs a browser) | `bun run lab:flash-audit` | per-preset WCAG 2.3.1 counts |
 
 ## Splits: always by family
@@ -43,7 +43,7 @@ dataset gives it to you frame-aligned:
 1. Export with real music, keeping the synthetic probes as controls:
 
    ```bash
-   bun run lab:dataset -- --out data/sync --audio music/ --scenarios bass-pulse,full-mix --frames 1800
+   bun run lab:dataset -- --out scratch/sync --audio music/ --scenarios bass-pulse,full-mix --frames 1800
    ```
 
    Every WAV runs through the live audio stack offline, so `inputs/` holds the
@@ -64,7 +64,7 @@ dataset gives it to you frame-aligned:
    import json, numpy as np
    from pathlib import Path
 
-   root = Path("data/sync")
+   root = Path("scratch/sync")
    manifest = json.loads((root / "manifest.json").read_text())
    rows = [json.loads(line) for line in (root / "index.jsonl").read_text().splitlines()]
 
@@ -120,7 +120,9 @@ way to score a shader fix on what it draws.
 
 The VM seeds its RNG from the preset id, the synthetic scenarios are pure
 functions of time, and audio files are analysed deterministically, so the same
-flags and files write the same bytes. Rendered captures are deterministic too
+flags and files write the same arrays and index rows. The manifest is the one
+exception: it records a `createdAt` timestamp, so hash the `.npy` and `.jsonl`
+files, not the whole directory, when checking a rerun. Rendered captures are deterministic too
 once `startTime` is passed: that resets the VM, the GPU feedback buffers, and
 the audio signal tracker together.
 
