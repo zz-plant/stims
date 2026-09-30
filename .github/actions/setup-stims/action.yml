@@ -26,14 +26,18 @@ runs:
       with:
         bun-version-file: .bun-version
 
+    # Exact key only, no restore-keys. Installing over another lockfile's
+    # node_modules does not relink the packages whose dependency moved: after
+    # the @codemirror/state 6.7.1 -> 6.7.4 bump, every @codemirror package in
+    # the store still pointed at 6.7.1 beside a top-level 6.7.4, two copies
+    # were loaded, and CodeMirror's instanceof checks failed the editor tests.
+    # A miss now installs clean from bun's download cache (~3s) instead.
     - name: Cache node_modules
       id: node-modules
       uses: actions/cache@v6
       with:
         path: node_modules
         key: ${{ runner.os }}-node-modules-${{ hashFiles('bun.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-node-modules-
 
     # Bun's download cache only feeds `bun install`, which has nothing to
     # download when node_modules came back for this exact lockfile — it
