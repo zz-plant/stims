@@ -140,12 +140,38 @@ describe('scoring', () => {
     expect(score.detail).toContain('compile error');
   });
 
+  test("audio edits: the remix's new zoom ← bass_att is the edit to make", () => {
+    expect(scoreAnswer(task, remix, cache)).toMatchObject({
+      audioEditRecall: 1,
+      audioEditExtra: 0,
+    });
+    expect(scoreAnswer(task, parent, cache)).toMatchObject({
+      audioEditRecall: 0,
+      audioEditExtra: 0,
+    });
+  });
+
+  test('audio edits: driving a different signal is extra, not the edit asked for', () => {
+    // more audio-reactive by correlation, but not the remix's change
+    const other = remix.replace('0.1*bass_att', '0.1*treb');
+    expect(scoreAnswer(task, other, cache)).toMatchObject({
+      audioEditRecall: 0,
+      audioEditExtra: 1,
+    });
+  });
+
   test('summaries average the per-task scores', () => {
     const summary = summarize([
       scoreAnswer(task, parent, cache),
       scoreAnswer(task, remix, cache),
     ]);
-    expect(summary).toMatchObject({ tasks: 2, valid: 2, changed: 1 });
+    expect(summary).toMatchObject({
+      tasks: 2,
+      valid: 2,
+      changed: 1,
+      audioEditTasks: 2,
+      audioEditRecall: 0.5,
+    });
     expect(summary.instructionScore).toBeCloseTo(0.5, 10);
   });
 });
