@@ -235,7 +235,7 @@
     "@lezer/highlight": "^1.2.4",
     "@resvg/resvg-wasm": "^2.6.2",
     "@strudel/web": "^1.3.0",
-    "@tanstack/react-virtual": "^3.14.10",
+    "@tanstack/react-virtual": "^3.14.13",
     "browser-fs-access": "^0.38.0",
     "comlink": "^4.4.2",
     "fflate": "^0.8.3",
