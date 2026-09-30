@@ -893,16 +893,12 @@
   "orbasonic": {
     "terms": [
       "orbasonic",
-      "collection webgpu showcase",
-      "collection hall of fame",
       "collection cream of the crop",
       "preset",
       "ambient",
       "collection audio reactive",
       "category particles",
       "category waveform",
-      "webgpu showcase",
-      "hall of fame",
       "cream of the crop",
       "audio reactive",
       "classic milkdrop",
@@ -911,7 +907,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "orbasonic collection webgpu showcase collection hall of fame collection cream of the crop preset ambient collection audio reactive category particles category waveform webgpu showcase hall of fame cream of the crop audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "orbasonic collection cream of the crop preset ambient collection audio reactive category particles category waveform cream of the crop audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "pieturp-sunflare": {
     "terms": [
@@ -1887,11 +1883,15 @@
     "terms": [
       "adamfx 2 geiss somewhat distort me 3 1",
       "adamfx geiss",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -1900,7 +1900,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "adamfx 2 geiss somewhat distort me 3 1 adamfx geiss collection butterchurn preset category waveform category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "adamfx 2 geiss somewhat distort me 3 1 adamfx geiss collection webgpu showcase collection hall of fame collection butterchurn preset category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "adamfx-2-geiss-zylot-and-flexi-reaction-diffusion-3-overload-mix-2-eatit4-bccnj4": {
     "terms": [
@@ -5024,11 +5024,15 @@
     "terms": [
       "eo s phat eater v2",
       "eo s phat",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category particles",
       "category waveform",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -5037,17 +5041,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "eo s phat eater v2 eo s phat collection butterchurn preset category particles category waveform collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "eo s phat eater v2 eo s phat collection webgpu showcase collection hall of fame collection butterchurn preset category particles category waveform collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "eo-s-phat-shipwreaked-v3": {
     "terms": [
       "eo s phat shipwreaked v3",
       "eo s phat",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -5056,17 +5064,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "eo s phat shipwreaked v3 eo s phat collection butterchurn preset category waveform category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "eo s phat shipwreaked v3 eo s phat collection webgpu showcase collection hall of fame collection butterchurn preset category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "eo-s-phat-cool-bug-v2-krash-s-beat-detection": {
     "terms": [
       "eo s phat cool bug v2 krash s beat detection",
       "eo s phat",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "collection audio reactive",
       "category waveform",
       "category particles",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -5075,17 +5087,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "eo s phat cool bug v2 krash s beat detection eo s phat collection butterchurn preset collection audio reactive category waveform category particles butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "eo s phat cool bug v2 krash s beat detection eo s phat collection webgpu showcase collection hall of fame collection butterchurn preset collection audio reactive category waveform category particles webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "eo-s-phat-cool-bug": {
     "terms": [
       "eo s phat cool bug",
       "eo s phat",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -5094,7 +5110,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "eo s phat cool bug eo s phat collection butterchurn preset category waveform category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "eo s phat cool bug eo s phat collection webgpu showcase collection hall of fame collection butterchurn preset category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "eo-s-phat-emergent-factors-bitcore-tweak": {
     "terms": [
@@ -5123,11 +5139,15 @@
     "terms": [
       "eo s phat fractical dancer v2d",
       "eo s phat",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -5136,17 +5156,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "eo s phat fractical dancer v2d eo s phat collection butterchurn preset category waveform category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "eo s phat fractical dancer v2d eo s phat collection webgpu showcase collection hall of fame collection butterchurn preset category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "eo-s-phat-speak-with-the-orb-rotation-mix-time-mod": {
     "terms": [
       "eo s phat speak with the orb rotation mix time mod",
       "eo s phat",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -5155,17 +5179,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "eo s phat speak with the orb rotation mix time mod eo s phat collection butterchurn preset category waveform category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "eo s phat speak with the orb rotation mix time mod eo s phat collection webgpu showcase collection hall of fame collection butterchurn preset category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "eo-s-phat-trail-of-darkness": {
     "terms": [
       "eo s phat trail of darkness",
       "eo s phat",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -5174,17 +5202,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "eo s phat trail of darkness eo s phat collection butterchurn preset category waveform category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "eo s phat trail of darkness eo s phat collection webgpu showcase collection hall of fame collection butterchurn preset category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "eo-s-phat-technicolor-f-breather-e-god-cock-gaia-pussy": {
     "terms": [
       "eo s phat technicolor f breather e god cock gaia pussy",
       "eo s phat",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category particles",
       "category waveform",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -5193,7 +5225,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "eo s phat technicolor f breather e god cock gaia pussy eo s phat collection butterchurn preset category particles category waveform collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "eo s phat technicolor f breather e god cock gaia pussy eo s phat collection webgpu showcase collection hall of fame collection butterchurn preset category particles category waveform collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "eo-s-and-pieturp-alienspaceshipinvasion-2": {
     "terms": [
@@ -5535,11 +5567,15 @@
     "terms": [
       "flexi phat fractal star child restless",
       "flexi phat",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category fractal",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -5548,7 +5584,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "flexi phat fractal star child restless flexi phat collection butterchurn preset category fractal category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "flexi phat fractal star child restless flexi phat collection webgpu showcase collection hall of fame collection butterchurn preset category fractal category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "flexi-rovastar-fractopia-blame-hexcollie": {
     "terms": [
@@ -15551,11 +15587,15 @@
     "terms": [
       "phat fishbrain eo s mandala chasers remix",
       "phat fishbrain eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category geometric",
       "category sparkle",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15564,7 +15604,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat fishbrain eo s mandala chasers remix phat fishbrain eo s collection butterchurn preset category geometric category sparkle collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat fishbrain eo s mandala chasers remix phat fishbrain eo s collection webgpu showcase collection hall of fame collection butterchurn preset category geometric category sparkle collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-bluelight-condition-yin-and-eo-s-waveforms-more-flash-mix": {
     "terms": [
@@ -15654,11 +15694,15 @@
     "terms": [
       "phat eo s eyes spiral mix",
       "phat eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category sparkle",
       "category waveform",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15667,18 +15711,22 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat eo s eyes spiral mix phat eo s collection butterchurn preset category sparkle category waveform collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat eo s eyes spiral mix phat eo s collection webgpu showcase collection hall of fame collection butterchurn preset category sparkle category waveform collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-eo-s-rainbow-bubble-mid3-f-me-dood-alt": {
     "terms": [
       "phat eo s rainbow bubble mid3 f me dood",
       "phat eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "near duplicate",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15687,18 +15735,22 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat eo s rainbow bubble mid3 f me dood phat eo s collection butterchurn preset near duplicate category waveform category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat eo s rainbow bubble mid3 f me dood phat eo s collection webgpu showcase collection hall of fame collection butterchurn preset near duplicate category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-eo-s-rainbow-bubble-mid3-fuck-me-dood": {
     "terms": [
       "phat eo s rainbow bubble mid3 fuck me dood",
       "phat eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "near duplicate",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15707,7 +15759,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat eo s rainbow bubble mid3 fuck me dood phat eo s collection butterchurn preset near duplicate category waveform category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat eo s rainbow bubble mid3 fuck me dood phat eo s collection webgpu showcase collection hall of fame collection butterchurn preset near duplicate category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-rovastar-what-does-your-soul-look-like9": {
     "terms": [
@@ -15763,11 +15815,15 @@
     "terms": [
       "phat rovastar eo s square faces v2",
       "phat rovastar eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category geometric",
       "category waveform",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "rovastar",
@@ -15778,17 +15834,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat rovastar eo s square faces v2 phat rovastar eo s collection butterchurn preset category geometric category waveform collection audio reactive butterchurn audio reactive rovastar rovastar classics classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat rovastar eo s square faces v2 phat rovastar eo s collection webgpu showcase collection hall of fame collection butterchurn preset category geometric category waveform collection audio reactive webgpu showcase hall of fame butterchurn audio reactive rovastar rovastar classics classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-zylot-eo-s-trippy-rotation-v2-sector-mix-alt-colours": {
     "terms": [
       "phat zylot eo s trippy rotation v2 sector mix alt colours",
       "phat zylot eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category geometric",
       "category waveform",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15797,17 +15857,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat zylot eo s trippy rotation v2 sector mix alt colours phat zylot eo s collection butterchurn preset category geometric category waveform collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat zylot eo s trippy rotation v2 sector mix alt colours phat zylot eo s collection webgpu showcase collection hall of fame collection butterchurn preset category geometric category waveform collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-zylot-eo-s-trippy-rotation-weird-boxs-mix": {
     "terms": [
       "phat zylot eo s trippy rotation weird boxs mix",
       "phat zylot eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category geometric",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15816,18 +15880,22 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat zylot eo s trippy rotation weird boxs mix phat zylot eo s collection butterchurn preset category geometric category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat zylot eo s trippy rotation weird boxs mix phat zylot eo s collection webgpu showcase collection hall of fame collection butterchurn preset category geometric category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-zylot-eo-s-rainbow-bubble-mid3-fuck-me-dood-flash": {
     "terms": [
       "phat zylot eo s rainbow bubble mid3 fuck me dood flash",
       "phat zylot eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "near duplicate",
       "category particles",
       "category waveform",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15836,7 +15904,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat zylot eo s rainbow bubble mid3 fuck me dood flash phat zylot eo s collection butterchurn preset near duplicate category particles category waveform collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat zylot eo s rainbow bubble mid3 fuck me dood flash phat zylot eo s collection webgpu showcase collection hall of fame collection butterchurn preset near duplicate category particles category waveform collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-zylot-eo-s-rainbow-bubble-mid3-starpoints-spirals-ve-bitcore-tweak": {
     "terms": [
@@ -15865,11 +15933,15 @@
     "terms": [
       "phat zylot eo s spiral movements beatle",
       "phat zylot eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "collection audio reactive",
       "category sparkle",
       "category waveform",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15878,18 +15950,22 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat zylot eo s spiral movements beatle phat zylot eo s collection butterchurn preset collection audio reactive category sparkle category waveform butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat zylot eo s spiral movements beatle phat zylot eo s collection webgpu showcase collection hall of fame collection butterchurn preset collection audio reactive category sparkle category waveform webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-zylot-eo-s-spiral-movements-beatle-square-mix": {
     "terms": [
       "phat zylot eo s spiral movements beatle square mix",
       "phat zylot eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "collection audio reactive",
       "near duplicate",
       "category geometric",
       "category sparkle",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15898,17 +15974,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat zylot eo s spiral movements beatle square mix phat zylot eo s collection butterchurn preset collection audio reactive near duplicate category geometric category sparkle butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat zylot eo s spiral movements beatle square mix phat zylot eo s collection webgpu showcase collection hall of fame collection butterchurn preset collection audio reactive near duplicate category geometric category sparkle webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-zylot-eo-s-spiral-faces-v2": {
     "terms": [
       "phat zylot eo s spiral faces v2",
       "phat zylot eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category geometric",
       "category sparkle",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15917,17 +15997,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat zylot eo s spiral faces v2 phat zylot eo s collection butterchurn preset category geometric category sparkle collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat zylot eo s spiral faces v2 phat zylot eo s collection webgpu showcase collection hall of fame collection butterchurn preset category geometric category sparkle collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-zylot-eo-s-square-faces-v2-alt-colours": {
     "terms": [
       "phat zylot eo s square faces v2 alt colours",
       "phat zylot eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category geometric",
       "category waveform",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15936,17 +16020,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat zylot eo s square faces v2 alt colours phat zylot eo s collection butterchurn preset category geometric category waveform collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat zylot eo s square faces v2 alt colours phat zylot eo s collection webgpu showcase collection hall of fame collection butterchurn preset category geometric category waveform collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-zylot-eo-s-strate-lines": {
     "terms": [
       "phat zylot eo s strate lines",
       "phat zylot eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15955,18 +16043,22 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat zylot eo s strate lines phat zylot eo s collection butterchurn preset category waveform category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat zylot eo s strate lines phat zylot eo s collection webgpu showcase collection hall of fame collection butterchurn preset category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-zylot-eo-s-work-with-lines-alt": {
     "terms": [
       "phat zylot eo s work with lines",
       "phat zylot eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "near duplicate",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15975,17 +16067,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat zylot eo s work with lines phat zylot eo s collection butterchurn preset near duplicate category waveform category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat zylot eo s work with lines phat zylot eo s collection webgpu showcase collection hall of fame collection butterchurn preset near duplicate category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-zylot-eo-s-krash-i-hope-someone-will-see-this-triping-v2b": {
     "terms": [
       "phat zylot eo s krash i hope someone will see this triping v2b",
       "phat zylot eo s krash",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -15994,7 +16090,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "phat zylot eo s krash i hope someone will see this triping v2b phat zylot eo s krash collection butterchurn preset category waveform category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "phat zylot eo s krash i hope someone will see this triping v2b phat zylot eo s krash collection webgpu showcase collection hall of fame collection butterchurn preset category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "phat-remix-eo-s-zion-square-mix": {
     "terms": [
@@ -18816,11 +18912,15 @@
     "terms": [
       "rovastar studiomusic morecherish",
       "rovastar studio music",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "collection audio reactive",
       "category waveform",
       "category geometric",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "rovastar",
@@ -18831,17 +18931,21 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "rovastar studiomusic morecherish rovastar studio music collection butterchurn preset collection audio reactive category waveform category geometric butterchurn audio reactive rovastar rovastar classics classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "rovastar studiomusic morecherish rovastar studio music collection webgpu showcase collection hall of fame collection butterchurn preset collection audio reactive category waveform category geometric webgpu showcase hall of fame butterchurn audio reactive rovastar rovastar classics classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "rovastar-altarsofmadness-forgottenrea": {
     "terms": [
       "rovastar altarsofmadness forgottenrea",
       "rovastar",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category waveform",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "rovastar",
@@ -18852,7 +18956,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "rovastar altarsofmadness forgottenrea rovastar collection butterchurn preset category waveform category particles collection audio reactive butterchurn audio reactive rovastar rovastar classics classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "rovastar altarsofmadness forgottenrea rovastar collection webgpu showcase collection hall of fame collection butterchurn preset category waveform category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive rovastar rovastar classics classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "rozzor-aderrasi-canon": {
     "terms": [
@@ -24570,11 +24674,15 @@
     "terms": [
       "geiss experimental lsb bass cubes",
       "geiss",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "collection audio reactive",
       "category geometric",
       "category particles",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -24583,7 +24691,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "geiss experimental lsb bass cubes geiss collection butterchurn preset collection audio reactive category geometric category particles butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "geiss experimental lsb bass cubes geiss collection webgpu showcase collection hall of fame collection butterchurn preset collection audio reactive category geometric category particles webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "geiss-experimental-spiral-artifact-filament-mix-scallop-mix": {
     "terms": [
@@ -24635,10 +24743,14 @@
     "terms": [
       "geiss experimental wavefronts",
       "geiss",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category waveform",
       "category particles",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "classic milkdrop",
       "milkdrop classics",
@@ -24646,7 +24758,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "geiss experimental wavefronts geiss collection butterchurn preset category waveform category particles butterchurn classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "geiss experimental wavefronts geiss collection webgpu showcase collection hall of fame collection butterchurn preset category waveform category particles webgpu showcase hall of fame butterchurn classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "a-crappy-reality-you-did-well": {
     "terms": [
@@ -25023,11 +25135,15 @@
     "terms": [
       "bdrv al phat and eo s shapes are cool slow colour melting edit bdrv et al rmxmix32",
       "bdrv phat eo s",
+      "collection webgpu showcase",
+      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "category geometric",
       "category particles",
       "collection audio reactive",
+      "webgpu showcase",
+      "hall of fame",
       "butterchurn",
       "audio reactive",
       "classic milkdrop",
@@ -25036,7 +25152,7 @@
       "geiss",
       "ryan geiss"
     ],
-    "combinedTerms": "bdrv al phat and eo s shapes are cool slow colour melting edit bdrv et al rmxmix32 bdrv phat eo s collection butterchurn preset category geometric category particles collection audio reactive butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
+    "combinedTerms": "bdrv al phat and eo s shapes are cool slow colour melting edit bdrv et al rmxmix32 bdrv phat eo s collection webgpu showcase collection hall of fame collection butterchurn preset category geometric category particles collection audio reactive webgpu showcase hall of fame butterchurn audio reactive classic milkdrop milkdrop classics winamp milkdrop geiss ryan geiss"
   },
   "bdrv-al-shifter-feathers-angel-wings-phat-remix4-bdrv-et-al-rmx-ii": {
     "terms": [
@@ -31770,19 +31886,15 @@
     "terms": [
       "niko radiative bunchess i m gonna break my rusty cage and run the fuck grunge isn t the source of anarchy",
       "niko radiative bunchess",
-      "collection webgpu showcase",
-      "collection hall of fame",
       "collection butterchurn",
       "preset",
       "collection audio reactive",
       "category waveform",
       "category particles",
-      "webgpu showcase",
-      "hall of fame",
       "butterchurn",
       "audio reactive"
     ],
-    "combinedTerms": "niko radiative bunchess i m gonna break my rusty cage and run the fuck grunge isn t the source of anarchy niko radiative bunchess collection webgpu showcase collection hall of fame collection butterchurn preset collection audio reactive category waveform category particles webgpu showcase hall of fame butterchurn audio reactive"
+    "combinedTerms": "niko radiative bunchess i m gonna break my rusty cage and run the fuck grunge isn t the source of anarchy niko radiative bunchess collection butterchurn preset collection audio reactive category waveform category particles butterchurn audio reactive"
   },
   "nil-did-you-speak-with-the-orb": {
     "terms": [
