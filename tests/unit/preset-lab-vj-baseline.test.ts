@@ -11,6 +11,8 @@ import {
   audioR2,
   audioShare,
   clockDesign,
+  eventF1,
+  eventMatch,
   memoryGroup,
   memoryLookup,
   perFrameChange,
@@ -275,8 +277,55 @@ describe('memory classes from lab:memory-probe', () => {
       { id: 'a', column: 'q1', audioR2: -0.1, memory: 'persistent' },
       { id: 'b', column: 'q1', audioR2: 0.9, memory: 'unprobed' },
     ]);
-    expect(summary.bounded).toEqual({ cells: 2, medianAudioR2: 0.5 });
-    expect(summary.stateful).toEqual({ cells: 1, medianAudioR2: -0.1 });
-    expect(summary.byClass.unprobed).toEqual({ cells: 1, medianAudioR2: 0.9 });
+    expect(summary.bounded).toMatchObject({ cells: 2, medianAudioR2: 0.5 });
+    expect(summary.stateful).toMatchObject({ cells: 1, medianAudioR2: -0.1 });
+    expect(summary.byClass.unprobed).toMatchObject({
+      cells: 1,
+      medianAudioR2: 0.9,
+    });
+  });
+});
+
+describe('event timing', () => {
+  // a toggle that flips at frames 10, 30 and 50
+  const toggle = Float64Array.from(
+    { length: 60 },
+    (_, f) => [10, 30, 50].filter((at) => f >= at).length % 2,
+  );
+
+  test('a prediction that flips on the same frames scores 1, even from the other state', () => {
+    const inverted = toggle.map((value) => 1 - value);
+    expect(eventF1([eventMatch(toggle, inverted)])).toBe(1);
+  });
+
+  test('a flip within the tolerance counts; one far off does not', () => {
+    const late = Float64Array.from(
+      { length: 60 },
+      (_, f) => [12, 30, 58].filter((at) => f >= at).length % 2,
+    );
+    expect(eventMatch(toggle, late)).toEqual({
+      actual: 3,
+      predicted: 3,
+      hitActual: 2,
+      hitPredicted: 2,
+    });
+    expect(eventF1([eventMatch(toggle, late)])).toBeCloseTo(2 / 3, 10);
+  });
+
+  test('a smooth prediction never jumps, so it finds no events', () => {
+    const smooth = Float64Array.from({ length: 60 }, (_, f) => f / 60);
+    expect(eventF1([eventMatch(toggle, smooth)])).toBe(0);
+  });
+
+  test('a column that never jumps has no event score', () => {
+    const ramp = Float64Array.from({ length: 60 }, (_, f) => f);
+    expect(eventF1([eventMatch(ramp, ramp)])).toBeNull();
+  });
+
+  test('counts pool across folds before F1', () => {
+    const quiet = new Float64Array(60);
+    expect(
+      eventF1([eventMatch(toggle, toggle), eventMatch(quiet, quiet)]),
+    ).toBe(1);
   });
 });

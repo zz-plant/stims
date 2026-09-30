@@ -31,6 +31,13 @@
  *                    difference over two audio scenarios)
  *   reactivity       strongest correlation between a visual variable and the
  *                    audio bands, minus the parent's
+ *   audio edits      read from the equations (lab:dataflow), no rendering:
+ *                    each preset's audio edges ("zoom ← bass", "shader ←
+ *                    beat"), and of the edges the human remix added or
+ *                    removed relative to the parent, the share the answer
+ *                    reproduces (recall), plus how many it changed that the
+ *                    remix did not (extra). Exact where the correlation is a
+ *                    noisy two-scenario estimate.
  *
  * The baselines bracket a model: `copy` (the parent unchanged: valid, zero
  * instructions), `reference` (the human remix: the ceiling for
@@ -47,6 +54,7 @@ import {
   PRESET_MUTATION_STYLES,
   type PresetMutationStyle,
 } from '../src/js/milkdrop/preset-mutations.ts';
+import { labelPresetAudio } from './preset-lab-dataflow.ts';
 import {
   assignFamilySplits,
   CANONICAL_VARIABLES,
@@ -241,7 +249,41 @@ type Behaviour = {
   /** Per scenario, row-major [frames, CANONICAL_VARIABLES]. */
   states: Float32Array[];
   reactivity: number;
+  /** Audio dependencies read from the equations, as "target←signal". */
+  audioEdges: ReadonlySet<string>;
 };
+
+/** A preset's audio dependencies: canonical columns, the per-pixel mesh,
+ * enabled custom waves and shapes, and shader uniforms, each with the audio
+ * signals that reach it. */
+export function audioEdges(
+  ir: Parameters<typeof labelPresetAudio>[0],
+): Set<string> {
+  const label = labelPresetAudio(ir);
+  const edges = new Set<string>();
+  for (const [column, signals] of Object.entries(label.audioColumns))
+    for (const signal of signals) edges.add(`${column}←${signal}`);
+  const drawn: Array<[string, string[]]> = [
+    ['per-pixel', label.perPixelSignals],
+    ['waves', label.waveSignals],
+    ['shapes', label.shapeSignals],
+    ['shader', label.shaderSignals],
+  ];
+  for (const [target, signals] of drawn)
+    for (const signal of signals) edges.add(`${target}←${signal}`);
+  return edges;
+}
+
+/** Edges added (+) or removed (−) going from `before` to `after`. */
+export function edgeEdit(
+  before: ReadonlySet<string>,
+  after: ReadonlySet<string>,
+): Set<string> {
+  const edit = new Set<string>();
+  for (const edge of after) if (!before.has(edge)) edit.add(`+${edge}`);
+  for (const edge of before) if (!after.has(edge)) edit.add(`-${edge}`);
+  return edit;
+}
 
 let scenarioCache: { inputs: FrameInputs[]; signals: Float32Array }[] | null =
   null;
@@ -292,6 +334,7 @@ export function measureBehaviour(source: string, id: string): Behaviour {
       detail: compiled.message,
       states: [],
       reactivity: 0,
+      audioEdges: new Set(),
     };
   }
   const errors = compiled.diagnostics.filter(
@@ -303,6 +346,7 @@ export function measureBehaviour(source: string, id: string): Behaviour {
       detail: `compile error: ${errors[0]?.code}`,
       states: [],
       reactivity: 0,
+      audioEdges: new Set(),
     };
   }
   const width = CANONICAL_VARIABLES.length;
@@ -321,6 +365,7 @@ export function measureBehaviour(source: string, id: string): Behaviour {
         detail: `${run.status}: ${run.detail ?? ''}`,
         states: [],
         reactivity: 0,
+        audioEdges: new Set(),
       };
     }
     states.push(run.states);
@@ -340,7 +385,12 @@ export function measureBehaviour(source: string, id: string): Behaviour {
       }
     }
   }
-  return { valid: true, states, reactivity };
+  return {
+    valid: true,
+    states,
+    reactivity,
+    audioEdges: audioEdges(compiled.ir),
+  };
 }
 
 /**
@@ -406,6 +456,11 @@ export type TaskScore = {
   distanceFromParent: number;
   distanceFromRemix: number;
   reactivityDelta: number;
+  /** Share of the remix's audio edge edits the answer makes too; null when
+   * the remix changed no audio dependency. */
+  audioEditRecall: number | null;
+  /** Audio edge edits the answer makes that the remix did not. */
+  audioEditExtra: number;
 };
 
 export function scoreAnswer(
@@ -421,6 +476,11 @@ export function scoreAnswer(
     ? checkInstructions(task.parentSource, answerSource, task.items)
     : task.items.map(() => false);
   const distanceFromParent = behaviourDistance(cache.parent, behaviour);
+  const target = edgeEdit(cache.parent.audioEdges, cache.remix.audioEdges);
+  const made = behaviour.valid
+    ? edgeEdit(cache.parent.audioEdges, behaviour.audioEdges)
+    : new Set<string>();
+  const hit = [...made].filter((edge) => target.has(edge)).length;
   return {
     taskId: task.taskId,
     valid: behaviour.valid,
@@ -433,6 +493,8 @@ export function scoreAnswer(
     reactivityDelta: behaviour.valid
       ? behaviour.reactivity - cache.parent.reactivity
       : 0,
+    audioEditRecall: target.size ? hit / target.size : null,
+    audioEditExtra: made.size - hit,
   };
 }
 
@@ -445,6 +507,12 @@ export type EvalSummary = {
   meanDistanceFromParent: number;
   meanDistanceFromRemix: number;
   meanReactivityDelta: number;
+  /** Tasks whose human remix changed an audio dependency. */
+  audioEditTasks: number;
+  /** Mean audioEditRecall over those tasks (invalid answers score 0). */
+  audioEditRecall: number;
+  /** Mean audioEditExtra over valid answers. */
+  meanAudioEditExtra: number;
 };
 
 export function summarize(scores: readonly TaskScore[]): EvalSummary {
@@ -465,6 +533,13 @@ export function summarize(scores: readonly TaskScore[]): EvalSummary {
     meanDistanceFromParent: mean(valid.map((s) => s.distanceFromParent)),
     meanDistanceFromRemix: mean(valid.map((s) => s.distanceFromRemix)),
     meanReactivityDelta: mean(valid.map((s) => s.reactivityDelta)),
+    audioEditTasks: scores.filter((s) => s.audioEditRecall !== null).length,
+    audioEditRecall: mean(
+      scores
+        .filter((s) => s.audioEditRecall !== null)
+        .map((s) => (s.valid ? (s.audioEditRecall as number) : 0)),
+    ),
+    meanAudioEditExtra: mean(valid.map((s) => s.audioEditExtra)),
   };
 }
 
@@ -625,6 +700,11 @@ function main() {
             distanceFromParent: 0,
             distanceFromRemix: 1,
             reactivityDelta: 0,
+            audioEditRecall:
+              edgeEdit(cache.parent.audioEdges, cache.remix.audioEdges).size > 0
+                ? 0
+                : null,
+            audioEditExtra: 0,
           }
         : scoreAnswer(task, answer, cache),
     );
@@ -636,6 +716,9 @@ function main() {
   );
   console.log(
     `  distance from parent ${summary.meanDistanceFromParent.toFixed(3)}  from human remix ${summary.meanDistanceFromRemix.toFixed(3)}  reactivity Δ ${summary.meanReactivityDelta.toFixed(3)}`,
+  );
+  console.log(
+    `  audio edits (from the equations): recall ${(summary.audioEditRecall * 100).toFixed(1)}% on the ${summary.audioEditTasks} tasks whose remix changed an audio dependency, ${summary.meanAudioEditExtra.toFixed(2)} extra per answer`,
   );
   if (options.outPath) {
     fs.writeFileSync(
