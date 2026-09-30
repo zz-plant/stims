@@ -66,6 +66,15 @@ describe('bun run help --for', () => {
     );
   });
 
+  test('routes a model-training question to the dataset, memory probe and baseline', () => {
+    const out = run('--for', 'train a model on preset behaviour');
+    expect(out).toContain('lab:dataset');
+    expect(out).toContain('lab:vj-baseline');
+    expect(run('--for', 'how long does a preset remember a beat')).toContain(
+      'lab:memory-probe',
+    );
+  });
+
   test('falls back to keyword matches when no route is curated', () => {
     const out = run('--for', 'how do i deploy to cloudflare');
     expect(out).toContain('No curated route');

@@ -22,7 +22,8 @@ reference.
 | What each human remix changed | `bun run lab:remix-pairs -- --sources` | JSONL of (parent, child, changes) |
 | Score a preset-editing model | `bun run lab:edit-eval -- --export tasks.jsonl`, then `--score answers.jsonl --out edit-report.json` | summary on stdout; report JSON with `--out` |
 | Behaviour embeddings, neighbours, 2-D map | `bun run lab:preset-map -- --dataset <dir>` | `embeddings.npy`, `neighbors.json`, `map2d.json` |
-| The bar an audio → controls model must clear | `bun run lab:vj-baseline -- --dataset <dir>` | audio R² beyond the clock, plus per-preset held-out R² |
+| How long each preset control remembers the audio | `bun run lab:memory-probe -- --audio song.wav` | `probe.jsonl`: memory class and linearity per (preset, column) |
+| The bar an audio → controls model must clear | `bun run lab:vj-baseline -- --dataset <dir> [--features leaky] [--memory <probe dir>]` | audio R² beyond the clock, per preset and per memory class |
 | Score a shader-fixing model | `bun run lab:shader-fix-bench -- --export tasks.jsonl`, then `--score answers.jsonl --out shader-report.json` | summary on stdout; report JSON with `--out` |
 | Flash risk of rendered output (needs a browser) | `bun run lab:flash-audit` | per-preset WCAG 2.3.1 counts |
 
@@ -103,11 +104,74 @@ dataset gives it to you frame-aligned:
    | The four built-in probe scenarios (whole corpus, 1714 audio-reactive presets, 787 clockwork) | clock + lagged audio (`lab:vj-baseline`) | −0.04 |
    | 24 varied synthetic songs, 4 held out (158 presets) | clock + lagged audio | 0.19 |
    | same | leaky integrators, spectrum bands and onsets, per-preset ridge | 0.33 |
+   | 11 real-music clips of 30 s, each held out in turn (115 presets, 73 audio-reactive) | clock + lagged audio | −0.02 |
+   | same | clock + lagged audio + leaky integrators (`--features leaky`) | 0.02 |
 
    Each probe isolates one band, so a model fitted on three cannot say
    anything about the fourth. Use the probes for smoke tests, and many
    varied songs (`--audio`) to learn or evaluate audio mappings. A learned
    model has to beat the linear rows on the same songs.
+
+   Real music scored far below the synthetic songs. The two runs differ in
+   more than realism: the real clips trained on 10 songs per fold rather than
+   20, eight of the 11 come from one DJ mix, and `--features leaky` lacks the
+   spectrum bands and onsets of the 0.33 model. Do not quote a synthetic-song
+   score as a real-music one. The next section shows why the pooled number
+   sits near zero.
+
+## Memory: two kinds of audio-driven behaviour
+
+A preset is a program of its audio signals and the clock, so how much audio
+history a model of it needs can be measured rather than guessed from which
+architecture trains best. `lab:memory-probe` re-runs each preset with one
+signal (bass, mid, treb, their `_att` smoothings, level, beat) bumped for three
+frames and records how long each control's response lasts. A zero bump
+reproduces the run bit for bit, so the difference is the bump's alone.
+
+On 120 presets sampled from the corpus and driven by two real-music clips, a
+bump moved 423 (preset, column) cells in 67 presets. 61% of them forget it
+within four seconds (22% the moment the bump ends); 40% remember it for longer
+or until the end of the run. 31 of the 67 presets have at least one such
+column. The long memories are beat-detector counters and toggles
+(`index = mod(index + is_beat, 4)`) and accumulated phase
+(`x = x + 0.01*bass`): a text search of the 2,686 bundled `.milk` files finds
+the adaptive-threshold beat detector in 389 and a per-frame variable that adds
+audio to itself in 524.
+
+Scored with `lab:vj-baseline -- --memory <probe dir>` on the 11-clip dataset
+(median audio R² per preset column; cell counts differ between targets because
+a column's per-frame change can be audio-driven when its value is not):
+
+| Memory | lags, value | leaky, value | leaky, per-frame change |
+| --- | --- | --- | --- |
+| Bounded: instant | 0.38 (61) | 0.39 (61) | 0.09 (82) |
+| Bounded: seconds | 0.34 (26) | 0.45 (26) | 0.74 (115) |
+| Stateful: long (over 4 s) | −0.05 (32) | −0.03 (32) | 0.08 (33) |
+| Stateful: persistent | −0.05 (128) | −0.02 (128) | −0.04 (133) |
+| Stateful: gated (audio-driven, but no bump moved it) | −0.10 (200) | −0.08 (200) | 0.01 (224) |
+
+"Gated" columns are mostly threshold-driven counters: a half-standard-deviation
+bump rarely crosses an adaptive threshold, yet different songs leave the
+counter in different states.
+
+What follows:
+
+- **Score the two groups separately.** Bounded columns are a well-posed
+  regression, and the linear model already explains 0.39 of an instant
+  column's audio-driven motion and 0.74 of a seconds column's per-frame
+  change. A learned model has to beat those rows, on the same cells.
+- **Do not score stateful columns on their value.** One missed or extra beat
+  changes a counter's value for the rest of the song, so a model that toggles
+  on exactly the right beats but starts from the other state scores worse
+  than the clock, and every model lands near 0. These are 360 of the 452
+  cells scored on value, so they decide any pooled headline. Score them on
+  when they change instead (event timing within a few frames); no tool here
+  does that yet.
+- **Ask the probe before sizing a model's memory.** Leaky integrals lift the
+  seconds columns (0.34 → 0.45), and their per-frame change is predictable
+  (0.74). Neither helps the persistent columns (−0.05, −0.02, −0.04): their
+  difficulty is thresholds and counters, not how far back the model can
+  see.
 
 ## What the state vectors cannot see
 
