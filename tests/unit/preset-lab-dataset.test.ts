@@ -7,16 +7,25 @@
  * validation score is measured on near-copies of training data.
  */
 import { describe, expect, test } from 'bun:test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { buildAudioFileInputs } from '../../scripts/audio-file-inputs.ts';
 import {
   assignFamilySplits,
+  audioScenarioName,
   CANONICAL_VARIABLES,
   computeSignals,
   encodeNpy,
   packInputs,
+  resolveAudioPaths,
   runPresetForDataset,
   SIGNAL_COLUMNS,
 } from '../../scripts/preset-lab-dataset.ts';
-import { buildScenarioInputs } from '../../scripts/preset-lab-replay.ts';
+import {
+  buildScenarioInputs,
+  runTrace,
+} from '../../scripts/preset-lab-replay.ts';
 import type { LineageCatalogEntry } from '../../src/js/milkdrop/preset-lineage.ts';
 
 const entry = (id: string, title: string, author?: string) => ({
@@ -217,5 +226,99 @@ describe('scenario inputs and signals', () => {
     const silent = computeSignals(buildScenarioInputs('silence', 120));
     const bass = computeSignals(buildScenarioInputs('bass-pulse', 120));
     expect(mean(bass)).toBeGreaterThan(mean(silent));
+  });
+});
+
+/** A 120 BPM kick drum: a pitch-dropping sine burst every half second. */
+function kicks(seconds: number, sampleRate: number) {
+  const samples = new Float32Array(Math.round(seconds * sampleRate));
+  for (let index = 0; index < samples.length; index += 1) {
+    const phase = (index / sampleRate) % 0.5;
+    samples[index] =
+      0.8 *
+      Math.exp(-phase * 12) *
+      Math.sin(2 * Math.PI * (55 + 80 * Math.exp(-phase * 30)) * phase);
+  }
+  return samples;
+}
+
+describe('audio-file scenarios', () => {
+  const sampleRate = 44100;
+  const audioInputs = () =>
+    buildAudioFileInputs(
+      { sampleRate, channels: [kicks(2, sampleRate)] },
+      { frames: 90 },
+    );
+
+  test('presets step with the recorded live signals, as lab:replay does', async () => {
+    const inputs = await audioInputs();
+    const run = runPresetForDataset(
+      REACTIVE_PRESET,
+      'reactive',
+      inputs,
+      CANONICAL_VARIABLES,
+    );
+    expect(run.status).toBe('ok');
+    // The same frames replayed by lab:replay must give the same zoom: one
+    // signal path for both tools, not a second interpretation of the bytes.
+    const replayed = runTrace(REACTIVE_PRESET, 'reactive', inputs);
+    const zoomColumn = CANONICAL_VARIABLES.indexOf('zoom');
+    const states = run.states as Float32Array;
+    replayed.forEach((frame, index) => {
+      expect(
+        states[index * CANONICAL_VARIABLES.length + zoomColumn],
+      ).toBeCloseTo(frame.variables?.zoom ?? Number.NaN, 5);
+    });
+    const zooms = replayed.map((frame) => frame.variables?.zoom ?? 0);
+    expect(Math.max(...zooms) - Math.min(...zooms)).toBeGreaterThan(0.01);
+  });
+
+  test('signals are the recorded ones, and inputs keep the live shape', async () => {
+    const inputs = await audioInputs();
+    const signals = computeSignals(inputs);
+    const bass = SIGNAL_COLUMNS.indexOf('bass');
+    const beat = SIGNAL_COLUMNS.indexOf('beat');
+    inputs.forEach((input, frame) => {
+      expect(signals[frame * SIGNAL_COLUMNS.length + bass]).toBeCloseTo(
+        Number(input.signals?.bass),
+        5,
+      );
+      expect(signals[frame * SIGNAL_COLUMNS.length + beat]).toBe(
+        Number(input.signals?.beat ?? 0),
+      );
+    });
+    const packed = packInputs(inputs);
+    expect(packed.length).toBe(90 * (512 + 1024));
+    expect([...packed.slice(1536 * 40, 1536 * 40 + 512)]).toEqual(
+      inputs[40]?.frequencyData,
+    );
+  });
+
+  test('packInputs refuses a scenario whose shape changes mid-way', () => {
+    const inputs = buildScenarioInputs('full-mix', 3);
+    const broken = [
+      ...inputs.slice(0, 2),
+      { ...inputs[2], frequencyData: [1, 2, 3] },
+    ] as typeof inputs;
+    expect(() => packInputs(broken)).toThrow('changes the input shape');
+  });
+
+  test('audio paths expand directories and names stay unique', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lab-dataset-'));
+    try {
+      for (const name of ['b.wav', 'a.WAV', 'notes.txt']) {
+        fs.writeFileSync(path.join(dir, name), '');
+      }
+      expect(
+        resolveAudioPaths([dir]).map((file) => path.basename(file)),
+      ).toEqual(['a.WAV', 'b.wav']);
+      const taken = new Set(['full-mix']);
+      expect(audioScenarioName('/x/My Song.wav', taken)).toBe('audio-My_Song');
+      expect(audioScenarioName('/y/My Song.wav', taken)).toBe(
+        'audio-My_Song-2',
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

@@ -11,13 +11,23 @@
  *   bun run lab:dataset -- --only eos-ether [...]         # subset
  *   bun run lab:dataset -- --vars all                     # every numeric VM variable
  *   bun run lab:dataset -- --shard 0/4 & … --shard 3/4    # four processes, one --out
+ *   bun run lab:dataset -- --audio song.wav [--audio more/] [--start 30]
+ *
+ * --audio replaces the synthetic scenarios with real music (add --scenarios
+ * to keep both). Each WAV, or each .wav in a directory, runs through the live
+ * audio stack offline (scripts/audio-file-inputs.ts) from --start for
+ * --frames frames and becomes a scenario named `audio-<file stem>`. Its
+ * inputs carry the live analyser's shape (512 spectrum bins, 1024 waveform
+ * samples) and its signals are the merged signals the visualizer would have
+ * stepped with; the manifest records each scenario's shape.
  *
  * Layout written under --out:
  *   manifest.json            schema, scenarios, variable columns, split counts
  *   index.jsonl              one row per (preset, scenario): id, family, split, status, file
  *                            (index-<k>-of-<n>.jsonl and manifest-<k>-of-<n>.json with --shard)
- *   inputs/<scenario>.npy    uint8   [frames, 256]  spectrum bins 0–127 then waveform 0–127
- *   signals/<scenario>.npy   float32 [frames, S]    the tracker's band levels the VM stepped with
+ *   inputs/<scenario>.npy    uint8   [frames, B+W]  spectrum bins then waveform samples
+ *                                                   (128+128 synthetic, 512+1024 audio files)
+ *   signals/<scenario>.npy   float32 [frames, S]    the band levels the VM stepped with
  *   states/<id>__<scenario>.npy float32 [frames, V] per-frame variables (columns in the manifest,
  *                                                   or in the index row with --vars all)
  *
@@ -29,8 +39,9 @@
  * are listed in the index with that status and no states file. Presets whose
  * every column stays constant are kept and marked `static`.
  *
- * Determinism: the VM seeds its RNG from the preset id and the scenarios are
- * pure functions of frame time, so the same flags always write the same bytes.
+ * Determinism: the VM seeds its RNG from the preset id, the scenarios are
+ * pure functions of frame time and audio files are analysed deterministically,
+ * so the same flags and files always write the same bytes.
  */
 
 import fs from 'node:fs';
@@ -41,17 +52,20 @@ import {
   buildPresetFamilies,
   type LineageCatalogEntry,
 } from '../src/js/milkdrop/preset-lineage.ts';
-import { createMilkdropSignalTracker } from '../src/js/milkdrop/runtime-signals.ts';
 import { fnv1a } from '../src/js/milkdrop/trace-capture.ts';
 import type { MilkdropRuntimeSignals } from '../src/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../src/js/milkdrop/vm.ts';
+import { buildAudioFileInputs, decodeWav } from './audio-file-inputs.ts';
 import {
   PRESET_LAB_SCENARIOS,
-  PRESET_LAB_SPECTRUM_BINS,
   type PresetLabScenario,
 } from './preset-lab-metrics.ts';
 import { loadCatalogEntries } from './preset-lab-reactivity.ts';
-import { buildScenarioInputs, type FrameInputs } from './preset-lab-replay.ts';
+import {
+  buildScenarioInputs,
+  createFrameSignalReader,
+  type FrameInputs,
+} from './preset-lab-replay.ts';
 
 const DEFAULT_FRAMES = 600;
 const DEFAULT_OUT = 'output/dataset';
@@ -259,9 +273,7 @@ export function runPresetForDataset(
     return empty('compile-error', (error as Error).message.slice(0, 200));
   }
   const vm = createMilkdropVM(compiled);
-  const tracker = createMilkdropSignalTracker();
-  const frequencyData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
-  const waveformData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
+  const readSignals = createFrameSignalReader();
 
   let columns: string[] | null = variables === 'all' ? null : [...variables];
   let states: Float32Array | null =
@@ -269,16 +281,7 @@ export function runPresetForDataset(
   let moved = false;
 
   for (let frame = 0; frame < inputs.length; frame += 1) {
-    const input = inputs[frame] as FrameInputs;
-    frequencyData.set(input.frequencyData);
-    waveformData.set(input.waveformData);
-    const signals = tracker.update({
-      time: input.time,
-      deltaMs: input.deltaMs,
-      analyser: null,
-      frequencyData,
-      waveformData,
-    });
+    const signals = readSignals(inputs[frame] as FrameInputs);
     let frameVariables: Record<string, unknown>;
     try {
       frameVariables = vm.step(signals).variables;
@@ -320,33 +323,50 @@ export function runPresetForDataset(
   };
 }
 
-/** Packs a scenario's inputs as uint8 [frames, 256]: spectrum then waveform. */
+/** Spectrum bin and waveform sample counts of a scenario's inputs. */
+export function inputShape(inputs: readonly FrameInputs[]): {
+  spectrumBins: number;
+  waveformSamples: number;
+} {
+  return {
+    spectrumBins: inputs[0]?.frequencyData.length ?? 0,
+    waveformSamples: inputs[0]?.waveformData.length ?? 0,
+  };
+}
+
+/**
+ * Packs a scenario's inputs as uint8 [frames, bins + samples]: spectrum then
+ * waveform, at whatever size the scenario produced (see inputShape).
+ */
 export function packInputs(inputs: readonly FrameInputs[]): Uint8Array {
-  const width = PRESET_LAB_SPECTRUM_BINS * 2;
+  const { spectrumBins, waveformSamples } = inputShape(inputs);
+  const width = spectrumBins + waveformSamples;
   const packed = new Uint8Array(inputs.length * width);
   inputs.forEach((input, frame) => {
+    if (
+      input.frequencyData.length !== spectrumBins ||
+      input.waveformData.length !== waveformSamples
+    ) {
+      throw new Error(`packInputs: frame ${frame} changes the input shape`);
+    }
     packed.set(input.frequencyData, frame * width);
-    packed.set(input.waveformData, frame * width + PRESET_LAB_SPECTRUM_BINS);
+    packed.set(input.waveformData, frame * width + spectrumBins);
   });
   return packed;
 }
 
-/** Replays the signal tracker over `inputs` and returns [frames, SIGNAL_COLUMNS]. */
+/**
+ * The signals the VM steps with for `inputs` (recorded ones for audio-file
+ * frames, the signal tracker's for synthetic ones), as [frames, SIGNAL_COLUMNS].
+ */
 export function computeSignals(inputs: readonly FrameInputs[]): Float32Array {
-  const tracker = createMilkdropSignalTracker();
-  const frequencyData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
-  const waveformData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
+  const readSignals = createFrameSignalReader();
   const out = new Float32Array(inputs.length * SIGNAL_COLUMNS.length);
   inputs.forEach((input, frame) => {
-    frequencyData.set(input.frequencyData);
-    waveformData.set(input.waveformData);
-    const signals = tracker.update({
-      time: input.time,
-      deltaMs: input.deltaMs,
-      analyser: null,
-      frequencyData,
-      waveformData,
-    }) as unknown as Record<keyof MilkdropRuntimeSignals, unknown>;
+    const signals = readSignals(input) as unknown as Record<
+      keyof MilkdropRuntimeSignals,
+      unknown
+    >;
     SIGNAL_COLUMNS.forEach((name, column) => {
       const value = signals[name as keyof MilkdropRuntimeSignals];
       out[frame * SIGNAL_COLUMNS.length + column] =
@@ -366,6 +386,8 @@ type CliOptions = {
   fractions: SplitFractions;
   seed: string;
   shard: { index: number; count: number } | null;
+  audio: string[];
+  startSeconds: number;
 };
 
 function parseArgs(argv: string[]): CliOptions {
@@ -379,7 +401,10 @@ function parseArgs(argv: string[]): CliOptions {
     fractions: { val: 0.1, test: 0.1 },
     seed: 'stims',
     shard: null,
+    audio: [],
+    startSeconds: 0,
   };
+  let scenariosGiven = false;
   const valueAfter = (index: number, flag: string) => {
     const value = argv[index + 1];
     if (value === undefined || value.startsWith('--')) {
@@ -397,6 +422,7 @@ function parseArgs(argv: string[]): CliOptions {
         options.frames = Number(valueAfter(index++, arg));
         break;
       case '--scenarios':
+        scenariosGiven = true;
         options.scenarios = valueAfter(index++, arg).split(
           ',',
         ) as PresetLabScenario[];
@@ -431,6 +457,12 @@ function parseArgs(argv: string[]): CliOptions {
         options.shard = { index: shardIndex, count };
         break;
       }
+      case '--audio':
+        options.audio.push(valueAfter(index++, arg));
+        break;
+      case '--start':
+        options.startSeconds = Number(valueAfter(index++, arg));
+        break;
       case '--only':
         while (argv[index + 1] && !argv[index + 1]?.startsWith('--')) {
           options.only.push(argv[++index] as string);
@@ -439,6 +471,12 @@ function parseArgs(argv: string[]): CliOptions {
       default:
         throw new Error(`Unknown flag ${arg}`);
     }
+  }
+  if (options.audio.length && !scenariosGiven) {
+    options.scenarios = [];
+  }
+  if (!(options.startSeconds >= 0)) {
+    throw new Error('--start must be a number of seconds >= 0');
   }
   if (!Number.isInteger(options.frames) || options.frames < 2) {
     throw new Error('--frames must be an integer >= 2');
@@ -458,11 +496,96 @@ function parseArgs(argv: string[]): CliOptions {
   return options;
 }
 
+type DatasetScenario = {
+  name: string;
+  source: 'synthetic' | 'audio-file';
+  file?: string;
+  inputs: FrameInputs[];
+};
+
+/** Expands --audio arguments (files or directories) into .wav paths. */
+export function resolveAudioPaths(args: readonly string[]): string[] {
+  const paths: string[] = [];
+  for (const arg of args) {
+    const resolved = path.resolve(arg);
+    if (fs.statSync(resolved).isDirectory()) {
+      const wavs = fs
+        .readdirSync(resolved)
+        .filter((name) => /\.wav$/i.test(name))
+        .sort()
+        .map((name) => path.join(resolved, name));
+      if (wavs.length === 0) {
+        throw new Error(`No .wav files in ${arg}`);
+      }
+      paths.push(...wavs);
+    } else {
+      paths.push(resolved);
+    }
+  }
+  return paths;
+}
+
+/**
+ * Scenario name for an audio file: `audio-<stem>`, made file-safe, with a
+ * numeric suffix when two files share a stem.
+ */
+export function audioScenarioName(file: string, taken: Set<string>): string {
+  const stem = path
+    .basename(file)
+    .replace(/\.wav$/i, '')
+    .replace(/[^a-zA-Z0-9._-]/g, '_');
+  let name = `audio-${stem}`;
+  for (let copy = 2; taken.has(name); copy += 1) {
+    name = `audio-${stem}-${copy}`;
+  }
+  taken.add(name);
+  return name;
+}
+
+async function buildScenarios(options: CliOptions): Promise<DatasetScenario[]> {
+  const scenarios: DatasetScenario[] = options.scenarios.map((name) => ({
+    name,
+    source: 'synthetic',
+    inputs: buildScenarioInputs(name, options.frames),
+  }));
+  const taken = new Set(scenarios.map((scenario) => scenario.name));
+  for (const file of resolveAudioPaths(options.audio)) {
+    const audio = decodeWav(new Uint8Array(fs.readFileSync(file)));
+    // A track shorter than --frames yields fewer frames, not trailing silence.
+    const available = Math.floor(
+      (Math.max(
+        0,
+        (audio.channels[0]?.length ?? 0) -
+          options.startSeconds * audio.sampleRate,
+      ) /
+        audio.sampleRate) *
+        FPS,
+    );
+    const inputs = await buildAudioFileInputs(audio, {
+      fps: FPS,
+      frames: Math.min(options.frames, available),
+      startSeconds: options.startSeconds,
+    });
+    if (inputs.length < 2) {
+      throw new Error(
+        `${file} has no audio after --start ${options.startSeconds}s`,
+      );
+    }
+    scenarios.push({
+      name: audioScenarioName(file, taken),
+      source: 'audio-file',
+      file: path.basename(file),
+      inputs,
+    });
+  }
+  return scenarios;
+}
+
 function safeFileStem(id: string): string {
   return id.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
-function main() {
+async function main() {
   const options = parseArgs(process.argv.slice(2));
   const repoRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
   const catalog = [...loadCatalogEntries(repoRoot).values()].map((entry) => ({
@@ -498,21 +621,21 @@ function main() {
 
   const variables =
     options.variables === 'all' ? ('all' as const) : CANONICAL_VARIABLES;
-  const inputsByScenario = new Map<PresetLabScenario, FrameInputs[]>();
-  for (const scenario of options.scenarios) {
-    const inputs = buildScenarioInputs(scenario, options.frames);
-    inputsByScenario.set(scenario, inputs);
+  const scenarios = await buildScenarios(options);
+  for (const scenario of scenarios) {
+    const { spectrumBins, waveformSamples } = inputShape(scenario.inputs);
+    const frames = scenario.inputs.length;
     fs.writeFileSync(
-      path.join(outRoot, 'inputs', `${scenario}.npy`),
-      encodeNpy(packInputs(inputs), [
-        options.frames,
-        PRESET_LAB_SPECTRUM_BINS * 2,
+      path.join(outRoot, 'inputs', `${scenario.name}.npy`),
+      encodeNpy(packInputs(scenario.inputs), [
+        frames,
+        spectrumBins + waveformSamples,
       ]),
     );
     fs.writeFileSync(
-      path.join(outRoot, 'signals', `${scenario}.npy`),
-      encodeNpy(computeSignals(inputs), [
-        options.frames,
+      path.join(outRoot, 'signals', `${scenario.name}.npy`),
+      encodeNpy(computeSignals(scenario.inputs), [
+        frames,
         SIGNAL_COLUMNS.length,
       ]),
     );
@@ -536,20 +659,15 @@ function main() {
       split: DatasetSplit;
     };
     splitCounts[assignment.split] += 1;
-    for (const scenario of options.scenarios) {
-      const run = runPresetForDataset(
-        raw,
-        row.id,
-        inputsByScenario.get(scenario) as FrameInputs[],
-        variables,
-      );
+    for (const scenario of scenarios) {
+      const run = runPresetForDataset(raw, row.id, scenario.inputs, variables);
       statusCounts[run.status] = (statusCounts[run.status] ?? 0) + 1;
       let file: string | null = null;
       if (run.states) {
-        file = `states/${safeFileStem(row.id)}__${scenario}.npy`;
+        file = `states/${safeFileStem(row.id)}__${scenario.name}.npy`;
         fs.writeFileSync(
           path.join(outRoot, file),
-          encodeNpy(run.states, [options.frames, run.columns.length]),
+          encodeNpy(run.states, [scenario.inputs.length, run.columns.length]),
         );
       }
       indexLines.push(
@@ -559,7 +677,7 @@ function main() {
           author: row.author ?? null,
           family: assignment.family,
           split: assignment.split,
-          scenario,
+          scenario: scenario.name,
           status: run.status,
           file,
           ...(options.variables === 'all' && run.states
@@ -584,7 +702,13 @@ function main() {
     createdAt: new Date().toISOString(),
     fps: FPS,
     frames: options.frames,
-    scenarios: options.scenarios,
+    scenarios: scenarios.map((scenario) => ({
+      name: scenario.name,
+      source: scenario.source,
+      ...(scenario.file ? { file: scenario.file } : {}),
+      frames: scenario.inputs.length,
+      ...inputShape(scenario.inputs),
+    })),
     presets: selected.length,
     shard,
     splitSeed: options.seed,
@@ -593,8 +717,8 @@ function main() {
     statusCounts,
     inputs: {
       dtype: 'uint8',
-      shape: [options.frames, PRESET_LAB_SPECTRUM_BINS * 2],
-      columns: `spectrum[0..${PRESET_LAB_SPECTRUM_BINS - 1}], waveform[0..${PRESET_LAB_SPECTRUM_BINS - 1}]`,
+      columns:
+        'spectrum bins then waveform samples; per-scenario sizes under scenarios',
     },
     signals: { dtype: 'float32', columns: SIGNAL_COLUMNS },
     states: {
@@ -618,7 +742,7 @@ function main() {
 
 if (import.meta.main) {
   try {
-    main();
+    await main();
   } catch (error) {
     console.error((error as Error).message);
     process.exit(1);
