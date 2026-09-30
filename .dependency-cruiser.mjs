@@ -1,6 +1,7 @@
 /** @type {import('dependency-cruiser').IConfiguration} */
 const config = {
   options: {
+    parser: 'swc',
     tsConfig: {
       fileName: 'tsconfig.json',
     },
@@ -21,6 +22,9 @@ const config = {
       to: {
         circular: true,
         path: '^(src|scripts|tests)/',
+        // A cycle through an `import type` edge is erased at compile time.
+        // The tsc parser dropped those edges; swc keeps them, tagged.
+        viaOnly: { dependencyTypesNot: ['type-only'] },
       },
     },
     {
