@@ -42,6 +42,7 @@ opencode.json
 .wrangler/
 
 scratch/
+__pycache__/
 output/
 thumbnails/
 
