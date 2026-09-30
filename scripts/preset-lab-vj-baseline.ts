@@ -57,6 +57,13 @@
  *                      moved, which are mostly threshold-gated counters). A
  *                      pooled score hides that the two behave differently.
  *
+ * Every audio-driven column is also scored on timing: event F1 (`eventMatch`),
+ * where an event is a frame the column jumps by more than a quarter of its
+ * range and a predicted event counts when it lands within 3 frames of an
+ * actual one. A beat counter that toggles on the right beats but starts
+ * from the other state scores below the clock on its value and near 1 here,
+ * so stateful columns are read on event F1, next to the clock oracle's.
+ *
  *   bun run lab:memory-probe -- --audio music/ --out output/memory-probe
  *   bun run lab:vj-baseline -- --dataset output/dataset --features leaky --memory output/memory-probe
  */
@@ -357,6 +364,73 @@ function readJsonl<T>(file: string): T[] {
     .map((line) => JSON.parse(line) as T);
 }
 
+/** A jump larger than this share of a column's range is a change event. */
+export const EVENT_JUMP = 0.25;
+/** A predicted event this many frames from an actual one counts as a hit. */
+export const EVENT_TOLERANCE = 3;
+
+export type EventCounts = {
+  actual: number;
+  predicted: number;
+  hitActual: number;
+  hitPredicted: number;
+};
+
+/** Frames where a series jumps by more than `threshold`. */
+export function changeEvents(
+  series: Float64Array,
+  threshold: number,
+): number[] {
+  const events: number[] = [];
+  for (let f = 1; f < series.length; f += 1)
+    if (Math.abs((series[f] as number) - (series[f - 1] as number)) > threshold)
+      events.push(f);
+  return events;
+}
+
+/**
+ * Change events of `actual` and `predicted` (jumps over EVENT_JUMP of the
+ * actual series' range), and how many of each find a partner within
+ * `tolerance` frames in the other. Counts pool across folds; see eventF1.
+ */
+export function eventMatch(
+  actual: Float64Array,
+  predicted: Float64Array,
+  tolerance = EVENT_TOLERANCE,
+): EventCounts {
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  for (const value of actual) {
+    if (value < min) min = value;
+    if (value > max) max = value;
+  }
+  const threshold = EVENT_JUMP * (max - min);
+  const a = threshold > 0 ? changeEvents(actual, threshold) : [];
+  const p = threshold > 0 ? changeEvents(predicted, threshold) : [];
+  const near = (events: number[], frame: number) =>
+    events.some((other) => Math.abs(other - frame) <= tolerance);
+  return {
+    actual: a.length,
+    predicted: p.length,
+    hitActual: a.filter((frame) => near(p, frame)).length,
+    hitPredicted: p.filter((frame) => near(a, frame)).length,
+  };
+}
+
+/** F1 of pooled event counts; null when the column never jumped. */
+export function eventF1(counts: readonly EventCounts[]): number | null {
+  const sum = (key: keyof EventCounts) =>
+    counts.reduce((total, c) => total + c[key], 0);
+  const actual = sum('actual');
+  if (actual === 0) return null;
+  const predicted = sum('predicted');
+  const recall = sum('hitActual') / actual;
+  const precision = predicted ? sum('hitPredicted') / predicted : 0;
+  return precision + recall > 0
+    ? (2 * precision * recall) / (precision + recall)
+    : 0;
+}
+
 /**
  * A (preset, column)'s memory per lab:memory-probe: its measured class,
  * `gated` when the preset was probed but no bump moved that column (an
@@ -393,17 +467,36 @@ type Cell = {
   id: string;
   column: string;
   audioR2: number;
+  /** Event F1 of the model and of the clock oracle; null: no jumps. */
+  eventF1?: number | null;
+  oracleEventF1?: number | null;
   memory?: CellMemory;
 };
 
-/** Median audio R² and cell count per memory group and class. */
-export function summariseMemory(cells: readonly Cell[]) {
-  const describe = (group: readonly Cell[]) => ({
+/** Cell count, median audio R², and median event F1 (the model's and the
+ * clock oracle's) over the cells that jumped. */
+export function describeCells(group: readonly Cell[]) {
+  const timed = group.filter(
+    (cell) => cell.eventF1 !== null && cell.eventF1 !== undefined,
+  );
+  return {
     cells: group.length,
     medianAudioR2: group.length
       ? median(group.map((cell) => cell.audioR2))
       : null,
-  });
+    eventCells: timed.length,
+    medianEventF1: timed.length
+      ? median(timed.map((cell) => cell.eventF1 as number))
+      : null,
+    medianOracleEventF1: timed.length
+      ? median(timed.map((cell) => (cell.oracleEventF1 ?? 0) as number))
+      : null,
+  };
+}
+
+/** describeCells per memory group and class. */
+export function summariseMemory(cells: readonly Cell[]) {
+  const describe = describeCells;
   const classes = [...new Set(cells.map((cell) => cell.memory as string))];
   return {
     bounded: describe(
@@ -623,6 +716,12 @@ function main() {
         id,
         column: name,
         audioR2: score,
+        eventF1: eventF1(
+          pairs.map((pair) => eventMatch(pair.actual, pair.predicted)),
+        ),
+        oracleEventF1: eventF1(
+          pairs.map((pair) => eventMatch(pair.actual, pair.oracle)),
+        ),
         ...(memoryOf ? { memory: memoryOf(id, name) } : {}),
       });
     }
@@ -660,6 +759,7 @@ function main() {
     shareClockAudioOverHalf:
       perPreset.filter((p) => p.clockAudioR2 > 0.5).length /
       Math.max(1, perPreset.length),
+    events: describeCells(cells),
     memory: memoryOf ? summariseMemory(cells) : null,
   };
   fs.mkdirSync(outDir, { recursive: true });
@@ -681,6 +781,16 @@ function main() {
   console.log(
     `  audio adds >0.1 R² for ${(summary.shareAudioGainOverTenth * 100).toFixed(1)}% of presets; clock + audio explains >50% for ${(summary.shareClockAudioOverHalf * 100).toFixed(1)}%`,
   );
+  const f1 = (value: number | null) =>
+    value === null ? '—' : value.toFixed(3);
+  console.log(
+    `  event timing (F1 of jumps within ${EVENT_TOLERANCE} frames, ${summary.events.eventCells} jumping cells): model ${f1(summary.events.medianEventF1)}, clock oracle ${f1(summary.events.medianOracleEventF1)}`,
+  );
+  if (summary.memory) {
+    console.log(
+      `  event F1 by memory: bounded ${f1(summary.memory.bounded.medianEventF1)} (oracle ${f1(summary.memory.bounded.medianOracleEventF1)}, ${summary.memory.bounded.eventCells} cells), stateful ${f1(summary.memory.stateful.medianEventF1)} (oracle ${f1(summary.memory.stateful.medianOracleEventF1)}, ${summary.memory.stateful.eventCells} cells)`,
+    );
+  }
   if (summary.memory) {
     const score = (group: { cells: number; medianAudioR2: number | null }) =>
       `${group.medianAudioR2 === null ? '—' : group.medianAudioR2.toFixed(3)} (${group.cells} cells)`;
