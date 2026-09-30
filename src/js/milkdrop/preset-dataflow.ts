@@ -117,6 +117,11 @@ export type PresetDataflow = {
   /** Some `rand()` call runs only under an audio-dependent condition, so the
    * random stream itself depends on the audio. */
   randomStreamFollowsAudio: boolean;
+  /** The audio signals reaching what each drawn program draws (its warp,
+   * position and colour outputs, not its temporaries): the per-pixel mesh,
+   * and every enabled custom wave and shape (by index; disabled ones are
+   * empty). A wave's per-point `value1`/`value2` count. */
+  drawnAudio: { perPixel: string[]; waves: string[][]; shapes: string[][] };
 };
 
 const union = (...sets: ReadonlyArray<Atoms>): Atoms => {
@@ -294,6 +299,66 @@ function resolvePrevious(
   return resolved;
 }
 
+/** What each drawn program draws (the fields of CUSTOM_WAVE_PROPERTY_KEYS and
+ * CUSTOM_SHAPE_PROPERTY_KEYS in vm/shared.ts, and the per-pixel warp
+ * controls). Its q and megabuf writes reach the picture through the shared
+ * bank, which the variables already cover. */
+const PER_PIXEL_OUTPUTS = new Set([
+  'zoom',
+  'zoomexp',
+  'rot',
+  'warp',
+  'cx',
+  'cy',
+  'dx',
+  'dy',
+  'sx',
+  'sy',
+]);
+const WAVE_OUTPUTS = new Set([
+  'x',
+  'y',
+  'r',
+  'g',
+  'b',
+  'a',
+  'enabled',
+  'samples',
+  'spectrum',
+  'additive',
+  'usedots',
+  'scaling',
+  'smoothing',
+  'mystery',
+  'thick',
+]);
+const SHAPE_OUTPUTS = new Set([
+  'x',
+  'y',
+  'rad',
+  'ang',
+  'r',
+  'g',
+  'b',
+  'a',
+  'r2',
+  'g2',
+  'b2',
+  'a2',
+  'border_r',
+  'border_g',
+  'border_b',
+  'border_a',
+  'enabled',
+  'sides',
+  'num_inst',
+  'textured',
+  'tex_zoom',
+  'tex_ang',
+  'additive',
+  'thickoutline',
+]);
+
 /** Shared between programs across frames: megabuf memory and the q bank. */
 const isShared = (name: string) => name === MEMORY || /^q\d+$/.test(name);
 const signature = (map: ReadonlyMap<string, Atoms>) =>
@@ -322,6 +387,21 @@ export function analyzePresetDataflow(
   let external = new Map<string, Atoms>();
   let frame = new FramePass(builtinSet);
   let resolved = new Map<string, Atoms>();
+  // A drawn program runs after per-frame code, with its results in scope.
+  const runBlock = (...blocks: MilkdropProgramBlock[]) => {
+    const pass = new FramePass(builtinSet);
+    for (const [name, atoms] of resolved) {
+      if (!name.startsWith('ext:')) pass.env.set(name, atoms);
+    }
+    if (blocks[0] === ir.programs.perPixel) {
+      // A vertex's rad and ang are fixed by the grid and the aspect, as in
+      // MilkDrop, whatever per-frame code left in variables of those names.
+      pass.env.set('rad', new Set());
+      pass.env.set('ang', new Set());
+    }
+    for (const block of blocks) pass.run(block.statements, new Set());
+    return pass;
+  };
   let guards: Atoms = new Set();
   for (let round = 0; round < 8; round += 1) {
     frame = new FramePass(builtinSet);
@@ -330,17 +410,7 @@ export function analyzePresetDataflow(
     guards = new Set(frame.randomGuards);
     const next = new Map<string, Atoms>();
     for (const block of others) {
-      const pass = new FramePass(builtinSet);
-      for (const [name, atoms] of resolved) {
-        if (!name.startsWith('ext:')) pass.env.set(name, atoms);
-      }
-      if (block === ir.programs.perPixel) {
-        // A vertex's rad and ang are fixed by the grid and the aspect, as in
-        // MilkDrop, whatever per-frame code left in variables of those names.
-        pass.env.set('rad', new Set());
-        pass.env.set('ang', new Set());
-      }
-      pass.run(block.statements, new Set());
+      const pass = runBlock(block);
       for (const atom of pass.randomGuards) guards.add(atom);
       for (const name of pass.written) {
         if (!isShared(name)) continue;
@@ -361,6 +431,54 @@ export function analyzePresetDataflow(
     ),
   );
   const randomStreamFollowsAudio = hasAudio(resolvedGuards);
+  const audioSignals = (atoms: Atoms) => {
+    const signals = new Set<string>();
+    for (const atom of atoms) {
+      if (atom.startsWith('audio:')) signals.add(atom.slice(6));
+      else if (atom.startsWith('prev:'))
+        for (const source of previousSources(resolved, atom.slice(5)))
+          for (const inner of source)
+            if (inner.startsWith('audio:')) signals.add(inner.slice(6));
+    }
+    if (atoms.has(RANDOM) && randomStreamFollowsAudio)
+      for (const atom of resolvedGuards)
+        if (atom.startsWith('audio:')) signals.add(atom.slice(6));
+    return [...signals].sort();
+  };
+  // Audio that reaches what a drawn program draws: its outputs only, so a
+  // temporary nothing draws carries nothing. The blocks run in order in one
+  // pass, so a wave's per-frame values reach its per-point code.
+  const blockAudio = (
+    outputs: ReadonlySet<string>,
+    ...blocks: MilkdropProgramBlock[]
+  ) => {
+    const pass = runBlock(...blocks);
+    const atoms = new Set<string>();
+    for (const name of pass.written) {
+      if (!outputs.has(name)) continue;
+      for (const atom of pass.env.get(name) ?? []) atoms.add(atom);
+    }
+    return audioSignals(atoms);
+  };
+  const enabled = (fields: Record<string, unknown>) =>
+    Number(fields.enabled ?? 0) > 0;
+  const drawnAudio = {
+    perPixel: blockAudio(PER_PIXEL_OUTPUTS, ir.programs.perPixel),
+    waves: ir.customWaves.map((wave) =>
+      enabled(wave.fields)
+        ? blockAudio(
+            WAVE_OUTPUTS,
+            wave.programs.perFrame,
+            wave.programs.perPoint,
+          )
+        : [],
+    ),
+    shapes: ir.customShapes.map((shape) =>
+      enabled(shape.fields)
+        ? blockAudio(SHAPE_OUTPUTS, shape.programs.perFrame)
+        : [],
+    ),
+  };
 
   const variables = new Map<string, VariableDataflow>();
   // A shared register's value at the end of the frame is what per-frame code
@@ -416,5 +534,5 @@ export function analyzePresetDataflow(
             : 'constant',
     });
   }
-  return { variables, randomStreamFollowsAudio };
+  return { variables, randomStreamFollowsAudio, drawnAudio };
 }
