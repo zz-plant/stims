@@ -14,9 +14,10 @@
  * audio reaches its image, with no rendering: through the equations (which
  * canonical columns, from which signals), through audio uniforms its shaders
  * read, or only through a drawn waveform. It then compares those labels with
- * the catalog's two existing proxies: the source-text audio scan behind the
- * quality score's staticAudio component, and the title/author heuristic
- * behind the collection:audio-reactive tag.
+ * a source-text search for audio names (what the quality score's staticAudio
+ * used before it read these labels) and with the catalog's
+ * collection:audio-reactive tag (curate-catalog-collections.ts, which sets it
+ * from these labels; a disagreement means the catalog needs re-curating).
  *
  * With --dataset it compares the analysis with behaviour: for every preset
  * and canonical column in a lab:dataset export, the share of variance that
@@ -74,7 +75,8 @@ const SHADER_AUDIO = new RegExp(
     .join('|')})\\b`,
   'giu',
 );
-/** The source-text scan score-catalog-quality.ts uses for staticAudio. */
+/** A text search for audio names: the quality score's staticAudio before
+ * these labels replaced it, kept to show what that search gets wrong. */
 const SOURCE_AUDIO = /\b(bass|mid|treb|vol)(_att)?\b|\bbeat(_pulse)?\b/u;
 /** Below this alpha the main waveform is not visibly drawn. */
 const VISIBLE_WAVE_ALPHA = 0.01;
@@ -219,7 +221,7 @@ function labelAll(outPath: string | undefined) {
   const labels: Record<string, PresetAudioLabel> = {};
   const failed: string[] = [];
   const tiers = new Map<AudioTier, number>();
-  // [tier][proxy says audio?] for the two proxies the catalog uses today
+  // [tier][says audio?] for the text search and the catalog's tag
   const sourceScan = new Map<string, number>();
   const titleTag = new Map<string, number>();
   const sourceOnly: string[] = [];
@@ -285,14 +287,14 @@ function labelAll(outPath: string | undefined) {
       );
   };
   crossTab(
-    'Source-text scan (score-catalog-quality staticAudio) against the labels',
+    'Text search for audio names (the old staticAudio) against the labels',
     sourceScan,
   );
   console.log(
     `  ${sourceOnly.length} preset(s) mention an audio signal that reaches nothing drawn, e.g. ${sourceOnly.slice(0, 5).join(', ')}`,
   );
   crossTab(
-    'collection:audio-reactive tag (title/author heuristic, bundled catalog) against the labels',
+    'collection:audio-reactive tag (bundled catalog) against the labels',
     titleTag,
   );
   if (outPath) {
