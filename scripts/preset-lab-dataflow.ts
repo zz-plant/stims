@@ -1,14 +1,16 @@
 /**
- * Preset lab — static dataflow: which inputs each per-frame variable can depend on, read from the equations, and checked against a dataset export.
+ * Preset lab — static dataflow: which audio can reach each control and drawn program, read from the equations; labels the corpus and checks a dataset export against it.
  *
  *   bun run lab:dataflow -- --preset eos-ether
  *   bun run lab:dataflow -- --dataset output/dataset [--out report.json]
  *   bun run lab:dataflow -- --all [--out labels.json]
  *
- * With --preset it prints, for every canonical column that preset's
- * per-frame program writes, its kind (constant, clockwork, audio, pointer),
- * the audio signals it reads, and whether it has memory (history) or feeds
- * back on itself (accumulates). See src/js/milkdrop/preset-dataflow.ts.
+ * With --preset it prints the preset's tier (driven, waveform-only, none; see
+ * labelPresetAudio), the audio signals reaching each drawn program, and, for
+ * every canonical column that preset's per-frame program writes, its kind
+ * (constant, clockwork, audio, pointer), the audio signals it reads, and
+ * whether it has memory (history) or feeds back on itself (accumulates).
+ * See src/js/milkdrop/preset-dataflow.ts.
  *
  * With --all it labels every catalog preset (bundled and libraries) by how
  * audio reaches its image, with no rendering: through the equations (which
@@ -180,13 +182,30 @@ export function observeColumn(runs: readonly Float64Array[]): Observed {
 
 function printPreset(id: string) {
   const catalog = loadCatalogEntries(repoRoot);
-  const { variables, randomStreamFollowsAudio } = analyzeCatalogPreset(
-    catalog,
-    id,
+  const entry = catalog.get(id);
+  if (!entry) throw new Error(`Unknown preset id: ${id}`);
+  const { ir } = compileMilkdropPresetSource(
+    fs.readFileSync(
+      path.join(repoRoot, 'public', entry.file.replace(/^\//, '')),
+      'latin1',
+    ),
+    { id },
   );
+  const { variables, randomStreamFollowsAudio } = analyzePresetDataflow(ir);
+  const label = labelPresetAudio(ir);
   console.log(
-    `${id}${randomStreamFollowsAudio ? '  (rand() stream follows the audio)' : ''}`,
+    `${id}: ${label.tier}${randomStreamFollowsAudio ? '  (rand() stream follows the audio)' : ''}`,
   );
+  const drawn: Array<[string, string[]]> = [
+    ['per-pixel mesh', label.perPixelSignals],
+    ['custom waves', label.waveSignals],
+    ['custom shapes', label.shapeSignals],
+    ['shaders', label.shaderSignals],
+  ];
+  for (const [what, signals] of drawn)
+    if (signals.length)
+      console.log(`  ${what.padEnd(18)} ${signals.join(' ')}`);
+  if (label.waveform) console.log('  waveform           drawn');
   for (const column of CANONICAL_VARIABLES) {
     const v = variables.get(column);
     if (!v || v.kind === 'constant') continue;
