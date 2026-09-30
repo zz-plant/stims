@@ -21,6 +21,7 @@
 import {
   captureFrame,
   type FrameInputs,
+  snapshotFrameInputs,
   type TraceFile,
 } from '../trace-capture';
 import type { MilkdropFrameState, MilkdropRuntimeSignals } from '../types';
@@ -57,41 +58,6 @@ export type MilkdropTraceRecorder = {
   stop: () => TraceFile | null;
   getState: () => MilkdropTraceRecorderState;
 };
-
-function snapshotSignalArrays(
-  signals: Partial<MilkdropRuntimeSignals>,
-): FrameInputs['arrays'] {
-  let out: FrameInputs['arrays'];
-  for (const key of Object.keys(signals)) {
-    if (key === 'frequencyData' || key === 'waveformData') {
-      continue; // stored as first-class FrameInputs fields
-    }
-    const value = (signals as Record<string, unknown>)[key];
-    if (value instanceof Uint8Array) {
-      out ??= {};
-      out[key] = { type: 'u8', values: Array.from(value) };
-    } else if (value instanceof Float32Array) {
-      out ??= {};
-      out[key] = { type: 'f32', values: Array.from(value) };
-    }
-  }
-  return out;
-}
-
-function snapshotSignals(
-  signals: Partial<MilkdropRuntimeSignals>,
-): Record<string, number | boolean> {
-  const out: Record<string, number | boolean> = {};
-  for (const key of Object.keys(signals)) {
-    const value = (signals as Record<string, unknown>)[key];
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      out[key] = value;
-    } else if (typeof value === 'boolean') {
-      out[key] = value;
-    }
-  }
-  return out;
-}
 
 export function createMilkdropTraceRecorder({
   vm,
@@ -175,15 +141,16 @@ export function createMilkdropTraceRecorder({
         autoStopped = true;
         return;
       }
-      inputs.push({
-        time,
-        deltaMs,
-        frequencyData: Array.from(frequencyData),
-        waveformData: Array.from(waveformData),
-        signals: snapshotSignals(signals),
-        detailScale,
-        arrays: snapshotSignalArrays(signals),
-      });
+      inputs.push(
+        snapshotFrameInputs({
+          time,
+          deltaMs,
+          frequencyData,
+          waveformData,
+          signals,
+          detailScale,
+        }),
+      );
       frames.push(captureFrame(frameState));
       if (frames.length >= maxFrames) {
         recording = false;
