@@ -26,21 +26,29 @@ runs:
       with:
         bun-version-file: .bun-version
 
-    - name: Cache bun install cache
-      uses: actions/cache@v6
-      with:
-        path: ~/.bun/install/cache
-        key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-bun-
-
     - name: Cache node_modules
+      id: node-modules
       uses: actions/cache@v6
       with:
         path: node_modules
         key: ${{ runner.os }}-node-modules-${{ hashFiles('bun.lock') }}
         restore-keys: |
           ${{ runner.os }}-node-modules-
+
+    # Bun's download cache only feeds `bun install`, which has nothing to
+    # download when node_modules came back for this exact lockfile — it
+    # finishes in a quarter of a second. Restoring the download cache anyway
+    # cost ~7s in every job of every run, so it is fetched only on a miss (a
+    # lockfile change), which is also the only time it has anything new to
+    # save.
+    - name: Cache bun install cache
+      if: steps.node-modules.outputs.cache-hit != 'true'
+      uses: actions/cache@v6
+      with:
+        path: ~/.bun/install/cache
+        key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-bun-
 
     - name: Install dependencies
       shell: bash
