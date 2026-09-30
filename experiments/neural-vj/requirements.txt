@@ -1,0 +1,5 @@
+# CPU-only is enough; nothing here needs a GPU.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.4
+numpy>=1.26
+lightgbm>=4.0
