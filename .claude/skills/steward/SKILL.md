@@ -27,7 +27,8 @@ generic PR rules: it covers conventions and traps specific to Stims.
 ## Reading CI
 
 - Jobs: Changed paths, Commit messages, Quality gate, Gate test suite,
-  Parity corpus, three browser e2e jobs, then the **CI Status** aggregate.
+  Parity corpus, four browser e2e jobs (engine-mount runs as two: its preset
+  switch test has its own runner), then the **CI Status** aggregate.
 - **CI Status goes red on a superseded run.** The aggregate counts a
   *cancelled* job as failed, and a new push cancels the previous run. If the
   red check is on an older commit than the PR head, read its log: when the
