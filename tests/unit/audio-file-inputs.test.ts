@@ -10,6 +10,9 @@
  * bit-for-bit.
  */
 import { describe, expect, test } from 'bun:test';
+import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import {
   buildAudioFileInputs,
   type DecodedAudio,
@@ -303,4 +306,61 @@ per_frame_2=q1 = beat_pulse;
     const zooms = recorded.map((frame) => frame.variables?.zoom ?? 0);
     expect(Math.max(...zooms) - Math.min(...zooms)).toBeGreaterThan(0.01);
   });
+});
+
+describe("audio-handler.ts's `?worklet` import", () => {
+  const repoPath = (path: string) =>
+    resolve(import.meta.dirname, '../..', path);
+  const workletSpecifier = `${repoPath('src/js/utils/audio/frequency-analyser-processor.ts')}?worklet`;
+
+  test('keeps the test preload mock for later test files', async () => {
+    await buildAudioFileInputs(
+      { sampleRate: 44100, channels: [new Float32Array(4410)] },
+      { frames: 2 },
+    );
+    const { default: source } = await import(
+      '../../src/js/utils/audio/frequency-analyser-processor.ts?worklet'
+    );
+    expect(source).toContain("registerProcessor('frequency-analyser'");
+  });
+
+  // audio-handler.ts is over the 50KB threshold of Bun's on-disk transpiler
+  // cache, so what a lab run writes there is what the next process loads.
+  test('a lab run leaves no cache entry that breaks a later process', () => {
+    const cacheDir = mkdtempSync(join(tmpdir(), 'stims-transpiler-cache-'));
+    const run = (script: string) => {
+      const result = Bun.spawnSync({
+        cmd: [process.execPath, '-e', script],
+        env: { ...process.env, BUN_RUNTIME_TRANSPILER_CACHE_PATH: cacheDir },
+      });
+      return (
+        new TextDecoder().decode(result.stdout) +
+        new TextDecoder().decode(result.stderr)
+      );
+    };
+    try {
+      expect(
+        run(`
+          import { buildAudioFileInputs } from ${JSON.stringify(repoPath('scripts/audio-file-inputs.ts'))};
+          const frames = await buildAudioFileInputs(
+            { sampleRate: 44100, channels: [new Float32Array(4410)] },
+            { frames: 2 },
+          );
+          console.log(frames.length);
+        `),
+      ).toBe('2\n');
+      expect(readdirSync(cacheDir).length).toBeGreaterThan(0);
+      // What tests/setup.ts does for every test process.
+      expect(
+        run(`
+          import { mock } from 'bun:test';
+          mock.module(${JSON.stringify(workletSpecifier)}, () => ({ default: '' }));
+          const handler = await import(${JSON.stringify(repoPath('src/js/core/audio-handler.ts'))});
+          console.log(typeof handler.FrequencyAnalyser);
+        `),
+      ).toBe('function\n');
+    } finally {
+      rmSync(cacheDir, { recursive: true, force: true });
+    }
+  }, 30_000);
 });
