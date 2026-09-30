@@ -70,6 +70,9 @@ function buildFragment(outputNode: unknown): string {
     shadowMap: {},
     capabilities: {},
     info: {},
+    // A real renderer's default (three 0.186 reads it while registering
+    // each declaration).
+    debug: { diagnostics: { keywords: false } },
   };
   // The typings stop at the public node API; `build()` and the two scene
   // fields are what the renderer's own Nodes.getForRender sets and calls.
