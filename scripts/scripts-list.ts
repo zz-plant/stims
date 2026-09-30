@@ -313,6 +313,19 @@ const ROUTES: Array<{ when: string[]; run: string[]; note: string }> = [
     note: 'mcp starts the local MCP server for AI agents; mcp:check validates its Worker deployment config.',
   },
   {
+    when: [
+      'train',
+      'dataset',
+      'neural',
+      'machine learning',
+      'learned model',
+      'remember',
+      'audio history',
+    ],
+    run: ['lab:dataset', 'lab:memory-probe', 'lab:vj-baseline'],
+    note: 'lab:dataset exports audio and per-frame preset state as NumPy; lab:memory-probe measures how long each preset control remembers a bump in the audio; lab:vj-baseline is the audio R² a learned model has to beat, split by memory class with --memory. docs/guides/training-models.md walks through them.',
+  },
+  {
     when: ['benchmark', 'butterchurn', 'speed test', 'fps compare'],
     run: ['bench:butterchurn', 'perf:certification-corpus'],
     note: 'bench:butterchurn benchmarks performance directly against Butterchurn; perf:certification-corpus measures frame rates across presets.',

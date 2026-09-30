@@ -39,14 +39,43 @@
  * presets whose behaviour is not a linear function of time and audio
  * (thresholds, accumulators, feedback), which is what a nonlinear model is
  * for.
+ *
+ * Options:
+ *
+ *   --features leaky   adds leaky integrals of each signal (time constants
+ *                      2 to 256 frames) to the lags, so the linear model can
+ *                      hold a few seconds of audio history: the stronger
+ *                      baseline, and slower to fit.
+ *   --target change    scores each column's per-frame change instead of its
+ *                      value. A column that accumulates its audio has an
+ *                      increment with short memory even when its value never
+ *                      forgets.
+ *   --memory <dir>     a lab:memory-probe output. Audio R² is then also
+ *                      reported per memory class, per (preset, column):
+ *                      bounded (instant, short, seconds) against stateful
+ *                      (long, persistent, and audio-driven columns no bump
+ *                      moved, which are mostly threshold-gated counters). A
+ *                      pooled score hides that the two behave differently.
+ *
+ *   bun run lab:memory-probe -- --audio music/ --out output/memory-probe
+ *   bun run lab:vj-baseline -- --dataset output/dataset --features leaky --memory output/memory-probe
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { decodeNpy } from './preset-lab-map.ts';
+import {
+  BOUNDED_MEMORY,
+  type MemoryClass,
+  readMemoryProbe,
+} from './preset-lab-memory-probe.ts';
 
 /** History the model sees: the current frame and these many frames back. */
 const LAGS = [0, 4, 12, 30] as const;
+/** `--features leaky`: time constants, in frames, of each signal's leaky integrals. */
+const LEAKY_TAUS = [2, 4, 8, 16, 32, 64, 128, 256] as const;
+
+export type AudioFeatures = 'lags' | 'leaky';
 /**
  * Default ridge penalty per training row, on standardised inputs with the
  * intercept unpenalised. Override with --ridge; the scores move with it
@@ -128,28 +157,53 @@ export function ridgeSolver(
 
 /**
  * Design rows for one scenario: a bias, then each signal at every lag in
- * LAGS (clamped at the first frame). Signals are standardised with the
- * training statistics so the ridge penalty treats them alike.
+ * LAGS (clamped at the first frame), then with `leaky` each signal's leaky
+ * integral at every time constant in LEAKY_TAUS (started at the first
+ * frame's value). Signals are standardised with the training statistics
+ * before either, so the ridge penalty treats them alike.
  */
 export function audioDesign(
   signals: Float32Array,
   signalWidth: number,
   stats: { mean: Float64Array; std: Float64Array },
+  features: AudioFeatures = 'lags',
 ): Float64Array[] {
   const frames = signals.length / signalWidth;
+  const standardised = (f: number, s: number) =>
+    ((signals[f * signalWidth + s] as number) - (stats.mean[s] as number)) /
+      (stats.std[s] as number) || 0;
+  const taus = features === 'leaky' ? LEAKY_TAUS : [];
+  const leaky = new Float64Array(signalWidth * taus.length);
+  const lagWidth = signalWidth * LAGS.length;
   return Array.from({ length: frames }, (_, f) => {
-    const row = new Float64Array(1 + signalWidth * LAGS.length);
+    const row = new Float64Array(1 + lagWidth + leaky.length);
     row[0] = 1;
     LAGS.forEach((lag, l) => {
       const source = Math.max(0, f - lag);
       for (let s = 0; s < signalWidth; s += 1) {
-        const value = signals[source * signalWidth + s] as number;
-        row[1 + l * signalWidth + s] =
-          (value - (stats.mean[s] as number)) / (stats.std[s] as number) || 0;
+        row[1 + l * signalWidth + s] = standardised(source, s);
+      }
+    });
+    taus.forEach((tau, t) => {
+      for (let s = 0; s < signalWidth; s += 1) {
+        const k = t * signalWidth + s;
+        const value = standardised(f, s);
+        leaky[k] =
+          f === 0
+            ? value
+            : (leaky[k] as number) + (value - (leaky[k] as number)) / tau;
+        row[1 + lagWidth + k] = leaky[k] as number;
       }
     });
     return row;
   });
+}
+
+/** A series' per-frame change, 0 on the first frame. */
+export function perFrameChange(series: Float64Array): Float64Array {
+  return Float64Array.from(series, (value, f) =>
+    f === 0 ? 0 : value - (series[f - 1] as number),
+  );
 }
 
 /**
@@ -163,6 +217,7 @@ export function scenarioFold(
   signalWidth: number,
   clock: readonly Float64Array[],
   held: number,
+  features: AudioFeatures = 'lags',
 ): { others: number[]; train: Float64Array[]; heldOut: Float64Array[] } {
   const others = signals.map((_, i) => i).filter((i) => i !== held);
   const frames = clock.length;
@@ -172,9 +227,12 @@ export function scenarioFold(
     frames,
   );
   const rows = (scenario: number) =>
-    audioDesign(signals[scenario] as Float32Array, signalWidth, stats).map(
-      (row, f) => concat(clock[f] as Float64Array, row.subarray(1)),
-    );
+    audioDesign(
+      signals[scenario] as Float32Array,
+      signalWidth,
+      stats,
+      features,
+    ).map((row, f) => concat(clock[f] as Float64Array, row.subarray(1)));
   return { others, train: others.flatMap(rows), heldOut: rows(held) };
 }
 
@@ -299,6 +357,72 @@ function readJsonl<T>(file: string): T[] {
     .map((line) => JSON.parse(line) as T);
 }
 
+/**
+ * A (preset, column)'s memory per lab:memory-probe: its measured class,
+ * `gated` when the preset was probed but no bump moved that column (an
+ * audio-driven column that ignores small bumps is threshold-gated or
+ * accumulated from long ago), or `unprobed`.
+ */
+export type CellMemory = MemoryClass | 'gated' | 'unprobed';
+
+export function memoryLookup(
+  rows: ReadonlyArray<{
+    id: string;
+    status: string;
+    columns: Record<string, { memory: MemoryClass }>;
+  }>,
+): (id: string, column: string) => CellMemory {
+  const byId = new Map(
+    rows.filter((row) => row.status === 'ok').map((row) => [row.id, row]),
+  );
+  return (id, column) => {
+    const row = byId.get(id);
+    if (!row) return 'unprobed';
+    return row.columns[column]?.memory ?? 'gated';
+  };
+}
+
+export function memoryGroup(
+  memory: CellMemory,
+): 'bounded' | 'stateful' | 'unprobed' {
+  if (memory === 'unprobed') return 'unprobed';
+  return BOUNDED_MEMORY.has(memory as MemoryClass) ? 'bounded' : 'stateful';
+}
+
+type Cell = {
+  id: string;
+  column: string;
+  audioR2: number;
+  memory?: CellMemory;
+};
+
+/** Median audio R² and cell count per memory group and class. */
+export function summariseMemory(cells: readonly Cell[]) {
+  const describe = (group: readonly Cell[]) => ({
+    cells: group.length,
+    medianAudioR2: group.length
+      ? median(group.map((cell) => cell.audioR2))
+      : null,
+  });
+  const classes = [...new Set(cells.map((cell) => cell.memory as string))];
+  return {
+    bounded: describe(
+      cells.filter((c) => memoryGroup(c.memory ?? 'unprobed') === 'bounded'),
+    ),
+    stateful: describe(
+      cells.filter((c) => memoryGroup(c.memory ?? 'unprobed') === 'stateful'),
+    ),
+    byClass: Object.fromEntries(
+      classes
+        .sort()
+        .map((name) => [
+          name,
+          describe(cells.filter((cell) => cell.memory === name)),
+        ]),
+    ),
+  };
+}
+
 function main() {
   const args = process.argv.slice(2);
   const get = (flag: string) => {
@@ -308,12 +432,24 @@ function main() {
   const datasetDir = get('--dataset');
   if (!datasetDir) {
     throw new Error(
-      'Usage: bun run lab:vj-baseline -- --dataset <lab:dataset dir> [--ridge 0.1] [--out output/vj-baseline]',
+      'Usage: bun run lab:vj-baseline -- --dataset <lab:dataset dir> [--ridge 0.1] [--features lags|leaky] [--target value|change] [--memory <lab:memory-probe dir>] [--out output/vj-baseline]',
     );
   }
   const outDir = path.resolve(get('--out') ?? 'output/vj-baseline');
   const ridge = Number(get('--ridge') ?? DEFAULT_RIDGE);
   if (!(ridge >= 0)) throw new Error('--ridge must be a number >= 0');
+  const features = get('--features') ?? 'lags';
+  if (features !== 'lags' && features !== 'leaky') {
+    throw new Error('--features takes lags or leaky');
+  }
+  const target = get('--target') ?? 'value';
+  if (target !== 'value' && target !== 'change') {
+    throw new Error('--target takes value or change');
+  }
+  const memoryPath = get('--memory');
+  const memoryOf = memoryPath
+    ? memoryLookup(readMemoryProbe(path.resolve(memoryPath)))
+    : null;
   const root = path.resolve(datasetDir);
   const files = fs.readdirSync(root);
   const manifestFile = files.find((file) => /^manifest.*\.json$/.test(file));
@@ -330,7 +466,8 @@ function main() {
       'lab:vj-baseline needs a dataset with the canonical columns.',
     );
   }
-  const columns = manifest.states.columns.length;
+  const columnNames = manifest.states.columns;
+  const columns = columnNames.length;
   const signalWidth = manifest.signals.columns.length;
   const loadFloats = (file: string) =>
     decodeNpy(new Uint8Array(fs.readFileSync(path.join(root, file))))
@@ -354,7 +491,7 @@ function main() {
   // differs between stimuli has to come from the audio.
   const clock = clockDesign(frames, manifest.fps);
   const folds = scenarios.map((_, held) => {
-    const fold = scenarioFold(signals, signalWidth, clock, held);
+    const fold = scenarioFold(signals, signalWidth, clock, held, features);
     return {
       held,
       others: fold.others,
@@ -383,6 +520,7 @@ function main() {
     audioColumns: number;
     audioR2: number | null;
   }> = [];
+  const cells: Cell[] = [];
   for (const [id, scenarioFiles] of [...byPreset].sort(([a], [b]) =>
     a.localeCompare(b),
   )) {
@@ -390,11 +528,42 @@ function main() {
     const states = scenarios.map((s) =>
       loadFloats(scenarioFiles.get(s) as string),
     );
-    const column = (scenario: number, c: number) =>
-      Float64Array.from(
-        { length: frames },
-        (_, f) => states[scenario]?.[f * columns + c] as number,
-      );
+    const series = new Map<string, Float64Array>();
+    const column = (scenario: number, c: number) => {
+      const key = `${scenario}:${c}`;
+      let values = series.get(key);
+      if (!values) {
+        values = Float64Array.from(
+          { length: frames },
+          (_, f) => states[scenario]?.[f * columns + c] as number,
+        );
+        if (target === 'change') values = perFrameChange(values);
+        series.set(key, values);
+      }
+      return values;
+    };
+    // Each (model, column, fold) is fitted once: the per-column R² and the
+    // audio R² score the same full-model predictions.
+    const predictions = new Map<string, Float64Array>();
+    const heldPrediction = (model: 'clock' | 'full', c: number, f: number) => {
+      const key = `${model}:${c}:${f}`;
+      let predicted = predictions.get(key);
+      if (!predicted) {
+        const fold = folds[f] as (typeof folds)[number];
+        const training = Float64Array.from(
+          fold.others.flatMap((i) => Array.from(column(i, c))),
+        );
+        const [weights] = (
+          model === 'clock' ? fold.solveClock : fold.solveFull
+        )([training]);
+        predicted = predict(
+          model === 'clock' ? clock : fold.heldFull,
+          weights as Float64Array,
+        );
+        predictions.set(key, predicted);
+      }
+      return predicted;
+    };
     const moving: number[] = [];
     for (let c = 0; c < columns; c += 1) {
       // Scored only where the column moves in some scenario.
@@ -407,16 +576,9 @@ function main() {
     if (moving.length === 0) continue;
     const foldScores = (model: 'clock' | 'full') =>
       moving.map((c) => {
-        const perFold = folds.map((fold) => {
-          const target = Float64Array.from(
-            fold.others.flatMap((i) => Array.from(column(i, c))),
-          );
-          const [weights] = (
-            model === 'clock' ? fold.solveClock : fold.solveFull
-          )([target]);
-          const design = model === 'clock' ? clock : fold.heldFull;
+        const perFold = folds.map((fold, f) => {
           const actual = column(fold.held, c);
-          const predicted = predict(design, weights as Float64Array);
+          const predicted = heldPrediction(model, c, f);
           const r2 = rSquared(actual, predicted);
           // A held-out scenario where the column is flat is scored by
           // whether the model also predicts it flat (1) or not (0).
@@ -440,11 +602,7 @@ function main() {
     for (const c of moving) {
       const runs = scenarios.map((_, i) => column(i, c));
       if (audioShare(runs) < AUDIO_SHARE_MIN) continue;
-      const pairs = folds.map((fold) => {
-        const target = Float64Array.from(
-          fold.others.flatMap((i) => Array.from(runs[i] as Float64Array)),
-        );
-        const [weights] = fold.solveFull([target]);
+      const pairs = folds.map((fold, foldIndex) => {
         const oracle = Float64Array.from({ length: frames }, (_, f) => {
           let sum = 0;
           for (const i of fold.others)
@@ -453,12 +611,20 @@ function main() {
         });
         return {
           actual: runs[fold.held] as Float64Array,
-          predicted: predict(fold.heldFull, weights as Float64Array),
+          predicted: heldPrediction('full', c, foldIndex),
           oracle,
         };
       });
       const score = audioR2(pairs);
-      if (score !== null) audioScores.push(score);
+      if (score === null) continue;
+      audioScores.push(score);
+      const name = columnNames[c] as string;
+      cells.push({
+        id,
+        column: name,
+        audioR2: score,
+        ...(memoryOf ? { memory: memoryOf(id, name) } : {}),
+      });
     }
     perPreset.push({
       id,
@@ -482,6 +648,9 @@ function main() {
     scenarios,
     split: 'leave one scenario out',
     lags: LAGS,
+    features,
+    ...(features === 'leaky' ? { leakyTaus: LEAKY_TAUS } : {}),
+    target,
     ridge,
     medianClockR2: median(perPreset.map((p) => p.clockR2)),
     medianClockAudioR2: median(perPreset.map((p) => p.clockAudioR2)),
@@ -491,14 +660,15 @@ function main() {
     shareClockAudioOverHalf:
       perPreset.filter((p) => p.clockAudioR2 > 0.5).length /
       Math.max(1, perPreset.length),
+    memory: memoryOf ? summariseMemory(cells) : null,
   };
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(
     path.join(outDir, 'report.json'),
-    JSON.stringify({ summary, presets: perPreset }, null, 2),
+    JSON.stringify({ summary, presets: perPreset, cells }, null, 2),
   );
   console.log(
-    `Linear controls baseline on ${summary.presets} presets (${summary.split}, ${scenarios.length} folds)`,
+    `Linear controls baseline on ${summary.presets} presets (${summary.split}, ${scenarios.length} folds; ${features} features, ${target} target)`,
   );
   console.log(
     summary.medianAudioR2 === null
@@ -511,6 +681,18 @@ function main() {
   console.log(
     `  audio adds >0.1 R² for ${(summary.shareAudioGainOverTenth * 100).toFixed(1)}% of presets; clock + audio explains >50% for ${(summary.shareClockAudioOverHalf * 100).toFixed(1)}%`,
   );
+  if (summary.memory) {
+    const score = (group: { cells: number; medianAudioR2: number | null }) =>
+      `${group.medianAudioR2 === null ? '—' : group.medianAudioR2.toFixed(3)} (${group.cells} cells)`;
+    console.log(
+      `  audio R² by memory (per preset column): bounded ${score(summary.memory.bounded)}, stateful ${score(summary.memory.stateful)}`,
+    );
+    console.log(
+      `    ${Object.entries(summary.memory.byClass)
+        .map(([name, group]) => `${name} ${score(group)}`)
+        .join(', ')}`,
+    );
+  }
 }
 
 function concat(a: Float64Array, b: Float64Array): Float64Array {
