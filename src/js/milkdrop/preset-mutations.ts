@@ -26,6 +26,37 @@ export const PRESET_MUTATION_STYLES: ReadonlyArray<{
   { id: 'bass-surge', label: 'Bass pulse' },
 ];
 
+/**
+ * Appends equation lines to a preset's per-frame or per-pixel program.
+ *
+ * Program lines must be numbered (`per_frame_7=`) and continue after the
+ * preset's own: the compiler reads a bare `per_frame=` as an unknown field
+ * and drops it, which is how every restyle's equations used to vanish
+ * while its plain settings still applied. A no-op when the first line is
+ * already present, so applying a restyle twice adds its equations once.
+ */
+export function appendProgramLines(
+  source: string,
+  block: 'per_frame' | 'per_pixel',
+  lines: readonly string[],
+): string {
+  const numbered = new RegExp(`^\\s*${block}_(\\d+)\\s*=`, 'gim');
+  let last = 0;
+  for (const match of source.matchAll(numbered)) {
+    last = Math.max(last, Number(match[1]));
+  }
+  // Re-applying a restyle must not stack its equations: skip when its first
+  // line is already there.
+  const first = lines[0];
+  if (first === undefined || source.includes(`=${first}`)) {
+    return source;
+  }
+  const appended = lines
+    .map((line, index) => `${block}_${last + index + 1}=${line}`)
+    .join('\n');
+  return `${source.replace(/\s*$/, '')}\n${appended}\n`;
+}
+
 export function mutatePresetStyle(
   source: string,
   style: PresetMutationStyle,
@@ -40,13 +71,15 @@ export function mutatePresetStyle(
         brighten: 1,
         darken: 0,
         solarize: 0,
-        wrap: 0,
+        texture_wrap: 0,
       });
 
       // Inject neon / treble-reactive dynamics if not present
-      if (!updated.includes('wave_b = 0.8') && !updated.includes('treb_att')) {
-        updated += `\nper_frame=wave_r = 0.9 + 0.1 * sin(time * 1.5);\nper_frame=wave_b = 0.7 + 0.3 * cos(treb * 2.0);\nper_frame=zoom = zoom + 0.04 * treb_att;\n`;
-      }
+      updated = appendProgramLines(updated, 'per_frame', [
+        'wave_r = 0.9 + 0.1 * sin(time * 1.5);',
+        'wave_b = 0.7 + 0.3 * cos(treb * 2.0);',
+        'zoom = zoom + 0.04 * treb_att;',
+      ]);
       return updated;
     }
 
@@ -56,12 +89,13 @@ export function mutatePresetStyle(
         rot: 0.015,
         warp: 0.15,
         decay: 0.97,
-        wrap: 1,
+        texture_wrap: 1,
       });
 
-      if (!updated.includes('rad * 8.0')) {
-        updated += `\nper_pixel=zoom = zoom + 0.05 * sin(rad * 6.0 - time * 2.0);\nper_pixel=rot = rot + 0.02 * cos(ang * 4.0 + time);\n`;
-      }
+      updated = appendProgramLines(updated, 'per_pixel', [
+        'zoom = zoom + 0.05 * sin(rad * 6.0 - time * 2.0);',
+        'rot = rot + 0.02 * cos(ang * 4.0 + time);',
+      ]);
       return updated;
     }
 
@@ -75,9 +109,11 @@ export function mutatePresetStyle(
         zoom: 1.005,
       });
 
-      if (!updated.includes('sin(time * 0.3)')) {
-        updated += `\nper_frame=wave_g = 0.7 + 0.3 * sin(time * 0.3);\nper_frame=wave_b = 0.6 + 0.4 * cos(time * 0.4);\nper_frame=rot = 0.005 * sin(time * 0.2);\n`;
-      }
+      updated = appendProgramLines(updated, 'per_frame', [
+        'wave_g = 0.7 + 0.3 * sin(time * 0.3);',
+        'wave_b = 0.6 + 0.4 * cos(time * 0.4);',
+        'rot = 0.005 * sin(time * 0.2);',
+      ]);
       return updated;
     }
 
@@ -87,12 +123,13 @@ export function mutatePresetStyle(
         rot: 0.02,
         zoom: 1.01,
         decay: 0.96,
-        wrap: 1,
+        texture_wrap: 1,
       });
 
-      if (!updated.includes('ang * 6.0')) {
-        updated += `\nper_pixel=dx = 0.02 * sin(ang * 6.0 + rad * 8.0);\nper_pixel=dy = 0.02 * cos(ang * 6.0 + rad * 8.0);\n`;
-      }
+      updated = appendProgramLines(updated, 'per_pixel', [
+        'dx = 0.02 * sin(ang * 6.0 + rad * 8.0);',
+        'dy = 0.02 * cos(ang * 6.0 + rad * 8.0);',
+      ]);
       return updated;
     }
 
@@ -103,9 +140,10 @@ export function mutatePresetStyle(
         brighten: 1,
       });
 
-      if (!updated.includes('bass_att * 0.08')) {
-        updated += `\nper_frame=zoom = 1.0 + 0.08 * (bass_att - 1.0);\nper_frame=decay = 0.94 + 0.05 * (bass - 1.0);\n`;
-      }
+      updated = appendProgramLines(updated, 'per_frame', [
+        'zoom = 1.0 + 0.08 * (bass_att - 1.0);',
+        'decay = 0.94 + 0.05 * (bass - 1.0);',
+      ]);
       return updated;
     }
   }
