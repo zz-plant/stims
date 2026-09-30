@@ -76,6 +76,20 @@ function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
   return data instanceof Uint8Array ? data : new Uint8Array(data);
 }
 
+/** Copies `source` into `target`, reallocating only when the size changes. */
+function copyBytes(
+  target: Uint8Array | null,
+  source: ArrayBuffer | Uint8Array,
+): Uint8Array {
+  const bytes = toUint8Array(source);
+  const out =
+    target && target.length === bytes.length
+      ? target
+      : new Uint8Array(bytes.length);
+  out.set(bytes);
+  return out;
+}
+
 // Float analog of createWaveformAutoGain().apply(): scale around 0 and clamp
 // to [-1, 1], writing into a reusable output buffer.
 function applyFloatWaveformGain(
@@ -293,16 +307,19 @@ export class FrequencyAnalyser {
         }
         this.waveformData.set(nextWave);
       }
+      // Copy, never keep a view: the payload's buffers are transferred back
+      // to the worklet at the end of this handler, which detaches every view
+      // over them (zero length, and reading one throws).
       if (frequencyDataL && frequencyDataR) {
-        this.frequencyDataL = toUint8Array(frequencyDataL);
-        this.frequencyDataR = toUint8Array(frequencyDataR);
+        this.frequencyDataL = copyBytes(this.frequencyDataL, frequencyDataL);
+        this.frequencyDataR = copyBytes(this.frequencyDataR, frequencyDataR);
       } else {
         this.frequencyDataL = null;
         this.frequencyDataR = null;
       }
       if (waveformDataL && waveformDataR) {
-        this.waveformDataL = toUint8Array(waveformDataL);
-        this.waveformDataR = toUint8Array(waveformDataR);
+        this.waveformDataL = copyBytes(this.waveformDataL, waveformDataL);
+        this.waveformDataR = copyBytes(this.waveformDataR, waveformDataR);
       } else {
         this.waveformDataL = null;
         this.waveformDataR = null;
