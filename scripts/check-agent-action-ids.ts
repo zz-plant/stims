@@ -4,8 +4,8 @@
  *
  * Both lists exist so browser automation can select a control by a stable
  * id instead of fragile aria-label/text matching:
- *   - the palette's authoritative action list lives inline in App.tsx's
- *     `paletteActions` useMemo (see command-palette-registry.ts for the
+ *   - the palette's authoritative action list is `buildPaletteActions` in
+ *     palette-actions.ts (see command-palette-registry.ts for the
  *     `CommandAction` type/matching logic only — it does not enumerate ids)
  *   - the dock wires matching `data-action="<id>"` attributes onto its
  *     buttons/menu items in StageControls.tsx
@@ -20,7 +20,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const REPO_ROOT = process.cwd();
-const APP_PATH = join(REPO_ROOT, 'src/js/frontend/App.tsx');
+const PALETTE_PATH = join(REPO_ROOT, 'src/js/frontend/palette-actions.ts');
 const FIRST_RUN_PRESET_PATH = join(
   REPO_ROOT,
   'src/js/milkdrop/runtime/first-run-preset.ts',
@@ -109,7 +109,7 @@ const PALETTE_ONLY_EXEMPT = new Set([
 /**
  * Dock data-action ids that are deliberately dock-only — no palette action
  * exists (or reasonably could exist) for them. Every entry here must be
- * justified by reading App.tsx's paletteActions list, not added just to
+ * justified by reading palette-actions.ts' action list, not added just to
  * make the check pass.
  *
  * - 'toggle-pip': Picture-in-Picture is gated behind a browser support
@@ -127,27 +127,23 @@ const DOCK_ONLY_EXEMPT = new Set([
 ]);
 
 function extractPaletteActionIds(source: string): string[] {
-  const startMarker = 'const paletteActions: CommandAction[] = useMemo(';
+  const startMarker = 'export function buildPaletteActions(';
   const startIdx = source.indexOf(startMarker);
   if (startIdx === -1) {
     throw new Error(
-      `Could not find "${startMarker}" in ${APP_PATH}. The paletteActions useMemo may have moved or been renamed — update this script's boundary marker.`,
+      `Could not find "${startMarker}" in ${PALETTE_PATH}. The palette action builder may have moved or been renamed — update this script's boundary marker.`,
     );
   }
-  // Bound the scan to the useMemo's own closing `],\n    [deps],\n  );`.
-  // This used to match the literal deps array, which meant that adding one
-  // dependency — an ordinary edit — broke the check with a confusing
-  // "block may have been restructured" error. Match the *shape* instead: the
-  // first deps array at the useMemo's indentation, whatever it contains.
-  const depsPattern = /\n {4}\[[^\]]*\],\n {2}\);/;
+  // Bound the scan to the builder's returned array: it ends at the first
+  // top-level `];\n}` after the start.
   const rest = source.slice(startIdx);
-  const depsMatch = depsPattern.exec(rest);
-  if (!depsMatch) {
+  const endMatch = /\n {2}\];\n\}/.exec(rest);
+  if (!endMatch) {
     throw new Error(
-      `Could not find the paletteActions useMemo's closing deps array after its start in ${APP_PATH}. The block may have been restructured — update this script's boundary pattern.`,
+      `Could not find the end of buildPaletteActions' returned array in ${PALETTE_PATH}. The function may have been restructured — update this script's boundary pattern.`,
     );
   }
-  const block = rest.slice(0, depsMatch.index);
+  const block = rest.slice(0, endMatch.index);
 
   const ids: string[] = [];
   const idPattern = /id:\s*'([a-z0-9.-]+)'/g;
@@ -285,12 +281,12 @@ function extractDockActionIds(source: string): {
 }
 
 export function checkAgentActionIds(): boolean {
-  let appSource: string;
+  let paletteSource: string;
   let stageControlsSource: string;
   try {
-    appSource = readFileSync(APP_PATH, 'utf8');
+    paletteSource = readFileSync(PALETTE_PATH, 'utf8');
   } catch (error) {
-    logError(`Failed to read ${APP_PATH}: ${(error as Error).message}`);
+    logError(`Failed to read ${PALETTE_PATH}: ${(error as Error).message}`);
     return false;
   }
   try {
@@ -304,14 +300,14 @@ export function checkAgentActionIds(): boolean {
 
   let paletteIds: string[];
   try {
-    paletteIds = extractPaletteActionIds(appSource);
+    paletteIds = extractPaletteActionIds(paletteSource);
   } catch (error) {
     logError((error as Error).message);
     return false;
   }
   if (paletteIds.length === 0) {
     logError(
-      `Parsed zero action ids out of paletteActions in ${APP_PATH} — the extraction regex is likely broken.`,
+      `Parsed zero action ids out of paletteActions in ${PALETTE_PATH} — the extraction regex is likely broken.`,
     );
     return false;
   }
@@ -344,7 +340,7 @@ export function checkAgentActionIds(): boolean {
       continue;
     }
     logError(
-      `Palette action "${id}" (defined in App.tsx's paletteActions) has no matching data-action in StageControls.tsx, and is not on the PALETTE_ONLY_EXEMPT list. Either add a dock control with data-action="${id}", or add it to PALETTE_ONLY_EXEMPT with a comment justifying why it is palette-only.`,
+      `Palette action "${id}" (defined in palette-actions.ts) has no matching data-action in StageControls.tsx, and is not on the PALETTE_ONLY_EXEMPT list. Either add a dock control with data-action="${id}", or add it to PALETTE_ONLY_EXEMPT with a comment justifying why it is palette-only.`,
     );
     errorsCount += 1;
   }
@@ -356,7 +352,7 @@ export function checkAgentActionIds(): boolean {
       continue;
     }
     logError(
-      `Dock data-action "${id}" (in StageControls.tsx) does not match any palette action id in App.tsx's paletteActions — likely a typo or a stale id left after a rename. Either fix the id, or add it to DOCK_ONLY_EXEMPT with a comment justifying why it is dock-only.`,
+      `Dock data-action "${id}" (in StageControls.tsx) does not match any palette action id in palette-actions.ts — likely a typo or a stale id left after a rename. Either fix the id, or add it to DOCK_ONLY_EXEMPT with a comment justifying why it is dock-only.`,
     );
     errorsCount += 1;
   }

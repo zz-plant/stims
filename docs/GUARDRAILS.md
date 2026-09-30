@@ -58,8 +58,8 @@ Guard against drift between the command palette's action-id catalog and the stag
 
 Both lists exist so browser automation can select a control by a stable
 id instead of fragile aria-label/text matching:
-  - the palette's authoritative action list lives inline in App.tsx's
-    `paletteActions` useMemo (see command-palette-registry.ts for the
+  - the palette's authoritative action list is `buildPaletteActions` in
+    palette-actions.ts (see command-palette-registry.ts for the
     `CommandAction` type/matching logic only — it does not enumerate ids)
   - the dock wires matching `data-action="<id>"` attributes onto its
     buttons/menu items in StageControls.tsx

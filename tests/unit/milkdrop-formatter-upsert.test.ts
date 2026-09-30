@@ -194,4 +194,23 @@ describe('milkdrop field upsert', () => {
       expect(fieldValue(next, 'zoom')).toBeCloseTo(1.5, 6);
     });
   });
+
+  describe('reads the preset the way the compiler does', () => {
+    test('rewrites a field in a block that follows a shader section', () => {
+      // The compiler reads `decay=0.5` from the second [preset00] block. The
+      // old scan stopped at the first shader header, so the knob wrote a
+      // rival `decay=` above it that last-wins then ignored.
+      const source =
+        '[preset00]\nzoom=1\n[warp_shader]\nshader_body{ret=1;}\n[preset00]\ndecay=0.5\n';
+      const next = upsertMilkdropField(source, 'decay', 0.9);
+      expect(assignmentsFor(next, 'decay')).toEqual(['decay=0.9']);
+      expect(fieldValue(next, 'decay')).toBeCloseTo(0.9, 6);
+    });
+
+    test('keeps the trailing comment on the line it rewrites', () => {
+      const next = upsertMilkdropField('zoom = 1 // gentle\n', 'zoom', 1.5);
+      expect(next).toBe('zoom=1.5 // gentle\n');
+      expect(fieldValue(next, 'zoom')).toBeCloseTo(1.5, 6);
+    });
+  });
 });

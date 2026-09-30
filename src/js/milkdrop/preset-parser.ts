@@ -1,50 +1,11 @@
+import { MAX_SYNTAX_LINE_CHARS, parsePresetSyntax } from './preset-syntax.ts';
 import type {
   MilkdropDiagnostic,
   MilkdropPresetAST,
   MilkdropPresetField,
 } from './types';
 
-/** Splits a trailing `//` comment off a line, ignoring `//` inside quotes. */
-function splitInlineComment(line: string): { code: string; comment: string } {
-  let quote: '"' | "'" | null = null;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const current = line[index];
-    const next = line[index + 1];
-
-    if (quote) {
-      // Only the matching quote character closes the string — a stray
-      // apostrophe inside a double-quoted title (or vice versa) is just
-      // literal content, not a toggle. Treating every quote char as a
-      // toggle regardless of kind let mismatched quotes flip `quote` to
-      // null mid-string, so a real "//" later on the line either failed
-      // to strip (comment leaked into the field value) or got stripped
-      // too early (truncating quoted content that legitimately contains
-      // "//").
-      if (current === quote) {
-        quote = null;
-      }
-      continue;
-    }
-
-    if (current === '"' || current === "'") {
-      quote = current;
-      continue;
-    }
-
-    if (current === '/' && next === '/') {
-      return {
-        code: line.slice(0, index).trimEnd(),
-        comment: line.slice(index).trim(),
-      };
-    }
-  }
-
-  return { code: line, comment: '' };
-}
-
 const MAX_SOURCE_BYTES = 5 * 1024 * 1024; // 5MB
-const MAX_LINE_CHARS = 100_000;
 const MAX_PRESET_FIELDS = 10_000;
 
 export function parseMilkdropPreset(source: string): {
@@ -55,7 +16,6 @@ export function parseMilkdropPreset(source: string): {
   const diagnostics: MilkdropDiagnostic[] = [];
   const fields: MilkdropPresetField[] = [];
   const sections: string[] = [];
-  let currentSection: string | null = null;
 
   if (!safeSource) {
     return { ast: { source: '', fields: [], sections: [] }, diagnostics };
@@ -72,110 +32,65 @@ export function parseMilkdropPreset(source: string): {
     return { ast: { source: '', fields: [], sections: [] }, diagnostics };
   }
 
-  const lines = safeSource.split(/\r?\n/u);
-  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+  for (const line of parsePresetSyntax(safeSource).lines) {
     if (fields.length >= MAX_PRESET_FIELDS) {
       diagnostics.push({
         severity: 'warning',
         category: 'parse',
         code: 'preset_max_fields_exceeded',
-        line: lineIndex + 1,
+        line: line.number,
         message: `Preset field count exceeded maximum limit of 10,000 fields.`,
       });
       break;
     }
 
-    const rawLine = lines[lineIndex] ?? '';
-    const line =
-      rawLine.length > MAX_LINE_CHARS
-        ? rawLine.slice(0, MAX_LINE_CHARS)
-        : rawLine;
-    const number = lineIndex + 1;
-    const trimmed = line.trim();
-    if (!trimmed) {
-      continue;
-    }
-
-    // `#` and `;` start a comment in the key=value body, but inside a shader
-    // section they are shader text — a preprocessor directive (`#define`,
-    // `#if`) or an empty statement — that Format writes back out as a bare
-    // line. Skipping a directive silently deleted the whole section whenever
-    // the shader began with one.
-    const inShaderSection =
-      currentSection === 'warp_shader' || currentSection === 'comp_shader';
-    if (
-      trimmed.startsWith('//') ||
-      ((trimmed.startsWith('#') || trimmed.startsWith(';')) && !inShaderSection)
-    ) {
-      continue;
-    }
-
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      currentSection = trimmed.slice(1, -1).trim().toLowerCase();
-      if (currentSection) {
-        sections.push(currentSection);
-      }
-      continue;
-    }
-
-    const { code, comment } = splitInlineComment(line);
-    const withoutComments = code.trim();
-    if (!withoutComments) {
-      continue;
-    }
-
-    const equalsIndex = withoutComments.indexOf('=');
-    if (equalsIndex < 0) {
-      if (
-        currentSection === 'warp_shader' ||
-        currentSection === 'comp_shader'
-      ) {
+    switch (line.kind) {
+      case 'section':
+        if (line.section) {
+          sections.push(line.section);
+        }
+        break;
+      case 'shader':
         fields.push({
-          key: currentSection,
-          rawValue: withoutComments,
-          line: number,
-          section: currentSection,
+          key: line.section as string,
+          rawValue: line.value as string,
+          line: line.number,
+          section: line.section,
         });
-        continue;
-      }
-      diagnostics.push({
-        severity: 'warning',
-        category: 'parse',
-        code: 'preset_line_ignored',
-        line: number,
-        message: `Ignored line without an assignment: "${trimmed}".`,
-      });
-      continue;
+        break;
+      case 'text':
+        diagnostics.push({
+          severity: 'warning',
+          category: 'parse',
+          code: 'preset_line_ignored',
+          line: line.number,
+          message: `Ignored line without an assignment: "${line.text.slice(0, MAX_SYNTAX_LINE_CHARS).trim()}".`,
+        });
+        break;
+      case 'assignment':
+        if (!line.key) {
+          diagnostics.push({
+            severity: 'warning',
+            category: 'parse',
+            code: 'preset_missing_key',
+            line: line.number,
+            message: 'Ignored assignment without a key.',
+          });
+          break;
+        }
+        fields.push({
+          key: line.key,
+          rawValue: line.value as string,
+          line: line.number,
+          section: line.section,
+          // Shader comments are recovered verbatim by shader-source.ts; this
+          // carries the equation comments Format would otherwise delete.
+          ...(line.comment ? { comment: line.comment } : {}),
+        });
+        break;
+      default:
+        break;
     }
-
-    const key =
-      currentSection === 'warp_shader' || currentSection === 'comp_shader'
-        ? currentSection
-        : withoutComments.slice(0, equalsIndex).trim();
-    const rawValue =
-      currentSection === 'warp_shader' || currentSection === 'comp_shader'
-        ? withoutComments
-        : withoutComments.slice(equalsIndex + 1).trim();
-    if (!key) {
-      diagnostics.push({
-        severity: 'warning',
-        category: 'parse',
-        code: 'preset_missing_key',
-        line: number,
-        message: 'Ignored assignment without a key.',
-      });
-      continue;
-    }
-
-    fields.push({
-      key,
-      rawValue,
-      line: number,
-      section: currentSection,
-      // Shader comments are recovered verbatim by shader-source.ts; this
-      // carries the equation comments Format would otherwise delete.
-      ...(comment && !inShaderSection ? { comment } : {}),
-    });
   }
 
   return {
