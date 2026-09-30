@@ -90,43 +90,51 @@ export function runTrace(
     ...options.webgpuFlags,
   });
   vm.setRenderBackend(options.backend ?? 'webgl');
+  const readSignals = createFrameSignalReader();
+  const frames: FrameCapture[] = [];
+  for (const frame of inputs) {
+    if (frame.signals && frame.detailScale !== undefined) {
+      vm.setDetailScale(frame.detailScale);
+    }
+    frames.push(captureFrame(vm.step(readSignals(frame))));
+  }
+  return frames;
+}
+
+/**
+ * The signals a VM steps with for each recorded frame, in order. Frames that
+ * carry `signals` (live and audio-file traces) are fed to the VM as stored:
+ * the tracker's smoothing state that produced them cannot be rebuilt from
+ * bytes. The raw byte arrays are reattached, because wave geometry reads
+ * signals.waveformData/frequencyData and JSON snapshots drop them. Frames
+ * without signals (synthetic scenarios) run through a fresh signal tracker.
+ * Stateful: create one reader per run and call it once per frame, in order.
+ */
+export function createFrameSignalReader(): (
+  frame: FrameInputs,
+) => MilkdropRuntimeSignals {
   const tracker = createMilkdropSignalTracker();
   const frequencyData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
   const waveformData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
-  const frames: FrameCapture[] = [];
-  for (const frame of inputs) {
-    // Live captures store the fully merged signal environment the VM stepped
-    // with; the tracker's live smoothing state cannot be rebuilt from bytes,
-    // so replay feeds those signals to the VM directly. The raw byte arrays
-    // are reattached from the recorded inputs — wave geometry reads
-    // signals.waveformData/frequencyData, which JSON snapshots drop.
+  return (frame) => {
     if (frame.signals) {
-      if (frame.detailScale !== undefined) {
-        vm.setDetailScale(frame.detailScale);
-      }
-      const signals = {
+      return {
         ...frame.signals,
         ...(frame.arrays ? reviveInputArrays(frame.arrays) : null),
         frequencyData: new Uint8Array(frame.frequencyData),
         waveformData: new Uint8Array(frame.waveformData),
-      };
-      frames.push(
-        captureFrame(vm.step(signals as unknown as MilkdropRuntimeSignals)),
-      );
-      continue;
+      } as unknown as MilkdropRuntimeSignals;
     }
     frequencyData.set(frame.frequencyData);
     waveformData.set(frame.waveformData);
-    const signals = tracker.update({
+    return tracker.update({
       time: frame.time,
       deltaMs: frame.deltaMs,
       analyser: null,
       frequencyData,
       waveformData,
     });
-    frames.push(captureFrame(vm.step(signals)));
-  }
-  return frames;
+  };
 }
 
 export function buildScenarioInputs(
