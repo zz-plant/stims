@@ -248,7 +248,6 @@ function collectFrameNumbers(frameState: MilkdropFrameState) {
     frameState.waveform,
     frameState.mainWave,
     frameState.customWaves,
-    frameState.trails,
     frameState.mesh,
     frameState.shapes,
     frameState.borders,

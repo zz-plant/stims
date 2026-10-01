@@ -21,12 +21,6 @@ const basePlan: MilkdropWebGpuDescriptorPlan = {
     },
     {
       kind: 'procedural-wave',
-      target: 'trail-waves',
-      slotIndex: null,
-      sampleSource: 'waveform',
-    },
-    {
-      kind: 'procedural-wave',
       target: 'custom-wave',
       slotIndex: 0,
       sampleSource: 'spectrum',
@@ -137,7 +131,6 @@ describe('milkdrop webgpu descriptor gating', () => {
     const gated = applyMilkdropWebGpuOptimizationFlags(basePlan, {
       ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
       proceduralMainWave: false,
-      proceduralTrailWaves: false,
       directFeedbackShaders: false,
       renderBundles: false,
     });
@@ -154,7 +147,6 @@ describe('milkdrop webgpu descriptor gating', () => {
   test('downgrades to the generic payload path when every descriptor optimization is disabled', () => {
     const gated = applyMilkdropWebGpuOptimizationFlags(basePlan, {
       proceduralMainWave: false,
-      proceduralTrailWaves: false,
       proceduralCustomWaves: false,
       proceduralMesh: false,
       proceduralMotionVectors: false,

@@ -102,6 +102,15 @@ describe('Workspace performance regressions', () => {
 
   test('preserves blend frames when reusable custom-wave and motion-vector buffers are enabled', () => {
     const frameState = {
+      mainWave: {
+        positions: [0, 0, 0, 0.5, 0.5, 0],
+        color: { r: 1, g: 1, b: 1, a: 1 },
+        alpha: 0.9,
+        thickness: 1,
+        drawMode: 'line',
+        additive: false,
+        pointSize: 1,
+      },
       customWaves: [
         {
           positions: [0, 0, 0, 1, 1, 0],
@@ -169,6 +178,7 @@ describe('Workspace performance regressions', () => {
       throw new Error('Expected a GPU blend state.');
     }
 
+    frameState.mainWave.positions[0] = 66;
     const [customWave] = frameState.customWaves;
     const [motionVector] = frameState.motionVectors;
     const [proceduralWave] = frameState.gpuGeometry.customWaves;
@@ -179,6 +189,7 @@ describe('Workspace performance regressions', () => {
     motionVector.positions[0] = 88;
     proceduralWave.samples[0] = 77;
 
+    expect(blendState.previousFrame.mainWave.positions[0]).toBe(0);
     expect(blendState.previousFrame.customWaves[0]?.positions[0]).toBe(0);
     expect(blendState.previousFrame.motionVectors[0]?.positions[0]).toBe(0);
     expect(

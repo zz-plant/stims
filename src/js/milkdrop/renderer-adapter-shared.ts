@@ -97,7 +97,6 @@ export type MilkdropRendererBatcher = {
     alphaMultiplier: number,
   ) => boolean;
   renderProceduralWaveGroup?: (
-    target: 'main-wave' | 'trail-waves',
     group: Group,
     waves: MilkdropProceduralWaveVisual[],
   ) => boolean;
@@ -119,17 +118,13 @@ export type MilkdropRendererBatcher = {
     screenAspect: number,
   ) => boolean;
   renderLineVisualGroup?: (
-    target: 'trails' | 'motion-vectors' | 'blend-motion-vectors',
+    target: 'motion-vectors' | 'blend-motion-vectors',
     group: Group,
     lines: Array<{
       positions: ArrayLike<number>;
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;
-      /** Per-point RGBA, as on a wave visual (a mode 7 trail hides its
-       * bridge between the two lines this way). */
-      colors?: ArrayLike<number>;
-      perPointAlpha?: boolean;
     }>,
     alphaMultiplier: number,
   ) => boolean;
@@ -810,7 +805,6 @@ export function getMilkdropLayerRenderOrder(
     | 'mesh'
     | 'main-wave'
     | 'custom-wave'
-    | 'trails'
     | 'particle-field'
     | 'shapes'
     | 'borders'
@@ -831,8 +825,6 @@ export function getMilkdropLayerRenderOrder(
       return 20;
     case 'custom-wave':
       return 30;
-    case 'trails':
-      return 40;
     case 'particle-field':
       return 45;
     case 'shapes':
@@ -860,7 +852,6 @@ export function getMilkdropPassRenderOrder(
   target:
     | 'main-wave'
     | 'custom-wave'
-    | 'trails'
     | 'particle-field'
     | 'shapes'
     | 'borders'

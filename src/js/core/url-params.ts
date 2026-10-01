@@ -90,7 +90,6 @@ export interface FlagURLParams {
 
 export interface WebGpuFlagURLParams {
   proceduralMainWave: boolean | null;
-  proceduralTrailWaves: boolean | null;
   proceduralCustomWaves: boolean | null;
   proceduralMesh: boolean | null;
   proceduralMotionVectors: boolean | null;
@@ -382,7 +381,6 @@ export function parseURLParams(
     },
     webgpuFlags: {
       proceduralMainWave: parseBoolParam(get('milkdrop-webgpu-main-wave')),
-      proceduralTrailWaves: parseBoolParam(get('milkdrop-webgpu-trail-waves')),
       proceduralCustomWaves: parseBoolParam(
         get('milkdrop-webgpu-custom-waves'),
       ),

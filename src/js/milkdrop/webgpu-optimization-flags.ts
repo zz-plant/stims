@@ -15,7 +15,6 @@ import {
 
 export const MILKDROP_WEBGPU_OPTIMIZATION_SEARCH_PARAMS = {
   proceduralMainWave: 'milkdrop-webgpu-main-wave',
-  proceduralTrailWaves: 'milkdrop-webgpu-trail-waves',
   proceduralCustomWaves: 'milkdrop-webgpu-custom-waves',
   proceduralMesh: 'milkdrop-webgpu-mesh',
   proceduralMotionVectors: 'milkdrop-webgpu-motion-vectors',
@@ -28,7 +27,6 @@ export const MILKDROP_WEBGPU_OPTIMIZATION_SEARCH_PARAMS = {
 
 export const MILKDROP_WEBGPU_OPTIMIZATION_STORAGE_KEYS = {
   proceduralMainWave: 'stims:experiments:milkdrop-webgpu-main-wave',
-  proceduralTrailWaves: 'stims:experiments:milkdrop-webgpu-trail-waves',
   proceduralCustomWaves: 'stims:experiments:milkdrop-webgpu-custom-waves',
   proceduralMesh: 'stims:experiments:milkdrop-webgpu-mesh',
   proceduralMotionVectors: 'stims:experiments:milkdrop-webgpu-motion-vectors',
@@ -41,7 +39,6 @@ export const MILKDROP_WEBGPU_OPTIMIZATION_STORAGE_KEYS = {
 
 export type MilkdropWebGpuOptimizationFlags = {
   proceduralMainWave: boolean;
-  proceduralTrailWaves: boolean;
   proceduralCustomWaves: boolean;
   proceduralMesh: boolean;
   proceduralMotionVectors: boolean;
@@ -68,7 +65,6 @@ export type MilkdropWebGpuOptimizationFlagName =
 // fallback regardless of this flag.
 export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
   proceduralMainWave: true,
-  proceduralTrailWaves: true,
   proceduralCustomWaves: true,
   proceduralMesh: true,
   proceduralMotionVectors: true,
@@ -131,8 +127,6 @@ export function applyNativeWebGpuMaterialCompatibilityFlags(
     ...flags,
     proceduralMainWave:
       routing.proceduralMainWave.enabled && flags.proceduralMainWave,
-    proceduralTrailWaves:
-      routing.proceduralTrailWaves.enabled && flags.proceduralTrailWaves,
     proceduralCustomWaves:
       routing.proceduralCustomWaves.enabled && flags.proceduralCustomWaves,
     proceduralMesh: routing.proceduralMesh.enabled && flags.proceduralMesh,
@@ -247,8 +241,6 @@ function hasEnabledProceduralDescriptors(
   return (
     (flags.proceduralMainWave &&
       plan.proceduralWaves.some((entry) => entry.target === 'main-wave')) ||
-    (flags.proceduralTrailWaves &&
-      plan.proceduralWaves.some((entry) => entry.target === 'trail-waves')) ||
     (flags.proceduralCustomWaves &&
       plan.proceduralWaves.some((entry) => entry.target === 'custom-wave')) ||
     (flags.proceduralMesh && Boolean(plan.proceduralMesh)) ||
@@ -290,8 +282,6 @@ export function applyMilkdropWebGpuOptimizationFlags(
     switch (entry.target) {
       case 'main-wave':
         return flags.proceduralMainWave;
-      case 'trail-waves':
-        return flags.proceduralTrailWaves;
       case 'custom-wave':
         return flags.proceduralCustomWaves;
       default:

@@ -193,13 +193,6 @@ function enhanceGpuGeometryInPlace(
       2.4,
     );
   }
-  for (let wi = 0; wi < gpuGeometry.trailWaves.length; wi += 1) {
-    const wave = gpuGeometry.trailWaves[wi];
-    if (!wave) continue;
-    wave.centerX = nudgeCenter(wave.centerX, offsetX);
-    wave.centerY = nudgeCenter(wave.centerY, -offsetY);
-    wave.scale = clamp(wave.scale * scale, 0.45, 2.4);
-  }
   for (let ci = 0; ci < gpuGeometry.customWaves.length; ci += 1) {
     const wave = gpuGeometry.customWaves[ci];
     if (!wave) continue;
@@ -360,16 +353,6 @@ export function applyMilkdropInteractionResponse(
     const wave = frameState.customWaves[wi];
     if (!wave) continue;
     transformScenePositionsInPlace(wave.positions, {
-      offsetX,
-      offsetY,
-      rotation,
-      scale,
-    });
-  }
-  for (let ti = 0; ti < frameState.trails.length; ti += 1) {
-    const trail = frameState.trails[ti];
-    if (!trail) continue;
-    transformScenePositionsInPlace(trail.positions, {
       offsetX,
       offsetY,
       rotation,
