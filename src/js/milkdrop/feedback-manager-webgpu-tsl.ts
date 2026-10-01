@@ -21,7 +21,10 @@
 import type { Camera, Texture } from 'three';
 import {
   Color,
+  DataTexture,
+  HalfFloatType,
   Mesh,
+  NoBlending,
   OrthographicCamera,
   PlaneGeometry,
   Scene,
@@ -325,10 +328,28 @@ function createGaussianBlurOutputNode(
   })();
 }
 
+/**
+ * What `savedTex` holds until the first snapshot: a texture no other node in
+ * the present material can ever hold.
+ *
+ * three.js gives texture nodes that hold the same texture when a material
+ * compiles ONE shared binding (UniformNode.getSharedNode hashes a texture
+ * node by its texture's uuid), owned by whichever node registered first.
+ * `savedTex` used to start on the display target `currentTex` samples, so the
+ * two compiled into a single binding and every later `savedTex.value = …` was
+ * ignored: the WebGPU crossfade dissolved the live frame into itself and the
+ * outgoing preset never appeared at all.
+ */
+const PRESENT_SAVED_PLACEHOLDER = (() => {
+  const placeholder = new DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+  placeholder.needsUpdate = true;
+  return placeholder;
+})();
+
 function createPresentUniforms(initialSource: Texture) {
   return {
     currentTex: texture(initialSource),
-    savedTex: texture(initialSource),
+    savedTex: texture(PRESENT_SAVED_PLACEHOLDER),
     transitionAlpha: uniform(0),
     patternAspect: uniform(16 / 9),
     // Display-frame postprocessing (profile-driven). Applied here — over the
@@ -436,7 +457,8 @@ function createPresentOutputNode(
       );
     });
 
-    const result = vec4(max(base, vec3(0)), current.a).toVar();
+    const live = max(base, vec3(0));
+    const result = vec4(live, current.a).toVar();
     const linearA = clamp(uniforms.transitionAlpha, 0, 1);
     // Uniform branch mirroring the WebGL shader's early-out: the present
     // pass runs full-screen every frame, so outside a preset transition the
@@ -464,7 +486,13 @@ function createPresentOutputNode(
       // every pixel, regardless of where its pattern threshold landed.
       const aa = a.mul(1.0 + 2.0 * band).sub(band);
       const local = smoothstep(pattern.sub(band), pattern.add(band), aa);
-      const currentSq = current.rgb.mul(current.rgb);
+      // The live side keeps its bloom and aberration (`live`, not the raw
+      // sample): the snapshot was taken through this pass with them on, so
+      // dropping them here made them blink off for the length of the blend.
+      // Not `result.rgb` — a swizzle of a WGSL var that is assigned in this
+      // branch fails Tint's IR lowering on Metal ("swizzle view instruction
+      // still has usages"), and the whole present pipeline goes invalid.
+      const currentSq = live.mul(live);
       const savedSq = saved.rgb.mul(saved.rgb);
       const blendedRgb = mix(currentSq, savedSq, local).sqrt();
       const blendedAlpha = mix(current.a, saved.a, local);
@@ -3749,7 +3777,17 @@ class WebGPUMilkdropFeedbackManager
     null,
   ];
   private savedFrameIndex = 0;
-  private lastRenderer: FeedbackRendererLike | null = null;
+  /** Resamples one target into another; see copyTargetImage. */
+  private copyPass: {
+    scene: Scene;
+    material: NodeMaterial;
+    source: ReturnType<typeof texture>;
+  } | null = null;
+  private lastRenderer:
+    | (FeedbackRendererLike & {
+        getRenderTarget?: () => RenderTarget | null;
+      })
+    | null = null;
   private compositeSwapRevision = 0;
   // Warm-up materials from the previous preset swap. They are kept alive
   // until the next swap (or dispose): releasing them immediately would
@@ -3844,6 +3882,15 @@ class WebGPUMilkdropFeedbackManager
     });
 
     const blurUniforms = createGaussianBlurUniforms(this.targets[0].texture);
+    // Set here, not only in resize(): nothing resizes the manager at
+    // startup, so the blur ran at its (1, 1) default — a whole texture per
+    // tap, copied into the composite's texelSize whenever blur is on — until
+    // the first quality step, smearing the brightest content across the
+    // frame. One texel of the feedback target, as resize() sets it.
+    blurUniforms.texelSize.value.set(
+      1 / Math.max(1, this.targets[0].width),
+      1 / Math.max(1, this.targets[0].height),
+    );
     const blurMaterial = new NodeMaterial();
     blurMaterial.outputNode = createGaussianBlurOutputNode(blurUniforms);
     blurMaterial.needsUpdate = true;
@@ -3939,25 +3986,68 @@ class WebGPUMilkdropFeedbackManager
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
   }
 
+  /**
+   * Snapshots the picture on screen for a crossfade to dissolve out of: the
+   * present pass at its current alpha, so a switch made mid-blend dissolves
+   * out of the half-finished blend instead of popping back to the incoming
+   * preset alone. Render-target draws skip tone mapping and the output
+   * encode, which the canvas present suppresses too, so the snapshot matches
+   * the screen.
+   */
   saveCurrentFrame(): void {
-    let target = this.savedFrameTargets[this.savedFrameIndex];
-    if (!target) {
-      target = createFeedbackRenderTarget(
-        this.viewportWidth,
-        this.viewportHeight,
-        this.currentFeedbackResolutionScale,
-      );
-      this.savedFrameTargets[this.savedFrameIndex] = target;
-    }
     const renderer = this.lastRenderer;
     if (!renderer?.setRenderTarget) return;
+    const { width, height } = this.readTarget;
+    let target = this.savedFrameTargets[this.savedFrameIndex];
+    if (!target) {
+      target = createFeedbackRenderTarget(width, height, 1);
+      this.savedFrameTargets[this.savedFrameIndex] = target;
+    } else if (target.width !== width || target.height !== height) {
+      target.setSize(width, height);
+    }
+    const previousTarget = renderer.getRenderTarget?.() ?? null;
     renderer.setRenderTarget(target);
-    const oldAlpha = this.presentMaterial.uniforms.transitionAlpha.value;
-    this.presentMaterial.uniforms.transitionAlpha.value = 0;
     renderer.render(this.presentScene, this.camera);
-    this.presentMaterial.uniforms.transitionAlpha.value = oldAlpha;
+    renderer.setRenderTarget(previousTarget);
     this.presentMaterial.uniforms.savedTex.value = target.texture;
     this.savedFrameIndex = 1 - this.savedFrameIndex;
+  }
+
+  protected copyTargetImage(
+    source: RenderTarget,
+    destination: RenderTarget,
+  ): boolean {
+    const renderer = this.lastRenderer;
+    if (!renderer?.setRenderTarget) return false;
+    if (!this.copyPass) {
+      const sourceNode = texture(source.texture);
+      const material = new NodeMaterial();
+      // Same render-target addressing as every other feedback pass, so the
+      // copy lands upright.
+      material.outputNode = sampleFeedbackTarget(sourceNode, uv());
+      // A copy, not a draw: alpha must not blend against what was there.
+      material.blending = NoBlending;
+      material.depthTest = false;
+      material.depthWrite = false;
+      const scene = new Scene();
+      scene.matrixAutoUpdate = false;
+      scene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, material));
+      this.copyPass = { scene, material, source: sourceNode };
+    }
+    this.copyPass.source.value = source.texture;
+    const previousTarget = renderer.getRenderTarget?.() ?? null;
+    renderer.setRenderTarget(destination);
+    renderer.render(this.copyPass.scene, this.camera);
+    renderer.setRenderTarget(previousTarget);
+    return true;
+  }
+
+  protected createScratchTarget(like: RenderTarget): RenderTarget {
+    const scratch = createFeedbackRenderTarget(like.width, like.height, 1);
+    if (like.texture.type !== HalfFloatType) {
+      scratch.texture.type = like.texture.type;
+    }
+    return scratch;
   }
 
   applyPostprocessingProfile(
@@ -4424,20 +4514,35 @@ class WebGPUMilkdropFeedbackManager
       1,
       Math.round(height * this.currentFeedbackResolutionScale),
     );
-    this.sceneTarget.setSize(sceneWidth, sceneHeight);
-    this.targets.forEach((target) =>
-      target.setSize(feedbackWidth, feedbackHeight),
-    );
-    this.displayTargets.forEach((target) =>
-      target.setSize(feedbackWidth, feedbackHeight),
-    );
-    this.blurTarget.setSize(feedbackWidth, feedbackHeight);
+    const feedback = (target: RenderTarget | null, keepImage: boolean) => ({
+      target,
+      width: feedbackWidth,
+      height: feedbackHeight,
+      keepImage,
+    });
+    this.resizeTargets([
+      // Redrawn from scratch every frame before anything reads them; the
+      // blur is rebuilt from the read target at the top of each frame.
+      {
+        target: this.sceneTarget,
+        width: sceneWidth,
+        height: sceneHeight,
+        keepImage: false,
+      },
+      feedback(this.writeTarget, false),
+      feedback(this.blurTarget, false),
+      // The feedback history the next frame warps.
+      feedback(this.readTarget, true),
+      // The afterimage history and the frame a snapshot is drawn from.
+      feedback(this.displayTargets[0], true),
+      feedback(this.displayTargets[1], true),
+      // The snapshots a crossfade dissolves out of.
+      feedback(this.savedFrameTargets[0], true),
+      feedback(this.savedFrameTargets[1], true),
+    ]);
     this.compositeMaterial.uniforms.blur1Tex.value = this.blurTarget.texture;
     this.compositeMaterial.uniforms.blur2Tex.value = this.blurTarget.texture;
     this.compositeMaterial.uniforms.blur3Tex.value = this.blurTarget.texture;
-    for (const target of this.savedFrameTargets) {
-      target?.setSize(feedbackWidth, feedbackHeight);
-    }
     this.compositeMaterial.uniforms.texelSize.value.set(
       1 / Math.max(1, feedbackWidth),
       1 / Math.max(1, feedbackHeight),
@@ -4479,6 +4584,10 @@ class WebGPUMilkdropFeedbackManager
       target?.dispose();
     }
     this.savedFrameTargets = [null, null];
+    if (this.copyPass) {
+      disposeMaterial(this.copyPass.material);
+      this.copyPass = null;
+    }
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.feedbackBlendMaterial);
     disposeMaterial(this.presentMaterial);

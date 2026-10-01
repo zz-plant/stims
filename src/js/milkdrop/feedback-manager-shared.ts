@@ -23,7 +23,9 @@ import {
   type Camera,
   Color,
   DoubleSide,
+  HalfFloatType,
   Mesh,
+  NoBlending,
   OrthographicCamera,
   PlaneGeometry,
   type RenderTarget,
@@ -2154,11 +2156,20 @@ class SharedMilkdropFeedbackManager
   readonly blurVMaterial: ShaderMaterial;
   readonly blurQuad: Mesh;
   readonly blurScene: Scene;
-  private savedFrameTarget: WebGLRenderTarget | null = null;
+  // Snapshots ping-pong: one taken mid-blend draws the present pass, which
+  // samples the current snapshot, so it has to land in the other slot.
+  private savedFrameTargets: [
+    WebGLRenderTarget | null,
+    WebGLRenderTarget | null,
+  ] = [null, null];
+  private savedFrameIndex = 0;
+  /** Resamples one target into another; see copyTargetImage. */
+  private copyPass: { scene: Scene; material: ShaderMaterial } | null = null;
   private readonly halfFloatFeedback: boolean;
   private lastRenderer: {
     render(scene: Scene, camera: Camera): void;
     setRenderTarget?: (target: WebGLRenderTarget | null) => void;
+    getRenderTarget?: () => WebGLRenderTarget | null;
     clear?: () => void;
     getClearAlpha?: () => number;
     setClearAlpha?: (alpha: number) => void;
@@ -2881,36 +2892,92 @@ class SharedMilkdropFeedbackManager
     );
   }
 
+  /**
+   * Snapshots the picture on screen for a crossfade to dissolve out of.
+   *
+   * Outside a blend the composite draws straight to the canvas and the
+   * display target is never written, so copying the display target (what
+   * this used to do) snapshotted an empty or stale buffer and every WebGL
+   * crossfade dissolved out of black. Re-running the composite reproduces the
+   * frame just shown, because its input — the last internal frame — is still
+   * bound. Mid-blend the screen is the present pass's dissolve, so that is
+   * what gets drawn, into the slot the present pass is not sampling.
+   */
   saveCurrentFrame(): void {
-    if (!this.savedFrameTarget) {
-      this.savedFrameTarget = createWebGLFeedbackRenderTarget(
-        this.viewportWidth,
-        this.viewportHeight,
-        {
-          resolutionScale: this.currentFeedbackResolutionScale,
-          useHalfFloatFeedback: this.halfFloatFeedback,
-          samples: 1,
-        },
-      );
-    }
-    if (
-      this.savedFrameTarget.width !== this.readTarget.width ||
-      this.savedFrameTarget.height !== this.readTarget.height
-    ) {
-      this.savedFrameTarget.setSize(
-        this.readTarget.width,
-        this.readTarget.height,
-      );
-    }
     const renderer = this.lastRenderer;
     if (!renderer?.setRenderTarget) return;
-    renderer.setRenderTarget(this.savedFrameTarget);
-    const oldAlpha = this.presentMaterial.uniforms.transitionAlpha.value;
-    this.presentMaterial.uniforms.transitionAlpha.value = 0;
-    renderer.render(this.presentScene, this.camera);
-    this.presentMaterial.uniforms.transitionAlpha.value = oldAlpha;
-    this.presentMaterial.uniforms.savedTex.value =
-      this.savedFrameTarget.texture;
+    const { width, height } = this.readTarget;
+    let target = this.savedFrameTargets[this.savedFrameIndex];
+    if (!target) {
+      target = createWebGLFeedbackRenderTarget(width, height, {
+        resolutionScale: 1,
+        useHalfFloatFeedback: this.halfFloatFeedback,
+        samples: 0,
+      });
+      this.savedFrameTargets[this.savedFrameIndex] = target;
+    } else if (target.width !== width || target.height !== height) {
+      target.setSize(width, height);
+    }
+    const blending =
+      (this.presentMaterial.uniforms.transitionAlpha.value as number) > 0.001;
+    const previousTarget = renderer.getRenderTarget?.() ?? null;
+    renderer.setRenderTarget(target);
+    renderer.render(
+      blending ? this.presentScene : this.compositeScene,
+      this.camera,
+    );
+    renderer.setRenderTarget(previousTarget);
+    this.presentMaterial.uniforms.savedTex.value = target.texture;
+    this.savedFrameIndex = 1 - this.savedFrameIndex;
+  }
+
+  protected copyTargetImage(
+    source: WebGLRenderTarget,
+    destination: WebGLRenderTarget,
+  ): boolean {
+    const renderer = this.lastRenderer;
+    if (!renderer?.setRenderTarget) return false;
+    if (!this.copyPass) {
+      const material = new ShaderMaterial({
+        uniforms: { sourceTex: { value: null } },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = vec4(position.xy, 0.0, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform sampler2D sourceTex;
+          varying vec2 vUv;
+          void main() {
+            gl_FragColor = texture2D(sourceTex, vUv);
+          }
+        `,
+        // A copy, not a draw: alpha must not blend against what was there.
+        blending: NoBlending,
+        depthTest: false,
+        depthWrite: false,
+      });
+      const scene = new Scene();
+      scene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, material));
+      this.copyPass = { scene, material };
+    }
+    this.copyPass.material.uniforms.sourceTex.value = source.texture;
+    const previousTarget = renderer.getRenderTarget?.() ?? null;
+    renderer.setRenderTarget(destination);
+    renderer.render(this.copyPass.scene, this.camera);
+    renderer.setRenderTarget(previousTarget);
+    this.copyPass.material.uniforms.sourceTex.value = null;
+    return true;
+  }
+
+  protected createScratchTarget(like: WebGLRenderTarget): WebGLRenderTarget {
+    return createWebGLFeedbackRenderTarget(like.width, like.height, {
+      resolutionScale: 1,
+      useHalfFloatFeedback: like.texture.type === HalfFloatType,
+      samples: 0,
+    });
   }
 
   setDirectShaderPrograms(
@@ -3488,28 +3555,38 @@ class SharedMilkdropFeedbackManager
       1,
       Math.round(height * this.currentFeedbackResolutionScale),
     );
-    this.sceneTarget.setSize(sceneWidth, sceneHeight);
-    this.warpTarget.setSize(feedbackWidth, feedbackHeight);
-    this.warpUvTarget.setSize(feedbackWidth, feedbackHeight);
-    this.targets.forEach((target) =>
-      target.setSize(feedbackWidth, feedbackHeight),
-    );
-    this.displayTarget.setSize(feedbackWidth, feedbackHeight);
-    if (this.savedFrameTarget) {
-      this.savedFrameTarget.setSize(feedbackWidth, feedbackHeight);
-    }
-    for (let level = 0; level < BLUR_LEVEL_SCALES.length; level += 1) {
-      const levelWidth = Math.max(
-        1,
-        Math.round(feedbackWidth * BLUR_LEVEL_SCALES[level]),
-      );
-      const levelHeight = Math.max(
-        1,
-        Math.round(feedbackHeight * BLUR_LEVEL_SCALES[level]),
-      );
-      this.blurTargets[level].setSize(levelWidth, levelHeight);
-      this.blurHTargets[level].setSize(levelWidth, levelHeight);
-    }
+    const feedback = (
+      target: WebGLRenderTarget | null,
+      keepImage: boolean,
+    ) => ({ target, width: feedbackWidth, height: feedbackHeight, keepImage });
+    this.resizeTargets([
+      // Redrawn from scratch every frame before anything reads them.
+      {
+        target: this.sceneTarget,
+        width: sceneWidth,
+        height: sceneHeight,
+        keepImage: false,
+      },
+      feedback(this.warpTarget, false),
+      feedback(this.warpUvTarget, false),
+      feedback(this.writeTarget, false),
+      // The feedback history the next frame warps.
+      feedback(this.readTarget, true),
+      // What a mid-blend snapshot draws from, and the snapshots themselves.
+      feedback(this.displayTarget, true),
+      feedback(this.savedFrameTargets[0], true),
+      feedback(this.savedFrameTargets[1], true),
+      // The composite samples the blur the previous frame left behind; the
+      // horizontal pass is scratch within renderBlurPasses.
+      ...BLUR_LEVEL_SCALES.flatMap((scale, level) => {
+        const width = Math.max(1, Math.round(feedbackWidth * scale));
+        const height = Math.max(1, Math.round(feedbackHeight * scale));
+        return [
+          { target: this.blurTargets[level], width, height, keepImage: true },
+          { target: this.blurHTargets[level], width, height, keepImage: false },
+        ];
+      }),
+    ]);
     this.compositeMaterial.uniforms.texelSize.value.set(
       1 / Math.max(1, feedbackWidth),
       1 / Math.max(1, feedbackHeight),
@@ -3542,8 +3619,14 @@ class SharedMilkdropFeedbackManager
     this.displayTarget.dispose();
     this.blurTargets.forEach((target) => target.dispose());
     this.blurHTargets.forEach((target) => target.dispose());
-    this.savedFrameTarget?.dispose();
-    this.savedFrameTarget = null;
+    for (const target of this.savedFrameTargets) {
+      target?.dispose();
+    }
+    this.savedFrameTargets = [null, null];
+    if (this.copyPass) {
+      disposeMaterial(this.copyPass.material);
+      this.copyPass = null;
+    }
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.presentMaterial);
     disposeMaterial(this.blurHMaterial);
