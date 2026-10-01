@@ -66,10 +66,26 @@ export interface AgentEditorState {
   sourceLength: number;
 }
 
+/**
+ * Audio sources an embedding page can start by message. The others need the
+ * viewer: 'file' plays a file they pick, and tab or YouTube capture opens a
+ * screen-share prompt that only a click inside the page may open.
+ */
+export type AgentAudioSource = 'demo' | 'microphone';
+
+/**
+ * A command's outcome, posted back as `toil:status`. `success` is true only
+ * once the effect has landed; otherwise `reason` says what stopped it.
+ */
+export type AgentCommandResult = {
+  success: boolean;
+  reason?: string;
+} & Record<string, unknown>;
+
 export type AgentBridgeCommand =
   | { type: 'toil:load_preset'; presetId?: string; milkSource?: string }
   | { type: 'toil:apply_tweak'; tweak: string }
-  | { type: 'toil:set_audio'; source: 'demo' | 'microphone' | 'file' }
+  | { type: 'toil:set_audio'; source: AgentAudioSource }
   | { type: 'toil:request_telemetry' }
   | { type: 'toil:midi_set'; target: string; value: number }
   | { type: 'toil:midi_cc'; cc: number; value: number }
@@ -202,10 +218,12 @@ export function getAgentTelemetry(): AgentTelemetry {
   return activeTelemetry;
 }
 
-export function initAgentBridge(callbacks?: {
+export interface AgentBridgeCallbacks {
   onLoadPreset?: (payload: { presetId?: string; milkSource?: string }) => void;
-  onApplyTweak?: (tweak: string) => void;
-  onSetAudio?: (source: 'demo' | 'microphone' | 'file') => void;
+  /** Resolves once the tweak has been applied and compiled, or refused. */
+  onApplyTweak?: (tweak: string) => Promise<AgentCommandResult>;
+  /** Resolves once the stage is playing `source`, or the start failed. */
+  onSetAudio?: (source: AgentAudioSource) => Promise<AgentCommandResult>;
   /** Claude (via an MCP session_midi_set call) asking for a target by
    * name — e.g. "warp" — with a value already in that target's range. */
   onMidiSet?: (target: string, value: number) => void;
@@ -220,7 +238,48 @@ export function initAgentBridge(callbacks?: {
   applyEditorFields?: (
     updates: Record<string, number | string>,
   ) => Promise<AgentEditorState | null>;
-}): () => void {
+}
+
+/** Messages this bridge posts itself. Never answered, so a bridge that
+ * hears its own replies (same window, nested frames) cannot echo forever. */
+const REPLY_TYPES: readonly string[] = [
+  'toil:status',
+  'toil:telemetry',
+  'toil:editor_state',
+];
+
+const AUDIO_SOURCE_REFUSALS: Record<string, string> = {
+  file: 'needs a file the viewer picks inside the page',
+  tab: 'opens a screen-share prompt, which only a click inside the page may open',
+  youtube:
+    'opens a screen-share prompt, which only a click inside the page may open',
+};
+
+function describeAudioSourceRefusal(source: unknown): string {
+  const hint = 'Send source "demo" or "microphone".';
+  if (typeof source !== 'string' || !source) {
+    return `source is required. ${hint}`;
+  }
+  return `"${source}" ${AUDIO_SOURCE_REFUSALS[source] ?? 'is not an audio source'}. ${hint}`;
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/** Null means the engine is not mounted, so nothing was applied. */
+function describeEditorOutcome(state: AgentEditorState | null) {
+  if (!state) {
+    return {
+      success: false,
+      reason: 'The visualizer is not running yet, so nothing was applied.',
+      state,
+    };
+  }
+  return { success: state.errorCount === 0, state };
+}
+
+export function initAgentBridge(callbacks?: AgentBridgeCallbacks): () => void {
   if (typeof window === 'undefined') {
     return () => {};
   }
@@ -239,6 +298,61 @@ export function initAgentBridge(callbacks?: {
       (await callbacks?.applyEditorFields?.(updates)) ?? null,
   };
 
+  const replyStatus = (
+    action: string,
+    result: AgentCommandResult,
+    context: Record<string, unknown> = {},
+  ) => {
+    postAgentMessage({ type: 'toil:status', action, ...context, ...result });
+  };
+
+  /** Runs an async command and reports what actually happened. An unwired
+   * callback is a refusal, never a silent success. */
+  const settleStatus = (
+    action: string,
+    context: Record<string, unknown>,
+    run: (() => Promise<AgentCommandResult>) | undefined,
+  ) => {
+    if (!run) {
+      replyStatus(
+        action,
+        { success: false, reason: `${action} is not available on this page.` },
+        context,
+      );
+      return;
+    }
+    void run().then(
+      (result) => replyStatus(action, result, context),
+      (error) =>
+        replyStatus(
+          action,
+          { success: false, reason: describeError(error) },
+          context,
+        ),
+    );
+  };
+
+  const settleEditor = (
+    action: string,
+    run: (() => Promise<AgentEditorState | null>) | undefined,
+  ) => {
+    const reply = (outcome: Record<string, unknown>) =>
+      postAgentMessage({ type: 'toil:editor_state', action, ...outcome });
+    if (!run) {
+      reply({
+        success: false,
+        reason: `${action} is not available on this page.`,
+        state: null,
+      });
+      return;
+    }
+    void run().then(
+      (state) => reply(describeEditorOutcome(state)),
+      (error) =>
+        reply({ success: false, reason: describeError(error), state: null }),
+    );
+  };
+
   const handleMessage = (event: MessageEvent) => {
     if (!event.data || typeof event.data !== 'object') {
       return;
@@ -248,42 +362,73 @@ export function initAgentBridge(callbacks?: {
 
     switch (data.type) {
       case 'toil:load_preset': {
-        callbacks?.onLoadPreset?.({
-          presetId: data.presetId,
-          milkSource: data.milkSource,
-        });
-        postAgentMessage({
-          type: 'toil:status',
-          action: 'load_preset',
-          success: true,
-          presetId: data.presetId,
-        });
+        const presetId =
+          typeof data.presetId === 'string' && data.presetId
+            ? data.presetId
+            : undefined;
+        const milkSource =
+          typeof data.milkSource === 'string' && data.milkSource
+            ? data.milkSource
+            : undefined;
+        const onLoadPreset = callbacks?.onLoadPreset;
+        if (!presetId && !milkSource) {
+          replyStatus('load_preset', {
+            success: false,
+            reason: 'Send presetId (a catalog id) or milkSource (preset code).',
+          });
+          break;
+        }
+        if (!onLoadPreset) {
+          replyStatus(
+            'load_preset',
+            {
+              success: false,
+              reason: 'load_preset is not available on this page.',
+            },
+            { presetId },
+          );
+          break;
+        }
+        onLoadPreset({ presetId, milkSource });
+        replyStatus('load_preset', { success: true }, { presetId });
         break;
       }
 
       case 'toil:apply_tweak': {
-        if (data.tweak) {
-          callbacks?.onApplyTweak?.(data.tweak);
-          postAgentMessage({
-            type: 'toil:status',
-            action: 'apply_tweak',
-            success: true,
-            tweak: data.tweak,
+        const tweak = typeof data.tweak === 'string' ? data.tweak.trim() : '';
+        if (!tweak) {
+          replyStatus('apply_tweak', {
+            success: false,
+            reason:
+              'tweak must describe the change in words, e.g. "faster motion".',
           });
+          break;
         }
+        const onApplyTweak = callbacks?.onApplyTweak;
+        settleStatus(
+          'apply_tweak',
+          { tweak },
+          onApplyTweak && (() => onApplyTweak(tweak)),
+        );
         break;
       }
 
       case 'toil:set_audio': {
-        if (data.source) {
-          callbacks?.onSetAudio?.(data.source);
-          postAgentMessage({
-            type: 'toil:status',
-            action: 'set_audio',
-            success: true,
-            source: data.source,
-          });
+        const source: unknown = data.source;
+        if (source !== 'demo' && source !== 'microphone') {
+          replyStatus(
+            'set_audio',
+            { success: false, reason: describeAudioSourceRefusal(source) },
+            { source },
+          );
+          break;
         }
+        const onSetAudio = callbacks?.onSetAudio;
+        settleStatus(
+          'set_audio',
+          { source },
+          onSetAudio && (() => onSetAudio(source)),
+        );
         break;
       }
 
@@ -311,34 +456,38 @@ export function initAgentBridge(callbacks?: {
 
       case 'toil:apply_source': {
         if (typeof data.source === 'string') {
-          void callbacks?.applyEditorSource?.(data.source).then((state) => {
-            postAgentMessage({
-              type: 'toil:editor_state',
-              action: 'apply_source',
-              success: (state?.errorCount ?? 0) === 0,
-              state,
-            });
-          });
+          const source = data.source;
+          const apply = callbacks?.applyEditorSource;
+          settleEditor('apply_source', apply && (() => apply(source)));
         }
         break;
       }
 
       case 'toil:set_fields': {
         if (data.fields && typeof data.fields === 'object') {
-          void callbacks?.applyEditorFields?.(data.fields).then((state) => {
-            postAgentMessage({
-              type: 'toil:editor_state',
-              action: 'set_fields',
-              success: (state?.errorCount ?? 0) === 0,
-              state,
-            });
-          });
+          const fields = data.fields;
+          const apply = callbacks?.applyEditorFields;
+          settleEditor('set_fields', apply && (() => apply(fields)));
         }
         break;
       }
 
-      default:
+      default: {
+        // Anything else namespaced to this protocol is a command this page
+        // does not have. Say so, rather than leave the sender waiting.
+        const type: unknown = (event.data as { type?: unknown }).type;
+        if (
+          typeof type === 'string' &&
+          type.startsWith('toil:') &&
+          !REPLY_TYPES.includes(type)
+        ) {
+          replyStatus(type.slice('toil:'.length), {
+            success: false,
+            reason: `Unknown message type "${type}".`,
+          });
+        }
         break;
+      }
     }
   };
 
