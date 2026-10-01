@@ -17,10 +17,5 @@
 /lefthook.yml @zz-plant
 /.githooks/ @zz-plant
 
-# Toy implementation and metadata
-/src/js/toys/ @zz-plant
-/src/data/toys.json @zz-plant
-/toys/ @zz-plant
-
 # Tests
 /tests/ @zz-plant

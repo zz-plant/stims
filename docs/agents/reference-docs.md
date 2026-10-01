@@ -12,7 +12,6 @@
 - `docs/QA_PLAN.md` — broader QA map and focused regression coverage.
 - `docs/PAGE_SPECIFICATIONS.md` — app shell and launch-flow behavior.
 - `docs/DEPLOYMENT.md` — shipping and hosting guidance.
-- `src/data/toys.json` — product metadata for the shipped experience, read directly by the MCP server.
 
 ## Architecture and fidelity docs
 
@@ -28,7 +27,6 @@
 - `src/js/core/` — shared renderer, audio, settings, automation, and capability systems.
 - `src/js/milkdrop/` — preset compiler, VM, runtime, editor, overlay, and catalog behavior.
 - `src/css/` — `tokens.css` (design tokens), `chrome.css` (panel/dock control system), `app-shell.css` (workspace shell, wrapped in `@scope (.stims-shell)`), `index.css` and `base.css` (older page-level styles), plus `*.module.css` for component-scoped styles.
-- `src/data/toys.json` — compatibility manifest source for shipped entry metadata.
 - `public/milkdrop-presets/` — bundled preset corpus and catalog assets.
 
 ## Config and entry points

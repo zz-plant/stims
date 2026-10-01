@@ -82,12 +82,6 @@ const ogWidth = 1200;
 const ogHeight = 630;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-type ToyEntry = {
-  slug: string;
-  title: string;
-  description: string;
-};
-
 type SitemapRouteSpec = {
   path: string;
   imagePath: string;
@@ -595,26 +589,6 @@ function encodeIco(images: Array<{ size: number; png: Buffer }>) {
 const formatDate = (value: number | Date) =>
   new Date(value).toISOString().slice(0, 10);
 
-async function loadToys(rootDir = repoRoot) {
-  const toysRaw = await readFile(
-    path.join(rootDir, 'src/data/toys.json'),
-    'utf8',
-  );
-  return JSON.parse(toysRaw) as ToyEntry[];
-}
-
-function getMilkdropEntry(toys: ToyEntry[]) {
-  return (
-    toys.find((entry) => entry.slug === 'milkdrop') ??
-    ({
-      slug: 'milkdrop',
-      title: 'MilkDrop Visualizer',
-      description:
-        'Dedicated Stims launch route for compatibility checks, audio setup, quality tuning, preset browsing, and live editing.',
-    } satisfies ToyEntry)
-  );
-}
-
 async function gitCommandSucceeded(
   rootDir: string,
   args: string[],
@@ -677,17 +651,19 @@ export async function resolveLastmodDate(
   return getFilesystemLastmod(rootDir, sourcePaths);
 }
 
-export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
+const MILKDROP_IMAGE_TITLE = 'MilkDrop Visualizer | Stims';
+
+export function getSitemapRouteSpecs(): SitemapRouteSpec[] {
   return [
     {
       path: '/',
       imagePath: '/og/milkdrop.png',
-      imageTitle: `${milkdrop.title} | Stims`,
+      imageTitle: MILKDROP_IMAGE_TITLE,
       imageCaption:
         'Play and live-edit MilkDrop presets in your browser, with demo audio, hand-picked presets, and ways to react to your own music.',
       changefreq: 'weekly',
       priority: '1.0',
-      sourcePaths: ['index.html', 'src/data/toys.json'],
+      sourcePaths: ['index.html'],
       includeInSitemap: true,
     },
     {
@@ -704,7 +680,7 @@ export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
     {
       path: '/milkdrop/',
       imagePath: '/og/milkdrop.png',
-      imageTitle: `${milkdrop.title} | Stims`,
+      imageTitle: MILKDROP_IMAGE_TITLE,
       imageCaption:
         'Compatibility alias that immediately redirects to the canonical Stims route.',
       changefreq: 'monthly',
@@ -760,18 +736,14 @@ export async function buildSitemapEntries(
   rootDir = repoRoot,
   {
     baseUrl = DEFAULT_BASE_URL,
-    milkdrop,
     resolveLastmod = (sourcePaths: string[]) =>
       resolveLastmodDate(rootDir, sourcePaths),
   }: {
     baseUrl?: string;
-    milkdrop?: ToyEntry;
     resolveLastmod?: (sourcePaths: string[]) => Promise<string>;
   } = {},
 ): Promise<SitemapEntry[]> {
-  const toys = milkdrop ? [] : await loadToys(rootDir);
-  const milkdropEntry = milkdrop ?? getMilkdropEntry(toys);
-  const specs = getSitemapRouteSpecs(milkdropEntry).filter(
+  const specs = getSitemapRouteSpecs().filter(
     (route) => route.includeInSitemap,
   );
 
@@ -995,12 +967,7 @@ export async function buildSeoArtifacts(
   rootDir = repoRoot,
   { baseUrl = DEFAULT_BASE_URL }: { baseUrl?: string } = {},
 ): Promise<SeoArtifacts> {
-  const toys = await loadToys(rootDir);
-  const milkdrop = getMilkdropEntry(toys);
-  const sitemapEntries = await buildSitemapEntries(rootDir, {
-    baseUrl,
-    milkdrop,
-  });
+  const sitemapEntries = await buildSitemapEntries(rootDir, { baseUrl });
   const presetChunks = chunkSitemapEntries(
     await buildPresetSitemapEntries(rootDir, { baseUrl }),
   );

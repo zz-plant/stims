@@ -214,7 +214,7 @@ bun run test:compat
 ### Before committing
 
 ```bash
-# Full quality gate (syntax, types, tests, architecture, SEO, toy manifest)
+# Full quality gate (syntax, types, tests, architecture, SEO, README claims)
 bun run check
 ```
 

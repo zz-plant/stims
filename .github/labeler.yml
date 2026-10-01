@@ -9,13 +9,6 @@ github:
       - any-glob-to-any-file:
           - '.github/**'
 
-toys:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'src/js/toys/**'
-          - 'src/data/toys.json'
-          - 'public/toys.json'
-
 frontend:
   - changed-files:
       - any-glob-to-any-file:
