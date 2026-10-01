@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
+  readMilkdropField,
   upsertMilkdropField,
   upsertMilkdropFields,
 } from '../../src/js/milkdrop/formatter.ts';
@@ -211,6 +212,35 @@ describe('milkdrop field upsert', () => {
       const next = upsertMilkdropField('zoom = 1 // gentle\n', 'zoom', 1.5);
       expect(next).toBe('zoom=1.5 // gentle\n');
       expect(fieldValue(next, 'zoom')).toBeCloseTo(1.5, 6);
+    });
+  });
+
+  // The Tune pane's wave and shape controls write MilkDrop 2's spelling;
+  // the buffer may carry another one the compiler reads the same way.
+  describe('custom wave and shape fields', () => {
+    test('a write finds the field under any spelling the compiler reads', () => {
+      const source = 'wavecode_0_enabled=1\nwavecode_0_thick=0\n';
+      const next = upsertMilkdropField(source, 'wavecode_0_bDrawThick', 1);
+      expect(next).toBe('wavecode_0_enabled=1\nwavecode_0_thick=1\n');
+      expect(readMilkdropField(next, 'wavecode_0_bDrawThick')).toBe(1);
+    });
+
+    test('a missing field is added under the spelling it was given', () => {
+      const next = upsertMilkdropField(
+        'shapecode_2_enabled=1\n',
+        'shapecode_2_thickOutline',
+        1,
+      );
+      expect(assignmentsFor(next, 'shapecode_2_thickOutline')).toEqual([
+        'shapecode_2_thickOutline=1',
+      ]);
+    });
+
+    test('a slot field never touches the same field in another slot', () => {
+      const source = 'shapecode_0_rad=0.1\nshapecode_1_rad=0.2\n';
+      expect(upsertMilkdropField(source, 'shapecode_1_rad', 0.5)).toBe(
+        'shapecode_0_rad=0.1\nshapecode_1_rad=0.5\n',
+      );
     });
   });
 });

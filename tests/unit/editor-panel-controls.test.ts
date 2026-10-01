@@ -358,6 +358,147 @@ describe('editor panel colour groups and value-source chips', () => {
     panel.dispose();
     expect(hasVariableListeners()).toBe(false);
   });
+
+  // A custom wave's or shape's own settings, shown for the one picked.
+  const slotSource = [
+    'wavecode_0_enabled=1',
+    'wavecode_0_bDrawThick=0',
+    'shapecode_1_enabled=0',
+    'shapecode_1_rad=0.2',
+    'shapecode_1_sides=5',
+    'shape_1_per_frame1=x = 0.5 + 0.1*sin(time);',
+  ].join('\n');
+  const slotPicker = (panel: EditorPanel) =>
+    panel.element.querySelector<HTMLSelectElement>(
+      '[data-section="slot"] select',
+    );
+  const pick = (panel: EditorPanel, value: string) => {
+    const picker = slotPicker(panel);
+    if (!picker) throw new Error('missing wave-or-shape picker');
+    picker.value = value;
+    picker.dispatchEvent(new Event('change'));
+  };
+  const slotLabels = (panel: EditorPanel) =>
+    Array.from(
+      panel.element.querySelectorAll(
+        '.stims-editor__slot-controls .stims-editor__slider-label, .stims-editor__slot-controls .stims-editor__toggle',
+      ),
+      (node) => node.textContent,
+    );
+
+  test('the picker lists the waves and shapes the preset defines', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    panel.setSessionState(compiledStateFor(slotSource));
+
+    const options = Array.from(
+      slotPicker(panel)?.options ?? [],
+      (option) => option.textContent,
+    );
+    expect(options).toEqual(['Pick one to tune', 'wave_0', 'shape_1 (off)']);
+    // Nothing is shown until something is picked.
+    expect(slotLabels(panel)).toEqual([]);
+
+    panel.setSessionState(compiledStateFor('zoom=1\n'));
+    expect(
+      panel.element.querySelector<HTMLElement>('[data-section="slot"]')?.hidden,
+    ).toBe(true);
+
+    panel.dispose();
+  });
+
+  test('a picked shape gets its own controls, writing its own lines', () => {
+    const callbacks = createMockCallbacks();
+    const panel = new EditorPanel(callbacks);
+    panel.setSessionState(compiledStateFor(slotSource));
+    pick(panel, 'shape_1');
+
+    expect(slotLabels(panel)).toEqual([
+      'Draw',
+      'Additive',
+      'Thick outline',
+      'Textured',
+      'Centre',
+      'Edge',
+      'Border',
+      'Sides',
+      'Radius',
+      'X',
+      'Y',
+      'Angle',
+    ]);
+    // The fader shows the shape's value, not the default.
+    const radius = panel.element.querySelector<HTMLInputElement>(
+      '.stims-editor__slot-controls input[aria-label^="Radius"]',
+    );
+    expect(radius?.getAttribute('aria-valuetext')).toBe('0.20');
+
+    // Its code recomputes x every frame; nothing recomputes the radius.
+    expect(chipFor(panel, 'X')?.dataset.state).toBe('driven');
+    expect(chipFor(panel, 'Radius')?.dataset.state).toBe('static');
+
+    // A slot field has no per-frame value for MIDI or modulation to drive.
+    const radiusRow = radius?.closest('.stims-editor__slider');
+    // Strings, not elements: a failing matcher that prints a DOM node
+    // stalls or aborts the runner.
+    expect(
+      radiusRow?.querySelector('.stims-editor__mod') ? 'modulation' : 'none',
+    ).toBe('none');
+    expect(
+      radiusRow?.querySelector('[aria-label^="MIDI-learn"]') ? 'learn' : 'none',
+    ).toBe('none');
+
+    // Switching it on rewrites the shape's own line.
+    const draw = Array.from(
+      panel.element.querySelectorAll<HTMLButtonElement>(
+        '.stims-editor__slot-controls .stims-editor__toggle',
+      ),
+    ).find((button) => button.textContent === 'Draw');
+    draw?.click();
+    expect(panel.getEditorSource()).toContain('shapecode_1_enabled=1');
+    expect(panel.getEditorSource()).not.toContain('shapecode_1_enabled=0');
+
+    panel.dispose();
+  });
+
+  test('a wave switch writes the spelling the preset uses', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    panel.setSessionState(compiledStateFor(slotSource));
+    pick(panel, 'wave_0');
+
+    const thick = Array.from(
+      panel.element.querySelectorAll<HTMLButtonElement>(
+        '.stims-editor__slot-controls .stims-editor__toggle',
+      ),
+    ).find((button) => button.textContent === 'Thick');
+    expect(thick?.getAttribute('aria-checked')).toBe('false');
+    thick?.click();
+    expect(panel.getEditorSource()).toContain('wavecode_0_bDrawThick=1');
+    expect(thick?.getAttribute('aria-checked')).toBe('true');
+
+    // Picking another takes the first one's controls away.
+    pick(panel, 'shape_1');
+    expect(slotLabels(panel)).not.toContain('Thick');
+    pick(panel, '');
+    expect(slotLabels(panel)).toEqual([]);
+
+    panel.dispose();
+  });
+
+  test('the Outline’s Tune button picks the shape and brings Tune forward', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    panel.setSessionState(compiledStateFor(slotSource));
+    tabFor(panel, 'outline')?.click();
+
+    panel.element
+      .querySelector<HTMLButtonElement>('[aria-label="Tune shape_1"]')
+      ?.click();
+
+    expect(tabFor(panel, 'tune')?.getAttribute('aria-selected')).toBe('true');
+    expect(slotPicker(panel)?.value).toBe('shape_1');
+    expect(slotLabels(panel)).toContain('Sides');
+
+    panel.dispose();
+  });
 });
 
 /**
