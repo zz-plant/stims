@@ -12,11 +12,14 @@ import {
   recordStatusMessage,
   resetAgentStateForTests,
 } from '../../src/js/frontend/agent-state.ts';
-import { createEmptyEngineSnapshot } from '../../src/js/frontend/engine/engine-snapshot.ts';
+import {
+  createEmptyEngineSnapshot,
+  type EngineSnapshot,
+} from '../../src/js/frontend/engine/engine-snapshot.ts';
 import type { EngineContextValue } from '../../src/js/frontend/engine-context.tsx';
 import { mutatePresetStyle } from '../../src/js/milkdrop/preset-mutations.ts';
 import type { MilkdropEditorSessionState } from '../../src/js/milkdrop/runtime-types.ts';
-import { makeEngineValue } from '../frontend-harness.tsx';
+import { makeEngineValue, makePresetEntry } from '../frontend-harness.tsx';
 
 describe('agent bridge & telemetry', () => {
   test('updates and reads agent telemetry snapshot', () => {
@@ -40,8 +43,9 @@ describe('agent bridge & telemetry', () => {
     let loadedPreset: string | undefined;
 
     const cleanup = initAgentBridge({
-      onLoadPreset: (payload) => {
+      onLoadPreset: async (payload) => {
         loadedPreset = payload.presetId;
+        return { success: true };
       },
     });
 
@@ -249,23 +253,47 @@ describe('agent bridge replies report what actually happened', () => {
     });
   };
 
-  /** The bridge exactly as the app wires it, over a fake engine. */
+  /** The bridge exactly as the app wires it, over a fake engine. Returns
+   * the snapshot ref so a test can land the catalog the way the app does. */
   const installAppBridge = (
     engine: Partial<EngineContextValue>,
-    options: { currentSource?: string; audioCommitTimeoutMs?: number } = {},
+    options: {
+      currentSource?: string;
+      catalog?: string[];
+      audioCommitTimeoutMs?: number;
+      presetTimeoutMs?: number;
+    } = {},
   ) => {
+    const engineSnapshotRef: { current: EngineSnapshot | null } = {
+      current: {
+        ...createEmptyEngineSnapshot(),
+        currentSource: options.currentSource ?? '',
+        catalogEntries: catalogOf(options.catalog ?? []),
+      },
+    };
     cleanup = initAgentBridge(
       buildAgentBridgeCallbacks({
         engineRef: { current: makeEngineValue(engine) },
-        engineSnapshotRef: {
-          current: {
-            ...createEmptyEngineSnapshot(),
-            currentSource: options.currentSource ?? '',
-          },
-        },
+        engineSnapshotRef,
         audioCommitTimeoutMs: options.audioCommitTimeoutMs,
+        presetTimeoutMs: options.presetTimeoutMs,
       }),
     );
+    return engineSnapshotRef;
+  };
+
+  const catalogOf = (ids: string[]): EngineSnapshot['catalogEntries'] =>
+    ids.map(
+      (id) => ({ id, title: id }) as EngineSnapshot['catalogEntries'][number],
+    );
+
+  const CATALOG = ['geiss-casino', 'shifter-snakeskin', 'eos-heater-core-c'];
+
+  /** The stage after boot: catalog loaded, preview preset on screen. */
+  const stageCore: AgentCoreSnapshot = {
+    ...idleCore,
+    presetId: 'shifter-snakeskin',
+    catalogSize: CATALOG.length,
   };
 
   const compiledSession = (
@@ -472,10 +500,203 @@ describe('agent bridge replies report what actually happened', () => {
     }
   });
 
+  test('load_preset resolves the id, switches the stage, and confirms once it shows', async () => {
+    emitAgentCommit(stageCore);
+    const selected: string[] = [];
+    installAppBridge(
+      {
+        handlePresetSelection: (presetId) => {
+          selected.push(presetId);
+          setTimeout(() => emitAgentCommit({ ...stageCore, presetId }), 0);
+        },
+      },
+      { catalog: CATALOG },
+    );
+
+    // Ids resolve the way the route resolves them, so case does not matter.
+    post({ type: 'toil:load_preset', presetId: 'GEISS-CASINO' });
+    const reply = await replyTo('load_preset');
+
+    expect(selected).toEqual(['geiss-casino']);
+    expect(reply).toMatchObject({ success: true, presetId: 'geiss-casino' });
+  });
+
+  test('load_preset before the engine mounts mounts it with that preset', async () => {
+    // An embedded page mounts nothing before audio. Only the shell's fallback
+    // catalog exists, and selecting the preset is what boots the stage.
+    const selected: string[] = [];
+    installAppBridge({
+      catalog: [makePresetEntry({ id: 'geiss-casino', title: 'Casino' })],
+      handlePresetSelection: (presetId) => {
+        selected.push(presetId);
+        setTimeout(() => emitAgentCommit({ ...stageCore, presetId }), 0);
+      },
+    });
+
+    post({ type: 'toil:load_preset', presetId: 'geiss-casino' });
+    const reply = await replyTo('load_preset');
+
+    expect(selected).toEqual(['geiss-casino']);
+    expect(reply).toMatchObject({ success: true, presetId: 'geiss-casino' });
+  });
+
+  test('load_preset while the stage boots waits past the boot preset', async () => {
+    // Nothing on stage yet: the booting stage shows its own first preset
+    // before the requested one lands.
+    installAppBridge(
+      {
+        handlePresetSelection: (presetId) => {
+          setTimeout(() => {
+            emitAgentCommit({ ...stageCore, presetId: 'first-run' });
+            setTimeout(() => emitAgentCommit({ ...stageCore, presetId }), 0);
+          }, 0);
+        },
+      },
+      { catalog: CATALOG },
+    );
+
+    post({ type: 'toil:load_preset', presetId: 'geiss-casino' });
+    const reply = await replyTo('load_preset');
+
+    expect(reply).toMatchObject({ success: true, presetId: 'geiss-casino' });
+  });
+
+  test('load_preset reports a stage that settled on a different preset', async () => {
+    emitAgentCommit(stageCore);
+    installAppBridge(
+      {
+        // Something else took the stage first, and nothing reported a
+        // failure for the requested preset.
+        handlePresetSelection: () => {
+          setTimeout(
+            () => emitAgentCommit({ ...stageCore, presetId: 'autoplay-pick' }),
+            0,
+          );
+        },
+      },
+      { catalog: CATALOG },
+    );
+
+    post({ type: 'toil:load_preset', presetId: 'geiss-casino' });
+    const reply = await replyTo('load_preset');
+
+    expect(reply.success).toBe(false);
+    expect(String(reply.reason)).toContain('"autoplay-pick"');
+  });
+
+  test('load_preset refuses an id the catalog does not have, and suggests the close ones', async () => {
+    emitAgentCommit(stageCore);
+    const selected: string[] = [];
+    installAppBridge(
+      { handlePresetSelection: (presetId) => selected.push(presetId) },
+      { catalog: CATALOG },
+    );
+
+    post({ type: 'toil:load_preset', presetId: 'geiss-casin' });
+    const reply = await replyTo('load_preset');
+
+    expect(reply.success).toBe(false);
+    expect(reply.suggestions).toEqual(['geiss-casino']);
+    expect(selected).toEqual([]);
+  });
+
+  test('load_preset reports the shell giving up on a preset', async () => {
+    emitAgentCommit(stageCore);
+    installAppBridge(
+      {
+        // What the shell does when a preset will not load: say so, then
+        // show the first-run preset instead.
+        handlePresetSelection: () => {
+          recordStatusMessage(
+            '"geiss-casino" could not be loaded. Showing another preset instead.',
+          );
+          setTimeout(
+            () => emitAgentCommit({ ...stageCore, presetId: 'first-run' }),
+            0,
+          );
+        },
+      },
+      { catalog: CATALOG },
+    );
+
+    post({ type: 'toil:load_preset', presetId: 'geiss-casino' });
+    const reply = await replyTo('load_preset');
+
+    expect(reply.success).toBe(false);
+    expect(reply.reason).toBe(
+      '"geiss-casino" could not be loaded. Showing another preset instead.',
+    );
+  });
+
+  test('load_preset reports a preset that never reaches the stage', async () => {
+    emitAgentCommit(stageCore);
+    installAppBridge(
+      {
+        // The selection is taken, but the engine gives up on the preset.
+        handlePresetSelection: () => {
+          recordStatusMessage('Could not load "geiss-casino".');
+        },
+      },
+      { catalog: CATALOG, presetTimeoutMs: 20 },
+    );
+
+    post({ type: 'toil:load_preset', presetId: 'geiss-casino' });
+    const reply = await replyTo('load_preset');
+
+    expect(reply.success).toBe(false);
+    expect(reply.reason).toBe('Could not load "geiss-casino".');
+  });
+
+  test('load_preset with milkSource reports whether the code compiled', async () => {
+    emitAgentCommit(stageCore);
+    const applied: string[] = [];
+    installAppBridge(
+      {
+        applyEditorSourceAwaited: async (source) => {
+          applied.push(source);
+          return compiledSession(source, { failed: source.includes('(') });
+        },
+      },
+      { catalog: CATALOG },
+    );
+
+    post({ type: 'toil:load_preset', milkSource: '[preset00]\nzoom=1.1\n' });
+    const compiled = await replyTo('load_preset');
+    replies.length = 0;
+    post({ type: 'toil:load_preset', milkSource: '[preset00]\nzoom=(\n' });
+    const broken = await replyTo('load_preset');
+
+    expect(applied).toEqual(['[preset00]\nzoom=1.1\n', '[preset00]\nzoom=(\n']);
+    expect(compiled.success).toBe(true);
+    expect(broken).toMatchObject({
+      success: false,
+      state: { renderingFallback: true },
+    });
+  });
+
+  test('load_preset with milkSource is refused while nothing is on stage', async () => {
+    const applied: string[] = [];
+    installAppBridge({
+      applyEditorSourceAwaited: async (source) => {
+        applied.push(source);
+        return compiledSession(source);
+      },
+    });
+
+    post({ type: 'toil:load_preset', milkSource: '[preset00]\nzoom=1.1\n' });
+    const reply = await replyTo('load_preset');
+
+    expect(reply.success).toBe(false);
+    expect(applied).toEqual([]);
+  });
+
   test('load_preset with nothing to load is refused', async () => {
     const loaded: unknown[] = [];
     cleanup = initAgentBridge({
-      onLoadPreset: (payload) => loaded.push(payload),
+      onLoadPreset: async (payload) => {
+        loaded.push(payload);
+        return { success: true };
+      },
     });
 
     post({ type: 'toil:load_preset' });
