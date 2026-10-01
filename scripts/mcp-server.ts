@@ -23,6 +23,7 @@ import sharp from 'sharp';
 import { z } from 'zod';
 import type { MilkdropExpressionNode } from '../src/js/milkdrop/common-types.ts';
 import { resolveAgentChromiumArgs } from './browser-launch.ts';
+import { sendToil } from './embed-harness.ts';
 import { registerPerformanceTools } from './mcp-performance-tools.ts';
 import {
   asImageResponse,
@@ -1030,8 +1031,8 @@ server.registerTool(
 // goes through the exact same per-device binding pipeline a physical
 // controller uses (src/js/core/services/webmidi-controller.ts). These
 // tools post window messages the app already listens for
-// (src/js/frontend/agent-bridge.ts) — same mechanism session_apply_source
-// uses for the editor, just a different event name.
+// (src/js/frontend/agent-bridge.ts) and report its reply: they used to say
+// "Set warp = 1.2." whether or not anything was on stage to receive it.
 
 server.registerTool(
   'session_midi_set',
@@ -1051,16 +1052,16 @@ server.registerTool(
     if (!session) return asTextResponse('Session not found or expired.');
 
     try {
-      await session.page.evaluate(
-        ({ target: t, value: v }) => {
-          window.postMessage(
-            { type: 'toil:midi_set', target: t, value: v },
-            '*',
-          );
-        },
-        { target, value },
+      const reply = await sendToil(
+        session.page,
+        { type: 'toil:midi_set', target, value },
+        { embedded: false, timeoutMs: 5000 },
       );
-      return asTextResponse(`Set ${target} = ${value}.`);
+      return asTextResponse(
+        reply.success
+          ? `Set ${target} = ${value}.`
+          : `Did not set ${target}: ${reply.reason}`,
+      );
     } catch (e) {
       return asTextResponse(`Error setting ${target}: ${e}`);
     }
@@ -1083,13 +1084,16 @@ server.registerTool(
     if (!session) return asTextResponse('Session not found or expired.');
 
     try {
-      await session.page.evaluate(
-        ({ cc: c, value: v }) => {
-          window.postMessage({ type: 'toil:midi_cc', cc: c, value: v }, '*');
-        },
-        { cc, value },
+      const reply = await sendToil(
+        session.page,
+        { type: 'toil:midi_cc', cc, value },
+        { embedded: false, timeoutMs: 5000 },
       );
-      return asTextResponse(`Sent CC${cc} = ${value}.`);
+      return asTextResponse(
+        reply.success
+          ? `CC${cc} = ${value} drove ${String(reply.target)} to ${String(reply.normalized)}.`
+          : `CC${cc} = ${value} did nothing: ${reply.reason}`,
+      );
     } catch (e) {
       return asTextResponse(`Error sending CC${cc}: ${e}`);
     }

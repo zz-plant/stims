@@ -114,6 +114,10 @@ export const buildMilkdropInputSignalOverrides =
   buildMilkdropInputSignalOverridesImpl;
 export const getMilkdropDetailScale = getMilkdropDetailScaleImpl;
 
+/** An awaited edit that a newer edit or preset load replaced mid-compile. */
+const EDIT_SUPERSEDED =
+  'A newer edit or preset load replaced this one before it compiled, so it was not applied.';
+
 /** Why a requested crossfade became a cut, in the performer's terms. */
 const BLEND_REFUSAL_STATUS = {
   workload: 'Too much on screen to crossfade — switched instantly.',
@@ -1254,18 +1258,27 @@ function buildExperienceController(
      * know whether the source actually compiled — an agent editing preset
      * code cannot tell "applied" from "failed and the stage kept rendering
      * the last good compile" without the resulting diagnostics.
+     *
+     * Rejects when a newer edit or preset load superseded this source while it
+     * compiled: the session then resolves with whatever state is current, and
+     * returning that read as a clean compile of a source that never landed.
      */
     async applyEditorSourceAwaited(source: string) {
-      const next = await deps.session.applySource(source);
+      const { state, applied } =
+        await deps.session.applySourceWithOutcome(source);
       deps.emitChange();
-      return next;
+      if (!applied) throw new Error(EDIT_SUPERSEDED);
+      return state;
     },
 
-    /** Atomic multi-field edit; see `MilkdropEditorSession.updateFields`. */
+    /** Atomic multi-field edit; see `MilkdropEditorSession.updateFields`.
+     * Rejects when superseded, like `applyEditorSourceAwaited`. */
     async applyEditorFieldsAwaited(updates: Record<string, string | number>) {
-      const next = await deps.session.updateFields(updates);
+      const { state, applied } =
+        await deps.session.updateFieldsWithOutcome(updates);
       deps.emitChange();
-      return next;
+      if (!applied) throw new Error(EDIT_SUPERSEDED);
+      return state;
     },
 
     getEditorSessionState() {

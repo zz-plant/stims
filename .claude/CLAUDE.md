@@ -84,6 +84,7 @@ Don't scrape the DOM or hand-roll sleep-and-poll loops — there is a first-clas
 | Verify an effect after a transient toast vanished | `getState().statusLog` / `getEvents(sinceSeq)` |
 | Assert the canvas is actually animating | `__stims_agent.captureStats()` twice, check `motionEstimate` |
 | Drive a session from the shell, no MCP client | `bun run ctl -- --run next-preset --wait-for 's.presetId !== null'` — ordered `--run` / `--wait-for` steps, summary has `agent` state and per-step `events`, exits non-zero on a failed step |
+| Check the iframe `postMessage` protocol the way an embedding site sees it | `bun run ctl -- --embed --post '{"type":"toil:load_preset","presetId":"geiss-casino"}'` — each `--post` records its `toil:status` reply; `tests/e2e/embed-bridge.test.ts` is the regression test |
 | Expose these surfaces to an MCP client | `bun run mcp` |
 
 Full reference: [`docs/agents/browser-automation.md`](../docs/agents/browser-automation.md). Useful URL flags: `?agent=true` (keeps rendering while the tab reports hidden — a Browser-pane tab always does, and without it the canvas goes black and reads as a shader failure), `?renderer=webgl`, `?mockAudio=1`, `?lockQualityStep=`.

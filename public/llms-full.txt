@@ -70,10 +70,11 @@ Blends structural motion of Preset A with color styling of Preset B.
 Web applications embedding `toil.fyi` can post JSON messages to the iframe `contentWindow`. Point the iframe at `https://toil.fyi/?embed=true` (add `&preset=<id>` to choose the first preset): other URLs send `X-Frame-Options: SAMEORIGIN`, so they will not load in another site's frame.
 
 ```javascript
-// Example: Send command to iframe
+// Example: Send command to iframe; the reply echoes requestId
 iframeEl.contentWindow.postMessage({
   type: 'toil:load_preset',
-  presetId: 'shifter-snakeskin'
+  presetId: 'shifter-snakeskin',
+  requestId: 'load-1'
 }, '*');
 
 // Example: Start the bundled demo track ('demo' or 'microphone')
@@ -86,7 +87,7 @@ iframeEl.contentWindow.postMessage({ type: 'toil:apply_tweak', tweak: 'faster mo
 window.addEventListener('message', (event) => {
   if (event.data?.type === 'toil:status') {
     // success: false always carries a reason.
-    console.log(event.data.action, event.data.success, event.data.reason);
+    console.log(event.data.requestId, event.data.action, event.data.success, event.data.reason);
   }
   if (event.data?.type === 'toil:telemetry') {
     console.log(event.data.fps, event.data.audioEnergy, event.data.backend);
@@ -98,6 +99,11 @@ Commands:
 - `toil:load_preset`: `presetId` (a catalog id; aliases and slugs resolve) or `milkSource` (`.milk` code). The reply arrives once the stage shows the preset, with its canonical `presetId`. It works before audio starts: an embedded page boots its stage for the request, and the preset plays when audio starts. An unknown id is refused with close matches in `suggestions`. If the preset times out or will not load, the reply carries the reason. With `milkSource`, a compile failure replies `success: false` with the editor `state`, and the code is refused while nothing is on stage yet.
 - `toil:apply_tweak`: `tweak` describes the change. It goes through `/api/refine-preset`; when AI is unavailable, a tweak naming blue, neon, cyan, warp, fast, speed, bass or beat applies the matching one-click restyle, and the reply carries `method: "restyle"` and a `note` saying so. Any other tweak is refused. A tweak whose source fails to compile is reported with `success: false` and the editor `state`, since the previous preset stays on screen.
 - `toil:set_audio`: `source` is `"demo"` or `"microphone"`; a cross-origin iframe needs `allow="microphone"` for the second. The reply arrives once the stage is playing that source, or carries the start failure as `reason` (for example, microphone permission denied). File playback and tab capture need a click inside the page, so they are refused.
+- `toil:run`: `id` is any command-palette action or agent verb (`window.__stims_agent.listActions()` lists them), with optional `params`, the same as `__stims_agent.run(id, params)`. `success` means the action ran; `settled` says whether state changed before the reply and `events` lists what changed. An unknown id is refused with close matches in `suggestions`.
+- `toil:apply_source`: `source` is `.milk` code for the editor. `toil:set_fields`: `fields` maps field names to values, applied in one commit. Both reply once the source has compiled, with the editor `state`; a compile failure is `success: false`, and the previous preset stays on screen. An edit that a newer edit or preset load replaced while it compiled is also `success: false`, with a `reason` saying so.
+- `toil:midi_set` (`target` is a field name, `value` in its own units) and `toil:midi_cc` (`cc` and `value`, 0-127) drive the stage through the virtual "Claude (MCP)" MIDI device, the same path a hardware controller takes. They are live controls, so the reply confirms delivery rather than a compile; `midi_cc` names the `target` its mapping drove, and is refused when the CC is unmapped. Both are refused while nothing is on stage.
 - `toil:request_telemetry`: answered with `toil:telemetry` rather than `toil:status`.
 
-Each command above except `toil:request_telemetry` is answered with `{ type: 'toil:status', action, success, reason? }`. Any other `toil:` message is answered with `success: false` and a `reason`.
+Each command above except `toil:request_telemetry` is answered with `{ type: 'toil:status', action, success, reason? }`. Any other `toil:` message is answered with `success: false` and a `reason`. Every reply echoes the command's `requestId` (a string or finite number) when it had one, and goes to the window that sent the command, so a page posting to its own window hears back too.
+
+To try the protocol as an embedder sees it: `bun run ctl -- --embed --post '{"type":"toil:load_preset","presetId":"geiss-casino"}'` in a checkout of the repository.
