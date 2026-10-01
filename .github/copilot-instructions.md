@@ -4,7 +4,7 @@ Fast conventions for agents working on Stims (browser-native MilkDrop visualizer
 
 ## What is Stims?
 
-Single-page MilkDrop-inspired audio-reactive visualizer. Built with Three.js/WebGL. Core features: preset browser, live editing, import/export, audio reactivity.
+Single-page app for playing and live-editing MilkDrop presets against any audio. Built with Three.js/WebGL. Core features: preset browser, live editing, import/export, audio reactivity.
 
 ## Stack & Tools
 

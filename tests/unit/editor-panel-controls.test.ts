@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   EditorPanel,
   type EditorPanelCallbacks,
@@ -176,6 +177,88 @@ describe('editor panel colour groups and value-source chips', () => {
 
     panel.setSessionState(stateFor('rot=0.1\nper_frame_1=rot = time*0.01;\n'));
     expect(chipFor(panel, 'Rot')?.dataset.state).toBe('driven');
+
+    panel.dispose();
+  });
+
+  // With a compile on stage, a driven chip also says which audio its
+  // equations feed into the field, read from the dataflow analysis.
+  let serial = 0;
+  const compiledStateFor = (source: string): MilkdropEditorSessionState => {
+    const compiled = compileMilkdropPresetSource(source, {
+      id: `chip-audio-${serial++}`,
+    });
+    return {
+      source,
+      diagnostics: [],
+      latestCompiled: compiled,
+      activeCompiled: compiled,
+      dirty: false,
+    };
+  };
+
+  test('a driven chip names the audio its equation follows', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    panel.setSessionState(
+      compiledStateFor('zoom=1.02\nper_frame_1=zoom = 1.0 + bass*0.1;\n'),
+    );
+
+    const chip = chipFor(panel, 'Zoom');
+    expect(chip?.dataset.state).toBe('driven');
+    expect(chip?.textContent).toBe('eq · bass');
+    expect(chip?.title).toContain('every frame from bass,');
+    expect(chip?.getAttribute('aria-label')).toBe(
+      'Zoom value source: driven, computed from bass',
+    );
+
+    panel.dispose();
+  });
+
+  test('the audio is traced through variables, not matched as text', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    panel.setSessionState(
+      compiledStateFor(
+        [
+          // zoom never names a signal: it follows bass_att through q1
+          'per_frame_1=q1 = 0.9*q1 + 0.1*bass_att;',
+          'per_frame_2=zoom = 1.0 + q1*0.05;',
+          // rot names none either, and none reaches it: only the clock
+          'per_frame_3=rot = 0.01*sin(time);',
+        ].join('\n'),
+      ),
+    );
+
+    expect(chipFor(panel, 'Zoom')?.textContent).toBe('eq · bass_att');
+    expect(chipFor(panel, 'Rot')?.textContent).toBe('eq');
+    expect(chipFor(panel, 'Rot')?.title).toContain('No audio reaches it.');
+
+    panel.dispose();
+  });
+
+  test('per-pixel equations count, and several signals are summarised', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    panel.setSessionState(
+      compiledStateFor('per_pixel_1=rot = rot + 0.01*(mid + treb_att)*rad;\n'),
+    );
+
+    const chip = chipFor(panel, 'Rot');
+    expect(chip?.textContent).toBe('eq · mid +1');
+    expect(chip?.title).toContain('every frame from mid, treb_att,');
+
+    panel.dispose();
+  });
+
+  test('the chip re-reads the audio when the equation changes', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    panel.setSessionState(
+      compiledStateFor('per_frame_1=zoom = 1.0 + bass*0.1;\n'),
+    );
+    expect(chipFor(panel, 'Zoom')?.textContent).toBe('eq · bass');
+
+    panel.setSessionState(
+      compiledStateFor('per_frame_1=zoom = 1.0 + treb*0.1;\n'),
+    );
+    expect(chipFor(panel, 'Zoom')?.textContent).toBe('eq · treb');
 
     panel.dispose();
   });
