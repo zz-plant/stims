@@ -30,7 +30,7 @@ const httpHandler = createMcpHandler(() =>
   createMcpServer({
     jsonSchemaValidator: validator,
     instructions:
-      'Use the HTTP or WebSocket endpoint to access documentation, toy metadata, loader behavior, and development commands for the Stim Webtoys library.',
+      'Use the HTTP or WebSocket endpoint to read Stims documentation, look up MilkDrop presets in the catalog, get launch URLs, and list development commands.',
   }),
 );
 
@@ -174,7 +174,7 @@ async function createWebSocketSession(socket: WebSocket) {
 }
 
 function defaultWebSocketInstructions() {
-  return 'Connect over WebSocket to access documentation, toy metadata, loader behavior, and development commands for Stim Webtoys.';
+  return 'Connect over WebSocket to read Stims documentation, look up MilkDrop presets in the catalog, get launch URLs, and list development commands.';
 }
 
 export default {

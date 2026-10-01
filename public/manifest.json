@@ -1,7 +1,7 @@
 {
   "name": "Stims",
   "short_name": "Stims",
-  "description": "MilkDrop in the browser: play and edit the original .milk presets against any audio. Open source, no account.",
+  "description": "Play and live-edit MilkDrop presets in your browser: the original .milk files, against any audio. Open source, no account.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b1014",

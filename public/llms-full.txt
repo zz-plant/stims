@@ -1,7 +1,7 @@
 # Stims (toil.fyi) Technical Agent Specification
 
 ## Overview
-Stims is a WebGL and WebGPU MilkDrop audio visualizer engine with built-in preset compilation, live inspector tuning, AI preset generation, and MCP automation tooling.
+Stims plays and live-edits the original MilkDrop `.milk` presets in a browser, on WebGL2 or WebGPU, against any audio source, with the session carried in the URL. It is an independent implementation in the lineage of Ryan Geiss's MilkDrop, Butterchurn and projectM. What it adds to them (per-pixel equations on the GPU held to the CPU's answer, fidelity measured against native projectM, and analysis of the preset corpus as programs) is set out in https://github.com/zz-plant/stims/blob/main/docs/LINEAGE_AND_CREDITS.md#what-stims-contributes
 
 ## Guides
 
@@ -18,13 +18,15 @@ The live catalog at `https://toil.fyi/milkdrop-presets/catalog.json` contains en
 - `title`: Display title of preset.
 - `author`: Original author name.
 - `tags`: Array of string tags (e.g. `["ambient", "neon", "tunnel"]`).
-- `fidelity`: Tier rating (`certified-native`, `smooth`, `parsed-only`).
-- `supports`: Object with `webgl`, `webgpu`, `audioReactivity` capabilities.
+- `expectedFidelityClass`: How closely the preset is expected to match projectM (`exact`, `near-exact`, `partial`, `fallback`).
+- `visualEvidenceTier`: `visual` when a capture has been diffed against a native projectM reference, `runtime` when the preset has only been compiled and run.
+- `visualCertification`: The certification record behind that tier (`status`, `fidelityClass`, `requiredBackend`, `reasons`).
+- `supports`: Object with `webgl` and `webgpu` booleans.
+- `quality`: Ranking score and its components (fidelity, evidence, measured reactivity, motion, flash and duplicate penalties).
 
 ## URL State & Query Parameters
-- `?agent=true`: Activates agent mode (disables ambient sound prompts, enables window hooks).
+- `?agent=true`: Keeps rendering while the tab reports itself hidden, as headless and embedded browsers often do. `window.__stims_agent` (`getState`, `waitFor`, `run`) is available in every mode.
 - `?preset=<presetId>`: Loads preset matching ID directly on page mount.
-- `?tweak=<tweak_string>`: Applies initial visual tweak (e.g. `brighter`, `cooler`, `faster`).
 - `?renderer=webgpu|webgl`: Overrides backend selection.
 - `#code=<base64>`: Decodes UTF-8 base64 `.milk` equations and loads immediately in editor.
 
@@ -46,6 +48,8 @@ Validates MilkDrop `.milk` preset code syntax without browser rendering.
   "warnings": []
 }
 ```
+
+The routes below are model-backed and optional. They depend on the deployment's model configuration and a rate limit, and playback and editing never need them.
 
 ### `POST /api/generate-preset`
 Generates MilkDrop equations from natural language prompts.

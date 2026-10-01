@@ -7,7 +7,7 @@
  * now been wrong twice for the same reason, so the criterion is written down
  * here and enforced by a test rather than re-argued each time.
  *
- * The landing page makes exactly one claim: "full-screen visuals that move to
+ * The landing page makes exactly one claim: "MilkDrop presets that move to
  * whatever you're listening to". The first-run preset is the only proof of it
  * most visitors ever see, so it has to be lit enough to look at and it has to
  * visibly change when the music does.

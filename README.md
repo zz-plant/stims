@@ -38,7 +38,7 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 </div>
 
 - **Play** a 1,787-preset catalog of the originals, curated picks first. Presets stay `.milk` files: there is no conversion step, and export gives you `.milk` back.
-- **Edit while it plays.** The source opens in an editor with completions and compiler diagnostics; `zoom`, `warp`, `rot` and `decay` are sliders.
+- **Edit while it plays**, as MilkDrop 2 let you. The source opens in an editor with completions and compiler diagnostics; `zoom`, `warp`, `rot` and `decay` are sliders.
 - **Point it at anything:** a browser tab, a YouTube link, your microphone, a local file, or the built-in demo loop.
 - **Send a link.** The address bar is the session. Whoever opens it sees the same preset, edits included, and one click turns the sound on.
 - **Calm by default.** Nothing plays until you start audio, one action stops everything, and motion follows your system's reduce-motion setting.
@@ -60,11 +60,19 @@ Butterchurn and projectM are where most people meet MilkDrop presets today, and 
 
 The [full comparison](./docs/learn/milkdrop-vs-butterchurn-projectm.md) says which one to pick for what.
 
+## What's new here
+
+Playing MilkDrop presets in a browser isn't new: Butterchurn did it first. Neither is the live editor, which brings back what MilkDrop 2 had built in. These three are:
+
+- **Per-pixel equations run on the GPU.** On WebGPU, per-pixel and custom-wave equations compile into the shader and run for every vertex at once; that covers 1,094 of the 1,102 catalog presets with per-pixel code. Butterchurn and projectM run them on the CPU, one grid point at a time. Seeded differential fuzz tests hold the GPU, the JIT and the interpreter to the same results. Their first runs found 18 shipped preset blocks the JIT couldn't compile and divergent results in 32% of GPU-lowered programs.
+- **Fidelity is measured against native projectM.** Both renderers are stepped on a fixed clock, and a difference counts only when it exceeds that preset's own run-to-run noise. Every result is published per preset, passing or not ([scoreboard](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md#current-state-2026-08-27)), and promotion refuses a reference that a blank frame would pass.
+- **The corpus is analysed as programs.** `bun run lab:dataflow` reads which audio reaches each control and each drawn program from the equations alone; in 73 of 2,679 presets, the audio reaches nothing on screen. Used as training data, the corpus shows presets behave as threshold programs: gradient-boosted trees beat every network tried, and 41% of memoryless audio-driven controls come back as exact equations from their behaviour ([findings](./docs/guides/training-models.md)).
+
 ## How it works
 
 | Part | What it does | Code |
 | --- | --- | --- |
-| Compiler and VM | Parses preset equations (EEL2) into an IR and runs them on an interpreter, a JIT, or WebGPU compute; translates preset shaders to GLSL and WGSL | `src/js/milkdrop/compiler/`, `src/js/milkdrop/vm.ts` |
+| Compiler and VM | Parses preset equations (EEL2) into an IR and runs them on an interpreter or a JIT, lowering per-pixel equations into the shader on WebGPU; translates preset shaders to GLSL and WGSL | `src/js/milkdrop/compiler/`, `src/js/milkdrop/vm.ts` |
 | Renderer | WebGL2 is the baseline; an optional WebGPU path falls back to it when a preset needs something WebGPU can't run yet | `src/js/milkdrop/` |
 | Audio | FFT, bands and transients computed in an AudioWorklet, packed into a GPU texture | `src/js/core/audio-handler.ts`, `src/js/utils/audio/` |
 | App | The React workspace: browsing, the editor, and the URL as session state | `src/js/frontend/` |

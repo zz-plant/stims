@@ -8,14 +8,31 @@ Use language like:
 
 - "Play and live-edit MilkDrop presets in your browser." This is the public pitch: the README tagline, the page title, and link previews all use it. It names what Stims does with the presets rather than claiming to be MilkDrop, and it is more accurate than "MilkDrop-inspired", because the presets are the original `.milk` files.
 - "Independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop."
-- "Inspired by MilkDrop-era preset workflows."
-- "Able to load and render presets from the MilkDrop/projectM ecosystem. Visual fidelity varies: 4 of 23 certification-corpus presets have measured near-exact results; the remaining presets are at the compiler/runtime compatibility stage and have not yet been measured against projectM references."
+- "Able to load and render presets from the MilkDrop/projectM ecosystem. Visual fidelity is measured one preset at a time against native projectM; only a few presets have been measured, and most of those still differ visibly." Quote counts only from the current scoreboard in [the parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md#current-state-2026-08-27), never from memory.
 
 Avoid language like:
 
 - "Official MilkDrop for the web."
 - "Winamp MilkDrop in the browser."
 - "Full projectM replacement" unless the implementation and test harness actually prove that claim.
+- "MilkDrop-inspired." The presets are the original files, so the word undersells what Stims runs and contradicts the pitch.
+- "The first MilkDrop in the browser," or anything that implies it. Butterchurn was first.
+- "High-performance," "fast," or any speed claim without a benchmark against Butterchurn behind it (`bun run bench:butterchurn`).
+- Leading with the model-backed routes (generate, refine, blend, visual search). They are optional Worker routes whose availability depends on deployment; see [technical foundations §7](./TECHNICAL_ACHIEVEMENTS.md#7-optional-edge-services--implemented-routes-deployment-dependent-product-behavior).
+
+## What Stims contributes
+
+Product copy (the home page, page titles, link previews) says what Stims does and needs no novelty claim. Any surface that says what is new, such as the README, `llms.txt`, the technical docs or a launch post, uses these three, in this order:
+
+1. **Per-pixel equations run on the GPU, held to the CPU's answer.** Preset equations compile to one IR that runs on an interpreter or a JavaScript JIT. On WebGPU, per-pixel and custom-wave point equations that read only their own inputs are also lowered into the shader and evaluated for every vertex in parallel ([`gpu-field-planner.ts`](../src/js/milkdrop/compiler/gpu-field-planner.ts)); on 2026-10-01 that covered 1,094 of the 1,102 catalog presets with per-pixel code. That is the new part: Butterchurn and projectM run per-pixel equations on the CPU, one grid point at a time. Seeded differential fuzz tests ([`eel-tier-differential`](../tests/unit/eel-tier-differential.test.ts), [`gpu-field-tier-differential`](../tests/unit/gpu-field-tier-differential.test.ts)) hold the tiers to the same results. Their first runs found 18 shipped preset blocks the JIT could not compile and divergent results in 32% of GPU-lowered programs.
+2. **Fidelity is measured, not asserted.** Stims is compared with frames from native projectM, both stepped on a fixed clock, and a difference counts only when it exceeds that preset's own run-to-run noise (`bun run parity:noise`). Results are published per preset, failures included ([scoreboard](./MILKDROP_PROJECTM_PARITY_PLAN.md#current-state-2026-08-27)), and `parity:promote-reference` refuses to certify a reference that a blank frame would pass.
+3. **The preset corpus is read as a set of programs.** `bun run lab:dataflow` works out, from the equations alone, which audio signals reach each control and each drawn program. It sorts all 2,679 presets in the lab corpus in seconds, and in 73 of them the audio reaches nothing on screen. Used as training data, the corpus shows that presets behave as threshold programs: gradient-boosted trees beat every network tried, and 41% of memoryless audio-driven controls can be recovered as exact equations from their behaviour ([findings](./guides/training-models.md)).
+
+Present these as what is not new:
+
+- **Running MilkDrop presets in a browser.** Butterchurn did it first.
+- **Editing a preset while it plays.** MilkDrop 2 had a built-in editor. Stims brings it back, adding completions, compiler diagnostics, sliders, and a link that carries the edit. Compare it only with Butterchurn and projectM, which have no editor, and say "brings back".
+- **Playing `.milk` files without converting them.** projectM does too; the contrast holds only against Butterchurn.
 
 ## Credits Stims owes
 
@@ -112,4 +129,4 @@ the handle registry, which is also the list of handles worth researching next.
 
 - The homepage and MilkDrop pages should surface lineage explicitly, not only in buried docs.
 - The repo README should state that Stims is an independent implementation.
-- Generated toy pages for `milkdrop` should acknowledge the lineage and the broader preset ecosystem.
+- The `/discover/` and `/learn/` pages should acknowledge the lineage and the broader preset ecosystem.

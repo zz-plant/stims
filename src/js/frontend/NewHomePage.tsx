@@ -330,7 +330,7 @@ function Header({
       </h1>
       <LaunchSignalTrace />
       <p className="stims-shell__launch-tagline">
-        Full-screen visuals that move to whatever you&rsquo;re listening to.
+        MilkDrop presets that move to whatever you&rsquo;re listening to.
       </p>
     </>
   );

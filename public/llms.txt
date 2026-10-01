@@ -1,6 +1,12 @@
-# Stims — MilkDrop Browser Music Visualizer (toil.fyi)
+# Stims — play and live-edit MilkDrop presets in your browser (toil.fyi)
 
-> Stims is a high-performance, web-native music visualizer supporting WebGL and WebGPU rendering, preset generation, AI preset refinement, audio reactivity, and Model Context Protocol (MCP) integrations.
+> Stims plays the original MilkDrop `.milk` presets in a browser tab against any audio (demo loop, microphone, a tab, a YouTube link, a file), with a live editor and the session carried in the URL. It is an independent implementation in the lineage of Ryan Geiss's MilkDrop, Butterchurn and projectM.
+
+## What is new in Stims
+Butterchurn ran MilkDrop presets in a browser first, and MilkDrop 2 already had a live editor. What Stims adds:
+- **Per-pixel equations on the GPU.** On WebGPU, per-pixel and custom-wave equations compile into the shader and run for every vertex at once, for 1,094 of the 1,102 catalog presets with per-pixel code (Butterchurn and projectM run them on the CPU). Seeded differential fuzz tests hold the GPU, JIT and interpreter tiers to the same results.
+- **Measured fidelity.** Frames are compared with native projectM on a fixed clock, a difference counts only above the preset's own run-to-run noise, and every per-preset result is published, failures included.
+- **The corpus analysed as programs.** `lab:dataflow` reads which audio reaches each control from the equations alone; model-training findings (presets behave as threshold programs; trees beat networks; 41% of memoryless audio controls recoverable as exact equations) are in https://github.com/zz-plant/stims/blob/main/docs/guides/training-models.md
 
 ## Core Links & Resources
 - **Live Visualizer**: https://toil.fyi/
@@ -17,24 +23,24 @@
 - **Compatibility and performance**: https://toil.fyi/performance/
 
 ## Key URL Parameters for AI Agents
-- `?agent=true`: Enables low-overhead, automation-friendly mode.
+- `?agent=true`: Keeps rendering while the tab reports itself hidden, as headless and embedded browsers often do. `window.__stims_agent` (`getState`, `waitFor`, `run`) is available in every mode.
 - `?preset=<id>`: Loads a specific preset by ID (e.g. `?preset=shifter-snakeskin`).
-- `?tweak=<description>`: Applies natural language visual tweaking on load (e.g. `?tweak=more+blue+and+warp`).
 - `?renderer=webgpu` or `?renderer=webgl`: Forces specific rendering engine backend.
 - `#code=<base64>`: Instant URL deep-link containing base64-encoded `.milk` source code.
 
-## Main API Endpoints
+## API Endpoints
 - `POST /api/validate-preset`: Validate MilkDrop `.milk` code syntax and return diagnostic JSON.
+
+The routes below are model-backed and optional: they depend on the deployment's model configuration, and playback and editing never need them.
 - `POST /api/generate-preset`: Generate `.milk` equations from text description.
 - `POST /api/blend-presets`: Blend wave patterns and color schemes of two presets.
 - `POST /api/refine-preset`: Iteratively refine `.milk` code based on prompt instructions.
 - `POST /api/visual-search`: Search catalog visually by natural language description.
 
 ## Iframe `postMessage` Protocol
-When `toil.fyi` is embedded in an iframe, send JSON messages to `window`:
+When `toil.fyi` is embedded in an iframe, post JSON messages to the iframe's `contentWindow`:
 - `{ type: "toil:load_preset", presetId: "shifter-snakeskin" }`
-- `{ type: "toil:apply_tweak", tweak: "faster motion" }`
 - `{ type: "toil:request_telemetry" }`
 
 Listen for response messages:
-- `{ type: "toil:telemetry", fps: 60, backend: "webgpu", audioEnergy: 0.75, currentPreset: "..." }`
+- `{ type: "toil:telemetry", fps: 60, backend: "webgpu", audioEnergy: 0.75, currentPresetId: "..." }`
