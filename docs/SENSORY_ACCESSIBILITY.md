@@ -5,7 +5,7 @@ This is the home for Stims' sensory-accessibility research program: the product 
 - [`LITERATURE.md`](./LITERATURE.md) holds the citation list itself (grouped by theme, meant for UI-copy footnotes and general grounding). This doc holds the *argument* — what the citations are for, what's confirmed vs. still open, and what changes in the product as a result.
 - [`ROADMAP.md`](./ROADMAP.md) / [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) track what's actually shipped. This doc is the research/rationale layer underneath specific roadmap entries in that area.
 
-**No therapeutic claims.** Nothing here is evidence that Stims treats, manages, or improves any clinical condition. Every claim below is either "the published literature says X" (cited) or "this is an open question we could test" (marked as such). Product copy sourced from this doc must keep that distinction — see [Regulatory posture](#regulatory-posture) for why, and [`PUBLIC_DOCS_SITE_MAP.md`](./PUBLIC_DOCS_SITE_MAP.md#L15) for the planned public `guides/accessibility` page.
+**No therapeutic claims.** Nothing here is evidence that Stims treats, manages, or improves any clinical condition. Every claim below is either "the published literature says X" (cited) or "this is an open question we could test" (marked as such). Product copy sourced from this doc must keep that distinction — see [Regulatory posture](#regulatory-posture) for why, and [`guides/accessibility.md`](./guides/accessibility.md) for the user-facing page.
 
 ## The distinctive claim
 
