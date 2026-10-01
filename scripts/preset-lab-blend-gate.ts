@@ -94,7 +94,6 @@ for (const entry of [...loadCatalogEntries(repoRoot).values()].slice(
           `mv=${frameState.motionVectors.length}`,
           `shapes=${frameState.shapes.length}`,
           `borders=${frameState.borders.length}`,
-          `trails=${frameState.trails.length}`,
         ].join(' ');
       }
     }

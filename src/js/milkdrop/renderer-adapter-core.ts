@@ -285,10 +285,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
    */
   private readonly customWaveLanes = new WeakMap<Group, [Group, Group]>();
 
-  private readonly trailGroup = withRenderOrder(
-    new Group(),
-    getMilkdropLayerRenderOrder('trails'),
-  );
   private readonly particleFieldGroup = withRenderOrder(
     new Group(),
     getMilkdropLayerRenderOrder('particle-field'),
@@ -438,7 +434,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.root.add(this.meshLines);
     this.root.add(this.mainWaveGroup);
     this.root.add(this.customWaveGroup);
-    this.root.add(this.trailGroup);
     this.root.add(this.particleFieldGroup);
     this.root.add(this.shapesGroup);
     this.root.add(this.borderGroup);
@@ -608,21 +603,19 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   private renderProceduralWaveGroup(
-    target: 'main-wave' | 'trail-waves',
     group: Group,
     waves: MilkdropProceduralWaveVisual[],
-    interaction?: MilkdropGpuInteractionTransform | null,
   ) {
-    if (this.batcher?.renderProceduralWaveGroup?.(target, group, waves)) {
+    if (this.batcher?.renderProceduralWaveGroup?.(group, waves)) {
       clearGroup(group);
       return;
     }
     for (let index = 0; index < waves.length; index += 1) {
       const wave = waves[index] as MilkdropProceduralWaveVisual;
       const existing = this.readExistingProceduralLine(group, index);
-      const synced = syncProceduralWaveObject(existing, wave, interaction);
+      const synced = syncProceduralWaveObject(existing, wave);
       synced.renderOrder = getMilkdropPassRenderOrder(
-        target === 'trail-waves' ? 'trails' : 'main-wave',
+        'main-wave',
         wave.additive,
       );
       if (!existing) {
@@ -985,17 +978,13 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   private renderLineVisualGroup(
-    target: 'trails' | 'motion-vectors' | 'blend-motion-vectors',
+    target: 'motion-vectors' | 'blend-motion-vectors',
     group: Group,
     lines: Array<{
       positions: ArrayLike<number>;
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;
-      /** Per-point RGBA, as on a wave visual (a mode 7 trail hides its
-       * bridge between the two lines this way). */
-      colors?: ArrayLike<number>;
-      perPointAlpha?: boolean;
     }>,
     alphaMultiplier = 1,
   ) {
@@ -1107,7 +1096,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     frameState: MilkdropRenderPayload['frameState'],
     mainWaveGroup: Group,
     customWaveGroup: Group,
-    trailGroup: Group,
     particleFieldGroup: Group,
     shapesGroup: Group,
     borderGroup: Group,
@@ -1128,7 +1116,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       signals,
       mainWave,
       customWaves,
-      trails,
       mesh,
       shapes,
       borders,
@@ -1142,9 +1129,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       canProcedural('custom-wave') && (gpu?.customWaves?.length ?? 0) > 0;
 
     if (canProceduralMain && gpu.mainWave) {
-      this.renderProceduralWaveGroup('main-wave', mainWaveGroup, [
-        gpu.mainWave,
-      ]);
+      this.renderProceduralWaveGroup(mainWaveGroup, [gpu.mainWave]);
     } else {
       this.renderWaveGroup(
         'main-wave',
@@ -1170,16 +1155,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       this.cpuOnlyCustomWaves(customWaves, canProceduralCustom, 0),
       alphaMultiplier,
     );
-    if (canProcedural('trail-waves') && (gpu?.trailWaves?.length ?? 0) > 0) {
-      this.renderProceduralWaveGroup(
-        'trail-waves',
-        trailGroup,
-        gpu.trailWaves,
-        interaction?.waves,
-      );
-    } else {
-      this.renderLineVisualGroup('trails', trailGroup, trails, alphaMultiplier);
-    }
     renderParticleFieldGroupHelper({
       backend: this.backend,
       target: 'particle-field',
@@ -1449,7 +1424,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         payload.frameState,
         this.mainWaveGroup,
         this.customWaveGroup,
-        this.trailGroup,
         this.particleFieldGroup,
         this.shapesGroup,
         this.borderGroup,
@@ -1536,7 +1510,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     clearGroup(this.mainWaveGroup);
     clearGroup(this.customWaveGroup);
     this.customWaveLanes.delete(this.customWaveGroup);
-    clearGroup(this.trailGroup);
     clearGroup(this.particleFieldGroup);
     clearGroup(this.shapesGroup);
     clearGroup(this.borderGroup);

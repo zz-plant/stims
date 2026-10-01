@@ -472,9 +472,6 @@ function getBatchedTargetRenderOrder(key: string) {
     case 'wave:custom-wave':
     case 'procedural-custom-wave':
       return getMilkdropLayerRenderOrder('custom-wave');
-    case 'line:trails':
-    case 'procedural-wave:trail-waves':
-      return getMilkdropLayerRenderOrder('trails');
     case 'particle-field':
     case 'wave:particle-field':
       return getMilkdropLayerRenderOrder('particle-field');
@@ -1798,7 +1795,6 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   }
 
   renderProceduralWaveGroup(
-    target: string,
     _group: Group,
     waves: MilkdropProceduralWaveVisual[],
   ) {
@@ -1809,7 +1805,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
         : this.segmentUploads.normal
       ).appendProceduralWave(wave);
     }
-    this.getWaveTarget(`procedural-wave:${target}`).syncSplit(
+    this.getWaveTarget('procedural-wave:main-wave').syncSplit(
       this.segmentUploads,
     );
     return true;
@@ -1865,10 +1861,6 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;
-      /** Per-point RGBA, as on a wave visual (a mode 7 trail hides its
-       * bridge between the two lines this way). */
-      colors?: ArrayLike<number>;
-      perPointAlpha?: boolean;
     }>,
     alphaMultiplier: number,
   ) {
@@ -1880,11 +1872,8 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       ).appendPolyline(
         line.positions,
         line.color,
-        // as for waves: a per-point alpha already carries the line's alpha
-        line.perPointAlpha ? alphaMultiplier : line.alpha * alphaMultiplier,
+        line.alpha * alphaMultiplier,
         getMilkdropSegmentWidth(1),
-        false,
-        line.colors,
       );
     }
     this.getWaveTarget(`line:${target}`).syncSplit(this.segmentUploads);

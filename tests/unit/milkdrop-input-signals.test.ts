@@ -200,7 +200,6 @@ describe('milkdrop input signal overrides', () => {
         pointSize: 1,
       },
       customWaves: [],
-      trails: [],
       mesh: {
         positions: [-0.5, -0.5, 0, 0.5, 0.5, 0],
         color: { r: 1, g: 1, b: 1 },
@@ -305,7 +304,6 @@ describe('milkdrop input signal overrides', () => {
           additive: false,
           thickness: 1,
         },
-        trailWaves: [],
         customWaves: [],
         meshField: {
           density: 12,

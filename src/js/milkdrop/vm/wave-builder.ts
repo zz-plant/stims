@@ -1,6 +1,7 @@
 /**
- * Wave Visual & Geometry Builder — generates main oscilloscope ribbons, multi-trail history buffers,
- * and custom per-point waveform samples driven by EEL2 equations and audio signal spectrum buffers.
+ * Wave Visual & Geometry Builder — generates the main oscilloscope ribbon and
+ * custom per-point waveform samples driven by EEL2 equations and audio signal
+ * spectrum buffers.
  */
 
 import { isElementHidden } from '../render-isolation';
@@ -17,7 +18,6 @@ import { buildMainWaveFrame } from './frame-generation';
 import {
   clamp,
   MAIN_WAVE_FRAME_HISTORY_SIZE,
-  MAX_TRAILS,
   type MutableState,
   sampleCustomWaveChannels,
   type WaveBuilderState,
@@ -76,37 +76,6 @@ export function buildMainWave({
     visual: built.visual,
     procedural: built.procedural,
   };
-}
-
-function pushTrailInPlace<T>(trails: T[], item: T) {
-  const len = Math.min(trails.length + 1, MAX_TRAILS);
-  trails.length = len;
-  for (let i = len - 1; i > 0; i--) {
-    trails[i] = trails[i - 1];
-  }
-  trails[0] = item;
-}
-
-export function commitMainWaveFrame({
-  waveState,
-  mainWave,
-  proceduralMainWave,
-}: {
-  waveState: WaveBuilderState;
-  mainWave: MilkdropWaveVisual;
-  proceduralMainWave: import('../types').MilkdropProceduralWaveVisual | null;
-}) {
-  if (waveState.lastWaveform) {
-    pushTrailInPlace(waveState.trails, waveState.lastWaveform);
-  }
-  if (waveState.lastProceduralWave) {
-    pushTrailInPlace(
-      waveState.proceduralTrailWaves,
-      waveState.lastProceduralWave,
-    );
-  }
-  waveState.lastWaveform = mainWave;
-  waveState.lastProceduralWave = proceduralMainWave;
 }
 
 /** Copies only the frame-constant registers the lowered per-point program

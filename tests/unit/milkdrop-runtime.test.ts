@@ -1,10 +1,13 @@
 import { describe, expect, test } from 'bun:test';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   applyMilkdropInteractionResponse,
   getMilkdropDetailScale,
 } from '../../src/js/milkdrop/runtime/interaction-response.ts';
 import { __milkdropRuntimeTestUtils } from '../../src/js/milkdrop/runtime/test-utils.ts';
+import { createMilkdropSignalTracker } from '../../src/js/milkdrop/runtime-signals.ts';
 import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
+import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 
 describe('milkdrop runtime detail scale', () => {
   test('boosts detail scale on webgpu for the same quality budget', () => {
@@ -83,6 +86,72 @@ describe('milkdrop runtime blend state', () => {
     expect(blendState.alpha).toBe(1);
     expect(blendState.previousFrame).toBe(frameState);
   });
+
+  test.each(['webgl', 'webgpu'] as const)(
+    'keeps the outgoing main wave on %s while the next preset steps',
+    (backend) => {
+      // The VM rebuilds its main wave in place, and the incoming preset
+      // reuses those visuals within two frames. A blend holding a reference
+      // drew the incoming preset's wave as the outgoing one.
+      const tracker = createMilkdropSignalTracker();
+      const frequencyData = new Uint8Array(64).fill(150);
+      const waveformData = new Uint8Array(64);
+      const signalsAt = (frame: number) => {
+        for (let index = 0; index < waveformData.length; index += 1) {
+          waveformData[index] = Math.round(
+            128 + Math.sin(index / 5 + frame) * 60,
+          );
+        }
+        return tracker.update({
+          time: frame / 60,
+          deltaMs: 1000 / 60,
+          analyser: null,
+          frequencyData,
+          waveformData,
+        });
+      };
+      const mainWaveOf = (frame: MilkdropFrameState) => ({
+        positions: Array.from(frame.mainWave.positions),
+        color: { ...frame.mainWave.color },
+        procedural: frame.gpuGeometry.mainWave
+          ? {
+              samples: Array.from(frame.gpuGeometry.mainWave.samples),
+              color: { ...frame.gpuGeometry.mainWave.color },
+            }
+          : null,
+      });
+
+      const vm = createMilkdropVM(
+        compileMilkdropPresetSource(
+          'title=Outgoing\nwave_mode=0\nwave_r=1\nwave_g=0\nwave_b=0',
+          { id: 'blend-outgoing' },
+        ),
+      );
+      vm.setRenderBackend(backend);
+      const blendState = __milkdropRuntimeTestUtils.cloneBlendState(
+        vm.step(signalsAt(1)),
+      );
+      if (blendState?.mode !== 'gpu') {
+        throw new Error('Expected a GPU blend state.');
+      }
+      const outgoing = mainWaveOf(blendState.previousFrame);
+
+      vm.setPreset(
+        compileMilkdropPresetSource(
+          'title=Incoming\nwave_mode=1\nwave_r=0\nwave_g=0\nwave_b=1',
+          { id: 'blend-incoming' },
+        ),
+      );
+      vm.setRenderBackend(backend);
+      let incoming = vm.step(signalsAt(2));
+      for (let frame = 3; frame <= 8; frame += 1) {
+        incoming = vm.step(signalsAt(frame));
+      }
+
+      expect(mainWaveOf(incoming)).not.toEqual(outgoing);
+      expect(mainWaveOf(blendState.previousFrame)).toEqual(outgoing);
+    },
+  );
 });
 
 describe('milkdrop runtime GPU descriptor interaction response', () => {
@@ -110,7 +179,6 @@ describe('milkdrop runtime GPU descriptor interaction response', () => {
         pointSize: 1,
       },
       customWaves: [],
-      trails: [],
       mesh: {
         positions: [],
         color: { r: 0.4, g: 0.6, b: 1, a: 0.2 },
@@ -205,7 +273,6 @@ describe('milkdrop runtime GPU descriptor interaction response', () => {
           additive: false,
           thickness: 1,
         },
-        trailWaves: [],
         customWaves: [],
         meshField: {
           density: 12,
@@ -292,7 +359,6 @@ describe('milkdrop runtime GPU descriptor interaction response', () => {
         pointSize: 1,
       },
       customWaves: [],
-      trails: [],
       mesh: {
         positions: [0, 0, -0.25, 0.5, 0.5, -0.25],
         color: { r: 0.4, g: 0.6, b: 1, a: 0.2 },
@@ -395,7 +461,6 @@ describe('milkdrop runtime GPU descriptor interaction response', () => {
           additive: false,
           thickness: 1,
         },
-        trailWaves: [],
         customWaves: [],
         meshField: {
           density: 12,

@@ -41,7 +41,6 @@ function buildFrameState(): MilkdropFrameState {
     variables,
     gpuGeometry: {
       mainWave: null,
-      trailWaves: [],
       customWaves: [],
       meshField: {
         density: 12,

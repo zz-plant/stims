@@ -1148,7 +1148,6 @@ export function buildGpuGeometryHints({
   state,
   preset,
   meshField,
-  trailWaves,
   signals,
   detailScale,
   proceduralMotionVectorPlan,
@@ -1156,7 +1155,6 @@ export function buildGpuGeometryHints({
   state: MutableState;
   preset: MilkdropCompiledPreset;
   meshField: MeshField;
-  trailWaves: import('../types').MilkdropProceduralWaveVisual[];
   signals: MilkdropRuntimeSignals;
   detailScale: number;
   proceduralMotionVectorPlan: MilkdropProceduralMotionVectorDescriptorPlan | null;
@@ -1165,7 +1163,6 @@ export function buildGpuGeometryHints({
 } {
   return {
     mainWave: null,
-    trailWaves,
     customWaves: [],
     meshField: getProceduralMeshFieldVisual({ state, meshField }),
     particleField: buildParticleFieldVisual({

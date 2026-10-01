@@ -259,7 +259,6 @@ export type MilkdropParticleFieldVisual = {
 
 export type MilkdropGpuGeometryHints = {
   mainWave: MilkdropProceduralWaveVisual | null;
-  trailWaves: MilkdropProceduralWaveVisual[];
   customWaves: MilkdropProceduralCustomWaveVisual[];
   meshField: MilkdropProceduralMeshFieldVisual | null;
   motionVectorField: MilkdropProceduralMotionVectorFieldVisual | null;
@@ -322,7 +321,6 @@ export type MilkdropFrameState = {
   waveform: MilkdropWaveVisual;
   mainWave: MilkdropWaveVisual;
   customWaves: MilkdropWaveVisual[];
-  trails: MilkdropPolyline[];
   mesh: MilkdropMeshVisual;
   shapes: MilkdropShapeVisual[];
   borders: MilkdropBorderVisual[];
@@ -343,7 +341,6 @@ export type MilkdropCpuBlendState = {
   waveform: MilkdropWaveVisual;
   mainWave: MilkdropWaveVisual;
   customWaves: MilkdropWaveVisual[];
-  trails: MilkdropPolyline[];
   shapes: MilkdropShapeVisual[];
   borders: MilkdropBorderVisual[];
   motionVectors: MilkdropMotionVectorVisual[];

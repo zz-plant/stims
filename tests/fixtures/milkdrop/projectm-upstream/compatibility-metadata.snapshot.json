@@ -22,13 +22,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -83,13 +76,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -141,13 +127,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -207,13 +186,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -280,13 +252,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -350,13 +315,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -416,13 +374,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -479,13 +430,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -550,13 +494,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -644,13 +581,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -702,13 +632,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -766,13 +689,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -824,13 +740,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -888,13 +797,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -946,13 +848,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -1010,13 +905,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -1068,13 +956,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -1132,13 +1013,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -1190,13 +1064,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -1254,13 +1121,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -1312,13 +1172,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -1376,13 +1229,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -1434,13 +1280,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -1498,13 +1337,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -1556,13 +1388,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -1624,13 +1449,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -1734,13 +1552,6 @@
           },
           {
             "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
             "target": "custom-wave",
             "slotIndex": 1,
             "sampleSource": "waveform",
@@ -1832,13 +1643,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -1942,13 +1746,6 @@
           },
           {
             "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
             "target": "custom-wave",
             "slotIndex": 1,
             "sampleSource": "waveform",
@@ -2040,13 +1837,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -2150,13 +1940,6 @@
           },
           {
             "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
             "target": "custom-wave",
             "slotIndex": 1,
             "sampleSource": "waveform",
@@ -2253,13 +2036,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -2387,13 +2163,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -2548,13 +2317,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -3046,13 +2808,6 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
           }
         ],
         "proceduralMesh": {
@@ -3111,13 +2866,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
@@ -3203,13 +2951,6 @@
           {
             "kind": "procedural-wave",
             "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
