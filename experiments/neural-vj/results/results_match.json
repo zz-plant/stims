@@ -1,0 +1,104 @@
+{
+  "decomposition": {
+    "preset": 0.6233845404282923,
+    "song": 0.10994657232999834,
+    "interaction": 0.26666888724170934,
+    "interaction_split_half_r": 0.4735623049613986
+  },
+  "presets": 117,
+  "known presets, \u03bb=0.001": {
+    "model_spearman": 0.89322764465225,
+    "fixed_spearman": 0.9102835723598435,
+    "model_top10": 0.6875,
+    "fixed_top10": 0.725
+  },
+  "known presets, \u03bb=0.01": {
+    "model_spearman": 0.9015842062671402,
+    "fixed_spearman": 0.9102835723598435,
+    "model_top10": 0.7,
+    "fixed_top10": 0.725
+  },
+  "known presets, \u03bb=0.1": {
+    "model_spearman": 0.908969488528226,
+    "fixed_spearman": 0.9102835723598435,
+    "model_top10": 0.7124999999999999,
+    "fixed_top10": 0.725
+  },
+  "known presets, \u03bb=1": {
+    "model_spearman": 0.9098161968559397,
+    "fixed_spearman": 0.9102835723598435,
+    "model_top10": 0.7124999999999999,
+    "fixed_top10": 0.725
+  },
+  "known presets, 3 nearest songs": {
+    "model_spearman": 0.9603217866295013,
+    "fixed_spearman": 0.9102835723598435,
+    "model_top10": 0.775,
+    "fixed_top10": 0.725,
+    "songs_won_spearman": 7,
+    "songs_won_top10": 4,
+    "songs_tied_top10": 3
+  },
+  "known presets, 5 nearest songs": {
+    "model_spearman": 0.9569892775255135,
+    "fixed_spearman": 0.9102835723598435,
+    "model_top10": 0.7625,
+    "fixed_top10": 0.725,
+    "songs_won_spearman": 7,
+    "songs_won_top10": 4,
+    "songs_tied_top10": 2
+  },
+  "known presets, 8 nearest songs": {
+    "model_spearman": 0.9548528375968468,
+    "fixed_spearman": 0.9102835723598435,
+    "model_top10": 0.7375,
+    "fixed_top10": 0.725,
+    "songs_won_spearman": 7,
+    "songs_won_top10": 3,
+    "songs_tied_top10": 3
+  },
+  "unfamiliar styles, 3 nearest songs": {
+    "model_spearman": 0.5894794617033073,
+    "fixed_spearman": 0.5987482953438534,
+    "model_top10": 0.175,
+    "fixed_top10": 0.2,
+    "songs_won_spearman": 1,
+    "songs_won_top10": 0,
+    "songs_tied_top10": 3,
+    "songs": 4
+  },
+  "unfamiliar styles, 5 nearest songs": {
+    "model_spearman": 0.5957679569602421,
+    "fixed_spearman": 0.5987482953438534,
+    "model_top10": 0.22499999999999998,
+    "fixed_top10": 0.2,
+    "songs_won_spearman": 1,
+    "songs_won_top10": 2,
+    "songs_tied_top10": 1,
+    "songs": 4
+  },
+  "unseen presets, \u03bb=0.001": {
+    "model_spearman": -0.06377091377091378,
+    "fixed_spearman": -0.24147361647361648,
+    "model_top10": 0.3125,
+    "fixed_top10": 0.2
+  },
+  "unseen presets, \u03bb=0.01": {
+    "model_spearman": -0.07654440154440155,
+    "fixed_spearman": -0.21045688545688546,
+    "model_top10": 0.2875,
+    "fixed_top10": 0.32499999999999996
+  },
+  "unseen presets, \u03bb=0.1": {
+    "model_spearman": -0.06492921492921494,
+    "fixed_spearman": 0.06171171171171172,
+    "model_top10": 0.275,
+    "fixed_top10": 0.32499999999999996
+  },
+  "unseen presets, \u03bb=1": {
+    "model_spearman": -0.19665379665379668,
+    "fixed_spearman": 0.47323037323037326,
+    "model_top10": 0.25,
+    "fixed_top10": 0.375
+  }
+}

@@ -1,0 +1,4648 @@
+{
+  "summary": {
+    "all": {
+      "cells": 458,
+      "oracle": {
+        "median_f1": 0.0,
+        "share_over_half": 0.0851528384279476
+      },
+      "ridge": {
+        "median_f1": 0.0,
+        "share_over_half": 0.26200873362445415
+      },
+      "lgbm_value": {
+        "median_f1": 0.12,
+        "share_over_half": 0.33624454148471616
+      },
+      "lgbm_events": {
+        "median_f1": 0.6048652202498356,
+        "share_over_half": 0.5807860262008734
+      }
+    },
+    "history": {
+      "cells": 348,
+      "oracle": {
+        "median_f1": 0.0,
+        "share_over_half": 0.04885057471264368
+      },
+      "ridge": {
+        "median_f1": 0.0,
+        "share_over_half": 0.08908045977011494
+      },
+      "lgbm_value": {
+        "median_f1": 0.0,
+        "share_over_half": 0.15804597701149425
+      },
+      "lgbm_events": {
+        "median_f1": 0.44413791079381615,
+        "share_over_half": 0.46264367816091956
+      }
+    },
+    "no history": {
+      "cells": 110,
+      "oracle": {
+        "median_f1": 0.1568627450980392,
+        "share_over_half": 0.2
+      },
+      "ridge": {
+        "median_f1": 0.7354651162790699,
+        "share_over_half": 0.8090909090909091
+      },
+      "lgbm_value": {
+        "median_f1": 0.9393382352941176,
+        "share_over_half": 0.9
+      },
+      "lgbm_events": {
+        "median_f1": 0.927536231884058,
+        "share_over_half": 0.9545454545454546
+      }
+    },
+    "events_vs_value": {
+      "median_diff": 0.059432288586635074,
+      "ci95": [0.02104980534299894, 0.13809523809523816],
+      "win_rate": 0.6157205240174672
+    }
+  },
+  "cells": [
+    {
+      "preset": "cope-passage-geiss-emboss-mix",
+      "column": "sx",
+      "history": false,
+      "oracle": 0.15384615384615385,
+      "ridge": 0.9361702127659574,
+      "lgbm_value": 0.9375,
+      "lgbm_events": 0.945054945054945,
+      "theta": 0.2
+    },
+    {
+      "preset": "cope-passage-geiss-emboss-mix",
+      "column": "sy",
+      "history": false,
+      "oracle": 0.15384615384615385,
+      "ridge": 0.9361702127659574,
+      "lgbm_value": 0.9375,
+      "lgbm_events": 0.945054945054945,
+      "theta": 0.2
+    },
+    {
+      "preset": "cope-passage-geiss-emboss-mix",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.15384615384615385,
+      "ridge": 0.946236559139785,
+      "lgbm_value": 0.9473684210526315,
+      "lgbm_events": 0.946236559139785,
+      "theta": 0.6
+    },
+    {
+      "preset": "cope-the-neverending-explosion-of-red-liquid-fire",
+      "column": "q3",
+      "history": false,
+      "oracle": 0.4210526315789474,
+      "ridge": 0.9285714285714286,
+      "lgbm_value": 0.9333333333333333,
+      "lgbm_events": 0.8571428571428571,
+      "theta": 0.05
+    },
+    {
+      "preset": "cope-the-neverending-explosion-of-red-liquid-fire",
+      "column": "q5",
+      "history": false,
+      "oracle": 0.4210526315789474,
+      "ridge": 0.9285714285714286,
+      "lgbm_value": 0.9333333333333333,
+      "lgbm_events": 0.8571428571428571,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.1904761904761905,
+      "ridge": 0.8378378378378377,
+      "lgbm_value": 0.7936507936507937,
+      "lgbm_events": 0.8780487804878049,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+      "column": "q2",
+      "history": false,
+      "oracle": 0.1111111111111111,
+      "ridge": 0.7500000000000001,
+      "lgbm_value": 0.8936170212765958,
+      "lgbm_events": 0.8155339805825242,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+      "column": "q3",
+      "history": false,
+      "oracle": 0.037735849056603765,
+      "ridge": 0.8478260869565216,
+      "lgbm_value": 0.9010989010989012,
+      "lgbm_events": 0.8865979381443299,
+      "theta": 0.2
+    },
+    {
+      "preset": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-bitstorm-intune-with-ada",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-bitstorm-intune-with-ada",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.27777777777777773,
+      "ridge": 0.13333333333333333,
+      "lgbm_value": 0.5888888888888889,
+      "lgbm_events": 0.7896678966789669,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-bitstorm-intune-with-ada",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.4521253382211748,
+      "ridge": 0.5583981057291398,
+      "lgbm_value": 0.7507293582818779,
+      "lgbm_events": 0.8055407565263718,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-bitstorm-intune-with-ada",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+      "column": "q8",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.6717663421418637,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+      "column": "q9",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.7027027027027027,
+      "theta": 0.2
+    },
+    {
+      "preset": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+      "column": "q10",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.08163265306122448,
+      "lgbm_value": 0.0392156862745098,
+      "lgbm_events": 0.7142857142857143,
+      "theta": 0.3
+    },
+    {
+      "preset": "cotc-53",
+      "column": "q8",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.6,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-bitstorm-intune-with-ada",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.2857142857142857,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-bmelgren-morpherous3",
+      "column": "mv_l",
+      "history": false,
+      "oracle": 0.11320754716981131,
+      "ridge": 0.9791666666666666,
+      "lgbm_value": 0.9795918367346939,
+      "lgbm_events": 0.9896907216494846,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-dark-one-clouds",
+      "column": "q1",
+      "history": true,
+      "oracle": 0.631578947368421,
+      "ridge": 0.0,
+      "lgbm_value": 0.9,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-dark-one-clouds",
+      "column": "q2",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.11764705882352941,
+      "lgbm_value": 0.5,
+      "lgbm_events": 0.0,
+      "theta": 0.7
+    },
+    {
+      "preset": "cotc-dark-one-clouds",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.21052631578947367,
+      "lgbm_value": 0.3157894736842105,
+      "lgbm_events": 0.5,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-dark-one-clouds",
+      "column": "q4",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.6666666666666666,
+      "lgbm_events": 0.4,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-dark-one-clouds",
+      "column": "q6",
+      "history": true,
+      "oracle": 0.6046017636217081,
+      "ridge": 0.7232770707213424,
+      "lgbm_value": 0.8887280331362851,
+      "lgbm_events": 0.845990144001445,
+      "theta": 0.3
+    },
+    {
+      "preset": "cotc-eos-apocalypse-g",
+      "column": "q6",
+      "history": false,
+      "oracle": 0.4210526315789474,
+      "ridge": 0.9285714285714286,
+      "lgbm_value": 0.9333333333333333,
+      "lgbm_events": 0.8571428571428571,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2e-feat-martin-flexi-phat",
+      "column": "q2",
+      "history": true,
+      "oracle": 0.2857142857142857,
+      "ridge": 0.0,
+      "lgbm_value": 0.43750000000000006,
+      "lgbm_events": 0.5,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2e-feat-martin-flexi-phat",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.25806451612903225,
+      "ridge": 0.0,
+      "lgbm_value": 0.39999999999999997,
+      "lgbm_events": 0.368421052631579,
+      "theta": 0.6
+    },
+    {
+      "preset": "cotc-eos-more-waveforms-8",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.804177545691906,
+      "lgbm_value": 0.9763779527559054,
+      "lgbm_events": 0.9387755102040817,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-eos-phat-trinary-02-afterlife",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.2857142857142857,
+      "ridge": 0.2857142857142857,
+      "lgbm_value": 0.3888888888888889,
+      "lgbm_events": 0.2857142857142857,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-eos-phat-trinary-02-afterlife",
+      "column": "ob_g",
+      "history": true,
+      "oracle": 0.21052631578947367,
+      "ridge": 0.1111111111111111,
+      "lgbm_value": 0.21052631578947367,
+      "lgbm_events": 0.2362204724409449,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-eos-phat-trinary-02-afterlife",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.11029411764705882,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-eos-phat-trinary-02-afterlife",
+      "column": "mv_r",
+      "history": true,
+      "oracle": 0.2857142857142857,
+      "ridge": 0.2857142857142857,
+      "lgbm_value": 0.3888888888888889,
+      "lgbm_events": 0.2857142857142857,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-eos-phat-trinary-02-afterlife",
+      "column": "mv_g",
+      "history": true,
+      "oracle": 0.21052631578947367,
+      "ridge": 0.1111111111111111,
+      "lgbm_value": 0.21052631578947367,
+      "lgbm_events": 0.2362204724409449,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q25",
+      "history": true,
+      "oracle": 0.34197634125940973,
+      "ridge": 0.0078125,
+      "lgbm_value": 0.10936051899907322,
+      "lgbm_events": 0.8781710451917,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q30",
+      "history": true,
+      "oracle": 0.17204301075268816,
+      "ridge": 0.03088803088803089,
+      "lgbm_value": 0.11460258780036968,
+      "lgbm_events": 0.8580749976885179,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-eos-phat-trinary-02-afterlife",
+      "column": "mv_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.11029411764705882,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.04040404040404041,
+      "ridge": 0.8818897637795275,
+      "lgbm_value": 0.9738219895287958,
+      "lgbm_events": 0.9948717948717948,
+      "theta": 0.3
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.14285714285714288,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q9",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q14",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.09638554216867469,
+      "ridge": 0.38775510204081637,
+      "lgbm_value": 0.42592592592592593,
+      "lgbm_events": 0.7126436781609196,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.18518518518518517,
+      "ridge": 0.6655301738833959,
+      "lgbm_value": 0.7442795556292489,
+      "lgbm_events": 0.7057392009734332,
+      "theta": 0.3
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.04040404040404041,
+      "ridge": 0.8818897637795275,
+      "lgbm_value": 0.9738219895287958,
+      "lgbm_events": 0.9948717948717948,
+      "theta": 0.3
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q9",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q14",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.28571428571428575,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.09638554216867469,
+      "ridge": 0.38775510204081637,
+      "lgbm_value": 0.42592592592592593,
+      "lgbm_events": 0.7126436781609196,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.18518518518518517,
+      "ridge": 0.6655301738833959,
+      "lgbm_value": 0.7442795556292489,
+      "lgbm_events": 0.7057392009734332,
+      "theta": 0.3
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q25",
+      "history": true,
+      "oracle": 0.34197634125940973,
+      "ridge": 0.0078125,
+      "lgbm_value": 0.10936051899907322,
+      "lgbm_events": 0.8781710451917,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q30",
+      "history": true,
+      "oracle": 0.17204301075268816,
+      "ridge": 0.03088803088803089,
+      "lgbm_value": 0.11460258780036968,
+      "lgbm_events": 0.8580749976885179,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-fishbrain-quark-matrix",
+      "column": "video_echo_orientation",
+      "history": false,
+      "oracle": 0.0449438202247191,
+      "ridge": 0.24761904761904766,
+      "lgbm_value": 0.8552631578947368,
+      "lgbm_events": 0.40816326530612246,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-isosceles-mashup24",
+      "column": "decay",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.9333333333333332,
+      "lgbm_value": 0.9473684210526315,
+      "lgbm_events": 0.9787234042553191,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-isosceles-mashup24",
+      "column": "wave_r",
+      "history": false,
+      "oracle": 0.32,
+      "ridge": 0.9500000000000001,
+      "lgbm_value": 0.9767441860465117,
+      "lgbm_events": 0.9767441860465117,
+      "theta": 0.2
+    },
+    {
+      "preset": "cotc-isosceles-mashup24",
+      "column": "wave_g",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.9333333333333332,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9928057553956835,
+      "theta": 0.2
+    },
+    {
+      "preset": "cotc-isosceles-mashup24",
+      "column": "wave_b",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.9433962264150945,
+      "lgbm_value": 0.9285714285714286,
+      "lgbm_events": 0.962962962962963,
+      "theta": 0.2
+    },
+    {
+      "preset": "cotc-krash-yin-electric-universe-uncertainty-principle",
+      "column": "video_echo_orientation",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.27918170878459686,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-krash-yin-electric-universe-uncertainty-principle",
+      "column": "q8",
+      "history": true,
+      "oracle": 0.08163265306122448,
+      "ridge": 0.7826597514433897,
+      "lgbm_value": 0.8460122104855121,
+      "lgbm_events": 0.8353281056541478,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-luxxx-water-your-pet-goldfish-i",
+      "column": "q21",
+      "history": true,
+      "oracle": 0.14545454545454545,
+      "ridge": 0.14545454545454545,
+      "lgbm_value": 0.14035087719298245,
+      "lgbm_events": 0.3225806451612903,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-luxxx-water-your-pet-goldfish-i",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.13559322033898305,
+      "ridge": 0.13559322033898305,
+      "lgbm_value": 0.13559322033898305,
+      "lgbm_events": 0.31775700934579443,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-martin-pendulum-in-brass-ps3",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "cotc-martin-pendulum-in-brass-ps3",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.19999999999999998,
+      "ridge": 0.14634146341463414,
+      "lgbm_value": 0.3636363636363636,
+      "lgbm_events": 0.3555555555555555,
+      "theta": 0.7
+    },
+    {
+      "preset": "cotc-martin-pendulum-in-brass-ps3",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-martin-pendulum-in-brass-ps3",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.11594202898550725,
+      "ridge": 0.6253256904637832,
+      "lgbm_value": 0.6599326599326599,
+      "lgbm_events": 0.6352941176470588,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-martin-pendulum-in-brass-ps3",
+      "column": "q26",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.5,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-martin-pendulum-in-brass-ps3",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+      "column": "video_echo_alpha",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.5
+    },
+    {
+      "preset": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+      "column": "video_echo_orientation",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.24,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-orb-space-time2",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.4272300469483568,
+      "lgbm_events": 0.6666666666666667,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-rovastar-destiny-star-starbrust-mix",
+      "column": "zoom",
+      "history": false,
+      "oracle": 0.6153846153846153,
+      "ridge": 0.7142857142857143,
+      "lgbm_value": 0.8888888888888888,
+      "lgbm_events": 0.823529411764706,
+      "theta": 0.3
+    },
+    {
+      "preset": "cotc-rovastar-destiny-star-starbrust-mix",
+      "column": "ob_a",
+      "history": false,
+      "oracle": 0.03940886699507389,
+      "ridge": 0.6812227074235808,
+      "lgbm_value": 0.9636686028737389,
+      "lgbm_events": 0.9084790776984715,
+      "theta": 0.5
+    },
+    {
+      "preset": "cotc-rovastar-destiny-star-starbrust-mix",
+      "column": "q2",
+      "history": true,
+      "oracle": 0.13084112149532712,
+      "ridge": 0.0,
+      "lgbm_value": 0.0392156862745098,
+      "lgbm_events": 0.89196675900277,
+      "theta": 0.2
+    },
+    {
+      "preset": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+      "column": "mv_a",
+      "history": true,
+      "oracle": 0.14545454545454545,
+      "ridge": 0.17543859649122806,
+      "lgbm_value": 0.14545454545454545,
+      "lgbm_events": 0.49871023215821153,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.8,
+      "lgbm_value": 1.0,
+      "lgbm_events": 1.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.1,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+      "column": "q4",
+      "history": true,
+      "oracle": 0.1694915254237288,
+      "ridge": 0.1694915254237288,
+      "lgbm_value": 0.19607843137254902,
+      "lgbm_events": 0.5072463768115943,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-rovastar-destiny-star-starbrust-mix",
+      "column": "q7",
+      "history": false,
+      "oracle": 0.6153846153846153,
+      "ridge": 0.7142857142857143,
+      "lgbm_value": 0.8888888888888888,
+      "lgbm_events": 0.823529411764706,
+      "theta": 0.3
+    },
+    {
+      "preset": "cotc-rovastar-explosive-minds-kay",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.6666666666666666,
+      "ridge": 0.7692307692307693,
+      "lgbm_value": 0.9333333333333333,
+      "lgbm_events": 0.5454545454545454,
+      "theta": 0.3
+    },
+    {
+      "preset": "cotc-shifter-flexi-american-pie-artifactory-never-contribute-given-7-inches-to-bath-with",
+      "column": "q5",
+      "history": true,
+      "oracle": 0.6666666666666666,
+      "ridge": 0.8571428571428571,
+      "lgbm_value": 0.9333333333333333,
+      "lgbm_events": 0.8571428571428571,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "zoom",
+      "history": true,
+      "oracle": 0.1904761904761905,
+      "ridge": 0.0,
+      "lgbm_value": 0.1904761904761905,
+      "lgbm_events": 0.4067796610169492,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "rot",
+      "history": true,
+      "oracle": 0.2926829268292683,
+      "ridge": 0.0,
+      "lgbm_value": 0.35,
+      "lgbm_events": 0.4642857142857143,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "dx",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.30434782608695654,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "dy",
+      "history": true,
+      "oracle": 0.2222222222222222,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.391304347826087,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q23",
+      "history": false,
+      "oracle": 0.4790507971820542,
+      "ridge": 0.0,
+      "lgbm_value": 0.08048666354702855,
+      "lgbm_events": 0.8509803921568627,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q24",
+      "history": false,
+      "oracle": 0.5000356843191529,
+      "ridge": 0.011639185257032008,
+      "lgbm_value": 0.10536044362292052,
+      "lgbm_events": 0.83031269619303,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q25",
+      "history": false,
+      "oracle": 0.486046511627907,
+      "ridge": 0.0,
+      "lgbm_value": 0.10572259941804073,
+      "lgbm_events": 0.8573111704819598,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q26",
+      "history": false,
+      "oracle": 0.486046511627907,
+      "ridge": 0.0,
+      "lgbm_value": 0.09927007299270073,
+      "lgbm_events": 0.8573111704819598,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q27",
+      "history": false,
+      "oracle": 0.486062033765214,
+      "ridge": 0.02459016393442623,
+      "lgbm_value": 0.11257953989231523,
+      "lgbm_events": 0.8836132020845398,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q28",
+      "history": false,
+      "oracle": 0.533806360687237,
+      "ridge": 0.018225419664268584,
+      "lgbm_value": 0.10805860805860805,
+      "lgbm_events": 0.8732233682285833,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q29",
+      "history": false,
+      "oracle": 0.47719562759140594,
+      "ridge": 0.003952569169960474,
+      "lgbm_value": 0.1348107109879963,
+      "lgbm_events": 0.8474273113123728,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q30",
+      "history": false,
+      "oracle": 0.5017458330588314,
+      "ridge": 0.002994011976047904,
+      "lgbm_value": 0.08149568552253117,
+      "lgbm_events": 0.8695477046889035,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q31",
+      "history": false,
+      "oracle": 0.5017458330588314,
+      "ridge": 0.002994011976047904,
+      "lgbm_value": 0.07225433526011561,
+      "lgbm_events": 0.8695477046889035,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q32",
+      "history": false,
+      "oracle": 0.499409216226861,
+      "ridge": 0.0,
+      "lgbm_value": 0.11105602379771938,
+      "lgbm_events": 0.8862905583162818,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+      "column": "ib_r",
+      "history": true,
+      "oracle": 0.06593406593406592,
+      "ridge": 0.853470437017995,
+      "lgbm_value": 0.988095238095238,
+      "lgbm_events": 1.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+      "column": "ib_g",
+      "history": true,
+      "oracle": 0.1875,
+      "ridge": 0.5490196078431372,
+      "lgbm_value": 1.0,
+      "lgbm_events": 0.9655172413793104,
+      "theta": 0.2
+    },
+    {
+      "preset": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+      "column": "ib_b",
+      "history": true,
+      "oracle": 0.05194805194805195,
+      "ridge": 0.6262660944206009,
+      "lgbm_value": 0.7860840753779251,
+      "lgbm_events": 0.7290128520645338,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.9700000000000001,
+      "lgbm_value": 0.9753694581280787,
+      "lgbm_events": 1.0,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+      "column": "q2",
+      "history": false,
+      "oracle": 0.11320754716981131,
+      "ridge": 0.9791666666666666,
+      "lgbm_value": 1.0,
+      "lgbm_events": 0.9896907216494846,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+      "column": "q3",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.9700000000000001,
+      "lgbm_value": 0.9753694581280787,
+      "lgbm_events": 1.0,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-stahlregen-geiss-tiger-no5-mashup-16-seizure-inducing-confetti-kaleidoscope-rmx",
+      "column": "dx",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2105263157894737,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-stahlregen-geiss-tiger-no5-mashup-16-seizure-inducing-confetti-kaleidoscope-rmx",
+      "column": "dy",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2857142857142857,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-suksma-camden-defib-lancaster-tucker-s-neck",
+      "column": "dx",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.5106382978723405,
+      "lgbm_events": 0.7887323943661971,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-suksma-mtn-flx-flacc-choilan-collapsar",
+      "column": "wave_g",
+      "history": false,
+      "oracle": 0.20079762318995742,
+      "ridge": 0.0,
+      "lgbm_value": 0.05027652086475616,
+      "lgbm_events": 0.8527694866344323,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-suksma-mtn-flx-flacc-choilan-collapsar",
+      "column": "wave_b",
+      "history": false,
+      "oracle": 0.07909604519774012,
+      "ridge": 0.6307977736549165,
+      "lgbm_value": 1.0,
+      "lgbm_events": 0.9717237843593486,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-suksma-mtn-flx-flacc-choilan-collapsar",
+      "column": "mv_r",
+      "history": true,
+      "oracle": 0.5425833445809151,
+      "ridge": 0.0,
+      "lgbm_value": 0.022535211267605635,
+      "lgbm_events": 0.8008816547982367,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-suksma-truth-rarity-isosceles-edit05",
+      "column": "mv_r",
+      "history": false,
+      "oracle": 0.21621621621621626,
+      "ridge": 0.888888888888889,
+      "lgbm_value": 0.9374999999999999,
+      "lgbm_events": 0.927536231884058,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-suksma-truth-rarity-isosceles-edit05",
+      "column": "mv_g",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.9700000000000001,
+      "lgbm_value": 0.9751243781094527,
+      "lgbm_events": 1.0,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-suksma-truth-rarity-isosceles-edit05",
+      "column": "mv_b",
+      "history": false,
+      "oracle": 0.11320754716981131,
+      "ridge": 0.9791666666666666,
+      "lgbm_value": 0.9896907216494846,
+      "lgbm_events": 0.9896907216494846,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "zoom",
+      "history": true,
+      "oracle": 0.21621621621621626,
+      "ridge": 0.888888888888889,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 0.9142857142857143,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "warp",
+      "history": false,
+      "oracle": 0.21621621621621626,
+      "ridge": 0.888888888888889,
+      "lgbm_value": 0.9374999999999999,
+      "lgbm_events": 0.927536231884058,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "dx",
+      "history": true,
+      "oracle": 0.9689841396257444,
+      "ridge": 0.0,
+      "lgbm_value": 0.7638804562112214,
+      "lgbm_events": 0.8964560544066964,
+      "theta": 0.4
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "dy",
+      "history": true,
+      "oracle": 0.9701521730626297,
+      "ridge": 0.0,
+      "lgbm_value": 0.7146327583650944,
+      "lgbm_events": 0.8992806726723123,
+      "theta": 0.3
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "invert",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.7216494845360825,
+      "lgbm_value": 0.8089887640449439,
+      "lgbm_events": 0.868421052631579,
+      "theta": 0.7
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "q4",
+      "history": false,
+      "oracle": 0.21621621621621626,
+      "ridge": 0.888888888888889,
+      "lgbm_value": 0.9374999999999999,
+      "lgbm_events": 0.927536231884058,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "q8",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.766355140186916,
+      "lgbm_value": 0.8,
+      "lgbm_events": 0.8631578947368421,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-alien-complex",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.6153846153846153,
+      "ridge": 0.7142857142857143,
+      "lgbm_value": 0.9473684210526316,
+      "lgbm_events": 0.7777777777777778,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "sx",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.7216494845360825,
+      "lgbm_value": 0.8089887640449439,
+      "lgbm_events": 0.868421052631579,
+      "theta": 0.7
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "sy",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.7216494845360825,
+      "lgbm_value": 0.8089887640449439,
+      "lgbm_events": 0.868421052631579,
+      "theta": 0.7
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "brighten",
+      "history": false,
+      "oracle": 0.21621621621621626,
+      "ridge": 0.888888888888889,
+      "lgbm_value": 0.9374999999999999,
+      "lgbm_events": 0.927536231884058,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "darken",
+      "history": false,
+      "oracle": 0.21621621621621626,
+      "ridge": 0.888888888888889,
+      "lgbm_value": 0.923076923076923,
+      "lgbm_events": 0.927536231884058,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-alien-complex-isosceles-edit",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.6153846153846153,
+      "ridge": 0.7142857142857143,
+      "lgbm_value": 0.9473684210526316,
+      "lgbm_events": 0.7777777777777778,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-xtramartin-3",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "cotc-xtramartin-3",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.125,
+      "ridge": 0.3209876543209877,
+      "lgbm_value": 0.5813953488372093,
+      "lgbm_events": 0.7067669172932332,
+      "theta": 0.1
+    },
+    {
+      "preset": "cotc-xtramartin-3",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.12307692307692307,
+      "ridge": 0.6179775280898876,
+      "lgbm_value": 0.6710526315789473,
+      "lgbm_events": 0.6749999999999999,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-xtramartin-3",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5,
+      "theta": 0.05
+    },
+    {
+      "preset": "cotc-xtramartin-3",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5,
+      "theta": 0.05
+    },
+    {
+      "preset": "eo-s-phat-detached-centerpoint",
+      "column": "dx",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.28571428571428575,
+      "lgbm_events": 0.6666666666666666,
+      "theta": 0.05
+    },
+    {
+      "preset": "eo-s-phat-emergent-factors-bitcore-tweak",
+      "column": "dx",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.3720930232558139,
+      "lgbm_events": 0.8391608391608392,
+      "theta": 0.05
+    },
+    {
+      "preset": "flexi-fishbrain-martin-witchery",
+      "column": "q6",
+      "history": true,
+      "oracle": 0.3287671232876712,
+      "ridge": 0.6684672518568534,
+      "lgbm_value": 0.803030303030303,
+      "lgbm_events": 0.8051437756742275,
+      "theta": 0.1
+    },
+    {
+      "preset": "flexi-geiss-mindblob-where-it-s-at-now-emboss-mix",
+      "column": "q6",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.12539184952978055,
+      "theta": 0.05
+    },
+    {
+      "preset": "flexi-sto-aftermath",
+      "column": "q25",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.13333333333333333,
+      "theta": 0.5
+    },
+    {
+      "preset": "flexi-using-jedi-forces",
+      "column": "q9",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 1.0,
+      "lgbm_events": 0.888888888888889,
+      "theta": 0.05
+    },
+    {
+      "preset": "eo-s-phat-emergent-factors-bitcore-tweak",
+      "column": "dy",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.22222222222222224,
+      "lgbm_events": 0.8571428571428571,
+      "theta": 0.05
+    },
+    {
+      "preset": "flexi-fishbrain-geiss-martin-tokamak-witchery",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.3076923076923077,
+      "ridge": 0.0,
+      "lgbm_value": 0.3076923076923077,
+      "lgbm_events": 0.3076923076923077,
+      "theta": 0.1
+    },
+    {
+      "preset": "flexi-fishbrain-geiss-martin-tokamak-witchery",
+      "column": "ob_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "flexi-fishbrain-geiss-martin-tokamak-witchery",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.4444444444444445,
+      "ridge": 0.0,
+      "lgbm_value": 0.6,
+      "lgbm_events": 0.4761904761904762,
+      "theta": 0.05
+    },
+    {
+      "preset": "flexi-fishbrain-martin-witchery",
+      "column": "rot",
+      "history": true,
+      "oracle": 0.5853658536585366,
+      "ridge": 0.0,
+      "lgbm_value": 0.5853658536585366,
+      "lgbm_events": 0.4961832061068703,
+      "theta": 0.05
+    },
+    {
+      "preset": "flexi-fishbrain-martin-witchery",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.3137254901960785,
+      "ridge": 0.24489795918367346,
+      "lgbm_value": 0.40740740740740744,
+      "lgbm_events": 0.5523012552301255,
+      "theta": 0.2
+    },
+    {
+      "preset": "flexi-fishbrain-martin-witchery",
+      "column": "q4",
+      "history": true,
+      "oracle": 0.4651162790697675,
+      "ridge": 0.0,
+      "lgbm_value": 0.3870967741935484,
+      "lgbm_events": 0.5868814729574223,
+      "theta": 0.1
+    },
+    {
+      "preset": "flexi-fishbrain-martin-witchery",
+      "column": "q5",
+      "history": true,
+      "oracle": 0.4444444444444445,
+      "ridge": 0.3389830508474576,
+      "lgbm_value": 0.4444444444444445,
+      "lgbm_events": 0.5932124593212459,
+      "theta": 0.1
+    },
+    {
+      "preset": "geiss-de-la-moutard-1",
+      "column": "wave_r",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 0.9473684210526316,
+      "theta": 0.05
+    },
+    {
+      "preset": "geiss-de-la-moutard-1",
+      "column": "wave_g",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 0.9473684210526316,
+      "theta": 0.1
+    },
+    {
+      "preset": "geiss-de-la-moutard-1",
+      "column": "wave_b",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 1.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "geiss-myriad-mosaics-test",
+      "column": "zoom",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.6428571428571429,
+      "theta": 0.1
+    },
+    {
+      "preset": "geiss-myriad-mosaics-test",
+      "column": "rot",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5970149253731343,
+      "theta": 0.05
+    },
+    {
+      "preset": "geiss-myriad-mosaics-test",
+      "column": "warp",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5634920634920634,
+      "theta": 0.05
+    },
+    {
+      "preset": "geiss-myriad-mosaics-test",
+      "column": "cx",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.6141732283464566,
+      "theta": 0.1
+    },
+    {
+      "preset": "geiss-myriad-mosaics-test",
+      "column": "cy",
+      "history": true,
+      "oracle": 0.02247191011235955,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5469387755102041,
+      "theta": 0.1
+    },
+    {
+      "preset": "geiss-myriad-mosaics-test",
+      "column": "wave_a",
+      "history": true,
+      "oracle": 0.08791208791208792,
+      "ridge": 0.6281968898599152,
+      "lgbm_value": 0.8214285714285715,
+      "lgbm_events": 0.8161014612627515,
+      "theta": 0.4
+    },
+    {
+      "preset": "geiss-myriad-mosaics-test",
+      "column": "q11",
+      "history": true,
+      "oracle": 0.06818181818181818,
+      "ridge": 0.0,
+      "lgbm_value": 0.023529411764705882,
+      "lgbm_events": 0.6379310344827586,
+      "theta": 0.1
+    },
+    {
+      "preset": "geiss-virus-2",
+      "column": "dx",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2857142857142857,
+      "theta": 0.05
+    },
+    {
+      "preset": "geiss-virus-2",
+      "column": "dy",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "goody-sonic-infection",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.07339449541284404,
+      "ridge": 0.4625000000000001,
+      "lgbm_value": 0.9155555555555556,
+      "lgbm_events": 0.8756218905472636,
+      "theta": 0.5
+    },
+    {
+      "preset": "goody-sonic-infection",
+      "column": "ob_g",
+      "history": true,
+      "oracle": 0.055944055944055944,
+      "ridge": 0.49230769230769234,
+      "lgbm_value": 0.9250768378092405,
+      "lgbm_events": 0.9065743944636678,
+      "theta": 0.1
+    },
+    {
+      "preset": "goody-sonic-infection",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.05555555555555555,
+      "ridge": 0.4285714285714286,
+      "lgbm_value": 0.8255319148936171,
+      "lgbm_events": 0.9417475728155339,
+      "theta": 0.3
+    },
+    {
+      "preset": "hexcollie-jacked-on-way-too-much-caffeine",
+      "column": "dx",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.3478260869565218,
+      "lgbm_events": 0.8275862068965517,
+      "theta": 0.5
+    },
+    {
+      "preset": "hexcollie-jacked-on-way-too-much-caffeine",
+      "column": "dy",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.8,
+      "theta": 0.05
+    },
+    {
+      "preset": "hexcollie-personal-mashup3-flexis-portal-mix",
+      "column": "video_echo_alpha",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.5
+    },
+    {
+      "preset": "hexcollie-personal-mashup3-flexis-portal-mix",
+      "column": "video_echo_orientation",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "hexcollie-personal-mashup3-flexis-portal-mix",
+      "column": "mv_a",
+      "history": true,
+      "oracle": 0.14545454545454545,
+      "ridge": 0.17543859649122806,
+      "lgbm_value": 0.14545454545454545,
+      "lgbm_events": 0.49871023215821153,
+      "theta": 0.05
+    },
+    {
+      "preset": "hexcollie-personal-mashup3-flexis-portal-mix",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.8,
+      "lgbm_value": 1.0,
+      "lgbm_events": 1.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "hexcollie-personal-mashup3-flexis-portal-mix",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2,
+      "theta": 0.1
+    },
+    {
+      "preset": "hexcollie-personal-mashup3-flexis-portal-mix",
+      "column": "q4",
+      "history": true,
+      "oracle": 0.20408163265306123,
+      "ridge": 0.1895734597156398,
+      "lgbm_value": 0.23076923076923075,
+      "lgbm_events": 0.44991965720407073,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "wave_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5062320230105465,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "wave_g",
+      "history": true,
+      "oracle": 0.06185567010309278,
+      "ridge": 0.09137055837563451,
+      "lgbm_value": 0.38791286015460286,
+      "lgbm_events": 0.6196869474097845,
+      "theta": 0.1
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "wave_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.07894736842105264,
+      "lgbm_events": 0.6,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.180327868852459,
+      "ridge": 0.11864406779661016,
+      "lgbm_value": 0.180327868852459,
+      "lgbm_events": 0.6028919534074173,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "ob_g",
+      "history": true,
+      "oracle": 0.17283950617283952,
+      "ridge": 0.0,
+      "lgbm_value": 0.17283950617283952,
+      "lgbm_events": 0.5914872798434441,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.07894736842105264,
+      "lgbm_events": 0.6,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "ib_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5062320230105465,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "ib_g",
+      "history": true,
+      "oracle": 0.06185567010309278,
+      "ridge": 0.09137055837563451,
+      "lgbm_value": 0.38791286015460286,
+      "lgbm_events": 0.6196869474097845,
+      "theta": 0.1
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "ib_b",
+      "history": true,
+      "oracle": 0.180327868852459,
+      "ridge": 0.11864406779661016,
+      "lgbm_value": 0.180327868852459,
+      "lgbm_events": 0.6028919534074173,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "q1",
+      "history": true,
+      "oracle": 1.0,
+      "ridge": 0.0,
+      "lgbm_value": 1.0,
+      "lgbm_events": 1.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "q2",
+      "history": true,
+      "oracle": 1.0,
+      "ridge": 0.0,
+      "lgbm_value": 1.0,
+      "lgbm_events": 1.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "q3",
+      "history": true,
+      "oracle": 1.0,
+      "ridge": 0.0,
+      "lgbm_value": 1.0,
+      "lgbm_events": 1.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "q4",
+      "history": true,
+      "oracle": 1.0,
+      "ridge": 0.0,
+      "lgbm_value": 1.0,
+      "lgbm_events": 1.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "q5",
+      "history": true,
+      "oracle": 0.20779220779220778,
+      "ridge": 0.0,
+      "lgbm_value": 0.1842105263157895,
+      "lgbm_events": 0.562596599690881,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "q6",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.19047619047619044,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "q7",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.12,
+      "lgbm_events": 0.3492537313432836,
+      "theta": 0.05
+    },
+    {
+      "preset": "idiot-marphets-surreal-dream-hypnotic-spiral-mix",
+      "column": "q8",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.12,
+      "lgbm_events": 0.3492537313432836,
+      "theta": 0.05
+    },
+    {
+      "preset": "luxxx-rapeplay-v3-the-war-within-all-of-us",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "luxxx-rapeplay-v3-the-war-within-all-of-us",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.14285714285714288,
+      "ridge": 0.4166666666666667,
+      "lgbm_value": 0.7333333333333333,
+      "lgbm_events": 0.7747747747747747,
+      "theta": 0.05
+    },
+    {
+      "preset": "luxxx-rapeplay-v3-the-war-within-all-of-us",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.5
+    },
+    {
+      "preset": "luxxx-rapeplay-v3-the-war-within-all-of-us",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.14285714285714288,
+      "ridge": 0.6507592190889372,
+      "lgbm_value": 0.7594936708860758,
+      "lgbm_events": 0.8070175438596492,
+      "theta": 0.1
+    },
+    {
+      "preset": "luxxx-rapeplay-v3-the-war-within-all-of-us",
+      "column": "q26",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-angel-flight",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-angel-flight",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.15094339622641506,
+      "ridge": 0.2456140350877193,
+      "lgbm_value": 0.47887323943661975,
+      "lgbm_events": 0.6265060240963856,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-angel-flight",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-angel-flight",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.24615384615384617,
+      "ridge": 0.6008416963418581,
+      "lgbm_value": 0.7011866235167206,
+      "lgbm_events": 0.7179487179487181,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-angel-flight",
+      "column": "q26",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-angel-flight",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-axon3",
+      "column": "q5",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.3333333333333333,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-axon3",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-axon3",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.1095890410958904,
+      "ridge": 0.24390243902439027,
+      "lgbm_value": 0.5,
+      "lgbm_events": 0.723404255319149,
+      "theta": 0.2
+    },
+    {
+      "preset": "martin-axon3",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-axon3",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.2325469427058257,
+      "ridge": 0.650887573964497,
+      "lgbm_value": 0.6777777777777777,
+      "lgbm_events": 0.7115710253998119,
+      "theta": 0.2
+    },
+    {
+      "preset": "martin-axon3",
+      "column": "q26",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-axon3",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-axon3",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-chain-breaker",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9514563106796116,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "dx",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "dy",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "q19",
+      "history": true,
+      "oracle": 0.051612903225806445,
+      "ridge": 0.0,
+      "lgbm_value": 0.3499618611746758,
+      "lgbm_events": 0.601589103291714,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.09302325581395349,
+      "ridge": 0.19354838709677422,
+      "lgbm_value": 0.4403669724770642,
+      "lgbm_events": 0.6838709677419356,
+      "theta": 0.2
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.08333333333333333,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.632258064516129,
+      "theta": 0.3
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.1685022026431718,
+      "ridge": 0.6196242171189978,
+      "lgbm_value": 0.6913684049607307,
+      "lgbm_events": 0.6902001122124556,
+      "theta": 0.3
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "q26",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.08333333333333333,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.632258064516129,
+      "theta": 0.3
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.1764705882352941,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "q29",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-electric-pool",
+      "column": "q19",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.16830601092896177,
+      "lgbm_events": 0.6641245630759454,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-electric-pool",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-electric-pool",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.2916666666666667,
+      "ridge": 0.09302325581395349,
+      "lgbm_value": 0.39024390243902435,
+      "lgbm_events": 0.830013472898746,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-electric-pool",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.35,
+      "ridge": 0.0,
+      "lgbm_value": 0.1452513966480447,
+      "lgbm_events": 0.8235386921195866,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-electric-pool",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.43683083511777304,
+      "ridge": 0.5129275909652117,
+      "lgbm_value": 0.7911482571944154,
+      "lgbm_events": 0.8608410797472932,
+      "theta": 0.2
+    },
+    {
+      "preset": "martin-electric-pool",
+      "column": "q26",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-electric-pool",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.35,
+      "ridge": 0.0,
+      "lgbm_value": 0.1452513966480447,
+      "lgbm_events": 0.8235386921195866,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-electric-pool",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.18181818181818182,
+      "ridge": 0.0,
+      "lgbm_value": 0.04878048780487806,
+      "lgbm_events": 0.3076923076923077,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-electric-pool",
+      "column": "q29",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-flexi-diamond-cutter-prismaticvortex-com-camille-i-wish-i-wish-i-wish-i-was-constrained",
+      "column": "zoom",
+      "history": false,
+      "oracle": 0.14545454545454545,
+      "ridge": 0.92,
+      "lgbm_value": 0.9607843137254902,
+      "lgbm_events": 0.9696969696969697,
+      "theta": 0.5
+    },
+    {
+      "preset": "martin-flexi-diamond-cutter-prismaticvortex-com-camille-i-wish-i-wish-i-wish-i-was-constrained",
+      "column": "q3",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-gate-to-moria",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-gate-to-moria",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.15094339622641506,
+      "ridge": 0.2456140350877193,
+      "lgbm_value": 0.47887323943661975,
+      "lgbm_events": 0.6265060240963856,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-gate-to-moria",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.0,
+      "lgbm_value": 0.03636363636363636,
+      "lgbm_events": 0.6601941747572816,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-gate-to-moria",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.24615384615384617,
+      "ridge": 0.6008416963418581,
+      "lgbm_value": 0.7011866235167206,
+      "lgbm_events": 0.7179487179487181,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-gate-to-moria",
+      "column": "q25",
+      "history": true,
+      "oracle": 0.15384615384615385,
+      "ridge": 0.4938271604938272,
+      "lgbm_value": 0.6597938144329897,
+      "lgbm_events": 0.5813953488372092,
+      "theta": 0.2
+    },
+    {
+      "preset": "martin-gate-to-moria",
+      "column": "q26",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-rogue-wave-ps2",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.15094339622641506,
+      "ridge": 0.2456140350877193,
+      "lgbm_value": 0.47887323943661975,
+      "lgbm_events": 0.6265060240963856,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-rogue-wave-ps2",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-rogue-wave-ps2",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.24615384615384617,
+      "ridge": 0.6008416963418581,
+      "lgbm_value": 0.7011866235167206,
+      "lgbm_events": 0.7179487179487181,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-rogue-wave-ps2",
+      "column": "q26",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-gate-to-moria",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.0,
+      "lgbm_value": 0.03636363636363636,
+      "lgbm_events": 0.6601941747572816,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-gate-to-moria",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.09523809523809525,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-rogue-wave-ps2",
+      "column": "warp",
+      "history": true,
+      "oracle": 0.2666666666666667,
+      "ridge": 0.0,
+      "lgbm_value": 0.20689655172413793,
+      "lgbm_events": 0.3684210526315789,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-rogue-wave-ps2",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-rogue-wave-ps2",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-1",
+      "column": "rot",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-1",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-1",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.125,
+      "ridge": 0.2318840579710145,
+      "lgbm_value": 0.46341463414634154,
+      "lgbm_events": 0.72992700729927,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-1",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-1",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.21212121212121213,
+      "ridge": 0.5439070521480681,
+      "lgbm_value": 0.6958798401543338,
+      "lgbm_events": 0.69281045751634,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-1",
+      "column": "q26",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-1",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-1",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.2222222222222222,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-10-infinity-mix",
+      "column": "rot",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-10-infinity-mix",
+      "column": "q10",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-10-infinity-mix",
+      "column": "q12",
+      "history": true,
+      "oracle": 0.13559322033898305,
+      "ridge": 0.16129032258064518,
+      "lgbm_value": 0.3529411764705882,
+      "lgbm_events": 0.6315789473684211,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-10-infinity-mix",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-10-infinity-mix",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.13559322033898305,
+      "ridge": 0.16129032258064518,
+      "lgbm_value": 0.3529411764705882,
+      "lgbm_events": 0.6315789473684211,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-10-infinity-mix",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.13333333333333333,
+      "ridge": 0.5327905924920852,
+      "lgbm_value": 0.6923076923076923,
+      "lgbm_events": 0.6286438529784537,
+      "theta": 0.3
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-10-infinity-mix",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-10-infinity-mix",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-the-dome-ps2",
+      "column": "q10",
+      "history": true,
+      "oracle": 0.4,
+      "ridge": 0.0,
+      "lgbm_value": 0.38095238095238093,
+      "lgbm_events": 0.4,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-the-dome-ps2",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.4210526315789474,
+      "ridge": 0.9285714285714286,
+      "lgbm_value": 0.9333333333333333,
+      "lgbm_events": 0.8571428571428571,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-the-dome-ps2",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.39999999999999997,
+      "ridge": 0.05882352941176471,
+      "lgbm_value": 0.45454545454545453,
+      "lgbm_events": 0.7575757575757576,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-the-dome-ps2",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.26666666666666666,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-the-dome-ps2",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.3043853591160221,
+      "ridge": 0.6658739595719383,
+      "lgbm_value": 0.8407892854391583,
+      "lgbm_events": 0.8399172310007526,
+      "theta": 0.2
+    },
+    {
+      "preset": "martin-the-dome-ps2",
+      "column": "q25",
+      "history": true,
+      "oracle": 0.3043853591160221,
+      "ridge": 0.6658739595719383,
+      "lgbm_value": 0.8407892854391583,
+      "lgbm_events": 0.8399172310007526,
+      "theta": 0.2
+    },
+    {
+      "preset": "martin-the-dome-ps2",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.26666666666666666,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-the-dome-ps2",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.3548387096774193,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-the-dome-ps2",
+      "column": "q29",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.15384615384615385,
+      "lgbm_events": 0.26666666666666666,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-unholy-amulet-2",
+      "column": "q5",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-unholy-amulet-2",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-unholy-amulet-2",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.15094339622641506,
+      "ridge": 0.2456140350877193,
+      "lgbm_value": 0.47887323943661975,
+      "lgbm_events": 0.6265060240963856,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-unholy-amulet-2",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-unholy-amulet-2",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.24615384615384617,
+      "ridge": 0.6008416963418581,
+      "lgbm_value": 0.7011866235167206,
+      "lgbm_events": 0.7179487179487181,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-unholy-amulet-2",
+      "column": "q26",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-unholy-amulet-2",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-unholy-amulet-2",
+      "column": "q28",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-volcano",
+      "column": "q21",
+      "history": false,
+      "oracle": 0.1568627450980392,
+      "ridge": 0.7209302325581396,
+      "lgbm_value": 0.8837209302325582,
+      "lgbm_events": 0.7857142857142857,
+      "theta": 0.4
+    },
+    {
+      "preset": "martin-volcano",
+      "column": "q22",
+      "history": true,
+      "oracle": 0.15094339622641506,
+      "ridge": 0.2456140350877193,
+      "lgbm_value": 0.47887323943661975,
+      "lgbm_events": 0.6265060240963856,
+      "theta": 0.4
+    },
+    {
+      "preset": "orb-quicksand-lab",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.6666666666666666,
+      "ridge": 0.0,
+      "lgbm_value": 0.6666666666666666,
+      "lgbm_events": 0.8,
+      "theta": 0.05
+    },
+    {
+      "preset": "orb-quicksand-lab",
+      "column": "q2",
+      "history": true,
+      "oracle": 0.6666666666666666,
+      "ridge": 0.0,
+      "lgbm_value": 0.6666666666666666,
+      "lgbm_events": 0.8,
+      "theta": 0.05
+    },
+    {
+      "preset": "pieturp-triptrap-ultimate-trip-mix",
+      "column": "video_echo_zoom",
+      "history": true,
+      "oracle": 0.29629629629629634,
+      "ridge": 0.0,
+      "lgbm_value": 0.29629629629629634,
+      "lgbm_events": 0.4516129032258065,
+      "theta": 0.5
+    },
+    {
+      "preset": "pieturp-triptrap-ultimate-trip-mix",
+      "column": "q1",
+      "history": true,
+      "oracle": 0.13793103448275862,
+      "ridge": 0.0,
+      "lgbm_value": 0.07142857142857142,
+      "lgbm_events": 0.5937202664129401,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-volcano",
+      "column": "q23",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-volcano",
+      "column": "q24",
+      "history": true,
+      "oracle": 0.24615384615384617,
+      "ridge": 0.6008416963418581,
+      "lgbm_value": 0.7011866235167206,
+      "lgbm_events": 0.7179487179487181,
+      "theta": 0.1
+    },
+    {
+      "preset": "martin-volcano",
+      "column": "q26",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "martin-volcano",
+      "column": "q27",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "pork-blouse-lafertion",
+      "column": "q20",
+      "history": false,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.9411764705882353,
+      "lgbm_value": 0.9411764705882353,
+      "lgbm_events": 0.9615384615384616,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-fvese-mosaic-waves",
+      "column": "dx",
+      "history": false,
+      "oracle": 0.09259259259259259,
+      "ridge": 0.4210526315789474,
+      "lgbm_value": 0.9672933534605004,
+      "lgbm_events": 0.9310771770532398,
+      "theta": 0.1
+    },
+    {
+      "preset": "rovastar-fvese-mosaic-waves",
+      "column": "wave_x",
+      "history": true,
+      "oracle": 0.29629629629629634,
+      "ridge": 0.3571428571428571,
+      "lgbm_value": 0.4666666666666667,
+      "lgbm_events": 0.75,
+      "theta": 0.6
+    },
+    {
+      "preset": "rovastar-fvese-mosaic-waves",
+      "column": "wave_y",
+      "history": true,
+      "oracle": 0.24561403508771928,
+      "ridge": 0.3050847457627119,
+      "lgbm_value": 0.464957264957265,
+      "lgbm_events": 0.7441055591607182,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-harlequin-s-dynamic-fractal-3",
+      "column": "ob_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0625,
+      "lgbm_events": 0.5447714464621164,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-harlequin-s-dynamic-fractal-3",
+      "column": "ib_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0625,
+      "lgbm_events": 0.5447714464621164,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-harlequin-s-dynamic-fractal-3",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.3333333333333333,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-harlequin-s-dynamic-fractal-3",
+      "column": "q5",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.15384615384615385,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-unchained-oddball-world",
+      "column": "wave_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.4337349397590361,
+      "lgbm_events": 0.579064587973274,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-unchained-oddball-world",
+      "column": "wave_b",
+      "history": true,
+      "oracle": 0.34782608695652173,
+      "ridge": 0.2727272727272727,
+      "lgbm_value": 0.5384615384615384,
+      "lgbm_events": 0.6405693950177936,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-unchained-oddball-world",
+      "column": "ob_r",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.6666666666666666,
+      "lgbm_value": 0.9347826086956522,
+      "lgbm_events": 0.9438202247191012,
+      "theta": 0.1
+    },
+    {
+      "preset": "rovastar-unchained-oddball-world",
+      "column": "ob_g",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.5172413793103449,
+      "lgbm_value": 0.878048780487805,
+      "lgbm_events": 0.8266666666666667,
+      "theta": 0.1
+    },
+    {
+      "preset": "rovastar-krash-rainbow-deflection",
+      "column": "zoom",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.5593220338983051,
+      "lgbm_events": 0.7369371693974971,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-krash-rainbow-deflection",
+      "column": "rot",
+      "history": true,
+      "oracle": 0.6958290946083417,
+      "ridge": 0.0,
+      "lgbm_value": 0.7161172161172161,
+      "lgbm_events": 0.7377245508982037,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-unchained-oddball-world",
+      "column": "zoomexp",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.2891566265060241,
+      "lgbm_events": 0.6048652202498356,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-unchained-oddball-world",
+      "column": "wave_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.49411764705882344,
+      "lgbm_events": 0.1,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-unchained-oddball-world",
+      "column": "ob_b",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.04545454545454545,
+      "lgbm_value": 0.8648648648648648,
+      "lgbm_events": 0.7027027027027026,
+      "theta": 0.05
+    },
+    {
+      "preset": "rovastar-unchained-oddball-world",
+      "column": "q1",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.2891566265060241,
+      "lgbm_events": 0.6048652202498356,
+      "theta": 0.05
+    },
+    {
+      "preset": "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive",
+      "column": "wave_r",
+      "history": true,
+      "oracle": 0.025559105431309903,
+      "ridge": 0.0064516129032258064,
+      "lgbm_value": 0.025559105431309903,
+      "lgbm_events": 0.8449462957862847,
+      "theta": 0.2
+    },
+    {
+      "preset": "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive",
+      "column": "wave_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0310077519379845,
+      "lgbm_events": 0.8697420726634002,
+      "theta": 0.4
+    },
+    {
+      "preset": "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive",
+      "column": "wave_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.010610079575596818,
+      "lgbm_events": 0.843417405552748,
+      "theta": 0.3
+    },
+    {
+      "preset": "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.03960396039603961,
+      "ridge": 0.0,
+      "lgbm_value": 0.04926108374384236,
+      "lgbm_events": 0.8365314130481654,
+      "theta": 0.3
+    },
+    {
+      "preset": "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive",
+      "column": "ob_g",
+      "history": true,
+      "oracle": 0.035460992907801414,
+      "ridge": 0.0,
+      "lgbm_value": 0.027972027972027972,
+      "lgbm_events": 0.7937365010799136,
+      "theta": 0.1
+    },
+    {
+      "preset": "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.04199475065616798,
+      "ridge": 0.010666666666666666,
+      "lgbm_value": 0.062176165803108814,
+      "lgbm_events": 0.8367874267448054,
+      "theta": 0.2
+    },
+    {
+      "preset": "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive",
+      "column": "q2",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.8561306540050273,
+      "theta": 0.4
+    },
+    {
+      "preset": "sckephthaeck-nz",
+      "column": "wave_r",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 0.9473684210526316,
+      "theta": 0.05
+    },
+    {
+      "preset": "sckephthaeck-nz",
+      "column": "wave_g",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 0.9473684210526316,
+      "theta": 0.1
+    },
+    {
+      "preset": "sckephthaeck-nz",
+      "column": "wave_b",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 1.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive",
+      "column": "ob_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.8561306540050273,
+      "theta": 0.4
+    },
+    {
+      "preset": "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive",
+      "column": "ib_r",
+      "history": true,
+      "oracle": 0.03960396039603961,
+      "ridge": 0.0,
+      "lgbm_value": 0.04926108374384236,
+      "lgbm_events": 0.8574618722561982,
+      "theta": 0.2
+    },
+    {
+      "preset": "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive",
+      "column": "ib_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0310077519379845,
+      "lgbm_events": 0.8697420726634002,
+      "theta": 0.4
+    },
+    {
+      "preset": "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive",
+      "column": "ib_b",
+      "history": true,
+      "oracle": 0.04199475065616798,
+      "ridge": 0.010666666666666666,
+      "lgbm_value": 0.0721339630742808,
+      "lgbm_events": 0.8367874267448054,
+      "theta": 0.2
+    },
+    {
+      "preset": "shadowharlequin-loadus-fishbrain-geiss-fitting-butterfly-v-many-times-2",
+      "column": "zoom",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 1.0,
+      "lgbm_value": 1.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "stahlregen-aderrasi-eo-s-geiss-fishbrain-prickly-abyss",
+      "column": "wave_r",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 0.9473684210526316,
+      "theta": 0.05
+    },
+    {
+      "preset": "stahlregen-aderrasi-eo-s-geiss-fishbrain-prickly-abyss",
+      "column": "wave_g",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 0.9473684210526316,
+      "theta": 0.1
+    },
+    {
+      "preset": "stahlregen-aderrasi-eo-s-geiss-fishbrain-prickly-abyss",
+      "column": "wave_b",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 1.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "stahlregen-bdrv-fishbrain-flexi-geiss-shifter-starcraft-distorted",
+      "column": "zoom",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.8571428571428571,
+      "lgbm_value": 1.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "stahlregen-bdrv-fishbrain-flexi-geiss-shifter-starcraft-distorted",
+      "column": "cx",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 1.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion",
+      "column": "wave_r",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 0.9473684210526316,
+      "theta": 0.05
+    },
+    {
+      "preset": "stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion",
+      "column": "wave_g",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 0.9473684210526316,
+      "theta": 0.1
+    },
+    {
+      "preset": "suksma-question-authority-take-what-you-want-be-a-nihilist",
+      "column": "mv_dx",
+      "history": false,
+      "oracle": 0.21621621621621626,
+      "ridge": 0.888888888888889,
+      "lgbm_value": 0.9374999999999999,
+      "lgbm_events": 0.927536231884058,
+      "theta": 0.05
+    },
+    {
+      "preset": "tokyo-corridor-shifter-tumbling-cubes-remix",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.05673758865248227,
+      "ridge": 0.9138576779026217,
+      "lgbm_value": 0.959409594095941,
+      "lgbm_events": 0.9716312056737589,
+      "theta": 0.1
+    },
+    {
+      "preset": "tokyo-corridor-shifter-tumbling-cubes-remix",
+      "column": "q8",
+      "history": false,
+      "oracle": 0.21621621621621626,
+      "ridge": 0.888888888888889,
+      "lgbm_value": 0.9374999999999999,
+      "lgbm_events": 0.927536231884058,
+      "theta": 0.05
+    },
+    {
+      "preset": "tonymilkdrop-leonardo-da-vinci-s-balloon-flexi-merry-go-round-techstyle",
+      "column": "q1",
+      "history": false,
+      "oracle": 0.6666666666666666,
+      "ridge": 0.7692307692307693,
+      "lgbm_value": 0.7058823529411765,
+      "lgbm_events": 0.7058823529411765,
+      "theta": 0.05
+    },
+    {
+      "preset": "stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion",
+      "column": "wave_b",
+      "history": false,
+      "oracle": 0.5333333333333333,
+      "ridge": 0.5000000000000001,
+      "lgbm_value": 0.9523809523809523,
+      "lgbm_events": 1.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "stahlregen-old-school-baby-spiral-ornament-1",
+      "column": "wave_mystery",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.08823529411764705,
+      "lgbm_events": 0.41756659467242624,
+      "theta": 0.05
+    },
+    {
+      "preset": "suksma-more-pathetic-attempts-justifying-my-ignominious-end-waning-anti-tunneled",
+      "column": "rot",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.9700000000000001,
+      "lgbm_value": 0.9655172413793103,
+      "lgbm_events": 1.0,
+      "theta": 0.1
+    },
+    {
+      "preset": "suksma-question-authority-take-what-you-want-be-a-nihilist",
+      "column": "video_echo_zoom",
+      "history": false,
+      "oracle": 0.4210526315789474,
+      "ridge": 0.9285714285714286,
+      "lgbm_value": 0.9333333333333333,
+      "lgbm_events": 0.8571428571428571,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "zoom",
+      "history": true,
+      "oracle": 1.0,
+      "ridge": 0.0,
+      "lgbm_value": 1.0,
+      "lgbm_events": 0.8571428571428571,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "wave_r",
+      "history": true,
+      "oracle": 0.1844841087678557,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.6565231278492406,
+      "theta": 0.2
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "wave_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.46987951807228917,
+      "theta": 0.3
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "wave_b",
+      "history": true,
+      "oracle": 0.41676451069477766,
+      "ridge": 0.03314917127071823,
+      "lgbm_value": 0.0962566844919786,
+      "lgbm_events": 0.5861708309122603,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "ob_size",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.38157894736842113,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "ob_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "ob_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "ib_size",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "ib_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.07724137931034483,
+      "lgbm_events": 0.3829484902309059,
+      "theta": 0.3
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "ib_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5390505359877488,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "ib_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "ib_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "q1",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.05882352941176471,
+      "lgbm_events": 0.3829484902309059,
+      "theta": 0.3
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "q2",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "q4",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-all-you-can-eat",
+      "column": "q5",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "decay",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.6578947368421053,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "wave_x",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.14285714285714288,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "wave_y",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.5
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "wave_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.6666666666666666,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "wave_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5161290322580646,
+      "theta": 0.4
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "wave_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2608695652173913,
+      "theta": 0.3
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "wave_mystery",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "ob_size",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5385450597176982,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.4,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "ob_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5106382978723405,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "ob_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.4888888888888889,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "ib_size",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5405405405405406,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "ib_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.13793103448275862,
+      "lgbm_events": 0.5853658536585367,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "ib_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.04545454545454545,
+      "lgbm_events": 0.5925925925925927,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "ib_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.12244897959183672,
+      "lgbm_events": 0.4383561643835616,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "q1",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.6666666666666666,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "q2",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2608695652173913,
+      "theta": 0.3
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5161290322580646,
+      "theta": 0.4
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "q5",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.6613924050632911,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "q6",
+      "history": true,
+      "oracle": 0.3,
+      "ridge": 0.0,
+      "lgbm_value": 0.3157894736842105,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "q7",
+      "history": true,
+      "oracle": 0.12631578947368421,
+      "ridge": 0.0,
+      "lgbm_value": 0.1045751633986928,
+      "lgbm_events": 0.6076429097799768,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-beat-demo-demonology-mix",
+      "column": "q8",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.01904761904761905,
+      "lgbm_events": 0.7393939393939394,
+      "theta": 0.4
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "zoom",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.26086956521739135,
+      "theta": 0.2
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "wave_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2222222222222222,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "wave_mystery",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.26086956521739135,
+      "theta": 0.2
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.38251455034733084,
+      "ridge": 0.012944983818770227,
+      "lgbm_value": 0.012944983818770227,
+      "lgbm_events": 0.5660159472092384,
+      "theta": 0.3
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "ob_g",
+      "history": true,
+      "oracle": 0.7506761765141907,
+      "ridge": 0.06525285481239804,
+      "lgbm_value": 0.18654434250764526,
+      "lgbm_events": 0.710914032327278,
+      "theta": 0.2
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.019169329073482427,
+      "ridge": 0.0,
+      "lgbm_value": 0.008287292817679558,
+      "lgbm_events": 0.7534587985948938,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "ob_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2222222222222222,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "ib_size",
+      "history": true,
+      "oracle": 0.7315715168968402,
+      "ridge": 0.06525285481239804,
+      "lgbm_value": 0.13814756671899528,
+      "lgbm_events": 0.710914032327278,
+      "theta": 0.2
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "ib_r",
+      "history": true,
+      "oracle": 0.36186711266534893,
+      "ridge": 0.04871447902571042,
+      "lgbm_value": 0.03809523809523809,
+      "lgbm_events": 0.7025059941822962,
+      "theta": 0.2
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "ib_g",
+      "history": true,
+      "oracle": 0.18930430667297682,
+      "ridge": 0.03587443946188341,
+      "lgbm_value": 0.024060150375939848,
+      "lgbm_events": 0.7283703311518539,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "ib_b",
+      "history": true,
+      "oracle": 0.22709232096635032,
+      "ridge": 0.046094750320102434,
+      "lgbm_value": 0.03603603603603604,
+      "lgbm_events": 0.7229219950311809,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "q1",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.26086956521739135,
+      "theta": 0.2
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "q2",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.4,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2222222222222222,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-geiss-furious-spirals-canvas-mix",
+      "column": "q4",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "decay",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2121212121212121,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "wave_x",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.08,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "wave_y",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "wave_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.24669603524229078,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "wave_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.23300970873786406,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "wave_mystery",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "ob_size",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.20657276995305165,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.33156216790648246,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "ob_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.41911970843846375,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.1686746987951807,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "ib_size",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.17821782178217824,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "mv_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.41911970843846375,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "mv_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.1686746987951807,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "mv_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.33156216790648246,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "mv_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.05714285714285715,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "q1",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.28037383177570097,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "q2",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.17821782178217824,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.23622047244094488,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "q5",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "q6",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2986666666666667,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-housed-in-a-childish-mind",
+      "column": "q7",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.4,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-morat-s-final-voyage",
+      "column": "wave_r",
+      "history": true,
+      "oracle": 0.06865464632454925,
+      "ridge": 0.0,
+      "lgbm_value": 0.052631578947368425,
+      "lgbm_events": 0.7081703527691464,
+      "theta": 0.2
+    },
+    {
+      "preset": "unchained-morat-s-final-voyage",
+      "column": "wave_g",
+      "history": true,
+      "oracle": 0.14545454545454545,
+      "ridge": 0.07476635514018691,
+      "lgbm_value": 0.1839464882943144,
+      "lgbm_events": 0.7996848532597991,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-morat-s-final-voyage",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.14545454545454545,
+      "ridge": 0.07476635514018691,
+      "lgbm_value": 0.1839464882943144,
+      "lgbm_events": 0.7996848532597991,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-morat-s-final-voyage",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.06865464632454925,
+      "ridge": 0.0,
+      "lgbm_value": 0.052631578947368425,
+      "lgbm_events": 0.7081703527691464,
+      "theta": 0.2
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "wave_mode",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "wave_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2843601895734597,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "wave_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.32727272727272727,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "wave_b",
+      "history": true,
+      "oracle": 0.19999999999999998,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.38297872340425526,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "wave_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.3888888888888889,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "wave_mystery",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "ob_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.5
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "ob_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.5945179584120983,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "mv_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "q1",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.6222444889779559,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "q2",
+      "history": true,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.0,
+      "lgbm_value": 0.10714285714285715,
+      "lgbm_events": 0.6324934839270199,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.6244579358196011,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "ib_size",
+      "history": true,
+      "oracle": 0.14035087719298245,
+      "ridge": 0.0,
+      "lgbm_value": 0.10714285714285715,
+      "lgbm_events": 0.6324934839270199,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "ib_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.24,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "mv_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "mv_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "q4",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "q5",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "q6",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "q7",
+      "history": true,
+      "oracle": 0.43752237737200145,
+      "ridge": 0.0,
+      "lgbm_value": 0.3027027027027027,
+      "lgbm_events": 0.6121891760117016,
+      "theta": 0.2
+    },
+    {
+      "preset": "unchained-reawoke",
+      "column": "q8",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-rovastar-waves-of-waves",
+      "column": "dx",
+      "history": false,
+      "oracle": 0.09259259259259259,
+      "ridge": 0.4210526315789474,
+      "lgbm_value": 0.9672933534605004,
+      "lgbm_events": 0.9310771770532398,
+      "theta": 0.1
+    },
+    {
+      "preset": "unchained-rovastar-waves-of-waves",
+      "column": "ob_r",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.6343906510851419,
+      "lgbm_events": 0.5221518987341772,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-rovastar-waves-of-waves",
+      "column": "ob_g",
+      "history": false,
+      "oracle": 0.10526315789473684,
+      "ridge": 0.2329749103942652,
+      "lgbm_value": 1.0,
+      "lgbm_events": 0.9566770879857079,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-rovastar-waves-of-waves",
+      "column": "ob_b",
+      "history": false,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.6818181818181818,
+      "lgbm_events": 0.44174757281553395,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-rovastar-waves-of-waves",
+      "column": "ob_a",
+      "history": false,
+      "oracle": 0.10526315789473684,
+      "ridge": 0.12987012987012989,
+      "lgbm_value": 0.5689873417721519,
+      "lgbm_events": 0.5139412207987942,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "zoom",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2986666666666667,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "cy",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "wave_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.24669603524229078,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "wave_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.23300970873786406,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "ob_size",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.20657276995305165,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "ob_r",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.33156216790648246,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "ob_g",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.41911970843846375,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "ob_b",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.1686746987951807,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "ob_a",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.17821782178217824,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "ib_size",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.17821782178217824,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "q6",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.2986666666666667,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "q7",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.4,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "q1",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.28037383177570097,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "q2",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.17821782178217824,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "q3",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.23622047244094488,
+      "theta": 0.05
+    },
+    {
+      "preset": "unchained-unified-drag-2",
+      "column": "q5",
+      "history": true,
+      "oracle": 0.0,
+      "ridge": 0.0,
+      "lgbm_value": 0.0,
+      "lgbm_events": 0.0,
+      "theta": 0.05
+    }
+  ]
+}
