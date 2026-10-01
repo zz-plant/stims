@@ -27,8 +27,13 @@ reference.
 - On presets from unseen families, nothing learned from other presets
   transfers. The preset's own equations help more than a network: feeding
   each control only the signals it reads gains +0.12.
-- **Stateful controls** (beat counters, toggles) defeat every regression and
-  are scored on when they change instead. No baseline times their jumps yet.
+- **Stateful controls** (beat counters, toggles) defeat every regression, so
+  they are scored on when they change. A classifier that predicts *when* a
+  jump happens times them (event F1 0.44, against 0 for every value model).
+- **Song-aware preset picking** beats a fixed ranking within a musical
+  style, but not across styles.
+- **Equations can be recovered from behaviour**: 41% of memoryless audio
+  controls come back exactly, most in 4 terms or fewer.
 
 ## The tools
 
@@ -329,12 +334,87 @@ What follows:
   160-preset, 32-song set, 501 cells jump. The linear model times them well
   (F1 over 0.5) on 108 (the clock oracle on 31): cells that jump with
   the audio directly. On the other ~340, counters and gated toggles, neither
-  times a single jump. That is the bar for a threshold model.
+  times a single jump. A LightGBM event classifier clears that bar (event
+  F1 0.44 on cells with history; see the next section).
 - **Ask the probe before sizing a model's memory.** Leaky integrals lift the
   seconds columns (0.34 → 0.45), and their per-frame change is predictable
   (0.74). Neither helps the persistent columns (−0.05, −0.02, −0.04): their
   difficulty is thresholds and counters, not how far back the model can
   see.
+
+## Beyond imitation: timing, matching, recovering equations
+
+Three experiments in [`experiments/neural-vj/`](../../experiments/neural-vj/README.md),
+on the same 160-preset, 32-song export (24 training songs, 4 validation,
+4 test unless noted). Raw results are in `experiments/neural-vj/results/`.
+
+**Timing the jumps** (`run_events.py`). The cells are 458 audio-driven
+columns that jump: a jump is over a quarter of the column's training range,
+5 or more in training and at least one in test. The models:
+- the value models predict the column, and their jumps are read off the
+  prediction;
+- the event classifier is LightGBM on the same features plus their
+  one-frame change, predicting "jumps at this frame". Its threshold is tuned
+  on the validation songs, with one event kept per 3-frame window.
+
+Event F1 on the test songs (median, with the share of cells over 0.5):
+
+| Cells | Clock oracle | Ridge | LightGBM, value | **LightGBM, events** |
+| --- | --- | --- | --- | --- |
+| all 458 | 0.00 (9%) | 0.00 (26%) | 0.12 (34%) | **0.61 (58%)** |
+| 348 with history (counters, toggles) | 0.00 (5%) | 0.00 (9%) | 0.00 (16%) | **0.44 (46%)** |
+| 110 memoryless | 0.16 (20%) | 0.74 (81%) | 0.94 (90%) | 0.93 (95%) |
+
+Predicting when a counter ticks is learnable even though its value is not:
+a counter's value depends on how many ticks came before, its timing on the
+audio now. Per cell, the classifier beats LightGBM-on-value by a median of
++0.06 [+0.02, +0.14] and wins 62% of cells. The gap is concentrated in the
+stateful cells, where every value model scores 0.
+
+**Song-aware preset picking** (`run_match.py`). `fit[p, s]` is the share of
+preset p's motion on song s that departs from its clock-only trajectory. On
+117 reacting presets the variance of fit splits into:
+- 62% preset: some presets react to anything;
+- 11% song;
+- 27% interaction.
+
+The interaction is real: computed on each half of every song, it agrees at
+r = 0.47. Ranking presets for 8 held-out songs:
+
+| Ranking | Spearman | Top-10 precision |
+| --- | --- | --- |
+| fixed (each preset's mean fit) | 0.91 | 0.72 |
+| linear map from 39 song statistics, through each preset's dataflow profile | 0.91 | 0.71 |
+| mean fit on the 3 training songs nearest in those statistics | **0.96** (7 of 8 songs won) | **0.78** |
+
+On the 4 unfamiliar-style songs, nearest songs gains nothing (0.59 against
+0.60). The fixed ranking itself falls to 0.60, so which presets react most
+changes with style. A song-aware autoplay needs training songs covering the
+styles it will hear, and 24 synthetic songs are too few for the linear map.
+
+**Recovering equations** (`run_symbolic.py`). For the 138 audio-driven
+columns `lab:dataflow` labels memoryless, sparse regression searches a
+library of MilkDrop-shaped terms:
+- signals and their squares and pair products;
+- `above(signal, threshold)`;
+- `sin`/`cos` of time at the column's own clock frequencies, and their
+  products with signals.
+
+It keeps the sparsest fit within 0.001 validation R² of the best.
+
+| Signals offered | Median R² (test) | Exact (R² > 0.999) | R² > 0.9 | Median terms |
+| --- | --- | --- | --- | --- |
+| the ones `lab:dataflow` says it reads | 0.983 | 41% | 79% | 10 |
+| all 13 | 0.988 | 40% | 82% | 94 |
+
+The 56 exact recoveries have a median of 4 terms, and 27 have 3 or fewer,
+for example `warp = 2*bass` and `zoomexp = 1 + 50*mid_att`. Given every
+signal, the regression finds 98% of the signals the equations read, but
+picks extras too (precision 0.44). Given the analysis's signals, it is as
+accurate with a tenth of the terms. The misses need forms the library lacks:
+ratios like `bass/bass_att`, `mod` and discrete steps. Adding those, or
+replacing the library with a genetic search over the VM's operators, is the
+next step.
 
 ## What the state vectors cannot see
 

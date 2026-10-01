@@ -23,6 +23,9 @@ about a third of the corpus) are counted and left out.
 | `train_job.py`, `pretrain_job.py` | One network per process (supervised; audio-only future-spectrum pretraining) |
 | `run_known.py` | Phase 1: known presets, held-out songs, the full model ladder plus LightGBM |
 | `run_fewshot.py` | Phase 2: presets from unseen families, fitted from 1 or 4 calibration songs |
+| `run_events.py` | Phase 4a: timing the jumps of counters and toggles (event F1), with a LightGBM event classifier against value models |
+| `run_match.py` | Phase 4b: whether how strongly a preset reacts depends on the song, and ranking presets for an unseen song |
+| `run_symbolic.py` | Phase 4c: recovering memoryless preset equations from behaviour by sparse regression over MilkDrop-shaped terms |
 | `run_codecond.py` | Phase 3: the same, with each column's features and prior chosen from the preset's equations (`lab:dataflow --all` labels) |
 | `verify_lgbm.py` | Independent refit of the LightGBM result and a permutation (mismatched-audio) leakage check |
 
@@ -44,6 +47,9 @@ cd experiments/neural-vj
 ../../.venv/bin/python run_fewshot.py ../../scratch/nvj/data --kind mingru
 (cd ../.. && bun run lab:dataflow -- --all --out scratch/nvj/labels.json)
 ../../.venv/bin/python run_codecond.py ../../scratch/nvj/data ../../scratch/nvj/labels.json --bank jobs_fewshot/trunk.npz
+../../.venv/bin/python run_events.py ../../scratch/nvj/data ../../scratch/nvj/labels.json --procs 4   # ~45 min on 4 cores
+../../.venv/bin/python run_match.py ../../scratch/nvj/data ../../scratch/nvj/labels.json --ood ../../scratch/nvj/ood
+../../.venv/bin/python run_symbolic.py ../../scratch/nvj/data ../../scratch/nvj/labels.json   # ~3 min
 ```
 
 The published results used 160 randomly sampled presets (seed 7) whose
