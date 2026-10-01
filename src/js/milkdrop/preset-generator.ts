@@ -272,8 +272,6 @@ function logSalvage(dropped: SalvagedLine[]): void {
 type ImageGenerationResponse = {
   description?: string;
   milkSource?: string;
-  cached?: boolean;
-  cachedPresetId?: string;
 };
 
 export async function generatePresetFromImage(

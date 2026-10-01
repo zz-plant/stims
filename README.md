@@ -282,7 +282,7 @@ The quality gate verifies that the visible preset count matches the public catal
 
 ## Optional edge APIs
 
-The repository includes Cloudflare Worker routes for generation, blending, visual search, and community presets. They are optional enhancements rather than requirements for local playback or editing. See [the API reference](./docs/api.md) for deployment requirements and endpoint contracts.
+The repository includes Cloudflare Worker routes for generation, blending, and visual search. They are optional enhancements rather than requirements for local playback or editing. See [the API reference](./docs/api.md) for deployment requirements and endpoint contracts.
 
 ---
 

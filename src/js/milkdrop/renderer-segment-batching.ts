@@ -496,6 +496,10 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;
+      /** Per-point RGBA, as on a wave visual (a mode 7 trail hides its
+       * bridge between the two lines this way). */
+      colors?: ArrayLike<number>;
+      perPointAlpha?: boolean;
     }>,
     alphaMultiplier: number,
   ) {
@@ -507,8 +511,11 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
       ).appendPolyline(
         line.positions,
         line.color,
-        line.alpha * alphaMultiplier,
+        // as for waves: a per-point alpha already carries the line's alpha
+        line.perPointAlpha ? alphaMultiplier : line.alpha * alphaMultiplier,
         getMilkdropSegmentWidth(1),
+        false,
+        line.colors,
       );
     }
     this.getTarget(target).syncSplit(this.normalUploads, this.additiveUploads);

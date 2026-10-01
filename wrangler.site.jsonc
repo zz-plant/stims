@@ -63,6 +63,8 @@
       }
     ]
   },
+  // Holds preset_embeddings (written by the embed-backfill cron) for the
+  // /api/visual-search fallback. The `stims-gallery` name predates its use.
   "d1_databases": [
     {
       "binding": "DB",
@@ -71,10 +73,6 @@
     }
   ],
   "r2_buckets": [
-    {
-      "binding": "GALLERY_R2",
-      "bucket_name": "stims-gallery"
-    },
     {
       "binding": "STATIC_R2",
       "bucket_name": "stims-static"
