@@ -314,6 +314,16 @@ export function applyCompositeUniformState(
 
 const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
 
+type FeedbackFrameRenderer = {
+  render(scene: Scene, camera: Camera): void;
+  setRenderTarget?: (target: RenderTarget | null) => void;
+  /** Present on WebGLRenderer; optional so test doubles stay simple. */
+  getClearAlpha?: () => number;
+  setClearAlpha?: (alpha: number) => void;
+  getClearColor?: (target: Color) => Color;
+  setClearColor?: (color: Color | number, alpha?: number) => void;
+};
+
 type SharedAuxTextureMap = Record<AuxTextureName | 'video', Texture>;
 
 // The built-in aux samplers (noise/perlin/simplex/voronoi/aura/caustics/
@@ -2548,6 +2558,9 @@ class SharedMilkdropFeedbackManager
         savedTex: { value: null },
         transitionAlpha: { value: 0 },
         patternAspect: { value: 16 / 9 },
+        // 1 zooms a still snapshot as it dissolves; 0 for another deck's
+        // live frame, which moves on its own (setTransitionSource).
+        savedDrift: { value: 1 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -2561,6 +2574,7 @@ class SharedMilkdropFeedbackManager
         uniform sampler2D savedTex;
         uniform float transitionAlpha;
         uniform float patternAspect;
+        uniform float savedDrift;
         varying vec2 vUv;
 
         // MilkDrop-style dissolve: a static noise pattern sets when each pixel
@@ -2595,11 +2609,13 @@ class SharedMilkdropFeedbackManager
           // Ease the global progression so the wipe starts and ends gently
           // instead of snapping into motion off the linear alpha ramp.
           a = a * a * (3.0 - 2.0 * a);
-          // The saved frame is a static snapshot; zoom it slowly as it
-          // dissolves out (alpha runs 1 -> 0) so the outgoing image keeps
-          // moving instead of freezing for the whole blend.
+          // A saved snapshot is still; zoom it slowly as it dissolves out
+          // (alpha runs 1 -> 0) so the outgoing image keeps moving instead
+          // of freezing for the whole blend. Off for a live deck's frame
+          // (savedDrift 0), which moves on its own.
           float drift = 1.0 +
-            ${MILKDROP_BLEND_DISSOLVE.savedZoomDrift.toFixed(4)} * (1.0 - a);
+            ${MILKDROP_BLEND_DISSOLVE.savedZoomDrift.toFixed(4)} * (1.0 - a) *
+              savedDrift;
           vec2 savedUv = (vUv - 0.5) / drift + 0.5;
           vec4 saved = texture2D(savedTex, savedUv);
           // Aspect-corrected sample point keeps dissolve patches round on
@@ -2927,12 +2943,21 @@ class SharedMilkdropFeedbackManager
       this.camera,
     );
     renderer.setRenderTarget(previousTarget);
-    this.presentMaterial.uniforms.savedTex.value = target.texture;
+    this.recordSnapshot(target.texture);
     this.savedFrameIndex = 1 - this.savedFrameIndex;
   }
 
+  protected rememberRenderer(renderer: unknown) {
+    this.lastRenderer =
+      renderer as SharedMilkdropFeedbackManager['lastRenderer'];
+  }
+
+  getDisplayTexture(): Texture {
+    return this.displayTarget.texture;
+  }
+
   protected copyTargetImage(
-    source: WebGLRenderTarget,
+    source: Texture,
     destination: WebGLRenderTarget,
   ): boolean {
     const renderer = this.lastRenderer;
@@ -2963,7 +2988,7 @@ class SharedMilkdropFeedbackManager
       scene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, material));
       this.copyPass = { scene, material };
     }
-    this.copyPass.material.uniforms.sourceTex.value = source.texture;
+    this.copyPass.material.uniforms.sourceTex.value = source;
     const previousTarget = renderer.getRenderTarget?.() ?? null;
     renderer.setRenderTarget(destination);
     renderer.render(this.copyPass.scene, this.camera);
@@ -3413,17 +3438,28 @@ class SharedMilkdropFeedbackManager
   }
 
   render(
-    renderer: {
-      render(scene: Scene, camera: Camera): void;
-      setRenderTarget?: (target: RenderTarget | null) => void;
-      /** Present on WebGLRenderer; optional so test doubles stay simple. */
-      getClearAlpha?: () => number;
-      setClearAlpha?: (alpha: number) => void;
-      getClearColor?: (target: Color) => Color;
-      setClearColor?: (color: Color | number, alpha?: number) => void;
-    },
+    renderer: FeedbackFrameRenderer,
     sourceScene: Scene,
     sourceCamera: Camera,
+  ) {
+    return this.renderFrame(renderer, sourceScene, sourceCamera, true);
+  }
+
+  /** The outgoing deck of a live crossfade: composites into the display
+   * target, which the incoming deck's present pass samples. */
+  renderOffscreen(
+    renderer: FeedbackFrameRenderer,
+    sourceScene: Scene,
+    sourceCamera: Camera,
+  ) {
+    return this.renderFrame(renderer, sourceScene, sourceCamera, false);
+  }
+
+  private renderFrame(
+    renderer: FeedbackFrameRenderer,
+    sourceScene: Scene,
+    sourceCamera: Camera,
+    present: boolean,
   ) {
     if (!renderer.setRenderTarget) {
       return false;
@@ -3475,7 +3511,7 @@ class SharedMilkdropFeedbackManager
         | number
         | undefined) ?? 0;
 
-    if (transitionAlpha > 0.001) {
+    if (!present || transitionAlpha > 0.001) {
       renderer.setRenderTarget(this.displayTarget);
       renderer.render(this.compositeScene, this.camera);
 
@@ -3486,8 +3522,10 @@ class SharedMilkdropFeedbackManager
         this.renderBlurPasses(renderer);
       }
 
-      renderer.setRenderTarget(null);
-      renderer.render(this.presentScene, this.camera);
+      if (present) {
+        renderer.setRenderTarget(null);
+        renderer.render(this.presentScene, this.camera);
+      }
     } else {
       renderer.setRenderTarget(null);
       renderer.render(this.compositeScene, this.camera);

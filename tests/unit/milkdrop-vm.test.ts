@@ -1963,3 +1963,110 @@ wave_0_per_point1=x = 0.1; y = 0.2;
     expect(shape?.x).toBeCloseTo(shapeBefore.x + 0.09, 6);
   });
 });
+
+describe('handing a running preset off for a live crossfade', () => {
+  // Everything here accumulates frame to frame — q registers, megabuf, the
+  // RNG, wave and shape locals — so state lost or shared in the hand-off
+  // shows up as a diverged frame rather than passing by coincidence.
+  const outgoing = compileMilkdropPresetSource(
+    `
+title=Outgoing
+wavecode_0_enabled=1
+wavecode_0_samples=32
+wave_0_per_frame1=t1 = t1 + 0.1;
+wave_0_per_point1=y = y + sin(sample * pi * 4 + t1) * 0.08;
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shape_0_per_frame1=ang = ang + 0.05 * bass; rad = 0.1 + 0.05 * sin(q1);
+per_frame_1=q1 = q1 + bass; megabuf(7) = megabuf(7) + 1; q2 = megabuf(7);
+per_frame_2=q3 = rand(1000); zoom = 1 + 0.01 * sin(q1);
+    `.trim(),
+    { id: 'handoff-outgoing' },
+  );
+  const incoming = compileMilkdropPresetSource(
+    `
+title=Incoming
+wavecode_0_enabled=1
+wavecode_0_samples=16
+wave_0_per_point1=x = x + cos(sample * pi * 2) * 0.05;
+per_frame_1=q1 = q1 - treb; megabuf(7) = megabuf(7) + 5; q2 = megabuf(7);
+per_frame_2=q3 = rand(10); rot = 0.01 * q1;
+    `.trim(),
+    { id: 'handoff-incoming' },
+  );
+  const flags = {
+    ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+    proceduralMainWave: false,
+  };
+
+  // Frame states point into buffers the VM reuses, so copy what matters
+  // before anything else steps.
+  const fingerprint = (
+    vm: ReturnType<typeof createMilkdropVM>,
+    frame: ReturnType<ReturnType<typeof createMilkdropVM>['step']>,
+  ) => ({
+    state: vm.getStateSnapshot(),
+    q1: frame.variables.q1,
+    mainWave: Array.from(frame.mainWave.positions),
+    customWaves: frame.customWaves.map((wave) => Array.from(wave.positions)),
+    shapes: JSON.parse(JSON.stringify(frame.shapes)),
+    mesh: Array.from(frame.mesh.positions),
+  });
+
+  const run = (
+    vm: ReturnType<typeof createMilkdropVM>,
+    from: number,
+    to: number,
+  ) => {
+    for (let frame = from; frame <= to; frame += 1) {
+      vm.step(makeSignals({ frame, frequencyValue: 100 + frame }));
+    }
+  };
+
+  test('the outgoing preset carries on exactly where it was', () => {
+    const reference = createMilkdropVM(outgoing, flags);
+    const host = createMilkdropVM(outgoing, flags);
+    run(reference, 1, 20);
+    run(host, 1, 20);
+
+    const handedOff = host.handOffRunningPreset(incoming);
+
+    for (let frame = 21; frame <= 40; frame += 1) {
+      const signals = makeSignals({ frame, frequencyValue: 100 + frame });
+      // Alternate which deck steps first: module-level scratch shared
+      // between VMs would make the order matter.
+      if (frame % 2 === 0) host.step(signals);
+      const actual = fingerprint(handedOff, handedOff.step(signals));
+      if (frame % 2 === 1) host.step(signals);
+      expect(actual).toEqual(fingerprint(reference, reference.step(signals)));
+    }
+  });
+
+  test('the host starts the incoming preset from a clean init', () => {
+    const fresh = createMilkdropVM(incoming, flags);
+    const host = createMilkdropVM(outgoing, flags);
+    run(host, 1, 20);
+
+    const handedOff = host.handOffRunningPreset(incoming);
+
+    for (let frame = 21; frame <= 40; frame += 1) {
+      const signals = makeSignals({ frame, frequencyValue: 100 + frame });
+      handedOff.step(signals);
+      expect(fingerprint(host, host.step(signals))).toEqual(
+        fingerprint(fresh, fresh.step(signals)),
+      );
+    }
+  });
+
+  test('each VM reports its own preset after the hand-off', () => {
+    const host = createMilkdropVM(outgoing, flags);
+    run(host, 1, 5);
+    const handedOff = host.handOffRunningPreset(incoming);
+    const signals = makeSignals({ frame: 6 });
+
+    expect(handedOff.step(signals).presetId).toBe('handoff-outgoing');
+    expect(host.step(signals).presetId).toBe('handoff-incoming');
+    expect(handedOff.getStateSnapshot().q2).toBe(6);
+    expect(host.getStateSnapshot().q2).toBe(5);
+  });
+});

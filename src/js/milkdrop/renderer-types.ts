@@ -510,6 +510,41 @@ export interface MilkdropFeedbackManager {
     sourceScene: Scene,
     sourceCamera: Camera,
   ): boolean;
+  /*
+   * Live crossfade. Each preset in a live blend runs on its own manager (a
+   * "deck"), as projectM does: the outgoing deck keeps rendering its own
+   * feedback chain offscreen, and the incoming deck's present pass dissolves
+   * out of that live frame instead of a frozen snapshot.
+   */
+  /** Renders a frame into the display target without presenting it. */
+  renderOffscreen?(
+    renderer: {
+      render(scene: Scene, camera: Camera): void;
+      setRenderTarget?: MilkdropFeedbackSetRenderTarget;
+    },
+    sourceScene: Scene,
+    sourceCamera: Camera,
+  ): boolean;
+  /** The most recent composited frame — after renderOffscreen, the one it drew. */
+  getDisplayTexture?(): Texture | null;
+  /** The feedback history the next frame warps. */
+  getHistoryTexture?(): Texture | null;
+  /**
+   * Dissolves out of `texture` — another deck's live frame — instead of the
+   * saved snapshot; null returns to the snapshot.
+   */
+  setTransitionSource?(texture: Texture | null): void;
+  /**
+   * Starts this manager's feedback history from `source`'s, so an incoming
+   * deck warps the outgoing picture instead of growing from black.
+   */
+  seedHistoryFrom?(
+    renderer: {
+      render(scene: Scene, camera: Camera): void;
+      setRenderTarget?: MilkdropFeedbackSetRenderTarget;
+    },
+    source: MilkdropFeedbackManager,
+  ): boolean;
   swap(): void;
   resize(width: number, height: number): void;
   dispose(): void;
@@ -545,6 +580,11 @@ export interface MilkdropRendererAdapter {
   ): void;
   saveFeedbackFrame?(): void;
   setTransitionBlend?(alpha: number): void;
+  /** Splits the feedback chain into two decks for a live crossfade; call
+   * before setPreset. False leaves the blend on the snapshot. */
+  beginLiveBlend?(): boolean;
+  endLiveBlend?(): void;
+  isLiveBlendActive?(): boolean;
   render(payload: MilkdropRenderPayload): boolean;
   getAudioTexture?(): Texture | null;
   resize(width: number, height: number): void;

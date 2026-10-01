@@ -66,10 +66,21 @@ export function createMilkdropPresentationController({
     updateAgentDebugSnapshot(true);
   };
 
-  const applyCompiledPreset = (compiled: MilkdropCompiledPreset) => {
+  const applyCompiledPreset = (
+    compiled: MilkdropCompiledPreset,
+    {
+      presetAlreadyStarted = false,
+    }: {
+      /** The VM is already running `compiled` — a live crossfade handed the
+       * outgoing preset off and started this one (handOffRunningPreset). */
+      presetAlreadyStarted?: boolean;
+    } = {},
+  ) => {
     setCompiledState(compiled);
     const state = getState();
-    vm.setPreset(compiled);
+    if (!presetAlreadyStarted) {
+      vm.setPreset(compiled);
+    }
     vm.setRenderBackend(state.backend);
     getAdapter()?.setPreset(compiled);
     updateAgentDebugSnapshot(true);
