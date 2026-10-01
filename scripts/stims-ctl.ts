@@ -8,9 +8,13 @@
  *     since there is no live backend switch — changing it always reloads.
  *   - audio source: window.stimState.enableDemoAudio()/enableMicrophone()
  *     (src/js/core/agent-api.ts) — stable, DOM-click-backed.
- *   - field values: window.postMessage({ type: 'toil:midi_set', ... })
- *     (src/js/frontend/agent-bridge.ts), the same virtual-MIDI-device path
- *     the session_midi_set MCP tool uses.
+ *   - field values: the `toil:midi_set` message (src/js/frontend/agent-bridge.ts),
+ *     the same virtual-MIDI-device path the session_midi_set MCP tool uses;
+ *     each waits for its reply.
+ *   - any other `toil:*` message: --post, answered by the same bridge an
+ *     embedding page uses. --embed loads the app inside an iframe on a parent
+ *     page (scripts/embed-harness.ts) so those messages cross a real frame
+ *     boundary, the way they do for an embedding site.
  *
  * Usage:
  *   bun run scripts/stims-ctl.ts [options]
@@ -38,6 +42,11 @@
  *   --wait-for <expr>          Wait until a JS expression over the agent state
  *                              `s` is true, e.g. --wait-for 's.catalogSize > 0'
  *                              (repeatable; runs in order with --run)
+ *   --post <json>              Send a toil:* message and record its reply
+ *                              (repeatable; runs in order with --run), e.g.
+ *                              --post '{"type":"toil:load_preset","presetId":"geiss-casino"}'
+ *   --embed                    Load the app in an iframe (?embed=true) and send
+ *                              --post / --set-field from the parent page
  *   --step-timeout <ms>        Budget per --wait-for / precondition (default 15000)
  *   --screenshot <path>        Capture a PNG after all actions apply
  *   --wait <ms>                Extra wait before the final screenshot/summary
@@ -48,9 +57,10 @@
 
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { chromium, type Page } from 'playwright';
+import { chromium, type Frame, type Page } from 'playwright';
 import { resolveAgentChromiumArgs } from './browser-launch.ts';
 import { ensureDevServer } from './dev-server.ts';
+import { AUTOPLAY_ARG, openEmbedded, sendToil } from './embed-harness.ts';
 
 type Backend = 'webgl' | 'webgpu' | 'auto';
 type AudioSource = 'demo' | 'microphone';
@@ -58,7 +68,8 @@ type AudioSource = 'demo' | 'microphone';
 /** One ordered action against `window.__stims_agent`. */
 export type CtlStep =
   | { kind: 'run'; id: string; params?: Record<string, unknown> }
-  | { kind: 'wait'; expr: string };
+  | { kind: 'wait'; expr: string }
+  | { kind: 'post'; message: Record<string, unknown> };
 
 type CliOptions = {
   preset: string | null;
@@ -73,6 +84,7 @@ type CliOptions = {
   timeoutMs: number;
   steps: CtlStep[];
   stepTimeoutMs: number;
+  embed: boolean;
 };
 
 /**
@@ -126,6 +138,32 @@ export function parseRunSpec(
   }
 }
 
+/** A `toil:*` message as JSON: an object whose `type` names the command. */
+export function parsePostSpec(
+  raw: string,
+): { message: Record<string, unknown> } | { error: string } {
+  let message: unknown;
+  try {
+    message = JSON.parse(raw);
+  } catch (error) {
+    return { error: `not valid JSON (${(error as Error).message})` };
+  }
+  if (
+    message === null ||
+    typeof message !== 'object' ||
+    Array.isArray(message)
+  ) {
+    return { error: 'expected a JSON object' };
+  }
+  const { type } = message as { type?: unknown };
+  if (typeof type !== 'string' || !type.startsWith('toil:')) {
+    return {
+      error: 'type must name a toil:* command, e.g. "toil:load_preset"',
+    };
+  }
+  return { message: message as Record<string, unknown> };
+}
+
 function printUsageAndExit(): never {
   console.error('Usage: bun run scripts/stims-ctl.ts [options]');
   console.error('Options:');
@@ -147,7 +185,13 @@ function printUsageAndExit(): never {
     '  --wait-for <expr>          Wait until an expression over the agent state `s` is true (repeatable)',
   );
   console.error(
-    '  --step-timeout <ms>        Budget per --wait-for / precondition (default: 15000)',
+    '  --post <json>              Send a toil:* message and record its reply (repeatable, ordered)',
+  );
+  console.error(
+    '  --embed                    Load the app in an iframe and post from the parent page',
+  );
+  console.error(
+    '  --step-timeout <ms>        Budget per --wait-for / --post / precondition (default: 15000)',
   );
   console.error(
     '  --screenshot <path>        Capture a PNG after all actions apply',
@@ -177,6 +221,7 @@ function parseArgs(argv: string[]): CliOptions {
     timeoutMs: 15000,
     steps: [],
     stepTimeoutMs: 15000,
+    embed: argv.includes('--embed'),
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -255,6 +300,18 @@ function parseArgs(argv: string[]): CliOptions {
         options.steps.push({ kind: 'wait', expr });
         break;
       }
+      case '--post': {
+        const raw = argv[++i] ?? '';
+        const spec = parsePostSpec(raw);
+        if ('error' in spec) {
+          console.error(`Invalid --post "${raw}": ${spec.error}`);
+          printUsageAndExit();
+        }
+        options.steps.push({ kind: 'post', message: spec.message });
+        break;
+      }
+      case '--embed':
+        break;
       case '--step-timeout':
         options.stepTimeoutMs =
           Number.parseInt(argv[++i] ?? '15000', 10) || 15000;
@@ -286,7 +343,11 @@ function parseArgs(argv: string[]): CliOptions {
   return options;
 }
 
-type StepResult = { kind: 'run' | 'wait'; ok: boolean; [key: string]: unknown };
+type StepResult = {
+  kind: CtlStep['kind'];
+  ok: boolean;
+  [key: string]: unknown;
+};
 
 /**
  * Runs one step inside the page against `window.__stims_agent`. Push-based
@@ -294,11 +355,24 @@ type StepResult = { kind: 'run' | 'wait'; ok: boolean; [key: string]: unknown };
  */
 async function executeStep(
   page: Page,
+  app: Frame,
   step: CtlStep,
   timeoutMs: number,
+  embedded: boolean,
 ): Promise<StepResult> {
+  if (step.kind === 'post') {
+    const reply = await sendToil(page, step.message, { embedded, timeoutMs });
+    return {
+      kind: 'post',
+      message: step.message,
+      // toil:telemetry is data rather than an outcome, so it has no success.
+      ok: reply.type === 'toil:telemetry' || reply.success === true,
+      error: reply.success === false ? reply.reason : undefined,
+      reply,
+    };
+  }
   if (step.kind === 'wait') {
-    return page.evaluate(
+    return app.evaluate(
       async ({ expr, timeoutMs }) => {
         const agent = window.__stims_agent;
         if (!agent) {
@@ -335,7 +409,7 @@ async function executeStep(
       { expr: step.expr, timeoutMs },
     );
   }
-  return page.evaluate(
+  return app.evaluate(
     async ({ id, params, timeoutMs }) => {
       const agent = window.__stims_agent;
       if (!agent) {
@@ -367,7 +441,7 @@ async function run(options: CliOptions) {
   const server = await ensureDevServer(options.port);
   const browser = await chromium.launch({
     headless: options.headless,
-    args: resolveAgentChromiumArgs(),
+    args: [...resolveAgentChromiumArgs(), AUTOPLAY_ARG],
   });
 
   try {
@@ -377,33 +451,52 @@ async function run(options: CliOptions) {
 
     const url = new URL(`http://127.0.0.1:${options.port}/`);
     url.searchParams.set('agent', 'true');
+    if (options.embed) url.searchParams.set('embed', 'true');
     if (options.preset) url.searchParams.set('preset', options.preset);
     if (options.backend) url.searchParams.set('renderer', options.backend);
 
-    await page.goto(url.toString(), {
-      waitUntil: 'networkidle',
-      timeout: options.timeoutMs,
-    });
-
-    const launchBtn = page.locator('button:has-text("See visuals now")');
-    if (await launchBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await launchBtn.click();
+    // The frame holding the app: the page itself, or the embed iframe.
+    let app: Frame;
+    if (options.embed) {
+      app = await openEmbedded(page, url.toString(), options.timeoutMs);
+      await app
+        .waitForFunction(() => Boolean(window.__STIMS_AGENT_BRIDGE__), {
+          timeout: options.timeoutMs,
+        })
+        .catch(() => {});
+    } else {
+      await page.goto(url.toString(), {
+        waitUntil: 'networkidle',
+        timeout: options.timeoutMs,
+      });
+      app = page.mainFrame();
     }
 
-    const loaded = await page
-      .waitForFunction(() => window.stimState?.getState().toyLoaded === true, {
-        timeout: options.timeoutMs,
-      })
-      .then(() => true)
-      .catch(() => false);
-    if (!loaded) {
+    // An embedded page mounts nothing until a command asks for a preset or
+    // audio, so there is no load to wait for before the steps run; null
+    // records that nothing was waited on.
+    let loaded: boolean | null = null;
+    if (!options.embed) {
+      const launchBtn = app.locator('button:has-text("See visuals now")');
+      if (await launchBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await launchBtn.click();
+      }
+      loaded = await app
+        .waitForFunction(
+          () => window.stimState?.getState().toyLoaded === true,
+          { timeout: options.timeoutMs },
+        )
+        .then(() => true)
+        .catch(() => false);
+    }
+    if (loaded === false) {
       console.error(
         `Warning: toy did not report loaded within ${options.timeoutMs}ms — continuing anyway.`,
       );
     }
 
     if (options.audio) {
-      await page.evaluate((source) => {
+      await app.evaluate((source) => {
         const api = window.stimState;
         if (!api) throw new Error('window.stimState is not available.');
         return source === 'demo'
@@ -412,16 +505,29 @@ async function run(options: CliOptions) {
       }, options.audio);
     }
 
+    const fieldResults: StepResult[] = [];
     for (const field of options.setFields) {
-      await page.evaluate(({ key, value }) => {
-        window.postMessage({ type: 'toil:midi_set', target: key, value }, '*');
-      }, field);
-      await page.waitForTimeout(150);
+      fieldResults.push(
+        await executeStep(
+          page,
+          app,
+          {
+            kind: 'post',
+            message: {
+              type: 'toil:midi_set',
+              target: field.key,
+              value: field.value,
+            },
+          },
+          options.stepTimeoutMs,
+          options.embed,
+        ),
+      );
     }
 
     for (const id of options.shortcuts) {
       const key = SHORTCUT_KEYS[id];
-      await page.evaluate((k) => {
+      await app.evaluate((k) => {
         document.dispatchEvent(
           new KeyboardEvent('keydown', {
             key: k,
@@ -435,7 +541,15 @@ async function run(options: CliOptions) {
 
     const stepResults: StepResult[] = [];
     for (const step of options.steps) {
-      stepResults.push(await executeStep(page, step, options.stepTimeoutMs));
+      stepResults.push(
+        await executeStep(
+          page,
+          app,
+          step,
+          options.stepTimeoutMs,
+          options.embed,
+        ),
+      );
     }
 
     if (options.waitMs > 0) {
@@ -447,13 +561,13 @@ async function run(options: CliOptions) {
       await page.screenshot({ path: options.screenshot });
     }
 
-    const summary = await page.evaluate(() => ({
+    const summary = await app.evaluate(() => ({
       state: window.stimState?.getState() ?? null,
       agent: window.__stims_agent?.getState() ?? null,
       backend: document.body.dataset.activeBackend ?? null,
       midiBindings: window.__STIMS_AGENT_BRIDGE__?.getMidiBindings?.() ?? null,
     }));
-    const rendererString = await page
+    const rendererString = await app
       .evaluate(() => {
         const canvas = document.createElement('canvas');
         const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
@@ -471,7 +585,8 @@ async function run(options: CliOptions) {
           rendererString,
           toyLoaded: loaded,
           screenshot: options.screenshot,
-          fieldsSet: options.setFields,
+          embedded: options.embed,
+          fieldsSet: fieldResults,
           shortcutsTriggered: options.shortcuts,
           steps: stepResults,
         },
@@ -479,11 +594,17 @@ async function run(options: CliOptions) {
         2,
       ),
     );
-    const failed = stepResults.filter((result) => !result.ok);
+    const failed = [...fieldResults, ...stepResults].filter(
+      (result) => !result.ok,
+    );
     for (const result of failed) {
-      console.error(
-        `Step failed: ${result.kind === 'run' ? `--run ${String(result.id)}` : `--wait-for ${String(result.expr)}`}: ${String(result.error)}`,
-      );
+      const label =
+        result.kind === 'run'
+          ? `--run ${String(result.id)}`
+          : result.kind === 'wait'
+            ? `--wait-for ${String(result.expr)}`
+            : `--post ${JSON.stringify(result.message)}`;
+      console.error(`Step failed: ${label}: ${String(result.error)}`);
     }
     if (failed.length > 0) process.exitCode = 1;
   } finally {

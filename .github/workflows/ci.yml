@@ -244,6 +244,7 @@ jobs:
         include:
           - file: agent-integration.test.ts
           - file: chrome-visual-contract.test.ts
+          - file: embed-bridge.test.ts
           - file: e2e-engine-mount.test.ts
             tests: '^(?!switches preset)'
           - file: e2e-engine-mount.test.ts

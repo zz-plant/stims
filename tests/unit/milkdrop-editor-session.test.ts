@@ -85,6 +85,46 @@ describe('milkdrop editor session', () => {
     globalThis.Worker = DefaultMockWorker as unknown as typeof Worker;
   });
 
+  test('says whether an edit landed or was superseded while it compiled', async () => {
+    // A superseded commit resolves with whatever state is current, which
+    // reads as a clean compile of a source that never landed — so callers
+    // that report an outcome need `applied`.
+    const session = createMilkdropEditorSession({
+      initialPreset: {
+        id: 'outcome',
+        title: 'Outcome',
+        raw: 'title=Outcome\nwave_r=0.4\n',
+        origin: 'user',
+      },
+    });
+
+    const replaced = session.applySourceWithOutcome(
+      'title=Outcome\nper_frame_1=zoom = (1 +;\n',
+    );
+    const newer = session.applySourceWithOutcome('title=Outcome\nwave_r=0.9\n');
+    const [first, second] = await Promise.all([replaced, newer]);
+
+    expect(first.applied).toBe(false);
+    expect(second.applied).toBe(true);
+    expect(
+      session.getState().activeCompiled?.ir.numericFields.wave_r,
+    ).toBeCloseTo(0.9, 6);
+
+    // A failed compile still landed: the session holds it, with its errors.
+    const broken = await session.applySourceWithOutcome(
+      'title=Outcome\nper_frame_1=zoom = (1 +;\n',
+    );
+    expect(broken.applied).toBe(true);
+    expect(broken.state.diagnostics.some((d) => d.severity === 'error')).toBe(
+      true,
+    );
+
+    const fields = await session.updateFieldsWithOutcome({ wave_g: 0.25 });
+    expect(fields.applied).toBe(true);
+
+    session.dispose();
+  });
+
   test('loads presets through the compile worker', async () => {
     // Preset loads happen mid-playback: compiling them on the main thread
     // stalls the running visual (measured in seconds on mobile), so
