@@ -44,7 +44,6 @@ function makeFrameState(
         pointSize: 1,
       },
     ],
-    trails: [],
     mesh: {
       positions: [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0],
       color: { r: 0.8, g: 0.9, b: 1, a: 0.3 },
@@ -285,7 +284,6 @@ function makeFrameState(
     },
     gpuGeometry: {
       mainWave: null,
-      trailWaves: [],
       customWaves: [],
       meshField: null,
       motionVectorField: null,

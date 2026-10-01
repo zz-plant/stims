@@ -27,7 +27,6 @@ type SegmentBatchTarget =
   | 'custom-wave'
   | 'blend-main-wave'
   | 'blend-custom-wave'
-  | 'trails'
   | 'motion-vectors'
   | 'blend-motion-vectors';
 
@@ -123,7 +122,7 @@ class CompactSegmentUploadBuffer {
   }
 
   /**
-   * Hot path: called for every wave, trail and motion vector, every frame.
+   * Hot path: called for every wave and motion vector, every frame.
    *
    * The previous implementation appended one segment at a time through a
    * helper that allocated an options object per segment and re-derived each
@@ -489,17 +488,13 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
   }
 
   renderLineVisualGroup(
-    target: 'trails' | 'motion-vectors' | 'blend-motion-vectors',
+    target: 'motion-vectors' | 'blend-motion-vectors',
     _group: Group,
     lines: Array<{
       positions: ArrayLike<number>;
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;
-      /** Per-point RGBA, as on a wave visual (a mode 7 trail hides its
-       * bridge between the two lines this way). */
-      colors?: ArrayLike<number>;
-      perPointAlpha?: boolean;
     }>,
     alphaMultiplier: number,
   ) {
@@ -511,11 +506,8 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
       ).appendPolyline(
         line.positions,
         line.color,
-        // as for waves: a per-point alpha already carries the line's alpha
-        line.perPointAlpha ? alphaMultiplier : line.alpha * alphaMultiplier,
+        line.alpha * alphaMultiplier,
         getMilkdropSegmentWidth(1),
-        false,
-        line.colors,
       );
     }
     this.getTarget(target).syncSplit(this.normalUploads, this.additiveUploads);

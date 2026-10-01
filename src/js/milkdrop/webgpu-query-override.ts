@@ -46,7 +46,6 @@ export type WebGpuForceMode = 'auto' | 'safe' | 'full';
 
 export type MilkdropWebGpuFeatureName =
   | 'proceduralMainWave'
-  | 'proceduralTrailWaves'
   | 'proceduralCustomWaves'
   | 'proceduralMesh'
   | 'proceduralMotionVectors'
@@ -221,7 +220,6 @@ export function resolveMilkdropWebGpuFeatureRouting(
 
   return {
     proceduralMainWave: { enabled: !safeMode, reason: safeReason },
-    proceduralTrailWaves: { enabled: !safeMode, reason: safeReason },
     proceduralCustomWaves: { enabled: !safeMode, reason: safeReason },
     proceduralMesh: { enabled: !safeMode, reason: safeReason },
     proceduralMotionVectors: { enabled: !safeMode, reason: safeReason },

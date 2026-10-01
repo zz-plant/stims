@@ -566,56 +566,6 @@ shapecode_0_thickoutline=1
     }
   });
 
-  test('drops empty trail line objects on query-forced webgpu sessions', async () => {
-    const restoreLocation = replaceProperty(
-      globalThis,
-      'location',
-      new URL('http://localhost/?renderer=webgpu'),
-    );
-
-    try {
-      const preset = compileMilkdropPresetSource(
-        readFileSync(
-          './tests/fixtures/milkdrop/projectm-upstream/100-square.milk',
-          'utf8',
-        ),
-        { id: '100-square' },
-      );
-      const vm = createMilkdropVM(preset);
-      vm.setRenderBackend('webgpu');
-      const frameState = vm.step(makeSignals());
-      const scene = new Scene();
-      const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
-      const adapter = await createMilkdropRendererAdapter({
-        scene,
-        camera,
-        backend: 'webgpu',
-        preset,
-      });
-
-      adapter.attach();
-      adapter.render({
-        frameState,
-        blendState: null,
-      });
-
-      const root = scene.children[0] as { children?: RenderTreeNode[] };
-      const trailGroup = root.children?.[4] as RenderTreeNode | undefined;
-      const emptyVisibleLines = flattenRenderTree(trailGroup ?? {}).filter(
-        (child) =>
-          child.type === 'Line' &&
-          child.geometry?.getAttribute?.('position') !== undefined &&
-          (child.geometry?.getAttribute?.('position') as { count?: number })
-            ?.count === 0 &&
-          child.visible !== false,
-      );
-
-      expect(emptyVisibleLines).toHaveLength(0);
-    } finally {
-      restoreLocation();
-    }
-  });
-
   test('keeps the native WebGPU 100-square render tree free of GLSL shader materials', async () => {
     const restoreLocation = replaceProperty(
       globalThis,
@@ -1194,8 +1144,8 @@ mv_y=6
       }>;
     };
     expect(
-      root.children.map((child) => child.renderOrder).slice(0, 15),
-    ).toEqual([0, 10, 20, 30, 40, 45, 50, 60, 70, 80, 90, 95, 100, 110, 120]);
+      root.children.map((child) => child.renderOrder).slice(0, 14),
+    ).toEqual([0, 10, 20, 30, 45, 50, 60, 70, 80, 90, 95, 100, 110, 120]);
   });
 
   test('keeps additive custom waves above normal waves across render backends', async () => {
@@ -1380,7 +1330,7 @@ ob_border=1
         }>;
       }>;
     };
-    const borderGroup = root.children[7];
+    const borderGroup = root.children[6];
     const outerBorder = borderGroup?.children?.[0];
     const fill = outerBorder?.children?.[0] as
       | { material?: MeshBasicMaterial }
@@ -1992,7 +1942,7 @@ warpanimspeed=1.25
         children?: Array<{ type?: string; material?: unknown }>;
       }>;
     };
-    const motionVectorGroup = root.children?.[8] as {
+    const motionVectorGroup = root.children?.[7] as {
       children: Array<{
         type?: string;
         visible?: boolean;
@@ -2048,7 +1998,7 @@ warpanimspeed=1.25
     });
 
     const root = scene.children[0] as RenderTreeNode;
-    const motionVectorGroup = root.children?.[8] as {
+    const motionVectorGroup = root.children?.[7] as {
       children: Array<{
         type?: string;
         visible?: boolean;
@@ -2593,7 +2543,7 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb * 1.1
     );
   });
 
-  test('renders waveform-driven main wave and trails on webgpu line-wave presets', async () => {
+  test('renders waveform-driven main wave on webgpu line-wave presets', async () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Procedural Wave Renderer
@@ -2611,7 +2561,6 @@ mesh_density=16
     const webgpuCpuFallbackFlags = {
       ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
       proceduralMainWave: false,
-      proceduralTrailWaves: false,
     };
     const vm = createMilkdropVM(preset, webgpuCpuFallbackFlags);
     vm.setRenderBackend('webgpu');
@@ -2646,7 +2595,6 @@ mesh_density=16
     );
 
     expect(firstFrame.gpuGeometry.mainWave).toBeNull();
-    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
     const populatedSegmentMeshes = batchedSegmentMeshes.filter(
       (mesh) => (getGeometryInstanceCount(mesh) ?? 0) > 0,
     );
@@ -2697,6 +2645,52 @@ modwavealphaend=0.6
     expect(frameState.mainWave.closed).toBe(true);
     expect(segmentCounts).toContain(expectedSegmentCount);
   });
+
+  test.each(['webgl', 'webgpu'] as const)(
+    'draws only the current main wave on %s, never earlier frames',
+    async (backend) => {
+      // MilkDrop draws a frame's wave once; it lingers only because the
+      // feedback buffer decays. Redrawing earlier frames' waves on top (Stims
+      // drew five, at full alpha) multiplies the light a feedback preset takes
+      // in and pushes it to white.
+      const preset = compileMilkdropPresetSource(
+        `
+title=Single Main Wave
+wave_mode=0
+wave_usedots=0
+      `.trim(),
+        { id: 'single-main-wave' },
+      );
+      const vm = createMilkdropVM(preset);
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+      const adapter =
+        backend === 'webgpu'
+          ? await createMilkdropRendererAdapter({ scene, camera, backend })
+          : createMilkdropRendererAdapter({ scene, camera, backend });
+      adapter.attach();
+
+      let frameState = vm.step(makeSignals());
+      adapter.render({ frameState, blendState: null });
+      for (let frame = 2; frame <= 8; frame += 1) {
+        frameState = vm.step(makeSignals({ frame, time: frame / 60 }));
+        adapter.render({ frameState, blendState: null });
+      }
+
+      const root = scene.children[0] as RenderTreeNode;
+      const drawnSegments = flattenRenderTree(root)
+        .filter(
+          (node) => isWebGPUSegmentBatchNode(node) && node.visible !== false,
+        )
+        .reduce(
+          (total, node) => total + (getGeometryInstanceCount(node) ?? 0),
+          0,
+        );
+
+      expect(frameState.mainWave.closed).toBe(true);
+      expect(drawnSegments).toBe(frameState.mainWave.positions.length / 3);
+    },
+  );
 
   test('uploads compact line and control attributes for batched webgpu waves', async () => {
     const preset = compileMilkdropPresetSource(
@@ -3306,7 +3300,7 @@ shapecode_0_border_a=0.25
         }>;
       }>;
     };
-    const blendShapeGroup = root.children[12];
+    const blendShapeGroup = root.children[11];
     const blendedShape = blendShapeGroup?.children?.[0];
     const fill = blendedShape?.children?.[0] as
       | { material?: ShaderMaterial }
@@ -3896,7 +3890,7 @@ wavecode_0_thick=4
     const customWaveGroup = root.children[3] as {
       children: Array<{ children?: Array<{ material?: unknown }> }>;
     };
-    const motionVectorGroup = root.children[8] as {
+    const motionVectorGroup = root.children[7] as {
       children: Array<{ children?: Array<{ material?: unknown }> }>;
     };
 

@@ -13,7 +13,6 @@ The pipeline order is identical for both backends. `ThreeMilkdropAdapter.render(
 [10] mesh                → renderOrder 10
 [20] main-wave           → renderOrder 20   (+1 if additive)
 [30] custom-wave         → renderOrder 30   (+1 if additive)
-[40] trails              → renderOrder 40   (+1 if additive)
 [45] particle-field      → renderOrder 45
 [50] shapes              → renderOrder 50   (+1 if additive)
 [60] borders             → renderOrder 60

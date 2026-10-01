@@ -327,7 +327,6 @@ function fillProceduralWaveAttributes(
 export function syncProceduralWaveObject(
   object: Line | undefined,
   wave: MilkdropProceduralWaveVisual,
-  interaction?: MilkdropGpuInteractionTransform | null,
 ) {
   const next = ensureProceduralWaveObject(object, wave);
   const { sampleDataChannels } = fillProceduralWaveAttributes(next, wave);
@@ -361,7 +360,9 @@ export function syncProceduralWaveObject(
   material.uniforms.blendMix.value = 1;
   material.uniforms.tint.value.setRGB(wave.color.r, wave.color.g, wave.color.b);
   material.uniforms.alpha.value = wave.alpha;
-  syncProceduralInteractionUniforms(material, interaction);
+  // The runtime applies a viewer's drag/pinch to the main wave's descriptor
+  // itself (interaction-response.ts), so the shader transform stays identity.
+  syncProceduralInteractionUniforms(material, null);
   material.blending = wave.additive ? AdditiveBlending : NormalBlending;
   return next;
 }

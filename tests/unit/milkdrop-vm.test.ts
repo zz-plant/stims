@@ -319,7 +319,6 @@ per_pixel_1=rot = rot + 0.001;
     const vm = createMilkdropVM(preset, {
       ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
       proceduralMainWave: false,
-      proceduralTrailWaves: false,
     });
     const frameState = vm.step(makeSignals({ frame: 1 }));
 
@@ -1157,7 +1156,6 @@ mesh_density=16
     const vm = createMilkdropVM(preset, {
       ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
       proceduralMainWave: false,
-      proceduralTrailWaves: false,
     });
     vm.setRenderBackend('webgpu');
     const firstFrame = vm.step(makeSignals({ frame: 1, time: 0.15 }));
@@ -1165,12 +1163,8 @@ mesh_density=16
 
     expect(firstFrame.mainWave.positions.length).toBeGreaterThan(0);
     expect(firstFrame.gpuGeometry.mainWave).toBeNull();
-    expect(firstFrame.gpuGeometry.trailWaves).toHaveLength(0);
     expect(secondFrame.mainWave.positions.length).toBeGreaterThan(0);
     expect(secondFrame.gpuGeometry.mainWave).toBeNull();
-    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
-    expect(secondFrame.trails.length).toBeGreaterThan(0);
-    expect(secondFrame.trails[0]?.positions.length).toBeGreaterThan(0);
   });
 
   test('builds closed waveform loops from time-domain data and volume-modulated alpha', () => {
@@ -1597,22 +1591,6 @@ shape_32_per_frame1=rad=0.24;
     expect(
       frameState.shapes.find((shape) => shape.key === 'shape_32')?.sides,
     ).toBe(6);
-  });
-
-  test('accumulates and caps trail history across steps', () => {
-    const preset = compileMilkdropPresetSource('title=Trail Test', {
-      id: 'trail-test',
-    });
-    const vm = createMilkdropVM(preset);
-
-    let trailsCount = 0;
-    for (let frame = 1; frame <= 8; frame += 1) {
-      const state = vm.step(makeSignals({ frame }));
-      trailsCount = state.trails.length;
-    }
-
-    expect(trailsCount).toBeGreaterThan(0);
-    expect(trailsCount).toBeLessThanOrEqual(5);
   });
 
   test('detail scale affects main-wave density and setPreset resets q/t registers', () => {

@@ -52,7 +52,6 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
     expect(effective.proceduralWaves).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ target: 'main-wave' }),
-        expect.objectContaining({ target: 'trail-waves' }),
         expect.objectContaining({ target: 'custom-wave', slotIndex: 1 }),
       ]),
     );
@@ -95,7 +94,6 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
       {
         ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
         proceduralMainWave: false,
-        proceduralTrailWaves: false,
         proceduralCustomWaves: false,
         proceduralMesh: false,
         proceduralMotionVectors: false,

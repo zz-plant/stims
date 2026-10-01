@@ -5,6 +5,7 @@ import type {
   MilkdropFrameState,
   MilkdropMotionVectorVisual,
   MilkdropProceduralCustomWaveVisual,
+  MilkdropProceduralWaveVisual,
   MilkdropWaveVisual,
 } from '../types';
 
@@ -16,6 +17,18 @@ function cloneWaveVisual(wave: MilkdropWaveVisual): MilkdropWaveVisual {
   return {
     ...wave,
     positions: wave.positions.slice(),
+    colors: wave.colors?.slice(),
+    color: cloneColor(wave.color),
+  };
+}
+
+function cloneProceduralWaveVisual(
+  wave: MilkdropProceduralWaveVisual,
+): MilkdropProceduralWaveVisual {
+  return {
+    ...wave,
+    samples: wave.samples.slice(),
+    velocities: wave.velocities.slice(),
     color: cloneColor(wave.color),
   };
 }
@@ -56,21 +69,35 @@ export function cloneBlendState(
     frameState.gpuGeometry !== null &&
     Array.isArray(frameState.gpuGeometry.customWaves);
 
+  if (!hasReusableBlendBuffers) {
+    return { mode: 'gpu', previousFrame: frameState, alpha: 1 };
+  }
+
+  // The VM rebuilds its main wave in place, reusing each visual two frames
+  // later, so a blend that kept a reference drew the incoming preset's wave
+  // as the outgoing one within two frames of the switch.
+  const mainWave = cloneWaveVisual(frameState.mainWave);
   return {
     mode: 'gpu',
-    previousFrame: hasReusableBlendBuffers
-      ? {
-          ...frameState,
-          customWaves: frameState.customWaves.map(cloneWaveVisual),
-          motionVectors: frameState.motionVectors.map(cloneMotionVectorVisual),
-          gpuGeometry: {
-            ...frameState.gpuGeometry,
-            customWaves: frameState.gpuGeometry.customWaves.map(
-              cloneProceduralCustomWaveVisual,
-            ),
-          },
-        }
-      : frameState,
+    previousFrame: {
+      ...frameState,
+      mainWave,
+      waveform:
+        frameState.waveform === frameState.mainWave
+          ? mainWave
+          : frameState.waveform,
+      customWaves: frameState.customWaves.map(cloneWaveVisual),
+      motionVectors: frameState.motionVectors.map(cloneMotionVectorVisual),
+      gpuGeometry: {
+        ...frameState.gpuGeometry,
+        mainWave: frameState.gpuGeometry.mainWave
+          ? cloneProceduralWaveVisual(frameState.gpuGeometry.mainWave)
+          : null,
+        customWaves: frameState.gpuGeometry.customWaves.map(
+          cloneProceduralCustomWaveVisual,
+        ),
+      },
+    },
     alpha: 1,
   };
 }
@@ -103,8 +130,7 @@ export function estimateFrameBlendWorkload(
     Math.floor(frameState.mesh.positions.length / 6) * 0.5 +
     motionVectorSegments * 2 +
     frameState.shapes.length * 10 +
-    frameState.borders.length * 12 +
-    frameState.trails.length * 8
+    frameState.borders.length * 12
   );
 }
 
@@ -112,15 +138,15 @@ export function estimateFrameBlendWorkload(
  * Geometry ceiling above which a crossfade is refused outright.
  *
  * Calibrated against a 250-preset corpus sweep (`bun run lab:blend-gate`):
- * the floor is 1323 and the median 1651, because the warp mesh alone
+ * the floor is 1283 and the median 1640, because the warp mesh alone
  * contributes ~992 to every preset that has one. An earlier value of 900
  * therefore sat BELOW the corpus minimum and silently turned every single
  * crossfade into a cut — the blend path was unreachable in production for
  * as long as it existed. `blend-gate.test.ts` pins the floor so the
  * threshold can never drop under a realistic frame again.
  *
- * The value here sits above the corpus p90 (3401) and below the max
- * (10523), so it now catches only genuinely pathological frames — which is
+ * The value here sits above the corpus p90 (3361) and below the max
+ * (10776), so it now catches only genuinely pathological frames — which is
  * what a static geometry gate can honestly do. Device pressure is handled
  * by the timing gate below instead, because it is the thing that actually
  * varies between a laptop in a booth and the machine the preset was

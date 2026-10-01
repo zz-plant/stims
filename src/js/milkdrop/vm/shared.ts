@@ -17,8 +17,14 @@ import type {
 } from '../types';
 import { deriveMilkdropViewportSignalValues } from '../wgsl-signal-layout.ts';
 
-export const MAX_TRAILS = 5;
-export const MAIN_WAVE_FRAME_HISTORY_SIZE = MAX_TRAILS + 1;
+/**
+ * The main wave's visuals are pooled and rebuilt in place. Two slots, like
+ * the custom-wave and motion-vector double buffers: the frame state a step
+ * returns stays intact while the next frame is built, so consecutive frames
+ * can be compared. Nothing holds one longer — a blend snapshot outlives it
+ * by the whole crossfade, so cloneBlendState copies the main wave instead.
+ */
+export const MAIN_WAVE_FRAME_HISTORY_SIZE = 2;
 export const MAX_CUSTOM_WAVE_SLOTS = 32;
 export const MAX_CUSTOM_SHAPE_SLOTS = 32;
 export const MAX_MOTION_VECTOR_COLUMNS = 96;
@@ -70,9 +76,6 @@ export type WaveFrameBuffers = {
 };
 
 export type WaveBuilderState = {
-  trails: MilkdropWaveVisual[];
-  lastWaveform: MilkdropWaveVisual | null;
-  lastProceduralWave: MilkdropProceduralWaveVisual | null;
   lastWaveSamples: Float32Array;
   lastWaveMomentum: Float32Array;
   mainWaveFrameIndex: number;
@@ -89,7 +92,6 @@ export type WaveBuilderState = {
   ];
   customWaveVisualPool: MilkdropWaveVisual[];
   proceduralCustomWavePool: MilkdropProceduralCustomWaveVisual[];
-  proceduralTrailWaves: MilkdropProceduralWaveVisual[];
   channelSample: CustomWaveChannelSample;
   buffers: WaveFrameBuffers;
   pointLocalsScratch: MutableState;

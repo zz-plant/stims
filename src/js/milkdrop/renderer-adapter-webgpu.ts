@@ -49,7 +49,6 @@ function buildSafeWebGpuOptimizationFlags(
     ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
     ...flags,
     proceduralMainWave: featureRouting.proceduralMainWave.enabled,
-    proceduralTrailWaves: featureRouting.proceduralTrailWaves.enabled,
     proceduralCustomWaves: featureRouting.proceduralCustomWaves.enabled,
     proceduralMesh: featureRouting.proceduralMesh.enabled,
     proceduralMotionVectors: featureRouting.proceduralMotionVectors.enabled,

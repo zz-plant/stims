@@ -24,7 +24,7 @@ export type MilkdropGpuDescriptorRouting =
 
 export type MilkdropProceduralWaveDescriptorPlan = {
   kind: 'procedural-wave';
-  target: 'main-wave' | 'trail-waves' | 'custom-wave';
+  target: 'main-wave' | 'custom-wave';
   slotIndex: number | null;
   sampleSource: 'waveform' | 'spectrum';
   fieldProgram?: MilkdropGpuFieldProgramDescriptor | null;
