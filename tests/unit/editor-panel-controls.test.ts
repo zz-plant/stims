@@ -4,7 +4,15 @@ import {
   EditorPanel,
   type EditorPanelCallbacks,
 } from '../../src/js/milkdrop/overlay/editor-panel.ts';
+import {
+  SCALAR_CONTROLS,
+  valueToPosition,
+} from '../../src/js/milkdrop/preset-controls.ts';
 import type { MilkdropEditorSessionState } from '../../src/js/milkdrop/types.ts';
+import {
+  hasVariableListeners,
+  publishVariables,
+} from '../../src/js/milkdrop/variable-probe.ts';
 
 /**
  * The Tune pane's non-fader controls. A MilkDrop colour is three or four
@@ -261,6 +269,94 @@ describe('editor panel colour groups and value-source chips', () => {
     expect(chipFor(panel, 'Zoom')?.textContent).toBe('eq · treb');
 
     panel.dispose();
+  });
+
+  // The fader holds the base value; on a field the per-frame code recomputes,
+  // a tick on its track shows what the frame actually drew with.
+  const tickFor = (panel: EditorPanel, label: string) => {
+    const rows = Array.from(
+      panel.element.querySelectorAll('.stims-editor__slider'),
+    );
+    const row = rows.find(
+      (candidate) =>
+        candidate.querySelector('.stims-editor__slider-label')?.textContent ===
+        label,
+    );
+    return row?.querySelector<HTMLElement>('.stims-editor__live-tick') ?? null;
+  };
+  const tabFor = (panel: EditorPanel, pane: string) =>
+    panel.element.querySelector<HTMLButtonElement>(`[data-pane="${pane}"]`);
+
+  test('a fader the per-frame code drives shows the value the frame used', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    panel.setSessionState(
+      compiledStateFor('zoom=1.0\nper_frame_1=zoom = 1.0 + bass*0.1;\n'),
+    );
+    const tick = tickFor(panel, 'Zoom');
+    // Nothing has rendered yet, so there is nothing to show.
+    expect(tick?.hidden).toBe(true);
+
+    publishVariables({ zoom: 1.2 });
+    const zoom = SCALAR_CONTROLS.find((control) => control.key === 'zoom');
+    if (!zoom || !tick) throw new Error('missing zoom fader');
+    expect(tick.hidden).toBe(false);
+    expect(Number(tick.style.getPropertyValue('--live-position'))).toBeCloseTo(
+      valueToPosition(1.2, zoom),
+      6,
+    );
+    // The fader itself still holds the base value.
+    expect(panel.readVariableFromEditor('zoom')).toBe(1);
+
+    panel.dispose();
+    expect(hasVariableListeners()).toBe(false);
+  });
+
+  test('no tick where no single value per frame decides the field', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    panel.setSessionState(
+      compiledStateFor(
+        [
+          // per-frame code sets rot, then per-pixel code varies it across
+          // the mesh, so the per-frame number is not what was drawn
+          'per_frame_1=rot = 0.1*bass;',
+          'per_pixel_1=rot = rot + 0.1*rad;',
+          // zoom is a literal the buffer owns
+          'zoom=1.02',
+        ].join('\n'),
+      ),
+    );
+
+    expect(hasVariableListeners()).toBe(false);
+    publishVariables({ rot: 0.3, zoom: 1.2 });
+    expect(tickFor(panel, 'Rot')?.hidden).toBe(true);
+    expect(tickFor(panel, 'Zoom')?.hidden).toBe(true);
+
+    panel.dispose();
+  });
+
+  test('the feed runs only while Tune is on screen', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    panel.setSessionState(
+      compiledStateFor('per_frame_1=zoom = 1.0 + bass*0.1;\n'),
+    );
+    expect(hasVariableListeners()).toBe(true);
+
+    tabFor(panel, 'outline')?.click();
+    expect(hasVariableListeners()).toBe(false);
+    tabFor(panel, 'tune')?.click();
+    expect(hasVariableListeners()).toBe(true);
+
+    const dockToggle = panel.element.querySelector<HTMLButtonElement>(
+      '.stims-editor__dock-toggle',
+    );
+    dockToggle?.click();
+    expect(hasVariableListeners()).toBe(false);
+    expect(tickFor(panel, 'Zoom')?.hidden).toBe(true);
+    dockToggle?.click();
+    expect(hasVariableListeners()).toBe(true);
+
+    panel.dispose();
+    expect(hasVariableListeners()).toBe(false);
   });
 });
 

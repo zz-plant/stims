@@ -840,8 +840,8 @@ class MilkdropPresetVM implements MilkdropVM {
       waveState: this.waveState,
       supportsProceduralWave: this.frameCallbacks.supportsProceduralWave,
     });
-    // An element soloed from the editor hides the main waveform too. Its alpha
-    // is rebuilt every frame, so zeroing it here lasts exactly one frame.
+    // Hidden from the editor (muted, or another element soloed). Its alpha is
+    // rebuilt every frame, so zeroing it here lasts exactly one frame.
     if (isElementHidden(this.preset.source.id, 'main-wave')) {
       mainWave.alpha = 0;
       if (proceduralMainWave) {
@@ -909,6 +909,16 @@ class MilkdropPresetVM implements MilkdropVM {
       seedCustomShapeState: this.frameCallbacks.seedCustomShapeState,
     });
     const borders = buildBorders(this.state, this.declaredBorderKeys);
+    // Borders and motion vectors hidden from the editor are still built, so
+    // the motion vectors' history carries on, and are left out of the frame.
+    const hideBorders = isElementHidden(this.preset.source.id, 'borders');
+    const hideMotionVectors = isElementHidden(
+      this.preset.source.id,
+      'motion-vectors',
+    );
+    if (hideMotionVectors) {
+      gpuGeometry.motionVectorField = null;
+    }
     const post = buildPost({
       preset: this.preset,
       state: this.state,
@@ -935,8 +945,8 @@ class MilkdropPresetVM implements MilkdropVM {
       customWaves: customWaves.visual,
       mesh,
       shapes,
-      borders,
-      motionVectors,
+      borders: hideBorders ? [] : borders,
+      motionVectors: hideMotionVectors ? [] : motionVectors,
       post,
       signals,
       variables: this.variablesProxy,

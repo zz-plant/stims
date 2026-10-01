@@ -10,12 +10,18 @@ import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 
 /**
  * Solo and mute from the Outline: the frame the renderer receives must leave
- * out exactly the hidden waves and shapes, and nothing about the source or
- * the running state may change.
+ * out exactly the hidden waves, shapes and layers, and nothing about the
+ * source or the running state may change.
  */
 const SOURCE = [
   'title=Isolation',
   'wave_a=0.8',
+  'ob_size=0.02',
+  'ob_a=0.8',
+  'motion_vectors=1',
+  'mv_x=12',
+  'mv_y=9',
+  'mv_a=0.6',
   'wavecode_0_enabled=1',
   'wavecode_1_enabled=1',
   'shapecode_0_enabled=1',
@@ -70,6 +76,8 @@ function frameOf(id: string, frames = 1) {
     shapes: frame.shapes.map((shape) => shape.key),
     waves: frame.customWaves.length,
     mainWaveAlpha: frame.mainWave.alpha,
+    borders: frame.borders.length,
+    motionVectors: frame.motionVectors.length,
     q1: frame.variables.q1,
   };
 }
@@ -84,14 +92,44 @@ describe('render isolation', () => {
     expect(frame.shapes).toEqual(['shape_1', 'shape_2']);
     expect(frame.waves).toBe(2);
     expect(frame.mainWaveAlpha).toBeGreaterThan(0);
+    expect(frame.borders).toBe(1);
+    expect(frame.motionVectors).toBeGreaterThan(0);
   });
 
-  test('soloing a shape draws only that shape, and hides waves and the main wave', () => {
+  test('soloing a shape draws only that shape, and hides waves and every layer', () => {
     toggleSolo('iso-solo', { kind: 'shape', index: 2 });
     const frame = frameOf('iso-solo');
     expect(frame.shapes).toEqual(['shape_2']);
     expect(frame.waves).toBe(0);
     expect(frame.mainWaveAlpha).toBe(0);
+    expect(frame.borders).toBe(0);
+    expect(frame.motionVectors).toBe(0);
+  });
+
+  test('muting a layer leaves out just that layer', () => {
+    toggleMute('iso-layer-mute', { kind: 'borders', index: 0 });
+    toggleMute('iso-layer-mute', { kind: 'motion-vectors', index: 0 });
+    const frame = frameOf('iso-layer-mute');
+    expect(frame.borders).toBe(0);
+    expect(frame.motionVectors).toBe(0);
+    expect(frame.mainWaveAlpha).toBeGreaterThan(0);
+    expect(frame.shapes).toEqual(['shape_1', 'shape_2']);
+
+    toggleMute('iso-main-mute', { kind: 'main-wave', index: 0 });
+    const muted = frameOf('iso-main-mute');
+    expect(muted.mainWaveAlpha).toBe(0);
+    expect(muted.borders).toBe(1);
+    expect(muted.waves).toBe(2);
+  });
+
+  test('soloing the main waveform hides everything else that draws', () => {
+    toggleSolo('iso-main-solo', { kind: 'main-wave', index: 0 });
+    const frame = frameOf('iso-main-solo');
+    expect(frame.mainWaveAlpha).toBeGreaterThan(0);
+    expect(frame.shapes).toEqual([]);
+    expect(frame.waves).toBe(0);
+    expect(frame.borders).toBe(0);
+    expect(frame.motionVectors).toBe(0);
   });
 
   test('soloing a wave keeps only that wave', () => {
