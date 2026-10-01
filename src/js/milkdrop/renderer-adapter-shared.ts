@@ -126,6 +126,10 @@ export type MilkdropRendererBatcher = {
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;
+      /** Per-point RGBA, as on a wave visual (a mode 7 trail hides its
+       * bridge between the two lines this way). */
+      colors?: ArrayLike<number>;
+      perPointAlpha?: boolean;
     }>,
     alphaMultiplier: number,
   ) => boolean;
@@ -529,6 +533,13 @@ export function ensureInstancedAttribute(
   );
   attribute.setUsage(DynamicDrawUsage);
   geometry.setAttribute(name, attribute);
+  // three.js (WebGLBindingStates) caches the instance cap from the first
+  // instanced attribute it binds and never recomputes it, so a batch that
+  // outgrew its first allocation kept drawing only that many instances: a
+  // denser wave after a sparse one was cut off part-way. Clearing the cache
+  // makes the next draw size it from the new buffer.
+  delete (geometry as InstancedBufferGeometry & { _maxInstanceCount?: number })
+    ._maxInstanceCount;
   return attribute;
 }
 
