@@ -1415,7 +1415,6 @@ function StimsWorkspaceAppShell() {
           {ui.routeState.panel === 'capture' ? <CapturePanel /> : null}
           {ui.routeState.panel === 'browse' ? (
             <BrowseSheetPanel
-              offline={offline}
               onPresetChosen={dismissBrowseHint}
               sessionHistory={sessionHistory}
               onCollectionTagChange={(collectionTag) =>

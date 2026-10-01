@@ -4718,53 +4718,29 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
 }
 
 /* The tile's caption sits under full-bleed art, so it carries the padding the
-   card itself cannot; its title is a size smaller than a list row's.
+   card itself cannot; its type is a size smaller than a list row's.
 
-   One line, not two. MilkDrop community names run past 60 characters
-   ("Reaction Diffusion 3 (Ov…", "Thumbdrum Tokamak [c…") while a tile is
-   ~165px wide, so a stacked title-over-byline spent two rows to show roughly
-   twenty characters of each. Inlining them halves the caption and puts more
-   art per screen, which is the entire reason to be in grid view. */
+   Title over byline, each on a line of its own. Sharing one line, the byline
+   took up to 45% of a 132–170px tile and left the title 62–88px: "Glowsticks
+   v…", "Dark Ri…", too little to tell presets apart. Stacked, the title gets
+   the tile's full width for one more line of caption. Both lines are always
+   reserved, even for a preset with no byline, because the grid sizes every
+   row from one measured row. */
 .stims-preset-grid__item .stims-preset-identity {
-  flex-direction: row;
-  align-items: baseline;
-  gap: 4px;
+  gap: 0;
   padding: var(--space-xs, 4px) var(--space-sm, 8px);
+  font-size: var(--text-xs);
+  line-height: 1.35;
+  box-sizing: border-box;
+  min-height: calc(2 * 1.35em + 2 * var(--space-xs, 4px));
 }
 
 .stims-preset-grid__item .stims-preset-identity__title,
 .stims-preset-grid__item .stims-preset-identity__subtitle {
+  font-size: inherit;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* The title absorbs the truncation and the credit keeps its width. Letting
-   both shrink proportionally reduced a long-titled tile to
-   "And - Idiot24 - ... · R…", where neither half identified anything. A
-   title's opening words are what distinguishes it, so it is the half that
-   can afford to lose its tail; the credit is short and either fits or does
-   not, capped here so a long chain of authors cannot take the whole line. */
-.stims-preset-grid__item .stims-preset-identity__title {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.stims-preset-grid__item .stims-preset-identity__subtitle {
-  flex: 0 0 auto;
-  max-width: 45%;
-}
-
-.stims-preset-grid__item .stims-preset-identity__title {
-  font-size: var(--text-xs);
-}
-
-/* --stims-muted, not a border token: this reads as punctuation between two
-   runs of text, so it needs text contrast rather than hairline contrast. */
-.stims-preset-grid__item .stims-preset-identity__subtitle::before {
-  content: "·";
-  margin-right: 4px;
-  color: var(--stims-muted);
 }
 
 .stims-preset-grid__spacer {

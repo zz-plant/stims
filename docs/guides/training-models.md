@@ -11,6 +11,25 @@ Every tool below is headless, needs no GPU, and writes plain files (NumPy
 has the one-line purpose of each; the docblock atop each script is its full
 reference.
 
+**Findings so far**, each detailed below:
+
+- Score on **audio R²**, not R². About a third of presets run the same
+  function of time on every song, and a clock-only model scores near 1 on
+  them.
+- For a preset you have the code for, **the equations are the exact model**:
+  running them on a new song is perfect, and `lab:dataflow` reads which
+  audio reaches what without running anything. Learning earns its place
+  where there are no equations yet: writing, editing, fixing and remixing
+  presets.
+- On known presets, **gradient-boosted trees beat every network** (audio R²
+  0.60 against 0.48 for the best, a selective recurrence), because presets
+  are threshold programs.
+- On presets from unseen families, nothing learned from other presets
+  transfers. The preset's own equations help more than a network: feeding
+  each control only the signals it reads gains +0.12.
+- **Stateful controls** (beat counters, toggles) defeat every regression and
+  are scored on when they change instead. No baseline times their jumps yet.
+
 ## The tools
 
 | Goal | Command | Output |
@@ -37,6 +56,64 @@ remix family (`src/js/milkdrop/preset-lineage.ts`), and `lab:edit-eval`
 draws its tasks from the held-out families. If you build your own split, split
 on the `family` field. A per-preset random split puts near-copies on both
 sides and inflates every score.
+
+## Reading the equations: `lab:dataflow`
+
+A preset is a small program, so which inputs each value can depend on is a
+question for program analysis, not for a model.
+`src/js/milkdrop/preset-dataflow.ts` interprets a compiled preset's
+equations over dependency sets instead of numbers. It follows the VM's own
+rules:
+- built-in controls reset every frame, while `q`/`t`/user variables and
+  `megabuf` persist;
+- `init` runs with silent audio;
+- a conditional write depends on its condition;
+- waves, shapes and per-pixel code feed the shared `q` bank back to the
+  next frame;
+- one `rand()` stream serves every program, so a single audio-gated call
+  makes all of them follow the audio.
+
+For every canonical column it reports:
+- the audio signals that can reach it;
+- whether it carries history or accumulates;
+- whether it is constant, clockwork or audio-driven.
+
+For every drawn program (the per-pixel mesh, enabled custom waves and
+shapes, shader uniforms) it reports the audio signals that reach what that
+program draws.
+
+How far to trust it, measured against `lab:dataset` exports:
+
+| Export | Soundness (differs by song, but no path found) | Precision (audio path found, and it differs by song) |
+| --- | --- | --- |
+| 158 presets × 32 songs | 0 of 14,004 cells | 932 of 980 |
+| same, 16 unfamiliar-style songs | 0 | 922 of 980 |
+| 2,445 held-out presets × 4 probes | 1 of 215,160 (a documented 5e-4 wobble) | 11,797 of 13,532 |
+
+It is conservative by design:
+- a path the audio never exercised on those songs still counts, which is
+  the precision gap;
+- shaders count only by the audio uniform names they read.
+
+Uses:
+
+- **Labels with no rendering.** `lab:dataflow --all` sorts all 2,679 presets
+  in 22 s:
+  - driven: the audio moves something drawn (2,232);
+  - waveform-only: only a drawn waveform shows the audio (374);
+  - none (73).
+
+  The catalog's quality score and its `collection:audio-reactive` tag both
+  read these tiers.
+- **Checking measured labels.** `lab:dataflow --dataset <dir>` compares the
+  analysis with what an export measured. No preset measured as reactive
+  lacks an audio path. The measured-clockwork presets that do have one (8 of
+  158, 160 of 2,445) have an effect under the 10% threshold on those songs.
+- **Scoring edits.** `lab:edit-eval` turns each preset's dependencies into
+  edges (`zoom ← bass`, `shader ← beat`). It scores an answer on the share
+  of the human remix's audio edits it reproduces.
+- **Choosing model inputs.** The code-conditioned models below feed each
+  column only the signals it reads.
 
 ## Recipe: audio–visual sync pairs
 
@@ -263,14 +340,17 @@ What follows:
 
 The per-frame states are the VM's equation variables (zoom, rot, warp, decay,
 wave colours, q1–q32 …). They do not include what the shaders, custom waves
-and shapes, or per-pixel equations draw. Consequences, measured on the full
-corpus:
+and shapes, or per-pixel equations draw. `lab:dataflow` says statically
+which audio reaches those programs, but not what they draw. Consequences,
+measured on the full corpus:
 
 - `lab:preset-map` finds 719 of 2679 presets whose features are identical to
   another's; it lists them as `duplicates` rather than pretending to rank
   them.
 - 13 of 35 `lab:edit-eval` test remixes change only shader text, so their
-  behavioural distance from the parent reads as zero.
+  behavioural distance from the parent reads as zero. The audio-edit score
+  still sees a change in which audio uniforms a shader reads, but nothing
+  else about it.
 - `lab:shader-fix-bench` scores compilation and local edits, not whether the
   fixed shader draws what its author intended.
 

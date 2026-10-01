@@ -260,13 +260,17 @@ export function splitPresetDisplay(
   authorField?: string,
 ): { title: string; byline: string | null } {
   const credit = parsePresetCredit(rawTitle, authorField);
-  if (credit.authors.length === 0) {
-    return { title: rawTitle.trim(), byline: authorField?.trim() || null };
-  }
-  return {
-    title: formatPresetWorkTitle(credit),
-    byline: credit.authors.join(' + '),
-  };
+  const title =
+    credit.authors.length === 0
+      ? rawTitle.trim()
+      : formatPresetWorkTitle(credit);
+  const byline =
+    credit.authors.length === 0
+      ? authorField?.trim() || null
+      : credit.authors.join(' + ');
+  // an author field copied from the title credits nobody
+  const repeatsTitle = byline?.toLowerCase() === title.toLowerCase();
+  return { title, byline: repeatsTitle ? null : byline };
 }
 
 /**

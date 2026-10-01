@@ -14,6 +14,7 @@ baseline → edit → compare loops.
 
 | Your capabilities | Tool | What you get |
 | --- | --- | --- |
+| Text only, before measuring | `bun run lab:dataflow -- --preset <id>` | Which audio signals can reach each control and drawn program, read from the equations with no run. Shows dead audio code (an overwritten `bass` term, a disabled wave) that no measurement will ever move. |
 | Text only (no vision, no hearing) | `bun run lab:reactivity` | Per-variable audio→motion correlations, verdicts, band influence. Pure bun VM run, no browser, ~15s, fully deterministic. |
 | Text only, needs rendered-pixel truth | `bun run lab:visual` | Numeric luminance/contrast/colorfulness/motion metrics and a pixel-level reactivity verdict from headless Chromium. |
 | Computer vision | both + the lab's PNGs | Everything above, plus `contact-sheet.png` (whole run in one image) and `comparison.png` (baseline vs current side-by-side). |
@@ -30,6 +31,8 @@ bun run lab:visual -- --preset <id> --baseline
 
 # 2. Edit the preset (public/milkdrop-presets/<id>.milk) or runtime code.
 #    Equation semantics: docs/MILKDROP_CODING_GUIDE.md
+#    `bun run lab:dataflow -- --preset <id>` confirms the edit wired the
+#    audio where you meant, before you spend a measurement on it.
 
 # 3. Measure again and compare — ▲ improved / ▼ REGRESSED lines tell you
 #    exactly which metrics moved
