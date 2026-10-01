@@ -12,12 +12,8 @@ The repository includes an MCP stdio server at `scripts/mcp-server.ts` and a Clo
 | `read_doc_section` | `file` (enum), optional `heading` | Markdown file or section content |
 | `search_docs` | `query`, optional `file`, optional `limit` | Matching sections with excerpts |
 | `dev_commands` | optional `scope` (setup/dev/build/test/lint) | Relevant commands from README.md |
-| `describe_loader` | none | How the toy loader resolves entries and errors |
 | `list_agent_capabilities` | optional `kind` (skill/workflow) | Available agent workflows and skills |
 | `read_agent_capability` | `kind`, `name` | Full skill/workflow instructions |
-| `get_toys` | optional `slug`, `requiresWebGPU` | Toy metadata (controls, module, type) |
-| `launch_toy` | `slug`, optional `port` | Instructions for launching and observing a toy |
-| `get_toy_audio_reactivity_guide` | optional `slug` | How toys respond to audio frequencies |
 
 ### Preset Catalog (Worker + Stdio)
 
@@ -30,6 +26,7 @@ All tools fetch the live catalog from `https://toil.fyi/milkdrop-presets/catalog
 | `get_preset_info` | `presetId` | Full preset metadata (file path, tags, certification, supports) |
 | `describe_preset` | `presetId` | Human-readable description — style, collections, fidelity, launch URL |
 | `open_preset_url` | `presetId`, optional `baseUrl` | URL to load the preset in agent mode |
+| `get_audio_reactivity_guide` | optional `presetId` | How presets read `bass`/`mid`/`treb`, `_att` and `vol`, and the `lab:dataflow` / `lab:reactivity` commands that check a preset. With `presetId`: that preset's audio reach and measured reactivity from the catalog |
 
 ### Agent Session (Stdio-only, requires Playwright)
 
@@ -59,7 +56,7 @@ These tools manage a persistent headless browser session so you can interact wit
 | `session_midi_devices` | `sessionId` | Known MIDI devices (physical + the virtual Claude channel) with connect state |
 | `session_compare` | `sessionId`, optional `settleMs`, `label` | Before/after screenshot pair |
 | `session_watch` | `sessionId`, optional `durationMs`, `intervalMs` | Timelapse frames + state snapshots over time |
-| `session_vibe` | `vibe` (natural language description), optional `durationMs` | Searches all 43 presets by keyword relevance, returns screenshots of top 3 matches |
+| `session_vibe` | `vibe` (natural language description), optional `durationMs` | Searches the preset catalog by keyword relevance, returns screenshots of top 3 matches |
 | `session_close` | `sessionId` | Releases browser resources |
 
 **Natural language tweaks supported by `session_tweak`:**
@@ -208,11 +205,8 @@ duration in the macro, so one definition covers the half-time version.
 | Tool | Input | Output |
 |------|-------|--------|
 | `run_quality_gate` | optional `scope`, `timeoutMs` | Structured pass/fail output |
-| `capture_toy_screenshot` | `slug`, optional `duration` | Screenshot path + audio/error summary |
-| `capture_preset` | `presetId`, optional `duration` | Opens visualizer with preset, returns screenshot |
+| `capture_preset` | `presetId`, optional `duration` | Opens visualizer with preset, returns screenshot, whether audio started, and any console errors |
 | `preview_gallery` | optional `query`, `count` (1-6), `duration` | Screenshots of multiple presets in sequence |
-| `test_toy_interactivity` | `slug` | Pass/fail with audio and error details |
-| `get_toy_health` | `slug` | HEALTHY/UNHEALTHY status |
 
 ### Compiler inspection (Stdio-only)
 

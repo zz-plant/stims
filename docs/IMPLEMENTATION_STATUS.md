@@ -81,7 +81,7 @@ This document is the consolidated source for implementation progress across road
 - [x] **Milestone C:** Broad toy migration with hardened drift checks.
   - [x] Added `bun run check:architecture` and wired it into the full `bun run check` quality gate.
   - [x] Promoted additional runtime-critical helpers (`audio-handler`, `unified-input`, `webgl-check`, `webgl-renderer`, `party-mode`, `shared-initializer`, and library back-navigation) out of `utils/` and into `core/`.
-  - [x] Retired the generated toy-manifest artifacts; `src/data/toys.json` is now read directly by the MCP server.
+  - [x] Retired the generated toy-manifest artifacts, then the hand-kept toys.json once the MCP server's toy tools were removed.
   - [x] Wired `bun run check:readme-claims` and `bun run check:seo` into the main quality gate so metadata/docs and shipped SEO surfaces fail fast when they drift.
 - [x] **Milestone D:** Performance/reliability pass complete.
   - [x] Reduced per-frame signal override allocation churn in the MilkDrop input-response path.

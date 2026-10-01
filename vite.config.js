@@ -6,33 +6,15 @@ import { build } from 'esbuild';
 import { defineConfig } from 'vite';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
-const toysDataPath = path.resolve(rootDir, 'src/data/toys.json');
-const toysData = fs.existsSync(toysDataPath)
-  ? JSON.parse(fs.readFileSync(toysDataPath, 'utf8'))
-  : [];
-const toyEntries = Array.isArray(toysData) ? toysData : [];
 
 // milkdrop/index.html is a pure redirect (no JS imports) — exclude it from
 // Vite bundling to avoid an unnecessary chunk graph.  It is copied to dist/
 // as a static asset by Vite's default public-dir behaviour.
-const htmlInputs = {
+const rollupInputs = {
   index: path.resolve(rootDir, 'index.html'),
   certify: path.resolve(rootDir, 'certify/index.html'),
   performance: path.resolve(rootDir, 'performance/index.html'),
 };
-const moduleInputs = Object.fromEntries(
-  toyEntries
-    .filter((toy) => toy.type === 'module')
-    .map((toy) => [toy.module, path.resolve(rootDir, toy.module)]),
-);
-const rollupInputs = {
-  ...htmlInputs,
-  ...moduleInputs,
-};
-
-if (!rollupInputs.index) {
-  rollupInputs.index = path.resolve(rootDir, 'index.html');
-}
 
 function audioWorkletTransform() {
   return {

@@ -5,8 +5,8 @@
  * session_capture_frame/switch_preset/watch/describe_frame/compare),
  * preset editing and inspection (session_get_preset_source, session_apply_source,
  * session_set_fields, session_tweak, session_vibe, inspect_eel_ast,
- * inspect_preset_lowerer), MIDI control, toy screenshots and health checks,
- * preview galleries, quality gates (run_quality_gate), and the live-performance
+ * inspect_preset_lowerer), MIDI control, preset screenshots and preview
+ * galleries, quality gates (run_quality_gate), and the live-performance
  * tools from mcp-performance-tools.ts (session_play_pattern, session_bind,
  * session_macro, session_scene, session_listen). Launched via `bun run mcp`.
  */
@@ -234,52 +234,27 @@ server.registerTool(
   },
 );
 
-server.registerTool(
-  'capture_toy_screenshot',
-  {
-    description:
-      'Launch a toy in a headless browser, enable audio, and capture a screenshot. Useful for verifying visual output.',
-    inputSchema: z.object({
-      slug: z.string().describe('The toy slug to capture'),
-      duration: z
-        .number()
-        .optional()
-        .default(3000)
-        .describe('Duration in ms to wait before captioning'),
-    }),
-  },
-  async ({ slug, duration }) => {
-    try {
-      const result = await playToy({
-        slug,
-        duration,
-        screenshot: true,
-      });
+const maxListedConsoleErrors = 10;
 
-      if (!result.success) {
-        return asTextResponse(
-          `Failed to capture screenshot for ${slug}: ${result.error}`,
-        );
-      }
-
-      const summary = `Captured screenshot for ${slug} at ${result.screenshot}\nAudio Active: ${result.audioActive}\nConsole Errors: ${result.consoleErrors?.length || 0}`;
-      const pngBuffer = result.screenshot
-        ? await readFile(result.screenshot).catch(() => null)
-        : null;
-      return pngBuffer
-        ? asImageResponse(pngBuffer, summary)
-        : asTextResponse(summary);
-    } catch (e) {
-      return asTextResponse(`Error running automation: ${e}`);
-    }
-  },
-);
+/** Lists the page's console errors so a capture doubles as a health check. */
+function describeConsoleErrors(errors: readonly string[] = []) {
+  if (errors.length === 0) return ['No console errors'];
+  const listed = errors
+    .slice(0, maxListedConsoleErrors)
+    .map((error) => `- ${error}`);
+  const unlisted = errors.length - listed.length;
+  return [
+    `Console errors (${errors.length}):`,
+    ...listed,
+    ...(unlisted > 0 ? [`- …and ${unlisted} more`] : []),
+  ];
+}
 
 server.registerTool(
   'capture_preset',
   {
     description:
-      'Open the visualizer with a specific bundled preset, wait for it to render, and return a screenshot. Lets agents see what a preset looks like visually.',
+      'Open the visualizer with a preset, wait for it to render, and return a screenshot plus whether audio started and any console errors.',
     inputSchema: z.object({
       presetId: z
         .string()
@@ -316,7 +291,10 @@ server.registerTool(
 
       if (!result.success) {
         return asTextResponse(
-          `Failed to capture "${preset.title}": ${result.error}`,
+          [
+            `Failed to capture "${preset.title}": ${result.error}`,
+            ...describeConsoleErrors(result.consoleErrors),
+          ].join('\n'),
         );
       }
 
@@ -324,9 +302,7 @@ server.registerTool(
         `Preset: ${preset.title} by ${preset.author}`,
         `Screenshot: ${result.screenshot}`,
         `Audio Active: ${result.audioActive}`,
-        result.consoleErrors?.length
-          ? `Console Warnings: ${result.consoleErrors.length}`
-          : 'No console errors',
+        ...describeConsoleErrors(result.consoleErrors),
       ].join('\n');
       const pngBuffer = result.screenshot
         ? await readFile(result.screenshot).catch(() => null)
@@ -409,72 +385,6 @@ server.registerTool(
       );
     } catch (e) {
       return asTextResponse(`Error in gallery capture: ${e}`);
-    }
-  },
-);
-
-server.registerTool(
-  'test_toy_interactivity',
-  {
-    description:
-      'Run a full interactivity test on a toy: launch, check load state, enable audio, and verify active state.',
-    inputSchema: z.object({
-      slug: z.string().describe('The toy slug to test'),
-    }),
-  },
-  async ({ slug }) => {
-    try {
-      const result = await playToy({
-        slug,
-        duration: 5000,
-        screenshot: false,
-      });
-
-      if (result.success && result.audioActive) {
-        return asTextResponse(
-          `✅ Test Passed for ${slug}: Toy loaded and audio activated successfully.`,
-        );
-      } else {
-        return asTextResponse(
-          `❌ Test Failed for ${slug}\nSuccess: ${result.success}\nAudio Active: ${result.audioActive}\nError: ${result.error || 'Unknown'}\nConsole Errors: ${JSON.stringify(result.consoleErrors)}`,
-        );
-      }
-    } catch (e) {
-      return asTextResponse(`Error running test: ${e}`);
-    }
-  },
-);
-
-server.registerTool(
-  'get_toy_health',
-  {
-    description:
-      'Check if a specific toy loads and renders correctly without errors. Returns a health status.',
-    inputSchema: z.object({
-      slug: z.string().describe('The toy slug to check'),
-    }),
-  },
-  async ({ slug }) => {
-    try {
-      const result = await playToy({
-        slug,
-        duration: 2000,
-        screenshot: false,
-      });
-
-      if (
-        result.success &&
-        !result.error &&
-        (!result.consoleErrors || result.consoleErrors.length === 0)
-      ) {
-        return asTextResponse(`HEALTHY: ${slug}`);
-      } else {
-        return asTextResponse(
-          `UNHEALTHY: ${slug}\nError: ${result.error}\nConsole Errors: ${JSON.stringify(result.consoleErrors)}`,
-        );
-      }
-    } catch (e) {
-      return asTextResponse(`Error checking health: ${e}`);
     }
   },
 );

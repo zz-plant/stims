@@ -46,8 +46,6 @@ Both camelCase and snake_case aliases are exposed so preset equations can stay r
 
 ## Metadata sync workflow
 
-`src/data/toys.json` holds the shipped experience's product metadata (title, description, controls, starter preset). The MCP server reads it directly — there are no generated artifacts to keep in sync.
-
 `bun run check:readme-claims` keeps the README's visible preset count aligned with `public/milkdrop-presets/catalog.json` and blocks selected shipped-feature wording that exceeds current implementation evidence.
 
 ## Catalog id contract

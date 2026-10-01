@@ -27,7 +27,7 @@ When restructuring docs, keep these entry points in sync:
 | Change type | Required docs updates |
 | --- | --- |
 | New script or renamed script | `docs/DEVELOPMENT.md` plus `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `docs/agents/README.md`, `docs/agents/tooling-and-quality.md`, `docs/agents/visualizer-workflows.md`, and `docs/MCP_SERVER.md` when they reference the changed script. |
-| Product metadata changes (title, description, controls, starter preset) | Update `src/data/toys.json`; it is read directly by the MCP server, so there is nothing to regenerate. |
+| MCP tool added, removed, or renamed | `docs/MCP_SERVER.md`, the instructions in `scripts/mcp-shared.ts`, and `CHANGELOG.md`. A removal breaks every client that calls the tool, so say what replaces it. |
 | Workflow behavior changes | Update the source workflow doc (for example `docs/DEVELOPMENT.md`, `docs/DEPLOYMENT.md`, `docs/QA_PLAN.md`). |
 | Repo-local agent skill/workflow changes | `AGENTS.md`, `docs/agents/README.md`, `docs/agents/custom-capabilities.md`, `docs/agents/visual-testing.md`, `docs/agents/visualizer-workflows.md`, and `docs/MCP_SERVER.md` when they mention the changed route, command, or capability. |
 | New or changed guard script | Update the guard's docblock — it is the source of truth. Regenerate with `bun run generate:guardrails`; `check:guardrails-doc` fails if `docs/GUARDRAILS.md` is stale. |

@@ -10,6 +10,7 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 
 - The Release workflow can be run from the Actions tab on `main`, for anyone who cannot push tags: it tags a commit on `main` (by default its head) as `v<that commit's package.json version>` and publishes the same notes a tag push would. It refuses a commit that is not on `main`, or a tag that already points at another commit.
 - The Tune pane says which audio drives each control. When the preset's equations recompute a field, its chip names the signals that reach it (`eq · bass`, all of them in the tooltip and accessible name), or says no audio does. It reads the static dataflow analysis (`src/js/milkdrop/preset-dataflow.ts`) of the compile on stage. So it follows a signal through `q` variables, persistent state and per-pixel equations, works before any music plays, and reruns only when the equations change (`dataflowSignature()`), not on every fader move.
+- MCP tool `get_audio_reactivity_guide` (stdio and Worker) explains how presets read `bass`/`mid`/`treb`, their `_att` versions and `vol`, and names the `lab:dataflow` and `lab:reactivity` commands that check a preset. Given a `presetId`, it adds that preset's audio reach and measured reactivity from the catalog. `docs/ARCHITECTURE.md` and the authoring reference and listening chapter are now readable through `read_doc_section`.
 
 ### Changed
 
@@ -17,6 +18,16 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 - `llms.txt` and `llms-full.txt` drop the "high-performance" and AI-first framing, the `?tweak=` flag and `toil:apply_tweak` message (neither does anything), and catalog fields that do not exist; the model-backed API routes are marked optional. The home screen's tagline names MilkDrop, the MCP endpoint stops calling itself "Stim Webtoys", and "MilkDrop-inspired" is gone from the docs.
 - The compiler case study is deleted: its IR type, JIT output and WGSL kernel were invented, it described a dead-store pass that does not exist, and it credited the browser MilkDrop to a WebAssembly projectM port instead of Butterchurn. Its accurate parts are in [`docs/TECHNICAL_ACHIEVEMENTS.md`](./docs/TECHNICAL_ACHIEVEMENTS.md), which also now says the per-frame compute VM is off by default and documents the corpus analysis.
 - The start page's tagline and explainer say what you can do with a preset: play it, see what moves it, and change it while it plays. `/learn/milkdrop-online/` drops "Winamp's Visualizer in Your Browser" from its title, which `docs/LINEAGE_AND_CREDITS.md` asks public copy to avoid, and the agent instructions under `.github/` drop "MilkDrop-inspired".
+
+### Removed
+
+- **Breaking for MCP clients:** the tools left over from the toy library. They described a one-entry registry and a loader that no longer exists. Calling one now returns an unknown-tool error. Replacements:
+  - `get_toys` → `list_presets` / `get_preset_info`.
+  - `launch_toy` → `open_preset_url`; pass `baseUrl` to target a local dev server.
+  - `get_toy_audio_reactivity_guide` → `get_audio_reactivity_guide`.
+  - `describe_loader` → `read_doc_section` on `docs/ARCHITECTURE.md` ("App bootstrap").
+  - `capture_toy_screenshot`, `test_toy_interactivity`, `get_toy_health` (stdio only) → `capture_preset`, which now lists the page's console errors on success and on failure.
+- `src/data/toys.json`, which nothing reads once those tools are gone. The sitemap's MilkDrop image title is now a constant in `scripts/generate-seo.ts`, and the Vite build no longer derives inputs from it.
 
 ### Planned — studio first, parity as a floor
 

@@ -11,7 +11,7 @@ This document describes the current shipped frontend architecture for Stims afte
 - Workspace-scene decorative layers are rendered with imperative Three.js, not a secondary React renderer.
 - `src/js/core/*` owns shared renderer, audio, quality, persistence, and input systems, including the Three.js scene bootstrap (`toy-runtime*`, `web-toy.ts`, `toy-*-session.ts`) that the engine session mounts onto.
 - The old DOM shell modules (`loader.ts`, `router.ts`, `toy-view.ts`, `library-view*`, `bootstrap/*`) have been deleted. Nothing outside the React workspace boots the engine anymore.
-- There is no toy plugin layer. The old toys directory, the generated toy manifest, and the registry tooling around them were removed once it was clear they described a registry of one; `src/data/toys.json` survives purely as product metadata for the MCP server.
+- There is no toy plugin layer. The old toys directory, the generated toy manifest, the hand-kept toys.json that outlived it, and the registry tooling and MCP tools around them were removed once it was clear they described a registry of one.
 
 ## Runtime map
 

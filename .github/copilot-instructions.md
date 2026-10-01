@@ -54,7 +54,6 @@ bun run check
 | `src/js/core/` | Shared runtime (loader, shell, renderer, audio) |
 | `src/js/milkdrop/` | Preset engine (runner, editor, compiler, VM) |
 | `src/js/bootstrap/` | Page wiring (home, library, visualizer) |
-| `src/data/toys.json` | Preset manifest |
 | `tests/` | Test suite (unit + integration) |
 | `docs/agents/` | Agent guidance (task routing, tools, verification) |
 | `.agent/skills/` | Reusable agent workflows |
@@ -79,7 +78,6 @@ Pick the right starting point:
 bun run check:quick        # Fast check (syntax, types, lint)
 bun run check              # Full gate (includes tests, architecture, SEO)
 bun run check:architecture # Boundary violations
-bun run check:toys         # Manifest drift
 bun run check:seo          # SEO surface
 ```
 

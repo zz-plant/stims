@@ -1,51 +1,186 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
+import packageJson from '../../package.json';
 import {
   buildDocPointers,
   defaultQualityGateTimeoutMs,
   getDocSectionContent,
   getReadmeDevCommands,
   markdownSources,
-  normalizeToys,
   resolveQualityGateCommand,
   runCommand,
   searchMarkdownSources,
 } from '../../scripts/mcp-server.ts';
+import mcpWorker from '../../scripts/mcp-worker.ts';
+import { MILKDROP_BUILTIN_DOCS } from '../../src/js/milkdrop/builtin-docs.ts';
 
-describe('normalizeToys', () => {
-  test('preserves optional metadata fields when provided', () => {
-    const [toy] = normalizeToys([
+/** Sends one JSON-RPC request through the Worker's HTTP handler. */
+async function callWorker(
+  method: string,
+  params: Record<string, unknown> = {},
+) {
+  const response = await mcpWorker.fetch(
+    new Request('http://localhost/mcp', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    }),
+  );
+  const body = await response.text();
+  const event = body.split('\n').find((line) => line.startsWith('data: '));
+  return JSON.parse(event ? event.slice('data: '.length) : body);
+}
+
+async function callTool(name: string, args: Record<string, unknown> = {}) {
+  const { result } = await callWorker('tools/call', {
+    name,
+    arguments: args,
+  });
+  return result.content[0].text as string;
+}
+
+describe('MCP tool surface', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  function serveCatalog(presets: unknown[]) {
+    globalThis.fetch = mock(
+      async () => new Response(JSON.stringify({ presets })),
+    ) as unknown as typeof fetch;
+  }
+
+  test('lists the preset tools and none of the retired toy tools', async () => {
+    const { result } = await callWorker('tools/list');
+    const names = result.tools.map((tool: { name: string }) => tool.name);
+
+    expect(names).toContain('get_audio_reactivity_guide');
+    expect(names).toContain('open_preset_url');
+    for (const retired of [
+      'get_toys',
+      'launch_toy',
+      'get_toy_audio_reactivity_guide',
+      'describe_loader',
+    ]) {
+      expect(names).not.toContain(retired);
+    }
+  });
+
+  test('the audio guide names only signals the compiler knows', async () => {
+    const guide = await callTool('get_audio_reactivity_guide');
+    const signals = new Set(
+      MILKDROP_BUILTIN_DOCS.filter((entry) => entry.group === 'signal').map(
+        (entry) => entry.name,
+      ),
+    );
+
+    for (const name of [
+      'bass',
+      'mid',
+      'treb',
+      'bass_att',
+      'mid_att',
+      'treb_att',
+      'vol',
+      'rms',
+      'beat_pulse',
+    ]) {
+      expect(guide).toContain(`\`${name}\``);
+      expect(signals.has(name)).toBe(true);
+    }
+  });
+
+  test('the audio guide sends readers to docs and commands that exist', async () => {
+    const guide = await callTool('get_audio_reactivity_guide');
+    const reference = await getDocSectionContent(
+      'docs/authoring/reference.md',
+      'Signals (read-only inputs)',
+    );
+    const listening = await getDocSectionContent(
+      'docs/authoring/03-listening.md',
+    );
+
+    expect(guide).toContain('"Signals (read-only inputs)"');
+    expect(reference.ok).toBe(true);
+    expect(listening.ok).toBe(true);
+    for (const script of ['lab:dataflow', 'lab:reactivity'] as const) {
+      expect(guide).toContain(`bun run ${script} -- --preset <id>`);
+      expect(packageJson.scripts[script]).toBeDefined();
+    }
+  });
+
+  test('serves the boot path from docs/ARCHITECTURE.md in place of describe_loader', async () => {
+    const section = await callTool('read_doc_section', {
+      file: 'docs/ARCHITECTURE.md',
+      heading: 'App bootstrap',
+    });
+
+    expect(section).toContain('src/js/app.ts');
+  });
+
+  test("reports a preset's audio scores from the catalog", async () => {
+    serveCatalog([
       {
-        slug: 'example',
-        description: 'example toy',
-        requiresWebGPU: true,
-        module: 'src/example.ts',
-        type: 'module',
-        allowWebGLFallback: true,
-        controls: ['alpha', 'beta', 1],
+        id: 'waves-only',
+        title: 'Waves Only',
+        author: 'Tester',
+        quality: { components: { staticAudio: 0.5, measuredReactivity: null } },
+      },
+      {
+        id: 'driven',
+        title: 'Driven',
+        author: 'Tester',
+        quality: { components: { staticAudio: 1, measuredReactivity: 0.8201 } },
       },
     ]);
 
-    expect(toy).toBeDefined();
-    expect(toy?.module).toBe('src/example.ts');
-    expect(toy?.type).toBe('module');
-    expect(toy?.allowWebGLFallback).toBe(true);
-    expect(toy?.controls).toEqual(['alpha', 'beta']);
+    const wavesOnly = await callTool('get_audio_reactivity_guide', {
+      presetId: 'waves-only',
+    });
+    expect(wavesOnly).toContain('## Waves Only (`waves-only`)');
+    expect(wavesOnly).toContain('waveform only');
+    expect(wavesOnly).toContain(
+      'Measured reactivity (lab:reactivity): not measured',
+    );
+    expect(wavesOnly).toContain('bun run lab:dataflow -- --preset waves-only');
+
+    const driven = await callTool('get_audio_reactivity_guide', {
+      presetId: 'driven',
+    });
+    expect(driven).toContain('driven: audio changes what it draws');
+    expect(driven).toContain('Measured reactivity (lab:reactivity): 0.82,');
   });
 
-  test('defaults optional metadata when fields are missing', () => {
-    const [toy] = normalizeToys([{ slug: 'fallback' }]);
+  test('an unknown preset id is reported, not answered with a generic guide', async () => {
+    serveCatalog([]);
 
-    expect(toy).toBeDefined();
-    expect(toy?.title).toBe('fallback');
-    expect(toy?.description).toBe('');
-    expect(toy?.requiresWebGPU).toBe(false);
-    expect(toy?.controls).toEqual([]);
-    expect(toy?.module).toBeNull();
-    expect(toy?.type).toBeNull();
-    expect(toy?.allowWebGLFallback).toBe(false);
-    expect(toy?.url).toContain('experience=fallback');
+    const text = await callTool('get_audio_reactivity_guide', {
+      presetId: 'missing',
+    });
+
+    expect(text).toBe(
+      'Preset "missing" not found. Use search_presets to find a preset ID.',
+    );
+  });
+
+  test('still answers with the guide when the catalog is unreachable', async () => {
+    globalThis.fetch = mock(async () => {
+      throw new Error('offline');
+    }) as unknown as typeof fetch;
+
+    const text = await callTool('get_audio_reactivity_guide', {
+      presetId: 'driven',
+    });
+
+    expect(text).toContain('# How MilkDrop presets react to audio');
+    expect(text).toContain('could not be loaded');
+    expect(text).toContain('bun run lab:reactivity -- --preset driven');
   });
 });
 
