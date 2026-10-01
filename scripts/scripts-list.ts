@@ -186,6 +186,19 @@ const describe = ([name, command]: [string, string]) => ({
 const ROUTES: Array<{ when: string[]; run: string[]; note: string }> = [
   {
     when: [
+      'worktree',
+      'another session',
+      'other session',
+      'concurrent',
+      'parallel',
+      'separate checkout',
+      'shared checkout',
+    ],
+    run: ['worktree:new'],
+    note: "Several sessions share the main checkout's index and working tree, so one session's staged files or stash can take another's work. A worktree per change avoids that; this creates one off origin/main and installs it.",
+  },
+  {
+    when: [
       'preset looks wrong',
       'wrong',
       'fidelity',
