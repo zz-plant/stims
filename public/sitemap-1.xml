@@ -2,13 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://toil.fyi/</loc>
-    <lastmod>2026-09-29</lastmod>
+    <lastmod>2026-10-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>MilkDrop Visualizer | Stims</image:title>
-      <image:caption>MilkDrop-inspired browser music visualizer with demo audio, hand-picked presets, and ways to react to your own music.</image:caption>
+      <image:caption>Play and live-edit MilkDrop presets in your browser, with demo audio, hand-picked presets, and ways to react to your own music.</image:caption>
     </image:image>
   </url>
   <url>

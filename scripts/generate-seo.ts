@@ -684,7 +684,7 @@ export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
       imagePath: '/og/milkdrop.png',
       imageTitle: `${milkdrop.title} | Stims`,
       imageCaption:
-        'MilkDrop-inspired browser music visualizer with demo audio, hand-picked presets, and ways to react to your own music.',
+        'Play and live-edit MilkDrop presets in your browser, with demo audio, hand-picked presets, and ways to react to your own music.',
       changefreq: 'weekly',
       priority: '1.0',
       sourcePaths: ['index.html', 'src/data/toys.json'],

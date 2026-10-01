@@ -33,7 +33,7 @@ describe('preset social sharing', () => {
 
       expect(copy.title).toBe('Parallel Universe by Rovastar | Stims');
       expect(copy.text).toBe(
-        '"Parallel Universe" by Rovastar — a MilkDrop-inspired visualizer that reacts to your mic or any song, live in your browser.',
+        '"Parallel Universe" by Rovastar — a MilkDrop preset that reacts to your mic or any song, live in your browser.',
       );
       expect(copy.url).toBe(
         'https://toil.fyi/?preset=rovastar-parallel-universe',
@@ -48,7 +48,7 @@ describe('preset social sharing', () => {
 
       expect(copy.title).toBe('Signal Bloom | Stims');
       expect(copy.text).toBe(
-        '"Signal Bloom" — a MilkDrop-inspired visualizer that reacts to your mic or any song, live in your browser.',
+        '"Signal Bloom" — a MilkDrop preset that reacts to your mic or any song, live in your browser.',
       );
       expect(copy.url).toBe('https://toil.fyi/?preset=signal-bloom');
     });

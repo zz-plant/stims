@@ -2,7 +2,7 @@
   {
     "slug": "milkdrop",
     "title": "MilkDrop Visualizer",
-    "description": "MilkDrop-inspired browser visualizer with demo audio, hand-picked favorites, live editing, and preset import/export.",
+    "description": "Play and live-edit MilkDrop presets in your browser, with demo audio, hand-picked favorites, and .milk import/export.",
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "featured",
