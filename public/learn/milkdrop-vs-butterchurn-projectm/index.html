@@ -117,7 +117,7 @@
 <article>
 <h1 id="stims-vs-butterchurn-vs-projectm">Stims vs Butterchurn vs projectM</h1>
 <p><a class="cta" href="/">Open Stims — no install needed</a></p>
-
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#side-by-side">Side by side</a></li><li><a href="#what-stims-adds">What Stims adds</a></li><li><a href="#which-should-you-use">Which should you use?</a></li><li><a href="#faq">FAQ</a></li></ul></nav>
 <p>Stims is an independent browser visualizer in the line of Ryan Geiss&#39;s MilkDrop, Butterchurn and projectM. It is not affiliated with any of them.</p>
 <p>Butterchurn and projectM are the projects most people arrive from, and both are good at what they were built for. They occupy a different slot from Stims: they are renderers you embed or run, while Stims is the workflow around one.</p>
 <h2 id="side-by-side">Side by side</h2>
@@ -161,6 +161,13 @@
 <td>The reference implementation Stims diffs against</td>
 </tr>
 </tbody></table></div>
+<h2 id="what-stims-adds">What Stims adds</h2>
+<p>Butterchurn ran MilkDrop presets in a browser first, and MilkDrop 2 already let you edit a preset while it played; the Stims editor brings that back. Three things underneath are new:</p>
+<ul>
+<li><strong>The warp runs on the GPU.</strong> On WebGPU, a preset&#39;s per-pixel equations run for every point of the warp mesh at once, in all but 8 of the 1,102 catalog presets that have them. Butterchurn and projectM work through the points one at a time on the CPU.</li>
+<li><strong>Fidelity is measured.</strong> Frames are compared with native projectM, and each preset&#39;s result is published, failures included.</li>
+<li><strong>The equations are read, not only run.</strong> Without playing a preset, Stims can say which parts of the music reach which parts of the picture.</li>
+</ul>
 <h2 id="which-should-you-use">Which should you use?</h2>
 <ul>
 <li><strong>You want to embed a visualizer in your own web app:</strong> Butterchurn is built for exactly that.</li>

@@ -10,11 +10,16 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 
 - The Release workflow can be run from the Actions tab on `main`, for anyone who cannot push tags: it tags a commit on `main` (by default its head) as `v<that commit's package.json version>` and publishes the same notes a tag push would. It refuses a commit that is not on `main`, or a tag that already points at another commit.
 
+### Changed
+
+- Every public surface now tells the same story about what Stims is and what is new in it. [`docs/LINEAGE_AND_CREDITS.md`](./docs/LINEAGE_AND_CREDITS.md#what-stims-contributes) states the three contributions: per-pixel equations on the GPU, held to the CPU's answer by differential fuzzing; fidelity measured against native projectM; and the preset corpus analysed as programs. The README, both `llms` files and the comparison page repeat them. Running presets in a browser (Butterchurn was first) and editing them live (MilkDrop 2 had an editor) are no longer presented as new.
+- `llms.txt` and `llms-full.txt` drop the "high-performance" and AI-first framing, the `?tweak=` flag and `toil:apply_tweak` message (neither does anything), and catalog fields that do not exist; the model-backed API routes are marked optional. The home screen's tagline names MilkDrop, the MCP endpoint stops calling itself "Stim Webtoys", and "MilkDrop-inspired" is gone from the docs.
+- The compiler case study is deleted: its IR type, JIT output and WGSL kernel were invented, it described a dead-store pass that does not exist, and it credited the browser MilkDrop to a WebAssembly projectM port instead of Butterchurn. Its accurate parts are in [`docs/TECHNICAL_ACHIEVEMENTS.md`](./docs/TECHNICAL_ACHIEVEMENTS.md), which also now says the per-frame compute VM is off by default and documents the corpus analysis.
+
 ### Planned — studio first, parity as a floor
 
 - **Remix studio**: dependable undo/redo and named snapshots, side-by-side A/B against the source preset, remix provenance retained in exported `.milk`.
 - **Creator-grade export**: deterministic frame pacing, loop-duration controls, and codec/AV-sync verification for 1080p and 4K recording.
-- **Live EEL preset editor** with real-time expression AST diagnostics.
 - Parity stays a maintenance floor, not a frontier: projectM WebGPU compute-shader lowering and the AudioWorklet analyzer migration proceed only as they serve the compatibility labels and recording path above.
 
 ## [1.4.0] - 2026-10-01

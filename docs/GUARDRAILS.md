@@ -319,7 +319,7 @@ Run it directly: `bun run check:duplicate-css`
 
 Record the measured evidence behind the first-run preset.
 
-The landing page makes one claim — "full-screen visuals that move to
+The landing page makes one claim — "MilkDrop presets that move to
 whatever you're listening to" — and the first-run preset is the only proof
 of it most visitors ever see. The previous default was chosen on a variable
 count (8 of 36 parameters read audio) that turned out not to predict
@@ -459,7 +459,7 @@ in the repo supports.
 
 It covers `README.md` and the live docs under `docs/`, because the claim that
 actually shipped a contradiction was in `docs/`, not the README:
-`CASE_STUDY_COMPILER_RUNTIME.md` asserted a `< 1.5%` parity gate and "over
+`CASE_STUDY_COMPILER_RUNTIME.md` (since deleted) asserted a `< 1.5%` parity gate and "over
 99% compatibility" on the same day `MILKDROP_PROJECTM_PARITY_PLAN.md`
 recorded most of the certified set diverging by 5–100%. Two rules follow from
 that: a parity gate has to be one the manifest configures, and there is no
