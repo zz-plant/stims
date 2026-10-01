@@ -64,6 +64,21 @@ describe('check-commit-msg', () => {
     ).toBe(1);
   });
 
+  test('accepts the subjects git writes itself', async () => {
+    expect(
+      await check("Merge remote-tracking branch 'origin/main' into fix/x"),
+    ).toBe(0);
+    expect(await check("Merge branch 'main' into feat/y")).toBe(0);
+    expect(await check('Revert "fix(audio): close context on unmount"')).toBe(
+      0,
+    );
+  });
+
+  test('does not let a hand-written subject pass as a merge', async () => {
+    expect(await check('Merge stuff')).toBe(1);
+    expect(await check('Merged the audio fixes')).toBe(1);
+  });
+
   test('accepts valid conventional commits', async () => {
     expect(await check('fix(audio): close context on unmount')).toBe(0);
     expect(await check('feat: add mobile viewport matrix')).toBe(0);

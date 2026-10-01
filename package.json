@@ -197,7 +197,8 @@
     "typecheck": "bunx --bun --package typescript@7.0.2 tsc --noEmit",
     "typecheck:watch": "bunx --bun --package typescript@7.0.2 tsc --noEmit --watch",
     "ui:diff": "bun run scripts/ui-diff.ts",
-    "verify": "bun run scripts/agent-verify.ts"
+    "verify": "bun run scripts/agent-verify.ts",
+    "worktree:new": "bun run scripts/worktree-new.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

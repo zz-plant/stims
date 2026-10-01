@@ -48,6 +48,13 @@ export function subjectError(
     );
   }
 
+  // Subjects git writes itself: bringing the base into a branch, and `git
+  // revert`. They say what happened, and the repo squash-merges under the
+  // PR title, so neither reaches main as-is.
+  const GIT_GENERATED =
+    /^(Merge (branch|remote-tracking branch|commit|tag) .+|Revert ".+"( \(#\d+\))?)$/;
+  if (GIT_GENERATED.test(subject)) return null;
+
   const CONVENTIONAL =
     /^(feat|fix|refactor|chore|docs|test|style|perf|ci|build|revert|hotfix)(\([^)]+\))?!?: .+/;
   if (!CONVENTIONAL.test(subject)) {
