@@ -104,6 +104,8 @@ import {
   analyzePresetDataflow,
   controlAudio,
   dataflowSignature,
+  drawnPartAudio,
+  frameValueName,
   type PresetDataflow,
 } from '../preset-dataflow.ts';
 import { analyzePresetMath } from '../preset-math-analyzer.ts';
@@ -121,6 +123,7 @@ import {
   PRESET_MUTATION_STYLES,
 } from '../preset-mutations.ts';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
+import { subscribeVariables } from '../variable-probe.ts';
 import { createMilkdropLanguage } from './editor-language';
 import { numberScrubExtension } from './editor-number-scrub.ts';
 import { computeAstDiagnostics, mergeDiagnostics } from './editor-parser';
@@ -858,6 +861,7 @@ export class EditorPanel {
       defaultValue: number;
       learnButton: HTMLButtonElement;
       liveHint: HTMLDivElement;
+      liveTick: HTMLSpanElement;
       config: ScalarControlConfig;
     }
   > = new Map();
@@ -914,6 +918,12 @@ export class EditorPanel {
     signature: string;
     dataflow: PresetDataflow;
   } | null = null;
+  /** Whether the Tune pane is on screen: its tab selected, the dock open. */
+  private tuneVisible = true;
+  /** Faders whose tick follows the frame, keyed to the name the VM keeps
+   * that field's value under. */
+  private readonly liveTickNames = new Map<string, string>();
+  private disposeLiveFeed: (() => void) | null = null;
   private midiTargets: Set<string> = new Set();
   // The slider whose "learn" button is currently armed, waiting for the
   // next CC from any device — mirrors webMidiService.getLearnTarget() but
@@ -1326,6 +1336,9 @@ export class EditorPanel {
         if (panes[otherIndex].id === 'inspect') {
           this.inspectPane.setInspectActive(selected);
         }
+        if (panes[otherIndex].id === 'tune') {
+          this.setTuneVisible(selected);
+        }
       });
     };
     panes.forEach((pane, index) => {
@@ -1392,6 +1405,10 @@ export class EditorPanel {
       const open = dock.dataset.open !== 'true';
       dock.dataset.open = String(open);
       dockToggle.textContent = open ? '▾' : '▴';
+      const tuneTab = tabButtons[panes.findIndex((pane) => pane.id === 'tune')];
+      this.setTuneVisible(
+        open && tuneTab?.getAttribute('aria-selected') === 'true',
+      );
     });
     // Sibling of the tablist, not a child of it. A `role="tablist"` may only
     // contain tabs, so putting the collapse button inside made every child
@@ -2172,12 +2189,19 @@ export class EditorPanel {
           ? 'Draft live'
           : 'Synced';
 
+    this.updateControlDataflow(state.activeCompiled);
+    this.compatPane.update(state);
+    const dataflow = this.controlDataflow?.dataflow ?? null;
+    this.outlinePane.update(
+      state,
+      state.activeCompiled && dataflow
+        ? drawnPartAudio(state.activeCompiled.ir, dataflow)
+        : null,
+    );
+    this.paintKnobs(state.source);
     // Fidelity degradation only. Error counts are the status label's and the
     // problems strip's job — this flag reports the one thing neither can:
     // the stage is rendering a simplified version of what compiled.
-    this.compatPane.update(state);
-    this.outlinePane.update(state);
-    this.paintKnobs(state.source);
     this.safetyFlag.hidden = !isDegraded;
     this.safetyFlag.textContent = 'Simplified';
     this.safetyFlag.dataset.tone = 'warning';
@@ -2288,7 +2312,6 @@ export class EditorPanel {
     this.updateRangesFromDoc();
     this.updateModulationsFromDoc();
     this.refreshMidiGutter();
-    this.updateControlDataflow(state.activeCompiled);
     this.refreshSliderMidiState();
   }
 
@@ -2385,7 +2408,74 @@ export class EditorPanel {
         ? `Listening… move a knob or fader to map it to ${key}.`
         : `MIDI-learn ${key}: click, then move a knob or fader.`;
     });
+    this.refreshLiveTicks(doc, dataflow);
     this.refreshLiveHintsFromDoc();
+  }
+
+  /**
+   * Which faders show the value the frame used: a field the per-frame code
+   * recomputes, so one number per frame is what was drawn. A field per-pixel
+   * code varies across the mesh has no single number to show. The feed from
+   * the running preset is subscribed only while one of those faders is on
+   * screen, so a closed dock or another tab costs nothing.
+   */
+  private refreshLiveTicks(doc: string, dataflow: PresetDataflow | null) {
+    this.liveTickNames.clear();
+    this.sliderInputs.forEach((item, key) => {
+      const name =
+        dataflow && isFieldShadowedByEquations(doc, key)
+          ? frameValueName(dataflow, key)
+          : null;
+      if (name) this.liveTickNames.set(key, name);
+      else item.liveTick.hidden = true;
+    });
+    const wanted = this.tuneVisible && this.liveTickNames.size > 0;
+    if (wanted && !this.disposeLiveFeed) {
+      this.disposeLiveFeed = subscribeVariables((variables) =>
+        this.paintLiveTicks(variables),
+      );
+    } else if (!wanted && this.disposeLiveFeed) {
+      this.stopLiveFeed();
+    }
+  }
+
+  private paintLiveTicks(variables: Readonly<Record<string, number>>) {
+    this.liveTickNames.forEach((name, key) => {
+      const item = this.sliderInputs.get(key);
+      if (!item) return;
+      const value = variables[name];
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        item.liveTick.hidden = true;
+        return;
+      }
+      item.liveTick.hidden = false;
+      item.liveTick.style.setProperty(
+        '--live-position',
+        String(valueToPosition(value, item.config)),
+      );
+    });
+  }
+
+  private stopLiveFeed() {
+    this.disposeLiveFeed?.();
+    this.disposeLiveFeed = null;
+    this.sliderInputs.forEach((item) => {
+      item.liveTick.hidden = true;
+    });
+  }
+
+  /** Tune went on or off screen: start or stop the ticks' feed. */
+  private setTuneVisible(visible: boolean) {
+    if (visible === this.tuneVisible) return;
+    this.tuneVisible = visible;
+    if (!visible) {
+      this.stopLiveFeed();
+      return;
+    }
+    this.refreshLiveTicks(
+      this.editor.state.doc.toString(),
+      this.controlDataflow?.dataflow ?? null,
+    );
   }
 
   /**
@@ -2451,6 +2541,7 @@ export class EditorPanel {
   }
 
   dispose() {
+    this.stopLiveFeed();
     this.inspectPane.dispose();
     this.closeVariableJump();
     this.disposeDiagnosticsListener?.();
@@ -2897,7 +2988,19 @@ export class EditorPanel {
     resetButton.title = `Reset to ${s.defaultValue}`;
     resetButton.addEventListener('click', resetToDefault);
 
-    controls.append(input, learnButton, resetButton);
+    // Where the preset's own equations put the field on the last frame, on
+    // the fader's track. The fader holds the base value; on a field the
+    // per-frame code recomputes, that is what the equation starts from or
+    // throws away, and this tick is what was drawn.
+    const track = document.createElement('div');
+    track.className = 'stims-editor__slider-track';
+    const liveTick = document.createElement('span');
+    liveTick.className = 'stims-editor__live-tick';
+    liveTick.hidden = true;
+    liveTick.setAttribute('aria-hidden', 'true');
+    track.append(input, liveTick);
+
+    controls.append(track, learnButton, resetButton);
 
     const liveHint = document.createElement('div');
     liveHint.className = 'stims-editor__live-hint';
@@ -2910,6 +3013,7 @@ export class EditorPanel {
       defaultValue: s.defaultValue,
       learnButton,
       liveHint,
+      liveTick,
       config: s,
     });
 

@@ -775,6 +775,31 @@ html.light .stims-editor {
   outline-offset: 2px;
 }
 
+.stims-editor__slider-track {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+}
+
+/* The value the preset's equations gave the field this frame, beside the
+   base the fader holds. It shares the thumb's travel (the 4px thumb's centre
+   runs from 2px to 100% - 2px) and the eq chip's colour, so it reads as the
+   equation's half of the row. */
+.stims-editor__live-tick {
+  position: absolute;
+  top: 50%;
+  left: calc(2px + var(--live-position, 0) * (100% - 4px));
+  width: 2px;
+  height: 8px;
+  margin-left: -1px;
+  transform: translateY(-50%);
+  border-radius: var(--radius-hairline);
+  background: var(--stims-warn);
+  pointer-events: none;
+}
+
 .stims-editor__slider-btn {
   flex: none;
   width: 18px;
@@ -1758,10 +1783,38 @@ button.stims-editor__compat-row:focus-visible {
   background: var(--stims-surface-2, rgba(255, 255, 255, 0.05));
 }
 
+/* A layer (main waveform, borders, motion vectors) is not a span of the
+   buffer, so its row is not a jump target. It sits indented under the
+   Settings row its fields belong to. */
+.stims-editor__outline-layer {
+  padding-left: 20px;
+  cursor: default;
+}
+
+.stims-editor__outline-layer:hover {
+  border-color: transparent;
+  background: none;
+}
+
 .stims-editor__outline-range {
   font-size: var(--text-2xs);
   opacity: 0.7;
   white-space: nowrap;
+}
+
+/* What a drawn part follows, from its equations: the Outline's half of the
+   Tune chip's "eq · bass", in the same colour. It hugs the label and leaves
+   the line range on the right. */
+.stims-editor__outline-audio {
+  margin-right: auto;
+  font-family: var(--font-family-mono);
+  font-size: var(--text-2xs);
+  color: var(--stims-warn);
+  white-space: nowrap;
+}
+
+.stims-editor__outline-audio[data-audio="none"] {
+  color: var(--ed-dim);
 }
 
 /* Eight tabs no longer fit beside the collapse toggle in a narrow dock: let
