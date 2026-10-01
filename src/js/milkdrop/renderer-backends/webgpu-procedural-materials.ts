@@ -705,6 +705,9 @@ function buildProceduralMeshVertexFnWgsl(
     )},
     interactionTransform: vec4<f32>
   ) -> vec3<f32> {
+    // Mesh space spans the screen as [-1, 1]; the scene camera is in square
+    // units, so stretch the overlay to its half-extents.
+    let sceneAspect = max(signalsA.w, 0.0001);
     let point = milkdropTransformPointWithParams(
       sourcePosition.xy,
       fieldParamsA,
@@ -715,7 +718,7 @@ function buildProceduralMeshVertexFnWgsl(
       signalsC,
       signalsD,
       signalsE${buildGpuFieldRegisterCallArgs(program)}
-    );
+    ) * vec2<f32>(max(1.0, sceneAspect), max(1.0, 1.0 / sceneAspect));
 ${WGSL_APPLY_INTERACTION}
     return vec3<f32>(
       interacted.x,
@@ -857,11 +860,14 @@ function buildProceduralMotionVectorVertexFnWgsl(
       delta = delta / magnitude * explicitLengthMixed;
       magnitude = length(delta);
     }
+    // Mesh space spans the screen as [-1, 1]; the scene camera is in square
+    // units, so stretch the vector to its half-extents.
+    let sceneAspect = max(signalsA.w, 0.0001);
     let point = mix(
       blendedCurrent - delta * 0.45,
       blendedCurrent + delta,
       vec2<f32>(endpointWeight)
-    );
+    ) * vec2<f32>(max(1.0, sceneAspect), max(1.0, 1.0 / sceneAspect));
 ${WGSL_APPLY_INTERACTION}
     let alpha =
       lengthBlendAlpha.w *
@@ -1024,7 +1030,7 @@ export function buildCustomWaveProgramWgslCode(
   const returnType = output === 'point' ? 'vec2<f32>' : 'vec4<f32>';
   const returnCode =
     output === 'point'
-      ? 'return vec2<f32>((field_x - 0.5) * 2.0, (0.5 - field_y) * 2.0);'
+      ? 'return vec2<f32>((field_x - 0.5) * 2.0, (field_y - 0.5) * 2.0);'
       : // Clamped exactly as the CPU wave-builder clamps its per-point
         // colours, so an out-of-range write cannot inject more light into the
         // feedback loop than the same preset does on WebGL.
@@ -1067,11 +1073,12 @@ ${WGSL_SIGNAL_UNPACK}
         paramScaling;
     let rendererPointX = paramCenterX + (-1.0 + sampleTValue * 2.0);
     let rendererPointY = mix(orbitalY, baseY, paramSpectrum);
-    // Per-point code reads/writes x,y in MilkDrop [0,1] space (y-down),
-    // matching the CPU wave-builder path; rad/ang measure distance from
-    // screen center in renderer (zero-centered) space.
+    // Per-point code reads/writes x,y in MilkDrop [0,1] space, y up as
+    // projectM and Butterchurn draw custom waves, matching the CPU
+    // wave-builder path; rad/ang measure distance from screen centre in clip
+    // space.
     var field_x = rendererPointX / 2.0 + 0.5;
-    var field_y = 0.5 - rendererPointY / 2.0;
+    var field_y = rendererPointY / 2.0 + 0.5;
     var field_rad = length(vec2<f32>(rendererPointX, rendererPointY));
     var field_ang = atan2(rendererPointY, rendererPointX);
     // Seeded, not zeroed: MilkDrop hands the per-point block the wavecode's
@@ -1165,6 +1172,10 @@ function buildCustomWaveVertexWgslCode(
     let blendedSignalTime = blendedSignalsA.x;
     var point = vec2<f32>(0.0, 0.0);
     ${pointCode}
+    // MilkDrop clip space to the scene's square units (vm/shared.ts
+    // milkdropToSceneX/Y), before the interaction transform acts on it.
+    let sceneAspect = max(blendedSignalsA.w, 0.0001);
+    point = point * vec2<f32>(max(1.0, sceneAspect), max(1.0, 1.0 / sceneAspect));
 ${WGSL_APPLY_INTERACTION}
     return interacted;
   }`;
@@ -1548,18 +1559,9 @@ const PROCEDURAL_WAVE_POINT_WGSL = `
     } else if (mode < 3.5) {
       x = pointCenterX + blendedSampleValue * pointScale;
       y = pointCenterY + blendedSampleOffset32 * pointScale;
-    } else if (mode < 4.5) {
-      // DerivativeLine (HORIZONTAL) — matches CPU path (frame-generation.ts mode 4).
-      let w1 = 0.45 + 0.5 * (pointMystery * 0.5 + 0.5);
-      let w2 = 1.0 - w1;
-      x = -1.0 + 2.0 * t + pointCenterX + blendedSampleOffset32 * 0.44 * pointScale;
-      y = pointCenterY + blendedSampleValue * 0.47 * pointScale;
-      // Intra-frame momentum (simplified for GPU).
-      x = x * w2 + w1 * blendedSampleOffset64 * pointScale;
-      y = y * w2 + w1 * blendedSampleOffset96 * pointScale;
     } else {
-      // Modes 6 and 7 (line waves) are built on the CPU and never reach
-      // this shader; see buildMilkdropLineWave in vm/frame-generation.ts.
+      // Modes 4, 6 and 7 (line waves) are built on the CPU and never reach
+      // this shader; see buildMainWaveFrame in vm/frame-generation.ts.
       // ExplosiveHash — mono collapse of MilkDrop's
       // x0 = R[i]*L[i+32] + L[i]*R[i+32], y0 = R[i]^2 - L[i+32]^2,
       // with fWaveScale applied to each factor (pointScale squared).

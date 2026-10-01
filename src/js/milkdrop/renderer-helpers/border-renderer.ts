@@ -20,6 +20,7 @@ import type {
   MilkdropRendererBatcher,
 } from '../renderer-adapter';
 import type { MilkdropBorderVisual } from '../types';
+import { sceneHalfExtents } from '../vm/shared';
 
 const BORDER_TRIANGLE_INDICES = [
   0, 1, 4, 1, 4, 5, 2, 3, 6, 3, 7, 6, 2, 0, 6, 0, 4, 6, 3, 7, 5, 1, 3, 5,
@@ -454,7 +455,11 @@ export function renderBorderGroup({
     alphaMultiplier: number,
   ) => Group;
 }) {
-  group.scale.set(Math.max(1, screenAspect), 1, 1);
+  group.scale.set(
+    sceneHalfExtents(screenAspect).x,
+    sceneHalfExtents(screenAspect).y,
+    1,
+  );
   if (
     batcher?.renderBorderGroup?.(
       target,
