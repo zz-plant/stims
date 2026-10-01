@@ -7,6 +7,8 @@ export function WorkspaceToast({
     message: string;
     tone: 'info' | 'warn' | 'error';
     exiting?: boolean;
+    /** Announced to screen readers, not drawn. */
+    quiet?: boolean;
   } | null;
 }) {
   if (!toast) {
@@ -22,7 +24,7 @@ export function WorkspaceToast({
 
   return (
     <output
-      className="stims-shell__toast"
+      className={toast.quiet ? 'stims-shell__sr-only' : 'stims-shell__toast'}
       data-tone={toast.tone}
       // Drives the `toast-exit` keyframe in app-shell.css, which had sat
       // unused because nothing ever set this.
