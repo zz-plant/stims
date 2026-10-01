@@ -202,7 +202,7 @@ Stims pairs its browser-native visualizer client with a serverless edge backend 
 
 - **Site Worker with Static Assets**: The entire production bundle (`dist/`) is served at the edge with smart routing. Navigations hit [`functions/_middleware.ts`](../functions/_middleware.ts) first for dynamic SEO, JSON-LD, and Open Graph rewrites via `HTMLRewriter`.
 - **Workers AI & Vectorize**: `/api/visual-search` runs semantic search using `@cf/baai/bge-base-en-v1.5` embeddings over Vectorize indices (with fallback to cosine scanning over D1 database storage). `/api/generate-preset` uses reasoning and coding models to synthesize `.milk` source on the fly.
-- **D1 SQL & R2 Storage**: Persistent preset galleries, author registries, and social preview assets (`stims-gallery` and `stims-static`).
+- **D1 SQL & R2 Storage**: D1 (`stims-gallery`) holds the preset embeddings behind the `/api/visual-search` fallback; R2 (`stims-static`) holds the preset preview images served to the browse grid and Open Graph cards.
 - **Durable Objects & WebSockets (Hibernation API)**: [`scripts/sync-room-worker.ts`](../scripts/sync-room-worker.ts) powers real-time watch-together sync rooms where hosts stream visualizer parameters to viewers with zero idle cost.
 - **Vite & Vinext Edge Toolchain**: The codebase uses standard Vite Environment APIs and worker entrypoints (`dist/_worker.js`), ensuring seamless compatibility with modern fullstack edge frameworks like Vinext.
 

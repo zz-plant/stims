@@ -29,7 +29,6 @@
 - `POST /api/blend-presets`: Blend wave patterns and color schemes of two presets.
 - `POST /api/refine-preset`: Iteratively refine `.milk` code based on prompt instructions.
 - `POST /api/visual-search`: Search catalog visually by natural language description.
-- `GET /api/presets`: Query community presets catalog.
 
 ## Iframe `postMessage` Protocol
 When `toil.fyi` is embedded in an iframe, send JSON messages to `window`:
