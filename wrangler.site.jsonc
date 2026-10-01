@@ -38,8 +38,7 @@
       "!/preset-meta.json",
       "!/llms.txt",
       "!/llms-full.txt",
-      "!/openapi.json",
-      "!/toys.json"
+      "!/openapi.json"
     ]
   },
   "placement": { "mode": "smart" },

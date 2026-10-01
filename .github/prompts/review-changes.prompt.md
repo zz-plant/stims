@@ -140,5 +140,5 @@ Stop and fix if you see:
 
 **See:**
 - Full gate: `bun run check`
-- Specific gates: `bun run check:architecture`, `bun run check:toys`, etc.
+- Specific gates: `bun run check:architecture`, `bun run check:seo`, etc.
 - Docs maintenance: `docs/DOCS_MAINTENANCE.md`

@@ -21,16 +21,9 @@ import {
   renderOgPng,
 } from '../../scripts/generate-seo.ts';
 
-const milkdrop = {
-  slug: 'milkdrop',
-  title: 'MilkDrop Visualizer',
-  description:
-    'Play and live-edit MilkDrop presets in your browser, with demo audio, hand-picked favorites, and .milk import/export.',
-};
-
 describe('generate-seo sitemap routes', () => {
   test('keeps the compatibility alias out of the sitemap route set', () => {
-    const routes = getSitemapRouteSpecs(milkdrop);
+    const routes = getSitemapRouteSpecs();
     const canonicalPaths = routes
       .filter((route) => route.includeInSitemap)
       .map((route) => route.path);
@@ -54,7 +47,6 @@ describe('generate-seo sitemap routes', () => {
 
   test('builds sitemap entries for the canonical route with the launch OG image', async () => {
     const entries = await buildSitemapEntries('/tmp/stims-test', {
-      milkdrop,
       resolveLastmod: async () => '2026-04-04',
     });
 
@@ -86,7 +78,8 @@ describe('generate-seo sitemap routes', () => {
         priority: '1.0',
         imageLoc: 'https://toil.fyi/og/milkdrop.png',
         imageTitle: 'MilkDrop Visualizer | Stims',
-        imageCaption: milkdrop.description,
+        imageCaption:
+          'Play and live-edit MilkDrop presets in your browser, with demo audio, hand-picked presets, and ways to react to your own music.',
       },
       {
         loc: 'https://toil.fyi/performance/',

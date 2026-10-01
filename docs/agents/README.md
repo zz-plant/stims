@@ -68,7 +68,6 @@ Use [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md) as the checklist before f
 - `src/js/core/` — shared runtime, renderer, shell, audio, and capability systems.
 - `src/js/milkdrop/` — preset runtime, editor, compiler, catalog, and VM behavior.
 - `src/css/` — `tokens.css`, `chrome.css` (panel/dock control system), `app-shell.css` (workspace shell, `@scope (.stims-shell)`), `index.css`/`base.css`, and `*.module.css` component styles.
-- `src/data/toys.json` — loader manifest source for the shipped MilkDrop entry.
 - `.github/workflows/ci.yml` — CI quality gate (tests only; deploys run on Cloudflare Workers Builds from `wrangler.site.jsonc`).
 - `tests/` — automated test suite.
 - `docs/` — contributor and architecture docs.

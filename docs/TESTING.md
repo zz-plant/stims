@@ -85,7 +85,7 @@ bun run check:all     # Guards + Tier 2 tests (all). Use pre-merge on hot files.
 Each gate runs in this sequence:
 
 1. **Preflight**: `check:no-ts-nocheck` (bans `@ts-nocheck` guards) + `check:ci-config` (workflow drift)
-2. **Concurrent Lane (Fail-Fast)**: Asset health (`assets:check`), Biome check, catalog fidelity, catalog integrity, toy manifest drift, SEO surface, CSS token resolution, stale paths, duplicate CSS, architecture boundaries, and TypeScript typecheck run concurrently. If any check fails, remaining concurrent tasks are killed immediately for instant feedback.
+2. **Concurrent Lane (Fail-Fast)**: Asset health (`assets:check`), Biome check, catalog fidelity, catalog integrity, README claim drift, SEO surface, CSS token resolution, stale paths, duplicate CSS, architecture boundaries, and TypeScript typecheck run concurrently. If any check fails, remaining concurrent tasks are killed immediately for instant feedback.
 3. **Postflight**: Test suite (tier depends on mode: none for `quick`, `test:fast` for `full`, `test` for `all`).
 
 ---

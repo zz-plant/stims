@@ -1,11 +1,11 @@
 ---
 name: review-module-loading
-description: "Review changes to app boot, lazy module loading, toy manifest, catalog resolution, or gamepad polling. Use when a PR touches src/js/app.ts, src/js/frontend/load-status.ts, src/js/frontend/use-lazy-factory.ts, src/js/milkdrop/catalog-store*.ts, src/data/toys.json, index.html, or gamepad polling code."
+description: "Review changes to app boot, lazy module loading, catalog resolution, or gamepad polling. Use when a PR touches src/js/app.ts, src/js/frontend/load-status.ts, src/js/frontend/use-lazy-factory.ts, src/js/milkdrop/catalog-store*.ts, index.html, or gamepad polling code."
 ---
 
 # Review App Boot and Module Loading
 
-Use this skill when reviewing or authoring changes to [`src/js/app.ts`](../../../src/js/app.ts), [`src/js/frontend/load-status.ts`](../../../src/js/frontend/load-status.ts), [`src/js/frontend/use-lazy-factory.ts`](../../../src/js/frontend/use-lazy-factory.ts), `src/js/milkdrop/catalog-store*.ts`, [`src/data/toys.json`](../../../src/data/toys.json), [`index.html`](../../../index.html), or [`src/js/utils/browser/gamepad-navigation.ts`](../../../src/js/utils/browser/gamepad-navigation.ts).
+Use this skill when reviewing or authoring changes to [`src/js/app.ts`](../../../src/js/app.ts), [`src/js/frontend/load-status.ts`](../../../src/js/frontend/load-status.ts), [`src/js/frontend/use-lazy-factory.ts`](../../../src/js/frontend/use-lazy-factory.ts), `src/js/milkdrop/catalog-store*.ts`, [`index.html`](../../../index.html), or [`src/js/utils/browser/gamepad-navigation.ts`](../../../src/js/utils/browser/gamepad-navigation.ts).
 
 ## Why this exists
 
@@ -45,9 +45,8 @@ The pre-React DOM shell (`loader.ts`, `router.ts`, `toy-view.ts`, `library-view*
   - Polling stops on unmount/navigation
   - No orphaned requestAnimationFrame loops
 
-### 5. Catalog/manifest consistency
+### 5. Catalog consistency
 
-- [ ] If changing `src/data/toys.json`, the in-memory manifest matches the file
 - [ ] Bundled preset loading (`catalog-store-bundled-loader.ts`) and persisted state (`catalog-store-persistence.ts`) stay consistent when the catalog shape changes
 - [ ] Catalog resolution does not depend on file-system paths that differ between dev and production
 
@@ -60,7 +59,6 @@ The pre-React DOM shell (`loader.ts`, `router.ts`, `toy-view.ts`, `library-view*
 ## What to reject in review
 
 - New `import()` calls in the boot path that don't handle load failure
-- Toy manifest changes without regenerating `toys.json`
 - Gamepad polling that starts before user gesture
 - Implicit ordering assumptions between boot phases
 - Any reintroduction of a second shell that boots the engine outside the adapter seam
