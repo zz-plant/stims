@@ -7,10 +7,20 @@ name: Release
 # reviewed in the PR that cut the release; `release:notes` refuses a tag that
 # disagrees with package.json or has no notes, so a mistyped tag publishes
 # nothing.
+#
+# It can also be run by hand from the Actions tab on main, for anyone who
+# cannot push tags: it tags `commit` (default: the head of main) as
+# v<that commit's package.json version> and publishes the same notes.
 
 on:
   push:
     tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Commit on main to release (default: the head of main)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -19,27 +29,60 @@ jobs:
   publish:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
+    # Releases are cut from main: a manual run on any other branch does nothing.
+    if: github.event_name == 'push' || github.ref == 'refs/heads/main'
     # Creating a release is a write; only this job is granted it.
     permissions:
       contents: write
     steps:
       # The local setup action is read from the checkout, so check out first.
+      # Full history, so a manual run can check the commit is on main.
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.commit || github.sha }}
+          fetch-depth: 0
 
       - name: Setup environment
         uses: ./.github/actions/setup-stims
         with:
           checkout: 'false'
 
-      - name: Write release notes
-        run: bun run release:notes -- "$GITHUB_REF_NAME" > "$RUNNER_TEMP/release-notes.md"
+      - name: Resolve tag and commit
+        id: release
+        run: |
+          sha="$(git rev-parse HEAD)"
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            tag="$GITHUB_REF_NAME"
+          else
+            if ! git merge-base --is-ancestor "$sha" origin/main; then
+              echo "::error::$sha is not on main; releases are cut from main."
+              exit 1
+            fi
+            tag="v$(jq -r .version package.json)"
+          fi
+          existing="$(git rev-parse -q --verify "refs/tags/$tag^{commit}" || true)"
+          if [ -n "$existing" ] && [ "$existing" != "$sha" ]; then
+            echo "::error::$tag already points at $existing, not $sha."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
+      - name: Write release notes
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: bun run release:notes -- "$TAG" > "$RUNNER_TEMP/release-notes.md"
+
+      # A tag push already made the tag; a manual run creates it at SHA. Either
+      # way, an existing release for TAG fails this step and publishes nothing.
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          SHA: ${{ steps.release.outputs.sha }}
         run: >-
-          gh release create "$GITHUB_REF_NAME"
-          --verify-tag
-          --title "Stims $GITHUB_REF_NAME"
+          gh release create "$TAG"
+          --target "$SHA"
+          --title "Stims $TAG"
           --notes-file "$RUNNER_TEMP/release-notes.md"
