@@ -135,6 +135,8 @@ describe('control scales', () => {
         'tail',
       );
       expect(formatControlValue(0.25, { scale: 'linear' })).toBe('0.25');
+      // a count moves in whole steps
+      expect(formatControlValue(5, { scale: 'linear', step: 1 })).toBe('5');
     });
   });
 });

@@ -23,7 +23,10 @@ export type ScaleKind =
    * seconds. On a linear 0.8..1.0 track those are 3px apart. */
   | 'retention';
 
-export type ControlSection = 'warp' | 'wave' | 'post' | 'frame';
+/** `element` holds a custom wave's or shape's own settings, shown when one
+ * is picked in the Tune pane (slot-controls.ts); it has no CONTROL_SECTIONS
+ * entry because those controls are built per slot, not listed here. */
+export type ControlSection = 'warp' | 'wave' | 'post' | 'frame' | 'element';
 
 /**
  * The pane is organised by what a field *does*, not by which widget it
@@ -202,7 +205,8 @@ export function positionToValue(
  * tail length, everything else as the raw value the preset holds. */
 export function formatControlValue(
   value: number,
-  config: Pick<ScalarControlConfig, 'scale' | 'unit'>,
+  config: Pick<ScalarControlConfig, 'scale' | 'unit'> &
+    Partial<Pick<ScalarControlConfig, 'step'>>,
 ): string {
   if (config.scale === 'retention') {
     const seconds = retentionToSeconds(value);
@@ -213,7 +217,9 @@ export function formatControlValue(
   if (config.scale === 'ratio') {
     return `${value.toFixed(2)}×`;
   }
-  return `${value.toFixed(2)}${config.unit ?? ''}`;
+  // A count (sides, samples) moves in whole steps; "5.00 sides" reads wrong.
+  const digits = (config.step ?? 0) >= 1 ? 0 : 2;
+  return `${value.toFixed(digits)}${config.unit ?? ''}`;
 }
 
 // ── Catalogue ───────────────────────────────────────────────────────

@@ -122,6 +122,7 @@ import {
   mutatePresetStyle,
   PRESET_MUTATION_STYLES,
 } from '../preset-mutations.ts';
+import { parseSlotName, slotControls } from '../slot-controls.ts';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { subscribeVariables } from '../variable-probe.ts';
 import { createMilkdropLanguage } from './editor-language';
@@ -924,6 +925,18 @@ export class EditorPanel {
    * that field's value under. */
   private readonly liveTickNames = new Map<string, string>();
   private disposeLiveFeed: (() => void) | null = null;
+  /** The custom wave or shape Tune shows controls for (`shape_1`). */
+  private tunedSlot: string | null = null;
+  private slotWrap: HTMLElement | null = null;
+  private slotPicker: HTMLSelectElement | null = null;
+  private slotControlsWrap: HTMLElement | null = null;
+  private slotSignature = '';
+  /** What the shown slot's controls registered, so the next pick can take
+   * it back out of the shared control maps. */
+  private slotKeys: string[] = [];
+  private slotColorLabels: string[] = [];
+  /** Selects a dock tab by pane id; set once the tabs exist. */
+  private selectPane: ((id: string) => void) | null = null;
   private midiTargets: Set<string> = new Set();
   // The slider whose "learn" button is currently armed, waiting for the
   // next CC from any device — mirrors webMidiService.getLearnTarget() but
@@ -1300,7 +1313,9 @@ export class EditorPanel {
     this.referencePane = new ReferencePane(host);
     this.insertPane = new InsertPane(host);
     this.compatPane = new CompatPane(host);
-    this.outlinePane = new OutlinePane(host);
+    this.outlinePane = new OutlinePane(host, {
+      onTuneSlot: (slot) => this.showSlotInTune(slot),
+    });
     this.inspectPane = new InspectPane(host, {
       onSetStageFrozen: callbacks.onSetStageFrozen,
       onStepFrame: callbacks.onStepFrame,
@@ -1366,6 +1381,10 @@ export class EditorPanel {
       tabs.appendChild(tab);
       dockBody.appendChild(pane.content);
     });
+    this.selectPane = (id) => {
+      const tab = tabButtons[panes.findIndex((pane) => pane.id === id)];
+      if (tab) selectTab(tab);
+    };
     tabs.addEventListener('keydown', (event) => {
       const current = tabButtons.indexOf(event.target as HTMLButtonElement);
       // The dock toggle shares the strip but is not a tab; leave its keys
@@ -2199,6 +2218,7 @@ export class EditorPanel {
         : null,
     );
     this.paintKnobs(state.source);
+    this.paintSlots(state.latestCompiled ?? state.activeCompiled);
     // Fidelity degradation only. Error counts are the status label's and the
     // problems strip's job — this flag reports the one thing neither can:
     // the stage is rendering a simplified version of what compiled.
@@ -2728,11 +2748,151 @@ export class EditorPanel {
     this.knobsWrap.hidden = true;
     panel.appendChild(this.knobsWrap);
 
+    // One custom wave's or shape's own settings, picked here or from its
+    // Outline row. Hidden for presets that have none.
+    this.slotWrap = document.createElement('section');
+    this.slotWrap.className = 'stims-editor__section stims-editor__slot';
+    this.slotWrap.dataset.section = 'slot';
+    this.slotWrap.setAttribute('aria-label', 'Custom wave or shape');
+    this.slotWrap.hidden = true;
+    const pickerRow = document.createElement('label');
+    pickerRow.className = 'stims-editor__slot-picker';
+    const pickerLabel = document.createElement('span');
+    pickerLabel.className = 'stims-editor__slider-label';
+    pickerLabel.textContent = 'Wave or shape';
+    const picker = document.createElement('select');
+    picker.className = 'stims-editor__mod-select';
+    picker.addEventListener('change', () =>
+      this.tuneSlot(picker.value || null),
+    );
+    this.slotPicker = picker;
+    pickerRow.append(pickerLabel, picker);
+    this.slotControlsWrap = document.createElement('div');
+    this.slotControlsWrap.className = 'stims-editor__slot-controls';
+    this.slotWrap.append(pickerRow, this.slotControlsWrap);
+    panel.appendChild(this.slotWrap);
+
     for (const section of CONTROL_SECTIONS) {
       panel.appendChild(this.renderSection(section));
     }
 
     return panel;
+  }
+
+  /**
+   * The Tune pane's wave-or-shape picker, one entry per custom wave and shape
+   * the preset defines, marked when it is switched off. Rebuilt only when
+   * that list changes, so typing does not close an open picker.
+   */
+  private paintSlots(compiled: MilkdropEditorSessionState['activeCompiled']) {
+    const picker = this.slotPicker;
+    if (!picker || !this.slotWrap) return;
+    const slots = compiled
+      ? [
+          ...compiled.ir.customWaves.map((wave) => ({
+            name: `wave_${wave.index - 1}`,
+            on: Number(wave.fields.enabled ?? 0) > 0,
+          })),
+          ...compiled.ir.customShapes.map((shape) => ({
+            name: `shape_${shape.index - 1}`,
+            on: Number(shape.fields.enabled ?? 0) > 0,
+          })),
+        ]
+      : [];
+    const signature = slots.map((slot) => `${slot.name}:${slot.on}`).join('|');
+    if (signature === this.slotSignature) return;
+    this.slotSignature = signature;
+    this.slotWrap.hidden = slots.length === 0;
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = 'Pick one to tune';
+    picker.replaceChildren(
+      none,
+      ...slots.map((slot) => {
+        const option = document.createElement('option');
+        option.value = slot.name;
+        option.textContent = slot.on ? slot.name : `${slot.name} (off)`;
+        return option;
+      }),
+    );
+    if (
+      this.tunedSlot !== null &&
+      !slots.some((slot) => slot.name === this.tunedSlot)
+    ) {
+      this.tuneSlot(null);
+    } else {
+      picker.value = this.tunedSlot ?? '';
+    }
+  }
+
+  /**
+   * Shows one custom wave's or shape's controls in Tune: the selection
+   * decides what the properties show, as in Framer. The controls are the
+   * pane's own faders, swatches and switches, registered in the same maps,
+   * so the buffer keeps them current and each move is a line in the draft.
+   */
+  tuneSlot(name: string | null) {
+    for (const key of this.slotKeys) {
+      this.sliderInputs.delete(key);
+      this.toggleInputs.delete(key);
+    }
+    for (const label of this.slotColorLabels) this.colorInputs.delete(label);
+    const taken = new Set(this.slotKeys);
+    this.fieldStateCells = this.fieldStateCells.filter(
+      (cell) => !cell.keys.some((key) => taken.has(key)),
+    );
+    this.slotKeys = [];
+    this.slotColorLabels = [];
+
+    const parsed = name ? parseSlotName(name) : null;
+    this.tunedSlot = parsed ? name : null;
+    if (this.slotPicker) this.slotPicker.value = this.tunedSlot ?? '';
+    const wrap = this.slotControlsWrap;
+    if (!wrap) return;
+    if (!parsed) {
+      wrap.replaceChildren();
+      return;
+    }
+
+    const controls = slotControls(parsed.kind, parsed.slot);
+    const toggles = document.createElement('div');
+    toggles.className = 'stims-editor__toggle-bank';
+    for (const config of controls.toggles) {
+      toggles.appendChild(this.renderToggleControl(config));
+    }
+    const colors = document.createElement('div');
+    colors.className = 'stims-editor__colors';
+    for (const group of controls.colors) {
+      colors.appendChild(this.renderColorGroup(group));
+    }
+    const sliders = document.createElement('div');
+    sliders.className = 'stims-editor__sliders';
+    for (const config of controls.scalars) {
+      sliders.appendChild(
+        this.renderScalarControl(config, { perFrameField: false }),
+      );
+    }
+    wrap.replaceChildren(toggles, colors, sliders);
+    this.slotKeys = [
+      ...controls.toggles.map((config) => config.key),
+      ...controls.scalars.map((config) => config.key),
+      ...controls.colors.flatMap((group) => [
+        ...group.rgb,
+        ...(group.alpha ? [group.alpha.key] : []),
+      ]),
+    ];
+    this.slotColorLabels = controls.colors.map((group) => group.label);
+    this.updateSlidersFromDoc();
+    this.updateColorsFromDoc();
+    this.updateTogglesFromDoc();
+    this.refreshSliderMidiState();
+  }
+
+  /** From an Outline row: tune that wave or shape and bring Tune forward. */
+  private showSlotInTune(name: string) {
+    this.tuneSlot(name);
+    this.selectPane?.('tune');
+    this.slotWrap?.scrollIntoView?.({ block: 'nearest' });
   }
 
   /**
@@ -2907,7 +3067,16 @@ export class EditorPanel {
    * own units, MIDI-learn, reset, and a modulation control that writes the
    * per_frame equation when a fader alone cannot reach the field.
    */
-  private renderScalarControl(s: ScalarControlConfig): HTMLElement {
+  private renderScalarControl(
+    s: ScalarControlConfig,
+    {
+      perFrameField = true,
+    }: {
+      /** MIDI-learn and modulation drive a per-frame value, which only a
+       * built-in field has; a custom wave or shape field has neither. */
+      perFrameField?: boolean;
+    } = {},
+  ): HTMLElement {
     const row = document.createElement('div');
     row.className = 'stims-editor__slider';
 
@@ -3000,7 +3169,11 @@ export class EditorPanel {
     liveTick.setAttribute('aria-hidden', 'true');
     track.append(input, liveTick);
 
-    controls.append(track, learnButton, resetButton);
+    controls.append(
+      track,
+      ...(perFrameField ? [learnButton] : []),
+      resetButton,
+    );
 
     const liveHint = document.createElement('div');
     liveHint.className = 'stims-editor__live-hint';
@@ -3029,7 +3202,12 @@ export class EditorPanel {
     head.className = 'stims-editor__control-head';
     head.append(label, this.createFieldStateChip([s.key], s.label), valDisplay);
 
-    row.append(head, controls, liveHint, this.renderModulationRow(s));
+    row.append(
+      head,
+      controls,
+      liveHint,
+      ...(perFrameField ? [this.renderModulationRow(s)] : []),
+    );
     return row;
   }
 

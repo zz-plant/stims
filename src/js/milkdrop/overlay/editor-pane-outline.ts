@@ -107,7 +107,13 @@ export class OutlinePane {
   /** The preset the solo/mute toggles act on. */
   private outlinePresetId: string | null = null;
 
-  constructor(private readonly host: EditorPaneHost) {
+  constructor(
+    private readonly host: EditorPaneHost,
+    private readonly callbacks: {
+      /** Show a custom wave's or shape's controls (`shape_1`) in Tune. */
+      onTuneSlot?: (slot: string) => void;
+    } = {},
+  ) {
     this.element = this.renderOutlinePane();
   }
 
@@ -279,6 +285,18 @@ export class OutlinePane {
       return button;
     };
     wrap.append(row, makeToggle('Solo', 'solo'), makeToggle('Mute', 'mute'));
+    // A wave or shape has settings of its own; Tune is where they are.
+    const onTuneSlot = this.callbacks.onTuneSlot;
+    if (onTuneSlot && (element.kind === 'wave' || element.kind === 'shape')) {
+      const tune = document.createElement('button');
+      tune.type = 'button';
+      tune.className = 'stims-editor__btn stims-editor__outline-isolate';
+      tune.textContent = 'Tune';
+      tune.setAttribute('aria-label', `Tune ${name}`);
+      tune.title = `Show ${name}'s settings in Tune`;
+      tune.addEventListener('click', () => onTuneSlot(name));
+      wrap.appendChild(tune);
+    }
     return wrap;
   }
   /** Reflect the current solo/mute state on every Outline toggle. */
