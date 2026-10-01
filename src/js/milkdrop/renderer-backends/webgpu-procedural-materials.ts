@@ -1514,7 +1514,6 @@ const PROCEDURAL_WAVE_POINT_WGSL = `
     let blendedSampleOffset32 = blendedSample.y;
     let blendedSampleOffset64 = blendedSample.z;
     let blendedSampleOffset96 = blendedSample.w;
-    let parity = sampleMisc.x;
 
     let pointCenterX = mix(previousCenterX, centerX, blendMix);
     let pointCenterY = mix(previousCenterY, centerY, blendMix);
@@ -1558,7 +1557,9 @@ const PROCEDURAL_WAVE_POINT_WGSL = `
       // Intra-frame momentum (simplified for GPU).
       x = x * w2 + w1 * blendedSampleOffset64 * pointScale;
       y = y * w2 + w1 * blendedSampleOffset96 * pointScale;
-    } else if (mode < 5.5) {
+    } else {
+      // Modes 6 and 7 (line waves) are built on the CPU and never reach
+      // this shader; see buildMilkdropLineWave in vm/frame-generation.ts.
       // ExplosiveHash — mono collapse of MilkDrop's
       // x0 = R[i]*L[i+32] + L[i]*R[i+32], y0 = R[i]^2 - L[i+32]^2,
       // with fWaveScale applied to each factor (pointScale squared).
@@ -1570,19 +1571,6 @@ const PROCEDURAL_WAVE_POINT_WGSL = `
       let sinR = sin(rot);
       x = pointCenterX + (x0 * cosR - y0 * sinR);
       y = pointCenterY + (x0 * sinR + y0 * cosR);
-    } else if (mode < 6.5) {
-      // Line — matches CPU path (frame-generation.ts mode 6).
-      x = -1.0 + 2.0 * t;
-      y = pointCenterY + blendedSampleValue * 0.25 * pointScale;
-    } else {
-      let separation = 0.1 + pointMystery * 0.2;
-      x = -1.0 + 2.0 * t;
-      // select(falseValue, trueValue, condition) — WGSL has no ?: operator.
-      y = pointCenterY + select(
-        blendedSampleOffset32 * pointScale * 0.25 - separation,
-        blendedSampleValue * pointScale * 0.25 + separation,
-        parity < 0.5
-      );
     }
 
     let point = vec2<f32>(x, y);

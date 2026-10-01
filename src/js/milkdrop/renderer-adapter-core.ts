@@ -992,6 +992,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;
+      /** Per-point RGBA, as on a wave visual (a mode 7 trail hides its
+       * bridge between the two lines this way). */
+      colors?: ArrayLike<number>;
+      perPointAlpha?: boolean;
     }>,
     alphaMultiplier = 1,
   ) {
