@@ -368,7 +368,22 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     ),
     getMilkdropLayerRenderOrder('blend-motion-vectors'),
   );
-  private readonly feedback: MilkdropFeedbackManager | null;
+  private feedback: MilkdropFeedbackManager | null;
+  /**
+   * The outgoing preset's deck while a live crossfade runs: the feedback
+   * manager it was rendering on, still running its own chain offscreen, and
+   * the execution plan it was compiled under. See beginLiveBlend.
+   */
+  private outgoingDeck: {
+    feedback: MilkdropFeedbackManager;
+    descriptorPlan: MilkdropWebGpuDescriptorPlan | null;
+  } | null = null;
+  /** What the feedback managers were last sized and scaled to, so a deck
+   * created mid-session matches the one it replaces. */
+  private feedbackSize = { width: 1, height: 1 };
+  private feedbackMultipliers: Partial<{
+    feedbackResolutionMultiplier: number;
+  }> | null = null;
   private readonly sceneOwner: ReturnType<
     typeof createMilkdropRendererAdapterSceneOwner
   >;
@@ -469,9 +484,13 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       this.createFeedbackManager
     ) {
       const size = renderer.getSize(new Vector2());
+      this.feedbackSize = {
+        width: Math.max(1, Math.round(size.x)),
+        height: Math.max(1, Math.round(size.y)),
+      };
       this.feedback = this.createFeedbackManager(
-        Math.max(1, Math.round(size.x)),
-        Math.max(1, Math.round(size.y)),
+        this.feedbackSize.width,
+        this.feedbackSize.height,
       );
     } else {
       this.feedback = null;
@@ -520,7 +539,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   resize(width: number, height: number) {
+    this.feedbackSize = { width, height };
     this.feedback?.resize(width, height);
+    this.outgoingDeck?.feedback.resize(width, height);
   }
 
   setAdaptiveQuality(
@@ -528,7 +549,124 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       feedbackResolutionMultiplier: number;
     }>,
   ) {
+    this.feedbackMultipliers = { ...multipliers };
     this.feedback?.setAdaptiveQuality?.(multipliers);
+    this.outgoingDeck?.feedback.setAdaptiveQuality?.(multipliers);
+  }
+
+  /**
+   * Starts a live crossfade: the preset about to be replaced keeps rendering
+   * on its own feedback manager — its own warp, comp shader and history —
+   * while the incoming preset gets a fresh one, seeded with the outgoing
+   * history so it warps the old picture, as projectM's DrawInitialImage
+   * does. Each frame the outgoing deck renders offscreen and the incoming
+   * deck's present pass dissolves out of that live frame instead of a frozen
+   * snapshot.
+   *
+   * Call before setPreset(), which replaces the execution plan the outgoing
+   * deck still needs. Returns false — the crossfade then stays on the
+   * snapshot — when there is no feedback chain to split, or one is already
+   * split: a switch made during a live crossfade collapses it first
+   * (endLiveBlend).
+   */
+  beginLiveBlend(): boolean {
+    if (
+      this.outgoingDeck ||
+      !this.feedback ||
+      !this.createFeedbackManager ||
+      !isFeedbackCapableRenderer(this.renderer)
+    ) {
+      return false;
+    }
+    const incoming = this.createFeedbackManager(
+      this.feedbackSize.width,
+      this.feedbackSize.height,
+    );
+    if (this.feedbackMultipliers) {
+      incoming.setAdaptiveQuality?.(this.feedbackMultipliers);
+    }
+    incoming.seedHistoryFrom?.(this.renderer, this.feedback);
+    this.outgoingDeck = {
+      feedback: this.feedback,
+      descriptorPlan: this.webgpuDescriptorPlan,
+    };
+    this.feedback = incoming;
+    return true;
+  }
+
+  /** Ends a live crossfade and releases the outgoing deck. */
+  endLiveBlend() {
+    if (!this.outgoingDeck) return;
+    this.feedback?.setTransitionSource?.(null);
+    this.outgoingDeck.feedback.dispose();
+    this.outgoingDeck = null;
+  }
+
+  isLiveBlendActive(): boolean {
+    return this.outgoingDeck !== null;
+  }
+
+  /**
+   * Runs `work` as if `deck` were the current one — its feedback manager and
+   * execution plan — and restores the incoming deck after. The outgoing
+   * deck's geometry and composite state are built through the same paths as
+   * the incoming deck's, and those read both: the plan decides which visuals
+   * are procedural and how the feedback composites, and textured shapes
+   * sample the feedback history of the deck they are drawn on.
+   */
+  private withDeck<T>(
+    deck: {
+      feedback: MilkdropFeedbackManager;
+      descriptorPlan: MilkdropWebGpuDescriptorPlan | null;
+    },
+    work: () => T,
+  ): T {
+    const feedback = this.feedback;
+    const plan = this.webgpuDescriptorPlan;
+    this.feedback = deck.feedback;
+    this.webgpuDescriptorPlan = deck.descriptorPlan;
+    try {
+      return work();
+    } finally {
+      this.feedback = feedback;
+      this.webgpuDescriptorPlan = plan;
+    }
+  }
+
+  /**
+   * Hides one preset's geometry and returns what restores it: 'main' is the
+   * current (incoming) preset, 'blend' the outgoing one. Each deck of a live
+   * crossfade renders only its own preset's geometry into its feedback.
+   */
+  private hideLayer(layer: 'main' | 'blend'): () => void {
+    const objects =
+      layer === 'main'
+        ? [
+            this.meshLines,
+            this.mainWaveGroup,
+            this.customWaveGroup,
+            this.particleFieldGroup,
+            this.shapesGroup,
+            this.borderGroup,
+            this.motionVectorGroup,
+          ]
+        : [
+            this.blendWaveGroup,
+            this.blendCustomWaveGroup,
+            this.blendParticleFieldGroup,
+            this.blendShapeGroup,
+            this.blendBorderGroup,
+            this.blendMotionVectorGroup,
+          ];
+    const wasVisible = objects.map((object) => object.visible);
+    for (const object of objects) object.visible = false;
+    const restoreBatched = this.batcher?.hideLayer?.(layer);
+    return () => {
+      objects.forEach((object, index) => {
+        object.visible = wasVisible[index] ?? true;
+      });
+      restoreBatched?.();
+    };
   }
 
   private renderWaveGroup(
@@ -1047,6 +1185,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       BufferGeometry,
       LineBasicMaterial | ShaderMaterial
     > = this.proceduralMotionVectors,
+    cpuLayer?: Parameters<typeof renderMotionVectorsHelper>[0]['cpuLayer'],
   ) {
     return renderMotionVectorsHelper({
       backend: this.backend,
@@ -1057,6 +1196,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       previousFrame,
       blendMix,
       cpuGroup,
+      cpuLayer,
       proceduralObject,
       clearGroup,
       renderLineVisualGroup: (target, group, lines, nextAlphaMultiplier) =>
@@ -1321,6 +1461,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         blendMix,
         this.blendMotionVectorCpuGroup,
         this.blendProceduralMotionVectors,
+        { target: 'blend-motion-vectors', motionVectors: prev.motionVectors },
       );
       if (
         !this.blendProceduralMotionVectors.visible &&
@@ -1432,11 +1573,20 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       );
 
       const blend = payload.blendState;
+      const liveDeck = blend?.mode === 'gpu' ? this.outgoingDeck : null;
       if (blend) {
         if (!this.blendVisualsVisible) {
           this.setBlendVisualsVisible(true);
         }
-        this.renderBlendVisuals(payload, blend);
+        if (liveDeck) {
+          // The outgoing preset draws at full strength on its own deck; the
+          // present pass's dissolve does the fading.
+          this.withDeck(liveDeck, () =>
+            this.renderBlendVisuals(payload, { ...blend, alpha: 1 }),
+          );
+        } else {
+          this.renderBlendVisuals(payload, blend);
+        }
       } else if (this.blendVisualsVisible) {
         // No blend this frame (settled, cut/cancelled, or gate-suspended):
         // the blend groups still hold the outgoing preset's last geometry
@@ -1453,46 +1603,38 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       ) {
         return false;
       }
-      const compositeState = this.buildFeedbackCompositeState(
-        payload.frameState,
-      );
-      this.feedback.applyCompositeState(compositeState);
-      // Shader presets get NO heuristic postprocessing profile on any
-      // backend. On WebGL the app-level composer is disposed for shader
-      // presets and the WebGL feedback manager never implemented
-      // applyPostprocessingProfile, so the profile suite (bloom, afterimage,
-      // film grain, chroma offset) silently never applied there — WebGL's
-      // clean output is the visual reference. Feeding the profile to the
-      // WebGPU manager made bright comp presets measurably brighter than
-      // WebGL (bloom + grain + afterimage stack). MilkDrop-native post
-      // effects (echo, vignette, gamma, …) still flow through
-      // applyCompositeState above. The WebGPU manager keeps a working
-      // display-frame afterimage/bloom/grain implementation behind
-      // applyPostprocessingProfile for when profiles are deliberately
-      // (re)enabled on both backends.
-      this.feedback.applyPostprocessingProfile?.(null);
-      // The warp grid carries per-pixel transforms that no uniform can, so a
-      // preset whose dx/dy vary across the screen finally warps on WebGL.
-      this.feedback.setWarpField?.(payload.frameState.warpField ?? null);
-      if (payload.resetHistory) {
-        this.feedback.clearHistory?.();
-      }
-      const audioTex = this.audioTexture.getTexture();
-      if (this.feedback.setAudioTexture) {
-        this.feedback.setAudioTexture(audioTex);
-      } else {
-        const compositeMat = (
-          this.feedback as {
-            compositeMaterial?: {
-              uniforms?: Record<string, { value: unknown }>;
-            };
-          }
-        ).compositeMaterial;
-        if (audioTex && compositeMat?.uniforms?.audioTex) {
-          compositeMat.uniforms.audioTex.value = audioTex;
+      if (liveDeck && blend?.mode === 'gpu') {
+        const outgoingFrame = blend.previousFrame;
+        const showMain = this.hideLayer('main');
+        let outgoingRendered = false;
+        try {
+          outgoingRendered = this.withDeck(liveDeck, () =>
+            this.renderFeedbackDeck(outgoingFrame, payload.resetHistory, false),
+          );
+        } finally {
+          showMain();
+        }
+        const showBlend = this.hideLayer('blend');
+        try {
+          this.feedback.setTransitionSource?.(
+            outgoingRendered
+              ? (liveDeck.feedback.getDisplayTexture?.() ?? null)
+              : null,
+          );
+          return this.renderFeedbackDeck(
+            payload.frameState,
+            payload.resetHistory,
+            true,
+          );
+        } finally {
+          showBlend();
         }
       }
-      return this.feedback.render(this.renderer, this.scene, this.camera);
+      return this.renderFeedbackDeck(
+        payload.frameState,
+        payload.resetHistory,
+        true,
+      );
     } catch (error) {
       console.warn(
         'ThreeMilkdropAdapter: render failed (potentially during fallback/transition)',
@@ -1500,6 +1642,64 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       );
       return false;
     }
+  }
+
+  /**
+   * Feeds the current deck (this.feedback — see withDeck) its frame's
+   * composite state and renders it: presented for the incoming deck,
+   * offscreen for the outgoing deck of a live crossfade.
+   */
+  private renderFeedbackDeck(
+    frameState: MilkdropRenderPayload['frameState'],
+    resetHistory: boolean | undefined,
+    present: boolean,
+  ): boolean {
+    const feedback = this.feedback;
+    const renderer = this.renderer;
+    if (!feedback || !isFeedbackCapableRenderer(renderer)) {
+      return false;
+    }
+    const compositeState = this.buildFeedbackCompositeState(frameState);
+    feedback.applyCompositeState(compositeState);
+    // Shader presets get NO heuristic postprocessing profile on any
+    // backend. On WebGL the app-level composer is disposed for shader
+    // presets and the WebGL feedback manager never implemented
+    // applyPostprocessingProfile, so the profile suite (bloom, afterimage,
+    // film grain, chroma offset) silently never applied there — WebGL's
+    // clean output is the visual reference. Feeding the profile to the
+    // WebGPU manager made bright comp presets measurably brighter than
+    // WebGL (bloom + grain + afterimage stack). MilkDrop-native post
+    // effects (echo, vignette, gamma, …) still flow through
+    // applyCompositeState above. The WebGPU manager keeps a working
+    // display-frame afterimage/bloom/grain implementation behind
+    // applyPostprocessingProfile for when profiles are deliberately
+    // (re)enabled on both backends.
+    feedback.applyPostprocessingProfile?.(null);
+    // The warp grid carries per-pixel transforms that no uniform can, so a
+    // preset whose dx/dy vary across the screen finally warps on WebGL.
+    feedback.setWarpField?.(frameState.warpField ?? null);
+    if (resetHistory) {
+      feedback.clearHistory?.();
+    }
+    const audioTex = this.audioTexture.getTexture();
+    if (feedback.setAudioTexture) {
+      feedback.setAudioTexture(audioTex);
+    } else {
+      const compositeMat = (
+        feedback as {
+          compositeMaterial?: {
+            uniforms?: Record<string, { value: unknown }>;
+          };
+        }
+      ).compositeMaterial;
+      if (audioTex && compositeMat?.uniforms?.audioTex) {
+        compositeMat.uniforms.audioTex.value = audioTex;
+      }
+    }
+    return present
+      ? feedback.render(renderer, this.scene, this.camera)
+      : (feedback.renderOffscreen?.(renderer, this.scene, this.camera) ??
+          false);
   }
 
   getAudioTexture(): Texture | null {
@@ -1544,6 +1744,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     // in the worst case, a stuck-black canvas. Only release what this
     // instance exclusively owns.
     this.batcher?.dispose();
+    this.outgoingDeck?.feedback.dispose();
+    this.outgoingDeck = null;
     this.feedback?.dispose();
     this.audioTexture.dispose();
     this.scene.remove(this.root);

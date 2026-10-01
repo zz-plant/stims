@@ -84,6 +84,10 @@ export type MilkdropRendererBatcher = {
    * groups, so blend end must hide them here or their last synced
    * instances keep rendering as a ghost of the outgoing preset. */
   hideBlendTargets?: () => void;
+  /** Hides one layer's batched targets — 'main' or the 'blend' layer — and
+   * returns what restores their visibility. Each deck of a live crossfade
+   * renders only its own preset's geometry. */
+  hideLayer?: (layer: 'main' | 'blend') => () => void;
   disposeWithCaches?: () => void;
   setShapeTexture?: (texture: Texture | null) => void;
   renderWaveGroup?: (

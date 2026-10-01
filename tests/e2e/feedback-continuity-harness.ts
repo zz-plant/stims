@@ -16,6 +16,7 @@ import {
   OrthographicCamera,
   PlaneGeometry,
   Scene,
+  type Texture,
   UnsignedByteType,
   WebGLRenderer,
 } from 'three';
@@ -50,6 +51,14 @@ type HarnessManager = {
     scene: Scene,
     camera: OrthographicCamera,
   ): boolean;
+  renderOffscreen(
+    renderer: HarnessRenderer,
+    scene: Scene,
+    camera: OrthographicCamera,
+  ): boolean;
+  getDisplayTexture(): Texture | null;
+  setTransitionSource(texture: Texture | null): void;
+  seedHistoryFrom(renderer: HarnessRenderer, source: HarnessManager): boolean;
   saveCurrentFrame(): void;
   setTransitionBlend(alpha: number): void;
   setAdaptiveQuality(options: { feedbackResolutionMultiplier: number }): void;
@@ -124,28 +133,48 @@ export async function createFeedbackHarness(backend: FeedbackHarnessBackend) {
     };
   }
 
-  const manager = (backend === 'webgpu'
-    ? createMilkdropWebGPUFeedbackManager(WIDTH, HEIGHT)
-    : createMilkdropWebGLFeedbackManager(
-        WIDTH,
-        HEIGHT,
-      )) as unknown as HarnessManager;
+  const createManager = () =>
+    (backend === 'webgpu'
+      ? createMilkdropWebGPUFeedbackManager(WIDTH, HEIGHT)
+      : createMilkdropWebGLFeedbackManager(
+          WIDTH,
+          HEIGHT,
+        )) as unknown as HarnessManager;
 
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
   camera.position.z = 1;
-  const scene = new Scene();
-  const quad = new Mesh(
-    new PlaneGeometry(1, 1),
-    new MeshBasicMaterial({ color: 0xffffff }),
-  );
-  scene.add(quad);
-  const setScene = (drawing: FeedbackHarnessScene) => {
-    quad.visible = drawing !== 'empty';
-    // Quadrant centres of the [-1, 1] clip square.
-    if (drawing === 'incoming') quad.position.set(0.5, -0.5, 0);
-    else quad.position.set(-0.5, 0.5, 0);
+
+  /** A source scene of one bright quad; see FeedbackHarnessScene. */
+  const createQuadScene = () => {
+    const scene = new Scene();
+    const quad = new Mesh(
+      new PlaneGeometry(1, 1),
+      new MeshBasicMaterial({ color: 0xffffff }),
+    );
+    scene.add(quad);
+    const setScene = (drawing: FeedbackHarnessScene) => {
+      quad.visible = drawing !== 'empty';
+      // Quadrant centres of the [-1, 1] clip square.
+      if (drawing === 'incoming') quad.position.set(0.5, -0.5, 0);
+      else quad.position.set(-0.5, 0.5, 0);
+    };
+    setScene('outgoing');
+    return {
+      scene,
+      setScene,
+      /** Puts the quad's centre at (x, y) in clip space. */
+      moveQuad: (x: number, y: number) => quad.position.set(x, y, 0),
+      dispose: () => {
+        quad.geometry.dispose();
+        quad.material.dispose();
+      },
+    };
   };
-  setScene('outgoing');
+
+  const manager = createManager();
+  const source = createQuadScene();
+  const scene = source.scene;
+  const decks: Array<{ dispose(): void }> = [];
 
   return {
     /** Renders one frame and returns what it presented. */
@@ -154,7 +183,8 @@ export async function createFeedbackHarness(backend: FeedbackHarnessBackend) {
       return readFrame();
     },
     /** What the scene draws from the next frame on; see FeedbackHarnessScene. */
-    setScene,
+    setScene: source.setScene,
+    moveQuad: source.moveQuad,
     saveCurrentFrame: () => manager.saveCurrentFrame(),
     setTransitionBlend: (alpha: number) => manager.setTransitionBlend(alpha),
     setFeedbackResolution(multiplier: number) {
@@ -163,12 +193,41 @@ export async function createFeedbackHarness(backend: FeedbackHarnessBackend) {
       // settle both now so the caller sees the new size on the next frame.
       manager.resize(WIDTH, HEIGHT);
     },
+    /**
+     * A second feedback manager on the same renderer, with its own scene —
+     * the other deck of a live crossfade. It never presents: it renders
+     * offscreen for this harness's present pass to dissolve out of.
+     */
+    addDeck() {
+      const deckManager = createManager();
+      const deckSource = createQuadScene();
+      const deck = {
+        manager: deckManager,
+        setScene: deckSource.setScene,
+        moveQuad: deckSource.moveQuad,
+        renderOffscreen: () =>
+          deckManager.renderOffscreen(renderer, deckSource.scene, camera),
+        dispose() {
+          deckManager.dispose();
+          deckSource.dispose();
+        },
+      };
+      decks.push(deck);
+      return deck;
+    },
+    /** Dissolves out of `deck`'s live frame, or back to the snapshot. */
+    setTransitionSource(deck: { manager: HarnessManager } | null) {
+      manager.setTransitionSource(deck?.manager.getDisplayTexture() ?? null);
+    },
+    /** Starts this harness's feedback history from `deck`'s. */
+    seedHistoryFrom: (deck: { manager: HarnessManager }) =>
+      manager.seedHistoryFrom(renderer, deck.manager),
     dispose() {
+      for (const deck of decks) deck.dispose();
       manager.dispose();
+      source.dispose();
       disposeReadback();
       renderer.dispose();
-      quad.geometry.dispose();
-      quad.material.dispose();
       canvas.remove();
     },
   };

@@ -1865,21 +1865,25 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   }
 
   hideBlendTargets() {
-    for (const [key, target] of this.waveTargets) {
-      if (key.includes('blend-')) {
+    this.hideLayer('blend');
+  }
+
+  hideLayer(layer: 'main' | 'blend') {
+    const hidden: Array<{ group: Group; visible: boolean }> = [];
+    for (const targets of [
+      this.waveTargets,
+      this.shapeTargets,
+      this.borderTargets,
+    ]) {
+      for (const [key, target] of targets) {
+        if (key.includes('blend-') !== (layer === 'blend')) continue;
+        hidden.push({ group: target.group, visible: target.group.visible });
         target.group.visible = false;
       }
     }
-    for (const [key, target] of this.shapeTargets) {
-      if (key.includes('blend-')) {
-        target.group.visible = false;
-      }
-    }
-    for (const [key, target] of this.borderTargets) {
-      if (key.includes('blend-')) {
-        target.group.visible = false;
-      }
-    }
+    return () => {
+      for (const { group, visible } of hidden) group.visible = visible;
+    };
   }
 
   dispose() {
@@ -1944,6 +1948,7 @@ export function createNativeWebGPUShapeBatchingLayer(
         screenAspect,
       ),
     hideBlendTargets: () => layer.hideBlendTargets(),
+    hideLayer: (which) => layer.hideLayer(which),
     dispose: () => layer.dispose(),
     disposeWithCaches: () => layer.disposeWithCaches(),
   };

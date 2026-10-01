@@ -270,6 +270,15 @@ export function createMilkdropTransitionController() {
       settle(reason);
     },
 
+    /**
+     * Records something the caller did with the blend — a live crossfade
+     * splitting into two decks or collapsing back — in the same log as the
+     * phase changes, so one place answers "what did that switch do".
+     */
+    annotate(event: string, detail?: string) {
+      record(event, detail);
+    },
+
     getPhase: () => phase,
     getEvents: (): readonly MilkdropTransitionEvent[] => events,
   };

@@ -45,11 +45,22 @@ export abstract class MilkdropFeedbackManagerLifecycleBase<
    * there is no picture to keep.
    */
   protected abstract copyTargetImage(
-    source: TTarget,
+    source: Texture,
     destination: TTarget,
   ): boolean;
   /** A target with `like`'s current size and texel format. */
   protected abstract createScratchTarget(like: TTarget): TTarget;
+  /** Adopts `renderer` for draws made outside render(). */
+  protected abstract rememberRenderer(renderer: unknown): void;
+
+  /**
+   * What the present pass's saved side samples when no live source is set:
+   * the latest snapshot, or the backend's placeholder before the first one.
+   * saveCurrentFrame updates it.
+   */
+  protected snapshotTexture: Texture | null = null;
+  /** Another deck's live frame, while a live crossfade runs. */
+  protected transitionSource: Texture | null = null;
 
   protected index = 0;
   protected viewportWidth: number;
@@ -99,6 +110,52 @@ export abstract class MilkdropFeedbackManagerLifecycleBase<
       aspectUniform.value =
         this.viewportWidth / Math.max(1, this.viewportHeight);
     }
+  }
+
+  /**
+   * Points the present pass's saved side at another deck's live frame, or
+   * back at the snapshot. The snapshot zooms slowly as it dissolves out so a
+   * still picture keeps moving; a live frame moves on its own, so the drift
+   * is off while one is set.
+   */
+  setTransitionSource(texture: Texture | null): void {
+    this.transitionSource = texture;
+    this.presentMaterial.uniforms.savedTex.value =
+      texture ?? this.snapshotTexture;
+    const drift = this.presentMaterial.uniforms.savedDrift;
+    if (drift) {
+      drift.value = texture ? 0 : 1;
+    }
+  }
+
+  /** Records a new snapshot, and shows it unless a live source is set. */
+  protected recordSnapshot(texture: Texture) {
+    this.snapshotTexture = texture;
+    if (!this.transitionSource) {
+      this.presentMaterial.uniforms.savedTex.value = texture;
+    }
+  }
+
+  getHistoryTexture(): Texture {
+    return this.readTarget.texture;
+  }
+
+  /**
+   * Starts the feedback history from another deck's, resampled to this one's
+   * size. The incoming deck of a live crossfade then warps the outgoing
+   * picture, as a preset switch without a crossfade does on one deck.
+   * projectM seeds from the outgoing preset's composited output instead;
+   * the internal frame keeps the incoming comp shader from being applied on
+   * top of the outgoing one.
+   */
+  seedHistoryFrom(
+    renderer: unknown,
+    source: { getHistoryTexture?(): Texture | null },
+  ): boolean {
+    const history = source.getHistoryTexture?.();
+    if (!history) return false;
+    this.rememberRenderer(renderer);
+    return this.copyTargetImage(history, this.readTarget);
   }
 
   setAdaptiveQuality({
@@ -153,10 +210,10 @@ export abstract class MilkdropFeedbackManagerLifecycleBase<
         continue;
       }
       const scratch = this.createScratchTarget(target);
-      const saved = this.copyTargetImage(target, scratch);
+      const saved = this.copyTargetImage(target.texture, scratch);
       target.setSize(width, height);
       if (saved) {
-        this.copyTargetImage(scratch, target);
+        this.copyTargetImage(scratch.texture, target);
       }
       scratch.dispose();
     }

@@ -352,6 +352,9 @@ function createPresentUniforms(initialSource: Texture) {
     savedTex: texture(PRESENT_SAVED_PLACEHOLDER),
     transitionAlpha: uniform(0),
     patternAspect: uniform(16 / 9),
+    // 1 zooms a still snapshot as it dissolves; 0 for another deck's live
+    // frame, which moves on its own (setTransitionSource).
+    savedDrift: uniform(1),
     // Display-frame postprocessing (profile-driven). Applied here — over the
     // COMPOSITED frame the present pass samples — never inside the composite
     // pass, which cannot take neighbor samples of its own output.
@@ -468,10 +471,15 @@ function createPresentOutputNode(
       // Ease the global progression so the wipe starts and ends gently
       // instead of snapping into motion off the linear alpha ramp.
       const a = smoothstep(0.0, 1.0, linearA);
-      // The saved frame is a static snapshot; zoom it slowly as it
-      // dissolves out (alpha runs 1 -> 0) so the outgoing image keeps
-      // moving instead of freezing for the whole blend.
-      const drift = a.oneMinus().mul(savedZoomDrift).add(1.0);
+      // A saved snapshot is still; zoom it slowly as it dissolves out
+      // (alpha runs 1 -> 0) so the outgoing image keeps moving instead of
+      // freezing for the whole blend. Off for a live deck's frame
+      // (savedDrift 0), which moves on its own.
+      const drift = a
+        .oneMinus()
+        .mul(savedZoomDrift)
+        .mul(uniforms.savedDrift)
+        .add(1.0);
       const savedUv = uv().sub(0.5).div(drift).add(0.5);
       const saved = sampleFeedbackTarget(uniforms.savedTex, savedUv);
       // Aspect-corrected sample point keeps dissolve patches round on any
@@ -3899,6 +3907,7 @@ class WebGPUMilkdropFeedbackManager
     const presentUniforms = createPresentUniforms(
       this.displayTargets[0].texture,
     );
+    this.snapshotTexture = PRESENT_SAVED_PLACEHOLDER;
     const presentMaterial = new NodeMaterial();
     presentMaterial.outputNode = createPresentOutputNode(presentUniforms);
     presentMaterial.needsUpdate = true;
@@ -4009,18 +4018,26 @@ class WebGPUMilkdropFeedbackManager
     renderer.setRenderTarget(target);
     renderer.render(this.presentScene, this.camera);
     renderer.setRenderTarget(previousTarget);
-    this.presentMaterial.uniforms.savedTex.value = target.texture;
+    this.recordSnapshot(target.texture);
     this.savedFrameIndex = 1 - this.savedFrameIndex;
   }
 
+  protected rememberRenderer(renderer: unknown) {
+    this.lastRenderer = renderer as typeof this.lastRenderer;
+  }
+
+  getDisplayTexture(): Texture | null {
+    return (this.presentMaterial.uniforms.currentTex.value as Texture) ?? null;
+  }
+
   protected copyTargetImage(
-    source: RenderTarget,
+    source: Texture,
     destination: RenderTarget,
   ): boolean {
     const renderer = this.lastRenderer;
     if (!renderer?.setRenderTarget) return false;
     if (!this.copyPass) {
-      const sourceNode = texture(source.texture);
+      const sourceNode = texture(source);
       const material = new NodeMaterial();
       // Same render-target addressing as every other feedback pass, so the
       // copy lands upright.
@@ -4034,7 +4051,7 @@ class WebGPUMilkdropFeedbackManager
       scene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, material));
       this.copyPass = { scene, material, source: sourceNode };
     }
-    this.copyPass.source.value = source.texture;
+    this.copyPass.source.value = source;
     const previousTarget = renderer.getRenderTarget?.() ?? null;
     renderer.setRenderTarget(destination);
     renderer.render(this.copyPass.scene, this.camera);
@@ -4398,6 +4415,25 @@ class WebGPUMilkdropFeedbackManager
   }
 
   render(renderer: FeedbackRendererLike, scene: Scene, camera: Camera) {
+    return this.renderFrame(renderer, scene, camera, true);
+  }
+
+  /** The outgoing deck of a live crossfade: composites into the display
+   * target, which the incoming deck's present pass samples. */
+  renderOffscreen(
+    renderer: FeedbackRendererLike,
+    scene: Scene,
+    camera: Camera,
+  ) {
+    return this.renderFrame(renderer, scene, camera, false);
+  }
+
+  private renderFrame(
+    renderer: FeedbackRendererLike,
+    scene: Scene,
+    camera: Camera,
+    present: boolean,
+  ) {
     this.lastRenderer = renderer;
     this.compositeMaterial.uniforms.currentTex.value = this.sceneTarget.texture;
 
@@ -4484,13 +4520,15 @@ class WebGPUMilkdropFeedbackManager
     // linear→sRGB encode alone lifted geiss-game-of-life from ~14 to ~49
     // mean luminance vs WebGL. Suspend tone mapping AND the output
     // color-space transform around the present to match WebGL's luminance.
-    renderWithoutOutputConversion(
-      renderer as FeedbackRendererLike & OutputConversionRenderer,
-      () => {
-        renderer.setRenderTarget(null);
-        renderer.render(this.presentScene, this.camera);
-      },
-    );
+    if (present) {
+      renderWithoutOutputConversion(
+        renderer as FeedbackRendererLike & OutputConversionRenderer,
+        () => {
+          renderer.setRenderTarget(null);
+          renderer.render(this.presentScene, this.camera);
+        },
+      );
+    }
     this.swap();
     return true;
   }
