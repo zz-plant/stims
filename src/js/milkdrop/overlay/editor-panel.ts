@@ -100,6 +100,12 @@ import {
   type ToggleControlConfig,
   valueToPosition,
 } from '../preset-controls.ts';
+import {
+  analyzePresetDataflow,
+  controlAudio,
+  dataflowSignature,
+  type PresetDataflow,
+} from '../preset-dataflow.ts';
 import { analyzePresetMath } from '../preset-math-analyzer.ts';
 import {
   MODULATION_SOURCES,
@@ -758,6 +764,23 @@ function liveHintForFields(doc: string, keys: string[]): string {
   return '';
 }
 
+/**
+ * The audio signals the equations on stage feed into any of `keys`: [] when
+ * none reaches them, null when the analysis has none of them (nothing on
+ * stage yet, or the draft has run ahead of the last compile). Read from the
+ * dataflow, so a field that follows bass through a q variable says bass.
+ */
+function audioReaching(
+  dataflow: PresetDataflow | null,
+  keys: readonly string[],
+): string[] | null {
+  if (!dataflow) return null;
+  const reached = keys
+    .map((key) => controlAudio(dataflow, key))
+    .filter((audio): audio is string[] => audio !== null);
+  return reached.length > 0 ? [...new Set(reached.flat())].sort() : null;
+}
+
 export class EditorPanel {
   readonly element: HTMLElement;
 
@@ -884,6 +907,13 @@ export class EditorPanel {
     keys: string[];
     label: string;
   }> = [];
+  /** Which audio reaches each field, read from the equations on stage. Kept
+   * with its signature: every fader move recompiles, and only an equation
+   * change can change the answer. */
+  private controlDataflow: {
+    signature: string;
+    dataflow: PresetDataflow;
+  } | null = null;
   private midiTargets: Set<string> = new Set();
   // The slider whose "learn" button is currently armed, waiting for the
   // next CC from any device — mirrors webMidiService.getLearnTarget() but
@@ -2258,7 +2288,25 @@ export class EditorPanel {
     this.updateRangesFromDoc();
     this.updateModulationsFromDoc();
     this.refreshMidiGutter();
+    this.updateControlDataflow(state.activeCompiled);
     this.refreshSliderMidiState();
+  }
+
+  /** Re-reads which audio reaches each field when the equations on stage
+   * change. With nothing on stage there is no answer, rather than an old one. */
+  private updateControlDataflow(
+    compiled: MilkdropEditorSessionState['activeCompiled'],
+  ): void {
+    if (!compiled) {
+      this.controlDataflow = null;
+      return;
+    }
+    const signature = dataflowSignature(compiled.ir);
+    if (this.controlDataflow?.signature === signature) return;
+    this.controlDataflow = {
+      signature,
+      dataflow: analyzePresetDataflow(compiled.ir),
+    };
   }
 
   private refreshMidiGutter(): void {
@@ -2277,6 +2325,7 @@ export class EditorPanel {
    * enough to call on every doc change — there are under 20 controls. */
   private refreshSliderMidiState(): void {
     const doc = this.editor.state.doc.toString();
+    const dataflow = this.controlDataflow?.dataflow ?? null;
 
     for (const cell of this.fieldStateCells) {
       const driven = cell.keys.filter((key) =>
@@ -2291,6 +2340,12 @@ export class EditorPanel {
             : bound.length > 0
               ? 'bound'
               : 'static';
+      // What the equations feed into a driven field: the audio, by the names
+      // the code uses, so the chip answers "why does this move?" too.
+      const audio = state === 'driven' ? audioReaching(dataflow, driven) : null;
+      const follows = audio?.length
+        ? ` · ${audio[0]}${audio.length > 1 ? ` +${audio.length - 1}` : ''}`
+        : '';
 
       cell.chip.dataset.state = state;
       cell.chip.textContent =
@@ -2299,7 +2354,7 @@ export class EditorPanel {
           : state === 'bound'
             ? 'midi'
             : state === 'driven'
-              ? 'eq'
+              ? `eq${follows}`
               : 'eq ⚠';
       // Only the equation states have somewhere to jump to.
       cell.chip.disabled = driven.length === 0;
@@ -2309,11 +2364,17 @@ export class EditorPanel {
           : state === 'bound'
             ? `MIDI/MCP is driving ${bound.join(', ')}.`
             : state === 'driven'
-              ? `This preset recomputes ${driven.join(', ')} every frame, so the control's value is overwritten. Click to jump to the equation.`
+              ? `This preset recomputes ${driven.join(', ')} every frame${
+                  audio?.length ? ` from ${audio.join(', ')}` : ''
+                }, so the control's value is overwritten.${
+                  audio?.length === 0 ? ' No audio reaches it.' : ''
+                } Click to jump to the equation.`
               : `MIDI/MCP is bound to ${bound.join(', ')}, but this preset's own equations reassign ${driven.join(', ')} every frame — no visible effect. Click to jump to the equation.`;
       cell.chip.setAttribute(
         'aria-label',
-        `${cell.label} value source: ${state}`,
+        `${cell.label} value source: ${state}${
+          audio?.length ? `, computed from ${audio.join(', ')}` : ''
+        }`,
       );
     }
 
@@ -2556,7 +2617,7 @@ export class EditorPanel {
     const hint = document.createElement('p');
     hint.className = 'stims-editor__hint';
     hint.textContent =
-      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value or the preset recomputes it per frame.';
+      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value (set) or the preset recomputes it per frame (eq), and from which audio (eq · bass).';
     panel.appendChild(hint);
 
     this.sliderInputs.clear();
