@@ -2937,6 +2937,13 @@ class SharedMilkdropFeedbackManager
     const blending =
       (this.presentMaterial.uniforms.transitionAlpha.value as number) > 0.001;
     const previousTarget = renderer.getRenderTarget?.() ?? null;
+    if (blending) {
+      // The present pass reads the display target, which a frame drawn
+      // without a cover (a gated mid-blend frame) composited past. Redraw it
+      // from the same bound internal frame first.
+      renderer.setRenderTarget(this.displayTarget);
+      renderer.render(this.compositeScene, this.camera);
+    }
     renderer.setRenderTarget(target);
     renderer.render(
       blending ? this.presentScene : this.compositeScene,
@@ -2954,6 +2961,22 @@ class SharedMilkdropFeedbackManager
 
   getDisplayTexture(): Texture {
     return this.displayTarget.texture;
+  }
+
+  /** Also carries the blur levels: the next composite samples the blur the
+   * previous frame left, so a deck seeded without them starts blur-sampling
+   * comp shaders on black. */
+  override seedHistoryFrom(
+    renderer: unknown,
+    source: { getHistoryTexture?(): Texture | null },
+  ): boolean {
+    if (!super.seedHistoryFrom(renderer, source)) return false;
+    if (source instanceof SharedMilkdropFeedbackManager) {
+      source.blurTargets.forEach((level, index) => {
+        this.copyTargetImage(level.texture, this.blurTargets[index]);
+      });
+    }
+    return true;
   }
 
   protected copyTargetImage(

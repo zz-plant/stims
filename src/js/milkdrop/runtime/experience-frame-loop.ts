@@ -136,6 +136,7 @@ export function createMilkdropExperienceFrameLoop({
   liveBlend?: {
     getOutgoingVm: () => {
       step: (signals: MilkdropRuntimeSignals) => MilkdropFrameState;
+      setDetailScale: (value: number) => void;
     } | null;
     end: () => void;
   };
@@ -281,7 +282,13 @@ export function createMilkdropExperienceFrameLoop({
         const adaptiveDensityMultiplier =
           runtime.toy.rendererInfo?.adaptiveDensityMultiplier ?? 1;
         vm.setDetailScale(detailScale * adaptiveDensityMultiplier);
+        liveBlend
+          ?.getOutgoingVm()
+          ?.setDetailScale(detailScale * adaptiveDensityMultiplier);
         if (frame.resetHistory) {
+          // A clean start has no outgoing preset to carry: a live blend's
+          // second VM would bring its evolved state into the capture.
+          liveBlend?.end();
           // A deterministic capture asked for a clean start. Clearing the GPU
           // feedback chain alone is not one: the VM's per-frame state — q/t
           // registers, per-frame accumulators, megabuf — carries the previous

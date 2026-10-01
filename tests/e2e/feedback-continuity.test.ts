@@ -390,6 +390,45 @@ for (const { backend, run } of BACKENDS) {
     );
 
     run(
+      'seeding carries everything the next frame reads from the past',
+      async () => {
+        const { painted, seeded } = await runScenario(
+          backend,
+          async ({ harnessModule, backend }) => {
+            const { createFeedbackHarness } = (await import(
+              harnessModule
+            )) as HarnessModule;
+            const incoming = await createFeedbackHarness(backend);
+            const outgoing = incoming.addDeck();
+            try {
+              // Both have rendered, so their targets exist at full size.
+              outgoing.renderOffscreen();
+              await incoming.renderFrame();
+              incoming.paintCarried(outgoing, 0.2, 0.15);
+              const painted = await incoming.readCarried(outgoing);
+              incoming.seedHistoryFrom(outgoing);
+              return { painted, seeded: await incoming.readCarried() };
+            } finally {
+              incoming.dispose();
+            }
+          },
+        );
+        // The history plus the blur levels (WebGL) or display history
+        // (WebGPU), each painted its own grey...
+        expect(painted.length).toBeGreaterThan(1);
+        // (Loose: WebGPU readback pads rows, which reads a few % low.)
+        painted.forEach((value, index) => {
+          expect(value).toBeCloseTo(0.2 + index * 0.15, 1);
+        });
+        // ...and each arriving in its own slot of the seeded deck.
+        seeded.forEach((value, index) => {
+          expect(value).toBeCloseTo(painted[index] ?? -1, 2);
+        });
+      },
+      { timeout: 120000 },
+    );
+
+    run(
       'a switch made mid-blend dissolves out of the half-finished blend',
       async () => {
         const { midBlend, first } = await runScenario(
