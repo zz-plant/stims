@@ -1,7 +1,7 @@
 /**
  * Record the measured evidence behind the first-run preset.
  *
- * The landing page makes one claim — "full-screen visuals that move to
+ * The landing page makes one claim — "MilkDrop presets that move to
  * whatever you're listening to" — and the first-run preset is the only proof
  * of it most visitors ever see. The previous default was chosen on a variable
  * count (8 of 36 parameters read audio) that turned out not to predict

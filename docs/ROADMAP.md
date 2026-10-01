@@ -1,6 +1,6 @@
 # Stims product and engineering roadmap
 
-Stims is building a browser-native studio around audio-reactive, MilkDrop-inspired presets. The roadmap prioritizes user-visible workflow improvements and measurable compatibility before speculative rendering or hardware breadth.
+Stims is building a browser-native studio around the original MilkDrop presets. The roadmap prioritizes user-visible workflow improvements and measurable compatibility before speculative rendering or hardware breadth.
 
 ## Product principles
 
@@ -159,7 +159,7 @@ Exit criteria:
 
 - Offload per-point custom wavecode generation ($4 \text{ waves} \times 512 \text{ points} = 2,048 \text{ evaluations/frame}$) from CPU JavaScript JIT to WebGPU compute storage buffers.
 - Implement AST SIMD/vec4 vectorization in the WGSL generator for per-vertex grid transformations.
-- Eliminate remaining main-thread CPU spikes, building on the 16.5% frame work reduction ($3.43 \text{ ms} \rightarrow 2.87 \text{ ms}$ at 1× and $17.56 \text{ ms} \rightarrow 15.31 \text{ ms}$ at 4× CPU throttle).
+- Eliminate remaining main-thread CPU spikes, building on the frame-work reduction recorded in [RUNTIME_PERFORMANCE.md](./RUNTIME_PERFORMANCE.md) ($3.43 \text{ ms} \rightarrow 2.87 \text{ ms}$ at 1×, about 16%; $17.56 \text{ ms} \rightarrow 15.31 \text{ ms}$ at 4× CPU throttle, about 13%).
 
 Exit criteria:
 - Median frame work under 4× CPU throttle remains under $12.0 \text{ ms}$ on standard $1280 \times 720$ benchmarks.

@@ -1,79 +1,31 @@
-# Public docs site map and messaging alignment
+# Public surfaces and messaging alignment
 
-This document captures what the public Stims docs communicate, so repository docs and web-facing copy can stay aligned.
+Every place a stranger can read what Stims is, where its text comes from, and what keeps it current. The wording itself (the pitch, what Stims contributes, and the phrases to avoid) is set in [`LINEAGE_AND_CREDITS.md`](./LINEAGE_AND_CREDITS.md); this page only says where that wording has to land.
 
-## Core product message
+## The message
 
-Stim Webtoys is positioned as an **independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop**, with one flagship launch flow, one browse surface, and a smaller set of canonical toy detail pages.
+- **The pitch**, for product copy: "Play and live-edit MilkDrop presets in your browser." It says what Stims does and makes no novelty claim.
+- **What is new**, for surfaces that compare Stims with anything: the three contributions in [What Stims contributes](./LINEAGE_AND_CREDITS.md#what-stims-contributes), in that order. Running presets in a browser and editing them while they play are not among them: Butterchurn did the first, and MilkDrop 2 had the second.
 
-## Public docs information architecture
+## Surfaces
 
-### Documentation tab
+| Surface | Source | Says | Kept current by |
+| --- | --- | --- | --- |
+| `toil.fyi/` page title, description, link previews, JSON-LD | [`index.html`](../index.html) | The pitch | Hand-edited; `check:seo` checks the social tags are present |
+| Home screen | [`NewHomePage.tsx`](../src/js/frontend/NewHomePage.tsx) | One claim: MilkDrop presets that move to the music. The first-run preset is chosen to prove it ([`first-run-preset.ts`](../src/js/milkdrop/runtime/first-run-preset.ts)) | `tests/unit/bundled-first-run-preset.test.ts` |
+| Shared-preset previews | [`functions/_middleware.ts`](../functions/_middleware.ts), `functions/api/oembed.ts`, `functions/api/og-preset.ts` | The preset's title and credit | `tests/unit/oembed.test.ts`, `tests/unit/seo-middleware.test.ts` |
+| `/learn/` (authoring course, reference, MilkDrop online, the comparison) | `docs/authoring/*.md`, `docs/learn/*.md` | The comparison page states what is new | `bun run generate:learn`; `check:seo` fails on a stale page |
+| `/discover/<slug>` | [`functions/discover-slugs.ts`](../functions/discover-slugs.ts) | Presets grouped by look and by author | Hand-edited |
+| `/performance/` | [`performance/index.html`](../performance/index.html) | Browser and device support | Hand-edited |
+| `/llms.txt`, `/llms-full.txt` | [`public/llms.txt`](../public/llms.txt), [`public/llms-full.txt`](../public/llms-full.txt) | The pitch, what is new, URL flags, API routes, the embed protocol | Hand-edited; document only flags and messages that do something |
+| `/openapi.json` | [`public/openapi.json`](../public/openapi.json) | The optional API routes | Hand-edited |
+| `/mcp` | [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts), [`scripts/mcp-shared.ts`](../scripts/mcp-shared.ts) | Server instructions and tool descriptions | Hand-edited |
+| Installed app | [`public/manifest.json`](../public/manifest.json) | The pitch | Hand-edited |
+| GitHub README | [`README.md`](../README.md) | The pitch, then what is new | [`check-readme-claims.ts`](../scripts/check-readme-claims.ts) for counts and fidelity wording |
+| GitHub repository description and topics | GitHub settings, not the repo | The pitch | `gh repo edit` when the pitch changes |
 
-- **Get Started**
-  - `introduction`
-  - `quickstart`
-  - `browser-support`
-- **Using Stims**
-  - `guides/milkdrop-visualizer`
-  - `guides/playing-toys`
-  - `guides/audio-setup`
-  - `guides/accessibility` *(planned public surface — content lives in [`docs/guides/accessibility.md`](./guides/accessibility.md) today, sourced from [`docs/SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md))*
-  - `guides/performance`
-- **Create Presets** *(planned public surface — content lives in `docs/authoring/` today)*
-  - `create/learn` — the authoring curriculum (Tracks 0–8, live examples)
-  - `create/reference` — the generated language reference
-- **Browse**
-  - `browse/overview`
-  - `browse/featured`
-  - `toys/:slug`
+## When the message changes
 
-### Development tab
-
-Repository documentation is hubbed in [`docs/README.md`](./README.md) across 6 core developer tracks:
-
-1. **🚀 Getting Started**: `DEVELOPMENT.md`, `DEPLOYMENT.md`, `TESTING.md`, `COMMIT_CONVENTIONS.md`
-2. **🏛️ Architecture & Engine**: `ARCHITECTURE.md`, `TECHNICAL_ACHIEVEMENTS.md`, `MILKDROP_PRESET_RUNTIME.md`, `WEBGPU_ARCHITECTURAL_REVAMP.md`
-3. **🎨 Preset Authoring**: `authoring/README.md` (curriculum), `authoring/reference.md` (generated language reference), `MILKDROP_CODING_GUIDE.md`, `MILKDROP_PROJECTM_PARITY_PLAN.md`, `MILKDROP_PROJECTM_PARITY_BACKLOG.md`
-4. **🤖 AI & Infrastructure**: `api.md`, `MCP_SERVER.md`
-5. **📊 Strategy & QA**: `ROADMAP.md`, `IMPLEMENTATION_STATUS.md`, `QA_PLAN.md`, `LINEAGE_AND_CREDITS.md`
-6. **♿ Accessibility & Sensory Research**: `SENSORY_ACCESSIBILITY.md`, `LITERATURE.md`
-
-- **Contributing**
-  - `contributing/getting-started`
-  - `contributing/development-setup`
-  - `contributing/code-quality`
-- **Architecture**
-  - `architecture/overview`
-  - `architecture/technical-achievements`
-  - `architecture/rendering`
-  - `architecture/preset-runtime`
-- **Deployment**
-  - `deployment/overview`
-  - `deployment/cloudflare-pages`
-
-## What each public page emphasizes
-
-- **Introduction**: MilkDrop-led value proposition and lineage framing, with quick links to launch and browse.
-- **Quickstart**: launch MilkDrop first, then explore the broader library from one browse surface.
-- **Browser support**: feature-level compatibility and troubleshooting for WebGL, microphone, and WebGPU.
-- **MilkDrop visualizer guide**: presets, blending, the editor flow, import/export, and compatibility guardrails.
-- **Playing toys**: browse/launch flow, filters, badges, and the toy detail path.
-- **Audio setup**: microphone, demo audio, and tab-capture paths plus troubleshooting.
-- **Accessibility**: motion comfort defaults, reduced-motion handling, and fallback controls.
-- **Performance**: quality presets, persistent settings, and the performance panel.
-- **Browse overview / toy pages**: one browse hub plus canonical toy detail pages instead of large taxonomy matrices.
-- **Contributing getting started**: quality checks and commit/PR expectations.
-- **Competitive messaging handoff**: external-safe value propositions derived from internal battlecards, avoiding direct competitor callouts.
-
-## Repo alignment checklist
-
-When updating user-facing copy (README, landing copy, docs hubs), keep these themes visible:
-
-1. Audio-reactive + sensory-friendly positioning.
-2. MilkDrop-led lineage framing with careful language (no blanket compatibility claims).
-3. Clear onboarding path (`introduction` -> `quickstart` -> `browser-support`).
-4. Explicit mention of accessibility and performance controls.
-5. Discovery vocabulary for the broader toy library, without relying on large standalone taxonomy hubs.
-6. Contributor expectations (quality gates, commit/PR metadata, docs consistency).
-7. External copy should use internal battlecard outputs without public competitor callouts.
+1. Change [`LINEAGE_AND_CREDITS.md`](./LINEAGE_AND_CREDITS.md) first.
+2. Update every surface in the table that states the changed part. A pitch change reaches at least `index.html`, `manifest.json`, the README, both `llms` files and the repository description; a contribution change reaches the README, both `llms` files and the comparison page.
+3. Regenerate what is generated (`bun run generate:learn`) and run `bun run check:quick`.

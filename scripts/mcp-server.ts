@@ -2049,7 +2049,7 @@ function startServer() {
   // 2026-07-28 client gets the modern envelope. One instance per process is
   // fine on stdio — there is only ever one connection.
   const handle = serveStdio(() => server);
-  console.error('Stim Webtoys MCP server is running on stdio.');
+  console.error('Stims MCP server is running on stdio.');
   return handle;
 }
 

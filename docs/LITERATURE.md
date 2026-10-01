@@ -9,7 +9,7 @@ This guide collects published scientific literature that serves as grounding for
 - **Cite by claim**: pick references that directly support the user-facing statement you are making (e.g., audio-visual binding, crossmodal correspondences, sensory processing differences).
 - **Avoid medical claims**: unless there is a direct study matching the exact claim, keep language descriptive (e.g., "audio-reactive visuals" or "sensory exploration") rather than therapeutic.
 - **Prefer review papers** when summarizing broader phenomena; use primary studies for specific phenomena.
-- **Connect to a feature**: each citation should point to a concrete UI or toy behavior (see the mapping below).
+- **Connect to a feature**: each citation should point to a concrete UI or preset behavior (see the mapping below).
 
 ## Feature-to-literature map
 
@@ -17,9 +17,9 @@ Use the following table to tie literature to specific features so citations are 
 
 | Feature or behavior | UI surface | Recommended literature focus |
 | --- | --- | --- |
-| Audio-reactive visuals (frequency to motion/color mapping) | Toy descriptions, audio onboarding copy | Multisensory integration & audio-visual binding; crossmodal correspondences |
-| “Synesthetic” or linked audio-visual patterns | Toy description for synesthetic-themed visuals | Crossmodal correspondences & synesthesia-related perception |
-| Sensory exploration language (non-therapeutic) | Library landing copy, toy overview cards | Sensory processing differences in neurodiversity (framed as diversity, not treatment) |
+| Audio-reactive visuals (frequency to motion/color mapping) | Preset descriptions, audio onboarding copy | Multisensory integration & audio-visual binding; crossmodal correspondences |
+| “Synesthetic” or linked audio-visual patterns | Descriptions of synesthetic-looking presets | Crossmodal correspondences & synesthesia-related perception |
+| Sensory exploration language (non-therapeutic) | README "Why Stims?", sensory controls in Settings | Sensory processing differences in neurodiversity (framed as diversity, not treatment) |
 | Music-driven engagement/affect | Demo audio option, descriptions referencing musical response | Music, rhythm, and affect |
 
 ## UI citation/footnote guidance
@@ -27,7 +27,7 @@ Use the following table to tie literature to specific features so citations are 
 If the UI references scientific grounding, use lightweight footnotes so users can inspect sources without cluttering the interface.
 
 - **Footnote trigger**: Only add citations when a claim implies scientific backing (e.g., “audio-visual binding,” “crossmodal mapping,” or “sensory processing diversity”). Avoid citations for purely aesthetic language.
-- **Placement**: Prefer a footnote marker in the toy description block, settings tooltip, or info panel. If a toy has a “Learn more” link, put citations there instead of inline.
+- **Placement**: Prefer a footnote marker in the preset description, settings tooltip, or info panel. If the surface has a “Learn more” link, put citations there instead of inline.
 - **Format**: Use numeric footnotes with a short bibliography in the same UI panel or a linked “Sources” drawer. Keep them readable on mobile.
 - **Linking**: Use DOI links when available; otherwise link to the publisher or journal landing page.
 
@@ -108,5 +108,5 @@ Relevant to any claim that tighter audio-visual coupling ("coherence") is prefer
 ## Notes on scope
 
 - This list is not exhaustive; it is a starter set aligned with the historical positioning captured in this document.
-- Add new references as new claims or toy mechanics emerge (e.g., motion coupling, haptic feedback, or attention effects).
+- Add new references as new claims or features emerge (e.g., motion coupling, haptic feedback, or attention effects).
 - For the accessibility/sensory-control research program specifically (research questions, flash-safety specification, roadmap), see [`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md) — this file holds citations, that one holds the argument and status tracking.
