@@ -230,11 +230,10 @@ export function createMilkdropExperience({
   };
   const lifetime = createMilkdropRuntimeLifetime();
   // Resolves once the async startup preset selection below (catalog sync +
-  // selectMilkdropStartupPreset) has run to completion. Startup selection
-  // races any preset an agent selects immediately after mount — without a
-  // signal for "startup is done," an early stims.agent.selectPreset() call
-  // could apply successfully and then get silently overwritten a moment
-  // later, or vice versa. Exposed to agent callers via the debug handle.
+  // selectMilkdropStartupPreset) has run to completion. A preset selected
+  // before then wins over the startup pick (see `revisionBeforeStartup`), but
+  // a caller reading the stage still needs to know when the boot preset has
+  // settled. Exposed to agent callers via the debug handle.
   let resolveStartupSettled: () => void = () => {};
   const startupSettled = new Promise<void>((resolve) => {
     resolveStartupSettled = resolve;
@@ -1013,6 +1012,12 @@ export function createMilkdropExperience({
       },
     );
   }
+  // Startup picks its preset only after the catalog sync below. Whatever was
+  // selected in the meantime (the shell routing a request that arrived while
+  // the stage was mounting, an agent) is newer and keeps the stage; the pick
+  // used to supersede it, and the shell then read the switch as the engine
+  // moving on its own and dropped the request.
+  const revisionBeforeStartup = navigation.getLoadRequestRevision();
   void (async () => {
     try {
       await catalogCoordinator.scheduleCatalogSync({
@@ -1039,6 +1044,7 @@ export function createMilkdropExperience({
           recordHistory: false,
           skipIfAlreadyActive: true,
           reason: startupPresetReason,
+          unlessRequestedSince: revisionBeforeStartup,
         });
         pendingStartupPresetId = null;
         if (!lifetime.isActive()) {

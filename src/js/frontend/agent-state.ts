@@ -329,6 +329,11 @@ function nextCommit(timeoutMs: number): Promise<boolean> {
   });
 }
 
+/** The core snapshot as React last committed it; null before the first. */
+export function getLastCommittedCore(): AgentCoreSnapshot | null {
+  return lastCore;
+}
+
 /**
  * Resolves with the first committed core snapshot that satisfies `predicate`
  * (the latest commit, if it already does), or null after `timeoutMs`. The
