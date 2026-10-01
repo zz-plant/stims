@@ -47,7 +47,7 @@ describe('oEmbed provider', () => {
     );
 
     expect(status).toBe(200);
-    expect(body.title).toBe('martin - "wtf" track by martin');
+    expect(body.title).toBe('"wtf" track by martin');
     expect(body.author_name).toBe('martin');
     expect(body.thumbnail_url).toBe(
       'https://toil.fyi/api/og-preset?id=martin-wtf-track',
@@ -55,8 +55,26 @@ describe('oEmbed provider', () => {
     expect(body.html).toContain(
       'src="https://toil.fyi/?preset=martin-wtf-track&amp;embed=true"',
     );
+    expect(body.html).toContain('title="&quot;wtf&quot; track by martin"');
+  });
+
+  test('names the author once when the corpus title already leads with it', async () => {
+    const { body } = await embedFor(
+      embedUrl('https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars'),
+      {
+        'krash-rovastar-cerebral-demons-stars': [
+          'Krash & Rovastar - Cerebral Demons (Stars Remix)',
+          'Krash & Rovastar',
+        ],
+      },
+    );
+
+    expect(body.title).toBe(
+      'Cerebral Demons (Stars Remix) by Krash & Rovastar',
+    );
+    expect(body.author_name).toBe('Krash & Rovastar');
     expect(body.html).toContain(
-      'title="martin - &quot;wtf&quot; track by martin"',
+      'title="Cerebral Demons (Stars Remix) by Krash &amp; Rovastar"',
     );
   });
 
