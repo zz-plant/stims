@@ -2,7 +2,8 @@
  * Main-wave modes 6 and 7 follow MilkDrop 2's geometry, which projectM and
  * Butterchurn both draw: lines across the screen at angle pi/2 * fWaveParam,
  * offset by wave_x, and for mode 7 two separate lines sep = wave_y^2 apart.
- * Renderer y is MilkDrop clip y negated, as for every other wave mode.
+ * The lines are built in MilkDrop clip space (y up) and scaled to the scene's
+ * square units by its half-extents.
  */
 import { describe, expect, test } from 'bun:test';
 import {
@@ -28,12 +29,13 @@ describe('buildMilkdropLineWave', () => {
       count: 64,
       sampleLeft: silent,
       sampleRight: silent,
+      half: { x: 1, y: 1 },
     });
     expect(lines).toHaveLength(2);
     const sep = 0.68 ** 2;
-    // the left channel's line sits above centre (renderer y is negated)
-    for (const y of ys(lines[0])) expect(y).toBeCloseTo(-sep, 5);
-    for (const y of ys(lines[1])) expect(y).toBeCloseTo(sep, 5);
+    // the left channel's line sits above centre
+    for (const y of ys(lines[0])) expect(y).toBeCloseTo(sep, 5);
+    for (const y of ys(lines[1])) expect(y).toBeCloseTo(-sep, 5);
     // edge to edge, clipped to the +/-1.1 box
     expect(Math.min(...xs(lines[0]))).toBeCloseTo(-1.1, 5);
     expect(Math.max(...xs(lines[0]))).toBeGreaterThan(1.05);
@@ -50,11 +52,12 @@ describe('buildMilkdropLineWave', () => {
         count: 32,
         sampleLeft: silent,
         sampleRight: silent,
+        half: { x: 1, y: 1 },
       });
     const low = at(0.1);
     expect(low).toHaveLength(1);
     // wave_x 0.3 -> clip y -0.4 (projectM draws it 70% down the screen)
-    for (const y of ys(low[0])) expect(y).toBeCloseTo(0.4, 5);
+    for (const y of ys(low[0])) expect(y).toBeCloseTo(-0.4, 5);
     expect(ys(at(0.9)[0])).toEqual(ys(low[0]));
   });
 
@@ -68,9 +71,10 @@ describe('buildMilkdropLineWave', () => {
       count: 32,
       sampleLeft: silent,
       sampleRight: silent,
+      half: { x: 1, y: 1 },
     });
     const last = line.length - 3;
-    const slope = -(line[last + 1] - line[1]) / (line[last] - line[0]);
+    const slope = (line[last + 1] - line[1]) / (line[last] - line[0]);
     expect(slope).toBeCloseTo(Math.tan(Math.PI * 0.5 * 0.4), 4);
   });
 
@@ -84,8 +88,26 @@ describe('buildMilkdropLineWave', () => {
       count: 16,
       sampleLeft: () => 0.5,
       sampleRight: silent,
+      half: { x: 1, y: 1 },
     });
-    for (const y of ys(line)) expect(y).toBeCloseTo(-0.25, 5);
+    for (const y of ys(line)) expect(y).toBeCloseTo(0.25, 5);
+  });
+
+  test('a widescreen scene stretches the line edge to edge', () => {
+    // a 16:9 scene spans +/-16/9 by +/-1 in square units
+    const [line] = buildMilkdropLineWave({
+      mode: 6,
+      waveX: 0.3,
+      waveY: 0.5,
+      mystery: 0,
+      scale: 1,
+      count: 32,
+      sampleLeft: silent,
+      sampleRight: silent,
+      half: { x: 16 / 9, y: 1 },
+    });
+    expect(Math.min(...xs(line))).toBeCloseTo(-1.1 * (16 / 9), 4);
+    for (const y of ys(line)) expect(y).toBeCloseTo(-0.4, 5);
   });
 });
 
@@ -117,8 +139,8 @@ describe('buildMainWaveFrame line modes', () => {
       expect(a).toBeCloseTo(0.6, 6);
     // the halves are the two lines, one above centre and one below
     const half = (vertices - 2) / 2;
-    expect(visual.positions[1]).toBeLessThan(0);
-    expect(visual.positions[(half + 2) * 3 + 1]).toBeGreaterThan(0);
+    expect(visual.positions[1]).toBeGreaterThan(0);
+    expect(visual.positions[(half + 2) * 3 + 1]).toBeLessThan(0);
   });
 
   test('a reused visual drops the bridge colours once the mode changes', () => {

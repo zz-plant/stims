@@ -19,7 +19,7 @@ import type {
   MilkdropWaveVisual,
 } from '../types';
 
-import { clamp, color, colorTo, mix } from './shared';
+import { clamp, color, colorTo, mix, sceneHalfExtents } from './shared';
 
 const TWO_PI = Math.PI * 2;
 /** Depth the main wave draws at (before its per-point momentum nudge). */
@@ -429,9 +429,8 @@ function isMilkdropLineWaveMode(mode: number) {
  * right channel `sep` to the other, with sep = wave_y^2. `wave_y` does not
  * move a mode 6 line at all.
  *
- * Returns one raw xyz polyline per line, in this renderer's space: x as
- * MilkDrop's clip x, y negated (y grows downward here, the same flip the
- * other modes apply to `wave_y`).
+ * Returns one raw xyz polyline per line in scene units: the line is built in
+ * MilkDrop's clip space (y up) and scaled by the scene's half-extents.
  */
 export function buildMilkdropLineWave({
   mode,
@@ -442,6 +441,7 @@ export function buildMilkdropLineWave({
   count,
   sampleLeft,
   sampleRight,
+  half,
 }: {
   mode: 6 | 7;
   waveX: number;
@@ -451,6 +451,8 @@ export function buildMilkdropLineWave({
   count: number;
   sampleLeft: (t: number) => number;
   sampleRight: (t: number) => number;
+  /** The scene's half-extents (sceneHalfExtents in vm/shared.ts). */
+  half: { x: number; y: number };
 }): Float32Array[] {
   const angle = Math.PI * 0.5 * mystery;
   const dirX = Math.cos(angle);
@@ -491,8 +493,9 @@ export function buildMilkdropLineWave({
     for (let index = 0; index < count; index += 1) {
       const push = 0.25 * sample(index / Math.max(1, count - 1)) * scale;
       const offset = push + side * separation;
-      points[index * 3] = edgeX[0] + stepX * index + perpX * offset;
-      points[index * 3 + 1] = -(edgeY[0] + stepY * index + perpY * offset);
+      points[index * 3] = (edgeX[0] + stepX * index + perpX * offset) * half.x;
+      points[index * 3 + 1] =
+        (edgeY[0] + stepY * index + perpY * offset) * half.y;
       points[index * 3 + 2] = MAIN_WAVE_Z;
     }
     return points;
@@ -565,9 +568,10 @@ export function buildMainWaveFrame({
 } {
   const mode = normalizeWaveMode(state.wave_mode ?? 0);
   // Line waves are built on the CPU (buildMilkdropLineWave): mode 7 is two
-  // separate lines, which the single-strip procedural path cannot draw.
+  // separate lines, which the single-strip procedural path cannot draw. Mode
+  // 4 is a line too, built in clip space here and scaled to scene units.
   const lineMode = isMilkdropLineWaveMode(mode);
-  const proceduralGeometry = useProcedural && !lineMode;
+  const proceduralGeometry = useProcedural && !lineMode && mode !== 4;
   const waveformData =
     signals.waveformData && signals.waveformData.length > 0
       ? signals.waveformData
@@ -577,8 +581,14 @@ export function buildMainWaveFrame({
     detailScale,
     waveformData.length,
   );
+  // MilkDrop's wave position in clip space, y up (0 = bottom), and the same
+  // point in scene units. Round modes (0-3, 5) add unscaled offsets to the
+  // scene centre; the line modes are built in clip space and scaled.
   const centerX = ((state.wave_x ?? 0.5) - 0.5) * 2;
-  const centerY = (0.5 - (state.wave_y ?? 0.5)) * 2;
+  const centerY = ((state.wave_y ?? 0.5) - 0.5) * 2;
+  const half = sceneHalfExtents(signals.aspect ?? 1);
+  const sceneCenterX = centerX * half.x;
+  const sceneCenterY = centerY * half.y;
   // MilkDrop multiplies PCM samples by fWaveScale at full strength before
   // any mode math (processWaveform: pcm * wave_scale / 128). Samples here
   // are already normalized to [-1, 1], so `scale` is the whole factor.
@@ -735,8 +745,8 @@ export function buildMainWaveFrame({
       case 0: {
         const angle = t * TWO_PI + signals.time * 0.2;
         const radius = 0.5 + 0.4 * sampleValue * scale + mystery;
-        x = centerX + Math.cos(angle) * radius;
-        y = centerY + Math.sin(angle) * radius;
+        x = sceneCenterX + Math.cos(angle) * radius;
+        y = sceneCenterY + Math.sin(angle) * radius;
         break;
       }
       case 1: {
@@ -744,8 +754,8 @@ export function buildMainWaveFrame({
         const sampleL = sampleWaveformDataOffset(signals, t, 32 / 512);
         const radius = 0.53 + 0.43 * sampleR * scale + mystery;
         const angle = sampleL * scale * 1.5708 + signals.time * 2.3;
-        x = centerX + Math.cos(angle) * radius;
-        y = centerY + Math.sin(angle) * radius;
+        x = sceneCenterX + Math.cos(angle) * radius;
+        y = sceneCenterY + Math.sin(angle) * radius;
         break;
       }
       case 2:
@@ -755,8 +765,8 @@ export function buildMainWaveFrame({
         // both modes; mode 3 differs only in treble-modulated alpha.
         const sampleR = sampleStereoWaveformData(signals, 'right', t, 0);
         const sampleL = sampleStereoWaveformData(signals, 'left', t, 32 / 512);
-        x = centerX + sampleR * scale;
-        y = centerY + sampleL * scale;
+        x = sceneCenterX + sampleR * scale;
+        y = sceneCenterY + sampleL * scale;
         break;
       }
       case 4: {
@@ -797,8 +807,8 @@ export function buildMainWaveFrame({
         const rot = signals.time * 0.3;
         const cosR = Math.cos(rot);
         const sinR = Math.sin(rot);
-        x = centerX + (x0 * cosR - y0 * sinR);
-        y = centerY + (x0 * sinR + y0 * cosR);
+        x = sceneCenterX + (x0 * cosR - y0 * sinR);
+        y = sceneCenterY + (x0 * sinR + y0 * cosR);
         break;
       }
       default:
@@ -815,8 +825,10 @@ export function buildMainWaveFrame({
       continue;
     }
     const writeIndex = index * 3;
-    tempPositionsBuffer[writeIndex] = x;
-    tempPositionsBuffer[writeIndex + 1] = y;
+    // mode 4 is clip space (its smoothing runs there); round modes are scene
+    // units already
+    tempPositionsBuffer[writeIndex] = mode === 4 ? x * half.x : x;
+    tempPositionsBuffer[writeIndex + 1] = mode === 4 ? y * half.y : y;
     tempPositionsBuffer[writeIndex + 2] = 0.22 + momentum * 0.06;
   }
 
@@ -837,6 +849,7 @@ export function buildMainWaveFrame({
           ? (t) => smoothedSamples[Math.round(t * (samples - 1))] ?? 0
           : (t) => sampleStereoWaveformData(signals, 'left', t, 0),
       sampleRight: (t) => sampleStereoWaveformData(signals, 'right', t, 0),
+      half,
     });
     // Each line is smoothed on its own, then the two are joined by a pair of
     // zero-alpha vertices so the hop between them draws nothing.
@@ -931,8 +944,8 @@ export function buildMainWaveFrame({
 
   if (procedural) {
     procedural.mode = mode;
-    procedural.centerX = centerX;
-    procedural.centerY = centerY;
+    procedural.centerX = sceneCenterX;
+    procedural.centerY = sceneCenterY;
     procedural.scale = scale;
     procedural.mystery = mystery;
     procedural.time = signals.time;

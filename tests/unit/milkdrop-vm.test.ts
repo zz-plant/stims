@@ -1,10 +1,16 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { initCamera } from '../../src/js/core/camera-setup.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { applyMilkdropInteractionResponse } from '../../src/js/milkdrop/runtime/interaction-response.ts';
 import type { MilkdropRuntimeSignals } from '../../src/js/milkdrop/types.ts';
 import { buildMainWaveFrame } from '../../src/js/milkdrop/vm/frame-generation.ts';
-import type { WaveFrameBuffers } from '../../src/js/milkdrop/vm/shared.ts';
+import {
+  milkdropToSceneX,
+  milkdropToSceneY,
+  type WaveFrameBuffers,
+} from '../../src/js/milkdrop/vm/shared.ts';
 import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 import {
   applyNativeWebGpuMaterialCompatibilityFlags,
@@ -582,8 +588,9 @@ wave_1_per_point1=y=t1;
     const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
 
     expect(frameState.customWaves).toHaveLength(2);
-    expect(frameState.customWaves[0]?.positions[1]).toBeCloseTo(0.8, 6);
-    expect(frameState.customWaves[1]?.positions[1]).toBeCloseTo(0.2, 6);
+    // y up: MilkDrop y 0.1 and 0.4 sit below centre
+    expect(frameState.customWaves[0]?.positions[1]).toBeCloseTo(-0.8, 6);
+    expect(frameState.customWaves[1]?.positions[1]).toBeCloseTo(-0.2, 6);
     expect(frameState.variables.t1).toBeCloseTo(0, 6);
   });
 
@@ -605,8 +612,8 @@ wave_1_per_point1=y=xp;
     const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
 
     expect(frameState.customWaves).toHaveLength(2);
-    expect(frameState.customWaves[0]?.positions[1]).toBeCloseTo(0.5, 6);
-    expect(frameState.customWaves[1]?.positions[1]).toBeCloseTo(1, 6);
+    expect(frameState.customWaves[0]?.positions[1]).toBeCloseTo(-0.5, 6);
+    expect(frameState.customWaves[1]?.positions[1]).toBeCloseTo(-1, 6);
   });
 
   test('keeps shape texture-control locals and projectM instance aliases available at runtime', () => {
@@ -971,7 +978,7 @@ wave_0_per_point2=y = value2;
 
     expect(firstPoint).toBeDefined();
     expect(firstPoint?.[0]).toBeCloseTo((normalizedValue * 2 - 0.5) * 2, 6);
-    expect(firstPoint?.[1]).toBeCloseTo((0.5 - normalizedValue) * 2, 6);
+    expect(firstPoint?.[1]).toBeCloseTo((normalizedValue - 0.5) * 2, 6);
   });
 
   test('applies legacy cx/cy/sx/sy/dx/dy mesh transforms', () => {
@@ -1765,5 +1772,194 @@ describe('milkdrop vm live field updates', () => {
     vm.setField('q1', 0.42);
     vm.step(makeSignals({ frame: 1 }));
     expect(vm.getStateSnapshot().q1).toBeCloseTo(0.42, 6);
+  });
+});
+
+// MilkDrop draws waves and shapes across the whole screen with y up
+// (projectM and Butterchurn agree). The scene camera is in square units, so a
+// 16:9 screen spans x in [-16/9, 16/9] and y in [-1, 1].
+const WIDE = 16 / 9;
+
+function compilePresetForScene(source: string, id: string) {
+  return compileMilkdropPresetSource(source.trim(), { id });
+}
+
+describe('MilkDrop scene coordinates', () => {
+  test('the scene camera frames exactly the screen the mapping fills', () => {
+    for (const aspect of [WIDE, 1, 1 / WIDE]) {
+      const camera = initCamera({ aspect });
+      expect(milkdropToSceneX(1, aspect)).toBeCloseTo(camera.right, 6);
+      expect(milkdropToSceneX(0, aspect)).toBeCloseTo(camera.left, 6);
+      expect(milkdropToSceneY(1, aspect)).toBeCloseTo(camera.top, 6);
+      expect(milkdropToSceneY(0, aspect)).toBeCloseTo(camera.bottom, 6);
+    }
+  });
+
+  test('a shape keeps its MilkDrop position on a wide screen, y up', () => {
+    const preset = compilePresetForScene(
+      `
+title=Shape Position
+shapecode_0_enabled=1
+shapecode_0_sides=4
+shape_0_per_frame1=x = 0.1; y = 0.8; rad = 0.05;
+      `,
+      'scene-shape-position',
+    );
+
+    const shape = createMilkdropVM(preset).step(makeSignals({ aspect: WIDE }))
+      .shapes[0];
+
+    // 10% from the left and 20% from the top of a 16:9 screen
+    expect(shape?.x).toBeCloseTo(-0.8 * WIDE, 6);
+    expect(shape?.y).toBeCloseTo(0.6, 6);
+  });
+
+  test('a portrait screen stretches y instead of x', () => {
+    const preset = compilePresetForScene(
+      `
+title=Shape Portrait
+shapecode_0_enabled=1
+shapecode_0_sides=4
+shape_0_per_frame1=x = 0.1; y = 0.8; rad = 0.05;
+      `,
+      'scene-shape-portrait',
+    );
+
+    const shape = createMilkdropVM(preset).step(
+      makeSignals({ aspect: 1 / WIDE }),
+    ).shapes[0];
+
+    expect(shape?.x).toBeCloseTo(-0.8, 6);
+    expect(shape?.y).toBeCloseTo(0.6 * WIDE, 6);
+  });
+
+  test('a custom wave across x 0..1 spans the whole wide screen', () => {
+    const preset = compilePresetForScene(
+      `
+title=Wave Span
+wavecode_0_enabled=1
+wavecode_0_samples=16
+wave_0_per_point1=x = sample; y = 0.8;
+      `,
+      'scene-wave-span',
+    );
+
+    const positions =
+      createMilkdropVM(preset).step(makeSignals({ aspect: WIDE }))
+        .customWaves[0]?.positions ?? [];
+    const last = positions.length - 3;
+
+    expect(positions[0]).toBeCloseTo(-WIDE, 6);
+    expect(positions[last]).toBeCloseTo(WIDE, 6);
+    expect(positions[1]).toBeCloseTo(0.6, 6);
+  });
+
+  test('a circular main wave sits at wave_x / wave_y on a wide screen', () => {
+    const preset = compilePresetForScene(
+      `
+title=Main Wave Centre
+nWaveMode=0
+fWaveAlpha=1
+fWaveScale=1
+wave_x=0.1
+wave_y=0.8
+      `,
+      'scene-main-wave-centre',
+    );
+
+    const positions = createMilkdropVM(preset).step(
+      makeSignals({ aspect: WIDE }),
+    ).mainWave.positions;
+    let sumX = 0;
+    let sumY = 0;
+    const count = positions.length / 3;
+    for (let index = 0; index < positions.length; index += 3) {
+      sumX += positions[index] ?? 0;
+      sumY += positions[index + 1] ?? 0;
+    }
+
+    expect(count).toBeGreaterThan(8);
+    expect(sumX / count).toBeCloseTo(-0.8 * WIDE, 1);
+    expect(sumY / count).toBeCloseTo(0.6, 1);
+  });
+
+  test('motion vectors stretch across a wide screen like the mesh', () => {
+    const preset = compilePresetForScene(
+      `
+title=Motion Span
+motion_vectors=1
+motion_vectors_x=12
+motion_vectors_y=9
+mv_a=1
+per_pixel_1=zoom=1.08;
+      `,
+      'scene-motion-span',
+    );
+    const extents = (aspect: number) => {
+      const vectors = createMilkdropVM(preset).step(
+        makeSignals({ aspect }),
+      ).motionVectors;
+      let maxX = 0;
+      let maxY = 0;
+      for (const vector of vectors) {
+        maxX = Math.max(
+          maxX,
+          Math.abs(vector.positions[0] ?? 0),
+          Math.abs(vector.positions[3] ?? 0),
+        );
+        maxY = Math.max(
+          maxY,
+          Math.abs(vector.positions[1] ?? 0),
+          Math.abs(vector.positions[4] ?? 0),
+        );
+      }
+      return { count: vectors.length, maxX, maxY };
+    };
+
+    const wide = extents(WIDE);
+    const tall = extents(1 / WIDE);
+
+    // The field is sampled across the whole screen, so its reach follows the
+    // screen's longer side: 16/9 apart, where the centre square gave 1.
+    expect(wide.count).toBeGreaterThan(0);
+    expect(wide.maxX / wide.maxY).toBeCloseTo(WIDE, 0);
+    expect(tall.maxY / tall.maxX).toBeCloseTo(WIDE, 0);
+  });
+
+  test('a drag moves shapes with the waves, even left of centre', () => {
+    const preset = compilePresetForScene(
+      `
+title=Drag Shapes
+shapecode_0_enabled=1
+shapecode_0_sides=4
+shape_0_per_frame1=x = 0.1; y = 0.2; rad = 0.05;
+wavecode_0_enabled=1
+wavecode_0_samples=4
+wave_0_per_point1=x = 0.1; y = 0.2;
+      `,
+      'scene-drag-shapes',
+    );
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+    const shapeBefore = { x: frameState.shapes[0]?.x ?? 0, y: 0 };
+    shapeBefore.y = frameState.shapes[0]?.y ?? 0;
+    const waveBefore = {
+      x: frameState.customWaves[0]?.positions[0] ?? 0,
+      y: frameState.customWaves[0]?.positions[1] ?? 0,
+    };
+
+    const adjusted = applyMilkdropInteractionResponse(frameState, {
+      dragDelta: { x: 0.1, y: 0.1 },
+      performance: { dragIntensity: 0 },
+      gesture: null,
+    } as never);
+
+    const shape = adjusted.shapes[0];
+    const wave = adjusted.customWaves[0]?.positions ?? [];
+    // the shape and the wave point started together and moved together
+    expect(shapeBefore.x).toBeCloseTo(waveBefore.x, 6);
+    expect(shapeBefore.y).toBeCloseTo(waveBefore.y, 6);
+    expect(shape?.x).toBeCloseTo(wave[0] ?? Number.NaN, 6);
+    expect(shape?.y).toBeCloseTo(wave[1] ?? Number.NaN, 6);
+    expect(shape?.x).toBeCloseTo(shapeBefore.x + 0.09, 6);
   });
 });

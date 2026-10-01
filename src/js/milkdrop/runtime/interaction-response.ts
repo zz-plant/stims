@@ -105,8 +105,27 @@ function transformScenePositionsInPlace(
   }
 }
 
-function nudgeCenter(value: number, offset: number) {
-  return clamp(value + offset * 0.5, 0, 1);
+/**
+ * Moves a shape's centre with the rest of the scene: the same scale, twist
+ * and drag the wave positions get. Shape centres are scene units like every
+ * other position here; treating them as MilkDrop [0,1] values clamped every
+ * shape left of or below centre onto it as soon as a drag began.
+ */
+function transformShapeCenterInPlace(
+  shape: { x: number; y: number },
+  {
+    offsetX,
+    offsetY,
+    rotation,
+    scale,
+  }: { offsetX: number; offsetY: number; rotation: number; scale: number },
+) {
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const x = shape.x * scale;
+  const y = shape.y * scale;
+  shape.x = x * cos - y * sin + offsetX;
+  shape.y = x * sin + y * cos + offsetY;
 }
 
 function enhancePostEffectsInPlace(
@@ -178,15 +197,11 @@ function enhanceGpuGeometryInPlace(
     pinchDelta: number;
   },
 ): void {
+  // Wave centres are scene units, so a drag moves them by the offset itself.
+  // The main wave gets no interaction uniforms, so this is its only drag.
   if (gpuGeometry.mainWave) {
-    gpuGeometry.mainWave.centerX = nudgeCenter(
-      gpuGeometry.mainWave.centerX,
-      offsetX,
-    );
-    gpuGeometry.mainWave.centerY = nudgeCenter(
-      gpuGeometry.mainWave.centerY,
-      -offsetY,
-    );
+    gpuGeometry.mainWave.centerX += offsetX;
+    gpuGeometry.mainWave.centerY += offsetY;
     gpuGeometry.mainWave.scale = clamp(
       gpuGeometry.mainWave.scale * scale,
       0.45,
@@ -196,8 +211,7 @@ function enhanceGpuGeometryInPlace(
   for (let ci = 0; ci < gpuGeometry.customWaves.length; ci += 1) {
     const wave = gpuGeometry.customWaves[ci];
     if (!wave) continue;
-    wave.centerX = nudgeCenter(wave.centerX, offsetX);
-    wave.centerY = nudgeCenter(wave.centerY, -offsetY);
+    // translated by the interaction uniforms in the vertex shader
     wave.scaling = clamp(wave.scaling * scale, 0.45, 2.4);
   }
   if (gpuGeometry.meshField) {
@@ -316,8 +330,7 @@ export function applyMilkdropInteractionResponse(
     for (let si = 0; si < frameState.shapes.length; si += 1) {
       const shape = frameState.shapes[si];
       if (!shape) continue;
-      shape.x = nudgeCenter(shape.x, offsetX);
-      shape.y = nudgeCenter(shape.y, -offsetY);
+      transformShapeCenterInPlace(shape, { offsetX, offsetY, rotation, scale });
       shape.radius = clamp(shape.radius * scale, 0.02, 0.6);
       shape.rotation = shape.rotation + rotation;
     }
@@ -373,8 +386,7 @@ export function applyMilkdropInteractionResponse(
   for (let si = 0; si < frameState.shapes.length; si += 1) {
     const shape = frameState.shapes[si];
     if (!shape) continue;
-    shape.x = nudgeCenter(shape.x, offsetX);
-    shape.y = nudgeCenter(shape.y, -offsetY);
+    transformShapeCenterInPlace(shape, { offsetX, offsetY, rotation, scale });
     shape.radius = clamp(shape.radius * scale, 0.02, 0.6);
     shape.rotation = shape.rotation + rotation;
   }
