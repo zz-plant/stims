@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 
 const STORAGE_KEY = 'stims:preset-queue:v1';
@@ -7,10 +8,9 @@ const MAX_QUEUE_SIZE = 50;
 type QueueSnapshot = { presetIds: string[] };
 
 function readStoredQueue(): string[] {
-  if (typeof localStorage === 'undefined') return [];
   try {
     const parsed = JSON.parse(
-      localStorage.getItem(STORAGE_KEY) ?? '{}',
+      readStored(STORAGE_KEY) ?? '{}',
     ) as Partial<QueueSnapshot>;
     return Array.isArray(parsed.presetIds)
       ? parsed.presetIds.filter((id): id is string => typeof id === 'string')
@@ -21,17 +21,12 @@ function readStoredQueue(): string[] {
 }
 
 function writeStoredQueue(presetIds: string[]) {
-  if (typeof localStorage === 'undefined') return;
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        presetIds: presetIds.slice(0, MAX_QUEUE_SIZE),
-      } satisfies QueueSnapshot),
-    );
-  } catch (error) {
-    console.debug('Failed to write stored preset queue', error);
-  }
+  writeStored(
+    STORAGE_KEY,
+    JSON.stringify({
+      presetIds: presetIds.slice(0, MAX_QUEUE_SIZE),
+    } satisfies QueueSnapshot),
+  );
 }
 
 export function usePersistentPresetQueue(catalog: PresetCatalogEntry[]) {

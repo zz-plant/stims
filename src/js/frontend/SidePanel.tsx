@@ -15,6 +15,11 @@ import {
   useState,
 } from 'react';
 import styles from '../../css/SidePanel.module.css';
+import {
+  readStored,
+  removeStored,
+  writeStored,
+} from '../core/state/browser-storage.ts';
 import { useEscapeHandler } from './hooks/use-escape-handler.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import { UiIcon } from './UiIcon.tsx';
@@ -42,8 +47,7 @@ const clampSeamWidth = (width: number) =>
   Math.round(Math.min(seamMaxWidth(), Math.max(SEAM_MIN_WIDTH, width)));
 
 const readStoredSeamWidth = (): number | null => {
-  if (typeof localStorage === 'undefined') return null;
-  const raw = Number(localStorage.getItem(SEAM_STORAGE_KEY));
+  const raw = Number(readStored(SEAM_STORAGE_KEY));
   return Number.isFinite(raw) && raw > 0 ? raw : null;
 };
 
@@ -223,14 +227,12 @@ export function SidePanel({
 
   const commitSeamWidth = useCallback((width: number | null) => {
     setSeamWidth(width);
-    try {
-      if (width === null) {
-        localStorage.removeItem(SEAM_STORAGE_KEY);
-      } else {
-        localStorage.setItem(SEAM_STORAGE_KEY, String(width));
-      }
-    } catch {
-      // private mode / quota — the width still applies for this session
+    // Unpersisted in private mode / over quota: the width still applies for
+    // this session.
+    if (width === null) {
+      removeStored(SEAM_STORAGE_KEY);
+    } else {
+      writeStored(SEAM_STORAGE_KEY, String(width));
     }
   }, []);
 

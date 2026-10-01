@@ -14,6 +14,8 @@
  * modulated, and all three describe it with the same words.
  */
 
+import { readStored, writeStored } from '../core/state/browser-storage.ts';
+
 const STORAGE_KEY = 'stims:perform-pins:v1';
 
 /**
@@ -68,9 +70,8 @@ let pinnedTargets: string[] | null = null;
 const pinListeners = new Set<() => void>();
 
 function loadPinnedTargets(): string[] {
-  if (typeof localStorage === 'undefined') return [];
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+    const parsed = JSON.parse(readStored(STORAGE_KEY) ?? '[]');
     if (!Array.isArray(parsed)) return [];
     // Drop anything the picker no longer offers rather than rendering a
     // control with no range: a stale pin from an older build must degrade to
@@ -85,14 +86,11 @@ function loadPinnedTargets(): string[] {
 }
 
 function persist(targets: string[]): void {
-  if (typeof localStorage === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(targets));
-  } catch (error) {
-    // Private-mode and quota failures must not take the panel down with
-    // them: the pins still work for this session, they just will not
-    // survive a reload. Worth a line in the console, not a toast.
-    console.debug('[stims] Could not persist performance pins.', error);
+  // Private-mode and quota failures must not take the panel down with
+  // them: the pins still work for this session, they just will not
+  // survive a reload. Worth a line in the console, not a toast.
+  if (!writeStored(STORAGE_KEY, JSON.stringify(targets))) {
+    console.debug('[stims] Could not persist performance pins.');
   }
 }
 

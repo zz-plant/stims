@@ -3,6 +3,8 @@
  * (Mac vs Windows/Linux), priority scopes, and visual shortcut cheat sheets.
  */
 
+import { readStored, writeStored } from '../core/state/browser-storage.ts';
+
 export type ShortcutActionId =
   | 'palette'
   | 'audio'
@@ -365,10 +367,9 @@ if (typeof window !== 'undefined') {
 
 export function readShortcutOverrides(): ShortcutOverrides {
   if (overridesCache) return overridesCache;
-  if (typeof localStorage === 'undefined') return {};
   try {
     const parsed = JSON.parse(
-      localStorage.getItem(SHORTCUT_STORAGE_KEY) ?? '{}',
+      readStored(SHORTCUT_STORAGE_KEY) ?? '{}',
     ) as ShortcutOverrides;
     overridesCache = parsed && typeof parsed === 'object' ? parsed : {};
   } catch {
@@ -379,18 +380,15 @@ export function readShortcutOverrides(): ShortcutOverrides {
 
 /** Returns false (instead of throwing) when the write could not persist. */
 export function writeShortcutOverrides(overrides: ShortcutOverrides): boolean {
-  if (typeof localStorage === 'undefined') return false;
-  try {
-    localStorage.setItem(SHORTCUT_STORAGE_KEY, JSON.stringify(overrides));
-    overridesCache = overrides;
-    return true;
-  } catch (error) {
-    // A quota/private-browsing failure here runs inside a keydown handler;
-    // letting it throw would take down the whole app via the error boundary
-    // for what is only a rebind that fails to persist.
-    console.warn('[shortcuts] Could not save shortcut overrides:', error);
+  // A quota/private-browsing failure here runs inside a keydown handler;
+  // letting it throw would take down the whole app via the error boundary
+  // for what is only a rebind that fails to persist.
+  if (!writeStored(SHORTCUT_STORAGE_KEY, JSON.stringify(overrides))) {
+    console.warn('[shortcuts] Could not save shortcut overrides.');
     return false;
   }
+  overridesCache = overrides;
+  return true;
 }
 
 type ParsedShortcut = {

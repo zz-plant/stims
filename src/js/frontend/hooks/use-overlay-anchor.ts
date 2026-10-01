@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { readStored, writeStored } from '../../core/state/browser-storage.ts';
 
 /**
  * Drag-to-snap positioning for stage overlays. The overlay never gets free
@@ -25,15 +26,10 @@ function readStoredAnchor<A extends string>(
   storageKey: string,
   anchors: readonly A[],
 ): A | null {
-  if (typeof localStorage === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(storageKey);
-    return raw !== null && (anchors as readonly string[]).includes(raw)
-      ? (raw as A)
-      : null;
-  } catch {
-    return null;
-  }
+  const raw = readStored(storageKey);
+  return raw !== null && (anchors as readonly string[]).includes(raw)
+    ? (raw as A)
+    : null;
 }
 
 function prefersReducedMotion() {
@@ -75,11 +71,9 @@ export function useOverlayAnchor<A extends string>({
   const setAnchor = useCallback(
     (next: A) => {
       setAnchorState(next);
-      try {
-        localStorage.setItem(storageKey, next);
-      } catch {
-        // private mode / quota — the anchor still applies for this session
-      }
+      // Unpersisted in private mode / over quota: the anchor still applies
+      // for this session.
+      writeStored(storageKey, next);
     },
     [storageKey],
   );
