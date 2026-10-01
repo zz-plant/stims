@@ -1116,6 +1116,7 @@ async function buildDocPointers() {
     extractSectionWithRange(lines, 'Quick Reference Commands') ||
     extractSectionWithRange(lines, 'Quick reference');
   const layout =
+    extractSectionWithRange(lines, 'How it works') ||
     extractSectionWithRange(lines, 'Technical foundations') ||
     extractSectionWithRange(lines, 'Features at a Glance') ||
     extractSectionWithRange(lines, 'What it does') ||

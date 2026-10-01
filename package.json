@@ -1,6 +1,6 @@
 {
   "name": "stims",
-  "description": "Browser-native MilkDrop-inspired visualizer with curated presets, live editing, and import/export.",
+  "description": "Play and live-edit MilkDrop presets in your browser: original .milk files, any audio source, shareable links.",
   "version": "1.0.0",
   "type": "module",
   "homepage": "https://toil.fyi",

@@ -69,7 +69,7 @@ Deep-dive specifications into the JIT VM, dual WebGPU/WebGL2 rendering pipeline,
 | Document | Description |
 | --- | --- |
 | 📐 [**Architecture Overview**](./ARCHITECTURE.md) | High-level system architecture, SPA URL state, React workspace, and engine seams |
-| 🧱 [**Technical Foundations**](./TECHNICAL_ACHIEVEMENTS.md) | Implemented systems, evidence boundaries, beta behavior, optional services, and non-shipped scaffolding |
+| 🧱 [**Technical Foundations**](./TECHNICAL_ACHIEVEMENTS.md) | System diagram, implemented systems, evidence boundaries, beta behavior, optional services, and non-shipped scaffolding |
 | ⚡ [**MilkDrop Preset Runtime**](./MILKDROP_PRESET_RUNTIME.md) | Preset compiler lifecycle, EEL2 expression execution, memory buffers, and signal contracts |
 | 📈 [**Runtime Performance Evidence**](./RUNTIME_PERFORMANCE.md) | Repeated production FPS methodology, hardware GPU timing, adaptive resource tiers, measured JIT result, caveats, and reproduction command |
 | 🖥️ [**WebGPU Architectural Revamp**](./WEBGPU_ARCHITECTURAL_REVAMP.md) | WebGPU TSL/WGSL pipeline design, feature rollout flags, and WebGL2 fallback chains |

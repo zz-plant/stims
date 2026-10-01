@@ -46,6 +46,7 @@ import {
   normalizeTransformCenter,
   normalizeTransformCenterY,
   type StaticMeshLattice,
+  sceneHalfExtents,
 } from './shared';
 
 type ParticleFieldDeviceProfile = {
@@ -967,10 +968,12 @@ export function buildMesh({
   state,
   meshField,
   geometryState,
+  aspect = 1,
 }: {
   state: MutableState;
   meshField: MeshField;
   geometryState?: GeometryBuilderState;
+  aspect?: number;
 }): MilkdropMeshVisual {
   const colorValue = color(
     state.mesh_r ?? 0.4,
@@ -997,6 +1000,9 @@ export function buildMesh({
     }
   }
   let writeIndex = 0;
+  // Mesh space spans the screen as [-1, 1]; the overlay is drawn by the scene
+  // camera, which is in square units.
+  const { x: halfX, y: halfY } = sceneHalfExtents(aspect);
 
   for (let row = 0; row < meshField.density; row += 1) {
     for (let col = 0; col < meshField.density; col += 1) {
@@ -1009,11 +1015,11 @@ export function buildMesh({
       if (col + 1 < meshField.density) {
         const next = meshField.points[index + 1];
         if (next) {
-          positions[writeIndex] = point.x;
-          positions[writeIndex + 1] = point.y;
+          positions[writeIndex] = point.x * halfX;
+          positions[writeIndex + 1] = point.y * halfY;
           positions[writeIndex + 2] = -0.25;
-          positions[writeIndex + 3] = next.x;
-          positions[writeIndex + 4] = next.y;
+          positions[writeIndex + 3] = next.x * halfX;
+          positions[writeIndex + 4] = next.y * halfY;
           positions[writeIndex + 5] = -0.25;
           writeIndex += 6;
         }
@@ -1022,11 +1028,11 @@ export function buildMesh({
       if (row + 1 < meshField.density) {
         const next = meshField.points[index + meshField.density];
         if (next) {
-          positions[writeIndex] = point.x;
-          positions[writeIndex + 1] = point.y;
+          positions[writeIndex] = point.x * halfX;
+          positions[writeIndex + 1] = point.y * halfY;
           positions[writeIndex + 2] = -0.25;
-          positions[writeIndex + 3] = next.x;
-          positions[writeIndex + 4] = next.y;
+          positions[writeIndex + 3] = next.x * halfX;
+          positions[writeIndex + 4] = next.y * halfY;
           positions[writeIndex + 5] = -0.25;
           writeIndex += 6;
         }
@@ -1406,6 +1412,7 @@ export function buildMotionVectors({
   const aspectRatio = signals.aspect ?? 1;
   const aspectX = aspectRatio < 1 ? aspectRatio : 1;
   const aspectY = aspectRatio > 1 ? 1 / aspectRatio : 1;
+  const sceneHalf = sceneHalfExtents(aspectRatio);
 
   // Motion-vector sample points CAN repeat (legacy mv_dx/mv_dy offsets clamp
   // several columns onto +/-1) and can coincide with mesh-lattice points. They
@@ -1552,12 +1559,14 @@ export function buildMotionVectors({
         thickness: 1,
         additive: false,
       };
+      // The field is sampled in mesh space, which spans the screen as [-1, 1];
+      // the scene camera is in square units, so stretch to its half-extents.
       const positions = vector.positions;
-      positions[0] = currentPointX - dx * 0.45;
-      positions[1] = currentPointY - dy * 0.45;
+      positions[0] = (currentPointX - dx * 0.45) * sceneHalf.x;
+      positions[1] = (currentPointY - dy * 0.45) * sceneHalf.y;
       positions[2] = 0.18;
-      positions[3] = currentPointX + dx;
-      positions[4] = currentPointY + dy;
+      positions[3] = (currentPointX + dx) * sceneHalf.x;
+      positions[4] = (currentPointY + dy) * sceneHalf.y;
       positions[5] = 0.18;
       vector.color = colorValue;
       vector.alpha = alpha;

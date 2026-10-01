@@ -6,6 +6,7 @@ This document defines the attribution posture for Stims when we talk about the M
 
 Use language like:
 
+- "Play and live-edit MilkDrop presets in your browser." This is the public pitch: the README tagline, the page title, and link previews all use it. It names what Stims does with the presets rather than claiming to be MilkDrop, and it is more accurate than "MilkDrop-inspired", because the presets are the original `.milk` files.
 - "Independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop."
 - "Inspired by MilkDrop-era preset workflows."
 - "Able to load and render presets from the MilkDrop/projectM ecosystem. Visual fidelity varies: 4 of 23 certification-corpus presets have measured near-exact results; the remaining presets are at the compiler/runtime compatibility stage and have not yet been measured against projectM references."
