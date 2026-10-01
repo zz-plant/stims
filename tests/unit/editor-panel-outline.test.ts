@@ -54,6 +54,14 @@ describe('editor panel Outline tab', () => {
     Array.from(
       panel.element.querySelectorAll<HTMLElement>('.stims-editor__outline-row'),
     );
+  /** The audio tag's text on the first row whose label starts with
+   * `label`, or null with no tag. Text, not the element: a failing matcher
+   * that has to print a DOM node aborts the test runner. */
+  const audioTagFor = (panel: EditorPanel, label: string) =>
+    rows(panel)
+      .find((row) => row.querySelector('code')?.textContent?.startsWith(label))
+      ?.querySelector<HTMLElement>('.stims-editor__outline-audio')
+      ?.textContent ?? null;
   const cursorLine = (panel: EditorPanel) => {
     const view = (
       panel as unknown as {
@@ -206,6 +214,123 @@ describe('editor panel Outline tab', () => {
       'false',
     );
     clearRenderIsolation();
+    panel.dispose();
+  });
+  test('the layers a preset draws get Solo and Mute, under Settings', () => {
+    const source = [
+      'title=Layers',
+      'wave_a=0.8',
+      'ob_size=0.02',
+      'ob_a=0.5',
+      // motion vectors stay off: the toggle is off and mv_a is 0
+      'mv_a=0',
+      'per_frame_1=zoom = 1.01;',
+    ].join('\n');
+    const panel = mount(source);
+    const compiled = compileMilkdropPresetSource(source, {
+      id: 'outline-layers',
+    });
+    panel.setSessionState({
+      source,
+      diagnostics: [],
+      latestCompiled: compiled,
+      activeCompiled: compiled,
+      dirty: false,
+    });
+    const layers = () =>
+      Array.from(
+        panel.element.querySelectorAll<HTMLElement>(
+          '.stims-editor__outline-layer',
+        ),
+        (row) => row.dataset.kind,
+      );
+    expect(layers()).toEqual(['main-wave', 'borders']);
+    // Right after the Settings row, where their fields live.
+    const list = panel.element.querySelector('.stims-editor__outline');
+    const items = Array.from(list?.children ?? []);
+    const settings = items.findIndex(
+      (item) =>
+        item.querySelector('code')?.textContent === 'Settings' ||
+        (item as HTMLElement).dataset.kind === 'settings',
+    );
+    expect(
+      items[settings + 1]?.querySelector<HTMLElement>(
+        '.stims-editor__outline-layer',
+      )?.dataset.kind,
+    ).toBe('main-wave');
+
+    const mute = panel.element.querySelector<HTMLButtonElement>(
+      '[aria-label="Mute borders"]',
+    );
+    mute?.click();
+    expect(getRenderIsolation()?.muted).toEqual([
+      { kind: 'borders', index: 0 },
+    ]);
+    expect(mute?.getAttribute('aria-pressed')).toBe('true');
+
+    // An equation that writes an alpha the file leaves at 0 draws the layer.
+    const driven = `${source}\nper_frame_2=mv_a = 0.5*bass;`;
+    panel.setSessionState({
+      source: driven,
+      diagnostics: [],
+      latestCompiled: compileMilkdropPresetSource(driven, {
+        id: 'outline-layers',
+      }),
+      activeCompiled: compileMilkdropPresetSource(driven, {
+        id: 'outline-layers',
+      }),
+      dirty: false,
+    });
+    expect(layers()).toEqual(['motion-vectors', 'main-wave', 'borders']);
+
+    clearRenderIsolation();
+    panel.dispose();
+  });
+
+  test('each drawn part says which audio reaches what it draws', () => {
+    const source = [
+      'per_frame_1=q1 = mid_att;',
+      'per_pixel_1=zoom = zoom + 0.01*q1*rad;',
+      // a wave whose code draws the waveform
+      'wavecode_0_enabled=1',
+      'wave_0_per_point1=y = 0.5 + value1*0.3;',
+      // a wave whose code reads no audio: its points may still sit on the
+      // waveform, so the row makes no claim
+      'wavecode_2_enabled=1',
+      'wave_2_per_point1=x = sample;',
+      'shapecode_0_enabled=1',
+      'shape_0_per_frame1=rad = 0.1 + 0.2*bass;',
+      // slots need not be contiguous: the IR lists only those defined
+      'shapecode_3_enabled=1',
+      'shape_3_per_frame1=ang = time;',
+      // disabled: draws nothing
+      'shapecode_2_enabled=0',
+      'shape_2_per_frame1=rad = treb;',
+    ].join('\n');
+    const panel = mount(source);
+    const compiled = compileMilkdropPresetSource(source, {
+      id: 'outline-audio',
+    });
+    panel.setSessionState({
+      source,
+      diagnostics: [],
+      latestCompiled: compiled,
+      activeCompiled: compiled,
+      dirty: false,
+    });
+
+    // through q1, which the per-pixel code reads
+    expect(audioTagFor(panel, 'Per-pixel')).toBe('mid_att');
+    expect(audioTagFor(panel, 'wave_0')).toBe('waveform');
+    expect(audioTagFor(panel, 'wave_2')).toBeNull();
+    expect(audioTagFor(panel, 'shape_0')).toBe('bass');
+    expect(audioTagFor(panel, 'shape_3')).toBe('no audio');
+    expect(audioTagFor(panel, 'shape_2')).toBeNull();
+    // one tag per part, on its first row
+    expect(
+      panel.element.querySelectorAll('.stims-editor__outline-audio'),
+    ).toHaveLength(4);
+
     panel.dispose();
   });
 });

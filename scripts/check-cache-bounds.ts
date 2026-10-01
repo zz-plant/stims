@@ -49,6 +49,8 @@ const ALLOWED: Record<string, string> = {
     'MILKDROP2_STIMS_KEYS is a fixed set built once at module load from the MilkDrop 2 field table, and `known` is a per-call Set over one slot-order table — lookup tables, not caches.',
   'src/js/milkdrop/preset-dataflow.ts':
     'AUDIO/CLOCK/POINTER are fixed name literals built at module load; every other Map/Set is a per-call dependency set inside analyzePresetDataflow, bounded by the variables and inputs of the one preset being analysed and discarded on return.',
+  'src/js/milkdrop/overlay/editor-pane-outline.ts':
+    'Every Set is per repaint over one preset: the parts already tagged or given Solo/Mute, and one part’s signal names. Each is rebuilt from the buffer on every paint and discarded, so it is bounded by the outline it describes; expandedShaderStages holds at most the two shader stages.',
   'src/js/milkdrop/compiler/shader-analysis-glsl.ts':
     'TEMPLATE_OWNED_TARGETS is a two-element literal fixed at module load, and declaredLocals is a per-call Set scoped to one shader program — both are bounded by the source they read, not by runtime accumulation.',
 };

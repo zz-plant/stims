@@ -368,6 +368,9 @@ const SHAPE_OUTPUTS = new Set([
 
 /** Shared between programs across frames: megabuf memory and the q bank. */
 const isShared = (name: string) => name === MEMORY || /^q\d+$/.test(name);
+/** Whether a custom wave or shape draws at all. */
+const isEnabled = (fields: Record<string, unknown>) =>
+  Number(fields.enabled ?? 0) > 0;
 const signature = (map: ReadonlyMap<string, Atoms>) =>
   JSON.stringify([...map].map(([k, v]) => [k, [...v].sort()]).sort());
 
@@ -473,14 +476,12 @@ export function analyzePresetDataflow(
     outputs: ReadonlySet<string>,
     ...blocks: MilkdropProgramBlock[]
   ) => merged(outputAudio(outputs, ...blocks));
-  const enabled = (fields: Record<string, unknown>) =>
-    Number(fields.enabled ?? 0) > 0;
   const perPixelOutputs = outputAudio(PER_PIXEL_OUTPUTS, ir.programs.perPixel);
   const drawnAudio = {
     perPixel: merged(perPixelOutputs),
     perPixelOutputs,
     waves: ir.customWaves.map((wave) =>
-      enabled(wave.fields)
+      isEnabled(wave.fields)
         ? blockAudio(
             WAVE_OUTPUTS,
             wave.programs.perFrame,
@@ -489,7 +490,7 @@ export function analyzePresetDataflow(
         : [],
     ),
     shapes: ir.customShapes.map((shape) =>
-      enabled(shape.fields)
+      isEnabled(shape.fields)
         ? blockAudio(SHAPE_OUTPUTS, shape.programs.perFrame)
         : [],
     ),
@@ -568,6 +569,58 @@ export function controlAudio(
     dataflow.variables.get(key)?.audio ??
     null
   );
+}
+
+/**
+ * The audio reaching what each drawn part of a preset draws, keyed by the
+ * name the file gives the part: `per_pixel`, `wave_0`, `shape_1`. Only parts
+ * that draw are present: the per-pixel equations when there are any, and
+ * enabled custom waves and shapes.
+ */
+export function drawnPartAudio(
+  ir: MilkdropPresetIR,
+  dataflow: PresetDataflow,
+): Map<string, string[]> {
+  const parts = new Map<string, string[]>();
+  if (ir.programs.perPixel.statements.length > 0) {
+    parts.set('per_pixel', dataflow.drawnAudio.perPixel);
+  }
+  // The IR counts slots from 1; the file, from 0.
+  ir.customWaves.forEach((wave, position) => {
+    if (isEnabled(wave.fields)) {
+      parts.set(
+        `wave_${wave.index - 1}`,
+        dataflow.drawnAudio.waves[position] ?? [],
+      );
+    }
+  });
+  ir.customShapes.forEach((shape, position) => {
+    if (isEnabled(shape.fields)) {
+      parts.set(
+        `shape_${shape.index - 1}`,
+        dataflow.drawnAudio.shapes[position] ?? [],
+      );
+    }
+  });
+  return parts;
+}
+
+/**
+ * The name the VM keeps a built-in control's value under, when one value per
+ * frame decides it: per-frame code writes the control and the per-pixel
+ * program leaves it alone. Null when nothing writes it per frame, or when
+ * per-pixel code varies it across the mesh, so that no single number is what
+ * the frame drew with.
+ */
+export function frameValueName(
+  dataflow: PresetDataflow,
+  name: string,
+): string | null {
+  const key = keyOf(name);
+  return dataflow.variables.has(key) &&
+    !dataflow.drawnAudio.perPixelOutputs.has(key)
+    ? key
+    : null;
 }
 
 /**
