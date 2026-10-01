@@ -30,9 +30,9 @@ import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { EngineContextValue } from './engine-context.tsx';
 
 /**
- * The start path awaits the engine mount itself, so this only covers React
- * committing the new source afterwards. A failed start never commits it, so
- * this is also how long a refusal takes to come back.
+ * Bounds the wait for React to commit a source the start path already
+ * reported playing, so the next command reads the stage the reply describes.
+ * A failed start is reported straight from the start path's outcome.
  */
 const AUDIO_COMMIT_TIMEOUT_MS = 2000;
 
@@ -84,20 +84,21 @@ async function startAudioForAgent(
   source: AgentAudioSource,
   timeoutMs: number,
 ): Promise<AgentCommandResult> {
-  const startedAt = Date.now();
   // The same start path the audio source panel's buttons take.
-  await engine.handleAudioStart(source);
-  const committed = await waitForCommittedCore(
+  const outcome = await engine.handleAudioStart(source);
+  if (!outcome.ok) {
+    return {
+      success: false,
+      reason: outcome.message,
+      // An in-app browser falls back to demo audio rather than none.
+      ...(outcome.source ? { playing: outcome.source } : {}),
+    };
+  }
+  await waitForCommittedCore(
     (core) => core.liveMode && core.audioSource === source,
     timeoutMs,
   );
-  if (committed) return { success: true };
-  return {
-    success: false,
-    reason:
-      latestStatusSince(startedAt) ??
-      `The ${source} audio source did not start.`,
-  };
+  return { success: true };
 }
 
 async function loadPresetForAgent(
