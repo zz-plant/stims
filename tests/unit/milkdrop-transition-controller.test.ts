@@ -272,6 +272,56 @@ describe('manual fades survive the duplicate begin', () => {
     );
   });
 
+  test('a cut cannot silently cancel a hand-driven fade either', () => {
+    const controller = createMilkdropTransitionController();
+    controller.beginManual(blendPayload());
+    controller.begin(null, 0);
+
+    expect(controller.getPhase()).toBe('manual');
+  });
+});
+
+describe('milkdrop transition controller under gating', () => {
+  test('a blend gated frame after frame gives up instead of hanging', () => {
+    // An incoming preset heavier than the per-frame workload gate suspends
+    // every frame of its own blend. Suspension used to have no end: the
+    // blend sat in 'blending' with no cover until the next switch.
+    const controller = createMilkdropTransitionController();
+    controller.begin(blendPayload(), 2);
+    controller.tick({ ...tickDefaults, now: 1000 });
+
+    let now = 1000;
+    for (let frame = 0; frame < 9; frame += 1) {
+      now += 100;
+      controller.tick({ ...tickDefaults, canBlendThisFrame: false, now });
+    }
+    // Brief gating — a beat-driven spike — still just suspends.
+    expect(controller.getPhase()).toBe('blending');
+
+    for (let frame = 0; frame < 3; frame += 1) {
+      now += 100;
+      controller.tick({ ...tickDefaults, canBlendThisFrame: false, now });
+    }
+    expect(controller.getPhase()).toBe('idle');
+    expect(controller.getEvents().at(-2)?.event).toBe('cancelled');
+  });
+
+  test('a blended frame resets the suspension clock', () => {
+    const controller = createMilkdropTransitionController();
+    controller.begin(blendPayload(), 4);
+    let now = 1000;
+    controller.tick({ ...tickDefaults, now });
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      for (let frame = 0; frame < 8; frame += 1) {
+        now += 100;
+        controller.tick({ ...tickDefaults, canBlendThisFrame: false, now });
+      }
+      now += 100;
+      controller.tick({ ...tickDefaults, now });
+    }
+    expect(controller.getPhase()).toBe('blending');
+  });
+
   test('the cover alpha stays where the blend stands through a gated frame', () => {
     // A switch made mid-blend snapshots the screen at this alpha; a gated
     // frame draws no cover, and a snapshot taken at its 0 would drop the
@@ -297,13 +347,5 @@ describe('manual fades survive the duplicate begin', () => {
     controller.beginManual(blendPayload());
     controller.setManualPosition(0.25);
     expect(controller.getCoverAlpha()).toBeCloseTo(0.75, 5);
-  });
-
-  test('a cut cannot silently cancel a hand-driven fade either', () => {
-    const controller = createMilkdropTransitionController();
-    controller.beginManual(blendPayload());
-    controller.begin(null, 0);
-
-    expect(controller.getPhase()).toBe('manual');
   });
 });
