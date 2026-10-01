@@ -35,8 +35,11 @@ import agentQaWorkflow from '../.agent/workflows/qa.md';
 import agentShipVisualizerChangeWorkflow from '../.agent/workflows/ship-visualizer-change.md';
 import agentTestVisualizerWorkflow from '../.agent/workflows/test-visualizer.md';
 import docsClaudeReadme from '../.claude/CLAUDE.md';
+import docsArchitecture from '../docs/ARCHITECTURE.md';
 import docsAgentsAgentHandoffs from '../docs/agents/agent-handoffs.md';
 import docsAgentsReadme from '../docs/agents/README.md';
+import docsAuthoringListening from '../docs/authoring/03-listening.md';
+import docsAuthoringReference from '../docs/authoring/reference.md';
 import docsDevelopment from '../docs/DEVELOPMENT.md';
 import docsEvidenceClaimAudit from '../docs/evidence/public-claim-audit.md';
 import docsEvidenceLedger202605 from '../docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md';
@@ -44,16 +47,16 @@ import docsMcpServer from '../docs/MCP_SERVER.md';
 import docsReadme from '../docs/README.md';
 import docsStatus202605 from '../docs/STATUS_2026-05.md';
 import readme from '../README.md';
-import toyManifest from '../src/data/toys.json';
 
 const defaultInstructions = [
-  'Stims is a browser-native MilkDrop visualizer with 43+ bundled presets. The MCP server provides tools organized into these categories:',
+  'Stims plays and live-edits MilkDrop presets in the browser. The MCP server provides tools organized into these categories:',
   '',
   '## Documentation & Commands',
   'list_docs, read_doc_section, search_docs, dev_commands, list_agent_capabilities, read_agent_capability — Explore docs, find commands, load agent workflows.',
   '',
   '## Preset Catalog (Worker-compatible)',
   'list_presets, search_presets, get_preset_info, describe_preset, open_preset_url — Browse, search, and learn about presets without a running visualizer.',
+  "get_audio_reactivity_guide — How presets read audio, and one preset's audio scores.",
   '',
   '## Live Visualizer Session (Stdio-only, requires browser)',
   'Start with start_agent_session to open the visualizer in a headless browser. Then use:',
@@ -71,7 +74,7 @@ const defaultInstructions = [
   '- session_close — Release browser resources when done',
   '',
   '## Automation (Stdio-only)',
-  'run_quality_gate, capture_toy_screenshot, capture_preset, preview_gallery — Run local checks and capture visual output.',
+  'run_quality_gate, capture_preset, preview_gallery — Run local checks and capture visual output.',
   '',
   '## Workflow Tips',
   '1. Browse: list_presets → search_presets → describe_preset → open_preset_url',
@@ -84,12 +87,15 @@ const markdownSources = {
   'README.md': readme,
   'docs/README.md': docsReadme,
   'docs/MCP_SERVER.md': docsMcpServer,
+  'docs/ARCHITECTURE.md': docsArchitecture,
   'docs/DEVELOPMENT.md': docsDevelopment,
   'docs/STATUS_2026-05.md': docsStatus202605,
   'docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md': docsEvidenceLedger202605,
   'docs/evidence/public-claim-audit.md': docsEvidenceClaimAudit,
   'docs/agents/README.md': docsAgentsReadme,
   'docs/agents/agent-handoffs.md': docsAgentsAgentHandoffs,
+  'docs/authoring/reference.md': docsAuthoringReference,
+  'docs/authoring/03-listening.md': docsAuthoringListening,
   '.claude/CLAUDE.md': docsClaudeReadme,
   '.agent/skills/modify-preset-workflow/SKILL.md':
     agentModifyPresetWorkflowSkill,
@@ -148,18 +154,6 @@ type DocSearchResult = {
 type CreateServerOptions = {
   instructions?: string;
   jsonSchemaValidator?: jsonSchemaValidator;
-};
-
-type ToyMetadata = {
-  slug: string;
-  title: string;
-  description: string;
-  requiresWebGPU: boolean;
-  controls: string[];
-  module: string | null;
-  type: string | null;
-  allowWebGLFallback: boolean;
-  url: string;
 };
 
 type AgentCapability = {
@@ -318,7 +312,7 @@ const agentCapabilities: AgentCapability[] = [
     kind: 'skill',
     path: '.agent/skills/review-module-loading/SKILL.md',
     description:
-      'Review PRs touching module loading, bootstrap, toy manifest, library resolution, or gamepad polling.',
+      'Review PRs touching app boot, lazy module loading, catalog resolution, or gamepad polling.',
     command: '/review-module-loading',
   },
   {
@@ -416,51 +410,13 @@ function registerTools(server: McpServer) {
     'list_docs',
     {
       description:
-        'Return quick-start, runtime, repository layout, and manifest-doc pointers from README.md with line references.',
+        'Return quick-start, command, repository-layout, and docs entry-point pointers from README.md with line references.',
       inputSchema: z.object({}),
     },
     async () => {
       const pointers = await buildDocPointers();
 
       return asTextResponse(pointers || 'README content was not available.');
-    },
-  );
-
-  server.registerTool(
-    'get_toys',
-    {
-      description:
-        'Return structured toy metadata (including controls and module info) from src/data/toys.json with optional slug or WebGPU filters.',
-      inputSchema: z.object({
-        slug: z
-          .string()
-          .trim()
-          .optional()
-          .describe('Limit results to a specific toy slug.'),
-        requiresWebGPU: z
-          .boolean()
-          .optional()
-          .describe('Filter by WebGPU requirement (true = only WebGPU toys).'),
-      }),
-    },
-    async ({ slug, requiresWebGPU }) => {
-      const toys = normalizeToys(toyManifest);
-
-      const filtered = toys.filter((toy) => {
-        if (slug && toy.slug !== slug) return false;
-        if (
-          typeof requiresWebGPU === 'boolean' &&
-          toy.requiresWebGPU !== requiresWebGPU
-        )
-          return false;
-        return true;
-      });
-
-      if (!filtered.length) {
-        return asTextResponse('No toys matched the requested filters.');
-      }
-
-      return asTextResponse(JSON.stringify(filtered, null, 2));
     },
   );
 
@@ -544,27 +500,6 @@ function registerTools(server: McpServer) {
         .join('\n\n');
 
       return asTextResponse(response);
-    },
-  );
-
-  server.registerTool(
-    'describe_loader',
-    {
-      description:
-        'Summarize how toy loading and error handling works based on src/js/loader.ts.',
-      inputSchema: z.object({}),
-    },
-    async () => {
-      const loaderDetails = [
-        '- Loader derives the manifest path from the current URL to resolve compiled module files (`/.vite/manifest.json`).',
-        '- Query param `toy` controls navigation; history updates keep the slug in the URL and restore the library view when removed.',
-        '- `loadToy` clears any active toy, shows the active container, and gates WebGPU-only entries before importing modules.',
-        '- Imports are resolved through Vite manifest entries when available, with fallbacks for relative and absolute module paths.',
-        '- Visible status blocks appear while loading; errors render actionable messages for missing dev server, MIME mismatches, or file:// access.',
-        '- A reusable "Back to Library" control and history updates let users return to the catalog without reloads.',
-      ];
-
-      return asTextResponse(loaderDetails.join('\n'));
     },
   );
 
@@ -663,148 +598,6 @@ function registerTools(server: McpServer) {
     },
   );
 
-  server.registerTool(
-    'launch_toy',
-    {
-      description:
-        'Launch a toy in headless mode and enable demo audio for visualization. Returns instructions for capturing screenshots or observing audio reactivity.',
-      inputSchema: z.object({
-        slug: z
-          .string()
-          .trim()
-          .describe('The toy slug to launch (for example, "milkdrop").'),
-        port: z
-          .number()
-          .int()
-          .min(1024)
-          .max(65535)
-          .optional()
-          .default(5173)
-          .describe('Dev server port (defaults to 5173).'),
-      }),
-    },
-    async ({ slug, port = 5173 }) => {
-      const toy = normalizeToys(toyManifest).find((t) => t.slug === slug);
-
-      if (!toy) {
-        return asTextResponse(
-          `Toy "${slug}" not found. Use get_toys to list available toys.`,
-        );
-      }
-
-      const url = `http://localhost:${port}/milkdrop/?experience=${encodeURIComponent(slug)}`;
-
-      const instructions = [
-        `# Launching ${toy.title}`,
-        '',
-        `**URL:** ${url}`,
-        `**Description:** ${toy.description}`,
-        '',
-        '## Steps to interact:',
-        '1. Ensure dev server is running: `bun run dev`',
-        '2. Open the URL in a browser or headless browser',
-        '3. Look for the audio prompt modal',
-        '4. Click "Use demo audio" to enable procedural audio',
-        '5. Wait 3-5 seconds for the visualization to react',
-        '',
-        '## What to observe:',
-        toy.requiresWebGPU
-          ? '- This toy requires WebGPU support'
-          : '- This toy runs with WebGL',
-        '- Visual effects that pulse with bass frequencies',
-        '- Color changes responding to mid-range frequencies',
-        '- Sparkles or fine details reacting to high frequencies',
-        '',
-        '## Controls:',
-        ...(toy.controls.length > 0
-          ? toy.controls.map((c) => `- ${c}`)
-          : ['- No custom controls documented']),
-        '',
-        '**Press Escape to return to the library.**',
-      ].join('\n');
-
-      return asTextResponse(instructions);
-    },
-  );
-
-  server.registerTool(
-    'get_toy_audio_reactivity_guide',
-    {
-      description:
-        'Get a guide on how toys respond to audio frequencies and what visual effects to look for when a toy is playing with demo audio.',
-      inputSchema: z.object({
-        slug: z
-          .string()
-          .trim()
-          .optional()
-          .describe('Specific toy slug for targeted guidance.'),
-      }),
-    },
-    async ({ slug }) => {
-      const guide = [
-        '# Audio Reactivity Guide',
-        '',
-        '## How Toys React to Audio',
-        '',
-        'Stim toys use the AudioHandler to analyze frequency bands and translate them into visual effects:',
-        '',
-        '### Frequency Band Mapping',
-        '- **Bass (20-250 Hz)**: Large-scale movements, pulses, expansions',
-        '  - Examples: Halo size, spiral burst radius, camera shake',
-        '  - Visual cues: Scaling, position offsets, bloom intensity',
-        '',
-        '- **Mids (250-4000 Hz)**: Color shifts, rotations, secondary motion',
-        '  - Examples: Hue cycling, particle velocity, shape morphing',
-        '  - Visual cues: Color temperature, rotation speed, warp effects',
-        '',
-        '- **Highs (4000-20000 Hz)**: Fine details, sparkles, edge effects',
-        '  - Examples: Particle emission, shimmer, grain noise',
-        '  - Visual cues: Brightness spikes, detail layers, pixel shimmer',
-        '',
-        '### Common Audio-Reactive Patterns',
-        '1. **Beat detection**: Sudden visual changes on strong transients',
-        '2. **Smoothed envelopes**: Gradual visual changes following energy curves',
-        '3. **Multi-band visualization**: Different visual elements per frequency band',
-        '',
-        '## Demo Audio',
-        'Demo audio is procedural and contains:',
-        '- Consistent bass beats for rhythm',
-        '- Melodic mid-range content',
-        '- High-frequency harmonics and noise bursts',
-        '',
-        '## What to Look For',
-        'When observing a toy with demo audio:',
-        '- Note the timing between audio events and visual changes',
-        '- Watch for different elements reacting to different frequencies',
-        '- Check if effects are smooth (filtered) or immediate (unfiltered)',
-        '- Observe if there are distinct "layers" of reactivity',
-      ];
-
-      if (slug) {
-        const toy = normalizeToys(toyManifest).find((t) => t.slug === slug);
-        if (toy) {
-          guide.push('', `## Specific to "${toy.title}"`, '');
-          guide.push(`**Description:** ${toy.description}`);
-
-          // Add slug-specific hints for the shipped MilkDrop experience.
-          const slugHints: Record<string, string[]> = {
-            milkdrop: [
-              '- Blend transitions and warp density should swell with bass energy',
-              '- Palette shifts, motion, and preset layering should stay responsive through mids',
-              '- Fine shimmer, mesh detail, and edge activity should lift with highs',
-            ],
-          };
-
-          if (slugHints[slug]) {
-            guide.push('', '### Expected Behaviors:', ...slugHints[slug]);
-          }
-        }
-      }
-
-      return asTextResponse(guide.join('\n'));
-    },
-  );
-
   // ── Preset interaction tools ─────────────────────────────────────────
 
   const PRESET_CATALOG_URL = 'https://toil.fyi/milkdrop-presets/catalog.json';
@@ -824,6 +617,12 @@ function registerTools(server: McpServer) {
             fidelityClass?: string;
             status?: string;
           };
+          quality?: {
+            components?: {
+              staticAudio?: number;
+              measuredReactivity?: number | null;
+            };
+          };
         }>;
       };
     } catch {
@@ -835,7 +634,7 @@ function registerTools(server: McpServer) {
     'list_presets',
     {
       description:
-        'List all 43+ bundled MilkDrop presets with title, author, tags, and certification status.',
+        'List MilkDrop presets from the catalog with title, author, tags, and certification status.',
       inputSchema: z.object({
         filter: z
           .string()
@@ -926,8 +725,7 @@ function registerTools(server: McpServer) {
   server.registerTool(
     'search_presets',
     {
-      description:
-        'Full-text search across all 43+ bundled presets by title, author, or tags.',
+      description: 'Search the preset catalog by title, author, or tags.',
       inputSchema: z.object({
         query: z
           .string()
@@ -1087,6 +885,98 @@ function registerTools(server: McpServer) {
       }
     },
   );
+
+  server.registerTool(
+    'get_audio_reactivity_guide',
+    {
+      description:
+        "Explain how MilkDrop presets read audio (bass/mid/treb, their smoothed _att versions, vol) and how to check what a preset does with it. With a presetId, adds that preset's audio scores from the catalog and the commands that measure it.",
+      inputSchema: z.object({
+        presetId: z
+          .string()
+          .trim()
+          .min(1)
+          .optional()
+          .describe('Preset ID to report audio scores for.'),
+      }),
+    },
+    async ({ presetId }) => {
+      if (!presetId) {
+        return asTextResponse(
+          [...AUDIO_GUIDE, '', ...audioMeasurementSteps('<id>')].join('\n'),
+        );
+      }
+
+      const catalog = await resolveCatalog();
+      const preset = catalog?.presets.find((p) => p.id === presetId);
+      if (catalog && !preset) {
+        return asTextResponse(
+          `Preset "${presetId}" not found. Use search_presets to find a preset ID.`,
+        );
+      }
+
+      const scores = preset
+        ? describeAudioScores(preset.quality?.components)
+        : ['The preset catalog could not be loaded, so scores are missing.'];
+      return asTextResponse(
+        [
+          ...AUDIO_GUIDE,
+          '',
+          `## ${preset?.title ?? presetId} (\`${presetId}\`)`,
+          ...scores,
+          '',
+          ...audioMeasurementSteps(presetId),
+        ].join('\n'),
+      );
+    },
+  );
+}
+
+/**
+ * The audio contract every preset is written against. The scales match
+ * `src/js/milkdrop/runtime-signals.ts`, which documents why they are relative.
+ */
+const AUDIO_GUIDE = [
+  '# How MilkDrop presets react to audio',
+  '',
+  "A preset never sees the audio stream. Each frame the runtime writes a few numbers into the preset's variables, and the preset's equations decide what they move.",
+  '',
+  "- `bass`, `mid`, `treb`: energy in three bands on a relative scale, where 1.0 is the track's own average for that band. `above(bass, 1.3)` means louder than usual for this track.",
+  '- `bass_att`, `mid_att`, `treb_att`: the same bands through an envelope follower. They still rise fast on a hit but do not chatter, so continuous motion usually reads these.',
+  '- `vol`: the mean of the three relative bands, about 1 during steady music and below 0.75 in quiet passages.',
+  "- The built-in waveform and custom waves draw the audio samples themselves (`value1`/`value2` in a custom wave's per-point code), so a preset can show the audio without any equation reading a band.",
+  '',
+  'Stims also feeds signals that standard MilkDrop does not have, such as `rms`, `beat_pulse` and a percussive/harmonic split. The "Signals (read-only inputs)" section of docs/authoring/reference.md lists every input; docs/authoring/03-listening.md (https://toil.fyi/learn/listening/) covers smoothing, beat detection and the volume clock with runnable examples. Read either with read_doc_section.',
+];
+
+function audioMeasurementSteps(presetId: string) {
+  return [
+    '## Checking a preset',
+    'Audio can feed a variable that nothing draws, so reading the code does not settle whether a preset reacts. Two local commands do:',
+    `- \`bun run lab:dataflow -- --preset ${presetId}\` reads the equations without running them and reports which audio signals reach each control and each drawn program.`,
+    `- \`bun run lab:reactivity -- --preset ${presetId}\` runs the preset against test audio and rates each variable reactive, autonomous, weak or static.`,
+  ];
+}
+
+const STATIC_AUDIO_TIERS: Record<number, string> = {
+  1: 'driven: audio changes what it draws',
+  0.5: 'waveform only: only its drawn waveform shows the audio',
+  0: 'none: nothing it draws depends on the audio',
+};
+
+/** Reads the two audio components that `score-catalog-quality.ts` writes. */
+function describeAudioScores(
+  components: { staticAudio?: number; measuredReactivity?: number | null } = {},
+) {
+  const { staticAudio, measuredReactivity } = components;
+  const tier =
+    staticAudio === undefined ? undefined : STATIC_AUDIO_TIERS[staticAudio];
+  return [
+    `- Audio reach from its equations (lab:dataflow): ${tier ?? 'not scored'}`,
+    typeof measuredReactivity === 'number'
+      ? `- Measured reactivity (lab:reactivity): ${measuredReactivity.toFixed(2)}, the strongest correlation between one of its variables and the test audio (1 is perfect)`
+      : '- Measured reactivity (lab:reactivity): not measured',
+  ];
 }
 
 async function loadReadme() {
@@ -1263,51 +1153,6 @@ function asImageResponse(pngBuffer: Buffer, summaryText: string) {
       },
     ],
   };
-}
-
-function normalizeToys(data: unknown): ToyMetadata[] {
-  if (!Array.isArray(data)) return [];
-
-  return data
-    .map((item) => {
-      if (!item || typeof item !== 'object') return null;
-      const entry = item as Record<string, unknown>;
-
-      const slug = typeof entry.slug === 'string' ? entry.slug : null;
-      const title = typeof entry.title === 'string' ? entry.title : '';
-      const description =
-        typeof entry.description === 'string' ? entry.description : '';
-      const requiresWebGPU =
-        typeof entry.requiresWebGPU === 'boolean'
-          ? entry.requiresWebGPU
-          : false;
-      const module = typeof entry.module === 'string' ? entry.module : null;
-      const type = typeof entry.type === 'string' ? entry.type : null;
-      const allowWebGLFallback =
-        typeof entry.allowWebGLFallback === 'boolean'
-          ? entry.allowWebGLFallback
-          : false;
-      const controls = Array.isArray(entry.controls)
-        ? entry.controls.filter(
-            (control): control is string => typeof control === 'string',
-          )
-        : [];
-
-      if (!slug) return null;
-
-      return {
-        slug,
-        title: title || slug,
-        description,
-        requiresWebGPU,
-        controls,
-        module,
-        type,
-        allowWebGLFallback,
-        url: `milkdrop/?experience=${encodeURIComponent(slug)}`,
-      };
-    })
-    .filter((entry): entry is ToyMetadata => Boolean(entry));
 }
 
 function extractMarkdownSection(markdown: string, heading: string) {
@@ -1495,12 +1340,7 @@ async function searchMarkdownSources(
   return results;
 }
 
-export type {
-  AgentCapability,
-  DocSectionResult,
-  MarkdownSourceKey,
-  ToyMetadata,
-};
+export type { AgentCapability, DocSectionResult, MarkdownSourceKey };
 export {
   asImageResponse,
   asTextResponse,
@@ -1516,7 +1356,6 @@ export {
   loadReadme,
   loadReadmeLines,
   markdownSources,
-  normalizeToys,
   registerTools,
   searchMarkdownSources,
 };

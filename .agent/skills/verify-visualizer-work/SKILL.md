@@ -170,7 +170,7 @@ bun run check:architecture
 # Check SEO surface integrity
 bun run check:seo
 
-# Check toy manifest alignment
+# Check README claims against the shipped catalog
 bun run check:readme-claims
 ```
 

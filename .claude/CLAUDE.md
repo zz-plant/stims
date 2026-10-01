@@ -155,7 +155,7 @@ Always use `http://localhost:5173/?agent=true` for browser-based QA. It persists
 ## Quality gate reminder
 
 - Every enforced rule, with its rationale, is listed in [`docs/GUARDRAILS.md`](../docs/GUARDRAILS.md) (generated from the guard scripts by `bun run generate:guardrails`)
-- `bun run check:quick` = `@ts-nocheck` guard + Biome + catalog fidelity/integrity + toy manifest + SEO + architecture + typecheck, no tests
+- `bun run check:quick` = `@ts-nocheck` guard + Biome + catalog fidelity/integrity + README claims + SEO + architecture + typecheck, no tests
 - `bun run check` = everything above, preceded by `assets:check`, plus the gate test suite (`unit` + `compat` + `corpus`; skips the slow, serial, browser-backed e2e tests)
 - `bun run check:all` = the same gate with every profile, including e2e
 - Two `corpus` tests drive a real browser and skip when Playwright's Chromium is not installed — `bun run setup:browsers` to run them
