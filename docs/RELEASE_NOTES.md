@@ -4,6 +4,25 @@ Detailed release notes and milestone breakdown for the Stims Webtoys Visualizer 
 
 ---
 
+## Release v1.4.0 (2026-10-01)
+
+### 🌟 Release Highlights
+- Pause: Space or the dock's transport button holds the picture, while the preset, history and audio session stay put.
+- The preset-tuning keys are listed and rebindable: H (blend/cut), W (waveform), I (zoom), O (warp), J (wave scale) and `<` / `>` (rotation). The first nine Browse cards play from the number keys.
+- Presets draw closer to MilkDrop: wave modes 6 and 7 follow MilkDrop 2's geometry, the main wave no longer leaves trails MilkDrop never drew, and waves and shapes land where MilkDrop puts them.
+- Matrix element writes in preset shaders now execute directly on WebGPU, so more presets run there without approximation. Of the 1,750 presets in the bundled Butterchurn pack, 1,578 run with no approximation on both WebGL2 and WebGPU.
+- A corpus-wide sweep for presets that rendered black, white or flat fixed the causes with a compile-level signature.
+- One pitch across the site, link previews and README: "Play and live-edit MilkDrop presets in your browser". The README is less than half its old length, and the repository no longer carries 130 MiB of build output.
+
+### 🐛 Bug Fixes & Technical Improvements
+- The keyboard is no longer treated as a TV remote on every page, and closing a panel no longer reverts a preset change made in the same tick.
+- Status messages no longer silence each other, and the status toast no longer covers the Cue deck card.
+- oEmbed titles name a preset's author once.
+- Bounded the cache and pool growth paths found in the #1105–#1111 series.
+- Pushing a release tag now publishes a GitHub Release from these notes.
+
+---
+
 ## Release v1.3.0 (2026-07-29)
 
 ### 🌟 Release Highlights

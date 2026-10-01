@@ -116,7 +116,8 @@ runtime-starter, viewport-session, sample-toy) · `shared-initializer.test.ts` �
 `check-duplicate-css.test.ts` · `run-quality-gate.test.ts` · `check-catalog-integrity.test.ts` ·
 `codex-*.test.ts` (model-route, session-script, setup-script) ·
 `seo-canonical-intent.test.ts` · `check-no-ts-nocheck` (script) · `check-doc-references` (script) ·
-`check-readme-claims` (script) · `check-cache-bounds.test.ts`
+`check-readme-claims` (script) · `check-cache-bounds.test.ts` ·
+`release-notes.test.ts` (Release workflow notes; fails a version bump without notes)
 
 ## Served-card pipeline (previews + OG cards)
 
