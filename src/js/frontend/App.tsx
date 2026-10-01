@@ -94,10 +94,10 @@ const NewHomePage = lazy(() =>
   })),
 );
 
+import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
-import { readStored, writeStored } from './safe-storage.ts';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
 import {
   buildRemixShareUrl,
@@ -360,21 +360,12 @@ function StimsWorkspaceAppShell() {
     };
   }, [audioMatch, engine.catalog]);
   const [thumbMode, setThumbMode] = useState(() => {
-    try {
-      const stored = localStorage.getItem('stims:mobile-thumb-mode');
-      if (stored !== null) return stored === 'true';
-      return prefersThumbModeByDefault();
-    } catch {
-      return false;
-    }
+    const stored = readStored('stims:mobile-thumb-mode');
+    return stored !== null ? stored === 'true' : prefersThumbModeByDefault();
   });
-  const [hapticsEnabled, setHapticsEnabled] = useState(() => {
-    try {
-      return localStorage.getItem('stims:mobile-haptics') !== 'false';
-    } catch {
-      return true;
-    }
-  });
+  const [hapticsEnabled, setHapticsEnabled] = useState(
+    () => readStored('stims:mobile-haptics') !== 'false',
+  );
   const [offline, setOffline] = useState(() =>
     typeof navigator === 'undefined' ? false : !navigator.onLine,
   );

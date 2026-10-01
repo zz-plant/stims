@@ -1,3 +1,4 @@
+import { getBrowserStorage } from '../core/state/browser-storage.ts';
 import {
   getRequestedCorpus,
   getRequestedRenderer,
@@ -189,7 +190,7 @@ function getStorageFlag(
 
 export function resolveMilkdropWebGpuOptimizationFlags({
   location = globalThis.location,
-  storage = globalThis.localStorage,
+  storage = getBrowserStorage(),
   overrides = {},
 }: {
   location?: Pick<Location, 'search'> | null;
