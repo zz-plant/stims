@@ -53,7 +53,7 @@ const CORPUS_PEAK = frameState({
 });
 
 const HEALTHY = {
-  rollingAverageFrameMs: 12,
+  rollingAverageFrameMs: 6,
   frameBudgetMs: 16.67,
   thermalState: 'nominal' as const,
 };
@@ -77,6 +77,7 @@ describe('blend gate', () => {
     expect(evaluateBlendGate(CORPUS_PEAK, HEALTHY)).toEqual({
       canBlend: false,
       refusal: 'workload',
+      canLiveBlend: false,
     });
   });
 
@@ -87,7 +88,11 @@ describe('blend gate', () => {
         // ~14fps against a 60Hz budget.
         rollingAverageFrameMs: 70,
       }),
-    ).toEqual({ canBlend: false, refusal: 'frame-pressure' });
+    ).toEqual({
+      canBlend: false,
+      refusal: 'frame-pressure',
+      canLiveBlend: false,
+    });
   });
 
   test('a serviceable frame rate still crossfades', () => {
@@ -107,7 +112,42 @@ describe('blend gate', () => {
         ...HEALTHY,
         thermalState: 'throttling',
       }),
-    ).toEqual({ canBlend: false, refusal: 'thermal' });
+    ).toEqual({ canBlend: false, refusal: 'thermal', canLiveBlend: false });
+  });
+
+  test('a frame inside its budget blends live', () => {
+    expect(evaluateBlendGate(CORPUS_MEDIAN, HEALTHY).canLiveBlend).toBe(true);
+  });
+
+  test('a frame whose double would miss the budget blends out of a snapshot', () => {
+    // A live blend runs a second preset for its whole duration, roughly
+    // doubling the frame: 12ms fits a 16.7ms budget, 24ms does not.
+    const decision = evaluateBlendGate(CORPUS_MEDIAN, {
+      ...HEALTHY,
+      rollingAverageFrameMs: 12,
+    });
+    expect(decision.canBlend).toBe(true);
+    expect(decision.canLiveBlend).toBe(false);
+  });
+
+  test('a switch during a live blend still clears the blend gate', () => {
+    // The live blend's own doubled frames: 2 x 8ms, inside the 2x tolerance
+    // the snapshot blend is held to.
+    expect(
+      evaluateBlendGate(CORPUS_MEDIAN, {
+        ...HEALTHY,
+        rollingAverageFrameMs: 16,
+      }).canBlend,
+    ).toBe(true);
+  });
+
+  test('a warming device blends out of a snapshot instead of live', () => {
+    const decision = evaluateBlendGate(CORPUS_MEDIAN, {
+      ...HEALTHY,
+      thermalState: 'elevated',
+    });
+    expect(decision.canBlend).toBe(true);
+    expect(decision.canLiveBlend).toBe(false);
   });
 
   test('without a quality controller the timing gate abstains', () => {

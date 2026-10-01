@@ -99,6 +99,7 @@ export function createMilkdropExperienceFrameLoop({
   getMotionScale,
   traceRecorder,
   beatClock,
+  liveBlend,
 }: {
   getRuntime: () => ToyRuntimeInstance | null;
   getAdapter: () => {
@@ -127,6 +128,17 @@ export function createMilkdropExperienceFrameLoop({
       id: string;
       particleScale?: number;
     };
+  };
+  /**
+   * The outgoing side of a live crossfade, while one runs: its VM, and how
+   * to end it once the transition settles. See runtime.ts.
+   */
+  liveBlend?: {
+    getOutgoingVm: () => {
+      step: (signals: MilkdropRuntimeSignals) => MilkdropFrameState;
+      setDetailScale: (value: number) => void;
+    } | null;
+    end: () => void;
   };
   vm: {
     setDetailScale: (value: number) => void;
@@ -270,7 +282,13 @@ export function createMilkdropExperienceFrameLoop({
         const adaptiveDensityMultiplier =
           runtime.toy.rendererInfo?.adaptiveDensityMultiplier ?? 1;
         vm.setDetailScale(detailScale * adaptiveDensityMultiplier);
+        liveBlend
+          ?.getOutgoingVm()
+          ?.setDetailScale(detailScale * adaptiveDensityMultiplier);
         if (frame.resetHistory) {
+          // A clean start has no outgoing preset to carry: a live blend's
+          // second VM would bring its evolved state into the capture.
+          liveBlend?.end();
           // A deterministic capture asked for a clean start. Clearing the GPU
           // feedback chain alone is not one: the VM's per-frame state — q/t
           // registers, per-frame accumulators, megabuf — carries the previous
@@ -401,11 +419,44 @@ export function createMilkdropExperienceFrameLoop({
             transitionController.getPhase() === 'manual') &&
           frame.performance.shaderQuality !== 'low' &&
           getCurrentFrameWorkload() < MAX_BLEND_WORKLOAD;
-        const activeBlendState = transitionController.tick({
+        let activeBlendState = transitionController.tick({
           now: frameStartAt,
           canBlendThisFrame,
           presentable: adapter.isPresetPresentable?.() ?? true,
         });
+
+        // A live crossfade keeps stepping the outgoing preset on its own VM,
+        // with the same signals, through the same render-state policy, and
+        // hands that frame to the blend in place of the frozen one. It ends
+        // with the transition; a gated frame skips it, holding the outgoing
+        // preset where it was until the blend resumes.
+        const outgoingVm = liveBlend?.getOutgoingVm() ?? null;
+        if (outgoingVm) {
+          if (transitionController.getPhase() === 'idle') {
+            liveBlend?.end();
+          } else if (activeBlendState?.mode === 'gpu') {
+            const outgoingFrame = applyMilkdropEnhancedEffectsPolicy({
+              frameState: buildRenderFrameState({
+                frameState: applyMotionDampening(
+                  applyMilkdropInteractionResponse(
+                    outgoingVm.step(signals),
+                    frame.input,
+                    activeBackend,
+                  ),
+                  getMotionScale(),
+                ),
+                shaderQuality: frame.performance.shaderQuality,
+                lowQualityPostOverride,
+              }),
+              shaderQuality: frame.performance.shaderQuality,
+              qualityPresetId: quality.activeQuality.id,
+            });
+            activeBlendState = {
+              ...activeBlendState,
+              previousFrame: outgoingFrame,
+            };
+          }
+        }
 
         const renderFrameState = applyMilkdropEnhancedEffectsPolicy({
           frameState: buildRenderFrameState({

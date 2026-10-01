@@ -347,6 +347,7 @@ export function createMilkdropExperience({
           ? transitionController.getManualPosition()
           : null,
       events: transitionController.getEvents(),
+      live: liveBlendInfo ? { ...liveBlendInfo } : null,
     }),
     startTraceCapture: (options) => {
       if (!traceRecorder) {
@@ -465,8 +466,28 @@ export function createMilkdropExperience({
     setEffectiveTransitionMode(mode, { rememberPreferred: true });
   };
 
-  const applyCompiledPreset = (compiled: MilkdropCompiledPreset) =>
+  const applyCompiledPreset = (compiled: MilkdropCompiledPreset) => {
+    // One switch applies twice (navigation, then the session subscriber);
+    // the first apply takes the armed live blend and the second is in place.
+    // Only a real switch with its blend still running takes it: an armed
+    // switch can be superseded before it applies, and the next apply may
+    // be an editor re-apply of the same preset with nothing to blend.
+    const live =
+      pendingLiveBlend &&
+      compiled.source.id !== activePresetId &&
+      transitionController.getPhase() !== 'idle';
+    pendingLiveBlend = false;
+    if (live && !outgoingVm && adapter?.beginLiveBlend?.()) {
+      outgoingVm = vm.handOffRunningPreset(compiled);
+      liveBlendInfo = { presetId: activePresetId ?? '', frames: 0 };
+      transitionController.annotate('live-blend-started', activePresetId ?? '');
+      presentationController.applyCompiledPreset(compiled, {
+        presetAlreadyStarted: true,
+      });
+      return;
+    }
     presentationController.applyCompiledPreset(compiled);
+  };
 
   const catalogCoordinator = createMilkdropCatalogCoordinator({
     catalogStore,
@@ -641,6 +662,47 @@ export function createMilkdropExperience({
   let pendingManualCrossfade = false;
 
   /**
+   * A live crossfade keeps the outgoing preset running — its own VM here,
+   * its own feedback deck in the adapter — instead of dissolving a frozen
+   * snapshot of it. beginPresetTransition arms it when the gate allows;
+   * applyCompiledPreset starts it, because only there do both presets exist;
+   * the frame loop steps the outgoing VM and ends it when the transition
+   * settles.
+   */
+  let pendingLiveBlend = false;
+  let outgoingVm: ReturnType<typeof createMilkdropVM> | null = null;
+  /** The outgoing preset of the running live crossfade and how many frames
+   * it has stepped since — the debug handle's proof that it is live. */
+  let liveBlendInfo: { presetId: string; frames: number } | null = null;
+  const outgoingDeckVm = {
+    step: (signals: MilkdropRuntimeSignals) => {
+      if (!outgoingVm) {
+        throw new Error('No outgoing preset is running.');
+      }
+      if (liveBlendInfo) liveBlendInfo.frames += 1;
+      return outgoingVm.step(signals);
+    },
+    setDetailScale: (scale: number) => outgoingVm?.setDetailScale(scale),
+  };
+
+  /** Lets the outgoing preset go: its VM, the debug record, any armed
+   * blend. The adapter's half — the outgoing deck — is endLiveBlend's. */
+  const releaseOutgoingPreset = (reason: string) => {
+    if (outgoingVm) {
+      transitionController.annotate('live-blend-ended', reason);
+    }
+    outgoingVm?.dispose();
+    outgoingVm = null;
+    liveBlendInfo = null;
+    pendingLiveBlend = false;
+  };
+
+  const endLiveBlend = (reason = 'settled') => {
+    releaseOutgoingPreset(reason);
+    adapter?.endLiveBlend?.();
+  };
+
+  /**
    * Starts the crossfade into a preset that is about to be applied.
    *
    * Preset switches arrive on two paths — the navigation controller and the
@@ -684,6 +746,21 @@ export function createMilkdropExperience({
       return lastTransitionDecision;
     }
 
+    // A switch made during a live crossfade collapses it to one deck first.
+    // The snapshot is taken while both decks are still on screen, so this
+    // switch dissolves out of the half-finished blend; it blends from that
+    // snapshot rather than live, since there is no third deck to run.
+    const collapsingLiveBlend = adapter?.isLiveBlendActive?.() ?? false;
+    if (collapsingLiveBlend) {
+      // At the blend's own cover, not whatever the last frame drew: a gated
+      // frame draws none, and a snapshot taken at 0 would drop the
+      // outgoing half of the screen.
+      adapter?.setTransitionBlend?.(transitionController.getCoverAlpha());
+      adapter?.saveFeedbackFrame?.();
+      endLiveBlend('superseded');
+    }
+    pendingLiveBlend = false;
+
     const quality = adaptiveQualityController?.getState() ?? null;
     const gate = evaluateBlendGate(
       currentFrameState,
@@ -714,7 +791,11 @@ export function createMilkdropExperience({
       );
     }
     if (nextBlendState) {
+      // Still taken for a live blend: it covers the frames until the
+      // incoming preset is applied and the decks split, and it is what the
+      // blend falls back to if they cannot.
       adapter?.saveFeedbackFrame?.();
+      pendingLiveBlend = gate.canLiveBlend && !collapsingLiveBlend;
     }
     lastPresetSwitchAt = performance.now();
     // Warm-up hint: the incoming preset's first frames carry compile and
@@ -792,6 +873,11 @@ export function createMilkdropExperience({
     },
     getAdapter: () => adapter,
     setAdapter: (nextAdapter) => {
+      // The outgoing deck lives in the adapter being replaced, and goes
+      // with it.
+      if (nextAdapter !== adapter) {
+        releaseOutgoingPreset('renderer replaced');
+      }
       adapter = nextAdapter;
     },
     activeCompiled: () => activeCompiled,
@@ -865,6 +951,10 @@ export function createMilkdropExperience({
     getFreezeFrame: () => isFreezeFrameActive(),
     getMotionScale,
     traceRecorder,
+    liveBlend: {
+      getOutgoingVm: () => (outgoingVm ? outgoingDeckVm : null),
+      end: () => endLiveBlend(),
+    },
   });
 
   _disposeSessionSubscription = session.subscribe((state) => {
@@ -1011,6 +1101,7 @@ export function createMilkdropExperience({
     getDisposeRequestedPresetListener: () => disposeRequestedPresetListener,
     catalogCoordinator,
     disposeRuntimeSignalHub,
+    releaseOutgoingPreset: () => releaseOutgoingPreset('disposed'),
     setQualityPresetById,
     previewCaptureRevision,
     emitChange,
@@ -1104,10 +1195,11 @@ function buildExperienceController(
      * timer. Call immediately before selecting the preset; it applies to that
      * one switch only.
      *
-     * Known limit, worth stating plainly: the outgoing side of the fade is a
-     * saved frame, not a second live pipeline (see `cloneBlendState`). Riding
-     * a fade of a second or two looks right; parking the fader at halfway for
-     * eight bars shows a still image of where the outgoing preset stopped.
+     * When the blend gate allows a live blend, both sides stay live: the
+     * outgoing preset keeps running on its own deck, so the fader can park at
+     * halfway for as long as the set needs. Where the gate refuses — a frame
+     * with no room to double — the outgoing side is a saved frame instead,
+     * and a fader parked mid-way shows a still image of where it stopped.
      */
     startManualCrossfade() {
       deps.startManualCrossfade();
@@ -1273,6 +1365,7 @@ function buildExperienceController(
       deps.capturedVideoReactivityTracker?.reset();
       deps.disposePostprocessingPipeline();
       deps.capturedVideoOverlay?.dispose();
+      deps.releaseOutgoingPreset();
       deps.adapter?.dispose();
       deps.performanceTracker?.reset();
       deps.getAdaptiveQualityUnsubscribe?.()?.();

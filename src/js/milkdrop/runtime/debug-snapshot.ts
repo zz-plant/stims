@@ -122,6 +122,9 @@ export type MilkdropAgentDriverHandle = {
     phase: string;
     crossfade: number | null;
     events: ReadonlyArray<{ at: number; event: string; detail?: string }>;
+    /** The live crossfade in progress, if any: the outgoing preset still
+     * running on its own deck, and how many frames it has stepped. */
+    live: { presetId: string; frames: number } | null;
   };
 };
 

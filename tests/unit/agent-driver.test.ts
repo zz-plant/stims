@@ -38,7 +38,12 @@ function fakeHandle(
       frameCount: 0,
       autoStopped: false,
     }),
-    getTransition: () => ({ phase: 'idle', crossfade: null, events: [] }),
+    getTransition: () => ({
+      phase: 'idle',
+      crossfade: null,
+      events: [],
+      live: null,
+    }),
     ...overrides,
   };
 }

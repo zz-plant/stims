@@ -304,6 +304,131 @@ for (const { backend, run } of BACKENDS) {
     );
 
     run(
+      'a live crossfade shows the outgoing deck still moving',
+      async () => {
+        const frames = await runScenario(
+          backend,
+          async ({ harnessModule, backend, warmupFrames }) => {
+            const { createFeedbackHarness } = (await import(
+              harnessModule
+            )) as HarnessModule;
+            // The incoming deck presents; the outgoing deck renders offscreen
+            // on the same renderer; the control presents the outgoing scene
+            // on its own, which is what a live crossfade at alpha 1 must show.
+            const incoming = await createFeedbackHarness(backend);
+            const outgoing = incoming.addDeck();
+            const control = await createFeedbackHarness(backend);
+            try {
+              incoming.setScene('incoming');
+              incoming.setTransitionBlend(1);
+              const pairs = [];
+              for (let i = 0; i < warmupFrames; i += 1) {
+                // The outgoing quad travels from the top-left quadrant into
+                // the top-right one, so a frozen frame cannot pass.
+                const x = -0.5 + (i / warmupFrames) * 1.0;
+                outgoing.moveQuad(x, 0.5);
+                control.moveQuad(x, 0.5);
+                outgoing.renderOffscreen();
+                incoming.setTransitionSource(outgoing);
+                const screen = await incoming.renderFrame();
+                const expected = await control.renderFrame();
+                if (i % 10 === 9) pairs.push({ screen, expected });
+              }
+              return pairs;
+            } finally {
+              incoming.dispose();
+              control.dispose();
+            }
+          },
+        );
+        // The outgoing picture really moved across the scenario.
+        expect(frames.at(-1)?.expected[1] ?? 0).toBeGreaterThan(
+          (frames[0]?.expected[1] ?? 0) + 50,
+        );
+        for (const [index, { screen, expected }] of frames.entries()) {
+          expectSamePicture(`live frame ${index}`, screen, expected, 2);
+        }
+      },
+      { timeout: 120000 },
+    );
+
+    run(
+      "an incoming deck starts from the outgoing deck's picture",
+      async () => {
+        const { seeded, expected } = await runScenario(
+          backend,
+          async ({ harnessModule, backend, warmupFrames }) => {
+            const { createFeedbackHarness } = (await import(
+              harnessModule
+            )) as HarnessModule;
+            const incoming = await createFeedbackHarness(backend);
+            const outgoing = incoming.addDeck();
+            // One deck that never switches: the picture a seeded deck must
+            // carry on from.
+            const control = await createFeedbackHarness(backend);
+            try {
+              for (let i = 0; i < warmupFrames; i += 1) {
+                outgoing.renderOffscreen();
+                await control.renderFrame();
+              }
+              incoming.seedHistoryFrom(outgoing);
+              incoming.setScene('empty');
+              control.setScene('empty');
+              return {
+                seeded: await incoming.renderFrame(),
+                expected: await control.renderFrame(),
+              };
+            } finally {
+              incoming.dispose();
+              control.dispose();
+            }
+          },
+        );
+        expectSamePicture('first frame of a seeded deck', seeded, expected, 3);
+      },
+      { timeout: 120000 },
+    );
+
+    run(
+      'seeding carries everything the next frame reads from the past',
+      async () => {
+        const { painted, seeded } = await runScenario(
+          backend,
+          async ({ harnessModule, backend }) => {
+            const { createFeedbackHarness } = (await import(
+              harnessModule
+            )) as HarnessModule;
+            const incoming = await createFeedbackHarness(backend);
+            const outgoing = incoming.addDeck();
+            try {
+              // Both have rendered, so their targets exist at full size.
+              outgoing.renderOffscreen();
+              await incoming.renderFrame();
+              incoming.paintCarried(outgoing, 0.2, 0.15);
+              const painted = await incoming.readCarried(outgoing);
+              incoming.seedHistoryFrom(outgoing);
+              return { painted, seeded: await incoming.readCarried() };
+            } finally {
+              incoming.dispose();
+            }
+          },
+        );
+        // The history plus the blur levels (WebGL) or display history
+        // (WebGPU), each painted its own grey...
+        expect(painted.length).toBeGreaterThan(1);
+        // (Loose: WebGPU readback pads rows, which reads a few % low.)
+        painted.forEach((value, index) => {
+          expect(value).toBeCloseTo(0.2 + index * 0.15, 1);
+        });
+        // ...and each arriving in its own slot of the seeded deck.
+        seeded.forEach((value, index) => {
+          expect(value).toBeCloseTo(painted[index] ?? -1, 2);
+        });
+      },
+      { timeout: 120000 },
+    );
+
+    run(
       'a switch made mid-blend dissolves out of the half-finished blend',
       async () => {
         const { midBlend, first } = await runScenario(
