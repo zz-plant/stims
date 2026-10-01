@@ -67,7 +67,7 @@ Blends structural motion of Preset A with color styling of Preset B.
 **Response**: `{ "milkSource": "..." }`
 
 ## Embedded Iframe Protocol (`postMessage`)
-Web applications embedding `toil.fyi` can post JSON messages to the iframe `contentWindow`:
+Web applications embedding `toil.fyi` can post JSON messages to the iframe `contentWindow`. Point the iframe at `https://toil.fyi/?embed=true` (add `&preset=<id>` to choose the first preset): other URLs send `X-Frame-Options: SAMEORIGIN`, so they will not load in another site's frame.
 
 ```javascript
 // Example: Send command to iframe
@@ -76,10 +76,28 @@ iframeEl.contentWindow.postMessage({
   presetId: 'shifter-snakeskin'
 }, '*');
 
-// Example: Listen for telemetry
+// Example: Start the bundled demo track ('demo' or 'microphone')
+iframeEl.contentWindow.postMessage({ type: 'toil:set_audio', source: 'demo' }, '*');
+
+// Example: Describe a change to the playing preset
+iframeEl.contentWindow.postMessage({ type: 'toil:apply_tweak', tweak: 'faster motion' }, '*');
+
+// Example: Listen for outcomes and telemetry
 window.addEventListener('message', (event) => {
+  if (event.data?.type === 'toil:status') {
+    // success: false always carries a reason.
+    console.log(event.data.action, event.data.success, event.data.reason);
+  }
   if (event.data?.type === 'toil:telemetry') {
     console.log(event.data.fps, event.data.audioEnergy, event.data.backend);
   }
 });
 ```
+
+Commands:
+- `toil:load_preset`: `presetId` (a catalog id) or `milkSource` (`.milk` code). Refused when neither is given. The reply confirms the request was accepted; `currentPresetId` in `toil:telemetry` confirms the switch.
+- `toil:apply_tweak`: `tweak` describes the change. It goes through `/api/refine-preset`; when AI is unavailable, a tweak naming blue, neon, cyan, warp, fast, speed, bass or beat applies the matching one-click restyle, and the reply carries `method: "restyle"` and a `note` saying so. Any other tweak is refused. A tweak whose source fails to compile is reported with `success: false` and the editor `state`, since the previous preset stays on screen.
+- `toil:set_audio`: `source` is `"demo"` or `"microphone"`; a cross-origin iframe needs `allow="microphone"` for the second. The reply arrives once the stage is playing that source, or carries the start failure as `reason` (for example, microphone permission denied). File playback and tab capture need a click inside the page, so they are refused.
+- `toil:request_telemetry`: answered with `toil:telemetry` rather than `toil:status`.
+
+Each command above except `toil:request_telemetry` is answered with `{ type: 'toil:status', action, success, reason? }`. Any other `toil:` message is answered with `success: false` and a `reason`.

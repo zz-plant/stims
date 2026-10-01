@@ -225,8 +225,8 @@ function maxTransitionsInRollingWindow(
  * per failure. In the state the fallback was written for, the page is still
  * in home mode and the launch overlay covers the canvas, so Playwright's
  * click spent its full 30s waiting for the canvas to become hit-testable and
- * never delivered a gesture; the agent bridge has no `onSetAudio` handler,
- * so the message did nothing; and the 30s wait that followed could only
+ * never delivered a gesture; the agent bridge had no `onSetAudio` handler
+ * then, so the message did nothing; and the 30s wait that followed could only
  * time out. The autoplay gate that produced that state is now disabled at
  * browser launch (see resolveLoopSweepChromiumArgs), and if audio still
  * fails to start the report says so after AUDIO_ACTIVE_TIMEOUT_MS.

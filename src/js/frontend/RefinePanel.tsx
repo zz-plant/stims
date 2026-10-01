@@ -9,11 +9,8 @@ import {
   type PresetMutationStyle,
 } from '../milkdrop/preset-mutations.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
+import { refinePresetSource, restyleLabel } from './preset-refine.ts';
 import { useWorkspace } from './workspace-context.tsx';
-
-function restyleLabel(style: PresetMutationStyle) {
-  return PRESET_MUTATION_STYLES.find((m) => m.id === style)?.label ?? style;
-}
 
 export function RefinePanel() {
   const [instruction, setInstruction] = useState('');
@@ -53,57 +50,26 @@ export function RefinePanel() {
     setState('refining');
     ui.setStatusMessage('Refining preset…');
     try {
-      const res = await fetch('/api/refine-preset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          currentSource,
-          instruction: instruction.trim(),
-        }),
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      if (data.milkSource) {
-        await engine.updateEditorSource(data.milkSource);
-        setResponse(`Refined: ${data.title || 'untitled preset'}`);
-        setAnalysis(null);
-      } else {
-        throw new Error('No source returned');
+      const refinement = await refinePresetSource(
+        currentSource,
+        instruction.trim(),
+      );
+      if (refinement.method === 'none') {
+        setResponse(
+          `AI is unavailable (${refinement.aiError}). The restyle buttons above still work.`,
+        );
+        return;
       }
+      await engine.updateEditorSource(refinement.milkSource);
+      setResponse(
+        refinement.method === 'ai'
+          ? `Refined: ${refinement.title || 'untitled preset'}`
+          : `AI is unavailable, so the ${refinement.label} restyle was applied.`,
+      );
+      setAnalysis(null);
     } catch (err) {
       const error = err as Error;
-      // Without the refine API (dev server, or AI not configured), map a few
-      // keywords onto the matching one-click restyle.
-      const lower = instruction.toLowerCase();
-      if (
-        lower.includes('blue') ||
-        lower.includes('neon') ||
-        lower.includes('cyan')
-      ) {
-        const mutated = mutatePresetStyle(currentSource, 'cyberpunk');
-        await engine.updateEditorSource(mutated);
-        setResponse('AI is unavailable, so the Neon restyle was applied.');
-      } else if (
-        lower.includes('warp') ||
-        lower.includes('fast') ||
-        lower.includes('speed')
-      ) {
-        const mutated = mutatePresetStyle(currentSource, 'hyperspace');
-        await engine.updateEditorSource(mutated);
-        setResponse(
-          'AI is unavailable, so the Zoom tunnel restyle was applied.',
-        );
-      } else if (lower.includes('bass') || lower.includes('beat')) {
-        const mutated = mutatePresetStyle(currentSource, 'bass-surge');
-        await engine.updateEditorSource(mutated);
-        setResponse(
-          'AI is unavailable, so the Bass pulse restyle was applied.',
-        );
-      } else {
-        setResponse(
-          `AI is unavailable (${error.message}). The restyle buttons above still work.`,
-        );
-      }
+      setResponse(`Could not apply the change: ${error.message}`);
     } finally {
       setState('idle');
       ui.setStatusMessage(null);

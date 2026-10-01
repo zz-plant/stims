@@ -51,11 +51,8 @@ import {
 import { parseURLParams } from '../core/url-params.ts';
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
-import {
-  initAgentBridge,
-  toAgentEditorState,
-  updateAgentTelemetry,
-} from './agent-bridge.ts';
+import { initAgentBridge, updateAgentTelemetry } from './agent-bridge.ts';
+import { buildAgentBridgeCallbacks } from './agent-bridge-handlers.ts';
 import { emitAgentCommit } from './agent-state.ts';
 import { CommandPalette, useCommandPaletteHotkey } from './CommandPalette.tsx';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
@@ -674,72 +671,12 @@ function StimsWorkspaceAppShell() {
   // live values flow through refs.
   useEffect(() => {
     return deferToIdle(() => {
-      return initAgentBridge({
-        onLoadPreset: (payload) => {
-          // milkSource is how an agent hands over preset *code* rather than a
-          // catalog id (MCP's session_apply_source). The bridge has always
-          // forwarded it and this handler always dropped it, so that tool
-          // silently did nothing.
-          if (payload.milkSource) {
-            engineBridgeRef.current.updateEditorSource(payload.milkSource);
-            return;
-          }
-          if (payload.presetId) {
-            void engineBridgeRef.current.handlePlayPreset(payload.presetId);
-          }
-        },
-        onApplyTweak: (_tweak) => {
-          const activePresetId = engineSnapshotRef.current?.activePresetId;
-          if (activePresetId) {
-            void engineBridgeRef.current.handlePlayPreset(activePresetId);
-          }
-        },
-        // Lets an MCP session_midi_set/session_midi_cc call "perform" on the
-        // live stage through the exact same virtual-device pipeline a
-        // physical controller uses — see webmidi-controller.ts.
-        onMidiSet: (target, value) => {
-          webMidiService.injectTargetValue(
-            VIRTUAL_CLAUDE_DEVICE_ID,
-            target,
-            value,
-          );
-        },
-        onMidiCc: (cc, value) => {
-          webMidiService.injectControlChange(
-            VIRTUAL_CLAUDE_DEVICE_ID,
-            cc,
-            value,
-          );
-        },
-        getMidiBindings: () => webMidiService.getAllBindings(),
-        getMidiDevices: () => webMidiService.getDevices(),
-        // Read/await surface for live code editing. Without these an agent
-        // could send preset source but never learn whether it compiled.
-        getEditorState: () => {
-          const state = engineBridgeRef.current.getEditorSessionState();
-          return state ? toAgentEditorState(state) : null;
-        },
-        getEditorFields: () => {
-          // The editor session's own latest compile, not the renderer's active
-          // one. They diverge whenever rendering is paused (a hidden or headless
-          // tab) or the newest source failed — and an agent reading values to
-          // compute a delta needs the buffer it is actually editing.
-          const compiled =
-            engineBridgeRef.current.getEditorSessionState()?.latestCompiled ??
-            engineBridgeRef.current.getActiveCompiledPreset();
-          return compiled ? { ...compiled.ir.numericFields } : null;
-        },
-        applyEditorSource: async (source) => {
-          const state =
-            await engineBridgeRef.current.applyEditorSourceAwaited(source);
-          return state ? toAgentEditorState(state) : null;
-        },
-        applyEditorFields: async (updates) => {
-          const state =
-            await engineBridgeRef.current.applyEditorFieldsAwaited(updates);
-          return state ? toAgentEditorState(state) : null;
-        },
-      });
+      return initAgentBridge(
+        buildAgentBridgeCallbacks({
+          engineRef: engineBridgeRef,
+          engineSnapshotRef,
+        }),
+      );
     });
   }, []);
 
