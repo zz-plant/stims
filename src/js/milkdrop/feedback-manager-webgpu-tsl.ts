@@ -3844,6 +3844,15 @@ class WebGPUMilkdropFeedbackManager
     });
 
     const blurUniforms = createGaussianBlurUniforms(this.targets[0].texture);
+    // Set here, not only in resize(): nothing resizes the manager at
+    // startup, so the blur ran at its (1, 1) default — a whole texture per
+    // tap, copied into the composite's texelSize whenever blur is on — until
+    // the first quality step, smearing the brightest content across the
+    // frame. One texel of the feedback target, as resize() sets it.
+    blurUniforms.texelSize.value.set(
+      1 / Math.max(1, this.targets[0].width),
+      1 / Math.max(1, this.targets[0].height),
+    );
     const blurMaterial = new NodeMaterial();
     blurMaterial.outputNode = createGaussianBlurOutputNode(blurUniforms);
     blurMaterial.needsUpdate = true;
