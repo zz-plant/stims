@@ -416,6 +416,80 @@ describe('milkdrop preset navigation controller', () => {
     });
   });
 
+  describe('unlessRequestedSince', () => {
+    // Startup decides its preset, waits on a catalog sync, then selects. A
+    // preset chosen during that wait (the shell routing a request that
+    // arrived while the stage was mounting) must keep the stage.
+    const buildRaceHarness = () => {
+      const applied: string[] = [];
+      const controller = createMilkdropPresetNavigationController({
+        catalogStore: {
+          async getPresetSource(id: string) {
+            return { id, title: id, raw: `title=${id}\n`, origin: 'bundled' };
+          },
+          async getDraft() {
+            return null;
+          },
+          async saveDraft() {},
+        } as unknown as MilkdropCatalogStore,
+        catalogCoordinator: {
+          async syncCatalog() {},
+          async scheduleCatalogSync() {},
+          async rememberSelection() {},
+          async consumePreviousSelection() {
+            return null;
+          },
+          getCatalogEntries: () => [],
+          getActiveCatalogEntry: () => null,
+          dispose() {},
+        } as unknown as MilkdropCatalogCoordinator,
+        session: createSession({
+          'requested-preset': createCompiledPreset('requested-preset'),
+          'startup-preset': createCompiledPreset('startup-preset'),
+        }),
+        getActivePresetId: () => 'bundled-preset',
+        getActiveBackend: () => 'webgl' as MilkdropRenderBackend,
+        applyCompiledPreset: (compiled) => {
+          applied.push(compiled.source.id);
+        },
+        applyPresetPerformanceOverride: () => undefined,
+        setOverlayStatus: () => undefined,
+        shouldFallbackToWebgl: () => false,
+        triggerWebglFallback: () => undefined,
+        rememberLastPreset: () => undefined,
+        beginPresetTransition: () => ({
+          mode: 'cut' as const,
+          durationSeconds: 0,
+        }),
+      });
+      return { controller, applied };
+    };
+
+    test('a pick decided before the wait yields to a preset chosen during it', async () => {
+      const { controller, applied } = buildRaceHarness();
+      const revision = controller.getLoadRequestRevision();
+
+      const requested = controller.selectPreset('requested-preset');
+      const startup = controller.selectPreset('startup-preset', {
+        unlessRequestedSince: revision,
+      });
+      await Promise.all([requested, startup]);
+
+      expect(applied).toEqual(['requested-preset']);
+    });
+
+    test('the pick still loads when nothing was chosen meanwhile', async () => {
+      const { controller, applied } = buildRaceHarness();
+      const revision = controller.getLoadRequestRevision();
+
+      await controller.selectPreset('startup-preset', {
+        unlessRequestedSince: revision,
+      });
+
+      expect(applied).toEqual(['startup-preset']);
+    });
+  });
+
   test('includes detailed descriptor unsupported reasons when triggering WebGL fallback', async () => {
     const entries = [
       createCatalogEntry('fallback-preset', {

@@ -156,8 +156,19 @@ export function createMilkdropPresetNavigationController({
        * an unexpected preset can be traced to its cause. Defaults to
        * 'requested' (a UI/route/agent selection). */
       reason?: MilkdropPresetSelectionReason;
+      /** Skip if any selection was requested after this revision (from
+       * `getLoadRequestRevision`). The newest request supersedes older
+       * ones, so a pick decided before an async wait would otherwise cancel
+       * whatever was chosen during it. */
+      unlessRequestedSince?: number;
     } = {},
   ) => {
+    if (
+      options.unlessRequestedSince !== undefined &&
+      options.unlessRequestedSince !== currentLoadRequestRevision
+    ) {
+      return;
+    }
     const requestRevision = ++currentLoadRequestRevision;
     noteSelectionReason?.(options.reason ?? 'requested');
     const trace = createPresetLoadTrace(id);
@@ -464,6 +475,7 @@ export function createMilkdropPresetNavigationController({
   return {
     getFirstSelectablePresetId,
     isBackendSelectable,
+    getLoadRequestRevision: () => currentLoadRequestRevision,
     selectPreset,
     selectAdjacentPreset,
     selectRandomPreset,

@@ -4,21 +4,28 @@
  * mounting the whole workspace.
  *
  * A command that cannot finish says why. `toil:apply_tweak` once replayed the
- * active preset and reported success, and `toil:set_audio` reported success
- * with no handler behind it at all.
+ * active preset and reported success, `toil:set_audio` reported success with
+ * no handler behind it at all, and `toil:load_preset` reported success for
+ * ids that never loaded.
  */
 import type { RefObject } from 'react';
 import {
   VIRTUAL_CLAUDE_DEVICE_ID,
   webMidiService,
 } from '../core/services/webmidi-controller.ts';
+import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
 import {
   type AgentAudioSource,
   type AgentBridgeCallbacks,
   type AgentCommandResult,
   toAgentEditorState,
 } from './agent-bridge.ts';
-import { getStatusLog, waitForCommittedCore } from './agent-state.ts';
+import {
+  getLastCommittedCore,
+  getStatusLog,
+  suggestIds,
+  waitForCommittedCore,
+} from './agent-state.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { EngineContextValue } from './engine-context.tsx';
 
@@ -28,6 +35,49 @@ import type { EngineContextValue } from './engine-context.tsx';
  * this is also how long a refusal takes to come back.
  */
 const AUDIO_COMMIT_TIMEOUT_MS = 2000;
+
+/**
+ * Live switches measured 110–240 ms. The rest is headroom for an engine that
+ * mounts on the request and a first shader compile on a slow device; the
+ * shell gives up on a preset after 10 s and says so first.
+ */
+const PRESET_TIMEOUT_MS = 15000;
+
+type EditorSession = Awaited<
+  ReturnType<EngineContextValue['applyEditorSourceAwaited']>
+>;
+
+/** The start paths report failures (permission denied, a preset that would
+ * not load) as a status message rather than a throw. */
+function latestStatusSince(startedAt: number): string | undefined {
+  return getStatusLog()
+    .filter((entry) => entry.at >= startedAt)
+    .at(-1)?.message;
+}
+
+/** Source handed to the editor either compiled, failed to compile (the last
+ * good compile stays on screen), or was never applied because nothing is
+ * mounted. */
+function describeAppliedSource(
+  session: EditorSession,
+  subject: string,
+): AgentCommandResult {
+  if (!session) {
+    return {
+      success: false,
+      reason: 'The visualizer is not running yet, so nothing was applied.',
+    };
+  }
+  const state = toAgentEditorState(session);
+  if (state.errorCount > 0) {
+    return {
+      success: false,
+      reason: `${subject} failed to compile, so the previous preset is still on screen.`,
+      state,
+    };
+  }
+  return { success: true, state };
+}
 
 async function startAudioForAgent(
   engine: EngineContextValue,
@@ -42,14 +92,96 @@ async function startAudioForAgent(
     timeoutMs,
   );
   if (committed) return { success: true };
-  // The start path reports its failures (permission denied, no device) as a
-  // status message rather than a throw.
-  const failure = getStatusLog()
-    .filter((entry) => entry.at >= startedAt)
-    .at(-1)?.message;
   return {
     success: false,
-    reason: failure ?? `The ${source} audio source did not start.`,
+    reason:
+      latestStatusSince(startedAt) ??
+      `The ${source} audio source did not start.`,
+  };
+}
+
+async function loadPresetForAgent(
+  engineRef: RefObject<EngineContextValue>,
+  engineSnapshotRef: RefObject<EngineSnapshot | null>,
+  payload: { presetId?: string; milkSource?: string },
+  timeoutMs: number,
+): Promise<AgentCommandResult> {
+  const startedAt = Date.now();
+  if (payload.milkSource) {
+    // The editor needs a mounted stage. Before audio, an embedded page mounts
+    // nothing until something asks for a catalog preset or audio.
+    if (!getLastCommittedCore()?.presetId) {
+      return {
+        success: false,
+        reason:
+          'Nothing is on stage yet, so the source was not applied. Load a catalog preset or start audio first.',
+      };
+    }
+    return describeAppliedSource(
+      await engineRef.current.applyEditorSourceAwaited(payload.milkSource),
+      'The preset source',
+    );
+  }
+
+  const requested = payload.presetId ?? '';
+  // The runtime's catalog is the full one; before the engine mounts only the
+  // shell's smaller fallback list exists, which cannot rule an id out.
+  const lookup = () => {
+    const runtime = engineSnapshotRef.current?.catalogEntries ?? [];
+    const full = runtime.length > 0;
+    const entries: readonly { id: string; title?: string | null }[] = full
+      ? runtime
+      : engineRef.current.catalog;
+    // The same resolver the route uses, so aliases and slugs load.
+    return { full, entries, presetId: resolvePresetId(entries, requested) };
+  };
+  const refuseUnknown = (entries: readonly { id: string }[]) => {
+    const suggestions = suggestIds(
+      requested,
+      entries.map((entry) => entry.id),
+      { maxDistance: 4 },
+    );
+    return {
+      success: false,
+      reason: `No preset matches "${requested}" in the ${entries.length}-preset catalog.${
+        suggestions.length > 0
+          ? ` Did you mean ${suggestions.map((id) => `"${id}"`).join(', ')}?`
+          : ''
+      }`,
+      ...(suggestions.length > 0 ? { suggestions } : {}),
+    };
+  };
+
+  const initial = lookup();
+  if (initial.full && !initial.presetId) return refuseUnknown(initial.entries);
+
+  // Selecting is what mounts an embedded page's engine, so it comes first.
+  const before = getLastCommittedCore()?.presetId ?? null;
+  engineRef.current.handlePresetSelection(initial.presetId ?? requested);
+  const settled = await waitForCommittedCore((core) => {
+    const now = lookup();
+    if (now.full && !now.presetId) return true;
+    if (now.presetId && core.presetId === now.presetId) return true;
+    // A booting stage's first preset is its own, not a verdict on this
+    // request; only a move away from what was showing is.
+    return (
+      before !== null && core.presetId !== null && core.presetId !== before
+    );
+  }, timeoutMs);
+  const now = lookup();
+  if (now.full && !now.presetId) return refuseUnknown(now.entries);
+  if (settled && settled.presetId === now.presetId) {
+    return { success: true, presetId: now.presetId };
+  }
+  // The shell says why when a preset times out or will not load, then shows
+  // a fallback.
+  return {
+    success: false,
+    reason:
+      latestStatusSince(startedAt) ??
+      (settled
+        ? `The stage settled on "${settled.presetId}" instead of "${requested}".`
+        : `"${now.presetId ?? requested}" did not finish loading within ${timeoutMs / 1000}s.`),
   };
 }
 
@@ -83,51 +215,36 @@ async function applyTweakForAgent(
           restyle: refinement.style,
           note: `AI refine is unavailable (${refinement.aiError}), so the ${refinement.label} restyle was applied instead.`,
         };
-  const session = await engine.applyEditorSourceAwaited(refinement.milkSource);
-  if (!session) {
-    return {
-      success: false,
-      reason:
-        'The visualizer is not running yet, so the tweak was not applied.',
-      ...how,
-    };
-  }
-  const state = toAgentEditorState(session);
-  if (state.errorCount > 0) {
-    return {
-      success: false,
-      reason:
-        'The tweaked preset failed to compile, so the previous one is still on screen.',
-      ...how,
-      state,
-    };
-  }
-  return { success: true, ...how, state };
+  return {
+    ...how,
+    ...describeAppliedSource(
+      await engine.applyEditorSourceAwaited(refinement.milkSource),
+      'The tweaked preset',
+    ),
+  };
 }
 
 export function buildAgentBridgeCallbacks({
   engineRef,
   engineSnapshotRef,
   audioCommitTimeoutMs = AUDIO_COMMIT_TIMEOUT_MS,
+  presetTimeoutMs = PRESET_TIMEOUT_MS,
 }: {
   engineRef: RefObject<EngineContextValue>;
   engineSnapshotRef: RefObject<EngineSnapshot | null>;
   audioCommitTimeoutMs?: number;
+  presetTimeoutMs?: number;
 }): AgentBridgeCallbacks {
   return {
-    onLoadPreset: (payload) => {
-      // milkSource is how an agent hands over preset *code* rather than a
-      // catalog id (MCP's session_apply_source). The bridge has always
-      // forwarded it and this handler always dropped it, so that tool
-      // silently did nothing.
-      if (payload.milkSource) {
-        engineRef.current.updateEditorSource(payload.milkSource);
-        return;
-      }
-      if (payload.presetId) {
-        void engineRef.current.handlePlayPreset(payload.presetId);
-      }
-    },
+    // milkSource is how an embedder hands over preset *code* rather than a
+    // catalog id.
+    onLoadPreset: (payload) =>
+      loadPresetForAgent(
+        engineRef,
+        engineSnapshotRef,
+        payload,
+        presetTimeoutMs,
+      ),
     onApplyTweak: (tweak) =>
       applyTweakForAgent(
         engineRef.current,
