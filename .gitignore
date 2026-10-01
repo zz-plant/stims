@@ -19,6 +19,9 @@ yarn-error.log*
 
 # Build directories
 /dist/
+# `bun run ctl:compile` output: a 60 MB single-platform executable, rebuilt on
+# demand from scripts/stims-ctl.ts.
+/bin/stims-ctl
 
 # Stale TypeScript compiled outputs
 /src/js/utils/**/*.js
