@@ -574,9 +574,101 @@ shapecode_0_a=0.9
     expect(visibleLayers()).toEqual(['blend', 'main']);
 
     adapter.endLiveBlend?.();
-    expect(outgoingDeck.disposed).toBe(true);
     expect(incomingDeck.transitionSource).toBeNull();
     expect(adapter.isLiveBlendActive?.()).toBe(false);
+    // The retired deck is kept for the next live crossfade, which takes it
+    // instead of allocating a third chain...
+    expect(outgoingDeck.disposed).toBe(false);
+    expect(adapter.beginLiveBlend?.()).toBe(true);
+    expect(created).toBe(2);
+    expect(outgoingDeck.seededFrom).toBe(incomingDeck.manager);
+    adapter.endLiveBlend?.();
+
+    // ...and freed once no live crossfade has claimed it for a while.
+    const realNow = performance.now.bind(performance);
+    const restoreNow = replaceProperty(
+      performance,
+      'now',
+      () => realNow() + 60_000,
+    );
+    try {
+      adapter.render({ frameState: step(outgoingVm), blendState: null });
+    } finally {
+      restoreNow();
+    }
+    expect(incomingDeck.disposed).toBe(true);
+    expect(outgoingDeck.disposed).toBe(false);
+  });
+
+  test('a live crossfade draws the outgoing preset from its own frame alone', () => {
+    // The outgoing deck's geometry must not depend on what the incoming
+    // preset happens to share with it: interpolating toward the incoming
+    // frame dropped the outgoing procedural main wave whenever the incoming
+    // frame had none to interpolate with.
+    const outgoing = compileMilkdropPresetSource(
+      'title=Live Outgoing Wave\nwave_mode=0\nwave_a=1\nwave_r=1',
+      { id: 'live-outgoing-wave' },
+    );
+    const incoming = compileMilkdropPresetSource('title=Live Incoming', {
+      id: 'live-incoming-no-wave',
+    });
+    const outgoingVm = createMilkdropVM(outgoing);
+    outgoingVm.setRenderBackend('webgpu');
+    const incomingVm = createMilkdropVM(incoming);
+    incomingVm.setRenderBackend('webgpu');
+    const outgoingFrame = outgoingVm.step(makeSignals());
+    expect(outgoingFrame.gpuGeometry.mainWave).not.toBeNull();
+    const rawIncoming = incomingVm.step(makeSignals());
+    const incomingFrame = {
+      ...rawIncoming,
+      gpuGeometry: { ...rawIncoming.gpuGeometry, mainWave: null },
+    };
+
+    const decks = [0, 1].map(
+      () =>
+        ({
+          applyCompositeState() {},
+          render: () => true,
+          renderOffscreen: () => true,
+          getDisplayTexture: () => null,
+          setTransitionSource() {},
+          seedHistoryFrom: () => true,
+          swap() {},
+          resize() {},
+          dispose() {},
+        }) as unknown as MilkdropFeedbackManager,
+    );
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgpu',
+      batcher: null,
+      preset: outgoing,
+      createFeedbackManager: () => decks.shift() as MilkdropFeedbackManager,
+    });
+    adapter.attach();
+    expect(adapter.beginLiveBlend?.()).toBe(true);
+    adapter.setPreset(incoming);
+    adapter.render({
+      frameState: incomingFrame,
+      blendState: { mode: 'gpu', previousFrame: outgoingFrame, alpha: 0.6 },
+    });
+
+    const blendWaveGroup = (
+      adapter as unknown as { blendWaveGroup: RenderTreeNode }
+    ).blendWaveGroup;
+    const drawn = flattenRenderTree(blendWaveGroup).filter(
+      (node) =>
+        node !== blendWaveGroup &&
+        node.visible !== false &&
+        node.material instanceof NodeMaterial,
+    );
+    expect(drawn.length).toBeGreaterThan(0);
   });
 
   test('hides blend-layer visuals once the blend ends instead of ghosting', async () => {

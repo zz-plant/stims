@@ -221,6 +221,16 @@ function interpolateShapeVisualInto(
   return out;
 }
 
+/**
+ * How long a retired live-crossfade deck is kept for the next switch to
+ * reuse. Autoplay advances well inside this; a session left on one preset
+ * gives the memory back.
+ */
+const SPARE_DECK_TTL_MS = 30_000;
+
+const now = () =>
+  typeof performance !== 'undefined' ? performance.now() : Date.now();
+
 class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   readonly backend: 'webgl' | 'webgpu';
   private readonly behavior: MilkdropBackendBehavior;
@@ -377,6 +387,18 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private outgoingDeck: {
     feedback: MilkdropFeedbackManager;
     descriptorPlan: MilkdropWebGpuDescriptorPlan | null;
+  } | null = null;
+  /**
+   * The deck the last live crossfade retired, kept for the next one: each
+   * deck is a whole feedback chain — a dozen render targets at up to 1.25x
+   * the canvas — and allocating one per switch and freeing it 2.5s later
+   * churned that much memory on every autoplay advance. Freed if no live
+   * crossfade claims it within SPARE_DECK_TTL_MS, so a session that stops
+   * switching does not hold two chains.
+   */
+  private spareDeck: {
+    feedback: MilkdropFeedbackManager;
+    retiredAt: number;
   } | null = null;
   /** What the feedback managers were last sized and scaled to, so a deck
    * created mid-session matches the one it replaces. */
@@ -578,10 +600,18 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     ) {
       return false;
     }
-    const incoming = this.createFeedbackManager(
-      this.feedbackSize.width,
-      this.feedbackSize.height,
-    );
+    const spare = this.spareDeck?.feedback ?? null;
+    this.spareDeck = null;
+    const incoming =
+      spare ??
+      this.createFeedbackManager(
+        this.feedbackSize.width,
+        this.feedbackSize.height,
+      );
+    if (spare) {
+      // Sized and scaled for whenever it last ran.
+      spare.resize(this.feedbackSize.width, this.feedbackSize.height);
+    }
     if (this.feedbackMultipliers) {
       incoming.setAdaptiveQuality?.(this.feedbackMultipliers);
     }
@@ -594,12 +624,26 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     return true;
   }
 
-  /** Ends a live crossfade and releases the outgoing deck. */
+  /** Ends a live crossfade; the outgoing deck becomes the spare. */
   endLiveBlend() {
     if (!this.outgoingDeck) return;
     this.feedback?.setTransitionSource?.(null);
-    this.outgoingDeck.feedback.dispose();
+    this.spareDeck?.feedback.dispose();
+    this.spareDeck = {
+      feedback: this.outgoingDeck.feedback,
+      retiredAt: now(),
+    };
     this.outgoingDeck = null;
+  }
+
+  private releaseIdleSpareDeck() {
+    if (
+      this.spareDeck &&
+      now() - this.spareDeck.retiredAt > SPARE_DECK_TTL_MS
+    ) {
+      this.spareDeck.feedback.dispose();
+      this.spareDeck = null;
+    }
   }
 
   isLiveBlendActive(): boolean {
@@ -1542,6 +1586,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   render(payload: MilkdropRenderPayload) {
+    this.releaseIdleSpareDeck();
     try {
       this.audioTexture.update(
         payload.frameState.signals.frequencyData,
@@ -1578,11 +1623,18 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         if (!this.blendVisualsVisible) {
           this.setBlendVisualsVisible(true);
         }
-        if (liveDeck) {
-          // The outgoing preset draws at full strength on its own deck; the
-          // present pass's dissolve does the fading.
+        if (liveDeck && blend.mode === 'gpu') {
+          // The outgoing preset draws its own frame at full strength on its
+          // own deck, and the present pass's dissolve does the fading. Its
+          // frame stands in for the payload's too: interpolating toward the
+          // incoming frame dropped any procedural geometry the incoming
+          // preset did not also have.
+          const outgoingPayload = {
+            ...payload,
+            frameState: blend.previousFrame,
+          };
           this.withDeck(liveDeck, () =>
-            this.renderBlendVisuals(payload, { ...blend, alpha: 1 }),
+            this.renderBlendVisuals(outgoingPayload, { ...blend, alpha: 1 }),
           );
         } else {
           this.renderBlendVisuals(payload, blend);
@@ -1746,6 +1798,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.batcher?.dispose();
     this.outgoingDeck?.feedback.dispose();
     this.outgoingDeck = null;
+    this.spareDeck?.feedback.dispose();
+    this.spareDeck = null;
     this.feedback?.dispose();
     this.audioTexture.dispose();
     this.scene.remove(this.root);

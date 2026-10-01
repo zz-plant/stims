@@ -469,7 +469,13 @@ export function createMilkdropExperience({
   const applyCompiledPreset = (compiled: MilkdropCompiledPreset) => {
     // One switch applies twice (navigation, then the session subscriber);
     // the first apply takes the armed live blend and the second is in place.
-    const live = pendingLiveBlend;
+    // Only a real switch with its blend still running takes it: an armed
+    // switch can be superseded before it applies, and the next apply may
+    // be an editor re-apply of the same preset with nothing to blend.
+    const live =
+      pendingLiveBlend &&
+      compiled.source.id !== activePresetId &&
+      transitionController.getPhase() !== 'idle';
     pendingLiveBlend = false;
     if (live && !outgoingVm && adapter?.beginLiveBlend?.()) {
       outgoingVm = vm.handOffRunningPreset(compiled);
@@ -676,15 +682,23 @@ export function createMilkdropExperience({
       if (liveBlendInfo) liveBlendInfo.frames += 1;
       return outgoingVm.step(signals);
     },
+    setDetailScale: (scale: number) => outgoingVm?.setDetailScale(scale),
   };
 
-  const endLiveBlend = (reason = 'settled') => {
+  /** Lets the outgoing preset go: its VM, the debug record, any armed
+   * blend. The adapter's half — the outgoing deck — is endLiveBlend's. */
+  const releaseOutgoingPreset = (reason: string) => {
     if (outgoingVm) {
       transitionController.annotate('live-blend-ended', reason);
     }
     outgoingVm?.dispose();
     outgoingVm = null;
     liveBlendInfo = null;
+    pendingLiveBlend = false;
+  };
+
+  const endLiveBlend = (reason = 'settled') => {
+    releaseOutgoingPreset(reason);
     adapter?.endLiveBlend?.();
   };
 
@@ -738,6 +752,10 @@ export function createMilkdropExperience({
     // snapshot rather than live, since there is no third deck to run.
     const collapsingLiveBlend = adapter?.isLiveBlendActive?.() ?? false;
     if (collapsingLiveBlend) {
+      // At the blend's own cover, not whatever the last frame drew: a gated
+      // frame draws none, and a snapshot taken at 0 would drop the
+      // outgoing half of the screen.
+      adapter?.setTransitionBlend?.(transitionController.getCoverAlpha());
       adapter?.saveFeedbackFrame?.();
       endLiveBlend('superseded');
     }
@@ -855,10 +873,10 @@ export function createMilkdropExperience({
     },
     getAdapter: () => adapter,
     setAdapter: (nextAdapter) => {
-      // The outgoing deck lives in the adapter being replaced.
+      // The outgoing deck lives in the adapter being replaced, and goes
+      // with it.
       if (nextAdapter !== adapter) {
-        outgoingVm?.dispose();
-        outgoingVm = null;
+        releaseOutgoingPreset('renderer replaced');
       }
       adapter = nextAdapter;
     },
@@ -1083,6 +1101,7 @@ export function createMilkdropExperience({
     getDisposeRequestedPresetListener: () => disposeRequestedPresetListener,
     catalogCoordinator,
     disposeRuntimeSignalHub,
+    releaseOutgoingPreset: () => releaseOutgoingPreset('disposed'),
     setQualityPresetById,
     previewCaptureRevision,
     emitChange,
@@ -1346,6 +1365,7 @@ function buildExperienceController(
       deps.capturedVideoReactivityTracker?.reset();
       deps.disposePostprocessingPipeline();
       deps.capturedVideoOverlay?.dispose();
+      deps.releaseOutgoingPreset();
       deps.adapter?.dispose();
       deps.performanceTracker?.reset();
       deps.getAdaptiveQualityUnsubscribe?.()?.();

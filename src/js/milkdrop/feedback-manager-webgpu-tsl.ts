@@ -4030,6 +4030,23 @@ class WebGPUMilkdropFeedbackManager
     return (this.presentMaterial.uniforms.currentTex.value as Texture) ?? null;
   }
 
+  /** Also carries the display history: an afterimage-damped composite reads
+   * the previous display frame, so a deck seeded without it starts that
+   * term on black. */
+  override seedHistoryFrom(
+    renderer: unknown,
+    source: { getHistoryTexture?(): Texture | null },
+  ): boolean {
+    if (!super.seedHistoryFrom(renderer, source)) return false;
+    if (source instanceof WebGPUMilkdropFeedbackManager) {
+      source.displayTargets.forEach((target, index) => {
+        this.copyTargetImage(target.texture, this.displayTargets[index]);
+      });
+      this.displayIndex = source.displayIndex;
+    }
+    return true;
+  }
+
   protected copyTargetImage(
     source: Texture,
     destination: RenderTarget,

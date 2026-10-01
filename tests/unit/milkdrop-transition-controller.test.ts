@@ -272,6 +272,33 @@ describe('manual fades survive the duplicate begin', () => {
     );
   });
 
+  test('the cover alpha stays where the blend stands through a gated frame', () => {
+    // A switch made mid-blend snapshots the screen at this alpha; a gated
+    // frame draws no cover, and a snapshot taken at its 0 would drop the
+    // outgoing half of the picture.
+    const controller = createMilkdropTransitionController();
+    controller.begin(blendPayload(), 2);
+    for (let now = 1000; now <= 2000; now += 100) {
+      controller.tick({ ...tickDefaults, now });
+    }
+    expect(controller.getCoverAlpha()).toBeCloseTo(0.5, 5);
+
+    expect(
+      controller.tick({ ...tickDefaults, canBlendThisFrame: false, now: 2100 }),
+    ).toBeNull();
+    expect(controller.getCoverAlpha()).toBeCloseTo(0.5, 5);
+
+    controller.cancel('test');
+    expect(controller.getCoverAlpha()).toBe(0);
+  });
+
+  test('a hand-driven fade covers by the inverse of the fader', () => {
+    const controller = createMilkdropTransitionController();
+    controller.beginManual(blendPayload());
+    controller.setManualPosition(0.25);
+    expect(controller.getCoverAlpha()).toBeCloseTo(0.75, 5);
+  });
+
   test('a cut cannot silently cancel a hand-driven fade either', () => {
     const controller = createMilkdropTransitionController();
     controller.beginManual(blendPayload());

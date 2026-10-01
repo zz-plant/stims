@@ -279,6 +279,18 @@ export function createMilkdropTransitionController() {
       record(event, detail);
     },
 
+    /**
+     * How much of the outgoing picture the blend stands at: the timed
+     * blend's alpha, the fader's inverse, or 0 between transitions. A gated
+     * frame draws no cover but leaves this where the blend stands, which is
+     * what a snapshot of the screen mid-blend has to be taken at.
+     */
+    getCoverAlpha(): number {
+      if (phase === 'manual') return 1 - manualPosition;
+      if (phase === 'blending' && blendState) return blendState.alpha;
+      return 0;
+    },
+
     getPhase: () => phase,
     getEvents: (): readonly MilkdropTransitionEvent[] => events,
   };
