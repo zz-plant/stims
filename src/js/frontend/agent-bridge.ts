@@ -219,7 +219,11 @@ export function getAgentTelemetry(): AgentTelemetry {
 }
 
 export interface AgentBridgeCallbacks {
-  onLoadPreset?: (payload: { presetId?: string; milkSource?: string }) => void;
+  /** Resolves once the stage shows the preset, or the load was refused. */
+  onLoadPreset?: (payload: {
+    presetId?: string;
+    milkSource?: string;
+  }) => Promise<AgentCommandResult>;
   /** Resolves once the tweak has been applied and compiled, or refused. */
   onApplyTweak?: (tweak: string) => Promise<AgentCommandResult>;
   /** Resolves once the stage is playing `source`, or the start failed. */
@@ -370,7 +374,6 @@ export function initAgentBridge(callbacks?: AgentBridgeCallbacks): () => void {
           typeof data.milkSource === 'string' && data.milkSource
             ? data.milkSource
             : undefined;
-        const onLoadPreset = callbacks?.onLoadPreset;
         if (!presetId && !milkSource) {
           replyStatus('load_preset', {
             success: false,
@@ -378,19 +381,12 @@ export function initAgentBridge(callbacks?: AgentBridgeCallbacks): () => void {
           });
           break;
         }
-        if (!onLoadPreset) {
-          replyStatus(
-            'load_preset',
-            {
-              success: false,
-              reason: 'load_preset is not available on this page.',
-            },
-            { presetId },
-          );
-          break;
-        }
-        onLoadPreset({ presetId, milkSource });
-        replyStatus('load_preset', { success: true }, { presetId });
+        const onLoadPreset = callbacks?.onLoadPreset;
+        settleStatus(
+          'load_preset',
+          { presetId },
+          onLoadPreset && (() => onLoadPreset({ presetId, milkSource })),
+        );
         break;
       }
 
