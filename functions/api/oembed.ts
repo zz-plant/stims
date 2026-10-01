@@ -93,7 +93,9 @@ export async function onRequest(context: EventContext): Promise<Response> {
   );
   const entry = presetId ? presetMeta?.[presetId] : null;
 
-  const title = entry ? entry[0] : 'Stims — MilkDrop-Inspired Audio Visualizer';
+  const title = entry
+    ? entry[0]
+    : 'Stims — Play and Edit MilkDrop Presets in Your Browser';
   const author = entry?.[1];
   const authorCredit = author ? ` by ${author}` : '';
 
