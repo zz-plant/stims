@@ -1,0 +1,3710 @@
+{
+  "summary": {
+    "cells": 138,
+    "guided": {
+      "median_r2": 0.983153737958596,
+      "exact": 0.4057971014492754,
+      "over_0.9": 0.7898550724637681,
+      "median_terms": 10.0
+    },
+    "blind": {
+      "median_r2": 0.9880966394853821,
+      "exact": 0.39855072463768115,
+      "over_0.9": 0.8188405797101449,
+      "median_terms": 94.0
+    },
+    "blind_signals": {
+      "precision": 0.43959392057218144,
+      "recall": 0.9806763285024154
+    }
+  },
+  "rows": [
+    {
+      "preset": "bmelgren-rovastar-schisathing-6-mash0001-hellraiser-s-molten-consciousness",
+      "column": "zoomexp",
+      "true_signals": ["mid_att"],
+      "guided": {
+        "r2": 0.9999987790928997,
+        "terms": 2,
+        "equation": "0.9999 + 50*mid_att",
+        "signals": ["mid_att"]
+      },
+      "blind": {
+        "r2": 0.9999987790928997,
+        "terms": 2,
+        "signals": ["mid_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cope-passage-geiss-emboss-mix",
+      "column": "sx",
+      "true_signals": ["bass_att", "mid_att", "treb_att", "vol"],
+      "guided": {
+        "r2": 0.9992758042327403,
+        "terms": 4,
+        "equation": "1 + 0.000799*bass_att + 0.000955*treb_att + 0.01806*vol",
+        "signals": ["bass_att", "treb_att", "vol"]
+      },
+      "blind": {
+        "r2": 0.9987039770067923,
+        "terms": 22,
+        "signals": [
+          "bass",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "transient",
+          "treb",
+          "vol"
+        ]
+      },
+      "blind_signal_precision": 0.2857142857142857,
+      "blind_signal_recall": 0.5
+    },
+    {
+      "preset": "cope-passage-geiss-emboss-mix",
+      "column": "sy",
+      "true_signals": ["bass_att", "mid_att", "treb_att", "vol"],
+      "guided": {
+        "r2": 0.9992758042327403,
+        "terms": 4,
+        "equation": "1 + 0.000799*bass_att + 0.000955*treb_att + 0.01806*vol",
+        "signals": ["bass_att", "treb_att", "vol"]
+      },
+      "blind": {
+        "r2": 0.9987039770067923,
+        "terms": 22,
+        "signals": [
+          "bass",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "transient",
+          "treb",
+          "vol"
+        ]
+      },
+      "blind_signal_precision": 0.2857142857142857,
+      "blind_signal_recall": 0.5
+    },
+    {
+      "preset": "cope-passage-geiss-emboss-mix",
+      "column": "q1",
+      "true_signals": ["bass_att", "mid_att", "treb_att", "vol"],
+      "guided": {
+        "r2": 0.9999085379269714,
+        "terms": 4,
+        "equation": "0.01001 + 0.0398*bass_att + 0.04823*treb_att + 0.9026*vol",
+        "signals": ["bass_att", "treb_att", "vol"]
+      },
+      "blind": {
+        "r2": 0.9999803856280046,
+        "terms": 23,
+        "signals": [
+          "bass",
+          "bass_att",
+          "mid",
+          "mid_att",
+          "treb",
+          "treb_att",
+          "vol"
+        ]
+      },
+      "blind_signal_precision": 0.5714285714285714,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cope-the-neverending-explosion-of-red-liquid-fire",
+      "column": "q3",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999660383504706,
+        "terms": 6,
+        "equation": "0.004269 + 0.05626*bass*bass + 0.04631*treb*treb + 0.1646*bass*mid + 0.1048*bass*treb + 0.1891*mid*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999998254525336,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cope-the-neverending-explosion-of-red-liquid-fire",
+      "column": "q5",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999660383504706,
+        "terms": 6,
+        "equation": "0.002135 + 0.02813*bass*bass + 0.02316*treb*treb + 0.08228*bass*mid + 0.05239*bass*treb + 0.09456*mid*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999998254525336,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+      "column": "q1",
+      "true_signals": ["bass", "bass_att"],
+      "guided": {
+        "r2": 0.8434581757455529,
+        "terms": 31,
+        "equation": "0.8598 + -1.452*bass + 2.276*bass*bass + 0.1547*above(bass,1.25) + 0.2543*above(bass,1.58) + 0.1895*above(bass,2.15) + -0.2624*above(bass,1) + 0.297*above(bass,1.5) + 1.911*bass_att + 2.108*bass_att*bass_att + -0.1283*above(bass_att,1.31) + -0.2852*above(bass_att,1.66) + -0.291*above(bass_att,1) + -0.2049*above(bass_att,1.2) + -0.236*above(bass_att,1.5) + -4.472*bass*bass_att + 0.3464*sin(0.4189*time) + 0.2373*cos(0.4189*time) + 0.126*bass*cos(0.4189*time) + -0.1257*bass_att*sin(0.4189*time) + -0.1612*bass_att*cos(0.4189*time) + 0.4041*sin(0.8378*time) + 0.1537*bass*sin(0.8378*time) + 0.2373*bass*cos(0.8378*time) + -0.3262*bass_att*sin(0.8378*time) + -0.1828*bass_att*cos(0.8378*time) + 0.1779*sin(1.257*time) + -0.2035*cos(1.257*time) + 0.2316*bass*sin(1.257*time) + 0.1518*bass*cos(1.257*time) + -0.2489*bass_att*sin(1.257*time)",
+        "signals": ["bass", "bass_att"]
+      },
+      "blind": {
+        "r2": 0.9127492689148933,
+        "terms": 189,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+      "column": "q2",
+      "true_signals": ["mid", "mid_att"],
+      "guided": {
+        "r2": 0.8645456945565831,
+        "terms": 23,
+        "equation": "0.9638 + -1.965*mid + 3.68*mid*mid + -0.1068*above(mid,1.16) + 0.3629*above(mid,1.93) + 0.2086*above(mid,1.2) + 0.2749*above(mid,1.5) + 1.614*mid_att + 2.864*mid_att*mid_att + -6.556*mid*mid_att + 0.1218*sin(0.4189*time) + 0.1557*mid*cos(0.4189*time) + -0.07721*mid_att*sin(0.4189*time) + -0.09522*mid_att*cos(0.4189*time) + -0.07605*sin(67.44*time) + 0.1423*cos(67.44*time) + -0.09176*mid*sin(67.44*time) + 0.2137*mid*cos(67.44*time) + 0.1301*mid_att*sin(67.44*time) + -0.2715*mid_att*cos(67.44*time) + -0.1337*cos(67.86*time) + -0.2853*mid*cos(67.86*time) + 0.3215*mid_att*cos(67.86*time)",
+        "signals": ["mid", "mid_att"]
+      },
+      "blind": {
+        "r2": 0.8866348459114475,
+        "terms": 191,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+      "column": "q3",
+      "true_signals": ["treb", "treb_att"],
+      "guided": {
+        "r2": 0.860757231681537,
+        "terms": 28,
+        "equation": "0.5912 + -2.712*treb + 2.021*treb*treb + 0.479*above(treb,1.65) + 0.8278*above(treb,2.25) + -0.118*above(treb,1) + 0.2499*above(treb,1.5) + 3.276*treb_att + 0.8848*treb_att*treb_att + -0.256*above(treb_att,1.74) + -0.1945*above(treb_att,2.29) + -0.1075*above(treb_att,1) + -0.1399*above(treb_att,1.5) + -3.045*treb*treb_att + 0.07446*sin(0.4189*time) + 0.07716*cos(0.4189*time) + -0.04877*treb*sin(0.4189*time) + -0.02714*treb*cos(0.4189*time) + 0.04603*treb_att*cos(0.4189*time) + 0.1878*cos(1.676*time) + 0.1963*treb*cos(1.676*time) + -0.2633*treb_att*cos(1.676*time) + -0.189*sin(67.44*time) + 0.1574*cos(67.44*time) + -0.06475*treb*sin(67.44*time) + 0.1681*treb*cos(67.44*time) + 0.164*treb_att*sin(67.44*time) + -0.1816*treb_att*cos(67.44*time)",
+        "signals": ["treb", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.8785794264628346,
+        "terms": 134,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-bitstorm-intune-with-ada",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-bitstorm-intune-with-ada",
+      "column": "q26",
+      "true_signals": ["bass_att", "mid_att", "treb_att"],
+      "guided": {
+        "r2": 0.9999994194408937,
+        "terms": 4,
+        "equation": "2.675e-05 + 0.9999*bass_att + 1*mid_att + 1*treb_att",
+        "signals": ["bass_att", "mid_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9999994194408937,
+        "terms": 4,
+        "signals": ["bass_att", "mid_att", "treb_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-bmelgren-morpherous3",
+      "column": "mv_l",
+      "true_signals": ["mid"],
+      "guided": {
+        "r2": 0.999998462614193,
+        "terms": 2,
+        "equation": "1 + 1*mid",
+        "signals": ["mid"]
+      },
+      "blind": {
+        "r2": 0.999998462614193,
+        "terms": 2,
+        "signals": ["mid"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-eos-apocalypse-g",
+      "column": "q6",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999660383504706,
+        "terms": 6,
+        "equation": "0.004269 + 0.05626*bass*bass + 0.04631*treb*treb + 0.1646*bass*mid + 0.1048*bass*treb + 0.1891*mid*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999998254525336,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2e-feat-martin-flexi-phat",
+      "column": "zoom",
+      "true_signals": ["bass_att", "treb_att"],
+      "guided": {
+        "r2": 0.9833014040309158,
+        "terms": 17,
+        "equation": "1.004 + 0.04699*bass_att + 0.02415*bass_att*bass_att + 0.05114*treb_att + 0.0233*treb_att*treb_att + 0.002016*above(treb_att,1.36) + 0.006001*above(treb_att,1.74) + 0.003822*above(treb_att,2.29) + -0.002863*above(treb_att,1) + 0.003167*above(treb_att,1.5) + -0.04502*bass_att*treb_att + 0.00578*sin(0.4189*time) + -0.004118*treb_att*sin(0.4189*time) + -0.00358*cos(0.8378*time) + 0.002593*treb_att*cos(0.8378*time) + -0.005548*bass_att*cos(1.257*time) + 0.005143*treb_att*cos(1.257*time)",
+        "signals": ["bass_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9835809345923128,
+        "terms": 101,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-eos-more-waveforms-8",
+      "column": "q1",
+      "true_signals": ["mid", "treb"],
+      "guided": {
+        "r2": 0.9582544973647487,
+        "terms": 18,
+        "equation": "-0.2134 + 0.6176*mid + -0.09706*mid*mid + -0.03922*above(mid,1.16) + -0.04136*above(mid,1.5) + -0.07389*above(mid,1.93) + 0.08009*above(mid,1) + -0.05645*above(mid,1.2) + -0.05021*above(mid,1.5) + 0.681*treb + -0.07984*treb*treb + -0.04328*above(treb,1.14) + -0.1107*above(treb,1.65) + -0.1491*above(treb,2.25) + 0.02319*above(treb,1) + -0.07125*above(treb,1.2) + -0.08708*above(treb,1.5) + -0.05132*mid*treb",
+        "signals": ["mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9573210285176909,
+        "terms": 107,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q1",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9805958427895666,
+        "terms": 33,
+        "equation": "0.0706 + 1.002*bass + 0.03054*bass*bass + 0.07243*above(bass,1.25) + -0.1025*above(bass,2.15) + 0.1593*above(bass,1) + 0.06403*above(bass,1.2) + 0.08342*above(bass,1.5) + 1.524*mid + -0.06819*mid*mid + 0.05153*above(mid,1.16) + -0.07483*above(mid,1.5) + -0.4078*above(mid,1.93) + 0.09583*above(mid,1) + 0.08313*above(mid,1.2) + 0.09839*above(mid,1.5) + 1.261*treb + -0.1179*treb*treb + 0.06303*above(treb,1.14) + -0.05257*above(treb,1.65) + -0.229*above(treb,2.25) + 0.05649*above(treb,1) + 0.0564*above(treb,1.2) + 0.0818*above(treb,1.5) + -0.3079*bass*mid + -0.1291*bass*treb + -0.05486*mid*treb + 0.03894*cos(0.4189*time) + -0.03803*mid*cos(0.4189*time) + 0.0398*cos(0.8378*time) + -0.03357*mid*cos(0.8378*time) + 0.02395*mid*sin(1.257*time) + -0.02664*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9913465521953743,
+        "terms": 139,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q1",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9805958427895666,
+        "terms": 33,
+        "equation": "0.0706 + 1.002*bass + 0.03054*bass*bass + 0.07243*above(bass,1.25) + -0.1025*above(bass,2.15) + 0.1593*above(bass,1) + 0.06403*above(bass,1.2) + 0.08342*above(bass,1.5) + 1.524*mid + -0.06819*mid*mid + 0.05153*above(mid,1.16) + -0.07483*above(mid,1.5) + -0.4078*above(mid,1.93) + 0.09583*above(mid,1) + 0.08313*above(mid,1.2) + 0.09839*above(mid,1.5) + 1.261*treb + -0.1179*treb*treb + 0.06303*above(treb,1.14) + -0.05257*above(treb,1.65) + -0.229*above(treb,2.25) + 0.05649*above(treb,1) + 0.0564*above(treb,1.2) + 0.0818*above(treb,1.5) + -0.3079*bass*mid + -0.1291*bass*treb + -0.05486*mid*treb + 0.03894*cos(0.4189*time) + -0.03803*mid*cos(0.4189*time) + 0.0398*cos(0.8378*time) + -0.03357*mid*cos(0.8378*time) + 0.02395*mid*sin(1.257*time) + -0.02664*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9913465521953743,
+        "terms": 139,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-fishbrain-quark-matrix",
+      "column": "video_echo_orientation",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.6943911276637467,
+        "terms": 30,
+        "equation": "1.73 + 1.476*bass + -0.1551*bass*bass + -0.1835*above(bass,1) + -1.162*mid + 0.3673*mid*mid + 0.6321*above(mid,1.16) + -1.413*above(mid,1.5) + -0.3177*above(mid,1.93) + 1.346*above(mid,1) + -2.191*above(mid,1.2) + 2.058*above(mid,1.5) + 0.8133*treb + 0.05626*treb*treb + 0.2425*above(treb,1.14) + 0.2553*above(treb,1.65) + 0.1461*bass*mid + -0.1064*bass*treb + -0.05842*mid*treb + -0.1062*sin(0.4189*time) + 0.1163*bass*sin(0.4189*time) + -0.1254*sin(0.8378*time) + -0.1435*cos(0.8378*time) + 0.08215*bass*sin(0.8378*time) + 0.0985*bass*cos(0.8378*time) + 0.1926*bass*cos(1.257*time) + -0.1981*mid*sin(1.257*time) + -0.3001*mid*cos(1.257*time) + 0.171*treb*sin(1.257*time) + 0.1*treb*cos(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.6931397715529293,
+        "terms": 231,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-fvese-lips-isosceles-edit",
+      "column": "zoom",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9999310077341054,
+        "terms": 2,
+        "equation": "1.161 + -0.05*bass_att",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9999310263389674,
+        "terms": 10,
+        "signals": ["bass", "bass_att", "mid", "treb", "vol", "weightedenergy"]
+      },
+      "blind_signal_precision": 0.16666666666666666,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-isosceles-mashup24",
+      "column": "decay",
+      "true_signals": ["treb"],
+      "guided": {
+        "r2": 0.9608553018756287,
+        "terms": 15,
+        "equation": "0.7509 + -0.0494*treb + -0.001186*above(treb,1.14) + 0.002292*above(treb,2.25) + 0.03302*sin(2.094*time) + -0.03165*cos(2.094*time) + 0.001678*treb*sin(2.094*time) + 0.002061*treb*cos(2.094*time) + -0.01148*sin(1.676*time) + 0.006725*cos(1.676*time) + 0.001502*treb*sin(1.676*time) + 0.001941*treb*cos(1.676*time) + 0.000916*cos(0.4189*time) + -0.0009148*treb*sin(0.4189*time) + 0.001343*treb*cos(0.4189*time)",
+        "signals": ["treb"]
+      },
+      "blind": {
+        "r2": 0.984719077475149,
+        "terms": 115,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-isosceles-mashup24",
+      "column": "wave_r",
+      "true_signals": ["bass"],
+      "guided": {
+        "r2": 0.9972654907744267,
+        "terms": 11,
+        "equation": "0.6071 + 0.3033*bass + 0.2435*sin(0.4189*time) + -0.1043*cos(0.4189*time) + 0.007672*bass*cos(0.4189*time) + 0.03292*sin(0.8378*time) + -0.02263*cos(0.8378*time) + 0.008938*bass*cos(0.8378*time) + 0.01608*sin(1.257*time) + -0.01941*cos(1.257*time) + 0.01064*bass*cos(1.257*time)",
+        "signals": ["bass"]
+      },
+      "blind": {
+        "r2": 0.9991176457416476,
+        "terms": 87,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-isosceles-mashup24",
+      "column": "wave_g",
+      "true_signals": ["treb"],
+      "guided": {
+        "r2": 0.9985356928053708,
+        "terms": 7,
+        "equation": "0.7497 + 0.3018*treb + 0.02079*sin(0.4189*time) + -0.1188*cos(0.4189*time) + -0.009797*cos(1.257*time) + 0.00796*sin(0.8378*time) + -0.02304*cos(0.8378*time)",
+        "signals": ["treb"]
+      },
+      "blind": {
+        "r2": 0.9992575170176919,
+        "terms": 71,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.08333333333333333,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-isosceles-mashup24",
+      "column": "wave_b",
+      "true_signals": ["mid"],
+      "guided": {
+        "r2": 0.9849945526380023,
+        "terms": 11,
+        "equation": "0.6731 + 0.3057*mid + 0.1411*sin(0.4189*time) + -0.1652*cos(0.4189*time) + 0.01304*mid*cos(0.4189*time) + 0.04002*sin(0.8378*time) + -0.03934*cos(0.8378*time) + 0.01233*mid*cos(0.8378*time) + 0.02218*sin(1.257*time) + -0.0296*cos(1.257*time) + 0.0161*mid*cos(1.257*time)",
+        "signals": ["mid"]
+      },
+      "blind": {
+        "r2": 0.9974616848937521,
+        "terms": 108,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-martin-pendulum-in-brass-ps3",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+      "column": "q1",
+      "true_signals": ["bass", "bass_att", "treb"],
+      "guided": {
+        "r2": 0.9989701703969532,
+        "terms": 3,
+        "equation": "-0.01668 + 0.518*treb + 1.486*bass_att",
+        "signals": ["bass_att", "treb"]
+      },
+      "blind": {
+        "r2": 0.9989701703969532,
+        "terms": 3,
+        "signals": ["bass_att", "treb"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 0.6666666666666666
+    },
+    {
+      "preset": "cotc-rovastar-destiny-star-starbrust-mix",
+      "column": "zoom",
+      "true_signals": [
+        "bass",
+        "bass_att",
+        "mid",
+        "mid_att",
+        "treb",
+        "treb_att"
+      ],
+      "guided": {
+        "r2": 0.9395535592416783,
+        "terms": 85,
+        "equation": "0.943 + -0.1003*bass + 0.02971*bass*bass + -0.005607*above(bass,1.25) + -0.01692*above(bass,1.58) + -0.04984*above(bass,2.15) + -0.002524*above(bass,1) + -0.004669*above(bass,1.2) + -0.009295*above(bass,1.5) + 0.00953*mid + 0.008075*mid*mid + -0.003448*above(mid,1.16) + -0.002447*above(mid,1.5) + -0.01414*above(mid,1.93) + -0.003176*above(mid,1.5) + -0.006071*treb + -0.00405*treb*treb + -0.003178*above(treb,1.14) + -0.003388*above(treb,1.65) + 0.003566*bass_att + -0.0003541*bass_att*bass_att + -0.004032*above(bass_att,1.31) + -0.007024*above(bass_att,1.66) + -0.007892*above(bass_att,2.33) + -0.001596*above(bass_att,1.2) + -0.003451*above(bass_att,1.5) + -0.01155*mid_att + 0.00659*mid_att*mid_att + 0.001926*above(mid_att,1.56) + 0.008445*treb_att + 0.005412*treb_att*treb_att + 0.001742*above(treb_att,1.74) + 0.00199*above(treb_att,1.5) + -0.008942*bass*mid + 0.008925*bass*treb + 0.01527*bass*bass_att + 0.0521*bass*mid_att + -0.01644*bass*treb_att + 0.006033*mid*treb + 0.001366*mid*bass_att + -0.02841*mid*mid_att + 0.01064*mid*treb_att + 0.004951*treb*bass_att + -0.0009168*treb*mid_att + -0.0004577*treb*treb_att + -0.007673*bass_att*mid_att + 0.001404*bass_att*treb_att + -0.01621*mid_att*treb_att + 0.01042*sin(0.4189*time) + 0.007315*cos(0.4189*time) + -0.01013*bass*sin(0.4189*time) + -0.01144*bass*cos(0.4189*time) + 0.007156*mid*sin(0.4189*time) + 0.00231*mid*cos(0.4189*time) + -0.004907*treb*sin(0.4189*time) + 0.001523*bass_att*cos(0.4189*time) + -0.007425*mid_att*sin(0.4189*time) + 0.006073*treb_att*sin(0.4189*time) + 0.001105*treb_att*cos(0.4189*time) + 0.01391*sin(0.8378*time) + 0.005511*cos(0.8378*time) + -0.01103*bass*sin(0.8378*time) + -0.00649*bass*cos(0.8378*time) + 0.005853*mid*sin(0.8378*time) + -0.004464*treb*sin(0.8378*time) + 0.003066*treb*cos(0.8378*time) + -0.002943*bass_att*sin(0.8378*time) + -0.002684*bass_att*cos(0.8378*time) + -0.005943*mid_att*sin(0.8378*time) + 0.0009239*mid_att*cos(0.8378*time) + 0.006023*treb_att*sin(0.8378*time) + 0.01127*sin(1.257*time) + -0.001411*cos(1.257*time) + -0.008774*bass*sin(1.257*time) + -0.001363*bass*cos(1.257*time) + 0.005602*mid*sin(1.257*time) + -0.002388*mid*cos(1.257*time) + -0.003728*treb*sin(1.257*time) + 0.003752*treb*cos(1.257*time) + -0.004003*bass_att*sin(1.257*time) + -0.002243*bass_att*cos(1.257*time) + -0.004851*mid_att*sin(1.257*time) + 0.005803*mid_att*cos(1.257*time) + 0.005706*treb_att*sin(1.257*time) + -0.003228*treb_att*cos(1.257*time)",
+        "signals": ["bass", "bass_att", "mid", "mid_att", "treb", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9716425296258621,
+        "terms": 177,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.46153846153846156,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-rovastar-destiny-star-starbrust-mix",
+      "column": "ob_a",
+      "true_signals": ["mid", "treb"],
+      "guided": {
+        "r2": 0.8251300867717477,
+        "terms": 12,
+        "equation": "-0.004633 + 0.06746*above(mid,1.16) + -0.04008*above(mid,1.5) + -0.07674*above(mid,1.93) + 0.2375*above(mid,1.2) + 0.1974*above(mid,1.5) + -0.03342*treb + 0.09339*above(treb,1.14) + -0.08241*above(treb,1) + 0.3344*above(treb,1.2) + 0.3*above(treb,1.5) + 0.01101*mid*treb",
+        "signals": ["mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.8304279963796527,
+        "terms": 127,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-rovastar-destiny-star-starbrust-mix",
+      "column": "q7",
+      "true_signals": [
+        "bass",
+        "bass_att",
+        "mid",
+        "mid_att",
+        "treb",
+        "treb_att"
+      ],
+      "guided": {
+        "r2": 0.9396794890538758,
+        "terms": 85,
+        "equation": "1.143 + -3.588*bass + 1.061*bass*bass + -0.2016*above(bass,1.25) + -0.6038*above(bass,1.58) + -1.779*above(bass,2.15) + -0.09211*above(bass,1) + -0.1633*above(bass,1.2) + -0.3311*above(bass,1.5) + 0.3415*mid + 0.2894*mid*mid + -0.1232*above(mid,1.16) + -0.08802*above(mid,1.5) + -0.5053*above(mid,1.93) + -0.1128*above(mid,1.5) + -0.217*treb + -0.1447*treb*treb + -0.1138*above(treb,1.14) + -0.1212*above(treb,1.65) + 0.1264*bass_att + -0.01328*bass_att*bass_att + -0.1435*above(bass_att,1.31) + -0.251*above(bass_att,1.66) + -0.2818*above(bass_att,2.33) + -0.05731*above(bass_att,1.2) + -0.1232*above(bass_att,1.5) + -0.4165*mid_att + 0.2405*mid_att*mid_att + 0.06834*above(mid_att,1.56) + 0.302*treb_att + 0.1943*treb_att*treb_att + 0.06251*above(treb_att,1.74) + 0.07105*above(treb_att,1.5) + -0.3188*bass*mid + 0.3189*bass*treb + 0.5465*bass*bass_att + 1.86*bass*mid_att + -0.587*bass*treb_att + 0.2149*mid*treb + 0.04866*mid*bass_att + -1.019*mid*mid_att + 0.3814*mid*treb_att + 0.176*treb*bass_att + -0.03003*treb*mid_att + -0.01703*treb*treb_att + -0.2735*bass_att*mid_att + 0.05104*bass_att*treb_att + -0.5837*mid_att*treb_att + 0.3725*sin(0.4189*time) + 0.2615*cos(0.4189*time) + -0.3615*bass*sin(0.4189*time) + -0.408*bass*cos(0.4189*time) + 0.2561*mid*sin(0.4189*time) + 0.08233*mid*cos(0.4189*time) + -0.1756*treb*sin(0.4189*time) + 0.0544*bass_att*cos(0.4189*time) + -0.2664*mid_att*sin(0.4189*time) + 0.2175*treb_att*sin(0.4189*time) + 0.03896*treb_att*cos(0.4189*time) + 0.4971*sin(0.8378*time) + 0.1972*cos(0.8378*time) + -0.394*bass*sin(0.8378*time) + -0.2321*bass*cos(0.8378*time) + 0.2095*mid*sin(0.8378*time) + -0.1595*treb*sin(0.8378*time) + 0.1099*treb*cos(0.8378*time) + -0.105*bass_att*sin(0.8378*time) + -0.09536*bass_att*cos(0.8378*time) + -0.2136*mid_att*sin(0.8378*time) + 0.03223*mid_att*cos(0.8378*time) + 0.2156*treb_att*sin(0.8378*time) + 0.4033*sin(1.257*time) + -0.05006*cos(1.257*time) + -0.3133*bass*sin(1.257*time) + -0.04825*bass*cos(1.257*time) + 0.2005*mid*sin(1.257*time) + -0.08567*mid*cos(1.257*time) + -0.1337*treb*sin(1.257*time) + 0.1343*treb*cos(1.257*time) + -0.1424*bass_att*sin(1.257*time) + -0.08086*bass_att*cos(1.257*time) + -0.1747*mid_att*sin(1.257*time) + 0.2074*mid_att*cos(1.257*time) + 0.2043*treb_att*sin(1.257*time) + -0.1152*treb_att*cos(1.257*time)",
+        "signals": ["bass", "bass_att", "mid", "mid_att", "treb", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9716990470152034,
+        "terms": 177,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.46153846153846156,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-rovastar-explosive-minds-kay",
+      "column": "wave_r",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9999995280187786,
+        "terms": 2,
+        "equation": "2.067e-06 + 0.3*bass_att",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9999995280187786,
+        "terms": 2,
+        "signals": ["bass_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-rovastar-explosive-minds-kay",
+      "column": "wave_g",
+      "true_signals": ["treb_att"],
+      "guided": {
+        "r2": 0.9999992386592436,
+        "terms": 2,
+        "equation": "7.097e-07 + 0.3*treb_att",
+        "signals": ["treb_att"]
+      },
+      "blind": {
+        "r2": 0.9999992386592436,
+        "terms": 2,
+        "signals": ["treb_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-rovastar-explosive-minds-kay",
+      "column": "wave_b",
+      "true_signals": ["mid_att"],
+      "guided": {
+        "r2": 0.9999987613109916,
+        "terms": 2,
+        "equation": "-1.445e-06 + 0.3*mid_att",
+        "signals": ["mid_att"]
+      },
+      "blind": {
+        "r2": 0.9999987613109916,
+        "terms": 2,
+        "signals": ["mid_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-rovastar-explosive-minds-kay",
+      "column": "q1",
+      "true_signals": ["bass", "bass_att"],
+      "guided": {
+        "r2": 0.9982406508766962,
+        "terms": 29,
+        "equation": "1.065 + -0.177*bass + 0.05965*bass*bass + -0.01511*above(bass,1.25) + -0.02481*above(bass,1.58) + -0.05634*above(bass,2.15) + -0.01374*above(bass,1) + -0.01314*above(bass,1.5) + -0.1133*bass_att + 0.04891*bass_att*bass_att + -0.01309*above(bass_att,1.31) + -0.0276*above(bass_att,1.66) + -0.04773*above(bass_att,2.33) + -0.01017*above(bass_att,1.2) + -0.01629*above(bass_att,1.5) + 0.1388*bass*bass_att + 0.01921*sin(0.4189*time) + 0.01251*cos(0.4189*time) + -0.01065*bass*sin(0.4189*time) + -0.01092*bass*cos(0.4189*time) + -0.006056*bass_att*sin(0.4189*time) + 0.02275*sin(0.8378*time) + 0.01374*cos(0.8378*time) + -0.01128*bass*sin(0.8378*time) + -0.007885*bass_att*sin(0.8378*time) + -0.01175*bass_att*cos(0.8378*time) + 0.01683*sin(1.257*time) + -0.008586*bass*sin(1.257*time) + -0.005493*bass_att*sin(1.257*time)",
+        "signals": ["bass", "bass_att"]
+      },
+      "blind": {
+        "r2": 0.9983004056516275,
+        "terms": 85,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.18181818181818182,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q23",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.009508483908787446,
+        "terms": 17,
+        "equation": "0.5023 + 0.02975*above(mid,1.5) + -0.02437*above(mid,1.5) + -0.004333*treb*treb + -0.00482*bass*mid + 0.004328*bass*treb + 0.004265*mid*treb + -0.01672*bass*cos(35.6*time) + -0.02765*sin(2.932*time) + -0.02834*cos(2.932*time) + 0.02029*mid*sin(2.932*time) + 0.02505*mid*cos(2.932*time) + -0.01254*treb*sin(2.932*time) + -0.009255*treb*cos(2.932*time) + -0.01691*cos(2.513*time) + -0.01388*mid*cos(2.513*time) + 0.009577*treb*cos(2.513*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.00899477171757701,
+        "terms": 74,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q24",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.012361391749955652,
+        "terms": 15,
+        "equation": "0.4913 + -0.01631*mid*mid + -0.007686*treb*treb + 0.02427*mid*treb + 0.05187*cos(10.89*time) + -0.03129*mid*cos(10.89*time) + 0.01166*treb*cos(10.89*time) + 0.015*bass*sin(96.34*time) + 0.01409*mid*sin(96.34*time) + -0.009718*treb*sin(96.34*time) + 0.01548*cos(56.55*time) + -0.008707*bass*sin(56.55*time) + -0.01479*bass*cos(56.55*time) + -0.0267*mid*cos(56.55*time) + 0.01212*treb*cos(56.55*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.00974727681056986,
+        "terms": 194,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q25",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.016851384712354922,
+        "terms": 13,
+        "equation": "3.298 + -0.03396*bass*bass + -0.03876*mid*mid + -0.02293*treb*treb + 0.05129*mid*treb + -0.1787*sin(1.257*time) + -0.3185*cos(1.257*time) + 0.1026*bass*sin(1.257*time) + 0.1094*bass*cos(1.257*time) + -0.08781*cos(17.59*time) + -0.06236*bass*cos(17.59*time) + -0.1389*sin(15.5*time) + -0.08891*bass*cos(15.5*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.021330790731637128,
+        "terms": 93,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q26",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.01685076180602285,
+        "terms": 13,
+        "equation": "0.1583 + -0.03396*bass*bass + -0.03869*mid*mid + -0.02289*treb*treb + 0.05119*mid*treb + -0.1787*sin(1.257*time) + -0.3185*cos(1.257*time) + 0.1026*bass*sin(1.257*time) + 0.1094*bass*cos(1.257*time) + -0.08784*cos(17.59*time) + -0.06234*bass*cos(17.59*time) + -0.139*sin(15.5*time) + -0.0889*bass*cos(15.5*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.021331771935541255,
+        "terms": 93,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q27",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.020360437016157973,
+        "terms": 14,
+        "equation": "0.08068 + 0.0008134*mid*mid + 0.002301*above(mid,1.5) + -0.002943*above(mid,1.5) + -0.0005599*bass*mid + 0.001827*cos(12.57*time) + 0.001853*bass*sin(12.57*time) + -0.00465*sin(16.34*time) + 0.001731*bass*sin(16.34*time) + -0.0008324*bass*cos(16.34*time) + -0.00242*sin(34.77*time) + 0.00197*mid*sin(34.77*time) + -0.001026*treb*sin(34.77*time) + -0.001282*treb*cos(34.77*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.021495330776458266,
+        "terms": 138,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q28",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.013471836927886227,
+        "terms": 17,
+        "equation": "0.5105 + -0.00851*bass*bass + -0.01688*mid + 0.01312*mid*mid + -0.02425*above(mid,1.16) + 0.02785*above(mid,1.2) + 0.01831*treb + 0.01202*treb*treb + 0.01914*bass*mid + -0.03988*mid*treb + -0.02875*bass*sin(54.04*time) + 0.01029*bass*cos(54.04*time) + 0.01376*treb*sin(54.04*time) + 0.01312*cos(54.45*time) + -0.01138*bass*sin(54.45*time) + -0.01829*sin(17.17*time) + -0.01408*cos(17.17*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.011615247230104764,
+        "terms": 75,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q29",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.010371736190534109,
+        "terms": 22,
+        "equation": "0.5107 + -0.05112*mid + -0.0359*above(mid,1.5) + 0.03579*above(mid,1.5) + 0.0216*treb + -0.004745*treb*treb + -0.02944*above(treb,1.14) + 0.01873*above(treb,1) + 0.01634*bass*mid + -0.0176*bass*treb + 0.01879*mid*treb + 0.04716*cos(2.513*time) + 0.014*bass*sin(2.513*time) + -0.02834*mid*sin(2.513*time) + -0.03257*mid*cos(2.513*time) + 0.01295*treb*sin(2.513*time) + 0.01693*treb*cos(2.513*time) + 0.02792*cos(8.378*time) + 0.01839*sin(6.702*time) + 0.03788*cos(6.702*time) + -0.02621*mid*cos(6.702*time) + 0.01153*treb*cos(6.702*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.009961831153571632,
+        "terms": 95,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q30",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.02017409822235161,
+        "terms": 21,
+        "equation": "3.312 + 0.1095*bass + -0.1059*bass*bass + -0.1807*mid + 0.1186*mid*mid + 0.03791*treb*treb + 0.06029*bass*mid + 0.04289*bass*treb + -0.149*mid*treb + -0.166*sin(1.257*time) + -0.2669*cos(1.257*time) + 0.1279*bass*sin(1.257*time) + 0.08322*bass*cos(1.257*time) + -0.08588*mid*sin(1.257*time) + 0.1294*sin(20.53*time) + -0.2302*cos(20.53*time) + 0.0921*bass*sin(20.53*time) + 0.1393*bass*cos(20.53*time) + -0.06314*mid*sin(20.53*time) + 0.1322*sin(22.2*time) + 0.07232*bass*cos(22.2*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.025691985654712313,
+        "terms": 139,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q31",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.020167740683849078,
+        "terms": 21,
+        "equation": "0.1725 + 0.1095*bass + -0.1059*bass*bass + -0.1807*mid + 0.1185*mid*mid + 0.03791*treb*treb + 0.06038*bass*mid + 0.04284*bass*treb + -0.149*mid*treb + -0.166*sin(1.257*time) + -0.2668*cos(1.257*time) + 0.1279*bass*sin(1.257*time) + 0.08319*bass*cos(1.257*time) + -0.08588*mid*sin(1.257*time) + 0.1294*sin(20.53*time) + -0.2302*cos(20.53*time) + 0.09211*bass*sin(20.53*time) + 0.1393*bass*cos(20.53*time) + -0.06314*mid*sin(20.53*time) + 0.1322*sin(22.2*time) + 0.0723*bass*cos(22.2*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.02568584442023092,
+        "terms": 139,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-fishbrain-geiss-witchcraft-cents",
+      "column": "q32",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.018839794908699026,
+        "terms": 36,
+        "equation": "0.07564 + -0.0003832*bass + -0.0004953*bass*bass + -0.0005002*above(bass,1.25) + 0.001737*above(bass,2.15) + 0.0007558*above(bass,1) + -0.00126*mid*mid + -0.001094*above(mid,1.16) + 0.0006504*above(mid,1) + 0.000834*above(mid,1.2) + -0.0008266*treb + -0.00142*above(treb,1.14) + 0.0004783*above(treb,1.65) + 0.002617*above(treb,1.2) + -0.0006355*above(treb,1.5) + 0.001349*bass*mid + -0.0008311*bass*treb + 0.001113*mid*treb + -0.002921*sin(16.34*time) + -0.0008946*cos(16.34*time) + 0.001301*bass*sin(16.34*time) + -0.0007437*bass*cos(16.34*time) + 0.0002528*mid*sin(16.34*time) + 0.0006472*mid*cos(16.34*time) + -0.0007466*treb*sin(16.34*time) + -0.0005034*treb*cos(16.34*time) + 0.000996*sin(12.57*time) + 0.001314*cos(12.57*time) + 0.000434*bass*cos(12.57*time) + -0.0003334*mid*cos(12.57*time) + -0.000898*sin(12.99*time) + -0.002637*cos(12.99*time) + 0.0005799*bass*sin(12.99*time) + 0.0007826*bass*cos(12.99*time) + -0.001006*mid*cos(12.99*time) + 0.0006623*treb*cos(12.99*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.017781230542436743,
+        "terms": 143,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+      "column": "q1",
+      "true_signals": ["treb"],
+      "guided": {
+        "r2": 1.0,
+        "terms": 2,
+        "equation": "5.536e-11 + 1*treb",
+        "signals": ["treb"]
+      },
+      "blind": {
+        "r2": 1.0,
+        "terms": 2,
+        "signals": ["treb"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+      "column": "q2",
+      "true_signals": ["mid"],
+      "guided": {
+        "r2": 1.0,
+        "terms": 2,
+        "equation": "5.471e-11 + 1*mid",
+        "signals": ["mid"]
+      },
+      "blind": {
+        "r2": 1.0,
+        "terms": 2,
+        "signals": ["mid"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+      "column": "q3",
+      "true_signals": ["treb"],
+      "guided": {
+        "r2": 1.0,
+        "terms": 2,
+        "equation": "5.536e-11 + 1*treb",
+        "signals": ["treb"]
+      },
+      "blind": {
+        "r2": 1.0,
+        "terms": 2,
+        "signals": ["treb"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-suksma-mtn-flx-flacc-choilan-collapsar",
+      "column": "wave_g",
+      "true_signals": ["treb"],
+      "guided": {
+        "r2": 0.001331816876467884,
+        "terms": 13,
+        "equation": "0.3211 + 0.00819*treb + -0.03359*above(treb,1.14) + 0.02731*above(treb,1.2) + -0.01918*sin(30.58*time) + -0.02064*cos(30.58*time) + 0.005655*treb*sin(30.58*time) + 0.008689*treb*cos(30.58*time) + -0.01183*treb*sin(181.4*time) + 0.005336*treb*cos(181.4*time) + -0.006432*cos(145.4*time) + -0.003633*treb*sin(145.4*time) + -0.005062*treb*cos(145.4*time)",
+        "signals": ["treb"]
+      },
+      "blind": {
+        "r2": 0.004651169387487553,
+        "terms": 75,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-suksma-mtn-flx-flacc-choilan-collapsar",
+      "column": "wave_b",
+      "true_signals": ["treb"],
+      "guided": {
+        "r2": 0.7598080988052878,
+        "terms": 14,
+        "equation": "0.915 + -0.06343*treb + -0.004773*treb*treb + 0.01089*above(treb,1.14) + -0.5747*above(treb,1.65) + -0.1983*above(treb,2.25) + 0.04259*above(treb,1) + 0.01511*above(treb,1.2) + 0.01637*above(treb,1.5) + -0.005724*sin(0.4189*time) + -0.01193*cos(0.4189*time) + 0.004824*treb*sin(0.4189*time) + -0.007097*cos(1.257*time) + 0.005752*treb*cos(1.257*time)",
+        "signals": ["treb"]
+      },
+      "blind": {
+        "r2": 0.763750927832502,
+        "terms": 125,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-suksma-mtn-flx-flacc-choilan-collapsar",
+      "column": "mv_a",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9999994939995639,
+        "terms": 2,
+        "equation": "2.232e-06 + 0.4*bass_att",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9999994939995639,
+        "terms": 2,
+        "signals": ["bass_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-suksma-truth-rarity-isosceles-edit05",
+      "column": "zoom",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.999996444000183,
+        "terms": 2,
+        "equation": "0.7727 + 0.2*bass_att",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.999996444000183,
+        "terms": 2,
+        "signals": ["bass_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-suksma-truth-rarity-isosceles-edit05",
+      "column": "mv_r",
+      "true_signals": ["bass"],
+      "guided": {
+        "r2": 0.9999997782637546,
+        "terms": 2,
+        "equation": "1 + 2*bass",
+        "signals": ["bass"]
+      },
+      "blind": {
+        "r2": 0.9999997782637546,
+        "terms": 2,
+        "signals": ["bass"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-suksma-truth-rarity-isosceles-edit05",
+      "column": "mv_g",
+      "true_signals": ["treb"],
+      "guided": {
+        "r2": 0.9999997612192092,
+        "terms": 2,
+        "equation": "1 + 2*treb",
+        "signals": ["treb"]
+      },
+      "blind": {
+        "r2": 0.9999997612192092,
+        "terms": 2,
+        "signals": ["treb"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-suksma-truth-rarity-isosceles-edit05",
+      "column": "mv_b",
+      "true_signals": ["mid"],
+      "guided": {
+        "r2": 0.9999994609068317,
+        "terms": 2,
+        "equation": "1 + 2*mid",
+        "signals": ["mid"]
+      },
+      "blind": {
+        "r2": 0.9999994609068317,
+        "terms": 2,
+        "signals": ["mid"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "warp",
+      "true_signals": ["bass"],
+      "guided": {
+        "r2": 1.0,
+        "terms": 2,
+        "equation": "1.211e-10 + 2*bass",
+        "signals": ["bass"]
+      },
+      "blind": {
+        "r2": 1.0,
+        "terms": 2,
+        "signals": ["bass"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "brighten",
+      "true_signals": ["bass"],
+      "guided": {
+        "r2": 0.9999996677768539,
+        "terms": 2,
+        "equation": "1 + -10*bass",
+        "signals": ["bass"]
+      },
+      "blind": {
+        "r2": 0.9999996677768539,
+        "terms": 2,
+        "signals": ["bass"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "darken",
+      "true_signals": ["bass"],
+      "guided": {
+        "r2": 0.9999996464845091,
+        "terms": 2,
+        "equation": "4.409e-06 + 10*bass",
+        "signals": ["bass"]
+      },
+      "blind": {
+        "r2": 0.9999996464845091,
+        "terms": 2,
+        "signals": ["bass"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-tag-cradle-of-life-remix-of-yin-315",
+      "column": "q4",
+      "true_signals": ["bass"],
+      "guided": {
+        "r2": 1.0,
+        "terms": 2,
+        "equation": "1.211e-10 + 2*bass",
+        "signals": ["bass"]
+      },
+      "blind": {
+        "r2": 1.0,
+        "terms": 2,
+        "signals": ["bass"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-alien-complex",
+      "column": "q1",
+      "true_signals": [
+        "bass",
+        "bass_att",
+        "mid",
+        "mid_att",
+        "treb",
+        "treb_att"
+      ],
+      "guided": {
+        "r2": 0.961839236719566,
+        "terms": 79,
+        "equation": "8.098 + -23.8*bass + 7.356*bass*bass + -1.404*above(bass,1.25) + -3.986*above(bass,1.58) + -11.24*above(bass,2.15) + -0.8644*above(bass,1) + -1.204*above(bass,1.2) + -2.22*above(bass,1.5) + 1.795*mid + 1.671*mid*mid + -0.7792*above(mid,1.16) + -0.5087*above(mid,1.5) + -3.241*above(mid,1.93) + -0.6953*above(mid,1.5) + -1.327*treb + -0.9553*treb*treb + -0.6991*above(treb,1.14) + -0.6767*above(treb,1.65) + -1.055*above(bass_att,1.31) + -1.604*above(bass_att,1.66) + -2.022*above(bass_att,2.33) + -0.7379*above(bass_att,1.5) + -3.287*mid_att + 1.918*mid_att*mid_att + 2.031*treb_att + 1.188*treb_att*treb_att + 0.5684*above(treb_att,1.74) + -1.744*bass*mid + 2.037*bass*treb + 3.899*bass*bass_att + 11.63*bass*mid_att + -3.454*bass*treb_att + 1.55*mid*treb + 0.378*mid*bass_att + -6.233*mid*mid_att + 2.272*mid*treb_att + 1.105*treb*bass_att + -0.3632*treb*mid_att + -1.588*bass_att*mid_att + 0.3711*bass_att*treb_att + -3.752*mid_att*treb_att + 2.388*sin(0.4189*time) + 1.689*cos(0.4189*time) + -2.276*bass*sin(0.4189*time) + -2.563*bass*cos(0.4189*time) + 1.539*mid*sin(0.4189*time) + 0.6765*mid*cos(0.4189*time) + -1.043*treb*sin(0.4189*time) + 0.5638*bass_att*cos(0.4189*time) + -1.635*mid_att*sin(0.4189*time) + -0.5925*mid_att*cos(0.4189*time) + 1.308*treb_att*sin(0.4189*time) + 0.4451*treb_att*cos(0.4189*time) + 3.153*sin(0.8378*time) + 1.26*cos(0.8378*time) + -2.457*bass*sin(0.8378*time) + -1.431*bass*cos(0.8378*time) + 1.251*mid*sin(0.8378*time) + -0.9287*treb*sin(0.8378*time) + 0.7697*treb*cos(0.8378*time) + -0.6491*bass_att*sin(0.8378*time) + -0.5088*bass_att*cos(0.8378*time) + -1.327*mid_att*sin(0.8378*time) + 1.298*treb_att*sin(0.8378*time) + 2.484*sin(1.257*time) + -0.3951*cos(1.257*time) + -1.933*bass*sin(1.257*time) + -0.2087*bass*cos(1.257*time) + 1.267*mid*sin(1.257*time) + -0.6508*mid*cos(1.257*time) + -0.8143*treb*sin(1.257*time) + 0.9021*treb*cos(1.257*time) + -0.8615*bass_att*sin(1.257*time) + -0.5062*bass_att*cos(1.257*time) + -1.158*mid_att*sin(1.257*time) + 1.322*mid_att*cos(1.257*time) + 1.281*treb_att*sin(1.257*time) + -0.7113*treb_att*cos(1.257*time)",
+        "signals": ["bass", "bass_att", "mid", "mid_att", "treb", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.982271837314112,
+        "terms": 166,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.46153846153846156,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-alien-complex-isosceles-edit",
+      "column": "q1",
+      "true_signals": [
+        "bass",
+        "bass_att",
+        "mid",
+        "mid_att",
+        "treb",
+        "treb_att"
+      ],
+      "guided": {
+        "r2": 0.961839236719566,
+        "terms": 79,
+        "equation": "8.098 + -23.8*bass + 7.356*bass*bass + -1.404*above(bass,1.25) + -3.986*above(bass,1.58) + -11.24*above(bass,2.15) + -0.8644*above(bass,1) + -1.204*above(bass,1.2) + -2.22*above(bass,1.5) + 1.795*mid + 1.671*mid*mid + -0.7792*above(mid,1.16) + -0.5087*above(mid,1.5) + -3.241*above(mid,1.93) + -0.6953*above(mid,1.5) + -1.327*treb + -0.9553*treb*treb + -0.6991*above(treb,1.14) + -0.6767*above(treb,1.65) + -1.055*above(bass_att,1.31) + -1.604*above(bass_att,1.66) + -2.022*above(bass_att,2.33) + -0.7379*above(bass_att,1.5) + -3.287*mid_att + 1.918*mid_att*mid_att + 2.031*treb_att + 1.188*treb_att*treb_att + 0.5684*above(treb_att,1.74) + -1.744*bass*mid + 2.037*bass*treb + 3.899*bass*bass_att + 11.63*bass*mid_att + -3.454*bass*treb_att + 1.55*mid*treb + 0.378*mid*bass_att + -6.233*mid*mid_att + 2.272*mid*treb_att + 1.105*treb*bass_att + -0.3632*treb*mid_att + -1.588*bass_att*mid_att + 0.3711*bass_att*treb_att + -3.752*mid_att*treb_att + 2.388*sin(0.4189*time) + 1.689*cos(0.4189*time) + -2.276*bass*sin(0.4189*time) + -2.563*bass*cos(0.4189*time) + 1.539*mid*sin(0.4189*time) + 0.6765*mid*cos(0.4189*time) + -1.043*treb*sin(0.4189*time) + 0.5638*bass_att*cos(0.4189*time) + -1.635*mid_att*sin(0.4189*time) + -0.5925*mid_att*cos(0.4189*time) + 1.308*treb_att*sin(0.4189*time) + 0.4451*treb_att*cos(0.4189*time) + 3.153*sin(0.8378*time) + 1.26*cos(0.8378*time) + -2.457*bass*sin(0.8378*time) + -1.431*bass*cos(0.8378*time) + 1.251*mid*sin(0.8378*time) + -0.9287*treb*sin(0.8378*time) + 0.7697*treb*cos(0.8378*time) + -0.6491*bass_att*sin(0.8378*time) + -0.5088*bass_att*cos(0.8378*time) + -1.327*mid_att*sin(0.8378*time) + 1.298*treb_att*sin(0.8378*time) + 2.484*sin(1.257*time) + -0.3951*cos(1.257*time) + -1.933*bass*sin(1.257*time) + -0.2087*bass*cos(1.257*time) + 1.267*mid*sin(1.257*time) + -0.6508*mid*cos(1.257*time) + -0.8143*treb*sin(1.257*time) + 0.9021*treb*cos(1.257*time) + -0.8615*bass_att*sin(1.257*time) + -0.5062*bass_att*cos(1.257*time) + -1.158*mid_att*sin(1.257*time) + 1.322*mid_att*cos(1.257*time) + 1.281*treb_att*sin(1.257*time) + -0.7113*treb_att*cos(1.257*time)",
+        "signals": ["bass", "bass_att", "mid", "mid_att", "treb", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.982271837314112,
+        "terms": 166,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.46153846153846156,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "cotc-xtramartin-3",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "eo-s-glowsticks-v2-03-music-shifter-edit-b-jelly-v2",
+      "column": "zoom",
+      "true_signals": ["bass_att", "treb_att"],
+      "guided": {
+        "r2": 0.9833213429048782,
+        "terms": 17,
+        "equation": "1.002 + 0.04268*bass_att + 0.02196*bass_att*bass_att + 0.0465*treb_att + 0.02118*treb_att*treb_att + 0.001836*above(treb_att,1.36) + 0.005464*above(treb_att,1.74) + 0.003483*above(treb_att,2.29) + -0.002606*above(treb_att,1) + 0.002856*above(treb_att,1.5) + -0.04092*bass_att*treb_att + 0.005287*sin(0.4189*time) + -0.003763*treb_att*sin(0.4189*time) + -0.00325*cos(0.8378*time) + 0.002349*treb_att*cos(0.8378*time) + -0.005044*bass_att*cos(1.257*time) + 0.004676*treb_att*cos(1.257*time)",
+        "signals": ["bass_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9837505198376829,
+        "terms": 152,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "flexi-mom-why-the-sky-looks-different-today",
+      "column": "q13",
+      "true_signals": ["bass_att", "treb_att"],
+      "guided": {
+        "r2": 0.9999060634825621,
+        "terms": 3,
+        "equation": "0.25 + 0.01*bass_att + -0.01*treb_att",
+        "signals": ["bass_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9999060081809229,
+        "terms": 11,
+        "signals": [
+          "bass",
+          "bass_att",
+          "mid",
+          "mid_att",
+          "treb",
+          "treb_att",
+          "vol"
+        ]
+      },
+      "blind_signal_precision": 0.2857142857142857,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "geiss-de-la-moutard-1",
+      "column": "wave_r",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.982449575661396,
+        "terms": 10,
+        "equation": "-0.1011 + 0.16*bass_att + -0.02054*bass_att*bass_att + 0.1658*above(bass_att,1.31) + 0.1978*above(bass_att,1.66) + 0.1014*above(bass_att,1) + 0.1669*above(bass_att,1.2) + 0.215*above(bass_att,1.5) + 0.02555*cos(0.4189*time) + -0.0195*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840733650643234,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "geiss-de-la-moutard-1",
+      "column": "wave_g",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9824525975799215,
+        "terms": 10,
+        "equation": "-0.07085 + 0.1121*bass_att + -0.01439*bass_att*bass_att + 0.1161*above(bass_att,1.31) + 0.1386*above(bass_att,1.66) + 0.07093*above(bass_att,1) + 0.1168*above(bass_att,1.2) + 0.1505*above(bass_att,1.5) + 0.01788*cos(0.4189*time) + -0.01364*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840782929347852,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "geiss-de-la-moutard-1",
+      "column": "wave_b",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9824461347702533,
+        "terms": 10,
+        "equation": "-0.0101 + 0.01599*bass_att + -0.002052*bass_att*bass_att + 0.01659*above(bass_att,1.31) + 0.01977*above(bass_att,1.66) + 0.01014*above(bass_att,1) + 0.01669*above(bass_att,1.2) + 0.0215*above(bass_att,1.5) + 0.002556*cos(0.4189*time) + -0.00195*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840690418515001,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "hexcollie-personal-mashup3-flexis-portal-mix",
+      "column": "q1",
+      "true_signals": ["bass", "bass_att", "treb"],
+      "guided": {
+        "r2": 0.9989701703969532,
+        "terms": 3,
+        "equation": "-0.01668 + 0.518*treb + 1.486*bass_att",
+        "signals": ["bass_att", "treb"]
+      },
+      "blind": {
+        "r2": 0.9989701703969532,
+        "terms": 3,
+        "signals": ["bass_att", "treb"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 0.6666666666666666
+    },
+    {
+      "preset": "luxxx-rapeplay-v3-the-war-within-all-of-us",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "luxxx-rapeplay-v3-the-war-within-all-of-us",
+      "column": "q26",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-angel-flight",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-angel-flight",
+      "column": "q26",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-axon3",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-axon3",
+      "column": "q26",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-chain-breaker",
+      "column": "q1",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996536387459,
+        "terms": 4,
+        "equation": "-2.644e-06 + 0.3333*bass + 0.3333*mid + 0.3333*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 1.0,
+        "terms": 2,
+        "signals": ["vol"]
+      },
+      "blind_signal_precision": 0.0,
+      "blind_signal_recall": 0.0
+    },
+    {
+      "preset": "martin-chain-breaker",
+      "column": "q2",
+      "true_signals": ["bass_att", "mid_att", "treb_att"],
+      "guided": {
+        "r2": 0.9999993924793295,
+        "terms": 4,
+        "equation": "-8.408e-06 + 0.3333*bass_att + 0.3334*mid_att + 0.3333*treb_att",
+        "signals": ["bass_att", "mid_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9999993924793295,
+        "terms": 4,
+        "signals": ["bass_att", "mid_att", "treb_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-dark-galaxy",
+      "column": "q26",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-electric-pool",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-electric-pool",
+      "column": "q26",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-flexi-diamond-cutter-prismaticvortex-com-camille-i-wish-i-wish-i-wish-i-was-constrained",
+      "column": "zoom",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9979919144063613,
+        "terms": 4,
+        "equation": "0.9995 + 0.003746*bass + 0.00376*mid + 0.003746*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9979691828259413,
+        "terms": 57,
+        "signals": [
+          "bass",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.3,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-flexi-diamond-cutter-prismaticvortex-com-camille-i-wish-i-wish-i-wish-i-was-constrained",
+      "column": "q3",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-2.703e-06 + 0.25*bass + 0.25*mid + 0.25*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-gate-to-moria",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-gate-to-moria",
+      "column": "q26",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-rogue-wave-ps2",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-rogue-wave-ps2",
+      "column": "q26",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-1",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-1",
+      "column": "q26",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-stahlregen-martin-in-da-mash-10-infinity-mix",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-the-dome-ps2",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999660383504706,
+        "terms": 6,
+        "equation": "0.06831 + 0.9001*bass*bass + 0.741*treb*treb + 2.633*bass*mid + 1.676*bass*treb + 3.026*mid*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999998254525336,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-the-dome-ps2",
+      "column": "q26",
+      "true_signals": ["bass_att", "mid_att", "treb_att"],
+      "guided": {
+        "r2": 0.9999991534857011,
+        "terms": 4,
+        "equation": "1 + 0.9999*bass_att + 1*mid_att + 1*treb_att",
+        "signals": ["bass_att", "mid_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9999991534857011,
+        "terms": 4,
+        "signals": ["bass_att", "mid_att", "treb_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-unholy-amulet-2",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-unholy-amulet-2",
+      "column": "q26",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-volcano",
+      "column": "q21",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9786505440648668,
+        "terms": 32,
+        "equation": "0.2956 + 0.393*bass + 0.1961*bass*bass + 0.171*mid + 0.2217*mid*mid + 0.2666*treb + 0.2621*treb*treb + 0.06999*above(treb,1.65) + 0.1233*above(treb,2.25) + 0.02046*above(treb,1.2) + 0.05137*above(treb,1.5) + -0.1338*bass*mid + -0.2386*bass*treb + -0.2806*mid*treb + 0.02641*sin(0.4189*time) + -0.02042*cos(0.4189*time) + -0.02867*bass*cos(0.4189*time) + 0.02986*mid*sin(0.4189*time) + 0.05778*mid*cos(0.4189*time) + -0.04735*treb*sin(0.4189*time) + -0.01324*treb*cos(0.4189*time) + 0.01114*bass*sin(0.8378*time) + -0.03573*bass*cos(0.8378*time) + -0.01142*mid*sin(0.8378*time) + 0.03328*mid*cos(0.8378*time) + -0.04621*sin(1.257*time) + -0.01548*cos(1.257*time) + 0.01035*bass*sin(1.257*time) + -0.0345*bass*cos(1.257*time) + 0.04695*mid*sin(1.257*time) + 0.04754*mid*cos(1.257*time) + -0.01857*treb*sin(1.257*time)",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.983065367782862,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.23076923076923078,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "martin-volcano",
+      "column": "q26",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "mig-036-version5",
+      "column": "q2",
+      "true_signals": ["bass_att", "mid_att", "treb_att"],
+      "guided": {
+        "r2": 0.9999088676438821,
+        "terms": 5,
+        "equation": "0.0008305 + 0.07404*bass_att*bass_att + 0.09158*bass_att*mid_att + 0.1266*bass_att*treb_att + 0.2707*mid_att*treb_att",
+        "signals": ["bass_att", "mid_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9999088676438821,
+        "terms": 5,
+        "signals": ["bass_att", "mid_att", "treb_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "mig-101",
+      "column": "zoom",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9991936628708028,
+        "terms": 4,
+        "equation": "0.912 + 0.1022*bass_att + 0.008436*sin(0.4189*time) + -0.007483*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9996253976117561,
+        "terms": 56,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.1,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "new-creation-sensation-adamfx-flexi-amandio-c-n-martin-star-to-another-world-ft-hexocollie-n-shadow-harlequin-n-geiss-b",
+      "column": "q5",
+      "true_signals": ["bass_att", "treb_att"],
+      "guided": {
+        "r2": 0.983153737958596,
+        "terms": 17,
+        "equation": "0.1204 + 0.000851*bass_att + 0.0004394*bass_att*bass_att + 0.0009281*treb_att + 0.0004235*treb_att*treb_att + 3.762e-05*above(treb_att,1.36) + 0.0001082*above(treb_att,1.74) + 6.98e-05*above(treb_att,2.29) + -5.196e-05*above(treb_att,1) + 5.76e-05*above(treb_att,1.5) + -0.0008172*bass_att*treb_att + 0.0001062*sin(0.4189*time) + -7.572e-05*treb_att*sin(0.4189*time) + -6.43e-05*cos(0.8378*time) + 4.67e-05*treb_att*cos(0.8378*time) + -0.0001006*bass_att*cos(1.257*time) + 9.303e-05*treb_att*cos(1.257*time)",
+        "signals": ["bass_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9837614349499918,
+        "terms": 150,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "new-creation-sensation-adamfx-flexi-amandio-c-n-martin-star-to-another-world-ft-hexocollie-n-shadow-harlequin-n-geiss-b",
+      "column": "q8",
+      "true_signals": ["bass_att", "treb_att"],
+      "guided": {
+        "r2": 0.983153737958596,
+        "terms": 17,
+        "equation": "0.1204 + 0.000851*bass_att + 0.0004394*bass_att*bass_att + 0.0009281*treb_att + 0.0004235*treb_att*treb_att + 3.762e-05*above(treb_att,1.36) + 0.0001082*above(treb_att,1.74) + 6.98e-05*above(treb_att,2.29) + -5.196e-05*above(treb_att,1) + 5.76e-05*above(treb_att,1.5) + -0.0008172*bass_att*treb_att + 0.0001062*sin(0.4189*time) + -7.572e-05*treb_att*sin(0.4189*time) + -6.43e-05*cos(0.8378*time) + 4.67e-05*treb_att*cos(0.8378*time) + -0.0001006*bass_att*cos(1.257*time) + 9.303e-05*treb_att*cos(1.257*time)",
+        "signals": ["bass_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9837614349499918,
+        "terms": 150,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "new-creation-sensation-adamfx-flexi-amandio-c-n-martin-star-to-another-world-ft-hexocollie-n-shadow-harlequin-n-geiss-b",
+      "column": "q11",
+      "true_signals": ["bass_att", "treb_att"],
+      "guided": {
+        "r2": 0.983153737958596,
+        "terms": 17,
+        "equation": "0.1204 + 0.000851*bass_att + 0.0004394*bass_att*bass_att + 0.0009281*treb_att + 0.0004235*treb_att*treb_att + 3.762e-05*above(treb_att,1.36) + 0.0001082*above(treb_att,1.74) + 6.98e-05*above(treb_att,2.29) + -5.196e-05*above(treb_att,1) + 5.76e-05*above(treb_att,1.5) + -0.0008172*bass_att*treb_att + 0.0001062*sin(0.4189*time) + -7.572e-05*treb_att*sin(0.4189*time) + -6.43e-05*cos(0.8378*time) + 4.67e-05*treb_att*cos(0.8378*time) + -0.0001006*bass_att*cos(1.257*time) + 9.303e-05*treb_att*cos(1.257*time)",
+        "signals": ["bass_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9837614349499918,
+        "terms": 150,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "new-creation-sensation-adamfx-flexi-amandio-c-n-martin-star-to-another-world-ft-hexocollie-n-shadow-harlequin-n-geiss-b",
+      "column": "q14",
+      "true_signals": ["bass_att", "treb_att"],
+      "guided": {
+        "r2": 0.983153737958596,
+        "terms": 17,
+        "equation": "0.1204 + 0.000851*bass_att + 0.0004394*bass_att*bass_att + 0.0009281*treb_att + 0.0004235*treb_att*treb_att + 3.762e-05*above(treb_att,1.36) + 0.0001082*above(treb_att,1.74) + 6.98e-05*above(treb_att,2.29) + -5.196e-05*above(treb_att,1) + 5.76e-05*above(treb_att,1.5) + -0.0008172*bass_att*treb_att + 0.0001062*sin(0.4189*time) + -7.572e-05*treb_att*sin(0.4189*time) + -6.43e-05*cos(0.8378*time) + 4.67e-05*treb_att*cos(0.8378*time) + -0.0001006*bass_att*cos(1.257*time) + 9.303e-05*treb_att*cos(1.257*time)",
+        "signals": ["bass_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9837614349499918,
+        "terms": 150,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "orb-quicksand-lab",
+      "column": "ob_g",
+      "true_signals": ["bass"],
+      "guided": {
+        "r2": 0.0636549528741357,
+        "terms": 21,
+        "equation": "0.5472 + -0.05688*bass + 0.02755*bass*bass + 0.009363*above(bass,1.25) + -0.03658*above(bass,1.58) + 0.03475*above(bass,2.15) + 0.007787*above(bass,1) + -0.02564*above(bass,1.2) + -0.0109*above(bass,1.5) + -0.08776*sin(1.676*time) + 0.06455*cos(1.676*time) + 0.01816*bass*sin(1.676*time) + 0.03794*bass*cos(1.676*time) + -0.05582*sin(2.094*time) + -0.08875*cos(2.094*time) + -0.02125*bass*sin(2.094*time) + 0.02713*bass*cos(2.094*time) + 0.06224*sin(2.513*time) + -0.05438*cos(2.513*time) + -0.07029*bass*sin(2.513*time) + -0.01358*bass*cos(2.513*time)",
+        "signals": ["bass"]
+      },
+      "blind": {
+        "r2": 0.4234797991897361,
+        "terms": 170,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "orb-quicksand-lab",
+      "column": "ob_b",
+      "true_signals": ["bass"],
+      "guided": {
+        "r2": 0.15405217519815384,
+        "terms": 15,
+        "equation": "0.4898 + 0.02242*bass*bass + -0.03737*above(bass,1.25) + -0.06615*above(bass,2.15) + -0.02496*above(bass,1.5) + 0.06131*sin(2.094*time) + 0.1665*cos(2.094*time) + -0.01883*bass*sin(2.094*time) + -0.03173*bass*cos(2.094*time) + -0.02979*cos(3.77*time) + -0.04175*bass*sin(3.77*time) + 0.05535*bass*cos(3.77*time) + 0.03568*sin(4.189*time) + -0.05696*bass*sin(4.189*time) + 0.03142*bass*cos(4.189*time)",
+        "signals": ["bass"]
+      },
+      "blind": {
+        "r2": 0.34010096969051884,
+        "terms": 166,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "pork-blouse-lafertion",
+      "column": "q20",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999996764941831,
+        "terms": 4,
+        "equation": "-1.081e-05 + 1*bass + 1*mid + 1*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999996923700516,
+        "terms": 5,
+        "signals": ["bass", "mid", "treb", "vol"]
+      },
+      "blind_signal_precision": 0.75,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "rovastar-fvese-mosaic-waves",
+      "column": "dx",
+      "true_signals": ["bass", "bass_att"],
+      "guided": {
+        "r2": 0.8313418311502926,
+        "terms": 26,
+        "equation": "0.004504 + 0.002621*bass + 0.0005132*bass*bass + 0.004633*above(bass,1.25) + -0.001271*above(bass,1.58) + -0.002506*above(bass,2.15) + 0.007377*above(bass,1.5) + 0.0008844*bass_att*bass_att + 0.004665*above(bass_att,1.31) + 0.001546*above(bass_att,2.33) + -0.001302*above(bass_att,1) + -0.001722*above(bass_att,1.2) + 0.008284*above(bass_att,1.5) + -0.001182*bass*bass_att + 0.001446*sin(0.4189*time) + 0.00185*cos(0.4189*time) + 0.003511*bass*sin(0.4189*time) + -0.00179*bass*cos(0.4189*time) + -0.002896*bass_att*sin(0.4189*time) + -0.001427*bass_att*cos(0.4189*time) + 0.0006113*sin(0.8378*time) + -0.001008*cos(0.8378*time) + 0.0004331*bass*sin(0.8378*time) + -0.001653*bass*cos(0.8378*time) + -0.0005167*bass_att*sin(0.8378*time) + 0.001489*bass_att*cos(0.8378*time)",
+        "signals": ["bass", "bass_att"]
+      },
+      "blind": {
+        "r2": 0.8322641757818037,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "rovastar-krash-rainbow-deflection",
+      "column": "zoom",
+      "true_signals": ["bass_att", "treb_att"],
+      "guided": {
+        "r2": 0.6765512825571205,
+        "terms": 31,
+        "equation": "1.003 + -0.0004298*bass_att + -0.00196*bass_att*bass_att + 0.001375*above(bass_att,1.31) + 0.002432*above(bass_att,1.66) + 0.002378*above(bass_att,2.33) + -0.0007563*above(bass_att,1) + 0.0007203*above(bass_att,1.2) + 0.001335*above(bass_att,1.5) + -0.003972*treb_att + -0.004213*treb_att*treb_att + -0.001856*above(treb_att,1.36) + -0.00299*above(treb_att,1.74) + -0.002169*above(treb_att,2.29) + 0.001432*above(treb_att,1) + 0.0007672*above(treb_att,1.2) + -0.002634*above(treb_att,1.5) + 0.006152*bass_att*treb_att + -0.002625*sin(0.4189*time) + -0.002114*cos(0.4189*time) + 0.001007*bass_att*cos(0.4189*time) + 0.002047*treb_att*sin(0.4189*time) + 0.0006509*treb_att*cos(0.4189*time) + -0.002097*sin(0.8378*time) + 0.0009626*bass_att*sin(0.8378*time) + 0.0006289*treb_att*sin(0.8378*time) + -0.00123*sin(2.513*time) + 0.0003916*cos(2.513*time) + 0.0009017*bass_att*sin(2.513*time) + 0.0003491*bass_att*cos(2.513*time) + -0.0006853*treb_att*cos(2.513*time)",
+        "signals": ["bass_att", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.6762529700090895,
+        "terms": 162,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "rovastar-unchained-oddball-world",
+      "column": "ob_r",
+      "true_signals": ["bass"],
+      "guided": {
+        "r2": 0.8938238984904971,
+        "terms": 19,
+        "equation": "1.147 + 7.707*bass + -1.341*bass*bass + -0.3946*above(bass,1.25) + -1.195*above(bass,1.58) + -1.522*above(bass,2.15) + -0.4992*above(bass,1.5) + -1.314*sin(0.4189*time) + 0.2515*cos(0.4189*time) + -2.13*bass*sin(0.4189*time) + 0.2261*bass*cos(0.4189*time) + -0.7129*sin(0.8378*time) + 0.7971*cos(0.8378*time) + -0.8477*bass*sin(0.8378*time) + -0.4315*bass*cos(0.8378*time) + -0.2168*sin(1.257*time) + 1.073*cos(1.257*time) + -0.6349*bass*sin(1.257*time) + -0.8171*bass*cos(1.257*time)",
+        "signals": ["bass"]
+      },
+      "blind": {
+        "r2": 0.9770738439829004,
+        "terms": 179,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "rovastar-unchained-oddball-world",
+      "column": "ob_g",
+      "true_signals": ["mid"],
+      "guided": {
+        "r2": 0.8308192743419902,
+        "terms": 16,
+        "equation": "-0.33 + 6.341*mid + -1.341*mid*mid + 0.2805*above(mid,1.16) + -0.3198*above(mid,1.93) + -0.7739*sin(0.4189*time) + 0.3939*cos(0.4189*time) + -2.013*mid*sin(0.4189*time) + -0.2388*mid*cos(0.4189*time) + -0.3959*sin(0.8378*time) + 0.6209*cos(0.8378*time) + -0.9373*mid*sin(0.8378*time) + -0.467*mid*cos(0.8378*time) + 0.9678*cos(1.257*time) + -0.7436*mid*sin(1.257*time) + -0.874*mid*cos(1.257*time)",
+        "signals": ["mid"]
+      },
+      "blind": {
+        "r2": 0.9797159820504268,
+        "terms": 121,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "rovastar-unchained-oddball-world",
+      "column": "ob_b",
+      "true_signals": ["treb"],
+      "guided": {
+        "r2": 0.878796694545857,
+        "terms": 17,
+        "equation": "6.621 + 1.548*treb + -0.5305*treb*treb + -2.248*above(treb,1.65) + -3.262*above(treb,2.25) + -1.084*above(treb,1) + -0.9808*above(treb,1.2) + -1.51*above(treb,1.5) + -5.292*sin(0.4189*time) + 2.009*treb*sin(0.4189*time) + 0.3394*treb*cos(0.4189*time) + -2.421*sin(0.8378*time) + 0.2736*cos(0.8378*time) + 0.9198*treb*sin(0.8378*time) + -1.481*sin(1.257*time) + 0.2681*cos(1.257*time) + 0.5322*treb*sin(1.257*time)",
+        "signals": ["treb"]
+      },
+      "blind": {
+        "r2": 0.9511717147971696,
+        "terms": 203,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "sckephthaeck-nz",
+      "column": "wave_r",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.982449575661396,
+        "terms": 10,
+        "equation": "-0.1011 + 0.16*bass_att + -0.02054*bass_att*bass_att + 0.1658*above(bass_att,1.31) + 0.1978*above(bass_att,1.66) + 0.1014*above(bass_att,1) + 0.1669*above(bass_att,1.2) + 0.215*above(bass_att,1.5) + 0.02555*cos(0.4189*time) + -0.0195*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840733650643234,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "sckephthaeck-nz",
+      "column": "wave_g",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9824525975799215,
+        "terms": 10,
+        "equation": "-0.07085 + 0.1121*bass_att + -0.01439*bass_att*bass_att + 0.1161*above(bass_att,1.31) + 0.1386*above(bass_att,1.66) + 0.07093*above(bass_att,1) + 0.1168*above(bass_att,1.2) + 0.1505*above(bass_att,1.5) + 0.01788*cos(0.4189*time) + -0.01364*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840782929347852,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "sckephthaeck-nz",
+      "column": "wave_b",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9824461347702533,
+        "terms": 10,
+        "equation": "-0.0101 + 0.01599*bass_att + -0.002052*bass_att*bass_att + 0.01659*above(bass_att,1.31) + 0.01977*above(bass_att,1.66) + 0.01014*above(bass_att,1) + 0.01669*above(bass_att,1.2) + 0.0215*above(bass_att,1.5) + 0.002556*cos(0.4189*time) + -0.00195*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840690418515001,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "shadowharlequin-loadus-fishbrain-geiss-fitting-butterfly-v-many-times-2",
+      "column": "zoom",
+      "true_signals": ["treb_att"],
+      "guided": {
+        "r2": 0.9992534943981264,
+        "terms": 9,
+        "equation": "-0.02431 + 0.6604*treb_att + -0.1166*treb_att*treb_att + 0.008789*above(treb_att,1.36) + 0.02122*above(treb_att,1.74) + 0.02376*above(treb_att,2.29) + 0.007967*above(treb_att,1) + 0.009167*above(treb_att,1.2) + 0.01174*above(treb_att,1.5)",
+        "signals": ["treb_att"]
+      },
+      "blind": {
+        "r2": 0.9978562391191075,
+        "terms": 44,
+        "signals": [
+          "bass",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.1,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "shadowharlequin-loadus-fishbrain-geiss-fitting-butterfly-v-many-times-2",
+      "column": "rot",
+      "true_signals": ["treb_att"],
+      "guided": {
+        "r2": 0.9996584932550158,
+        "terms": 2,
+        "equation": "0.005964 + 0.1439*treb_att",
+        "signals": ["treb_att"]
+      },
+      "blind": {
+        "r2": 0.9996584932550158,
+        "terms": 2,
+        "signals": ["treb_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "shadowharlequin-loadus-fishbrain-geiss-fitting-butterfly-v-many-times-2",
+      "column": "warp",
+      "true_signals": ["treb_att"],
+      "guided": {
+        "r2": 1.0,
+        "terms": 2,
+        "equation": "3.371e-11 + 0.5*treb_att",
+        "signals": ["treb_att"]
+      },
+      "blind": {
+        "r2": 1.0,
+        "terms": 2,
+        "signals": ["treb_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "shadowharlequin-loadus-fishbrain-geiss-fitting-butterfly-v-many-times-2",
+      "column": "wave_a",
+      "true_signals": ["treb_att"],
+      "guided": {
+        "r2": 1.0,
+        "terms": 2,
+        "equation": "1.686e-11 + 0.25*treb_att",
+        "signals": ["treb_att"]
+      },
+      "blind": {
+        "r2": 1.0,
+        "terms": 2,
+        "signals": ["treb_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "shadowharlequin-loadus-fishbrain-geiss-fitting-butterfly-v-many-times-2",
+      "column": "mv_l",
+      "true_signals": ["treb_att"],
+      "guided": {
+        "r2": 0.9999941072150413,
+        "terms": 2,
+        "equation": "3 + 0.75*treb_att",
+        "signals": ["treb_att"]
+      },
+      "blind": {
+        "r2": 0.9999941072150413,
+        "terms": 2,
+        "signals": ["treb_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "shadowharlequin-loadus-fishbrain-geiss-fitting-butterfly-v-many-times-2",
+      "column": "mv_a",
+      "true_signals": ["treb_att"],
+      "guided": {
+        "r2": 0.9999992513449004,
+        "terms": 2,
+        "equation": "-5.043e-06 + 0.35*treb_att",
+        "signals": ["treb_att"]
+      },
+      "blind": {
+        "r2": 0.9999992513449004,
+        "terms": 2,
+        "signals": ["treb_att"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "stahlregen-aderrasi-eo-s-geiss-fishbrain-prickly-abyss",
+      "column": "wave_r",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.982449575661396,
+        "terms": 10,
+        "equation": "-0.1011 + 0.16*bass_att + -0.02054*bass_att*bass_att + 0.1658*above(bass_att,1.31) + 0.1978*above(bass_att,1.66) + 0.1014*above(bass_att,1) + 0.1669*above(bass_att,1.2) + 0.215*above(bass_att,1.5) + 0.02555*cos(0.4189*time) + -0.0195*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840733650643234,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "stahlregen-aderrasi-eo-s-geiss-fishbrain-prickly-abyss",
+      "column": "wave_g",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9824525975799215,
+        "terms": 10,
+        "equation": "-0.07085 + 0.1121*bass_att + -0.01439*bass_att*bass_att + 0.1161*above(bass_att,1.31) + 0.1386*above(bass_att,1.66) + 0.07093*above(bass_att,1) + 0.1168*above(bass_att,1.2) + 0.1505*above(bass_att,1.5) + 0.01788*cos(0.4189*time) + -0.01364*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840782929347852,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "stahlregen-aderrasi-eo-s-geiss-fishbrain-prickly-abyss",
+      "column": "wave_b",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9824461347702533,
+        "terms": 10,
+        "equation": "-0.0101 + 0.01599*bass_att + -0.002052*bass_att*bass_att + 0.01659*above(bass_att,1.31) + 0.01977*above(bass_att,1.66) + 0.01014*above(bass_att,1) + 0.01669*above(bass_att,1.2) + 0.0215*above(bass_att,1.5) + 0.002556*cos(0.4189*time) + -0.00195*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840690418515001,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "stahlregen-bdrv-fishbrain-flexi-geiss-shifter-starcraft-distorted",
+      "column": "zoom",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9960195911407164,
+        "terms": 3,
+        "equation": "1.061 + 0.01072*bass_att + -0.0009289*bass_att*bass_att",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9960458777999516,
+        "terms": 62,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.08333333333333333,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "stahlregen-bdrv-fishbrain-flexi-geiss-shifter-starcraft-distorted",
+      "column": "cx",
+      "true_signals": ["treb_att"],
+      "guided": {
+        "r2": 0.9399938995819387,
+        "terms": 8,
+        "equation": "0.5 + 0.001291*treb_att + -0.0001347*treb_att*treb_att + -0.0001372*above(treb_att,1.36) + -9.984e-05*above(treb_att,1.74) + 0.0001333*above(treb_att,1) + -5.68e-05*above(treb_att,1.2) + 0.0002643*above(treb_att,1.5)",
+        "signals": ["treb_att"]
+      },
+      "blind": {
+        "r2": 0.9390127997044653,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "stahlregen-bdrv-fishbrain-flexi-geiss-shifter-starcraft-distorted",
+      "column": "cy",
+      "true_signals": ["mid_att"],
+      "guided": {
+        "r2": 0.8779240453706703,
+        "terms": 11,
+        "equation": "0.4998 + 0.001438*mid_att + -0.0001278*mid_att*mid_att + -0.0001534*above(mid_att,1.26) + 0.000142*above(mid_att,1.56) + -0.0001226*above(mid_att,1.94) + -8.989e-05*above(mid_att,1) + 0.0001733*above(mid_att,1.2) + -0.0001742*above(mid_att,1.5) + 2.576e-05*cos(1.257*time) + -1.948e-05*mid_att*cos(1.257*time)",
+        "signals": ["mid_att"]
+      },
+      "blind": {
+        "r2": 0.8791920848299276,
+        "terms": 116,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion",
+      "column": "wave_r",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.982449575661396,
+        "terms": 10,
+        "equation": "-0.1011 + 0.16*bass_att + -0.02054*bass_att*bass_att + 0.1658*above(bass_att,1.31) + 0.1978*above(bass_att,1.66) + 0.1014*above(bass_att,1) + 0.1669*above(bass_att,1.2) + 0.215*above(bass_att,1.5) + 0.02555*cos(0.4189*time) + -0.0195*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840733650643234,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion",
+      "column": "wave_g",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9824525975799215,
+        "terms": 10,
+        "equation": "-0.07085 + 0.1121*bass_att + -0.01439*bass_att*bass_att + 0.1161*above(bass_att,1.31) + 0.1386*above(bass_att,1.66) + 0.07093*above(bass_att,1) + 0.1168*above(bass_att,1.2) + 0.1505*above(bass_att,1.5) + 0.01788*cos(0.4189*time) + -0.01364*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840782929347852,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion",
+      "column": "wave_b",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9824461347702533,
+        "terms": 10,
+        "equation": "-0.0101 + 0.01599*bass_att + -0.002052*bass_att*bass_att + 0.01659*above(bass_att,1.31) + 0.01977*above(bass_att,1.66) + 0.01014*above(bass_att,1) + 0.01669*above(bass_att,1.2) + 0.0215*above(bass_att,1.5) + 0.002556*cos(0.4189*time) + -0.00195*bass_att*cos(0.4189*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9840690418515001,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "suksma-more-pathetic-attempts-justifying-my-ignominious-end-waning-anti-tunneled",
+      "column": "rot",
+      "true_signals": ["treb"],
+      "guided": {
+        "r2": 0.9999996757568227,
+        "terms": 2,
+        "equation": "2.847e-08 + -0.002*treb",
+        "signals": ["treb"]
+      },
+      "blind": {
+        "r2": 0.9999996757568227,
+        "terms": 2,
+        "signals": ["treb"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "suksma-question-authority-take-what-you-want-be-a-nihilist",
+      "column": "video_echo_zoom",
+      "true_signals": ["bass", "mid", "treb"],
+      "guided": {
+        "r2": 0.9999325877066579,
+        "terms": 6,
+        "equation": "1 + 0.002719*bass*bass + 0.002246*treb*treb + 0.007974*bass*mid + 0.005074*bass*treb + 0.009137*mid*treb",
+        "signals": ["bass", "mid", "treb"]
+      },
+      "blind": {
+        "r2": 0.9999665723348489,
+        "terms": 29,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat_pulse",
+          "mid",
+          "transient",
+          "treb",
+          "vol"
+        ]
+      },
+      "blind_signal_precision": 0.42857142857142855,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "suksma-question-authority-take-what-you-want-be-a-nihilist",
+      "column": "mv_dx",
+      "true_signals": ["bass"],
+      "guided": {
+        "r2": 1.0,
+        "terms": 2,
+        "equation": "6.055e-11 + 1*bass",
+        "signals": ["bass"]
+      },
+      "blind": {
+        "r2": 1.0,
+        "terms": 2,
+        "signals": ["bass"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "tokyo-corridor-shifter-tumbling-cubes-remix",
+      "column": "q1",
+      "true_signals": ["bass_att", "mid_att", "treb_att", "vol"],
+      "guided": {
+        "r2": 0.9948401019422107,
+        "terms": 33,
+        "equation": "0.3742 + 0.01711*bass_att + 0.000591*bass_att*bass_att + 0.01598*mid_att + 0.006167*above(mid_att,1.56) + 0.01077*treb_att + -0.002298*treb_att*treb_att + 0.005999*above(treb_att,1.74) + 0.3465*vol + -0.05222*vol*vol + 0.00621*above(vol,1.18) + 0.025*above(vol,1.54) + 0.007614*above(vol,1) + 0.009341*above(vol,1.2) + 0.01493*above(vol,1.5) + -0.01419*bass_att*mid_att + 0.006265*bass_att*treb_att + -0.003223*bass_att*vol + 0.003269*mid_att*treb_att + 0.004619*mid_att*vol + -0.00897*treb_att*vol + 0.003125*mid_att*sin(0.4189*time) + 0.005469*mid_att*cos(0.4189*time) + -0.002291*treb_att*sin(0.4189*time) + -0.002946*treb_att*cos(0.4189*time) + -0.002621*vol*cos(0.4189*time) + 0.002195*bass_att*sin(0.8378*time) + -0.001525*treb_att*sin(0.8378*time) + 0.001943*bass_att*sin(1.257*time) + -0.002192*bass_att*cos(1.257*time) + 0.003934*mid_att*cos(1.257*time) + -0.001603*vol*sin(1.257*time) + -0.002811*vol*cos(1.257*time)",
+        "signals": ["bass_att", "mid_att", "treb_att", "vol"]
+      },
+      "blind": {
+        "r2": 0.9959941694360968,
+        "terms": 118,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.3076923076923077,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "tokyo-corridor-shifter-tumbling-cubes-remix",
+      "column": "q8",
+      "true_signals": ["bass"],
+      "guided": {
+        "r2": 1.0,
+        "terms": 2,
+        "equation": "6.055e-11 + 1*bass",
+        "signals": ["bass"]
+      },
+      "blind": {
+        "r2": 1.0,
+        "terms": 2,
+        "signals": ["bass"]
+      },
+      "blind_signal_precision": 1.0,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "tonymilkdrop-leonardo-da-vinci-s-balloon-flexi-merry-go-round-techstyle",
+      "column": "q1",
+      "true_signals": [
+        "bass",
+        "bass_att",
+        "mid",
+        "mid_att",
+        "treb",
+        "treb_att"
+      ],
+      "guided": {
+        "r2": 0.9669740144262381,
+        "terms": 79,
+        "equation": "5.479 + -13.92*bass + 4.025*bass*bass + -0.7926*above(bass,1.25) + -2.273*above(bass,1.58) + -6.254*above(bass,2.15) + -0.5451*above(bass,1) + -0.7061*above(bass,1.2) + -1.258*above(bass,1.5) + 1.277*mid + 1.052*mid*mid + -0.495*above(mid,1.16) + -0.3353*above(mid,1.5) + -2.073*above(mid,1.93) + -0.4344*above(mid,1.5) + -1.269*treb + -0.5485*treb*treb + -0.4274*above(treb,1.14) + -0.3474*above(treb,1.65) + -0.815*bass_att + 0.1134*bass_att*bass_att + -0.6739*above(bass_att,1.31) + -1.103*above(bass_att,1.66) + -1.645*above(bass_att,2.33) + -0.5118*above(bass_att,1.5) + -2.656*mid_att + 1.018*mid_att*mid_att + 1.333*treb_att + 0.6006*treb_att*treb_att + -1.212*bass*mid + 1.272*bass*treb + 2.704*bass*bass_att + 6.769*bass*mid_att + -1.807*bass*treb_att + 1.009*mid*treb + 0.3636*mid*bass_att + -3.83*mid*mid_att + 1.264*mid*treb_att + 0.7552*treb*bass_att + -0.08573*treb*mid_att + -0.4561*bass_att*mid_att + -1.853*mid_att*treb_att + 1.521*sin(0.4189*time) + 1.058*cos(0.4189*time) + -1.339*bass*sin(0.4189*time) + -1.494*bass*cos(0.4189*time) + 1.017*mid*sin(0.4189*time) + 0.4142*mid*cos(0.4189*time) + -0.711*treb*sin(0.4189*time) + 0.3307*bass_att*cos(0.4189*time) + -1.091*mid_att*sin(0.4189*time) + -0.4813*mid_att*cos(0.4189*time) + 0.8032*treb_att*sin(0.4189*time) + 0.3212*treb_att*cos(0.4189*time) + 1.922*sin(0.8378*time) + 0.7143*cos(0.8378*time) + -1.396*bass*sin(0.8378*time) + -0.8811*bass*cos(0.8378*time) + 0.7747*mid*sin(0.8378*time) + -0.5678*treb*sin(0.8378*time) + 0.473*treb*cos(0.8378*time) + -0.4238*bass_att*sin(0.8378*time) + -0.2624*bass_att*cos(0.8378*time) + -0.8666*mid_att*sin(0.8378*time) + 0.7958*treb_att*sin(0.8378*time) + 1.482*sin(1.257*time) + -0.2759*cos(1.257*time) + -1.053*bass*sin(1.257*time) + -0.1544*bass*cos(1.257*time) + 0.7832*mid*sin(1.257*time) + -0.4474*mid*cos(1.257*time) + -0.5087*treb*sin(1.257*time) + 0.5836*treb*cos(1.257*time) + -0.544*bass_att*sin(1.257*time) + -0.244*bass_att*cos(1.257*time) + -0.7778*mid_att*sin(1.257*time) + 0.7668*mid_att*cos(1.257*time) + 0.7911*treb_att*sin(1.257*time) + -0.3989*treb_att*cos(1.257*time)",
+        "signals": ["bass", "bass_att", "mid", "mid_att", "treb", "treb_att"]
+      },
+      "blind": {
+        "r2": 0.9848467267753898,
+        "terms": 163,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.46153846153846156,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "unchained-rovastar-waves-of-waves",
+      "column": "dx",
+      "true_signals": ["bass", "bass_att"],
+      "guided": {
+        "r2": 0.8313418311502926,
+        "terms": 26,
+        "equation": "0.004504 + 0.002621*bass + 0.0005132*bass*bass + 0.004633*above(bass,1.25) + -0.001271*above(bass,1.58) + -0.002506*above(bass,2.15) + 0.007377*above(bass,1.5) + 0.0008844*bass_att*bass_att + 0.004665*above(bass_att,1.31) + 0.001546*above(bass_att,2.33) + -0.001302*above(bass_att,1) + -0.001722*above(bass_att,1.2) + 0.008284*above(bass_att,1.5) + -0.001182*bass*bass_att + 0.001446*sin(0.4189*time) + 0.00185*cos(0.4189*time) + 0.003511*bass*sin(0.4189*time) + -0.00179*bass*cos(0.4189*time) + -0.002896*bass_att*sin(0.4189*time) + -0.001427*bass_att*cos(0.4189*time) + 0.0006113*sin(0.8378*time) + -0.001008*cos(0.8378*time) + 0.0004331*bass*sin(0.8378*time) + -0.001653*bass*cos(0.8378*time) + -0.0005167*bass_att*sin(0.8378*time) + 0.001489*bass_att*cos(0.8378*time)",
+        "signals": ["bass", "bass_att"]
+      },
+      "blind": {
+        "r2": 0.8322641757818037,
+        "terms": 145,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.15384615384615385,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "unchained-rovastar-waves-of-waves",
+      "column": "ob_r",
+      "true_signals": ["treb_att"],
+      "guided": {
+        "r2": 0.6254329501348939,
+        "terms": 10,
+        "equation": "-0.1024 + 0.1381*treb_att + 0.08555*treb_att*treb_att + -0.2381*treb_att*sin(1.257*time) + -0.1028*treb_att*cos(1.257*time) + -0.1548*cos(2.513*time) + 0.1014*treb_att*sin(2.513*time) + 0.04946*treb_att*cos(2.513*time) + 0.1445*sin(0.4189*time) + -0.1008*treb_att*sin(0.4189*time)",
+        "signals": ["treb_att"]
+      },
+      "blind": {
+        "r2": 0.6228905482164433,
+        "terms": 150,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "unchained-rovastar-waves-of-waves",
+      "column": "ob_g",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.9980438932936897,
+        "terms": 2,
+        "equation": "0.0008154 + 0.9992*above(bass_att,1)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.9980448922820752,
+        "terms": 24,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "transient",
+          "treb",
+          "vol"
+        ]
+      },
+      "blind_signal_precision": 0.125,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "unchained-rovastar-waves-of-waves",
+      "column": "ob_b",
+      "true_signals": ["mid_att"],
+      "guided": {
+        "r2": 0.5924706272163479,
+        "terms": 16,
+        "equation": "0.1139 + -0.3278*mid_att + 0.2191*mid_att*mid_att + -0.1617*above(mid_att,1.94) + 0.1435*above(mid_att,1) + 0.1253*sin(0.8378*time) + 0.2851*cos(0.8378*time) + -0.1477*mid_att*sin(0.8378*time) + -0.4164*mid_att*cos(0.8378*time) + -0.07284*sin(1.257*time) + -0.1486*cos(1.257*time) + 0.1099*mid_att*sin(1.257*time) + 0.2869*mid_att*cos(1.257*time) + 0.1229*sin(1.676*time) + -0.05311*mid_att*sin(1.676*time) + 0.08781*mid_att*cos(1.676*time)",
+        "signals": ["mid_att"]
+      },
+      "blind": {
+        "r2": 0.5695871460074347,
+        "terms": 113,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.08333333333333333,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "unchained-rovastar-waves-of-waves",
+      "column": "ob_a",
+      "true_signals": ["bass_att"],
+      "guided": {
+        "r2": 0.6928163589385614,
+        "terms": 19,
+        "equation": "0.02911 + -0.1456*bass_att + 0.1424*bass_att*bass_att + 0.02937*above(bass_att,1.31) + -0.1251*above(bass_att,2.33) + 0.1049*above(bass_att,1) + 0.05607*above(bass_att,1.2) + 0.02721*above(bass_att,1.5) + -0.0247*sin(3.77*time) + 0.105*cos(3.77*time) + -0.2227*bass_att*sin(3.77*time) + 0.03791*bass_att*cos(3.77*time) + 0.05331*sin(0.4189*time) + -0.01238*cos(0.4189*time) + -0.04751*bass_att*sin(0.4189*time) + 0.01052*bass_att*cos(0.4189*time) + -0.1455*sin(7.54*time) + -0.137*cos(7.54*time) + 0.05157*bass_att*cos(7.54*time)",
+        "signals": ["bass_att"]
+      },
+      "blind": {
+        "r2": 0.7082633624771162,
+        "terms": 201,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "spectralflux",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.07692307692307693,
+      "blind_signal_recall": 1.0
+    },
+    {
+      "preset": "zylot-crossing-over-paint-spatter-mix",
+      "column": "wave_g",
+      "true_signals": ["treb_att"],
+      "guided": {
+        "r2": 0.9803543932975937,
+        "terms": 14,
+        "equation": "0.541 + 0.2403*treb_att + -0.0115*treb_att*treb_att + -0.02142*above(treb_att,2.29) + 0.1348*sin(0.4189*time) + 0.3358*cos(0.4189*time) + 0.01153*treb_att*sin(0.4189*time) + -0.005844*treb_att*cos(0.4189*time) + -0.1009*sin(0.8378*time) + -0.0945*cos(0.8378*time) + -0.00777*treb_att*cos(0.8378*time) + -0.05433*sin(1.257*time) + 0.008455*treb_att*sin(1.257*time) + -0.02161*treb_att*cos(1.257*time)",
+        "signals": ["treb_att"]
+      },
+      "blind": {
+        "r2": 0.9977445922782227,
+        "terms": 97,
+        "signals": [
+          "bass",
+          "bass_att",
+          "beat",
+          "beat_pulse",
+          "mid",
+          "mid_att",
+          "rms",
+          "transient",
+          "treb",
+          "treb_att",
+          "vol",
+          "weightedenergy"
+        ]
+      },
+      "blind_signal_precision": 0.08333333333333333,
+      "blind_signal_recall": 1.0
+    }
+  ]
+}

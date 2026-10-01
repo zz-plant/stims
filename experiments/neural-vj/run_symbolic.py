@@ -24,7 +24,8 @@ Two variants:
   blind        all 13 signals
   code-guided  only the signals lab:dataflow says the column reads
 
-Sparsity is chosen on the validation songs; scored on the test songs:
+Sparsity is chosen on the validation songs (the sparsest fit within 0.001 R²
+of the best); scored on the test songs:
 R² of the value, exact recovery (R² > 0.999), terms used, and, for the blind
 variant, whether the signals it picked are the ones the equations read.
 Songs as in run_known.py: 24 train, 4 validation, 4 test.
@@ -127,16 +128,14 @@ def fit_cell(p, c, channels):
     X, names = library(channels, omegas)
     Xtr, ytr = X[train].reshape(-1, X.shape[-1]), target[train].reshape(-1)
     scale = ytr.std() + 1e-12
-    best = None
-    for th in (1e-4, 1e-3, 3e-3, 1e-2, 3e-2, 1e-1):
+    fits = []
+    for th in (1e-4, 1e-3, 3e-3, 1e-2, 3e-2, 1e-1, 3e-1):
         w = stlsq(Xtr, ytr / scale, th) * scale
-        pv = X[val].reshape(-1, X.shape[-1]) @ w
-        score = r2(target[val].reshape(-1), pv)
-        terms = int((np.abs(w) > 0).sum())
-        # prefer fewer terms when validation R² is within 1e-4
-        key = (round(score if score is not None else -1e9, 4), -terms)
-        if best is None or key > best[0]:
-            best = (key, w, th)
+        score = r2(target[val].reshape(-1), X[val].reshape(-1, X.shape[-1]) @ w)
+        fits.append((score if score is not None else -1e9, int((np.abs(w) > 0).sum()), w))
+    # the sparsest equation within 0.001 validation R² of the best: readable over marginal
+    top = max(f[0] for f in fits)
+    best = (None, min((f for f in fits if f[0] >= top - 1e-3), key=lambda f: f[1])[2])
     w = best[1]
     pt = X[test].reshape(-1, X.shape[-1]) @ w
     score = r2(target[test].reshape(-1), pt)
