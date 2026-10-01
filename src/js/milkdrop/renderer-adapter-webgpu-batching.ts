@@ -704,7 +704,6 @@ class CompactSegmentUploadBuffer {
       const point = buildProceduralWavePoint(
         wave,
         sampleT,
-        index,
         wave.samples[index] ?? 0,
         wave.velocities[index] ?? 0,
       );
@@ -804,7 +803,6 @@ function computeJoinExtension(
 function buildProceduralWavePoint(
   wave: MilkdropProceduralWaveVisual,
   sampleT: number,
-  sampleIndex: number,
   sampleValue: number,
   _velocity: number,
 ) {
@@ -878,7 +876,9 @@ function buildProceduralWavePoint(
     // Intra-frame momentum (simplified for GPU parity).
     x = x * w2 + w1 * sampleOffset64 * wave.scale;
     y = y * w2 + w1 * sampleOffset96 * wave.scale;
-  } else if (wave.mode < 5.5) {
+  } else {
+    // Modes 6 and 7 (line waves) are built on the CPU and never arrive here;
+    // see buildMilkdropLineWave in vm/frame-generation.ts.
     const sampleL = sampleProceduralWaveOffset(
       wave.samples,
       sampleT,
@@ -901,23 +901,6 @@ function buildProceduralWavePoint(
     const sinR = Math.sin(rot);
     x = wave.centerX + (x0 * cosR - y0 * sinR) * wave.scale;
     y = wave.centerY + (x0 * sinR + y0 * cosR) * wave.scale;
-  } else if (wave.mode < 6.5) {
-    // Line — matches CPU path (frame-generation.ts mode 6).
-    x = -1.0 + 2.0 * sampleT;
-    y = wave.centerY + sampleValue * 0.25 * wave.scale;
-  } else {
-    const sampleL = sampleProceduralWaveOffset(
-      wave.samples,
-      sampleT,
-      PROJECTM_STEREO_OFFSET,
-    );
-    const separation = 0.1 + wave.mystery * 0.2;
-    x = -1 + 2 * sampleT;
-    y =
-      wave.centerY +
-      (sampleIndex % 2 === 0
-        ? sampleValue * wave.scale * 0.5 + separation
-        : sampleL * wave.scale * 0.5 - separation);
   }
 
   return { x, y };
@@ -1882,6 +1865,10 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;
+      /** Per-point RGBA, as on a wave visual (a mode 7 trail hides its
+       * bridge between the two lines this way). */
+      colors?: ArrayLike<number>;
+      perPointAlpha?: boolean;
     }>,
     alphaMultiplier: number,
   ) {
@@ -1893,8 +1880,11 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       ).appendPolyline(
         line.positions,
         line.color,
-        line.alpha * alphaMultiplier,
+        // as for waves: a per-point alpha already carries the line's alpha
+        line.perPointAlpha ? alphaMultiplier : line.alpha * alphaMultiplier,
         getMilkdropSegmentWidth(1),
+        false,
+        line.colors,
       );
     }
     this.getWaveTarget(`line:${target}`).syncSplit(this.segmentUploads);

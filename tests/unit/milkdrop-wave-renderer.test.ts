@@ -9,6 +9,7 @@ import {
 import type { MilkdropBackendBehavior } from '../../src/js/milkdrop/renderer-adapter';
 import {
   createWaveObject,
+  syncLineObject,
   syncWaveObject,
 } from '../../src/js/milkdrop/renderer-helpers/wave-renderer';
 import type { MilkdropWaveVisual } from '../../src/js/milkdrop/types';
@@ -252,5 +253,48 @@ describe('milkdrop wave renderer', () => {
       (((synced as Group).children[0] as Line).material as LineBasicMaterial)
         .opacity,
     ).toBeCloseTo(0.5, 6);
+  });
+
+  test('a trail line carries per-point alpha, so a mode 7 bridge stays hidden', () => {
+    const helpers = {
+      ...makeHelpers(),
+      markAlwaysOnscreen: <T>(object: T) => object,
+    };
+    const colors = new Float32Array([1, 1, 1, 0.6, 1, 1, 1, 0, 1, 1, 1, 0.6]);
+    const line = syncLineObject(
+      undefined,
+      {
+        positions: [0, 0, 0, 1, 0, 0, 1, 1, 0],
+        color: { r: 1, g: 1, b: 1, a: 1 },
+        alpha: 0.6,
+        additive: false,
+        colors,
+        perPointAlpha: true,
+      },
+      0.5,
+      helpers,
+    ) as Line;
+    const material = line.material as LineBasicMaterial;
+    const colorAttribute = line.geometry.getAttribute('color');
+    expect(colorAttribute.itemSize).toBe(4);
+    expect(colorAttribute.getW(1)).toBe(0);
+    expect(material.vertexColors).toBe(true);
+    // the per-point alpha already holds 0.6; only the multiplier remains
+    expect(material.opacity).toBeCloseTo(0.5, 6);
+
+    const plain = syncLineObject(
+      line,
+      {
+        positions: [0, 0, 0, 1, 0, 0],
+        color: { r: 1, g: 1, b: 1, a: 1 },
+        alpha: 0.6,
+        additive: false,
+      },
+      0.5,
+      helpers,
+    ) as Line;
+    expect(plain.geometry.getAttribute('color')).toBeUndefined();
+    expect((plain.material as LineBasicMaterial).vertexColors).toBe(false);
+    expect((plain.material as LineBasicMaterial).opacity).toBeCloseTo(0.3, 6);
   });
 });

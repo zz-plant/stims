@@ -410,6 +410,8 @@ export function syncLineObject(
     color: MilkdropColor;
     alpha: number;
     additive: boolean;
+    colors?: ArrayLike<number>;
+    perPointAlpha?: boolean;
   },
   alphaMultiplier: number,
   helpers: {
@@ -432,26 +434,46 @@ export function syncLineObject(
     }
     return null;
   }
+  // as for waves: a per-point alpha already carries the line's alpha
+  const opacity = line.perPointAlpha
+    ? alphaMultiplier
+    : line.alpha * alphaMultiplier;
 
   if (!(existing instanceof ThreeLine) || existing instanceof ThreeLineLoop) {
     if (existing) {
       helpers.disposeObject(existing);
     }
-    return createLineObject(
+    const created = createLineObject(
       line.positions,
       line.color,
-      line.alpha * alphaMultiplier,
+      opacity,
       line.additive,
       helpers,
     );
+    syncLineVertexColors(created, line);
+    return created;
   }
 
   helpers.ensureGeometryPositions(existing.geometry, line.positions);
   const material = existing.material as LineBasicMaterial;
   material.blending = line.additive ? AdditiveBlending : NormalBlending;
-  helpers.setMaterialColor(material, line.color, line.alpha * alphaMultiplier);
+  helpers.setMaterialColor(material, line.color, opacity);
+  syncLineVertexColors(existing, line);
   existing.position.z = 0.24;
   return existing;
+}
+
+/** A line with per-point RGBA (a trail of a mode 7 wave hides the bridge
+ * between its two lines this way) draws it; any other line drops it. */
+function syncLineVertexColors(
+  object: Line,
+  line: { colors?: ArrayLike<number>; perPointAlpha?: boolean },
+) {
+  const material = object.material as LineBasicMaterial;
+  syncWaveVertexColors(object.geometry, material, line.colors);
+  if (line.perPointAlpha) {
+    material.transparent = true;
+  }
 }
 
 export function renderWaveGroup({
@@ -518,6 +540,8 @@ export function renderLineVisualGroup({
     color: MilkdropColor;
     alpha: number;
     additive?: boolean;
+    colors?: ArrayLike<number>;
+    perPointAlpha?: boolean;
   }>;
   alphaMultiplier?: number;
   batcher: MilkdropRendererBatcher | null;
@@ -530,6 +554,8 @@ export function renderLineVisualGroup({
       color: MilkdropColor;
       alpha: number;
       additive: boolean;
+      colors?: ArrayLike<number>;
+      perPointAlpha?: boolean;
     },
     alphaMultiplier: number,
   ) => Line | null;
@@ -551,6 +577,8 @@ export function renderLineVisualGroup({
         color: line.color,
         alpha: line.alpha,
         additive: line.additive ?? false,
+        colors: line.colors,
+        perPointAlpha: line.perPointAlpha,
       },
       alphaMultiplier,
     );
