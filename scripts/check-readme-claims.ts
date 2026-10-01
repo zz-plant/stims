@@ -11,7 +11,7 @@
  *
  * It covers `README.md` and the live docs under `docs/`, because the claim that
  * actually shipped a contradiction was in `docs/`, not the README:
- * `CASE_STUDY_COMPILER_RUNTIME.md` asserted a `< 1.5%` parity gate and "over
+ * `CASE_STUDY_COMPILER_RUNTIME.md` (since deleted) asserted a `< 1.5%` parity gate and "over
  * 99% compatibility" on the same day `MILKDROP_PROJECTM_PARITY_PLAN.md`
  * recorded most of the certified set diverging by 5–100%. Two rules follow from
  * that: a parity gate has to be one the manifest configures, and there is no

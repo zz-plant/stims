@@ -1,6 +1,6 @@
 # Technical foundations and evidence status
 
-This document maps Stims' implemented engineering systems without turning scaffolding, optional services, or roadmap work into shipped-product claims.
+This document maps Stims' implemented engineering systems without turning scaffolding, optional services, or roadmap work into shipped-product claims. What is new compared with Butterchurn and projectM is stated once, in [What Stims contributes](./LINEAGE_AND_CREDITS.md#what-stims-contributes); the sections below are the evidence for those claims and for everything else.
 
 ## System diagram
 
@@ -20,7 +20,7 @@ flowchart TB
 
   subgraph RuntimeLayer ["Execution & Graphics"]
     VM["EEL2 Runtime VM<br/>per-frame · per-vertex · megabuf"]
-    Renderer["Dual-Backend Renderer<br/>WebGL2 Baseline · WebGPU Compute"]
+    Renderer["Dual-Backend Renderer<br/>WebGL2 Baseline · WebGPU"]
     Fallback["Automatic Failover & DRS<br/>adaptive density · quality ladder"]
   end
 
@@ -46,7 +46,11 @@ flowchart TB
 - [`src/js/milkdrop/expression-jit.ts`](../src/js/milkdrop/expression-jit.ts) compiles preset equations into browser-executable functions.
 - [`src/js/milkdrop/vm.ts`](../src/js/milkdrop/vm.ts) and its focused modules model preset state, registers, custom waves and shapes, `megabuf`, and `gmegabuf` behavior.
 - [`src/js/milkdrop/compiler/ir.ts`](../src/js/milkdrop/compiler/ir.ts) provides a shared intermediate representation for runtime execution and backend-specific lowering.
-- Equations parse to an AST and the IR, which runs on an interpreter, the CPU JIT, or WebGPU compute shaders in WGSL. The 4 MB `megabuf` (per VM) and 4 MB `gmegabuf` (shared across preset switches) are kept in sync between CPU and GPU.
+- Equations parse to an AST and the IR, which runs on an interpreter or the CPU JIT. On WebGPU, per-pixel and custom-wave point programs that read only their own inputs are also lowered into the shader and evaluated for every vertex in parallel ([`gpu-field-planner.ts`](../src/js/milkdrop/compiler/gpu-field-planner.ts)); anything else stays on the JIT.
+- The JIT compiles each program block into one function, clamps every stored value to a finite number, and bounds-checks `megabuf` indices. Where a Content Security Policy forbids `new Function`, the tree-walking interpreter in [`expression.ts`](../src/js/milkdrop/expression.ts) runs instead ([test](../tests/unit/eel-csp-fallback.test.ts)). Constant folding runs on the AST before either tier sees it ([`ast-constant-fold.ts`](../src/js/milkdrop/compiler/ast-constant-fold.ts)).
+- A per-frame compute VM exists but is off by default (`?milkdrop-webgpu-compute-vm=1` opts in): a per-frame block is one invocation, so upload, dispatch and readback make it slower than the JIT. The measurement is recorded beside the flag in [`webgpu-optimization-flags.ts`](../src/js/milkdrop/webgpu-optimization-flags.ts).
+- The 4 MB `megabuf` (per VM) and 4 MB `gmegabuf` (shared across preset switches) live on the CPU; the compute VM, when enabled, mirrors them to GPU storage buffers ([memory model](./architecture/eel-guest-memory.md)).
+- Seeded differential fuzz tests hold the tiers to the same results: [`eel-tier-differential`](../tests/unit/eel-tier-differential.test.ts) compares the interpreter with the JIT, and [`gpu-field-tier-differential`](../tests/unit/gpu-field-tier-differential.test.ts) compares the JIT with the GPU lowering. Their first runs found 18 shipped preset blocks the JIT could not compile and six classes of CPU/GPU divergence across 32% of lowered programs.
 - Direct `.milk` import and export keep the authoring format visible to users instead of requiring a renderer-specific JSON representation. There is no conversion step to run before a preset is usable, and no converted artifact to keep in sync with the original.
 
 Compilation and runtime stepping are necessary compatibility evidence. They do not, by themselves, prove visual fidelity.
@@ -84,7 +88,7 @@ The WebGPU path is not presented as broadly visually equivalent. Current certifi
 - [`src/js/frontend/url-state.ts`](../src/js/frontend/url-state.ts) retains preset, collection, audio, tool, and automation state in URL query parameters.
 - Progressive catalog loading and bounded preview work keep the large imported library usable on constrained devices.
 
-This product layer—not graphics API branding—is the primary differentiation from engine-only integrations.
+For someone using Stims, this workspace is what separates it from Butterchurn and projectM, which are engines for a host app to wrap. It is not the technical contribution; see [What Stims contributes](./LINEAGE_AND_CREDITS.md#what-stims-contributes).
 
 ## 4. Live preset editor — implemented
 
@@ -135,6 +139,13 @@ See [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) for
 - The live binding from MIDI/MCP input to engine parameters is mounted at the app-shell level in `App.tsx`, so it stays active independent of which settings panel is open.
 - A virtual "Claude (MCP)" device participates in the same per-device binding and learn-mode pipeline as physical hardware, driven by four MCP tools — `session_midi_set`, `session_midi_cc`, `session_midi_bindings`, `session_midi_devices` — registered in [`scripts/mcp-server.ts`](../scripts/mcp-server.ts).
 - The editor's Tune sliders and the CodeMirror gutter both surface live/shadowed status per bound target — whether the active preset's own `per_frame`/`per_pixel` equations would immediately overwrite a MIDI-driven value — computed in [`src/js/milkdrop/formatter.ts`](../src/js/milkdrop/formatter.ts) and covered by unit tests.
+
+## 10. Corpus analysis — implemented
+
+- [`src/js/milkdrop/preset-dataflow.ts`](../src/js/milkdrop/preset-dataflow.ts) interprets a compiled preset over dependency sets instead of numbers, following the VM's own reset, persistence and shared-`rand()` rules. `bun run lab:dataflow -- --all` labels every preset in the lab corpus by which audio signals reach each control and each drawn program.
+- Checked against `lab:dataset` exports of 2,445 held-out presets, one of 215,160 cells varied with the song where the analysis found no audio path (a documented 5e-4 wobble). It is conservative by design, so precision is lower: 11,797 of the 13,532 cells it marks as audio-driven actually varied.
+- The catalog's quality score and its `collection:audio-reactive` tag both read its tiers.
+- `lab:dataset`, `lab:vj-baseline`, `lab:memory-probe`, `lab:edit-eval` and `lab:shader-fix-bench` turn the corpus into training data and evaluations, split by remix family so near-copies never straddle train and test. The findings, including why gradient-boosted trees beat every network tried, are in [Training and evaluating models](./guides/training-models.md).
 
 ## Foundations that are not shipped workflows
 

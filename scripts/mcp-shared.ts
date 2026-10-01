@@ -394,7 +394,7 @@ const agentCapabilities: AgentCapability[] = [
   },
 ];
 
-const serverInfo = { name: 'stim-webtoys-mcp', version: '1.0.0' } as const;
+const serverInfo = { name: 'stims-mcp', version: '1.0.0' } as const;
 
 function createMcpServer({
   instructions = defaultInstructions,
