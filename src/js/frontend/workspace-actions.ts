@@ -85,7 +85,7 @@ export function setTransition(
 
 export function startAudioSource(
   engine: {
-    handleAudioStart: (source: AudioSource) => Promise<void> | void;
+    handleAudioStart: (source: AudioSource) => Promise<unknown>;
   },
   source: 'demo' | 'microphone' | 'tab',
 ): void {

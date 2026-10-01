@@ -14,6 +14,16 @@ import type {
 
 export type { AudioSource, PanelState };
 
+/**
+ * What starting an audio source did. `ok` is true only when the requested
+ * source is the one now playing. A fallback (an in-app browser gets demo audio
+ * instead of the microphone) is `ok: false`, naming the source that did start
+ * and the message the visitor saw.
+ */
+export type AudioStartOutcome =
+  | { ok: true; source: AudioSource }
+  | { ok: false; source: AudioSource | null; message: string };
+
 export type LaunchIntent = {
   presetId: string | null;
   collectionTag: string | null;

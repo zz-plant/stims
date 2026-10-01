@@ -337,6 +337,7 @@ describe('agent bridge replies report what actually happened', () => {
             audioSource: source,
           });
         }, 0);
+        return { ok: true, source };
       },
     });
 
@@ -351,17 +352,14 @@ describe('agent bridge replies report what actually happened', () => {
     });
   });
 
-  test('set_audio reports why a start failed instead of claiming success', async () => {
-    installAppBridge(
-      {
-        // The start path reports a refusal as a status message, not a throw,
-        // and the stage never commits the new source.
-        handleAudioStart: async () => {
-          recordStatusMessage('Microphone access was denied.');
-        },
-      },
-      { audioCommitTimeoutMs: 20 },
-    );
+  test('set_audio reports why a start failed, straight from the start path', async () => {
+    installAppBridge({
+      handleAudioStart: async () => ({
+        ok: false,
+        source: null,
+        message: 'Microphone access was denied.',
+      }),
+    });
 
     post({ type: 'toil:set_audio', source: 'microphone' });
     const reply = await replyTo('set_audio');
@@ -370,11 +368,28 @@ describe('agent bridge replies report what actually happened', () => {
     expect(reply.reason).toBe('Microphone access was denied.');
   });
 
+  test('set_audio names the fallback an in-app browser started instead', async () => {
+    installAppBridge({
+      handleAudioStart: async () => ({
+        ok: false,
+        source: 'demo',
+        message:
+          'In-app browsers limit live mic access. Started with Demo Audio.',
+      }),
+    });
+
+    post({ type: 'toil:set_audio', source: 'microphone' });
+    const reply = await replyTo('set_audio');
+
+    expect(reply).toMatchObject({ success: false, playing: 'demo' });
+  });
+
   test('set_audio refuses a source an embedding page cannot start, before touching the engine', async () => {
     const started: string[] = [];
     installAppBridge({
       handleAudioStart: async (source) => {
         started.push(source);
+        return { ok: true, source };
       },
     });
 
