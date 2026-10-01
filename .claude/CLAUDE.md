@@ -54,6 +54,7 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 | See every failing test in one run, not just the first | `bun run test -- --no-bail <files>` | varies |
 | Scaffold / check a PR description | `bun run pr:body` / `bun run pr:body -- --check body.md` | < 2s |
 | Restart a branch after its PR was squash-merged | `bun run branch:restart` | < 5s |
+| Start a change in its own worktree (other sessions share this checkout) | `bun run worktree:new -- <branch>` | ~30s |
 | Integration tests | `bun run test:integration` | 1–2 min |
 | Compatibility tests | `bun run test:compat` | 1–2 min |
 | Warm long-lived session | `bun run session:codex -- --profile review` | — |

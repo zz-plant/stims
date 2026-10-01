@@ -5,10 +5,12 @@
  *
  * Each step is skipped where it does not apply — STIMS_SKIP_POSTINSTALL_BUILD=1
  * disables the WASM sync and the Pages build, and hooks are skipped in CI or
- * when Bun is not the installer.
+ * when Bun is not the installer. A git worktree reuses the main checkout's
+ * hooks (see git-hooks-install.ts).
  */
 
 import { execSync } from 'node:child_process';
+import { planHookInstall } from './git-hooks-install.ts';
 
 const userAgent = process.env.npm_config_user_agent ?? '';
 const isBunUserAgent = userAgent.startsWith('bun');
@@ -68,7 +70,18 @@ if (isCloudflarePages) {
 if (isCI || isCloudflarePages) {
   console.log('[postinstall] lefthook install skipped (CI/CF Pages).');
 } else if (isBunUserAgent) {
-  run('bunx lefthook install');
+  const { action, hooksDir } = planHookInstall();
+  if (action === 'reuse') {
+    console.log(
+      `[postinstall] git worktree: reusing the hooks already installed at ${hooksDir}.`,
+    );
+  } else if (action === 'install-force') {
+    run('bunx lefthook install --force');
+  } else if (action === 'install') {
+    run('bunx lefthook install');
+  } else {
+    console.log('[postinstall] not a git checkout; lefthook install skipped.');
+  }
 } else {
   console.log(
     '[postinstall] lefthook install skipped (Bun not detected as installer).',
