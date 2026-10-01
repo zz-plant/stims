@@ -946,8 +946,6 @@ export function StageControls({
               </span>
             ) : transition.phase === 'loading' ? (
               <span className={styles.statusText}>Loading…</span>
-            ) : transition.phase === 'blending' ? (
-              <span className={styles.statusText}>Blending…</span>
             ) : presetAuthor ? (
               <span className={styles.authorText}>{presetAuthor}</span>
             ) : null}
