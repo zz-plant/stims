@@ -27,6 +27,7 @@ import { isShaderBranchDesugarEnabled } from './compiler/shader-branch-desugar';
 import { upsertMilkdropField, upsertMilkdropFields } from './formatter';
 import type {
   MilkdropCompiledPreset,
+  MilkdropEditorCommitOutcome,
   MilkdropEditorCompiler,
   MilkdropEditorSession,
   MilkdropEditorSessionState,
@@ -309,8 +310,8 @@ export function createMilkdropEditorSession({
       useWorker?: boolean;
       cacheCompile?: boolean;
     } = {},
-  ) => {
-    if (disposed) return state;
+  ): Promise<MilkdropEditorCommitOutcome> => {
+    if (disposed) return { state, applied: false };
 
     const currentCommitId = ++commitId;
     // Pin the preset identity now: a preset swap while this compile is in
@@ -328,14 +329,14 @@ export function createMilkdropEditorSession({
     const compileDuration = performance.now() - compileStart;
 
     if (outcome.kind === 'aborted') {
-      return state;
+      return { state, applied: false };
     }
     if (currentCommitId !== commitId) {
       editorLog(
         meta.id,
         `commit #${currentCommitId} superseded by #${commitId}, discarding`,
       );
-      return state;
+      return { state, applied: false };
     }
 
     const compiled = outcome.compiled;
@@ -371,7 +372,7 @@ export function createMilkdropEditorSession({
         : nextSource.trim() !== activeCompiled.formattedSource.trim(),
     };
     notify();
-    return state;
+    return { state, applied: true };
   };
 
   return {
@@ -386,29 +387,40 @@ export function createMilkdropEditorSession({
       // hundreds of ms to seconds (measured on a Galaxy S22). The worker
       // path falls back to a main-thread compile on spawn failure/timeout.
       editorLog(source.id, 'loadPreset (worker compile, mark clean)');
-      return commit(source.raw, {
-        markClean: true,
-        useWorker: true,
-        cacheCompile: true,
-      });
+      return (
+        await commit(source.raw, {
+          markClean: true,
+          useWorker: true,
+          cacheCompile: true,
+        })
+      ).state;
     },
 
     async applySource(source) {
-      return commit(source);
+      return (await commit(source)).state;
     },
 
     async updateField(key, value) {
-      return commit(upsertMilkdropField(pendingSource, key, value));
+      return (await commit(upsertMilkdropField(pendingSource, key, value)))
+        .state;
     },
 
     async updateFields(updates) {
+      return (await commit(upsertMilkdropFields(pendingSource, updates))).state;
+    },
+
+    applySourceWithOutcome(source) {
+      return commit(source);
+    },
+
+    updateFieldsWithOutcome(updates) {
       return commit(upsertMilkdropFields(pendingSource, updates));
     },
 
     async resetToActive() {
       const activeSource =
         state.activeCompiled?.formattedSource ?? state.source;
-      return commit(activeSource, { markClean: true });
+      return (await commit(activeSource, { markClean: true })).state;
     },
 
     subscribe(listener) {

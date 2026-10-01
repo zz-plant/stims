@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
+  VIRTUAL_CLAUDE_DEVICE_ID,
+  webMidiService,
+} from '../../src/js/core/services/webmidi-controller.ts';
+import {
   getAgentTelemetry,
   initAgentBridge,
   toAgentEditorState,
@@ -9,6 +13,7 @@ import { buildAgentBridgeCallbacks } from '../../src/js/frontend/agent-bridge-ha
 import {
   type AgentCoreSnapshot,
   emitAgentCommit,
+  installAgentStateGlobal,
   recordStatusMessage,
   resetAgentStateForTests,
 } from '../../src/js/frontend/agent-state.ts';
@@ -728,9 +733,207 @@ describe('agent bridge replies report what actually happened', () => {
     const reply = await replyTo('apply_source');
 
     expect(reply).toMatchObject({
-      type: 'toil:editor_state',
+      type: 'toil:status',
       success: false,
       state: null,
+    });
+  });
+
+  test('an edit replaced mid-compile is reported, not passed off as compiled', async () => {
+    emitAgentCommit(stageCore);
+    installAppBridge({
+      applyEditorSourceAwaited: async () => {
+        throw new Error(
+          'A newer edit or preset load replaced this one before it compiled, so it was not applied.',
+        );
+      },
+    });
+
+    post({ type: 'toil:apply_source', source: '[preset00]\nzoom=1.1\n' });
+    const reply = await replyTo('apply_source');
+
+    expect(reply.success).toBe(false);
+    expect(String(reply.reason)).toContain('replaced');
+  });
+
+  test('every reply echoes the requestId it was sent with', async () => {
+    emitAgentCommit(stageCore);
+    installAppBridge({}, { catalog: CATALOG });
+
+    post({ type: 'toil:request_telemetry', requestId: 'tel-1' });
+    post({ type: 'toil:spin_faster', requestId: 7 });
+    post({ type: 'toil:load_preset', requestId: { not: 'an id' } });
+
+    expect(replies.map((reply) => [reply.type, reply.requestId])).toEqual([
+      ['toil:telemetry', 'tel-1'],
+      ['toil:status', 7],
+      // Only strings and finite numbers are echoed.
+      ['toil:status', undefined],
+    ]);
+  });
+
+  test('replies go to the window that sent the command', () => {
+    cleanup = initAgentBridge({});
+    const received: Reply[] = [];
+    const sender = { postMessage: (reply: Reply) => received.push(reply) };
+
+    window.dispatchEvent(
+      new window.MessageEvent('message', {
+        data: { type: 'toil:spin_faster', requestId: 'r1' },
+        source: sender as unknown as Window,
+      }),
+    );
+
+    expect(received).toEqual([
+      expect.objectContaining({ action: 'spin_faster', requestId: 'r1' }),
+    ]);
+    // Not also to the parent frame.
+    expect(replies).toEqual([]);
+  });
+
+  test('a malformed command is refused with what to send instead', () => {
+    cleanup = initAgentBridge({});
+
+    post({ type: 'toil:midi_set', target: 'warp' });
+    post({ type: 'toil:midi_cc', cc: 'one', value: 64 });
+    post({ type: 'toil:apply_source', source: 42 });
+    post({ type: 'toil:set_fields', fields: [1, 2] });
+    post({ type: 'toil:run' });
+    post({ type: 'toil:run', id: 'next-preset', params: [1] });
+
+    expect(replies.map((reply) => [reply.action, reply.success])).toEqual([
+      ['midi_set', false],
+      ['midi_cc', false],
+      ['apply_source', false],
+      ['set_fields', false],
+      ['run', false],
+      ['run', false],
+    ]);
+    for (const reply of replies) expect(String(reply.reason)).not.toBe('');
+  });
+
+  describe('midi_set and midi_cc', () => {
+    afterEach(() => {
+      webMidiService.setDeviceEnabled(VIRTUAL_CLAUDE_DEVICE_ID, true);
+      webMidiService.unbindCc(VIRTUAL_CLAUDE_DEVICE_ID, 21);
+    });
+
+    test('midi_set reaches the stage, and says when nothing is there to reach', async () => {
+      installAppBridge({});
+      const delivered: Array<[string | undefined, number | undefined]> = [];
+      const unsubscribe = webMidiService.onControlChange(
+        (_cc, _raw, target, value) => delivered.push([target, value]),
+      );
+
+      post({ type: 'toil:midi_set', target: 'warp', value: 1.4 });
+      const early = await replyTo('midi_set');
+      replies.length = 0;
+      emitAgentCommit(stageCore);
+      post({ type: 'toil:midi_set', target: 'warp', value: 1.4 });
+      const onStage = await replyTo('midi_set');
+      unsubscribe();
+
+      expect(early.success).toBe(false);
+      expect(onStage).toMatchObject({ success: true, target: 'warp' });
+      expect(delivered).toEqual([['warp', 1.4]]);
+    });
+
+    test('midi_set reports a turned-off device', async () => {
+      emitAgentCommit(stageCore);
+      installAppBridge({});
+      webMidiService.setDeviceEnabled(VIRTUAL_CLAUDE_DEVICE_ID, false);
+
+      post({ type: 'toil:midi_set', target: 'warp', value: 1.4 });
+      const reply = await replyTo('midi_set');
+
+      expect(reply.success).toBe(false);
+      expect(String(reply.reason)).toContain('turned off');
+    });
+
+    test('midi_cc reports the target a mapped CC drove, and refuses an unmapped one', async () => {
+      emitAgentCommit(stageCore);
+      installAppBridge({});
+
+      post({ type: 'toil:midi_cc', cc: 21, value: 64 });
+      const unmapped = await replyTo('midi_cc');
+      replies.length = 0;
+      webMidiService.bindCc(VIRTUAL_CLAUDE_DEVICE_ID, 21, 'warp', 0, 2);
+      post({ type: 'toil:midi_cc', cc: 21, value: 127 });
+      const mapped = await replyTo('midi_cc');
+
+      expect(unmapped.success).toBe(false);
+      expect(mapped).toMatchObject({ success: true, target: 'warp' });
+      expect(mapped.normalized).toBeCloseTo(2, 5);
+    });
+  });
+
+  describe('run', () => {
+    let uninstallAgent: (() => void) | null = null;
+    afterEach(() => {
+      uninstallAgent?.();
+      uninstallAgent = null;
+    });
+
+    /** The real agent API, over one palette action. */
+    const installAgent = (onRun: () => void) => {
+      uninstallAgent = installAgentStateGlobal({
+        getSnapshot: () => stageCore,
+        getActions: () => [
+          {
+            id: 'next-preset',
+            group: 'Playback',
+            label: 'Next preset',
+            run: onRun,
+          },
+        ],
+        getTelemetry: getAgentTelemetry,
+        selectPreset: () => {},
+        resolvePresetId: () => null,
+        getPresetIds: () => [],
+        setField: () => {},
+        setCrossfade: () => {},
+        pinParameter: () => false,
+        unpinParameter: () => false,
+        getStageCanvas: () => null,
+      });
+    };
+
+    test('run executes a palette action and reports the events it caused', async () => {
+      installAppBridge({});
+      let ran = 0;
+      installAgent(() => {
+        ran += 1;
+        emitAgentCommit({ ...stageCore, presetId: 'geiss-casino' });
+      });
+      emitAgentCommit(stageCore);
+
+      post({ type: 'toil:run', id: 'next-preset', requestId: 'n1' });
+      const reply = await replyTo('run');
+
+      expect(ran).toBe(1);
+      expect(reply).toMatchObject({
+        success: true,
+        id: 'next-preset',
+        requestId: 'n1',
+        settled: true,
+      });
+      expect(reply.events).toEqual([
+        expect.objectContaining({
+          type: 'preset',
+          data: expect.objectContaining({ to: 'geiss-casino' }),
+        }),
+      ]);
+    });
+
+    test('run refuses an unknown id with the close ones', async () => {
+      installAppBridge({});
+      installAgent(() => {});
+
+      post({ type: 'toil:run', id: 'next-presett' });
+      const reply = await replyTo('run');
+
+      expect(reply.success).toBe(false);
+      expect(reply.suggestions).toContain('next-preset');
     });
   });
 

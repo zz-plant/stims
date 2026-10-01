@@ -732,22 +732,24 @@ export class WebMidiControllerService {
 
   /** Virtual-device entry point that skips CC math entirely — Claude asks
    * for a target by name ("set warp to 1.4") instead of reverse-engineering
-   * a CC-to-range mapping. */
+   * a CC-to-range mapping. Returns false when nothing was delivered: an
+   * invalid value, or the device is turned off. */
   public injectTargetValue(
     deviceId: string,
     target: string,
     value: number,
-  ): void {
-    if (!target || !Number.isFinite(value)) return;
+  ): boolean {
+    if (!target || !Number.isFinite(value)) return false;
     const rec = this.ensureDeviceRecord(deviceId, {
       enabled: true,
       bindings: {},
       noteBindings: {},
     });
-    if (!rec.enabled) return;
+    if (!rec.enabled) return false;
     for (const listener of this.listeners) {
       listener(-1, Number.NaN, target, value, deviceId);
     }
+    return true;
   }
 
   private applyControlChange(

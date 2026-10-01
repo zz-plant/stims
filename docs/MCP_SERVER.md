@@ -50,8 +50,8 @@ These tools manage a persistent headless browser session so you can interact wit
 | `session_set_fields` | `sessionId`, `fields` (name → value) | Sets several fields in ONE compile; returns the same diagnostics as `session_apply_source` |
 | `session_get_preset_source` | `presetId` or `sessionId` | Raw .milk source code from disk |
 | `session_get_inspector_values` | `sessionId`, optional `filter` | Live numeric field values from the compiled IR (no panel needs to be open) |
-| `session_midi_set` | `sessionId`, `target`, `value` | Sets a field (zoom, warp, q1, any preset variable) as the virtual "Claude (MCP)" MIDI device |
-| `session_midi_cc` | `sessionId`, `cc` (0-127), `value` (0-127) | Sends a raw CC value, resolved through the Claude device's current mapping |
+| `session_midi_set` | `sessionId`, `target`, `value` | Sets a field (zoom, warp, q1, any preset variable) as the virtual "Claude (MCP)" MIDI device, and says so when nothing was on stage to receive it |
+| `session_midi_cc` | `sessionId`, `cc` (0-127), `value` (0-127) | Sends a raw CC value, resolved through the Claude device's current mapping; reports the target it drove, or that the CC is unmapped |
 | `session_midi_bindings` | `sessionId` | CC→target mappings for every known device, keyed by device id |
 | `session_midi_devices` | `sessionId` | Known MIDI devices (physical + the virtual Claude channel) with connect state |
 | `session_compare` | `sessionId`, optional `settleMs`, `label` | Before/after screenshot pair |
