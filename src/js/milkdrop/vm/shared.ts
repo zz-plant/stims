@@ -240,6 +240,30 @@ export function sampleCustomWaveChannels(
   return next;
 }
 
+/**
+ * Half-extents of the scene camera, which is in square units
+ * (core/camera-setup.ts): the visible scene spans +/-x by +/-y.
+ */
+export function sceneHalfExtents(aspect: number) {
+  const safe = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+  return { x: Math.max(1, safe), y: Math.max(1, 1 / safe) };
+}
+
+/**
+ * MilkDrop wave and shape coordinates to scene units. MilkDrop draws these in
+ * clip space stretched over the whole screen, x from 0 (left) to 1 (right)
+ * and y from 0 (bottom) to 1 (top), as projectM and Butterchurn render them.
+ * Round things (circular wave modes, shape radii) keep unscaled offsets around
+ * the mapped centre, which is what MilkDrop's aspect factors do in clip space.
+ */
+export function milkdropToSceneX(value: number, aspect: number) {
+  return (value - 0.5) * 2 * sceneHalfExtents(aspect).x;
+}
+
+export function milkdropToSceneY(value: number, aspect: number) {
+  return (value - 0.5) * 2 * sceneHalfExtents(aspect).y;
+}
+
 export function normalizeTransformCenter(value: number) {
   if (value >= 0 && value <= 1) {
     return value * 2 - 1;

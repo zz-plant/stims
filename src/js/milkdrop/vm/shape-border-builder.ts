@@ -11,6 +11,8 @@ import {
   color,
   MAX_CUSTOM_SHAPE_SLOTS,
   type MutableState,
+  milkdropToSceneX,
+  milkdropToSceneY,
   SHAPECODE_PROPERTY_KEYS,
   type ShapeBuilderState,
 } from './shared';
@@ -21,12 +23,13 @@ const MAX_SHAPE_INSTANCES = 1024;
 export function shapeVisualFromLocals(
   key: string,
   locals: MutableState,
-  _signals: MilkdropRuntimeSignals,
+  signals: MilkdropRuntimeSignals,
 ): MilkdropShapeVisual {
+  const aspect = signals.aspect ?? 1;
   return {
     key,
-    x: ((locals.x ?? 0.5) - 0.5) * 2,
-    y: (0.5 - (locals.y ?? 0.5)) * 2,
+    x: milkdropToSceneX(locals.x ?? 0.5, aspect),
+    y: milkdropToSceneY(locals.y ?? 0.5, aspect),
     // The lower bound only guards against degenerate geometry. It has to stay
     // well below MilkDrop's typical instanced-dot radii (0.005-0.02), which an
     // aggressive floor would inflate into overlapping blobs.

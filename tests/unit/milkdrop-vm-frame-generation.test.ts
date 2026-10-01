@@ -49,6 +49,42 @@ describe('milkdrop vm frame generation', () => {
     expect(mesh.alpha).toBe(0);
   });
 
+  test('stretches the mesh overlay over the whole screen, not its centre square', () => {
+    const corners = {
+      density: 2,
+      points: [
+        { sourceX: -1, sourceY: -1, x: -1, y: -1 },
+        { sourceX: 1, sourceY: -1, x: 1, y: -1 },
+        { sourceX: -1, sourceY: 1, x: -1, y: 1 },
+        { sourceX: 1, sourceY: 1, x: 1, y: 1 },
+      ],
+      program: null,
+      signals: null,
+    };
+    const extents = (aspect: number) => {
+      const { positions } = buildMesh({
+        state: {},
+        meshField: corners,
+        aspect,
+      });
+      let maxX = 0;
+      let maxY = 0;
+      for (let index = 0; index < positions.length; index += 3) {
+        maxX = Math.max(maxX, Math.abs(positions[index] ?? 0));
+        maxY = Math.max(maxY, Math.abs(positions[index + 1] ?? 0));
+      }
+      return { maxX, maxY };
+    };
+
+    // the scene camera spans [-16/9, 16/9] x [-1, 1] on a 16:9 screen
+    const wide = extents(16 / 9);
+    const tall = extents(9 / 16);
+    expect(wide.maxX).toBeCloseTo(16 / 9, 5);
+    expect(wide.maxY).toBeCloseTo(1, 5);
+    expect(tall.maxX).toBeCloseTo(1, 5);
+    expect(tall.maxY).toBeCloseTo(16 / 9, 5);
+  });
+
   test('builds deterministic main-wave visuals from explicit inputs', () => {
     const signals = defaultSignalEnv();
     signals.time = 0.25;
