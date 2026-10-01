@@ -25,7 +25,7 @@ const milkdrop = {
   slug: 'milkdrop',
   title: 'MilkDrop Visualizer',
   description:
-    'MilkDrop-inspired browser visualizer with demo audio, hand-picked presets, live editing, and preset import/export.',
+    'Play and live-edit MilkDrop presets in your browser, with demo audio, hand-picked favorites, and .milk import/export.',
 };
 
 describe('generate-seo sitemap routes', () => {

@@ -2,12 +2,52 @@
 
 This document maps Stims' implemented engineering systems without turning scaffolding, optional services, or roadmap work into shipped-product claims.
 
+## System diagram
+
+Audio and preset inputs through the compiler, VM and renderer:
+
+```mermaid
+flowchart TB
+  subgraph InputLayer ["Audio & Preset Inputs"]
+    Audio["Audio Source<br/>demo · mic · tab · file · YouTube"]
+    Milk[".milk Preset<br/>catalog · import · live editor"]
+  end
+
+  subgraph ProcessingLayer ["Analysis & Compilation"]
+    Worklet["AudioWorklet Processor<br/>FFT · bands · transients · buffer pooling"]
+    Compiler["Preset Compiler & JIT<br/>EEL2 AST → IR → GLSL/WGSL"]
+  end
+
+  subgraph RuntimeLayer ["Execution & Graphics"]
+    VM["EEL2 Runtime VM<br/>per-frame · per-vertex · megabuf"]
+    Renderer["Dual-Backend Renderer<br/>WebGL2 Baseline · WebGPU Compute"]
+    Fallback["Automatic Failover & DRS<br/>adaptive density · quality ladder"]
+  end
+
+  subgraph OutputLayer ["Presentation & Verification"]
+    Canvas["Live 120/240Hz Canvas"]
+    Record["In-Browser Recording Beta<br/>(MediaRecorder)"]
+    Diff["Deterministic Capture<br/>→ projectM Parity Diff"]
+  end
+
+  Audio --> Worklet
+  Milk --> Compiler
+  Worklet --> VM
+  Compiler --> VM
+  VM --> Renderer
+  Renderer -.-> Fallback -.-> Renderer
+  Renderer --> Canvas
+  Canvas --> Record
+  Canvas --> Diff
+```
+
 ## 1. Preset compiler and VM — implemented
 
 - [`src/js/milkdrop/expression-jit.ts`](../src/js/milkdrop/expression-jit.ts) compiles preset equations into browser-executable functions.
 - [`src/js/milkdrop/vm.ts`](../src/js/milkdrop/vm.ts) and its focused modules model preset state, registers, custom waves and shapes, `megabuf`, and `gmegabuf` behavior.
 - [`src/js/milkdrop/compiler/ir.ts`](../src/js/milkdrop/compiler/ir.ts) provides a shared intermediate representation for runtime execution and backend-specific lowering.
-- Direct `.milk` import and export keep the authoring format visible to users instead of requiring a renderer-specific JSON representation.
+- Equations parse to an AST and the IR, which runs on an interpreter, the CPU JIT, or WebGPU compute shaders in WGSL. The 4 MB `megabuf` (per VM) and 4 MB `gmegabuf` (shared across preset switches) are kept in sync between CPU and GPU.
+- Direct `.milk` import and export keep the authoring format visible to users instead of requiring a renderer-specific JSON representation. There is no conversion step to run before a preset is usable, and no converted artifact to keep in sync with the original.
 
 Compilation and runtime stepping are necessary compatibility evidence. They do not, by themselves, prove visual fidelity.
 
@@ -22,12 +62,18 @@ state. The bounded 2026-08-24 result and its reproduction contract live in
 [`RUNTIME_PERFORMANCE.md`](./RUNTIME_PERFORMANCE.md); it is evidence for the
 measured stress case, not a universal FPS claim.
 
+Startup work is staged around the first paint: renderer-selection probes stay
+on the critical path, while telemetry, automation, and gamepad services load
+after the shell. The measured cold-load and deploy-build method lives in
+[the front-end performance audit](./FRONTEND_PERFORMANCE_BOTTLENECKS.md#latest-startup-and-deploy-build-evidence).
+
 ## 2. WebGL2 baseline and guarded WebGPU path — implemented, partially certified
 
 - WebGL2 remains the compatibility baseline.
 - [`src/js/core/renderer-capabilities.ts`](../src/js/core/renderer-capabilities.ts) probes browser support and records renderer decisions.
 - [`src/js/milkdrop/compiler/shader-execution-classification.ts`](../src/js/milkdrop/compiler/shader-execution-classification.ts) classifies shader programs before runtime selection.
 - WebGPU batching, descriptors, WGSL generation, and TSL feedback work live behind independent rollout flags and fallback rules.
+- Rendering pressure has an explicit fallback path: hardware-timed WebGPU pressure can trim render and feedback resolution continuously inside a quality tier, and sustained broader pressure steps down the discrete adaptive-quality ladder.
 
 The WebGPU path is not presented as broadly visually equivalent. Current certification status lives in [`src/data/milkdrop-parity/webgpu-certification-report.json`](../src/data/milkdrop-parity/webgpu-certification-report.json), and measured results require trusted projectM reference captures.
 
@@ -43,8 +89,9 @@ This product layer—not graphics API branding—is the primary differentiation 
 ## 4. Live preset editor — implemented
 
 - [`src/js/milkdrop/overlay/editor-panel.ts`](../src/js/milkdrop/overlay/editor-panel.ts) integrates CodeMirror with MilkDrop-oriented completions, snippets, diagnostics, and line navigation.
-- Live controls patch common values such as `zoom`, `warp`, `rot`, and `decay` in the active authoring session.
-- Import, edit, inspect, and export actions operate around the same running preset.
+- Live controls patch `zoom`, `warp`, `rot`, `decay`, `dx`, and `dy` in the active authoring session. If the preset's own equations overwrite a value every frame, the slider says so.
+- A/B snapshots: save the current state to slot A, keep editing in slot B, and switch between them with `Cmd/Ctrl+Shift+B` or the toolbar button.
+- Import, edit, inspect, and export actions operate around the same running preset, so a change is visible in the same session that found the problem.
 
 Optional edge-assisted fixes and blending are separate from the local editor contract and may require deployed API configuration.
 
@@ -53,6 +100,7 @@ Optional edge-assisted fixes and blending are separate from the local editor con
 - [`src/js/utils/audio/frequency-analyser-processor.ts`](../src/js/utils/audio/frequency-analyser-processor.ts) calculates waveform, band-energy, transient, and envelope data in an AudioWorklet when available.
 - [`src/js/core/audio-handler.ts`](../src/js/core/audio-handler.ts) coordinates demo, microphone, tab, YouTube, and local-file paths subject to browser support and permissions.
 - [`src/js/core/audio-gpu-texture.ts`](../src/js/core/audio-gpu-texture.ts) packs frequency and waveform data into a shared GPU texture allocation for renderer consumption.
+- Harmonic and percussive energy are separate signals, so presets can react to sustained tones and transients independently. This reads rhythm and melody apart; it does not separate instruments.
 
 Stem-oriented runtime identifiers were retired: the reserved zero-filled fields and a disconnected band-derived pseudo-stem calculation were removed rather than shipped as fake signals. Stem-aware reactivity returns only with real on-device separation (see the roadmap's platform-expansion prerequisites).
 
@@ -75,6 +123,8 @@ The bundled Generate panel now calls [`src/js/milkdrop/preset-generator.ts`](../
 - [`src/js/core/agent-api.ts`](../src/js/core/agent-api.ts) exposes session state and controls for headless verification.
 - `?agent=true` provides the canonical automation route.
 - Native projectM capture metadata, checked-in references, backend-aware browser captures, image diffs, and promoted measured results form the compatibility evidence chain.
+- Reference frames come from native projectM (C++, SDL2, OpenGL) rendered offscreen, with a sidecar file recording how each was made. Each preset's run-to-run variation is measured first (`bun run parity:noise`), so a diff has to exceed it before it counts, and frames are stepped on a fixed clock (`renderFrames({ holdAfterPump })`) so Stims and the reference compare the same frame.
+- A preset is visually certified only with a Stims capture on the requested backend, a provenance-checked projectM reference, an image diff within the declared tolerance, and promotion of that result into [`src/data/milkdrop-parity/measured-results.json`](../src/data/milkdrop-parity/measured-results.json). Compiling and running is tracked separately: [`tests/corpus/butterchurn-corpus-support.test.ts`](../tests/corpus/butterchurn-corpus-support.test.ts) compiles the whole Butterchurn pack for both backends and pins how many presets each one supports fully, partially, or not at all.
 - [`scripts/check-readme-claims.ts`](../scripts/check-readme-claims.ts) prevents the public README preset count and selected product claims from drifting beyond their implementation evidence.
 
 See [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) for the complete capture and promotion workflow.
