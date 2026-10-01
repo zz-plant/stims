@@ -198,6 +198,6 @@ The project now treats `/` as the canonical workspace route and `/milkdrop/` as 
 
 ## Release Checklist
 
-- Update [`CHANGELOG.md`](../CHANGELOG.md) with user-facing notes for the release.
-- Tag the version in Git after merging (e.g., `git tag vX.Y.Z && git push origin --tags`).
+- In the release PR, move the `[Unreleased]` entries of [`CHANGELOG.md`](../CHANGELOG.md) under a new `## [X.Y.Z] - date` heading, add a `## Release vX.Y.Z (date)` section with the highlights to [`RELEASE_NOTES.md`](./RELEASE_NOTES.md), and set `version` in `package.json` to `X.Y.Z`. `tests/unit/release-notes.test.ts` fails the PR if the version has no notes.
+- Tag the merge commit after merging: `git tag vX.Y.Z <merge-sha> && git push origin vX.Y.Z`. The [Release workflow](../.github/workflows/release.yml) then publishes a GitHub Release with that version's `RELEASE_NOTES.md` section (`bun run release:notes -- vX.Y.Z` prints the same text locally). It refuses a tag that disagrees with `package.json` or has no notes. A bare tag without the workflow is not a Release, which is why v1.1.0–v1.3.0 never showed on the repo page.
 - Smoke test the production URL at [https://toil.fyi](https://toil.fyi) after deploy (basic load, a few toys, and audio input checks).

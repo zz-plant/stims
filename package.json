@@ -1,7 +1,7 @@
 {
   "name": "stims",
   "description": "Play and live-edit MilkDrop presets in your browser: original .milk files, any audio source, shareable links.",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "type": "module",
   "homepage": "https://toil.fyi",
   "repository": {
@@ -162,6 +162,7 @@
     "previews:sync": "bun run scripts/sync-previews-r2.ts",
     "previews:audit": "bun run scripts/audit-production-previews.ts",
     "profile:frame": "bun run scripts/profile-frame.ts",
+    "release:notes": "bun run scripts/release-notes.ts",
     "scripts:list": "bun run scripts/scripts-list.ts",
     "serve:dist": "bun run scripts/serve-dist.ts",
     "session:codex": "bash scripts/codex-session.sh",
