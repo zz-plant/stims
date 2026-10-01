@@ -30,7 +30,12 @@ describe('shell orchestration route commits', () => {
     agentMode: false,
   };
 
-  function render(commitRoute: (next: unknown) => void) {
+  function render(
+    commitRoute: (next: unknown) => void,
+    overrides: Partial<
+      Parameters<typeof useWorkspaceShellOrchestration>[0]
+    > = {},
+  ) {
     let api: ReturnType<typeof useWorkspaceShellOrchestration> | null = null;
     function Host() {
       api = useWorkspaceShellOrchestration({
@@ -50,6 +55,7 @@ describe('shell orchestration route commits', () => {
         updateEditorSource: () => {},
         stageRef: { current: null },
         youtubePreviewRef: { current: null },
+        ...overrides,
       });
       return null;
     }
@@ -95,5 +101,67 @@ describe('shell orchestration route commits', () => {
 
     api.handleAudioStop();
     expect(applyTo(commit, newer)).toEqual({ ...newer, audioSource: null });
+  });
+
+  /**
+   * The start path reports what happened, not just a status line: the agent
+   * bridge used to read the status log and wait out a timeout to learn that
+   * a start had failed.
+   */
+  describe('audio start outcome', () => {
+    test('a started source says so', async () => {
+      const started: string[] = [];
+      const api = render(() => {}, {
+        startAudioSource: async (request) => {
+          started.push(request.source);
+        },
+      });
+
+      expect(await api.handleAudioStart('demo')).toEqual({
+        ok: true,
+        source: 'demo',
+      });
+      expect(started).toEqual(['demo']);
+    });
+
+    test('a failed start carries the message the visitor saw', async () => {
+      const shown: Array<string | null> = [];
+      const api = render(() => {}, {
+        setStatusMessage: (message) => shown.push(message),
+        startAudioSource: async () => {
+          throw new Error('The audio device went away.');
+        },
+      });
+
+      expect(await api.handleAudioStart('demo')).toEqual({
+        ok: false,
+        source: null,
+        message: 'The audio device went away.',
+      });
+      expect(shown.at(-1)).toBe('The audio device went away.');
+    });
+
+    test('a second start while one is running is refused, not dropped', async () => {
+      let release: () => void = () => {};
+      let reached: () => void = () => {};
+      const inFlight = new Promise<void>((resolve) => {
+        reached = resolve;
+      });
+      const api = render(() => {}, {
+        startAudioSource: () =>
+          new Promise<void>((resolve) => {
+            release = resolve;
+            reached();
+          }),
+      });
+
+      const first = api.handleAudioStart('demo');
+      await inFlight;
+      const second = await api.handleAudioStart('demo');
+      release();
+
+      expect(second.ok).toBe(false);
+      expect((await first).ok).toBe(true);
+    });
   });
 });

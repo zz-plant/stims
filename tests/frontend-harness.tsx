@@ -147,7 +147,11 @@ export function makeEngineValue(
     handlePreviousPreset: noop,
     handlePlayPreset: asyncNoop,
     handleShufflePreset: noop,
-    handleAudioStart: asyncNoop,
+    handleAudioStart: async () => ({
+      ok: false,
+      source: null,
+      message: 'Audio is not wired in this test.',
+    }),
     handleAudioStop: noop,
     handleTogglePlayback: noop,
     loadRecentYouTubeVideo: noop,

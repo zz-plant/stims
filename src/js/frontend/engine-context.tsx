@@ -1,6 +1,10 @@
 import { createContext, type ReactNode, useContext } from 'react';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
-import type { PresetCatalogEntry, SessionRouteState } from './contracts.ts';
+import type {
+  AudioStartOutcome,
+  PresetCatalogEntry,
+  SessionRouteState,
+} from './contracts.ts';
 import type { ForwardedEngineActions } from './engine/engine-forwarding.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { StarterPreset } from './workspace-helpers.ts';
@@ -64,7 +68,7 @@ export interface EngineContextValue extends ForwardedEngineActions {
   handleAudioStart: (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
     deviceId?: string,
-  ) => Promise<void>;
+  ) => Promise<AudioStartOutcome>;
   handleAudioStop: () => void;
   /** Holds or releases the stage without ending the session (Space). */
   handleTogglePlayback: () => void;
