@@ -181,7 +181,25 @@ export type BlendGateDecision = {
   canBlend: boolean;
   /** Why not, for the status line. Null when the blend is allowed. */
   refusal: 'workload' | 'frame-pressure' | 'thermal' | null;
+  /**
+   * Whether the blend may run live — the outgoing preset still stepping and
+   * rendering on its own deck — rather than dissolving a snapshot. A live
+   * blend runs two whole presets, VM and feedback chain, for its duration,
+   * so it needs a frame already inside its budget and a device that is not
+   * warming up; anything less still blends, out of a snapshot.
+   */
+  canLiveBlend: boolean;
 };
+
+/**
+ * How far into its frame budget the renderer may run and still be asked to
+ * run a live blend. A live blend steps and renders a second preset, which
+ * roughly doubles the frame for its duration, so it is allowed only where
+ * the doubled frame still fits. Anything between that and the blend gate's
+ * own tolerance blends out of a snapshot — and a switch made during a live
+ * blend, whose frames are the doubled ones, still clears that gate.
+ */
+const LIVE_BLEND_FRAME_BUDGET_TOLERANCE = 0.5;
 
 /**
  * Decides whether the frame currently on screen can be crossfaded out of.
@@ -195,21 +213,26 @@ export function evaluateBlendGate(
   pressure: BlendPressureSnapshot = null,
 ): BlendGateDecision {
   if (estimateFrameBlendWorkload(frameState) >= MAX_BLEND_WORKLOAD) {
-    return { canBlend: false, refusal: 'workload' };
+    return { canBlend: false, refusal: 'workload', canLiveBlend: false };
   }
   if (pressure?.thermalState === 'throttling') {
-    return { canBlend: false, refusal: 'thermal' };
+    return { canBlend: false, refusal: 'thermal', canLiveBlend: false };
   }
   const rolling = pressure?.rollingAverageFrameMs ?? null;
+  const budget = pressure?.frameBudgetMs ?? 0;
   if (
     rolling !== null &&
-    pressure !== null &&
-    pressure.frameBudgetMs > 0 &&
-    rolling > pressure.frameBudgetMs * BLEND_FRAME_BUDGET_TOLERANCE
+    budget > 0 &&
+    rolling > budget * BLEND_FRAME_BUDGET_TOLERANCE
   ) {
-    return { canBlend: false, refusal: 'frame-pressure' };
+    return { canBlend: false, refusal: 'frame-pressure', canLiveBlend: false };
   }
-  return { canBlend: true, refusal: null };
+  const canLiveBlend =
+    pressure?.thermalState !== 'elevated' &&
+    (rolling === null ||
+      budget <= 0 ||
+      rolling <= budget * LIVE_BLEND_FRAME_BUDGET_TOLERANCE);
+  return { canBlend: true, refusal: null, canLiveBlend };
 }
 
 export function isEditablePreset(

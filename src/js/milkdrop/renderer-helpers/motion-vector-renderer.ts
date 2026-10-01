@@ -94,6 +94,7 @@ export function renderMotionVectors({
   previousFrame,
   blendMix = 1,
   cpuGroup,
+  cpuLayer = { target: 'motion-vectors', motionVectors: payload.motionVectors },
   proceduralObject,
   clearGroup,
   renderLineVisualGroup,
@@ -105,6 +106,16 @@ export function renderMotionVectors({
   previousFrame?: MilkdropRenderPayload['frameState'] | null;
   blendMix?: number;
   cpuGroup: Group;
+  /**
+   * What the CPU path draws, and into which batched target. The blend layer
+   * draws the outgoing preset's vectors into its own target; drawing the
+   * payload's (incoming) vectors under the main layer's key put the incoming
+   * preset's vectors in the outgoing layer and overwrote the main layer's.
+   */
+  cpuLayer?: {
+    target: 'motion-vectors' | 'blend-motion-vectors';
+    motionVectors: MilkdropRenderPayload['frameState']['motionVectors'];
+  };
   // Material is Line/Shader on WebGL and a NodeMaterial on WebGPU — this
   // function swaps in the latter a few lines below. The union said otherwise
   // and the assignment was simply unchecked while this layer was untyped.
@@ -191,9 +202,9 @@ export function renderMotionVectors({
 
   proceduralObject.visible = false;
   renderLineVisualGroup(
-    'motion-vectors',
+    cpuLayer.target,
     cpuGroup,
-    payload.motionVectors,
+    cpuLayer.motionVectors,
     alphaMultiplier,
   );
 }

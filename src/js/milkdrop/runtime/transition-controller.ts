@@ -42,6 +42,16 @@ const PRESENTABLE_HOLD_ALPHA = 0.35;
 /** Hard cap on how long the presentable hold may extend a blend. */
 const PRESENTABLE_HOLD_MAX_SECONDS = 2;
 
+/**
+ * How long a blend may sit suspended by the per-frame gates before it gives
+ * up. A spike — a beat-driven burst of geometry — gates a few frames and
+ * the blend resumes; an incoming preset heavier than the workload gate on
+ * its own gates every frame of its own blend, and without a cap held the
+ * transition open with no cover until the next switch, along with a live
+ * crossfade's second deck.
+ */
+const MAX_SUSPENDED_SECONDS = 1;
+
 export type MilkdropTransitionController = ReturnType<
   typeof createMilkdropTransitionController
 >;
@@ -52,6 +62,8 @@ export function createMilkdropTransitionController() {
   let durationSeconds = 0;
   let elapsedSeconds = 0;
   let holdSeconds = 0;
+  /** Consecutive sim time the per-frame gates have suspended the blend. */
+  let suspendedSeconds = 0;
   let lastTickAt: number | null = null;
   /** Hand-driven deck position, 0 = outgoing preset, 1 = incoming. */
   let manualPosition = 0;
@@ -80,6 +92,7 @@ export function createMilkdropTransitionController() {
     durationSeconds = 0;
     elapsedSeconds = 0;
     holdSeconds = 0;
+    suspendedSeconds = 0;
     lastTickAt = null;
     manualPosition = 0;
     manualHoldStartedAt = null;
@@ -113,6 +126,7 @@ export function createMilkdropTransitionController() {
         durationSeconds = seconds;
         elapsedSeconds = 0;
         holdSeconds = 0;
+        suspendedSeconds = 0;
         lastTickAt = null;
         record('blend-started', `${seconds.toFixed(2)}s`);
       } else {
@@ -228,9 +242,16 @@ export function createMilkdropTransitionController() {
       lastTickAt = now;
 
       if (!canBlendThisFrame) {
-        // Suspended: no cover this frame, no progress consumed.
+        // Suspended: no cover this frame, no progress consumed — for a
+        // while (MAX_SUSPENDED_SECONDS).
+        suspendedSeconds += delta;
+        if (suspendedSeconds > MAX_SUSPENDED_SECONDS) {
+          record('cancelled', 'gated');
+          settle('gated');
+        }
         return null;
       }
+      suspendedSeconds = 0;
 
       elapsedSeconds += delta;
       let alpha = 1 - elapsedSeconds / durationSeconds;
@@ -268,6 +289,27 @@ export function createMilkdropTransitionController() {
         record('cancelled', reason);
       }
       settle(reason);
+    },
+
+    /**
+     * Records something the caller did with the blend — a live crossfade
+     * splitting into two decks or collapsing back — in the same log as the
+     * phase changes, so one place answers "what did that switch do".
+     */
+    annotate(event: string, detail?: string) {
+      record(event, detail);
+    },
+
+    /**
+     * How much of the outgoing picture the blend stands at: the timed
+     * blend's alpha, the fader's inverse, or 0 between transitions. A gated
+     * frame draws no cover but leaves this where the blend stands, which is
+     * what a snapshot of the screen mid-blend has to be taken at.
+     */
+    getCoverAlpha(): number {
+      if (phase === 'manual') return 1 - manualPosition;
+      if (phase === 'blending' && blendState) return blendState.alpha;
+      return 0;
     },
 
     getPhase: () => phase,

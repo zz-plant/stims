@@ -92,6 +92,19 @@ function resolveGlobalBuffer(preset: MilkdropCompiledPreset) {
   return sharedGlobalBuffer;
 }
 
+/**
+ * Fields that close over their own VM instance — the variables proxy and the
+ * callbacks bound for the frame builders. handOffRunningPreset swaps every
+ * other field between two VMs; these must stay put, or one VM's frame would
+ * read the other's state. A field added later that captures `this` belongs
+ * here too, and the hand-off tests in milkdrop-vm.test.ts fail if it is not.
+ */
+const INSTANCE_BOUND_FIELDS: ReadonlySet<string> = new Set([
+  'variablesProxy',
+  'frameCallbacks',
+  'nextRandom',
+]);
+
 class MilkdropPresetVM implements MilkdropVM {
   private preset: MilkdropCompiledPreset;
   /**
@@ -291,6 +304,42 @@ class MilkdropPresetVM implements MilkdropVM {
     this.preset = preset;
     this.inspectableNames = null;
     this.reset();
+  }
+
+  /**
+   * Starts `next` here from a clean init and returns a new VM that carries
+   * on with the preset this one was running, mid-flight — so a live
+   * crossfade can keep stepping the outgoing preset while everything that
+   * holds this VM moves on to the incoming one.
+   *
+   * The two swap their state wholesale instead of copying it: much of it is
+   * reused buffers that frame states still point into, and a copy would
+   * also cost the megabuf's full size on every switch. Fields bound to their
+   * own instance stay where they are (see INSTANCE_BOUND_FIELDS); they read
+   * `this` when called, so they follow the swapped state. Host settings —
+   * detail scale, backend, optimisation flags — are set on the new VM first,
+   * so they come out of the swap unchanged on both.
+   */
+  handOffRunningPreset(next: MilkdropCompiledPreset): MilkdropPresetVM {
+    const handedOff = new MilkdropPresetVM(next, this.webgpuOptimizationFlags);
+    handedOff.detailScale = this.detailScale;
+    handedOff.renderBackend = this.renderBackend;
+    const self = this as unknown as Record<string, unknown>;
+    const other = handedOff as unknown as Record<string, unknown>;
+    for (const key of Object.keys(self)) {
+      if (INSTANCE_BOUND_FIELDS.has(key)) continue;
+      const value = self[key];
+      self[key] = other[key];
+      other[key] = value;
+    }
+    return handedOff;
+  }
+
+  /** Releases what a VM holds outside the JS heap (the GPU compute runner).
+   * The host VM lives as long as the runtime; a handed-off one is dropped
+   * when its crossfade ends. */
+  dispose() {
+    this.gpuRunner.dispose();
   }
 
   private inspectableNames: string[] | null = null;
