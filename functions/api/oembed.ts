@@ -5,6 +5,7 @@
 
 import type { OEmbedResponse } from '../../src/js/core/edge-contracts.ts';
 import { loadPresetMeta } from '../shared/preset-meta.ts';
+import { presentTitle } from '../shared/preset-title.ts';
 
 interface EventContext {
   request: Request;
@@ -93,10 +94,12 @@ export async function onRequest(context: EventContext): Promise<Response> {
   );
   const entry = presetId ? presetMeta?.[presetId] : null;
 
-  const title = entry
-    ? entry[0]
-    : 'Stims — Play and Edit MilkDrop Presets in Your Browser';
   const author = entry?.[1];
+  // preset-meta titles carry the author as a prefix ("Rovastar - Parallel
+  // Universe"); shown raw next to the byline they named the author twice.
+  const title = entry
+    ? presentTitle(entry[0], author)
+    : 'Stims — Play and Edit MilkDrop Presets in Your Browser';
   const authorCredit = author ? ` by ${author}` : '';
 
   const embedWidth = clampEmbedDimension(

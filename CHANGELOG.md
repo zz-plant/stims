@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-_Current release status: actively developed. Latest release: **v1.3.0**._
+_Current release status: actively developed. Latest release: **v1.4.0**._
 
 ## [Unreleased]
 
+### Planned — studio first, parity as a floor
+
+- **Remix studio**: dependable undo/redo and named snapshots, side-by-side A/B against the source preset, remix provenance retained in exported `.milk`.
+- **Creator-grade export**: deterministic frame pacing, loop-duration controls, and codec/AV-sync verification for 1080p and 4K recording.
+- **Live EEL preset editor** with real-time expression AST diagnostics.
+- Parity stays a maintenance floor, not a frontier: projectM WebGPU compute-shader lowering and the AudioWorklet analyzer migration proceed only as they serve the compatibility labels and recording path above.
+
+## [1.4.0] - 2026-10-01
+
 ### Added
 
+- Pushing a `vX.Y.Z` tag publishes a GitHub Release: `.github/workflows/release.yml` runs `bun run release:notes`, which takes that version's section of `docs/RELEASE_NOTES.md` and refuses a tag that disagrees with `package.json` or has no notes. Versions 1.1.0 through 1.3.0 were written up but never tagged, so none of them appeared on the repo page.
 - Pause. Space and the dock's transport button hold the picture and release it; the preset, history and audio session stay put. Stopping audio — which unmounts the engine and returns to the start page — moves to the menu as "Stop audio and go back to start". `EngineSnapshot.playbackPaused` and `__stims_agent.getState().playbackPaused` expose the state; `toggle-playback` is the palette action.
 - The preset-tuning keys are listed, rebindable and announced: H (blend/cut), W / Shift+W (waveform), I / Shift+I (zoom), O / Shift+O (warp), J / Shift+J (wave scale), `<` / `>` (rotation) are registry bindings dispatching `nudge-*`, `wave-mode-*` and `toggle-transition-mode` palette actions (`frontend/preset-nudges.ts`), each reporting the value it landed on. They replace the MilkDrop runtime's document-level key handler (`ui-bridge.ts`), a leftover of the standalone overlay that in the shell was undocumented and reported only to the agent debug snapshot. Q (echo zoom) is not carried over — the canvas holds Q as a performance key — and R, which duplicated N, is free; Backspace stays as an alias of Previous.
 - Quick-select shows its numbers: the first nine cards in Browse wear the digit that plays them (and `aria-keyshortcuts`), the shortcut reads the same list the panel is showing, and with Browse closed the digits say to open it instead of playing an unpredictable preset.
@@ -34,6 +44,7 @@ _Current release status: actively developed. Latest release: **v1.3.0**._
 
 ### Fixed
 
+- oEmbed titles name a preset's author once. `functions/api/oembed.ts` used the raw catalog title, which already leads with the author, next to its own byline ("Krash & Rovastar - Cerebral Demons (Stars Remix) by Krash & Rovastar"); it now formats titles with `presentTitle()`, as the link-preview middleware does.
 - The keyboard is no longer treated as a TV remote on every page. `gamepad-navigation.ts` handled arrow keys, Enter and Backspace/Escape as D-pad input wherever it was installed — so on a desktop each → that changed the preset also walked DOM focus one element along (from the stage, which is not in the focusable list, that meant the skip link, left sitting visible over the visuals), and each Backspace re-dispatched a synthetic Escape that closed whatever panel was open. Keyboard-as-remote is now an explicit option, on only for smart-TV / leanback devices; real gamepads are polled as before.
 - Closing a panel no longer reverts a preset change committed in the same tick. `updatePanel`, `handlePresetSelection`, `handleBrowseRecovery` and `handleAudioStop` spread the `routeState` their render captured, rewriting every other field to that render's values; `commitRoute` takes an updater and each changes only what it owns. With the point above this was Backspace in Browse: the previous preset, the panel closing, and the preset put straight back as a 2.5 s blend of itself.
 - The quick-select digits are worn only while they answer. Opening Browse focuses the search field, where a digit is a search; the badges showed regardless, so pressing 1 wrote "1" into the query and filtered the list. They hide while the field has focus and return the moment focus leaves it; the shortcut listing says so.
@@ -48,13 +59,6 @@ _Current release status: actively developed. Latest release: **v1.3.0**._
 - Preset transitions no longer invalidate the frame's WebGPU command buffer (`2528bfa7`).
 - Removed duplicate `.milk` files and normalized Geiss/Aderrasi catalog metadata (`7cc92dae`); search index re-embeds presets whose description changed (`03ba5f93`).
 - Stopped three tests failing on the CI runner and nowhere else (`900a3617`).
-
-### Planned — studio first, parity as a floor
-
-- **Remix studio**: dependable undo/redo and named snapshots, side-by-side A/B against the source preset, remix provenance retained in exported `.milk`.
-- **Creator-grade export**: deterministic frame pacing, loop-duration controls, and codec/AV-sync verification for 1080p and 4K recording.
-- **Live EEL preset editor** with real-time expression AST diagnostics.
-- Parity stays a maintenance floor, not a frontier: projectM WebGPU compute-shader lowering and the AudioWorklet analyzer migration proceed only as they serve the compatibility labels and recording path above.
 
 ## [1.3.0] - 2026-07-29
 
@@ -125,7 +129,8 @@ _Current release status: actively developed. Latest release: **v1.3.0**._
 - Initial release of the Stim Webtoys Library featuring [Aurora Painter](./toy.html?toy=aurora-painter), [Defrag Visualizer](./toy.html?toy=defrag), [Multi-Capability Visualizer](./toy.html?toy=multi), and [Audio Light Show](./toy.html?toy=lights).
 - Core execution engine supporting Vite build, preview, Bun runtime, and test execution.
 
-[Unreleased]: https://github.com/zz-plant/stims/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/zz-plant/stims/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/zz-plant/stims/releases/tag/v1.4.0
 [1.3.0]: https://github.com/zz-plant/stims/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/zz-plant/stims/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/zz-plant/stims/compare/v1.0.0...v1.1.0
