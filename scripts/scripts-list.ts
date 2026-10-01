@@ -198,8 +198,8 @@ const ROUTES: Array<{ when: string[]; run: string[]; note: string }> = [
   },
   {
     when: ['not reacting', 'audio', 'reactivity', 'music', 'beat', 'quiet'],
-    run: ['lab:reactivity', 'lab:visual'],
-    note: 'lab:reactivity is ~15s and needs no browser; lab:visual (1-3 min) confirms the reaction is visible in pixels, not just in the numbers.',
+    run: ['lab:dataflow', 'lab:reactivity', 'lab:visual'],
+    note: 'lab:dataflow reads the equations and says instantly which audio can reach which control or drawn program (dead code and disabled waves included); lab:reactivity (~15s, no browser) measures how strongly it reacts; lab:visual (1-3 min) confirms the reaction is visible in pixels, not just in the numbers.',
   },
   {
     when: [
@@ -322,8 +322,21 @@ const ROUTES: Array<{ when: string[]; run: string[]; note: string }> = [
       'remember',
       'audio history',
     ],
-    run: ['lab:dataset', 'lab:memory-probe', 'lab:vj-baseline'],
-    note: 'lab:dataset exports audio and per-frame preset state as NumPy; lab:memory-probe measures how long each preset control remembers a bump in the audio; lab:vj-baseline is the audio R² a learned model has to beat, split by memory class with --memory. docs/guides/training-models.md walks through them.',
+    run: ['lab:dataset', 'lab:memory-probe', 'lab:vj-baseline', 'lab:dataflow'],
+    note: 'lab:dataset exports audio and per-frame preset state as NumPy; lab:memory-probe measures how long each preset control remembers a bump in the audio; lab:vj-baseline is the audio R² (and event-timing F1) a learned model has to beat, split by memory class with --memory; lab:dataflow labels which signals each column reads, from the equations. docs/guides/training-models.md walks through them.',
+  },
+  {
+    when: [
+      'edit model',
+      'preset editing',
+      'remix',
+      'fix shader',
+      'generate preset',
+      'llm',
+      'eval',
+    ],
+    run: ['lab:edit-eval', 'lab:remix-pairs', 'lab:shader-fix-bench'],
+    note: 'lab:edit-eval scores a preset-editing model on directed edits derived from human remixes (validity, instructions, behaviour, and the audio edits it reproduces, read from the equations); lab:remix-pairs is the underlying (parent, remix, changes) data; lab:shader-fix-bench scores a shader-fixing model. Tasks come from held-out remix families.',
   },
   {
     when: ['benchmark', 'butterchurn', 'speed test', 'fps compare'],
