@@ -18,6 +18,7 @@ import {
 } from '../utils/media/share-link.ts';
 import type {
   AudioSource,
+  AudioStartOutcome,
   PanelState,
   PresetCatalogEntry,
   SessionRouteState,
@@ -378,11 +379,23 @@ export function useWorkspaceShellOrchestration({
     });
   };
 
+  /**
+   * Starts `source` and says whether it is now playing. Failures are still
+   * shown to the visitor as a status message; the outcome hands the same
+   * message to callers that report on their own (the agent bridge), which
+   * otherwise had to read the status log and wait out a timeout.
+   */
   const handleAudioStart = async (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
     deviceId?: string,
-  ) => {
-    if (audioStartInProgressRef.current) return;
+  ): Promise<AudioStartOutcome> => {
+    if (audioStartInProgressRef.current) {
+      return {
+        ok: false,
+        source: null,
+        message: 'Another audio source is still starting.',
+      };
+    }
     audioStartInProgressRef.current = true;
 
     // Starting any other source replaces file playback, and the file element
@@ -447,15 +460,18 @@ export function useWorkspaceShellOrchestration({
               launchState: demoRouteState,
             });
             setStatusMessage(IN_APP_BROWSER_LIMITED_MIC_MESSAGE);
-            return;
+            return {
+              ok: false,
+              source: 'demo',
+              message: IN_APP_BROWSER_LIMITED_MIC_MESSAGE,
+            };
           }
 
-          setStatusMessage(
-            insecure
-              ? 'Microphone needs a secure connection. Open this site over HTTPS and try again.'
-              : 'Microphone capture is not available in this browser.',
-          );
-          return;
+          const message = insecure
+            ? 'Microphone needs a secure connection. Open this site over HTTPS and try again.'
+            : 'Microphone capture is not available in this browser.';
+          setStatusMessage(message);
+          return { ok: false, source: null, message };
         }
 
         let permissionStream: MediaStream;
@@ -473,7 +489,11 @@ export function useWorkspaceShellOrchestration({
               launchState: demoRouteState,
             });
             setStatusMessage(IN_APP_BROWSER_LIMITED_MIC_MESSAGE);
-            return;
+            return {
+              ok: false,
+              source: 'demo',
+              message: IN_APP_BROWSER_LIMITED_MIC_MESSAGE,
+            };
           }
 
           const errName =
@@ -515,13 +535,13 @@ export function useWorkspaceShellOrchestration({
         if (processingWarning) {
           setStatusMessage(processingWarning);
         }
-        return;
+        return { ok: true, source };
       }
 
       if (source === 'demo') {
         commitRoute(nextRouteState);
         await startAudioSource({ source, launchState: nextRouteState });
-        return;
+        return { ok: true, source };
       }
 
       const { captureDisplayAudioStream } = await import(
@@ -550,10 +570,12 @@ export function useWorkspaceShellOrchestration({
         cropTarget: youtubePreviewRef.current,
         launchState: nextRouteState,
       });
+      return { ok: true, source };
     } catch (error) {
-      setStatusMessage(
-        error instanceof Error ? error.message : 'Audio start failed.',
-      );
+      const message =
+        error instanceof Error ? error.message : 'Audio start failed.';
+      setStatusMessage(message);
+      return { ok: false, source: null, message };
     } finally {
       audioStartInProgressRef.current = false;
     }
