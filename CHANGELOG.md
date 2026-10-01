@@ -9,12 +9,14 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 ### Added
 
 - The Release workflow can be run from the Actions tab on `main`, for anyone who cannot push tags: it tags a commit on `main` (by default its head) as `v<that commit's package.json version>` and publishes the same notes a tag push would. It refuses a commit that is not on `main`, or a tag that already points at another commit.
+- The Tune pane says which audio drives each control. When the preset's equations recompute a field, its chip names the signals that reach it (`eq · bass`, all of them in the tooltip and accessible name), or says no audio does. It reads the static dataflow analysis (`src/js/milkdrop/preset-dataflow.ts`) of the compile on stage. So it follows a signal through `q` variables, persistent state and per-pixel equations, works before any music plays, and reruns only when the equations change (`dataflowSignature()`), not on every fader move.
 
 ### Changed
 
 - Every public surface now tells the same story about what Stims is and what is new in it. [`docs/LINEAGE_AND_CREDITS.md`](./docs/LINEAGE_AND_CREDITS.md#what-stims-contributes) states the three contributions: per-pixel equations on the GPU, held to the CPU's answer by differential fuzzing; fidelity measured against native projectM; and the preset corpus analysed as programs. The README, both `llms` files and the comparison page repeat them. Running presets in a browser (Butterchurn was first) and editing them live (MilkDrop 2 had an editor) are no longer presented as new.
 - `llms.txt` and `llms-full.txt` drop the "high-performance" and AI-first framing, the `?tweak=` flag and `toil:apply_tweak` message (neither does anything), and catalog fields that do not exist; the model-backed API routes are marked optional. The home screen's tagline names MilkDrop, the MCP endpoint stops calling itself "Stim Webtoys", and "MilkDrop-inspired" is gone from the docs.
 - The compiler case study is deleted: its IR type, JIT output and WGSL kernel were invented, it described a dead-store pass that does not exist, and it credited the browser MilkDrop to a WebAssembly projectM port instead of Butterchurn. Its accurate parts are in [`docs/TECHNICAL_ACHIEVEMENTS.md`](./docs/TECHNICAL_ACHIEVEMENTS.md), which also now says the per-frame compute VM is off by default and documents the corpus analysis.
+- The start page's tagline and explainer say what you can do with a preset: play it, see what moves it, and change it while it plays. `/learn/milkdrop-online/` drops "Winamp's Visualizer in Your Browser" from its title, which `docs/LINEAGE_AND_CREDITS.md` asks public copy to avoid, and the agent instructions under `.github/` drop "MilkDrop-inspired".
 
 ### Planned — studio first, parity as a floor
 

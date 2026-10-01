@@ -1,6 +1,6 @@
 # Agent Guidelines (Essentials)
 
-Stims is a browser-native MilkDrop-inspired visualizer built with Three.js/WebGL for responsive, audio-reactive visual play.
+Stims is a browser-native app for playing and live-editing MilkDrop presets, built with Three.js/WebGL for responsive, audio-reactive visual play.
 
 ## Quick start (yes, read this first)
 

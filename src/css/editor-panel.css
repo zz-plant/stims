@@ -827,6 +827,8 @@ html.light .stims-editor {
   font-size: 0.6875rem;
   line-height: 1.5;
   letter-spacing: 0.02em;
+  /* "eq · bass_att +1" reads as one token; a wrap would split it. */
+  white-space: nowrap;
   cursor: default;
 }
 

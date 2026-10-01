@@ -93,7 +93,7 @@ For someone using Stims, this workspace is what separates it from Butterchurn an
 ## 4. Live preset editor — implemented
 
 - [`src/js/milkdrop/overlay/editor-panel.ts`](../src/js/milkdrop/overlay/editor-panel.ts) integrates CodeMirror with MilkDrop-oriented completions, snippets, diagnostics, and line navigation.
-- Live controls patch `zoom`, `warp`, `rot`, `decay`, `dx`, and `dy` in the active authoring session. If the preset's own equations overwrite a value every frame, the slider says so.
+- Live controls patch `zoom`, `warp`, `rot`, `decay`, `dx`, and `dy` in the active authoring session. If the preset's own equations overwrite a value every frame, the slider says so, and names the audio that reaches it (`eq · bass`). That comes from the static dataflow analysis in [`src/js/milkdrop/preset-dataflow.ts`](../src/js/milkdrop/preset-dataflow.ts), so it follows a signal through `q` variables, persistent state and the per-pixel program, and needs no music playing. The analysis reruns only when the equations change, not on every fader move.
 - A/B snapshots: save the current state to slot A, keep editing in slot B, and switch between them with `Cmd/Ctrl+Shift+B` or the toolbar button.
 - Import, edit, inspect, and export actions operate around the same running preset, so a change is visible in the same session that found the problem.
 
@@ -144,7 +144,7 @@ See [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) for
 
 - [`src/js/milkdrop/preset-dataflow.ts`](../src/js/milkdrop/preset-dataflow.ts) interprets a compiled preset over dependency sets instead of numbers, following the VM's own reset, persistence and shared-`rand()` rules. `bun run lab:dataflow -- --all` labels every preset in the lab corpus by which audio signals reach each control and each drawn program.
 - Checked against `lab:dataset` exports of 2,445 held-out presets, one of 215,160 cells varied with the song where the analysis found no audio path (a documented 5e-4 wobble). It is conservative by design, so precision is lower: 11,797 of the 13,532 cells it marks as audio-driven actually varied.
-- The catalog's quality score and its `collection:audio-reactive` tag both read its tiers.
+- The catalog's quality score and its `collection:audio-reactive` tag both read its tiers, and the editor's Tune pane reads it per control for the preset on stage ([§4](#4-live-preset-editor--implemented)).
 - `lab:dataset`, `lab:vj-baseline`, `lab:memory-probe`, `lab:edit-eval` and `lab:shader-fix-bench` turn the corpus into training data and evaluations, split by remix family so near-copies never straddle train and test. The findings, including why gradient-boosted trees beat every network tried, are in [Training and evaluating models](./guides/training-models.md).
 
 ## Foundations that are not shipped workflows

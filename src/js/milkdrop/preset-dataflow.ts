@@ -120,8 +120,15 @@ export type PresetDataflow = {
   /** The audio signals reaching what each drawn program draws (its warp,
    * position and colour outputs, not its temporaries): the per-pixel mesh,
    * and every enabled custom wave and shape (by index; disabled ones are
-   * empty). A wave's per-point `value1`/`value2` count. */
-  drawnAudio: { perPixel: string[]; waves: string[][]; shapes: string[][] };
+   * empty). A wave's per-point `value1`/`value2` count. `perPixelOutputs`
+   * splits the mesh's signals by the control each one reaches, for the
+   * controls the per-pixel program writes. */
+  drawnAudio: {
+    perPixel: string[];
+    perPixelOutputs: Map<string, string[]>;
+    waves: string[][];
+    shapes: string[][];
+  };
 };
 
 const union = (...sets: ReadonlyArray<Atoms>): Atoms => {
@@ -448,22 +455,30 @@ export function analyzePresetDataflow(
   // Audio that reaches what a drawn program draws: its outputs only, so a
   // temporary nothing draws carries nothing. The blocks run in order in one
   // pass, so a wave's per-frame values reach its per-point code.
-  const blockAudio = (
+  const outputAudio = (
     outputs: ReadonlySet<string>,
     ...blocks: MilkdropProgramBlock[]
   ) => {
     const pass = runBlock(...blocks);
-    const atoms = new Set<string>();
+    const byOutput = new Map<string, string[]>();
     for (const name of pass.written) {
       if (!outputs.has(name)) continue;
-      for (const atom of pass.env.get(name) ?? []) atoms.add(atom);
+      byOutput.set(name, audioSignals(pass.env.get(name) ?? new Set()));
     }
-    return audioSignals(atoms);
+    return byOutput;
   };
+  const merged = (byOutput: ReadonlyMap<string, string[]>) =>
+    [...new Set([...byOutput.values()].flat())].sort();
+  const blockAudio = (
+    outputs: ReadonlySet<string>,
+    ...blocks: MilkdropProgramBlock[]
+  ) => merged(outputAudio(outputs, ...blocks));
   const enabled = (fields: Record<string, unknown>) =>
     Number(fields.enabled ?? 0) > 0;
+  const perPixelOutputs = outputAudio(PER_PIXEL_OUTPUTS, ir.programs.perPixel);
   const drawnAudio = {
-    perPixel: blockAudio(PER_PIXEL_OUTPUTS, ir.programs.perPixel),
+    perPixel: merged(perPixelOutputs),
+    perPixelOutputs,
     waves: ir.customWaves.map((wave) =>
       enabled(wave.fields)
         ? blockAudio(
@@ -535,4 +550,45 @@ export function analyzePresetDataflow(
     });
   }
   return { variables, randomStreamFollowsAudio, drawnAudio };
+}
+
+/**
+ * The audio signals reaching a built-in control (`zoom`, `wave_r`, …) as it
+ * is drawn, or null when no program writes it. The per-pixel program starts
+ * from what per-frame code left in a warp control and the mesh draws what it
+ * ends with, so its result wins where it writes one.
+ */
+export function controlAudio(
+  dataflow: PresetDataflow,
+  name: string,
+): string[] | null {
+  const key = keyOf(name);
+  return (
+    dataflow.drawnAudio.perPixelOutputs.get(key) ??
+    dataflow.variables.get(key)?.audio ??
+    null
+  );
+}
+
+/**
+ * Everything analyzePresetDataflow reads from a preset, as one string: two
+ * IRs with the same signature have the same dataflow. Changing a literal
+ * leaves it alone, so a caller that recompiles on every fader move can skip
+ * the analysis, which takes tens of milliseconds on the heaviest presets.
+ */
+export function dataflowSignature(ir: MilkdropPresetIR): string {
+  return JSON.stringify([
+    Object.keys(ir.numericFields).sort(),
+    ir.programs.perFrame.sourceLines,
+    ir.programs.perPixel.sourceLines,
+    ir.customWaves.map((wave) => [
+      wave.fields.enabled,
+      wave.programs.perFrame.sourceLines,
+      wave.programs.perPoint.sourceLines,
+    ]),
+    ir.customShapes.map((shape) => [
+      shape.fields.enabled,
+      shape.programs.perFrame.sourceLines,
+    ]),
+  ]);
 }

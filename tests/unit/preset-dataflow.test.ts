@@ -6,15 +6,21 @@
  */
 import { describe, expect, test } from 'bun:test';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
-import { analyzePresetDataflow } from '../../src/js/milkdrop/preset-dataflow.ts';
+import {
+  analyzePresetDataflow,
+  controlAudio,
+  dataflowSignature,
+} from '../../src/js/milkdrop/preset-dataflow.ts';
 
 let serial = 0;
-function analyze(lines: string[]) {
+function compile(lines: string[]) {
   const source = `[preset00]\n${lines.join('\n')}\n`;
-  const compiled = compileMilkdropPresetSource(source, {
+  return compileMilkdropPresetSource(source, {
     id: `dataflow-${serial++}`,
   });
-  const result = analyzePresetDataflow(compiled.ir);
+}
+function analyze(lines: string[]) {
+  const result = analyzePresetDataflow(compile(lines).ir);
   return {
     ...result,
     variable: (name: string) => result.variables.get(name),
@@ -248,5 +254,51 @@ describe('analyzePresetDataflow', () => {
     expect(drawnAudio.waves[0]).toEqual(['bass', 'value1']);
     expect(drawnAudio.waves[1]).toEqual([]);
     expect(drawnAudio.shapes[0]).toEqual(['mid']);
+  });
+
+  test('a warp control follows what the per-pixel program leaves in it', () => {
+    // per-frame zoom follows bass; per-pixel code replaces it outright...
+    const replaced = analyze([
+      'per_frame_1=zoom = 1 + 0.1*bass;',
+      'per_pixel_1=zoom = 1 + 0.1*treb*rad;',
+    ]);
+    expect(controlAudio(replaced, 'zoom')).toEqual(['treb']);
+    // ...or builds on it, so both reach the mesh
+    const built = analyze([
+      'per_frame_1=zoom = 1 + 0.1*bass;',
+      'per_pixel_1=zoom = zoom + 0.1*treb*rad;',
+    ]);
+    expect(controlAudio(built, 'zoom')).toEqual(['bass', 'treb']);
+  });
+
+  test('a control no program writes has no answer', () => {
+    const result = analyze(['per_frame_1=zoom = 1 + 0.1*bass;']);
+    expect(controlAudio(result, 'zoom')).toEqual(['bass']);
+    expect(controlAudio(result, 'rot')).toBeNull();
+  });
+
+  test('the signature ignores literals and follows the equations', () => {
+    const signature = (lines: string[]) => dataflowSignature(compile(lines).ir);
+    const base = signature(['zoom=1.0', 'per_frame_1=zoom = 1 + 0.1*bass;']);
+    expect(signature(['zoom=1.5', 'per_frame_1=zoom = 1 + 0.1*bass;'])).toBe(
+      base,
+    );
+    expect(
+      signature(['zoom=1.0', 'per_frame_1=zoom = 1 + 0.1*treb;']),
+    ).not.toBe(base);
+    expect(
+      signature([
+        'zoom=1.0',
+        'per_frame_1=zoom = 1 + 0.1*bass;',
+        'per_pixel_1=rot = 0.1*mid;',
+      ]),
+    ).not.toBe(base);
+    // only an enabled wave is drawn, so switching one on changes the answer
+    const wave = (enabled: number) =>
+      signature([
+        `wavecode_0_enabled=${enabled}`,
+        'wave_0_per_frame1=r = bass;',
+      ]);
+    expect(wave(1)).not.toBe(wave(0));
   });
 });

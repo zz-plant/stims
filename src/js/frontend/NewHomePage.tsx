@@ -223,9 +223,10 @@ export function NewHomePage() {
         />
         {resume ? null : (
           <p className="stims-shell__launch-explainer">
-            Every scene is a preset — a small visual program from the MilkDrop
-            community. The demo is a built-in synth loop, not a song; switch
-            presets while it plays, or generate your own.
+            Every scene is a MilkDrop preset, a small program that turns sound
+            into motion. Stims runs the original file, shows which part of the
+            sound drives what, and lets you edit it while it plays. The demo is
+            a built-in synth loop, not a song.
           </p>
         )}
         <AudioSources resume={resume} />
@@ -330,7 +331,8 @@ function Header({
       </h1>
       <LaunchSignalTrace />
       <p className="stims-shell__launch-tagline">
-        MilkDrop presets that move to whatever you&rsquo;re listening to.
+        Play MilkDrop presets, see what moves them, and change them while they
+        play.
       </p>
     </>
   );

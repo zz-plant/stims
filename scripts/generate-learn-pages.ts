@@ -57,7 +57,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
   {
     slug: 'milkdrop-online',
     source: 'docs/learn/milkdrop-online.md',
-    seoTitle: 'MilkDrop Online — Winamp’s Visualizer in Your Browser',
+    seoTitle: 'MilkDrop Online — Play and Edit Presets in Your Browser',
     description:
       'Run MilkDrop presets in your browser with nothing to install. Watch, play your own music, edit the equations, and import or export .milk files.',
     kind: 'landing',

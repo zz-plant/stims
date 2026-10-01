@@ -1,4 +1,4 @@
-# MilkDrop in your browser
+# MilkDrop presets in your browser
 
 Stims plays MilkDrop presets in a browser tab. There is nothing to install: open [toil.fyi](https://toil.fyi) and a preset is already animating, silently, until you start some audio.
 
@@ -9,10 +9,10 @@ MilkDrop is the music visualizer Ryan Geiss wrote for Winamp. A MilkDrop *preset
 - **Watch.** Pick a preset from the catalog, or follow a link like [toil.fyi/?preset=krash-rovastar-cerebral-demons-stars](https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars) and it plays with demo audio straight away.
 - **Play your own music.** Start audio from a browser tab, a YouTube link, or your microphone, and the presets react to it.
 - **Browse.** The catalog has well over 1,700 presets, searchable by description, with collections, previews and favorites. The [discover hubs](/discover/audio-reactive) group them by look and by author.
-- **Edit and remix.** Open the editor to see the real `.milk` source, drag live sliders, or change the equations. A remix keeps the credit of whoever you built on.
+- **Edit and remix.** Open the editor to see the real `.milk` source and which part of the sound drives each control, then drag live sliders or change the equations. A remix keeps the credit of whoever you built on.
 - **Bring your own presets.** Import `.milk` files (or a `.zip` pack), export them in the format MilkDrop 2 itself saves — comments, shader code and fields Stims does not use kept intact — or share a link that carries your edited preset inside the address.
 
-## Winamp visualizer, without Winamp
+## Coming from Winamp?
 
 If you remember MilkDrop from Winamp, this is the same kind of preset file running in a web page, so there is no player to install and no plugin to hunt down. Stims is an independent project. It is not made by, or affiliated with, Winamp or Ryan Geiss, and it credits the preset authors on every entry.
 
