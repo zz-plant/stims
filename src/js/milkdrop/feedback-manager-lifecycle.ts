@@ -11,6 +11,15 @@ export type FeedbackLifecycleRenderTarget = {
   width: number;
   height: number;
   setSize(width: number, height: number): void;
+  dispose(): void;
+};
+
+/** One target in a resize: its new size, and whether its picture must survive. */
+export type FeedbackTargetResize<TTarget> = {
+  target: TTarget | null;
+  width: number;
+  height: number;
+  keepImage: boolean;
 };
 
 export type FeedbackLifecyclePresentMaterial = {
@@ -29,8 +38,18 @@ export abstract class MilkdropFeedbackManagerLifecycleBase<
 > {
   protected abstract targets: readonly TTarget[];
   protected abstract presentMaterial: FeedbackLifecyclePresentMaterial;
-  protected abstract saveCurrentFrame(): void;
   abstract resize(width: number, height: number): void;
+  /**
+   * Draws `source` into `destination`, resampled to the destination's size.
+   * False when there is no renderer yet, i.e. nothing has ever been drawn and
+   * there is no picture to keep.
+   */
+  protected abstract copyTargetImage(
+    source: TTarget,
+    destination: TTarget,
+  ): boolean;
+  /** A target with `like`'s current size and texel format. */
+  protected abstract createScratchTarget(like: TTarget): TTarget;
 
   protected index = 0;
   protected viewportWidth: number;
@@ -61,14 +80,16 @@ export abstract class MilkdropFeedbackManagerLifecycleBase<
     return this.readTarget.texture;
   }
 
+  /**
+   * Sets how much of the saved frame the present pass dissolves over the live
+   * one. It never takes the snapshot itself: the caller does, once, when the
+   * switch begins (`saveCurrentFrame`). Snapshotting here on every 0 → >0
+   * edge re-captured the frame at the wrong moment twice over — after a
+   * quality-step resize had already emptied the targets (the "every preset
+   * fades in from black" bug), and after a gated mid-blend frame had drawn
+   * the incoming preset, replacing the outgoing picture with the new one.
+   */
   setTransitionBlend(alpha: number): void {
-    const prevAlpha =
-      (this.presentMaterial.uniforms.transitionAlpha?.value as
-        | number
-        | undefined) ?? 0;
-    if (alpha > 0.001 && prevAlpha <= 0.001) {
-      this.saveCurrentFrame();
-    }
     this.presentMaterial.uniforms.transitionAlpha.value = alpha;
     // Keeps the dissolve pattern's aspect correction in sync with the
     // viewport; set here (once per blend frame) rather than on resize so
@@ -104,6 +125,41 @@ export abstract class MilkdropFeedbackManagerLifecycleBase<
       return;
     }
     this.scheduleAdaptiveResize();
+  }
+
+  /**
+   * Resizes render targets without losing their pictures.
+   *
+   * three.js discards a target's contents whenever its size changes, and
+   * some of these targets are the visual's memory: the feedback history every
+   * frame warps, the snapshot a crossfade dissolves out of, the blur levels
+   * the next composite samples. Adaptive quality resizes them on a preset
+   * switch and again when it earns the step back, so dropping their contents
+   * made every switch fade in from black and blanked the picture mid-preset.
+   *
+   * A kept target's picture goes out to a scratch copy at the old size, the
+   * target resizes, and the picture comes back resampled to the new size.
+   * setSize keeps the Texture object, so nothing bound to it needs rebinding.
+   * Targets every frame rewrites before reading are resized plainly.
+   */
+  protected resizeTargets(
+    resizes: ReadonlyArray<FeedbackTargetResize<TTarget>>,
+  ) {
+    for (const { target, width, height, keepImage } of resizes) {
+      if (!target) continue;
+      if (target.width === width && target.height === height) continue;
+      if (!keepImage) {
+        target.setSize(width, height);
+        continue;
+      }
+      const scratch = this.createScratchTarget(target);
+      const saved = this.copyTargetImage(target, scratch);
+      target.setSize(width, height);
+      if (saved) {
+        this.copyTargetImage(scratch, target);
+      }
+      scratch.dispose();
+    }
   }
 
   private scheduleAdaptiveResize() {
