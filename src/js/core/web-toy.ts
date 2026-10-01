@@ -185,11 +185,13 @@ export default class WebToy {
         bottom: number;
         updateProjectionMatrix: () => void;
       };
+      // square units, as in camera-setup.ts
       const halfWidth = Math.max(1, aspect);
+      const halfHeight = Math.max(1, 1 / aspect);
       orthoCam.left = -halfWidth;
       orthoCam.right = halfWidth;
-      orthoCam.top = 1;
-      orthoCam.bottom = -1;
+      orthoCam.top = halfHeight;
+      orthoCam.bottom = -halfHeight;
       orthoCam.updateProjectionMatrix();
     }
     this.rendererSession.setViewport(state);

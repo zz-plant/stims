@@ -19,6 +19,8 @@ import {
   clamp,
   MAIN_WAVE_FRAME_HISTORY_SIZE,
   type MutableState,
+  milkdropToSceneX,
+  milkdropToSceneY,
   sampleCustomWaveChannels,
   type WaveBuilderState,
 } from './shared';
@@ -33,10 +35,10 @@ export function getCustomWaveSampleLimit(detailScale: number) {
     : BALANCED_CUSTOM_WAVE_SAMPLE_LIMIT;
 }
 
-const toRendererWaveX = (value: number) => (value - 0.5) * 2;
-const toRendererWaveY = (value: number) => (0.5 - value) * 2;
-const toMilkdropWaveX = (value: number) => value / 2 + 0.5;
-const toMilkdropWaveY = (value: number) => 0.5 - value / 2;
+// Custom-wave geometry runs in MilkDrop clip space (y up, 0 = bottom); only
+// the finished positions are mapped to scene units (milkdropToSceneX/Y).
+const toClip = (value: number) => (value - 0.5) * 2;
+const fromClip = (value: number) => value / 2 + 0.5;
 
 export function buildMainWave({
   state,
@@ -194,8 +196,9 @@ export function buildCustomWaves({
       8,
       getCustomWaveSampleLimit(detailScale),
     );
-    const centerX = ((frameLocals.x ?? 0.5) - 0.5) * 2;
-    const centerY = (0.5 - (frameLocals.y ?? 0.5)) * 2;
+    const aspect = signals.aspect ?? 1;
+    const centerX = toClip(frameLocals.x ?? 0.5);
+    const centerY = toClip(frameLocals.y ?? 0.5);
     const scaling = frameLocals.scaling ?? 1;
     const drawMode = (frameLocals.usedots ?? 0) >= 0.5 ? 'dots' : 'line';
     const additive = (frameLocals.additive ?? 0) >= 0.5;
@@ -408,11 +411,12 @@ export function buildCustomWaves({
         (frameLocals.spectrum ?? 0) >= 0.5
           ? baseY
           : centerY + waveChannels.value * scaling;
-      // Per-point code reads (and may write) x/y in MilkDrop [0,1] space
-      // (y-down), matching the mesh per-pixel convention; rad/ang measure
-      // distance from screen center in renderer (zero-centered) space.
-      pointLocals.x = toMilkdropWaveX(rendererPointX);
-      pointLocals.y = toMilkdropWaveY(rendererPointY);
+      // Per-point code reads (and may write) x/y in MilkDrop [0,1] space,
+      // y up as projectM and Butterchurn draw custom waves (unlike the mesh's
+      // per-pixel y); rad/ang measure distance from screen centre in clip
+      // space.
+      pointLocals.x = fromClip(rendererPointX);
+      pointLocals.y = fromClip(rendererPointY);
       pointLocals.a = waveAlpha;
       pointLocals.rad = Math.sqrt(
         rendererPointX * rendererPointX + rendererPointY * rendererPointY,
@@ -423,8 +427,8 @@ export function buildCustomWaves({
       }
       const writeIndex = point * 3;
       if (positions) {
-        positions[writeIndex] = toRendererWaveX(pointLocals.x);
-        positions[writeIndex + 1] = toRendererWaveY(pointLocals.y);
+        positions[writeIndex] = milkdropToSceneX(pointLocals.x, aspect);
+        positions[writeIndex + 1] = milkdropToSceneY(pointLocals.y, aspect);
         positions[writeIndex + 2] = 0.28;
       }
       if (pointColors) {
@@ -493,6 +497,10 @@ export function buildCustomWaves({
       fieldSignals.vol = signals.vol;
       fieldSignals.music = signals.music;
       fieldSignals.weightedEnergy = signals.weightedEnergy;
+      // The vertex shader maps clip space to the scene's square units with
+      // this, and per-point code reads aspectx/aspecty from it; it used to stay
+      // at its initial value, which squeezed GPU custom waves to a square.
+      fieldSignals.aspect = signals.aspect ?? 1;
       proceduralWave.spectrum = (frameLocals.spectrum ?? 0) >= 0.5;
       proceduralWave.centerX = centerX;
       proceduralWave.centerY = centerY;

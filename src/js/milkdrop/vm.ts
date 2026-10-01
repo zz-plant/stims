@@ -838,6 +838,7 @@ class MilkdropPresetVM implements MilkdropVM {
       state: this.state,
       meshField,
       geometryState: this.geometryState,
+      aspect: signals.aspect ?? 1,
     });
     const motionVectors = buildMotionVectors({
       state: this.state,

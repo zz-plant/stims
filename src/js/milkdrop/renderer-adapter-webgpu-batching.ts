@@ -49,6 +49,7 @@ import type {
   MilkdropShapeVisual,
   MilkdropWaveVisual,
 } from './types';
+import { sceneHalfExtents } from './vm/shared';
 
 export type BlendModeKey =
   | 'normal'
@@ -712,6 +713,8 @@ class CompactSegmentUploadBuffer {
   appendProceduralCustomWave(wave: MilkdropProceduralCustomWaveVisual) {
     const positions: number[] = [];
     const width = getMilkdropSegmentWidth(wave.thickness);
+    // the point is MilkDrop clip space; the scene is in square units
+    const half = sceneHalfExtents(wave.signals?.aspect ?? 1);
     for (let index = 0; index < wave.samples.length; index += 1) {
       const sampleT = index / Math.max(1, wave.samples.length - 1);
       const point = buildMilkdropCustomWavePoint(
@@ -724,7 +727,11 @@ class CompactSegmentUploadBuffer {
         sampleT,
         wave.samples[index] ?? 0,
       );
-      positions.push(point.x, point.y, MILKDROP_CUSTOM_WAVE_Z);
+      positions.push(
+        point.x * half.x,
+        point.y * half.y,
+        MILKDROP_CUSTOM_WAVE_Z,
+      );
     }
     this.appendPolyline(positions, wave.color, wave.alpha, width);
   }
@@ -846,36 +853,9 @@ function buildProceduralWavePoint(
         PROJECTM_STEREO_OFFSET,
       ) *
         wave.scale;
-  } else if (wave.mode < 4.5) {
-    // DerivativeLine (HORIZONTAL) — matches CPU path (frame-generation.ts mode 4).
-    const w1 = 0.45 + 0.5 * (wave.mystery * 0.5 + 0.5);
-    const w2 = 1 - w1;
-    const sampleOffset64 = sampleProceduralWaveOffset(
-      wave.samples,
-      sampleT,
-      PROJECTM_STEREO_OFFSET * 2,
-    );
-    const sampleOffset96 = sampleProceduralWaveOffset(
-      wave.samples,
-      sampleT,
-      PROJECTM_STEREO_OFFSET * 3,
-    );
-    x = -1.0 + 2.0 * sampleT + wave.centerX + sampleValue * 0.44 * wave.scale;
-    y =
-      wave.centerY +
-      sampleProceduralWaveOffset(
-        wave.samples,
-        sampleT,
-        PROJECTM_STEREO_OFFSET,
-      ) *
-        0.47 *
-        wave.scale;
-    // Intra-frame momentum (simplified for GPU parity).
-    x = x * w2 + w1 * sampleOffset64 * wave.scale;
-    y = y * w2 + w1 * sampleOffset96 * wave.scale;
   } else {
-    // Modes 6 and 7 (line waves) are built on the CPU and never arrive here;
-    // see buildMilkdropLineWave in vm/frame-generation.ts.
+    // Modes 4, 6 and 7 (line waves) are built on the CPU and never arrive
+    // here; see buildMainWaveFrame in vm/frame-generation.ts.
     const sampleL = sampleProceduralWaveOffset(
       wave.samples,
       sampleT,
@@ -1848,7 +1828,11 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     screenAspect: number,
   ) {
     const borderTarget = this.getBorderTarget(target);
-    borderTarget.group.scale.set(Math.max(1, screenAspect), 1, 1);
+    borderTarget.group.scale.set(
+      sceneHalfExtents(screenAspect).x,
+      sceneHalfExtents(screenAspect).y,
+      1,
+    );
     borderTarget.sync(borders, alphaMultiplier);
     return true;
   }
