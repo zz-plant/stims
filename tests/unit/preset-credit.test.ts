@@ -148,6 +148,16 @@ describe('splitPresetDisplay', () => {
       byline: null,
     });
   });
+
+  test('an author field that only repeats the title is not a byline', () => {
+    // "Orbasonic" shipped with its title copied into the author field, and
+    // the card read "Orbasonic · Orbasonic"
+    expect(splitPresetDisplay('Orbasonic', 'orbasonic')).toEqual({
+      title: 'Orbasonic',
+      byline: null,
+    });
+    expect(splitPresetDisplay('Orbasonic', 'ORB').byline).toBe('ORB');
+  });
 });
 
 describe('presetFamilyKey', () => {

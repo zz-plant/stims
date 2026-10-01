@@ -106,13 +106,11 @@ function readGridView(): boolean {
 export function BrowseSheetPanel({
   onCollectionTagChange,
   onImport,
-  offline = false,
   onPresetChosen,
   sessionHistory = [],
 }: {
   onCollectionTagChange: (tag: string | null) => void;
   onImport: (files: FileList | File[] | null) => void;
-  offline?: boolean;
   /**
    * Fired when the visitor picks a preset from this panel — a click, a tap or
    * an Enter on a tile, a row, or a lineage entry.
@@ -260,7 +258,6 @@ export function BrowseSheetPanel({
         if (!entry.isFavorite) return false;
       } else if (
         routeState.collectionTag &&
-        routeState.collectionTag !== 'collection:community' &&
         !entry.tags?.includes(routeState.collectionTag)
       ) {
         return false;
@@ -451,7 +448,7 @@ export function BrowseSheetPanel({
   // Both rails hide their scrollbars, so the edge fade is the only signal
   // that they scroll at all — the chips hide roughly three screens of
   // filters at phone widths.
-  useScrollerOverflow(collectionChipsRef, [featuredTags.length, offline]);
+  useScrollerOverflow(collectionChipsRef, [featuredTags.length]);
   useScrollerOverflow(recentRailRef, [sessionHistory.length]);
 
   // This-session rail: distinct from the "Recently opened" sort mode, which
@@ -755,24 +752,6 @@ export function BrowseSheetPanel({
               ) : null}
             </button>
           ))}
-          <button
-            type="button"
-            className="ctl-chip"
-            data-active={String(
-              routeState.collectionTag === 'collection:community',
-            )}
-            aria-pressed={routeState.collectionTag === 'collection:community'}
-            disabled={offline}
-            onClick={() =>
-              onCollectionTagChange(
-                routeState.collectionTag === 'collection:community'
-                  ? null
-                  : 'collection:community',
-              )
-            }
-          >
-            Community
-          </button>
         </nav>
 
         {/* Author and sort are both "refine the result set" selects, so they
