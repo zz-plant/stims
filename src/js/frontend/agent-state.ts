@@ -329,6 +329,33 @@ function nextCommit(timeoutMs: number): Promise<boolean> {
   });
 }
 
+/**
+ * Resolves with the first committed core snapshot that satisfies `predicate`
+ * (the latest commit, if it already does), or null after `timeoutMs`. The
+ * in-app counterpart of `waitFor`, for code that must report an outcome only
+ * once React has committed it.
+ */
+export function waitForCommittedCore(
+  predicate: (core: AgentCoreSnapshot) => boolean,
+  timeoutMs: number,
+): Promise<AgentCoreSnapshot | null> {
+  return new Promise((resolve) => {
+    const listener = () => {
+      const core = lastCore;
+      if (!core || !predicate(core)) return;
+      commitListeners.delete(listener);
+      window.clearTimeout(timer);
+      resolve(core);
+    };
+    const timer = window.setTimeout(() => {
+      commitListeners.delete(listener);
+      resolve(null);
+    }, timeoutMs);
+    commitListeners.add(listener);
+    listener();
+  });
+}
+
 export interface AgentRunResult {
   ok: boolean;
   /** True when a state commit was observed after the action; false means
