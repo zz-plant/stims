@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
-import { parseArgs, parseRunSpec } from '../../scripts/stims-ctl.ts';
+import {
+  parseArgs,
+  parsePostSpec,
+  parseRunSpec,
+} from '../../scripts/stims-ctl.ts';
 
 describe('parseRunSpec', () => {
   test('a bare id has no params', () => {
@@ -23,6 +27,23 @@ describe('parseRunSpec', () => {
     expect(parseRunSpec('select-preset=null')).toEqual({
       error: 'params must be a JSON object',
     });
+  });
+});
+
+describe('parsePostSpec', () => {
+  test('accepts a toil:* message object', () => {
+    expect(
+      parsePostSpec('{"type":"toil:load_preset","presetId":"geiss-casino"}'),
+    ).toEqual({
+      message: { type: 'toil:load_preset', presetId: 'geiss-casino' },
+    });
+  });
+
+  test('rejects invalid JSON, non-objects, and messages outside the protocol', () => {
+    expect(parsePostSpec('{bad')).toHaveProperty('error');
+    expect(parsePostSpec('[1]')).toEqual({ error: 'expected a JSON object' });
+    expect(parsePostSpec('{"type":"load_preset"}')).toHaveProperty('error');
+    expect(parsePostSpec('{"presetId":"x"}')).toHaveProperty('error');
   });
 });
 
@@ -55,6 +76,25 @@ describe('parseArgs steps', () => {
     ]);
   });
 
+  test('--post joins the ordered steps, and --embed is a flag', () => {
+    const options = parseArgs([
+      '--embed',
+      '--post',
+      '{"type":"toil:load_preset","presetId":"x"}',
+      '--run',
+      'next-preset',
+      '--post',
+      '{"type":"toil:request_telemetry"}',
+    ]);
+    expect(options.embed).toBe(true);
+    expect(parseArgs([]).embed).toBe(false);
+    expect(options.steps).toEqual([
+      { kind: 'post', message: { type: 'toil:load_preset', presetId: 'x' } },
+      { kind: 'run', id: 'next-preset' },
+      { kind: 'post', message: { type: 'toil:request_telemetry' } },
+    ]);
+  });
+
   test('the step timeout defaults to 15s and can be set', () => {
     expect(parseArgs([]).stepTimeoutMs).toBe(15000);
     expect(parseArgs(['--step-timeout', '4000']).stepTimeoutMs).toBe(4000);
@@ -77,6 +117,7 @@ describe('parseArgs steps', () => {
   test('a malformed --run or empty --wait-for exits with usage instead of being ignored', () => {
     expect(() => parseArgs(['--run', 'select-preset={bad'])).toThrow('exit(1)');
     expect(() => parseArgs(['--wait-for', '  '])).toThrow('exit(1)');
+    expect(() => parseArgs(['--post', '{"type":"nope"}'])).toThrow('exit(1)');
     expect(err.mock.calls.flat().join('\n')).toContain('Invalid --run');
   });
 
