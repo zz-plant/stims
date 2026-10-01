@@ -87,7 +87,7 @@ How far to trust it, measured against `lab:dataset` exports:
 | Export | Soundness (differs by song, but no path found) | Precision (audio path found, and it differs by song) |
 | --- | --- | --- |
 | 158 presets × 32 songs | 0 of 14,004 cells | 932 of 980 |
-| same, 16 unfamiliar-style songs | 0 | 922 of 980 |
+| same presets, 4 unfamiliar-style songs (one per style) | 0 | 922 of 980 |
 | 2,445 held-out presets × 4 probes | 1 of 215,160 (a documented 5e-4 wobble) | 11,797 of 13,532 |
 
 It is conservative by design:
