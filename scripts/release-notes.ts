@@ -6,8 +6,9 @@
  * a bare tag is not a GitHub Release: v1.1.0 through v1.3.0 were written up in
  * docs/RELEASE_NOTES.md and never appeared on the repo page. The Release
  * workflow (.github/workflows/release.yml) runs this on every `vX.Y.Z` tag
- * push and publishes what it prints, so the notes are the ones reviewed in the
- * PR that cut the release, not text written at tag time.
+ * push, or when run by hand on main, and publishes what it prints, so the
+ * notes are the ones reviewed in the PR that cut the release, not text
+ * written at tag time.
  *
  * Exits 1 when the tag is not `vX.Y.Z`, when package.json's version is not
  * X.Y.Z, or when docs/RELEASE_NOTES.md has no non-empty `## Release vX.Y.Z`

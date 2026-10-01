@@ -6,6 +6,10 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 
 ## [Unreleased]
 
+### Added
+
+- The Release workflow can be run from the Actions tab on `main`, for anyone who cannot push tags: it tags a commit on `main` (by default its head) as `v<that commit's package.json version>` and publishes the same notes a tag push would. It refuses a commit that is not on `main`, or a tag that already points at another commit.
+
 ### Planned — studio first, parity as a floor
 
 - **Remix studio**: dependable undo/redo and named snapshots, side-by-side A/B against the source preset, remix provenance retained in exported `.milk`.
