@@ -3,24 +3,29 @@ import {
   type RendererOptimizationTelemetryDetail,
   setRendererTelemetryHandler,
 } from './renderer-capabilities.ts';
+import {
+  readStored,
+  removeStored,
+  writeStored,
+} from './state/browser-storage.ts';
 
 const logger = createLogger('RendererTelemetry');
 
 const STORAGE_KEY = 'stims:renderer-support-stats';
 
 function readTelemetryStats(): Record<string, unknown> {
-  const raw = window.localStorage.getItem(STORAGE_KEY);
+  const raw = readStored(STORAGE_KEY);
   if (!raw) return {};
   const parsed: unknown = JSON.parse(raw);
   if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
     return parsed as Record<string, unknown>;
   }
-  window.localStorage.removeItem(STORAGE_KEY);
+  removeStored(STORAGE_KEY);
   return {};
 }
 
 function writeTelemetryStats(nextStats: Record<string, unknown>) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextStats));
+  writeStored(STORAGE_KEY, JSON.stringify(nextStats));
 }
 
 function installRendererSupportTelemetry() {
