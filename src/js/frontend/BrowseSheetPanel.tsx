@@ -19,6 +19,7 @@ import {
   setAccessibilityPreference,
   subscribeToAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
+import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
@@ -35,7 +36,6 @@ import {
   quickSelectDigit,
 } from './quick-select.ts';
 import { SkeletonPresetCard } from './SkeletonPresetCard.tsx';
-import { writeStored } from './safe-storage.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
@@ -83,11 +83,7 @@ const PRESET_ROW_OVERSCAN = 8;
 const browseScrollMemory: { grid: number; list: number } = { grid: 0, list: 0 };
 
 function readSortMode(): SortMode {
-  try {
-    return (localStorage.getItem('stims:browse-sort') as SortMode) ?? 'curated';
-  } catch {
-    return 'curated';
-  }
+  return (readStored('stims:browse-sort') as SortMode | null) ?? 'curated';
 }
 
 /**
@@ -96,11 +92,7 @@ function readSortMode(): SortMode {
  * scanning a long catalog by name.
  */
 function readGridView(): boolean {
-  try {
-    return (localStorage.getItem('stims:browse-view') ?? 'grid') === 'grid';
-  } catch {
-    return true;
-  }
+  return (readStored('stims:browse-view') ?? 'grid') === 'grid';
 }
 
 export function BrowseSheetPanel({
