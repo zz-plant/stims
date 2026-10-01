@@ -953,7 +953,7 @@ function StimsWorkspaceAppShell() {
   ]);
 
   useEffect(() => {
-    if (ui.toast && visibleHint) {
+    if (ui.toast && !ui.toast.quiet && visibleHint) {
       dismissHint();
     }
   }, [ui.toast, visibleHint, dismissHint]);
@@ -1094,13 +1094,25 @@ function StimsWorkspaceAppShell() {
   }, [isFullscreen, liveMode, engineSnapshot?.audioActive]);
 
   useEffect(() => {
-    // Deferred, not skipped: re-running once showRotateHint clears (it's a
-    // dependency) lets the two toasts land one after another instead of
-    // overlapping in the same bottom-of-screen slot on first mobile launch.
-    if (liveMode && engineSnapshot?.audioActive && !showRotateHint) {
+    // Deferred, not skipped: re-running once showRotateHint or the "click
+    // to turn the sound on" notice clears (both are dependencies) lets them
+    // land one after another instead of stacking over the stage. The sound
+    // notice goes first because nothing reacts until it is answered.
+    if (
+      liveMode &&
+      engineSnapshot?.audioActive &&
+      !showRotateHint &&
+      !awaitingAudioGesture
+    ) {
       showHint('first-play');
     }
-  }, [liveMode, engineSnapshot?.audioActive, showRotateHint, showHint]);
+  }, [
+    liveMode,
+    engineSnapshot?.audioActive,
+    showRotateHint,
+    awaitingAudioGesture,
+    showHint,
+  ]);
 
   // Gated on the grid actually having cards in it, not merely on the panel
   // being routed to. "Tap a card to play it" fired the moment the route said
@@ -1340,7 +1352,7 @@ function StimsWorkspaceAppShell() {
     <main
       className="stims-shell"
       id="stims-main"
-      data-has-toast={ui.toast ? 'true' : undefined}
+      data-has-toast={ui.toast && !ui.toast.quiet ? 'true' : undefined}
       data-mode={liveMode ? 'live' : 'home'}
       data-active-preset-id={engineSnapshot?.activePresetId ?? undefined}
       data-preview={ui.routeState.previewMode ? 'true' : undefined}

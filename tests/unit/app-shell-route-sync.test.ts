@@ -107,7 +107,7 @@ describe('Workspace shell route sync regression', () => {
     );
 
     expect(appSource).toMatch(
-      /data-has-toast=\{(?:ui|w)\.toast \? 'true' : undefined\}/u,
+      /data-has-toast=\{(?:ui|w)\.toast && !(?:ui|w)\.toast\.quiet \? 'true' : undefined\}/u,
     );
     expect(cssSource).toMatch(
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell\[data-has-toast="true"\]\s*\{\s*padding-bottom:\s*calc\(96px \+ env\(safe-area-inset-bottom\)\);/u,
