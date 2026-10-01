@@ -10,7 +10,7 @@ import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
  * Frame shapes taken from a 250-preset corpus sweep of
  * `estimateFrameBlendWorkload` (`bun run lab:blend-gate`). The numbers are
  * the point of the test: an earlier threshold of 900 sat below the corpus
- * MINIMUM of 1323, so every crossfade in the product silently became a cut.
+ * MINIMUM (1283), so every crossfade in the product silently became a cut.
  * Pin the floor here so no future threshold can land under a real frame.
  */
 function frameState(options: {
@@ -20,7 +20,6 @@ function frameState(options: {
   motionVectors?: number;
   shapes?: number;
   borders?: number;
-  trails?: number;
 }): MilkdropFrameState {
   return {
     mainWave: { positions: new Float32Array(options.wavePoints * 3) },
@@ -32,19 +31,17 @@ function frameState(options: {
     ),
     shapes: Array.from({ length: options.shapes ?? 0 }, () => ({})),
     borders: Array.from({ length: options.borders ?? 0 }, () => ({})),
-    trails: Array.from({ length: options.trails ?? 0 }, () => ({})),
   } as unknown as MilkdropFrameState;
 }
 
 /** The lightest real preset measured in the corpus sweep. */
-const CORPUS_FLOOR = frameState({ wavePoints: 291, meshQuads: 992, trails: 5 });
+const CORPUS_FLOOR = frameState({ wavePoints: 291, meshQuads: 992 });
 /** Corpus median. */
 const CORPUS_MEDIAN = frameState({
   wavePoints: 307,
   meshQuads: 992,
   motionVectors: 144,
   borders: 2,
-  trails: 5,
 });
 /** Corpus maximum — the only tier a static geometry gate should refuse. */
 const CORPUS_PEAK = frameState({
@@ -53,7 +50,6 @@ const CORPUS_PEAK = frameState({
   motionVectors: 1024,
   shapes: 400,
   borders: 64,
-  trails: 64,
 });
 
 const HEALTHY = {
@@ -64,9 +60,9 @@ const HEALTHY = {
 
 describe('blend gate', () => {
   test('the corpus floor is a 992-quad warp mesh, so the threshold must clear it', () => {
-    expect(estimateFrameBlendWorkload(CORPUS_FLOOR)).toBe(1323);
-    // The regression that motivated this test: 900 < 1323.
-    expect(MAX_BLEND_WORKLOAD).toBeGreaterThan(1323);
+    expect(estimateFrameBlendWorkload(CORPUS_FLOOR)).toBe(1283);
+    // The regression that motivated this test: 900 < 1283.
+    expect(MAX_BLEND_WORKLOAD).toBeGreaterThan(1283);
   });
 
   test('ordinary presets can crossfade', () => {

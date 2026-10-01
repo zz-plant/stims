@@ -69,7 +69,6 @@ The MilkDrop runtime can now gate each WebGPU descriptor optimization independen
 | Flag | Query param | `localStorage` key | Purpose |
 | --- | --- | --- | --- |
 | Main wave | `milkdrop-webgpu-main-wave` | `stims:experiments:milkdrop-webgpu-main-wave` | Gates descriptor-backed main-wave rendering. |
-| Trail waves | `milkdrop-webgpu-trail-waves` | `stims:experiments:milkdrop-webgpu-trail-waves` | Gates descriptor-backed trail rendering. |
 | Custom waves | `milkdrop-webgpu-custom-waves` | `stims:experiments:milkdrop-webgpu-custom-waves` | Gates authored custom-wave descriptor uploads. |
 | Mesh field | `milkdrop-webgpu-mesh` | `stims:experiments:milkdrop-webgpu-mesh` | Gates procedural mesh descriptors and field programs. |
 | Motion vectors | `milkdrop-webgpu-motion-vectors` | `stims:experiments:milkdrop-webgpu-motion-vectors` | Gates procedural motion-vector descriptors. |

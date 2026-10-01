@@ -116,7 +116,7 @@ Read-only QA / override params:
 - `tv` / `tvMode` — smart-TV override
 - `maxPixelRatio`, `particleBudget`, `shaderQuality`, `lockQualityStep`, `powerSaver`
 - `mockAudio`, `mockFrequency`
-- `milkdrop-webgpu-{main-wave,trail-waves,custom-waves,mesh,motion-vectors,feedback,fallback,compute-vm,render-bundles}`
+- `milkdrop-webgpu-{main-wave,custom-waves,mesh,motion-vectors,feedback,fallback,compute-vm,render-bundles}`
 - `component`, `props`, `grid` — UI harness page (`ui-harness.html`)
 - `debug=hud` — on-canvas debug HUD
 - `liveTiles`, `strudel` — prototype flags (presence-only)

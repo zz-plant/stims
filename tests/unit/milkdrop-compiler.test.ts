@@ -2407,20 +2407,14 @@ motion_vectors_y=5
 
     expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual({
       routing: 'descriptor-plan',
-      proceduralWaves: expect.arrayContaining([
+      proceduralWaves: [
         expect.objectContaining({
           kind: 'procedural-wave',
           target: 'main-wave',
           slotIndex: null,
           sampleSource: 'waveform',
         }),
-        expect.objectContaining({
-          kind: 'procedural-wave',
-          target: 'trail-waves',
-          slotIndex: null,
-          sampleSource: 'waveform',
-        }),
-      ]),
+      ],
       proceduralMesh: {
         kind: 'procedural-mesh',
         requiresPerPixelProgram: false,

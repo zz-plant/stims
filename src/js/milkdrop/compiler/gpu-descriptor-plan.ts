@@ -158,13 +158,6 @@ export function buildWebGpuDescriptorPlan({
       sampleSource: 'waveform',
       fieldProgram: null,
     },
-    {
-      kind: 'procedural-wave',
-      target: 'trail-waves',
-      slotIndex: null,
-      sampleSource: 'waveform',
-      fieldProgram: null,
-    },
     ...customWaves
       .map<MilkdropProceduralWaveDescriptorPlan | null>((wave) => {
         const loweredPerPointProgram =

@@ -63,11 +63,7 @@ import {
   syncSignalEnvironment,
   type WaveBuilderState,
 } from './vm/shared';
-import {
-  buildCustomWaves,
-  buildMainWave,
-  commitMainWaveFrame,
-} from './vm/wave-builder';
+import { buildCustomWaves, buildMainWave } from './vm/wave-builder';
 import { createGpuVmRunner } from './vm-gpu';
 import {
   applyMilkdropWebGpuOptimizationFlags,
@@ -120,9 +116,6 @@ class MilkdropPresetVM implements MilkdropVM {
   };
   private gpuRunner = createGpuVmRunner();
   private readonly waveState: WaveBuilderState = {
-    trails: [],
-    lastWaveform: null,
-    lastProceduralWave: null,
     lastWaveSamples: new Float32Array(0),
     lastWaveMomentum: new Float32Array(0),
     mainWaveFrameIndex: -1,
@@ -135,7 +128,6 @@ class MilkdropPresetVM implements MilkdropVM {
     proceduralCustomWaveFrames: [[], []],
     customWaveVisualPool: [],
     proceduralCustomWavePool: [],
-    proceduralTrailWaves: [],
     channelSample: {
       sample: 0,
       value: 0,
@@ -420,9 +412,6 @@ class MilkdropPresetVM implements MilkdropVM {
     }
     this.randomState =
       hashSeed(this.preset.source.id || this.preset.title || 'milkdrop') || 1;
-    this.waveState.trails = [];
-    this.waveState.lastWaveform = null;
-    this.waveState.lastProceduralWave = null;
     this.waveState.mainWaveFrameIndex = -1;
     this.waveState.customWaveLocals = this.preset.ir.customWaves.map((wave) =>
       this.seedCustomWaveState(wave),
@@ -441,7 +430,6 @@ class MilkdropPresetVM implements MilkdropVM {
       (shape) => this.seedCustomShapeState(shape),
     );
 
-    this.waveState.proceduralTrailWaves = [];
     this.waveState.pointLocalsScratch = {};
     this.geometryState.lastMotionVectorField = null;
     this.geometryState.motionVectorFrameIndex = 0;
@@ -811,11 +799,6 @@ class MilkdropPresetVM implements MilkdropVM {
         proceduralMainWave.alpha = 0;
       }
     }
-    commitMainWaveFrame({
-      waveState: this.waveState,
-      mainWave,
-      proceduralMainWave,
-    });
 
     const proceduralMeshPlan = this.getProceduralMeshDescriptorPlan();
     const proceduralMotionVectorPlan =
@@ -834,7 +817,6 @@ class MilkdropPresetVM implements MilkdropVM {
       state: this.state,
       preset: this.preset,
       meshField,
-      trailWaves: this.waveState.proceduralTrailWaves,
       signals,
       detailScale: this.detailScale,
       proceduralMotionVectorPlan,
@@ -901,7 +883,6 @@ class MilkdropPresetVM implements MilkdropVM {
       waveform: mainWave,
       mainWave,
       customWaves: customWaves.visual,
-      trails: this.waveState.trails,
       mesh,
       shapes,
       borders,

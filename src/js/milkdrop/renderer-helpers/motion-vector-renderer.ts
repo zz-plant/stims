@@ -114,7 +114,7 @@ export function renderMotionVectors({
   >;
   clearGroup: (group: Group) => void;
   renderLineVisualGroup: (
-    target: 'trails' | 'motion-vectors' | 'blend-motion-vectors',
+    target: 'motion-vectors' | 'blend-motion-vectors',
     group: Group,
     lines: MilkdropRenderPayload['frameState']['motionVectors'],
     alphaMultiplier?: number,
