@@ -77,7 +77,7 @@ export function formatPresetShareCopy(preset: PresetShareMetadata): {
   // a visualizer link worth opening and worth re-sharing. Every promise stays
   // inside claims the product already makes elsewhere (reacts to mic / any song,
   // runs in the browser, no install).
-  const hook = `a MilkDrop-inspired visualizer that reacts to your mic or any song, live in your browser.`;
+  const hook = `a MilkDrop preset that reacts to your mic or any song, live in your browser.`;
 
   return {
     title: `${displayTitle} | Stims`,

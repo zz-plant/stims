@@ -69,7 +69,7 @@ the test. `bun run spec:eel` runs the same corpus with a per-section report.
 `preset-credit.test.ts` · `preset-lineage.test.ts` · `preset-artwork.test.ts` ·
 `preset-visual-description.test.ts` · `assisted-edit-gate.test.ts` ·
 `milkdrop-preset-navigation-controller.test.ts` · `milkdrop-preset-preview-service.test.ts` ·
-`milkdrop-preset-performance-overrides.test.ts` · `milkdrop-scene-selection.test.ts` ·
+`milkdrop-preset-performance-overrides.test.ts` ·
 `bundled-first-run-preset.test.ts` · `milkdrop-overlay-panels.test.ts` ·
 `milkdrop-overlay-stacking.test.ts` · `milkdrop-live-tile-pool.test.ts` ·
 `preset-lab-metrics.test.ts`

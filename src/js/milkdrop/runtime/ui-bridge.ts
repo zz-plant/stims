@@ -1,19 +1,5 @@
 import { MILKDROP_PRESET_SELECTION_EVENT } from '../preset-selection';
 
-export {
-  describeMilkdropScenePickResult,
-  getMilkdropSceneDragFieldUpdates,
-  getMilkdropScenePickResult,
-  getMilkdropSceneSelectionFieldMap,
-  isMilkdropSceneSelectionEditable,
-  type MilkdropSceneDragModifiers,
-  type MilkdropScenePickDescription,
-  type MilkdropScenePickKind,
-  type MilkdropScenePickResult,
-  type MilkdropScenePointerPoint,
-  resolveMilkdropScenePointerPoint,
-} from './scene-selection';
-
 export function installRequestedPresetListener(
   onPreset: (presetId: string) => void,
 ) {

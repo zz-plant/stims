@@ -76,7 +76,9 @@ describe('oEmbed provider', () => {
       'martin-wtf-track': ['martin - "wtf" track', 'martin'],
     });
 
-    expect(body.title).toBe('Stims — MilkDrop-Inspired Audio Visualizer');
+    expect(body.title).toBe(
+      'Stims — Play and Edit MilkDrop Presets in Your Browser',
+    );
     expect(body.thumbnail_url).toBe('https://toil.fyi/og/milkdrop.png');
     expect(body.html).toContain('src="https://toil.fyi/?embed=true"');
   });
