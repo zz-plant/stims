@@ -68,6 +68,20 @@ const MAX_FRAMES = 600;
 /** Checkpoints without a better frame before the search is considered done. */
 const PLATEAU_CHECKPOINTS = 3;
 const MAX_RETRIES = 1;
+/** Mean luma (0-255) below which a capture is retried with beats. */
+const DARK_MEAN_LUMA = 12;
+
+/**
+ * Mostly clipped, or a near-flat wash that is not dark: the renderer whiting
+ * or flooding out, which outscores a dark frame while showing less of the
+ * preset. A re-sweep of the 845 darkest previews picked 13 of these before
+ * this check existed.
+ */
+function isFlood(stats: FrameStats): boolean {
+  return (
+    stats.blownFraction > 0.3 || (stats.stdLuma < 12 && stats.meanLuma > 40)
+  );
+}
 // Generous under load: 8 workers can stampede compiles + Vite transforms,
 // especially while every page boots at once.
 const BOOT_TIMEOUT_MS = 45000;
@@ -375,8 +389,9 @@ class RenderSession {
       { timeout: SWAP_TIMEOUT_MS },
     );
 
-    let failure = 'unknown';
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    // One capture of the playing preset under the synthetic signal, with or
+    // without beats in it.
+    const captureFrame = async (beatPulse: boolean) => {
       const capture = await page.evaluate(
         ({ minFrames, maxFrames, beatPulse, plateauCheckpoints }) => {
           const step = window.__STIMS_AGENT_RENDER_FRAMES__;
@@ -535,7 +550,7 @@ class RenderSession {
         {
           minFrames: MIN_FRAMES,
           maxFrames: MAX_FRAMES,
-          beatPulse: this.beatPulse,
+          beatPulse,
           plateauCheckpoints: PLATEAU_CHECKPOINTS,
         },
       );
@@ -548,7 +563,26 @@ class RenderSession {
         capture.dataUrl.slice('data:image/png;base64,'.length),
         'base64',
       );
-      const stats = await analyzeFrame(buffer);
+      return { buffer, stats: await analyzeFrame(buffer) };
+    };
+
+    let failure = 'unknown';
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      let { buffer, stats } = await captureFrame(this.beatPulse);
+      // Beat-gated presets stay near black under the smooth idle signal, and
+      // a third of the corpus's previews came out that way. A dark capture
+      // gets one more pass with beats in the signal, keeping whichever frame
+      // scores better: re-swept that way, 20 of the 26 darkest previews in
+      // the curated top 60 came out lit.
+      if (!this.beatPulse && stats.meanLuma < DARK_MEAN_LUMA) {
+        const pulsed = await captureFrame(true);
+        if (
+          !isFlood(pulsed.stats) &&
+          frameScore(pulsed.stats) > frameScore(stats)
+        ) {
+          ({ buffer, stats } = pulsed);
+        }
+      }
 
       const badReason = badFrameReason(stats);
       if (badReason) {
@@ -575,7 +609,7 @@ class RenderSession {
           // monotonic instead of a coin flip per preset.
           if (this.keepBest && existsSync(outPath)) {
             const previous = await analyzeFrame(readFileSync(outPath));
-            if (frameScore(stats) <= frameScore(previous)) {
+            if (isFlood(stats) || frameScore(stats) <= frameScore(previous)) {
               this.seenHashes.set(previous.hash, preset.id);
               this.tally.kept++;
               this.rendered++;
