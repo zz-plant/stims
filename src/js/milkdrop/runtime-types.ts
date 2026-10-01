@@ -205,6 +205,14 @@ export type MilkdropEditorSessionState = {
   dirty: boolean;
 };
 
+/** A commit either landed, or was superseded by a newer edit or preset load
+ * (or aborted) while it compiled, in which case `state` is whatever is
+ * current and says nothing about the source that was sent. */
+export type MilkdropEditorCommitOutcome = {
+  state: MilkdropEditorSessionState;
+  applied: boolean;
+};
+
 export interface MilkdropEditorSession {
   getState(): MilkdropEditorSessionState;
   loadPreset(source: MilkdropPresetSource): Promise<MilkdropEditorSessionState>;
@@ -219,6 +227,12 @@ export interface MilkdropEditorSession {
   updateFields(
     updates: Record<string, string | number>,
   ): Promise<MilkdropEditorSessionState>;
+  /** `applySource`, saying whether this source is the one that committed. */
+  applySourceWithOutcome(source: string): Promise<MilkdropEditorCommitOutcome>;
+  /** `updateFields`, saying whether these fields are the ones that committed. */
+  updateFieldsWithOutcome(
+    updates: Record<string, string | number>,
+  ): Promise<MilkdropEditorCommitOutcome>;
   resetToActive(): Promise<MilkdropEditorSessionState>;
   subscribe(listener: (state: MilkdropEditorSessionState) => void): () => void;
   dispose(): void;

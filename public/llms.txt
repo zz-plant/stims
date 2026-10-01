@@ -42,8 +42,13 @@ Embed `https://toil.fyi/?embed=true` (add `&preset=<id>` to choose the first pre
 - `{ type: "toil:load_preset", presetId: "shifter-snakeskin" }`, or `milkSource: "<.milk code>"` in place of `presetId`. Works before audio starts; an unknown id is refused with close matches in `suggestions`.
 - `{ type: "toil:apply_tweak", tweak: "faster motion" }`: refines the playing preset through `/api/refine-preset`. When AI is unavailable, a tweak naming blue, neon, cyan, warp, fast, speed, bass or beat applies the matching one-click restyle instead.
 - `{ type: "toil:set_audio", source: "demo" }`: `"demo"` or `"microphone"` (which needs `allow="microphone"` on the iframe). File playback and tab capture need a click inside the page, so they are refused.
+- `{ type: "toil:run", id: "next-preset" }`: any command-palette action or agent verb (`select-preset`, `set-field`, `crossfade`, …), with optional `params`. An unknown id is refused with close matches in `suggestions`.
+- `{ type: "toil:apply_source", source: "<.milk code>" }` and `{ type: "toil:set_fields", fields: { zoom: 1.1 } }`: edit the playing preset; the reply carries the compile `state`.
+- `{ type: "toil:midi_set", target: "warp", value: 1.2 }` and `{ type: "toil:midi_cc", cc: 21, value: 64 }`: live controls through the virtual "Claude (MCP)" MIDI device; the reply confirms delivery to the stage.
 - `{ type: "toil:request_telemetry" }`
 
+Add a `requestId` (string or number) to any command and its reply echoes it. Replies go to the window that sent the command.
+
 Listen for response messages:
-- `{ type: "toil:status", action: "set_audio", success: true, source: "demo" }`: answers each command above except telemetry, once the change has landed. `success: false` always carries a `reason`, including for unknown `toil:` messages.
+- `{ type: "toil:status", action: "set_audio", success: true, source: "demo" }`: answers each command above except telemetry, once the change has landed. For `run` that means once the action has run; `settled` and `events` say what changed. `success: false` always carries a `reason`, including for unknown `toil:` messages.
 - `{ type: "toil:telemetry", fps: 60, backend: "webgpu", audioEnergy: 0.75, currentPresetId: "..." }`

@@ -111,10 +111,26 @@ bun run ctl -- --step-timeout 90000 \
   `set-field` for the engine first, the two preconditions `run()` rejects.
 - `--wait-for '<expr>'` waits (push-based, no sleeping) until a JS expression
   over the state `s` is true.
+- `--post '<json>'` sends one `toil:*` message (the iframe protocol in
+  `public/llms-full.txt`) in the same order and records its reply, matched by
+  `requestId`. `--set-field key=value` is a `toil:midi_set` post and waits for
+  its reply too.
+- `--embed` loads the app at `?embed=true` inside an iframe on a parent page
+  (`scripts/embed-harness.ts`) and posts from the parent, so messages cross a
+  real frame boundary the way they do for an embedding site. Nothing mounts
+  there until a command asks for a preset or audio, so lead with one:
+
+  ```bash
+  bun run ctl -- --embed \
+    --post '{"type":"toil:load_preset","presetId":"geiss-casino"}' \
+    --post '{"type":"toil:set_audio","source":"demo"}' \
+    --post '{"type":"toil:run","id":"next-preset"}'
+  ```
+
 - The summary's `agent` is the full `getState()` snapshot and `steps` has each
-  step's result, including `events`. The process **exits non-zero** if any step
-  failed, and prints `Step failed: …` to stderr, so a shell script can branch
-  on it.
+  step's result, including `events` (and a posted message's `reply`). The
+  process **exits non-zero** if any step failed, and prints `Step failed: …`
+  to stderr, so a shell script can branch on it.
 
 ## Events
 
