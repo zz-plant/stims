@@ -1,10 +1,22 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
   getAgentTelemetry,
   initAgentBridge,
   toAgentEditorState,
   updateAgentTelemetry,
 } from '../../src/js/frontend/agent-bridge.ts';
+import { buildAgentBridgeCallbacks } from '../../src/js/frontend/agent-bridge-handlers.ts';
+import {
+  type AgentCoreSnapshot,
+  emitAgentCommit,
+  recordStatusMessage,
+  resetAgentStateForTests,
+} from '../../src/js/frontend/agent-state.ts';
+import { createEmptyEngineSnapshot } from '../../src/js/frontend/engine/engine-snapshot.ts';
+import type { EngineContextValue } from '../../src/js/frontend/engine-context.tsx';
+import { mutatePresetStyle } from '../../src/js/milkdrop/preset-mutations.ts';
+import type { MilkdropEditorSessionState } from '../../src/js/milkdrop/runtime-types.ts';
+import { makeEngineValue } from '../frontend-harness.tsx';
 
 describe('agent bridge & telemetry', () => {
   test('updates and reads agent telemetry snapshot', () => {
@@ -153,5 +165,354 @@ describe('agent bridge & telemetry', () => {
     expect(await bridge?.applyEditorSource('title=x\n')).toBeNull();
 
     cleanup();
+  });
+});
+
+/**
+ * Every command an embedding page posts gets a `toil:status` reply, and
+ * `success: true` only once the effect has landed. `toil:apply_tweak` used to
+ * replay the active preset and `toil:set_audio` had no handler at all, and
+ * both still answered success.
+ */
+describe('agent bridge replies report what actually happened', () => {
+  type Reply = Record<string, unknown>;
+  const parentDescriptor = Object.getOwnPropertyDescriptor(window, 'parent');
+  const originalFetch = globalThis.fetch;
+  let replies: Reply[] = [];
+  let onReply: Array<(reply: Reply) => void> = [];
+  let cleanup: (() => void) | null = null;
+
+  const PLAYING_SOURCE = [
+    '[preset00]',
+    'fDecay=0.98',
+    'zoom=1.01',
+    'warp=0.2',
+    'per_frame_1=wave_r = 0.5 + 0.5*sin(time);',
+    '',
+  ].join('\n');
+
+  const idleCore: AgentCoreSnapshot = {
+    engineState: 'ready',
+    engineReady: true,
+    liveMode: false,
+    backend: null,
+    panel: null,
+    presetId: null,
+    presetTitle: null,
+    catalogSize: 0,
+    audioSource: null,
+    playbackPaused: false,
+    audioEnergy: null,
+    autoplay: null,
+    transition: { mode: null, blendDuration: null },
+    shaderExecution: null,
+  };
+
+  beforeEach(() => {
+    replies = [];
+    onReply = [];
+    resetAgentStateForTests();
+    emitAgentCommit(idleCore);
+    // The bridge answers its embedding page, so stand one in for it.
+    Object.defineProperty(window, 'parent', {
+      configurable: true,
+      value: {
+        postMessage: (reply: Reply) => {
+          replies.push(reply);
+          for (const listener of onReply) listener(reply);
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    cleanup?.();
+    cleanup = null;
+    if (parentDescriptor) {
+      Object.defineProperty(window, 'parent', parentDescriptor);
+    }
+    globalThis.fetch = originalFetch;
+    resetAgentStateForTests();
+  });
+
+  const post = (data: Record<string, unknown>) => {
+    window.dispatchEvent(new window.MessageEvent('message', { data }));
+  };
+
+  const replyTo = (action: string): Promise<Reply> => {
+    const existing = replies.find((reply) => reply.action === action);
+    if (existing) return Promise.resolve(existing);
+    return new Promise((resolve) => {
+      onReply.push((reply) => {
+        if (reply.action === action) resolve(reply);
+      });
+    });
+  };
+
+  /** The bridge exactly as the app wires it, over a fake engine. */
+  const installAppBridge = (
+    engine: Partial<EngineContextValue>,
+    options: { currentSource?: string; audioCommitTimeoutMs?: number } = {},
+  ) => {
+    cleanup = initAgentBridge(
+      buildAgentBridgeCallbacks({
+        engineRef: { current: makeEngineValue(engine) },
+        engineSnapshotRef: {
+          current: {
+            ...createEmptyEngineSnapshot(),
+            currentSource: options.currentSource ?? '',
+          },
+        },
+        audioCommitTimeoutMs: options.audioCommitTimeoutMs,
+      }),
+    );
+  };
+
+  const compiledSession = (
+    source: string,
+    options: { failed?: boolean } = {},
+  ): MilkdropEditorSessionState => {
+    const latest = { title: 'Tweaked', source: { id: 'tweaked' } };
+    return {
+      source,
+      dirty: false,
+      diagnostics: options.failed
+        ? [{ severity: 'error', code: 'parse', message: 'Unexpected token.' }]
+        : [],
+      latestCompiled: latest,
+      activeCompiled: options.failed
+        ? { title: 'Previous', source: { id: 'previous' } }
+        : latest,
+    } as unknown as MilkdropEditorSessionState;
+  };
+
+  const respondWith = (response: Response) => {
+    globalThis.fetch = (async () => response) as unknown as typeof fetch;
+  };
+
+  test('set_audio starts the source through the app start path and confirms once the stage plays it', async () => {
+    const started: string[] = [];
+    installAppBridge({
+      handleAudioStart: async (source) => {
+        started.push(source);
+        // React commits the new source after the start path returns.
+        setTimeout(() => {
+          emitAgentCommit({
+            ...idleCore,
+            engineState: 'live',
+            liveMode: true,
+            audioSource: source,
+          });
+        }, 0);
+      },
+    });
+
+    post({ type: 'toil:set_audio', source: 'demo' });
+    const reply = await replyTo('set_audio');
+
+    expect(started).toEqual(['demo']);
+    expect(reply).toMatchObject({
+      type: 'toil:status',
+      success: true,
+      source: 'demo',
+    });
+  });
+
+  test('set_audio reports why a start failed instead of claiming success', async () => {
+    installAppBridge(
+      {
+        // The start path reports a refusal as a status message, not a throw,
+        // and the stage never commits the new source.
+        handleAudioStart: async () => {
+          recordStatusMessage('Microphone access was denied.');
+        },
+      },
+      { audioCommitTimeoutMs: 20 },
+    );
+
+    post({ type: 'toil:set_audio', source: 'microphone' });
+    const reply = await replyTo('set_audio');
+
+    expect(reply.success).toBe(false);
+    expect(reply.reason).toBe('Microphone access was denied.');
+  });
+
+  test('set_audio refuses a source an embedding page cannot start, before touching the engine', async () => {
+    const started: string[] = [];
+    installAppBridge({
+      handleAudioStart: async (source) => {
+        started.push(source);
+      },
+    });
+
+    post({ type: 'toil:set_audio', source: 'file' });
+    const reply = await replyTo('set_audio');
+
+    expect(reply.success).toBe(false);
+    expect(String(reply.reason)).toContain('"file"');
+    expect(started).toEqual([]);
+  });
+
+  test('apply_tweak applies the AI refinement of the playing preset', async () => {
+    respondWith(
+      new Response(JSON.stringify({ milkSource: '[preset00]\nzoom=1.2\n' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const applied: string[] = [];
+    installAppBridge(
+      {
+        applyEditorSourceAwaited: async (source) => {
+          applied.push(source);
+          return compiledSession(source);
+        },
+      },
+      { currentSource: PLAYING_SOURCE },
+    );
+
+    post({ type: 'toil:apply_tweak', tweak: 'more zoom' });
+    const reply = await replyTo('apply_tweak');
+
+    expect(applied).toEqual(['[preset00]\nzoom=1.2\n']);
+    expect(reply).toMatchObject({
+      success: true,
+      method: 'ai',
+      tweak: 'more zoom',
+    });
+  });
+
+  test('apply_tweak falls back to the matching restyle and says so', async () => {
+    respondWith(new Response('unavailable', { status: 503 }));
+    const applied: string[] = [];
+    installAppBridge(
+      {
+        applyEditorSourceAwaited: async (source) => {
+          applied.push(source);
+          return compiledSession(source);
+        },
+      },
+      { currentSource: PLAYING_SOURCE },
+    );
+
+    post({ type: 'toil:apply_tweak', tweak: 'faster motion' });
+    const reply = await replyTo('apply_tweak');
+
+    // The same edit the Refine panel makes for these words offline.
+    const restyled = mutatePresetStyle(PLAYING_SOURCE, 'hyperspace');
+    expect(restyled).not.toBe(PLAYING_SOURCE);
+    expect(applied).toEqual([restyled]);
+    expect(reply).toMatchObject({
+      success: true,
+      method: 'restyle',
+      restyle: 'hyperspace',
+    });
+    expect(String(reply.note)).toContain('503');
+  });
+
+  test('apply_tweak refuses a tweak it cannot carry out, leaving the preset alone', async () => {
+    respondWith(new Response('unavailable', { status: 503 }));
+    const applied: string[] = [];
+    installAppBridge(
+      {
+        applyEditorSourceAwaited: async (source) => {
+          applied.push(source);
+          return compiledSession(source);
+        },
+      },
+      { currentSource: PLAYING_SOURCE },
+    );
+
+    post({ type: 'toil:apply_tweak', tweak: 'more triangles' });
+    const reply = await replyTo('apply_tweak');
+
+    expect(reply.success).toBe(false);
+    expect(String(reply.reason)).toContain('503');
+    expect(applied).toEqual([]);
+  });
+
+  test('apply_tweak reports a tweak that failed to compile', async () => {
+    respondWith(
+      new Response(JSON.stringify({ milkSource: '[preset00]\nzoom=(\n' }), {
+        status: 200,
+      }),
+    );
+    installAppBridge(
+      {
+        applyEditorSourceAwaited: async (source) =>
+          compiledSession(source, { failed: true }),
+      },
+      { currentSource: PLAYING_SOURCE },
+    );
+
+    post({ type: 'toil:apply_tweak', tweak: 'more zoom' });
+    const reply = await replyTo('apply_tweak');
+
+    expect(reply.success).toBe(false);
+    expect(reply.state).toMatchObject({
+      errorCount: 1,
+      renderingFallback: true,
+    });
+  });
+
+  test('a command with no handler on the page is refused, not acknowledged', async () => {
+    cleanup = initAgentBridge({});
+
+    post({ type: 'toil:set_audio', source: 'demo' });
+    post({ type: 'toil:apply_tweak', tweak: 'faster motion' });
+    post({ type: 'toil:load_preset', presetId: 'shifter-snakeskin' });
+    post({ type: 'toil:apply_source', source: 'zoom=1.5' });
+
+    const outcomes = await Promise.all(
+      ['set_audio', 'apply_tweak', 'load_preset', 'apply_source'].map(replyTo),
+    );
+    for (const outcome of outcomes) {
+      expect(outcome.success).toBe(false);
+      expect(String(outcome.reason)).toContain('not available');
+    }
+  });
+
+  test('load_preset with nothing to load is refused', async () => {
+    const loaded: unknown[] = [];
+    cleanup = initAgentBridge({
+      onLoadPreset: (payload) => loaded.push(payload),
+    });
+
+    post({ type: 'toil:load_preset' });
+    const reply = await replyTo('load_preset');
+
+    expect(reply.success).toBe(false);
+    expect(loaded).toEqual([]);
+  });
+
+  test('apply_source before the visualizer is running is not a success', async () => {
+    installAppBridge({ applyEditorSourceAwaited: async () => null });
+
+    post({ type: 'toil:apply_source', source: 'zoom=1.5' });
+    const reply = await replyTo('apply_source');
+
+    expect(reply).toMatchObject({
+      type: 'toil:editor_state',
+      success: false,
+      state: null,
+    });
+  });
+
+  test('an unknown toil message is refused, and the bridge never answers its own replies', () => {
+    cleanup = initAgentBridge({});
+
+    post({ type: 'toil:status', action: 'set_audio', success: true });
+    post({ type: 'toil:telemetry', fps: 60 });
+    post({ type: 'toil:spin_faster' });
+    post({ type: 'not-ours' });
+
+    expect(replies).toEqual([
+      {
+        type: 'toil:status',
+        action: 'spin_faster',
+        success: false,
+        reason: 'Unknown message type "toil:spin_faster".',
+      },
+    ]);
   });
 });
