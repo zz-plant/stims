@@ -12,6 +12,15 @@ import type { EngineSnapshot } from './engine/milkdrop-engine-adapter.ts';
  */
 const TOAST_EXIT_MS = 250;
 
+/**
+ * A load with nothing to add: "Loaded <title>." The stage's title card and
+ * the dock already show the name, so drawing it a third time was noise. It is
+ * still announced, because the title card is hidden from assistive tech and
+ * this is the only place a screen reader hears that the preset changed. A
+ * load that carries news ("— shader text approximated on WebGPU.") shows.
+ */
+const PLAIN_PRESET_LOAD = /^Loaded (?:(?! — ).)+\.$/u;
+
 export function useWorkspaceToast({
   engineSnapshot,
   routeState,
@@ -25,6 +34,7 @@ export function useWorkspaceToast({
     message: string;
     tone: 'info' | 'warn' | 'error';
     exiting?: boolean;
+    quiet?: boolean;
   } | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const toastExitTimerRef = useRef<number | null>(null);
@@ -75,8 +85,12 @@ export function useWorkspaceToast({
   // the context-loss toasts below.
 
   const showToast = useEffectEvent(
-    (message: string, tone: 'info' | 'warn' | 'error' = 'info') => {
-      setToast({ message, tone });
+    (
+      message: string,
+      tone: 'info' | 'warn' | 'error' = 'info',
+      quiet = false,
+    ) => {
+      setToast({ message, tone, quiet });
       clearToastTimer();
       // Warn/error toasts carry more important, often longer copy (e.g. an
       // audio source substitution) — give visitors more time to read them.
@@ -159,7 +173,11 @@ export function useWorkspaceToast({
             /limit live mic access|Started with Demo Audio/i.test(message)
           ? 'warn'
           : 'info';
-    showToast(message, resolvedTone);
+    showToast(
+      message,
+      resolvedTone,
+      !fromShell && PLAIN_PRESET_LOAD.test(message),
+    );
   }, [
     engineSnapshot?.catalogEntries,
     engineSnapshot?.status,

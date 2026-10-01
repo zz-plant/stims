@@ -62,6 +62,7 @@ describe('Workspace shell toast regression', () => {
 
     function mountToast() {
       let latest: string | null = null;
+      let latestQuiet = false;
       let rerender: (props: {
         status: string | null;
         statusMessage: string | null;
@@ -76,6 +77,7 @@ describe('Workspace shell toast regression', () => {
           statusMessage: props.statusMessage,
         });
         latest = toast?.message ?? null;
+        latestQuiet = toast?.quiet ?? false;
         return null;
       }
       host = document.createElement('div');
@@ -95,8 +97,24 @@ describe('Workspace shell toast regression', () => {
           rerender(props);
           return latest;
         },
+        quiet: () => latestQuiet,
       };
     }
+
+    test('a plain preset load is announced but not drawn; one with news shows', () => {
+      const shown = mountToast();
+      // the title card and the dock already show the name
+      expect(shown.set({ status: 'Loaded Alpha.', statusMessage: null })).toBe(
+        'Loaded Alpha.',
+      );
+      expect(shown.quiet()).toBe(true);
+
+      const approximated = 'Loaded Beta — shader text approximated on WebGPU.';
+      expect(shown.set({ status: approximated, statusMessage: null })).toBe(
+        approximated,
+      );
+      expect(shown.quiet()).toBe(false);
+    });
 
     test('a runtime status shows once, not on every re-run with it still set', () => {
       const shown = mountToast();
