@@ -1,18 +1,6 @@
 import { buildGeneratePrompt } from '../../src/js/milkdrop/preset-prompt.ts';
 import { enforceAiRateLimit, type RateLimiter } from './_ai-guard.ts';
 
-interface D1Database {
-  prepare(sql: string): D1PreparedStatement;
-}
-interface D1PreparedStatement {
-  bind(...params: unknown[]): D1PreparedStatement;
-  all<T = unknown>(): Promise<{ results: T[] }>;
-}
-
-interface R2Bucket {
-  get(key: string): Promise<{ text(): Promise<string> } | null>;
-}
-
 interface Env {
   AI: {
     run: (
@@ -20,31 +8,14 @@ interface Env {
       opts: {
         messages?: Array<{ role: string; content: string }>;
         image?: string;
-        text?: string[];
       },
-    ) => Promise<{ response?: string; data?: number[][] }>;
+    ) => Promise<{ response?: string }>;
   };
-  DB: D1Database;
-  GALLERY_R2?: R2Bucket;
   AI_RATE_LIMITER?: RateLimiter;
 }
 
 const VISION_MODEL = '@cf/google/gemma-4-26b-a4b-it';
 const GENERATION_MODEL = '@cf/qwen/qwen2.5-coder-32b-instruct';
-
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  const len = Math.min(a.length, b.length);
-  for (let i = 0; i < len; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   if (typeof Buffer !== 'undefined') {
@@ -129,60 +100,6 @@ export async function onRequest(context: { request: Request; env: Env }) {
       description = (visionResult.response || '').trim();
     } else {
       description = 'abstract geometric patterns with vibrant colors';
-    }
-
-    // User guidance individualizes the request, so a description-only cache
-    // match would ignore it — only consult the cache for guidance-free calls.
-    if (env.DB && env.AI && description && !guidance) {
-      try {
-        const embResult = await env.AI.run('@cf/baai/bge-base-en-v1.5', {
-          text: [description],
-        });
-        const queryEmbedding = embResult.data?.[0];
-        if (queryEmbedding) {
-          const { results } = await env.DB.prepare(
-            'SELECT preset_id, embedding FROM preset_embeddings',
-          ).all<{ preset_id: string; embedding: string }>();
-
-          for (const row of results) {
-            const stored = JSON.parse(row.embedding) as number[];
-            const score = cosineSimilarity(queryEmbedding, stored);
-            if (score > 0.88) {
-              // A cache hit is only reusable when the matched preset's real
-              // source can be served. Community preset source lives in R2;
-              // bundled-catalog embeddings have no server-side source, so an
-              // unresolvable hit falls through to generation instead of
-              // returning a placeholder that cannot compile.
-              const r2Key = `presets/${row.preset_id.replace(/^community:/, '')}.milk`;
-              const cachedObject = env.GALLERY_R2
-                ? await env.GALLERY_R2.get(r2Key)
-                : null;
-              const cachedSource = cachedObject
-                ? await cachedObject.text()
-                : '';
-              if (cachedSource) {
-                return new Response(
-                  JSON.stringify({
-                    description,
-                    milkSource: cachedSource,
-                    cached: true,
-                    cachedPresetId: row.preset_id,
-                  }),
-                  {
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Access-Control-Allow-Origin': '*',
-                    },
-                  },
-                );
-              }
-              break;
-            }
-          }
-        }
-      } catch {
-        // Cache miss — proceed to generation
-      }
     }
 
     let milkSource = '';

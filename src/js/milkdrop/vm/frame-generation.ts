@@ -22,6 +22,8 @@ import type {
 import { clamp, color, colorTo, mix } from './shared';
 
 const TWO_PI = Math.PI * 2;
+/** Depth the main wave draws at (before its per-point momentum nudge). */
+const MAIN_WAVE_Z = 0.22;
 
 let tempPositionsBuffer = new Float32Array(1024 * 3);
 function ensureTempPositionsCapacity(size: number) {
@@ -413,6 +415,118 @@ export function defaultSignalEnv(): MilkdropRuntimeSignals {
   };
 }
 
+/** Main-wave modes MilkDrop draws as straight lines across the screen. */
+function isMilkdropLineWaveMode(mode: number) {
+  return mode === 6 || mode === 7;
+}
+
+/**
+ * MilkDrop 2's line waves, modes 6 and 7, as projectM and Butterchurn draw
+ * them. The line runs through the screen at angle pi/2 * fWaveParam, sits
+ * `wave_x` off-centre perpendicular to itself, and is clipped where it leaves
+ * the +/-1.1 box; each sample pushes it sideways by a quarter of its value.
+ * Mode 7 draws two such lines, the left channel `sep` to one side and the
+ * right channel `sep` to the other, with sep = wave_y^2. `wave_y` does not
+ * move a mode 6 line at all.
+ *
+ * Returns one raw xyz polyline per line, in this renderer's space: x as
+ * MilkDrop's clip x, y negated (y grows downward here, the same flip the
+ * other modes apply to `wave_y`).
+ */
+export function buildMilkdropLineWave({
+  mode,
+  waveX,
+  waveY,
+  mystery,
+  scale,
+  count,
+  sampleLeft,
+  sampleRight,
+}: {
+  mode: 6 | 7;
+  waveX: number;
+  waveY: number;
+  mystery: number;
+  scale: number;
+  count: number;
+  sampleLeft: (t: number) => number;
+  sampleRight: (t: number) => number;
+}): Float32Array[] {
+  const angle = Math.PI * 0.5 * mystery;
+  const dirX = Math.cos(angle);
+  const dirY = Math.sin(angle);
+  const posX = waveX * 2 - 1;
+  const posY = waveY * 2 - 1;
+  const offsetX = posX * Math.cos(angle + Math.PI * 0.5);
+  const offsetY = posX * Math.sin(angle + Math.PI * 0.5);
+  const edgeX = [offsetX - dirX * 3, offsetX + dirX * 3];
+  const edgeY = [offsetY - dirY * 3, offsetY + dirY * 3];
+  // Pull each end back inside the +/-1.1 box along the line.
+  for (let end = 0; end < 2; end += 1) {
+    const other = 1 - end;
+    for (const [coords, limit] of [
+      [edgeX, 1.1],
+      [edgeX, -1.1],
+      [edgeY, 1.1],
+      [edgeY, -1.1],
+    ] as const) {
+      const outside = limit > 0 ? coords[end] > limit : coords[end] < limit;
+      if (!outside) continue;
+      const t = (limit - coords[other]) / (coords[end] - coords[other]);
+      const dx = edgeX[end] - edgeX[other];
+      const dy = edgeY[end] - edgeY[other];
+      edgeX[end] = edgeX[other] + dx * t;
+      edgeY[end] = edgeY[other] + dy * t;
+    }
+  }
+  const stepX = (edgeX[1] - edgeX[0]) / count;
+  const stepY = (edgeY[1] - edgeY[0]) / count;
+  const along = Math.atan2(stepY, stepX);
+  const perpX = Math.cos(along + Math.PI * 0.5);
+  const perpY = Math.sin(along + Math.PI * 0.5);
+  const separation = mode === 7 ? (posY * 0.5 + 0.5) ** 2 : 0;
+
+  const line = (sample: (t: number) => number, side: number) => {
+    const points = new Float32Array(count * 3);
+    for (let index = 0; index < count; index += 1) {
+      const push = 0.25 * sample(index / Math.max(1, count - 1)) * scale;
+      const offset = push + side * separation;
+      points[index * 3] = edgeX[0] + stepX * index + perpX * offset;
+      points[index * 3 + 1] = -(edgeY[0] + stepY * index + perpY * offset);
+      points[index * 3 + 2] = MAIN_WAVE_Z;
+    }
+    return points;
+  };
+  return mode === 7
+    ? [line(sampleLeft, 1), line(sampleRight, -1)]
+    : [line(sampleLeft, 0)];
+}
+
+/**
+ * Per-vertex RGBA for a mode 7 wave: the wave colour at `alpha` everywhere
+ * except the two bridge vertices in the middle, which are fully transparent.
+ */
+function lineWaveBridgeColors(
+  vertexCount: number,
+  waveColor: MilkdropColor,
+  alpha: number,
+  reuse: number[] | Float32Array | undefined,
+): Float32Array {
+  const colors =
+    reuse instanceof Float32Array && reuse.length === vertexCount * 4
+      ? reuse
+      : new Float32Array(vertexCount * 4);
+  const bridgeStart = (vertexCount - 2) / 2;
+  for (let vertex = 0; vertex < vertexCount; vertex += 1) {
+    const bridge = vertex === bridgeStart || vertex === bridgeStart + 1;
+    colors[vertex * 4] = waveColor.r;
+    colors[vertex * 4 + 1] = waveColor.g;
+    colors[vertex * 4 + 2] = waveColor.b;
+    colors[vertex * 4 + 3] = bridge ? 0 : alpha;
+  }
+  return colors;
+}
+
 export function buildMainWaveFrame({
   state,
   signals,
@@ -450,6 +564,10 @@ export function buildMainWaveFrame({
   nextMomentum: Float32Array;
 } {
   const mode = normalizeWaveMode(state.wave_mode ?? 0);
+  // Line waves are built on the CPU (buildMilkdropLineWave): mode 7 is two
+  // separate lines, which the single-strip procedural path cannot draw.
+  const lineMode = isMilkdropLineWaveMode(mode);
+  const proceduralGeometry = useProcedural && !lineMode;
   const waveformData =
     signals.waveformData && signals.waveformData.length > 0
       ? signals.waveformData
@@ -534,14 +652,14 @@ export function buildMainWaveFrame({
     closed: false,
   };
   let positions = visual.positions;
-  if (useProcedural) {
+  if (proceduralGeometry) {
     if (Array.isArray(positions)) {
       positions.length = 0;
     } else if (positions.length !== 0) {
       visual.positions = new Float32Array(0);
     }
   }
-  const procedural = useProcedural
+  const procedural = proceduralGeometry
     ? (reusableProcedural ?? {
         samples: new Float32Array(0),
         velocities: new Float32Array(0),
@@ -587,7 +705,7 @@ export function buildMainWaveFrame({
   let prevPrevY = 0;
 
   const rawLength = samples * 3;
-  if (!useProcedural) {
+  if (!proceduralGeometry) {
     ensureTempPositionsCapacity(rawLength);
   }
 
@@ -608,6 +726,9 @@ export function buildMainWaveFrame({
       clamp(0.24 + (1 - smoothing) * 0.58, 0.18, 0.82),
     );
     nextMomentum[index] = momentum;
+    if (lineMode) {
+      continue;
+    }
     let x = 0;
     let y = 0;
     switch (mode) {
@@ -680,29 +801,6 @@ export function buildMainWaveFrame({
         y = centerY + (x0 * sinR + y0 * cosR);
         break;
       }
-      case 6: {
-        const clipCount = Math.round((1.57 * mystery * samples) / 2);
-        const clipped =
-          index < clipCount || index >= samples - clipCount ? 0 : sampleValue;
-        x = -1 + 2 * t;
-        y = centerY + clipped * 0.25 * scale;
-        break;
-      }
-      case 7: {
-        // DoubleLine: MilkDrop shows two parallel lines from L and R
-        // channels displaced 0.25 * fWaveScale from the separation axis.
-        const sampleR = sampleStereoWaveformData(signals, 'right', t, 0);
-        const sampleL = sampleStereoWaveformData(signals, 'left', t, 32 / 512);
-        const separation = 0.1 + mystery * 0.2;
-        if (index % 2 === 0) {
-          x = -1 + 2 * t;
-          y = centerY + sampleR * scale * 0.25 + separation;
-        } else {
-          x = -1 + 2 * t;
-          y = centerY + sampleL * scale * 0.25 - separation;
-        }
-        break;
-      }
       default:
         x = -1.1 + t * 2.2;
         y = centerY + sampleValue * scale * 1.7 + velocity * 0.12;
@@ -711,7 +809,7 @@ export function buildMainWaveFrame({
     prevPrevY = prevY;
     prevX = x;
     prevY = y;
-    if (useProcedural && proceduralSamples && proceduralVelocities) {
+    if (proceduralGeometry && proceduralSamples && proceduralVelocities) {
       proceduralSamples[index] = sampleValue;
       proceduralVelocities[index] = momentum;
       continue;
@@ -725,7 +823,46 @@ export function buildMainWaveFrame({
   // ProjectM inserts exactly one midpoint per segment using fixed weights
   // [-0.15, 1.15, 1.15, -0.15] / 2.0, doubling the vertex count. The
   // wave_smoothing parameter controls the IIR filter, not subdivision.
-  if (!useProcedural) {
+  if (!proceduralGeometry && lineMode) {
+    const lines = buildMilkdropLineWave({
+      mode: mode as 6 | 7,
+      waveX: state.wave_x ?? 0.5,
+      waveY: state.wave_y ?? 0.5,
+      mystery: state.wave_mystery ?? 0,
+      scale,
+      count: samples,
+      // mode 6 reads the smoothed mono wave, mode 7 one line per channel
+      sampleLeft:
+        mode === 6
+          ? (t) => smoothedSamples[Math.round(t * (samples - 1))] ?? 0
+          : (t) => sampleStereoWaveformData(signals, 'left', t, 0),
+      sampleRight: (t) => sampleStereoWaveformData(signals, 'right', t, 0),
+    });
+    // Each line is smoothed on its own, then the two are joined by a pair of
+    // zero-alpha vertices so the hop between them draws nothing.
+    const smoothed = lines.map((raw) => {
+      const out = new Float32Array(
+        samples < 2 ? raw.length : (samples - 1) * 6 + 3,
+      );
+      catmullRomInterpolateTo(raw, raw.length, out);
+      return out;
+    });
+    const bridge = smoothed.length > 1 ? 6 : 0;
+    const total = smoothed.reduce((sum, line) => sum + line.length, 0) + bridge;
+    if (!(positions instanceof Float32Array) || positions.length !== total) {
+      visual.positions = new Float32Array(total);
+      positions = visual.positions;
+    }
+    const out = positions as Float32Array;
+    out.set(smoothed[0], 0);
+    if (smoothed.length > 1) {
+      const first = smoothed[0];
+      const second = smoothed[1];
+      out.set(first.subarray(first.length - 3), first.length);
+      out.set(second.subarray(0, 3), first.length + 3);
+      out.set(second, first.length + 6);
+    }
+  } else if (!proceduralGeometry) {
     const interpolatedLength = samples < 2 ? rawLength : (samples - 1) * 6 + 3;
     if (Array.isArray(positions)) {
       if (positions.length !== interpolatedLength) {
@@ -810,6 +947,20 @@ export function buildMainWaveFrame({
 
   visual.color = assignColor(visual.color, tempFinalColor);
   visual.alpha = alpha;
+  // Mode 7's bridge between its two lines is the only per-vertex alpha a main
+  // wave carries; every other frame clears it, since visuals are reused.
+  if (lineMode && mode === 7 && !proceduralGeometry) {
+    visual.colors = lineWaveBridgeColors(
+      visual.positions.length / 3,
+      tempFinalColor,
+      alpha,
+      visual.colors,
+    );
+    visual.perPointAlpha = true;
+  } else {
+    visual.colors = undefined;
+    visual.perPointAlpha = false;
+  }
   visual.thickness = thickness;
   visual.drawMode = drawMode;
   visual.additive = additive;
