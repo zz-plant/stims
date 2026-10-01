@@ -43,6 +43,11 @@ const AUDIO_COMMIT_TIMEOUT_MS = 2000;
  */
 const PRESET_TIMEOUT_MS = 15000;
 
+const NOTHING_ON_STAGE: AgentCommandResult = {
+  success: false,
+  reason: 'Nothing is on stage yet. Load a preset or start audio first.',
+};
+
 type EditorSession = Awaited<
   ReturnType<EngineContextValue['applyEditorSourceAwaited']>
 >;
@@ -255,12 +260,57 @@ export function buildAgentBridgeCallbacks({
       startAudioForAgent(engineRef.current, source, audioCommitTimeoutMs),
     // Lets an MCP session_midi_set/session_midi_cc call "perform" on the
     // live stage through the exact same virtual-device pipeline a
-    // physical controller uses — see webmidi-controller.ts.
+    // physical controller uses — see webmidi-controller.ts. A live control
+    // reports delivery, not a compile; set_fields is the awaited path.
     onMidiSet: (target, value) => {
-      webMidiService.injectTargetValue(VIRTUAL_CLAUDE_DEVICE_ID, target, value);
+      if (!getLastCommittedCore()?.presetId) return NOTHING_ON_STAGE;
+      return webMidiService.injectTargetValue(
+        VIRTUAL_CLAUDE_DEVICE_ID,
+        target,
+        value,
+      )
+        ? { success: true }
+        : {
+            success: false,
+            reason:
+              'The "Claude (MCP)" MIDI device is turned off in Performance settings.',
+          };
     },
     onMidiCc: (cc, value) => {
-      webMidiService.injectControlChange(VIRTUAL_CLAUDE_DEVICE_ID, cc, value);
+      if (!getLastCommittedCore()?.presetId) return NOTHING_ON_STAGE;
+      const { target, normalized } = webMidiService.injectControlChange(
+        VIRTUAL_CLAUDE_DEVICE_ID,
+        cc,
+        value,
+      );
+      return target
+        ? { success: true, target, normalized }
+        : {
+            success: false,
+            reason: `CC ${cc} drove nothing: it is not mapped on the "Claude (MCP)" device, or that device is turned off. Map it with MIDI learn, or send toil:midi_set with a field name.`,
+          };
+    },
+    // The agent API's own runner, so an embedding page gets every palette
+    // action and verb, with its unknown-id suggestions, without a second list.
+    // `success` means the action ran; `settled` and `events` say what changed.
+    runAction: async (id, params) => {
+      const agent =
+        typeof window === 'undefined' ? undefined : window.__stims_agent;
+      if (!agent) {
+        return {
+          success: false,
+          reason: 'The agent API is not installed yet.',
+        };
+      }
+      const result = await agent.run(id, params);
+      if (!result.ok) {
+        return {
+          success: false,
+          reason: result.error ?? `${id} did not run.`,
+          ...(result.suggestions ? { suggestions: result.suggestions } : {}),
+        };
+      }
+      return { success: true, settled: result.settled, events: result.events };
     },
     getMidiBindings: () => webMidiService.getAllBindings(),
     getMidiDevices: () => webMidiService.getDevices(),
