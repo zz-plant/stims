@@ -51,33 +51,7 @@ The `model` param overrides the default refine model (Llama 4 Scout). Explain/de
 
 Generate a MilkDrop preset from an uploaded image.
 
-**Body:** FormData with `image` file OR JSON `{ image: string }` (base64)
-**Response:** `{ description: string, milkSource: string, cached?: true, cachedPresetId?: string }`
+**Body:** FormData with `image` file OR JSON `{ image: string }` (base64); either form takes an optional `guidance` string (trimmed to 500 characters)
+**Response:** `{ description: string, milkSource: string }`
 
-Accepts both `multipart/form-data` (file upload from browser) and `application/json` (base64 for programmatic use). Uses Gemma 4 for vision description and Qwen 2.5 Coder for preset generation. When the description's embedding closely matches a stored preset embedding (cosine > 0.88) and that preset's source is resolvable from the gallery, returns the cached preset's real source with its id; otherwise generates fresh source.
-
-## GET /api/presets
-
-List community presets with optional search, tag filtering, and sorting.
-
-**Query:** `?search=&tag=&sort=newest|top&page=1&limit=20`
-**Response:** `{ presets: PresetEntry[], total: number, page: number, limit: number }`
-
-## POST /api/presets
-
-Upload a new community preset.
-
-**Body:** `{ title: string, author?: string, milkSource: string, tags?: string[], email?: string }`
-**Response:** `{ id: string, title: string }`
-
-## GET /api/presets/:id
-
-Get a single community preset with its .milk source.
-
-**Response:** `{ id: string, title: string, author: string, milkSource: string, tags: string[], rating: number, downloads: number }`
-
-## POST /api/presets/:id/favorite
-
-Toggle favorite status for a community preset.
-
-**Response:** `{ favorited: boolean }`
+Accepts both `multipart/form-data` (file upload from browser) and `application/json` (base64 for programmatic use). Uses Gemma 4 for vision description and Qwen 2.5 Coder for preset generation. Every request generates fresh source.
