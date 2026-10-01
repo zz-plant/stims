@@ -102,19 +102,20 @@ What is *not* solved is **knowing which instrument answers your question.** `bun
 
 ```bash
 bun run help --for "my preset looks wrong"      # → parity:capture, parity:diff
-bun run help --for "webgpu and webgl differ"    # → lab:gpu-differential
-bun run help --for "the visualizer is slow"     # → perf:certification-corpus
+bun run help --for "webgpu and webgl differ"    # → lab:backend-diff, lab:gpu-differential
+bun run help --for "the visualizer is slow"     # → lab:profile, perf:certification-corpus
 ```
 
 The underlying table, which is worth internalising:
 
 | Question | Instrument |
 | --- | --- |
+| Which audio can reach which control, and does anything drawn follow the audio at all? | `bun run lab:dataflow -- --preset <id>` (instant, reads the equations; `--all` labels the whole corpus in ~20s) |
 | Is this preset reacting to audio at all? | `bun run lab:reactivity` (~15s, no browser) |
 | Does it react *visually*, in pixels? | `bun run lab:visual` (1–3 min) |
 | Does anything in the corpus produce NaN / fail to compile? | `bun run lab:nan-sweep` (~5–10 min) |
 | Did my VM change alter semantics? | `bun run lab:replay` |
-| Do WebGL and WebGPU agree? | `bun run lab:gpu-differential` |
+| Do WebGL and WebGPU agree? | `bun run lab:backend-diff` (rendered frames; needs a GPU host), then `bun run lab:gpu-differential` (VM tiers) |
 | Is this preset a seizure risk? | `bun run lab:flash-audit` (the real WCAG 2.3.1 instrument, ~12 min) |
 | Which presets render blank or frozen? | `bun run sweep:milkdrop-loops` |
 | Is the frame budget blown? | `bun run perf:certification-corpus` |

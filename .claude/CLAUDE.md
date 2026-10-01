@@ -59,6 +59,7 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 | Warm long-lived session | `bun run session:codex -- --profile review` | — |
 | Check everything at once | `bun run agent:status` | < 5s |
 | Quick verify loop | `bun run agent:verify` | < 1 min |
+| Which audio reaches which control or drawn program, read from the equations (no run) | `bun run lab:dataflow -- --preset <id>` (`--all` for the corpus) | instant / ~20s |
 | Measure preset audio reactivity (no browser) | `bun run lab:reactivity -- --preset <id>` | ~15s |
 | Measure preset visuals + pixel reactivity | `bun run lab:visual -- --preset <id>` | 1–3 min |
 | Sweep whole corpus for NaN/compile/step failures (no browser) | `bun run lab:nan-sweep` | ~5–10 min |
