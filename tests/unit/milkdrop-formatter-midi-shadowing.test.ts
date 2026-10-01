@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   computeMidiGutterInfo,
+  findMilkdropEquationLine,
   findMilkdropFieldLine,
   getFieldOverwriteKind,
   isFieldShadowedByEquations,
@@ -125,5 +126,35 @@ describe('getFieldOverwriteKind', () => {
   it('does not treat a same-prefix variable as a self-reference', () => {
     const source = 'zoom=1.4\nper_frame_1=zoom2 = zoom2 * 1.01\n';
     expect(getFieldOverwriteKind(source, 'zoom')).toBe('none');
+  });
+});
+
+/**
+ * A custom wave or shape field is recomputed by its own slot's code, under
+ * its bare name: `shapecode_1_rad` is `rad = …` in `shape_1_per_frame*`.
+ */
+describe('custom wave and shape fields', () => {
+  const source = [
+    'shapecode_1_enabled=1',
+    'shapecode_1_rad=0.2',
+    'shape_1_per_frame1=rad = 0.1 + 0.1*bass;',
+    'shape_0_per_frame1=x = 0.3;',
+    'wavecode_0_enabled=1',
+    'wave_0_per_point1=r = sample;',
+    'per_frame_1=y = 0.5;',
+  ].join('\n');
+
+  it('counts only that slot’s own code', () => {
+    expect(isFieldShadowedByEquations(source, 'shapecode_1_rad')).toBe(true);
+    // shape_0's x and a per-frame y belong to other code
+    expect(isFieldShadowedByEquations(source, 'shapecode_1_x')).toBe(false);
+    expect(isFieldShadowedByEquations(source, 'shapecode_0_y')).toBe(false);
+    // a wave's colour set per point counts
+    expect(isFieldShadowedByEquations(source, 'wavecode_0_r')).toBe(true);
+  });
+
+  it('finds the line that recomputes it, and how', () => {
+    expect(findMilkdropEquationLine(source, 'shapecode_1_rad')).toBe(3);
+    expect(getFieldOverwriteKind(source, 'shapecode_1_rad')).toBe('absolute');
   });
 });

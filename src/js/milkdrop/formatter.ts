@@ -3,6 +3,7 @@
  * INI-format configuration blocks, preserving equation order, custom waves/shapes, and scalar fields.
  */
 
+import { normalizeFieldKey as normalizeCompiledFieldKey } from './compiler/preset-normalization.ts';
 import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
 import { editorFieldKey } from './field-table.ts';
 import {
@@ -426,9 +427,53 @@ function assignmentLines(source: string): PresetSyntaxLine[] {
  * everything else — the whole border, motion-vector, video-echo and main-wave
  * blocks, which real .milk files always spell the long way — got a second
  * assignment appended instead of an in-place rewrite.
+ *
+ * A custom wave or shape field has spellings of its own that the compiler
+ * reads as one (`wavecode_0_bDrawThick`, `wavecode_0_thick`), so those go
+ * through the compiler's normalization too.
  */
 function normalizeFieldKey(key: string): string {
+  if (SLOT_FIELD_KEY.test(key)) {
+    // Null for a slot past the last one the compiler reads.
+    const canonical = normalizeCompiledFieldKey({
+      key,
+      rawValue: '',
+      line: 0,
+      section: null,
+    });
+    if (canonical !== null) return canonical;
+  }
   return normalizeProgramAssignmentTarget(key);
+}
+
+/** A custom wave or shape field: `wavecode_0_bDrawThick`, `shapecode_2_rad`. */
+const SLOT_FIELD_KEY = /^(?:wavecode|shapecode)_\d+_/iu;
+
+/**
+ * Where a field is recomputed every frame, and under what name. A built-in
+ * (`zoom`) is assigned by name in any equation line. A custom wave or shape
+ * field is assigned by its bare name in that slot's own code: `shapecode_0_rad`
+ * is `rad` in `shape_0_per_frame*`, and a wave's colour can also be set per
+ * point. Null for an empty target.
+ */
+function equationScope(
+  target: string,
+): { variable: string; covers: (key: string) => boolean } | null {
+  const trimmed = target.trim();
+  if (!trimmed) return null;
+  if (!SLOT_FIELD_KEY.test(trimmed)) {
+    return { variable: trimmed, covers: isEquationKey };
+  }
+  // The compiler counts slots from 1; the file, from 0.
+  const canonical = normalizeFieldKey(trimmed);
+  const wave = /^custom_wave_(\d+)_(.+)$/u.exec(canonical);
+  const shape = /^shape_(\d+)_(.+)$/u.exec(canonical);
+  const slot = wave ?? shape;
+  if (!slot) return null;
+  const code = wave
+    ? new RegExp(`^wave_${Number(slot[1]) - 1}_per_(?:frame|point)\\d*$`, 'iu')
+    : new RegExp(`^shape_${Number(slot[1]) - 1}_per_frame\\d*$`, 'iu');
+  return { variable: slot[2] as string, covers: (key) => code.test(key) };
 }
 
 /**
@@ -505,16 +550,16 @@ export function isFieldShadowedByEquations(
   source: string,
   target: string,
 ): boolean {
-  const normalizedTarget = target.trim();
-  if (!normalizedTarget) return false;
+  const scope = equationScope(target);
+  if (!scope) return false;
   const assignPattern = new RegExp(
-    `(?:^|;)\\s*${escapeRegExpLiteral(normalizedTarget)}\\s*=(?!=)`,
+    `(?:^|;)\\s*${escapeRegExpLiteral(scope.variable)}\\s*=(?!=)`,
     'iu',
   );
 
   return assignmentLines(source).some(
     (line) =>
-      isEquationKey(line.key as string) &&
+      scope.covers(line.key as string) &&
       assignPattern.test(stripInlineCommentFromLine(line.value as string)),
   );
 }
@@ -531,15 +576,16 @@ export function getFieldOverwriteKind(
   source: string,
   target: string,
 ): 'none' | 'absolute' | 'relative' {
-  const normalizedTarget = target.trim().toLowerCase();
-  if (!normalizedTarget) return 'none';
+  const scope = equationScope(target);
+  if (!scope) return 'none';
+  const normalizedTarget = scope.variable.toLowerCase();
   const targetRef = new RegExp(
     `\\b${escapeRegExpLiteral(normalizedTarget)}\\b`,
     'iu',
   );
   let last: 'absolute' | 'relative' | null = null;
   for (const line of assignmentLines(source)) {
-    if (!isEquationKey(line.key as string)) continue;
+    if (!scope.covers(line.key as string)) continue;
     const valuePart = stripInlineCommentFromLine(line.value as string);
     // Statements within one equation line run in order, and the last
     // assignment to the target wins — so classify each and keep the last.
@@ -569,16 +615,16 @@ export function findMilkdropEquationLine(
   source: string,
   target: string,
 ): number | null {
-  const normalizedTarget = target.trim();
-  if (!normalizedTarget) return null;
+  const scope = equationScope(target);
+  if (!scope) return null;
   const assignPattern = new RegExp(
-    `(?:^|;)\\s*${escapeRegExpLiteral(normalizedTarget)}\\s*=(?!=)`,
+    `(?:^|;)\\s*${escapeRegExpLiteral(scope.variable)}\\s*=(?!=)`,
     'iu',
   );
 
   const line = assignmentLines(source).find(
     (candidate) =>
-      isEquationKey(candidate.key as string) &&
+      scope.covers(candidate.key as string) &&
       assignPattern.test(stripInlineCommentFromLine(candidate.value as string)),
   );
   return line?.number ?? null;

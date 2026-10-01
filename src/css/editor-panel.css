@@ -775,6 +775,19 @@ html.light .stims-editor {
   outline-offset: 2px;
 }
 
+/* The wave-or-shape picker reads like a control head: label, then the
+   select. The picked slot's controls follow in the pane's usual groups. */
+.stims-editor__slot-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stims-editor__slot-controls {
+  display: grid;
+  gap: 8px;
+}
+
 .stims-editor__slider-track {
   position: relative;
   display: flex;
@@ -1893,7 +1906,9 @@ button.stims-editor__compat-row:focus-visible {
 
 .stims-editor__outline-slot {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  /* Solo, Mute, then Tune for a wave or shape: last, so Solo and Mute line
+     up on the layer rows, which have no Tune. */
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 4px;
 }
