@@ -93,6 +93,29 @@ bun run dev
 
 Then open `http://localhost:5173`. The git history is large: `git clone --filter=blob:none https://github.com/zz-plant/stims.git` skips its old binaries and clones much faster.
 
+### Use the compiler without the app
+
+The compiler is a plain module, so scripts and CI can check `.milk` files the same way the live editor does:
+
+```ts
+// compile.ts — print the errors the editor would show
+import { readFileSync } from 'node:fs';
+import { compileMilkdropPresetSource } from './src/js/milkdrop/compiler.ts';
+
+const { diagnostics } = compileMilkdropPresetSource(
+  readFileSync(process.argv[2] ?? '', 'utf8'),
+);
+for (const d of diagnostics.filter((d) => d.severity === 'error')) {
+  console.log(`${d.line ?? '?'}: ${d.message}`);
+}
+```
+
+```bash
+bun compile.ts public/milkdrop-presets/eos-glowsticks-v2-03-music.milk
+```
+
+To learn the equation language, start with [the authoring curriculum](./docs/authoring/README.md); `bun run lab:dataflow -- --preset <id>` reports which audio signals reach each control of any catalog preset.
+
 ## Verification commands
 
 ```bash
