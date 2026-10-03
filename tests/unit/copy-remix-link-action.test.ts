@@ -24,6 +24,34 @@ function captureShare(
 }
 
 describe('copyRemixLinkAction', () => {
+  it('offers support only after a successful share, never on cancellation, failure, or an oversized draft', async () => {
+    const successes: string[] = [];
+    for (const outcome of [
+      'copied',
+      'shared',
+      'cancelled',
+      'unavailable',
+    ] as const) {
+      await copyRemixLinkAction({
+        source: SOURCE,
+        dirty: true,
+        announce: () => {},
+        href: HREF,
+        share: captureShare(outcome).share,
+        onSuccess: () => successes.push(outcome),
+      });
+    }
+    await copyRemixLinkAction({
+      source: SOURCE.repeat(1000),
+      dirty: true,
+      announce: () => {},
+      href: HREF,
+      share: captureShare('copied').share,
+      onSuccess: () => successes.push('oversized'),
+    });
+    expect(successes).toEqual(['copied', 'shared']);
+  });
+
   it('carries a draft containing emoji and non-Latin text', async () => {
     // `btoa` is Latin-1 only, so one emoji used to make the whole hash fail
     // to build. The link then degraded to a plain view URL while the UI still
