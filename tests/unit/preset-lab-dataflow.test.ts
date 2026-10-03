@@ -15,6 +15,25 @@ function label(lines: string[]) {
 }
 
 describe('labelPresetAudio', () => {
+  test('HPSS inputs drive canonical columns and drawn programs', () => {
+    const result = label([
+      'wave_a=0',
+      'per_frame_1=q1 = 0.9*q1 + 0.1*percussive;',
+      'per_frame_2=zoom = 1 + 0.1*q1;',
+      'per_pixel_1=rot = 0.1*harmonic*rad;',
+      'wavecode_0_enabled=1',
+      'wave_0_per_point1=y = 0.5 + 0.1*percussiveLow;',
+      'shapecode_0_enabled=1',
+      'shape_0_per_frame1=rad = 0.1 + 0.1*percussive_ratio;',
+    ]);
+    expect(result.tier).toBe('driven');
+    expect(result.audioColumns.zoom).toEqual(['percussive']);
+    expect(result.historyColumns).toContain('zoom');
+    expect(result.perPixelSignals).toEqual(['harmonic']);
+    expect(result.waveSignals).toEqual(['percussivelow']);
+    expect(result.shapeSignals).toEqual(['percussive_ratio']);
+  });
+
   test('an equation that moves the picture with the audio makes it driven', () => {
     const result = label(['per_frame_1=zoom = 1 + 0.1*bass;']);
     expect(result.tier).toBe('driven');

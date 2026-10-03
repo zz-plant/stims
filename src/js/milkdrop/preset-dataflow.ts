@@ -73,6 +73,17 @@ const AUDIO = new Set([
   'transient',
   'spectralflux',
   'weightedenergy',
+  'percussive',
+  'harmonic',
+  'percussive_low',
+  'percussive_mid',
+  'percussive_high',
+  'percussive_ratio',
+  // camelCase HPSS aliases after identifier normalization
+  'percussivelow',
+  'percussivemid',
+  'percussivehigh',
+  'percussiveratio',
 ]);
 const CLOCK = new Set(['time', 'frame', 'fps', 'progress']);
 const POINTER = new Set([

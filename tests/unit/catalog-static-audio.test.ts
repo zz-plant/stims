@@ -10,6 +10,31 @@ import { staticAudioScore } from '../../scripts/score-catalog-quality.ts';
 const preset = (lines: string[]) => `[preset00]\n${lines.join('\n')}\n`;
 
 describe('staticAudioScore', () => {
+  test.each(['percussive', 'harmonic', 'percussive_ratio', 'percussiveHigh'])(
+    'HPSS input %s driving motion earns full credit',
+    (signal) => {
+      expect(
+        staticAudioScore(
+          `hpss-${signal}`,
+          preset(['wave_a=0', `per_frame_1=zoom = 1 + 0.1*${signal};`]),
+        ),
+      ).toBe(1);
+    },
+  );
+
+  test('overwritten HPSS input earns no audio credit', () => {
+    expect(
+      staticAudioScore(
+        'hpss-overwritten',
+        preset([
+          'wave_a=0',
+          'per_frame_1=zoom = 1 + 0.1*harmonic;',
+          'per_frame_2=zoom = 1;',
+        ]),
+      ),
+    ).toBe(0);
+  });
+
   test('audio driving the motion earns full credit', () => {
     expect(
       staticAudioScore(
