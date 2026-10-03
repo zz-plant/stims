@@ -93,6 +93,29 @@ bun run dev
 
 Then open `http://localhost:5173`. The git history is large: `git clone --filter=blob:none https://github.com/zz-plant/stims.git` skips its old binaries and clones much faster.
 
+### Use the compiler without the app
+
+The compiler is a plain module, so scripts and CI can check `.milk` files the same way the live editor does:
+
+```ts
+// compile.ts — print the errors the editor would show
+import { readFileSync } from 'node:fs';
+import { compileMilkdropPresetSource } from './src/js/milkdrop/compiler.ts';
+
+const { diagnostics } = compileMilkdropPresetSource(
+  readFileSync(process.argv[2] ?? '', 'utf8'),
+);
+for (const d of diagnostics.filter((d) => d.severity === 'error')) {
+  console.log(`${d.line ?? '?'}: ${d.message}`);
+}
+```
+
+```bash
+bun compile.ts public/milkdrop-presets/eos-glowsticks-v2-03-music.milk
+```
+
+To learn the equation language, start with [the authoring curriculum](./docs/authoring/README.md); `bun run lab:dataflow -- --preset <id>` reports which audio signals reach each control of any catalog preset.
+
 ## Verification commands
 
 ```bash
@@ -107,8 +130,8 @@ bun run build         # production bundle
 The most useful things, roughly in order of effort:
 
 - **Tell us when a preset looks wrong.** The link in your address bar reproduces the exact session, so that link, plus a screenshot of the same preset in MilkDrop or projectM if you have one, is a complete bug report: [report a preset that renders wrong](https://github.com/zz-plant/stims/issues/new?template=preset-renders-wrong.yml).
-- **Share presets and finds** in [Discussions](https://github.com/zz-plant/stims/discussions): a preset you wrote or restored, a collection worth curating, a song that makes one sing.
-- **Send code.** Start with [CONTRIBUTING.md](./CONTRIBUTING.md); [docs/ONBOARDING.md](./docs/ONBOARDING.md) maps the codebase and says which parts are hard. Compatibility changes should bring a test and its evidence.
+- **Share presets and finds** in [Discussions](https://github.com/zz-plant/stims/discussions): a preset you wrote or restored, a collection worth curating, a song that makes one sing. [The remix thread](https://github.com/zz-plant/stims/discussions/1341) collects one-equation edits of a featured preset.
+- **Send code.** Start with [CONTRIBUTING.md](./CONTRIBUTING.md); [docs/ONBOARDING.md](./docs/ONBOARDING.md) maps the codebase and says which parts are hard. The [good first issues](https://github.com/zz-plant/stims/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) are scoped small on purpose. Compatibility changes should bring a test and its evidence.
 
 What changed recently is in [the changelog](./CHANGELOG.md).
 
