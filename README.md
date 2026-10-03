@@ -130,8 +130,8 @@ bun run build         # production bundle
 The most useful things, roughly in order of effort:
 
 - **Tell us when a preset looks wrong.** The link in your address bar reproduces the exact session, so that link, plus a screenshot of the same preset in MilkDrop or projectM if you have one, is a complete bug report: [report a preset that renders wrong](https://github.com/zz-plant/stims/issues/new?template=preset-renders-wrong.yml).
-- **Share presets and finds** in [Discussions](https://github.com/zz-plant/stims/discussions): a preset you wrote or restored, a collection worth curating, a song that makes one sing.
-- **Send code.** Start with [CONTRIBUTING.md](./CONTRIBUTING.md); [docs/ONBOARDING.md](./docs/ONBOARDING.md) maps the codebase and says which parts are hard. Compatibility changes should bring a test and its evidence.
+- **Share presets and finds** in [Discussions](https://github.com/zz-plant/stims/discussions): a preset you wrote or restored, a collection worth curating, a song that makes one sing. [The remix thread](https://github.com/zz-plant/stims/discussions/1341) collects one-equation edits of a featured preset.
+- **Send code.** Start with [CONTRIBUTING.md](./CONTRIBUTING.md); [docs/ONBOARDING.md](./docs/ONBOARDING.md) maps the codebase and says which parts are hard. The [good first issues](https://github.com/zz-plant/stims/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) are scoped small on purpose. Compatibility changes should bring a test and its evidence.
 
 What changed recently is in [the changelog](./CHANGELOG.md).
 
