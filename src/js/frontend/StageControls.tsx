@@ -842,6 +842,25 @@ export function StageControls({
             />
           ) : null}
           <AudioStatusControl onActivity={signalActivity} />
+          {panel !== 'editor' ? (
+            <button
+              type="button"
+              className={styles.editEntry}
+              data-action="open-editor"
+              aria-label="Edit this visual"
+              aria-keyshortcuts={ariaKeyShortcutsFor('open-editor')}
+              onClick={() => {
+                signalActivity();
+                ui.updatePanel('editor');
+              }}
+            >
+              <UiIcon
+                name="pencil"
+                className="stims-icon-slot stims-icon-slot--sm"
+              />
+              Edit this visual
+            </button>
+          ) : null}
           <button
             type="button"
             className={styles.navBtn}

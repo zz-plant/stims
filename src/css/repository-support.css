@@ -1,0 +1,59 @@
+.stims-repository-support,
+.stims-editor-intro {
+  flex-shrink: 0;
+  padding: 12px;
+  border-bottom: 1px solid var(--stims-line);
+  color: var(--stims-ink);
+  background: var(--stims-panel);
+  font-size: 0.8125rem;
+}
+
+.stims-repository-support p,
+.stims-editor-intro p {
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+.stims-repository-support > div,
+.stims-editor-intro__heading,
+.stims-editor-intro__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stims-editor-intro__heading {
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.stims-repository-support a,
+.stims-repository-support button,
+.stims-editor-intro button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--stims-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.stims-repository-support a {
+  color: var(--stims-accent);
+}
+
+.stims-repository-support :is(a, button):focus-visible,
+.stims-editor-intro button:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 2px;
+}
+
+.stims-editor-intro button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

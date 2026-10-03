@@ -11,6 +11,7 @@
  * call in.
  */
 
+import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { shareOrCopyLink } from '../utils/media/share-link.ts';
 import type {
   AudioSource,
@@ -128,12 +129,14 @@ export async function copyRemixLinkAction({
   source,
   dirty,
   announce,
+  onSuccess,
   share = shareOrCopyLink,
   href = typeof window === 'undefined' ? '' : window.location.href,
 }: {
   source: string;
   dirty: boolean;
   announce: (message: string) => void;
+  onSuccess?: () => void;
   /** Test seam for the clipboard/native-share path. */
   share?: typeof shareOrCopyLink;
   href?: string;
@@ -154,6 +157,15 @@ export async function copyRemixLinkAction({
       : 'Open this Stims preset.',
   });
 
+  noteGrowthEvent(
+    result === 'shared'
+      ? 'share-shared'
+      : result === 'copied'
+        ? 'share-copied'
+        : result === 'cancelled'
+          ? 'share-cancelled'
+          : 'share-unavailable',
+  );
   if (result === 'cancelled') return;
 
   if (result === 'shared' || result === 'copied') {
@@ -163,6 +175,7 @@ export async function copyRemixLinkAction({
         ? `Link ${verb} — it carries your unsaved edits, and opens in their editor.`
         : `Link ${verb}.`,
     );
+    onSuccess?.();
     return;
   }
 
