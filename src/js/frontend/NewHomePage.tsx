@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import type { ResumableAudioSource } from '../core/state/last-session-store.ts';
 import { getLastSession } from '../core/state/last-session-store.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
@@ -159,7 +160,10 @@ export function NewHomePage() {
       setAudioStarting(false),
     );
   };
-  const handlePlayDemo = () => startWithFeedback('demo');
+  const handlePlayDemo = () => {
+    noteGrowthEvent('demo-started');
+    startWithFeedback('demo');
+  };
   const handleBrowsePresets = () => ui.updatePanel('browse');
 
   // A shared source outranks the visitor's own last session: they followed
@@ -532,6 +536,7 @@ function ProjectMeta() {
         href={STIMS_REPO_URL}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => noteGrowthEvent('github-clicked')}
       >
         <UiIcon name="github" className="stims-shell__launch-meta-icon" />
         Open source on GitHub

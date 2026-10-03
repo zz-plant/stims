@@ -77,4 +77,20 @@ describe('noteGrowthEvent', () => {
       'growth-audio-started',
     ]);
   });
+
+  test('records the edit-entry, share, and support funnels', async () => {
+    noteGrowthEvent('demo-started');
+    noteGrowthEvent('editor-opened');
+    noteGrowthEvent('first-edit-applied');
+    noteGrowthEvent('video-saved');
+    noteGrowthEvent('github-clicked');
+    await flush();
+    expect(beacons.map((beacon) => beacon.body.event)).toEqual([
+      'growth-demo-started',
+      'growth-editor-opened',
+      'growth-first-edit-applied',
+      'growth-video-saved',
+      'growth-github-clicked',
+    ]);
+  });
 });

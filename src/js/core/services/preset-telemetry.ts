@@ -26,7 +26,12 @@ export type GrowthTelemetryEvent =
   | 'share-unavailable'
   | 'embed-landing'
   | 'discovery-landing'
-  | 'audio-started';
+  | 'audio-started'
+  | 'demo-started'
+  | 'editor-opened'
+  | 'first-edit-applied'
+  | 'github-clicked'
+  | 'video-saved';
 
 let growthTransmitted = 0;
 const MAX_GROWTH_TRANSMITS_PER_SESSION = 50;
