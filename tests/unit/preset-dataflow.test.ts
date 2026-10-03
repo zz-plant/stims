@@ -28,6 +28,37 @@ function analyze(lines: string[]) {
 }
 
 describe('analyzePresetDataflow', () => {
+  test.each([
+    'percussive',
+    'harmonic',
+    'percussive_low',
+    'percussive_mid',
+    'percussive_high',
+    'percussive_ratio',
+    'percussiveLow',
+    'percussiveMid',
+    'percussiveHigh',
+    'percussiveRatio',
+  ])(
+    'HPSS input %s reaches controls through registers and per-pixel code',
+    (signal) => {
+      const result = analyze([
+        `per_frame_1=q1 = 0.9*q1 + 0.1*${signal};`,
+        'per_frame_2=zoom = 1 + q1*0.1;',
+        'per_pixel_1=rot = q1*rad;',
+      ]);
+      const audio = [signal.toLowerCase()];
+      expect(result.variable('q1')).toMatchObject({
+        kind: 'audio',
+        audio,
+        history: true,
+      });
+      expect(result.variable('zoom')).toMatchObject({ kind: 'audio', audio });
+      expect(controlAudio(result, 'zoom')).toEqual(audio);
+      expect(controlAudio(result, 'rot')).toEqual(audio);
+    },
+  );
+
   test('a control driven by an audio signal is audio', () => {
     const { variable } = analyze(['per_frame_1=zoom = 1 + bass*0.1;']);
     expect(variable('zoom')).toMatchObject({

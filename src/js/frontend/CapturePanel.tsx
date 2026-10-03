@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/CapturePanel.module.css';
+import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import {
   CanvasVideoExporter,
   type CanvasVideoExporterSupport,
   EXPORT_PRESETS,
   type ExportPresetTarget,
 } from '../utils/media/canvas-video-exporter.ts';
+import { RepositorySupport } from './RepositorySupport.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
 const CAPTURE_FORMATS = [
@@ -42,6 +44,7 @@ export function CapturePanel() {
     null,
   );
   const [recording, setRecording] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [status, setStatus] = useState(
     'Choose a format, then start recording.',
@@ -101,6 +104,7 @@ export function CapturePanel() {
       return;
     }
     setElapsedSeconds(0);
+    setSaved(false);
     setRecording(true);
     setStatus(
       `Recording ${EXPORT_PRESETS[preset].label}${engine.audioActive ? ' with audio' : ' without audio'}. The visualizer remains live.`,
@@ -119,12 +123,17 @@ export function CapturePanel() {
     let flagged = false;
     try {
       flagged = sessionStorage.getItem('stims:capture-autostart') === '1';
-    } catch {}
+    } catch {
+      // Storage can be blocked (private mode); the flag stays unset and the
+      // panel shows the form, which is the pre-flag behavior.
+    }
     if (!flagged) return;
     autoStartConsumedRef.current = true;
     try {
       sessionStorage.removeItem('stims:capture-autostart');
-    } catch {}
+    } catch {
+      // Best-effort cleanup; the in-memory guard above already consumed it.
+    }
     startRecording();
   }, [support, recording, startRecording]);
 
@@ -140,6 +149,8 @@ export function CapturePanel() {
       }
       exporter.downloadVideo(blob, getFilename(preset, blob.type));
       setStatus('Video saved to your downloads.');
+      setSaved(true);
+      noteGrowthEvent('video-saved');
     } catch (error) {
       setStatus(
         error instanceof Error
@@ -180,7 +191,10 @@ export function CapturePanel() {
                   setPreset(format);
                   try {
                     localStorage.setItem(CAPTURE_FORMAT_STORAGE_KEY, format);
-                  } catch {}
+                  } catch {
+                    // A blocked localStorage keeps the choice for this visit
+                    // only; remembering it is a nicety, not a requirement.
+                  }
                 }}
               />
               <span>
@@ -230,6 +244,7 @@ export function CapturePanel() {
           Start recording
         </button>
       )}
+      {saved ? <RepositorySupport /> : null}
     </section>
   );
 }

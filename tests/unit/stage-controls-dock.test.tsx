@@ -120,6 +120,31 @@ describe('stage dock auto-hide', () => {
 });
 
 describe('stage dock transport', () => {
+  test('opens the current visual in the editor without changing its source or audio', () => {
+    const updatePanel = jest.fn();
+    const updateEditorSource = jest.fn();
+    const handleAudioStart = jest.fn();
+    const rendered = renderWorkspace(
+      createElement(StageControls, {
+        isFullscreen: false,
+        onToggleFullscreen: () => {},
+      }),
+      {
+        snapshot: liveSnapshot(),
+        ui: { updatePanel },
+        engine: { updateEditorSource, handleAudioStart },
+      },
+    );
+    try {
+      rendered.click(rendered.byLabel('Edit this visual'));
+      expect(updatePanel).toHaveBeenCalledWith('editor');
+      expect(updateEditorSource).not.toHaveBeenCalled();
+      expect(handleAudioStart).not.toHaveBeenCalled();
+    } finally {
+      rendered.dispose();
+    }
+  });
+
   test('the transport slot pauses and resumes instead of stopping', () => {
     const calls: string[] = [];
     const rendered = renderWorkspace(

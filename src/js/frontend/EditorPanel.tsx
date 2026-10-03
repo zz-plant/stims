@@ -1,13 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 // Editor styles ship with this lazy chunk so visitors who never open the
 // editor don't pay for them at startup.
 import '../../css/editor-panel.css';
+import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import type { MilkdropEditorSessionState } from '../milkdrop/types.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
+import { FirstEditGuide } from './FirstEditGuide.tsx';
+import { RepositorySupport } from './RepositorySupport.tsx';
 import { copyRemixLinkAction } from './workspace-actions.ts';
 import { useWorkspace } from './workspace-context.tsx';
 
 export function EditorPanel() {
+  const [shared, setShared] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<{
@@ -40,6 +44,7 @@ export function EditorPanel() {
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
+    noteGrowthEvent('editor-opened');
 
     let cancelled = false;
 
@@ -80,6 +85,7 @@ export function EditorPanel() {
             source: sessionStateRef.current?.source ?? '',
             dirty: sessionStateRef.current?.dirty ?? false,
             announce: (message) => uiRef.current.setStatusMessage(message),
+            onSuccess: () => setShared(true),
           });
         },
       });
@@ -113,19 +119,27 @@ export function EditorPanel() {
   }, [playbackPaused]);
 
   return (
-    <div ref={hostRef} className="stims-shell__editor-host">
-      <input
-        ref={importInputRef}
-        type="file"
-        accept=".milk,.zip,text/plain,application/zip"
-        multiple
-        hidden
-        aria-label="Import preset files or a .zip pack"
-        onChange={(event) => {
-          void handleImportRef.current(event.target.files);
-          event.target.value = '';
-        }}
+    <>
+      <FirstEditGuide
+        key={engineSnapshot?.activePresetId}
+        source={sessionState?.source ?? ''}
+        onChange={(source) => engine.updateEditorSource(source)}
       />
-    </div>
+      {shared ? <RepositorySupport /> : null}
+      <div ref={hostRef} className="stims-shell__editor-host">
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".milk,.zip,text/plain,application/zip"
+          multiple
+          hidden
+          aria-label="Import preset files or a .zip pack"
+          onChange={(event) => {
+            void handleImportRef.current(event.target.files);
+            event.target.value = '';
+          }}
+        />
+      </div>
+    </>
   );
 }
