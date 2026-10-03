@@ -222,6 +222,33 @@ describe('editor panel colour groups and value-source chips', () => {
     panel.dispose();
   });
 
+  test('Tune chips trace HPSS signals and refresh after an equation edit', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    try {
+      panel.setSessionState(
+        compiledStateFor(
+          'per_frame_1=q1 = percussive + harmonic;\nper_frame_2=zoom = 1 + q1*0.1;\n',
+        ),
+      );
+      const chip = chipFor(panel, 'Zoom');
+      expect(chip?.textContent).toBe('eq · harmonic +1');
+      expect(chip?.title).toContain('every frame from harmonic, percussive,');
+      expect(chip?.getAttribute('aria-label')).toBe(
+        'Zoom value source: driven, computed from harmonic, percussive',
+      );
+
+      panel.setSessionState(
+        compiledStateFor('per_pixel_1=zoom = 1 + percussiveRatio*rad*0.1;\n'),
+      );
+      expect(chipFor(panel, 'Zoom')?.textContent).toBe('eq · percussiveratio');
+      expect(chipFor(panel, 'Zoom')?.title).toContain(
+        'every frame from percussiveratio,',
+      );
+    } finally {
+      panel.dispose();
+    }
+  });
+
   test('the audio is traced through variables, not matched as text', () => {
     const panel = new EditorPanel(createMockCallbacks());
     panel.setSessionState(
