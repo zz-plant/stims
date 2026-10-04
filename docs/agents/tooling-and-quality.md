@@ -151,7 +151,7 @@ For Markdown-only edits, you can skip typecheck/tests unless the change modifies
 
 ## Quick CLI reference for agents
 
-This section lists the commands used most often — it is a shortlist, not the full set. The repo has well over a hundred scripts; start here when you don't already know the name:
+The commands used most often — a shortlist, not the full set, since the repo has well over a hundred scripts:
 
 ```bash
 # Every script, grouped by namespace, each with a one-line purpose

@@ -1,6 +1,6 @@
 # Contributing to Stims
 
-Thanks for contributing. This guide covers the current Bun-first workflow for humans and automation contributors.
+Thanks for contributing.
 
 ## Quick start
 

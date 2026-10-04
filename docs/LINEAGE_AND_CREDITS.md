@@ -1,6 +1,6 @@
 # Lineage and credits
 
-This document defines the attribution posture for Stims when we talk about the MilkDrop visualizer lineage in public copy, docs, presets, tests, and code comments.
+The attribution rules apply everywhere Stims mentions the MilkDrop lineage: public copy, docs, presets, tests, and code comments.
 
 ## Baseline wording
 

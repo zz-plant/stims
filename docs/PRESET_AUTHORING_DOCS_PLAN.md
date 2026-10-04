@@ -1,6 +1,6 @@
 # Preset Authoring Docs — Master Plan
 
-Goal: build the definitive learning path for writing and editing MilkDrop presets — good enough, combined with Stims itself, to bring a new generation into the hobby. This document is the assessment of the existing landscape plus the full plan.
+Goal: build the definitive learning path for writing and editing MilkDrop presets — good enough, combined with Stims itself, to bring a new generation into the hobby.
 
 Status: proposal (2026-08-11). Nothing here is built yet except where marked SHIPPED.
 

@@ -1,6 +1,6 @@
 # QA plan and automation map
 
-This guide captures the highest-impact flows to validate and how we keep them covered with automation. QA should protect the canonical root workspace on `/`, the `/milkdrop/` compatibility alias, the engine adapter seam, and the MilkDrop runtime contracts that sit beneath the React shell.
+QA should protect the canonical root workspace on `/`, the `/milkdrop/` compatibility alias, the engine adapter seam, and the MilkDrop runtime contracts that sit beneath the React shell.
 
 For the full testing reference — speed tiers, quality gate commands, per-change checklists, and CI behavior — see [`TESTING.md`](./TESTING.md).
 

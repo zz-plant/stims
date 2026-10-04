@@ -1,6 +1,6 @@
 # Generative AI use cases
 
-Stims already ships a substantial generative-AI surface: hosted Workers AI endpoints for preset generation, refinement, blending, image-guided generation, and semantic search, plus a bundled Generate panel and headless measurement labs. This document proposes where generative AI should go next as a set of product use cases. The framing is extension and hardening of what exists — not greenfield — and follows the roadmap principle that a foundation is not a feature until it is connected, usable, and verified.
+Stims already ships a substantial generative-AI surface: hosted Workers AI endpoints for preset generation, refinement, blending, image-guided generation, and semantic search, plus a bundled Generate panel and headless measurement labs. The framing for what comes next is extension and hardening of what exists — not greenfield — and follows the roadmap principle that a foundation is not a feature until it is connected, usable, and verified.
 
 Companion docs: [`api.md`](./api.md) (endpoint reference), [`MCP_SERVER.md`](./MCP_SERVER.md) (agent tooling), [`MILKDROP_CODING_GUIDE.md`](./MILKDROP_CODING_GUIDE.md) (the authoring spec generation targets), [`ROADMAP.md`](./ROADMAP.md) (overall priorities), [`guides/training-models.md`](./guides/training-models.md) (datasets and benchmarks for training and scoring models).
 

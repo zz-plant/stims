@@ -1,7 +1,5 @@
 # Feature Specifications (Current Build)
 
-This document describes the shipped React workspace frontend and the preserved MilkDrop engine beneath it.
-
 ## Audit snapshot
 
 | Area | Current state | Primary sources |

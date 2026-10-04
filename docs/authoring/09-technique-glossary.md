@@ -16,8 +16,7 @@ That last pair is the sharpest version of it: the bracket credits a *named
 mathematical technique* attributed to another author, not a preset. Citation
 practice, invented independently, inside a text field meant for names.
 
-This page is the working glossary of that vocabulary, built from the 1,787
-presets Stims ships.
+The glossary is built from the 1,787 presets Stims ships.
 
 ## How to read the numbers
 

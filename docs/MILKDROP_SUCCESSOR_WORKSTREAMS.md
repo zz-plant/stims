@@ -1,7 +1,5 @@
 # MilkDrop successor workstreams
 
-This page turns the current Stims direction into parallel work that can run without stepping on itself.
-
 Stims is an independent browser-native visualizer in the MilkDrop lineage. The goal is to become the strongest credible successor candidate in this repo, not to claim full projectM replacement before the evidence exists.
 
 ## Workstreams

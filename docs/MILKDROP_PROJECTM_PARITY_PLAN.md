@@ -1,7 +1,5 @@
 # MilkDrop projectM parity plan
 
-This document turns the current preset-fidelity gap into an implementation roadmap.
-
 For milestone-by-milestone execution details, see [`MILKDROP_PROJECTM_PARITY_BACKLOG.md`](./MILKDROP_PROJECTM_PARITY_BACKLOG.md).
 For how parity work fits alongside runtime, browser UX, and proof/release work, see [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md).
 

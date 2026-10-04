@@ -1,7 +1,5 @@
 # MilkDrop Preset Runtime
 
-This document covers the shared runtime used by the shipped MilkDrop visualizer.
-
 ## What this runtime owns
 
 - Preset loading, compilation, and live field patching.

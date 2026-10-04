@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document describes the current shipped frontend architecture for Stims after the React workspace cutover. The root route at `/` is the product surface. `milkdrop/index.html` exists only as a compatibility alias that redirects into `/`.
+The root route at `/` is the product surface. `milkdrop/index.html` exists only as a compatibility alias that redirects into `/`.
 
 ## Current shape
 
