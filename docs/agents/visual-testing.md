@@ -1,6 +1,6 @@
 # Visual Testing for Agents
 
-Visual verification is a critical part of agent work on Stims. This guide covers browser-based testing, development tools, and validation approaches for confirming UI, animation, and preset behavior.
+Visual verification is a critical part of agent work on Stims.
 
 ## Development server and agent-mode URL
 

@@ -34,6 +34,10 @@ When restructuring docs, keep these entry points in sync:
 | New `src/` module over 400 lines | Add a file-level docblock saying what it owns and what it leaves to others (`bun run check:module-docs`). |
 | Docs restructuring | Update links and references across all entry points listed above. |
 
+## Page voice
+
+Don't open a page by narrating itself. If the title, outline, or a table's header row already conveys the scope, don't start with "This document/guide/page covers..." — start with the content, and keep only sentences that add information the structure doesn't.
+
 ## PR metadata expectations
 
 PR descriptions should include:

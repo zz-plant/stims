@@ -1,7 +1,5 @@
 # Manual Smoke Baseline
 
-This document is the current sign-off baseline for root-route startup, workspace shell behavior, compatibility redirects, audio startup, and preset playback.
-
 ## What counts as the baseline
 
 Milestone A baseline evidence is the combination of:

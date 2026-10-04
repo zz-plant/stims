@@ -2,7 +2,7 @@
 
 > Updated 2026-03 for the MilkDrop-led positioning. References below remain applicable to audio-reactive visualizer research and multisensory UX rationale.
 
-This guide collects published scientific literature that serves as grounding for the Stims audio-reactive visualizer: browser-native, preset-driven visuals with audio, motion, and performance controls. Use these references when documenting the rationale for audio-visual mappings or multisensory experiences. It also links literature themes to product features so citations are specific rather than generic.
+Use these references when documenting the rationale for audio-visual mappings or multisensory experiences.
 
 ## How to use this list
 
@@ -12,8 +12,6 @@ This guide collects published scientific literature that serves as grounding for
 - **Connect to a feature**: each citation should point to a concrete UI or preset behavior (see the mapping below).
 
 ## Feature-to-literature map
-
-Use the following table to tie literature to specific features so citations are meaningful and traceable.
 
 | Feature or behavior | UI surface | Recommended literature focus |
 | --- | --- | --- |
