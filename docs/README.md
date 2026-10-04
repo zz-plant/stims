@@ -1,6 +1,6 @@
 # Stims Developer Documentation Portal
 
-Welcome to the **Stims** developer documentation portal. This hub provides guides, technical specifications, architecture overviews, and API references for building, extending, and authoring presets on Stims.
+Welcome to the **Stims** developer documentation portal.
 
 ---
 
