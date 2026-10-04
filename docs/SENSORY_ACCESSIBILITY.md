@@ -161,7 +161,7 @@ Recruitment is a separate, upstream constraint worth stating plainly: `toil.fyi`
 
 ## Regulatory posture
 
-This section exists so nobody has to re-derive it before writing public copy or a new feature description. Not legal advice — the actual line is fact-specific and FDA doesn't publish a bright-line word list; get real regulatory counsel before shipping anything that leans on this. What follows is the research map, not a clearance opinion.
+Don't re-derive this before writing public copy or a new feature description. Not legal advice, and not a clearance opinion — the actual line is fact-specific and FDA doesn't publish a bright-line word list; get real regulatory counsel before shipping anything that leans on this.
 
 **The trigger is claims, not mechanism.** FDA's "intended use" doctrine (21 CFR 801.4) looks at "labeling claims, advertising matter, or oral or written statements" — the *totality* of what a product's responsible parties say about it — not what the software technically does. This cuts both ways: a careful disclaimer on one page doesn't control if other public copy (blog posts, this doc, social copy) implies a treatment outcome. Practically, that means **this doc itself is labeling-adjacent if it stays prominently linked from public surfaces** — framing research questions as "does X help autistic/ADHD users" (exploratory, honest) reads differently under §801.4 than "we're building this to treat X" would. Keep the framing exploratory, because it is.
 

@@ -1,6 +1,6 @@
 # Technical foundations and evidence status
 
-This document maps Stims' implemented engineering systems without turning scaffolding, optional services, or roadmap work into shipped-product claims. What is new compared with Butterchurn and projectM is stated once, in [What Stims contributes](./LINEAGE_AND_CREDITS.md#what-stims-contributes); the sections below are the evidence for those claims and for everything else.
+Scaffolding, optional services, and roadmap work never count as shipped-product claims — each system is labeled with its evidence status. What is new compared with Butterchurn and projectM is stated once, in [What Stims contributes](./LINEAGE_AND_CREDITS.md#what-stims-contributes).
 
 ## System diagram
 

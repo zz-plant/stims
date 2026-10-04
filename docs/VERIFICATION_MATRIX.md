@@ -1,7 +1,6 @@
 # Verification Matrix
 
-This page collects the short-form guidance for renderer support and test
-selection. Keep it aligned with `ARCHITECTURE.md` and `DEVELOPMENT.md` when
+Keep this matrix aligned with `ARCHITECTURE.md` and `DEVELOPMENT.md` when
 those workflows change.
 
 ## Rendering support

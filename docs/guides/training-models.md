@@ -2,9 +2,7 @@
 
 Stims is not a model, but its preset runtime is a deterministic program that
 maps audio to motion and colour. That makes it a data generator and an
-evaluator for models about audio-reactive visuals. This guide lists what
-exists, what each tool is honest about, and what still needs hardware or a
-model this repo does not ship.
+evaluator for models about audio-reactive visuals.
 
 Every tool below is headless, needs no GPU, and writes plain files (NumPy
 `.npy`, JSONL, JSON), so the training stack can be anything. `bun run help`

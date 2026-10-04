@@ -1,7 +1,5 @@
 # Implementation status
 
-This document is the consolidated source for implementation progress across roadmap priorities, refactor milestones, technical debt execution, and UX backlog planning.
-
 ## Completed foundations
 
 - [x] Compatibility + onboarding improvements are in place.

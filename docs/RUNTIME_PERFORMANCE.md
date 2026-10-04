@@ -1,9 +1,7 @@
 # Runtime performance evidence
 
-This document defines how Stims measures frame-rate changes and which runtime
-performance claims the repository can support. It is deliberately narrower
-than a product-wide benchmark: one successful preset, backend, or machine does
-not establish universal FPS or visual-fidelity claims.
+Deliberately narrower than a product-wide benchmark: one successful preset,
+backend, or machine does not establish universal FPS or visual-fidelity claims.
 
 ## What the runtime measures
 

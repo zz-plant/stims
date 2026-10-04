@@ -1,7 +1,5 @@
 # Commit Conventions & Retrospective Audit
 
-This document defines the git commit standards for **Stims** and provides a retrospective audit mapping past non-descriptive git commits to structured Conventional Commit format.
-
 ---
 
 ## 📝 Conventional Commit Standard
@@ -32,8 +30,6 @@ All commits in this repository must follow the [Conventional Commits specificati
 ---
 
 ## 🔍 Retrospective Commit Audit & Mapping Table
-
-Below is a retrospective audit of recent commit history, mapping original non-descriptive or brief commit messages to standardized Conventional Commit messages:
 
 | Commit Hash | Date | Original Commit Message | Retrospective Conventional Commit Message |
 | :--- | :--- | :--- | :--- |

@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers how to build Stims, validate the production bundle locally, and ship it to Cloudflare. Stims now ships a single MilkDrop-led visualizer product, and the deployment workflow below applies to that surface. Commands reference the scripts in `package.json` so you can copy/paste without drift.
+Stims ships a single MilkDrop-led visualizer product. Commands reference the scripts in `package.json` so you can copy/paste without drift.
 
 ## Choose your deployment track
 
