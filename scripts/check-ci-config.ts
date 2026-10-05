@@ -96,7 +96,7 @@ const MARKER_FILES = [
   'vite.config.js',
   'biome.json',
   'wrangler.site.jsonc',
-  'wrangler.cron.jsonc',
+  'wrangler.embed.jsonc',
   'wrangler.mcp.jsonc',
   'package.json',
 ];

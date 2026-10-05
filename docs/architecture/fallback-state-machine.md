@@ -38,7 +38,8 @@ The setup path spans 12 files with no single state machine. Decisions are encode
           │  ├─ gap-guard on?  ──▶ force WebGL             │
           │  ├─ no navigator.gpu?──▶ WEBGPU_UNAVAILABLE    │
           │  ├─ fallback adapter?──▶ FALLBACK_ADAPTER       │
-          │  ├─ no adapter?    ──▶ NO_ADAPTER              │
+          │  ├─ no core adapter? ─ retry compat adapter     │
+          │  │   (GLES 3.1; still none? ──▶ NO_ADAPTER)     │
           │  ├─ device timeout? ──▶ NO_DEVICE              │
           │  ├─ device null?   ──▶ fallback                │
           │  └─ success       ──▶ webgpu capabilities      │

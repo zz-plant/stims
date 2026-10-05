@@ -8,6 +8,7 @@
  */
 
 import { getDevicePerformanceProfile } from '../core/device-profile.ts';
+import { getCachedRendererCapabilities } from '../core/renderer-capabilities.ts';
 import { isWebGPUStableInThisBrowser } from '../core/renderer-query-override.ts';
 import { getBrowserStorage } from '../core/state/browser-storage.ts';
 import { isCompatibilityModeEnabled } from '../core/state/render-preference-store.ts';
@@ -212,6 +213,18 @@ export function resolveMilkdropWebGpuFeatureRouting(
   // harnesses drive it directly.
   const computeVmRollout =
     webgpuFlagParams.gpuComputeVM ?? storageComputeVM ?? false;
+  // The compute VM stays disabled on the WebGPU compatibility adapter: the
+  // GLES 3.1 backend is exactly where the compute/readback latency penalty
+  // this flag is already measured to carry (see webgpu-optimization-flags.ts)
+  // is worst, and the one-workgroup dispatch gains nothing there. Read from
+  // the cached capability probe, which has completed by the time routing
+  // runs (routing needs the accepted device).
+  const featureLevel =
+    getCachedRendererCapabilities()?.webgpu?.featureLevel ?? 'core';
+  const compatReason =
+    featureLevel === 'compatibility'
+      ? 'disabled on the WebGPU compatibility adapter (GLES 3.1 backend)'
+      : null;
   const safeReason = safeMode
     ? `disabled by ${description.source} WebGPU safe path`
     : null;
@@ -228,8 +241,9 @@ export function resolveMilkdropWebGpuFeatureRouting(
       reason: safeReason,
     },
     gpuComputeVM: {
-      enabled: !safeMode && computeVmRollout,
+      enabled: featureLevel === 'core' && !safeMode && computeVmRollout,
       reason:
+        compatReason ??
         safeReason ??
         (!computeVmRollout
           ? 'compute VM is opt-in: measured slower than the CPU JIT for per_frame programs'

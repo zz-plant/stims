@@ -5,11 +5,12 @@
   "compatibility_date": "2024-10-20",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
-  // Every 15 minutes: at 100 presets/run the multi-thousand preset catalog
-  // finishes in hours instead of the months a daily 25-preset run would take.
-  "triggers": {
-    "crons": ["*/15 * * * *"]
-  },
+  // No scheduled trigger. Embeddings only need refreshing when catalog
+  // content or visual descriptions change, which happens in this repo's
+  // catalog pipeline — run `bun run embed:backfill` (scripts/
+  // trigger-embed-backfill.ts) after those change instead of paying for an
+  // always-on cron. The authenticated POST route triggers a run; PUT /static
+  // serves scripts/sync-previews-r2.ts.
   "ai": {
     "binding": "AI"
   },

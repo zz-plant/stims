@@ -12,7 +12,7 @@
 //   BACKFILL_TOKEN=<token> bun run scripts/sync-previews-r2.ts a.png b.png # specific files
 //
 // The token is the stims-embed-backfill worker secret (rotate with
-// `wrangler secret put BACKFILL_TOKEN --config wrangler.cron.jsonc`).
+// `wrangler secret put BACKFILL_TOKEN --config wrangler.embed.jsonc`).
 
 import { readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';

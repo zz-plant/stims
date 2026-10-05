@@ -681,3 +681,99 @@ describe('renderer capabilities', () => {
     window.dispatchEvent = originalDispatchEvent;
   });
 });
+
+describe('WebGPU feature level fallback', () => {
+  test('runs the session on the core adapter without asking for compatibility', async () => {
+    const requestDevice = mock(async () => ({ label: 'device' }));
+    const requestAdapter = mock(
+      async (_options?: { powerPreference?: string }) => ({
+        features: new Set(),
+        limits: {},
+        requestDevice,
+      }),
+    );
+
+    restoreNavigator();
+    restoreNavigator = replaceProperty(global, 'navigator', {
+      gpu: {
+        requestAdapter,
+        getPreferredCanvasFormat: () => 'bgra8unorm',
+      },
+    });
+
+    const result = await getRendererCapabilities({ forceRetry: true });
+
+    expect(requestAdapter).toHaveBeenCalledTimes(1);
+    expect(requestAdapter.mock.calls[0][0]).toEqual({
+      powerPreference: 'high-performance',
+    });
+    expect(result.preferredBackend).toBe('webgpu');
+    expect(result.webgpu?.featureLevel).toBe('core');
+  });
+
+  test('recovers on the compatibility adapter when the core request returns none', async () => {
+    // Core hardware: the plain request succeeds, so no compatibility attempt
+    // is ever made. The compatibility adapter is the step between "core
+    // returned nothing" and the WebGL floor (Chrome 146+ Compatibility Mode).
+    const requestDevice = mock(async () => ({ label: 'compat-device' }));
+    const requestAdapter = mock(
+      async (options?: { powerPreference?: string; featureLevel?: string }) => {
+        if (options?.featureLevel === 'compatibility') {
+          return {
+            // The GLES 3.1 backend may advertise timing; the session-level
+            // guard must still keep the timestamp profiler off it.
+            features: new Set(['timestamp-query']),
+            limits: {},
+            requestDevice,
+          };
+        }
+        return null;
+      },
+    );
+
+    restoreNavigator();
+    restoreNavigator = replaceProperty(global, 'navigator', {
+      gpu: {
+        requestAdapter,
+        getPreferredCanvasFormat: () => 'bgra8unorm',
+      },
+    });
+
+    const result = await getRendererCapabilities({ forceRetry: true });
+
+    expect(requestAdapter).toHaveBeenCalledTimes(2);
+    expect(requestAdapter.mock.calls[1][0]).toEqual({
+      powerPreference: 'high-performance',
+      featureLevel: 'compatibility',
+    });
+    expect(result.preferredBackend).toBe('webgpu');
+    expect(result.fallbackReason).toBeNull();
+    expect(result.webgpu?.featureLevel).toBe('compatibility');
+    expect(result.webgpu?.features.timestampQuery).toBe(false);
+    expect(result.webgpu?.optimization.timestampQuery).toBe(false);
+  });
+
+  test('falls back to WebGL when neither core nor compatibility adapters are available', async () => {
+    const requestAdapter = mock(
+      async (_options?: { featureLevel?: string }) => null,
+    );
+
+    restoreNavigator();
+    restoreNavigator = replaceProperty(global, 'navigator', {
+      gpu: {
+        requestAdapter,
+        getPreferredCanvasFormat: () => 'bgra8unorm',
+      },
+    });
+
+    const result = await getRendererCapabilities({ forceRetry: true });
+
+    // One attempt per level: core, then compatibility, then the bare
+    // last-resort request the probe already used before this fallback existed.
+    expect(requestAdapter).toHaveBeenCalledTimes(3);
+    expect(
+      result.preferredBackend === 'webgl' || result.preferredBackend === null,
+    ).toBe(true);
+    expect(result.shouldRetryWebGPU).toBe(true);
+  });
+});

@@ -7,6 +7,7 @@ const originalNavigator = globalThis.navigator;
 const highEndTimestampCapabilities = {
   preferredCanvasFormat: 'bgra8unorm' as const,
   performanceTier: 'high-end' as const,
+  featureLevel: 'core' as const,
   recommendedQualityPreset: 'hi-fi' as const,
   workers: {
     workers: true,
@@ -180,6 +181,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: {
         preferredCanvasFormat: 'bgra8unorm',
         performanceTier: 'baseline',
+        featureLevel: 'core' as const,
         recommendedQualityPreset: 'balanced',
         workers: {
           workers: true,
@@ -227,6 +229,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: {
         preferredCanvasFormat: 'bgra8unorm',
         performanceTier: 'high-end',
+        featureLevel: 'core' as const,
         recommendedQualityPreset: 'hi-fi',
         workers: {
           workers: true,
@@ -292,6 +295,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: {
         preferredCanvasFormat: 'bgra8unorm',
         performanceTier: 'high-end',
+        featureLevel: 'core' as const,
         recommendedQualityPreset: 'hi-fi',
         workers: {
           workers: true,
@@ -355,6 +359,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: {
         preferredCanvasFormat: 'bgra8unorm',
         performanceTier: 'high-end',
+        featureLevel: 'core' as const,
         recommendedQualityPreset: 'hi-fi',
         workers: {
           workers: true,
@@ -446,6 +451,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: {
         preferredCanvasFormat: 'bgra8unorm',
         performanceTier: 'high-end',
+        featureLevel: 'core' as const,
         recommendedQualityPreset: 'hi-fi',
         workers: {
           workers: true,
@@ -601,6 +607,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: {
         preferredCanvasFormat: 'bgra8unorm',
         performanceTier: 'high-end',
+        featureLevel: 'core' as const,
         recommendedQualityPreset: 'hi-fi',
         workers: {
           workers: true,
@@ -660,6 +667,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: {
         preferredCanvasFormat: 'bgra8unorm',
         performanceTier: 'high-end',
+        featureLevel: 'core' as const,
         recommendedQualityPreset: 'balanced',
         workers: {
           workers: false,
@@ -725,6 +733,7 @@ describe('createAdaptiveQualityController', () => {
         capabilities: {
           preferredCanvasFormat: 'bgra8unorm',
           performanceTier: 'high-end',
+          featureLevel: 'core' as const,
           recommendedQualityPreset: 'hi-fi',
           workers: {
             workers: true,
@@ -787,6 +796,7 @@ describe('createAdaptiveQualityController', () => {
     const capabilitiesForTier = (performanceTier: 'baseline' | 'high-end') => ({
       preferredCanvasFormat: 'bgra8unorm' as const,
       performanceTier,
+      featureLevel: 'core' as const,
       recommendedQualityPreset: 'balanced' as const,
       workers: {
         workers: true,
