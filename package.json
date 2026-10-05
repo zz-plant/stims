@@ -206,7 +206,7 @@
     "@cfworker/json-schema": "^4.1.1",
     "@modelcontextprotocol/server": "2.2.0",
     "@playwright/test": "1.63.0",
-    "@swc/core": "^1.16.12",
+    "@swc/core": "^1.16.13",
     "@types/bun": "^1.4.2",
     "@types/node": "^26.6.4",
     "@types/react": "19.3.0",
