@@ -55,6 +55,16 @@ export type RendererBackend = 'webgl' | 'webgpu';
 
 export type WebGPUCapabilityTier = 'baseline' | 'enhanced' | 'high-end';
 
+/**
+ * Which WebGPU feature level this session asked the adapter for. `'core'`
+ * is the default full-featured level; `'compatibility'` means the core
+ * request returned nothing and the session is running on the GLES 3.1
+ * compatibility adapter Chrome offers as a recovery step before the WebGL
+ * floor. Consumers that need more than compatibility semantics (timestamp
+ * profiling, the compute VM) read this instead of re-deriving it.
+ */
+export type WebGPUFeatureLevel = 'core' | 'compatibility';
+
 export type WebGPUFeatureSupport = {
   bgra8unormStorage: boolean;
   float32Blendable: boolean;
@@ -94,6 +104,7 @@ export type WebGPUCapabilitySummary = {
   optimization: RendererOptimizationSupport;
   preferredCanvasFormat: string | null;
   performanceTier: WebGPUCapabilityTier;
+  featureLevel: WebGPUFeatureLevel;
   recommendedQualityPreset: 'balanced' | 'hi-fi' | 'ultra';
 };
 
@@ -428,7 +439,10 @@ function getWebGPUPerformanceTier({
   return 'baseline';
 }
 
-function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
+function summarizeWebGPUCapabilities(
+  adapter: GPUAdapter,
+  featureLevel: WebGPUFeatureLevel = 'core',
+) {
   const environment = getDeviceEnvironmentProfile();
   const features: WebGPUFeatureSupport = {
     bgra8unormStorage: hasFeature(adapter.features, 'bgra8unorm-storage'),
@@ -438,6 +452,14 @@ function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
     subgroups: hasFeature(adapter.features, 'subgroups'),
     timestampQuery: hasFeature(adapter.features, 'timestamp-query'),
   };
+
+  if (featureLevel === 'compatibility') {
+    // Policy, not detection: the compatibility adapter (GLES 3.1 backend) may
+    // advertise timestamp-query, but the timestamp profiler stays disabled on
+    // it — a GLES-backed timing source is not dependable enough to drive the
+    // adaptive quality controller (TECH_STACK_MODERNIZATION_2026-09.md §10).
+    features.timestampQuery = false;
+  }
 
   const limits: WebGPULimitSnapshot = {
     maxColorAttachments: getNumericLimit(adapter.limits, 'maxColorAttachments'),
@@ -484,6 +506,7 @@ function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
     optimization: summarizeRendererOptimizationSupport({ features, workers }),
     preferredCanvasFormat: getPreferredCanvasFormat(),
     performanceTier,
+    featureLevel,
     recommendedQualityPreset: environment.isMobile
       ? 'balanced'
       : performanceTier === 'high-end'
@@ -614,6 +637,8 @@ interface CapabilityProbeContext {
   retry: RendererRetrySnapshot;
   adapter: GPUAdapter | null;
   device: GPUDevice | null;
+  /** Feature level of the accepted adapter attempt (see WebGPUFeatureLevel). */
+  featureLevel: WebGPUFeatureLevel;
 }
 
 const OPTIONAL_WEBGPU_DEVICE_FEATURES = [
@@ -676,7 +701,10 @@ export function buildWebGpuDeviceDescriptor(
 }
 
 export function resolveCapabilityProbeSuccess(
-  ctx: Pick<CapabilityProbeContext, 'adapter' | 'device' | 'retry'>,
+  ctx: Pick<
+    CapabilityProbeContext,
+    'adapter' | 'device' | 'retry' | 'featureLevel'
+  >,
 ): RendererCapabilities {
   if (!ctx.adapter) {
     ctx.device?.destroy?.();
@@ -704,7 +732,7 @@ export function resolveCapabilityProbeSuccess(
     fallbackReasonCode: null,
     shouldRetryWebGPU: false,
     forceWebGL: false,
-    webgpu: summarizeWebGPUCapabilities(ctx.adapter),
+    webgpu: summarizeWebGPUCapabilities(ctx.adapter, ctx.featureLevel),
     retry: ctx.retry,
   };
 }
@@ -816,19 +844,40 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
       // decision the app makes, hence the short wait for the battery state.
       await whenBatteryStateSettled();
       const powerPreference = resolveGpuPowerPreference();
-      const adapter =
-        (await gpu.requestAdapter({ powerPreference })) ??
-        (await gpu.requestAdapter());
-      if (!adapter) {
-        return buildFallback(
-          getRendererFallbackReasonMessage(
-            RENDERER_FALLBACK_REASON_CODES.noAdapter,
-          ),
-          { shouldRetryWebGPU: true },
-        );
+      // Core first so a fully capable session never gets downgraded. A
+      // compatibility adapter is the recovery step between "core returned
+      // nothing" and the WebGL floor (Chrome 146+ WebGPU Compatibility
+      // Mode): hardware that can only run WebGPU over GLES 3.1 keeps native
+      // rendering instead of dropping to WebGL2. Unknown dictionary members
+      // are ignored by older implementations, so passing `featureLevel` is
+      // safe everywhere.
+      const coreAdapter = await gpu.requestAdapter({ powerPreference });
+      if (coreAdapter) {
+        ctx.adapter = coreAdapter;
+        ctx.featureLevel = 'core';
+        return CapabilityProbeState.CheckingFallbackAdapter;
       }
-      ctx.adapter = adapter;
-      return CapabilityProbeState.CheckingFallbackAdapter;
+      const compatibilityAdapter = await gpu.requestAdapter({
+        powerPreference,
+        featureLevel: 'compatibility',
+      });
+      if (compatibilityAdapter) {
+        ctx.adapter = compatibilityAdapter;
+        ctx.featureLevel = 'compatibility';
+        return CapabilityProbeState.CheckingFallbackAdapter;
+      }
+      const lastResortAdapter = await gpu.requestAdapter();
+      if (lastResortAdapter) {
+        ctx.adapter = lastResortAdapter;
+        ctx.featureLevel = 'core';
+        return CapabilityProbeState.CheckingFallbackAdapter;
+      }
+      return buildFallback(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.noAdapter,
+        ),
+        { shouldRetryWebGPU: true },
+      );
     } catch {
       return buildFallback(
         getRendererFallbackReasonMessage(
@@ -934,6 +983,7 @@ async function probeRendererCapabilities({
     retry: getCurrentRetrySnapshot(),
     adapter: null,
     device: null,
+    featureLevel: 'core',
   };
 
   let state: CapabilityProbeState = CapabilityProbeState.Initial;
