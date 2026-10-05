@@ -232,8 +232,9 @@ graph, and handles `.wasm` imports natively, which would retire
 `scripts/sync-resvg-wasm.mjs` and the dual-runtime shim in
 `src/types/wasm-modules.d.ts`. Cloudflare has folded every Pages feature into
 Workers static assets; Pages Functions bundling is the last Pages-era piece
-here. Also worth a look once on the plugin: Workflows for the 15-minute embed
-backfill cron (`wrangler.cron.jsonc`) and Browser Rendering's REST
+here. Also worth a look once on the plugin: Workflows for on-demand
+embeddings backfill (the `embed:backfill` script replaces the retired
+cron; `wrangler.embed.jsonc`) and Browser Rendering's REST
 `/screenshot` for OG cards, which would remove resvg entirely.
 
 ### 10. three r186 and WebGPU Compatibility Mode
@@ -246,6 +247,15 @@ Android WebView), while Safari 26 and Firefox 141+ ship WebGPU by default.
 `src/js/core/renderer-capabilities.ts` should request the compat adapter
 (`featureLevel: 'compatibility'`) before falling back to WebGL2 — with the
 guard that the timestamp profiler and the compute VM stay disabled on it.
+
+**Landed (2026-10-05).** The capability probe now tries core first, then
+`featureLevel: 'compatibility'`, then the bare request, and records the
+accepted level as `webgpu.featureLevel` on the capability summary. The
+timestamp profiler is kept off compat adapters at the summary level
+(`features.timestampQuery` is reported false there), and the compute VM is
+kept off at the feature-routing level (`resolveMilkdropWebGpuFeatureRouting`
+reads the cached probe). Three's r186 renderer receives the compat device
+unchanged; its feature requests already degrade dynamically.
 
 ## Tier 3 — architectural
 

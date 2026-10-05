@@ -140,6 +140,17 @@ BACKFILL_TOKEN=<token> bun run previews:sync
 
 Run that after `scripts/generate-thumbnails.ts` regenerates previews; pass specific filenames to sync only what changed. The token is the `stims-embed-backfill` Worker secret. A non-Cloudflare static host would need the previews directory copied into its document root instead.
 
+### Preset embeddings backfill is on-demand
+
+The same Worker owns the preset embeddings index (D1 + Vectorize) that powers "By look / By sound" matching. It has no scheduled trigger: after catalog content or visual descriptions change (`catalog:generate`, `generate:descriptions`), re-embed with:
+
+```bash
+BACKFILL_TOKEN=<token> bun run embed:backfill
+```
+
+It POSTs the Worker's authenticated backfill route until a run reports no work left (each run covers up to 100 presets). Redeploy the Worker after changing `scripts/embed-backfill-worker.ts`: `bun run embed:deploy`.
+
+
 ## Legacy Cloudflare Pages path (removed)
 
 The site previously deployed as a Cloudflare Pages project with its own Wrangler TOML config, deploy helper script, and `pages:*` package scripts. That path was removed after the `toil.fyi` custom domain moved to the `stims` Worker; the manual fallback is now `bun run site:deploy` (see the Track A quick path above).

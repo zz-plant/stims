@@ -1,5 +1,8 @@
-// Cron-triggered Worker: backfills preset embeddings into D1 + Vectorize.
-// Deploy: wrangler deploy --config wrangler.cron.jsonc
+// Manual-trigger Worker: backfills preset embeddings into D1 + Vectorize.
+// Embeddings refresh only when catalog content changes, so there is no cron —
+// `bun run embed:backfill` (scripts/trigger-embed-backfill.ts) POSTs the
+// authenticated route until a run reports no work left.
+// Deploy: wrangler deploy --config wrangler.embed.jsonc
 
 import { toVectorizeId } from '../src/js/milkdrop/vectorize-id.ts';
 
@@ -49,23 +52,13 @@ interface Env {
   BACKFILL_TOKEN?: string;
 }
 
-// Cloudflare Workers runtime types
-interface ScheduledEvent {
-  scheduledTime: number;
-  cron: string;
-}
-interface ExecutionContext {
-  waitUntil(promise: Promise<unknown>): void;
-  passThroughOnException(): void;
-}
-
 const CATALOG_URL = 'https://toil.fyi/milkdrop-presets/catalog.json';
 const DESCRIPTIONS_URL =
   'https://toil.fyi/milkdrop-presets/preset-descriptions.json';
 const EMBED_MODEL = '@cf/baai/bge-base-en-v1.5';
 // Per-run cap. Each preset costs ~3 subrequests (AI + D1 + Vectorize), so 100
-// stays well inside the 1000-subrequest budget while clearing a multi-thousand
-// preset catalog within a day at the 15-minute cron cadence.
+// stays well inside the 1000-subrequest budget; `bun run embed:backfill`
+// repeats runs until a run reports no work left.
 const BATCH_SIZE = 100;
 // Rows per invocation when mirroring existing D1 embeddings into Vectorize.
 const SYNC_PAGE_SIZE = 500;
@@ -286,23 +279,10 @@ async function backfill(env: Env): Promise<{
 }
 
 export default {
-  async scheduled(
-    _event: ScheduledEvent,
-    env: Env,
-    ctx: ExecutionContext,
-  ): Promise<void> {
-    ctx.waitUntil(
-      backfill(env).then((result) => {
-        console.log(
-          `[embed-backfill] total=${result.total} succeeded=${result.succeeded} failed=${result.failed} skipped=${result.skipped}`,
-        );
-      }),
-    );
-  },
-
-  // Manual trigger. Requires `Authorization: Bearer <BACKFILL_TOKEN>` so the
-  // public workers.dev URL can't be used to burn AI neurons; the cron path
-  // above does the routine work.
+  // Trigger route. Requires `Authorization: Bearer <BACKFILL_TOKEN>` so the
+  // public workers.dev URL can't be used to burn AI neurons. Called on demand
+  // by `bun run embed:backfill` (scripts/trigger-embed-backfill.ts) after
+  // catalog content changes; there is no scheduled path.
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method !== 'POST' && request.method !== 'PUT') {
       return new Response('Method not allowed', { status: 405 });
