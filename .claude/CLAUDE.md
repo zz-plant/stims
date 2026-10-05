@@ -133,22 +133,7 @@ Reach for these before inventing a measurement; each one already exists.
 
 ## Task routing
 
-Use `.agent/skills/*/SKILL.md` for repeatable work classes:
-
-| If the task is mainly about… | Skill |
-| --- | --- |
-| runtime, renderer, shell, controls, audio, URL state | `.agent/skills/modify-visualizer-runtime/SKILL.md` |
-| presets, catalog, editor, import/export, compatibility | `.agent/skills/modify-preset-workflow/SKILL.md` |
-| preset visual fidelity / audio reactivity tuning (measured baseline→edit→compare) | `.agent/skills/improve-preset-fidelity/SKILL.md` |
-| matching native projectM — diagnosing and closing a rendering gap | `.agent/skills/close-parity-gap/SKILL.md` |
-| browser QA or visual confirmation | `.agent/skills/play-visualizer/SKILL.md` |
-| performing / jamming — live-coded audio + timed visual gestures | `.agent/skills/perform-livecoding/SKILL.md` |
-| quick iterative verification | `.agent/skills/verify-visualizer-work/SKILL.md` |
-| end-to-end product change → PR | `.agent/skills/ship-visualizer-change/SKILL.md` |
-| UI iteration, shell chrome, CSS | `.agent/skills/iterate-visualizer-ui/SKILL.md` |
-| knowing which guardrails apply before editing | `.agent/skills/guard-agent-work/SKILL.md` |
-
-Use `.agent/workflows/*.md` when you need a step-by-step runbook with explicit phase order.
+See the task-routing table in [`AGENTS.md`](../.github/AGENTS.md) and the full capability index in [`docs/agents/custom-capabilities.md`](../docs/agents/custom-capabilities.md) — kept there, not duplicated here.
 
 ## Agent mode URL
 
