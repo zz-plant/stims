@@ -145,6 +145,13 @@ The quality gate now also runs architecture dependency checks via `dependency-cr
   bun run test:integration
   ```
 
+- Gate tests that lean on bun's 5 s default timeout (rerun with a 2.5 s
+  default; only tests without their own timeout can trip it):
+
+  ```bash
+  bun run test:budget
+  ```
+
 ## Docs-only updates
 
 For Markdown-only edits, you can skip typecheck/tests unless the change modifies commands, paths, or workflow-critical instructions that should be validated.
