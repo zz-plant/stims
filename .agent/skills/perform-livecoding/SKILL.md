@@ -157,7 +157,9 @@ Ramps of 2–8s read as musical. Under ~300ms is a step change, so use
 
 The call returns when the gesture lands, so chaining calls sequences a
 performance. A second ramp on a target already in flight supersedes the first
-rather than fighting it — safe to redirect mid-gesture.
+rather than fighting it — safe to redirect mid-gesture. The first call then
+returns at once and names the targets it lost, instead of waiting out its
+duration and reporting values it never reached.
 
 ## Gotchas
 

@@ -57,6 +57,9 @@ function driveFrames({ stepMs }: { stepMs: number }) {
   };
 }
 
+/** Lets one `driveFrames` frame run: each is queued as a zero-delay timer. */
+const nextTick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 describe('live performance runtime', () => {
   test('installs the performance API on window and tears down cleanly', () => {
     const { live, uninstall } = harness();
@@ -200,33 +203,105 @@ describe('live performance runtime', () => {
     uninstall();
   });
 
-  test('a new ramp supersedes one still in flight on the same target', async () => {
-    const { applied, live, uninstall } = harness();
+  test('a new ramp takes over a target in flight, and the old one settles at once', async () => {
+    const { now, restore } = driveFrames({ stepMs: 30 });
 
-    const slow = live.ramp({
-      targets: { warp: 100 },
-      durationMs: 3000,
-      from: { warp: 0 },
-    });
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    await live.ramp({
-      targets: { warp: 5 },
-      durationMs: 60,
-      from: { warp: 0 },
-    });
+    try {
+      const { applied, live, uninstall } = harness();
 
-    const afterOverride = applied.length;
-    await new Promise((resolve) => setTimeout(resolve, 120));
+      // Every value the slow ramp writes is >= 50 and every value the new one
+      // writes is <= 5, so a stray write from the slow ramp is visible.
+      const slow = live.ramp({
+        targets: { warp: 100 },
+        durationMs: 3000,
+        from: { warp: 50 },
+      });
+      for (let frame = 0; frame < 10 && applied.length < 2; frame += 1) {
+        await nextTick();
+      }
+      const takeover = applied.length;
+      const fast = live.ramp({
+        targets: { warp: 5 },
+        durationMs: 60,
+        from: { warp: 0 },
+      });
 
-    // The superseded ramp must stop driving the target rather than fighting
-    // the new gesture frame by frame.
-    const strayWrites = applied
-      .slice(afterOverride)
-      .filter(([, value]) => value > 5);
-    expect(strayWrites).toEqual([]);
+      const result = await slow;
+      expect(result).toMatchObject({
+        landing: 'superseded',
+        forcedLanding: false,
+        superseded: ['warp'],
+      });
+      // It never reached 100, so it does not claim to have landed there.
+      expect(result.final).toEqual({});
+      // Settled when the new ramp started, not when its own 3000ms ran out.
+      expect(now()).toBeLessThan(3000);
 
-    await slow;
-    uninstall();
+      await fast;
+      // The superseded ramp stopped driving the target rather than fighting
+      // the new gesture frame by frame.
+      expect(applied.slice(takeover).filter(([, value]) => value > 5)).toEqual(
+        [],
+      );
+      expect(applied.at(-1)).toEqual(['warp', 5]);
+
+      uninstall();
+    } finally {
+      restore();
+    }
+  });
+
+  test('a ramp that loses one target lands the rest and lists the one it lost', async () => {
+    const { restore } = driveFrames({ stepMs: 30 });
+
+    try {
+      const { live, uninstall } = harness();
+
+      const both = live.ramp({
+        targets: { warp: 2, zoom: 1.5 },
+        durationMs: 300,
+        from: { warp: 1, zoom: 1 },
+      });
+      await nextTick();
+      await live.ramp({ targets: { warp: 4 }, durationMs: 0 });
+
+      const result = await both;
+      expect(result.landing).toBe('glided');
+      expect(result.final).toEqual({ zoom: 1.5 });
+      expect(result.superseded).toEqual(['warp']);
+      expect(live.getPositions()).toMatchObject({ warp: 4, zoom: 1.5 });
+
+      uninstall();
+    } finally {
+      restore();
+    }
+  });
+
+  test('a superseded ramp settles even when frames never arrive', async () => {
+    // A hidden tab never runs rAF, so noticing the takeover on the next frame
+    // would leave the old ramp waiting for its watchdog.
+    const realRaf = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = (() => 0) as typeof realRaf;
+
+    try {
+      const { live, uninstall } = harness();
+
+      const stalled = live.ramp({
+        targets: { warp: 100 },
+        durationMs: 1000,
+        from: { warp: 50 },
+      });
+      await live.ramp({ targets: { warp: 5 }, durationMs: 0 });
+
+      expect(await stalled).toMatchObject({
+        landing: 'superseded',
+        superseded: ['warp'],
+      });
+
+      uninstall();
+    } finally {
+      globalThis.requestAnimationFrame = realRaf;
+    }
   });
 
   test('setControl seeds the position a later ramp starts from', async () => {
