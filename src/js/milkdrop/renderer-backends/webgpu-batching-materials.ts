@@ -83,10 +83,10 @@ function createTslShapeFillMaterial(): ShapeFillBatchMaterial {
   const shapeTextureNode = texture(getFallbackShapeTexture());
   const textureAspectY = uniform(1);
 
-  const transform = typedAttribute('instanceTransform', 'vec4');
-  const primary = typedAttribute('instancePrimaryColorAlpha', 'vec4');
-  const secondary = typedAttribute('instanceSecondaryColorAlpha', 'vec4');
-  const fillControl = typedAttribute('instanceFillControl', 'vec4');
+  const transform = typedAttribute(TSL, 'instanceTransform', 'vec4');
+  const primary = typedAttribute(TSL, 'instancePrimaryColorAlpha', 'vec4');
+  const secondary = typedAttribute(TSL, 'instanceSecondaryColorAlpha', 'vec4');
+  const fillControl = typedAttribute(TSL, 'instanceFillControl', 'vec4');
 
   const local = positionGeometry.xy;
   const cosR = cos(transform.w);
@@ -137,11 +137,11 @@ function createTslShapeFillMaterial(): ShapeFillBatchMaterial {
 }
 
 function createTslShapeRingMaterial(layerZ: number): Material {
-  const unitCorner = typedAttribute('unitCorner', 'vec2');
-  const innerWeight = typedAttribute('innerWeight', 'float');
-  const transform = typedAttribute('instanceTransform', 'vec4');
-  const colorAlpha = typedAttribute('instanceColorAlpha', 'vec4');
-  const scales = typedAttribute('instanceScales', 'vec2');
+  const unitCorner = typedAttribute(TSL, 'unitCorner', 'vec2');
+  const innerWeight = typedAttribute(TSL, 'innerWeight', 'float');
+  const transform = typedAttribute(TSL, 'instanceTransform', 'vec4');
+  const colorAlpha = typedAttribute(TSL, 'instanceColorAlpha', 'vec4');
+  const scales = typedAttribute(TSL, 'instanceScales', 'vec2');
 
   const localScale = mix(scales.x, scales.y, innerWeight).mul(transform.z);
   const cosR = cos(transform.w);
@@ -162,10 +162,10 @@ function createTslShapeRingMaterial(layerZ: number): Material {
 }
 
 function createTslBorderMaterial(): Material {
-  const unitCorner = typedAttribute('unitCorner', 'vec2');
-  const innerWeight = typedAttribute('innerWeight', 'float');
-  const insets = typedAttribute('instanceInsets', 'vec4');
-  const colorAlpha = typedAttribute('instanceColorAlpha', 'vec4');
+  const unitCorner = typedAttribute(TSL, 'unitCorner', 'vec2');
+  const innerWeight = typedAttribute(TSL, 'innerWeight', 'float');
+  const insets = typedAttribute(TSL, 'instanceInsets', 'vec4');
+  const colorAlpha = typedAttribute(TSL, 'instanceColorAlpha', 'vec4');
 
   const outerScale = float(1.0).sub(insets.y);
   const innerScale = float(1.0).sub(insets.z);

@@ -117,7 +117,8 @@ against `dist/` output:
   - per-chunk ceiling for the largest JS chunk,
   - total JS payload ceiling,
   - total CSS payload ceiling,
-  - gzipped ceilings for the catalog manifests.
+  - gzipped ceilings for the catalog manifests,
+  - chunk-graph rules: which vendor chunks may sit on the boot path.
 
 The manifests are guarded separately because they are the largest things
 the app downloads and nothing watched them: `public/_headers` described
