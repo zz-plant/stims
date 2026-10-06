@@ -111,7 +111,7 @@
 </tr>
 <tr>
 <td><a href="/learn/warp-fields/">4 · Warp fields</a></td>
-<td>Per-pixel equations: <code>rad</code>, <code>ang</code>, tunnels and ripples</td>
+<td>Per-pixel equations: <code>rad</code>, <code>ang</code>, tunnels, and ripples</td>
 </tr>
 <tr>
 <td><a href="/learn/waves-and-shapes/">5 · Waves and shapes</a></td>
@@ -134,10 +134,10 @@
 <td>The named-technique vocabulary — Jelly, Relief, Painterly, Krash&#39;s beat code — counted across the shipped catalog</td>
 </tr>
 </tbody></table></div>
-<p>All nine tracks are live. The plan that scoped them, plus ideas for what comes next (a technique cookbook, an in-editor reactivity meter, archive rescue), is in <a href="https://github.com/zz-plant/stims/blob/main/docs/PRESET_AUTHORING_DOCS_PLAN.md">PRESET_AUTHORING_DOCS_PLAN.md</a>.</p>
+<p>All ten tracks are live. The plan that scoped them, and the follow-on work it lists, is in <a href="https://github.com/zz-plant/stims/blob/main/docs/PRESET_AUTHORING_DOCS_PLAN.md">PRESET_AUTHORING_DOCS_PLAN.md</a>.</p>
 <h2 id="how-the-examples-work">How the examples work</h2>
 <p>Example sources live in <a href="https://github.com/zz-plant/stims/tree/main/docs/authoring/examples">examples/</a> as ordinary <code>.milk</code> files you can also import directly. Each <strong>▶ Run</strong> link encodes the full file into the URL (<code>#code=&lt;base64&gt;</code>), so the link <em>is</em> the preset — share your own experiments the same way with the editor&#39;s Export or by copying the URL after an edit.</p>
-<p><code>bun run check:authoring-examples</code> compiles every example and verifies every run link matches its source file (<code>--write</code> on the underlying script regenerates them). CI treats a broken example like a broken build.</p>
+<p><code>bun run check:authoring-examples</code> compiles every example and verifies that every run link matches its source file (<code>--write</code> on the underlying script regenerates them). CI treats a broken example like a broken build.</p>
 <h2 id="conventions">Conventions</h2>
 <ul>
 <li>Lessons show the one or two lines that changed; the linked file is always the complete preset.</li>

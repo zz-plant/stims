@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Publishing MilkDrop Presets and Engine Compatibility — Track 8 | Stims</title>
-<meta name="description" content="What works in MilkDrop, projectM, Butterchurn and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset." />
+<meta name="description" content="What works in MilkDrop, projectM, Butterchurn, and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset." />
 <meta name="robots" content="index,follow" />
 <meta name="theme-color" content="#0b0f1a" />
 <link rel="canonical" href="https://toil.fyi/learn/shipping/" />
@@ -16,7 +16,7 @@
 <meta property="og:site_name" content="Stims" />
 <meta property="og:type" content="article" />
 <meta property="og:title" content="Publishing MilkDrop Presets and Engine Compatibility — Track 8 | Stims" />
-<meta property="og:description" content="What works in MilkDrop, projectM, Butterchurn and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset." />
+<meta property="og:description" content="What works in MilkDrop, projectM, Butterchurn, and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset." />
 <meta property="og:url" content="https://toil.fyi/learn/shipping/" />
 <meta property="og:image" content="https://toil.fyi/og/milkdrop.png" />
 <meta property="og:image:type" content="image/png" />
@@ -24,7 +24,7 @@
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Publishing MilkDrop Presets and Engine Compatibility — Track 8 | Stims" />
-<meta name="twitter:description" content="What works in MilkDrop, projectM, Butterchurn and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset." />
+<meta name="twitter:description" content="What works in MilkDrop, projectM, Butterchurn, and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset." />
 <meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
 <script type="application/ld+json">
 {
@@ -34,7 +34,7 @@
       "@type": "TechArticle",
       "headline": "Track 8 — Shipping",
       "name": "Publishing MilkDrop Presets and Engine Compatibility — Track 8",
-      "description": "What works in MilkDrop, projectM, Butterchurn and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset.",
+      "description": "What works in MilkDrop, projectM, Butterchurn, and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset.",
       "url": "https://toil.fyi/learn/shipping/",
       "mainEntityOfPage": "https://toil.fyi/learn/shipping/",
       "inLanguage": "en",
@@ -91,7 +91,7 @@
 <nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#compatibility-matrix">Compatibility matrix</a></li><li><a href="#performance-and-quality">Performance and quality</a></li><li><a href="#publishing">Publishing</a></li><li><a href="#what-you-can-now-do">What you can now do</a></li></ul></nav>
 <p>You can now write a preset from nothing. This track covers what happens after: knowing where it will and won&#39;t run correctly, keeping it fast, and publishing it.</p>
 <h2 id="compatibility-matrix">Compatibility matrix</h2>
-<p>MilkDrop presets travel between five active engines — the original Winamp MilkDrop 2, projectM, Butterchurn, and Stims on both its WebGL and WebGPU backends — and until now, no single place documented where a given feature actually works across all of them. This is that matrix, built directly from the Stims compiler&#39;s own compatibility/parity code and shader-support inventory.</p>
+<p>MilkDrop presets travel between five active engines — the original Winamp MilkDrop 2, projectM, Butterchurn, and Stims on both its WebGL and WebGPU backends — and until now, no single place documented where a given feature works across all of them. This is that matrix, built directly from the Stims compiler&#39;s own compatibility/parity code and shader-support inventory.</p>
 <p><strong>Read the labels carefully.</strong> Cells for Stims are sourced from code (<code>compatibility.ts</code>, <code>parity.ts</code>, <code>shader-execution-classification.ts</code>, the <a href="https://github.com/zz-plant/stims/blob/main/docs/architecture/shader-support-inventory.md">shader support inventory</a>) and are exact. Cells for Winamp MilkDrop 2, projectM, and Butterchurn are marked <strong>[inferred]</strong> — reasoned from the format spec and public documentation, not verified by running those engines. Treat an inferred cell as &quot;should work, unconfirmed,&quot; not as tested fact.</p>
 <h3 id="registers-buffers-control-flow">Registers, buffers, control flow</h3>
 <div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
@@ -222,7 +222,7 @@
 <tr>
 <td>Non-standard/legacy sampler names (~7.5% of the bundled catalog)</td>
 <td>Full, resolve to real distinct textures [inferred]</td>
-<td><strong>Aliased to the nearest of the 16 standard samplers</strong> — visually similar, not identical (e.g. <code>seaweed</code>/<code>lichen</code>/<code>moss1</code> → <code>organic</code>)</td>
+<td><strong>Aliased to the nearest of the 16 standard samplers</strong> — visually similar, not identical (e.g., <code>seaweed</code>/<code>lichen</code>/<code>moss1</code> → <code>organic</code>)</td>
 </tr>
 <tr>
 <td>3D noise volume sampling</td>
@@ -241,25 +241,23 @@
 <li><strong>&quot;Supported&quot; here means compiles and renders through Stims&#39;s own pipeline — not &quot;measured pixel-identical to a native MilkDrop render.&quot;</strong> Stims&#39;s own compatibility system deliberately keeps those two claims separate; so should you when describing your own preset&#39;s portability.</li>
 </ol>
 <h2 id="performance-and-quality">Performance and quality</h2>
-<ul>
-<li><strong>Frame-rate correction is not optional.</strong> Any accumulator advanced by a fixed amount per frame (<code>mtime</code>, custom clocks) needs an <code>fps</code>-relative term — <code>x*(75/fps)</code> for anything calibrated against 75fps, or derive your own factor as Track 3&#39;s RC filter does (<code>1/fps*k</code>). Skip it and the same preset runs at different speeds on different machines.</li>
-</ul>
-<ol start="2">
-<li><strong>Neighbor sampling in a shader costs more than a single sample.</strong> Track 6&#39;s edge-detection example reads five texture samples per pixel (four neighbors plus itself); that&#39;s a real, measurable cost multiplier over a one-sample shader, paid by every pixel on screen every frame. Reach for it when the effect needs it — not by default.</li>
-<li><strong>Fewer <code>per_pixel</code> lines beats more.</strong> Every line runs once per mesh point; a preset with a dozen <code>per_pixel</code> equations is doing that work at every vertex, every frame. The <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#professional-vs-amateur-checklist">coding guide&#39;s checklist</a> treats &quot;at least 3 meaningful per_pixel lines&quot; as a floor for depth, not a target to maximize.</li>
+<ol>
+<li><strong>Frame-rate correction is not optional.</strong> Any accumulator advanced by a fixed amount per frame (<code>mtime</code>, custom clocks) needs an <code>fps</code>-relative term — <code>x*(75/fps)</code> for anything calibrated against 75fps, or derive your own factor as Track 3&#39;s RC filter does (<code>k/fps</code>). Skip it and the same preset runs at different speeds on different machines.</li>
+<li><strong>Neighbor sampling in a shader costs more than a single sample.</strong> Track 6&#39;s edge-detection example reads six texture samples per pixel (four neighbors, the pixel itself, and one blurred copy); that&#39;s a real, measurable cost multiplier over a one-sample shader, paid by every pixel on screen every frame. Reach for it when the effect needs it — not by default.</li>
+<li><strong>Fewer <code>per_pixel</code> lines beat more.</strong> Every line runs once per mesh point; a preset with a dozen <code>per_pixel</code> equations is doing that work at every vertex, every frame. The <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#professional-vs-amateur-checklist">coding guide&#39;s checklist</a> treats &quot;at least 3 meaningful per_pixel lines&quot; as a floor for depth, not a target to maximize.</li>
 <li><strong><code>warp=1</code> with high <code>decay</code></strong> is the single most common performance-adjacent mistake — not because it&#39;s slow, but because it saturates into a smear that makes every other effect illegible. <a href="/learn/motion/#lesson-5--warp--the-wobble">Track 2</a> covers why.</li>
-<li><strong>Measure instead of guessing.</strong> <a href="/learn/listening/#lesson-5--measuring-it">Track 3, Lesson 5</a> covers <code>bun run lab:reactivity</code>. Its sibling <code>bun run lab:visual</code> (catalog presets only, currently) adds pixel-level checks — luminance, contrast, colorfulness, and whether the render is blank or static — the same instrument the Stims project uses on its own bundled catalog.</li>
+<li><strong>Measure instead of guessing.</strong> <a href="/learn/listening/#lesson-5--measuring-it">Track 3, Lesson 5</a> covers <code>bun run lab:reactivity</code>. Its sibling <code>bun run lab:visual</code> (catalog presets only, currently) adds pixel-level checks (luminance, contrast, colorfulness, and whether the render is blank or static) — the same instrument the Stims project uses on its own bundled catalog.</li>
 </ol>
 <h2 id="publishing">Publishing</h2>
 <ol>
 <li>Export your preset (or copy its <code>#code=</code> URL — see <a href="/learn/play/#6--share-it">Track 0</a>).</li>
 <li>Run it through <code>bun run lab:reactivity -- --file your.milk</code> and aim for a <code>reactive</code> verdict on the variables meant to respond to audio.</li>
 <li>Open a PR adding the <code>.milk</code> file to <code>public/milkdrop-presets/</code>, or share the link directly — both paths are covered in the <a href="https://github.com/zz-plant/stims/blob/main/CONTRIBUTING.md#contributing-presets">contributing guide</a>.</li>
-<li>If you remixed someone else&#39;s work anywhere along the way, keep the credit chain — the editor&#39;s Remix button does this automatically, and the multi-author filename convention (<code>&quot;Author A + Author B — Title&quot;</code>) is how the whole community has tracked lineage for over twenty years. It&#39;s not paperwork; it&#39;s the reason this hobby has a history at all.</li>
+<li>If you remixed someone else&#39;s work anywhere along the way, keep the credit chain — <strong>Remix</strong> in the editor&#39;s <strong>⋯</strong> menu does this automatically, and the multi-author filename convention (<code>&quot;Author A + Author B — Title&quot;</code>) is how the whole community has tracked lineage for over twenty years. It&#39;s not paperwork; it&#39;s the reason this hobby has a history at all.</li>
 </ol>
 <h2 id="what-you-can-now-do">What you can now do</h2>
 <p>Write a preset from the mental model up, wire it to the music, give it depth and shape, reach for a shader when equations aren&#39;t enough, know honestly where it will and won&#39;t run the same elsewhere, and ship it back into the same catalog you started by browsing in Track 0.</p>
-<p>If you want to go further — the essays on palette, pacing, and restraint that turn a technically correct preset into a good one — that&#39;s <a href="/learn/taste/">Track 7 — Taste</a>.</p>
+<p>If you want to go further, the essays on palette, pacing, and restraint that turn a technically correct preset into a good one are in <a href="/learn/taste/">Track 7 — Taste</a>.</p>
 
 <aside class="try" aria-label="Try Stims"><p><strong>Try it now.</strong> Stims plays MilkDrop presets in your browser, with nothing to install.</p><p><a class="cta" href="/">Open Stims</a></p></aside>
 </article>

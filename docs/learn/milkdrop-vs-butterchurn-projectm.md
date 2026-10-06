@@ -1,6 +1,6 @@
 # Stims vs Butterchurn vs projectM
 
-Stims is an independent browser visualizer in the line of Ryan Geiss's MilkDrop, Butterchurn and projectM. It is not affiliated with any of them.
+Stims is an independent browser visualizer in the line of Ryan Geiss's MilkDrop, Butterchurn, and projectM. It is not affiliated with any of them.
 
 Butterchurn and projectM are the projects most people arrive from, and both are good at what they were built for. They occupy a different slot from Stims: they are renderers you embed or run, while Stims is the workflow around one.
 

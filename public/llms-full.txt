@@ -1,36 +1,36 @@
-# Stims (toil.fyi) Technical Agent Specification
+# Stims (toil.fyi) technical agent specification
 
 ## Overview
-Stims plays and live-edits the original MilkDrop `.milk` presets in a browser, on WebGL2 or WebGPU, against any audio source, with the session carried in the URL. It is an independent implementation in the lineage of Ryan Geiss's MilkDrop, Butterchurn and projectM. What it adds to them (per-pixel equations on the GPU held to the CPU's answer, fidelity measured against native projectM, and analysis of the preset corpus as programs) is set out in https://github.com/zz-plant/stims/blob/main/docs/LINEAGE_AND_CREDITS.md#what-stims-contributes
+Stims plays and live-edits the original MilkDrop `.milk` presets in a browser, on WebGL2 or WebGPU, against any audio source, with the session carried in the URL. It is an independent implementation in the lineage of Ryan Geiss's MilkDrop, Butterchurn, and projectM. What it adds to them (per-pixel equations on the GPU held to the CPU's answer, fidelity measured against native projectM, and analysis of the preset corpus as programs) is set out in https://github.com/zz-plant/stims/blob/main/docs/LINEAGE_AND_CREDITS.md#what-stims-contributes
 
 ## Guides
 
-Static, crawlable guides live under https://toil.fyi/learn/: the ten-track authoring course (start at /learn/), /learn/milkdrop-online/, /learn/milkdrop-vs-butterchurn-projectm/ and /learn/reference/ (the language reference).
+Static, crawlable guides live under https://toil.fyi/learn/: the ten-track authoring course (start at /learn/), /learn/milkdrop-online/, /learn/milkdrop-vs-butterchurn-projectm/, and /learn/reference/ (the language reference).
 
-## MCP Integration
+## MCP integration
 The repository provides two MCP server implementations:
-1. **Stdio Server (`scripts/mcp-server.ts`)**: Run via `bun run mcp`. Full session control using Playwright headless browser session (`start_agent_session`, `session_capture_frame`, `session_tweak`, `session_vibe`, `run_quality_gate`).
-2. **Cloudflare Worker Server (`scripts/mcp-worker.ts`)**: Deployed to `https://toil.fyi/mcp` over HTTP/SSE and WebSockets. Provides documentation, catalog lookups, preset descriptions, and launch URLs.
+1. **Stdio server (`scripts/mcp-server.ts`)**: Run via `bun run mcp`. Full session control through a headless Playwright browser session (`start_agent_session`, `session_capture_frame`, `session_tweak`, `session_vibe`, `run_quality_gate`).
+2. **Cloudflare Worker server (`scripts/mcp-worker.ts`)**: Serves documentation, catalog lookups, preset descriptions, and launch URLs over HTTP/SSE and WebSockets when you deploy it yourself (`wrangler.mcp.jsonc`). It is not hosted on toil.fyi, and it has no session or automation tools.
 
-## Preset Catalog Schema
+## Preset catalog schema
 The live catalog at `https://toil.fyi/milkdrop-presets/catalog.json` contains entries with the following properties:
-- `id`: Unique identifier slug (e.g. `shifter-snakeskin`).
-- `title`: Display title of preset.
+- `id`: Unique identifier slug (e.g., `shifter-snakeskin`).
+- `title`: Display title of the preset.
 - `author`: Original author name.
-- `tags`: Array of string tags (e.g. `["ambient", "neon", "tunnel"]`).
+- `tags`: Array of string tags (e.g., `["ambient", "neon", "tunnel"]`).
 - `expectedFidelityClass`: How closely the preset is expected to match projectM (`exact`, `near-exact`, `partial`, `fallback`).
 - `visualEvidenceTier`: `visual` when a capture has been diffed against a native projectM reference, `runtime` when the preset has only been compiled and run.
 - `visualCertification`: The certification record behind that tier (`status`, `fidelityClass`, `requiredBackend`, `reasons`).
 - `supports`: Object with `webgl` and `webgpu` booleans.
 - `quality`: Ranking score and its components (fidelity, evidence, measured reactivity, motion, flash and duplicate penalties).
 
-## URL State & Query Parameters
+## URL state and query parameters
 - `?agent=true`: Keeps rendering while the tab reports itself hidden, as headless and embedded browsers often do. `window.__stims_agent` (`getState`, `waitFor`, `run`) is available in every mode.
-- `?preset=<presetId>`: Loads preset matching ID directly on page mount.
+- `?preset=<presetId>`: Loads the preset matching the ID directly on page mount.
 - `?renderer=webgpu|webgl`: Overrides backend selection.
-- `#code=<base64>`: Decodes UTF-8 base64 `.milk` equations and loads immediately in editor.
+- `#code=<base64>`: Decodes UTF-8 base64 `.milk` equations and loads them immediately in the editor.
 
-## API Endpoint Specifications
+## API endpoint specifications
 
 ### `POST /api/validate-preset`
 Validates MilkDrop `.milk` preset code syntax without browser rendering.
@@ -52,7 +52,7 @@ Validates MilkDrop `.milk` preset code syntax without browser rendering.
 The routes below are model-backed and optional. They depend on the deployment's model configuration and a rate limit, and playback and editing never need them.
 
 ### `POST /api/generate-preset`
-Generates MilkDrop equations from natural language prompts.
+Generates MilkDrop equations from natural-language prompts.
 **Request Body**: `{ "description": "cyan cybernetic tunnel with pulsing bass" }`
 **Response**: `{ "milkSource": "...", "title": "Cyan Cybernetic Tunnel" }`
 
@@ -62,12 +62,12 @@ Iteratively updates an existing `.milk` preset using AI model instructions.
 **Response**: `{ "milkSource": "..." }`
 
 ### `POST /api/blend-presets`
-Blends structural motion of Preset A with color styling of Preset B.
+Blends the structural motion of Preset A with the color styling of Preset B.
 **Request Body**: `{ "sourceA": "...", "sourceB": "..." }`
 **Response**: `{ "milkSource": "..." }`
 
-## Embedded Iframe Protocol (`postMessage`)
-Web applications embedding `toil.fyi` can post JSON messages to the iframe `contentWindow`. Point the iframe at `https://toil.fyi/?embed=true` (add `&preset=<id>` to choose the first preset): other URLs send `X-Frame-Options: SAMEORIGIN`, so they will not load in another site's frame.
+## Embedded iframe protocol (`postMessage`)
+Web applications embedding `toil.fyi` can post JSON messages to the iframe's `contentWindow`. Point the iframe at `https://toil.fyi/?embed=true` (add `&preset=<id>` to choose the first preset): other URLs send `X-Frame-Options: SAMEORIGIN`, so they will not load in another site's frame.
 
 ```javascript
 // Example: Send command to iframe; the reply echoes requestId
@@ -97,11 +97,11 @@ window.addEventListener('message', (event) => {
 
 Commands:
 - `toil:load_preset`: `presetId` (a catalog id; aliases and slugs resolve) or `milkSource` (`.milk` code). The reply arrives once the stage shows the preset, with its canonical `presetId`. It works before audio starts: an embedded page boots its stage for the request, and the preset plays when audio starts. An unknown id is refused with close matches in `suggestions`. If the preset times out or will not load, the reply carries the reason. With `milkSource`, a compile failure replies `success: false` with the editor `state`, and the code is refused while nothing is on stage yet.
-- `toil:apply_tweak`: `tweak` describes the change. It goes through `/api/refine-preset`; when AI is unavailable, a tweak naming blue, neon, cyan, warp, fast, speed, bass or beat applies the matching one-click restyle, and the reply carries `method: "restyle"` and a `note` saying so. Any other tweak is refused. A tweak whose source fails to compile is reported with `success: false` and the editor `state`, since the previous preset stays on screen.
+- `toil:apply_tweak`: `tweak` describes the change. It goes through `/api/refine-preset`; when AI is unavailable, a tweak naming blue, neon, cyan, warp, fast, speed, bass, or beat applies the matching one-click restyle, and the reply carries `method: "restyle"` and a `note` saying so. Any other tweak is refused. A tweak whose source fails to compile is reported with `success: false` and the editor `state`, since the previous preset stays on screen.
 - `toil:set_audio`: `source` is `"demo"` or `"microphone"`; a cross-origin iframe needs `allow="microphone"` for the second. The reply arrives once the stage is playing that source, or carries the start failure as `reason` (for example, microphone permission denied). An in-app browser that cannot open the microphone starts demo audio instead; that reply is `success: false` with `playing: "demo"`. File playback and tab capture need a click inside the page, so they are refused.
 - `toil:run`: `id` is any command-palette action or agent verb (`window.__stims_agent.listActions()` lists them), with optional `params`, the same as `__stims_agent.run(id, params)`. `success` means the action ran; `settled` says whether state changed before the reply and `events` lists what changed. An unknown id is refused with close matches in `suggestions`.
 - `toil:apply_source`: `source` is `.milk` code for the editor. `toil:set_fields`: `fields` maps field names to values, applied in one commit. Both reply once the source has compiled, with the editor `state`; a compile failure is `success: false`, and the previous preset stays on screen. An edit that a newer edit or preset load replaced while it compiled is also `success: false`, with a `reason` saying so.
-- `toil:midi_set` (`target` is a field name, `value` in its own units) and `toil:midi_cc` (`cc` and `value`, 0-127) drive the stage through the virtual "Claude (MCP)" MIDI device, the same path a hardware controller takes. They are live controls, so the reply confirms delivery rather than a compile; `midi_cc` names the `target` its mapping drove, and is refused when the CC is unmapped. Both are refused while nothing is on stage.
+- `toil:midi_set` (`target` is a field name, `value` in its own units) and `toil:midi_cc` (`cc` and `value`, 0–127) drive the stage through the virtual "Claude (MCP)" MIDI device, the same path a hardware controller takes. They are live controls, so the reply confirms delivery rather than a compile; `midi_cc` names the `target` its mapping drove, and is refused when the CC is unmapped. Both are refused while nothing is on stage.
 - `toil:request_telemetry`: answered with `toil:telemetry` rather than `toil:status`.
 
 Each command above except `toil:request_telemetry` is answered with `{ type: 'toil:status', action, success, reason? }`. Any other `toil:` message is answered with `success: false` and a `reason`. Every reply echoes the command's `requestId` (a string or finite number) when it had one, and goes to the window that sent the command, so a page posting to its own window hears back too.

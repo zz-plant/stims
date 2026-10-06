@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>MilkDrop Motion: zoom, rot, dx, sx, warp — Track 2 | Stims</title>
-<meta name="description" content="Control how a MilkDrop preset moves with zoom, rot, dx/dy, sx/sy and warp, plus a line-by-line dissection of a Geiss classic." />
+<meta name="description" content="Control how a MilkDrop preset moves with zoom, rot, dx/dy, sx/sy, and warp, plus a line-by-line dissection of a Geiss classic." />
 <meta name="robots" content="index,follow" />
 <meta name="theme-color" content="#0b0f1a" />
 <link rel="canonical" href="https://toil.fyi/learn/motion/" />
@@ -16,7 +16,7 @@
 <meta property="og:site_name" content="Stims" />
 <meta property="og:type" content="article" />
 <meta property="og:title" content="MilkDrop Motion: zoom, rot, dx, sx, warp — Track 2 | Stims" />
-<meta property="og:description" content="Control how a MilkDrop preset moves with zoom, rot, dx/dy, sx/sy and warp, plus a line-by-line dissection of a Geiss classic." />
+<meta property="og:description" content="Control how a MilkDrop preset moves with zoom, rot, dx/dy, sx/sy, and warp, plus a line-by-line dissection of a Geiss classic." />
 <meta property="og:url" content="https://toil.fyi/learn/motion/" />
 <meta property="og:image" content="https://toil.fyi/og/milkdrop.png" />
 <meta property="og:image:type" content="image/png" />
@@ -24,7 +24,7 @@
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="MilkDrop Motion: zoom, rot, dx, sx, warp — Track 2 | Stims" />
-<meta name="twitter:description" content="Control how a MilkDrop preset moves with zoom, rot, dx/dy, sx/sy and warp, plus a line-by-line dissection of a Geiss classic." />
+<meta name="twitter:description" content="Control how a MilkDrop preset moves with zoom, rot, dx/dy, sx/sy, and warp, plus a line-by-line dissection of a Geiss classic." />
 <meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
 <script type="application/ld+json">
 {
@@ -34,7 +34,7 @@
       "@type": "TechArticle",
       "headline": "Track 2 — Motion",
       "name": "MilkDrop Motion: zoom, rot, dx, sx, warp — Track 2",
-      "description": "Control how a MilkDrop preset moves with zoom, rot, dx/dy, sx/sy and warp, plus a line-by-line dissection of a Geiss classic.",
+      "description": "Control how a MilkDrop preset moves with zoom, rot, dx/dy, sx/sy, and warp, plus a line-by-line dissection of a Geiss classic.",
       "url": "https://toil.fyi/learn/motion/",
       "mainEntityOfPage": "https://toil.fyi/learn/motion/",
       "inLanguage": "en",
@@ -99,7 +99,7 @@
 rot=0.02</code></pre>
 <p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgbGVzc29uIGJlbmNoOiBhIGJyaWdodCB3YXZlZm9ybSwgbm8gbW90aW9uLCBub3RoaW5nIGhpZGRlbi4KLy8gRXZlcnkgVHJhY2sgMSBhbmQgVHJhY2sgMiBleGFtcGxlIGlzIHRoaXMgZmlsZSB3aXRoIG9uZSBvciB0d28gbGluZXMgY2hhbmdlZC4KZlJhdGluZz01CmZEZWNheT0wLjk4CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEuMDEKcm90PTAuMDIKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MAo%3D" title="examples/21-spiral.milk"><strong>▶ Run the spiral</strong></a></p>
 <p><code>rot</code> rotates the previous frame by a fixed angle (in radians) each frame. On its own it smears history into rings. Combined with outward <code>zoom</code> it makes the signature MilkDrop move: the spiral — every trail is simultaneously growing and turning.</p>
-<p>Rotation happens around the pivot <code>cx, cy</code> (screen fractions, <code>0.5,0.5</code> is dead center):</p>
+<p>Rotation happens around the pivot <code>cx, cy</code> (screen fractions; <code>0.5,0.5</code> is dead center):</p>
 <pre><code class="language-text">cx=0.3
 cy=0.35</code></pre>
 <p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgbGVzc29uIGJlbmNoOiBhIGJyaWdodCB3YXZlZm9ybSwgbm8gbW90aW9uLCBub3RoaW5nIGhpZGRlbi4KLy8gRXZlcnkgVHJhY2sgMSBhbmQgVHJhY2sgMiBleGFtcGxlIGlzIHRoaXMgZmlsZSB3aXRoIG9uZSBvciB0d28gbGluZXMgY2hhbmdlZC4KZlJhdGluZz01CmZEZWNheT0wLjk4CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEuMDEKcm90PTAuMDIKY3g9MC4zCmN5PTAuMzUKZHg9MApkeT0wCnN4PTEKc3k9MQp3YXJwPTAKd2F2ZV9yPTAuMgp3YXZlX2c9MC44NQp3YXZlX2I9MQp3YXZlX3g9MC41CndhdmVfeT0wLjUKb2JfYT0wCmliX2E9MAptdl9hPTAK" title="examples/22-off-center.milk"><strong>▶ Run the off-center spiral</strong></a></p>
@@ -119,7 +119,7 @@ sy=0.98</code></pre>
 fWarpAnimSpeed=1
 fWarpScale=1.5</code></pre>
 <p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgbGVzc29uIGJlbmNoOiBhIGJyaWdodCB3YXZlZm9ybSwgbm8gbW90aW9uLCBub3RoaW5nIGhpZGRlbi4KLy8gRXZlcnkgVHJhY2sgMSBhbmQgVHJhY2sgMiBleGFtcGxlIGlzIHRoaXMgZmlsZSB3aXRoIG9uZSBvciB0d28gbGluZXMgY2hhbmdlZC4KZlJhdGluZz01CmZEZWNheT0wLjk4CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MC4yCndhdmVfcj0wLjIKd2F2ZV9nPTAuODUKd2F2ZV9iPTEKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wCmZXYXJwQW5pbVNwZWVkPTEKZldhcnBTY2FsZT0xLjUK" title="examples/25-warp.milk"><strong>▶ Run the wobble</strong></a></p>
-<p><code>warp</code> displaces the previous frame through a built-in animated noise field — instant liquid. <code>fWarpAnimSpeed</code> sets how fast the field churns, <code>fWarpScale</code> how large its blobs are.</p>
+<p><code>warp</code> displaces the previous frame through a built-in animated noise field — instant liquid. <code>fWarpAnimSpeed</code> sets how fast the field churns, and <code>fWarpScale</code> how large its blobs are.</p>
 <blockquote>
 <p><strong>The classic beginner trap:</strong> <code>warp=1</code> plus high <code>decay</code> turns everything into brown smudge within seconds — the noise field stirs the paint and nothing erases it. Experienced authors keep <code>warp</code> low or zero and build distortion with per-pixel equations instead, where <em>they</em> control the field. The <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#anti-patterns">anti-pattern table</a> has the full list.</p>
 </blockquote>
@@ -137,31 +137,36 @@ per_frame_4=wave_b = wave_b + 0.25*(0.6*sin(0.814*time) + 0.4*sin(1.011*time));<
 <li><code>per_frame_1</code> — the spiral&#39;s twist is not constant: it drifts between <code>0.004</code> and <code>0.012</code> on a slow sine (<code>time*0.13</code> ≈ one swing per 48 s). The motion never settles, so the eye never files it away.</li>
 <li><code>per_frame_2–4</code> — each color channel wanders on a <em>sum of two sines at unrelated frequencies</em> (<code>0.98</code> vs <code>1.047</code>, …). Irrational-ratio frequencies never realign, so the palette never repeats. This is <strong>color cycling with irrational frequencies</strong> — <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#pattern-5-color-cycling-with-irrational-frequencies">Pattern 5 in the coding guide</a>, and a Geiss signature you&#39;ll see next.</li>
 </ul>
-<p><strong>Turn one knob.</strong> Make the vortex violent: shorten <code>decay</code>, raise the <code>rot</code> swing, speed up the color sines. Then make it glacial. The same six lines cover the whole mood spectrum.</p>
+<p><strong>Turn one knob.</strong> Make the vortex violent: shorten <code>decay</code>, raise the <code>rot</code> swing, and speed up the color sines. Then make it glacial. The same six lines cover the whole mood spectrum.</p>
 <h2 id="lesson-7--dissection-geiss--happy-drops-ryan-geiss">Lesson 7 · Dissection: <em>Geiss — Happy Drops</em> (Ryan Geiss)</h2>
-<p>Time to read a real one. This ships in the Stims catalog and is old enough to drink — it&#39;s pure Track 1–2 material plus exactly one line of foreshadowing.</p>
+<p>Time to read a real one. This ships in the Stims catalog and is old enough to drink. Its six <code>per_frame</code> lines are pure Track 2 material; its three <code>per_pixel</code> lines are a preview of Tracks 3 and 4.</p>
 <p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQpmUmF0aW5nPTUuMDAwMDAwCmZHYW1tYUFkaj0xLjk5NApmRGVjYXk9MC45OApmVmlkZW9FY2hvWm9vbT0yCmZWaWRlb0VjaG9BbHBoYT0wCm5WaWRlb0VjaG9PcmllbnRhdGlvbj0wCm5XYXZlTW9kZT0yCmJBZGRpdGl2ZVdhdmVzPTEKYldhdmVEb3RzPTAKYldhdmVUaGljaz0xCmJNb2RXYXZlQWxwaGFCeVZvbHVtZT0wCmJNYXhpbWl6ZVdhdmVDb2xvcj0xCmJUZXhXcmFwPTEKYkRhcmtlbkNlbnRlcj0wCmJSZWRCbHVlU3RlcmVvPTAKYkJyaWdodGVuPTAKYkRhcmtlbj0wCmJTb2xhcml6ZT0wCmJJbnZlcnQ9MApmV2F2ZUFscGhhPTAuNDIKZldhdmVTY2FsZT0wLjY5MTM1OApmV2F2ZVNtb290aGluZz0wLjQKZldhdmVQYXJhbT0wCmZNb2RXYXZlQWxwaGFTdGFydD0wLjc1CmZNb2RXYXZlQWxwaGFFbmQ9MC45NQpmV2FycEFuaW1TcGVlZD0xCmZXYXJwU2NhbGU9MQpmWm9vbUV4cG9uZW50PTAuODg4CmZTaGFkZXI9MQp6b29tPTAuOTk5NzEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKd2FycD0wLjI5ODgxNgpzeD0xCnN5PTEKd2F2ZV9yPTAuNjUKd2F2ZV9nPTAuNjUKd2F2ZV9iPTAuNjUKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX3NpemU9MC4wMQpvYl9yPTAKb2JfZz0wCm9iX2I9MApvYl9hPTAKaWJfc2l6ZT0wLjAxCmliX3I9MC4yNQppYl9nPTAuMjUKaWJfYj0wLjI1CmliX2E9MApuTW90aW9uVmVjdG9yc1g9MTIKbk1vdGlvblZlY3RvcnNZPTkKbXZfZHg9MAptdl9keT0wCm12X2w9MC45Cm12X3I9MQptdl9nPTEKbXZfYj0xCm12X2E9MApwZXJfZnJhbWVfMT13YXZlX3IgPSB3YXZlX3IgKyAwLjM1MCooIDAuNjAqc2luKDAuNzQyKnRpbWUpICsgMC40MCpzaW4oMS4wMjEqdGltZSkgKTsKcGVyX2ZyYW1lXzI9d2F2ZV9nID0gd2F2ZV9nICsgMC4zNTAqKCAwLjYwKnNpbigwLjcwMyp0aW1lKSArIDAuNDAqc2luKDAuOTY5KnRpbWUpICk7CnBlcl9mcmFtZV8zPXdhdmVfYiA9IHdhdmVfYiArIDAuMzUwKiggMC42MCpzaW4oMS4wOTAqdGltZSkgKyAwLjQwKnNpbigwLjk2Myp0aW1lKSApOwpwZXJfZnJhbWVfND1yb3QgPSByb3QgKyAwLjA0MCooIDAuNjAqc2luKDAuMzgxKnRpbWUpICsgMC40MCpzaW4oMC4yNzkqdGltZSkgKTsKcGVyX2ZyYW1lXzU9Y3ggPSBjeCArIDAuMTEwKiggMC42MCpzaW4oMC4zNzQqdGltZSkgKyAwLjQwKnNpbigwLjI5NCp0aW1lKSApOwpwZXJfZnJhbWVfNj1jeSA9IGN5ICsgMC4xMTAqKCAwLjYwKnNpbigwLjM5Myp0aW1lKSArIDAuNDAqc2luKDAuMjIzKnRpbWUpICk7CnBlcl9waXhlbF8xPWRyID0gMC4wMSArIDAuMDMqbWluKG1heChiYXNzX2F0dC0xLDAuMCksIDAuNSkqc2luKHJhZCoxNSk7CnBlcl9waXhlbF8yPWR4ID0gZHggKyBkcipjb3MoYW5nKSowLjc1OwpwZXJfcGl4ZWxfMz1keSA9IGR5ICsgZHIqc2luKC1hbmcpOwo%3D" title="public/milkdrop-presets/libraries/projectm-cream-of-the-crop/geiss-happy-drops.milk"><strong>▶ Open Happy Drops in the editor</strong></a> · <a href="https://toil.fyi/?preset=geiss-happy-drops">Watch it in the app</a></p>
 <p>The lines that matter (the rest of the file is default housekeeping):</p>
 <pre><code class="language-text">fDecay=0.98
-rot=0.00744
-bWaveThick=1
-bMaximizeWaveColor=1
-wave_r=0.9
-wave_g=0.45
-wave_b=0
-per_frame_1=wave_r = wave_r + 0.100*( 0.60*sin(0.933*time) + 0.40*sin(1.045*time) );
-per_frame_2=wave_g = wave_g + 0.050*( 0.60*sin(0.900*time) + 0.40*sin(0.956*time) );
-per_frame_3=decay = decay - 0.01*equal(frame%40,0);
-per_pixel_1=zoom=0.9615+rad*0.1;</code></pre>
+warp=0.298816
+rot=0
+wave_r=0.65
+wave_g=0.65
+wave_b=0.65
+per_frame_1=wave_r = wave_r + 0.350*( 0.60*sin(0.742*time) + 0.40*sin(1.021*time) );
+per_frame_2=wave_g = wave_g + 0.350*( 0.60*sin(0.703*time) + 0.40*sin(0.969*time) );
+per_frame_3=wave_b = wave_b + 0.350*( 0.60*sin(1.090*time) + 0.40*sin(0.963*time) );
+per_frame_4=rot = rot + 0.040*( 0.60*sin(0.381*time) + 0.40*sin(0.279*time) );
+per_frame_5=cx = cx + 0.110*( 0.60*sin(0.374*time) + 0.40*sin(0.294*time) );
+per_frame_6=cy = cy + 0.110*( 0.60*sin(0.393*time) + 0.40*sin(0.223*time) );
+per_pixel_1=dr = 0.01 + 0.03*min(max(bass_att-1,0.0), 0.5)*sin(rad*15);
+per_pixel_2=dx = dx + dr*cos(ang)*0.75;
+per_pixel_3=dy = dy + dr*sin(-ang);</code></pre>
 <ul>
-<li><code>rot=0.00744</code> — a twist so slow you feel it rather than see it. Compare your own spiral&#39;s <code>0.02</code>: Geiss is running at a third of your gentlest setting. Restraint is a recurring master move.</li>
-<li><code>per_frame_1</code>/<code>per_frame_2</code> — the same irrational-frequency color drift you just wrote, tuned warm: red wanders twice as far as green (<code>0.100</code> vs <code>0.050</code>) and blue stays at its base <code>0</code>, so the palette lives between ember-orange and gold and never leaves.</li>
-<li><code>per_frame_3</code> — the sneaky one. <code>equal(frame%40,0)</code> is <code>1</code> on every 40th frame and <code>0</code> otherwise, so <code>decay</code> dips from <code>0.98</code> to <code>0.97</code> for a single frame — a metronome tick of extra fade, about every two-thirds of a second, that keeps the accumulated paint from ever going stale. A conditional built from arithmetic: there is no <code>if</code> statement in sight, and you&#39;ll write beats the same way in Track 3.</li>
-<li><code>per_pixel_1</code> — the foreshadow. This line runs <em>per mesh point</em>, and <code>rad</code> is each point&#39;s distance from center: so <code>zoom</code> is <code>0.96</code> at the center (falling inward) rising past <code>1.0</code> toward the edges (streaming outward). One line, two opposing currents — that&#39;s why the drops seem to <em>rain</em> toward the middle while the edges glow outward. Making knobs vary across the screen is all of [Track 4], and this is its simplest useful sentence.</li>
+<li><code>per_frame_1</code>–<code>per_frame_3</code> — Lesson 6&#39;s irrational-frequency color drift at full strength. Each channel swings <code>0.35</code> either side of a neutral <code>0.65</code>, so red, green, and blue each wander between <code>0.3</code> and <code>1.0</code> on their own unrelated sines, and the palette never repeats.</li>
+<li><code>per_frame_4</code> — the same two-sine trick applied to motion. The file&#39;s base <code>rot</code> is <code>0</code>, so the twist wanders between <code>-0.04</code> and <code>0.04</code>: at its peak twice your spiral&#39;s <code>0.02</code>, but it keeps reversing (each sine takes 16–23 seconds per cycle), so it never settles into a plain spiral.</li>
+<li><code>per_frame_5</code>/<code>per_frame_6</code> — the pivot from Lesson 2, set wandering. <code>cx</code> and <code>cy</code> each drift up to <code>0.11</code> from center, so the point the rotation turns around slides slowly around the middle of the screen.</li>
+<li><code>per_pixel_1</code>–<code>per_pixel_3</code> — the preview. These lines run <em>per mesh point</em>, and <code>rad</code>/<code>ang</code> are each point&#39;s distance and direction from the screen center. <code>dr</code> pushes every point about <code>0.01</code> outward along its own radial line each frame — a steady outward stream, like a gentle <code>zoom</code>. On top of that, <code>bass_att-1</code> is how far the bass sits above its average, clamped to <code>0–0.5</code>: in quiet passages it is zero, but on a bass hit <code>sin(rad*15)</code> adds alternating bands of stronger and weaker push across the radius. Those bands, smeared outward by the feedback loop, are the drops. Track 3 covers <code>bass_att</code>; making knobs vary across the screen is all of <a href="/learn/warp-fields/">Track 4</a>.</li>
 </ul>
-<p><strong>Exercise.</strong> Remix Happy Drops (the editor&#39;s Remix button preserves the credit lineage): cool the palette to blues, retime the decay tick to <code>frame%15</code>, and flip the per-pixel current (<code>zoom=1.04-rad*0.1</code>). Export it, or copy the URL — the link is the preset.</p>
+<p><strong>Exercise.</strong> Remix Happy Drops (<strong>Remix</strong> in the editor&#39;s <strong>⋯</strong> menu preserves the credit lineage): cool the palette by lowering the base <code>wave_r</code> to <code>0.3</code> and its swing to <code>0.15</code>, give <code>rot</code> a base of <code>0.05</code> so the twist keeps one direction, and turn the stream inward by changing <code>0.01</code> to <code>-0.01</code> in <code>per_pixel_1</code>. Export it, or copy the URL — the link is the preset.</p>
 <h2 id="what-you-can-now-read">What you can now read</h2>
-<p>Any preset whose motion lives in <code>per_frame</code> — which includes most of the pre-2007 classics — is now legible to you: find the knobs, find the sines driving them, find the eraser. <strong>Next up: Track 3 — Listening</strong>, where <code>sin(time)</code> gives way to the music.</p>
+<p>Any preset whose motion lives in <code>per_frame</code> — which includes most of the pre-2007 classics — is now legible to you: find the knobs, find the sines driving them, find the eraser.</p>
+<p><strong>Next: <a href="/learn/listening/">Track 3 — Listening</a></strong>, where <code>sin(time)</code> gives way to the music.</p>
 
 <aside class="try" aria-label="Try Stims"><p><strong>Try it now.</strong> Stims plays MilkDrop presets in your browser, with nothing to install.</p><p><a class="cta" href="/">Open Stims</a></p></aside>
 </article>

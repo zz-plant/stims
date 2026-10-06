@@ -68,7 +68,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
     source: 'docs/learn/milkdrop-vs-butterchurn-projectm.md',
     seoTitle: 'Stims vs Butterchurn vs projectM',
     description:
-      'How Stims, Butterchurn and projectM differ: browser app, embeddable renderer and native library, and which one fits what you want to do.',
+      'How Stims, Butterchurn, and projectM differ (browser app, embeddable renderer, and native library) and which one fits what you want to do.',
     kind: 'landing',
     faq: true,
   },
@@ -93,7 +93,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
     source: 'docs/authoring/02-motion.md',
     seoTitle: 'MilkDrop Motion: zoom, rot, dx, sx, warp — Track 2',
     description:
-      'Control how a MilkDrop preset moves with zoom, rot, dx/dy, sx/sy and warp, plus a line-by-line dissection of a Geiss classic.',
+      'Control how a MilkDrop preset moves with zoom, rot, dx/dy, sx/sy, and warp, plus a line-by-line dissection of a Geiss classic.',
     kind: 'track',
   },
   {
@@ -109,7 +109,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
     source: 'docs/authoring/04-warp-fields.md',
     seoTitle: 'MilkDrop Per-Pixel Warp Fields — Track 4',
     description:
-      'Per-pixel equations in MilkDrop: rad and ang, tunnels, ripples and other warp fields that change with position across the screen.',
+      'Per-pixel equations in MilkDrop: rad and ang, tunnels, ripples, and other warp fields that change with position across the screen.',
     kind: 'track',
   },
   {
@@ -133,7 +133,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
     source: 'docs/authoring/07-taste.md',
     seoTitle: 'MilkDrop Masterworks Dissected — Track 7',
     description:
-      'Five celebrated MilkDrop presets taken apart: reaction-diffusion, tempo tracking, hand-rolled HSL and more, to learn what makes them good.',
+      'Five celebrated MilkDrop presets taken apart: reaction-diffusion, tempo tracking, hand-rolled HSL, and more, to learn what makes them good.',
     kind: 'track',
   },
   {
@@ -141,7 +141,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
     source: 'docs/authoring/08-shipping.md',
     seoTitle: 'Publishing MilkDrop Presets and Engine Compatibility — Track 8',
     description:
-      'What works in MilkDrop, projectM, Butterchurn and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset.',
+      'What works in MilkDrop, projectM, Butterchurn, and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset.',
     kind: 'track',
   },
   {
@@ -149,7 +149,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
     source: 'docs/authoring/09-technique-glossary.md',
     seoTitle: 'MilkDrop Technique Glossary',
     description:
-      'The named techniques of MilkDrop presets, like Jelly, Relief and Painterly, counted across the shipped catalog with examples.',
+      'The named techniques of MilkDrop presets, like Jelly, Relief, and Painterly, counted across the shipped catalog with examples.',
     kind: 'track',
   },
   {
@@ -157,7 +157,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
     source: 'docs/authoring/reference.md',
     seoTitle: 'MilkDrop Language Reference',
     description:
-      'Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals and the fields a preset can set.',
+      'Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals, and the fields a preset can set.',
     kind: 'track',
   },
 ];

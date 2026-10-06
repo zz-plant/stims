@@ -1,8 +1,9 @@
 [preset00]
-// Pattern 4 from the coding guide: concentric rings pulsing outward.
-// rad*12 packs 12 rings into the radius; time*0.5 rotates the ring
-// pattern; ang (built-in angle from center) steers each pixel's push
-// along its own radial direction via cos(ang)/sin(ang).
+// Pattern 4 from the coding guide: concentric rings drifting inward.
+// rad*12 fits about two rings between the center and the edge (12 / 2pi);
+// +time*0.5 slides them inward (-time*0.5 sends them outward); ang
+// (built-in angle from center) steers each pixel's push along its own
+// radial direction via cos(ang)/sin(-ang).
 fRating=5
 fDecay=0.97
 fWaveAlpha=1.2
