@@ -596,7 +596,7 @@ function toUniformNodes<T extends Record<string, { value: number | Color }>>(
 ): TslUniformNodes<T> {
   const nodes: Record<string, TslUniformNode<number | Color>> = {};
   for (const [key, entry] of Object.entries(state)) {
-    nodes[key] = typedUniform(entry.value);
+    nodes[key] = typedUniform(TSL, entry.value);
   }
   return nodes as TslUniformNodes<T>;
 }
@@ -757,7 +757,7 @@ export function createProceduralMeshMaterial(
   const signals = packSignalUniformVectors(uniforms, 'signal');
   const fieldParams = packFieldParamVectors(uniforms);
   const vertex = getProceduralMeshVertexFn(program)({
-    sourcePosition: typedAttribute('sourcePosition', 'vec3'),
+    sourcePosition: typedAttribute(TSL, 'sourcePosition', 'vec3'),
     fieldParamsA: fieldParams.a,
     fieldParamsB: fieldParams.b,
     fieldParamsC: fieldParams.c,
@@ -958,8 +958,8 @@ export function createProceduralMotionVectorMaterial(
   const previousFieldParams = packFieldParamVectors(uniforms, 'previous');
   const result = varying(
     getProceduralMotionVectorVertexFn(program)({
-      sourcePosition: typedAttribute('sourcePosition', 'vec3'),
-      endpointWeight: typedAttribute('endpointWeight', 'float'),
+      sourcePosition: typedAttribute(TSL, 'sourcePosition', 'vec3'),
+      endpointWeight: typedAttribute(TSL, 'endpointWeight', 'float'),
       fieldParamsA: fieldParams.a,
       fieldParamsB: fieldParams.b,
       fieldParamsC: fieldParams.c,
@@ -1368,11 +1368,11 @@ export function createProceduralCustomWaveMaterial(
   const previousSignals = packSignalUniformVectors(uniforms, 'previousSignal');
   const baseColor = asColorNode(uniforms.tint);
   const point = getProceduralCustomWaveVertexFn(program)({
-    sampleT: typedAttribute('sampleT', 'float'),
-    sampleValue: typedAttribute('sampleValue', 'float'),
-    sampleValue2: typedAttribute('sampleValue2', 'float'),
-    previousSampleValue: typedAttribute('previousSampleValue', 'float'),
-    previousSampleValue2: typedAttribute('previousSampleValue2', 'float'),
+    sampleT: typedAttribute(TSL, 'sampleT', 'float'),
+    sampleValue: typedAttribute(TSL, 'sampleValue', 'float'),
+    sampleValue2: typedAttribute(TSL, 'sampleValue2', 'float'),
+    previousSampleValue: typedAttribute(TSL, 'previousSampleValue', 'float'),
+    previousSampleValue2: typedAttribute(TSL, 'previousSampleValue2', 'float'),
     waveParams: vec4(
       uniforms.centerX,
       uniforms.centerY,
@@ -1416,11 +1416,15 @@ export function createProceduralCustomWaveMaterial(
   // wave per point and lets the rasteriser interpolate between them.
   const pointColor = varying(
     getProceduralCustomWaveColorFn(program)({
-      sampleT: typedAttribute('sampleT', 'float'),
-      sampleValue: typedAttribute('sampleValue', 'float'),
-      sampleValue2: typedAttribute('sampleValue2', 'float'),
-      previousSampleValue: typedAttribute('previousSampleValue', 'float'),
-      previousSampleValue2: typedAttribute('previousSampleValue2', 'float'),
+      sampleT: typedAttribute(TSL, 'sampleT', 'float'),
+      sampleValue: typedAttribute(TSL, 'sampleValue', 'float'),
+      sampleValue2: typedAttribute(TSL, 'sampleValue2', 'float'),
+      previousSampleValue: typedAttribute(TSL, 'previousSampleValue', 'float'),
+      previousSampleValue2: typedAttribute(
+        TSL,
+        'previousSampleValue2',
+        'float',
+      ),
       waveParams: vec4(
         uniforms.centerX,
         uniforms.centerY,
@@ -1602,7 +1606,7 @@ export function createProceduralWaveMaterial() {
     signalTime: uniform(0),
     beatPulse: uniform(0),
     trebleAtt: uniform(0),
-    tint: typedUniform(new Color(1, 1, 1)),
+    tint: typedUniform(TSL, new Color(1, 1, 1)),
     alpha: uniform(1),
     previousCenterX: uniform(0),
     previousCenterY: uniform(0),
@@ -1621,10 +1625,10 @@ export function createProceduralWaveMaterial() {
 
   const point = computeProceduralWavePoint({
     mode: uniforms.mode,
-    t: typedAttribute('sampleT', 'float'),
-    sampleData: typedAttribute('sampleData', 'vec4'),
-    previousSampleData: typedAttribute('previousSampleData', 'vec4'),
-    sampleMisc: typedAttribute('sampleMisc', 'vec3'),
+    t: typedAttribute(TSL, 'sampleT', 'float'),
+    sampleData: typedAttribute(TSL, 'sampleData', 'vec4'),
+    previousSampleData: typedAttribute(TSL, 'previousSampleData', 'vec4'),
+    sampleMisc: typedAttribute(TSL, 'sampleMisc', 'vec3'),
     centerX: uniforms.centerX,
     centerY: uniforms.centerY,
     scale: uniforms.scale,

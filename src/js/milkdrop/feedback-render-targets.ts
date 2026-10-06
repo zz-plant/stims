@@ -1,11 +1,13 @@
+// RenderTarget comes from 'three', not 'three/webgpu': both re-export the
+// same three.core class, and the 'three/webgpu' import dragged that whole
+// bundle onto the WebGL boot path.
 import {
   HalfFloatType,
   LinearFilter,
-  type RenderTarget,
+  RenderTarget,
   type RenderTargetOptions,
   WebGLRenderTarget,
 } from 'three';
-import { RenderTarget as WebGPURenderTarget } from 'three/webgpu';
 
 export type FeedbackRenderTargetBackend = 'webgl' | 'webgpu';
 
@@ -52,7 +54,7 @@ export function createFeedbackRenderTarget(
   };
 
   if (backend === 'webgpu') {
-    const target = new WebGPURenderTarget(scaledWidth, scaledHeight, options);
+    const target = new RenderTarget(scaledWidth, scaledHeight, options);
     target.samples = samples;
     return target;
   }
