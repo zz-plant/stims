@@ -127,7 +127,7 @@ centre + Σ(depth × shaped source)
 
 where `centre` is the position `session_ramp` and `session_midi_set` move. So a
 ramp can raise a parameter's resting value while an LFO keeps wobbling around
-it. Modulators never write back into the centre, which is what stops the
+it. Modulators never write back into the centre; that is what stops the
 resting value drifting on its own. Several may share a target; they sum, and
 `min`/`max` clamp the result.
 
@@ -149,8 +149,8 @@ as the parameters arrive.
 - **Audio was unreachable.** Strudel lived only in `StrudelLabPanel` behind
   `?strudel=1`, so an agent could drive the visuals but could not play a note.
 - **`session_midi_set` is a jump cut.** It posts one value and returns.
-  `session_ramp` moves several targets together over bars, which is what a
-  build or a drop actually is. `curve: 'sine'` (the default) eases in and out
+  A build or a drop is several targets moving together over bars, and
+  `session_ramp` does exactly that. `curve: 'sine'` (the default) eases in and out
   like a hand on a fader.
 - **`audioEnergy` telemetry is a frozen snapshot.** It only updates between
   engine emissions, so polling it cannot tell silence from a stalled reading.

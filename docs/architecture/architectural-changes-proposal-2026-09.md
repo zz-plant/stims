@@ -150,8 +150,8 @@ scoped to the fields already clean, and ratchet the rest field by field.
   [`docs/agents/src-map.md`](../agents/src-map.md) repeated the claim.
   (Both are corrected in the change that adds this document.)
 - The rules file, `.dependency-cruiser.mjs`, contains two `error` rules,
-  `no-circular` and `no-prod-to-tests`, and two `info` rules that name the
-  retired `loader/` and `bootstrap/` directories under `src/js`, which
+  `no-circular` and `no-prod-to-tests`, and two `info` rules that name
+  `loader/` and `bootstrap/`, retired `src/js` directories that
   `ARCHITECTURE.md` records as deleted. There is no rule about the
   frontend → engine seam.
   [`docs/GUARDRAILS.md`](../GUARDRAILS.md) lists `check:architecture` under
@@ -197,8 +197,8 @@ scoped to the fields already clean, and ratchet the rest field by field.
 must pass on `main` before merge; a seed allowlist that does not is a
 measurement error, not a reason to loosen the rule.
 
-**Risk.** None at runtime. The cost is a config file that names 20 modules,
-which change 5 retires.
+**Risk.** None at runtime. The cost is a config file that names 20 modules;
+change 5 retires it.
 
 ### 3. Catalog data crosses the seam by hand-copied projections
 
@@ -457,8 +457,8 @@ and need nothing extra.
   with `useSyncExternalStore` is adequate. The problem in change 4 is the
   shape of the contexts, not the mechanism.
 - **Not reorganizing `scripts/`.** 128 flat files are indexed by namespace
-  through `bun run help` already; the pain is their coupling to engine
-  internals, which change 2 measures and change 5 narrows.
+  through `bun run help` already; the pain is how they couple to engine
+  internals. Change 2 measures that coupling and change 5 narrows it.
 - **Docs drift noted, not fixed here.** [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md)
   says the repo has 127 scripts; `package.json` has 154.
   [`FULL_REFACTOR_PLAN.md`](../FULL_REFACTOR_PLAN.md) still describes the
@@ -513,8 +513,8 @@ grep -rn 'as unknown as' src/js --include='*.ts' --include='*.tsx' | wc -l
 
 The seam type probe. Save it as `src/js/__seam-probe.ts` (NEW), run
 `bun run typecheck`, and delete it. Each positive line compiles only if the
-named type is `any`; the control line must fail, which proves the probe is
-checking:
+named type is `any`; the control line must fail, and its failure proves the
+probe is checking:
 
 ```ts
 import type { EngineSnapshot } from './frontend/engine/engine-snapshot.ts';

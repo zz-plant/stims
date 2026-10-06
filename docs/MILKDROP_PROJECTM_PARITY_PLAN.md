@@ -70,8 +70,8 @@ ones can be trusted; the 2026-08-26 scoreboard below them is superseded.
   attached for information.
 - Two presets remain non-deterministic after the harness fix: mosaics swings
   66.3-99.7% and cubetrace 29.3-38.3% across repeats. Prime suspect is the
-  per-preset `Math.random` constants drawn at preset load, which the capture
-  path does not seed (`play-toy` has a `randomSeed` option that
+  per-preset `Math.random` constants drawn at preset load: the capture path
+  does not seed that draw (`play-toy` has a `randomSeed` option that
   `lab:backend-diff` passes and the parity capture does not).
 
 ## Superseded snapshot (2026-08-26)

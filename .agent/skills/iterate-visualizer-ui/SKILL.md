@@ -65,7 +65,7 @@ this list, and note the page footer prints the live set:
 These are the shipped components from `workspace-ui.tsx` with default props
 supplied, not reimplementations, so layout and styling here are real. Anything
 not registered renders an explicit "Unknown component" panel listing what is —
-it used to fall back to the stage panel, which let you iterate confidently on
+it used to fall back to the stage panel, so you could iterate confidently on
 the wrong thing. Add a component by editing `COMPONENT_REGISTRY`.
 
 ### Mock data

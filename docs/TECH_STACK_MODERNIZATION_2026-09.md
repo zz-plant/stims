@@ -181,8 +181,8 @@ subscribe through `useSyncExternalStore` (11 components). Start with
 `compilationMode: 'annotation'` on the browse grid and settings sheet.
 
 ### 7. esbuild → Rolldown for the AudioWorklet bundle (ported, then reverted)
-The only direct use of `esbuild` is the `audio-worklet-transform` plugin in
-`vite.config.js`, which inlines
+The only direct use of `esbuild` is `vite.config.js`'s
+`audio-worklet-transform` plugin, which inlines
 `src/js/utils/audio/frequency-analyser-processor.ts` and its DSP imports into
 an import-free string for `AudioWorkletGlobalScope`. Rolldown's programmatic
 `build()` produces an equivalent bundle (zero `import`/`export` statements,
@@ -228,14 +228,15 @@ hottest sharp call site and has a golden-output test.
 build` concurrently and stitches `dist/_worker.js` by hand, because the site
 Worker was born as a Pages project. The Cloudflare Vite plugin (1.51) runs
 the Worker inside workerd during `vite dev`, builds client and Worker in one
-graph, and handles `.wasm` imports natively, which would retire
+graph, and handles `.wasm` imports natively; adopting it would retire
 `scripts/sync-resvg-wasm.mjs` and the dual-runtime shim in
 `src/types/wasm-modules.d.ts`. Cloudflare has folded every Pages feature into
 Workers static assets; Pages Functions bundling is the last Pages-era piece
 here. Also worth a look once on the plugin: Workflows for on-demand
 embeddings backfill (the `embed:backfill` script replaces the retired
 cron; `wrangler.embed.jsonc`) and Browser Rendering's REST
-`/screenshot` for OG cards, which would remove resvg entirely.
+`/screenshot` for OG cards. Rendering cards that way would remove resvg
+entirely.
 
 ### 10. three r186 and WebGPU Compatibility Mode
 three.js is not swappable — the backend seam in
@@ -316,7 +317,7 @@ would be additive.
 - **Biome** — one tool for lint and format, fastest editor integration;
   see §15 for the type-aware add-on.
 - **Playwright 1.62** — current; used as a library under `bun test`, not
-  as a runner, which is the right shape for the parity captures. Vitest
+  as a runner, and that is the right shape for the parity captures. Vitest
   Browser Mode would add a runner the repo deliberately does not have.
 - **`@strudel/web`** — gated behind `?strudel=1` in its own chunk; the
   `AudioNode.prototype.connect` monkey-patch in

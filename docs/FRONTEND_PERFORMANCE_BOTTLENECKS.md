@@ -70,8 +70,9 @@
   inside each discrete quality step. GPU fill pressure can shed pixels without
   immediately reducing mesh density; quality locks freeze both lanes.
 - **Exact-size dynamic GPU buffers** (fixed 2026-08-24) — resizable vertex
-  attributes now grow with power-of-two item capacity, which removes validation
-  failures at awkward geometry counts and absorbs nearby size changes.
+  attributes now grow with power-of-two item capacity. Growing that way
+  removes validation failures at awkward geometry counts and absorbs nearby
+  size changes.
 - **Read-only EEL field locals** (fixed 2026-08-24) — variables that are read
   but never assigned lower as zero-initialized GPU temporaries, matching
   NS-EEL/CPU semantics and moving procedural field coverage to 1,611 of 1,619
@@ -143,7 +144,7 @@ Until then this is a bounded, unproven concern, not a confirmed spike.
   `three.core.js` that `three.webgpu.js` imports would duplicate the core
   instead of sharing it. Measured 2026-08-27.
 - **The many small chunks are the price of four HTML entries.** 61 of 102
-  chunks are under 5 KB (105 KB total), which looks like pure request
+  chunks are under 5 KB (105 KB total). That looks like pure request
   overhead. Grouping app code by directory in `manualChunks` cuts the count to
   60 — and takes the *eager* payload from 503 KB to 2237 KB, because the
   groups drag lazily-imported renderer code into the entry graph. A narrower

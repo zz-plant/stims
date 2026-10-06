@@ -25,8 +25,8 @@ and the handles most often credited on those presets.
 
 **A byline is evidence of who applied a technique, not proof of who invented
 it.** These counts tell you where a technique shows up and in whose company. To
-establish origin, you need the *earliest datable* appearance, which requires forum
-timestamps and pack release dates the catalog does not carry. Entries below are
+establish origin, you need the *earliest datable* appearance, and dating one takes
+forum timestamps and pack release dates the catalog does not carry. Entries below are
 marked accordingly:
 
 - **[A]** — attribution is in the marker's own name (`Flexi-Tex`, `Stahl's
@@ -90,7 +90,7 @@ The glossary is deliberately incomplete, and these are the gaps worth closing:
    turns [C] and [?] into [A]. It needs forum post timestamps and pack release
    dates, not filenames.
 2. **Who named these?** The vocabulary is stable enough that authors used it
-   without explanation by the mid-2000s, which means it was established
+   without explanation by the mid-2000s, so it was established
    somewhere — most likely the Winamp MilkDrop forum. Nobody appears to have
    written that down.
 3. **Are the version numbers chronological?** `Jelly V2` → `V3` → `bccn Jelly

@@ -77,7 +77,7 @@ Read `docs/architecture/fallback-state-machine.md` (the longest architecture doc
 
 ### 3. The parity culture — the thing newcomers most reliably get wrong
 
-This is a methodology, not a module, which is why it is easy to miss and expensive to miss.
+This is a methodology, not a module, so it is easy to miss and expensive to miss.
 
 Ground truth for this project lives **outside the repository** — in the behavior of MilkDrop and projectM. It is reachable only through capture-and-diff:
 

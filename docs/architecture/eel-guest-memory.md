@@ -146,7 +146,7 @@ property that shadows the signal in the prototype chain. The WGSL generator had 
 `vol` always compiled to `signals.vol`, unconditionally, so a per-frame program that reassigned a
 signal name silently read stale/wrong audio data on GPU instead of its own computed value. This
 was **not specific to guest memory** — it affects any per-frame program using this idiom, which is
-common corpus-wide, and was unverified because per-frame GPU dispatch had no differential coverage
+common corpus-wide. It went unverified because per-frame GPU dispatch had no differential coverage
 against real presets before this increment.
 
 Fixed by extending the existing `pi`/`e` "overwritten constant" mechanism

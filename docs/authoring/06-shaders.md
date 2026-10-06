@@ -1,6 +1,6 @@
 # Track 6 — Shaders
 
-Everything through Track 5 is EEL: small equations, evaluated on the CPU-side VM, one value per knob per frame (or per pixel, at most). Shaders are different in kind, not just in syntax — GLSL code that runs on the GPU, once per *screen pixel*, every frame. This is where reaction-diffusion, edge detection, and fractal iteration live: effects that need every pixel to see its neighbors, which EEL's per-pixel context can't do.
+Everything through Track 5 is EEL: small equations, evaluated on the CPU-side VM, one value per knob per frame (or per pixel, at most). Shaders are different in kind, not just in syntax — GLSL code that runs on the GPU, once per *screen pixel*, every frame. This is where reaction-diffusion, edge detection, and fractal iteration live: effects that need every pixel to see its neighbors. EEL's per-pixel context can't do that.
 
 **64% of the bundled catalog uses this pair of shaders.** This is the cliff every existing MilkDrop resource has left unbridged — the [authoring docs assessment](../PRESET_AUTHORING_DOCS_PLAN.md) found exactly two worked shader examples in the entire canonical reference. Here's the missing tutorial.
 

@@ -228,7 +228,7 @@ them inside the 0.6–0.85rem band where the steps are smaller than a pixel.
 
 Nothing caught either, because a stylesheet with a hand-picked radius is
 still valid CSS that renders fine on its own — it only shows up as
-incoherence across surfaces, which no single diff reveals. Hence this
+incoherence across surfaces. No single diff reveals that. Hence this
 check: the scale is only real if something enforces it.
 
 A literal is allowed when it lands on a scale step. Preferring the token
@@ -420,11 +420,11 @@ Scans every .ts/.tsx/.js/.jsx file and prints each offending file, line
 number, and line before exiting 1.
 
 Only a line where the directive *opens* the comment counts. Matching the
-bare substring meant prose describing the rule tripped it — a docblock
-explaining what this guard bans read as a violation of it — which is the
-kind of false positive that teaches people to reach for --no-verify, and
-which the codebase had already started working around by splicing the
-string ('@ts-' + 'nocheck') wherever it needed to be named.
+bare substring meant prose describing the rule tripped it: a docblock
+explaining what this guard bans read as a violation of it. That kind of
+false positive teaches people to reach for --no-verify, and the codebase had
+already started working around it by splicing the string
+('@ts-' + 'nocheck') wherever it needed to be named.
 
 Run it directly: `bun run check:no-ts-nocheck`
 
@@ -442,7 +442,7 @@ advertises: a share link is unfurled by a crawler, not a browser, so these
 are what a challenge or a 404 actually breaks. The sitemap routes are here
 because every /discover/ and /author/ page 404ed in production, with an
 empty body, and nothing noticed until an audit curled one. /milkdrop/ used to be here and went
-stale silently when the app routes changed, which is why this check also
+stale silently when the app routes changed; that is why this check also
 asserts on the card endpoints rather than a human-browsed page.
 
 Run it directly: `bun run check:production-edge`
@@ -537,7 +537,7 @@ only ever finds a skill through an index: the capability table in
 `docs/agents/custom-capabilities.md` and the routing table in
 `.claude/CLAUDE.md`. Both are maintained by hand, so a skill added without
 an index row is invisible — the work class it encodes gets re-derived from
-scratch every time, which is the exact cost skills exist to remove.
+scratch every time. Skills exist to remove exactly that cost.
 
 `check-doc-references.ts` verifies that links in the docs point at files
 that exist. This is the other direction: that files which exist are
@@ -597,9 +597,8 @@ the code correctly is what breaks them.
 
 The rule: assert through the module's exported behaviour instead. If the
 property really is about a file's text — an HTML artifact we ship, a config
-file, a generated header — allowlist it below with a reason. That is a
-one-line edit with a justification, which is the cost this guard is trying
-to impose.
+file, a generated header — allowlist it below with a reason. That one-line
+edit with a justification is the cost this guard is trying to impose.
 
 Run it directly: `bun run check:test-source-greps`
 
@@ -629,7 +628,7 @@ Blocks a bare `.sample()` against one of the WebGPU feedback manager's own rende
 Rendering into a render target lands the image with its rows in the opposite
 order from the uv a later pass samples it with, so every read of one of those
 targets has to flip back into screen space. That convention shipped broken:
-every pass wrote with the inversion and read without it, which mirrored the
+every pass wrote with the inversion and read without it. That mirrored the
 whole frame against WebGL and — because the feedback loop is a cycle through
 one target — made history come back flipped every frame, so motion piled up
 in both directions instead of streaming. It survived for months because a
@@ -668,7 +667,7 @@ use a token. Below that, a literal is fine and usually better — a `z-index:
 1` that lifts an image over its own tile is local stacking inside one
 component and makes no claim about the app's layers. Reaching for
 var(--z-stage-root) there would assert kinship with the stage from inside a
-browse panel, which is how the misleading ones got written.
+browse panel; that is how the misleading ones got written.
 
 Run it directly: `bun run check:z-layers`
 

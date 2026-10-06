@@ -49,7 +49,7 @@ __stims_agent.getState().statusLog.at(-1);              // {at, message}
 | `lastError` | most recent window error / unhandled rejection message, or null |
 | `statusLog` | last 20 status toasts, `{at, message}` — toasts are transient in the UI but durable here |
 | `documentHidden`, `agentMode` | `document.hidden` right now, and whether the page was loaded with `?agent=true` |
-| `renderingSuspended` | the frame loop is **skipping frames because this tab is hidden**. A hidden tab without `?agent=true` renders nothing and shows a black canvas with no error, which looks like a shader failure: check this first. Computed by the same rule the frame loop acts on (`src/js/core/hidden-tab-policy.ts`), so the two cannot disagree |
+| `renderingSuspended` | the frame loop is **skipping frames because this tab is hidden**. A hidden tab without `?agent=true` renders nothing: the canvas goes black with no error and looks like a shader failure, so check this first. Computed by the same rule the frame loop acts on (`src/js/core/hidden-tab-policy.ts`), so the two cannot disagree |
 
 **Staleness caveat:** a `getState()` read in the same tick as an action can
 predate the React commit. Use `await run(...)` / `waitFor(...)` instead of
@@ -157,7 +157,7 @@ if (s.shaderExecution !== 'direct' && s.shaderExecution !== 'none') {
 ```
 
 A screenshot cannot tell you this — the approximation renders a plausible
-frame, which is exactly why it went unnoticed for months. The same fact
+frame, so it went unnoticed for months. The same fact
 appears in the UI as an "Approximated" marker beside the preset title in the
 dock, in the `?debug=hud` overlay's "Shader lowering" section (the "On
 &lt;backend&gt;" row), and in production aggregates via

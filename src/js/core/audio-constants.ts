@@ -108,7 +108,7 @@ export function describeInputProcessingWarning(
       ? `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`
       : names.join(' and ');
   const pronoun = names.length > 1 ? 'them' : 'it';
-  return `This input still has ${list} on, which flattens the dynamics the visuals react to. Turn ${pronoun} off for the device in your OS sound settings, or use a line/loopback input.`;
+  return `This input still has ${list} on. That flattens the dynamics the visuals react to. Turn ${pronoun} off for the device in your OS sound settings, or use a line/loopback input.`;
 }
 
 /**

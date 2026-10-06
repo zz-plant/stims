@@ -127,6 +127,6 @@ per_pixel_3=dy = dy + dr*sin(-ang);
 
 ## What you can now read
 
-Any preset whose motion lives in `per_frame` — which includes most of the pre-2007 classics — is now legible to you: find the knobs, find the sines driving them, find the eraser.
+Most of the pre-2007 classics keep their motion in `per_frame`, and any preset that does is now legible to you: find the knobs, find the sines driving them, find the eraser.
 
 **Next: [Track 3 — Listening](03-listening.md)**, where `sin(time)` gives way to the music.

@@ -25,8 +25,8 @@ to:
 > `referenceAudio`, tone signal shared byte-for-byte with the runtime via a
 > generated header); captures run at native resolution, at projectM's own
 > frame 300, on one reused browser (~33s for the nine); the deterministic pump
-> resets clock, GPU history **and the VM**, which eliminated krash's bimodal
-> renders and eos-glowsticks' intermittent blank frames (bands now
+> resets clock, GPU history **and the VM**, a reset that eliminated krash's
+> bimodal renders and eos-glowsticks' intermittent blank frames (bands now
 > 0.000-2.4pp); and the harness provenance hash invalidates every reference
 > when the C++ harness *or* the audio signal changes. Current medians and the
 > measurement rules live in `MILKDROP_PROJECTM_PARITY_PLAN.md` — read its

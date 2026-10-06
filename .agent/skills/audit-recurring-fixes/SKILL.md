@@ -30,10 +30,10 @@ git log --oneline --grep="revert" -i -300 > /tmp/revert_commits.txt
 
 Categorize by **files touched**, not by words in the subject line, and assign
 each commit exactly one category — the one holding most of its changed files.
-Counting a commit once per matching category double-counts every fix that
-ships with its own regression test, which is most of them: by that method
-`tests/` appears in 50% of fix commits, against 16% when the question is
-"is this commit mostly a test change?".
+Most fixes ship with their own regression test, so counting a commit once per
+matching category double-counts most of them: by that method `tests/` appears
+in 50% of fix commits, against 16% when the question is "is this commit mostly
+a test change?".
 
 ```bash
 bun run audit:fix-categories                 # ranked table

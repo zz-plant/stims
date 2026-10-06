@@ -72,7 +72,7 @@ if (import.meta.main) {
     if (current !== generated) {
       console.error(
         'scripts/reference-audio-signal.h is stale. The C++ harness would feed ' +
-          'projectM different audio than our capture feeds the runtime, which ' +
+          'projectM different audio than our capture feeds the runtime. That ' +
           'invalidates every parity reference without erroring. Run ' +
           '`bun run generate:reference-audio-header`.',
       );
