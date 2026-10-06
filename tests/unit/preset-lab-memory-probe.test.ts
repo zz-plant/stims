@@ -20,8 +20,12 @@ import {
 } from '../../scripts/preset-lab-memory-probe.ts';
 import { buildScenarioInputs } from '../../scripts/preset-lab-replay.ts';
 
-const frames = settleSignals(buildScenarioInputs('full-mix', 400));
-const bump = { at: 150, length: 3 };
+// Each probe reruns the preset over every frame about ten times, so the
+// stimulus is as short as the classes allow: a second for the signals to
+// settle, then 87 frames, three times the smoothed control's memory plus the
+// half-second tail that marks a response persistent.
+const frames = settleSignals(buildScenarioInputs('full-mix', 150));
+const bump = { at: 60, length: 3 };
 const probe = (body: string) =>
   probePreset(
     `[preset00]\n${body}\n`,
@@ -50,12 +54,7 @@ describe('bumpFrames', () => {
     const width = CANONICAL_VARIABLES.length;
     const differs = (f: number) =>
       changed[f * width + zoom] !== base[f * width + zoom];
-    expect([149, 150, 152, 153].map(differs)).toEqual([
-      false,
-      true,
-      true,
-      false,
-    ]);
+    expect([59, 60, 62, 63].map(differs)).toEqual([false, true, true, false]);
   });
 });
 
@@ -73,9 +72,11 @@ describe('probePreset', () => {
       'per_frame_1=avg = avg*0.9 + 0.1*bass;\nper_frame_2=q2 = avg;',
     ).q2;
     expect(q2?.memory).toBe('seconds');
-    // 0.9 per frame falls under 2% of the spread within about half a second.
+    // 0.9 per frame falls under 2% of the spread within about half a second
+    // (27 frames). A tenfold change in that threshold moves it by ~22 frames
+    // either way, so these bounds also pin the threshold.
     expect(q2?.memoryFrames).toBeGreaterThan(15);
-    expect(q2?.memoryFrames).toBeLessThan(60);
+    expect(q2?.memoryFrames).toBeLessThan(40);
   });
 
   test('an accumulator never forgets it', () => {
