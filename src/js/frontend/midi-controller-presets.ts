@@ -38,7 +38,7 @@ export const MIDI_CONTROLLER_PROFILES: MidiDeviceProfile[] = [
     manufacturer: 'Korg',
     match: ['nanokontrol2'],
     description:
-      '8 knobs mapped to zoom, warp, rot, decay, and q1..q4; 8 faders mapped to motion dx/dy and video mixers.',
+      '8 knobs mapped to zoom, warp, rot, decay, and q1–q4; 8 faders mapped to motion dx/dy and video mixers.',
     ccBindings: {
       // 8 Knobs
       16: { target: 'zoom', min: 0.8, max: 1.3 },
@@ -116,10 +116,10 @@ export const MIDI_CONTROLLER_PROFILES: MidiDeviceProfile[] = [
   },
   {
     id: 'generic-dj-mixer',
-    name: 'Generic 8-Knob DJ Controller',
+    name: 'Generic 8-knob DJ controller',
     manufacturer: 'Generic',
     description:
-      'Standard CC 1..8 knob mapping compatible with most DJ and MIDI gear.',
+      'Standard CC 1–8 knob mapping compatible with most DJ and MIDI gear.',
     ccBindings: {
       1: { target: 'zoom', min: 0.8, max: 1.3 },
       2: { target: 'warp', min: 0.0, max: 2.5 },

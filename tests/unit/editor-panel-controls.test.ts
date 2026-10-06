@@ -444,7 +444,7 @@ describe('editor panel colour groups and value-source chips', () => {
       'Additive',
       'Thick outline',
       'Textured',
-      'Centre',
+      'Center',
       'Edge',
       'Border',
       'Sides',
@@ -610,7 +610,7 @@ describe('editor panel toggles, modes, ranges and modulation', () => {
     const panel = open('zoom=1.0\n');
 
     expect(toggleNamed(panel, 'Wrap edges')?.dataset.on).toBe('true');
-    expect(toggleNamed(panel, 'Max wave colour')?.dataset.on).toBe('true');
+    expect(toggleNamed(panel, 'Max wave color')?.dataset.on).toBe('true');
     expect(toggleNamed(panel, 'Solarize')?.dataset.on).toBe('false');
 
     panel.dispose();
@@ -968,12 +968,12 @@ describe('editor panel live overwrite hint', () => {
     );
 
     const input = panel.element.querySelector(
-      '.stims-editor__slider-input[aria-label^="Centre X."]',
+      '.stims-editor__slider-input[aria-label^="Center X."]',
     ) as HTMLInputElement;
     input.focus();
     expect(document.activeElement).toBe(input);
 
-    const hint = hintFor(panel, 'Centre X');
+    const hint = hintFor(panel, 'Center X');
     expect(hint?.hidden).toBe(false);
     expect(hint?.textContent).toContain('Overwritten every frame');
     expect(hint?.textContent).toContain('moves its base');

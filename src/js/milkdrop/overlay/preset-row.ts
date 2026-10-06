@@ -5,6 +5,7 @@
 
 import { renderIconSvg } from '../../ui/icon-library.ts';
 import type { VisualFidelityTier } from '../catalog-store-analysis.ts';
+import { formatRenderBackendName } from '../common-types.ts';
 import type { MilkdropPresetRenderPreview } from '../preset-preview.ts';
 import type {
   MilkdropCatalogEntry,
@@ -195,10 +196,6 @@ export function formatPrimaryCompatibilityMessage({
     : 'Showing a simpler version.';
 }
 
-function formatBackendName(backend: 'webgl' | 'webgpu') {
-  return backend === 'webgpu' ? 'WebGPU' : 'WebGL';
-}
-
 /**
  * Format a measured pixel-mismatch ratio (e.g. 0.07) as a short percent
  * string suitable for inline UI use. Returns `null` when no measurement is
@@ -264,7 +261,7 @@ function formatVisualCertificationNotice({
 
     return activeBackend === 'webgpu'
       ? 'Runs on WebGPU, but measured parity is still pending.'
-      : 'Current session is using WebGL fallback while measured WebGPU parity is still pending.';
+      : 'The current session is using the WebGL fallback while measured WebGPU parity is still pending.';
   }
 
   if (
@@ -272,7 +269,7 @@ function formatVisualCertificationNotice({
     visualCertification.requiredBackend !== null &&
     activeBackend !== visualCertification.requiredBackend
   ) {
-    return `Measured ${formatBackendName(visualCertification.requiredBackend)} parity exists; current session is using ${formatBackendName(activeBackend)}.`;
+    return `Measured ${formatRenderBackendName(visualCertification.requiredBackend)} parity exists; the current session is using ${formatRenderBackendName(activeBackend)}.`;
   }
 
   return null;
@@ -451,7 +448,7 @@ function buildPresetRow({
     uncertifiedBadge.textContent = 'Uncertified';
     uncertifiedBadge.title =
       preset.visualCertification?.reasons[0] ??
-      'Measured against Stims reference but did not pass certification.';
+      'Measured against the Stims reference but did not pass certification.';
     badges.appendChild(uncertifiedBadge);
   }
 

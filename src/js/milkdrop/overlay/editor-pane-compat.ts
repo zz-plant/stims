@@ -41,7 +41,7 @@ export class CompatPane {
     const beyondHint = document.createElement('p');
     beyondHint.className = 'stims-editor__hint';
     beyondHint.textContent =
-      'Checked against MilkDrop 2\u2019s own functions, variables, settings and textures. projectM and Butterchurn read the same format; where they differ from MilkDrop 2 is not checked.';
+      'Checked against MilkDrop 2\u2019s own functions, variables, settings, and textures. projectM and Butterchurn read the same format; where they differ from MilkDrop 2 is not checked.';
     this.portabilityHeadline = document.createElement('p');
     this.portabilityHeadline.className = 'stims-editor__compat-headline';
     this.portabilityList = document.createElement('div');
@@ -164,7 +164,7 @@ export class CompatPane {
     const items = checkPortability(compiled, source);
     this.portabilityHeadline.textContent =
       items.length === 0
-        ? 'Nothing here stops this preset running in MilkDrop 2.'
+        ? 'Nothing here stops this preset from running in MilkDrop 2.'
         : items.some((item) => item.severity === 'breaks')
           ? 'Will not run as-is in MilkDrop 2.'
           : 'Runs in MilkDrop 2, with differences.';

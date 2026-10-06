@@ -151,12 +151,18 @@ export async function startHostSession(): Promise<string> {
   leaveSyncSession();
   const response = await fetch(`${SYNC_BASE}/api/rooms`, { method: 'POST' });
   if (!response.ok) {
-    setState({ status: 'error', error: 'Could not create a sync session.' });
+    setState({
+      status: 'error',
+      error: 'Could not start a watch party. Try again in a moment.',
+    });
     throw new Error(`Room creation failed: ${response.status}`);
   }
   const parsed = SyncRoomCreateResponseSchema.safeParse(await response.json());
   if (!parsed.success) {
-    setState({ status: 'error', error: 'Could not create a sync session.' });
+    setState({
+      status: 'error',
+      error: 'Could not start a watch party. Try again in a moment.',
+    });
     throw new Error('Room creation returned an unexpected response body');
   }
   const { room, hostKey } = parsed.data;
@@ -268,8 +274,8 @@ export async function startOrCopyWatchParty(
     await navigator.clipboard.writeText(syncShareUrl(room));
     announce(
       wasHosting
-        ? 'Watch party link copied'
-        : 'Watch party started — link copied',
+        ? 'Watch party link copied.'
+        : 'Watch party started — link copied.',
     );
   } catch {
     announce('Watch party is live — copy the link from the address bar.');

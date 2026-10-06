@@ -30,7 +30,9 @@ async function loadStarterCatalog(): Promise<PresetCatalogEntry[]> {
   } else {
     const response = await fetch(STARTER_CATALOG_URL);
     if (!response.ok) {
-      throw new Error(`Unable to load starter catalog (${response.status}).`);
+      throw new Error(
+        `Unable to load the starter catalog (${response.status}).`,
+      );
     }
     document = await response.json();
   }
@@ -133,7 +135,9 @@ export function useCatalogLoading() {
         // "loading" state; the background full-catalog load clears it if it
         // succeeds.
         setFallbackCatalogError(
-          error instanceof Error ? error.message : 'Unable to load catalog.',
+          error instanceof Error
+            ? error.message
+            : 'Unable to load the catalog.',
         );
       });
 
@@ -167,7 +171,9 @@ export function useCatalogLoading() {
         .catch((error) => {
           if (cancelled) return;
           setFallbackCatalogError(
-            error instanceof Error ? error.message : 'Unable to load catalog.',
+            error instanceof Error
+              ? error.message
+              : 'Unable to load the catalog.',
           );
           setActivityCatalog([]);
         });
@@ -199,7 +205,7 @@ export function useCatalogLoading() {
       reportLoadStatus('full-catalog');
     } catch (error) {
       setFallbackCatalogError(
-        error instanceof Error ? error.message : 'Unable to load catalog.',
+        error instanceof Error ? error.message : 'Unable to load the catalog.',
       );
       setActivityCatalog([]);
     }

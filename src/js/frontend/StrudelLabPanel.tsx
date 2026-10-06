@@ -42,9 +42,9 @@ const EXAMPLES: StrudelExample[] = [
 type LabStatus = 'idle' | 'loading' | 'playing' | 'stopped' | 'error';
 
 const STATUS_TEXT: Record<LabStatus, string> = {
-  idle: 'Write a pattern, then Play. Audio is teed into the analyser, so bass/mid/treble drive the preset.',
+  idle: 'Write a pattern, then Play. Audio is teed into the analyzer, so bass/mid/treble drive the preset.',
   loading: 'Loading the Strudel engine…',
-  playing: 'Playing — the visualizer is being driven by this pattern.',
+  playing: 'Playing — this pattern is driving the visualizer.',
   stopped: 'Stopped. Edit the pattern and Play again.',
   error: 'Pattern failed to evaluate.',
 };

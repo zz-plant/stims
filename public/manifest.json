@@ -57,7 +57,7 @@
     {
       "name": "Browse presets",
       "short_name": "Browse",
-      "description": "Open directly to the preset browser.",
+      "description": "Open Stims on the Browse presets panel.",
       "url": "/?panel=browse&source=pwa",
       "icons": [
         {

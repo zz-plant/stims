@@ -783,7 +783,7 @@ export function buildUnsupportedVolumeSamplerWarnings(
       ) === 'not-equivalent'
     ) {
       warnings.push(
-        `${label} uses tex3D/texture3D with volume sampler "${source}" which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering.`,
+        `${label} uses tex3D/texture3D with volume sampler "${source}", which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering.`,
       );
       return;
     }

@@ -41,7 +41,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
 
     if (!data.event) {
       return new Response(
-        JSON.stringify({ error: 'event parameter required' }),
+        JSON.stringify({ error: 'event parameter is required.' }),
         {
           status: 400,
           headers: { 'Content-Type': 'application/json' },

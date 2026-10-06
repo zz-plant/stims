@@ -407,7 +407,7 @@ export const AGENT_VERBS: readonly AgentActionInfo[] = [
     id: 'set-field',
     label: 'Live-set a preset variable without recompiling',
     params: {
-      key: 'string: a built-in, q1-q32 or user variable name. Not validated against the preset: ok means it was written, not that the preset reads it.',
+      key: 'string: a built-in, q1–q32, or user variable name. Not validated against the preset: ok means it was written, not that the preset reads it.',
       value: 'number (finite). Requires engineReady.',
     },
   },
@@ -675,7 +675,7 @@ export function installAgentStateGlobal(
       if (typeof position !== 'number' || !Number.isFinite(position)) {
         return {
           ok: false,
-          error: 'crossfade requires params.position (number, 0-1).',
+          error: 'crossfade requires params.position (number, 0–1).',
         };
       }
       providers.setCrossfade(position);

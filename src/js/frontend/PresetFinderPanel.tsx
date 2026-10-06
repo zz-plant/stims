@@ -361,7 +361,7 @@ export function PresetFinderPanel({
 
       {loading ? (
         <div className="stims-finder__status" role="status">
-          {mode === 'sound' ? 'Analysing audio…' : 'Analysing frame…'}
+          {mode === 'sound' ? 'Analyzing audio…' : 'Analyzing frame…'}
         </div>
       ) : error ? (
         <div className="stims-finder__status stims-finder__status--error">
@@ -413,7 +413,7 @@ export function PresetFinderPanel({
           className="stims-icon-slot stims-icon-slot--sm"
           aria-hidden="true"
         />
-        {mode === 'sound' ? 'Analyse audio' : 'Analyse frame'}
+        {mode === 'sound' ? 'Analyze audio' : 'Analyze frame'}
       </button>
 
       {soundUnavailable ? (

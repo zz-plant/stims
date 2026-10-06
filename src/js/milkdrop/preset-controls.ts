@@ -42,7 +42,7 @@ export const CONTROL_SECTIONS: Array<{
   {
     id: 'warp',
     label: 'Warp',
-    hint: 'How each frame is scaled, spun and displaced from the last one.',
+    hint: 'How each frame is scaled, spun, and displaced from the last one.',
   },
   {
     id: 'wave',
@@ -57,7 +57,7 @@ export const CONTROL_SECTIONS: Array<{
   {
     id: 'frame',
     label: 'Frame',
-    hint: 'Feedback, background, borders and overlays.',
+    hint: 'Feedback, background, borders, and overlays.',
   },
 ];
 
@@ -276,7 +276,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   // gizmo needs the stage visible, and the panel covers it on a narrow
   // screen — and because a keyboard user gets a numeric track either way.
   {
-    label: 'Centre X',
+    label: 'Center X',
     key: 'cx',
     section: 'warp',
     min: 0,
@@ -285,10 +285,10 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
     defaultValue: 0.5,
     scale: 'linear',
     neutral: 0.5,
-    hint: 'Horizontal centre of zoom, rotation and warp.',
+    hint: 'Horizontal center of zoom, rotation, and warp.',
   },
   {
-    label: 'Centre Y',
+    label: 'Center Y',
     key: 'cy',
     section: 'warp',
     min: 0,
@@ -297,7 +297,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
     defaultValue: 0.5,
     scale: 'linear',
     neutral: 0.5,
-    hint: 'Vertical centre of zoom, rotation and warp. 0 is the top.',
+    hint: 'Vertical center of zoom, rotation, and warp. 0 is the top.',
   },
   {
     label: 'Scale X',
@@ -453,7 +453,7 @@ export const TOGGLE_CONTROLS: ToggleControlConfig[] = [
     hint: 'Inverts the whole frame.',
   },
   {
-    label: 'Darken centre',
+    label: 'Darken center',
     key: 'darken_center',
     section: 'post',
     defaultValue: 0,
@@ -509,11 +509,11 @@ export const TOGGLE_CONTROLS: ToggleControlConfig[] = [
     hint: 'Doubles the waveform line width.',
   },
   {
-    label: 'Max wave colour',
+    label: 'Max wave color',
     key: 'wave_brighten',
     section: 'wave',
     defaultValue: 1,
-    hint: 'Normalises the wave colour to full brightness.',
+    hint: 'Normalizes the wave color to full brightness.',
   },
   {
     label: 'Wave alpha by volume',
@@ -534,7 +534,7 @@ export const ENUM_CONTROLS: EnumControlConfig[] = [
     options: [
       { value: 0, label: 'Circle' },
       { value: 1, label: 'X-Y pair' },
-      { value: 2, label: 'Centred' },
+      { value: 2, label: 'Centered' },
       { value: 3, label: 'Explosive' },
       { value: 4, label: 'Line' },
       { value: 5, label: 'Double line' },
@@ -628,7 +628,7 @@ export const COLOR_GROUPS: ColorGroupConfig[] = [
     rgb: ['wave_r', 'wave_g', 'wave_b'],
     alpha: { key: 'wave_a', defaultValue: 0.8 },
     defaultRgb: [1, 1, 1],
-    hint: 'The main waveform. Most presets recolour this per frame.',
+    hint: 'The main waveform. Most presets recolor this per frame.',
   },
   {
     label: 'Motion vectors',

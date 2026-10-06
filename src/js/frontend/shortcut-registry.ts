@@ -98,7 +98,7 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   },
   {
     id: 'fullscreen',
-    label: 'Fullscreen',
+    label: 'Full screen',
     defaultKeys: ['F'],
     paletteActionId: 'toggle-fullscreen',
   },
@@ -332,7 +332,7 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   },
   {
     id: 'rotate-left',
-    label: 'Rotate counter-clockwise',
+    label: 'Rotate counterclockwise',
     defaultKeys: ['<'],
     paletteActionId: 'nudge-rotate-left',
     dispatchViaPalette: true,

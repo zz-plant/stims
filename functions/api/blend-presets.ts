@@ -38,7 +38,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
     };
 
     if (!sourceA || !sourceB) {
-      return json({ error: 'sourceA and sourceB are required' }, 400);
+      return json({ error: 'sourceA and sourceB are required.' }, 400);
     }
 
     const defaultInstruction =

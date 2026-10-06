@@ -117,7 +117,7 @@ describe('watchPerformanceHardware', () => {
     expect(applied).toHaveLength(0);
     // Still announced — the point is to say the device is live — but with the
     // generic summary, because their own mapping is what is running.
-    expect(messages[0]).toContain('CC 1-4 and 7-10');
+    expect(messages[0]).toContain('CC 1–4 and 7–10');
     stop();
   });
 

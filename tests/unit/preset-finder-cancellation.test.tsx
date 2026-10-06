@@ -64,13 +64,13 @@ describe('PresetFinderPanel cancellation', () => {
     jest.useFakeTimers();
     const panel = mountFinder();
 
-    expect(panel.text()).toContain('Analysing audio…');
+    expect(panel.text()).toContain('Analyzing audio…');
     await act(async () => {
       jest.advanceTimersByTime(2500);
     });
 
     expect(panel.text()).toContain('No matches found');
-    expect(panel.text()).not.toContain('Analysing audio…');
+    expect(panel.text()).not.toContain('Analyzing audio…');
   });
 
   test('unmounting mid-window cancels the pending collection timer', async () => {
@@ -106,14 +106,14 @@ describe('PresetFinderPanel cancellation', () => {
     // Back to sound: run 3 owns the loading state now.
     await switchMode(panel, 'sound');
     expect(jest.getTimerCount()).toBe(1);
-    expect(panel.text()).toContain('Analysing audio…');
+    expect(panel.text()).toContain('Analyzing audio…');
 
     // Past run 1's original deadline: neither its results nor its cleanup
     // may land on run 3's state.
     await act(async () => {
       jest.advanceTimersByTime(1600);
     });
-    expect(panel.text()).toContain('Analysing audio…');
+    expect(panel.text()).toContain('Analyzing audio…');
     expect(panel.text()).not.toContain('No matches found');
     expect(panel.text()).not.toContain('Visual search API is unavailable');
 
@@ -122,6 +122,6 @@ describe('PresetFinderPanel cancellation', () => {
       jest.advanceTimersByTime(1000);
     });
     expect(panel.text()).toContain('No matches found');
-    expect(panel.text()).not.toContain('Analysing audio…');
+    expect(panel.text()).not.toContain('Analyzing audio…');
   });
 });

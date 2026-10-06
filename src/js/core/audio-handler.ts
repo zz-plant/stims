@@ -1035,7 +1035,7 @@ export function classifyAudioAccessError(error: unknown): AudioAccessError {
   ) {
     return new AudioAccessError(
       'unavailable',
-      'Microphone hardware is currently in use by another application (e.g. Zoom, Teams, Discord). Please close other apps and try again.',
+      'Microphone hardware is in use by another application (for example, Zoom, Teams, or Discord). Please close other apps and try again.',
     );
   }
 
@@ -1563,9 +1563,9 @@ export async function initAudio(options: AudioInitOptions = {}) {
         typeof window !== 'undefined' && window.isSecureContext === false;
       const isAppBrowser = isInAppBrowser();
       const reasonMsg = isHttpInsecure
-        ? 'Microphone access requires HTTPS or localhost. Non-secure HTTP addresses (e.g. LAN IPs) block audio capture.'
+        ? 'Microphone access requires HTTPS or localhost. Non-secure HTTP addresses (for example, LAN IPs) block audio capture.'
         : isAppBrowser
-          ? "In-app browsers (Instagram, TikTok, Twitter) may block microphone capture. Tap '...' and select 'Open in Safari/Chrome'."
+          ? "In-app browsers (Instagram, TikTok, Twitter) may block microphone capture. Tap '…' and select 'Open in Safari/Chrome'."
           : 'This browser does not support microphone capture.';
       throw new AudioAccessError('unsupported', reasonMsg);
     }

@@ -9,6 +9,7 @@ import {
   supportsFromCompiled,
 } from './catalog-store-analysis';
 import type { StoredMetaRecord } from './catalog-store-persistence';
+import { formatRenderBackendName } from './common-types.ts';
 import type {
   MilkdropBackendSupport,
   MilkdropBundledCatalogEntry,
@@ -61,6 +62,7 @@ function toManifestSupport(
   supported: boolean | undefined,
   hasCompatibilityMetadata: boolean,
 ): MilkdropBackendSupport {
+  const backendName = formatRenderBackendName(backend);
   if (supported === true) {
     return {
       status: 'supported',
@@ -75,7 +77,7 @@ function toManifestSupport(
     return {
       status: 'unsupported',
       reasons: [
-        `Catalog metadata marks this preset as unsupported on ${backend.toUpperCase()}.`,
+        `Catalog metadata marks this preset as unsupported on ${backendName}.`,
       ],
       evidence: [],
       requiredFeatures: [],
@@ -88,7 +90,7 @@ function toManifestSupport(
     status: 'partial',
     reasons: [
       hasCompatibilityMetadata
-        ? `Detailed ${backend.toUpperCase()} compatibility is verified when this preset loads.`
+        ? `Detailed ${backendName} compatibility is verified when this preset loads.`
         : 'Detailed compatibility is analyzed when this preset loads.',
     ],
     evidence: [],

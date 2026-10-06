@@ -12,7 +12,7 @@ describe('image-to-preset result handling', () => {
       kind: 'generated-source',
       description: 'neon rings over a dark field',
       source: '[preset00]\nwave_mode=1',
-      title: 'Image generated preset',
+      title: 'Image-generated preset',
     });
   });
 

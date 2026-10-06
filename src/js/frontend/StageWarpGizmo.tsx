@@ -141,7 +141,7 @@ export function StageWarpGizmo() {
     return null;
   }
 
-  const label = `Warp centre: cx ${cx.toFixed(3)}, cy ${cy.toFixed(3)}`;
+  const label = `Warp center: cx ${cx.toFixed(3)}, cy ${cy.toFixed(3)}`;
 
   return (
     // The layer itself is inert; only the handle takes the pointer, so
@@ -155,13 +155,13 @@ export function StageWarpGizmo() {
         style={{ left: `${cx * 100}%`, top: `${cy * 100}%` }}
         aria-label={
           driven
-            ? `${label}. This preset recomputes the centre every frame, so dragging sets only the starting value.`
+            ? `${label}. This preset recomputes the center every frame, so dragging sets only the starting value.`
             : `${label}. Drag, or use the arrow keys.`
         }
         title={
           driven
-            ? 'The preset reassigns cx/cy every frame — this marker shows the literal value in the draft, not where the warp is actually centred.'
-            : 'Drag to move the warp centre. Arrow keys nudge; hold Shift for coarse steps.'
+            ? 'The preset reassigns cx/cy every frame — this marker shows the literal value in the draft, not where the warp is centered.'
+            : 'Drag to move the warp center. Arrow keys nudge; hold Shift for coarse steps.'
         }
         onPointerDown={(event) => {
           event.preventDefault();

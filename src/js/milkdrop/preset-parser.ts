@@ -27,7 +27,7 @@ export function parseMilkdropPreset(source: string): {
       category: 'parse',
       code: 'preset_source_too_large',
       line: 1,
-      message: `Preset source exceeds maximum safe size of 5MB.`,
+      message: `Preset source exceeds the maximum safe size of 5 MB.`,
     });
     return { ast: { source: '', fields: [], sections: [] }, diagnostics };
   }
@@ -39,7 +39,7 @@ export function parseMilkdropPreset(source: string): {
         category: 'parse',
         code: 'preset_max_fields_exceeded',
         line: line.number,
-        message: `Preset field count exceeded maximum limit of 10,000 fields.`,
+        message: `Preset field count exceeded the limit of 10,000 fields.`,
       });
       break;
     }

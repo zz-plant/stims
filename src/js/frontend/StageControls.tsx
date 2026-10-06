@@ -559,11 +559,11 @@ export function StageControls({
       action: () => run(() => togglePanel(menuSurface, 'browse')),
       actionId: 'open-browse',
       active: panel === 'browse',
-      sectionLabel: 'Presets & Setlist',
+      sectionLabel: 'Presets and setlist',
     },
     {
       icon: 'eye' as const,
-      label: 'Find similar',
+      label: 'Find a preset',
       actionId: 'find-similar',
       action: () => run(() => togglePanel(menuSurface, 'finder')),
       active: panel === 'finder',
@@ -610,7 +610,7 @@ export function StageControls({
       actionId: 'open-generate',
       action: () => run(() => togglePanel(menuSurface, 'synthesize')),
       active: panel === 'synthesize',
-      sectionLabel: 'Studio & Create',
+      sectionLabel: 'Create and edit',
     },
     {
       icon: 'wand' as const,
@@ -669,7 +669,7 @@ export function StageControls({
       label: isFullscreen ? 'Exit full screen' : 'Full screen',
       actionId: 'toggle-fullscreen',
       action: () => run(() => onToggleFullscreen()),
-      sectionLabel: 'Display & Streaming',
+      sectionLabel: 'Display and streaming',
     },
     ...(pip.supported
       ? [
@@ -709,7 +709,7 @@ export function StageControls({
       actionId: 'open-settings',
       action: () => run(() => togglePanel(menuSurface, 'settings')),
       active: panel === 'settings',
-      sectionLabel: 'Workspace & System',
+      sectionLabel: 'Workspace and system',
     },
     ...(onOpenPalette
       ? [
@@ -900,7 +900,7 @@ export function StageControls({
             className={styles.navBtn}
             data-primary="true"
             data-action="next-preset"
-            aria-label="Shuffle to random preset"
+            aria-label="Shuffle to a random preset"
             title={withHint('Surprise me', 'next-preset')}
             aria-keyshortcuts={ariaKeyShortcutsFor('next-preset')}
             onClick={handleShuffle}
@@ -1162,7 +1162,7 @@ export function StageControls({
 
             <div className={styles.menuSep} />
             <div className={styles.menuLabel} aria-hidden="true">
-              Live VJ & Audio
+              Live VJ and audio
             </div>
             {/* Direct picks, not a cycle: mid-set there is no time to click
               through the ladder to reach the rung you want. Marked by the

@@ -220,8 +220,8 @@ function AccessibilitySection({
             Stage brightness
           </label>
           <span className="ctl-row__hint">
-            Lowest setting is 30% — dark enough to rest against, still bright
-            enough to see.
+            The lowest setting is 30% — dark enough to rest against, still
+            bright enough to see.
           </span>
         </span>
         <input
@@ -290,10 +290,10 @@ function AccessibilitySection({
           gestures are the only useful half, and "Keyboard shortcuts" is
           exactly the label a phone user skips. */}
       <button type="button" className="ctl-btn" onClick={onOpenShortcuts}>
-        Shortcuts &amp; gestures
+        Shortcuts and gestures
       </button>
       <button type="button" className="ctl-btn" onClick={onOpenCredits}>
-        About &amp; credits
+        About and credits
       </button>
     </section>
   );
@@ -328,7 +328,7 @@ function LivePerformanceRow() {
   return (
     <SwitchRow
       label="Live performance mode"
-      hint="For driving a projector or a second screen: holds detail steady instead of re-scaling it mid-show, ignores the battery frame cap, and keeps drawing in an unfocused window. A fully hidden tab is still paused by the browser — keep the show window visible."
+      hint="For driving a projector or a second screen: holds detail steady instead of rescaling it mid-show, ignores the battery frame cap, and keeps drawing in an unfocused window. A fully hidden tab is still paused by the browser — keep the show window visible."
       checked={live}
       onChange={(next) => {
         setLivePerformanceMode(next);
@@ -348,13 +348,13 @@ function describePowerSaving(
   mode: PowerSaverMode,
 ): string {
   if (level === 'saving') {
-    return 'Holding 30fps to stretch the charge. The low-power GPU is used from the next reload.';
+    return 'Holding 30 fps to stretch the charge. The low-power GPU is used from the next reload.';
   }
   if (level === 'conserving') {
-    return 'Running on battery — holding 60fps instead of full display rate.';
+    return 'Running on battery — holding 60 fps instead of the full display rate.';
   }
   return mode === 'auto'
-    ? 'Uncapped while plugged in. On battery it holds 60fps, then 30fps below 35% charge.'
+    ? 'Uncapped while plugged in. On battery it holds 60 fps, then 30 fps below 35% charge.'
     : 'Uncapped — frames present as fast as the display allows.';
 }
 
@@ -704,7 +704,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'playback' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('playback')}
         >
-          Playback & Audio
+          Playback and audio
         </button>
         <button
           id="tab-hardware"
@@ -716,7 +716,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'hardware' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('hardware')}
         >
-          Hardware & MIDI
+          Hardware and MIDI
         </button>
         <button
           id="tab-graphics"
@@ -728,7 +728,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'graphics' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('graphics')}
         >
-          Visuals & Display
+          Visuals and display
         </button>
         <button
           id="tab-accessibility"
@@ -740,7 +740,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'accessibility' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('accessibility')}
         >
-          Appearance & Device
+          Appearance and device
         </button>
       </div>
       {activeTab === 'playback' ? (
@@ -751,7 +751,7 @@ export function SettingsSheetPanel({
 
           <section className="ctl-section">
             <div className="ctl-section__head">
-              <h3 className="ctl-section__title">Playback & Transitions</h3>
+              <h3 className="ctl-section__title">Playback and transitions</h3>
             </div>
             <SwitchRow
               label="Autoplay"
@@ -955,7 +955,7 @@ export function SettingsSheetPanel({
             />
             <SwitchRow
               label="Debug HUD"
-              hint="Overlays frames-per-second, quality and uniform readouts."
+              hint="Overlays frames per second, quality, and uniform readouts."
               checked={overlays.debugHud}
               onChange={(next) => setStageOverlayPreference({ debugHud: next })}
             />

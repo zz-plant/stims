@@ -9,7 +9,7 @@ describe('MilkDrop engine preset import', () => {
     });
 
     await expect(adapter.importPreset([file])).rejects.toThrow(
-      'Failed to import preset because the visualizer is still loading. Wait a moment, then try importing the file again.',
+      'Failed to import the preset because the visualizer is still loading. Wait a moment, then try importing the file again.',
     );
 
     adapter.dispose();

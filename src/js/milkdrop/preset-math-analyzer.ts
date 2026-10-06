@@ -99,7 +99,7 @@ export function analyzePresetMath(source: string): PresetMathAnalysis {
   }
   if (hasDynamicRot || Math.abs(rotVal) > 0.01) {
     motionParts.push(
-      rotVal < 0 ? 'rotates counter-clockwise' : 'rotates clockwise',
+      rotVal < 0 ? 'rotates counterclockwise' : 'rotates clockwise',
     );
   }
   if (hasDynamicWarp) {

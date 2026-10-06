@@ -566,7 +566,7 @@ export function createMilkdropEngineAdapter() {
     async importPreset(target: FileList | File[] | string) {
       if (!experience) {
         throw new Error(
-          'Failed to import preset because the visualizer is still loading. Wait a moment, then try importing the file again.',
+          'Failed to import the preset because the visualizer is still loading. Wait a moment, then try importing the file again.',
         );
       }
       await experience.importPresetFiles(toFileList(target));

@@ -184,11 +184,11 @@ export function PerformanceHardwareSection() {
         <span className="ctl-row__text">
           <span className="ctl-row__label">Map a knob by name</span>
           <span className="ctl-row__hint">
-            For variables with no control of their own — q1-q8, t1-t8, or
+            For variables with no control of their own — q1–q8, t1–t8, or
             anything a preset defines. Name it, then move a knob to bind it.
           </span>
           <span className="ctl-row__hint">
-            Anything that has a fader, switch or swatch is bound from the
+            Anything that has a fader, switch, or swatch is bound from the
             control itself: open Edit preset code and use its ⏺ button.
           </span>
         </span>
@@ -198,7 +198,7 @@ export function PerformanceHardwareSection() {
             className="ctl-midi-learn-input"
             value={learnTarget}
             onChange={(e) => setLearnTarget(e.target.value)}
-            placeholder="e.g. zoom, warp, q1"
+            placeholder="e.g., zoom, warp, q1"
             disabled={learning}
             aria-label="MIDI learn target name"
           />

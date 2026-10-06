@@ -336,7 +336,7 @@ export function useWorkspaceSessionState({
     async (launchIntent?: LaunchIntent) => {
       const stage = stageRef.current;
       if (!stage) {
-        throw new Error('Visualizer stage is not ready yet.');
+        throw new Error('The visualizer stage is not ready yet.');
       }
 
       if (ensureEngineMountPromiseRef.current) {

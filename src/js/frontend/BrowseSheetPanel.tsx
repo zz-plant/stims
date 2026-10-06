@@ -621,7 +621,7 @@ export function BrowseSheetPanel({
               void engine.exportUserPresets();
             }}
             aria-label="Export my presets as a .zip"
-            title="Export the presets you made or imported, as a .zip of MilkDrop 2 files"
+            title="Export the presets you made or imported as a .zip of MilkDrop 2 files"
           >
             <UiIcon
               name="download"
