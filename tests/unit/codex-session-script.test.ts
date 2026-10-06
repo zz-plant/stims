@@ -267,28 +267,35 @@ test('codex session stop is scoped to the requested port', async () => {
     devPid: dev5173.pid,
   });
 
-  const result = spawnSync(
-    'bash',
-    ['scripts/codex-session.sh', '--port', '4173', '--stop'],
+  // Not spawnSync: blocking this process's event loop leaves the sleeps the
+  // script kills unreaped, a zombie still answers `kill -0`, and the script
+  // then waits out its full second per process before `kill -9`. That was
+  // ~2.3 s of this test, enough to cross bun's 5 s default under load. Real
+  // sessions are unaffected: their processes are nohup'd orphans init reaps.
+  const script = Bun.spawn(
+    ['bash', 'scripts/codex-session.sh', '--port', '4173', '--stop'],
     {
       cwd: process.cwd(),
-      encoding: 'utf8',
       env: {
         ...process.env,
         CODEX_SESSION_DIR: rootDir,
       },
+      stdout: 'ignore',
+      stderr: 'pipe',
     },
   );
+  const [status, stderr] = await Promise.all([
+    script.exited,
+    new Response(script.stderr).text(),
+  ]);
 
-  if (result.status !== 0) {
+  if (status !== 0) {
     // This spawn failed exactly once in a full `bun run check` under load and
     // has never reproduced in isolation. When it happens again, the exit code
     // and stderr are the difference between a diagnosable failure and an
     // opaque flake.
     throw new Error(
-      `codex-session.sh exited ${result.status}` +
-        `${result.error ? ` (spawn error: ${result.error.message})` : ''}` +
-        `\nstderr: ${result.stderr?.slice(0, 2000) ?? '(none)'}`,
+      `codex-session.sh exited ${status}\nstderr: ${stderr.slice(0, 2000) || '(none)'}`,
     );
   }
   await waitForExit(dev4173);
