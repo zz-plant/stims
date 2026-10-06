@@ -1,6 +1,6 @@
 # Track 7 — Taste
 
-Everything through Track 6 answers "how." This track is about "why is this one good" — the part of the craft that has never been written down anywhere, despite the people who have it (Geiss, Rovastar, Flexi, and dozens of others credited across the catalog) demonstrably possessing it. Five dissections, each isolating one master-level technique the earlier tracks didn't cover, followed by the design principles they share.
+Everything through Track 6 answers "how." This track is about "why is this one good" — the part of the craft its masters (Geiss, Rovastar, Flexi, and dozens of others credited across the catalog) plainly have but never wrote down. Five dissections, each isolating one master-level technique the earlier tracks didn't cover, followed by the design principles they share.
 
 Every preset below ships in the Stims catalog exactly as an author left it. Each "Open in the editor" link jumps straight to the real source; "Watch it live" plays it as-is.
 
@@ -18,7 +18,7 @@ z.y = tmpvar_2.y + ( xy2 - 0.095 * tmpvar_2.y) * 4.0;
 
 Treat channel `x` as an *activator* and `y` as an *inhibitor*. `x*y²` is the coupling term each feeds the other. `x` regenerates toward 1 at rate `0.035` (the feed rate); `y` decays at rate `0.095` (the kill rate). **The ratio between those two constants is what decides whether the pattern grows as spots, stripes, or the lichen-like sprawl this preset is named for** — nudge either number and the topology of the growth changes, not just its speed. Two more moves worth naming: a blurred copy of the frame is subtracted from the sharp one and 40% of that difference is fed back into `x` — sharpening the growth's edges so it doesn't go mushy — and the whole displacement is dithered with a noise texture, which is what stops the pattern from settling into a repeating tile.
 
-On the EEL side, the same adaptive-threshold gate from [Track 3](03-listening.md#lesson-4--detecting-a-beat-without-a-beat-detector) is used for something new: not a color flash, but a **single-frame directional impulse**. `dx_residual` only gets a nonzero value on the exact frame the threshold snaps to its post-beat value, and falls back to its own previous value otherwise — no explicit decay curve, just "was this the beat frame or not." The impulse is inverted and amplified 7× to shove the waveform's drawn position, so it visibly flinches away from every hit.
+On the EEL side, the same adaptive-threshold gate from [Track 3](03-listening.md#lesson-4--detecting-a-beat-without-a-beat-detector) is used for something new: not a color flash, but a **single-frame directional impulse**. `dx_residual` gets a nonzero value only on the exact frame the threshold snaps to its post-beat value, and falls back to its own previous value otherwise — no explicit decay curve, just "was this the beat frame or not." The impulse is inverted and amplified 7× to shove the waveform's drawn position, so it visibly flinches away from every hit.
 
 ## Dissection 2 · Pieturp — one shape, three palettes
 
@@ -33,7 +33,7 @@ shape_0_per_frame1=a=treb*.1;
 shape_0_per_frame2=a2=mid*.1;
 ```
 
-MilkDrop shapes interpolate radially between the `r/g/b` (inner) and `r2/g2/b2` (outer) pair — that's the gradient glow. Each petal's *inner* alpha tracks treble, its *outer* alpha tracks mids, independently — one two-line hook, reused verbatim across all three shapes with only position and hue shifted. **Write the template once; vary the parameters, not the logic.** This is the same instinct behind Track 5's shape state machine, applied to *instances* instead of *time*.
+MilkDrop shapes interpolate radially between the `r/g/b` (inner) and `r2/g2/b2` (outer) pair — that's the gradient glow. Each petal's *inner* alpha tracks treble and its *outer* alpha tracks mids, independently — one two-line hook, reused verbatim across all three shapes with only position and hue shifted. **Write the template once; vary the parameters, not the logic.** This is the same instinct behind Track 5's shape state machine, applied to *instances* instead of *time*.
 
 The drift underneath is a different smoothing idiom than Track 3's RC filter — a **leaky integrator**:
 
@@ -42,7 +42,7 @@ per_frame_7=tel=max(0,(tel+(bass*above(bass_att,1.5)))*.91);
 per_frame_18=speed=above(bass_att,1.4)+speed*.975;
 ```
 
-`speed` only *gains* on a bass hit above threshold (`+1` each time) and bleeds off by 2.5% every other frame. Compare this to Track 2's decay-tick, which is a *step* (a sudden nudge every Nth frame): this is a *continuous* exponential release — smoother, and it naturally accumulates momentum across several hits in a row instead of resetting after each one.
+`speed` *gains* only while `bass_att` is above `1.4` (`+1` for every frame it stays there) and bleeds off by 2.5% every frame. Compare this to Track 3's beat flash, which lasts a single frame: this is a *continuous* exponential release — smoother, and it naturally accumulates momentum across several hits in a row instead of resetting after each one.
 
 ## Dissection 3 · Rovastar — a real tempo tracker
 
@@ -54,9 +54,9 @@ Track 3's beat detector was one adaptive threshold. This preset runs **two in pa
 per_frame_5=swapcolour = bass_on - treb_on;
 ```
 
-`1` when bass alone fired, `-1` when treble alone fired, `0` for both-or-neither. That one number then drives a genuine three-way palette switch (red on bass, blue on treble, warm amber at rest) — a **discrete state palette**, categorically different from the continuous color drift in every Track 2 example. Colors don't jump to their target either; they exponentially approach it, and — the detail worth lingering on — the approach *rate itself* depends on which state just fired, giving bass-triggered red a snappier attack than its release.
+`1` when bass alone fired, `-1` when treble alone fired, and `0` for both-or-neither. That one number then drives a genuine three-way palette switch (red on bass, blue on treble, and warm amber at rest) — a **discrete state palette**, categorically different from the continuous color drift in every Track 2 example. Colors don't jump to their target either; they exponentially approach it, and — the detail worth lingering on — the approach *rate itself* depends on which state just fired, giving bass-triggered red a snappier attack than its release.
 
-Underneath that is a full onset detector, not just a threshold: a slow moving average (`meanbass_att`, the quiet floor) and a decaying peak tracker (`peakbass_att`, the recent ceiling) are compared, and a beat only fires when volume is loud **and** close to its own recent peak **and** enough time has passed since the last one:
+Underneath that is a full onset detector, not just a threshold: a slow moving average (`meanbass_att`, the quiet floor) and a decaying peak tracker (`peakbass_att`, the recent ceiling) are compared, and a beat fires only when volume is loud **and** close to its own recent peak **and** enough time has passed since the last one:
 
 ```text
 per_frame_22=beat = if(above(volume,0.8),
@@ -80,7 +80,7 @@ per_frame_39=vrt = vrt + tic*min(1,max(0.1,2-vav));
 
 At low volume (`vav` near 0), `2-vav` is near 2 (clamped to 1) — the hue cycles at full speed. At high volume, `2-vav` shrinks toward the `0.1` floor — the hue nearly freezes. **This is inverted from almost every other reactive preset in the catalog**, where color energy usually scales *up* with volume. Here the palette races through hues in quiet passages and holds its color during loud ones — an unusual, deliberate choice, not a default.
 
-The mechanical core (worth a slower read if you want to actually implement HSL yourself) is the standard textbook algorithm: `tmpb`/`tmpa` compute the HSL "chroma" bounds, three hue values 120° apart derive one per RGB channel, and a six-segment piecewise function converts each into that channel's final value. It is, line for line, what a CSS engine does internally — just written in an audio-visualizer's expression language because MilkDrop has no native colorspace support.
+The mechanical core (worth a slower read if you want to implement HSL yourself) is the standard textbook algorithm: `tmpb`/`tmpa` compute the HSL "chroma" bounds, three hue values 120° apart derive one per RGB channel, and a six-segment piecewise function converts each into that channel's final value. It is, line for line, what a CSS engine does internally — just written in an audio visualizer's expression language because MilkDrop has no native colorspace support.
 
 ## Dissection 5 · Flexi, fishbrain & Martin — a mashup that reads as one preset
 
@@ -94,18 +94,18 @@ Flexi/fishbrain's EEL layer runs a stricter beat detector than Dissection 3's �
 per_frame_9=beat = above(vol, res) * above(vol, m) * above(vol, 10);
 ```
 
-above a dynamic recent-onset bar, above the running mean, **and** above an absolute floor — the floor exists specifically to reject false triggers during near-silence, when the running mean itself is tiny. On every detected beat, several variables — rotation, warp center, warp strength — snap to a *fresh random value* and hold it until the next beat:
+above a dynamic recent-onset bar, above the running mean, **and** above an absolute floor — the floor exists specifically to reject false triggers during near-silence, when the running mean itself is tiny. On every detected beat, several variables — rotation, warp center, and warp strength — snap to a *fresh random value* and hold it until the next beat:
 
 ```text
 per_frame_13=r = if(0.00001 < abs(beat), 0.0002 * (randint(200) - 100), r);
 ```
 
-This is a distinct technique family from anything in Tracks 1–6: **discrete random re-seeding on trigger**, rather than continuous oscillation. It's what produces the glitchy jump-cuts the title promises. The custom waves layer a bounded random walk on top — a heading angle nudged one way by bass and the other by treble, stepped forward each frame, with reflecting boundaries keeping the trace on screen instead of wandering off it.
+This is a distinct technique family from anything in Tracks 1–6: **discrete random re-seeding on trigger**, rather than continuous oscillation. It's what produces the glitchy jump cuts the title promises. The custom waves layer a bounded random walk on top — a heading angle nudged one way by bass and the other by treble, stepped forward each frame, with reflecting boundaries keeping the trace on screen instead of wandering off it.
 
-Martin's `comp_shader` contributes the visual signature: a hand-tuned luminance weighting (deliberately not the standard Rec.601 or Rec.709 coefficients) drives a vertical texture tear in the warp shader, then the comp shader combines an image gradient with a fixed cosine swirl field and lights up wherever the two nearly cancel out — **glow appears exactly where the image's edges align with the swirl's null lines**, the threadlike linework the preset is named for. This is a genuinely different comp_shader idiom from anything in Track 6 — worth treating as a technique in its own right, not just a variation on edge detection.
+Martin's `comp_shader` contributes the visual signature: a hand-tuned luminance weighting (deliberately not the standard Rec.601 or Rec.709 coefficients) drives a vertical texture tear in the warp shader, and then the comp shader combines an image gradient with a fixed cosine swirl field and lights up wherever the two nearly cancel out — **glow appears exactly where the image's edges align with the swirl's null lines**, the threadlike linework the preset is named for. This is a genuinely different comp_shader idiom from anything in Track 6 — worth treating as a technique in its own right, not just a variation on edge detection.
 
 ## What these five have in common
 
 Read back across all five, past the specific math: every one of them **commits to a small number of techniques and executes them precisely**, rather than reaching for more parameters. Pieturp's sunflare turns off both borders entirely. Shifter locks saturation and lightness to spend its whole budget on hue. Geiss's reaction-diffusion is two constants and a noise dither, not a dozen tunables. The pattern the [coding guide's checklist](../MILKDROP_CODING_GUIDE.md#professional-vs-amateur-checklist) gestures at — restraint over maximalism — isn't a rule about doing less. It's a rule about knowing exactly which few things are doing the work, and leaving everything else alone.
 
-**Next: [Track 8 — Shipping](08-shipping.md)**, or if you're ready to publish, the [contributing guide](../../CONTRIBUTING.md#contributing-presets) directly.
+**Next: [Track 8 — Shipping](08-shipping.md)**, or, if you're ready to publish, the [contributing guide](../../CONTRIBUTING.md#contributing-presets) directly.

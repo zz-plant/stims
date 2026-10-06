@@ -68,14 +68,14 @@ export function CreditsPanel() {
         </p>
       </CreditsSection>
 
-      <CreditsSection title="Foundational Works">
+      <CreditsSection title="Foundational works">
         <CreditEntry
           name="Ryan Geiss"
           creditRole="Creator, MilkDrop"
           url="http://www.geisswerks.com/milkdrop/"
         />
         <CreditEntry
-          name="Winamp & Nullsoft"
+          name="Winamp and Nullsoft"
           creditRole="Where MilkDrop first shipped"
         />
         <p className="stims-credits-disclaimer">
@@ -84,10 +84,10 @@ export function CreditsPanel() {
         </p>
       </CreditsSection>
 
-      <CreditsSection title="Active Ecosystem">
+      <CreditsSection title="Active ecosystem">
         <CreditEntry
           name="projectM"
-          creditRole="Open-source successor & reference implementation"
+          creditRole="Open-source successor and reference implementation"
           url="https://github.com/projectM-visualizer/projectm"
         />
         <CreditEntry
@@ -102,7 +102,7 @@ export function CreditsPanel() {
         </p>
       </CreditsSection>
 
-      <CreditsSection title="Preset Authors & Curators">
+      <CreditsSection title="Preset authors and curators">
         <p>
           The 1,787 presets in Stims' catalog were made by roughly 140 authors.
           Counting every appearance in a credit chain rather than only solo
@@ -136,7 +136,7 @@ export function CreditsPanel() {
         </p>
       </CreditsSection>
 
-      <CreditsSection title="This Implementation">
+      <CreditsSection title="This implementation">
         <p>
           Stims is an independent project. It builds on decades of preset-format
           research, demoscene work, and open-source visualization code, credited
@@ -173,7 +173,7 @@ export function CreditsPanel() {
         <p>
           Stims is released under the Unlicense (public domain). Presets retain
           their original licenses. When you use, share, or remix presets, please
-          credit the original authors—you'll see their names and links
+          credit the original authors — you'll see their names and links
           throughout the app.
         </p>
       </CreditsSection>

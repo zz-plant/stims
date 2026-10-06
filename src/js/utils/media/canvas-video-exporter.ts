@@ -59,25 +59,25 @@ export const EXPORT_PRESETS: Record<ExportPresetTarget, PresetDimensions> = {
   'spotify-canvas': {
     width: 1080,
     height: 1920,
-    label: 'Spotify Canvas (9:16 Vertical)',
+    label: 'Spotify Canvas (9:16 vertical)',
     aspectRatio: '9:16',
   },
   'tiktok-shorts': {
     width: 1080,
     height: 1920,
-    label: 'TikTok Video (9:16 60FPS)',
+    label: 'TikTok video (9:16, 60 fps)',
     aspectRatio: '9:16',
   },
   'youtube-shorts': {
     width: 1080,
     height: 1920,
-    label: 'YouTube Shorts (9:16 60FPS)',
+    label: 'YouTube Shorts (9:16, 60 fps)',
     aspectRatio: '9:16',
   },
   'hd-landscape': {
     width: 1920,
     height: 1080,
-    label: 'Full HD Landscape (16:9)',
+    label: 'Full HD landscape (16:9)',
     aspectRatio: '16:9',
   },
   '4k-landscape': {
@@ -89,7 +89,7 @@ export const EXPORT_PRESETS: Record<ExportPresetTarget, PresetDimensions> = {
   custom: {
     width: 1280,
     height: 720,
-    label: 'Custom Viewport',
+    label: 'Custom viewport',
     aspectRatio: 'custom',
   },
 };

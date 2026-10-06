@@ -537,7 +537,7 @@ export function AudioSourcePanel({
             name="video"
             className="stims-shell__source-card-icon stims-icon-slot"
           />
-          <strong>{chips ? 'Tab / System' : 'Tab or System audio'}</strong>
+          <strong>{chips ? 'Tab / system' : 'Tab or system audio'}</strong>
           {chips ? null : <span>Any tab, Spotify, or your system audio</span>}
         </button>
       ) : null}
@@ -624,25 +624,25 @@ export function AudioSourcePanel({
           <summary className="stims-shell__settings-summary">
             <span>Audio help</span>
             <span className="stims-shell__meta-copy">
-              Permissions & troubleshooting
+              Permissions and troubleshooting
             </span>
           </summary>
           <div className="stims-shell__settings-advanced-body">
             <p className="stims-shell__meta-copy">
               <strong>Permissions:</strong> Allow microphone access in site
-              permissions. If blocked, check macOS Privacy & Security or Windows
-              Privacy Settings.
+              permissions. If access is blocked, check macOS Privacy & Security
+              or Windows Privacy Settings.
             </p>
             <p className="stims-shell__meta-copy">
-              <strong>Smartphones & In-App Browsers:</strong> In-app browsers
+              <strong>Smartphones and in-app browsers:</strong> In-app browsers
               (Instagram, TikTok, Twitter) may block mic capture. Tap
               &quot;...&quot; and select &quot;Open in Safari / Chrome&quot;.
             </p>
             <p className="stims-shell__meta-copy">
-              <strong>Local Testing & Bluetooth:</strong> Mic capture requires
-              HTTPS or localhost. If using Bluetooth earbuds, OS settings may
-              switch sound to call mode; use built-in or wired mics for best
-              music quality.
+              <strong>Local testing and Bluetooth:</strong> Mic capture requires
+              HTTPS or localhost. If you use Bluetooth earbuds, OS settings may
+              switch sound to call mode; use a built-in or wired mic for the
+              best music quality.
             </p>
           </div>
         </details>

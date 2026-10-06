@@ -1013,7 +1013,7 @@ export class EditorPanel {
 
     const revertButton = this.createButton('Reset', {
       title: 'Reset draft to the active preset source',
-      ariaLabel: 'Reset draft to active preset source',
+      ariaLabel: 'Reset draft to the active preset source',
       onClick: () => this.callbacks.onRevertToActive(),
     });
 
@@ -3719,7 +3719,7 @@ export class EditorPanel {
     const swatch = document.createElement('input');
     swatch.type = 'color';
     swatch.className = 'stims-editor__color-swatch';
-    swatch.setAttribute('aria-label', `${group.label} colour`);
+    swatch.setAttribute('aria-label', `${group.label} color`);
     swatch.title = group.hint;
 
     const label = document.createElement('label');
@@ -3772,7 +3772,7 @@ export class EditorPanel {
     resetButton.type = 'button';
     resetButton.className = 'stims-editor__slider-btn';
     resetButton.textContent = '↺';
-    resetButton.setAttribute('aria-label', `Reset ${group.label} colour`);
+    resetButton.setAttribute('aria-label', `Reset ${group.label} color`);
     resetButton.title = 'Reset to the MilkDrop default';
     resetButton.addEventListener('click', () => {
       const updates: Record<string, number> = {

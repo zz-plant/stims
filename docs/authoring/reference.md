@@ -16,11 +16,11 @@ The equation language is NS-EEL, inherited from Winamp:
 - Every value is a number (double). There are no strings or booleans.
 - Comparisons and logic return 1 or 0, and any value within
   `0.00001` of zero is false — `if(x, a, b)`, `above`,
-  `below`, `equal`, `band`, `bor`, `bnot` are the branching toolkit
+  `below`, `equal`, `band`, `bor`, and `bnot` are the branching toolkit
   (`if` evaluates both branches; there is no short-circuit).
 - Names are case-insensitive. `//` starts a comment.
 - Operators: `+ - * / % ^` (power), comparisons `< <= > >= == !=`,
-  logic `&& || !`.
+  and logic `&& || !`.
 - Numeric literals accept decimals, exponents (`1e-3`), and hex (`0x1f`).
 - `megabuf(i)` / `gmegabuf(i)` read indexed storage; assigning to
   `megabuf(i) = v` writes it (per-preset vs global).
@@ -65,12 +65,12 @@ The equation language is NS-EEL, inherited from Winamp:
 | `above(a, b)` | 1 when a > b |
 | `below(a, b)` | 1 when a < b |
 | `equal(a, b)` | 1 when a and b are (almost) equal |
-| `rand(scale)` | random 0-scale |
+| `rand(scale)` | random 0–scale |
 | `randint(max)` | random integer in 0..max-1 |
 | `megabuf(index)` | per-preset shared value buffer |
 | `gmegabuf(index)` | global value buffer shared across presets |
 | `exec2(a, b)` | evaluate a then b; returns b |
-| `exec3(a, b, c)` | evaluate a, b, c; returns c |
+| `exec3(a, b, c)` | evaluate a, b, and c; returns c |
 
 ## Constants
 
@@ -97,8 +97,8 @@ see Track 3 of the curriculum for how to use them well.
 | `beat_pulse` | beat intensity pulse (Stims runtime signal) |
 | `percussive` | transient/broadband spectral energy (HPSS), relative scale like bass |
 | `harmonic` | sustained/tonal spectral energy (HPSS), relative scale like bass |
-| `percussive_low` | percussive energy in 20-250 Hz (not a kick detector) |
-| `percussive_mid` | percussive energy in 250-4000 Hz (not a snare detector) |
+| `percussive_low` | percussive energy in 20–250 Hz (not a kick detector) |
+| `percussive_mid` | percussive energy in 250–4000 Hz (not a snare detector) |
 | `percussive_high` | percussive energy above 4 kHz |
 | `percussive_ratio` | percussive share of total energy, 0..1 (0.5 in silence) |
 | `rms` | overall signal level |
@@ -106,7 +106,7 @@ see Track 3 of the curriculum for how to use them well.
 | `time` | seconds |
 | `frame` | frame count |
 | `fps` | frames per second |
-| `progress` | frame count (ProjectM-compatible alias) |
+| `progress` | frame count (projectM-compatible alias) |
 | `input_x` | pointer x while pressed, -1..1 (0 when nothing is touching the stage) |
 | `input_y` | pointer y while pressed, -1..1 |
 | `input_dx` | pointer movement along x since the last frame |
@@ -137,7 +137,7 @@ see Track 3 of the curriculum for how to use them well.
 | `action_quick_look_2` | 2 pressed (decaying pulse) |
 | `action_quick_look_3` | 3 pressed (decaying pulse) |
 | `action_remix` | R pressed (decaying pulse) |
-| `input_source_pointer` | 1 when the last input came from a mouse, pen or finger |
+| `input_source_pointer` | 1 when the last input came from a mouse, pen, or finger |
 | `input_source_keyboard` | 1 when the last input came from the keyboard |
 | `input_source_gamepad` | 1 when the last input came from a gamepad |
 | `input_source_mouse` | 1 when a mouse specifically is driving |

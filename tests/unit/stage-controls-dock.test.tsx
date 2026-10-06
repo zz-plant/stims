@@ -103,7 +103,7 @@ describe('stage dock auto-hide', () => {
   test('focus inside the pill holds it up, and the handle stays out of the way', () => {
     jest.useFakeTimers();
     const rendered = mount();
-    const next = rendered.byLabel('Shuffle to random preset');
+    const next = rendered.byLabel('Shuffle to a random preset');
 
     act(() => next?.focus());
     elapse(AUTO_HIDE_MS * 2);

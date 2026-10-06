@@ -170,7 +170,7 @@ describe('Compat tab: Beyond Stims', () => {
     const plain = mount('title=P\nper_frame_1=zoom = 1 + 0.1*bass;\n');
     expect(rows(plain)).toHaveLength(0);
     expect(plain.element.textContent).toContain(
-      'Nothing here stops this preset running in MilkDrop 2.',
+      'Nothing here stops this preset from running in MilkDrop 2.',
     );
     plain.dispose();
   });

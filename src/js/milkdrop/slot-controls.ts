@@ -119,10 +119,10 @@ export function slotControls(kind: SlotKind, slot: number): SlotControls {
       ],
       colors: [
         color(
-          'Colour',
+          'Color',
           ['r', 'g', 'b'],
           'a',
-          'The wave’s colour; its code can set one per point.',
+          'The wave’s color; its code can set one per point.',
         ),
       ],
       scalars: [
@@ -155,7 +155,7 @@ export function slotControls(kind: SlotKind, slot: number): SlotControls {
           max: 1,
           step: 0.01,
           scale: 'linear',
-          hint: 'How much each point follows its neighbours.',
+          hint: 'How much each point follows its neighbors.',
         }),
       ],
     };
@@ -180,22 +180,22 @@ export function slotControls(kind: SlotKind, slot: number): SlotControls {
         'Textured',
         'textured',
         'textured',
-        'Fill with the previous frame instead of a colour.',
+        'Fill with the previous frame instead of a color.',
       ),
     ],
     colors: [
-      color('Centre', ['r', 'g', 'b'], 'a', 'The fill colour at the centre.'),
+      color('Center', ['r', 'g', 'b'], 'a', 'The fill color at the center.'),
       color(
         'Edge',
         ['r2', 'g2', 'b2'],
         'a2',
-        'The fill colour at the rim; the fill blends from the centre to it.',
+        'The fill color at the rim; the fill blends from the center to it.',
       ),
       color(
         'Border',
         ['border_r', 'border_g', 'border_b'],
         'border_a',
-        'The outline’s colour.',
+        'The outline’s color.',
       ),
     ],
     scalars: [

@@ -102,8 +102,13 @@ export function describeInputProcessingWarning(
     noiseSuppression: 'noise suppression',
     echoCancellation: 'echo cancellation',
   };
-  const list = active.map((flag) => labels[flag]).join(' and ');
-  return `This input still has ${list} on, which flattens the dynamics the visuals react to. Turn it off for the device in your OS sound settings, or use a line/loopback input.`;
+  const names = active.map((flag) => labels[flag]);
+  const list =
+    names.length > 2
+      ? `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`
+      : names.join(' and ');
+  const pronoun = names.length > 1 ? 'them' : 'it';
+  return `This input still has ${list} on, which flattens the dynamics the visuals react to. Turn ${pronoun} off for the device in your OS sound settings, or use a line/loopback input.`;
 }
 
 /**

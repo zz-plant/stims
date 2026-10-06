@@ -1,3 +1,4 @@
+import { formatRenderBackendName } from '../common-types.ts';
 import type {
   MilkdropBackendSupport,
   MilkdropBackendSupportEvidence,
@@ -302,7 +303,7 @@ export function buildBackendSupport({
         scope: 'backend',
         status: 'partial',
         code: 'shader-text-translated',
-        message: `Shader programs execute directly on ${otherBackend.toUpperCase()} but are approximated through extracted controls on ${backend.toUpperCase()}; visuals may diverge between backends.`,
+        message: `Shader programs execute directly on ${formatRenderBackendName(otherBackend)} but are approximated through extracted controls on ${formatRenderBackendName(backend)}; visuals may diverge between backends.`,
       }),
     );
   }

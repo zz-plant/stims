@@ -38,13 +38,13 @@ Squaring compresses quiet passages and amplifies loud ones. The preset "rests" d
 ## Pattern 2: RC audio smoothing
 
 ```milk
-ra = 1/fps_corr*0.1;
+ra = 6/fps;  // 0.1 per frame at 60 fps
 treb_avg = treb_avg*(1-ra) + ra*treb;
 mid_avg  = mid_avg *(1-ra) + ra*mid;
 bass_avg = bass_avg*(1-ra) + ra*bass;
 ```
 
-This is a proper low-pass filter. `ra` (0.05–0.15) controls cutoff. Use these smoothed values for everything visual — raw audio creates jitter.
+This is a proper low-pass filter. `ra` (0.05–0.15 per frame at 60 fps) controls cutoff, and dividing by `fps` keeps that cutoff the same at any frame rate. Use these smoothed values for everything visual — raw audio creates jitter.
 
 ---
 
@@ -66,7 +66,7 @@ dx = dx + dr*cos(ang)*0.6;
 dy = dy + dr*sin(-ang)*0.6;
 ```
 
-`rad*12` creates 12 concentric rings. `time*0.5` rotates them. `q8` scales intensity with audio. Result: pulsing concentric circles radiating from center.
+`rad*12` fits about two rings between the center and the edge (12 radians ÷ 2π); raise the multiplier for more. `+time*0.5` drifts them inward; use `-time*0.5` to send them outward. `q8` scales intensity with audio. Result: concentric rings that pulse with the music.
 
 ---
 
@@ -93,7 +93,7 @@ bass_thresh = above(bass_att,bass_thresh)*2
   + (1-above(bass_att,bass_thresh))*((bass_thresh-1.3)*0.96+1.3);
 ```
 
-When a beat fires, threshold jumps to 2.0 (prevents rapid re-triggering). When it doesn't, threshold decays toward 1.3 with a 0.96 factor. Self-adapting — works for quiet music and loud music.
+When a beat fires, threshold jumps to 2.0 (prevents rapid re-triggering). Read the beat itself off that jump — `beat = equal(bass_thresh, 2);` — not by testing `above(bass_att, bass_thresh)` again, which compares against the new 2.0 bar and almost never fires. When it doesn't, threshold decays toward 1.3 with a 0.96 factor. Self-adapting — works for quiet music and loud music.
 
 ---
 

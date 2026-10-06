@@ -1,19 +1,19 @@
 # Stims — play and live-edit MilkDrop presets in your browser (toil.fyi)
 
-> Stims plays the original MilkDrop `.milk` presets in a browser tab against any audio (demo loop, microphone, a tab, a YouTube link, a file), with a live editor and the session carried in the URL. It is an independent implementation in the lineage of Ryan Geiss's MilkDrop, Butterchurn and projectM.
+> Stims plays the original MilkDrop `.milk` presets in a browser tab against any audio (the demo loop, a microphone, a tab, a YouTube link, or a file), with a live editor and the session carried in the URL. It is an independent implementation in the lineage of Ryan Geiss's MilkDrop, Butterchurn, and projectM.
 
 ## What is new in Stims
 Butterchurn ran MilkDrop presets in a browser first, and MilkDrop 2 already had a live editor. What Stims adds:
-- **Per-pixel equations on the GPU.** On WebGPU, per-pixel and custom-wave equations compile into the shader and run for every vertex at once, for 1,094 of the 1,102 catalog presets with per-pixel code (Butterchurn and projectM run them on the CPU). Seeded differential fuzz tests hold the GPU, JIT and interpreter tiers to the same results.
+- **Per-pixel equations on the GPU.** On WebGPU, per-pixel and custom-wave equations compile into the shader and run for every vertex at once, for 1,094 of the 1,102 catalog presets with per-pixel code (Butterchurn and projectM run them on the CPU). Seeded differential fuzz tests hold the GPU, JIT, and interpreter tiers to the same results.
 - **Measured fidelity.** Frames are compared with native projectM on a fixed clock, a difference counts only above the preset's own run-to-run noise, and every per-preset result is published, failures included.
-- **The corpus analysed as programs.** `lab:dataflow` reads which audio reaches each control from the equations alone; model-training findings (presets behave as threshold programs; trees beat networks; 41% of memoryless audio controls recoverable as exact equations) are in https://github.com/zz-plant/stims/blob/main/docs/guides/training-models.md
+- **The corpus analyzed as programs.** `lab:dataflow` reads which audio reaches each control from the equations alone; model-training findings (presets behave as threshold programs; trees beat networks; 41% of memoryless audio controls recoverable as exact equations) are in https://github.com/zz-plant/stims/blob/main/docs/guides/training-models.md
 
-## Core Links & Resources
-- **Live Visualizer**: https://toil.fyi/
-- **Full Agent Documentation**: https://toil.fyi/llms-full.txt
-- **MCP Endpoint (HTTP/SSE)**: https://toil.fyi/mcp
-- **Preset Catalog**: https://toil.fyi/milkdrop-presets/catalog.json
-- **Source Code**: https://github.com/zz-plant/stims
+## Core links and resources
+- **Live visualizer**: https://toil.fyi/
+- **Full agent documentation**: https://toil.fyi/llms-full.txt
+- **MCP server (stdio)**: run `bun run mcp` from a clone of the repository; setup is in https://github.com/zz-plant/stims/blob/main/docs/MCP_SERVER.md
+- **Preset catalog**: https://toil.fyi/milkdrop-presets/catalog.json
+- **Source code**: https://github.com/zz-plant/stims
 
 ## Guides (static pages)
 - **Learn to write MilkDrop presets** (10-track course): https://toil.fyi/learn/
@@ -22,25 +22,25 @@ Butterchurn ran MilkDrop presets in a browser first, and MilkDrop 2 already had 
 - **MilkDrop language reference**: https://toil.fyi/learn/reference/
 - **Compatibility and performance**: https://toil.fyi/performance/
 
-## Key URL Parameters for AI Agents
+## Key URL parameters for AI agents
 - `?agent=true`: Keeps rendering while the tab reports itself hidden, as headless and embedded browsers often do. `window.__stims_agent` (`getState`, `waitFor`, `run`) is available in every mode.
-- `?preset=<id>`: Loads a specific preset by ID (e.g. `?preset=shifter-snakeskin`).
-- `?renderer=webgpu` or `?renderer=webgl`: Forces specific rendering engine backend.
-- `#code=<base64>`: Instant URL deep-link containing base64-encoded `.milk` source code.
+- `?preset=<id>`: Loads a specific preset by ID (e.g., `?preset=shifter-snakeskin`).
+- `?renderer=webgpu` or `?renderer=webgl`: Forces a specific rendering backend.
+- `#code=<base64>`: Instant URL deep link containing base64-encoded `.milk` source code.
 
-## API Endpoints
+## API endpoints
 - `POST /api/validate-preset`: Validate MilkDrop `.milk` code syntax and return diagnostic JSON.
 
 The routes below are model-backed and optional: they depend on the deployment's model configuration, and playback and editing never need them.
-- `POST /api/generate-preset`: Generate `.milk` equations from text description.
-- `POST /api/blend-presets`: Blend wave patterns and color schemes of two presets.
+- `POST /api/generate-preset`: Generate `.milk` equations from a text description.
+- `POST /api/blend-presets`: Blend the wave patterns and color schemes of two presets.
 - `POST /api/refine-preset`: Iteratively refine `.milk` code based on prompt instructions.
-- `POST /api/visual-search`: Search catalog visually by natural language description.
+- `POST /api/visual-search`: Search the catalog visually by natural-language description.
 
-## Iframe `postMessage` Protocol
+## Iframe `postMessage` protocol
 Embed `https://toil.fyi/?embed=true` (add `&preset=<id>` to choose the first preset); other URLs send `X-Frame-Options: SAMEORIGIN` and will not load in another site's frame. Post JSON messages to the iframe's `contentWindow`:
 - `{ type: "toil:load_preset", presetId: "shifter-snakeskin" }`, or `milkSource: "<.milk code>"` in place of `presetId`. Works before audio starts; an unknown id is refused with close matches in `suggestions`.
-- `{ type: "toil:apply_tweak", tweak: "faster motion" }`: refines the playing preset through `/api/refine-preset`. When AI is unavailable, a tweak naming blue, neon, cyan, warp, fast, speed, bass or beat applies the matching one-click restyle instead.
+- `{ type: "toil:apply_tweak", tweak: "faster motion" }`: refines the playing preset through `/api/refine-preset`. When AI is unavailable, a tweak naming blue, neon, cyan, warp, fast, speed, bass, or beat applies the matching one-click restyle instead.
 - `{ type: "toil:set_audio", source: "demo" }`: `"demo"` or `"microphone"` (which needs `allow="microphone"` on the iframe). File playback and tab capture need a click inside the page, so they are refused.
 - `{ type: "toil:run", id: "next-preset" }`: any command-palette action or agent verb (`select-preset`, `set-field`, `crossfade`, …), with optional `params`. An unknown id is refused with close matches in `suggestions`.
 - `{ type: "toil:apply_source", source: "<.milk code>" }` and `{ type: "toil:set_fields", fields: { zoom: 1.1 } }`: edit the playing preset; the reply carries the compile `state`.

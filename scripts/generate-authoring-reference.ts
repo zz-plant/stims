@@ -68,11 +68,11 @@ The equation language is NS-EEL, inherited from Winamp:
 - Every value is a number (double). There are no strings or booleans.
 - Comparisons and logic return 1 or 0, and any value within
   \`${MILKDROP_EEL_CLOSE_FACTOR}\` of zero is false — \`if(x, a, b)\`, \`above\`,
-  \`below\`, \`equal\`, \`band\`, \`bor\`, \`bnot\` are the branching toolkit
+  \`below\`, \`equal\`, \`band\`, \`bor\`, and \`bnot\` are the branching toolkit
   (\`if\` evaluates both branches; there is no short-circuit).
 - Names are case-insensitive. \`//\` starts a comment.
 - Operators: \`+ - * / % ^\` (power), comparisons \`< <= > >= == !=\`,
-  logic \`&& || !\`.
+  and logic \`&& || !\`.
 - Numeric literals accept decimals, exponents (\`1e-3\`), and hex (\`0x1f\`).
 - \`megabuf(i)\` / \`gmegabuf(i)\` read indexed storage; assigning to
   \`megabuf(i) = v\` writes it (per-preset vs global).

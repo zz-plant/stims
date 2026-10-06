@@ -139,7 +139,7 @@ export function ShortcutsDialog({
           }
         }}
       >
-        <h2>Shortcuts &amp; gestures</h2>
+        <h2>Shortcuts and gestures</h2>
         {warning ? (
           <p className="stims-shell__meta-copy" role="alert">
             {warning}

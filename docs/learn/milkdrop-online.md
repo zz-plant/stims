@@ -8,9 +8,9 @@ MilkDrop is the music visualizer Ryan Geiss wrote for Winamp. A MilkDrop *preset
 
 - **Watch.** Pick a preset from the catalog, or follow a link like [toil.fyi/?preset=krash-rovastar-cerebral-demons-stars](https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars) and it plays with demo audio straight away.
 - **Play your own music.** Start audio from a browser tab, a YouTube link, or your microphone, and the presets react to it.
-- **Browse.** The catalog has well over 1,700 presets, searchable by description, with collections, previews and favorites. The [discover hubs](/discover/audio-reactive) group them by look and by author.
+- **Browse.** The catalog has well over 1,700 presets, searchable by description, with collections, previews, and favorites. The [discover hubs](/discover/audio-reactive) group them by look and by author.
 - **Edit and remix.** Open the editor to see the real `.milk` source and which part of the sound drives each control, then drag live sliders or change the equations. A remix keeps the credit of whoever you built on.
-- **Bring your own presets.** Import `.milk` files (or a `.zip` pack), export them in the format MilkDrop 2 itself saves — comments, shader code and fields Stims does not use kept intact — or share a link that carries your edited preset inside the address.
+- **Bring your own presets.** Import `.milk` files (or a `.zip` pack), export them in the format MilkDrop 2 itself saves — comments, shader code, and fields Stims does not use kept intact — or share a link that carries your edited preset inside the address.
 
 ## Coming from Winamp?
 
@@ -40,7 +40,7 @@ No. Stims is silent until you start some audio, and one action stops everything.
 
 ### Can I use my existing .milk preset files?
 
-Yes. Import `.milk` files into the editor, and export them back out as `.milk`. Some presets use features that are approximated, and each preset is labelled with how faithfully it runs.
+Yes. Import `.milk` files into the editor and export them back out as `.milk`. Some presets use features that are approximated, and each preset is labeled with how faithfully it runs.
 
 ### Can I make my own MilkDrop presets here?
 

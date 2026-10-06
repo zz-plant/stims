@@ -293,7 +293,7 @@ class ExpressionParser {
         createDiagnostic(
           this.line,
           'expr_max_depth_exceeded',
-          'Expression nesting depth exceeded maximum limit of 100.',
+          'Expression nesting depth exceeded the limit of 100.',
         ),
       );
       return false;

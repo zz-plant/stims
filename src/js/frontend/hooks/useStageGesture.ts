@@ -85,9 +85,9 @@ function whenStageReady(
 export const STAGE_GESTURES: { gesture: string; label: string }[] = [
   { gesture: 'Swipe left', label: 'Next preset' },
   { gesture: 'Swipe right', label: 'Previous preset' },
-  { gesture: 'Swipe up', label: 'Open browse' },
+  { gesture: 'Swipe up', label: 'Open Browse' },
   { gesture: 'Swipe down', label: 'Close the open panel' },
-  { gesture: 'Double-tap', label: 'Toggle fullscreen' },
+  { gesture: 'Double-tap', label: 'Toggle full screen' },
   { gesture: 'Press and hold', label: 'Save the playing preset' },
   { gesture: 'Pinch / twist', label: 'Warp and rotate the visuals' },
   { gesture: 'Drag', label: 'Push the visuals around' },
@@ -433,7 +433,7 @@ export function useStageGesture({
             lastTapTimeRef.current = 0;
             pulseHaptic([10, 20, 10], hapticsEnabled);
             toggleFullscreenRef.current?.();
-            statusRef.current?.('Fullscreen toggled.');
+            statusRef.current?.('Full screen toggled.');
             return;
           }
           lastTapTimeRef.current = now;

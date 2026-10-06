@@ -374,7 +374,7 @@ describe('agent bridge replies report what actually happened', () => {
         ok: false,
         source: 'demo',
         message:
-          'In-app browsers limit live mic access. Started with Demo Audio.',
+          'In-app browsers limit live mic access. Started with demo audio.',
       }),
     });
 

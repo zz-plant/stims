@@ -34,9 +34,10 @@
  * an average. tests/corpus/butterchurn-corpus-support.test.ts pins the
  * counts.
  */
-import type {
-  MilkdropFeatureAnalysis,
-  MilkdropRenderBackend,
+import {
+  formatRenderBackendName,
+  type MilkdropFeatureAnalysis,
+  type MilkdropRenderBackend,
 } from './common-types.ts';
 import type { MilkdropCompiledPreset } from './compiler-types.ts';
 
@@ -86,7 +87,7 @@ export function describeShaderApproximation(
   backend: MilkdropRenderBackend | null | undefined,
 ): { label: string; detail: string } | null {
   if (!isShaderApproximated(mode) || !backend) return null;
-  const backendName = backend === 'webgpu' ? 'WebGPU' : 'WebGL';
+  const backendName = formatRenderBackendName(backend);
   return {
     label: 'Approximated',
     detail:

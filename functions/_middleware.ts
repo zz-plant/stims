@@ -242,7 +242,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
   // Universe"), so using them raw next to a byline printed the name twice.
   const title = presentTitle(rawTitle, author);
   const authorCredit = author ? ` by ${author}` : '';
-  const fullTitle = `${title}${authorCredit} — MilkDrop preset on Stims`;
+  const fullTitle = `${title}${authorCredit} — MilkDrop Preset on Stims`;
   const description = `${title}${authorCredit} — a MilkDrop preset you can watch react to any song, your microphone, or audio from another tab. Live in your browser, no install.`;
 
   // Crawlers require absolute image URLs; /api/og-preset rasterizes the

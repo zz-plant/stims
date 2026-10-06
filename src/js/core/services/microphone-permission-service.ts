@@ -51,9 +51,9 @@ export function getMicrophoneCapabilityFromState(
       supported: false,
       state,
       reason: isHttpInsecure
-        ? 'Microphone access requires HTTPS or localhost. Non-secure HTTP addresses (e.g. LAN IPs) block audio capture.'
+        ? 'Microphone access requires HTTPS or localhost. Non-secure HTTP addresses (for example, LAN IPs) block audio capture.'
         : isAppBrowser
-          ? "In-app browsers (Instagram, TikTok, Twitter) may block microphone capture. Tap '...' and select 'Open in Safari/Chrome'."
+          ? "In-app browsers (Instagram, TikTok, Twitter) may block microphone capture. Tap '…' and select 'Open in Safari/Chrome'."
           : 'This browser cannot capture microphone audio.',
     };
   }

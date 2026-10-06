@@ -25,7 +25,7 @@ export class ReferencePane {
     const search = document.createElement('input');
     search.type = 'search';
     search.className = 'stims-editor__ref-search';
-    search.placeholder = 'e.g. clamp, absolute value, bass';
+    search.placeholder = 'For example: clamp, absolute value, bass';
     search.setAttribute('aria-label', 'Search functions and variables');
     const results = document.createElement('div');
     results.className = 'stims-editor__ref-results';

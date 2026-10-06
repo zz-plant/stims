@@ -39,7 +39,7 @@ export const COOKBOOK: readonly Recipe[] = [
     id: 'smooth-signal',
     title: 'Smooth a jumpy signal',
     summary: 'A calmer bass value in q1 for anything that twitches.',
-    how: 'Each frame keeps 90% of the old value and takes 10% of the new one — a one-pole low-pass filter. Raise 0.9 for slower, smoother motion. q1 carries the result to waves, shapes and shaders.',
+    how: 'Each frame keeps 90% of the old value and takes 10% of the new one — a one-pole low-pass filter. Raise 0.9 for slower, smoother motion. q1 carries the result to waves, shapes, and shaders.',
     code: {
       perFrame: ['q1 = 0.9*q1 + 0.1*bass;', 'zoom = zoom + 0.05*(q1 - 1);'],
     },
@@ -72,9 +72,9 @@ export const COOKBOOK: readonly Recipe[] = [
   },
   {
     id: 'hue-cycle',
-    title: 'Cycle the waveform colour',
+    title: 'Cycle the waveform color',
     summary: 'The wave drifts through the spectrum.',
-    how: 'Three sines at different speeds never line up, so red, green and blue wander independently and the colour never repeats exactly. Keeping each between 0.2 and 1 stops the wave going dark.',
+    how: 'Three sines at different speeds never line up, so red, green, and blue wander independently and the color never repeats exactly. Keeping each between 0.2 and 1 stops the wave from going dark.',
     code: {
       perFrame: [
         'wave_r = 0.6 + 0.4*sin(time*0.61);',
@@ -87,21 +87,21 @@ export const COOKBOOK: readonly Recipe[] = [
     id: 'tunnel',
     title: 'Tunnel',
     summary: 'The edges rush toward you faster than the middle.',
-    how: 'Per-pixel code runs for each point of the warp mesh, and rad is that point’s distance from the centre. Zooming more where rad is large pulls the edges in faster, which reads as depth.',
+    how: 'Per-pixel code runs for each point of the warp mesh, and rad is that point’s distance from the center. Zooming more where rad is large pulls the edges in faster, which reads as depth.',
     code: { perPixel: ['zoom = zoom + 0.06*rad;'] },
   },
   {
     id: 'swirl',
     title: 'Swirl',
     summary: 'The middle turns while the edges hold still.',
-    how: 'Rotating by (1 - rad) turns points near the centre most and the rim hardly at all; the feedback smears that difference into a spiral. The sine makes it turn back and forth.',
+    how: 'Rotating by (1 - rad) turns points near the center most and the rim hardly at all; the feedback smears that difference into a spiral. The sine makes it turn back and forth.',
     code: { perPixel: ['rot = rot + 0.04*(1 - rad)*sin(time*0.7);'] },
   },
   {
     id: 'drifting-centre',
-    title: 'Drifting centre',
+    title: 'Drifting center',
     summary: 'The zoom and spin wander around the screen.',
-    how: 'cx and cy are where zoom and rotation are centred. Moving them on slow, unrelated sines keeps the motion from feeling pinned to the middle.',
+    how: 'cx and cy are where zoom and rotation are centered. Moving them on slow, unrelated sines keeps the motion from feeling pinned to the middle.',
     code: {
       perFrame: [
         'cx = 0.5 + 0.15*sin(time*0.27);',

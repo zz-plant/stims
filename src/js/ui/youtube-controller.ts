@@ -70,7 +70,7 @@ export const YOUTUBE_STATE_PLAYING = 1;
  */
 const API_LOAD_TIMEOUT_MS = 10_000;
 export const YOUTUBE_API_BLOCKED_MESSAGE =
-  "The YouTube player script couldn't load. An ad blocker or network policy may be blocking youtube.com — try demo audio or microphone instead.";
+  "The YouTube player script couldn't load. An ad blocker or network policy may be blocking youtube.com — try demo audio or the microphone instead.";
 
 declare global {
   interface Window {

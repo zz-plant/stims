@@ -27,7 +27,7 @@ export async function onRequest(context: {
 
     if (typeof milkSource !== 'string') {
       return json(
-        { error: 'milkSource string is required in request body.' },
+        { error: 'milkSource string is required in the request body.' },
         400,
       );
     }
@@ -129,7 +129,7 @@ export function validatePresetSource(source: string) {
         severity: 'error',
         code: 'preset_missing_key',
         line: lineNumber,
-        message: 'Assignment line missing key before "=".',
+        message: 'Assignment line is missing a key before "=".',
       });
       return;
     }

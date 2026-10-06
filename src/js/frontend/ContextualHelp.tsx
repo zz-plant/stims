@@ -39,7 +39,7 @@ const HINTS: HelpHintDef[] = [
     // and it is the one key that lists every other one.
     message: () =>
       isMobileDevice()
-        ? 'Swipe to change the visuals — double-tap to fill the screen'
+        ? 'Swipe to change the visuals — double-tap to fill the screen.'
         : 'Press → for a different visual, Space to pause, ? for every key. Tab (or move the mouse) for the controls.',
     autoHideMs: 7000,
     anchor: 'stage',
@@ -49,7 +49,7 @@ const HINTS: HelpHintDef[] = [
     // Same split as first-play: "tap" is a touch verb, and this hint shows on
     // laptops too.
     message: () =>
-      isMobileDevice() ? 'Tap a card to play it' : 'Click a card to play it',
+      isMobileDevice() ? 'Tap a card to play it.' : 'Click a card to play it.',
     autoHideMs: 5000,
     anchor: 'panel',
   },

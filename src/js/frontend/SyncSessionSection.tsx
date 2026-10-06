@@ -57,7 +57,7 @@ export function SyncSessionSection() {
   const others = Math.max(0, session.peers - 1);
   const statusLine =
     session.status === 'error'
-      ? (session.error ?? 'Sync session error.')
+      ? (session.error ?? 'Could not start a watch party.')
       : session.status === 'connecting'
         ? 'Connecting…'
         : session.role === 'host'
@@ -72,10 +72,10 @@ export function SyncSessionSection() {
       {session.status === 'idle' ? (
         <div className="ctl-row">
           <span className="ctl-row__text">
-            <span className="ctl-row__label">Shared session</span>
+            <span className="ctl-row__label">Watch party</span>
             <span className="ctl-row__hint">
-              Start a session and share the link. Everyone who opens it sees the
-              presets you play, live.
+              Start a watch party and share the link. Everyone who opens it sees
+              the presets you play, live.
             </span>
           </span>
           <button
@@ -84,13 +84,13 @@ export function SyncSessionSection() {
             disabled={busy}
             onClick={() => void handleStart()}
           >
-            {busy ? 'Starting…' : 'Start session'}
+            {busy ? 'Starting…' : 'Start watch party'}
           </button>
         </div>
       ) : (
         <div className="ctl-row">
           <span className="ctl-row__text">
-            <span className="ctl-row__label">Shared session</span>
+            <span className="ctl-row__label">Watch party</span>
             <span className="ctl-row__hint" role="status">
               {statusLine}
             </span>

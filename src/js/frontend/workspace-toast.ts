@@ -124,7 +124,7 @@ export function useWorkspaceToast({
         showToast('Visuals reconnected.', 'info');
       } else if (status === 'context-restore-failed') {
         showToast(
-          'Could not reconnect the graphics context. Reload the page if visuals stay frozen.',
+          'Could not restore the graphics connection. Reload the page if the visuals stay frozen.',
           'error',
         );
       }

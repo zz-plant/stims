@@ -104,8 +104,8 @@ export function buildPaletteActions(
     {
       id: 'find-similar',
       group: 'Presets',
-      label: 'Find similar presets',
-      keywords: ['match', 'sound', 'look'],
+      label: 'Find a preset',
+      keywords: ['similar', 'match', 'sound', 'look'],
       run: () => void engineRef.current.handleVisualSearch(),
     },
     {
@@ -181,7 +181,7 @@ export function buildPaletteActions(
     {
       id: 'open-shortcuts',
       group: 'View',
-      label: 'Shortcuts & gestures',
+      label: 'Shortcuts and gestures',
       keywords: ['help', 'keys', 'bindings', 'gestures', 'swipe', 'touch'],
       run: () => setShowShortcuts(true),
     },
@@ -372,7 +372,7 @@ export function buildPaletteActions(
         const live = toggleLivePerformanceMode();
         uiRef.current.setStatusMessage(
           live
-            ? 'Live performance mode on — quality held steady, no battery frame cap, keeps drawing in an unfocused window.'
+            ? 'Live performance mode on — quality held steady, no battery frame cap, and drawing continues in an unfocused window.'
             : 'Live performance mode off — quality adapts again and background tabs pause.',
         );
       },
@@ -622,7 +622,7 @@ export function buildPaletteActions(
     {
       id: 'nudge-rotate-left',
       group: 'Tune',
-      label: 'Rotate counter-clockwise',
+      label: 'Rotate counterclockwise',
       keywords: ['nudge', 'adjust', 'rotation'],
       run: () =>
         void nudgePresetField(

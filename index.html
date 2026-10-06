@@ -138,7 +138,7 @@
         "featureList": [
           "Plays MilkDrop .milk presets in the browser with WebGL or WebGPU",
           "Live editor with compiler diagnostics and sliders",
-          "Reacts to demo audio, microphone, a browser tab, a YouTube link or a local file",
+          "Reacts to demo audio, a microphone, a browser tab, a YouTube link, or a local file",
           "Imports and exports .milk files",
           "Shares the exact preset and edits as a link"
         ],
@@ -216,7 +216,7 @@
         const slowTimer = setTimeout(() => {
           const target = text();
           if (target && !document.getElementById('stims-main')) {
-            target.textContent = 'Still loading — first visit sets up the preset library';
+            target.textContent = 'Still loading — the first visit sets up the preset library.';
           }
         }, SLOW_MS);
         const timer = setTimeout(() => {

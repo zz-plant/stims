@@ -34,7 +34,7 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
  * teaching two vocabularies for one job.
  */
 const QUICK_SOURCES = [
-  { source: 'demo' as const, label: 'Demo track' },
+  { source: 'demo' as const, label: 'Demo audio' },
   { source: 'microphone' as const, label: 'Microphone' },
   { source: 'tab' as const, label: 'Tab or system audio' },
 ] satisfies ReadonlyArray<{
@@ -43,9 +43,9 @@ const QUICK_SOURCES = [
 }>;
 
 const SOURCE_NAMES: Record<string, string> = {
-  demo: 'Demo track',
+  demo: 'Demo audio',
   microphone: 'Microphone',
-  tab: 'Tab / System audio',
+  tab: 'Tab or system audio',
   file: 'Audio file',
   youtube: 'YouTube',
 };
@@ -79,10 +79,10 @@ function nextStepFor(
     return 'Check the input device and that your mic is not muted.';
   }
   if (source === 'tab') {
-    return 'Check the shared tab or system audio is playing, and that you ticked "Share audio".';
+    return 'Check that the shared tab or system audio is playing, and that you ticked "Share audio".';
   }
   if (source === 'youtube' || source === 'file') {
-    return 'Check playback is running and the volume is up.';
+    return 'Check that playback is running and the volume is up.';
   }
   return 'Try another source, or check your system volume.';
 }

@@ -47,10 +47,9 @@ export class StimsErrorBoundary extends Component<
                 className="stims-icon-slot stims-icon-slot--md"
               />
             </div>
-            <h1 className="stims-shell__error-heading">Unexpected Error</h1>
+            <h1 className="stims-shell__error-heading">Unexpected error</h1>
             <p className="stims-shell__error-copy">
-              Stims encountered an issue. Reload to retry, or try compatibility
-              mode.
+              Stims encountered an issue. Reload to retry, or try WebGL mode.
             </p>
             {this.state.error && (
               <details className="stims-shell__error-details">

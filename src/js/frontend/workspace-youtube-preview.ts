@@ -1,5 +1,6 @@
 import type { KeyboardEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { removeStored } from '../core/state/browser-storage.ts';
 import {
   parseYouTubeVideoReference,
   readStoredRecentYouTubeVideos,
@@ -241,7 +242,9 @@ export function useWorkspaceYouTubePreview({
 
     const reference = parseYouTubeVideoReference(value);
     if (!reference) {
-      setStatusMessage('Enter a valid YouTube URL or 11-character video ID.');
+      setStatusMessage(
+        'Enter a valid YouTube link or an 11-character video ID.',
+      );
       setYoutubeReady(false);
       setLoadedVideoKey(null);
       return;
@@ -285,7 +288,7 @@ export function useWorkspaceYouTubePreview({
         startSeconds: reference.startSeconds,
       });
       setStatusMessage(
-        'YouTube preview is ready. Capture this tab audio next.',
+        "YouTube preview is ready. Capture this tab's audio next.",
       );
     } catch (error) {
       setYoutubeReady(false);
@@ -294,7 +297,7 @@ export function useWorkspaceYouTubePreview({
       setStatusMessage(
         error instanceof Error
           ? error.message
-          : 'Unable to load YouTube preview.',
+          : 'Unable to load the YouTube preview.',
       );
     } finally {
       setYoutubeLoading(false);
@@ -338,10 +341,8 @@ export function useWorkspaceYouTubePreview({
   };
 
   const clearRecentYouTubeVideos = () => {
-    try {
-      window.localStorage.removeItem('stims_recent_youtube');
-      setRecentYouTubeVideos([]);
-    } catch {}
+    removeStored('stims_recent_youtube');
+    setRecentYouTubeVideos([]);
   };
 
   return {

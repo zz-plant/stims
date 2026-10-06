@@ -435,7 +435,7 @@ export function initAgentBridge(callbacks?: AgentBridgeCallbacks): () => void {
         if (!tweak) {
           refuse(
             'apply_tweak',
-            'tweak must describe the change in words, e.g. "faster motion".',
+            'tweak must describe the change in words, for example, "faster motion".',
           );
           break;
         }

@@ -25,7 +25,7 @@ and the handles most often credited on those presets.
 
 **A byline is evidence of who applied a technique, not proof of who invented
 it.** These counts tell you where a technique shows up and in whose company. To
-establish origin you need the *earliest datable* appearance, which needs forum
+establish origin, you need the *earliest datable* appearance, which requires forum
 timestamps and pack release dates the catalog does not carry. Entries below are
 marked accordingly:
 
@@ -79,7 +79,7 @@ authorship record:
 
 | Marker | Shipped | Meaning |
 |---|---:|---|
-| `(ATI fix)` (6), `(geiss flicker fix)` (3), `[fixed]` (1) | 10 | The preset was modified to run correctly on another vendor's hardware. Unglamorous, uncredited-elsewhere labour. |
+| `(ATI fix)` (6), `(geiss flicker fix)` (3), `[fixed]` (1) | 10 | The preset was modified to run correctly on another vendor's hardware. Unglamorous, uncredited-elsewhere labor. |
 | `-ps2` / `-ps3` / `(ps2.0)` | 9 | Shader-model variants of the same work, from the MilkDrop 2 transition. Stims strips the suffix for family grouping, so `rogue wave -ps2` and `-ps3` sit together. |
 
 ## Open questions

@@ -28,7 +28,7 @@ wave_y=0.5
 ob_a=0
 ib_a=0
 mv_a=0
-per_frame_1=ra=1/fps*0.1;
+per_frame_1=ra=6/fps;
 per_frame_2=bass_avg=bass_avg*(1-ra)+ra*bass;
 per_frame_3=q8=bass_avg;
 per_pixel_1=dr=0.01+0.05*q8*sin(rad*12+time*0.5);

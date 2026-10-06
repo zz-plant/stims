@@ -39,7 +39,7 @@ import {
 } from './workspace-helpers.ts';
 
 const IN_APP_BROWSER_LIMITED_MIC_MESSAGE =
-  "In-app browsers (Instagram, TikTok, Twitter) limit live mic access. Started with Demo Audio. Tap '...' to open in Safari/Chrome.";
+  "In-app browsers (Instagram, TikTok, Twitter) limit live mic access. Started with demo audio. Tap '…' to open in Safari/Chrome.";
 
 /**
  * When the requested preset is missing (e.g. a dead link), fall back to the
@@ -508,10 +508,10 @@ export function useWorkspaceShellOrchestration({
                 ? 'No microphone hardware found. Please connect a microphone and try again.'
                 : errName === 'NotReadableError' ||
                     errName === 'TrackStartError'
-                  ? 'Microphone is currently in use by another app (e.g. Zoom, Teams).'
+                  ? 'Microphone is in use by another app (for example, Zoom or Teams). Close that app and try again.'
                   : error instanceof Error && error.message
                     ? error.message
-                    : 'Unable to access microphone.';
+                    : 'Unable to access the microphone.';
           throw new Error(msg);
         }
 

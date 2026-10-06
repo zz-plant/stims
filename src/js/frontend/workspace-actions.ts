@@ -172,7 +172,7 @@ export async function copyRemixLinkAction({
     const verb = result === 'shared' ? 'shared' : 'copied';
     announce(
       carriesDraft
-        ? `Link ${verb} — it carries your unsaved edits, and opens in their editor.`
+        ? `Link ${verb} — it carries your unsaved edits and opens in their editor.`
         : `Link ${verb}.`,
     );
     onSuccess?.();
@@ -456,7 +456,7 @@ export async function playNearbyPreset({
     // A neighbourhood can genuinely run out — a preset with few look-alikes,
     // all of them just played. Saying so beats silently doing nothing, and
     // names the control that does still have somewhere to go.
-    announce('No new neighbours for this one. Try Surprise me.');
+    announce('No new neighbors for this one. Try Surprise me.');
     return;
   }
 

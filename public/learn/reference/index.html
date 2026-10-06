@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>MilkDrop Language Reference | Stims</title>
-<meta name="description" content="Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals and the fields a preset can set." />
+<meta name="description" content="Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals, and the fields a preset can set." />
 <meta name="robots" content="index,follow" />
 <meta name="theme-color" content="#0b0f1a" />
 <link rel="canonical" href="https://toil.fyi/learn/reference/" />
@@ -16,7 +16,7 @@
 <meta property="og:site_name" content="Stims" />
 <meta property="og:type" content="article" />
 <meta property="og:title" content="MilkDrop Language Reference | Stims" />
-<meta property="og:description" content="Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals and the fields a preset can set." />
+<meta property="og:description" content="Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals, and the fields a preset can set." />
 <meta property="og:url" content="https://toil.fyi/learn/reference/" />
 <meta property="og:image" content="https://toil.fyi/og/milkdrop.png" />
 <meta property="og:image:type" content="image/png" />
@@ -24,7 +24,7 @@
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="MilkDrop Language Reference | Stims" />
-<meta name="twitter:description" content="Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals and the fields a preset can set." />
+<meta name="twitter:description" content="Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals, and the fields a preset can set." />
 <meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
 <script type="application/ld+json">
 {
@@ -34,7 +34,7 @@
       "@type": "TechArticle",
       "headline": "MilkDrop language reference (Stims)",
       "name": "MilkDrop Language Reference",
-      "description": "Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals and the fields a preset can set.",
+      "description": "Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals, and the fields a preset can set.",
       "url": "https://toil.fyi/learn/reference/",
       "mainEntityOfPage": "https://toil.fyi/learn/reference/",
       "inLanguage": "en",
@@ -101,11 +101,11 @@ compiles. For the guided course, start at <a href="/learn/">the curriculum</a>.<
 <li>Every value is a number (double). There are no strings or booleans.</li>
 <li>Comparisons and logic return 1 or 0, and any value within
 <code>0.00001</code> of zero is false — <code>if(x, a, b)</code>, <code>above</code>,
-<code>below</code>, <code>equal</code>, <code>band</code>, <code>bor</code>, <code>bnot</code> are the branching toolkit
+<code>below</code>, <code>equal</code>, <code>band</code>, <code>bor</code>, and <code>bnot</code> are the branching toolkit
 (<code>if</code> evaluates both branches; there is no short-circuit).</li>
 <li>Names are case-insensitive. <code>//</code> starts a comment.</li>
 <li>Operators: <code>+ - * / % ^</code> (power), comparisons <code>&lt; &lt;= &gt; &gt;= == !=</code>,
-logic <code>&amp;&amp; || !</code>.</li>
+and logic <code>&amp;&amp; || !</code>.</li>
 <li>Numeric literals accept decimals, exponents (<code>1e-3</code>), and hex (<code>0x1f</code>).</li>
 <li><code>megabuf(i)</code> / <code>gmegabuf(i)</code> read indexed storage; assigning to
 <code>megabuf(i) = v</code> writes it (per-preset vs global).</li>
@@ -264,7 +264,7 @@ logic <code>&amp;&amp; || !</code>.</li>
 </tr>
 <tr>
 <td><code>rand(scale)</code></td>
-<td>random 0-scale</td>
+<td>random 0–scale</td>
 </tr>
 <tr>
 <td><code>randint(max)</code></td>
@@ -284,7 +284,7 @@ logic <code>&amp;&amp; || !</code>.</li>
 </tr>
 <tr>
 <td><code>exec3(a, b, c)</code></td>
-<td>evaluate a, b, c; returns c</td>
+<td>evaluate a, b, and c; returns c</td>
 </tr>
 </tbody></table></div>
 <h2 id="constants">Constants</h2>
@@ -360,11 +360,11 @@ see Track 3 of the curriculum for how to use them well.</p>
 </tr>
 <tr>
 <td><code>percussive_low</code></td>
-<td>percussive energy in 20-250 Hz (not a kick detector)</td>
+<td>percussive energy in 20–250 Hz (not a kick detector)</td>
 </tr>
 <tr>
 <td><code>percussive_mid</code></td>
-<td>percussive energy in 250-4000 Hz (not a snare detector)</td>
+<td>percussive energy in 250–4000 Hz (not a snare detector)</td>
 </tr>
 <tr>
 <td><code>percussive_high</code></td>
@@ -396,7 +396,7 @@ see Track 3 of the curriculum for how to use them well.</p>
 </tr>
 <tr>
 <td><code>progress</code></td>
-<td>frame count (ProjectM-compatible alias)</td>
+<td>frame count (projectM-compatible alias)</td>
 </tr>
 <tr>
 <td><code>input_x</code></td>
@@ -520,7 +520,7 @@ see Track 3 of the curriculum for how to use them well.</p>
 </tr>
 <tr>
 <td><code>input_source_pointer</code></td>
-<td>1 when the last input came from a mouse, pen or finger</td>
+<td>1 when the last input came from a mouse, pen, or finger</td>
 </tr>
 <tr>
 <td><code>input_source_keyboard</code></td>

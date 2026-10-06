@@ -180,7 +180,7 @@ const FUNCTION_DOCS: readonly MilkdropBuiltinDoc[] = [
     params: ['a', 'b'],
     doc: '1 when a and b are (almost) equal',
   },
-  { name: 'rand', kind: 'function', params: ['scale'], doc: 'random 0-scale' },
+  { name: 'rand', kind: 'function', params: ['scale'], doc: 'random 0–scale' },
   {
     name: 'randint',
     kind: 'function',
@@ -209,7 +209,7 @@ const FUNCTION_DOCS: readonly MilkdropBuiltinDoc[] = [
     name: 'exec3',
     kind: 'function',
     params: ['a', 'b', 'c'],
-    doc: 'evaluate a, b, c; returns c',
+    doc: 'evaluate a, b, and c; returns c',
   },
 ];
 
@@ -269,13 +269,13 @@ const SIGNAL_VARIABLE_DOCS: readonly MilkdropBuiltinDoc[] = [
     name: 'percussive_low',
     kind: 'variable',
     group: 'signal',
-    doc: 'percussive energy in 20-250 Hz (not a kick detector)',
+    doc: 'percussive energy in 20–250 Hz (not a kick detector)',
   },
   {
     name: 'percussive_mid',
     kind: 'variable',
     group: 'signal',
-    doc: 'percussive energy in 250-4000 Hz (not a snare detector)',
+    doc: 'percussive energy in 250–4000 Hz (not a snare detector)',
   },
   {
     name: 'percussive_high',
@@ -308,7 +308,7 @@ const SIGNAL_VARIABLE_DOCS: readonly MilkdropBuiltinDoc[] = [
     name: 'progress',
     kind: 'variable',
     group: 'signal',
-    doc: 'frame count (ProjectM-compatible alias)',
+    doc: 'frame count (projectM-compatible alias)',
   },
 ];
 
@@ -510,7 +510,7 @@ const INTERACTION_VARIABLE_DOCS: readonly MilkdropBuiltinDoc[] = [
     name: 'input_source_pointer',
     kind: 'variable',
     group: 'signal',
-    doc: '1 when the last input came from a mouse, pen or finger',
+    doc: '1 when the last input came from a mouse, pen, or finger',
   },
   {
     name: 'input_source_keyboard',

@@ -73,7 +73,7 @@ function isAtServiceDefaults(bindings: MidiBindingMap): boolean {
  * paragraph nobody finishes.
  */
 const DEFAULT_BINDING_SUMMARY =
-  'CC 1-4 and 7-10 drive zoom, warp, rotation, decay and q1-q4';
+  'CC 1–4 and 7–10 drive zoom, warp, rotation, decay, and q1–q4';
 
 export function describeMidiConnection(
   device: MidiDeviceInfo,
@@ -82,13 +82,13 @@ export function describeMidiConnection(
 ): string {
   const label = profileName ?? device.name;
   if (profileDescription) {
-    return `${label} connected — ${profileDescription} Settings → Performance hardware to remap.`;
+    return `${label} connected — ${profileDescription} Open Settings → Performance hardware to remap.`;
   }
-  return `${label} connected — ${DEFAULT_BINDING_SUMMARY}. Settings → Performance hardware to remap or learn your own.`;
+  return `${label} connected — ${DEFAULT_BINDING_SUMMARY}. Open Settings → Performance hardware to remap or learn your own.`;
 }
 
 export const GAMEPAD_CONNECTED_MESSAGE =
-  'Controller connected — sticks nudge and rotate the visuals, triggers drive q1 and q2. Settings → Performance hardware to remap.';
+  'Controller connected — sticks nudge and rotate the visuals; triggers drive q1 and q2. Open Settings → Performance hardware to remap.';
 
 export interface WatchPerformanceHardwareOptions {
   midi: PerformanceHardwareMidi;

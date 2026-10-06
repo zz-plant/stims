@@ -125,7 +125,7 @@ export class OutlinePane {
     const hint = document.createElement('p');
     hint.className = 'stims-editor__hint';
     hint.textContent =
-      'The parts of this preset. Click one to jump to it; solo or mute a wave, a shape or a layer to see what it draws.';
+      'The parts of this preset. Click one to jump to it; solo or mute a wave, a shape, or a layer to see what it draws.';
     this.outlineList = document.createElement('div');
     this.outlineList.className = 'stims-editor__outline';
     this.outlineList.setAttribute('role', 'list');

@@ -1,3 +1,4 @@
+import { formatRenderBackendName } from '../common-types.ts';
 import { isMilkdropParityConstructAllowlisted } from '../parity-allowlist';
 import type {
   MilkdropBackendSupport,
@@ -216,7 +217,7 @@ export function buildDegradationReasons({
             ? 'backend-unsupported'
             : 'backend-partial',
         category: 'backend-degradation',
-        message: `${backend.toUpperCase()}: ${entry.message}`,
+        message: `${formatRenderBackendName(backend)}: ${entry.message}`,
         system: 'backend',
         blocking: entry.status === 'unsupported',
       });

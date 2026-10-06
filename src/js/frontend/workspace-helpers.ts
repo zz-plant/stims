@@ -115,13 +115,13 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
 }
 
 const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
-  'collection:favorites': 'Saved Presets',
+  'collection:favorites': 'Saved presets',
   'collection:hall-of-fame': 'Hall of Fame',
   'collection:audio-reactive': 'Audio-reactive',
   'collection:butterchurn': 'Butterchurn',
   'collection:cream-of-the-crop': 'Cream of the Crop',
   'collection:classic-milkdrop': 'Classic MilkDrop',
-  'collection:rovastar-and-collaborators': 'Rovastar & Collaborators',
+  'collection:rovastar-and-collaborators': 'Rovastar and collaborators',
 };
 
 /**
@@ -614,7 +614,7 @@ export function buildStarterPresets(entries: PresetCatalogEntry[]) {
     },
     {
       key: 'lasers',
-      label: 'Bright & sharp',
+      label: 'Bright and sharp',
       summary: 'Bright lines and sharp geometry.',
       tagPredicate: (tag: string) =>
         ['glowsticks', 'lasers', 'bright', 'geometry'].includes(tag),
@@ -704,7 +704,7 @@ export function formatPresetSupportNote(entry: PresetCatalogEntry) {
   const fidelityTier = entry.fidelityTier;
 
   if (fidelityTier === 'semantic-only') {
-    return 'Compiler parses this preset, but visual verification is not yet recorded.';
+    return 'The compiler parses this preset, but visual verification is not yet recorded.';
   }
 
   if (fidelityTier === 'unmeasured') {
@@ -735,7 +735,7 @@ export function formatPresetSupportNote(entry: PresetCatalogEntry) {
   ) {
     return visualCertification.measured
       ? (visualCertification.reasons[0] ??
-          'Measured WebGPU parity did not pass yet; this is the current runtime output.')
+          'Measured WebGPU parity has not passed yet; this is the current runtime output.')
       : 'Runs on WebGPU, but measured parity is still pending.';
   }
   if (entry.expectedFidelityClass === 'partial') {
@@ -961,7 +961,7 @@ export function resolveImageToPresetAction(
       kind: 'generated-source',
       description,
       source,
-      title: data.title?.trim() || 'Image generated preset',
+      title: data.title?.trim() || 'Image-generated preset',
     };
   }
   const presetId = data.presetId?.trim();

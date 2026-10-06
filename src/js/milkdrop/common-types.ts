@@ -222,6 +222,11 @@ export type MilkdropCompatibilityEvidence = {
 
 export type MilkdropRenderBackend = 'webgl' | 'webgpu';
 
+/** The backend's name as people read it, for messages and labels. */
+export function formatRenderBackendName(backend: MilkdropRenderBackend) {
+  return backend === 'webgpu' ? 'WebGPU' : 'WebGL';
+}
+
 export type MilkdropSemanticSupport = {
   fidelityClass: MilkdropFidelityClass;
   evidence: MilkdropCompatibilityEvidence;

@@ -8,6 +8,7 @@ import {
   notePresetShown,
   noteShaderExecution,
 } from '../../core/services/preset-telemetry';
+import { formatRenderBackendName } from '../common-types.ts';
 import { compileMilkdropPresetSource } from '../compiler';
 import { prewarmMilkdropPrograms } from '../expression-jit.ts';
 import {
@@ -315,7 +316,7 @@ export function createMilkdropPresetNavigationController({
       // viewer already sees, not a new banner.
       setOverlayStatus(
         isShaderApproximated(shaderExecution)
-          ? `Loaded ${nextCompiled.title} — shader text approximated on ${getActiveBackend() === 'webgpu' ? 'WebGPU' : 'WebGL'}.`
+          ? `Loaded ${nextCompiled.title} — shader text approximated on ${formatRenderBackendName(getActiveBackend())}.`
           : `Loaded ${nextCompiled.title}.`,
       );
       scheduleAdjacentPresetPrefetch(id);
