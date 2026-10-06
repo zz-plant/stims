@@ -394,9 +394,11 @@ const ROUTES: Array<{ when: string[]; run: string[]; note: string }> = [
       'intermittent',
       'only fails in ci',
       'passes locally',
+      'timed out',
+      'timeout',
     ],
-    run: ['test:changed', 'test:gate'],
-    note: 'Never assert on timing: wait on a condition (__stims_agent.waitFor) instead, and never skip a test to get green. Also check mock or global-state leaks by running the file alone and with its neighbours.',
+    run: ['test:changed', 'test:gate', 'test:budget'],
+    note: 'Never assert on timing: wait on a condition (__stims_agent.waitFor) instead, and never skip a test to get green. Also check mock or global-state leaks by running the file alone and with its neighbours. A test that "timed out after 5000ms" only under load is usually CPU-bound on the default timeout: test:budget lists every test that relies on it and uses more than half.',
   },
 ];
 

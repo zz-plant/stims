@@ -29,6 +29,7 @@ const targets = [
   'wrangler.mcp.jsonc',
   'vite.config.js',
   'index.html',
+  'certify',
   'milkdrop/index.html',
   'performance/index.html',
   'public/manifest.json',

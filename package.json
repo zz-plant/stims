@@ -184,6 +184,7 @@
     "test": "bun run scripts/run-tests.ts",
     "test:android": "bun run scripts/android-test.ts",
     "test:audio-rig": "bun run scripts/test-audio-rig.ts",
+    "test:budget": "bun run scripts/test-budget.ts",
     "test:changed": "bun run scripts/run-tests.ts --changed",
     "test:compat": "bun run scripts/run-tests.ts --profile compat",
     "test:corpus": "bun run scripts/run-tests.ts --profile corpus",

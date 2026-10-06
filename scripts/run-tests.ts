@@ -6,6 +6,9 @@
  * tests affected by uncommitted changes, and `--watch` re-runs on edit.
  * `--no-bail` (or STIMS_NO_BAIL=1) keeps running past the first failing file so
  * one run reports every failure instead of stopping at the first.
+ * `--timeout <ms>` sets bun's default per-test timeout for every pass (tests
+ * that pass their own timeout keep it), and `--junit-dir <dir>` also writes a
+ * junit report per pass there, which carries each test's duration.
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -140,6 +143,22 @@ async function assertNoUncategorizedTests(): Promise<void> {
 const NO_BAIL =
   process.argv.includes('--no-bail') || process.env.STIMS_NO_BAIL === '1';
 
+/** The value after `flag` in argv, read at command-build time like NO_BAIL. */
+function flagValue(flag: string): string | undefined {
+  const index = process.argv.indexOf(flag);
+  return index === -1 ? undefined : process.argv[index + 1];
+}
+
+// test:budget lowers this to find tests leaning on bun's 5s default.
+const TIMEOUT_MS = flagValue('--timeout');
+const JUNIT_DIR = flagValue('--junit-dir');
+/** One report per bun invocation: the serial pass runs one per file. */
+let junitReports = 0;
+const nextJunitReport = () => {
+  junitReports += 1;
+  return junitReports;
+};
+
 type ParsedArgs = {
   profile: string;
   watch: boolean;
@@ -170,6 +189,10 @@ function parseArgs(argv: string[]): ParsedArgs {
     // Read at command-build time (see NO_BAIL); consumed here so it is not
     // mistaken for a test file path.
     if (arg === '--no-bail') continue;
+    if (arg === '--timeout' || arg === '--junit-dir') {
+      index += 1;
+      continue;
+    }
 
     if (arg === '--profile') {
       profile = argv[index + 1] ?? profile;
@@ -238,6 +261,13 @@ function buildBunTestCmd({
         : []),
     ...(typeof maxConcurrency === 'number'
       ? [`--max-concurrency=${maxConcurrency}`]
+      : []),
+    ...(TIMEOUT_MS ? [`--timeout=${TIMEOUT_MS}`] : []),
+    ...(JUNIT_DIR
+      ? [
+          '--reporter=junit',
+          `--reporter-outfile=${path.join(JUNIT_DIR, `${nextJunitReport()}.xml`)}`,
+        ]
       : []),
     ...files,
   ];

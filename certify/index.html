@@ -27,6 +27,24 @@
         padding: 24px;
         line-height: 1.5;
       }
+      .skip-link {
+        position: fixed;
+        top: -6rem;
+        left: 12px;
+        z-index: 10;
+        padding: 10px 16px;
+        border: 1px solid var(--cool);
+        border-radius: 8px;
+        background: var(--bg);
+        color: var(--cool);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .skip-link:focus-visible {
+        top: 12px;
+        outline: 2px solid var(--cool);
+        outline-offset: 2px;
+      }
       .cert-shell {
         max-width: 900px;
         margin: 0 auto;
@@ -229,7 +247,7 @@
     </style>
   </head>
   <body>
-    <a href="#main-content" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;:focus{position:static;width:auto;height:auto;overflow:visible}">Skip to main content</a>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <main class="cert-shell" id="main-content">
       <header class="cert-header">
         <h1>Stims Certification Suite</h1>
