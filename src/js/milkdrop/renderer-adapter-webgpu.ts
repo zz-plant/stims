@@ -4,7 +4,7 @@ import { createMilkdropWebGPUFeedbackManager } from './feedback-manager-webgpu.t
 import type { MilkdropRendererAdapterConfig } from './renderer-adapter.ts';
 import { createMilkdropRendererAdapterCore } from './renderer-adapter.ts';
 import {
-  createNativeWebGPUShapeBatchingLayer,
+  createShapeBatchingLayer,
   createWebGPUBatchingLayer,
 } from './renderer-adapter-webgpu-batching.ts';
 import { createNativeWebGpuShapeBatchMaterialFactory } from './renderer-backends/webgpu-batching-materials.ts';
@@ -105,9 +105,7 @@ export function createMilkdropWebGPURendererAdapter(
     // so it gets a shapes+borders-only batcher built on NodeMaterial/TSL
     // (waves stay on the native procedural TSL paths).
     batcher: usesNativeWebGpuRenderer
-      ? createNativeWebGPUShapeBatchingLayer(
-          createNativeWebGpuShapeBatchMaterialFactory(),
-        )
+      ? createShapeBatchingLayer(createNativeWebGpuShapeBatchMaterialFactory())
       : createWebGPUBatchingLayer(),
     webgpuOptimizationFlags,
   });

@@ -29,6 +29,7 @@ import {
   createMilkdropRendererAdapterCore,
 } from '../../src/js/milkdrop/renderer-adapter.ts';
 import { createMilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-adapter-factory.ts';
+import { createMilkdropWebGLBatcher } from '../../src/js/milkdrop/renderer-adapter-webgl.ts';
 import { createWebGPUBatchingLayer } from '../../src/js/milkdrop/renderer-adapter-webgpu-batching.ts';
 import {
   buildCustomWaveProgramWgslCode,
@@ -137,6 +138,48 @@ function getRootChildByRenderOrder(
   );
 }
 
+/** Live instances of every drawn batch node (it and its ancestors visible)
+ * at `renderOrder` that carries `marker`, each as attribute name → that
+ * instance's values. Layer orders: shapes 50, borders 60, blend-shapes 100.
+ * Markers: shape fills carry instancePrimaryColorAlpha, shape outline rings
+ * instanceScales, border rings instanceInsets. */
+function drawnInstances(
+  root: RenderTreeNode,
+  renderOrder: number,
+  marker: string,
+  attributes: string[],
+): Array<Record<string, number[]>> {
+  const instances: Array<Record<string, number[]>> = [];
+  const visit = (node: RenderTreeNode) => {
+    if (node.visible === false) return;
+    if (
+      node.renderOrder === renderOrder &&
+      node.geometry?.getAttribute?.(marker) !== undefined
+    ) {
+      const count = getGeometryInstanceCount(node) ?? 0;
+      for (let index = 0; index < count; index += 1) {
+        const instance: Record<string, number[]> = {};
+        for (const name of attributes) {
+          const itemSize =
+            (
+              node.geometry?.getAttribute?.(name) as
+                | { itemSize?: number }
+                | undefined
+            )?.itemSize ?? 0;
+          const values = getFloat32AttributeArray(node, name) ?? [];
+          instance[name] = Array.from(
+            values.slice(index * itemSize, (index + 1) * itemSize),
+          );
+        }
+        instances.push(instance);
+      }
+    }
+    for (const child of node.children ?? []) visit(child);
+  };
+  visit(root);
+  return instances;
+}
+
 test('can route legacy custom waves through the canonical line path', () => {
   const batcher = createMilkdropSegmentBatchingLayer({
     fallbackCustomWaves: true,
@@ -161,6 +204,75 @@ test('can route legacy custom waves through the canonical line path', () => {
   );
 
   expect(rendered).toBe(false);
+  batcher.dispose();
+});
+
+test('the WebGL batcher draws each layer alone for a crossfade deck', () => {
+  const preset = compileMilkdropPresetSource(
+    `
+title=Batched Layers
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shapecode_0_num_inst=40
+shapecode_0_a=0.8
+    `.trim(),
+    { id: 'batched-layers' },
+  );
+  const { shapes } = createMilkdropVM(preset).step(makeSignals());
+  const wave = {
+    positions: [-0.5, 0, 0, 0.5, 0, 0],
+    color: { r: 0, g: 1, b: 1, a: 1 },
+    alpha: 1,
+    additive: false,
+    closed: false,
+    drawMode: 'line' as const,
+    pointSize: 1,
+    thickness: 1,
+  };
+  const batcher = createMilkdropWebGLBatcher();
+  const root = new Group();
+  batcher.attach(root);
+  const scratch = new Group();
+  const syncBoth = () => {
+    batcher.renderWaveGroup?.('custom-wave', scratch, [wave], 1);
+    batcher.renderWaveGroup?.('blend-custom-wave', scratch, [wave], 1);
+    batcher.renderShapeGroup?.('shapes', scratch, shapes, 1);
+    batcher.renderShapeGroup?.('blend-shapes', scratch, shapes, 1);
+  };
+  // Render orders of the batch meshes that would actually draw.
+  const drawnLayers = () => {
+    const orders = new Set<number>();
+    const visit = (node: RenderTreeNode) => {
+      if (node.visible === false) return;
+      if ((getGeometryInstanceCount(node) ?? 0) > 0) {
+        orders.add(node.renderOrder ?? -1);
+      }
+      for (const child of node.children ?? []) visit(child);
+    };
+    visit(root as unknown as RenderTreeNode);
+    return [...orders].sort((left, right) => left - right);
+  };
+
+  syncBoth();
+  // 40 shape instances draw from batch meshes, not 40 objects per layer.
+  expect(
+    flattenRenderTree(root as unknown as RenderTreeNode).length,
+  ).toBeLessThan(30);
+  expect(drawnLayers()).toEqual([30, 50, 90, 100]);
+
+  const showMain = batcher.hideLayer?.('main');
+  expect(drawnLayers()).toEqual([90, 100]);
+  showMain?.();
+  const showBlend = batcher.hideLayer?.('blend');
+  expect(drawnLayers()).toEqual([30, 50]);
+  showBlend?.();
+  expect(drawnLayers()).toEqual([30, 50, 90, 100]);
+
+  // A finished blend hides the outgoing layer until it is synced again.
+  batcher.hideBlendTargets?.();
+  expect(drawnLayers()).toEqual([30, 50]);
+  syncBoth();
+  expect(drawnLayers()).toEqual([30, 50, 90, 100]);
   batcher.dispose();
 });
 
@@ -903,18 +1015,23 @@ shapecode_0_thickoutline=1
       );
       expect(aspectScaledBorderGroups.length).toBeGreaterThan(0);
       if (backend === 'webgl') {
-        const borderMaterial = flattenRenderTree(
+        // The red border must reach the feedback buffer untouched by tone
+        // mapping.
+        const redBorderBatch = flattenRenderTree(
           scene.children[0] as RenderTreeNode,
-        )
-          .map((child) => child.material)
-          .find(
-            (material) =>
-              material instanceof MeshBasicMaterial &&
-              material.color.r > 0.9 &&
-              material.color.g < 0.1,
-          );
+        ).find(
+          (child) =>
+            child.geometry?.getAttribute?.('instanceInsets') !== undefined &&
+            drawnInstances(child, 60, 'instanceInsets', [
+              'instanceColorAlpha',
+            ]).some(
+              (border) =>
+                (border.instanceColorAlpha?.[0] ?? 0) > 0.9 &&
+                (border.instanceColorAlpha?.[1] ?? 1) < 0.1,
+            ),
+        );
         expect(
-          (borderMaterial as MeshBasicMaterial | undefined)?.toneMapped,
+          (redBorderBatch?.material as ShaderMaterial | undefined)?.toneMapped,
         ).toBe(false);
       }
       adapter.dispose();
@@ -1558,24 +1675,21 @@ ob_border=1
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children: Array<{
-        children?: Array<{
-          children?: Array<{
-            material?: MeshBasicMaterial;
-          }>;
-        }>;
-      }>;
-    };
-    const borderGroup = root.children[6];
-    const outerBorder = borderGroup?.children?.[0];
-    const fill = outerBorder?.children?.[0] as
-      | { material?: MeshBasicMaterial }
-      | undefined;
+    // Border instances: insets.x is the layer depth — 0.285 for fills,
+    // 0.3 for a styled accent ring.
+    const borders = drawnInstances(
+      scene.children[0] as RenderTreeNode,
+      60,
+      'instanceInsets',
+      ['instanceInsets', 'instanceColorAlpha'],
+    );
 
-    expect(fill?.material).toBeInstanceOf(MeshBasicMaterial);
-    expect(fill?.material?.opacity).toBeCloseTo(0.8, 6);
-    expect(outerBorder?.children).toHaveLength(2);
+    // ob_border=1 asks for exactly one accent ring over the fill.
+    expect(borders.map((border) => border.instanceInsets?.[0])).toEqual([
+      expect.closeTo(0.285, 6),
+      expect.closeTo(0.3, 6),
+    ]);
+    expect(borders[0]?.instanceColorAlpha?.[3]).toBeCloseTo(0.8, 6);
   });
 
   test('keeps zero-alpha border fills invisible on webgpu batches', async () => {
@@ -1724,44 +1838,27 @@ shapecode_0_thickoutline=0
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children?: Array<{
-        children?: Array<{
-          children?: Array<{
-            material?: LineBasicMaterial | ShaderMaterial;
-            position?: { x: number; y: number; z: number };
-            scale?: { x: number; y: number; z: number };
-            rotation?: { z: number };
-          }>;
-        }>;
-      }>;
-    };
-    const shapesGroup = getRootChildByRenderOrder(root, 50);
-    const shapeGroup = shapesGroup?.children?.[0];
-    const fill = shapeGroup?.children?.[0] as Mesh | undefined;
-    const borderGroup = shapeGroup?.children?.[1] as
-      | {
-          children?: Array<{
-            material?: LineBasicMaterial;
-            position?: { x: number; y: number; z: number };
-            scale?: { x: number; y: number; z: number };
-            rotation?: { z: number };
-          }>;
-        }
-      | undefined;
-    const border = borderGroup?.children?.[0];
+    // The plain shape's single outline ring must sit exactly on its fill:
+    // same centre, radius and rotation (instanceTransform), at the plain
+    // preset's border alpha, with nothing left over from the thick outline.
+    const root = scene.children[0] as RenderTreeNode;
+    const fills = drawnInstances(root, 50, 'instancePrimaryColorAlpha', [
+      'instanceTransform',
+    ]);
+    const rings = drawnInstances(root, 50, 'instanceScales', [
+      'instanceTransform',
+      'instanceColorAlpha',
+    ]);
 
-    expect(shapeGroup?.children).toHaveLength(2);
-    expect(fill?.type).toBe('Mesh');
-    expect(borderGroup?.children).toHaveLength(1);
-    expect(border?.material).toBeInstanceOf(LineBasicMaterial);
-    expect(border?.material?.opacity).toBeCloseTo(0.25, 6);
-    expect(border?.position?.x).toBeCloseTo(fill?.position.x ?? NaN, 6);
-    expect(border?.position?.y).toBeCloseTo(fill?.position.y ?? NaN, 6);
-    expect(border?.position?.z).toBeCloseTo(0.16, 6);
-    expect(border?.scale?.x).toBeCloseTo(fill?.scale.x ?? NaN, 6);
-    expect(border?.scale?.y).toBeCloseTo(fill?.scale.y ?? NaN, 6);
-    expect(border?.rotation?.z).toBeCloseTo(fill?.rotation.z ?? NaN, 6);
+    expect(fills).toHaveLength(1);
+    expect(rings).toHaveLength(1);
+    expect(rings[0]?.instanceColorAlpha?.[3]).toBeCloseTo(0.25, 6);
+    for (let component = 0; component < 4; component += 1) {
+      expect(rings[0]?.instanceTransform?.[component]).toBeCloseTo(
+        fills[0]?.instanceTransform?.[component] ?? Number.NaN,
+        6,
+      );
+    }
   });
 
   test('forwards gamma-adjusted post state into feedback uniforms', async () => {
@@ -3528,43 +3625,22 @@ shapecode_0_border_a=0.25
       },
     });
 
-    const root = scene.children[0] as {
-      children: Array<{
-        children?: Array<{
-          children?: Array<{
-            material?: ShaderMaterial | LineBasicMaterial;
-          }>;
-        }>;
-      }>;
-    };
-    const blendShapeGroup = root.children[11];
-    const blendedShape = blendShapeGroup?.children?.[0];
-    const fill = blendedShape?.children?.[0] as
-      | { material?: ShaderMaterial }
-      | undefined;
-    const borderGroup = blendedShape?.children?.[1] as
-      | {
-          children?: Array<{
-            material?: LineBasicMaterial;
-          }>;
-        }
-      | undefined;
-    const border = borderGroup?.children?.[0] as
-      | { material?: LineBasicMaterial }
-      | undefined;
+    // The outgoing shape draws at its own alphas scaled by the blend's 0.35:
+    // fill 0.2 → 0.07, rim 0.6 → 0.21, border 0.75 → 0.2625.
+    const root = scene.children[0] as RenderTreeNode;
+    const fills = drawnInstances(root, 100, 'instancePrimaryColorAlpha', [
+      'instancePrimaryColorAlpha',
+      'instanceSecondaryColorAlpha',
+    ]);
+    const rings = drawnInstances(root, 100, 'instanceScales', [
+      'instanceColorAlpha',
+    ]);
 
-    expect(fill?.material).toBeInstanceOf(ShaderMaterial);
-    expect(
-      (fill?.material as ShaderMaterial | undefined)?.uniforms.primaryAlpha
-        .value,
-    ).toBeCloseTo(0.07, 6);
-    expect(
-      (fill?.material as ShaderMaterial | undefined)?.uniforms.secondaryAlpha
-        .value,
-    ).toBeCloseTo(0.21, 6);
-    expect(borderGroup?.children).toHaveLength(1);
-    expect(border?.material).toBeInstanceOf(LineBasicMaterial);
-    expect(border?.material?.opacity).toBeCloseTo(0.2625, 6);
+    expect(fills).toHaveLength(1);
+    expect(fills[0]?.instancePrimaryColorAlpha?.[3]).toBeCloseTo(0.07, 6);
+    expect(fills[0]?.instanceSecondaryColorAlpha?.[3]).toBeCloseTo(0.21, 6);
+    expect(rings).toHaveLength(1);
+    expect(rings[0]?.instanceColorAlpha?.[3]).toBeCloseTo(0.2625, 6);
   });
 
   test('keeps previous-only blend shapes visible when the current frame has fewer shape slots', async () => {
@@ -3626,31 +3702,20 @@ shapecode_0_a=0.9
       },
     });
 
-    const blendShapeGroup = (
-      adapter as unknown as {
-        blendShapeGroup: {
-          children: Array<{
-            children?: Array<{
-              material?: MeshBasicMaterial | ShaderMaterial | LineBasicMaterial;
-            }>;
-          }>;
-        };
-      }
-    ).blendShapeGroup;
-    const extraBlendedShape = blendShapeGroup.children[1];
-    const extraFill = extraBlendedShape?.children?.[0] as
-      | { material?: MeshBasicMaterial | ShaderMaterial }
-      | undefined;
+    // Both outgoing shapes stay drawn, the previous-only one (alpha 0.5) at
+    // the blend-scaled 0.175.
+    const fills = drawnInstances(
+      scene.children[0] as RenderTreeNode,
+      100,
+      'instancePrimaryColorAlpha',
+      ['instancePrimaryColorAlpha'],
+    );
+    const fillAlphas = fills
+      .map((fill) => fill.instancePrimaryColorAlpha?.[3] ?? Number.NaN)
+      .sort((left, right) => left - right);
 
-    expect(blendShapeGroup.children).toHaveLength(2);
-    // Fills use the gradient shader now that every shape carries a rim
-    // color; the invariant under test is that the previous-only shape stays
-    // visible at the blend-scaled alpha.
-    expect(extraFill?.material).toBeInstanceOf(ShaderMaterial);
-    expect(
-      (extraFill?.material as ShaderMaterial | undefined)?.uniforms
-        ?.primaryAlpha?.value,
-    ).toBeCloseTo(0.175, 6);
+    expect(fillAlphas).toHaveLength(2);
+    expect(fillAlphas[1]).toBeCloseTo(0.175, 6);
   });
 
   test('draws both lanes when one custom wave is GPU-routed and another is not', () => {
@@ -5153,16 +5218,14 @@ ob_a=0.8
       blendState: null,
     });
 
-    const root = scene.children[0] as RenderTreeNode;
-    const borderGroup = getRootChildByRenderOrder(root, 60);
-    expect(borderGroup).toBeDefined();
-
-    const outerBorder = borderGroup?.children?.[0] as RenderTreeNode;
-    const borderMesh = outerBorder?.children?.[0] as {
-      position?: { z: number };
-    };
-    expect(borderMesh).toBeDefined();
-    expect(borderMesh?.position?.z).toBe(0.285);
+    const borders = drawnInstances(
+      scene.children[0] as RenderTreeNode,
+      60,
+      'instanceInsets',
+      ['instanceInsets'],
+    );
+    expect(borders).toHaveLength(1);
+    expect(borders[0]?.instanceInsets?.[0]).toBeCloseTo(0.285, 6);
   });
 });
 

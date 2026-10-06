@@ -439,6 +439,8 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
       this.targets.set(target, batch);
       this.root.add(batch.group);
     }
+    // A sync re-shows a target hidden by hideBlendTargets.
+    batch.group.visible = true;
     return batch;
   }
 
@@ -512,6 +514,25 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
     }
     this.getTarget(target).syncSplit(this.normalUploads, this.additiveUploads);
     return true;
+  }
+
+  hideBlendTargets() {
+    this.hideLayer('blend');
+  }
+
+  /** Batched targets render under this layer's own root, not the adapter's
+   * per-layer groups, so a live-crossfade deck or a finished blend has to
+   * hide them here or the other preset's waves draw into its feedback. */
+  hideLayer(layer: 'main' | 'blend') {
+    const hidden: Array<{ group: Group; visible: boolean }> = [];
+    for (const [target, batch] of this.targets) {
+      if (target.startsWith('blend-') !== (layer === 'blend')) continue;
+      hidden.push({ group: batch.group, visible: batch.group.visible });
+      batch.group.visible = false;
+    }
+    return () => {
+      for (const { group, visible } of hidden) group.visible = visible;
+    };
   }
 
   dispose() {
