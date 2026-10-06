@@ -88,13 +88,13 @@ describe('calibrateLive', () => {
       real: new Float32Array(1024),
       imag: new Float32Array(1024),
     };
-    // A live worklet whose message windows end at samples ≡ 1777 (mod 4096),
-    // which is ≡ 753 (mod 1024), so the two phases differ. Each window is
+    // A live worklet whose message windows end at samples ≡ 1777 (mod 4096).
+    // 1777 ≡ 753 (mod 1024), so the two phases differ. Each window is
     // displayed 128, 160 or 192 samples after it ends, the first one late, so
     // only the minimum gap reads 128.
     const phase = 1777;
     const delay = 128;
-    // Plus one frame showing nothing in the file, which must not be counted.
+    // Plus one frame that matches nothing in the file and must not count.
     const frames = [{ audioTime: 0.03, rawSpectrum: new Array(512).fill(7) }];
     for (let end = 4096 + phase; end < samples.length; end += 4096) {
       const bytes = new Uint8Array(512);
