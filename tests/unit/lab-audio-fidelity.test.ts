@@ -76,19 +76,26 @@ describe('compareAudioFrames', () => {
   });
 });
 
+// calibrateLive runs one 1024-point analysis per sample it walks back from a
+// frame, so these fixtures keep each walk short: the work is frames × delay,
+// or the whole search range when nothing matches.
 describe('calibrateLive', () => {
   test('recovers the block phase, message phase and delay of a live run', () => {
-    const samples = music(2);
+    const samples = music(1);
     const window = buildHannWindow(1024);
     const twiddles = buildTwiddleTable(1024);
     const scratch = {
       real: new Float32Array(1024),
       imag: new Float32Array(1024),
     };
-    // A live worklet whose message windows end at samples ≡ 777 (mod 4096),
-    // displayed 900 samples (or more) after they end.
-    const phase = 777;
-    const frames = [];
+    // A live worklet whose message windows end at samples ≡ 1777 (mod 4096),
+    // which is ≡ 753 (mod 1024), so the two phases differ. Each window is
+    // displayed 128, 160 or 192 samples after it ends, the first one late, so
+    // only the minimum gap reads 128.
+    const phase = 1777;
+    const delay = 128;
+    // Plus one frame showing nothing in the file, which must not be counted.
+    const frames = [{ audioTime: 0.03, rawSpectrum: new Array(512).fill(7) }];
     for (let end = 4096 + phase; end < samples.length; end += 4096) {
       const bytes = new Uint8Array(512);
       analyseBlockBytes(
@@ -99,7 +106,7 @@ describe('calibrateLive', () => {
         scratch,
       );
       frames.push({
-        audioTime: (end + 900 + (end % 3) * 50) / sampleRate,
+        audioTime: (end + delay + ((frames.length + 1) % 3) * 32) / sampleRate,
         rawSpectrum: [...bytes],
       });
     }
@@ -108,13 +115,15 @@ describe('calibrateLive', () => {
       phase: phase % 1024,
       messagePhase: phase,
       messagePeriod: 4096,
-      delaySamples: 900,
+      delaySamples: delay,
+      located: frames.length - 1,
     });
-    expect(calibration?.located).toBeGreaterThan(5);
   });
 
   test('returns null when nothing in the file matches', () => {
-    const frames = [{ audioTime: 0.5, rawSpectrum: new Array(512).fill(7) }];
+    // Near the start of the file the search stops at the first full window:
+    // ~300 analyses instead of the ~15,000 a frame mid-file would cost.
+    const frames = [{ audioTime: 0.03, rawSpectrum: new Array(512).fill(7) }];
     expect(calibrateLive(frames, music(1), sampleRate, 4096)).toBeNull();
   });
 });
