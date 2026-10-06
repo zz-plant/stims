@@ -1918,14 +1918,14 @@ export function createWebGPUBatchingLayer(): MilkdropRendererBatcher {
 }
 
 /**
- * Shapes+borders-only batcher for the native WebGPU renderer. Waves, lines,
- * and motion vectors intentionally stay on the existing native TSL paths
- * (procedural materials with cross-preset blending), so only the shape and
- * border hooks are exposed; the adapter core falls back to per-object
- * rendering for everything else.
+ * Shapes+borders-only batcher. The native WebGPU renderer pairs it with TSL
+ * materials and keeps waves, lines and motion vectors on its procedural TSL
+ * paths (cross-preset blending); WebGL pairs it with the GLSL materials and
+ * its own segment batcher for waves. Only the shape and border hooks are
+ * exposed, so the adapter core renders everything else another way.
  */
-export function createNativeWebGPUShapeBatchingLayer(
-  materials: ShapeBatchMaterialFactory,
+export function createShapeBatchingLayer(
+  materials: ShapeBatchMaterialFactory = GLSL_SHAPE_BATCH_MATERIAL_FACTORY,
 ): MilkdropRendererBatcher {
   const layer = new WebGPUBatchingLayer(materials);
   return {

@@ -1,13 +1,19 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { noteShaderExecution } from '../../src/js/core/services/preset-telemetry.ts';
+import {
+  notePresetFrame,
+  notePresetShown,
+  noteShaderExecution,
+} from '../../src/js/core/services/preset-telemetry.ts';
 
 /**
- * The counter that makes "how often are we approximating in the wild?"
- * answerable. The endpoint only resolves on a deployed origin, so these tests
- * stand up a minimal location + sendBeacon and read the payload the edge
- * function would receive — asserting the two properties the report queries
- * depend on: the mode is in the event name (the dataset's only index), and
- * shader-free presets are not counted at all.
+ * The beacons production queries depend on. The endpoint only resolves on a
+ * deployed origin, so these tests stand up a minimal location + sendBeacon
+ * and read the payload the edge function would receive.
+ *
+ * Shader execution: the mode is in the event name (the dataset's only index),
+ * and shader-free presets are not counted at all. Dwell: each beacon carries
+ * the frame rate and backend the visitor saw, the only field data on how
+ * Stims performs on real hardware.
  */
 
 type Beacon = { url: string; body: Record<string, unknown> };
@@ -106,5 +112,60 @@ describe('noteShaderExecution', () => {
       'presetId',
       'renderer',
     ]);
+  });
+});
+
+describe('preset dwell beacons', () => {
+  // Module state persists across tests: show a sentinel first so the preset
+  // under test is the one flushed, then drop the sentinel's own beacon.
+  const startFresh = async (presetId: string, backend: 'webgl' | 'webgpu') => {
+    notePresetShown(`sentinel-${presetId}`);
+    notePresetShown(presetId, backend);
+    await flush();
+    beacons = [];
+  };
+
+  test('reports the rendered frame rate and backend of the preset left', async () => {
+    await startFresh('steady-preset', 'webgpu');
+    for (let frame = 0; frame < 90; frame += 1) notePresetFrame(1000 / 30);
+    notePresetShown('next-preset', 'webgpu');
+    await flush();
+
+    expect(beacons).toHaveLength(1);
+    expect(beacons[0]?.body).toMatchObject({
+      presetId: 'steady-preset',
+      renderer: 'webgpu',
+      fps: 30,
+    });
+  });
+
+  test('spells the WebGL path webgl2, like the rest of the dataset', async () => {
+    await startFresh('webgl-preset', 'webgl');
+    for (let frame = 0; frame < 120; frame += 1) notePresetFrame(1000 / 60);
+    notePresetShown('next-preset', 'webgl');
+    await flush();
+
+    expect(beacons[0]?.body).toMatchObject({ renderer: 'webgl2', fps: 60 });
+  });
+
+  test('counts only the frames rendered since the preset was shown', async () => {
+    await startFresh('slow-preset', 'webgpu');
+    for (let frame = 0; frame < 90; frame += 1) notePresetFrame(1000 / 60);
+    notePresetShown('fast-preset', 'webgpu');
+    for (let frame = 0; frame < 48; frame += 1) notePresetFrame(1000 / 24);
+    notePresetShown('last-preset', 'webgpu');
+    await flush();
+
+    expect(beacons.map((beacon) => beacon.body.fps)).toEqual([60, 24]);
+  });
+
+  test('omits fps when too little was rendered to measure a rate', async () => {
+    await startFresh('brief-preset', 'webgpu');
+    for (let frame = 0; frame < 10; frame += 1) notePresetFrame(1000 / 60);
+    notePresetShown('next-preset', 'webgpu');
+    await flush();
+
+    expect(beacons[0]?.body).not.toHaveProperty('fps');
+    expect(beacons[0]?.body.renderer).toBe('webgpu');
   });
 });

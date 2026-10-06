@@ -106,7 +106,19 @@ describe('worktree:new', () => {
 describe('postinstall hook plan', () => {
   test('installs in the main checkout, and a worktree reuses installed hooks', () => {
     const { root, clone, hooksDir } = scenario();
-    expect(planHookInstall(clone)).toEqual({ action: 'install', hooksDir });
+    // lefthook refuses a custom core.hooksPath without --force; plain
+    // `install` here failed every `bun install` on a clone carrying one.
+    expect(planHookInstall(clone)).toEqual({
+      action: 'install-force',
+      hooksDir,
+    });
+    const defaultHooksDir = join(clone, '.git', 'hooks');
+    git(clone, 'config', 'core.hooksPath', defaultHooksDir);
+    expect(planHookInstall(clone)).toEqual({
+      action: 'install',
+      hooksDir: defaultHooksDir,
+    });
+    git(clone, 'config', 'core.hooksPath', hooksDir);
 
     const worktree = join(root, 'wt');
     git(clone, 'worktree', 'add', '-q', '--detach', worktree);

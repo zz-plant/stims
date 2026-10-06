@@ -13,6 +13,7 @@ import {
 import { getPowerSavingFrameCapHz } from '../../core/power-state.ts';
 import { isMilkdropCapturedVideoReady } from '../../core/services/captured-video-texture.ts';
 import { createGpuRenderTimingSampler } from '../../core/services/gpu-render-timing.ts';
+import { notePresetFrame } from '../../core/services/preset-telemetry.ts';
 import type {
   ToyRuntimeFrame,
   ToyRuntimeInstance,
@@ -554,6 +555,7 @@ export function createMilkdropExperienceFrameLoop({
           simulationMs: renderStartAt - frameStartAt,
           renderMs: frameEndAt - renderStartAt,
         });
+        notePresetFrame(frame.deltaMs);
         getAdaptiveQualityController()?.recordFrame({
           frameMs: frameEndAt - frameStartAt,
           // Cadence is evidence the GPU is falling behind only when nothing is

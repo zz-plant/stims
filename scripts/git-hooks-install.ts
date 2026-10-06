@@ -7,7 +7,8 @@
  * install already wrote. lefthook refuses to install into a hooks path outside
  * the checkout it runs from, so `bun install` in every new worktree used to end
  * in a failed postinstall. Here a worktree reuses installed hooks, and installs
- * with `--force` only when none exist yet.
+ * with `--force` only when none exist yet. The main checkout forces too when
+ * core.hooksPath points somewhere custom, for the same refusal.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -43,7 +44,13 @@ export function planHookInstall(cwd = process.cwd()): HookInstallPlan {
     return { action: 'skip', hooksDir: null };
   }
 
-  if (gitDir === commonDir) return { action: 'install', hooksDir };
+  if (gitDir === commonDir) {
+    // lefthook refuses a custom core.hooksPath (a husky leftover on older
+    // clones) unless forced, which failed every `bun install` in the main
+    // checkout. Install where git actually looks for hooks.
+    const customHooksPath = hooksDir !== join(gitDir, 'hooks');
+    return { action: customHooksPath ? 'install-force' : 'install', hooksDir };
+  }
   if (existsSync(join(hooksDir, 'pre-commit'))) {
     return { action: 'reuse', hooksDir };
   }
