@@ -138,13 +138,13 @@ function createParticleFieldNodeMaterial(
   const uniforms = Object.fromEntries(
     Object.entries(state).map(([key, entry]) => [
       key,
-      typedUniform(entry.value),
+      typedUniform(TSL, entry.value),
     ]),
   );
 
-  const instanceAnchor = typedAttribute('instanceAnchor', 'vec3');
-  const instanceSeed = typedAttribute('instanceSeed', 'float');
-  const instanceId = typedAttribute('instanceId', 'float');
+  const instanceAnchor = typedAttribute(TSL, 'instanceAnchor', 'vec3');
+  const instanceSeed = typedAttribute(TSL, 'instanceSeed', 'float');
+  const instanceId = typedAttribute(TSL, 'instanceId', 'float');
 
   const phase = instanceSeed
     .mul(6.2831853)

@@ -149,7 +149,23 @@ export default defineConfig({
             )
               return 'vendor-three-webgpu';
             if (id.includes('/three/')) return 'vendor-three';
-            if (id.includes('/@codemirror/')) return 'vendor-codemirror';
+            // CodeMirror's own dependencies travel with it. Left in
+            // vendor-other, they made that eagerly fetched chunk import
+            // vendor-codemirror, so every visitor downloaded the editor
+            // (~121 kB gz) before first paint.
+            if (
+              id.includes('/@codemirror/') ||
+              id.includes('/@lezer/') ||
+              id.includes('/@marijn/') ||
+              id.includes('/style-mod/') ||
+              id.includes('/w3c-keyname/') ||
+              id.includes('/crelt/')
+            )
+              return 'vendor-codemirror';
+            // Dynamically imported (preset archives) and Browse-only vendors
+            // follow their importers instead of riding in vendor-other.
+            if (id.includes('/fflate/') || id.includes('/@tanstack/'))
+              return null;
             if (id.includes('/react-dom/') || id.includes('/react/'))
               return 'vendor-react';
             // Runtime-only vendors: reachable only from the dynamically

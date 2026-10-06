@@ -12,11 +12,16 @@
  * `moduleResolution: bundler` reaches @types/three's real node typings, so
  * the stand-in is obsolete. This module exists so the replacement is named
  * once rather than three times.
+ *
+ * `TSL` is a parameter of the runtime helpers, never a value import: the
+ * particle-field renderer runs on both backends, and a value import here put
+ * the whole three/webgpu bundle (~189 kB gz) on every WebGL session's boot
+ * path. Callers pass the TSL they already hold.
  */
 
 import type { Color } from 'three';
 import type ThreeNode from 'three/src/nodes/core/Node.js';
-import { TSL } from 'three/webgpu';
+import type { TSL } from 'three/webgpu';
 
 /**
  * A TSL node carrying its value type, e.g. `TslNode<'vec4'>`.
@@ -45,10 +50,11 @@ export type TslAttributeType = 'float' | 'vec2' | 'vec3' | 'vec4';
  * casting at every use.
  */
 export function typedAttribute<T extends TslAttributeType>(
+  tsl: typeof TSL,
   name: string,
   nodeType: T,
 ): TslNode<T> {
-  return TSL.attribute(name, nodeType) as unknown as TslNode<T>;
+  return tsl.attribute(name, nodeType) as unknown as TslNode<T>;
 }
 
 /**
@@ -94,10 +100,11 @@ export type TslUniformNodes<T> = { [K in keyof T]: TslUniformNode };
  * actually matches the value being passed.
  */
 export function typedUniform(
+  tsl: typeof TSL,
   value: number | Color,
 ): TslUniformNode<number | Color> {
   const node =
-    typeof value === 'number' ? TSL.uniform(value) : TSL.uniform(value);
+    typeof value === 'number' ? tsl.uniform(value) : tsl.uniform(value);
   return node as unknown as TslUniformNode<number | Color>;
 }
 
