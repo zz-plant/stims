@@ -10,7 +10,8 @@
  *   - per-chunk ceiling for the largest JS chunk,
  *   - total JS payload ceiling,
  *   - total CSS payload ceiling,
- *   - gzipped ceilings for the catalog manifests.
+ *   - gzipped ceilings for the catalog manifests,
+ *   - chunk-graph rules: which vendor chunks may sit on the boot path.
  *
  * The manifests are guarded separately because they are the largest things
  * the app downloads and nothing watched them: `public/_headers` described
@@ -52,6 +53,101 @@ const MANIFEST_GZIP_BUDGETS: ReadonlyArray<{ file: string; max: number }> = [
   { file: 'milkdrop-presets/catalog.json', max: 160_000 },
   { file: 'milkdrop-presets/search-index.json', max: 100_000 },
 ];
+
+/**
+ * Byte totals cannot see a chunk moving onto the boot path, and two did:
+ * CodeMirror (~121 kB gz) became eager through vendor-other, and
+ * three/webgpu (~189 kB gz) entered the runtime closure every WebGL session
+ * loads. Each rule names a chunk prefix that must stay out of a load set.
+ */
+export const BOOT_PATH_RULES: ReadonlyArray<{
+  forbidden: string;
+  set: 'eager' | 'runtime';
+  why: string;
+}> = [
+  {
+    forbidden: 'vendor-codemirror',
+    set: 'eager',
+    why: 'the editor is prewarmed at idle; first paint must not wait for it',
+  },
+  {
+    forbidden: 'vendor-three-webgpu',
+    set: 'eager',
+    why: 'WebGL-only browsers can never execute it',
+  },
+  {
+    forbidden: 'vendor-three-webgpu',
+    set: 'runtime',
+    why: 'WebGL sessions load the runtime; WebGPU code must stay behind the WebGPU adapter import',
+  },
+  {
+    forbidden: 'vendor-codemirror',
+    set: 'runtime',
+    why: 'the engine does not need the editor to render',
+  },
+];
+
+/** Asset paths index.html loads up front: module scripts and modulepreloads. */
+export function eagerChunks(indexHtml: string): string[] {
+  const found = [
+    ...indexHtml.matchAll(/<script[^>]*type="module"[^>]*src="\/([^"]+)"/g),
+    ...indexHtml.matchAll(/rel="modulepreload"[^>]*href="\/([^"]+)"/g),
+  ].map((match) => match[1] as string);
+  return [...new Set(found)];
+}
+
+/**
+ * Chunks reachable from `start` through static imports only. Dynamic
+ * imports and preload-dependency lists are deliberately not followed: they
+ * load on demand, which is the point of splitting them out.
+ */
+export function staticClosure(
+  start: string[],
+  readChunk: (assetPath: string) => string | null,
+): Set<string> {
+  const seen = new Set<string>();
+  const pending = [...start];
+  const staticImport =
+    /(?:^|[;}\s])(?:import|export)\s*(?:[^"'();]*?\bfrom\s*)?["']\.\/([^"']+\.js)["']/g;
+  while (pending.length > 0) {
+    const assetPath = pending.pop() as string;
+    if (seen.has(assetPath)) continue;
+    seen.add(assetPath);
+    const source = readChunk(assetPath);
+    if (source === null) continue;
+    const dir = path.posix.dirname(assetPath);
+    for (const match of source.matchAll(staticImport)) {
+      pending.push(path.posix.join(dir, match[1] as string));
+    }
+  }
+  return seen;
+}
+
+/** Violations of BOOT_PATH_RULES, one message each. */
+export function findBootPathLeaks(
+  indexHtml: string,
+  assetPaths: string[],
+  readChunk: (assetPath: string) => string | null,
+): string[] {
+  const eager = staticClosure(eagerChunks(indexHtml), readChunk);
+  const runtimeEntry = assetPaths.filter((asset) =>
+    /^assets\/runtime-[\w-]+\.js$/.test(asset),
+  );
+  const runtime = staticClosure(runtimeEntry, readChunk);
+  const sets = { eager, runtime };
+  const leaks: string[] = [];
+  for (const rule of BOOT_PATH_RULES) {
+    const hit = [...sets[rule.set]].find((asset) =>
+      path.posix.basename(asset).startsWith(`${rule.forbidden}-`),
+    );
+    if (hit) {
+      leaks.push(
+        `${rule.forbidden} is in the ${rule.set} load set (${hit}): ${rule.why}.`,
+      );
+    }
+  }
+  return leaks;
+}
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -140,12 +236,36 @@ function main(): boolean {
       ok = false;
     }
   }
+  const indexPath = path.join(DIST, 'index.html');
+  if (existsSync(indexPath)) {
+    const assetPaths = js.map((f) =>
+      path.relative(DIST, f).split(path.sep).join('/'),
+    );
+    const leaks = findBootPathLeaks(
+      readFileSync(indexPath, 'utf8'),
+      assetPaths,
+      (assetPath) => {
+        const full = path.join(DIST, assetPath);
+        return existsSync(full) ? readFileSync(full, 'utf8') : null;
+      },
+    );
+    for (const leak of leaks) {
+      console.error(`[ERROR] ${leak}`);
+    }
+    if (leaks.length > 0) ok = false;
+  } else {
+    console.error(
+      `[ERROR] Missing ${DIST}/index.html for the boot-path check.`,
+    );
+    ok = false;
+  }
+
   if (ok) {
     console.log('[INFO] Bundle size within budget.');
   }
   return ok;
 }
 
-if (!main()) {
+if (import.meta.main && !main()) {
   process.exit(1);
 }
