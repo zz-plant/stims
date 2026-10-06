@@ -9,8 +9,8 @@
  *
  * This reruns the suite with the default per-test timeout lowered to the
  * budget (half the default unless told otherwise). Tests that pass their own
- * timeout keep it, so the only ones that time out are tests relying on the
- * default that used more than the budget. Each needs its work shrunk or a
+ * timeout keep it, so the only tests that time out are ones that rely on the
+ * default and ran longer than the budget. Each needs its work shrunk or a
  * justified timeout of its own. Other failures in the run are counted but not
  * listed: they are not budget findings.
  *
