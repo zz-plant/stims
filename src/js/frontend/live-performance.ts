@@ -70,12 +70,20 @@ export interface RampRequest {
  *                the value snapped. The watchdog was not involved.
  * - `watchdog` — rAF never fired at all (a hidden tab throttles it), and the
  *                timer landed the value.
+ * - `superseded` — a later ramp took over every target before this one
+ *                landed, so it stopped where it was and landed nothing.
  *
  * `starved` and `watchdog` are both failures to glide but have different
  * causes and different fixes, so they are reported separately rather than
- * collapsed into one flag.
+ * collapsed into one flag. `superseded` is not a failure: the newer gesture
+ * asked for it.
  */
-export type RampLanding = 'glided' | 'instant' | 'starved' | 'watchdog';
+export type RampLanding =
+  | 'glided'
+  | 'instant'
+  | 'starved'
+  | 'watchdog'
+  | 'superseded';
 
 export interface RampResult {
   targets: string[];
@@ -90,7 +98,11 @@ export interface RampResult {
    * the cause matters.
    */
   forcedLanding: boolean;
+  /** Destinations this ramp landed. Targets a later ramp took over are not
+   * here: they never reached this ramp's destination. */
   final: Record<string, number>;
+  /** Targets a later ramp took over before this one landed them. */
+  superseded: string[];
 }
 
 export interface ListenSample {
@@ -144,6 +156,12 @@ const EASE: Record<RampCurve, (t: number) => number> = {
 const positions = new Map<string, number>();
 /** Ramp generation per target, so a new ramp supersedes one in flight. */
 const generations = new Map<string, number>();
+/**
+ * In-flight ramps, each a check that settles it once a newer ramp owns all its
+ * targets. Run when a ramp starts rather than on the next frame, because rAF
+ * may not fire at all in a hidden tab.
+ */
+const inFlight = new Set<() => void>();
 
 let deps: LivePerformanceDeps | null = null;
 let strudel: StrudelBridge | null = null;
@@ -223,6 +241,10 @@ export function getCps(): number | null {
  * second used to report `forcedLanding: false`, claiming a healthy glide for
  * what was really a teleport under a starved main thread — and the two have
  * different causes, so `landing` keeps them apart.
+ *
+ * Starting a ramp takes its targets from any ramp already moving them. A ramp
+ * left with no targets settles at once as `superseded`; one that keeps some
+ * lands those and lists the rest in `superseded`.
  */
 export function ramp(request: RampRequest): Promise<RampResult> {
   const { setTarget } = requireDeps();
@@ -242,6 +264,14 @@ export function ramp(request: RampRequest): Promise<RampResult> {
     generations.set(target, generation);
     return { target, from, to, generation };
   });
+  /** False once a newer ramp has taken this leg's target. */
+  const owns = (leg: (typeof plan)[number]) =>
+    generations.get(leg.target) === leg.generation;
+
+  // Settle the ramps this one just took over now, not when their own windows
+  // close: a caller awaiting one would otherwise wait out its full duration
+  // and then be told it landed values it never reached.
+  for (const settleIfSuperseded of [...inFlight]) settleIfSuperseded();
 
   return new Promise<RampResult>((resolve) => {
     const started = performance.now();
@@ -255,28 +285,30 @@ export function ramp(request: RampRequest): Promise<RampResult> {
       for (const leg of plan) {
         // A newer ramp owns this target now; abandon this leg silently so the
         // two gestures do not fight frame by frame.
-        if (generations.get(leg.target) !== leg.generation) continue;
+        if (!owns(leg)) continue;
         const value = leg.from + (leg.to - leg.from) * eased;
         positions.set(leg.target, value);
         setTarget(leg.target, value);
       }
     };
 
-    const finish = (byWatchdog: boolean) => {
+    const finish = (cause: 'clock' | 'watchdog' | 'superseded') => {
       if (settled) return;
       settled = true;
+      inFlight.delete(settleIfSuperseded);
       window.clearTimeout(watchdog);
       apply(1);
       // A ramp that never got a frame inside its own window did not glide,
       // however it was landed. `durationMs === 0` is its own case: an instant
       // set is a deliberate request, not a starved gesture.
-      const landing: RampLanding = byWatchdog
-        ? 'watchdog'
-        : durationMs === 0
-          ? 'instant'
-          : glided
-            ? 'glided'
-            : 'starved';
+      const landing: RampLanding =
+        cause !== 'clock'
+          ? cause
+          : durationMs === 0
+            ? 'instant'
+            : glided
+              ? 'glided'
+              : 'starved';
       resolve({
         targets: plan.map((leg) => leg.target),
         durationMs,
@@ -284,8 +316,15 @@ export function ramp(request: RampRequest): Promise<RampResult> {
         steps,
         landing,
         forcedLanding: landing === 'starved' || landing === 'watchdog',
-        final: Object.fromEntries(plan.map((leg) => [leg.target, leg.to])),
+        final: Object.fromEntries(
+          plan.filter(owns).map((leg) => [leg.target, leg.to]),
+        ),
+        superseded: plan.filter((leg) => !owns(leg)).map((leg) => leg.target),
       });
+    };
+
+    const settleIfSuperseded = () => {
+      if (plan.length > 0 && !plan.some(owns)) finish('superseded');
     };
 
     const step = () => {
@@ -293,7 +332,7 @@ export function ramp(request: RampRequest): Promise<RampResult> {
       const elapsed = performance.now() - started;
       steps += 1;
       if (elapsed >= durationMs) {
-        finish(false);
+        finish('clock');
         return;
       }
       glided = true;
@@ -303,12 +342,16 @@ export function ramp(request: RampRequest): Promise<RampResult> {
 
     // Fires slightly late so a healthy rAF loop always finishes first and
     // reports forcedLanding: false.
-    const watchdog = window.setTimeout(() => finish(true), durationMs + 120);
+    const watchdog = window.setTimeout(
+      () => finish('watchdog'),
+      durationMs + 120,
+    );
 
     if (durationMs === 0) {
-      finish(false);
+      finish('clock');
       return;
     }
+    inFlight.add(settleIfSuperseded);
     requestAnimationFrame(step);
   });
 }

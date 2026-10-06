@@ -141,7 +141,7 @@ export function registerPerformanceTools(
     'session_ramp',
     {
       description:
-        'Glide one or more MilkDrop targets to new values over a duration, as one gesture — the performing counterpart to session_midi_set, which jumps instantly. Ramping several targets in a single call moves them together (a build, a drop, a slow bloom) instead of as separate steps. The call returns when the gesture lands, so chaining calls sequences a performance. Values are in each target\'s own units, e.g. {"warp": 2.4, "zoom": 1.03}.',
+        'Glide one or more MilkDrop targets to new values over a duration, as one gesture — the performing counterpart to session_midi_set, which jumps instantly. Ramping several targets in a single call moves them together (a build, a drop, a slow bloom) instead of as separate steps. The call returns when the gesture lands, so chaining calls sequences a performance; a later ramp that takes over all its targets ends it early, and the result names the targets it lost. Values are in each target\'s own units, e.g. {"warp": 2.4, "zoom": 1.03}.',
       inputSchema: z.object({
         sessionId: z.string().describe('Session ID from start_agent_session.'),
         targets: z
@@ -215,8 +215,12 @@ export function registerPerformanceTools(
             : landing === 'starved'
               ? '\nNote: the frame loop ran but its first frame arrived after the ramp window had already closed, so the values snapped to the endpoint rather than gliding. The endpoint is correct; the motion was not smooth. A longer durationMs, or less load on the main thread, would let it glide.'
               : '';
+        const superseded =
+          'superseded' in result && result.superseded.length > 0
+            ? `\nTaken over by a later ramp before landing: ${result.superseded.join(', ')}. Those targets stopped where that ramp picked them up.`
+            : '';
         return asTextResponse(
-          `Ramped over ${durationMs}ms (${'curve' in result ? result.curve : 'sine'}, ${'steps' in result ? result.steps : 0} frames). Landed: ${landed}.${forced}`,
+          `Ramped over ${durationMs}ms (${'curve' in result ? result.curve : 'sine'}, ${'steps' in result ? result.steps : 0} frames). Landed: ${landed || 'nothing'}.${forced}${superseded}`,
         );
       } catch (e) {
         return asTextResponse(`Error ramping: ${e}`);

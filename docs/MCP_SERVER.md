@@ -111,7 +111,7 @@ result before deciding the next move.
 |------|-------|--------|
 | `session_play_pattern` | `sessionId`, `code` (Strudel), optional `cps` | Plays a live-coded pattern as the session audio and drives the visuals with it. Calling it again replaces the running pattern — that is the live-coding loop |
 | `session_hush` | `sessionId` | Stops all patterns (audio only; the visualizer keeps rendering) |
-| `session_ramp` | `sessionId`, `targets` (map), `durationMs`, optional `curve`, `from` | Glides targets to new values over time, as one gesture. Returns when the gesture lands, so chained calls sequence a performance |
+| `session_ramp` | `sessionId`, `targets` (map), `durationMs`, optional `curve`, `from` | Glides targets to new values over time, as one gesture. Returns when the gesture lands, so chained calls sequence a performance. A later ramp that takes over all its targets ends it early, and the reply names the targets it lost |
 | `session_bind` | `sessionId`, `target`, `depth`, `kind` (lfo/audio), + shape/rate/band options | Binds a target to continuous modulation — an LFO or the audio itself |
 | `session_unbind` | `sessionId`, optional `id`, `target` | Removes modulators and returns the target to its resting value |
 | `session_macro` | `sessionId`, `action` (define/run/list/delete), `name`, `steps`, `speed` | A named, saved sequence of the same verbs you perform by hand |
