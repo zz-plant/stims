@@ -7,8 +7,9 @@
  * `--no-bail` (or STIMS_NO_BAIL=1) keeps running past the first failing file so
  * one run reports every failure instead of stopping at the first.
  * `--timeout <ms>` sets bun's default per-test timeout for every pass (tests
- * that pass their own timeout keep it), and `--junit-dir <dir>` also writes a
- * junit report per pass there, which carries each test's duration.
+ * that pass their own timeout keep it), and `--junit-dir <dir>` also writes
+ * one junit report per pass into that directory; each report carries every
+ * test's duration.
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
