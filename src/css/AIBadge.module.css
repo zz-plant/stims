@@ -12,4 +12,5 @@
   line-height: 1.4;
   vertical-align: middle;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
 }

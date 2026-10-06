@@ -146,6 +146,7 @@ html.light .stims-shell {
     font-weight: 600;
     letter-spacing: 0.09em;
     text-transform: uppercase;
+    font-stretch: var(--font-stretch-legend);
   }
 
   .ctl-section__note {
@@ -300,6 +301,7 @@ html.light .stims-shell {
     font-size: 0.6875rem;
     letter-spacing: 0.02em;
     text-transform: uppercase;
+    font-stretch: var(--font-stretch-legend);
     color: var(--ctl-ink-3);
     background: var(--ctl-fill-sunk);
     padding: 2px 6px;
@@ -963,6 +965,7 @@ html.light .stims-shell {
     font-weight: 500;
     letter-spacing: 0.02em;
     text-transform: uppercase;
+    font-stretch: var(--font-stretch-legend);
   }
 
   .ctl-recent-rail__list {
@@ -1104,6 +1107,7 @@ html.light .stims-shell {
     font-size: 0.6875rem;
     letter-spacing: 0.02em;
     text-transform: uppercase;
+    font-stretch: var(--font-stretch-legend);
   }
 
   .ctl-lineage__byline {
@@ -1354,6 +1358,7 @@ html.light .stims-shell {
     font-weight: 600;
     letter-spacing: 0.09em;
     text-transform: uppercase;
+    font-stretch: var(--font-stretch-legend);
   }
 
   .ctl-section .stims-shell__field-label {
@@ -1503,6 +1508,7 @@ html.light .stims-shell {
     font-weight: 600;
     letter-spacing: 0.09em;
     text-transform: uppercase;
+    font-stretch: var(--font-stretch-legend);
   }
 
   /* Disclosure */

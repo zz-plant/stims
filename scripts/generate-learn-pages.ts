@@ -288,11 +288,13 @@ export function extractFaq(html: string): Array<{ q: string; a: string }> {
 }
 
 const STYLE = `
+@font-face{font-family:Archivo;font-style:normal;font-weight:100 900;font-stretch:62% 125%;font-display:swap;src:url(/fonts/archivo-latin-var.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Martian Mono";font-style:normal;font-weight:400 700;font-display:swap;src:url(/fonts/martian-mono-latin-875.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 :root{color-scheme:dark light;--bg:#0b0f1a;--fg:#e8ecf3;--muted:#a9b3c4;--line:rgba(255,255,255,.12);--code:#121a2a;--accent:#5fc0b5;--accent-fg:#0a0f19;--glow:rgba(95,192,181,.16);--zebra:rgba(255,255,255,.035);--shadow:rgba(95,192,181,.4)}
 @media(prefers-color-scheme:light){:root{--bg:#f7f8fb;--fg:#141a26;--muted:#4a5568;--line:rgba(0,0,0,.14);--code:#eaeef5;--accent:#0f766e;--accent-fg:#fff;--glow:rgba(15,118,110,.09);--zebra:rgba(0,0,0,.035);--shadow:rgba(0,0,0,.22)}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg) radial-gradient(60rem 22rem at 50% -6rem,var(--glow),transparent) no-repeat;color:var(--fg);font:1rem/1.7 "Space Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{margin:0;background:var(--bg) radial-gradient(60rem 22rem at 50% -6rem,var(--glow),transparent) no-repeat;color:var(--fg);font:1rem/1.7 Archivo,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 a{color:var(--accent);text-underline-offset:.18em;text-decoration-thickness:1px}
 a:focus-visible,[tabindex]:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 img{max-width:100%;height:auto}
@@ -311,9 +313,9 @@ h1{font-size:clamp(1.9rem,6vw,2.7rem);line-height:1.15;letter-spacing:-.02em;mar
 h2{font-size:1.5rem;line-height:1.3;letter-spacing:-.01em;margin:2em 0 .5em;padding-top:.6em;border-top:1px solid var(--line);scroll-margin-top:16px}
 h3{font-size:1.15rem;margin:1.6em 0 .4em;scroll-margin-top:16px}
 p,li{max-width:42rem}
-code{font:.88em "Space Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.12em .38em;border-radius:5px}
+code{font:.82em "Martian Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:.12em .38em;border-radius:5px}
 pre{background:var(--code);padding:14px 16px;border-radius:10px;border:1px solid var(--line);overflow-x:auto;line-height:1.55}
-pre code{background:none;padding:0;font-size:.85rem}
+pre code{background:none;padding:0;font-size:.8rem}
 .table-wrap{margin:1.2em 0;border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:linear-gradient(to right,var(--bg) 30%,transparent) 0 0/40px 100% no-repeat local,linear-gradient(to left,var(--bg) 30%,transparent) 100% 0/40px 100% no-repeat local,radial-gradient(farthest-side at 0 50%,var(--shadow),transparent) 0 0/14px 100% no-repeat scroll,radial-gradient(farthest-side at 100% 50%,var(--shadow),transparent) 100% 0/14px 100% no-repeat scroll}
 table{border-collapse:collapse;min-width:100%;font-size:.95rem}
 th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}

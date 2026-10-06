@@ -35,6 +35,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   color: var(--stims-cool, #77c9ff);
 }
 
@@ -108,6 +109,7 @@
   font-size: 0.6875rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   color: var(--text-muted);
 }
 
