@@ -44,6 +44,7 @@ html.light .stims-editor {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   color: var(--ed-dim);
 }
 
@@ -395,6 +396,7 @@ html.light .stims-editor {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
 }
 
 .stims-editor__proposal-lines {
@@ -551,6 +553,7 @@ html.light .stims-editor {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
 }
 
 .stims-editor__problem--error .stims-editor__problem-tag {
@@ -620,6 +623,7 @@ html.light .stims-editor {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   cursor: pointer;
   transition: color 0.12s ease;
 }
@@ -1218,6 +1222,7 @@ html.light .stims-editor {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
 }
 
 .stims-editor__colors {
@@ -1587,7 +1592,7 @@ html.light .stims-editor {
 .stims-editor__inspect-name {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-family-mono);
 }
 
 .stims-editor__inspect-value {
@@ -1737,6 +1742,7 @@ button.stims-editor__compat-row:focus-visible {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   opacity: 0.8;
 }
 
@@ -1750,6 +1756,7 @@ button.stims-editor__compat-row:focus-visible {
 .stims-editor__compat-badge {
   font-size: var(--text-2xs);
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   letter-spacing: 0.04em;
   opacity: 0.75;
   white-space: nowrap;

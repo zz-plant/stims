@@ -14,6 +14,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="canonical" href="https://toil.fyi/" />
     <style>
+      /* Archivo is declared here as well as in src/css/fonts.css: the boot cover paints before that stylesheet arrives, and its wordmark should already be in the preloaded face. */
+      @font-face{font-family:Archivo;font-style:normal;font-weight:100 900;font-stretch:62% 125%;font-display:swap;src:url(/fonts/archivo-latin-var.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
       *,:after,:before{box-sizing:border-box}
       body,html{margin:0;padding:0;min-height:100%}
       body{background:#05070c;color:#e9fbff;font-family:system-ui,sans-serif}
@@ -21,7 +23,7 @@
       .stims-loading[hidden]{display:none}
       .stims-loading--leaving{animation:none;opacity:0;visibility:hidden;pointer-events:none}
       .stims-loading__content{display:grid;justify-items:start;gap:18px;width:min(52rem,100%);animation:loading-breathe 4s ease-in-out infinite}
-      .stims-loading__brand{margin:0;font-family:var(--stims-display,var(--font-family-base,system-ui,sans-serif));font-size:clamp(3rem,7vw,5.5rem);font-weight:600;line-height:.92;letter-spacing:-.03em;color:var(--stims-ink-strong,#fff8ef)}
+      .stims-loading__brand{margin:0;font-family:Archivo,system-ui,sans-serif;font-size:clamp(3.5rem,8vw,6.5rem);font-weight:820;font-stretch:72%;line-height:.88;letter-spacing:-.012em;color:var(--stims-ink-strong,#fff8ef)}
       .stims-loading__status{display:flex;align-items:center;gap:12px;min-height:34px}
       .stims-loading__spinner{width:28px;height:28px;flex:0 0 auto;position:relative;border-radius:50%;background:conic-gradient(from 0deg,rgba(95,192,181,.95),rgba(233,212,155,.85),rgba(211,137,84,.95),rgba(119,201,255,.85),rgba(95,192,181,.95));animation:stims-spin 1.2s cubic-bezier(.4,0,.2,1)infinite}
       .stims-loading__spinner:before{content:"";position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(from 180deg,transparent,rgba(119,201,255,.12),transparent,rgba(95,192,181,.08));animation:stims-spin 2s cubic-bezier(.4,0,.2,1)infinite reverse;opacity:.6}
@@ -49,11 +51,11 @@
          emits it as a data:video/mp2t link that fails every page load. -->
     <link rel="preload" href="/milkdrop-presets/starter-catalog.json" as="fetch" crossorigin="anonymous" />
     <!-- Fonts are same-origin now (src/css/fonts.css), so there is nothing to
-         preconnect to. The Sans face is preloaded because the wordmark that
+         preconnect to. Archivo is preloaded because the wordmark that
          paints first is set in it. -->
     <link
       rel="preload"
-      href="/fonts/ibm-plex-sans-latin-var.woff2"
+      href="/fonts/archivo-latin-var.woff2"
       as="font"
       type="font/woff2"
       crossorigin

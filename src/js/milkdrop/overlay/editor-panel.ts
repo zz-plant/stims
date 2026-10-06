@@ -478,10 +478,13 @@ function createEditorTheme() {
       color: '#eff6ff',
       background:
         'linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(8, 47, 73, 0.68))',
-      fontSize: '0.95rem',
+      // Martian Mono runs ~8% wider per character than the mono it replaced,
+      // with a taller x-height; one step down keeps the same columns per line
+      // and the same apparent size.
+      fontSize: 'var(--text-sm)',
     },
     '.cm-scroller': {
-      fontFamily: '"IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace',
+      fontFamily: 'var(--font-family-mono)',
       lineHeight: '1.6',
     },
     '.cm-gutters': {

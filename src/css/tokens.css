@@ -229,13 +229,17 @@
 
   /* ── Typography ────────────────────────────────────────────── */
   --font-family-base:
-    "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-family-mono:
-    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  /* Display is the same face as base, set tighter at large sizes rather than a
-     separate family. A third typeface was declared here for a long time but was
-     never actually loaded, so it silently rendered as base anyway. */
+    "Archivo", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-family-mono: "Martian Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* Display is the same face as base, heavier and tighter, rather than a
+     separate family: the title card already gets its character from the
+     width axis, and a third face would compete with the preset names. */
   --stims-display: var(--font-family-base);
+  /* Archivo's width axis (see fonts.css). Uppercase legends are condensed so
+     they read as panel lettering rather than shouted body text; compact is
+     for single-line labels that truncate, so long preset names lose less. */
+  --font-stretch-legend: 82%;
+  --font-stretch-compact: 92%;
   /* Type scale shared across all pages.
      This scale existed before and was almost entirely unused: the stylesheets
      carried 41 distinct rem font sizes, 13 of them packed between 0.6rem and

@@ -157,6 +157,7 @@ header.hero {
 
 .eyebrow {
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   letter-spacing: 0.05em;
   font-size: 0.875rem;
   font-weight: 600;
@@ -917,6 +918,7 @@ header.hero,
 .cta-button {
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
 }
 
 .eyebrow {

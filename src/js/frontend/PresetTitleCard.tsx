@@ -15,7 +15,13 @@
  * the accessible name for the playing preset), is skipped while a panel is
  * open, and is a Settings switch for performers who want a text-free stage.
  */
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import {
   getStageOverlayPreference,
   subscribeToStageOverlayPreference,
@@ -27,6 +33,55 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 export const TITLE_CARD_HOLD_MS = 2600;
 /** Matches the exit transition in app-shell.css. */
 const TITLE_CARD_EXIT_MS = 450;
+
+/** Archivo's narrowest width, and the widest the card will open a short name
+ * to: past ~112% a short title stops reading as a name and starts reading as
+ * a logo. */
+export const TITLE_STRETCH_MIN = 62;
+export const TITLE_STRETCH_MAX = 112;
+/** A name too long for one line even fully condensed wraps to two lines at
+ * this width instead of being crushed further. */
+export const TITLE_STRETCH_WRAPPED = 78;
+
+export type TitleFit = { stretch: number; wrap: boolean };
+
+/**
+ * The width-axis value (percent) that sets a preset name on one line of
+ * `available` pixels. Preset names run from one word to a full sentence, so a
+ * fixed width either wastes the line on short names or wraps long ones into a
+ * ragged paragraph; the width axis absorbs the difference instead.
+ *
+ * `measureAt(stretch)` returns the name's one-line width at that stretch.
+ * Width is close to linear in the axis but not exactly, so the first guess is
+ * corrected once against a real measurement.
+ */
+export function fitTitleStretch(
+  measureAt: (stretch: number) => number,
+  available: number,
+): TitleFit {
+  const natural = measureAt(100);
+  if (!(natural > 0) || !(available > 0)) {
+    return { stretch: 100, wrap: false };
+  }
+  const clamp = (value: number) =>
+    Math.min(TITLE_STRETCH_MAX, Math.max(TITLE_STRETCH_MIN, value));
+  let stretch = clamp((100 * available) / natural);
+  const measured = measureAt(stretch);
+  if (measured > available) {
+    stretch = clamp((stretch * available) / measured);
+  }
+  // Settle on a half-percent step that actually fits: the corrected guess can
+  // still land a pixel or two over, which the ellipsis would turn into a
+  // clipped last letter.
+  stretch = Math.floor(stretch * 2) / 2;
+  while (stretch > TITLE_STRETCH_MIN && measureAt(stretch) > available) {
+    stretch = Math.max(TITLE_STRETCH_MIN, stretch - 0.5);
+  }
+  if (measureAt(stretch) > available) {
+    return { stretch: TITLE_STRETCH_WRAPPED, wrap: true };
+  }
+  return { stretch, wrap: false };
+}
 
 type TitleCard = {
   nonce: number;
@@ -97,6 +152,51 @@ export function PresetTitleCard() {
     if (!enabled || panelOpen) setCard(null);
   }, [enabled, panelOpen]);
 
+  // Fit the name before the card paints, once per card. The measure probe is
+  // as wide as the line the CSS allows, so the width rule lives in one place.
+  const titleRef = useRef<HTMLSpanElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    if (nonce === 0) return;
+    const fit = () => {
+      const title = titleRef.current;
+      const measure = measureRef.current;
+      if (!title || !measure) return;
+      // Fractional widths throughout: scrollWidth rounds to whole pixels, and
+      // a name 0.4px wider than its box passes an integer check yet still
+      // trips the ellipsis. The half-pixel keeps clear of that edge.
+      const available = measure.getBoundingClientRect().width - 0.5;
+      // No layout yet (the stage can be unsized for the commit that flips the
+      // shell to live on a phone): keep the unfitted two-line wrap rather
+      // than forcing one line nobody has measured.
+      if (available <= 0) return;
+      title.dataset.fit = 'line';
+      const text = document.createRange();
+      text.selectNodeContents(title);
+      const result = fitTitleStretch((stretch) => {
+        title.style.fontStretch = `${stretch}%`;
+        return text.getBoundingClientRect().width;
+      }, available);
+      title.style.fontStretch = `${result.stretch}%`;
+      title.dataset.fit = result.wrap ? 'wrap' : 'line';
+    };
+    fit();
+    // Refit when the line changes size — including from zero, once the stage
+    // is laid out — and once Archivo has loaded, since a card that lands
+    // before the font would otherwise stay fitted to the fallback face.
+    let cancelled = false;
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit);
+    if (measureRef.current) observer?.observe(measureRef.current);
+    void document.fonts?.ready.then(() => {
+      if (!cancelled) fit();
+    });
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+    };
+  }, [nonce]);
+
   if (!card) return null;
 
   return (
@@ -106,7 +206,10 @@ export function PresetTitleCard() {
       data-leaving={leaving ? 'true' : undefined}
       aria-hidden="true"
     >
-      <span className="stims-shell__title-card-title">{card.title}</span>
+      <span className="stims-shell__title-card-measure" ref={measureRef} />
+      <span className="stims-shell__title-card-title" ref={titleRef}>
+        {card.title}
+      </span>
       {card.byline ? (
         <span className="stims-shell__title-card-byline">{card.byline}</span>
       ) : null}

@@ -511,6 +511,7 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__eyebrow {
     margin: 0;
     text-transform: uppercase;
+    font-stretch: var(--font-stretch-legend);
     letter-spacing: 0.22em;
     font-size: 0.75rem;
     font-weight: 700;
@@ -701,6 +702,7 @@ body[data-page="workspace"][data-live="true"] {
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    font-stretch: var(--font-stretch-legend);
     cursor: pointer;
     transition:
       border-color 140ms ease,
@@ -727,6 +729,7 @@ body[data-page="workspace"][data-live="true"] {
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+    font-stretch: var(--font-stretch-legend);
     color: color-mix(in srgb, var(--stims-cool) 62%, var(--stims-ink));
   }
 
@@ -1355,13 +1358,18 @@ body[data-page="workspace"][data-live="true"] {
     width: min(52rem, 100%);
   }
 
+  /* The wordmark is set like a nameplate: heavy and condensed on Archivo's
+     width axis, the same axis the panel legends and the title card use.
+     index.html's boot cover repeats these metrics so the hand-off from the
+     cover to this page does not jump. */
   .stims-shell__launch-title {
     margin: 0;
     font-family: var(--stims-display);
-    font-size: clamp(3rem, 7vw, 5.5rem);
-    font-weight: 600;
-    line-height: 0.92;
-    letter-spacing: -0.03em;
+    font-size: clamp(3.5rem, 8vw, 6.5rem);
+    font-weight: 820;
+    font-stretch: 72%;
+    line-height: 0.88;
+    letter-spacing: -0.012em;
     color: var(--stims-ink-strong);
   }
 
@@ -2325,6 +2333,10 @@ body[data-page="workspace"][data-live="true"] {
      toast above it and the status toasts beside it, and a card down there
      collided with the hint on the very first play. */
   .stims-shell__title-card {
+    /* The card's widest outer size. PresetTitleCard.tsx reads the line this
+       leaves for the name through the measure probe below, and fits the
+       name's width axis to it. */
+    --title-card-measure: min(72vw, 52rem);
     position: absolute;
     left: clamp(16px, 4vw, 56px);
     top: calc(clamp(16px, 5vh, 56px) + env(safe-area-inset-top, 0px));
@@ -2332,7 +2344,7 @@ body[data-page="workspace"][data-live="true"] {
     isolation: isolate;
     display: grid;
     gap: var(--space-xs);
-    max-width: min(72vw, 52rem);
+    max-width: var(--title-card-measure);
     padding: var(--space-md) var(--space-lg) var(--space-md) 0;
     pointer-events: none;
     color: var(--stims-on-stage-ink-strong);
@@ -2367,6 +2379,18 @@ body[data-page="workspace"][data-live="true"] {
     transform: translateY(-10px);
   }
 
+  /* The title's longest line: the measure less the card's right padding
+     (the card is border-box). Absolutely positioned so it cannot widen the
+     card, which shrinks to its title and sizes the ink pool from that. */
+  .stims-shell__title-card-measure {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(var(--title-card-measure) - var(--space-lg));
+    height: 0;
+    visibility: hidden;
+  }
+
   .stims-shell__title-card-title {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -2374,9 +2398,22 @@ body[data-page="workspace"][data-live="true"] {
     line-clamp: 2;
     overflow: hidden;
     font-size: clamp(var(--text-3xl), 5.2vw, 4.5rem);
-    font-weight: var(--font-weight-bold);
+    font-weight: 760;
     line-height: 0.98;
-    letter-spacing: -0.035em;
+    letter-spacing: -0.02em;
+  }
+
+  /* Fitted to one line: the width axis has absorbed the name's length, so
+     it never wraps; the ellipsis only shows if the fit was made against a
+     fallback face and the real one is wider. */
+  .stims-shell__title-card-title[data-fit="line"] {
+    display: block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .stims-shell__title-card-title[data-fit="wrap"] {
+    text-wrap: balance;
   }
 
   .stims-shell__title-card-byline {
@@ -2399,6 +2436,7 @@ body[data-page="workspace"][data-live="true"] {
 
   @media (max-width: 640px) {
     .stims-shell__title-card {
+      --title-card-measure: calc(100vw - 32px);
       right: 16px;
       left: 16px;
       max-width: none;
@@ -2528,6 +2566,7 @@ body[data-page="workspace"][data-live="true"] {
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+    font-stretch: var(--font-stretch-legend);
     color: color-mix(in srgb, var(--stims-accent) 72%, var(--stims-ink));
   }
   .stims-shell__sheet-panel,
@@ -3347,6 +3386,7 @@ body[data-page="workspace"][data-live="true"] {
   font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   margin: 0;
 }
 
@@ -3410,6 +3450,7 @@ body[data-page="workspace"][data-live="true"] {
 .stims-shell__midi-hud-label {
   color: var(--stims-ink-dim);
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   letter-spacing: 0.04em;
   font-size: 0.6875rem;
 }
@@ -3461,6 +3502,7 @@ body[data-page="workspace"][data-live="true"] {
 .stims-shell__debug-hud-title {
   color: var(--stims-cool);
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   letter-spacing: 0.06em;
   font-weight: 600;
 }
@@ -3515,6 +3557,7 @@ body[data-page="workspace"][data-live="true"] {
   margin: 0 0 6px;
   color: var(--stims-ink-muted);
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   letter-spacing: 0.06em;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -3760,6 +3803,7 @@ body[data-page="workspace"][data-live="true"] {
   font-weight: 600;
   margin: 0 0 0.75rem 0;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   letter-spacing: 0.06em;
   color: var(--stims-cool);
   opacity: 0.9;
@@ -4041,6 +4085,7 @@ body[data-page="workspace"][data-live="true"] {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   color: var(--stims-ink-muted);
 }
 
@@ -4072,7 +4117,7 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
     radial-gradient(circle at 70% 80%, var(--highlight-glow), transparent 50%),
     var(--bg-color);
   color: var(--text-color);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-family-base);
   text-align: center;
   padding: 24px;
 }
@@ -4141,7 +4186,7 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
   padding: 8px 12px;
   max-height: 140px;
   overflow-y: auto;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-family-mono);
   font-size: 0.75rem;
   line-height: 1.4;
   white-space: pre-wrap;
@@ -4500,6 +4545,7 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
 .stims-preset-identity__title {
   font-size: var(--text-sm);
   font-weight: var(--font-weight-medium);
+  font-stretch: var(--font-stretch-compact);
   color: var(--stims-ink);
   overflow: hidden;
   text-overflow: ellipsis;

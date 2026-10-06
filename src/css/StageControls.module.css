@@ -265,6 +265,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-stretch: var(--font-stretch-compact);
 }
 
 .authorText {
@@ -626,6 +627,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   color: var(--ctl-ink-3);
 }
 
@@ -802,6 +804,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   /* ink-2 weight of the warm accent: legible against the pill without
      pulling the eye off the title it annotates. */
   color: var(--stims-accent, #ff8a65);

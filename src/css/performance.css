@@ -80,6 +80,7 @@ body[data-page="performance"] {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   color: color-mix(in srgb, var(--stims-accent) 72%, var(--text-color));
 }
 

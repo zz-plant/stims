@@ -173,6 +173,7 @@
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
   color: var(--stims-ink-3, var(--stims-muted));
   padding: 12px 14px 4px;
   pointer-events: none;
