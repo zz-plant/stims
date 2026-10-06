@@ -74,10 +74,10 @@ per_frame_4=wave_g = 0.85 - beat_fired*0.3;
 
 Read the first line as a state machine with two states, chosen by `above(bass_att, bass_thresh)` (1 if a beat just cleared the bar, else 0):
 
-- **Beat fired** (`above` is 1): the whole right-hand expression collapses to `1*2 + 0*(...)` — `bass_thresh` snaps to `2.0`. The bar is now so high that next frame's `bass_att` almost certainly can't clear it, which is exactly the point: one hit can't retrigger itself for several frames.
+- **Beat fired** (`above` is 1): the whole right-hand expression collapses to `1*2 + 0*(...)` — `bass_thresh` snaps to `2.0`. The bar is now so high that next frame's `bass_att` almost certainly can't clear it. That is exactly the point: one hit can't retrigger itself for several frames.
 - **No beat** (`above` is 0): it collapses to `0*2 + 1*((bass_thresh-1.3)*0.96+1.3)` — `bass_thresh` decays 4% of the way back toward a `1.3` floor every frame. Give it enough quiet frames and the bar is low again, ready for the next hit.
 
-No branch, not even an `if` — `above()` returning exactly 1 or 0 is what lets both terms share one line, of which only one half ever survives. This self-tuning bar is why the same threshold code works on a whisper-quiet ambient track and a wall-of-noise one: it's relative to recent loudness, not an absolute number picked for one song.
+No branch, not even an `if` — `above()` returning exactly 1 or 0 is what lets both terms share one line while only one of them ever survives. This self-tuning bar is why the same threshold code works on a whisper-quiet ambient track and a wall-of-noise one: it's relative to recent loudness, not an absolute number picked for one song.
 
 The second line reads the beat off the bar itself: `equal(bass_thresh,2)` is 1 only on the frame the bar snapped up. Testing `above(bass_att,bass_thresh)` again would compare against the *new* bar of `2.0`, which almost nothing clears, so the flash would never fire.
 
@@ -118,7 +118,7 @@ Everything above is standard MilkDrop, portable to Winamp, projectM, and Butterc
 
 The keys reach the preset only while the stage has focus — click the visuals first. Shift plus an arrow key steers the pointer without a mouse.
 
-**None of the 1,787 presets in the catalog read any of them**, which cuts both ways: there is no prior art to copy, and a preset that answers the person watching is instantly unlike everything else in the catalog.
+**None of the 1,787 presets in the catalog read any of them.** That cuts both ways: there is no prior art to copy, and a preset that answers the person watching is instantly unlike everything else in the catalog.
 
 [**▶ Run the interactive drift**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBTdGltcy1vbmx5OiB0aGUgcGljdHVyZSBhbnN3ZXJzIHRoZSBwZXJzb24gd2F0Y2hpbmcgaXQuCi8vIERyYWcgdGhlIHN0YWdlIChvciBob2xkIFNoaWZ0IGFuZCBhbiBhcnJvdyBrZXkpIHRvIHB1c2ggdGhlIGRyaWZ0IGFyb3VuZCwKLy8gdHdpc3QgdHdvIGZpbmdlcnMg4oCUIG9yIHByZXNzICwgYW5kIC4g4oCUIHRvIHNwaW4gaXQsIGFuZCBwcmVzcyBSIHRvIHNuYXAKLy8gdGhlIGNvbG91ci4gV2l0aCBubyBoYW5kcyBvbiBpdCwgZXZlcnkgb25lIG9mIHRoZXNlIHJlYWRzIDAgYW5kIHRoZSBwcmVzZXQKLy8gYmVoYXZlcyBsaWtlIGFuIG9yZGluYXJ5IHNsb3cgZHJpZnQsIHdoaWNoIGlzIHRoZSBwb2ludDogaW50ZXJhY3Rpb24gaXMgYQovLyBsYXllciBvbiB0b3Agb2YgYSBwcmVzZXQgdGhhdCBhbHJlYWR5IHdvcmtzLgpmUmF0aW5nPTUKZkRlY2F5PTAuOTgKZldhdmVBbHBoYT0yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTAKYlRleFdyYXA9MQp6b29tPTEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC41NQp3YXZlX2c9MC43NQp3YXZlX2I9MQp3YXZlX3g9MC41CndhdmVfeT0wLjUKb2JfYT0wCmliX2E9MAptdl9hPTAKcGVyX2ZyYW1lXzE9dm9sID0gKGJhc3MrbWlkK3RyZWIpKjAuMzMzOwpwZXJfZnJhbWVfMj16b29tID0gMS4wMTIgKyAwLjAyKnZvbCp2b2w7Ci8vIERyYWcgcHVzaGVzIHRoZSBmaWVsZDogaW5wdXRfZHgvaW5wdXRfZHkgYXJlIHBlci1mcmFtZSBwb2ludGVyIG1vdmVtZW50LAovLyBzbyB0aGlzIGlzIGEgc2hvdmUgcmF0aGVyIHRoYW4gYSBwb3NpdGlvbi4KcGVyX2ZyYW1lXzM9ZHggPSBkeCowLjkgKyBpbnB1dF9keCowLjM1OwpwZXJfZnJhbWVfND1keSA9IGR5KjAuOSAtIGlucHV0X2R5KjAuMzU7Ci8vIFdoZXJlIHRoZSBoYW5kIGlzIGRlY2lkZXMgd2hlcmUgdGhlIHpvb20gcHVsbHMgZnJvbS4gaW5wdXRfeC9pbnB1dF95IGFyZQovLyAtMS4uMSBhY3Jvc3MgdGhlIHN0YWdlLCBhbmQgY3gvY3kgd2FudCAwLi4xLgpwZXJfZnJhbWVfNT1jeCA9IDAuNSArIGlucHV0X3gqMC4yNSppbnB1dF9wcmVzc2VkOwpwZXJfZnJhbWVfNj1jeSA9IDAuNSAtIGlucHV0X3kqMC4yNSppbnB1dF9wcmVzc2VkOwovLyBQaW5jaCBhbmQgdHdpc3QgcmlkZSBvbiB0b3Agb2Ygd2hhdGV2ZXIgdGhlIGF1ZGlvIGlzIGFscmVhZHkgZG9pbmcuCnBlcl9mcmFtZV83PXJvdCA9IDAuMDIgKyBnZXN0dXJlX3JvdGF0aW9uKjAuMjUgKyBiYXNzKjAuMDE7CnBlcl9mcmFtZV84PXdhcnAgPSAwLjIgKyBkcmFnX2ludGVuc2l0eSoxLjU7Ci8vIFIgaXMgYSBwdWxzZSB0aGF0IGRlY2F5cyBvdmVyIH4yMjBtcywgc28gdGhpcyByZWFkcyBhcyBhIHNuYXAsIG5vdCBhIGhvbGQuCnBlcl9mcmFtZV85PXdhdmVfciA9IDAuNTUgKyBhY3Rpb25fcmVtaXgqMC40NTsKcGVyX2ZyYW1lXzEwPXdhdmVfZyA9IDAuNzUgLSBhY3Rpb25fcmVtaXgqMC41Owo%3D "examples/36-interactive-drift.milk") — drag the stage to shove the field, twist to spin it, and press R to snap the color; with no hands on it, it is an ordinary slow drift.
 
@@ -126,6 +126,6 @@ The keys reach the preset only while the stage has focus — click the visuals f
 
 ## What you can now build
 
-Any preset whose personality comes from audio — which is most of them — is now legible: find the smoothing, find whether it's driving a knob directly or a clock, find the threshold logic if there's a beat effect, and measure instead of guessing.
+Most presets take their personality from audio, and any preset that does is now legible: find the smoothing, find whether it's driving a knob directly or a clock, find the threshold logic if there's a beat effect, and measure instead of guessing.
 
 **Next: [Track 4 — Warp fields](04-warp-fields.md)**, where knobs stop being one number for the whole screen and start varying per pixel.

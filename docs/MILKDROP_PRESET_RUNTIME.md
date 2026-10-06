@@ -50,7 +50,7 @@ Both camelCase and snake_case aliases are exposed so preset equations can stay r
 
 Every entry in `public/milkdrop-presets/catalog.json` must have a unique `id`. Ids are the key for React lists, `Object.fromEntries` lookups, the SEO route map in `scripts/generate-seo.ts`, the search index, and the `.milk` filename on disk — a repeat silently drops one of the pair instead of failing, so `bun run check:catalog-integrity` rejects duplicates outright.
 
-Butterchurn ids come from `slugify(<source filename>)` in `scripts/import-butterchurn-presets.ts`, which collapses every non-alphanumeric run to `-`. The upstream corpus ships filenames that differ only in those characters (`_Geiss - Desert Rose 2` vs `Geiss - Desert Rose 2`, `Rovastar & Unchained - …` vs `Rovastar + Unchained - …`), so slugs collide. `assignPresetIds()` resolves this deterministically across the whole sorted file list, independent of what the catalog already contains:
+`scripts/import-butterchurn-presets.ts` derives Butterchurn ids from `slugify(<source filename>)`, which collapses every non-alphanumeric run to `-`. The upstream corpus ships filenames that differ only in those characters (`_Geiss - Desert Rose 2` vs `Geiss - Desert Rose 2`, `Rovastar & Unchained - …` vs `Rovastar + Unchained - …`), so slugs collide. `assignPresetIds()` resolves this deterministically across the whole sorted file list, independent of what the catalog already contains:
 
 - the first filename (ASCII sort) for a slug keeps the bare slug;
 - a later filename whose bytes are identical is a true duplicate of the upstream corpus and is not imported at all;

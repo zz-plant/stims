@@ -6,7 +6,7 @@
  * `docs/agents/custom-capabilities.md` and the routing table in
  * `.claude/CLAUDE.md`. Both are maintained by hand, so a skill added without
  * an index row is invisible — the work class it encodes gets re-derived from
- * scratch every time, which is the exact cost skills exist to remove.
+ * scratch every time. Skills exist to remove exactly that cost.
  *
  * `check-doc-references.ts` verifies that links in the docs point at files
  * that exist. This is the other direction: that files which exist are

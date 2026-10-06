@@ -164,7 +164,7 @@ duration and reporting values it never reached.
 ## Gotchas
 
 - **Hidden tabs stall rAF.** The Browser pane reports `document.hidden = true`
-  even when visible, which pauses rendering. A ramp still lands its endpoint
+  even when visible, so rendering pauses. A ramp still lands its endpoint
   (a watchdog guarantees it) but reports `forcedLanding: true` — meaning the
   motion was not smooth. If you see that, the gesture happened but nobody saw
   it. Modulation is frame-locked with no watchdog (there is nothing to
@@ -183,4 +183,4 @@ duration and reporting values it never reached.
 - **A preset must be loaded first.** The runtime installs when the workspace
   mounts; the tools say so plainly if you get there early.
 - **`session_hush` stops audio only.** The visualizer keeps rendering the last
-  frame state, which is usually what you want between pieces.
+  frame state; between pieces, that is usually what you want.

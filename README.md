@@ -29,7 +29,7 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
   </tr>
 </table>
 
-<sub>The clips are silent. Each one opens its preset live, where a click turns the sound on.</sub>
+<sub>The clips are silent. Each one opens its preset live, and a click on the page turns the sound on.</sub>
 
 [![Live Site](https://img.shields.io/badge/live-toil.fyi-5a67d8?style=flat-square&logo=cloudflare)](https://toil.fyi)
 [![CI](https://img.shields.io/github/actions/workflow/status/zz-plant/stims/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/zz-plant/stims/actions/workflows/ci.yml)

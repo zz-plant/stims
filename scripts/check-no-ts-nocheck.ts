@@ -6,11 +6,11 @@
  * number, and line before exiting 1.
  *
  * Only a line where the directive *opens* the comment counts. Matching the
- * bare substring meant prose describing the rule tripped it — a docblock
- * explaining what this guard bans read as a violation of it — which is the
- * kind of false positive that teaches people to reach for --no-verify, and
- * which the codebase had already started working around by splicing the
- * string ('@ts-' + 'nocheck') wherever it needed to be named.
+ * bare substring meant prose describing the rule tripped it: a docblock
+ * explaining what this guard bans read as a violation of it. That kind of
+ * false positive teaches people to reach for --no-verify, and the codebase had
+ * already started working around it by splicing the string
+ * ('@ts-' + 'nocheck') wherever it needed to be named.
  */
 import { Glob } from 'bun';
 

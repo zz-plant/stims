@@ -92,7 +92,7 @@ bun run sweep:milkdrop-loops -- --limit 40
 ```
 
 `bun run lab:backend-diff -- --sample 24` checks WebGL and native WebGPU
-render the same frame without needing any external reference, which is often
+render the same frame without needing any external reference. That is often
 the faster way to localize a backend-specific gap.
 
 ## Prefer an invariant to a reference when one exists

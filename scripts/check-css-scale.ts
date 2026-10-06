@@ -9,7 +9,7 @@
  *
  * Nothing caught either, because a stylesheet with a hand-picked radius is
  * still valid CSS that renders fine on its own — it only shows up as
- * incoherence across surfaces, which no single diff reveals. Hence this
+ * incoherence across surfaces. No single diff reveals that. Hence this
  * check: the scale is only real if something enforces it.
  *
  * A literal is allowed when it lands on a scale step. Preferring the token

@@ -6,7 +6,7 @@
  * Rendering into a render target lands the image with its rows in the opposite
  * order from the uv a later pass samples it with, so every read of one of those
  * targets has to flip back into screen space. That convention shipped broken:
- * every pass wrote with the inversion and read without it, which mirrored the
+ * every pass wrote with the inversion and read without it. That mirrored the
  * whole frame against WebGL and — because the feedback loop is a cycle through
  * one target — made history come back flipped every frame, so motion piled up
  * in both directions instead of streaming. It survived for months because a
@@ -107,8 +107,8 @@ function main() {
     }
     console.error(
       '\nRead it through sampleFeedbackTarget(node, screenUv) instead — a target\n' +
-        'sampled at a raw screen coordinate comes back vertically mirrored, which\n' +
-        'renders as a plausible frame rather than an error.',
+        'sampled at a raw screen coordinate comes back vertically mirrored, and a\n' +
+        'mirrored frame looks plausible rather than raising an error.',
     );
     process.exit(1);
   }

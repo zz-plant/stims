@@ -48,7 +48,7 @@ export const COOKBOOK: readonly Recipe[] = [
     id: 'beat-trigger',
     title: 'Trigger on a beat, once',
     summary: 'A flash on each strong kick, never twice in a row.',
-    how: 'above(bass, 1.4) is 1 on a loud kick, and above(time, q2) is 1 only once the cooldown has passed, so both together fire at most every 0.3 s. q3 jumps to 1 on a hit and decays, which drives the border.',
+    how: 'above(bass, 1.4) is 1 on a loud kick, and above(time, q2) is 1 only once the cooldown has passed, so both together fire at most every 0.3 s. q3 jumps to 1 on a hit, decays, and drives the border.',
     code: {
       init: ['q2 = 0; q3 = 0;'],
       perFrame: [
@@ -87,7 +87,7 @@ export const COOKBOOK: readonly Recipe[] = [
     id: 'tunnel',
     title: 'Tunnel',
     summary: 'The edges rush toward you faster than the middle.',
-    how: 'Per-pixel code runs for each point of the warp mesh, and rad is that point’s distance from the center. Zooming more where rad is large pulls the edges in faster, which reads as depth.',
+    how: 'Per-pixel code runs for each point of the warp mesh, and rad is that point’s distance from the center. Zooming more where rad is large pulls the edges in faster, and the eye reads that as depth.',
     code: { perPixel: ['zoom = zoom + 0.06*rad;'] },
   },
   {

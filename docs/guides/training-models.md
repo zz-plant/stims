@@ -94,8 +94,8 @@ How far to trust it, measured against `lab:dataset` exports:
 | 2,445 held-out presets × 4 probes | 1 of 215,160 (a documented 5e-4 wobble) | 11,797 of 13,532 |
 
 It is conservative by design:
-- a path the audio never exercised on those songs still counts, which is
-  the precision gap;
+- a path the audio never exercised on those songs still counts (these
+  paths make up the precision gap);
 - shaders count only by the audio uniform names they read.
 
 Uses:

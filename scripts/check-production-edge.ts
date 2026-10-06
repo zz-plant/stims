@@ -12,7 +12,7 @@
  * are what a challenge or a 404 actually breaks. The sitemap routes are here
  * because every /discover/ and /author/ page 404ed in production, with an
  * empty body, and nothing noticed until an audit curled one. /milkdrop/ used to be here and went
- * stale silently when the app routes changed, which is why this check also
+ * stale silently when the app routes changed; that is why this check also
  * asserts on the card endpoints rather than a human-browsed page.
  */
 export {};

@@ -112,7 +112,7 @@ bun run catalog:authors -- --dry-run
 ```
 
 That reports every catalog preset whose author could not be confirmed against
-the handle registry, which is also the list of handles worth researching next.
+the handle registry. The same list names the handles worth researching next.
 
 ## Contributor rules
 

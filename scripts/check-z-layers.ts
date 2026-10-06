@@ -19,7 +19,7 @@
  * 1` that lifts an image over its own tile is local stacking inside one
  * component and makes no claim about the app's layers. Reaching for
  * var(--z-stage-root) there would assert kinship with the stage from inside a
- * browse panel, which is how the misleading ones got written.
+ * browse panel; that is how the misleading ones got written.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
