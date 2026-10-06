@@ -299,7 +299,7 @@ export function createMilkdropPresetNavigationController({
         nextCompiled,
         getActiveBackend(),
       );
-      notePresetShown(nextCompiled.source.id);
+      notePresetShown(nextCompiled.source.id, getActiveBackend());
       noteShaderExecution(
         nextCompiled.source.id,
         shaderExecution,

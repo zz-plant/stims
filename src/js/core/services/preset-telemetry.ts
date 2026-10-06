@@ -67,14 +67,42 @@ export function resetGrowthTelemetryForTests() {
   growthTransmitted = 0;
 }
 
+/** Rendered frames, and the wall-clock time they spanned, since the active
+ * preset was shown. Below this much rendered time the rate is noise. */
+const MIN_FPS_SPAN_MS = 1000;
+let framesSinceShown = 0;
+let frameSpanMsSinceShown = 0;
+let activeRenderer: 'webgpu' | 'webgl2' | undefined;
+
+/**
+ * Call once per rendered frame with the time since the previous one, so each
+ * dwell beacon carries the frame rate the visitor actually saw on that
+ * preset. Every preset-dwell row recorded fps=0 before this existed, so how
+ * Stims performs on real hardware was unknowable from production data.
+ *
+ * Summing frame gaps rather than dividing by the dwell keeps paused and
+ * hidden time out of the rate: the frame drivers stop then, and the first
+ * frame after resuming reports a clamped gap.
+ */
+export function notePresetFrame(deltaMs: number) {
+  framesSinceShown += 1;
+  frameSpanMsSinceShown += deltaMs;
+}
+
 function send(presetId: string, dwellMs: number) {
   if (transmitted >= MAX_TRANSMITS_PER_SESSION) return;
   const endpoint = resolveOptionalApiUrl('/api/telemetry');
   if (!endpoint) return;
+  const fps =
+    frameSpanMsSinceShown >= MIN_FPS_SPAN_MS
+      ? Math.round((framesSinceShown * 10000) / frameSpanMsSinceShown) / 10
+      : undefined;
   const payload = JSON.stringify({
     event: dwellMs < SKIP_THRESHOLD_MS ? 'preset-skip' : 'preset-dwell',
     presetId,
     dwellMs: Math.round(dwellMs),
+    renderer: activeRenderer,
+    fps,
   });
   try {
     if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
@@ -91,13 +119,25 @@ function send(presetId: string, dwellMs: number) {
 
 /** Call when a preset becomes the visible one. Flushes the previous
  * preset's dwell and starts timing the new one. */
-export function notePresetShown(presetId: string) {
+export function notePresetShown(
+  presetId: string,
+  backend?: 'webgl' | 'webgpu',
+) {
   const now = Date.now();
   if (activePresetId && activePresetId !== presetId && shownAt > 0) {
     send(activePresetId, now - shownAt);
   }
   activePresetId = presetId;
   shownAt = now;
+  framesSinceShown = 0;
+  frameSpanMsSinceShown = 0;
+  // webgl2 is the spelling the rest of the dataset uses for the WebGL path.
+  activeRenderer =
+    backend === undefined
+      ? undefined
+      : backend === 'webgpu'
+        ? 'webgpu'
+        : 'webgl2';
   if (!pagehideInstalled && typeof window !== 'undefined') {
     pagehideInstalled = true;
     window.addEventListener('pagehide', () => {
