@@ -169,6 +169,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:agent-action-ids'],
       },
       {
+        label: 'Unique e2e dev-server ports',
+        cmd: ['bun', 'run', 'check:e2e-ports'],
+      },
+      {
         label: 'WebGPU target sampling',
         cmd: ['bun', 'run', 'check:webgpu-target-sampling'],
       },

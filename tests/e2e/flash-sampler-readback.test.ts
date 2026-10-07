@@ -22,7 +22,7 @@ import {
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
 import { HEADLESS, WEBGL_RENDERER_ARGS } from './webgl-launch.ts';
 
-const TEST_PORT = 5186;
+const TEST_PORT = 5182;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
 let devServer: DevServerHandle | null = null;
 
