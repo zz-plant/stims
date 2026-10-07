@@ -17,6 +17,7 @@ import {
 } from '../core/accessibility-preferences.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { upsertMilkdropField } from '../milkdrop/formatter.ts';
+import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { shareOrCopyLink } from '../utils/media/share-link.ts';
 import type {
   AudioSource,
@@ -238,6 +239,36 @@ export function toggleReduceFlashingAction(
       ? 'Reduce flashing is on: flashing presets are skipped and strobes are dimmed.'
       : 'Reduce flashing is off.',
   );
+}
+
+/**
+ * Queue a preset from Browse, or take it back out. The dock and palette can
+ * only queue what is already on stage, which made the queue useless for its
+ * one job: lining up presets you have *not* played yet.
+ */
+export function togglePresetQueuedAction({
+  queue,
+  entry,
+  announce,
+}: {
+  queue: {
+    presetIds: string[];
+    add: (presetId: string) => void;
+    remove: (presetId: string) => void;
+  };
+  entry: Pick<PresetCatalogEntry, 'id' | 'title' | 'author'>;
+  announce: (message: string) => void;
+}): boolean {
+  // The name the card shows, not the raw "Author - Name" file title.
+  const { title } = splitPresetDisplay(entry.title || entry.id, entry.author);
+  if (queue.presetIds.includes(entry.id)) {
+    queue.remove(entry.id);
+    announce(`Removed “${title}” from the queue.`);
+    return false;
+  }
+  queue.add(entry.id);
+  announce(`Queued “${title}”. It shows in the cue monitor.`);
+  return true;
 }
 
 /**

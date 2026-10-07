@@ -733,7 +733,8 @@ html.light .stims-shell {
   .ctl-preset {
     position: absolute;
     display: grid;
-    grid-template-columns: 56px minmax(0, 1fr) auto;
+    /* artwork | title | queue | save */
+    grid-template-columns: 56px minmax(0, 1fr) auto auto;
     align-items: center;
     gap: 12px;
     border-radius: var(--ctl-radius);
@@ -918,6 +919,85 @@ html.light .stims-shell {
     -webkit-mask: var(--ctl-heart-filled) center / contain no-repeat;
   }
 
+  /* Queue: same box as the star, in the cool accent so the two marks read
+     apart. Revealed with the row like the grid's, and always shown once
+     queued, so the line-up stays visible while scanning. */
+  .ctl-preset__queue {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+    border: none;
+    /* The two trailing buttons sit as a pair, not a row gap apart. */
+    margin-right: -8px;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ctl-ink-3);
+    cursor: pointer;
+    opacity: 0;
+    transition:
+      color var(--ctl-ease),
+      background var(--ctl-ease),
+      opacity var(--ctl-ease);
+  }
+
+  .ctl-preset:hover .ctl-preset__queue,
+  .ctl-preset:focus-within .ctl-preset__queue,
+  .ctl-preset__queue[data-queued="true"] {
+    opacity: 1;
+  }
+
+  .ctl-preset__queue:hover {
+    background: var(--ctl-fill-hover);
+    color: var(--ctl-accent);
+  }
+
+  .ctl-preset__queue:active {
+    transform: scale(0.9);
+  }
+
+  .ctl-preset__queue[data-queued="true"],
+  .stims-preset-grid__queue[data-queued="true"] {
+    color: var(--ctl-accent);
+  }
+
+  .ctl-preset__queue:focus-visible {
+    outline: 2px solid var(--ctl-accent);
+    outline-offset: -2px;
+  }
+
+  .ctl-preset__queue-icon {
+    width: 15px;
+    height: 15px;
+    background: currentColor;
+    mask: var(--ctl-queue) center / contain no-repeat;
+    -webkit-mask: var(--ctl-queue) center / contain no-repeat;
+  }
+
+  [data-queued="true"] > .ctl-preset__queue-icon {
+    mask: var(--ctl-queued) center / contain no-repeat;
+    -webkit-mask: var(--ctl-queued) center / contain no-repeat;
+  }
+
+  .stims-preset-grid__queue {
+    color: var(--ctl-ink-2);
+  }
+
+  .stims-preset-grid__queue:hover {
+    color: var(--ctl-accent);
+  }
+
+  @media (any-hover: none) and (any-pointer: coarse) {
+    /* No hover to reveal it on touch. */
+    .ctl-preset__queue {
+      opacity: 1;
+    }
+  }
+
   /* The grid's star reuses the list's icon span, so it needs the same ink
      and filled-state mask. Its box/placement lives in app-shell.css with
      the rest of the tile, since it overlays the artwork there rather than
@@ -940,7 +1020,8 @@ html.light .stims-shell {
   }
 
   @media (pointer: coarse) {
-    .ctl-preset__fav {
+    .ctl-preset__fav,
+    .ctl-preset__queue {
       width: 44px;
       min-width: 44px;
       height: 44px;
@@ -1619,6 +1700,8 @@ html.light .stims-shell {
 .stims-shell {
   --ctl-heart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/%3E%3C/svg%3E");
   --ctl-heart-filled: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Cpath d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/%3E%3C/svg%3E");
+  --ctl-queue: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M3 6h13M3 12h13M3 18h8M18 14v8M14 18h8'/%3E%3C/svg%3E");
+  --ctl-queued: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h13M3 12h13M3 18h8M14 18l3 3 5-6'/%3E%3C/svg%3E");
 }
 
 @media (prefers-reduced-motion: reduce) {

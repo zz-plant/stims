@@ -23,6 +23,8 @@ function renderGrid(
       routeState: { presetId: null, audioSource: null },
       setRouteState: () => {},
       onToggleFavorite: () => {},
+      queuedPresetIds: [],
+      onToggleQueued: () => {},
       showQuickSelectKeys,
     }),
   );
