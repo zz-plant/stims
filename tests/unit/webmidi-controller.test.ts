@@ -142,6 +142,29 @@ describe('WebMIDI Hardware Controller Service', () => {
     expect(service.getBindings('device-a')[43]).toBeUndefined();
   });
 
+  it('a learned control sweeps the range the shell gives for its target', () => {
+    // Every learned control used to span 0-1, so a knob learned to zoom
+    // spent most of its travel beyond anything a preset can use.
+    const service = new WebMidiControllerService();
+    service.setLearnRangeResolver((target) =>
+      target === 'zoom' ? { min: 0.8, max: 1.2 } : null,
+    );
+    service.beginLearn('zoom');
+    service.handleMidiMessage('device-r', new Uint8Array([0xb0, 30, 0]));
+    expect(service.getBindings('device-r')[30]).toMatchObject({
+      target: 'zoom',
+      min: 0.8,
+      max: 1.2,
+    });
+    // A target the shell has no range for still gets 0-1.
+    service.beginLearn('q7');
+    service.handleMidiMessage('device-r', new Uint8Array([0xb0, 31, 0]));
+    expect(service.getBindings('device-r')[31]).toMatchObject({
+      min: 0,
+      max: 1,
+    });
+  });
+
   it('clears the learn target before notifying devicesChanged, not after', () => {
     // Regression: bindCc synchronously fires onDevicesChanged. A listener
     // that reads getLearnTarget() === null inside that callback (this is

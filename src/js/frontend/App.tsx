@@ -98,7 +98,12 @@ const NewHomePage = lazy(() =>
 );
 
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
-import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
+import {
+  bindMidiToMilkdropControls,
+  createHardwareCrossfader,
+  createPerformanceControlApplier,
+  learnRangeFor,
+} from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
@@ -108,6 +113,7 @@ import {
   REMIX_URL_FAILED,
 } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
+import { startQueuedCrossfade } from './workspace-actions.ts';
 import {
   useEngineSnapshot,
   useWorkspace,
@@ -781,11 +787,28 @@ function StimsWorkspaceAppShell() {
               },
             });
 
+      const crossfader = createHardwareCrossfader({
+        getPosition: () => engine.getCrossfade(),
+        setPosition: (position) => engine.setCrossfade(position),
+        startQueued: () =>
+          startQueuedCrossfade({
+            queue: uiRef.current.presetQueue,
+            startManualCrossfade: () => engine.startManualCrossfade(),
+            setRouteState: uiRef.current.setRouteState,
+            activePresetId: engineSnapshotRef.current?.activePresetId ?? null,
+          }),
+        announce: (message) => uiRef.current.setStatusMessage(message),
+      });
+      const controls = createPerformanceControlApplier({
+        setFieldLive: (target, value) => engine.updateFieldLive(target, value),
+        commitField: (target, value) =>
+          engine.updateInspectorField(target, value),
+        crossfade: (position) => crossfader.move(position),
+      });
+      webMidiService.setLearnRangeResolver(learnRangeFor);
       const unbindMidi = bindMidiToMilkdropControls(
         webMidiService,
-        (target, value) => {
-          engine.updateInspectorField(target, value);
-        },
+        controls.apply,
       );
 
       // A gamepad drives parameters through the same binding/learn machinery
@@ -809,6 +832,8 @@ function StimsWorkspaceAppShell() {
       return () => {
         uninstallLive();
         unbindMidi();
+        controls.dispose();
+        webMidiService.setLearnRangeResolver(null);
         stopGamepad?.();
         stopHardwareWatch();
       };
