@@ -1,7 +1,12 @@
 // Cloudflare Pages Function: Ingests client performance & engine telemetry metrics
 // POST /api/telemetry
 
-import type { TelemetryEvent } from '../../src/js/core/edge-contracts.ts';
+import {
+  TELEMETRY_AUDIO_SOURCES,
+  TELEMETRY_DEVICES,
+  TELEMETRY_ORIENTATIONS,
+  type TelemetryEvent,
+} from '../../src/js/core/edge-contracts.ts';
 
 interface AnalyticsEngineDataset {
   writeDataPoint(point: {
@@ -18,6 +23,11 @@ interface Env {
 // Shared with the sender (src/js/core/services/crash-telemetry.ts) so the two
 // halves of this endpoint cannot drift apart silently.
 type TelemetryPayload = TelemetryEvent;
+
+/** A known value, or '' — an unknown string never becomes a column value. */
+function known(values: readonly string[], input: unknown): string {
+  return typeof input === 'string' && values.includes(input) ? input : '';
+}
 
 export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
@@ -58,6 +68,10 @@ export async function onRequest(context: { request: Request; env: Env }) {
           (data.presetId || '').slice(0, 64),
           (data.error || '').slice(0, 256),
           request.headers.get('cf-ipcountry') || 'XX',
+          // Appended, never inserted: queries address blobs by position.
+          known(TELEMETRY_ORIENTATIONS, data.orientation),
+          known(TELEMETRY_DEVICES, data.device),
+          known(TELEMETRY_AUDIO_SOURCES, data.audioSource),
         ],
         doubles: [
           data.fps || 0,

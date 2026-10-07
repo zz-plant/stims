@@ -51,7 +51,9 @@ async function resolveCredentials(): Promise<{
   }
 }
 
-// blobs: [event, renderer, presetId, error, country]
+// blobs: [event, renderer, presetId, error, country,
+//         orientation, device, audioSource]  (the last three since 2026-10-06;
+//         '' on older rows and on clients that predate them)
 // doubles: [fps, audioLatencyMs, timestamp, dwellMs]
 // indexes: [event]
 
@@ -148,6 +150,37 @@ function buildReports(days: number): Report[] {
             WHERE timestamp > ${since} AND blob1 LIKE 'shader-exec-%'
             GROUP BY blob1, blob2 ORDER BY count DESC`,
       columns: ['event', 'renderer', 'count'],
+    },
+    {
+      // Which moment visitors are in (docs/PRODUCT_MOMENTS.md). An audible
+      // start is the session proxy, so this is sessions by screen and source.
+      // Rows before 2026-10-06 carry '' for all three and are left out.
+      title: `Audible starts by screen and audio source (last ${days}d)`,
+      sql: `SELECT blob7 AS device, blob6 AS orientation, blob8 AS audio,
+                   COUNT() AS count
+            FROM ${DATASET}
+            WHERE timestamp > ${since}
+              AND blob1 = 'growth-audio-started' AND blob7 != ''
+            GROUP BY blob7, blob6, blob8 ORDER BY count DESC`,
+      columns: ['device', 'orientation', 'audio', 'count'],
+    },
+    {
+      title: `Dwell and frame rate by screen (last ${days}d)`,
+      sql: `SELECT blob7 AS device, blob6 AS orientation, blob2 AS renderer,
+                   COUNT() AS views, AVG(double4) AS avg_dwell_ms,
+                   SUM(double1) / SUM(IF(double1 > 0, 1, 0)) AS avg_fps
+            FROM ${DATASET}
+            WHERE timestamp > ${since}
+              AND blob1 IN ('preset-dwell', 'preset-skip') AND blob7 != ''
+            GROUP BY blob7, blob6, blob2 ORDER BY views DESC`,
+      columns: [
+        'device',
+        'orientation',
+        'renderer',
+        'views',
+        'avg_dwell_ms',
+        'avg_fps',
+      ],
     },
     {
       title: `Presets most often approximated (last ${days}d)`,

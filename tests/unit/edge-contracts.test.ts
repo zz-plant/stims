@@ -99,6 +99,25 @@ describe('edge-contracts validators', () => {
     ).toThrow();
   });
 
+  test('TelemetryEventSchema accepts only the known visitor-context values', () => {
+    const event: TelemetryEvent = {
+      event: 'preset-dwell',
+      orientation: 'portrait',
+      device: 'phone',
+      audioSource: 'microphone',
+    };
+    expect(TelemetryEventSchema.parse(event)).toEqual(event);
+    expect(() =>
+      TelemetryEventSchema.parse({ event: 'x', orientation: 'sideways' }),
+    ).toThrow();
+    expect(() =>
+      TelemetryEventSchema.parse({ event: 'x', device: 'watch' }),
+    ).toThrow();
+    expect(() =>
+      TelemetryEventSchema.parse({ event: 'x', audioSource: 'spotify' }),
+    ).toThrow();
+  });
+
   test('SyncRoomCreateResponseSchema requires room and hostKey', () => {
     expect(
       SyncRoomCreateResponseSchema.parse({ room: 'abc', hostKey: 'xyz' }),

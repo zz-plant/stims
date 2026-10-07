@@ -60,10 +60,11 @@ describe('noteGrowthEvent', () => {
     noteGrowthEvent('share-copied', 'geiss-casino');
     await flush();
     expect(beacons[0]?.url).toBe('https://toil.fyi/api/telemetry');
-    expect(beacons[0]?.body).toEqual({
+    expect(beacons[0]?.body).toMatchObject({
       event: 'growth-share-copied',
       presetId: 'geiss-casino',
     });
+    expect(JSON.stringify(beacons[0]?.body)).not.toContain('http');
   });
 
   test('records landing and audible-start conversion events', async () => {
