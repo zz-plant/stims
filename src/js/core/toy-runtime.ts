@@ -6,6 +6,7 @@
 import type { AnimationContext } from './animation-loop';
 import { getContextFrequencyData, virtualTimeSource } from './animation-loop';
 import type { AudioInitOptions, FrequencyAnalyser } from './audio-handler';
+import { notifyFrameDrawn } from './frame-drawn.ts';
 import { createFrameGate } from './frame-pacing';
 import {
   getActivePerformanceSettings,
@@ -586,6 +587,7 @@ export function createToyRuntime({
       try {
         pluginManager.update(frameState);
         failureStreak = 0;
+        notifyFrameDrawn(currentTime);
       } catch (error) {
         failureStreak += 1;
         if (failureStreak === 1) {

@@ -4,6 +4,7 @@
  */
 
 import { type SetStateAction, useCallback, useMemo, useRef } from 'react';
+import { getActiveAccessibilityPreference } from '../core/accessibility-preferences.ts';
 import {
   acquireMicrophoneStream,
   describeInputProcessingWarning,
@@ -39,6 +40,7 @@ import {
   mapRuntimeCatalogEntry,
   matchesPreset,
   mergeCatalogActivity,
+  passesFlashPreference,
   pickFavoritePresets,
   pickRecentPresets,
 } from './workspace-helpers.ts';
@@ -314,19 +316,26 @@ export function useWorkspaceShellOrchestration({
   const handleShufflePreset = () => {
     const activePresetId =
       routeState.presetId ?? engineSnapshot?.activePresetId;
+    // Reduce flashing hid measured high-risk presets from Browse while
+    // shuffle could still land on one. Filtered before every pool below so
+    // no fallback reaches them.
+    const reduceFlashing = getActiveAccessibilityPreference().reduceFlashing;
+    const allowed = (entries: PresetCatalogEntry[]) =>
+      reduceFlashing
+        ? entries.filter((entry) => passesFlashPreference(entry, true))
+        : entries;
+    const filteredCatalog = allowed(shellState.filteredCatalog);
+    const catalog = allowed(shellState.catalog);
     const preferredPool =
-      shellState.filteredCatalog.length > 1
-        ? shellState.filteredCatalog
-        : shellState.catalog.length > 1
-          ? shellState.catalog
+      filteredCatalog.length > 1
+        ? filteredCatalog
+        : catalog.length > 1
+          ? catalog
           : [];
     const shuffledPool = preferredPool.filter(
       (entry) => entry.id !== activePresetId,
     );
-    const fallbackPool =
-      shellState.filteredCatalog.length > 0
-        ? shellState.filteredCatalog
-        : shellState.catalog;
+    const fallbackPool = filteredCatalog.length > 0 ? filteredCatalog : catalog;
     const nextPool = shuffledPool.length > 0 ? shuffledPool : fallbackPool;
     if (!nextPool.length) {
       return;

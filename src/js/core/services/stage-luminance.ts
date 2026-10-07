@@ -20,6 +20,25 @@ type Channels = { governor: number; ceiling: number };
 
 const channelsByStage = new WeakMap<HTMLElement, Channels>();
 
+/**
+ * Whether the flash governor is dimming any stage right now. Published so the
+ * stage can say so: a picture that darkens with no explanation reads as a
+ * rendering fault, and the protection is only trusted if it is visible.
+ */
+let governorDimming = false;
+const dimmingListeners = new Set<() => void>();
+
+export function isFlashGovernorDimming(): boolean {
+  return governorDimming;
+}
+
+export function subscribeToFlashGovernorDimming(listener: () => void) {
+  dimmingListeners.add(listener);
+  return () => {
+    dimmingListeners.delete(listener);
+  };
+}
+
 function channelsFor(stage: HTMLElement): Channels {
   let channels = channelsByStage.get(stage);
   if (!channels) {
@@ -51,6 +70,13 @@ export function setStageLuminanceChannel(
   const next = Number.isFinite(scale) ? Math.min(1, Math.max(0, scale)) : 1;
   if (channels[channel] === next) return;
   channels[channel] = next;
+  if (channel === 'governor') {
+    const dimming = next < 0.999;
+    if (dimming !== governorDimming) {
+      governorDimming = dimming;
+      for (const listener of dimmingListeners) listener();
+    }
+  }
 
   const composed = channels.governor * channels.ceiling;
   // Clearing rather than writing brightness(1) keeps the stage off the
@@ -65,4 +91,8 @@ export function setStageLuminanceChannel(
 export function resetStageLuminance(stage: HTMLElement): void {
   channelsByStage.delete(stage);
   stage.style.filter = '';
+  if (governorDimming) {
+    governorDimming = false;
+    for (const listener of dimmingListeners) listener();
+  }
 }

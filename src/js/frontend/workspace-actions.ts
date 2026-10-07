@@ -11,6 +11,10 @@
  * call in.
  */
 
+import {
+  getActiveAccessibilityPreference,
+  setAccessibilityPreference,
+} from '../core/accessibility-preferences.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { upsertMilkdropField } from '../milkdrop/formatter.ts';
 import { shareOrCopyLink } from '../utils/media/share-link.ts';
@@ -219,6 +223,19 @@ export function codeForLocalShare(
   return local && !dirty && title
     ? upsertMilkdropField(source, 'title', title)
     : source;
+}
+
+/** Flip Reduce flashing and say what it now does. */
+export function toggleReduceFlashingAction(
+  announce: (message: string) => void,
+): void {
+  const next = !getActiveAccessibilityPreference().reduceFlashing;
+  setAccessibilityPreference({ reduceFlashing: next });
+  announce(
+    next
+      ? 'Reduce flashing is on: flashing presets are skipped and strobes are dimmed.'
+      : 'Reduce flashing is off.',
+  );
 }
 
 export function endWatchParty(announce: (message: string) => void): void {

@@ -18,22 +18,25 @@
  * measured rather than assumed — the compute-VM benchmark (d3e47f70) is the
  * cautionary tale for a per-frame GPU->CPU round trip nobody timed.
  *
- * Measured on a 1217x760 canvas with `bun run lab:flash-sampler-bench`:
+ * `bun run lab:flash-sampler-bench` once put this at 10us per sample (16x16,
+ * 1217x760). That bench runs in agent mode and the sampler then read on its
+ * own animation frame, after the frame had been presented: on WebGPU it
+ * read transparent pixels and on WebGL a copy the browser already held, so
+ * neither waited for the GPU. Reading the frame that is actually on screen
+ * means reading inside the draw (see `core/frame-drawn.ts`), and that read
+ * waits for the GPU to finish the frame. Measured 2026-10-06, M1 Max,
+ * 1280x720, headless Chromium:
  *
- *     grid    per sample    of a 16.7ms frame
- *      8x8         5us          0.03%
- *     16x16       10us          0.06%
- *     32x32       20us          0.12%
- *     64x64       50us          0.30%
+ *     backend   median   p95
+ *     WebGPU    1.8ms    2.3ms
+ *     WebGL     2.9ms    3.9ms
  *
- * So the expected `drawImage` pipeline stall does not dominate: cost tracks
- * tile count, meaning the downscale stays a blit and what is being paid for
- * is the readback size plus the luminance loop. At the recommended grid this
- * is 0.06% of a frame, which is why the sampler is a plain synchronous read
- * instead of a fenced asynchronous one per backend. Re-run the bench before
- * assuming that still holds; if it stops being true the fix is the async
- * readback, not a coarser grid — see MIN_USEFUL_GRID for why coarser breaks
- * the area rule.
+ * A GPU-backed scratch canvas (`willReadFrequently: false`) moved WebGPU to
+ * 1.6ms: the cost is the wait, not the bytes. Sampling less often is not the
+ * answer either, because at 15Hz a 30Hz strobe aliases away. The fix that
+ * removes the wait is an asynchronous downscaled readback in the renderer;
+ * until then this is why Reduce flashing stays opt-in rather than on for
+ * everyone.
  */
 import { relativeLuminance } from '../flash-thresholds.ts';
 import { RECOMMENDED_GRID } from './flash-governor.ts';

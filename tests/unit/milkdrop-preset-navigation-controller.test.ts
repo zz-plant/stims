@@ -666,4 +666,59 @@ describe('milkdrop preset navigation controller', () => {
     await controller.selectRandomPreset();
     expect(applied).toEqual(['other-preset']);
   });
+
+  test('autoplay never picks a preset the exclusion rules out', async () => {
+    // Reduce flashing hides measured high-risk presets from Browse; the
+    // runtime passes the same rule here so autoplay cannot land on one.
+    const entries = ['active-preset', 'flashy', 'calm'].map((id) =>
+      createCatalogEntry(id, { webgl: 'supported', webgpu: 'supported' }),
+    );
+    const applied: string[] = [];
+    const controller = createMilkdropPresetNavigationController({
+      catalogStore: {
+        async getPresetSource(id: string) {
+          return { id, title: id, raw: `title=${id}\n`, origin: 'bundled' };
+        },
+        async getDraft() {
+          return null;
+        },
+      } as unknown as MilkdropCatalogStore,
+      catalogCoordinator: {
+        async syncCatalog() {},
+        scheduleCatalogSync: async () => undefined,
+        async rememberSelection() {},
+        async consumePreviousSelection() {
+          return null;
+        },
+        getCatalogEntries: () => entries,
+        getActiveCatalogEntry: () => null,
+        dispose() {},
+      } as unknown as MilkdropCatalogCoordinator,
+      session: createSession({
+        flashy: createCompiledPreset('flashy'),
+        calm: createCompiledPreset('calm'),
+      }),
+      getActivePresetId: () => 'active-preset',
+      getActiveBackend: () => 'webgl',
+      applyCompiledPreset: (next) => {
+        applied.push(next.source.id);
+      },
+      applyPresetPerformanceOverride: () => undefined,
+      setOverlayStatus: () => undefined,
+      shouldFallbackToWebgl: () => false,
+      triggerWebglFallback: () => undefined,
+      rememberLastPreset: () => undefined,
+      beginPresetTransition: () => ({
+        mode: 'blend' as const,
+        durationSeconds: 1,
+      }),
+      excludeFromRandom: (entry) => entry.id === 'flashy',
+    });
+
+    for (let i = 0; i < 20; i += 1) {
+      await controller.selectRandomPreset();
+    }
+    expect(applied.length).toBe(20);
+    expect(applied).not.toContain('flashy');
+  });
 });

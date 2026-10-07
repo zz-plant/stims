@@ -33,6 +33,7 @@ import {
   toggleAutoplay,
   toggleCameraAction,
   togglePanel,
+  toggleReduceFlashingAction,
 } from './workspace-actions.ts';
 import type { WorkspaceContextValue } from './workspace-context.tsx';
 
@@ -376,6 +377,15 @@ export function buildPaletteActions(
             : 'Live performance mode off — quality adapts again and background tabs pause.',
         );
       },
+    },
+    {
+      // Also in the dock menu: the one safety setting that should be a tap
+      // from the stage, not four tabs into Settings.
+      id: 'toggle-reduce-flashing',
+      group: 'View',
+      label: 'Toggle reduce flashing',
+      keywords: ['flash', 'strobe', 'seizure', 'photosensitive', 'safety'],
+      run: () => toggleReduceFlashingAction(uiRef.current.setStatusMessage),
     },
     {
       id: 'toggle-autoplay',
