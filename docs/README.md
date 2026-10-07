@@ -41,7 +41,7 @@ flowchart LR
   Access --> AC1["SENSORY_ACCESSIBILITY.md<br/>research program + flash-safety spec"]
   Access --> AC2["LITERATURE.md<br/>citation reference"]
 
-  Strat --> S1["ROADMAP.md · IMPLEMENTATION_STATUS.md"]
+  Strat --> S1["ROADMAP.md · PRODUCT_MOMENTS.md · IMPLEMENTATION_STATUS.md"]
   Strat --> S2["QA_PLAN.md · LINEAGE_AND_CREDITS.md"]
 ```
 
@@ -113,6 +113,7 @@ Roadmap priorities, QA verification suites, and historical context.
 | Document | Description |
 | --- | --- |
 | 🗺️ [**Project Roadmap**](./ROADMAP.md) | Quarterly milestones, feature roadmap, and active architectural priorities |
+| 🎯 [**Product Moments**](./PRODUCT_MOMENTS.md) | The visitor moments work is judged by: the claim each proves, what counts as correct, its instruments and telemetry, plus standing policies |
 | 🧪 [**Training and Evaluating Models**](./guides/training-models.md) | Headless datasets, baselines, and benchmarks for ML work on the preset corpus: sync pairs, family splits, memory classes, blind spots, licensing |
 | 🤖 [**Generative AI Use Cases**](./GENERATIVE_AI_USE_CASES.md) | Proposal for extending the shipped AI surface: quality gates, new UI surfaces, closed-loop iteration, and benchmarks |
 | 📈 [**Implementation Status**](./IMPLEMENTATION_STATUS.md) | Consolidated tracking of refactor milestones, completed features, and active debt queues |
