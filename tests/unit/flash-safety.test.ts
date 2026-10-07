@@ -28,6 +28,7 @@ function scriptedSampler(
   return {
     cols: GRID,
     rows: GRID,
+    density: 1,
     offThread: false,
     capture: (_canvas, onGrid) => {
       tiles.fill(getLuminance(frame));
@@ -47,6 +48,7 @@ function answering(read: () => Float32Array | null): FlashSampler {
   return {
     cols: GRID,
     rows: GRID,
+    density: 1,
     offThread: false,
     capture: (_canvas, onGrid) => {
       onGrid(read());
@@ -66,6 +68,7 @@ function deferred() {
   const sampler: FlashSampler = {
     cols: GRID,
     rows: GRID,
+    density: 1,
     offThread: true,
     capture: (_canvas, onGrid) => {
       if (waiting) return false;
@@ -160,6 +163,25 @@ describe('flash safety controller', () => {
       uncorrected.controller.getState().hold,
     );
     composed.stop();
+  });
+
+  test("the governor's own dimming is not mistaken for the content darkening", () => {
+    // Content holds at 0.6, the governor clamps to 0.3 (primed, as it is for
+    // a preset the catalog measured), then the content brightens to 0.95.
+    // On screen that is one step down, which the governor made, and one
+    // step up, which the content made: no flash. Judging both frames at the
+    // scale each was shown at read the clamp itself as a qualifying
+    // darkening across the whole frame, paired it with the content's rise,
+    // and counted a flash the content never made.
+    const { controller } = harness((frame) => (frame < 30 ? 0.6 : 0.95));
+    let flashes = 0;
+    for (let i = 0; i < 60; i += 1) {
+      if (i === 10) controller.prime(0.7);
+      if (controller.tick(i * FRAME_MS)?.flashed) flashes += 1;
+    }
+    expect(controller.getState().luminanceScale).toBeCloseTo(0.3, 5);
+    expect(flashes).toBe(0);
+    expect(controller.getState().flashesInWindow).toBe(0);
   });
 
   test('does nothing at all when the preference is off', () => {

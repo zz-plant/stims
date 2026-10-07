@@ -13,12 +13,17 @@
  * the governor becomes a blur filter nobody wants.
  */
 import { describe, expect, test } from 'bun:test';
-import { analyzeFlashTimeline } from '../../scripts/flash-analysis.ts';
+import {
+  analyzeFlashEvents,
+  analyzeFlashTimeline,
+  isFlashTransition,
+} from '../../scripts/flash-analysis.ts';
 import {
   createFlashGovernor,
   MIN_USEFUL_GRID,
   primingHoldForProfile,
   RECOMMENDED_GRID,
+  RECOMMENDED_SAMPLE_DENSITY,
 } from '../../src/js/core/services/flash-governor.ts';
 
 const COLS = 6;
@@ -238,6 +243,181 @@ describe('flash governor', () => {
       }
     }
     expect(fineTripped).toBe(false);
+  });
+
+  describe('judged per sample, as the audit judges per pixel', () => {
+    const DENSITY = RECOMMENDED_SAMPLE_DENSITY;
+    const EDGE = RECOMMENDED_GRID * DENSITY;
+
+    /** Deterministic PRNG, so the texture is the same on every run. */
+    function mulberry32(seed: number) {
+      let a = seed;
+      return () => {
+        a = (a + 0x6d2b79f5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    /**
+     * Fine twinkling texture over the whole frame: each sample toggles
+     * between dark and bright with probability 0.36 a frame, so about 18% of
+     * any visual field brightens and 18% darkens on every frame. Each swing
+     * is a full 0.5, but neither direction ever reaches 25% of a field, so
+     * WCAG counts no flash at all. Moving fine detail on the first-run
+     * preset (shifter-curlique) is this, measured.
+     */
+    function twinkleFields(frames: number): Float32Array[] {
+      const random = mulberry32(7);
+      const bright = new Uint8Array(EDGE * EDGE).map(() =>
+        random() < 0.5 ? 1 : 0,
+      );
+      const out: Float32Array[] = [];
+      for (let f = 0; f < frames; f += 1) {
+        for (let i = 0; i < bright.length; i += 1) {
+          if (random() < 0.36) bright[i] = 1 - (bright[i] as number);
+        }
+        out.push(Float32Array.from(bright, (on) => (on ? 0.6 : 0.1)));
+      }
+      return out;
+    }
+
+    /** The audit's per-pixel counts for the same fields. */
+    function auditFields(fields: Float32Array[]) {
+      const rising: number[][] = [];
+      const falling: number[][] = [];
+      for (let f = 1; f < fields.length; f += 1) {
+        const up = new Array(RECOMMENDED_GRID ** 2).fill(0);
+        const down = new Array(RECOMMENDED_GRID ** 2).fill(0);
+        const before = fields[f - 1] as Float32Array;
+        const after = fields[f] as Float32Array;
+        for (let i = 0; i < after.length; i += 1) {
+          const b = before[i] as number;
+          const a = after[i] as number;
+          if (!isFlashTransition(b, a)) continue;
+          const x = i % EDGE;
+          const y = Math.floor(i / EDGE);
+          const tile =
+            Math.floor(y / DENSITY) * RECOMMENDED_GRID +
+            Math.floor(x / DENSITY);
+          if (a > b) up[tile] += 1;
+          else down[tile] += 1;
+        }
+        rising.push(up);
+        falling.push(down);
+      }
+      return analyzeFlashEvents({
+        rising,
+        falling,
+        tilePixels: DENSITY * DENSITY,
+        cols: RECOMMENDED_GRID,
+        rows: RECOMMENDED_GRID,
+        deltaMs: FRAME_MS,
+      });
+    }
+
+    /** One sample at the centre of each tile: what the 16x16 read was. */
+    function tileCentres(field: Float32Array): Float32Array {
+      const out = new Float32Array(RECOMMENDED_GRID ** 2);
+      const mid = Math.floor(DENSITY / 2);
+      for (let ty = 0; ty < RECOMMENDED_GRID; ty += 1) {
+        for (let tx = 0; tx < RECOMMENDED_GRID; tx += 1) {
+          out[ty * RECOMMENDED_GRID + tx] = field[
+            (ty * DENSITY + mid) * EDGE + tx * DENSITY + mid
+          ] as number;
+        }
+      }
+      return out;
+    }
+
+    test('texture the audit passes never engages the governor', () => {
+      const fields = twinkleFields(300);
+      expect(auditFields(fields).totalFlashes).toBe(0);
+
+      const governor = createFlashGovernor();
+      let maxHold = 0;
+      for (const [index, field] of fields.entries()) {
+        const { hold } = governor.sample(
+          index * FRAME_MS,
+          field,
+          RECOMMENDED_GRID,
+          RECOMMENDED_GRID,
+          { density: DENSITY },
+        );
+        maxHold = Math.max(maxHold, hold);
+      }
+      expect(maxHold).toBe(0);
+    });
+
+    test('one sample per tile reads the same texture as flashing — hence the density', () => {
+      // 25 samples per visual field, and the worst of 144 fields: some
+      // field always has 7 of its 25 samples swinging the same way.
+      const governor = createFlashGovernor();
+      let maxHold = 0;
+      for (const [index, field] of twinkleFields(300).entries()) {
+        const { hold } = governor.sample(
+          index * FRAME_MS,
+          tileCentres(field),
+          RECOMMENDED_GRID,
+          RECOMMENDED_GRID,
+        );
+        maxHold = Math.max(maxHold, hold);
+      }
+      expect(maxHold).toBeGreaterThan(0.5);
+    });
+
+    test('a strobe covering a visual field still engages it', () => {
+      // A 6x6-tile patch, bigger than the 5x5 field window, strobing at
+      // 5Hz over a dim background: what the density must not dilute.
+      const governor = createFlashGovernor();
+      let flashes = 0;
+      for (let f = 0; f < 120; f += 1) {
+        const on = Math.floor(f / 6) % 2 === 1;
+        const field = new Float32Array(EDGE * EDGE).fill(0.05);
+        for (let y = 0; y < 6 * DENSITY; y += 1) {
+          for (let x = 0; x < 6 * DENSITY; x += 1) {
+            field[y * EDGE + x] = on ? 0.9 : 0.05;
+          }
+        }
+        const decision = governor.sample(
+          f * FRAME_MS,
+          field,
+          RECOMMENDED_GRID,
+          RECOMMENDED_GRID,
+          { density: DENSITY },
+        );
+        if (decision.flashed) flashes += 1;
+      }
+      expect(flashes).toBeGreaterThan(1);
+      expect(governor.getState().engaged).toBe(true);
+    });
+  });
+
+  test('the clamp is solved from the flashing area, not one bright outlier', () => {
+    // A 6x6-tile patch swings 0.3 at 5Hz while a single tile elsewhere
+    // swings 0.9 with it. The patch is what makes these frames a flash, and
+    // scaling it by about 0.27 puts it under the threshold. Solving for the
+    // outlier instead asks for 0.09 and blacks out the stage for one tile.
+    const grid = RECOMMENDED_GRID;
+    const governor = createFlashGovernor();
+    let engagedAt: number | null = null;
+    for (let f = 0; f < 120 && engagedAt === null; f += 1) {
+      const on = Math.floor(f / 6) % 2 === 1;
+      const frame = new Array(grid * grid).fill(0.05);
+      for (let y = 0; y < 6; y += 1) {
+        for (let x = 0; x < 6; x += 1) frame[y * grid + x] = on ? 0.35 : 0.05;
+      }
+      frame[grid * grid - 1] = on ? 0.95 : 0.05;
+      const decision = governor.sample(f * FRAME_MS, frame, grid, grid);
+      if (decision.engaged) engagedAt = decision.luminanceScale;
+    }
+    expect(engagedAt).not.toBeNull();
+    // The first engagement already carries the engageHold ramp (0.8), so the
+    // solved scale is 0.8 * 0.27 = 0.21; the outlier's would be 0.07.
+    expect(engagedAt as number).toBeGreaterThan(0.15);
+    // And it is enough: the patch's 0.3 swing no longer qualifies.
+    expect(0.3 * (engagedAt as number)).toBeLessThan(0.1);
   });
 
   test('the governor releases after the strobe stops', () => {

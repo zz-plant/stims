@@ -149,9 +149,9 @@ export function createFlashSafetyController(
     // filter on the stage), so reading the canvas back gives the unmitigated
     // pixels — the governor would never see its own effect, would keep
     // counting flashes it had already suppressed, and would escalate to the
-    // ceiling and stay there. Scaling the sample by the mitigation currently
-    // in force reconstructs what the viewer is actually looking at, which is
-    // the same thing tests/unit/flash-governor.test.ts feeds it.
+    // ceiling and stay there. Handing it the mitigation currently in force
+    // lets it judge the content as the viewer is actually seeing it, which
+    // is the same thing tests/unit/flash-governor.test.ts feeds it.
     //
     // The scale to correct by is everything on the filter, not just this
     // controller's contribution: with a visitor brightness ceiling of 0.5 the
@@ -164,14 +164,12 @@ export function createFlashSafetyController(
     const applied = compositedScale ? compositedScale() : lastApplied;
     const capturedIn = generation;
     let decision: FlashGovernorDecision | null = null;
-    const captured = sampler.capture(canvas, (tiles) => {
-      if (!tiles || capturedIn !== generation) return;
-      if (applied !== 1) {
-        for (let i = 0; i < tiles.length; i += 1) {
-          tiles[i] = (tiles[i] as number) * applied;
-        }
-      }
-      decision = governor.sample(nowMs, tiles, sampler.cols, sampler.rows);
+    const captured = sampler.capture(canvas, (samples) => {
+      if (!samples || capturedIn !== generation) return;
+      decision = governor.sample(nowMs, samples, sampler.cols, sampler.rows, {
+        density: sampler.density,
+        viewScale: applied,
+      });
       apply(decision.luminanceScale);
     });
     // A capture refused because the last one is still being read is not a

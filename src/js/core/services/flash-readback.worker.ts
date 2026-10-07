@@ -2,12 +2,12 @@
  * Reads a flash-sampler snapshot back to bytes, off the main thread.
  *
  * The snapshot is an ImageBitmap the sampler took inside the draw, already
- * downscaled to the luminance grid. Drawing it into a CPU-backed canvas waits
+ * downscaled to the luminance field. Drawing it into a CPU-backed canvas waits
  * for the GPU to finish the frame it came from (1.9-2.7ms measured, see
  * `flash-sampler.ts`); doing that here is what keeps the wait out of the
- * render loop. Luminance is computed by the caller: 256 pixels cost
- * microseconds, and keeping the worker free of imports keeps it one file in
- * every build.
+ * render loop. Luminance is computed by the caller from a lookup table: 16k
+ * pixels cost about 0.1ms, and keeping the worker free of imports keeps it
+ * one file in every build.
  */
 
 type ReadbackRequest = { bitmap: ImageBitmap; cols: number; rows: number };

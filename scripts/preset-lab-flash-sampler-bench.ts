@@ -9,7 +9,9 @@
  * wired into the loop, not after.
  *
  * Times the sampler against the real running visualizer canvas on a real
- * GPU, at several grid sizes, two ways: the main-thread read, which waits
+ * GPU, on the recommended 16x16 tile grid at several sample densities
+ * (samples along each tile edge, so density 8 reads a 128x128 field), two
+ * ways: the main-thread read, which waits
  * for the GPU inside the frame, and `createFlashSampler().capture()`, which
  * snapshots in the frame and reads in a worker. For each it reports the
  * main-thread microseconds per sample and what fraction of a 16.7ms frame
@@ -89,12 +91,18 @@ try {
         dispose: () => void;
       };
       const { createFlashSampler, createMainThreadFlashReader } = await load<{
-        createFlashSampler: (grid: number) => Sampler;
-        createMainThreadFlashReader: (grid: number) => {
+        createFlashSampler: (grid: number, density: number) => Sampler;
+        createMainThreadFlashReader: (
+          grid: number,
+          density: number,
+        ) => {
           read: (canvas: HTMLCanvasElement) => void;
           dispose: () => void;
         };
       }>('/src/js/core/services/flash-sampler.ts');
+      const { RECOMMENDED_GRID } = await load<{ RECOMMENDED_GRID: number }>(
+        '/src/js/core/services/flash-governor.ts',
+      );
       const { subscribeToFrameDrawn } = await load<{
         subscribeToFrameDrawn: (listener: () => void) => () => void;
       }>('/src/js/core/frame-drawn.ts');
@@ -132,7 +140,7 @@ try {
         });
 
       type Row = {
-        grid: number;
+        density: number;
         path: 'main thread' | 'worker';
         median: number;
         p95: number;
@@ -140,8 +148,9 @@ try {
       };
       const rows: Row[] = [];
       let offThread = false;
-      for (const grid of [8, 16, 32, 64]) {
-        const reader = createMainThreadFlashReader(grid);
+      for (const density of [1, 4, 8, 16]) {
+        const grid = RECOMMENDED_GRID;
+        const reader = createMainThreadFlashReader(grid, density);
         const readOnce = (record: (us: number) => void) => {
           const t0 = performance.now();
           reader.read(canvas);
@@ -150,9 +159,9 @@ try {
         await inFrames(readOnce, 10);
         const readTimes = await inFrames(readOnce, iterations);
         reader.dispose();
-        rows.push({ grid, path: 'main thread', ...stats(readTimes) });
+        rows.push({ density, path: 'main thread', ...stats(readTimes) });
 
-        const sampler = createFlashSampler(grid);
+        const sampler = createFlashSampler(grid, density);
         const arrivals: number[] = [];
         const captureOnce = (record: (us: number) => void) => {
           const t0 = performance.now();
@@ -167,7 +176,7 @@ try {
         offThread = sampler.offThread;
         sampler.dispose();
         rows.push({
-          grid,
+          density,
           path: offThread ? 'worker' : 'main thread',
           ...stats(captureTimes),
           arrivalMedianMs: stats(arrivals).median,
@@ -186,7 +195,7 @@ try {
     throw new Error(String(results.error));
   const { rows, canvas, offThread } = results as {
     rows: Array<{
-      grid: number;
+      density: number;
       path: string;
       median: number;
       p95: number;
@@ -200,9 +209,9 @@ try {
     console.log('  The capture fell back to the main thread in this browser.');
   }
   console.log(
-    '\n  grid   path          main us   p95 us   % of 16.7ms   grid after',
+    '\n  density   path          main us   p95 us   % of 16.7ms   grid after',
   );
-  console.log(`  ${'-'.repeat(68)}`);
+  console.log(`  ${'-'.repeat(71)}`);
   for (const row of rows) {
     const pct = (row.median / 1000 / 16.7) * 100;
     const arrival =
@@ -210,7 +219,7 @@ try {
         ? ''
         : `${row.arrivalMedianMs.toFixed(1)}ms`;
     console.log(
-      `  ${String(row.grid).padStart(4)}   ${row.path.padEnd(11)}   ${row.median.toFixed(1).padStart(7)}   ${row.p95.toFixed(1).padStart(6)}   ${pct.toFixed(2).padStart(10)}%   ${arrival.padStart(10)}`,
+      `  ${String(row.density).padStart(7)}   ${row.path.padEnd(11)}   ${row.median.toFixed(1).padStart(7)}   ${row.p95.toFixed(1).padStart(6)}   ${pct.toFixed(2).padStart(10)}%   ${arrival.padStart(10)}`,
     );
   }
   console.log('');

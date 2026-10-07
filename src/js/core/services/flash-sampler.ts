@@ -4,15 +4,22 @@
  * `visual-embedding.ts` already downsamples a canvas for its frame stats, but
  * that path runs on demand (agent captures, preset switches) and computes a
  * histogram, edge density, and motion estimate. The governor needs one thing,
- * every frame, as cheaply as possible: a small grid of WCAG relative
+ * every frame, as cheaply as possible: a small field of WCAG relative
  * luminance. Sharing the embedding path would mean paying for three
  * statistics to use none of them.
  *
- * The grid is RECOMMENDED_GRID square rather than the canvas aspect. The
+ * The tile grid is RECOMMENDED_GRID square rather than the canvas aspect. The
  * visual-field window is defined as a fraction of each axis, so a square grid
  * keeps the window square in tile space no matter how wide the canvas is; the
  * alternative is a window that stops approximating 10 degrees on ultrawide
  * displays.
+ *
+ * Each tile is read as RECOMMENDED_SAMPLE_DENSITY squared single pixels, not
+ * as one value: the downscale is nearest neighbour to a 128x128 field, so
+ * every sample is one pixel of the frame, the same pixel every frame, which
+ * is how the offline audit samples too. The governor thresholds each one
+ * before counting area; `RECOMMENDED_SAMPLE_DENSITY` has why a single value
+ * per tile made the first-run preset read as a strobe.
  *
  * Cost is the reason this is worth reading carefully, and the reason it was
  * measured rather than assumed — the compute-VM benchmark (d3e47f70) is the
@@ -49,11 +56,23 @@
  * difference 0 over 12 frames on each backend), so the governor sees the
  * same numbers a frame or so later. Where the off-thread pieces are missing
  * the synchronous read is used, as before.
+ *
+ * Reading the 128x128 field rather than a 16x16 grid moved none of that:
+ * re-measured 2026-10-07, the capture still costs 0.1ms of main thread and
+ * the field arrives 3.0-3.5ms later on either backend, as it does at 16x16
+ * on the same (heavily loaded) machine. What the larger field adds is work
+ * when it arrives: converting 16k pixels to luminance (about 0.1ms) and
+ * judging them (`governor.sample`: 0.09ms mean on a still frame, 0.24ms on
+ * busy texture, 0.49ms on a strobe that solves a clamp every flash). Load
+ * average was near 40 for every one of those numbers, so they are ceilings.
  */
-import { relativeLuminance } from '../flash-thresholds.ts';
-import { RECOMMENDED_GRID } from './flash-governor.ts';
+import { linearizeChannel } from '../flash-thresholds.ts';
+import {
+  RECOMMENDED_GRID,
+  RECOMMENDED_SAMPLE_DENSITY,
+} from './flash-governor.ts';
 
-/** Receives a captured frame's luminance grid, or null if it could not be read. */
+/** Receives a captured frame's luminance field, or null if it could not be read. */
 export type FlashGridCallback = (tiles: Float32Array | null) => void;
 
 export type FlashSampler = {
@@ -65,8 +84,14 @@ export type FlashSampler = {
    * reused by the next capture: read it in the callback.
    */
   capture: (canvas: HTMLCanvasElement, onGrid: FlashGridCallback) => boolean;
+  /** Tiles across and down. */
   readonly cols: number;
   readonly rows: number;
+  /**
+   * Samples along each tile edge: the grid handed to `onGrid` is
+   * `cols * density` by `rows * density` (see `FlashSampleOptions`).
+   */
+  readonly density: number;
   /** Whether captures are read off the main thread right now. */
   readonly offThread: boolean;
   dispose: () => void;
@@ -79,14 +104,21 @@ export type FlashSampler = {
  */
 const READBACK_TIMEOUT_MS = 1000;
 
+/**
+ * sRGB byte -> linear light, tabulated: a 128x128 field is 49k channel
+ * conversions a frame, and `linearizeChannel` is a pow() each.
+ */
+const LINEAR = Float32Array.from({ length: 256 }, (_, byte) =>
+  linearizeChannel(byte),
+);
+
 function fillLuminance(target: Float32Array, pixels: Uint8ClampedArray) {
   for (let i = 0; i < target.length; i += 1) {
     const idx = i * 4;
-    target[i] = relativeLuminance(
-      pixels[idx] as number,
-      pixels[idx + 1] as number,
-      pixels[idx + 2] as number,
-    );
+    target[i] =
+      0.2126 * (LINEAR[pixels[idx] as number] as number) +
+      0.7152 * (LINEAR[pixels[idx + 1] as number] as number) +
+      0.0722 * (LINEAR[pixels[idx + 2] as number] as number);
   }
   return target;
 }
@@ -95,10 +127,16 @@ function fillLuminance(target: Float32Array, pixels: Uint8ClampedArray) {
  * Reads the canvas on the calling thread and waits for the GPU to finish
  * the frame. The fallback, and what the off-thread path is measured against.
  */
-export function createMainThreadFlashReader(grid: number = RECOMMENDED_GRID) {
+export function createMainThreadFlashReader(
+  grid: number = RECOMMENDED_GRID,
+  density: number = RECOMMENDED_SAMPLE_DENSITY,
+) {
   const cols = Math.max(1, Math.floor(grid));
   const rows = cols;
-  const luminance = new Float32Array(cols * rows);
+  const samplesPerEdge = Math.max(1, Math.floor(density));
+  const width = cols * samplesPerEdge;
+  const height = rows * samplesPerEdge;
+  const luminance = new Float32Array(width * height);
 
   let scratch: HTMLCanvasElement | null = null;
   let context: CanvasRenderingContext2D | null = null;
@@ -107,11 +145,15 @@ export function createMainThreadFlashReader(grid: number = RECOMMENDED_GRID) {
     if (context) return context;
     if (typeof document === 'undefined') return null;
     scratch = document.createElement('canvas');
-    scratch.width = cols;
-    scratch.height = rows;
+    scratch.width = width;
+    scratch.height = height;
     // willReadFrequently keeps the surface CPU-side, which is what makes the
     // repeated getImageData cheap rather than a fresh map every frame.
     context = scratch.getContext('2d', { willReadFrequently: true });
+    // Nearest neighbour: each sample is one pixel, as in the offline audit,
+    // and the same pixel every frame. Smoothing would blend a browser-chosen
+    // neighbourhood, which is neither a pixel nor a tile mean.
+    if (context) context.imageSmoothingEnabled = false;
     return context;
   }
 
@@ -125,8 +167,18 @@ export function createMainThreadFlashReader(grid: number = RECOMMENDED_GRID) {
 
     let pixels: Uint8ClampedArray;
     try {
-      ctx.drawImage(canvas, 0, 0, sourceWidth, sourceHeight, 0, 0, cols, rows);
-      pixels = ctx.getImageData(0, 0, cols, rows).data;
+      ctx.drawImage(
+        canvas,
+        0,
+        0,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        width,
+        height,
+      );
+      pixels = ctx.getImageData(0, 0, width, height).data;
     } catch {
       // A tainted or zero-sized canvas throws; a governor that cannot see
       // must not guess, so the caller treats null as "no sample this frame"
@@ -145,7 +197,15 @@ export function createMainThreadFlashReader(grid: number = RECOMMENDED_GRID) {
     }
   }
 
-  return { read, cols, rows, dispose };
+  return {
+    read,
+    cols,
+    rows,
+    density: samplesPerEdge,
+    width,
+    height,
+    dispose,
+  };
 }
 
 function canReadOffThread() {
@@ -158,10 +218,11 @@ function canReadOffThread() {
 
 export function createFlashSampler(
   grid: number = RECOMMENDED_GRID,
+  density: number = RECOMMENDED_SAMPLE_DENSITY,
 ): FlashSampler {
-  const mainThread = createMainThreadFlashReader(grid);
-  const { cols, rows } = mainThread;
-  const luminance = new Float32Array(cols * rows);
+  const mainThread = createMainThreadFlashReader(grid, density);
+  const { cols, rows, width, height } = mainThread;
+  const luminance = new Float32Array(width * height);
 
   let offThread = canReadOffThread();
   let worker: Worker | null = null;
@@ -223,11 +284,12 @@ export function createFlashSampler(
     let snapshot: Promise<ImageBitmap>;
     try {
       // The snapshot is taken now, in the draw; only the bitmap resolves
-      // later. 'low' matches the main-thread read's drawImage downscale.
+      // later. 'pixelated' is nearest neighbour, matching the main-thread
+      // read with smoothing off.
       snapshot = createImageBitmap(canvas, {
-        resizeWidth: cols,
-        resizeHeight: rows,
-        resizeQuality: 'low',
+        resizeWidth: width,
+        resizeHeight: height,
+        resizeQuality: 'pixelated',
       });
     } catch {
       onGrid(null);
@@ -241,7 +303,7 @@ export function createFlashSampler(
           bitmap.close();
           return;
         }
-        target.postMessage({ bitmap, cols, rows }, [bitmap]);
+        target.postMessage({ bitmap, cols: width, rows: height }, [bitmap]);
       },
       () => settle(null),
     );
@@ -260,6 +322,7 @@ export function createFlashSampler(
     capture,
     cols,
     rows,
+    density: mainThread.density,
     get offThread() {
       return offThread;
     },
