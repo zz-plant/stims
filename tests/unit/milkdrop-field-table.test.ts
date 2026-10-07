@@ -1,15 +1,15 @@
 import { describe, expect, test } from 'bun:test';
-import { DEFAULT_MILKDROP_STATE } from '../../src/js/milkdrop/compiler/default-state.ts';
+import { DEFAULT_MILKDROP_STATE } from 'milkdrop-toolchain/src/compiler/default-state.ts';
 import {
   aliasMap,
   normalizeProgramAssignmentTarget,
-} from '../../src/js/milkdrop/field-normalization.ts';
+} from 'milkdrop-toolchain/src/field-normalization.ts';
 import {
   buildFieldAliasMap,
   editorFieldKey,
   MILKDROP_FIELDS,
   MILKDROP2_FIELD_PAIRS,
-} from '../../src/js/milkdrop/field-table.ts';
+} from 'milkdrop-toolchain/src/field-table.ts';
 import {
   COLOR_GROUPS,
   SCALAR_CONTROLS,

@@ -32,7 +32,7 @@ import { join } from 'node:path';
 import {
   clearCompiledPresetCache,
   compileMilkdropPresetSource,
-} from '../src/js/milkdrop/compiler.ts';
+} from 'milkdrop-toolchain/src/compiler.ts';
 import { createMilkdropSignalTracker } from '../src/js/milkdrop/runtime-signals.ts';
 import { createMilkdropVM } from '../src/js/milkdrop/vm.ts';
 import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../src/js/milkdrop/webgpu-optimization-flags.ts';

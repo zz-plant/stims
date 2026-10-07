@@ -5,7 +5,7 @@ import {
   MILKDROP_INTRINSIC_IDENTIFIER_NAMES,
   MILKDROP_REGISTER_WORD_PATTERN,
   milkdropVariableNames,
-} from '../builtin-docs';
+} from 'milkdrop-toolchain/src/builtin-docs.ts';
 
 // All four word classes derive from the shared builtin table so the
 // highlighter can never drift from what the compiler accepts. Exported for

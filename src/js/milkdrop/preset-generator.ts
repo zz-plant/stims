@@ -3,7 +3,7 @@
  * tournament candidate evaluation, and offline algorithmic template generation.
  */
 
-import { compileMilkdropPresetSource } from './compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { buildGeneratePrompt } from './preset-prompt.ts';
 import {
   probePresetReactivity,

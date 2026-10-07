@@ -20,12 +20,12 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import sharp from 'sharp';
 import {
   computeFrameStats,
   describeFrameParts,
 } from '../src/js/core/services/visual-embedding.ts';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
 import { estimatePresetMotion } from '../src/js/milkdrop/preset-motion-estimate.ts';
 
 const repoRoot = new URL('..', import.meta.url).pathname;

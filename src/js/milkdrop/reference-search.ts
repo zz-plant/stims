@@ -10,7 +10,7 @@
 import {
   MILKDROP_BUILTIN_DOCS,
   type MilkdropBuiltinDoc,
-} from './builtin-docs.ts';
+} from 'milkdrop-toolchain/src/builtin-docs.ts';
 
 export type ReferenceEntry = MilkdropBuiltinDoc & {
   /** Text inserted at the cursor: `clamp(x, min, max)` or a bare name. */

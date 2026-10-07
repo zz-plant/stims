@@ -30,7 +30,7 @@
 import {
   isFieldShadowedByEquations,
   readMilkdropField,
-} from '../milkdrop/formatter.ts';
+} from 'milkdrop-toolchain/src/formatter.ts';
 import { readModulation } from '../milkdrop/preset-modulation.ts';
 
 /**

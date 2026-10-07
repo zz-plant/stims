@@ -3,8 +3,7 @@
  * postprocessing profiles, feedback render targets, viewport states, and backend capabilities.
  */
 
-import type { Camera, Scene, Texture } from 'three';
-import type { MilkdropExpressionNode } from './common-types.ts';
+import type { MilkdropExpressionNode } from 'milkdrop-toolchain/src/common-types.ts';
 import type {
   MilkdropCompatibilityReport,
   MilkdropCompiledPreset,
@@ -12,7 +11,8 @@ import type {
   MilkdropShaderControls,
   MilkdropShaderProgramPayload,
   MilkdropVideoEchoOrientation,
-} from './compiler-types.ts';
+} from 'milkdrop-toolchain/src/compiler-types.ts';
+import type { Camera, Scene, Texture } from 'three';
 import type { MilkdropRuntimeSignals } from './runtime-types.ts';
 
 export type MilkdropPostprocessingProfile = {

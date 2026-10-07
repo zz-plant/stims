@@ -1,10 +1,10 @@
 import { expect, test } from 'bun:test';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   deriveFidelityTier,
   getValidatedCatalogOverrides,
 } from '../../src/js/milkdrop/catalog-store-analysis.ts';
 import { toCatalogEntry } from '../../src/js/milkdrop/catalog-store-projection.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   fidelityTierLabel,
   supportLabel,

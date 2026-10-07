@@ -1,6 +1,6 @@
 # Shader Support Inventory — MilkDrop Compiler
 
-Analysis date: 2026-07-18. Based on the current audit of `src/js/milkdrop/compiler/**`, `src/js/milkdrop/shader-ast.ts`, `src/js/milkdrop/shader-samplers.ts`, and the test suite (`tests/unit/milkdrop-compiler*.test.ts`).
+Analysis date: 2026-07-18. Based on the current audit of `packages/milkdrop-toolchain/src/compiler/**`, `packages/milkdrop-toolchain/src/shader-ast.ts`, `packages/milkdrop-toolchain/src/shader-samplers.ts`, and the test suite (`tests/unit/milkdrop-compiler*.test.ts`).
 
 ## Scope
 

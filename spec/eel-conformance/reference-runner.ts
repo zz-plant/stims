@@ -26,15 +26,15 @@
 import type {
   MilkdropCompiledStatement,
   MilkdropProgramBlock,
-} from '../../src/js/milkdrop/common-types.ts';
+} from 'milkdrop-toolchain/src/common-types.ts';
 import {
   evaluateMilkdropExpression,
   parseMilkdropStatement,
-} from '../../src/js/milkdrop/expression.ts';
+} from 'milkdrop-toolchain/src/expression.ts';
 import {
   __setJitAvailableForTests,
   compileMilkdropProgram,
-} from '../../src/js/milkdrop/expression-jit.ts';
+} from 'milkdrop-toolchain/src/expression-jit.ts';
 import {
   EEL_CONFORMANCE_BUFFER_SLOTS,
   EEL_CONFORMANCE_RANDOM_DRAW,

@@ -5,7 +5,7 @@ description: "Review changes to WebGPU/WebGL dual-backend parity. Use when a PR 
 
 # Review WebGPU/WebGL Parity
 
-Use this skill when reviewing or authoring changes to `src/js/milkdrop/feedback-manager-*`, `src/js/milkdrop/renderer-adapter*`, `src/js/milkdrop/backend-behavior.ts`, `src/js/milkdrop/compiler/gpu-descriptor-plan.ts`, or any shader-lowering code.
+Use this skill when reviewing or authoring changes to `src/js/milkdrop/feedback-manager-*`, `src/js/milkdrop/renderer-adapter*`, `src/js/milkdrop/backend-behavior.ts`, `packages/milkdrop-toolchain/src/compiler/gpu-descriptor-plan.ts`, or any shader-lowering code.
 
 ## Why this exists
 
@@ -28,7 +28,7 @@ Use this skill when reviewing or authoring changes to `src/js/milkdrop/feedback-
 
   ```bash
   bun run test tests/unit/milkdrop-compiler.test.ts
-  bun run test tests/unit/milkdrop-compiler-seams.test.ts
+  bun run test packages/milkdrop-toolchain/tests/milkdrop-compiler-seams.test.ts
   ```
 
 ### 2. No hardcoded backend-specific values without comment

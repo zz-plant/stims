@@ -1,11 +1,10 @@
 name: Package sites
 
-# Deploys every standalone package's site to this repository's GitHub Pages,
-# one site per package under /<name>/ plus an index page, built by
-# `bun run site:packages`. Enable Pages with "GitHub Actions" as the source
-# in the repository settings; until then the deploy job fails and nothing
-# else happens. After a package is split into its own repository, the
-# `.github/workflows/pages.yml` inside it deploys the same site on its own.
+# Deploys every standalone package's site to this repository's GitHub Pages
+# (https://zz-plant.github.io/stims/<name>/), one site per package plus an
+# index page, built by `bun run site:packages`. This is the only deployment:
+# the mirror repositories (see mirror-packages.yml) are read-only and run no
+# workflows.
 
 on:
   push:

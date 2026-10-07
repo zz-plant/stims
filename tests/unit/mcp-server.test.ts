@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
+import { MILKDROP_BUILTIN_DOCS } from 'milkdrop-toolchain/src/builtin-docs.ts';
 import packageJson from '../../package.json';
 import {
   buildDocPointers,
@@ -13,7 +14,6 @@ import {
   searchMarkdownSources,
 } from '../../scripts/mcp-server.ts';
 import mcpWorker from '../../scripts/mcp-worker.ts';
-import { MILKDROP_BUILTIN_DOCS } from '../../src/js/milkdrop/builtin-docs.ts';
 
 /** Sends one JSON-RPC request through the Worker's HTTP handler. */
 async function callWorker(

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import type { Vector2 } from 'three';
 import {
   AdditiveBlending,
@@ -23,7 +24,6 @@ import {
 } from 'three';
 import { NodeMaterial } from 'three/webgpu';
 import { getFeedbackBackendProfile } from '../../src/js/milkdrop/backend-behavior';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   __milkdropRendererAdapterTestUtils,
   createMilkdropRendererAdapterCore,

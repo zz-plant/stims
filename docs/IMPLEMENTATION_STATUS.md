@@ -22,7 +22,7 @@
   - [x] Added unit tests in `tests/unit/editor-panel.test.ts`.
   - [x] Verified quality gate passes (`bun run check:quick` clean).
 - [x] **Off-main-thread AudioWorklet DSP analysis** (2026-07-29):
-  - [x] Enhanced `FrequencyAnalyserProcessor` in `src/js/utils/audio/frequency-analyser-processor.ts` to compute multi-band energy levels (`bass`, `mid`, `treble`, `subBass`, `kick`), energy envelope tracking, and 4-band transient metrics off the main thread.
+  - [x] Enhanced `FrequencyAnalyserProcessor` in `packages/audio-reactive/src/frequency-analyser-processor.ts` to compute multi-band energy levels (`bass`, `mid`, `treble`, `subBass`, `kick`), energy envelope tracking, and 4-band transient metrics off the main thread.
   - [x] Updated `FrequencyAnalyser` in `src/js/core/audio-handler.ts` to consume worklet energy payloads with fallback to standard `AnalyserNode`.
   - [x] Added unit test suite in `tests/unit/audio-worklet.test.ts`.
   - [x] Verified quality gate passes (`bun run check:quick` clean).

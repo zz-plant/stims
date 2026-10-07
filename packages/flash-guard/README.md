@@ -189,6 +189,10 @@ The off-thread grid matched the synchronous read exactly over 12 frames on each 
 
 `demo/index.html` strobes a canvas at a chosen rate and contrast and shows the governor's readout and a live trace of raw versus seen luminance. Run `bun run build` first; the page imports from `dist/`.
 
+## Development
+
+The code is developed in [zz-plant/stims](https://github.com/zz-plant/stims) under [`packages/flash-guard`](https://github.com/zz-plant/stims/tree/main/packages/flash-guard), next to the app that uses it, and released from there. [zz-plant/flash-guard](https://github.com/zz-plant/flash-guard) is a read-only mirror of that directory, updated on every change. Open issues and pull requests on zz-plant/stims.
+
 ## Provenance
 
 Extracted from [zz-plant/stims](https://github.com/zz-plant/stims):

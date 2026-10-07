@@ -10,7 +10,7 @@
  * every canonical column that preset's per-frame program writes, its kind
  * (constant, clockwork, audio, pointer), the audio signals it reads, and
  * whether it has memory (history) or feeds back on itself (accumulates).
- * See src/js/milkdrop/preset-dataflow.ts.
+ * See packages/milkdrop-toolchain/src/preset-dataflow.ts.
  *
  * With --all it labels every catalog preset (bundled and libraries) by how
  * audio reaches its image, with no rendering: through the equations (which
@@ -32,13 +32,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MILKDROP_SIGNAL_NAME_ALIASES } from '../src/js/milkdrop/compiler/shader-analysis-helpers.ts';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
-import type { MilkdropPresetIR } from '../src/js/milkdrop/compiler-types.ts';
+import { MILKDROP_SIGNAL_NAME_ALIASES } from 'milkdrop-toolchain/src/compiler/shader-analysis-helpers.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import type { MilkdropPresetIR } from 'milkdrop-toolchain/src/compiler-types.ts';
 import {
   analyzePresetDataflow,
   type VariableDataflow,
-} from '../src/js/milkdrop/preset-dataflow.ts';
+} from 'milkdrop-toolchain/src/preset-dataflow.ts';
 import { CANONICAL_VARIABLES } from './preset-lab-dataset.ts';
 import { decodeNpy } from './preset-lab-map.ts';
 import { loadCatalogEntries } from './preset-lab-reactivity.ts';

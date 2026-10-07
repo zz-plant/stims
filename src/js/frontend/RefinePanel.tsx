@@ -1,12 +1,12 @@
+import {
+  analyzePresetMath,
+  type PresetMathAnalysis,
+} from 'milkdrop-toolchain/src/preset-math-analyzer.ts';
 import { useCallback, useMemo, useState } from 'react';
 import {
   computeSourceDiff,
   samePresetSource,
 } from '../milkdrop/overlay/source-diff.ts';
-import {
-  analyzePresetMath,
-  type PresetMathAnalysis,
-} from '../milkdrop/preset-math-analyzer.ts';
 import {
   mutatePresetStyle,
   PRESET_MUTATION_STYLES,

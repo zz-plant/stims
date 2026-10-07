@@ -1,5 +1,5 @@
+import { isMilkdropShaderProgramBackendExecutable } from 'milkdrop-toolchain/src/compiler/shader-execution-classification.ts';
 import { getFeedbackBackendProfile } from '../backend-behavior';
-import { isMilkdropShaderProgramBackendExecutable } from '../compiler/shader-execution-classification.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropPostVisual,

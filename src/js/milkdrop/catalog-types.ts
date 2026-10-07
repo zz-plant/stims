@@ -1,5 +1,3 @@
-import type { PresetSensoryProfile } from '../core/sensory-profile.ts';
-import type { VisualFidelityTier } from './catalog-store-analysis.ts';
 import type {
   MilkdropBackendSupport,
   MilkdropCompatibilityEvidence,
@@ -12,7 +10,9 @@ import type {
   MilkdropSemanticSupport,
   MilkdropVisualCertification,
   MilkdropVisualEvidenceTier,
-} from './common-types.ts';
+} from 'milkdrop-toolchain/src/common-types.ts';
+import type { PresetSensoryProfile } from '../core/sensory-profile.ts';
+import type { VisualFidelityTier } from './catalog-store-analysis.ts';
 
 /**
  * Offline measurements the catalog ships per preset: the quality scorer's

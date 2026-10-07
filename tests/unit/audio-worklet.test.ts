@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import type { HarmonicPercussiveLevels } from 'audio-reactive';
 import { FrequencyAnalyser } from '../../src/js/core/audio-handler.ts';
-import type { HarmonicPercussiveLevels } from '../../src/js/utils/audio/harmonic-percussive.ts';
 
 type ProcessorConstructor = new (
   options?: AudioWorkletNodeOptions,
@@ -41,7 +41,7 @@ class MockAudioWorkletProcessor {
   registeredProcessors.set(name, processorCtor);
 };
 
-await import('../../src/js/utils/audio/frequency-analyser-processor.ts');
+await import('audio-reactive/worklet');
 
 describe('Off-main-thread AudioWorklet DSP processing', () => {
   beforeEach(() => {

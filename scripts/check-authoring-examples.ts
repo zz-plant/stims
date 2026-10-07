@@ -13,8 +13,8 @@
  */
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { buildPresetCodeHash } from '../src/js/frontend/url-state.ts';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler';
 
 const ROOT = resolve(import.meta.dir, '..');
 const AUTHORING_DIR = join(ROOT, 'docs/authoring');

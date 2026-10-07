@@ -6,11 +6,11 @@ import {
   MILKDROP_REGISTER_WORD_PATTERN,
   MILKDROP_T_REGISTER_COUNT,
   milkdropVariableNames,
-} from '../../src/js/milkdrop/builtin-docs.ts';
+} from 'milkdrop-toolchain/src/builtin-docs.ts';
 import {
   MILKDROP_INTRINSIC_FUNCTIONS,
   MILKDROP_INTRINSIC_IDENTIFIERS,
-} from '../../src/js/milkdrop/expression.ts';
+} from 'milkdrop-toolchain/src/expression.ts';
 import {
   ATOM_WORDS,
   BUILTIN_WORDS,

@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { generateGlslFromShaderStatements } from '../../src/js/milkdrop/compiler/shader-analysis-glsl.ts';
-import { compileProgramToWgsl } from '../../src/js/milkdrop/compiler/wgsl-generator.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { generateGlslFromShaderStatements } from 'milkdrop-toolchain/src/compiler/shader-analysis-glsl.ts';
+import { compileProgramToWgsl } from 'milkdrop-toolchain/src/compiler/wgsl-generator.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { MILKDROP_WGSL_SIGNAL_FIELDS } from 'milkdrop-toolchain/src/wgsl-signal-layout.ts';
 import { assembleMilkdropDirectFragmentShaders } from '../../src/js/milkdrop/feedback-manager-shared.ts';
 import {
   applyHarmonicPercussiveUniforms,
@@ -11,7 +12,6 @@ import {
 import { buildFeedbackCompositeState } from '../../src/js/milkdrop/renderer-helpers/feedback-composite.ts';
 import type { MilkdropRuntimeSignals } from '../../src/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
-import { MILKDROP_WGSL_SIGNAL_FIELDS } from '../../src/js/milkdrop/wgsl-signal-layout.ts';
 
 function presetSource(lines: string[]): string {
   return ['[preset00]', ...lines].join('\n');

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 
 /**
  * Opening a preset puts Format's output in the editor, so anything Format

@@ -45,7 +45,7 @@ These are settled. Apply them without asking; change them here, with a reason, w
 
 - **Context.** From a running preset, the visitor opens the editor, sees which sounds drive each control, changes the code and watches the change run.
 - **Claim.** The landing's distinctive promise: "Open one to see which sounds drive it, then change its code while it runs." It rests on the corpus being analysed as programs, the third contribution in [Lineage & Credits](./LINEAGE_AND_CREDITS.md#what-stims-contributes).
-- **Correct.** The audio sources the editor shows for each control match the static dataflow (`src/js/milkdrop/preset-dataflow.ts`). For `shifter-curlique`, `lab:dataflow` reports zoom driven by bass, mid and treble with history. An edit shows on stage without losing the audio or the session.
+- **Correct.** The audio sources the editor shows for each control match the static dataflow (`packages/milkdrop-toolchain/src/preset-dataflow.ts`). For `shifter-curlique`, `lab:dataflow` reports zoom driven by bass, mid and treble with history. An edit shows on stage without losing the audio or the session.
 - **Instruments.** `tests/e2e/open-one-up.test.ts` walks the moment end to end on WebGL, in CI. Unit tests cover the editor panel (`editor-panel-controls`, `editor-panel-inspect`, `editor-panel-knobs`, `editor-panel-compare-safety`). See [Measuring Open one up](#measuring-open-one-up).
 - **Telemetry, 30 days.** 6 editor opens and no applied first edit, against 254 audible starts. The first-edit event counts one button, not edits; see [Open questions](#open-questions).
 - **Gap.** The path works but is hard to find; see [What makes it hard to find](#what-makes-it-hard-to-find).

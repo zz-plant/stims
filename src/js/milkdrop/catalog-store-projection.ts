@@ -3,13 +3,13 @@
  * typed, verified MilkDrop catalog entries with compatibility tiers and backend support flags.
  */
 
+import { formatRenderBackendName } from 'milkdrop-toolchain/src/common-types.ts';
 import {
   deriveFidelityTier,
   getConservativeBundledCatalogProjectionDefaults,
   supportsFromCompiled,
 } from './catalog-store-analysis';
 import type { StoredMetaRecord } from './catalog-store-persistence';
-import { formatRenderBackendName } from './common-types.ts';
 import type {
   MilkdropBackendSupport,
   MilkdropBundledCatalogEntry,

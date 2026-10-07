@@ -9,8 +9,8 @@ import {
 import {
   isShaderBranchDesugarEnabled,
   setShaderBranchDesugarEnabled,
-} from '../../src/js/milkdrop/compiler/shader-branch-desugar.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+} from 'milkdrop-toolchain/src/compiler/shader-branch-desugar.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { createMilkdropEditorSession } from '../../src/js/milkdrop/editor-session.ts';
 import type { MilkdropPresetSource } from '../../src/js/milkdrop/types.ts';
 

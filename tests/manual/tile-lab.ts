@@ -2,6 +2,7 @@
 // resolution (one WebGL context per tile) and measure compile cost and
 // per-frame cost. Prototype only; not wired into the app shell.
 
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { Scene, WebGLRenderer } from 'three';
 import { initCamera } from '../../src/js/core/camera-setup.ts';
 import {
@@ -9,7 +10,6 @@ import {
   type PostprocessingPipeline,
   shouldRenderMilkdropPostprocessing,
 } from '../../src/js/core/postprocessing.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { createMilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-adapter-factory.ts';
 import type { MilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-types.ts';
 import { createMilkdropSignalTracker } from '../../src/js/milkdrop/runtime-signals.ts';

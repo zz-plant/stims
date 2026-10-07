@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'bun:test';
-import { WebMidiControllerService } from '../../src/js/core/services/webmidi-controller.ts';
-import { parseURLParams } from '../../src/js/core/url-params.ts';
 import {
   evaluateMilkdropExpression,
   parseMilkdropExpression,
-} from '../../src/js/milkdrop/expression.ts';
-import { parseMilkdropPreset } from '../../src/js/milkdrop/preset-parser.ts';
+} from 'milkdrop-toolchain/src/expression.ts';
+import { parseMilkdropPreset } from 'milkdrop-toolchain/src/preset-parser.ts';
+import { WebMidiControllerService } from '../../src/js/core/services/webmidi-controller.ts';
+import { parseURLParams } from '../../src/js/core/url-params.ts';
 
 describe('Comprehensive Pressure & Stress Suite', () => {
   describe('1. Math Engine & Expression Boundary Stress', () => {

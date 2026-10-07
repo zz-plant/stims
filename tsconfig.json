@@ -3,6 +3,9 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    // Workspace packages (packages/*) export their TypeScript source under
+    // this condition, so the app type-checks against source, not dist.
+    "customConditions": ["stims-source"],
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "strict": true,
     "incremental": true,

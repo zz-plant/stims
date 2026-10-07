@@ -6,9 +6,9 @@
 import {
   evaluateMilkdropShaderControlExpressions,
   evaluateMilkdropShaderControlProgram,
-} from '../compiler';
-import { walkMilkdropExpression } from '../expression';
-import { resolveMilkdropIdentifier } from '../field-normalization';
+} from 'milkdrop-toolchain/src/compiler.ts';
+import { walkMilkdropExpression } from 'milkdrop-toolchain/src/expression.ts';
+import { resolveMilkdropIdentifier } from 'milkdrop-toolchain/src/field-normalization.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropExpressionNode,

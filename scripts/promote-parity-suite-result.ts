@@ -21,7 +21,7 @@ import type {
   MilkdropParitySourceFamily,
   MilkdropParityToleranceProfile,
   MilkdropRenderBackend,
-} from '../src/js/milkdrop/common-types.ts';
+} from 'milkdrop-toolchain/src/common-types.ts';
 import {
   type MeasuredVisualPresetResult,
   upsertMeasuredVisualPresetResult,

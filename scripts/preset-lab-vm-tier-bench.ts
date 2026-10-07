@@ -180,8 +180,8 @@ try {
         { compileMilkdropProgram },
         { createGpuVmRunner },
       ] = await Promise.all([
-        load('/src/js/milkdrop/expression.ts'),
-        load('/src/js/milkdrop/expression-jit.ts'),
+        load('/packages/milkdrop-toolchain/src/expression.ts'),
+        load('/packages/milkdrop-toolchain/src/expression-jit.ts'),
         load('/src/js/milkdrop/vm-gpu.ts'),
       ]);
 

@@ -3,7 +3,7 @@
 Status: compute-VM increment landing 2026-08-18/19; field-path increment designed, not yet implemented.
 Part of the EEL consolidation program (presets = ROM corpus, EEL = guest ISA); sibling of the
 platform-profile spec (`spec/eel-conformance/`) and the declarative op table
-(`src/js/milkdrop/compiler/eel-function-table.ts`).
+(`packages/milkdrop-toolchain/src/compiler/eel-function-table.ts`).
 
 ## The model
 
@@ -124,8 +124,8 @@ Planned shape:
   buffer semantics (indexing, truncation, bounds, megabuf/gmegabuf separation) in
   `cases/07-buffers.json`. Run with `bun run spec:eel`; enforced by
   `tests/unit/eel-conformance-spec.test.ts` across all three tiers.
-- `tests/unit/eel-csp-fallback.test.ts` — JIT vs interpreter buffer parity.
-- `tests/unit/wgsl-generator.test.ts` — buffer programs emit bindings/helpers and are
+- `packages/milkdrop-toolchain/tests/eel-csp-fallback.test.ts` — JIT vs interpreter buffer parity.
+- `packages/milkdrop-toolchain/tests/wgsl-generator.test.ts` — buffer programs emit bindings/helpers and are
   `gpuExecutable`.
 - `tests/unit/milkdrop-vm-gpu.test.ts` — runner allocates/binds/reads back guest memory.
 - `bun run lab:gpu-differential` — real-GPU differential incl. buffer programs (final buffer
@@ -154,7 +154,7 @@ Fixed by extending the existing `pi`/`e` "overwritten constant" mechanism
 incrementally per-statement as the program compiles, not precomputed over the whole block, so a
 read *before* the first assignment still correctly resolves to the raw signal (matching the CPU's
 env, which has no own property until the assignment statement executes). Regression tests in
-`tests/unit/wgsl-generator.test.ts` pin both directions (read-after-assign, read-before-assign).
+`packages/milkdrop-toolchain/tests/wgsl-generator.test.ts` pin both directions (read-after-assign, read-before-assign).
 
 Also fixed in the same pass: `med`/`att`/`med_att` are CPU-side legacy signal aliases
 (`vm/shared.ts`) that were missing from `MILKDROP_WGSL_SIGNAL_ALIAS_MAP`.

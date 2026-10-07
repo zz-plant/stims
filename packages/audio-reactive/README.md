@@ -263,6 +263,10 @@ Drawn from the source docblocks.
 
 **Waveform auto-gain.** Visualizers that draw the raw time-domain wave expect near-full-scale music; a quiet source parks every byte at 128 plus or minus a few counts and the drawn wave collapses to a line while the dB-scaled spectrum path keeps reacting. `createWaveformAutoGain` tracks the recent peak deviation from centre and scales up toward a target, never attenuates (gain floor 1), caps the gain, and treats deviations under a noise floor as silence so hiss is not amplified.
 
+## Development
+
+The code is developed in [zz-plant/stims](https://github.com/zz-plant/stims) under [`packages/audio-reactive`](https://github.com/zz-plant/stims/tree/main/packages/audio-reactive), next to the app that uses it, and released from there. [zz-plant/audio-reactive](https://github.com/zz-plant/audio-reactive) is a read-only mirror of that directory, updated on every change. Open issues and pull requests on zz-plant/stims.
+
 ## Provenance
 
 Extracted from [zz-plant/stims](https://github.com/zz-plant/stims), the source of the visualizer at toil.fyi. Files carried over unchanged apart from flattening import paths:

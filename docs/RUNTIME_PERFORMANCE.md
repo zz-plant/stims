@@ -157,7 +157,7 @@ artifacts, not source files to commit.
 - `tests/unit/milkdrop-program-jit.test.ts` asserts that aliased environment
   and local scopes receive one ordinary property write, while the bundled
   program differential tests retain interpreter/JIT equivalence.
-- `tests/unit/eel-csp-fallback.test.ts` compares the JIT and interpreter-only
+- `packages/milkdrop-toolchain/tests/eel-csp-fallback.test.ts` compares the JIT and interpreter-only
   paths across seeded programs.
 - `tests/unit/adaptive-quality-controller.test.ts` pins the independence of a
   configured benchmark lock and the live-performance hold, hardware-timing

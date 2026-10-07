@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   addSpinExample,
   undoSpinExample,
 } from '../../src/js/frontend/first-edit.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 
 describe('first edit example', () => {
   test('keeps existing equations and appends a distinct final per-frame line', () => {

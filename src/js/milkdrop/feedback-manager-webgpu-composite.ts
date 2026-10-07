@@ -5,6 +5,7 @@
 
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 
+import { MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS } from 'milkdrop-toolchain/src/shader-samplers.ts';
 import type { Camera, Scene, Texture } from 'three';
 import {
   ClampToEdgeWrapping,
@@ -36,7 +37,6 @@ import {
   MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE,
 } from './milkdrop-native-noise.ts';
 import type { TslNode } from './renderer-helpers/tsl-node-types.ts';
-import { MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS } from './shader-samplers.ts';
 import type { MilkdropFeedbackCompositeState } from './types';
 
 const {
@@ -67,8 +67,15 @@ export type FeedbackRendererLike = {
   setRenderTarget: (target: RenderTarget | null) => void;
 };
 
-export { CUSTOM_TEXTURE_FILES, MILKDROP_TEXTURE_FILES } from './texture-files';
+export {
+  CUSTOM_TEXTURE_FILES,
+  MILKDROP_TEXTURE_FILES,
+} from 'milkdrop-toolchain/src/texture-files.ts';
 
+import {
+  CUSTOM_TEXTURE_FILES,
+  MILKDROP_TEXTURE_FILES,
+} from 'milkdrop-toolchain/src/texture-files.ts';
 import {
   AUX_TEXTURE_SPECS,
   type AuxTextureName,
@@ -78,7 +85,6 @@ import {
   type MilkdropTextureSampleMode,
   resolveTextureUrl,
 } from './feedback-texture-utils.ts';
-import { CUSTOM_TEXTURE_FILES, MILKDROP_TEXTURE_FILES } from './texture-files';
 
 export {
   configureMilkdropTexture,

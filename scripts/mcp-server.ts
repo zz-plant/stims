@@ -18,10 +18,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
+import type { MilkdropExpressionNode } from 'milkdrop-toolchain/src/common-types.ts';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import { z } from 'zod';
-import type { MilkdropExpressionNode } from '../src/js/milkdrop/common-types.ts';
 import { resolveAgentChromiumArgs } from './browser-launch.ts';
 import { sendToil } from './embed-harness.ts';
 import { registerPerformanceTools } from './mcp-performance-tools.ts';
@@ -1745,7 +1745,7 @@ server.registerTool(
   },
   async ({ source, startLine = 1 }) => {
     const { parseMilkdropStatement, splitMilkdropStatements } = await import(
-      '../src/js/milkdrop/expression.ts'
+      'milkdrop-toolchain/src/expression.ts'
     );
 
     const statements = splitMilkdropStatements(source);
@@ -1816,8 +1816,8 @@ server.registerTool(
         { lowerGpuFieldProgram },
       ] = await Promise.all([
         import('./preset-lab-reactivity.ts'),
-        import('../src/js/milkdrop/compiler.ts'),
-        import('../src/js/milkdrop/compiler/gpu-field-planner.ts'),
+        import('milkdrop-toolchain/src/compiler.ts'),
+        import('milkdrop-toolchain/src/compiler/gpu-field-planner.ts'),
       ]);
 
       const repoRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -1830,7 +1830,7 @@ server.registerTool(
 
       if (stage === 'glsl') {
         const { generateGlslFromShaderStatements } = await import(
-          '../src/js/milkdrop/compiler/shader-analysis-glsl.ts'
+          'milkdrop-toolchain/src/compiler/shader-analysis-glsl.ts'
         );
         const warpGlsl = generateGlslFromShaderStatements(
           shader.warpAst,
@@ -1855,7 +1855,7 @@ server.registerTool(
 
       if (stage === 'wgsl') {
         const { compileProgramToWgsl } = await import(
-          '../src/js/milkdrop/compiler/wgsl-generator.ts'
+          'milkdrop-toolchain/src/compiler/wgsl-generator.ts'
         );
         const perFrame = compileProgramToWgsl(compiled.ir.programs.perFrame);
         return asTextResponse(

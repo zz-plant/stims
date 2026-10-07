@@ -22,9 +22,13 @@
 import { afterAll, beforeAll, expect } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import {
+  analyzePresetDataflow,
+  controlAudio,
+} from 'milkdrop-toolchain/src/preset-dataflow.ts';
 import { chromium, type Page } from 'playwright';
 import type { FrameStats } from '../../src/js/core/services/visual-embedding.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   COLOR_GROUPS,
   ENUM_CONTROLS,
@@ -32,10 +36,6 @@ import {
   SCALAR_CONTROLS,
   TOGGLE_CONTROLS,
 } from '../../src/js/milkdrop/preset-controls.ts';
-import {
-  analyzePresetDataflow,
-  controlAudio,
-} from '../../src/js/milkdrop/preset-dataflow.ts';
 import { FIRST_RUN_PRESET_ID } from '../../src/js/milkdrop/runtime/first-run-preset.ts';
 import {
   agentPredicates,

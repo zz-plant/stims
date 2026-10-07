@@ -5,14 +5,20 @@ folder they live in — `unit`, `compat`, `corpus`, `e2e`, `accessibility` —
 and the runner derives profiles from those folders (`fast` = unit + compat;
 `all` adds corpus + e2e). Run one file with `bun run test <path>`.
 
+## Standalone packages
+
+The compiler, expression/JIT, formatter and exporter (`milkdrop-toolchain`), the
+audio DSP (`audio-reactive`), the flash governor and analysis (`flash-guard`) and
+the EEL conformance corpus (`eel-conformance`) live in `packages/`, each with its
+own `tests/`. Run them with `bun run check:packages`, or one package with
+`bun --cwd packages/<name> test`. Tests here only cover what needs the rest of
+the repository, such as the bundled preset corpus.
+
 ## Compiler / expression / JIT
 
-`milkdrop-compiler.test.ts` (2663 lines, the big one) · `milkdrop-compiler-cache.test.ts` ·
-`milkdrop-compiler-compatibility.test.ts` · `milkdrop-compiler-default-state.test.ts` ·
-`milkdrop-compiler-seams.test.ts` · `milkdrop-compiler-shader-analysis.test.ts` ·
-`milkdrop-compiler-shader-glsl-emitter.test.ts` · `milkdrop-expression.test.ts` ·
-`milkdrop-program-jit.test.ts` · `milkdrop-shader-execution-classification.test.ts` ·
-`wgsl-generator.test.ts` · `milkdrop-wgsl-vectorization.test.ts` ·
+Most of it is `packages/milkdrop-toolchain/tests/`. Here: the corpus cases in
+`milkdrop-compiler.test.ts` · `milkdrop-program-jit.test.ts` (JIT against the
+interpreter over bundled presets) · `milkdrop-wgsl-vectorization.test.ts` ·
 `milkdrop-shader-tsl-intrinsics.test.ts` · `milkdrop-shader-sampler-aliases.test.ts` ·
 `custom-shader-import.test.ts` ·
 `butterchurn-eel-transpiler.test.ts` (scripts/)
@@ -44,11 +50,12 @@ the test. `bun run spec:eel` runs the same corpus with a per-section report.
 
 ## Audio
 
-`audio-handler.test.ts` · `audio-lifecycle.test.ts` · `audio-interpolator.test.ts` ·
-`audio-gpu-texture.test.ts` · `audio-frame-allocation.test.ts` · `audio-worklet.test.ts` ·
-`audio-transient-dsp.test.ts` · `harmonic-percussive-dsp.test.ts` ·
-`harmonic-percussive-signals.test.ts` · `milkdrop-audio-signal-contract.test.ts` ·
-`milkdrop-input-signals.test.ts` · `audio-visual-transfer.test.ts` · `waveform-auto-gain.test.ts` ·
+The DSP itself (FFT worklet, HPSS, beat tracking, spectral features, interpolation,
+lifecycle) is tested in `packages/audio-reactive/tests/`. Here:
+`audio-handler.test.ts` · `audio-gpu-texture.test.ts` · `audio-frame-allocation.test.ts` ·
+`audio-worklet.test.ts` · `harmonic-percussive-signals.test.ts` ·
+`milkdrop-audio-signal-contract.test.ts` · `milkdrop-input-signals.test.ts` ·
+`audio-visual-transfer.test.ts` ·
 `display-audio-capture.test.ts` · `youtube-controller.test.ts` · `test-audio-rig.ts` (script)
 
 ## Catalog / store / search
@@ -62,8 +69,7 @@ the test. `bun run spec:eel` runs the same corpus with a per-section report.
 ## Editor / authoring / presets
 
 `editor-panel.test.ts` · `editor-panel-controls.test.ts` · `milkdrop-editor-session.test.ts` ·
-`milkdrop-formatter-field-read.test.ts` · `milkdrop-formatter-upsert.test.ts` ·
-`milkdrop-formatter-midi-shadowing.test.ts` · `preset-controls.test.ts` ·
+`preset-controls.test.ts` · (formatter tests: `packages/milkdrop-toolchain/tests/`) ·
 `live-modulation.test.ts` · `preset-modulation.test.ts` · `preset-sharing.test.ts` ·
 `preset-file-actions.test.ts` · `preset-id-resolution.test.ts` · `preset-handles.test.ts` ·
 `preset-credit.test.ts` · `preset-lineage.test.ts` · `preset-artwork.test.ts` ·

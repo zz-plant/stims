@@ -1,6 +1,6 @@
 /**
  * Generates docs/authoring/reference.md from the single-source-of-truth
- * builtin table (`src/js/milkdrop/builtin-docs.ts`), so the human reference
+ * builtin table (`packages/milkdrop-toolchain/src/builtin-docs.ts`), so the human reference
  * can never drift from what the compiler and editor actually support.
  *
  *   bun run scripts/generate-authoring-reference.ts          # write
@@ -13,8 +13,8 @@ import {
   MILKDROP_Q_REGISTER_COUNT,
   MILKDROP_T_REGISTER_COUNT,
   type MilkdropBuiltinDoc,
-} from '../src/js/milkdrop/builtin-docs';
-import { MILKDROP_EEL_CLOSE_FACTOR } from '../src/js/milkdrop/expression';
+} from 'milkdrop-toolchain/src/builtin-docs.ts';
+import { MILKDROP_EEL_CLOSE_FACTOR } from 'milkdrop-toolchain/src/expression.ts';
 
 const OUT_PATH = resolve(
   import.meta.dir,
@@ -53,7 +53,7 @@ const stateVars = MILKDROP_BUILTIN_DOCS.filter(
 const content = `# MilkDrop language reference (Stims)
 
 <!-- GENERATED FILE — do not edit by hand.
-     Source of truth: src/js/milkdrop/builtin-docs.ts
+     Source of truth: packages/milkdrop-toolchain/src/builtin-docs.ts
      Regenerate: bun run docs:authoring-reference -->
 
 Every name below is derived from the same table the compiler, syntax

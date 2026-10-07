@@ -20,8 +20,8 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
-import { normalizeMilkdropShaderSamplerName } from '../../src/js/milkdrop/shader-samplers.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { normalizeMilkdropShaderSamplerName } from 'milkdrop-toolchain/src/shader-samplers.ts';
 
 const PRESET_DIR = join(process.cwd(), 'public/milkdrop-presets');
 

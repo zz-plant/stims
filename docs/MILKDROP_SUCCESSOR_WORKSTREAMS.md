@@ -15,7 +15,7 @@ Primary requirement:
 
 Primary files:
 
-- `src/js/milkdrop/compiler/*`
+- `packages/milkdrop-toolchain/src/compiler/*`
 - `src/js/milkdrop/vm/*`
 - `src/js/milkdrop/renderer-helpers/*`
 - `src/data/milkdrop-parity/*`

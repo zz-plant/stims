@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   extractNativeShaderBody,
   normalizeHlslToGlsl,
-} from '../../src/js/milkdrop/compiler/shader-analysis.ts';
+} from 'milkdrop-toolchain/src/compiler/shader-analysis.ts';
 
 /**
  * Statement-level HLSL→GLSL rewrites on the raw (hlsl2glsl-style) path.

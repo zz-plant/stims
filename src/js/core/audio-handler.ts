@@ -18,27 +18,24 @@
  * jitter this module passes through. Measure changes with
  * `bun run lab:reactivity` rather than judging by eye.
  */
-import type { Camera, Object3D } from 'three';
-import { Audio, AudioListener, PositionalAudio } from 'three';
-import workletSource from '../utils/audio/frequency-analyser-processor.ts?worklet';
-import type { HarmonicPercussiveLevels } from '../utils/audio/harmonic-percussive.ts';
-import {
-  createWaveformAutoGain,
-  type FourBandTransientMetrics,
-  getFourBandTransientMetrics,
-  getFrequencyBandLevels,
-} from '../utils/audio/reactivity.ts';
-import {
-  extractSpectralFeatures,
-  type SpectralFeatureSnapshot,
-} from '../utils/audio/spectral-features.ts';
-import { isInAppBrowser } from '../utils/browser/device-detect.ts';
-import { reportAudioAwaitingGesture } from './audio-gesture-gate.ts';
+
+import type { HarmonicPercussiveLevels } from 'audio-reactive';
 import {
   type AudioEnergySnapshot,
   type AudioReactivityInterpolator,
   createAudioReactivityInterpolator,
-} from './audio-interpolator.ts';
+  createWaveformAutoGain,
+  extractSpectralFeatures,
+  type FourBandTransientMetrics,
+  getFourBandTransientMetrics,
+  getFrequencyBandLevels,
+  reportAudioAwaitingGesture,
+  type SpectralFeatureSnapshot,
+} from 'audio-reactive';
+import workletSource from 'audio-reactive/worklet?worklet';
+import type { Camera, Object3D } from 'three';
+import { Audio, AudioListener, PositionalAudio } from 'three';
+import { isInAppBrowser } from '../utils/browser/device-detect.ts';
 import { createLogger } from './logger.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
 import { getMockAudioParams } from './url-params.ts';
@@ -1192,7 +1189,7 @@ function installResumeOnVisible() {
 // ── AudioContext / stream lifecycle ──────────────────────────────────
 // The ordering invariants (no leak, permission-before-mount, generation
 // race) are formalised in `audio-lifecycle.ts`. See that module and
-// `tests/unit/audio-lifecycle.test.ts` for the contract.
+// `packages/audio-reactive/tests/audio-lifecycle.test.ts` for the contract.
 
 export function registerAudioContext(context: AudioContext) {
   activeContexts.add(context);

@@ -1,5 +1,5 @@
+import type { MilkdropDiagnostic } from 'milkdrop-toolchain/src/common-types.ts';
 import { isAgentMode } from '../../core/url-params.ts';
-import type { MilkdropDiagnostic } from '../common-types.ts';
 
 const IS_DEV =
   typeof window !== 'undefined'

@@ -5,17 +5,17 @@
  * back into the offline reader.
  */
 import { describe, expect, test } from 'bun:test';
+import {
+  analyseBlockBytes,
+  buildHannWindow,
+  buildTwiddleTable,
+} from 'audio-reactive';
 import { buildAudioFileInputs } from '../../scripts/audio-file-inputs.ts';
 import {
   calibrateLive,
   compareAudioFrames,
 } from '../../scripts/lab-audio-fidelity.ts';
 import type { FrameInputs } from '../../scripts/preset-lab-replay.ts';
-import {
-  analyseBlockBytes,
-  buildHannWindow,
-  buildTwiddleTable,
-} from '../../src/js/utils/audio/analyser-core.ts';
 
 const sampleRate = 44100;
 

@@ -12,4 +12,4 @@
  * the fixed RNG, the buffer sizes and the comparison tolerance are documented
  * in the package README and exported from its loader.
  */
-export * from '../../packages/eel-conformance/src/index.ts';
+export * from 'eel-conformance';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   formatModulation,
   type Modulation,

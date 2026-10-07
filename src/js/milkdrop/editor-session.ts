@@ -20,11 +20,14 @@
  * else decides what to do with it.
  */
 import { type Remote, releaseProxy, wrap } from 'comlink';
+import { isShaderBranchDesugarEnabled } from 'milkdrop-toolchain/src/compiler/shader-branch-desugar.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import {
+  upsertMilkdropField,
+  upsertMilkdropFields,
+} from 'milkdrop-toolchain/src/formatter.ts';
 import { createLogger } from '../core/logger';
 import { isAgentMode } from '../core/url-params';
-import { compileMilkdropPresetSource } from './compiler';
-import { isShaderBranchDesugarEnabled } from './compiler/shader-branch-desugar';
-import { upsertMilkdropField, upsertMilkdropFields } from './formatter';
 import type {
   MilkdropCompiledPreset,
   MilkdropEditorCommitOutcome,

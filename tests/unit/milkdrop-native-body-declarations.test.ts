@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { extractNativeShaderBody } from '../../src/js/milkdrop/compiler/shader-analysis.ts';
+import { extractNativeShaderBody } from 'milkdrop-toolchain/src/compiler/shader-analysis.ts';
 
 /**
  * Declarations above `shader_body` are carried into the executable body.

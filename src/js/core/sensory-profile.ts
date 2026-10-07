@@ -7,16 +7,33 @@
  * catalog entries carried one, even though the WCAG 2.3.1 instrument
  * (scripts/analyze-preset-flash.ts) has been shipping the whole time. It
  * lives in core now because both the merge script and the UI need it, and
- * because the classifier below must be the single definition of where the
- * bands fall: a warning in the UI and a filter in Browse are worthless if
- * they disagree about what "high" means.
+ * because there must be a single definition of where the bands fall (the
+ * classifier is `flash-guard`'s): a warning in the UI and a filter in Browse
+ * are worthless if they disagree about what "high" means.
  *
  * WCAG 2.3.1 sets the general and red flash threshold at 3 flashes per
  * second. That is the line for "flags for review", not a medical
  * determination — see the caveats on classifyFlashRisk.
  */
 
-export type FlashRiskLevel = 'unknown' | 'none' | 'low' | 'medium' | 'high';
+import type {
+  FlashRiskLevel,
+  FlashMeasurement as RiskMeasurement,
+} from 'flash-guard';
+import { classifyFlashRisk } from 'flash-guard';
+
+/**
+ * The risk bands, their classifier and their labels come from `flash-guard`,
+ * so the catalog, the Browse filter and the live governor share one
+ * definition of where "high" starts. The WCAG limit is re-exported under
+ * its old name for the merge script and the UI.
+ */
+export {
+  classifyFlashRisk,
+  describeFlashRisk,
+  FLASHES_PER_SECOND_LIMIT as WCAG_FLASHES_PER_SECOND_LIMIT,
+  type FlashRiskLevel,
+} from 'flash-guard';
 
 export type PresetSensoryProfile = {
   flashRiskLevel: FlashRiskLevel;
@@ -28,64 +45,15 @@ export type PresetSensoryProfile = {
 };
 
 /**
- * The WCAG general/red flash threshold, in flashes per second.
- *
- * Re-exported from `flash-thresholds.ts` rather than redeclared: the offline
- * audit, this classifier, and the runtime governor must agree on the limit,
- * and a second literal `3` in the tree is how they stop agreeing.
+ * The measurement a profile is built from: what the classifier reads, plus
+ * the two figures the stored profile keeps. Structurally a subset of the
+ * lab's FlashAnalysis.
  */
-export { FLASHES_PER_SECOND_LIMIT as WCAG_FLASHES_PER_SECOND_LIMIT } from './flash-thresholds.ts';
-
-import { FLASHES_PER_SECOND_LIMIT as WCAG_FLASHES_PER_SECOND_LIMIT } from './flash-thresholds.ts';
-
-/**
- * The measurement this classifier consumes. Structurally a subset of the
- * lab's FlashAnalysis, declared here so `core` does not depend on `scripts`.
- */
-export type FlashMeasurement = {
-  peakFlashesPerSecond: number;
-  peakRedFlashesPerSecond: number;
+export type FlashMeasurement = RiskMeasurement & {
   meanLuminance: number;
   /** Std-dev of frame-to-frame luminance change. */
   luminanceVolatility: number;
 };
-
-/**
- * Turn a measured timeline into a risk band.
- *
- * Deliberately conservative in one direction only: a preset that exceeds the
- * WCAG limit on *either* the general or the red-flash channel is 'high',
- * because red flash is the more dangerous of the two and is not a subset of
- * the general count. Below the limit the bands are advisory — they let a
- * user avoid busy presets, and they are not a safety claim.
- *
- * 'none' means measured and essentially still. It is not "safe": no
- * automated measurement can promise that for an individual, which is why
- * `unknown` and `none` are distinct values and why the UI must never render
- * an unmeasured preset as if it were calm.
- */
-export function classifyFlashRisk(
-  measurement: FlashMeasurement,
-): FlashRiskLevel {
-  const { peakFlashesPerSecond, peakRedFlashesPerSecond } = measurement;
-
-  if (
-    peakFlashesPerSecond > WCAG_FLASHES_PER_SECOND_LIMIT ||
-    peakRedFlashesPerSecond > WCAG_FLASHES_PER_SECOND_LIMIT
-  ) {
-    return 'high';
-  }
-  // Right at the threshold, or close under it: a 1s window is a coarse
-  // instrument and a preset at 2.5/s is not meaningfully calmer than one at
-  // 3.1/s, so this band exists rather than rounding it down to 'low'.
-  if (peakFlashesPerSecond >= 2 || peakRedFlashesPerSecond >= 2) {
-    return 'medium';
-  }
-  if (peakFlashesPerSecond > 0 || peakRedFlashesPerSecond > 0) {
-    return 'low';
-  }
-  return 'none';
-}
 
 /** Build the stored profile from a measurement plus the run's timestamp. */
 export function toSensoryProfile(
@@ -123,20 +91,4 @@ export function hiddenByFlashPreference(
   profile: PresetSensoryProfile | undefined,
 ): boolean {
   return profile?.flashRiskLevel === 'high';
-}
-
-/** Short, non-clinical label for a risk band. */
-export function describeFlashRisk(level: FlashRiskLevel): string {
-  switch (level) {
-    case 'high':
-      return 'Frequent flashing';
-    case 'medium':
-      return 'Some flashing';
-    case 'low':
-      return 'Occasional flashing';
-    case 'none':
-      return 'No flashing measured';
-    default:
-      return 'Flashing not measured';
-  }
 }

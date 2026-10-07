@@ -16,10 +16,10 @@
  * projectM and Butterchurn read the same format and follow the same sets;
  * where they differ from MilkDrop 2 is not checked here, and the UI says so.
  */
-import { milkdropVariableNames } from './builtin-docs.ts';
-import { DEFAULT_MILKDROP_STATE } from './compiler/default-state.ts';
-import { findMilkdropFieldLine } from './formatter.ts';
-import { MILKDROP2_STIMS_KEYS } from './milkdrop2-export.ts';
+import { milkdropVariableNames } from 'milkdrop-toolchain/src/builtin-docs.ts';
+import { DEFAULT_MILKDROP_STATE } from 'milkdrop-toolchain/src/compiler/default-state.ts';
+import { findMilkdropFieldLine } from 'milkdrop-toolchain/src/formatter.ts';
+import { MILKDROP2_STIMS_KEYS } from 'milkdrop-toolchain/src/milkdrop2-export.ts';
 import type { MilkdropCompiledPreset } from './types.ts';
 
 export type PortabilitySeverity = 'breaks' | 'differs' | 'needs';

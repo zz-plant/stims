@@ -15,13 +15,13 @@
  */
 /* global GPUDevice */
 
-import { DEFAULT_MILKDROP_STATE } from './compiler';
+import { DEFAULT_MILKDROP_STATE } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   compileMilkdropProgram,
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,
-} from './expression-jit.ts';
-import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
+} from 'milkdrop-toolchain/src/expression-jit.ts';
+import { normalizeProgramAssignmentTarget } from 'milkdrop-toolchain/src/field-normalization.ts';
 import { inspectableVariableNames } from './inspectable-variables.ts';
 import { isElementHidden } from './render-isolation.ts';
 import type {

@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import { StringStream } from '@codemirror/language';
-import { initAgentBridge } from '../../src/js/frontend/agent-bridge.ts';
 import {
   findMilkdropEquationLine,
   isFieldShadowedByEquations,
   readMilkdropField,
   upsertMilkdropFields,
-} from '../../src/js/milkdrop/formatter.ts';
+} from 'milkdrop-toolchain/src/formatter.ts';
+import { initAgentBridge } from '../../src/js/frontend/agent-bridge.ts';
 import { milkdropParser } from '../../src/js/milkdrop/overlay/editor-language.ts';
 import { computeAstDiagnostics } from '../../src/js/milkdrop/overlay/editor-panel.ts';
 import { computeSourceDiff } from '../../src/js/milkdrop/overlay/source-diff.ts';

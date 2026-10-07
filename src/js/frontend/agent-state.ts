@@ -20,12 +20,12 @@
  * Full usage guide: docs/agents/browser-automation.md.
  */
 
+import type { MilkdropShaderExecutionMode } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import { isHiddenTabSuspendingFrames } from '../core/hidden-tab-policy.ts';
 import {
   extractFrameStats,
   type FrameStats,
 } from '../core/services/visual-embedding.ts';
-import type { MilkdropShaderExecutionMode } from '../milkdrop/shader-execution-mode.ts';
 import { subscribeVariables } from '../milkdrop/variable-probe.ts';
 import type { AgentTelemetry } from './agent-bridge.ts';
 import type { CommandAction } from './command-palette-registry.ts';

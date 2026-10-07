@@ -3,18 +3,18 @@ import {
   extractCustomSamplerDeclarations,
   resolveCustomSamplerSampleMode,
   resolveCustomSamplerTextureFile,
-} from '../../src/js/milkdrop/compiler/custom-samplers.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
-import { resolveDirectShaderSamplerBinding } from '../../src/js/milkdrop/feedback-manager-webgpu-bindings.ts';
+} from 'milkdrop-toolchain/src/compiler/custom-samplers.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   evaluateMilkdropShaderExpression,
   parseMilkdropShaderStatement,
-} from '../../src/js/milkdrop/shader-ast.ts';
+} from 'milkdrop-toolchain/src/shader-ast.ts';
 import {
   classifyTex3dSamplerEquivalence,
   isMilkdropVolumeShaderSamplerName as isVolumeSamplerName,
   normalizeMilkdropShaderSamplerName,
-} from '../../src/js/milkdrop/shader-samplers.ts';
+} from 'milkdrop-toolchain/src/shader-samplers.ts';
+import { resolveDirectShaderSamplerBinding } from '../../src/js/milkdrop/feedback-manager-webgpu-bindings.ts';
 
 const SAMPLER_ALIAS_CASES = [
   {

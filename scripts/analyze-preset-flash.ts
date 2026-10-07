@@ -79,7 +79,7 @@
  *
  * `--governor` measures each preset TWICE from one render pass: the raw
  * timeline, and the timeline as the runtime flash governor
- * (src/js/core/services/flash-governor.ts) would have presented it. That is
+ * (packages/flash-guard/src/governor.ts) would have presented it. That is
  * the only honest way to check the governor against real content -- its unit
  * tests use synthetic full-field strobes, which have none of the texture,
  * localized flicker, or motion that real presets do. It also reports what the
@@ -92,9 +92,9 @@
  */
 
 import { writeFileSync } from 'node:fs';
+import { analyzeFlashEvents, type FlashAnalysis } from 'flash-guard';
 import { chromium } from 'playwright';
 import { ensureDevServer } from './dev-server.ts';
-import { analyzeFlashEvents, type FlashAnalysis } from './flash-analysis.ts';
 
 const DEFAULT_COUNT = 50;
 const DEFAULT_PORT = 5199;
@@ -462,8 +462,7 @@ async function main() {
                 // Vite serves this from the dev server; the specifier is a URL
                 // rather than a path tsc can resolve, so it goes through a
                 // variable to keep the module graph out of the typecheck.
-                const governorModule =
-                  '/src/js/core/services/flash-governor.ts';
+                const governorModule = '/packages/flash-guard/src/governor.ts';
                 const mod = (await import(
                   /* @vite-ignore */ governorModule
                 )) as {

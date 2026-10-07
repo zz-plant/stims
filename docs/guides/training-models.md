@@ -64,7 +64,7 @@ sides and inflates every score.
 
 A preset is a small program, so which inputs each value can depend on is a
 question for program analysis, not for a model.
-`src/js/milkdrop/preset-dataflow.ts` interprets a compiled preset's
+`packages/milkdrop-toolchain/src/preset-dataflow.ts` interprets a compiled preset's
 equations over dependency sets instead of numbers. It follows the VM's own
 rules:
 - built-in controls reset every frame, while `q`/`t`/user variables and

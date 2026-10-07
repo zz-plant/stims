@@ -26,7 +26,6 @@
  * its phase; and viewport signals (aspect, pixelsx/y) are left unset.
  */
 
-import { resolve as resolvePath } from 'node:path';
 import { plugin } from 'bun';
 import type { FrequencyAnalyser as FrequencyAnalyserType } from '../src/js/core/audio-handler.ts';
 import {
@@ -157,11 +156,8 @@ type LiveAudioStack = {
 
 let liveAudioStack: Promise<LiveAudioStack> | null = null;
 
-/** audio-handler.ts's `?worklet` import, resolved. */
-const WORKLET_SPECIFIER = `${resolvePath(
-  import.meta.dirname,
-  '../src/js/utils/audio/frequency-analyser-processor.ts',
-)}?worklet`;
+/** audio-handler.ts's `?worklet` import, as it writes it. */
+const WORKLET_SPECIFIER = 'audio-reactive/worklet?worklet';
 
 /**
  * audio-handler.ts imports the worklet through Vite's `?worklet` suffix (a
@@ -214,7 +210,7 @@ function loadLiveAudioStack(): Promise<LiveAudioStack> {
     await supplyWorkletSource();
     const [processorModule, audioHandler, animationLoop, runtimeSignals] =
       await Promise.all([
-        import('../src/js/utils/audio/frequency-analyser-processor.ts'),
+        import('audio-reactive/worklet'),
         import('../src/js/core/audio-handler.ts'),
         import('../src/js/core/animation-loop.ts'),
         import('../src/js/milkdrop/runtime-signals.ts'),

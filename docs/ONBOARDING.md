@@ -47,7 +47,7 @@ flowchart TB
 
 ## 🔴 The four genuinely hard things
 
-### 1. The preset compiler — `src/js/milkdrop/compiler/`
+### 1. The preset compiler — `packages/milkdrop-toolchain/src/compiler/`
 
 21 files. This is the hardest thing in the repository, and it is hard for a reason that reading the code will not reveal.
 

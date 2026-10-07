@@ -72,9 +72,9 @@ Playing MilkDrop presets in a browser isn't new: Butterchurn did it first. Neith
 
 | Part | What it does | Code |
 | --- | --- | --- |
-| Compiler and VM | Parses preset equations (EEL2) into an IR and runs them on an interpreter or a JIT, lowering per-pixel equations into the shader on WebGPU; translates preset shaders to GLSL and WGSL | `src/js/milkdrop/compiler/`, `src/js/milkdrop/vm.ts` |
+| Compiler and VM | Parses preset equations (EEL2) into an IR and runs them on an interpreter or a JIT, lowering per-pixel equations into the shader on WebGPU; translates preset shaders to GLSL and WGSL | `packages/milkdrop-toolchain/src/compiler/`, `src/js/milkdrop/vm.ts` |
 | Renderer | WebGL2 is the baseline; an optional WebGPU path falls back to it when a preset needs something WebGPU can't run yet | `src/js/milkdrop/` |
-| Audio | FFT, bands and transients computed in an AudioWorklet, packed into a GPU texture | `src/js/core/audio-handler.ts`, `src/js/utils/audio/` |
+| Audio | FFT, bands and transients computed in an AudioWorklet, packed into a GPU texture | `src/js/core/audio-handler.ts`, `packages/audio-reactive/src/` |
 | App | The React workspace: browsing, the editor, and the URL as session state | `src/js/frontend/` |
 | Edge (optional) | Cloudflare Worker routes for model-backed preset generation, blending and visual search; playback and editing don't need them | `functions/` |
 
@@ -100,7 +100,7 @@ The compiler is a plain module, so scripts and CI can check `.milk` files the sa
 ```ts
 // compile.ts — print the errors the editor would show
 import { readFileSync } from 'node:fs';
-import { compileMilkdropPresetSource } from './src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from './packages/milkdrop-toolchain/src/compiler.ts';
 
 const { diagnostics } = compileMilkdropPresetSource(
   readFileSync(process.argv[2] ?? '', 'utf8'),
@@ -118,7 +118,7 @@ To learn the equation language, start with [the authoring curriculum](./docs/aut
 
 ### Standalone packages
 
-Four parts of Stims are also published on their own, with no dependency on the app, under [`packages/`](./packages/README.md):
+Four parts of Stims are standalone packages under [`packages/`](./packages/README.md): the app imports them, they have no dependency on the app, and each has a read-only mirror repository, a demo site and an npm-ready build.
 
 | Package | What it is |
 | --- | --- |

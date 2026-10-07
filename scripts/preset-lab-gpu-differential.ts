@@ -21,19 +21,19 @@
  * are orders of magnitude, not ulps.
  */
 
-import { chromium } from 'playwright';
 import type {
   MilkdropCompiledStatement,
   MilkdropProgramBlock,
-} from '../src/js/milkdrop/common-types.ts';
-import { compileProgramToWgsl } from '../src/js/milkdrop/compiler/wgsl-generator.ts';
-import { parseMilkdropStatement } from '../src/js/milkdrop/expression.ts';
+} from 'milkdrop-toolchain/src/common-types.ts';
+import { compileProgramToWgsl } from 'milkdrop-toolchain/src/compiler/wgsl-generator.ts';
+import { parseMilkdropStatement } from 'milkdrop-toolchain/src/expression.ts';
 import {
   compileMilkdropProgram,
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,
-} from '../src/js/milkdrop/expression-jit.ts';
-import { MILKDROP_WGSL_SIGNAL_FIELDS } from '../src/js/milkdrop/wgsl-signal-layout.ts';
+} from 'milkdrop-toolchain/src/expression-jit.ts';
+import { MILKDROP_WGSL_SIGNAL_FIELDS } from 'milkdrop-toolchain/src/wgsl-signal-layout.ts';
+import { chromium } from 'playwright';
 import { ensureDevServer } from './dev-server.ts';
 
 const PORT = 5196;

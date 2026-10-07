@@ -3,9 +3,9 @@
  * fidelity badges, author attribution, action menus, and compatibility indicators.
  */
 
+import { formatRenderBackendName } from 'milkdrop-toolchain/src/common-types.ts';
 import { renderIconSvg } from '../../ui/icon-library.ts';
 import type { VisualFidelityTier } from '../catalog-store-analysis.ts';
-import { formatRenderBackendName } from '../common-types.ts';
 import type { MilkdropPresetRenderPreview } from '../preset-preview.ts';
 import type {
   MilkdropCatalogEntry,

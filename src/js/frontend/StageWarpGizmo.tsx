@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   isFieldShadowedByEquations,
   readMilkdropField,
   upsertMilkdropFields,
-} from '../milkdrop/formatter.ts';
+} from 'milkdrop-toolchain/src/formatter.ts';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 

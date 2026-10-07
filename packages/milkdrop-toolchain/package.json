@@ -33,6 +33,8 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "stims-source": "./src/index.ts",
+      "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },

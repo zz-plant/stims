@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   clearRenderIsolation,
   toggleMute,

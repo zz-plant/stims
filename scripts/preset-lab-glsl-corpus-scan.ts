@@ -38,9 +38,9 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generateGlslFromShaderStatements } from '../src/js/milkdrop/compiler/shader-analysis-glsl.ts';
-import { isMilkdropShaderProgramBackendExecutable } from '../src/js/milkdrop/compiler/shader-execution-classification.ts';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
+import { generateGlslFromShaderStatements } from 'milkdrop-toolchain/src/compiler/shader-analysis-glsl.ts';
+import { isMilkdropShaderProgramBackendExecutable } from 'milkdrop-toolchain/src/compiler/shader-execution-classification.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { assembleMilkdropDirectFragmentShaders } from '../src/js/milkdrop/feedback-manager-shared.ts';
 import { loadCatalogEntries } from './preset-lab-reactivity.ts';
 

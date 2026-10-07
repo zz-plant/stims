@@ -3,19 +3,19 @@
  * history navigation, and smooth blend transition triggers between active visualizer scenes.
  */
 
+import { formatRenderBackendName } from 'milkdrop-toolchain/src/common-types.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { prewarmMilkdropPrograms } from 'milkdrop-toolchain/src/expression-jit.ts';
+import {
+  isShaderApproximated,
+  resolveShaderExecutionMode,
+} from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import { getSessionRandom } from '../../core/deterministic-random.ts';
 import {
   notePresetShown,
   noteShaderExecution,
 } from '../../core/services/preset-telemetry';
-import { formatRenderBackendName } from '../common-types.ts';
-import { compileMilkdropPresetSource } from '../compiler';
-import { prewarmMilkdropPrograms } from '../expression-jit.ts';
 import { samePresetSource } from '../overlay/source-diff.ts';
-import {
-  isShaderApproximated,
-  resolveShaderExecutionMode,
-} from '../shader-execution-mode.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,

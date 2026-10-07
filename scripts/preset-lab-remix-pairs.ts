@@ -42,12 +42,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { parseMilkdropPreset } from 'milkdrop-toolchain/src/preset-parser.ts';
 import {
   buildPresetFamilies,
   type LineageCatalogEntry,
 } from '../src/js/milkdrop/preset-lineage.ts';
-import { parseMilkdropPreset } from '../src/js/milkdrop/preset-parser.ts';
 import { loadCatalogEntries } from './preset-lab-reactivity.ts';
 
 /**

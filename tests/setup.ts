@@ -29,20 +29,17 @@ Bun.plugin({
   },
 });
 
+// audio-handler.ts imports the AudioWorklet processor through Vite's
+// `?worklet` suffix, which yields its bundled source as a string. Bun has no
+// such loader, so the test preload supplies the processor's source text.
 const workletSource = readFileSync(
   resolvePath(
     import.meta.dirname,
-    '../src/js/utils/audio/frequency-analyser-processor.ts',
+    '../packages/audio-reactive/src/frequency-analyser-processor.ts',
   ),
   'utf8',
 );
-mock.module(
-  '../src/js/utils/audio/frequency-analyser-processor.ts?worklet',
-  () => ({
-    default: workletSource,
-  }),
-);
-mock.module('../utils/audio/frequency-analyser-processor.ts?worklet', () => ({
+mock.module('audio-reactive/worklet?worklet', () => ({
   default: workletSource,
 }));
 

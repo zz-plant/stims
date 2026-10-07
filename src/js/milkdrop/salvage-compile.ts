@@ -9,7 +9,7 @@
  * compile error is a regression signal, not noise to paper over.
  */
 
-import { compileMilkdropPresetSource } from './compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import type { MilkdropCompiledPreset } from './types.ts';
 
 /** Matches reactivity-probe's notion of equation-carrying keys. Only these

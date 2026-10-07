@@ -12,7 +12,7 @@
  * are the compiler's own, so a field the file leaves out shows the value the
  * preset actually runs with.
  */
-import { DEFAULT_MILKDROP_STATE } from './compiler';
+import { DEFAULT_MILKDROP_STATE } from 'milkdrop-toolchain/src/compiler.ts';
 import type {
   ColorGroupConfig,
   ScalarControlConfig,

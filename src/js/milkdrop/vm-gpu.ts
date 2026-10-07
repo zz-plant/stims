@@ -18,18 +18,18 @@
 import {
   compileProgramToWgsl,
   type WgslProgramCompilation,
-} from './compiler/wgsl-generator';
+} from 'milkdrop-toolchain/src/compiler/wgsl-generator.ts';
 import {
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,
-} from './expression-jit';
-import type { MilkdropProgramBlock, MilkdropRuntimeSignals } from './types';
-import { createVmBufferManager } from './vm/buffer-manager';
-import { syncSignalEnvironment } from './vm/shared';
+} from 'milkdrop-toolchain/src/expression-jit.ts';
 import {
   MILKDROP_WGSL_SIGNAL_FIELDS,
   type MilkdropGpuVmSignals,
-} from './wgsl-signal-layout.ts';
+} from 'milkdrop-toolchain/src/wgsl-signal-layout.ts';
+import type { MilkdropProgramBlock, MilkdropRuntimeSignals } from './types';
+import { createVmBufferManager } from './vm/buffer-manager';
+import { syncSignalEnvironment } from './vm/shared';
 
 export type GpuVmResult = {
   state: Record<string, number>;

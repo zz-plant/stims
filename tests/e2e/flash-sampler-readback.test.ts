@@ -96,7 +96,7 @@ async function compareReadbacks(
           read: (canvas: HTMLCanvasElement) => Float32Array | null;
           dispose: () => void;
         };
-      }>('/src/js/core/services/flash-sampler.ts');
+      }>('/packages/flash-guard/src/sampler.ts');
       const { subscribeToFrameDrawn } = await load<{
         subscribeToFrameDrawn: (listener: () => void) => () => void;
       }>('/src/js/core/frame-drawn.ts');

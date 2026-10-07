@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   MILKDROP_BUILTIN_DOCS,
   MILKDROP_INTRINSIC_FUNCTION_NAMES,
-} from '../../src/js/milkdrop/builtin-docs.ts';
+} from 'milkdrop-toolchain/src/builtin-docs.ts';
 import { searchReference } from '../../src/js/milkdrop/reference-search.ts';
 
 describe('reference search', () => {

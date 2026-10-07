@@ -3,6 +3,7 @@
  * PiP controls, audio volume meters, preset transition progress, and overlay dialog triggers.
  */
 
+import { describeShaderApproximation } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import {
   useCallback,
   useEffect,
@@ -22,7 +23,6 @@ import {
 } from '../core/preset-lock.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
-import { describeShaderApproximation } from '../milkdrop/shader-execution-mode.ts';
 import type { UiIconName } from '../ui/icon-library.ts';
 import { AudioStatusControl } from './AudioStatusControl.tsx';
 import {

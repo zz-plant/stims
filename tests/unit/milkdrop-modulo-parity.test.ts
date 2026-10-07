@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { compileProgramToWgsl } from '../../src/js/milkdrop/compiler/wgsl-generator.ts';
-import { evaluateMilkdropExpression } from '../../src/js/milkdrop/expression.ts';
+import { compileProgramToWgsl } from 'milkdrop-toolchain/src/compiler/wgsl-generator.ts';
+import { evaluateMilkdropExpression } from 'milkdrop-toolchain/src/expression.ts';
 import type {
   MilkdropExpressionNode,
   MilkdropProgramBlock,

@@ -3,6 +3,7 @@
  * and visual element descriptor builders shared across the MilkDrop VM and WebGPU pipelines.
  */
 
+import { deriveMilkdropViewportSignalValues } from 'milkdrop-toolchain/src/wgsl-signal-layout.ts';
 import type {
   MilkdropColor,
   MilkdropGpuFieldSignalInputs,
@@ -15,7 +16,6 @@ import type {
   MilkdropWaveDefinition,
   MilkdropWaveVisual,
 } from '../types';
-import { deriveMilkdropViewportSignalValues } from '../wgsl-signal-layout.ts';
 
 /**
  * The main wave's visuals are pooled and rebuilt in place. Two slots, like

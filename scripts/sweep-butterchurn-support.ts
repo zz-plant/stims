@@ -16,8 +16,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { MilkdropSupportStatus } from '../src/js/milkdrop/common-types.ts';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
+import type { MilkdropSupportStatus } from 'milkdrop-toolchain/src/common-types.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');

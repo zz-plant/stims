@@ -6,8 +6,8 @@
  * bypassing the signal tracker.
  */
 import { describe, expect, test } from 'bun:test';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { runTrace } from '../../scripts/preset-lab-replay.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { DEFAULT_MILKDROP_PRESET_SOURCE } from '../../src/js/milkdrop/runtime/default-preset.ts';
 import { createMilkdropTraceRecorder } from '../../src/js/milkdrop/runtime/trace-recorder.ts';
 import { reviveInputArrays } from '../../src/js/milkdrop/trace-capture.ts';

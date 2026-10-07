@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'bun:test';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { analyzePresetMath } from 'milkdrop-toolchain/src/preset-math-analyzer.ts';
 import {
   buildScenarioInputs,
   runTrace,
 } from '../../scripts/preset-lab-replay.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
-import { analyzePresetMath } from '../../src/js/milkdrop/preset-math-analyzer.ts';
 import {
   appendProgramLines,
   blendPresetSources,

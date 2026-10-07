@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { buildCompatChecklist } from '../../src/js/milkdrop/compat-checklist.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 
 const build = (source: string) =>
   buildCompatChecklist(

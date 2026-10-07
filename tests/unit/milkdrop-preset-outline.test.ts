@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { buildPresetOutline } from '../../src/js/milkdrop/preset-outline.ts';
 
 const byLabel = (source: string) =>

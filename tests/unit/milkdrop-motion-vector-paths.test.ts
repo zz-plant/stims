@@ -20,7 +20,7 @@
  * nMotionVectorsLoop, and raw mv_dx / mv_dy.
  */
 import { describe, expect, test } from 'bun:test';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import type { MilkdropRuntimeSignals } from '../../src/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 

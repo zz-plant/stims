@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { computeSourceDiff } from '../../src/js/milkdrop/overlay/source-diff.ts';
 import { probePresetReactivity } from '../../src/js/milkdrop/reactivity-probe.ts';
 

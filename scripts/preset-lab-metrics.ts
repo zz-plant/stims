@@ -9,7 +9,7 @@
  *
  * Audio scenarios are band-isolated on purpose. The runtime derives bass/mid/
  * treble with ratio-based bins when no analyser sample rate is available
- * (`getBandLevels` in src/js/utils/audio/reactivity.ts: bass = first 12% of
+ * (`getBandLevels` in packages/audio-reactive/src/reactivity.ts: bass = first 12% of
  * bins, mid = 12–50%, treble = 50–100%), so each scenario fills exactly one of
  * those ranges. A correlation between the bass-pulse envelope and a preset
  * variable therefore isolates "does this preset respond to bass?".

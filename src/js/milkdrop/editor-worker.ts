@@ -1,12 +1,12 @@
 import { expose } from 'comlink';
 import {
-  clearCompiledPresetCache,
-  compileMilkdropPresetSource,
-} from './compiler';
-import {
   isShaderBranchDesugarEnabled,
   setShaderBranchDesugarEnabled,
-} from './compiler/shader-branch-desugar';
+} from 'milkdrop-toolchain/src/compiler/shader-branch-desugar.ts';
+import {
+  clearCompiledPresetCache,
+  compileMilkdropPresetSource,
+} from 'milkdrop-toolchain/src/compiler.ts';
 import type { MilkdropEditorCompiler } from './types';
 
 const editorCompiler: MilkdropEditorCompiler = {

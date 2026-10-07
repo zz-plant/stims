@@ -183,7 +183,7 @@ subscribe through `useSyncExternalStore` (11 components). Start with
 ### 7. esbuild → Rolldown for the AudioWorklet bundle (ported, then reverted)
 The only direct use of `esbuild` is `vite.config.js`'s
 `audio-worklet-transform` plugin, which inlines
-`src/js/utils/audio/frequency-analyser-processor.ts` and its DSP imports into
+`packages/audio-reactive/src/frequency-analyser-processor.ts` and its DSP imports into
 an import-free string for `AudioWorkletGlobalScope`. Rolldown's programmatic
 `build()` produces an equivalent bundle (zero `import`/`export` statements,
 same processor registered, parses as a classic script, ~4% smaller) and
@@ -286,7 +286,7 @@ time source at a fixed cadence instead of whatever the realtime recorder
 sampled.
 
 ### 14. ~~Fold meyda into the AudioWorklet~~ — Shipped
-`meyda` has been eliminated. `src/js/utils/audio/spectral-features.ts`
+`meyda` has been eliminated. `packages/audio-reactive/src/spectral-features.ts`
 provides zero-dependency implementations of RMS, spectral centroid, flatness,
 and rolloff. The worklet (`frequency-analyser-processor.ts`) computes these
 natively; the AnalyserNode fallback calls `extractSpectralFeatures()` directly.

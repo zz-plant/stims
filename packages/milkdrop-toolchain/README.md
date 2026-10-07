@@ -252,6 +252,10 @@ The EEL2 semantics implemented by the interpreter, the JIT and the WGSL generato
 4. `bor` and `band` are logical, not bitwise: `bor(0.5, 0)` is `1`.
 5. Identifiers are case-insensitive: `Zoom`, `ZOOM` and `zoom` are the same variable, and `pi` and `e` are ordinary prepopulated variables a preset may overwrite.
 
+## Development
+
+The code is developed in [zz-plant/stims](https://github.com/zz-plant/stims) under [`packages/milkdrop-toolchain`](https://github.com/zz-plant/stims/tree/main/packages/milkdrop-toolchain), next to the app that uses it, and released from there. [zz-plant/milkdrop-toolchain](https://github.com/zz-plant/milkdrop-toolchain) is a read-only mirror of that directory, updated on every change. Open issues and pull requests on zz-plant/stims.
+
 ## Provenance
 
 Extracted from [zz-plant/stims](https://github.com/zz-plant/stims), `src/js/milkdrop/`. The copied modules are the preset parser and syntax tree (`preset-parser.ts`, `preset-syntax.ts`), the EEL2 front end (`expression.ts`, `expression-jit.ts`, `builtin-docs.ts`, `field-normalization.ts`, `field-table.ts`), the compiler (`compiler.ts`, `compiler-types.ts`, `common-types.ts` and the 24 files under `compiler/`, including `ir.ts`, `eel-function-table.ts`, `shader-analysis*.ts`, `shader-branch-desugar.ts`, `wgsl-generator.ts`, `compatibility.ts`), the shader front end (`shader-ast.ts`, `shader-source.ts`, `shader-samplers.ts`, `shader-expression-shared.ts`, `texture-files.ts`, `shader-translation.ts`, `shader-execution-mode.ts`), the formatter and exporters (`formatter.ts`, `milkdrop2-export.ts`, `preset-lineage-fields.ts`), the analyzers (`preset-dataflow.ts`, `preset-math-analyzer.ts`), and `wgsl-signal-layout.ts` and `parity-allowlist.ts` with its JSON. Two files differ from their Stims originals: `types.ts` re-exports only the compiler-facing type modules instead of the renderer and catalog types, and `runtime-signals.ts` holds the `MilkdropRuntimeSignals` type copied out of Stims' `runtime-types.ts`. Relative imports were given explicit `.ts` extensions so `tsc` can emit working ESM.

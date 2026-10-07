@@ -23,8 +23,9 @@ import { readFileSync } from 'node:fs';
 
 const STRICT = process.argv.includes('--strict');
 
-// Only application code is scanned; tooling keeps its own bounds.
-const SCAN_PREFIX = 'src/';
+// Only application code is scanned; tooling keeps its own bounds. The
+// workspace packages' sources ship in the app bundle, so they count.
+const SCANNED = /^(?:src\/|packages\/[^/]+\/src\/)/;
 const CONTAINER_RE = /\bnew\s+(?:Map|Set|WeakMap)\s*\(/;
 // Bound evidence shared with the file that declares a new container.
 const BOUND_RE = /MAX_[A-Z0-9_]+|_LIMIT\b|maxSize|capacity|evict\(|\.clear\(/i;
@@ -33,7 +34,7 @@ const COMMENT_START_RE = /^\s*(?:\/\/|\*|\/\*)/;
 // Allowlist entries: `path: reason`. A container listed here is presumed
 // bounded for a documented reason and never flagged.
 const ALLOWED: Record<string, string> = {
-  'src/js/milkdrop/compiler/eel-function-table.ts':
+  'packages/milkdrop-toolchain/src/compiler/eel-function-table.ts':
     'GPU_FIELD_FUNCTION_NAMES is derived once from the fixed, finite EEL_FUNCTIONS table at module load — it never grows at runtime.',
   'src/js/frontend/perform-pins.ts':
     'PINNABLE_BY_TARGET is a lookup index over the fixed PINNABLE_FIELDS literal, built once at module load — it is a table, not a cache.',
@@ -45,13 +46,13 @@ const ALLOWED: Record<string, string> = {
     'RESERVED is the fixed set of built-in field and input names, built once at module load from builtin-docs and the default state table; the per-call maps in findPresetKnobs are bounded by the source being scanned.',
   'src/js/milkdrop/preset-lineage.ts':
     'buildForkTree builds per-call Maps/Sets over one family (bounded by its members) and discards them on return; familiesCache is a WeakMap keyed by the catalog array.',
-  'src/js/milkdrop/milkdrop2-export.ts':
+  'packages/milkdrop-toolchain/src/milkdrop2-export.ts':
     'MILKDROP2_STIMS_KEYS is a fixed set built once at module load from the MilkDrop 2 field table, and `known` is a per-call Set over one slot-order table — lookup tables, not caches.',
-  'src/js/milkdrop/preset-dataflow.ts':
+  'packages/milkdrop-toolchain/src/preset-dataflow.ts':
     'AUDIO/CLOCK/POINTER are fixed name literals built at module load; every other Map/Set is a per-call dependency set inside analyzePresetDataflow, bounded by the variables and inputs of the one preset being analysed and discarded on return.',
   'src/js/milkdrop/overlay/editor-pane-outline.ts':
     'Every Set is per repaint over one preset: the parts already tagged or given Solo/Mute, and one part’s signal names. Each is rebuilt from the buffer on every paint and discarded, so it is bounded by the outline it describes; expandedShaderStages holds at most the two shader stages.',
-  'src/js/milkdrop/compiler/shader-analysis-glsl.ts':
+  'packages/milkdrop-toolchain/src/compiler/shader-analysis-glsl.ts':
     'TEMPLATE_OWNED_TARGETS is a two-element literal fixed at module load, and declaredLocals is a per-call Set scoped to one shader program — both are bounded by the source they read, not by runtime accumulation.',
 };
 
@@ -108,7 +109,7 @@ for (const line of getDiff()) {
     continue;
   }
   if (line.kind !== 'added' || currentFile === null) continue;
-  if (!currentFile.startsWith(SCAN_PREFIX)) continue;
+  if (!SCANNED.test(currentFile)) continue;
   if (!/\.(?:ts|tsx|js|jsx)$/.test(currentFile)) continue;
   if (COMMENT_START_RE.test(line.text)) continue;
   if (!CONTAINER_RE.test(line.text)) continue;

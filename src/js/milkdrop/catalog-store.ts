@@ -1,3 +1,4 @@
+import type { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { createLogger } from '../core/logger.ts';
 import { sortMilkdropCatalogEntries } from './catalog-sort';
 import {
@@ -13,7 +14,6 @@ import {
   toBundledCatalogEntryFromManifest,
   toCatalogEntry,
 } from './catalog-store-projection';
-import type { compileMilkdropPresetSource } from './compiler';
 import { resolvePresetCatalogEntry } from './preset-id-resolution';
 import type {
   MilkdropCatalogEntry,

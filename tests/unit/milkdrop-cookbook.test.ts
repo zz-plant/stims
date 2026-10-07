@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { applyRecipe, COOKBOOK } from '../../src/js/milkdrop/cookbook.ts';
 import { checkPortability } from '../../src/js/milkdrop/portability.ts';
 import type { MilkdropRuntimeSignals } from '../../src/js/milkdrop/types.ts';

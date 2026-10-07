@@ -1,10 +1,10 @@
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import measuredResultsJson from '../../data/milkdrop-parity/measured-results.json' with {
   type: 'json',
 };
 import visualBaselinesJson from '../../data/milkdrop-parity/visual-baselines.json' with {
   type: 'json',
 };
-import { compileMilkdropPresetSource } from './compiler';
 import type {
   MilkdropBackendSupport,
   MilkdropBundledCatalogEntry,

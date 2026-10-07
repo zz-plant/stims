@@ -1,7 +1,7 @@
 import {
   getMilkdropShaderAuxTextureSourceId,
   normalizeMilkdropShaderSamplerName,
-} from './shader-samplers.ts';
+} from 'milkdrop-toolchain/src/shader-samplers.ts';
 import type { MilkdropShaderTextureSampler } from './types';
 
 export type DirectShaderValueKind = 'vec2' | 'vec3';

@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { initCamera } from '../../src/js/core/camera-setup.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { applyMilkdropInteractionResponse } from '../../src/js/milkdrop/runtime/interaction-response.ts';
 import type { MilkdropRuntimeSignals } from '../../src/js/milkdrop/types.ts';
 import { buildMainWaveFrame } from '../../src/js/milkdrop/vm/frame-generation.ts';

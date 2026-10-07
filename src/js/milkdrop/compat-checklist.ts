@@ -10,7 +10,7 @@
  * This describes Stims only. It makes no claim about MilkDrop 2, projectM or
  * Butterchurn; the cross-engine matrix lives in docs/authoring/08-shipping.md.
  */
-import { findMilkdropFieldLine } from './formatter.ts';
+import { findMilkdropFieldLine } from 'milkdrop-toolchain/src/formatter.ts';
 import type { MilkdropCompiledPreset } from './types.ts';
 
 export type CompatSeverity = 'blocker' | 'approximation' | 'ignored' | 'note';

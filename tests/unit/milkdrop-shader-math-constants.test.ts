@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { assembleMilkdropDirectFragmentShaders } from '../../src/js/milkdrop/feedback-manager-shared.ts';
 import {
   evaluateMilkdropShaderExpression,
   parseMilkdropShaderStatement,
-} from '../../src/js/milkdrop/shader-ast.ts';
+} from 'milkdrop-toolchain/src/shader-ast.ts';
+import { assembleMilkdropDirectFragmentShaders } from '../../src/js/milkdrop/feedback-manager-shared.ts';
 
 /**
  * MilkDrop 2's shader preamble (include.fx) defines M_PI, M_PI_2 and

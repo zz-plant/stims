@@ -1,13 +1,13 @@
-import { compileMilkdropPresetSource } from '../compiler';
-import { FALLBACK_TITLE } from '../formatter';
-import { exportMilkdrop2Preset } from '../milkdrop2-export';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { FALLBACK_TITLE } from 'milkdrop-toolchain/src/formatter.ts';
+import { exportMilkdrop2Preset } from 'milkdrop-toolchain/src/milkdrop2-export.ts';
+import { lineageFromFields } from 'milkdrop-toolchain/src/preset-lineage-fields.ts';
 import { expandPresetSelection, writePresetArchive } from '../preset-archive';
 import {
   deriveRemixCredit,
   formatPresetCredit,
   parsePresetCredit,
 } from '../preset-credit';
-import { lineageFromFields } from '../preset-lineage-fields.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
