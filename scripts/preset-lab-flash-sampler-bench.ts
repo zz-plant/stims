@@ -8,9 +8,12 @@
  * did in nanoseconds. So this number gets measured before the sampler is
  * wired into the loop, not after.
  *
- * Times createFlashSampler().sample() against the real running visualizer
- * canvas on a real GPU, at several grid sizes, and reports microseconds per
- * sample plus what fraction of a 16.7ms frame that is.
+ * Times the sampler against the real running visualizer canvas on a real
+ * GPU, at several grid sizes, two ways: the main-thread read, which waits
+ * for the GPU inside the frame, and `createFlashSampler().capture()`, which
+ * snapshots in the frame and reads in a worker. For each it reports the
+ * main-thread microseconds per sample and what fraction of a 16.7ms frame
+ * that is; for the capture, also how long the grid takes to arrive.
  *
  * Each sample is taken the way the app takes it: once per drawn frame,
  * inside the render loop's frame-drawn notification, outside agent mode.
@@ -77,9 +80,18 @@ try {
   const results = await page.evaluate(
     async ({ iterations }) => {
       const load = <T>(s: string) => import(/* @vite-ignore */ s) as Promise<T>;
-      const { createFlashSampler } = await load<{
-        createFlashSampler: (grid: number) => {
-          sample: (canvas: HTMLCanvasElement) => void;
+      type Sampler = {
+        capture: (
+          canvas: HTMLCanvasElement,
+          onGrid: (tiles: Float32Array | null) => void,
+        ) => boolean;
+        readonly offThread: boolean;
+        dispose: () => void;
+      };
+      const { createFlashSampler, createMainThreadFlashReader } = await load<{
+        createFlashSampler: (grid: number) => Sampler;
+        createMainThreadFlashReader: (grid: number) => {
+          read: (canvas: HTMLCanvasElement) => void;
           dispose: () => void;
         };
       }>('/src/js/core/services/flash-sampler.ts');
@@ -99,8 +111,8 @@ try {
       // One sample per drawn frame, timed alone: the cost being measured is
       // the wait for the GPU to finish that frame, which a batch of reads of
       // the same frame would pay once and then hide.
-      const timeInFrames = (
-        sampler: { sample: (c: HTMLCanvasElement) => void },
+      const inFrames = (
+        onFrame: (record: (us: number) => void) => void,
         count: number,
       ) =>
         new Promise<number[]>((resolve, reject) => {
@@ -110,9 +122,7 @@ try {
             reject(new Error(`only ${times.length} frames drawn in 30s`));
           }, 30_000);
           const stop = subscribeToFrameDrawn(() => {
-            const t0 = performance.now();
-            sampler.sample(canvas);
-            times.push((performance.now() - t0) * 1000);
+            onFrame((us) => times.push(us));
             if (times.length >= count) {
               clearTimeout(timer);
               stop();
@@ -121,17 +131,51 @@ try {
           });
         });
 
-      type BenchResultRow = { grid: number; median: number; p95: number };
-      const rows: BenchResultRow[] = [];
+      type Row = {
+        grid: number;
+        path: 'main thread' | 'worker';
+        median: number;
+        p95: number;
+        arrivalMedianMs?: number;
+      };
+      const rows: Row[] = [];
+      let offThread = false;
       for (const grid of [8, 16, 32, 64]) {
+        const reader = createMainThreadFlashReader(grid);
+        const readOnce = (record: (us: number) => void) => {
+          const t0 = performance.now();
+          reader.read(canvas);
+          record((performance.now() - t0) * 1000);
+        };
+        await inFrames(readOnce, 10);
+        const readTimes = await inFrames(readOnce, iterations);
+        reader.dispose();
+        rows.push({ grid, path: 'main thread', ...stats(readTimes) });
+
         const sampler = createFlashSampler(grid);
-        await timeInFrames(sampler, 10);
-        const times = await timeInFrames(sampler, iterations);
+        const arrivals: number[] = [];
+        const captureOnce = (record: (us: number) => void) => {
+          const t0 = performance.now();
+          const captured = sampler.capture(canvas, () => {
+            arrivals.push(performance.now() - t0);
+          });
+          if (captured) record((performance.now() - t0) * 1000);
+        };
+        await inFrames(captureOnce, 10);
+        arrivals.length = 0;
+        const captureTimes = await inFrames(captureOnce, iterations);
+        offThread = sampler.offThread;
         sampler.dispose();
-        rows.push({ grid, ...stats(times) });
+        rows.push({
+          grid,
+          path: offThread ? 'worker' : 'main thread',
+          ...stats(captureTimes),
+          arrivalMedianMs: stats(arrivals).median,
+        });
       }
       return {
         rows,
+        offThread,
         canvas: { width: canvas.width, height: canvas.height },
       };
     },
@@ -140,17 +184,33 @@ try {
 
   if ('error' in results && results.error)
     throw new Error(String(results.error));
-  const { rows, canvas } = results as {
-    rows: Array<{ grid: number; median: number; p95: number }>;
+  const { rows, canvas, offThread } = results as {
+    rows: Array<{
+      grid: number;
+      path: string;
+      median: number;
+      p95: number;
+      arrivalMedianMs?: number;
+    }>;
+    offThread: boolean;
     canvas: { width: number; height: number };
   };
   console.log(`\n  Source canvas: ${canvas.width}x${canvas.height}`);
-  console.log('\n  grid    median us   p95 us   % of 16.7ms frame');
-  console.log(`  ${'-'.repeat(50)}`);
+  if (!offThread) {
+    console.log('  The capture fell back to the main thread in this browser.');
+  }
+  console.log(
+    '\n  grid   path          main us   p95 us   % of 16.7ms   grid after',
+  );
+  console.log(`  ${'-'.repeat(68)}`);
   for (const row of rows) {
     const pct = (row.median / 1000 / 16.7) * 100;
+    const arrival =
+      row.arrivalMedianMs === undefined
+        ? ''
+        : `${row.arrivalMedianMs.toFixed(1)}ms`;
     console.log(
-      `  ${String(row.grid).padStart(4)}   ${row.median.toFixed(1).padStart(9)}   ${row.p95.toFixed(1).padStart(6)}   ${pct.toFixed(2).padStart(6)}%`,
+      `  ${String(row.grid).padStart(4)}   ${row.path.padEnd(11)}   ${row.median.toFixed(1).padStart(7)}   ${row.p95.toFixed(1).padStart(6)}   ${pct.toFixed(2).padStart(10)}%   ${arrival.padStart(10)}`,
     );
   }
   console.log('');

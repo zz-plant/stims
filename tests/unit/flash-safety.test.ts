@@ -28,14 +28,61 @@ function scriptedSampler(
   return {
     cols: GRID,
     rows: GRID,
-    sample: () => {
+    offThread: false,
+    capture: (_canvas, onGrid) => {
       tiles.fill(getLuminance(frame));
       frame += 1;
-      return tiles;
+      onGrid(tiles);
+      return true;
     },
     dispose: () => {},
     advance: () => {
       frame += 1;
+    },
+  };
+}
+
+/** A sampler that answers inside capture(), as the main-thread read does. */
+function answering(read: () => Float32Array | null): FlashSampler {
+  return {
+    cols: GRID,
+    rows: GRID,
+    offThread: false,
+    capture: (_canvas, onGrid) => {
+      onGrid(read());
+      return true;
+    },
+    dispose: () => {},
+  };
+}
+
+/**
+ * A sampler that answers later, as the off-thread read does: one capture in
+ * flight at a time, settled by the test.
+ */
+function deferred() {
+  let waiting: ((tiles: Float32Array | null) => void) | null = null;
+  let captures = 0;
+  const sampler: FlashSampler = {
+    cols: GRID,
+    rows: GRID,
+    offThread: true,
+    capture: (_canvas, onGrid) => {
+      if (waiting) return false;
+      captures += 1;
+      waiting = onGrid;
+      return true;
+    },
+    dispose: () => {},
+  };
+  return {
+    sampler,
+    captures: () => captures,
+    pending: () => waiting !== null,
+    settle: (luminance: number) => {
+      const onGrid = waiting;
+      waiting = null;
+      onGrid?.(new Float32Array(GRID * GRID).fill(luminance));
     },
   };
 }
@@ -150,16 +197,11 @@ describe('flash safety controller', () => {
     const tiles = new Float32Array(GRID * GRID);
     const controller = createFlashSafetyController({
       canvas: {} as HTMLCanvasElement,
-      sampler: {
-        cols: GRID,
-        rows: GRID,
-        sample: () => {
-          if (returnNull) return null;
-          tiles.fill(0.5);
-          return tiles;
-        },
-        dispose: () => {},
-      },
+      sampler: answering(() => {
+        if (returnNull) return null;
+        tiles.fill(0.5);
+        return tiles;
+      }),
       isEnabled: () => true,
       applyLuminanceScale: (scale) => applied.push(scale),
       subscribeToFrames: () => () => {},
@@ -178,15 +220,10 @@ describe('flash safety controller', () => {
     let samples = 0;
     const controller = createFlashSafetyController({
       canvas: {} as HTMLCanvasElement,
-      sampler: {
-        cols: GRID,
-        rows: GRID,
-        sample: () => {
-          samples += 1;
-          return new Float32Array(GRID * GRID);
-        },
-        dispose: () => {},
-      },
+      sampler: answering(() => {
+        samples += 1;
+        return new Float32Array(GRID * GRID);
+      }),
       isEnabled: () => true,
       applyLuminanceScale: () => {},
       subscribeToFrames: (listener) => {
@@ -213,12 +250,7 @@ describe('flash safety controller', () => {
       const tiles = new Float32Array(GRID * GRID);
       const controller = createFlashSafetyController({
         canvas: {} as HTMLCanvasElement,
-        sampler: {
-          cols: GRID,
-          rows: GRID,
-          sample: () => tiles.fill(luminanceAt(frame120)),
-          dispose: () => {},
-        },
+        sampler: answering(() => tiles.fill(luminanceAt(frame120))),
         isEnabled: () => true,
         applyLuminanceScale: () => {},
         subscribeToFrames: () => () => {},
@@ -234,5 +266,78 @@ describe('flash safety controller', () => {
     expect(timed((f) => (Math.floor(f / 12) % 2 === 1 ? 0.95 : 0.02))).toBe(
       true,
     );
+  });
+
+  describe('with a grid that arrives after the frame', () => {
+    function deferredHarness() {
+      let enabled = true;
+      const applied: number[] = [];
+      const source = deferred();
+      const controller = createFlashSafetyController({
+        canvas: {} as HTMLCanvasElement,
+        sampler: source.sampler,
+        isEnabled: () => enabled,
+        applyLuminanceScale: (scale) => applied.push(scale),
+        subscribeToFrames: () => () => {},
+      });
+      return {
+        controller,
+        applied,
+        source,
+        setEnabled: (next: boolean) => {
+          enabled = next;
+        },
+      };
+    }
+
+    test('still engages on a strobe', () => {
+      const { controller, applied, source } = deferredHarness();
+      for (let i = 0; i < 120; i += 1) {
+        expect(controller.tick(i * FRAME_MS)).toBeNull();
+        source.settle(strobe(i));
+      }
+      expect(Math.min(...applied)).toBeLessThan(1);
+      expect(controller.getState().engaged).toBe(true);
+    });
+
+    test('a frame drawn while the last grid is still out tries again next frame', () => {
+      const { controller, source } = deferredHarness();
+      controller.tick(0);
+      // Still being read: refused, and not counted as this cadence's sample.
+      controller.tick(FRAME_MS);
+      expect(source.captures()).toBe(1);
+      source.settle(0.5);
+      // One display frame later, not a whole cadence later.
+      controller.tick(FRAME_MS + 1);
+      expect(source.captures()).toBe(2);
+    });
+
+    test('a grid still out when Reduce flashing goes off is dropped', () => {
+      // Turned off and on again, the governor starts clean; the grid taken
+      // before that must not count toward a flash after it.
+      const run = (dropStale: boolean) => {
+        const { controller, source, setEnabled } = deferredHarness();
+        controller.tick(0); // bright frame captured, still being read
+        setEnabled(false);
+        controller.tick(FRAME_MS);
+        setEnabled(true);
+        if (dropStale) source.settle(0.95);
+        else {
+          // Control: the same bright frame captured after the reset.
+          source.settle(0.95);
+          controller.tick(2 * FRAME_MS);
+          source.settle(0.95);
+        }
+        controller.tick(3 * FRAME_MS);
+        source.settle(0.02);
+        controller.tick(4 * FRAME_MS);
+        source.settle(0.95);
+        return controller.getState().flashesInWindow;
+      };
+      // bright, dark, bright is one flash when every sample counts...
+      expect(run(false)).toBe(1);
+      // ...and none when the bright one predates the reset.
+      expect(run(true)).toBe(0);
+    });
   });
 });
