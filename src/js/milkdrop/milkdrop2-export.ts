@@ -29,6 +29,10 @@ import {
   resolveShaderText,
   serializeString,
 } from './formatter.ts';
+import {
+  isLineageFieldKey,
+  lineageFieldLines,
+} from './preset-lineage-fields.ts';
 import { ensureShaderBody } from './shader-source.ts';
 import type {
   MilkdropCompiledPreset,
@@ -198,9 +202,14 @@ export function exportMilkdrop2Preset(
   if (ir.description) {
     lines.push(`description=${serializeString(ir.description)}`);
   }
+  // Lineage the preset carries as metadata is written fresh; any copy of it
+  // that arrived inside the file is dropped so it is never written twice.
+  const lineage = lineageFieldLines(compiled.source.derivedFrom);
   for (const { key, rawValue } of ir.preservedFields ?? []) {
+    if (lineage.length > 0 && isLineageFieldKey(key)) continue;
     lines.push(`${key}=${rawValue}`);
   }
+  lines.push(...lineage);
 
   ir.customWaves.forEach((wave) => {
     emitWave(lines, wave);

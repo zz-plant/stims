@@ -5,7 +5,10 @@
  */
 import { describe, expect, it } from 'bun:test';
 import { decodePresetCodeFromHash } from '../../src/js/frontend/url-state.ts';
-import { copyRemixLinkAction } from '../../src/js/frontend/workspace-actions.ts';
+import {
+  codeForLocalShare,
+  copyRemixLinkAction,
+} from '../../src/js/frontend/workspace-actions.ts';
 
 const SOURCE = '[preset00]\nzoom=1.02\nwarp=0.9\n';
 const HREF = 'https://toil.fyi/?preset=geiss-aurora&tool=editor';
@@ -173,5 +176,54 @@ describe('copyRemixLinkAction', () => {
     expect(calls).toEqual([]);
     expect(messages[0]).toContain('too long');
     expect(messages[0]).toContain('.milk');
+  });
+
+  it('a preset that exists only here carries its code even with no edits', async () => {
+    // Its id means nothing to anyone else; without the code the recipient
+    // got "could not be loaded".
+    const local = captureShare('copied');
+    const messages: string[] = [];
+    await copyRemixLinkAction({
+      source: SOURCE,
+      dirty: false,
+      local: true,
+      announce: (message) => messages.push(message),
+      href: HREF,
+      share: local.share,
+    });
+    const url = new URL(local.calls[0] ?? '');
+    expect(decodePresetCodeFromHash(url.hash)).toBe(SOURCE);
+    expect(messages[0]).toContain('exists only in your browser');
+
+    const bundled = captureShare('copied');
+    await copyRemixLinkAction({
+      source: SOURCE,
+      dirty: false,
+      announce: () => {},
+      href: HREF,
+      share: bundled.share,
+    });
+    expect(new URL(bundled.calls[0] ?? '').hash).toBe('');
+  });
+
+  it("a clean local preset's code carries its own title, an edited one is left alone", () => {
+    const buffer = 'title="Geiss - Casino"\nzoom=1.01\n';
+    expect(
+      codeForLocalShare(buffer, {
+        local: true,
+        dirty: false,
+        title: 'Geiss - Casino (Remix)',
+      }),
+    ).toContain('title="Geiss - Casino (Remix)"');
+    expect(
+      codeForLocalShare(buffer, {
+        local: true,
+        dirty: true,
+        title: 'Geiss - Casino (Remix)',
+      }),
+    ).toBe(buffer);
+    expect(
+      codeForLocalShare(buffer, { local: false, dirty: false, title: 'X' }),
+    ).toBe(buffer);
   });
 });

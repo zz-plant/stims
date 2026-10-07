@@ -25,7 +25,12 @@ import type {
 } from './contracts.ts';
 import type { EngineSnapshot } from './engine/milkdrop-engine-adapter.ts';
 import { disposeActiveFileAudio } from './file-audio.ts';
-import { buildCanonicalUrl } from './url-state.ts';
+import {
+  buildCanonicalUrl,
+  buildRemixShareUrl,
+  REMIX_URL_FAILED,
+} from './url-state.ts';
+import { codeForLocalShare } from './workspace-actions.ts';
 import {
   buildStarterPresets,
   createFieldMatcher,
@@ -622,20 +627,50 @@ export function useWorkspaceShellOrchestration({
   };
 
   const handleShowCurrentLink = async () => {
+    // The preset on stage, not the route's: the route can trail the engine
+    // (a Remix selects its new preset in the runtime), and sharing from the
+    // route right after a Remix linked the parent instead.
+    const activeId = engineSnapshot?.activePresetId ?? routeState.presetId;
+    const sharedPreset =
+      (activeId
+        ? shellState.catalog.find((entry) => entry.id === activeId)
+        : null) ?? selectedPreset;
     const currentUrl = buildCanonicalUrl(
-      { ...routeState, agentMode: false },
+      { ...routeState, presetId: activeId ?? null, agentMode: false },
       window.location,
     );
-    const href = currentUrl.toString();
+    // A preset made or imported here has an id no one else can load, so the
+    // link carries its code (an edited one already does, via the address
+    // bar's #code=). Without it the recipient got "could not be loaded".
+    const local = Boolean(sharedPreset && !sharedPreset.bundledFile);
+    const source = engineSnapshot?.sessionState?.source;
+    let href = currentUrl.toString();
+    if (local && source && !currentUrl.hash) {
+      try {
+        href = buildRemixShareUrl(
+          currentUrl,
+          codeForLocalShare(source, {
+            local,
+            dirty: false,
+            title: sharedPreset?.title,
+          }),
+        );
+      } catch (error) {
+        setStatusMessage(
+          error instanceof Error ? error.message : REMIX_URL_FAILED,
+        );
+        return;
+      }
+    }
 
     let shareTitle = 'Stims visualizer';
     let shareText = 'Open this Stims visualizer view.';
 
-    if (selectedPreset) {
+    if (sharedPreset) {
       const shareCopy = formatPresetShareCopy({
-        id: selectedPreset.id,
-        title: selectedPreset.title,
-        author: selectedPreset.author,
+        id: sharedPreset.id,
+        title: sharedPreset.title,
+        author: sharedPreset.author,
       });
       shareTitle = shareCopy.title;
       shareText = shareCopy.text;
@@ -654,16 +689,17 @@ export function useWorkspaceShellOrchestration({
           : result === 'cancelled'
             ? 'share-cancelled'
             : 'share-unavailable',
-      selectedPreset?.id,
+      sharedPreset?.id,
     );
 
+    const carries = local ? " — it carries this preset's code" : '';
     if (result === 'shared') {
-      setStatusMessage('Link shared.');
+      setStatusMessage(`Link shared${carries}.`);
       return;
     }
 
     if (result === 'copied') {
-      setStatusMessage('Link copied.');
+      setStatusMessage(`Link copied${carries}.`);
       return;
     }
 
