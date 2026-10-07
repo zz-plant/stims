@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import {
+  classifyTelemetryArrival,
   classifyTelemetryViewport,
   readTelemetryContext,
   resetTelemetryContextForTests,
@@ -62,5 +63,58 @@ describe('setTelemetryAudioSource', () => {
   test('never passes an unknown source through', () => {
     setTelemetryAudioSource('spotify');
     expect(readTelemetryContext().audioSource).toBe('none');
+  });
+});
+
+describe('classifyTelemetryArrival', () => {
+  const own = 'https://toil.fyi';
+
+  test('files web search results pages as search, under any country domain', () => {
+    for (const referrer of [
+      'https://www.google.com/',
+      'https://www.google.co.uk/',
+      'https://www.bing.com/',
+      'https://duckduckgo.com/',
+      'https://search.yahoo.com/',
+      'https://search.brave.com/',
+      'https://yandex.ru/',
+    ]) {
+      expect(classifyTelemetryArrival(referrer, own)).toBe('search');
+    }
+  });
+
+  test('does not file other Google products as search', () => {
+    expect(classifyTelemetryArrival('https://mail.google.com/', own)).toBe(
+      'other',
+    );
+    expect(classifyTelemetryArrival('https://gemini.google.com/', own)).toBe(
+      'assistant',
+    );
+  });
+
+  test('keeps chat assistants, social sites and our own pages apart', () => {
+    expect(classifyTelemetryArrival('https://chatgpt.com/', own)).toBe(
+      'assistant',
+    );
+    expect(classifyTelemetryArrival('https://www.perplexity.ai/', own)).toBe(
+      'assistant',
+    );
+    expect(classifyTelemetryArrival('https://old.reddit.com/', own)).toBe(
+      'social',
+    );
+    expect(
+      classifyTelemetryArrival('https://news.ycombinator.com/item?id=1', own),
+    ).toBe('social');
+    expect(classifyTelemetryArrival('https://toil.fyi/learn/', own)).toBe(
+      'internal',
+    );
+    expect(classifyTelemetryArrival('https://example.org/blog', own)).toBe(
+      'other',
+    );
+  });
+
+  test('reports no referrer as none and an unparseable one as other', () => {
+    expect(classifyTelemetryArrival('', own)).toBe('none');
+    expect(classifyTelemetryArrival('not a url', own)).toBe('other');
   });
 });

@@ -1,6 +1,7 @@
 /**
  * The visitor context every telemetry beacon carries: which way the screen is
- * held, what kind of device it is, and which audio source is live.
+ * held, what kind of device it is, which audio source is live, and what kind
+ * of site the visit came from.
  *
  * Until these existed the dataset could not say which moment a visitor was
  * in. The first-run preset rendered black on every phone held upright for
@@ -17,7 +18,7 @@ import { resolveOptionalApiUrl } from './optional-api.ts';
 
 export type TelemetryContext = Pick<
   TelemetryEvent,
-  'orientation' | 'device' | 'audioSource'
+  'orientation' | 'device' | 'audioSource' | 'arrival'
 >;
 
 /**
@@ -34,6 +35,59 @@ const PHONE_MAX_SHORT_SIDE = 600;
 const SQUARE_TOLERANCE = 0.05;
 
 let liveAudioSource: TelemetryContext['audioSource'] = 'none';
+
+/**
+ * A search engine's results host: the bare or www./search. name under any
+ * country domain (google.co.uk, search.yahoo.com, search.brave.com), so
+ * mail.google.com or docs.google.com do not count as search.
+ */
+const SEARCH_HOST =
+  /^(?:www\.|search\.)?(?:google|bing|duckduckgo|yahoo|ecosia|baidu|yandex|startpage|kagi|qwant|naver|seznam|brave)\.[a-z.]+$/;
+/** Chat assistants that cite pages, kept apart from search on purpose. */
+const ASSISTANT_HOST =
+  /(^|\.)(chatgpt\.com|openai\.com|perplexity\.ai|claude\.ai|copilot\.microsoft\.com|gemini\.google\.com)$/;
+const SOCIAL_HOST =
+  /(^|\.)(reddit\.com|redd\.it|t\.co|x\.com|twitter\.com|facebook\.com|instagram\.com|threads\.net|youtube\.com|tiktok\.com|linkedin\.com|bsky\.app|discord\.com|news\.ycombinator\.com)$/;
+
+/**
+ * What kind of site a visit came from, read from the referrer's hostname and
+ * nothing else of it. The query string a search engine might carry is never
+ * looked at, and the hostname itself is never sent: only this class is.
+ * Browsers send an origin-only referrer across sites by default, so a search
+ * arrival reads as `https://www.google.com/`.
+ */
+export function classifyTelemetryArrival(
+  referrer: string,
+  ownOrigin: string,
+): NonNullable<TelemetryContext['arrival']> {
+  if (!referrer) return 'none';
+  let url: URL;
+  try {
+    url = new URL(referrer);
+  } catch {
+    return 'other';
+  }
+  if (url.origin === ownOrigin) return 'internal';
+  const host = url.hostname.toLowerCase();
+  if (ASSISTANT_HOST.test(host)) return 'assistant';
+  if (SEARCH_HOST.test(host)) return 'search';
+  if (SOCIAL_HOST.test(host)) return 'social';
+  return 'other';
+}
+
+/** Fixed for the page load: the referrer does not change after it. */
+let pageArrival: TelemetryContext['arrival'];
+
+function readPageArrival(): TelemetryContext['arrival'] {
+  if (
+    pageArrival === undefined &&
+    typeof document !== 'undefined' &&
+    typeof location !== 'undefined'
+  ) {
+    pageArrival = classifyTelemetryArrival(document.referrer, location.origin);
+  }
+  return pageArrival;
+}
 
 /** The audio source that is live now, or null when none is. */
 export function setTelemetryAudioSource(source: string | null): void {
@@ -88,10 +142,16 @@ export function readTelemetryContext(): TelemetryContext {
           window.innerHeight,
           isMobileDevice(),
         );
-  return { ...viewport, audioSource: liveAudioSource };
+  const arrival = readPageArrival();
+  return {
+    ...viewport,
+    audioSource: liveAudioSource,
+    ...(arrival ? { arrival } : {}),
+  };
 }
 
 /** Test-only reset. */
 export function resetTelemetryContextForTests(): void {
   liveAudioSource = 'none';
+  pageArrival = undefined;
 }
