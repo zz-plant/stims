@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   type AudioWindowSample,
   buildAudioProfile,
@@ -14,7 +15,6 @@ import {
   setAudioBands,
   subscribeAudioEnergy,
 } from '../../src/js/frontend/engine-audio-energy-store.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { estimatePresetMotion } from '../../src/js/milkdrop/preset-motion-estimate.ts';
 
 /**

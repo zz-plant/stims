@@ -3,7 +3,12 @@
  * each shader becomes, and solo/mute for each custom wave and shape and for
  * the main waveform, borders and motion vectors.
  */
-import { isFieldShadowedByEquations } from '../formatter';
+import { isFieldShadowedByEquations } from 'milkdrop-toolchain/src/formatter.ts';
+import {
+  describeExecutionMode,
+  describeShaderTranslations,
+  type ShaderStage,
+} from 'milkdrop-toolchain/src/shader-translation.ts';
 import { buildPresetOutline } from '../preset-outline.ts';
 import {
   getRenderIsolation,
@@ -12,11 +17,6 @@ import {
   toggleMute,
   toggleSolo,
 } from '../render-isolation.ts';
-import {
-  describeExecutionMode,
-  describeShaderTranslations,
-  type ShaderStage,
-} from '../shader-translation.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropEditorSessionState,

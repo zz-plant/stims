@@ -1,7 +1,7 @@
 # MilkDrop language reference (Stims)
 
 <!-- GENERATED FILE — do not edit by hand.
-     Source of truth: src/js/milkdrop/builtin-docs.ts
+     Source of truth: packages/milkdrop-toolchain/src/builtin-docs.ts
      Regenerate: bun run docs:authoring-reference -->
 
 Every name below is derived from the same table the compiler, syntax

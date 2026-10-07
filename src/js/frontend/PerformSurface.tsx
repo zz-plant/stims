@@ -1,3 +1,4 @@
+import { readMilkdropField } from 'milkdrop-toolchain/src/formatter.ts';
 import {
   useCallback,
   useEffect,
@@ -8,7 +9,6 @@ import {
 import styles from '../../css/PerformSurface.module.css';
 import { webMidiService } from '../core/services/webmidi-controller.ts';
 import { hadSessionBeforeBoot } from '../core/state/last-session-store.ts';
-import { readMilkdropField } from '../milkdrop/formatter.ts';
 import { listModulators } from './live-modulation.ts';
 import {
   describeParameterState,

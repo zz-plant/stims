@@ -79,7 +79,7 @@ Current WebGPU feedback mode is `none` on both safe and full paths until native 
 
 ## JIT performance contract
 
-`src/js/milkdrop/expression-jit.ts` compiles EEL2 blocks as whole JavaScript
+`packages/milkdrop-toolchain/src/expression-jit.ts` compiles EEL2 blocks as whole JavaScript
 functions. Per-point and per-pixel callers may deliberately use the same object
 for the engine environment and local scope. In that aliased case, an ordinary
 local assignment must write the property once; mirroring it through both
@@ -95,7 +95,7 @@ comparison contract, and reproduction command.
 
 ## Shader execution classification
 
-Direct shader payloads keep a separate execution classification in `src/js/milkdrop/compiler/shader-execution-classification.ts`. Runtime consumers should use this helper instead of checking `supportedBackends`, `rawGlsl`, and `requiresControlFallback` directly. The current categories are:
+Direct shader payloads keep a separate execution classification in `packages/milkdrop-toolchain/src/compiler/shader-execution-classification.ts`. Runtime consumers should use this helper instead of checking `supportedBackends`, `rawGlsl`, and `requiresControlFallback` directly. The current categories are:
 
 - `backend-executable`
 - `backend-executable-with-control-fallback`

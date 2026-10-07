@@ -3,8 +3,8 @@
  * a preset draws, from the equations and shader text alone.
  */
 import { describe, expect, test } from 'bun:test';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { labelPresetAudio } from '../../scripts/preset-lab-dataflow.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 
 let serial = 0;
 function label(lines: string[]) {

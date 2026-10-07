@@ -37,7 +37,7 @@ import {
   analyseBlockBytes,
   buildHannWindow,
   buildTwiddleTable,
-} from '../src/js/utils/audio/analyser-core.ts';
+} from 'audio-reactive';
 import { buildAudioFileInputs, decodeWav } from './audio-file-inputs.ts';
 import { ensureDevServer } from './dev-server.ts';
 import type { FrameInputs } from './preset-lab-replay.ts';

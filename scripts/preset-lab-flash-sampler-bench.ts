@@ -91,7 +91,10 @@ try {
         dispose: () => void;
       };
       const { createFlashSampler, createMainThreadFlashReader } = await load<{
-        createFlashSampler: (grid: number, density: number) => Sampler;
+        createFlashSampler: (options: {
+          grid: number;
+          density: number;
+        }) => Sampler;
         createMainThreadFlashReader: (
           grid: number,
           density: number,
@@ -99,9 +102,9 @@ try {
           read: (canvas: HTMLCanvasElement) => void;
           dispose: () => void;
         };
-      }>('/src/js/core/services/flash-sampler.ts');
+      }>('/packages/flash-guard/src/sampler.ts');
       const { RECOMMENDED_GRID } = await load<{ RECOMMENDED_GRID: number }>(
-        '/src/js/core/services/flash-governor.ts',
+        '/packages/flash-guard/src/governor.ts',
       );
       const { subscribeToFrameDrawn } = await load<{
         subscribeToFrameDrawn: (listener: () => void) => () => void;
@@ -161,7 +164,7 @@ try {
         reader.dispose();
         rows.push({ density, path: 'main thread', ...stats(readTimes) });
 
-        const sampler = createFlashSampler(grid, density);
+        const sampler = createFlashSampler({ grid, density });
         const arrivals: number[] = [];
         const captureOnce = (record: (us: number) => void) => {
           const t0 = performance.now();

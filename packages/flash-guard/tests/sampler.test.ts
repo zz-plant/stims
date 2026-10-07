@@ -1,21 +1,17 @@
 /**
  * The flash sampler's off-thread readback queue.
  *
- * The browser half (that a snapshot holds the frame the draw produced) is
- * tests/e2e/flash-sampler-readback.test.ts. What is checked here is the
- * bookkeeping around the worker, with the worker and the snapshot faked: a
+ * What is checked here is the bookkeeping around the worker, with the worker
+ * and the snapshot faked: a
  * readback slower than a frame must delay a sample, not drop the next one,
  * and samples must reach the governor in the order their frames were drawn.
  *
  * Dropping was not harmless. With one capture in flight, every slow readback
- * made the governor compare frames 33ms apart, and on the first-run preset
+ * made the governor compare frames 33ms apart, and on a busy MilkDrop preset
  * every flash it counted was across a comparison that spanned two frames.
  */
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import {
-  createFlashSampler,
-  MAX_CAPTURES_IN_FLIGHT,
-} from '../../src/js/core/services/flash-sampler.ts';
+import { createFlashSampler, MAX_CAPTURES_IN_FLIGHT } from '../src/index.ts';
 
 type Request = { id: number; cols: number; rows: number };
 

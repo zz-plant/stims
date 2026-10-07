@@ -33,17 +33,24 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "stims-source": "./src/index.ts",
+      "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./worker": "./dist/readback.worker.js"
+    "./worker": {
+      "stims-source": "./src/readback.worker.ts",
+      "bun": "./src/readback.worker.ts",
+      "default": "./dist/readback.worker.js"
+    }
   },
   "files": [
     "dist",
     "docs",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "src"
   ],
   "sideEffects": [
     "./dist/readback.worker.js"

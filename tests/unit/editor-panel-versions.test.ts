@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import type { VersionStorage } from '../../src/js/milkdrop/named-versions.ts';
 import { EditorPanel } from '../../src/js/milkdrop/overlay/editor-panel.ts';
 

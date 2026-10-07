@@ -11,17 +11,16 @@
  * change that makes one preset feel snappier can make another strobe. Measure
  * with `bun run lab:reactivity` across several presets, never one.
  */
-import type { FrequencyAnalyser } from '../core/audio-handler';
-import {
-  createHarmonicPercussiveAnalyser,
-  type HarmonicPercussiveLevels,
-} from '../utils/audio/harmonic-percussive';
+
 import {
   type BandLevels,
+  createHarmonicPercussiveAnalyser,
   getBandLevels,
   getWeightedEnergy,
+  type HarmonicPercussiveLevels,
   updateEnergyPeak,
-} from '../utils/audio/reactivity';
+} from 'audio-reactive';
+import type { FrequencyAnalyser } from '../core/audio-handler';
 
 type BandKey = 'bass' | 'mid' | 'treble';
 

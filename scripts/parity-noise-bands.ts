@@ -11,7 +11,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { MilkdropRenderBackend } from '../src/js/milkdrop/common-types.ts';
+import type { MilkdropRenderBackend } from 'milkdrop-toolchain/src/common-types.ts';
 
 export const PARITY_NOISE_BANDS_PATH =
   'src/data/milkdrop-parity/parity-noise-bands.json';

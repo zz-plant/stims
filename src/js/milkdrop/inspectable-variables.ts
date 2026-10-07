@@ -9,8 +9,8 @@
  * shared registers), every assignment target in the root programs, and each
  * custom wave's or shape's own targets under its frame name (`wave1_t1`).
  */
-import { MILKDROP_Q_REGISTER_COUNT } from './builtin-docs.ts';
-import { flattenProgramStatements } from './compiler/program-assembly.ts';
+import { MILKDROP_Q_REGISTER_COUNT } from 'milkdrop-toolchain/src/builtin-docs.ts';
+import { flattenProgramStatements } from 'milkdrop-toolchain/src/compiler/program-assembly.ts';
 import type { MilkdropCompiledPreset, MilkdropProgramBlock } from './types.ts';
 
 function targetsOf(blocks: readonly MilkdropProgramBlock[]): string[] {

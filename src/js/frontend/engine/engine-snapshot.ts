@@ -1,9 +1,9 @@
+import type { MilkdropShaderExecutionMode } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import type { ToyRuntimeInstance } from '../../core/toy-runtime.ts';
 import type {
   MilkdropExperienceController,
   MilkdropExperienceSnapshot,
 } from '../../milkdrop/runtime-types.ts';
-import type { MilkdropShaderExecutionMode } from '../../milkdrop/shader-execution-mode.ts';
 import type { AudioSource } from '../contracts.ts';
 
 // Named directly rather than re-derived through

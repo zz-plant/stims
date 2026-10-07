@@ -40,7 +40,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { assembleMilkdropDirectFragmentShaders } from '../src/js/milkdrop/feedback-manager-shared.ts';
 import {
   deriveStageGlsl,

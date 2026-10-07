@@ -16,9 +16,9 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { normalizeMilkdropShaderSamplerName } from 'milkdrop-toolchain/src/shader-samplers.ts';
 import { countEquationLines } from '../src/js/milkdrop/salvage-compile.ts';
-import { normalizeMilkdropShaderSamplerName } from '../src/js/milkdrop/shader-samplers.ts';
 
 // Same predicate as tests/unit/catalog-compiler-smoke.test.ts: every sampler
 // token must resolve, or the preset references texture packs we don't ship.

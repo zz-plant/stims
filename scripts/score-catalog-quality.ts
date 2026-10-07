@@ -20,7 +20,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { type AudioTier, labelPresetAudio } from './preset-lab-dataflow.ts';
 
 const REPO_ROOT = path.join(import.meta.dir, '..');

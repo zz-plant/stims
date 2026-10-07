@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
+import { DEFAULT_MILKDROP_STATE } from 'milkdrop-toolchain/src/compiler/default-state.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 // The corpus loader and the snapshot builder live with the generator that
 // rewrites the committed snapshot, so the two cannot drift: `bun run
 // generate:projectm-snapshot` and this test build the value the same way.
@@ -11,8 +13,6 @@ import {
   PROJECTM_CORPUS_DIR,
   PROJECTM_PRESET_FILES,
 } from '../../scripts/generate-projectm-compat-snapshot.ts';
-import { DEFAULT_MILKDROP_STATE } from '../../src/js/milkdrop/compiler/default-state.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import type {
   MilkdropFrameState,
   MilkdropRuntimeSignals,

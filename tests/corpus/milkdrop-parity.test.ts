@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
-import { loadMilkdropParityAllowlist } from '../../src/js/milkdrop/parity-allowlist.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { loadMilkdropParityAllowlist } from 'milkdrop-toolchain/src/parity-allowlist.ts';
 import type {
   MilkdropFrameState,
   MilkdropRuntimeSignals,

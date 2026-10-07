@@ -34,9 +34,11 @@ export {
   type FlashGovernor,
   type FlashGovernorDecision,
   type FlashGovernorOptions,
+  type FlashSampleOptions,
   MIN_USEFUL_GRID,
   primingHoldForMeasurement,
   RECOMMENDED_GRID,
+  RECOMMENDED_SAMPLE_DENSITY,
 } from './governor.ts';
 export {
   classifyFlashRisk,
@@ -50,5 +52,6 @@ export {
   type FlashGridCallback,
   type FlashSampler,
   type FlashSamplerOptions,
+  MAX_CAPTURES_IN_FLIGHT,
 } from './sampler.ts';
 export * from './thresholds.ts';

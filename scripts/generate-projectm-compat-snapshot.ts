@@ -21,7 +21,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import type { MilkdropCompiledPreset } from '../src/js/milkdrop/types.ts';
 
 export const PROJECTM_CORPUS_DIR = join(

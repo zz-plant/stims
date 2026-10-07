@@ -14,9 +14,10 @@
  * Profile changes with `bun run profile:frame` rather than reasoning about
  * them; intuition about which loop dominates is usually wrong.
  */
+
+import { normalizeProgramAssignmentTarget } from 'milkdrop-toolchain/src/field-normalization.ts';
 import { getDevicePerformanceProfile } from '../../core/device-profile.ts';
 import { isMobileDevice } from '../../utils/browser/device-detect';
-import { normalizeProgramAssignmentTarget } from '../field-normalization.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropGpuFieldSignalInputs,

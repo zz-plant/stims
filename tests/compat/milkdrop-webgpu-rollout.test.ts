@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import sharp from 'sharp';
 import type { ParityArtifactEntry } from '../../scripts/parity-artifacts.ts';
 import {
@@ -15,7 +16,6 @@ import {
   type WebGpuCertificationReport,
 } from '../../scripts/run-webgpu-certification-comparator.ts';
 import type { VisualReferenceManifest } from '../../scripts/visual-reference-manifest.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { shouldFallbackMilkdropPresetToWebgl } from '../../src/js/milkdrop/renderer-execution-plan.ts';
 import {
   applyMilkdropWebGpuOptimizationFlags,

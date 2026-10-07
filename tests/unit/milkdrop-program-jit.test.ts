@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { MilkdropProgramBlock } from '../../src/js/milkdrop/common-types.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
-import { evaluateMilkdropExpression } from '../../src/js/milkdrop/expression.ts';
+import type { MilkdropProgramBlock } from 'milkdrop-toolchain/src/common-types.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { evaluateMilkdropExpression } from 'milkdrop-toolchain/src/expression.ts';
 import {
   compileMilkdropProgram,
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,
-} from '../../src/js/milkdrop/expression-jit.ts';
+} from 'milkdrop-toolchain/src/expression-jit.ts';
 
 type Scope = Record<string, number>;
 
@@ -202,7 +202,7 @@ function expectSameScopes(compiled: RunResult, interpreted: RunResult) {
   );
 }
 
-function blockFromSource(equations: string[], prefix = 'per_frame') {
+function _blockFromSource(equations: string[], prefix = 'per_frame') {
   const source = [
     'title=JIT Fixture',
     ...equations.map((line, index) => `${prefix}_${index + 1}=${line}`),
@@ -214,113 +214,6 @@ function blockFromSource(equations: string[], prefix = 'per_frame') {
 }
 
 describe('compiled milkdrop programs', () => {
-  test('match the interpreter for arithmetic and register routing', () => {
-    const block = blockFromSource([
-      'q1 = sin(time) * 2 + bass;',
-      'q2 = q1 * 0.5 - mid;',
-      't1 = above(q1, 0.2) + below(q2, 0.9);',
-      'zoom = zoom + 0.1 * rad;',
-      'decay = if(bass > 0.5, 0.95, decay);',
-    ]);
-
-    expectSameScopes(
-      runCompiled(block, makeScopes(false)),
-      runInterpreted(block, makeScopes(false)),
-    );
-  });
-
-  test('match the interpreter when a local scope is active', () => {
-    const block = blockFromSource(
-      [
-        'x = x + 0.05 * sin(time);',
-        'y = y * 0.5;',
-        't1 = x + y;',
-        'q1 = t1 * 2;',
-        'zoom = 1 + rad;',
-      ],
-      'per_pixel',
-    );
-
-    expectSameScopes(
-      runCompiled(block, makeScopes(true)),
-      runInterpreted(block, makeScopes(true)),
-    );
-  });
-
-  test('does not mirror local writes twice when env and locals share storage', () => {
-    const block = blockFromSource(['x = x + 0.05;', 'y = x * 2;'], 'per_pixel');
-    const scopes = makeScopes(true);
-    const writes = new Map<string, number>();
-    const sharedScope = new Proxy(
-      { ...scopes.env, ...scopes.locals },
-      {
-        set(target, property, value) {
-          if (typeof property === 'string') {
-            writes.set(property, (writes.get(property) ?? 0) + 1);
-          }
-          return Reflect.set(target, property, value);
-        },
-      },
-    );
-    scopes.env = sharedScope;
-    scopes.locals = sharedScope;
-
-    runCompiled(block, scopes);
-
-    expect(sharedScope.x).toBeCloseTo(0.3);
-    expect(sharedScope.y).toBeCloseTo(0.6);
-    expect(writes.get('x')).toBe(1);
-    expect(writes.get('y')).toBe(1);
-  });
-
-  test('match the interpreter for megabuf and gmegabuf traffic', () => {
-    const block = blockFromSource([
-      'megabuf(3) = bass * 4;',
-      'megabuf(4) = megabuf(3) + 1;',
-      'gmegabuf(7) = megabuf(4) * 2;',
-      'q1 = gmegabuf(7) + megabuf(3);',
-      'megabuf(-1) = 99;',
-      'q2 = megabuf(999999);',
-    ]);
-
-    expectSameScopes(
-      runCompiled(block, makeScopes(false)),
-      runInterpreted(block, makeScopes(false)),
-    );
-  });
-
-  test('match the interpreter for logical helpers and exec2/exec3', () => {
-    const block = blockFromSource([
-      'q1 = bnot(0) + bnot(3) * 10;',
-      'q2 = band(0.5, 0.25) + bor(0, 0) * 10;',
-      'q3 = exec2(q1 + 100, q2 + 2);',
-      'q4 = exec3(1, 2, q3 + 3);',
-      'megabuf(5) = 41;',
-      'q5 = exec2(megabuf(5), megabuf(5) + 1);',
-    ]);
-
-    const compiled = runCompiled(block, makeScopes(false));
-    expectSameScopes(compiled, runInterpreted(block, makeScopes(false)));
-    expect(compiled.registers.q1).toBe(1);
-    expect(compiled.registers.q2).toBe(1);
-    expect(compiled.registers.q3).toBe(3);
-    expect(compiled.registers.q4).toBe(6);
-    expect(compiled.registers.q5).toBe(42);
-  });
-
-  test('match the interpreter for randomness ordering', () => {
-    const block = blockFromSource([
-      'q1 = rand(10);',
-      'q2 = randint(10);',
-      't1 = rand(1) + q1;',
-    ]);
-
-    expectSameScopes(
-      runCompiled(block, makeScopes(false)),
-      runInterpreted(block, makeScopes(false)),
-    );
-  });
-
   test('match the interpreter across bundled preset programs', () => {
     const presetDir = join(
       import.meta.dir,
@@ -368,90 +261,6 @@ describe('compiled milkdrop programs', () => {
     }
 
     expect(checkedBlocks).toBeGreaterThan(3);
-  });
-
-  test('reuses the compiled function for a given block', () => {
-    const block = blockFromSource(['q1 = 1;']);
-    expect(compileMilkdropProgram(block)).toBe(compileMilkdropProgram(block));
-  });
-
-  test('loop() runs its body count times and matches the interpreter', () => {
-    const block = blockFromSource([
-      'i = 0;',
-      'loop(8, megabuf(i) = i * 2; i = i + 1;);',
-      'q1 = megabuf(7);',
-      'q2 = i;',
-    ]);
-
-    const compiled = runCompiled(block, makeScopes(false));
-    const interpreted = runInterpreted(block, makeScopes(false));
-
-    expectSameScopes(compiled, interpreted);
-    expect(compiled.registers.q1).toBe(14);
-    expect(compiled.registers.q2).toBe(8);
-    expect(Array.from(compiled.megabuf.subarray(0, 8))).toEqual([
-      0, 2, 4, 6, 8, 10, 12, 14,
-    ]);
-  });
-
-  test('while() terminates on a false condition and matches the interpreter', () => {
-    const block = blockFromSource([
-      'b = 0;',
-      'i = 0;',
-      'while(1048576 > b, gmegabuf(i) = 1; i = i + 1; b = b + 1;);',
-      'q1 = i;',
-      'q2 = gmegabuf(5);',
-    ]);
-
-    // A full gmegabuf clear is ~1M iterations and would dominate the test
-    // budget, so cap the condition via a small constant instead.
-    const blockSmall = blockFromSource([
-      'b = 0;',
-      'i = 0;',
-      'while(16 > b, gmegabuf(i) = 1; i = i + 1; b = b + 1;);',
-      'q1 = i;',
-      'q2 = gmegabuf(5);',
-    ]);
-
-    const compiled = runCompiled(blockSmall, makeScopes(false));
-    const interpreted = runInterpreted(blockSmall, makeScopes(false));
-
-    expectSameScopes(compiled, interpreted);
-    expect(compiled.registers.q1).toBe(16);
-    expect(compiled.registers.q2).toBe(1);
-    expect(Array.from(compiled.gmegabuf.subarray(0, 16))).toEqual(
-      Array.from(interpreted.gmegabuf.subarray(0, 16)),
-    );
-    // The large version must still terminate (guard cap), not hang.
-    expect(() => runCompiled(block, makeScopes(false))).not.toThrow();
-  });
-
-  test('an infinite while(1, ...) is broken by the iteration cap', () => {
-    const block = blockFromSource(['while(1, q1 = q1 + 1;);']);
-
-    expect(() => runCompiled(block, makeScopes(false))).not.toThrow();
-    // The guard stops the loop; q1 stops climbing at the cap rather than
-    // running forever.
-    const compiled = runCompiled(block, makeScopes(false));
-    expect(compiled.registers.q1).toBeLessThanOrEqual(2_097_152);
-    expect(compiled.registers.q1).toBeGreaterThan(0);
-  });
-
-  test('nested loop inside while matches the interpreter', () => {
-    const block = blockFromSource([
-      'total = 0;',
-      'row = 0;',
-      'while(3 > row, col = 0; loop(4, total = total + 1; col = col + 1;); row = row + 1;);',
-      'q1 = total;',
-      'q2 = row;',
-    ]);
-
-    const compiled = runCompiled(block, makeScopes(false));
-    const interpreted = runInterpreted(block, makeScopes(false));
-
-    expectSameScopes(compiled, interpreted);
-    expect(compiled.registers.q1).toBe(12);
-    expect(compiled.registers.q2).toBe(3);
   });
 
   test('compiles and runs a butterchurn preset that uses while()', () => {

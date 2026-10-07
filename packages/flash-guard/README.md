@@ -21,7 +21,7 @@ flowchart LR
   events --> analysis["FlashAnalysis"]
   timeline --> analysis
   analysis --> risk["classifyFlashRisk<br/>none / low / medium / high"]
-  canvas["live canvas"] --> sampler["createFlashSampler<br/>16x16 grid, off-thread readback"]
+  canvas["live canvas"] --> sampler["createFlashSampler<br/>16x16 tiles, 8x8 pixels each, off-thread readback"]
   sampler --> governor["createFlashGovernor<br/>same rule, per frame"]
   governor --> apply["luminanceScale<br/>CSS brightness or a scrim"]
   apply -. "what the viewer sees" .-> sampler
@@ -115,12 +115,14 @@ function render(now: number) {
 import { createFlashGovernor, RECOMMENDED_GRID } from 'flash-guard';
 
 const governor = createFlashGovernor();
-const tiles = new Float32Array(RECOMMENDED_GRID * RECOMMENDED_GRID);
+const frame = new Float32Array(RECOMMENDED_GRID * RECOMMENDED_GRID);
 let scale = 1;
 for (let f = 0; f < 120; f += 1) {
   const on = Math.floor(f / 7.5) % 2 === 1;
-  tiles.fill((on ? 0.95 : 0.02) * scale); // what the viewer sees through the current scale
-  const d = governor.sample(f * (1000 / 60), tiles, RECOMMENDED_GRID, RECOMMENDED_GRID);
+  frame.fill(on ? 0.95 : 0.02); // the frame as drawn
+  const d = governor.sample(f * (1000 / 60), frame, RECOMMENDED_GRID, RECOMMENDED_GRID, {
+    viewScale: scale, // the mitigation the viewer is seeing it through
+  });
   scale = d.luminanceScale;
 }
 ```
@@ -130,34 +132,39 @@ Printed every quarter second from that loop:
 ```
 t=0.00s flashesInWindow=0 hold=0.000 luminanceScale=1.000
 t=0.25s flashesInWindow=1 hold=0.000 luminanceScale=1.000
-t=0.50s flashesInWindow=3 hold=0.970 luminanceScale=0.030
-t=0.75s flashesInWindow=3 hold=0.970 luminanceScale=0.030
-t=1.00s flashesInWindow=3 hold=0.970 luminanceScale=0.030
-t=1.25s flashesInWindow=2 hold=0.970 luminanceScale=0.030
-t=1.50s flashesInWindow=0 hold=0.970 luminanceScale=0.030
+t=0.50s flashesInWindow=2 hold=0.931 luminanceScale=0.069
+t=0.75s flashesInWindow=2 hold=0.931 luminanceScale=0.069
+t=1.00s flashesInWindow=2 hold=0.931 luminanceScale=0.069
+t=1.25s flashesInWindow=1 hold=0.931 luminanceScale=0.069
+t=1.50s flashesInWindow=0 hold=0.931 luminanceScale=0.069
+t=1.75s flashesInWindow=0 hold=0.931 luminanceScale=0.069
 ```
 
-The sample you feed must be what the viewer sees, scaled by the mitigation already in force. Otherwise the governor never observes its own effect, keeps counting flashes it has already suppressed, and escalates to the ceiling.
+Pass the frame as drawn and tell the governor, as `viewScale`, the mitigation already in force. Without it the governor never observes its own effect, keeps counting flashes it has already suppressed, and escalates to the ceiling. Multiplying the scale into the frame yourself is not the same: the governor would then read its own dimming step as the content darkening.
+
+That loop hands it one value per tile, which is exact for a uniform strobe. For a real canvas, use the sampler's field, which has `RECOMMENDED_SAMPLE_DENSITY` samples along each tile edge, and pass `density` too.
 
 ## How the governor decides
 
 Drawn from the source, where each choice records the measurement that forced it.
 
 - **It engages before the limit.** Intervention starts at the second flash in the window (`engageAt`), not the fourth. Acting only on the fourth would mean the failing sequence had already been shown.
-- **It solves rather than ramps.** On a flash it measures the swing it just observed and computes the scale that puts that swing under the threshold, then jumps there in one step. Blind ramping from a gentle start let a black-to-white strobe land nine flashes before the clamp caught up, when the limit is three.
+- **It solves rather than ramps.** On a flash it computes the largest scale at which the transition it just observed no longer covers 25% of any visual field, then jumps there in one step. Blind ramping from a gentle start let a black-to-white strobe land nine flashes before the clamp caught up, when the limit is three. The solve uses the whole field, not its single largest swing: one bright point crossing one sample is not what made the frame a flash, and solving for it took a calm preset from full brightness to 9% on the first flash.
+- **It does not count its own dimming.** Both frames of a comparison are judged at the scale now in force, so a swing the content makes is measured as the viewer sees it, and the drop the governor just applied does not read as the content darkening. Judged as shown, that drop qualified across most of the frame and paired with the content's next brightening into a flash the content never made.
 - **It starts gentle.** The first hold is 0.2, not a floor near full dimming, so a mild flicker is not punished like a full strobe; the solved step finds the right level.
 - **It releases slowly, and only after a delay.** Release begins once the window has been clear for 1.5 s and then eases off at 0.004 per frame. Releasing as soon as the window emptied, which is guaranteed to happen while the clamp works, let the strobe restart and settle into a limit cycle measured at 8 flashes a second while pinned at the ceiling.
-- **It compares frames 16.7 ms apart, whatever the display rate.** On a 120 Hz screen, frame-to-frame twinkle in calm content read as 82 flashes a second; compared one 60 Hz frame apart it read 2.4, and content that really strobed read the same either way.
+- **It compares frames 16.7 ms apart, whatever the display rate, and never skips one.** On a 120 Hz screen, frame-to-frame twinkle in calm content read as 82 flashes a second; compared one 60 Hz frame apart it read 2.4, and content that really strobed read the same either way. Skipping a 60 Hz frame doubles the motion in a comparison, so the gate sits at three quarters of a frame, clear of timestamp jitter, and up to three readbacks queue rather than a slow one refusing the next frame.
 - **It needs a fine enough grid.** At 6x6 tiles the visual-field window is 2x2 and one tile is 25% of it, so every flickering highlight trips the rule. `RECOMMENDED_GRID` is 16; `MIN_USEFUL_GRID` is 8.
+- **It judges pixels, not tiles.** One value per tile is a point read of about four pixels, which puts 25 points in a visual field, and the governor acts on the worst of 144 fields. Fine moving texture read as 12 to 49 flashes on frames the per-pixel analysis scored at 0. Each tile is read as 8x8 single pixels (`RECOMMENDED_SAMPLE_DENSITY`) and thresholded one by one, the offline analysis's own method at a coarser stride. Averaging each tile is not the fix: it scales a partial-coverage swing down by its coverage.
 
-The sampler takes a snapshot of the canvas inside the draw with `createImageBitmap`, already downscaled to the grid, and hands it to a worker whose readback does the waiting for the GPU. Measured on an M1 Max at 1280x720 in headless Chromium, per sample at a 16x16 grid:
+The sampler takes a snapshot of the canvas inside the draw with `createImageBitmap`, already downscaled (nearest neighbour) to the 128x128 field, and hands it to a worker whose readback does the waiting for the GPU. Measured on an M1 Max at 1280x720 in headless Chromium, per sample, first at a 16x16 grid:
 
 | Backend | Main thread, synchronous read | Main thread, off-thread read | Grid arrives after |
 | --- | --- | --- | --- |
 | WebGPU | 1.9 to 2.3 ms | 0.1 ms | 2.1 to 2.3 ms |
 | WebGL | 2.7 to 3.6 ms | 0.1 ms | 2.8 to 3.2 ms |
 
-The off-thread grid matched the synchronous read exactly over 12 frames on each backend. Where workers or `OffscreenCanvas` are missing, the synchronous read is used.
+The off-thread grid matched the synchronous read exactly over 12 frames on each backend. Where workers or `OffscreenCanvas` are missing, the synchronous read is used. At the 128x128 field the capture still costs 0.1 ms of main thread and the field arrives 3.0 to 3.5 ms later; judging it costs 0.09 ms on a still frame and 0.24 ms on busy texture.
 
 ## API
 
@@ -168,11 +175,12 @@ The off-thread grid matched the synchronous read exactly over 12 frames on each 
 | `analyzeFlashEvents(input)` | Per-transition, per-tile qualifying-pixel counts in (`FlashCountInput`), analysis out. The only path that evaluates red flash. |
 | `analyzeFlashTimeline({ frames, deltaMs, cols?, rows? })` | Per-frame luminance grids in, analysis out. |
 | `classifyFlashRisk(analysis)` | `'none'`, `'low'`, `'medium'` or `'high'`; `high` means over the WCAG limit on either channel. `describeFlashRisk(level)` gives a short label. |
-| `createFlashGovernor(options?)` | The live state machine: `sample(nowMs, tiles, cols, rows)` returns `{ hold, luminanceScale, flashesInWindow, engaged, flashed }`; also `prime(hold)`, `reset()`, `getState()`. |
+| `createFlashGovernor(options?)` | The live state machine: `sample(nowMs, samples, cols, rows, { density?, viewScale? })` returns `{ hold, luminanceScale, flashesInWindow, engaged, flashed }`; also `prime(hold)`, `reset()`, `getState()`. `samples` is `cols * density` by `rows * density`. |
 | `primingHoldForMeasurement({ flashRiskLevel, maxLuminanceDelta })` | A starting hold for content already measured `high`, so its first flashes are mitigated rather than counted. |
 | `createFlashController(options)` | Sampler plus governor plus the apply-on-change loop: `start()`, `stop()`, `tick(now)`, `prime(hold)`, `release()`, `getState()`. |
 | `createBrightnessFilterApplier(element)` | An `applyLuminanceScale` that writes a CSS `brightness()` filter, clearing it at 1. |
-| `createFlashSampler({ grid?, createWorker? })` | Canvas to luminance grid, off the main thread when possible. `createMainThreadFlashReader(grid)` is the synchronous fallback. |
+| `createFlashSampler({ grid?, density?, createWorker? })` | Canvas to luminance field, off the main thread when possible, with up to `MAX_CAPTURES_IN_FLIGHT` readbacks queued. `createMainThreadFlashReader(grid, density)` is the synchronous fallback. |
+| `RECOMMENDED_GRID`, `RECOMMENDED_SAMPLE_DENSITY`, `MIN_USEFUL_GRID`, `MIN_SAMPLE_INTERVAL_MS` | 16 tiles a side, 8 samples along each tile edge, the coarsest grid that discriminates, and the gate between compared frames. |
 | `relativeLuminance(r, g, b)`, `linearizeChannel(byte)`, `LINEAR_CHANNEL_LUT` | WCAG relative luminance from sRGB bytes, and the 256-entry table it reads. |
 | `isFlashTransition`, `isRedFlashTransition`, `isSaturatedRed`, `redFlashValue`, `peakWindowFraction` | The primitives every path above is built from. |
 | `FLASHES_PER_SECOND_LIMIT`, `FLASH_LUMINANCE_DELTA`, `FLASH_DARKER_CEILING`, `FLASH_AREA_FRACTION`, `VISUAL_FIELD_FRACTION`, `RED_SATURATION_MIN`, `RED_FLASH_DELTA`, `RED_FLASH_SCALE` | The thresholds, defined once. |
@@ -180,6 +188,10 @@ The off-thread grid matched the synchronous read exactly over 12 frames on each 
 ## Demo
 
 `demo/index.html` strobes a canvas at a chosen rate and contrast and shows the governor's readout and a live trace of raw versus seen luminance. Run `bun run build` first; the page imports from `dist/`.
+
+## Development
+
+The code is developed in [zz-plant/stims](https://github.com/zz-plant/stims) under [`packages/flash-guard`](https://github.com/zz-plant/stims/tree/main/packages/flash-guard), next to the app that uses it, and released from there. [zz-plant/flash-guard](https://github.com/zz-plant/flash-guard) is a read-only mirror of that directory, updated on every change. Open issues and pull requests on zz-plant/stims.
 
 ## Provenance
 
@@ -195,7 +207,7 @@ Extracted from [zz-plant/stims](https://github.com/zz-plant/stims):
 | `src/sampler.ts`, `src/readback.worker.ts` | `src/js/core/services/flash-sampler.ts`, `flash-readback.worker.ts`, with the worker factory injectable |
 | `src/risk.ts` | The classifier from `src/js/core/sensory-profile.ts` |
 
-Tests: the three Stims suites (`flash-analysis`, `flash-governor`, `flash-safety`) carried over, plus a new suite for the pixel frontend that checks it against the luminance path and exercises the visual-field window and the red channel. `bun test` runs 65 tests across 4 files.
+Tests: the Stims suites (`flash-analysis`, `flash-governor`, `flash-safety`, `flash-sampler`) carried over, plus a new suite for the pixel frontend that checks it against the luminance path and exercises the visual-field window and the red channel. `bun test` runs 74 tests across 5 files.
 
 ## License
 

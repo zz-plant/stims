@@ -2,12 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   FIRST_RUN_EVIDENCE_PATH,
   FIRST_RUN_VIEWPORTS,
   resolveFirstRunPresetPath,
 } from '../../scripts/generate-first-run-evidence.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { DEFAULT_MILKDROP_PRESET_SOURCE } from '../../src/js/milkdrop/runtime/default-preset.ts';
 import {
   FIRST_RUN_PRESET_AUTHOR,

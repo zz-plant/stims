@@ -1,3 +1,4 @@
+import { MILKDROP_TEXTURE_FILES } from 'milkdrop-toolchain/src/texture-files.ts';
 import type { Texture } from 'three';
 import {
   ClampToEdgeWrapping,
@@ -6,7 +7,6 @@ import {
   SRGBColorSpace,
   TextureLoader,
 } from 'three';
-import { MILKDROP_TEXTURE_FILES } from './texture-files';
 
 /**
  * Shared texture loading/configuration used by both the WebGL

@@ -68,7 +68,7 @@ Generate `vec2f`/`vec3f` WGSL types where expression trees operate on related sc
 - Emit vectorized WGSL when all operands share a width
 - Fuse adjacent scalar assignments into vector assignments
 
-Files: `src/js/milkdrop/compiler/wgsl-generator.ts`, `src/js/milkdrop/vm-gpu.ts`
+Files: `packages/milkdrop-toolchain/src/compiler/wgsl-generator.ts`, `src/js/milkdrop/vm-gpu.ts`
 
 ### 5) Implement RenderBundle for Static Draw Calls
 
@@ -97,7 +97,7 @@ Shader execution support should be explicit, without raw field checks spread acr
 - Move compatibility aggregation out of `compiler/ir.ts` into a narrow compiler compatibility module
 - Move descriptor-plan assembly inputs into a typed compiler output object so renderer planning does not re-derive compiler intent
 
-Files: `src/js/milkdrop/compiler/ir.ts`, `src/js/milkdrop/compiler/shader-execution-classification.ts`, plus a new `src/js/milkdrop/compiler/compatibility-report.ts` (New follow-up)
+Files: `packages/milkdrop-toolchain/src/compiler/ir.ts`, `packages/milkdrop-toolchain/src/compiler/shader-execution-classification.ts`, plus a new `packages/milkdrop-toolchain/src/compiler/compatibility-report.ts` (New follow-up)
 
 ## Sequencing
 

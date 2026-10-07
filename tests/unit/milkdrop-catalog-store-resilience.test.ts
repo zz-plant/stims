@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { createMilkdropCatalogStore } from '../../src/js/milkdrop/catalog-store.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 
 // Regression coverage for a corrupt/unparseable stored preset permanently
 // wedging the whole catalog. `listPresets()` used to run an unguarded

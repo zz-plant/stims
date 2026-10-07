@@ -1,4 +1,4 @@
-import type { MilkdropRenderBackend } from './common-types.ts';
+import type { MilkdropRenderBackend } from 'milkdrop-toolchain/src/common-types.ts';
 
 export const PRESET_PREVIEW_REQUEST_LIMIT = 8;
 

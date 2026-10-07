@@ -1,9 +1,9 @@
-import { useSyncExternalStore } from 'react';
-import styles from '../../css/SilentAudioNotice.module.css';
 import {
   isAudioAwaitingGesture,
   subscribeAudioGestureGate,
-} from '../core/audio-gesture-gate.ts';
+} from 'audio-reactive';
+import { useSyncExternalStore } from 'react';
+import styles from '../../css/SilentAudioNotice.module.css';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
 
 /**

@@ -64,16 +64,10 @@ import {
   rectangularSelection,
 } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
-import { webMidiService } from '../../core/services/webmidi-controller.ts';
-import {
-  resolveTheme,
-  subscribeToThemePreference,
-} from '../../core/theme-preferences';
-import { renderIconSvg } from '../../ui/icon-library.ts';
 import {
   MILKDROP_BUILTIN_DOCS,
   MILKDROP_FUNCTION_SNIPPET_TEMPLATES,
-} from '../builtin-docs';
+} from 'milkdrop-toolchain/src/builtin-docs.ts';
 import {
   computeMidiGutterInfo,
   findMilkdropEquationLine,
@@ -82,7 +76,22 @@ import {
   type MidiGutterEntry,
   readMilkdropField,
   upsertMilkdropFields,
-} from '../formatter';
+} from 'milkdrop-toolchain/src/formatter.ts';
+import {
+  analyzePresetDataflow,
+  controlAudio,
+  dataflowSignature,
+  drawnPartAudio,
+  frameValueName,
+  type PresetDataflow,
+} from 'milkdrop-toolchain/src/preset-dataflow.ts';
+import { analyzePresetMath } from 'milkdrop-toolchain/src/preset-math-analyzer.ts';
+import { webMidiService } from '../../core/services/webmidi-controller.ts';
+import {
+  resolveTheme,
+  subscribeToThemePreference,
+} from '../../core/theme-preferences';
+import { renderIconSvg } from '../../ui/icon-library.ts';
 import {
   COLOR_GROUPS,
   CONTROL_SECTIONS,
@@ -102,15 +111,6 @@ import {
   type ToggleControlConfig,
   valueToPosition,
 } from '../preset-controls.ts';
-import {
-  analyzePresetDataflow,
-  controlAudio,
-  dataflowSignature,
-  drawnPartAudio,
-  frameValueName,
-  type PresetDataflow,
-} from '../preset-dataflow.ts';
-import { analyzePresetMath } from '../preset-math-analyzer.ts';
 import {
   MODULATION_SOURCES,
   type Modulation,

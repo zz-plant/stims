@@ -19,10 +19,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { MilkdropControlFlowStatement } from 'milkdrop-toolchain/src/common-types.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { chromium, type Page } from 'playwright';
 import sharp from 'sharp';
-import type { MilkdropControlFlowStatement } from '../src/js/milkdrop/common-types.ts';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
 import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 import { ensureDevServer } from './dev-server.ts';
 

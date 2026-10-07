@@ -17,6 +17,20 @@
  * obvious by frame two hundred. Check with `bun run lab:visual`, which runs
  * long enough for accumulation to show.
  */
+
+import {
+  extractReferencedCustomSamplers,
+  type MilkdropCustomSamplerDeclaration,
+} from 'milkdrop-toolchain/src/compiler/custom-samplers.ts';
+import {
+  extractNativeShaderBody,
+  splitShaderGlobalsAndBody,
+} from 'milkdrop-toolchain/src/compiler/shader-analysis.ts';
+import {
+  generateGlslFromShaderStatements,
+  injectDirectShaderGlsl,
+} from 'milkdrop-toolchain/src/compiler/shader-analysis-glsl.ts';
+import { isMilkdropShaderProgramBackendExecutable } from 'milkdrop-toolchain/src/compiler/shader-execution-classification.ts';
 import {
   BufferAttribute,
   BufferGeometry,
@@ -43,19 +57,6 @@ import type {
   FeedbackBackendProfile,
   MilkdropBackendBehavior,
 } from './backend-behavior';
-import {
-  extractReferencedCustomSamplers,
-  type MilkdropCustomSamplerDeclaration,
-} from './compiler/custom-samplers.ts';
-import {
-  extractNativeShaderBody,
-  splitShaderGlobalsAndBody,
-} from './compiler/shader-analysis.ts';
-import {
-  generateGlslFromShaderStatements,
-  injectDirectShaderGlsl,
-} from './compiler/shader-analysis-glsl.ts';
-import { isMilkdropShaderProgramBackendExecutable } from './compiler/shader-execution-classification.ts';
 import {
   MILKDROP_BLEND_DISSOLVE,
   MILKDROP_FEEDBACK_BLUR_BLEND_CAP,

@@ -1,3 +1,5 @@
+import type { MilkdropCompiledPreset } from 'milkdrop-toolchain/src/compiler-types.ts';
+import { isShaderApproximated } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import {
   getStageOverlayPreference,
@@ -5,8 +7,6 @@ import {
   subscribeToStageOverlayPreference,
 } from '../core/stage-overlay-preferences.ts';
 import { parseURLParams } from '../core/url-params.ts';
-import type { MilkdropCompiledPreset } from '../milkdrop/compiler-types.ts';
-import { isShaderApproximated } from '../milkdrop/shader-execution-mode.ts';
 import { useEngine, useEngineSnapshot } from './engine-context.tsx';
 import { UiIcon } from './UiIcon.tsx';
 

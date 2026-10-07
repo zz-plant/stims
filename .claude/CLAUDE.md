@@ -28,7 +28,7 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 
 ## Ergonomics notes (from the last ~500 commits)
 
-- **Hot spots**: `fix(milkdrop)` (shader/GLSL/HLSL translation) and `fix(webgpu)` dominate. Reproduce with `lab:replay` / `lab:nan-sweep`, fix the *class* across the corpus (not one preset), add a fixture, and check both backends with `lab:backend-diff`.
+- **Hot spots**: `fix(milkdrop)` (shader/GLSL/HLSL translation, now in `packages/milkdrop-toolchain`) and `fix(webgpu)` dominate. Reproduce with `lab:replay` / `lab:nan-sweep`, fix the *class* across the corpus (not one preset), add a fixture, and check both backends with `lab:backend-diff`.
 - **Search noise**: `.ignore` hides `public/milkdrop-presets/`, `output/`, `screenshots/`, and the parity fixtures from ripgrep. Use `rg --no-ignore <pat> <path>` to search them on purpose.
 - **Learn pages**: `docs/authoring/*.md` and `docs/learn/*.md` are published as static pages under `public/learn/` (toil.fyi/learn/). After editing either, run `bun run generate:learn`; `check:seo` fails on stale pages, a missing sitemap entry, or a broken `/learn/…#anchor` link.
 - **Generators**: most `generate:*` scripts take `--check`, including `generate:seo` (delegates to `check:seo`, writes nothing). Running `generate:seo` without it rewrites tracked icons/sitemaps — `git checkout -- public` if that was unintended.
@@ -115,7 +115,8 @@ Reach for these before inventing a measurement; each one already exists.
 |------|------|-------------------|
 | Workspace UI | `src/js/frontend/` | React UI, URL state, engine adapter |
 | Shared runtime | `src/js/core/` | Renderer, shell, audio, capabilities, MIDI/VJ hardware (`services/webmidi-controller.ts`) |
-| Preset system | `src/js/milkdrop/` | Presets, editor, catalog, VM |
+| Preset system | `src/js/milkdrop/` | Presets, editor, catalog, VM, renderers |
+| Standalone packages | `packages/` | Compiler, EEL JIT, formatter, exporter (`milkdrop-toolchain`); audio DSP (`audio-reactive`); flash governor and analysis (`flash-guard`); EEL conformance corpus. The app imports them; test with `bun run check:packages`. See `packages/README.md` |
 | Stylesheets | `src/css/` | `tokens.css` (design tokens), `chrome.css` (panel/dock control system), `app-shell.css` (workspace shell, wrapped in `@scope (.stims-shell)`), `index.css` + `base.css` (older page-level styles), `*.module.css` (component-scoped) |
 | Entry points | `index.html`, `milkdrop/index.html` | Shell loading, redirects |
 | Tests | `tests/` | All automated coverage |

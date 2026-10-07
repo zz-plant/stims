@@ -3,6 +3,7 @@
  * WebGL context each) so catalog tiles can display the actual preset, animated, in real time.
  */
 
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { Scene, WebGLRenderer } from 'three';
 import { initCamera } from '../core/camera-setup.ts';
 import {
@@ -10,7 +11,6 @@ import {
   type PostprocessingPipeline,
   shouldRenderMilkdropPostprocessing,
 } from '../core/postprocessing.ts';
-import { compileMilkdropPresetSource } from './compiler.ts';
 import { createMilkdropRendererAdapter } from './renderer-adapter-factory.ts';
 import { createMilkdropSignalTracker } from './runtime-signals.ts';
 import type { MilkdropRuntimeSignals } from './types.ts';

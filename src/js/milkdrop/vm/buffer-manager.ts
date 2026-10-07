@@ -1,4 +1,4 @@
-import { EEL_F32_MAX } from '../compiler/eel-function-table.ts';
+import { EEL_F32_MAX } from 'milkdrop-toolchain/src/compiler/eel-function-table.ts';
 
 export type VmBufferLayout = {
   fieldOffsets: Record<string, number>;

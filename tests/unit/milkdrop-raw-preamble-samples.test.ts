@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { normalizeHlslToGlsl } from '../../src/js/milkdrop/compiler/shader-analysis.ts';
+import { normalizeHlslToGlsl } from 'milkdrop-toolchain/src/compiler/shader-analysis.ts';
 
 /**
  * MilkDrop 2's preamble ships GetPixel/GetBlur0..3, so raw hlsl2glsl bodies

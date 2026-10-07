@@ -36,7 +36,7 @@ to:
 Corpus integrity (resolved):
 - The bundled butterchurn import used to drop every equation block. 1739 of the 1791 catalogued presets shipped with base values and shader text only, so no per-frame, per-pixel, per-point, or per-shape code ran for them. Wave and shape base values were also written into `[wave00_N]` / `[shape00_N]` sections that the compiler does not read.
 - `scripts/butterchurn-eel-transpiler.ts` now converts the upstream JavaScript equation strings back to EEL, and `scripts/import-butterchurn-presets.ts --rewrite` emits canonical single-section `.milk` files. 157,950 statements were recovered and the whole bundled corpus compiles without error diagnostics.
-- The runtime now executes EEL `loop(count, body)` and `while(cond, body)` control flow, not just flat assignment statements. The statement parser (`src/js/milkdrop/expression.ts`) recognises `loop()`/`while()` lines that previously had no top-level `=` and were silently dropped, and the JIT (`src/js/milkdrop/expression-jit.ts`) emits a bounded loop sharing a per-block guard counter capped at 2,097,152 iterations so a non-terminating loop cannot hang the tab. The transpiler also lowers JS `do { ... } while(cond)` and strips the butterchurn `a.rkeys` render-hint, so every previously-untranslated block now transpiles and runs.
+- The runtime now executes EEL `loop(count, body)` and `while(cond, body)` control flow, not just flat assignment statements. The statement parser (`packages/milkdrop-toolchain/src/expression.ts`) recognises `loop()`/`while()` lines that previously had no top-level `=` and were silently dropped, and the JIT (`packages/milkdrop-toolchain/src/expression-jit.ts`) emits a bounded loop sharing a per-block guard counter capped at 2,097,152 iterations so a non-terminating loop cannot hang the tab. The transpiler also lowers JS `do { ... } while(cond)` and strips the butterchurn `a.rkeys` render-hint, so every previously-untranslated block now transpiles and runs.
 
 Completed foundation:
 - Milestones 0 through 3 are implemented in the repo: deterministic parity artifacts, checked-in certification manifests, native projectM reference promotion, measured-result promotion, backend-aware diffing, and honest fidelity labeling are all wired.
@@ -173,9 +173,9 @@ Goal:
 - Stop inferring fidelity from compiler optimism and make measured visual results authoritative.
 
 Primary files to change:
-- [`src/js/milkdrop/compiler/core.ts`](../src/js/milkdrop/compiler/core.ts)
-- [`src/js/milkdrop/compiler/ir.ts`](../src/js/milkdrop/compiler/ir.ts)
-- [`src/js/milkdrop/compiler/compatibility.ts`](../src/js/milkdrop/compiler/compatibility.ts)
+- [`packages/milkdrop-toolchain/src/compiler/core.ts`](../packages/milkdrop-toolchain/src/compiler/core.ts)
+- [`packages/milkdrop-toolchain/src/compiler/ir.ts`](../packages/milkdrop-toolchain/src/compiler/ir.ts)
+- [`packages/milkdrop-toolchain/src/compiler/compatibility.ts`](../packages/milkdrop-toolchain/src/compiler/compatibility.ts)
 - [`src/js/milkdrop/catalog-store-analysis.ts`](../src/js/milkdrop/catalog-store-analysis.ts)
 - [`public/milkdrop-presets/catalog.json`](../public/milkdrop-presets/catalog.json)
 
@@ -202,7 +202,7 @@ Primary files to change:
 - [`src/js/milkdrop/renderer-helpers/feedback-composite.ts`](../src/js/milkdrop/renderer-helpers/feedback-composite.ts)
 - [`src/js/milkdrop/feedback-manager-shared.ts`](../src/js/milkdrop/feedback-manager-shared.ts)
 - [`src/js/milkdrop/feedback-manager-webgpu.ts`](../src/js/milkdrop/feedback-manager-webgpu.ts)
-- [`src/js/milkdrop/compiler/gpu-descriptor-plan.ts`](../src/js/milkdrop/compiler/gpu-descriptor-plan.ts)
+- [`packages/milkdrop-toolchain/src/compiler/gpu-descriptor-plan.ts`](../packages/milkdrop-toolchain/src/compiler/gpu-descriptor-plan.ts)
 - [`tests/unit/milkdrop-renderer-adapter.test.ts`](../tests/unit/milkdrop-renderer-adapter.test.ts)
 
 Implementation tasks:
@@ -230,10 +230,10 @@ Goal:
 - Shrink the gap between translated controls and actual projectM shader behavior.
 
 Primary files to change:
-- [`src/js/milkdrop/compiler/shader-analysis.ts`](../src/js/milkdrop/compiler/shader-analysis.ts)
-- [`src/js/milkdrop/compiler/ir.ts`](../src/js/milkdrop/compiler/ir.ts)
-- [`src/js/milkdrop/compiler/parity.ts`](../src/js/milkdrop/compiler/parity.ts)
-- [`tests/unit/milkdrop-compiler-shader-analysis.test.ts`](../tests/unit/milkdrop-compiler-shader-analysis.test.ts)
+- [`packages/milkdrop-toolchain/src/compiler/shader-analysis.ts`](../packages/milkdrop-toolchain/src/compiler/shader-analysis.ts)
+- [`packages/milkdrop-toolchain/src/compiler/ir.ts`](../packages/milkdrop-toolchain/src/compiler/ir.ts)
+- [`packages/milkdrop-toolchain/src/compiler/parity.ts`](../packages/milkdrop-toolchain/src/compiler/parity.ts)
+- [`packages/milkdrop-toolchain/tests/milkdrop-compiler-shader-analysis.test.ts`](../packages/milkdrop-toolchain/tests/milkdrop-compiler-shader-analysis.test.ts)
 - [`tests/corpus/milkdrop-projectm-compat.test.ts`](../tests/corpus/milkdrop-projectm-compat.test.ts)
 
 Implementation tasks:
@@ -260,7 +260,7 @@ Goal:
 - Remove known sampler approximations that visibly change output.
 
 Primary files to change:
-- [`src/js/milkdrop/compiler/shader-analysis.ts`](../src/js/milkdrop/compiler/shader-analysis.ts)
+- [`packages/milkdrop-toolchain/src/compiler/shader-analysis.ts`](../packages/milkdrop-toolchain/src/compiler/shader-analysis.ts)
 - [`src/js/milkdrop/feedback-manager-shared.ts`](../src/js/milkdrop/feedback-manager-shared.ts)
 - [`src/js/milkdrop/feedback-manager-webgpu.ts`](../src/js/milkdrop/feedback-manager-webgpu.ts)
 - [`tests/unit/milkdrop-shader-sampler-aliases.test.ts`](../tests/unit/milkdrop-shader-sampler-aliases.test.ts)
@@ -368,7 +368,7 @@ Primary files to change:
 - [`src/js/milkdrop/overlay/preset-row.ts`](../src/js/milkdrop/overlay/preset-row.ts)
 - [`src/js/frontend/BrowseSheetPanel.tsx`](../src/js/frontend/BrowseSheetPanel.tsx)
 - [`src/js/milkdrop/catalog-store-analysis.ts`](../src/js/milkdrop/catalog-store-analysis.ts)
-- [`src/js/milkdrop/common-types.ts`](../src/js/milkdrop/common-types.ts)
+- [`packages/milkdrop-toolchain/src/common-types.ts`](../packages/milkdrop-toolchain/src/common-types.ts)
 - [`docs/MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)
 
 Implementation tasks:

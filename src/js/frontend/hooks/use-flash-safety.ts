@@ -1,10 +1,10 @@
+import { primingHoldForMeasurement } from 'flash-guard';
 import { useEffect, useRef } from 'react';
 import {
   getActiveAccessibilityPreference,
   subscribeToAccessibilityPreference,
 } from '../../core/accessibility-preferences.ts';
 import type { PresetSensoryProfile } from '../../core/sensory-profile.ts';
-import { primingHoldForProfile } from '../../core/services/flash-governor.ts';
 import {
   createFlashSafetyController,
   createStageCompositedScale,
@@ -87,7 +87,7 @@ export function useFlashSafety(
   // window the governor is mid-way through measuring.
   useEffect(() => {
     if (!activeProfile) return;
-    const hold = primingHoldForProfile(activeProfile);
+    const hold = primingHoldForMeasurement(activeProfile);
     if (hold > 0) {
       controllerRef.current?.prime(hold);
     }

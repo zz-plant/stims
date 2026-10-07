@@ -11,12 +11,12 @@
  * call in.
  */
 
+import { upsertMilkdropField } from 'milkdrop-toolchain/src/formatter.ts';
 import {
   getActiveAccessibilityPreference,
   setAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
-import { upsertMilkdropField } from '../milkdrop/formatter.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { shareOrCopyLink } from '../utils/media/share-link.ts';
 import type {

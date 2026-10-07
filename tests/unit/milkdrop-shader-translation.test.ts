@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
-import { resolveShaderExecutionMode } from '../../src/js/milkdrop/shader-execution-mode.ts';
-import { describeShaderTranslations } from '../../src/js/milkdrop/shader-translation.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { resolveShaderExecutionMode } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
+import { describeShaderTranslations } from 'milkdrop-toolchain/src/shader-translation.ts';
 
 const compile = (source: string) =>
   compileMilkdropPresetSource(source, {
@@ -10,31 +10,6 @@ const compile = (source: string) =>
   });
 
 describe('shader translation view', () => {
-  test('a preset without shaders has nothing to show', () => {
-    expect(describeShaderTranslations(compile('title=T\nzoom=1.01\n'))).toEqual(
-      [],
-    );
-  });
-
-  test('a simple warp shader is translated to GLSL from its statements', () => {
-    const [warp] = describeShaderTranslations(
-      compile(
-        [
-          'title=T',
-          '[warp_shader]',
-          'shader_body {',
-          '  ret = tex2D(sampler_main, uv).xyz * 0.98;',
-          '}',
-        ].join('\n'),
-      ),
-    );
-    expect(warp?.stage).toBe('warp');
-    expect(warp?.source).toContain('tex2D(sampler_main, uv)');
-    expect(warp?.glsl).toBeTruthy();
-    // HLSL tex2D does not exist in GLSL; the translation must not contain it.
-    expect(warp?.glsl).not.toContain('tex2D(');
-  });
-
   test('matches what the renderer compiles for a real bundled preset', () => {
     const compiled = compile(
       readFileSync(

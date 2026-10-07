@@ -4,7 +4,7 @@ import type {
   MilkdropParitySourceFamily,
   MilkdropParityToleranceProfile,
   MilkdropRenderBackend,
-} from '../src/js/milkdrop/common-types.ts';
+} from 'milkdrop-toolchain/src/common-types.ts';
 
 export const CERTIFICATION_CORPUS_MANIFEST_PATH =
   'src/data/milkdrop-parity/certification-corpus.json';

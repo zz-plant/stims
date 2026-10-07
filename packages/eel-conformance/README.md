@@ -123,6 +123,10 @@ Add it to the appropriate group in `cases/`. Keep `id` stable: never reuse an id
 
 Changing an existing pinned value is a platform-semantics decision. Check a preset corpus for content depending on the old behaviour before editing.
 
+## Development
+
+The code is developed in [zz-plant/stims](https://github.com/zz-plant/stims) under [`packages/eel-conformance`](https://github.com/zz-plant/stims/tree/main/packages/eel-conformance), next to the app that uses it, and released from there. [zz-plant/eel-conformance](https://github.com/zz-plant/eel-conformance) is a read-only mirror of that directory, updated on every change. Open issues and pull requests on zz-plant/stims.
+
 ## Provenance
 
 Extracted from `spec/eel-conformance/` in [zz-plant/stims](https://github.com/zz-plant/stims), where the corpus was written to pin the semantics shared by that project's EEL interpreter, JIT and WGSL generator. The cases and the schema are unchanged. The loader is the Stims loader with a `cases/` path that works from both `src/` and `dist/`; the harness and the CLI are new.

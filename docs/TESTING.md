@@ -144,10 +144,10 @@ current bounded result are documented in
 - [ ] Audio worklet initialization validated on the fallback path
 - [ ] `bun run test:integration` passes locally if the shell or audio bridge was touched
 
-### Touching `src/js/milkdrop/compiler/**`
+### Touching `packages/milkdrop-toolchain/src/compiler/**`
 
 - [ ] `bun run test:compat` passes
-- [ ] Any new compiler behavior has a focused test in `tests/unit/milkdrop-compiler-seams.test.ts` or `tests/unit/milkdrop-compiler-shader-analysis.test.ts`
+- [ ] Any new compiler behavior has a focused test in `packages/milkdrop-toolchain/tests/milkdrop-compiler-seams.test.ts` or `packages/milkdrop-toolchain/tests/milkdrop-compiler-shader-analysis.test.ts`
 - [ ] No new source-text string assertions — assert on AST/IR structure or numeric output instead
 
 ### Touching `tests/**`

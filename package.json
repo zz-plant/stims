@@ -3,6 +3,9 @@
   "description": "Play and live-edit MilkDrop presets in your browser: original .milk files, any audio source, shareable links.",
   "version": "1.4.0",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "homepage": "https://toil.fyi",
   "repository": {
     "type": "git",
@@ -203,7 +206,8 @@
     "typecheck:watch": "bunx --bun --package typescript@7.0.2 tsc --noEmit --watch",
     "ui:diff": "bun run scripts/ui-diff.ts",
     "verify": "bun run scripts/agent-verify.ts",
-    "worktree:new": "bun run scripts/worktree-new.ts"
+    "worktree:new": "bun run scripts/worktree-new.ts",
+    "packages:split": "bun run scripts/split-package.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -222,6 +226,7 @@
     "butterchurn": "^2.6.7",
     "butterchurn-presets": "^2.4.7",
     "dependency-cruiser": "^18.4.0",
+    "eel-conformance": "workspace:*",
     "esbuild": "^0.28.2",
     "happy-dom": "20.14.5",
     "knip": "6.39.0",
@@ -253,9 +258,12 @@
     "@resvg/resvg-wasm": "^2.6.2",
     "@strudel/web": "^1.3.0",
     "@tanstack/react-virtual": "^3.14.13",
+    "audio-reactive": "workspace:*",
     "browser-fs-access": "^0.38.0",
     "comlink": "^4.4.2",
     "fflate": "^0.8.3",
+    "flash-guard": "workspace:*",
+    "milkdrop-toolchain": "workspace:*",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "three": "0.186.1"

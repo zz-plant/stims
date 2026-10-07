@@ -6,9 +6,9 @@ import {
   parseMilkdropExpression,
   parseMilkdropStatement,
   splitMilkdropStatements,
-} from '../expression';
-import { parseMilkdropPreset } from '../preset-parser';
-import { parsePresetSyntax } from '../preset-syntax.ts';
+} from 'milkdrop-toolchain/src/expression.ts';
+import { parseMilkdropPreset } from 'milkdrop-toolchain/src/preset-parser.ts';
+import { parsePresetSyntax } from 'milkdrop-toolchain/src/preset-syntax.ts';
 import type { MilkdropDiagnostic } from '../types';
 
 export function computeAstDiagnostics(source: string): MilkdropDiagnostic[] {

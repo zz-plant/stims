@@ -11,7 +11,7 @@ import {
   reportAudioAwaitingGesture,
   resetAudioGestureGate,
   subscribeAudioGestureGate,
-} from '../../src/js/core/audio-gesture-gate.ts';
+} from 'audio-reactive';
 import {
   registerAudioContext,
   unregisterAudioContext,

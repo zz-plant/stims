@@ -17,6 +17,10 @@
  * something still on screen. Failing loudly here means a black canvas, which
  * users read as the app being broken.
  */
+
+import { setShaderBranchDesugarEnabled } from 'milkdrop-toolchain/src/compiler/shader-branch-desugar.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { resolveShaderExecutionMode } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import {
   getActiveAccessibilityPreference,
   getMotionScale,
@@ -47,8 +51,6 @@ import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createToyRuntimeStarter } from '../core/toy-runtime-starter.ts';
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { createMilkdropCatalogStore } from './catalog-store';
-import { compileMilkdropPresetSource } from './compiler';
-import { setShaderBranchDesugarEnabled } from './compiler/shader-branch-desugar';
 import {
   createDraftPersistence,
   createOriginalSourceResolver,
@@ -105,7 +107,6 @@ import type {
   MilkdropExperienceController,
   MilkdropExperienceSnapshot,
 } from './runtime-types.ts';
-import { resolveShaderExecutionMode } from './shader-execution-mode.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,

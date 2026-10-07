@@ -5,7 +5,10 @@
  * appends per-frame or per-pixel lines. No model is involved.
  */
 
-import { readMilkdropField, upsertMilkdropFields } from './formatter.ts';
+import {
+  readMilkdropField,
+  upsertMilkdropFields,
+} from 'milkdrop-toolchain/src/formatter.ts';
 
 export type PresetMutationStyle =
   | 'cyberpunk'

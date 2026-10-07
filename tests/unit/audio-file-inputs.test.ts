@@ -14,16 +14,16 @@ import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
+  analyseBlockBytes,
+  buildHannWindow,
+  buildTwiddleTable,
+} from 'audio-reactive';
+import {
   buildAudioFileInputs,
   type DecodedAudio,
   decodeWav,
 } from '../../scripts/audio-file-inputs.ts';
 import { runTrace } from '../../scripts/preset-lab-replay.ts';
-import {
-  analyseBlockBytes,
-  buildHannWindow,
-  buildTwiddleTable,
-} from '../../src/js/utils/audio/analyser-core.ts';
 
 /** Builds a WAV file in memory. */
 function encodeWav(
@@ -311,16 +311,14 @@ per_frame_2=q1 = beat_pulse;
 describe("audio-handler.ts's `?worklet` import", () => {
   const repoPath = (path: string) =>
     resolve(import.meta.dirname, '../..', path);
-  const workletSpecifier = `${repoPath('src/js/utils/audio/frequency-analyser-processor.ts')}?worklet`;
+  const workletSpecifier = 'audio-reactive/worklet?worklet';
 
   test('keeps the test preload mock for later test files', async () => {
     await buildAudioFileInputs(
       { sampleRate: 44100, channels: [new Float32Array(4410)] },
       { frames: 2 },
     );
-    const { default: source } = await import(
-      '../../src/js/utils/audio/frequency-analyser-processor.ts?worklet'
-    );
+    const { default: source } = await import('audio-reactive/worklet?worklet');
     expect(source).toContain("registerProcessor('frequency-analyser'");
   });
 

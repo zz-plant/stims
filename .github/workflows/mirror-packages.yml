@@ -1,0 +1,67 @@
+name: Mirror packages
+
+# Pushes each package under packages/ to its read-only mirror repository,
+# github.com/zz-plant/<name>, after a change to it lands on main. The code
+# is developed here; the mirrors exist so each package has its own home,
+# history and README on GitHub.
+#
+# The split is scripts/split-package.ts, which is deterministic: every run
+# reproduces the mirror's existing commits and appends the new ones, so the
+# push is always a fast-forward and the mirror's history is never rewritten.
+#
+# Pushing to another repository needs a token: a PACKAGES_MIRROR_TOKEN secret
+# holding a fine-grained personal access token with "Contents: Read and
+# write" on the four mirror repositories. Without it the job says so and
+# stops; nothing else depends on it.
+
+on:
+  push:
+    branches: [main]
+    paths: ['packages/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror-packages
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    name: Mirror ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - eel-conformance
+          - flash-guard
+          - milkdrop-toolchain
+          - audio-reactive
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # The split reads the package's history, not just the tip.
+          fetch-depth: 0
+
+      # Only Bun is needed: the split is git plumbing and imports nothing.
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Split
+        run: bun run packages:split -- ${{ matrix.package }}
+
+      - name: Push to the mirror
+        env:
+          TOKEN: ${{ secrets.PACKAGES_MIRROR_TOKEN }}
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::warning::PACKAGES_MIRROR_TOKEN is not set, so zz-plant/$PACKAGE was not updated. See packages/README.md."
+            exit 0
+          fi
+          git push "https://x-access-token:${TOKEN}@github.com/zz-plant/${PACKAGE}.git" "split/${PACKAGE}:refs/heads/main"

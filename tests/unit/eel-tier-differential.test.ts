@@ -15,12 +15,12 @@ import { describe, expect, test } from 'bun:test';
 import type {
   MilkdropCompiledStatement,
   MilkdropProgramBlock,
-} from '../../src/js/milkdrop/common-types.ts';
+} from 'milkdrop-toolchain/src/common-types.ts';
 import {
   evaluateMilkdropExpression,
   parseMilkdropStatement,
-} from '../../src/js/milkdrop/expression.ts';
-import { compileMilkdropProgram } from '../../src/js/milkdrop/expression-jit.ts';
+} from 'milkdrop-toolchain/src/expression.ts';
+import { compileMilkdropProgram } from 'milkdrop-toolchain/src/expression-jit.ts';
 
 function mulberry32(seed: number) {
   let a = seed >>> 0;

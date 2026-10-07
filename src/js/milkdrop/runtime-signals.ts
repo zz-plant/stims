@@ -3,8 +3,8 @@
  * `treb`, `bass_att`, `vol`), beat triggers, and spectral analysis for per-frame EEL evaluation.
  */
 
+import { createBeatTracker } from 'audio-reactive';
 import type { FrequencyAnalyser } from '../core/audio-handler';
-import { createBeatTracker } from '../utils/audio/beat';
 import { createMilkdropAudioSignalProcessor } from './audio-signal-processor';
 import type { MilkdropRuntimeSignals } from './types';
 
@@ -199,18 +199,17 @@ export function createMilkdropSignalTracker(options?: {
   let latestMid = 0;
   let latestTreble = 0;
 
-  const workletBeatUpdateCache: import('../utils/audio/beat').BeatTrackerUpdate =
-    {
-      smoothedBands: { bass: 0, mid: 0, treble: 0 },
-      beatIntensity: 0,
-      isBeat: false,
-      isTransient: false,
-      spectralFlux: 0,
-      bandFlux: 0,
-      beatBass: false,
-      beatMid: false,
-      beatTreble: false,
-    };
+  const workletBeatUpdateCache: import('audio-reactive').BeatTrackerUpdate = {
+    smoothedBands: { bass: 0, mid: 0, treble: 0 },
+    beatIntensity: 0,
+    isBeat: false,
+    isTransient: false,
+    spectralFlux: 0,
+    bandFlux: 0,
+    beatBass: false,
+    beatMid: false,
+    beatTreble: false,
+  };
 
   const beatTrackerInputCache = {
     bands: { bass: 0, mid: 0, treble: 0 },
@@ -339,7 +338,7 @@ export function createMilkdropSignalTracker(options?: {
       );
 
       const workletBeat = analyser?.getWorkletBeatDetection?.() ?? null;
-      let update: import('../utils/audio/beat').BeatTrackerUpdate;
+      let update: import('audio-reactive').BeatTrackerUpdate;
       if (workletBeat) {
         // The analyser keeps returning the same verdict object until the next
         // worklet message (every 4096 samples: ~6 frames at 44.1 kHz, ~11 at

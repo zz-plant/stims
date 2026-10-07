@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { parseMilkdropShaderStatement } from 'milkdrop-toolchain/src/shader-ast.ts';
 import { Texture } from 'three';
 import { getCurrentStack, setCurrentStack, stack, vec2 } from 'three/tsl';
 import {
@@ -11,7 +12,6 @@ import {
   createSampleUvNode,
 } from '../../src/js/milkdrop/feedback-manager-webgpu-composite.ts';
 import type { ShaderNodeEnv } from '../../src/js/milkdrop/feedback-manager-webgpu-tsl.ts';
-import { parseMilkdropShaderStatement } from '../../src/js/milkdrop/shader-ast.ts';
 
 function buildShaderEnv() {
   const aux = {

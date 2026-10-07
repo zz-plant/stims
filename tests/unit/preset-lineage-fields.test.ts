@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
-import { exportMilkdrop2Preset } from '../../src/js/milkdrop/milkdrop2-export.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { exportMilkdrop2Preset } from 'milkdrop-toolchain/src/milkdrop2-export.ts';
 import {
   lineageFieldLines,
   lineageFromFields,
-} from '../../src/js/milkdrop/preset-lineage-fields.ts';
+} from 'milkdrop-toolchain/src/preset-lineage-fields.ts';
 import { createMilkdropPresetFileActions } from '../../src/js/milkdrop/runtime/preset-file-actions.ts';
 import type {
   MilkdropCatalogStore,

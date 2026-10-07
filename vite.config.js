@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { build } from 'esbuild';
-import { defineConfig } from 'vite';
+import { defaultClientConditions, defineConfig } from 'vite';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
@@ -101,6 +101,10 @@ export default defineConfig({
   ],
   resolve: {
     dedupe: ['react', 'react-dom', 'three'],
+    // The workspace packages under packages/ export their TypeScript source
+    // under 'stims-source' and their built dist/ otherwise, so the app runs
+    // on the packages' source without building them first.
+    conditions: ['stims-source', ...defaultClientConditions],
   },
   server: {
     // Bind to all interfaces so forwarded browsers (e.g., Playwright) can reach

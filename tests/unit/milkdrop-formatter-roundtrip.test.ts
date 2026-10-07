@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { formatMilkdropPreset } from 'milkdrop-toolchain/src/formatter.ts';
 import {
   fingerprintPreset,
   roundTripDiff,
 } from '../../scripts/preset-lab-format-roundtrip.ts';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
-import { formatMilkdropPreset } from '../../src/js/milkdrop/formatter.ts';
 
 /**
  * The Format button rewrites an author's buffer from the compiled IR. If that

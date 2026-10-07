@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { createMilkdropSignalTracker } from '../src/js/milkdrop/runtime-signals.ts';
 import { createMilkdropVM } from '../src/js/milkdrop/vm.ts';
 import {

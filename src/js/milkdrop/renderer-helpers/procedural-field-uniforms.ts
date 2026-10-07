@@ -1,3 +1,4 @@
+import { deriveMilkdropViewportSignalValues } from 'milkdrop-toolchain/src/wgsl-signal-layout.ts';
 import { Color, type ShaderMaterial } from 'three';
 import type {
   MilkdropGpuFieldSignalInputs,
@@ -5,7 +6,6 @@ import type {
   MilkdropPerFrameFieldRegisters,
   MilkdropProceduralFieldTransformVisual,
 } from '../types';
-import { deriveMilkdropViewportSignalValues } from '../wgsl-signal-layout.ts';
 
 export type ProceduralFieldUniformState = {
   zoom: { value: number };

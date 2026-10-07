@@ -18,11 +18,11 @@
  * only reports.
  */
 
-import { useEffect, useRef, useState } from 'react';
 import {
   isAudioAwaitingGesture,
   subscribeAudioGestureGate,
-} from '../core/audio-gesture-gate.ts';
+} from 'audio-reactive';
+import { useEffect, useRef, useState } from 'react';
 import {
   getAudioEnergy,
   subscribeAudioEnergy,

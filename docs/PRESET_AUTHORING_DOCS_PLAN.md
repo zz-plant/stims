@@ -137,7 +137,7 @@ Palette strategies, pacing and scene structure, restraint, the pro-vs-amateur ch
 ## Part 5 — Product work the docs depend on
 
 ### Prerequisites (blockers)
-- **E1 — Single source of truth for builtins. SHIPPED 2026-08-11.** The table lives in `src/js/milkdrop/builtin-docs.ts`; the compiler intrinsic sets, syntax highlighter, autocomplete, hover docs, and the generated reference all derive from it (drift is now test-guarded). Bonus findings: `beat_pulse`/`progress`/`treble` are runtime signal variables, and the editor had been hiding `q9–q32`/`t1–t32` even though the VM supports them.
+- **E1 — Single source of truth for builtins. SHIPPED 2026-08-11.** The table lives in `packages/milkdrop-toolchain/src/builtin-docs.ts`; the compiler intrinsic sets, syntax highlighter, autocomplete, hover docs, and the generated reference all derive from it (drift is now test-guarded). Bonus findings: `beat_pulse`/`progress`/`treble` are runtime signal variables, and the editor had been hiding `q9–q32`/`t1–t32` even though the VM supports them.
 - **E2 — Fix the lossy formatter. SHIPPED 2026-08-11.** `formatMilkdropPreset` now round-trips `[warp_shader]`/`[comp_shader]` byte-identically and preserves titles; slider/field upserts were hardened against writing into shader sections. Round-trip tests cover both the section and legacy backtick formats. Caveat: drafts saved before the fix had already lost their shaders and need re-import.
 
 ### High-leverage, non-blocking

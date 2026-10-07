@@ -3,6 +3,7 @@
  * spectrum ribbon lines, radial rings, and audio-reactive vertex ribbons with dynamic smoothing.
  */
 
+import { deriveMilkdropViewportSignalValues } from 'milkdrop-toolchain/src/wgsl-signal-layout.ts';
 import {
   AdditiveBlending,
   BufferGeometry,
@@ -27,7 +28,6 @@ import type {
   MilkdropProceduralCustomWaveVisual,
   MilkdropProceduralWaveVisual,
 } from '../types';
-import { deriveMilkdropViewportSignalValues } from '../wgsl-signal-layout';
 import {
   FIELD_REGISTER_UNIFORM_COUNT,
   syncProceduralInteractionUniforms,

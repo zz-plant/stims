@@ -10,15 +10,16 @@
  * sides together; a backend-only visual becomes a silent difference on hardware
  * the author does not have.
  */
-import { Color } from 'three';
-import { NodeMaterial, TSL } from 'three/webgpu';
+
 import {
   EEL_BINARY_OPERATORS,
   EEL_F32_MAX,
   EEL_UNARY_OPERATORS,
   emitEelCallWgslField,
-} from '../compiler/eel-function-table.ts';
-import { MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE } from '../compiler/wgsl-eel-helpers';
+} from 'milkdrop-toolchain/src/compiler/eel-function-table.ts';
+import { MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE } from 'milkdrop-toolchain/src/compiler/wgsl-eel-helpers.ts';
+import { Color } from 'three';
+import { NodeMaterial, TSL } from 'three/webgpu';
 import {
   MILKDROP_CUSTOM_WAVE_Z,
   MILKDROP_WAVE_Z,

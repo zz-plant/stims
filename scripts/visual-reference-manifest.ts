@@ -4,7 +4,7 @@ import type {
   MilkdropParitySourceFamily,
   MilkdropParityToleranceProfile,
   MilkdropRenderBackend,
-} from '../src/js/milkdrop/common-types.ts';
+} from 'milkdrop-toolchain/src/common-types.ts';
 
 export const VISUAL_REFERENCE_MANIFEST_PATH =
   'src/data/milkdrop-parity/visual-reference-manifest.json';

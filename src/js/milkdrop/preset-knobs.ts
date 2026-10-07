@@ -13,9 +13,9 @@
  * So are built-in render fields and audio inputs, which have their own
  * controls or are read-only.
  */
-import { milkdropVariableNames } from './builtin-docs.ts';
-import { DEFAULT_MILKDROP_STATE } from './compiler/default-state.ts';
-import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
+import { milkdropVariableNames } from 'milkdrop-toolchain/src/builtin-docs.ts';
+import { DEFAULT_MILKDROP_STATE } from 'milkdrop-toolchain/src/compiler/default-state.ts';
+import { normalizeProgramAssignmentTarget } from 'milkdrop-toolchain/src/field-normalization.ts';
 
 export type PresetKnob = {
   name: string;

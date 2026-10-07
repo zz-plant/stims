@@ -19,7 +19,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   clearCompiledPresetCache,
   compileMilkdropPresetSource,
-} from '../../src/js/milkdrop/compiler.ts';
+} from 'milkdrop-toolchain/src/compiler.ts';
 
 const SOURCE = ['title=cache probe', 'per_frame_1=zoom=zoom+0;'].join('\n');
 

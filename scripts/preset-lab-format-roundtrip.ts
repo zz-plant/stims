@@ -20,10 +20,10 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
-import { formatMilkdropPreset } from '../src/js/milkdrop/formatter.ts';
-import { exportMilkdrop2Preset } from '../src/js/milkdrop/milkdrop2-export.ts';
-import { ensureShaderBody } from '../src/js/milkdrop/shader-source.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { formatMilkdropPreset } from 'milkdrop-toolchain/src/formatter.ts';
+import { exportMilkdrop2Preset } from 'milkdrop-toolchain/src/milkdrop2-export.ts';
+import { ensureShaderBody } from 'milkdrop-toolchain/src/shader-source.ts';
 
 const normalizeLines = (lines: readonly string[]) =>
   lines.map((line) => line.replace(/\s+/gu, ' ').trim()).filter(Boolean);

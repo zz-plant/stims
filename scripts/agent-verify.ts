@@ -34,8 +34,8 @@ const RULES: Rule[] = [
   },
   {
     match: [
-      'src/js/milkdrop/compiler/expression.ts',
-      'src/js/milkdrop/builtin-docs.ts',
+      'packages/milkdrop-toolchain/src/expression.ts',
+      'packages/milkdrop-toolchain/src/builtin-docs.ts',
     ],
     guards: ['check:authoring-docs'],
     regens: ['docs:authoring-reference'],

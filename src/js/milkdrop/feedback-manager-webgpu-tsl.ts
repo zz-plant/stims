@@ -72,13 +72,17 @@ export {
   resolveDirectShaderSwizzle,
 } from './feedback-manager-webgpu-bindings.ts';
 
+import { MILKDROP_EEL_CLOSE_FACTOR } from 'milkdrop-toolchain/src/compiler/eel-function-table.ts';
+import {
+  type MilkdropShaderValueKind,
+  resolveMilkdropShaderConstructorPattern,
+} from 'milkdrop-toolchain/src/shader-expression-shared.ts';
 import { isMobileDevice } from '../utils/browser/device-detect';
 import {
   type FeedbackBackendProfile,
   getFeedbackBackendProfile,
   WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
 } from './backend-behavior';
-import { MILKDROP_EEL_CLOSE_FACTOR } from './compiler/eel-function-table.ts';
 import {
   MILKDROP_BLEND_DISSOLVE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
@@ -89,10 +93,6 @@ import {
   resolveDirectShaderSamplerBinding,
   resolveDirectShaderSwizzle,
 } from './feedback-manager-webgpu-bindings.ts';
-import {
-  type MilkdropShaderValueKind,
-  resolveMilkdropShaderConstructorPattern,
-} from './shader-expression-shared.ts';
 import type {
   MilkdropExpressionNode,
   MilkdropFeedbackCompositeState,
