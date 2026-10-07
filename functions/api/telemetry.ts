@@ -2,6 +2,7 @@
 // POST /api/telemetry
 
 import {
+  TELEMETRY_ARRIVALS,
   TELEMETRY_AUDIO_SOURCES,
   TELEMETRY_DEVICES,
   TELEMETRY_ORIENTATIONS,
@@ -72,6 +73,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
           known(TELEMETRY_ORIENTATIONS, data.orientation),
           known(TELEMETRY_DEVICES, data.device),
           known(TELEMETRY_AUDIO_SOURCES, data.audioSource),
+          known(TELEMETRY_ARRIVALS, data.arrival),
         ],
         doubles: [
           data.fps || 0,

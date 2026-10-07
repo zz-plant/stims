@@ -3,6 +3,7 @@ import {
   noteGrowthEvent,
   resetGrowthTelemetryForTests,
 } from '../../src/js/core/services/preset-telemetry.ts';
+import { resetTelemetryContextForTests } from '../../src/js/core/services/telemetry-context.ts';
 
 type Beacon = { url: string; body: Record<string, unknown> };
 const pending: Promise<void>[] = [];
@@ -13,10 +14,13 @@ const flush = async () => {
 let beacons: Beacon[] = [];
 let originalLocation: unknown;
 let originalNavigator: unknown;
+let originalDocument: unknown;
 
 beforeEach(() => {
   beacons = [];
   resetGrowthTelemetryForTests();
+  resetTelemetryContextForTests();
+  originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
   originalLocation = Object.getOwnPropertyDescriptor(globalThis, 'location');
   originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
   Object.defineProperty(globalThis, 'location', {
@@ -39,6 +43,14 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  resetTelemetryContextForTests();
+  if (originalDocument)
+    Object.defineProperty(
+      globalThis,
+      'document',
+      originalDocument as PropertyDescriptor,
+    );
+  else delete (globalThis as Record<string, unknown>).document;
   if (originalLocation)
     Object.defineProperty(
       globalThis,
@@ -77,6 +89,21 @@ describe('noteGrowthEvent', () => {
       'growth-discovery-landing',
       'growth-audio-started',
     ]);
+  });
+
+  test('a landing says the visit came from search, and never which engine', async () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { referrer: 'https://www.google.com/' },
+    });
+    noteGrowthEvent('landing', 'geiss-casino');
+    await flush();
+    expect(beacons[0]?.body).toMatchObject({
+      event: 'growth-landing',
+      presetId: 'geiss-casino',
+      arrival: 'search',
+    });
+    expect(JSON.stringify(beacons[0]?.body)).not.toContain('google');
   });
 
   test('records the edit-entry, share, and support funnels', async () => {
