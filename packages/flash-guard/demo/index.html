@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>flash-guard demo</title>
+<style>
+  :root { color-scheme: light dark; font: 14px/1.4 ui-sans-serif, system-ui, sans-serif; }
+  body { margin: 0; padding: 16px; max-width: 760px; }
+  h1 { font-size: 18px; margin: 0 0 8px; }
+  p { margin: 0 0 12px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  label { display: inline-flex; gap: 6px; align-items: center; }
+  canvas { display: block; max-width: 100%; border-radius: 6px; }
+  #stage { background: #000; }
+  #trace { margin-top: 12px; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 12px 0 0; }
+  dt { opacity: .7; }
+  dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .warn { padding: 8px 12px; border-radius: 6px; background: color-mix(in srgb, #c9a227 25%, transparent); }
+</style>
+</head>
+<body>
+<h1>flash-guard demo</h1>
+<p class="warn">This page can strobe. Keep the contrast slider low or the governor on if flashing affects you.</p>
+<div class="row">
+  <label>Strobe <input id="hz" type="range" min="0" max="12" step="0.5" value="6"> <span id="hzOut">6</span> Hz</label>
+  <label>Contrast <input id="contrast" type="range" min="0" max="1" step="0.05" value="0.1"> <span id="contrastOut">0.10</span></label>
+  <label><input id="governed" type="checkbox" checked> Governor on</label>
+  <label>Area <select id="area"><option value="1">full screen</option><option value="0.33">one third</option><option value="0.125">one eighth</option></select></label>
+</div>
+<canvas id="stage" width="480" height="270"></canvas>
+<dl>
+  <dt>flashes in window</dt><dd id="flashes">0</dd>
+  <dt>hold</dt><dd id="hold">0.000</dd>
+  <dt>luminance scale applied</dt><dd id="scale">1.000</dd>
+  <dt>engaged</dt><dd id="engaged">no</dd>
+  <dt>sampler</dt><dd id="sampler">-</dd>
+</dl>
+<canvas id="trace" width="720" height="120"></canvas>
+<p style="margin-top:8px">Yellow: luminance drawn. Blue: luminance after the governor's brightness filter. Built against <code>../dist/index.js</code>; run <code>bun run build</code> first.</p>
+<script type="module">
+  import { createBrightnessFilterApplier, createFlashController } from '../dist/index.js';
+
+  const stage = document.getElementById('stage');
+  const ctx = stage.getContext('2d');
+  const trace = document.getElementById('trace');
+  const tctx = trace.getContext('2d');
+  const out = (id) => document.getElementById(id);
+  const hz = out('hz');
+  const contrast = out('contrast');
+  const governed = out('governed');
+  const area = out('area');
+  hz.oninput = () => { out('hzOut').textContent = hz.value; };
+  contrast.oninput = () => { out('contrastOut').textContent = Number(contrast.value).toFixed(2); };
+
+  const applyFilter = createBrightnessFilterApplier(stage);
+  let appliedScale = 1;
+  const controller = createFlashController({
+    canvas: stage,
+    applyLuminanceScale: (scale) => { appliedScale = scale; applyFilter(scale); },
+    isEnabled: () => governed.checked,
+    subscribeToFrames: () => () => {},
+  });
+  controller.start();
+
+  const history = { drawn: [], seen: [] };
+  const MAX = trace.width;
+
+  function drawTrace() {
+    tctx.clearRect(0, 0, trace.width, trace.height);
+    tctx.strokeStyle = '#444';
+    tctx.beginPath(); tctx.moveTo(0, trace.height - 0.5); tctx.lineTo(trace.width, trace.height - 0.5); tctx.stroke();
+    const plot = (series, color, width) => {
+      tctx.strokeStyle = color; tctx.lineWidth = width; tctx.beginPath();
+      series.forEach((v, i) => {
+        const x = i; const y = trace.height - 2 - v * (trace.height - 4);
+        if (i === 0) tctx.moveTo(x, y); else tctx.lineTo(x, y);
+      });
+      tctx.stroke();
+    };
+    plot(history.drawn, '#c9a227', 1);
+    plot(history.seen, '#3b6ea5', 2);
+  }
+
+  const start = performance.now();
+  function frame(now) {
+    const t = (now - start) / 1000;
+    const rate = Number(hz.value);
+    const on = rate > 0 && Math.floor(t * rate * 2) % 2 === 1;
+    const c = Number(contrast.value);
+    const low = 0.02;
+    const high = low + c * (0.98 - low);
+    const level = on ? high : low;
+    // A grey whose relative luminance is `level`: invert the sRGB transfer.
+    const srgb = level <= 0.0031308 ? level * 12.92 : 1.055 * level ** (1 / 2.4) - 0.055;
+    const byte = Math.round(srgb * 255);
+    ctx.fillStyle = '#050505';
+    ctx.fillRect(0, 0, stage.width, stage.height);
+    const frac = Number(area.value);
+    ctx.fillStyle = `rgb(${byte},${byte},${byte})`;
+    ctx.fillRect(0, 0, stage.width * frac, stage.height * frac);
+
+    // Sample inside the same task as the draw.
+    controller.tick(now);
+    const state = controller.getState();
+    out('flashes').textContent = state.flashesInWindow;
+    out('hold').textContent = state.hold.toFixed(3);
+    out('scale').textContent = appliedScale.toFixed(3);
+    out('engaged').textContent = state.engaged ? 'yes' : 'no';
+    out('sampler').textContent = controller.isRunning() ? 'running' : 'stopped';
+
+    history.drawn.push(level * frac * frac + low * (1 - frac * frac));
+    history.seen.push((level * frac * frac + low * (1 - frac * frac)) * appliedScale);
+    if (history.drawn.length > MAX) { history.drawn.shift(); history.seen.shift(); }
+    drawTrace();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.__flashGuardDemo = { controller, get appliedScale() { return appliedScale; } };
+</script>
+</body>
+</html>

@@ -1,0 +1,668 @@
+/**
+ * Compiler Program Assembly — assembles parsed EEL2 expression blocks into structured executable
+ * program units, lowering per-frame, per-pixel, custom wave, and custom shape equations.
+ */
+
+import {
+  evaluateMilkdropExpression,
+  MILKDROP_INTRINSIC_FUNCTIONS,
+  MILKDROP_INTRINSIC_IDENTIFIERS,
+  parseMilkdropExpression,
+  parseMilkdropStatement,
+  splitMilkdropStatements,
+  walkMilkdropExpression,
+} from '../expression.ts';
+import { aliasMap, normalizeFieldSuffix } from '../field-normalization.ts';
+import type {
+  MilkdropCompiledStatement,
+  MilkdropDiagnostic,
+  MilkdropExpressionNode,
+  MilkdropPresetField,
+  MilkdropPresetIR,
+  MilkdropProgramBlock,
+  MilkdropShapeDefinition,
+  MilkdropWaveDefinition,
+} from '../types.ts';
+import {
+  DEFAULT_MILKDROP_STATE,
+  MAX_CUSTOM_SHAPES,
+  MAX_CUSTOM_WAVES,
+} from './default-state.ts';
+import {
+  ensureShapeDefinition,
+  ensureWaveDefinition,
+  getProgramBlock,
+  normalizeProgramTarget,
+  presetProgramPatterns,
+  resolveCustomProgramSlotIndex,
+} from './preset-normalization.ts';
+
+const LEGACY_MOTION_VECTOR_CONTROL_TARGETS = new Set([
+  'motion_vectors_x',
+  'motion_vectors_y',
+  'mv_dx',
+  'mv_dy',
+  'mv_l',
+]);
+
+export function resolveRuntimeGlobals({
+  numericFields,
+  programs,
+}: {
+  numericFields: Record<string, number>;
+  programs: Pick<MilkdropPresetIR['programs'], 'init' | 'perFrame'>;
+}) {
+  const runtimeGlobals = {
+    ...DEFAULT_MILKDROP_STATE,
+    ...numericFields,
+  };
+  const evaluationEnv: Record<string, number> = {
+    ...runtimeGlobals,
+  };
+
+  for (let index = 1; index <= 32; index += 1) {
+    evaluationEnv[`q${index}`] = 0;
+  }
+
+  for (const block of [programs.init, programs.perFrame]) {
+    for (const statement of block.statements) {
+      const value = evaluateMilkdropExpression(
+        statement.expression,
+        evaluationEnv,
+      );
+      evaluationEnv[statement.target] = value;
+      if (statement.target in runtimeGlobals) {
+        runtimeGlobals[statement.target] = value;
+      }
+    }
+  }
+
+  return runtimeGlobals;
+}
+
+function buildSupportedExpressionIdentifierSet() {
+  const supported = new Set<string>([
+    ...Object.keys(DEFAULT_MILKDROP_STATE),
+    ...Object.keys(aliasMap).filter((key) => aliasMap[key] !== null),
+    ...MILKDROP_INTRINSIC_IDENTIFIERS,
+    'else',
+    'time',
+    'frame',
+    'fps',
+    'bass',
+    'mid',
+    'med',
+    'mids',
+    'treb',
+    'att',
+    'treble',
+    'bass_att',
+    'mid_att',
+    'med_att',
+    'mids_att',
+    'treb_att',
+    'treble_att',
+    'bassatt',
+    'midsatt',
+    'trebleatt',
+    'beat',
+    'beat_pulse',
+    'beatpulse',
+    'rms',
+    'vol',
+    'music',
+    'weighted_energy',
+    'progress',
+    'aspectx',
+    'aspecty',
+    'pixelsx',
+    'pixelsy',
+    'meshx',
+    'meshy',
+    'basstime',
+    'sample',
+    'value',
+    'value1',
+    'value2',
+    'x',
+    'y',
+    'rad',
+    'ang',
+    'instance',
+    'num_inst',
+    'sides',
+    'enabled',
+    'textured',
+    'tex_zoom',
+    'tex_ang',
+    'samples',
+    'spectrum',
+    'additive',
+    'usedots',
+    'scaling',
+    'smoothing',
+    'mystery',
+    'thick',
+    'a',
+    'r',
+    'g',
+    'b',
+    'a2',
+    'r2',
+    'g2',
+    'b2',
+    'border_a',
+    'border_r',
+    'border_g',
+    'border_b',
+    'thickoutline',
+  ]);
+  return supported;
+}
+
+function isSupportedExpressionIdentifier(
+  identifier: string,
+  supportedIdentifiers: Set<string>,
+) {
+  const normalized = identifier.toLowerCase();
+  return (
+    supportedIdentifiers.has(identifier) ||
+    supportedIdentifiers.has(normalized) ||
+    /^q\d+$/u.test(normalized) ||
+    /^t\d+$/u.test(normalized)
+  );
+}
+
+export function collectExpressionCompatibilityGaps(
+  expressions: MilkdropExpressionNode[],
+  assignedTargets: Iterable<string>,
+) {
+  const supportedIdentifiers = buildSupportedExpressionIdentifierSet();
+  for (const target of assignedTargets) {
+    supportedIdentifiers.add(target);
+    supportedIdentifiers.add(target.toLowerCase());
+  }
+
+  const missing = new Set<string>();
+  for (const expression of expressions) {
+    walkMilkdropExpression(expression, (node) => {
+      if (node.type === 'identifier') {
+        if (!isSupportedExpressionIdentifier(node.name, supportedIdentifiers)) {
+          const name = node.name.toLowerCase();
+          missing.add(name);
+        }
+        return;
+      }
+      if (
+        node.type === 'call' &&
+        !MILKDROP_INTRINSIC_FUNCTIONS.has(node.name.toLowerCase())
+      ) {
+        const name = node.name.toLowerCase();
+        missing.add(name);
+      }
+    });
+  }
+
+  return [...missing].sort();
+}
+
+export function collectExpressionsFromValue(
+  value: unknown,
+  expressions: MilkdropExpressionNode[],
+) {
+  if (!value || typeof value !== 'object') {
+    return;
+  }
+  if (
+    'type' in value &&
+    typeof value.type === 'string' &&
+    ['literal', 'identifier', 'unary', 'binary', 'call'].includes(value.type)
+  ) {
+    expressions.push(value as MilkdropExpressionNode);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((entry) => collectExpressionsFromValue(entry, expressions));
+    return;
+  }
+  Object.values(value).forEach((entry) =>
+    collectExpressionsFromValue(entry, expressions),
+  );
+}
+
+export function hasLegacyMotionVectorControls(
+  numericFields: Record<string, number>,
+  programs?: Pick<MilkdropPresetIR['programs'], 'init' | 'perFrame'>,
+) {
+  // Compare against the MilkDrop defaults, not against 0: mv_l defaults to
+  // 0.9, so a plain `> 0` test reports every preset in the catalog as using
+  // legacy motion-vector controls.
+  const hasLegacyFieldValues =
+    Math.abs((numericFields.mv_dx ?? 0) - (DEFAULT_MILKDROP_STATE.mv_dx ?? 0)) >
+      0.0001 ||
+    Math.abs((numericFields.mv_dy ?? 0) - (DEFAULT_MILKDROP_STATE.mv_dy ?? 0)) >
+      0.0001 ||
+    Math.abs((numericFields.mv_l ?? 0) - (DEFAULT_MILKDROP_STATE.mv_l ?? 0)) >
+      0.0001;
+  if (hasLegacyFieldValues) {
+    return true;
+  }
+
+  if (!programs) {
+    return false;
+  }
+
+  return [programs.init, programs.perFrame].some((block) =>
+    block.statements.some((statement) =>
+      LEGACY_MOTION_VECTOR_CONTROL_TARGETS.has(statement.target),
+    ),
+  );
+}
+
+export function compileScalarField(
+  field: MilkdropPresetField,
+  diagnostics: MilkdropDiagnostic[],
+): { value: number | null; expression?: MilkdropExpressionNode } {
+  const normalizedValue = field.rawValue.trim().replace(/;+\s*$/u, '');
+  const numeric = Number(normalizedValue);
+  if (Number.isFinite(numeric)) {
+    return { value: numeric };
+  }
+
+  const expressionResult = parseMilkdropExpression(normalizedValue, field.line);
+  diagnostics.push(...expressionResult.diagnostics);
+  if (!expressionResult.value) {
+    return { value: null };
+  }
+
+  return {
+    value: evaluateMilkdropExpression(
+      expressionResult.value,
+      DEFAULT_MILKDROP_STATE,
+    ),
+    expression: expressionResult.value,
+  };
+}
+
+export function pushProgramStatement(
+  block: MilkdropProgramBlock,
+  sourceLine: string,
+  line: number,
+  diagnostics: MilkdropDiagnostic[],
+) {
+  const statements = splitMilkdropStatements(sourceLine);
+  statements.forEach((statement) => {
+    const parsed = parseMilkdropStatement(statement, line);
+    diagnostics.push(...parsed.diagnostics);
+    if (parsed.value) {
+      if (parsed.value.control) {
+        block.statements.push(parsed.value);
+      } else {
+        block.statements.push({
+          ...parsed.value,
+          target: normalizeProgramTarget(parsed.value.target),
+        });
+      }
+      block.sourceLines.push(statement);
+    }
+  });
+}
+
+/** Yields every statement in a program, descending into `loop`/`while`
+ * control bodies so compatibility and register analysis see the full set. */
+export function flattenProgramStatements(
+  statements: readonly MilkdropCompiledStatement[],
+): MilkdropCompiledStatement[] {
+  const result: MilkdropCompiledStatement[] = [];
+  for (const statement of statements) {
+    result.push(statement);
+    if (statement.control) {
+      result.push(...flattenProgramStatements(statement.control.body));
+    }
+  }
+  return result;
+}
+
+function scanMilkdropProgramExpressionContext(sourceLine: string) {
+  let parenthesisDepth = 0;
+  let quote: '"' | "'" | null = null;
+
+  for (let index = 0; index < sourceLine.length; index += 1) {
+    const current = sourceLine[index];
+    const next = sourceLine[index + 1];
+
+    if (quote) {
+      if (current === '\\') {
+        index += 1;
+        continue;
+      }
+      if (current === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (current === '/' && next === '/') {
+      break;
+    }
+
+    if (current === '"' || current === "'") {
+      quote = current;
+      continue;
+    }
+
+    if (current === '(') {
+      parenthesisDepth += 1;
+      continue;
+    }
+
+    if (current === ')') {
+      parenthesisDepth = Math.max(0, parenthesisDepth - 1);
+    }
+  }
+
+  return { parenthesisDepth, hasOpenQuote: quote !== null };
+}
+
+function canContinueMilkdropProgramLine(sourceLine: string) {
+  const trimmed = sourceLine.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  const expressionContext = scanMilkdropProgramExpressionContext(trimmed);
+  if (
+    expressionContext.parenthesisDepth > 0 ||
+    expressionContext.hasOpenQuote
+  ) {
+    return true;
+  }
+
+  return /(?:[+\-*/,(]|\b(?:and|or)\b)$/iu.test(trimmed);
+}
+
+export function pushProgramStatementWithContinuation(
+  block: MilkdropProgramBlock,
+  sourceLine: string,
+  line: number,
+  diagnostics: MilkdropDiagnostic[],
+  pendingProgramSources: Map<
+    MilkdropProgramBlock,
+    { sourceLine: string; line: number }
+  >,
+  comment?: string,
+) {
+  const before = block.sourceLines.length;
+  pushProgramSource(
+    block,
+    sourceLine,
+    line,
+    diagnostics,
+    pendingProgramSources,
+  );
+  if (!comment) {
+    return;
+  }
+  const after = block.sourceLines.length;
+  // Trailing only when this line completed a statement of its own; otherwise
+  // the comment stands alone before whatever statement comes next.
+  const trailing =
+    sourceLine.trim().length > 0 &&
+    after > before &&
+    !pendingProgramSources.has(block);
+  block.comments ??= [];
+  block.comments.push({
+    index: trailing ? after - 1 : after,
+    text: comment,
+    trailing,
+  });
+}
+
+function pushProgramSource(
+  block: MilkdropProgramBlock,
+  sourceLine: string,
+  line: number,
+  diagnostics: MilkdropDiagnostic[],
+  pendingProgramSources: Map<
+    MilkdropProgramBlock,
+    { sourceLine: string; line: number }
+  >,
+) {
+  const trimmedValue = sourceLine.trim();
+  const pending = pendingProgramSources.get(block);
+
+  if (pending) {
+    if (!trimmedValue) {
+      return;
+    }
+
+    // An unclosed `(` on the pending line beats the `=` heuristic. MilkDrop
+    // concatenates the numbered lines of a block into one source blob before
+    // parsing, so a `loop(N,` head legitimately spans many of them and its
+    // body is full of assignments:
+    //
+    //   per_frame_8 =loop(1024,  sample=i/1024;
+    //   per_frame_10=s = 5.5*6.28*sample;
+    //   per_frame_17=i=i+1;);
+    //
+    // Treating line 10's `=` as the start of a new statement flushed the
+    // half-written `loop(` head — which then failed extractCallInner and was
+    // discarded — and left the closing `);` as an orphan. Whole iterative
+    // loops disappeared from shipped presets that way.
+    const pendingContext = scanMilkdropProgramExpressionContext(
+      pending.sourceLine,
+    );
+    const pendingIsOpen =
+      pendingContext.parenthesisDepth > 0 || pendingContext.hasOpenQuote;
+
+    if (pendingIsOpen || !trimmedValue.includes('=')) {
+      const combined = `${pending.sourceLine} ${trimmedValue}`.trim();
+      if (canContinueMilkdropProgramLine(combined)) {
+        pendingProgramSources.set(block, {
+          sourceLine: combined,
+          line: pending.line,
+        });
+        return;
+      }
+      pendingProgramSources.delete(block);
+      pushProgramStatement(block, combined, pending.line, diagnostics);
+      return;
+    }
+
+    pendingProgramSources.delete(block);
+    pushProgramStatement(block, pending.sourceLine, pending.line, diagnostics);
+  }
+
+  if (!trimmedValue) {
+    return;
+  }
+
+  // Whether the line continues is decided by the line itself, not by whether
+  // it happens to contain an `=`. A bare `loop (10000,` head — the exact form
+  // several shipped presets open an init loop with — has no `=`, so requiring
+  // one pushed it immediately as a complete statement; it then failed
+  // extractCallInner and vanished, taking its body with it.
+  if (canContinueMilkdropProgramLine(trimmedValue)) {
+    pendingProgramSources.set(block, { sourceLine: trimmedValue, line });
+    return;
+  }
+
+  pushProgramStatement(block, sourceLine, line, diagnostics);
+}
+
+export function compileProgramsFromField(
+  field: MilkdropPresetField,
+  programs: MilkdropPresetIR['programs'],
+  customWaves: Map<number, MilkdropWaveDefinition>,
+  customShapes: Map<number, MilkdropShapeDefinition>,
+  diagnostics: MilkdropDiagnostic[],
+  pendingProgramSources: Map<
+    MilkdropProgramBlock,
+    { sourceLine: string; line: number }
+  >,
+) {
+  if (field.section === 'init') {
+    pushProgramStatementWithContinuation(
+      programs.init,
+      `${field.key.trim()} = ${field.rawValue.trim()}`,
+      field.line,
+      diagnostics,
+      pendingProgramSources,
+      field.comment,
+    );
+    return true;
+  }
+
+  if (field.section === 'per_frame') {
+    pushProgramStatementWithContinuation(
+      programs.perFrame,
+      `${field.key.trim()} = ${field.rawValue.trim()}`,
+      field.line,
+      diagnostics,
+      pendingProgramSources,
+      field.comment,
+    );
+    return true;
+  }
+
+  if (field.section === 'per_pixel') {
+    pushProgramStatementWithContinuation(
+      programs.perPixel,
+      `${field.key.trim()} = ${field.rawValue.trim()}`,
+      field.line,
+      diagnostics,
+      pendingProgramSources,
+      field.comment,
+    );
+    return true;
+  }
+
+  const {
+    rootProgramPattern,
+    customWaveProgramPattern,
+    customShapeProgramPattern,
+  } = presetProgramPatterns;
+  const rawKey = normalizeFieldSuffix(field.key);
+  const rootMatch = rawKey.match(rootProgramPattern);
+  if (rootMatch) {
+    const block = getProgramBlock(
+      rootMatch[1] as 'init' | 'per_frame' | 'per_frame_init' | 'per_pixel',
+      {
+        init: programs.init,
+        perFrame: programs.perFrame,
+        perPixel: programs.perPixel,
+      },
+    );
+    if (block) {
+      pushProgramStatementWithContinuation(
+        block,
+        field.rawValue,
+        field.line,
+        diagnostics,
+        pendingProgramSources,
+        field.comment,
+      );
+      return true;
+    }
+  }
+
+  const waveMatch = rawKey.match(customWaveProgramPattern);
+  if (waveMatch) {
+    const wavePrefix = waveMatch[1] ?? 'wave';
+    const rawIndex = Number.parseInt(waveMatch[2] ?? '0', 10);
+    let index = resolveCustomProgramSlotIndex(rawIndex, MAX_CUSTOM_WAVES);
+    if (
+      wavePrefix === 'wave' &&
+      rawIndex > 0 &&
+      rawIndex < MAX_CUSTOM_WAVES &&
+      customWaves.has(rawIndex + 1)
+    ) {
+      index = rawIndex + 1;
+    }
+    if (index !== null) {
+      const wave = ensureWaveDefinition(customWaves, index);
+      const block = getProgramBlock(
+        waveMatch[3] as 'init' | 'per_frame' | 'per_point',
+        {
+          init: wave.programs.init,
+          perFrame: wave.programs.perFrame,
+          perPoint: wave.programs.perPoint,
+        },
+      );
+      if (block) {
+        pushProgramStatementWithContinuation(
+          block,
+          field.rawValue,
+          field.line,
+          diagnostics,
+          pendingProgramSources,
+          field.comment,
+        );
+        return true;
+      }
+    }
+  }
+
+  const shapeMatch = rawKey.match(customShapeProgramPattern);
+  if (shapeMatch) {
+    const rawIndex = Number.parseInt(shapeMatch[1] ?? '0', 10);
+    let index = resolveCustomProgramSlotIndex(rawIndex, MAX_CUSTOM_SHAPES);
+    if (
+      rawIndex > 0 &&
+      rawIndex < MAX_CUSTOM_SHAPES &&
+      customShapes.has(rawIndex + 1)
+    ) {
+      index = rawIndex + 1;
+    }
+    if (index !== null) {
+      const shape = ensureShapeDefinition(customShapes, index);
+      const block = getProgramBlock(shapeMatch[2] as 'init' | 'per_frame', {
+        init: shape.programs.init,
+        perFrame: shape.programs.perFrame,
+      });
+      if (block) {
+        pushProgramStatementWithContinuation(
+          block,
+          field.rawValue,
+          field.line,
+          diagnostics,
+          pendingProgramSources,
+          field.comment,
+        );
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function collectRegisterUsage(target: string, usage: { q: number; t: number }) {
+  const match = target.toLowerCase().match(/^([qt])(\d+)$/u);
+  if (!match) {
+    return;
+  }
+  const bucket = match[1] as 'q' | 't';
+  const index = Number.parseInt(match[2] ?? '0', 10);
+  if (Number.isFinite(index)) {
+    usage[bucket] = Math.max(usage[bucket], index);
+  }
+}
+
+export function analyzeProgramRegisters(
+  block: MilkdropProgramBlock,
+  usage: { q: number; t: number },
+) {
+  flattenProgramStatements(block.statements).forEach((statement) => {
+    collectRegisterUsage(statement.target, usage);
+    walkMilkdropExpression(statement.expression, (node) => {
+      if (node.type === 'identifier') {
+        collectRegisterUsage(node.name, usage);
+      }
+    });
+  });
+}
+
+export function hasProgramStatements(block: MilkdropProgramBlock) {
+  return block.statements.length > 0;
+}

@@ -1,0 +1,4 @@
+# No preload: the toolchain has no DOM or WebGPU dependency, so the tests run
+# against plain bun. (The Stims root bunfig installs happy-dom and a fake GPU.)
+[test]
+root = "./tests"

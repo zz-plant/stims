@@ -199,6 +199,8 @@ export type TelemetryEvent = {
   device?: (typeof TELEMETRY_DEVICES)[number];
   /** The audio source that is live, or 'none'. */
   audioSource?: (typeof TELEMETRY_AUDIO_SOURCES)[number];
+  /** Where this page load came from, by the referrer's host only. */
+  arrival?: (typeof TELEMETRY_ARRIVALS)[number];
 };
 
 const RENDERER_VALUES = ['webgpu', 'webgl2', 'webgl1', 'canvas'] as const;
@@ -216,6 +218,14 @@ export const TELEMETRY_AUDIO_SOURCES = [
   'microphone',
   'tab',
   'youtube',
+] as const;
+export const TELEMETRY_ARRIVALS = [
+  'search',
+  'assistant',
+  'social',
+  'internal',
+  'other',
+  'none',
 ] as const;
 
 function isOneOf<T extends string>(
@@ -276,6 +286,10 @@ export const TelemetryEventSchema = contractSchema<TelemetryEvent>((input) => {
   if (input.audioSource !== undefined) {
     if (!isOneOf(TELEMETRY_AUDIO_SOURCES, input.audioSource)) return null;
     result.audioSource = input.audioSource;
+  }
+  if (input.arrival !== undefined) {
+    if (!isOneOf(TELEMETRY_ARRIVALS, input.arrival)) return null;
+    result.arrival = input.arrival;
   }
   return result;
 });

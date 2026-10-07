@@ -1,0 +1,4 @@
+# Package-local test config: no happy-dom, no root preload. The only setup is
+# the fake AudioWorkletGlobalScope the processor test needs.
+[test]
+preload = ["./tests/setup.ts"]

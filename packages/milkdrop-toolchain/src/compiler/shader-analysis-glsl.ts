@@ -1,0 +1,1077 @@
+/**
+ * GLSL Shader Lowering & Emitter — translates MilkDrop HLSL/EEL2 warp and composite shader blocks
+ * into valid, high-performance GLSL 3.00 ES shader source with auxiliary samplers and noise textures.
+ */
+
+import {
+  getMilkdropShaderAuxTextureSourceId,
+  isMilkdropVolumeShaderSamplerName,
+} from '../shader-samplers.ts';
+import type {
+  MilkdropShaderExpressionNode,
+  MilkdropShaderStatement,
+} from '../types.ts';
+import {
+  isAuxShaderSamplerName,
+  MILKDROP_RAND_FRAME_GLSL,
+  MILKDROP_SIGNAL_NAME_ALIASES,
+  MILKDROP_TEXSIZE_MAIN_GLSL,
+  MILKDROP_TEXSIZE_NOISE_GLSL,
+  MILKDROP_TEXSIZE_SUBSTITUTE_GLSL,
+  normalizeShaderSamplerName,
+} from './shader-analysis-helpers.ts';
+
+type GlslEmitter = {
+  emitIdentifier: (name: string) => string;
+  emitLiteral: (value: number) => string;
+  emitBinary: (left: string, op: string, right: string) => string;
+  emitUnary: (op: string, operand: string) => string;
+  emitCall: (name: string, args: string[]) => string | null;
+  emitMember: (object: string, property: string) => string;
+};
+
+/**
+ * Emits a MilkDrop shader expression as a GLSL expression string.
+ * Handles tex2D/tex3D → GLSL texture sampling, standard math functions, etc.
+ */
+function emitExpression(
+  node: MilkdropShaderExpressionNode,
+  emitter: GlslEmitter,
+): string | null {
+  switch (node.type) {
+    case 'literal':
+      return emitter.emitLiteral(node.value);
+    case 'identifier':
+      return emitter.emitIdentifier(node.name);
+    case 'unary': {
+      const operand = emitExpression(node.operand, emitter);
+      if (operand === null) return null;
+      if (node.operator === '+') return operand;
+      if (node.operator === '-') return `-(${operand})`;
+      if (node.operator === '!')
+        return `(abs(${operand}) > 0.000001 ? 0.0 : 1.0)`;
+      return null;
+    }
+    case 'binary': {
+      const left = emitExpression(node.left, emitter);
+      const right = emitExpression(node.right, emitter);
+      if (left === null || right === null) return null;
+      return emitter.emitBinary(left, node.operator, right);
+    }
+    case 'member': {
+      const object = emitExpression(node.object, emitter);
+      if (object === null) return null;
+      return emitter.emitMember(object, node.property);
+    }
+    case 'index': {
+      return null;
+    }
+    case 'call': {
+      const name = node.name;
+      const args = node.args
+        .map((arg) => emitExpression(arg, emitter))
+        .filter((value): value is string => value !== null);
+      if (args.length !== node.args.length) return null;
+      if (name.includes('.')) {
+        const parts = name.split('.');
+        const method = parts[parts.length - 1].toLowerCase();
+        const obj = parts.slice(0, parts.length - 1).join('.');
+        if (
+          method === 'sample' ||
+          method === 'samplelevel' ||
+          method === 'samplebias'
+        ) {
+          const uv = args[1] ?? args[0] ?? 'vUv';
+          return emitter.emitCall('tex2D', [obj, uv]);
+        }
+      }
+      return emitter.emitCall(name, args);
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * Creates a GLSL emitter that maps MilkDrop sampler/texture names to GLSL
+ * functions in the composite shader.
+ *
+ * `shadowedIdentifiers` are the lowercased names the preset writes. The alias
+ * table below would otherwise rewrite every read of such a name to a shader
+ * uniform: a preset writing `b = …; ret = b;` would assign its own variable
+ * and then read `colorScale.b` — a silently wrong picture, or, in a warp body
+ * where `colorScale` is not declared, a compile error (27 presets in the
+ * offline scan). A written name wins over the alias, the way a local would in
+ * HLSL.
+ */
+/** `+ - * /` → the width-truncating overload sets in the preamble. */
+const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
+  '+': 'milkdropAdd',
+  '-': 'milkdropSub',
+  '*': 'milkdropMul',
+  '/': 'milkdropDiv',
+};
+
+/** Emitted names that are always float: signal and control uniforms, the q
+ * registers, the blur ranges and MilkDrop's math constants. */
+const SCALAR_GLSL_IDENTIFIER =
+  /^(?:signal[A-Z]\w*|q\d+|scale[123]|bias[123]|zoomMul|rotation|warpScale|offsetX|offsetY|decay|M_PI|M_PI_2|M_INV_PI_2)$/u;
+
+/**
+ * True when an emitted operand is certainly a float — a numeric literal
+ * (possibly negated or parenthesised), or a scalar uniform. Arithmetic with
+ * such an operand is already valid GLSL for any other operand width, so it
+ * stays a plain operator. Anything else might be a vector and goes through
+ * the overload set.
+ */
+function isProvablyScalarGlsl(expression: string): boolean {
+  const trimmed = expression.trim();
+  if (/^-?\(?-?\d+(?:\.\d+)?\)?$/u.test(trimmed)) return true;
+  if (/^-\((?:-?\d+(?:\.\d+)?)\)$/u.test(trimmed)) return true;
+  return SCALAR_GLSL_IDENTIFIER.test(trimmed);
+}
+
+/** Relational operators → the component-wise overload sets in the preamble. */
+const COMPARISON_HELPERS: Readonly<Record<string, string>> = {
+  '<': 'milkdropLt',
+  '<=': 'milkdropLe',
+  '>': 'milkdropGt',
+  '>=': 'milkdropGe',
+  '==': 'milkdropEq',
+  '!=': 'milkdropNe',
+};
+
+export function createCompositeGlslEmitter(
+  shadowedIdentifiers: ReadonlySet<string> = new Set(),
+): GlslEmitter {
+  return {
+    emitIdentifier(name: string): string {
+      const lower = name.toLowerCase();
+      // Reserved in GLSL; a preset local by that name is renamed, matching
+      // the target rename in generateGlslFromShaderStatements.
+      if (lower === 'output') return 'milkdropOutput';
+      // Statement targets are lowercased at parse time but reads keep the
+      // author's case, so `float L = lum(ret); … L * 27` wrote `l` and read
+      // an undeclared `L` — hoisted as a zero uniform, a silently wrong
+      // picture. Reads of a written name follow the target's spelling.
+      if (shadowedIdentifiers.has(lower)) return lower;
+      // Signal aliases come from the shared table; only the non-signal
+      // composite uniforms and literal constants live in this map.
+      const uniformMap: Record<string, string> = {
+        ...MILKDROP_SIGNAL_NAME_ALIASES,
+        rand_frame: MILKDROP_RAND_FRAME_GLSL,
+        // Emitter-only signal aliases: camelCase attenuated bands and energy
+        // synonyms the raw-text normalizer leaves untouched.
+        bassatt: 'signalBassAtt',
+        midatt: 'signalMidAtt',
+        midsatt: 'signalMidAtt',
+        percussiveratio: 'signalPercussiveRatio',
+        percussivelow: 'signalPercussiveLow',
+        percussivemid: 'signalPercussiveMid',
+        percussivehigh: 'signalPercussiveHigh',
+        music: 'signalEnergy',
+        weighted_energy: 'signalEnergy',
+        // aspect is an actual composite shader uniform, not a signal alias.
+        aspect: 'aspect',
+        pi: '3.14159265359',
+        e: '2.71828182846',
+        warp: 'warpScale',
+        warp_scale: 'warpScale',
+        dx: 'offsetX',
+        offset_x: 'offsetX',
+        translate_x: 'offsetX',
+        dy: 'offsetY',
+        offset_y: 'offsetY',
+        translate_y: 'offsetY',
+        rot: 'rotation',
+        rotation: 'rotation',
+        zoom: 'zoomMul',
+        scale: 'zoomMul',
+        saturation: 'saturation',
+        sat: 'saturation',
+        contrast: 'contrast',
+        r: 'colorScale.r',
+        red: 'colorScale.r',
+        g: 'colorScale.g',
+        green: 'colorScale.g',
+        b: 'colorScale.b',
+        blue: 'colorScale.b',
+        hue: 'hueShift',
+        hue_shift: 'hueShift',
+        mix: 'mixAlpha',
+        feedback: 'mixAlpha',
+        feedback_alpha: 'mixAlpha',
+        // brighten/invert/solarize are scalar shader controls in ProjectM;
+        // the composite shader combines them with post-effect toggles via the
+        // *Boost uniforms, so mapping here is the best available approximation.
+        brighten: 'brightenBoost',
+        invert: 'invertBoost',
+        solarize: 'solarizeBoost',
+        tint_r: 'tint.r',
+        tint_g: 'tint.g',
+        tint_b: 'tint.b',
+        // Deliberately absent: \`uv\`. Both stage templates declare their own
+        // \`vec2 uv\` — in the warp stage it is the warped coordinate, the one
+        // the preset's motion lives in — and rewriting reads to \`vUv\` made
+        // every emitted warp body sample the previous frame unwarped, while
+        // its writes (\`uv *= …\`) still went to the template's copy.
+      };
+      const mapped = uniformMap[lower];
+      if (mapped !== undefined) return mapped;
+      // texsize* are vec4s (xy = size, zw = 1/size). The raw-GLSL path
+      // rewrites them in shader-analysis.ts, but statement-emitted programs
+      // never went through that chain, so they reached the shader as bare
+      // identifiers — which the undeclared-identifier pass then declared as
+      // `uniform float`, turning every `texsize.xy` into a scalar swizzle and
+      // failing the whole program to compile. Values mirror that chain.
+      if (lower === 'texsize') return MILKDROP_TEXSIZE_MAIN_GLSL;
+      if (
+        /^texsize_(?:fw_|pw_)?(?:noise|noisevol)(?:_lq|_mq|_hq)?$/.test(lower)
+      )
+        return MILKDROP_TEXSIZE_NOISE_GLSL;
+      if (
+        /^texsize_(?:main|fw_main|pw_main|pc_main|fc_main|blur[123])$/.test(
+          lower,
+        )
+      )
+        return MILKDROP_TEXSIZE_MAIN_GLSL;
+      if (lower.startsWith('texsize_')) return MILKDROP_TEXSIZE_SUBSTITUTE_GLSL;
+      return name;
+    },
+
+    emitLiteral(value: number): string {
+      if (Number.isInteger(value) && Math.abs(value) < 1000000) {
+        return `${value}.0`;
+      }
+      return value.toFixed(10);
+    },
+
+    emitBinary(left: string, op: string, right: string): string {
+      if (op === '&&' || op === '||') {
+        return `((abs(${left}) > 0.000001 ${op} abs(${right}) > 0.000001) ? 1.0 : 0.0)`;
+      }
+      // Through overload sets, not a ternary: HLSL compares vectors
+      // component-wise (`left > 0.5` on a float3 is a float3 mask), and GLSL
+      // only allows scalar operands to relational operators.
+      const comparison = COMPARISON_HELPERS[op];
+      if (comparison) {
+        return `${comparison}(${left}, ${right})`;
+      }
+      if (op === '%') {
+        return `milkdropIntMod(${left}, ${right})`;
+      }
+      if (op === '^') {
+        // MilkDrop treats ^ as scalar exponentiation; GLSL reserves ^ for
+        // integer bitwise XOR, so emit an explicit floating-point pow().
+        return `pow(${left}, ${right})`;
+      }
+      if (op === '&') {
+        // GLSL ES does not accept bitwise operators on floats. MilkDrop values
+        // are float-like, so cast through int and back to keep emission valid.
+        return `float(int(${left}) & int(${right}))`;
+      }
+      if (op === '|') {
+        // See '&' above: avoid passing a float bitwise expression through.
+        return `float(int(${left}) | int(${right}))`;
+      }
+      const arithmetic = ARITHMETIC_HELPERS[op];
+      if (
+        arithmetic &&
+        !isProvablyScalarGlsl(left) &&
+        !isProvablyScalarGlsl(right)
+      ) {
+        // Possibly two vectors of different widths, which HLSL truncates
+        // and GLSL rejects; the overload set in the preamble handles every
+        // pairing (and the matrix products mul() lowers to).
+        return `${arithmetic}(${left}, ${right})`;
+      }
+      return `(${left} ${op} ${right})`;
+    },
+
+    emitUnary(op: string, operand: string): string {
+      return op === '-' ? `-(${operand})` : operand;
+    },
+
+    emitCall(name: string, args: string[]): string | null {
+      const lower = name.toLowerCase();
+
+      // Sampler functions: tex2D(sampler_main, uv) → texture2D(currentTex, sampleUv(uv, textureWrap))
+      if (lower === 'tex2d' || lower === 'texture' || lower === 'texture2d') {
+        return emitTextureSample(args, '2d');
+      }
+      if (lower === 'tex3d' || lower === 'texture3d') {
+        return emitTextureSample(args, '3d');
+      }
+      if (
+        lower === 'tex2dlod' ||
+        lower === 'tex2dbias' ||
+        lower === 'tex2dgrad'
+      ) {
+        return emitLodTextureSample(lower, args);
+      }
+      // MilkDrop 2's shader preamble ships these as helper functions, so
+      // preset bodies call them without ever defining them. They were missing
+      // here, which meant every preset using one failed to compile and
+      // rendered black — 511 presets, the entire projectm-cream-of-the-crop
+      // library (the main butterchurn catalog happens to use none of them,
+      // which is why the gap stayed invisible).
+      //
+      //   GetPixel(uv) = tex2D(sampler_main, uv).xyz
+      //   GetBlurN(uv) = tex2D(sampler_blurN, uv).xyz * scaleN + biasN
+      //
+      // GetBlur0 is MilkDrop's alias for the unblurred main sample.
+      if (lower === 'getpixel' || lower === 'getblur0') {
+        const coord = args[0];
+        return coord
+          ? `texture2D(currentTex, sampleUv(${coord}, textureWrap)).xyz`
+          : null;
+      }
+      const blurMatch = /^getblur([123])$/.exec(lower);
+      if (blurMatch) {
+        const level = blurMatch[1];
+        const coord = args[0];
+        return coord
+          ? `(texture2D(blur${level}Tex, sampleUv(${coord}, textureWrap)).xyz * scale${level} + bias${level})`
+          : null;
+      }
+
+      if (lower === 'videotex2d') {
+        // video texture sampling - maps to videoTex
+        const coord = args[1] ?? args[0];
+        return coord
+          ? `sampleAuxTexture(8.0, 0.0, sampleUv(${coord}, textureWrap), 0.0).rgb`
+          : null;
+      }
+
+      // Math functions. mix/max/min/pow/dot go through the milkdrop*
+      // overload sets in feedback-manager-shared.ts rather than the GLSL
+      // builtins: HLSL promotes a scalar argument to the other arguments'
+      // width (lerp(float3, float, t), max(float, float3), pow(float,
+      // float3)) and GLSL does not, and this emitter has no type
+      // information to do the promotion itself. GLSL's compile-time
+      // overload resolution does it instead.
+      if (lower === 'mix' || lower === 'lerp') {
+        const a = args[0] ?? '0.0';
+        const b = args[1] ?? '0.0';
+        const t = args[2] ?? '0.0';
+        return `milkdropLerp(${a}, ${b}, ${t})`;
+      }
+      if (lower === 'saturate') {
+        return `clamp(${args[0] ?? '0.0'}, 0.0, 1.0)`;
+      }
+      if (lower === 'frac') {
+        return `fract(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'ddx' || lower === 'dfdx') {
+        return `dFdx(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'ddy' || lower === 'dfdy') {
+        return `dFdy(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'fwidth') {
+        return `fwidth(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'mul') {
+        return `(${args[0] ?? '0.0'} * ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'transpose') {
+        return `transpose(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'if') {
+        const cond = args[0] ?? '0.0';
+        const thenVal = args[1] ?? '0.0';
+        const elseVal = args[2] ?? '0.0';
+        return `milkdropLerp(${elseVal}, ${thenVal}, step(0.0001, abs(${cond})))`;
+      }
+      if (lower === 'abs') {
+        return `abs(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'pow') {
+        return `milkdropPow(${args[0] ?? '0.0'}, ${args[1] ?? '2.0'})`;
+      }
+      if (lower === 'sqrt') {
+        // Vector first: GLSL has max(genType, float) but not max(float,
+        // genType), and MilkDrop bodies take sqrt of colour vectors.
+        return `sqrt(max(${args[0] ?? '0.0'}, 0.0))`;
+      }
+      if (lower === 'rsqrt') {
+        return `inversesqrt(max(${args[0] ?? '1.0'}, 0.000001))`;
+      }
+      if (lower === 'sin') {
+        return `sin(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'cos') {
+        return `cos(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'tan') {
+        return `tan(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'fract') {
+        return `fract(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'floor') {
+        return `floor(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'ceil') {
+        return `ceil(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'trunc') {
+        return `trunc(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'round') {
+        return `round(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'min') {
+        return `milkdropMin(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'max') {
+        return `milkdropMax(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'clamp') {
+        return `clamp(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'}, ${args[2] ?? '1.0'})`;
+      }
+      if (lower === 'step') {
+        return `step(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'smoothstep') {
+        return `smoothstep(${args[0] ?? '0.0'}, ${args[1] ?? '1.0'}, ${args[2] ?? '0.0'})`;
+      }
+      if (lower === 'length') {
+        return `length(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'dot') {
+        return `milkdropDot(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'cross') {
+        return `cross(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'normalize') {
+        return `normalize(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'reflect') {
+        return `reflect(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'refract') {
+        return `refract(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'}, ${args[2] ?? '1.0'})`;
+      }
+      if (lower === 'mod' || lower === 'fmod') {
+        return `mod(${args[0] ?? '0.0'}, ${args[1] ?? '1.0'})`;
+      }
+      if (lower === 'above') {
+        return `step(${args[1] ?? '0.0'}, ${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'below') {
+        return `step(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'equal') {
+        return `step(abs(${args[0] ?? '0.0'} - ${args[1] ?? '0.0'}), 0.0001)`;
+      }
+      if (lower === 'sign') {
+        return `sign(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'log') {
+        return `log(max(${args[0] ?? '1.0'}, 0.000001))`;
+      }
+      if (lower === 'log2') {
+        return `log2(max(${args[0] ?? '1.0'}, 0.000001))`;
+      }
+      if (lower === 'log10') {
+        return `(log(max(${args[0] ?? '1.0'}, 0.000001)) * 0.4342944819)`;
+      }
+      if (lower === 'exp') {
+        return `exp(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'exp2') {
+        return `exp2(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'atan') {
+        const y = args[0] ?? '0.0';
+        return args.length >= 2 ? `atan(${y}, ${args[1]})` : `atan(${y})`;
+      }
+      if (lower === 'atan2') {
+        return `atan(${args[0] ?? '0.0'}, ${args[1] ?? '1.0'})`;
+      }
+      if (lower === 'sqr') {
+        const value = args[0] ?? '0.0';
+        return `(${value} * ${value})`;
+      }
+      if (lower === 'sigmoid') {
+        const val = args[0] ?? '0.0';
+        const slope = args[1] ?? '1.0';
+        return `1.0 / (1.0 + exp(-(${val}) * (${slope})))`;
+      }
+      if (lower === 'asin') {
+        return `asin(clamp(${args[0] ?? '0.0'}, -1.0, 1.0))`;
+      }
+      if (lower === 'acos') {
+        return `acos(clamp(${args[0] ?? '0.0'}, -1.0, 1.0))`;
+      }
+      if (lower === 'rand') {
+        // Vary with signalTime so results differ per frame (matching VM's
+        // stateful LCG behavior more closely than a pure-hash approach)
+        const seed = args[0] ?? '0.0';
+        return `fract(sin(dot(vec2(${seed}, signalTime), vec2(12.9898, 78.233))) * 43758.5453)`;
+      }
+      if (lower === 'noise') {
+        // Simple noise approximation
+        const coord = args[0] ?? 'vUv';
+        return `sampleAuxTexture(1.0, 0.0, sampleUv(${coord}, textureWrap), 0.0).r`;
+      }
+
+      // vec2/vec3/vec4 constructors (half* aliases lower to the same forms)
+      const constructorName =
+        lower === 'half'
+          ? 'float'
+          : lower === 'half2'
+            ? 'vec2'
+            : lower === 'half3'
+              ? 'vec3'
+              : lower === 'half4'
+                ? 'vec4'
+                : lower;
+      if (constructorName === 'vec2') {
+        const x = args[0] ?? '0.0';
+        const y = args[1] ?? x;
+        return `vec2(${x}, ${y})`;
+      }
+      if (constructorName === 'vec3') {
+        const x = args[0] ?? '0.0';
+        if (args.length === 2) {
+          // Which argument is the vector is a type question this emitter
+          // cannot answer from text, so GLSL's overload resolution does:
+          // milkdropVec3 has a form for each split (see the preamble).
+          return `milkdropVec3(${x}, ${args[1] ?? x})`;
+        }
+        const y = args[1] ?? x;
+        const z = args[2] ?? x;
+        return `vec3(${x}, ${y}, ${z})`;
+      }
+      if (constructorName === 'vec4' || constructorName === 'float4') {
+        const x = args[0] ?? '0.0';
+        // Same split problem as vec3: `float4(uv, 0, 1)` is three arguments
+        // for four components. Padding with x used to emit vec4(uv, 0, 1, uv).
+        if (args.length === 2 || args.length === 3) {
+          return `milkdropVec4(${args.join(', ')})`;
+        }
+        const y = args[1] ?? x;
+        const z = args[2] ?? x;
+        const w = args[3] ?? x;
+        return `vec4(${x}, ${y}, ${z}, ${w})`;
+      }
+      const matrixMatch = /^float([234])x([234])$/u.exec(constructorName);
+      if (matrixMatch && matrixMatch[1] === matrixMatch[2]) {
+        return `mat${matrixMatch[1]}(${args.join(', ')})`;
+      }
+      if (constructorName === 'float') {
+        return `float(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'int') {
+        return `int(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'bool') {
+        return `bool(${args[0] ?? '0.0'})`;
+      }
+
+      // tint constructor
+      if (lower === 'tint') {
+        const r = args[0] ?? '1.0';
+        const g = args[1] ?? r;
+        const b = args[2] ?? r;
+        return `vec3(${r}, ${g}, ${b})`;
+      }
+
+      // General purpose: try bare function call
+      return `${lower}(${args.join(', ')})`;
+    },
+
+    emitMember(object: string, property: string): string {
+      const lowerProp = property.toLowerCase();
+      // Map swizzle components and common member accessors
+      if (
+        lowerProp.length >= 1 &&
+        lowerProp.length <= 4 &&
+        (/^[xyzw]+$/u.test(lowerProp) || /^[rgba]+$/u.test(lowerProp))
+      ) {
+        return `${object}.${lowerProp}`;
+      }
+      return `${object}_${lowerProp}`;
+    },
+  };
+}
+
+/**
+ * Emits a texture sample expression in GLSL.
+ */
+function emitTextureSample(
+  args: string[],
+  dimension: '2d' | '3d',
+): string | null {
+  const samplerArg = args[0];
+  let coordArg = args[1] ?? args[0];
+  if (!samplerArg || !coordArg) return null;
+  let zSlice = args[2] ?? '0.0';
+
+  if (dimension === '3d') {
+    const vec3Args = splitGlslConstructorArgs(coordArg);
+    if (vec3Args) {
+      if (vec3Args.length >= 3) {
+        coordArg = `vec2(${vec3Args[0]}, ${vec3Args[1]})`;
+        zSlice = vec3Args[2] ?? '0.0';
+      } else if (vec3Args.length >= 2) {
+        coordArg = vec3Args[0] ?? coordArg;
+        zSlice = vec3Args[1] ?? '0.0';
+      }
+    }
+  }
+
+  // Check if sampler is a named identifier
+  const samplerName = samplerArg.toLowerCase();
+
+  // Feed-forward noise samplers: check BEFORE normalization because these
+  // are aliased to static textures in the type system but should generate
+  // procedural animated noise at the GLSL level.
+  const rawSamplerName = samplerName.startsWith('sampler_')
+    ? samplerName.slice('sampler_'.length)
+    : samplerName;
+  if (rawSamplerName === 'fw_noise_lq' || rawSamplerName === 'fw_noise') {
+    return `vec3(noise((${coordArg}) * 8.0 + vec2(signalTime * 0.8, signalTime * 0.6)))`;
+  }
+  if (rawSamplerName === 'fw_noise_mq') {
+    return `vec3(noise((${coordArg}) * 12.0 + vec2(signalTime * 1.0, signalTime * 0.75)))`;
+  }
+  if (rawSamplerName === 'fw_noise_hq') {
+    return `vec3(noise((${coordArg}) * 16.0 + vec2(signalTime * 1.2, signalTime * 0.9)))`;
+  }
+  if (
+    rawSamplerName === 'pw_noise_lq' ||
+    rawSamplerName === 'pw_noise_mq' ||
+    rawSamplerName === 'pw_noise_hq' ||
+    rawSamplerName === 'pw_noise'
+  ) {
+    return `texture2D(noiseTex, sampleUv(${coordArg}, 1.0)).rgba`;
+  }
+
+  // Unknown samplers have no texture wired at runtime — emitting a
+  // `<name>Tex` binding would reference an undeclared uniform and fail to
+  // compile. Fall back to noise (MilkDrop's own behavior for unrecognized
+  // sampler names) so the sample routes through the aux texture path.
+  const normalizedName = normalizeShaderSamplerName(samplerName) ?? 'noise';
+
+  if (normalizedName === 'pw_main' || normalizedName === 'pc_main') {
+    return `texture2D(previousTex, sampleUv(${coordArg}, textureWrap)).rgb`;
+  }
+
+  if (normalizedName === 'fc_main') {
+    return `texture2D(warpTex, sampleUv(${coordArg}, textureWrap)).rgb`;
+  }
+
+  if (
+    normalizedName === 'blur1' ||
+    normalizedName === 'blur2' ||
+    normalizedName === 'blur3'
+  ) {
+    return `texture2D(${normalizedName}Tex, sampleUv(${coordArg}, textureWrap)).rgb`;
+  }
+
+  if (normalizedName === 'main') {
+    // Sample from the main framebuffer texture
+    return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;
+  }
+
+  if (isAuxShaderSamplerName(normalizedName)) {
+    const sourceId = getAuxTextureSourceId(normalizedName);
+    const isVolume = isMilkdropVolumeShaderSamplerName(normalizedName);
+    const sampleDim = dimension === '3d' && isVolume ? '1.0' : '0.0';
+    return `sampleAuxTexture(vec4(${sourceId}, 0, 0, 0).x, ${sampleDim}, sampleUv(${coordArg}, textureWrap), ${dimension === '3d' && isVolume ? zSlice : '0.0'}).rgb`;
+  }
+
+  return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;
+}
+
+function splitGlslConstructorArgs(expression: string): string[] | null {
+  const trimmed = expression.trim();
+  const match = trimmed.match(
+    /^(?:vec[234]|float[234]|milkdropVec[34])\((.*)\)$/s,
+  );
+  if (!match) {
+    return null;
+  }
+  const body = match[1];
+  const args: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let index = 0; index < body.length; index += 1) {
+    const char = body[index];
+    if (char === '(') depth += 1;
+    if (char === ')') depth = Math.max(0, depth - 1);
+    if (char === ',' && depth === 0) {
+      args.push(body.slice(start, index).trim());
+      start = index + 1;
+    }
+  }
+  args.push(body.slice(start).trim());
+  return args.every(Boolean) ? args : null;
+}
+
+/**
+ * Resolves a sampler argument to the GLSL texture uniform it samples on the
+ * direct path. Texture uniforms with a real mip chain (framebuffer, blur,
+ * bundled aux textures) support textureLod/textureGrad; the atlas/aux helper
+ * path and procedural feed-forward noise do not, so they fall back to the
+ * base-mip sample.
+ */
+function resolveLodTextureName(samplerArg: string): string | null {
+  const lower = samplerArg.toLowerCase();
+  const raw = lower.startsWith('sampler_')
+    ? lower.slice('sampler_'.length)
+    : lower;
+  const map: Record<string, string> = {
+    main: 'currentTex',
+    fw_main: 'currentTex',
+    pw_main: 'previousTex',
+    pc_main: 'previousTex',
+    fc_main: 'warpTex',
+    blur1: 'blur1Tex',
+    blur2: 'blur2Tex',
+    blur3: 'blur3Tex',
+    noise: 'noiseTex',
+    noise_lq: 'noiseTex',
+    noise_mq: 'noiseTex',
+    noise_hq: 'noiseTex',
+    pw_noise_lq: 'noiseTex',
+    perlin: 'perlinTex',
+    simplex: 'simplexTex',
+    voronoi: 'voronoiTex',
+    aura: 'auraTex',
+    caustics: 'causticsTex',
+    pattern: 'patternTex',
+    fractal: 'fractalTex',
+    video: 'videoTex',
+  };
+  return map[raw] ?? null;
+}
+
+/**
+ * Emits HLSL tex2Dlod/tex2Dbias/tex2Dgrad as GLSL ES 3.00
+ * textureLod/texture(bias)/textureGrad. HLSL's tex2Dlod/tex2Dbias take a
+ * float4 coordinate (xy = uv, w = lod/bias); tex2Dgrad takes a uv plus
+ * explicit gradient vectors. The composite/warp fragment templates stay in
+ * GLSL ES 1.00 style, but three's WebGLRenderer (0.185, WebGL2-only) shims
+ * ShaderMaterial sources to `#version 300 es` and maps texture2D→texture,
+ * so the native ES 3.00 functions resolve. Samplers without a native mip
+ * chain fall back to the base-mip sample so the call never emits invalid
+ * GLSL.
+ */
+function emitLodTextureSample(
+  name: 'tex2dlod' | 'tex2dbias' | 'tex2dgrad',
+  args: string[],
+): string | null {
+  const samplerArg = args[0];
+  const texName = samplerArg ? resolveLodTextureName(samplerArg) : null;
+  if (!texName) {
+    return samplerArg && args[1] ? emitTextureSample(args, '2d') : null;
+  }
+  const coordRaw = args[1] ?? args[0] ?? 'vUv';
+  const vectorArgs = splitGlslConstructorArgs(coordRaw);
+
+  if (name === 'tex2dgrad') {
+    const uv =
+      vectorArgs && vectorArgs.length >= 2
+        ? `vec2(${vectorArgs[0]}, ${vectorArgs[1]})`
+        : coordRaw;
+    const dx = args[2] ?? 'dFdx(vUv)';
+    const dy = args[3] ?? 'dFdy(vUv)';
+    return `textureGrad(${texName}, sampleUv(${uv}, textureWrap), ${dx}, ${dy}).rgb`;
+  }
+
+  const uv =
+    vectorArgs && vectorArgs.length >= 2
+      ? `vec2(${vectorArgs[0]}, ${vectorArgs[1]})`
+      : coordRaw;
+  const amount =
+    (vectorArgs && vectorArgs.length >= 4 ? vectorArgs[3] : args[2]) ?? '0.0';
+  if (name === 'tex2dlod') {
+    return `textureLod(${texName}, sampleUv(${uv}, textureWrap), ${amount}).rgb`;
+  }
+  return `texture(${texName}, sampleUv(${uv}, textureWrap), ${amount}).rgb`;
+}
+
+/**
+ * Returns the numeric source ID for an aux texture name.
+ */
+function getAuxTextureSourceId(name: string): string {
+  return `${getMilkdropShaderAuxTextureSourceId(name)}.0`;
+}
+
+/**
+ * Generates a GLSL function body from a list of shader statements.
+ * Returns GLSL code that can be embedded in a fragment shader.
+ */
+// Targets the stage templates declare and read back themselves. `ret` is the
+// shader's output and `uv` its coordinate: re-declaring either inside main()
+// would shadow the template's copy, so the value the template reads after the
+// body would never be written — a black frame rather than a compile error.
+const TEMPLATE_OWNED_TARGETS = new Set(['ret', 'uv']);
+
+/**
+ * Carries a preset's own `float2 uv_y = …` through as `vec2 uv_y = …`.
+ *
+ * The declared type was parsed into the statement and then dropped here, which
+ * left the assembled shader to infer it from the assignment text downstream —
+ * and that inference only recognises a bare `vecN(` constructor, so
+ * `float2 uv_y = uv - 0.25 * float2(a, b);` was declared `float uv_y;` and
+ * every later use failed to compile. `float` is emitted too: the fallback
+ * infers a width from the assignment text, and `float bl = GetBlur2(uv);`
+ * reads as a vec3 there, which HLSL truncates to its first component.
+ */
+function localDeclarationType(
+  statement: MilkdropShaderStatement,
+  target: string,
+  declaredLocals: Set<string>,
+): string | null {
+  const declaration = statement.declaration;
+  if (
+    !declaration ||
+    !/^(?:float|vec[234]|mat[234])$/u.test(declaration) ||
+    TEMPLATE_OWNED_TARGETS.has(target) ||
+    declaredLocals.has(target)
+  ) {
+    return null;
+  }
+  declaredLocals.add(target);
+  return declaration;
+}
+
+export function generateGlslFromShaderStatements(
+  statements: MilkdropShaderStatement[],
+  _stage: 'warp' | 'comp',
+): string | null {
+  if (statements.length === 0) return null;
+
+  // Collected before emission, not during: a preset may read one of its own
+  // locals on a line the emitter has not walked yet, and the name has to beat
+  // the alias on every line rather than only later ones. Every name the body
+  // writes counts, declared or not — `float b` and a bare `b = …` both make
+  // `b` the preset's own variable, since `b`, `zoom`, `rot` and the rest of
+  // the alias table are not MilkDrop shader builtins. `ret` and `uv` stay
+  // with the template.
+  const presetDeclaredNames = new Set(
+    statements
+      .map((statement) => statement.target.split('.')[0] ?? '')
+      .filter((name) => name !== '' && !TEMPLATE_OWNED_TARGETS.has(name)),
+  );
+  const emitter = createCompositeGlslEmitter(presetDeclaredNames);
+  const lines: string[] = [];
+  const declaredLocals = new Set<string>();
+  const targetWidths = collectTargetWidths(statements);
+
+  for (const statement of statements) {
+    const expressionGlsl = emitExpression(statement.expression, emitter);
+    if (expressionGlsl === null) {
+      // If any statement fails to emit, the whole program cannot be generated
+      return null;
+    }
+
+    const target = statement.target.replace(/^output\b/u, 'milkdropOutput');
+    const operator = statement.operator;
+    const declaration =
+      operator === '='
+        ? localDeclarationType(statement, target, declaredLocals)
+        : null;
+
+    if (declaration) {
+      // HLSL promotes a scalar to every component on assignment, so
+      // `float3 dots = <scalar>;` splats. vecN(...) is both a broadcast for a
+      // scalar RHS and a copy constructor for a matching one. Matrices are
+      // left alone — matN(scalar) is a diagonal in GLSL but a full splat in
+      // HLSL, so wrapping would quietly change the value.
+      const wrapped = declaration.startsWith('vec')
+        ? `${declaration}(${expressionGlsl})`
+        : declaration === 'float'
+          ? `milkdropScalar(${expressionGlsl})`
+          : expressionGlsl;
+      lines.push(`  ${declaration} ${target} = ${wrapped};`);
+      continue;
+    }
+
+    // The same promotion on every later write to a vector: `ret = lum(ret)`
+    // means grey in HLSL, and `uv *= 1.0 + 0.1 * GetPixel(uv)` truncates the
+    // float3 to the float2 it is applied to. GLSL rejects both outright and
+    // takes the whole program down. vecN(...) restores HLSL's meaning for a
+    // scalar (broadcast), a matching width (copy) and a wider RHS
+    // (truncation to the leading components). A too-narrow RHS is an error
+    // in HLSL as well, and stays one.
+    const width = targetWidths.get(target);
+    const rhs =
+      width === 1
+        ? `milkdropScalar(${expressionGlsl})`
+        : width &&
+            !new RegExp(`^(?:vec|milkdropVec)${width}\\(`, 'u').test(
+              expressionGlsl,
+            )
+          ? `vec${width}(${expressionGlsl})`
+          : expressionGlsl;
+    const glslOperator = COMPOUND_OPERATORS.has(operator) ? operator : '=';
+    lines.push(`  ${target} ${glslOperator} ${rhs};`);
+  }
+
+  return lines.join('\n');
+}
+
+const COMPOUND_OPERATORS = new Set(['+=', '-=', '*=', '/=']);
+
+/**
+ * The vector width of every assignment target the program writes, where it
+ * can be known without type inference. In priority order: the stage
+ * template's own `ret` (vec3) and `uv` (vec2); the preset's declared
+ * `float`/`float2`/`float3`/`float4` locals (width 1 is a scalar, written
+ * through `milkdropScalar`, HLSL's first-component truncation); a swizzle write's own width
+ * (`v.xy = …` assigns two components whatever `v` is); and, for a name never
+ * declared, a first bare assignment from a `vecN(...)` constructor — the same
+ * signal `classifyPerFrameVariable` in feedback-manager-shared.ts uses to
+ * hoist that name as `vecN`, so the two stay in agreement about what the
+ * variable is. A name written only through swizzles is left to the hoister,
+ * which sizes it from the widest component; its bare writes, if any, are not
+ * wrapped here because the width is not this pass's to guess.
+ */
+function collectTargetWidths(
+  statements: MilkdropShaderStatement[],
+): Map<string, 1 | 2 | 3 | 4> {
+  const widths = new Map<string, 1 | 2 | 3 | 4>([
+    ['ret', 3],
+    ['uv', 2],
+  ]);
+  const swizzleWrites = new Set<string>();
+  for (const statement of statements) {
+    const target = statement.target;
+    const dot = target.indexOf('.');
+    if (dot !== -1) {
+      const swizzle = target.slice(dot + 1);
+      if (swizzle.length >= 1 && swizzle.length <= 4) {
+        // One component is a scalar write: HLSL truncates a vector RHS to
+        // its first component (`ret.y = GetPixel(uv) - …`), GLSL rejects it.
+        widths.set(target, swizzle.length as 1 | 2 | 3 | 4);
+      }
+      swizzleWrites.add(target.slice(0, dot));
+      continue;
+    }
+    if (statement.declaration === 'float') {
+      widths.set(target, 1);
+      continue;
+    }
+    const declared = statement.declaration?.match(/^vec([234])$/u);
+    if (declared) {
+      widths.set(target, Number(declared[1]) as 2 | 3 | 4);
+      continue;
+    }
+    if (widths.has(target) || statement.operator !== '=') continue;
+    const seededWidth = constructorWidth(statement.expression);
+    if (seededWidth && !swizzleWrites.has(target)) {
+      widths.set(target, seededWidth);
+    }
+  }
+  return widths;
+}
+
+/** `vecN(...)` / `floatN(...)` at the root of an expression, else null. */
+function constructorWidth(
+  expression: MilkdropShaderStatement['expression'],
+): 2 | 3 | 4 | null {
+  if (expression.type !== 'call') return null;
+  const match = /^(?:vec|float)([234])$/iu.exec(expression.name);
+  return match ? (Number(match[1]) as 2 | 3 | 4) : null;
+}
+
+/**
+ * Injects generated warp/comp GLSL into the composite shader source.
+ * Uses placeholder markers to identify insertion points.
+ */
+/**
+ * The injected body runs inline in the template's main(), and the template
+ * keeps going after it — so a preset local named like a template variable
+ * shadowed it for the rest of main(). `vec2 zoom = vec2(1.85);` in a
+ * cotc-suksma warp turned the template's later `signedZoomDivisor(zoom)`
+ * into a vec2 call that does not exist. Its own block keeps the preset's
+ * locals to the preset; writes to the template's `ret`/`uv` still land,
+ * because the body assigns them rather than declaring them.
+ */
+function scopeInjectedBody(body: string): string {
+  return `{\n${body}\n}`;
+}
+
+export function injectDirectShaderGlsl(
+  source: string,
+  warpGlsl: string | null,
+  compGlsl: string | null,
+  warpGlobalsGlsl: string | null = null,
+): string {
+  let modified = source;
+
+  if (warpGlobalsGlsl) {
+    const globalsStartMarker = '// --- DIRECT_WARP_GLOBALS_START ---';
+    const globalsEndMarker = '// --- DIRECT_WARP_GLOBALS_END ---';
+    const globalsStartIndex = modified.indexOf(globalsStartMarker);
+    const globalsEndIndex = modified.indexOf(
+      globalsEndMarker,
+      globalsStartIndex,
+    );
+    if (globalsStartIndex >= 0 && globalsEndIndex > globalsStartIndex) {
+      const before = modified.substring(
+        0,
+        globalsStartIndex + globalsStartMarker.length,
+      );
+      const after = modified.substring(globalsEndIndex);
+      modified = `${before}\n${warpGlobalsGlsl}\n${after}`;
+    }
+  }
+
+  if (warpGlsl) {
+    // Replace the warp section between markers
+    const warpStartMarker = '// --- DIRECT_WARP_START ---';
+    const warpEndMarker = '// --- DIRECT_WARP_END ---';
+    const warpStartIndex = modified.lastIndexOf(warpStartMarker);
+    const warpEndIndex = modified.indexOf(warpEndMarker, warpStartIndex);
+
+    if (warpStartIndex >= 0 && warpEndIndex > warpStartIndex) {
+      // There's already a marker block - replace its content
+      const before = modified.substring(
+        0,
+        warpStartIndex + warpStartMarker.length,
+      );
+      const after = modified.substring(warpEndIndex);
+      modified = `${before}\n${scopeInjectedBody(warpGlsl)}\n${after}`;
+    }
+  }
+
+  if (compGlsl) {
+    // Replace the comp section between markers
+    const compStartMarker = '// --- DIRECT_COMP_START ---';
+    const compEndMarker = '// --- DIRECT_COMP_END ---';
+    const compStartIndex = modified.lastIndexOf(compStartMarker);
+    const compEndIndex = modified.indexOf(compEndMarker, compStartIndex);
+
+    if (compStartIndex >= 0 && compEndIndex > compStartIndex) {
+      const before = modified.substring(
+        0,
+        compStartIndex + compStartMarker.length,
+      );
+      const after = modified.substring(compEndIndex);
+      modified = `${before}\n${scopeInjectedBody(compGlsl)}\n${after}`;
+    }
+  }
+
+  return modified;
+}
+
+/**
+ * Generates complete shader variant names for warp/comp program GLSL.
+ */
+export function generateShaderVariantTag(
+  warpGlsl: string | null,
+  compGlsl: string | null,
+): string {
+  const parts: string[] = [];
+  if (warpGlsl) parts.push('dw');
+  if (compGlsl) parts.push('dc');
+  return parts.length > 0 ? `-direct-${parts.join('-')}` : '';
+}

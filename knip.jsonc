@@ -18,8 +18,7 @@
     "tests/setup.ts",
     // Hand-driven harnesses, opened by URL rather than imported.
     "tests/manual/**/*.ts",
-    "tests/demo-toy.ts",
-    "terminal/server.ts"
+    "tests/demo-toy.ts"
   ],
   "project": [
     "src/**/*.{ts,tsx,js,mjs}",
