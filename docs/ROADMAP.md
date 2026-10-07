@@ -32,9 +32,9 @@ The proof loop below is a floor, not a frontier: it stays green and does not gro
 
 ### Up next, in order
 
-Each of these needs a real GPU or a second display, which is why the 2026-10-06 pass stopped short of them.
+Each of these needs a real GPU, a second display, or a product decision.
 
-1. **Async canvas readback, then Reduce flashing on by default.** The governor now sees real frames (#1370), but each synchronous read costs 1.8–2.9 ms, too much to put on every visitor's frame. A pixel-buffer read on WebGL and `mapAsync` on WebGPU would let it run for everyone.
+1. **Reduce flashing on by default.** The governor sees real frames (#1370), and its read now costs the main thread 0.1 ms instead of 2–3.6 ms (#1375). What remains is a product call: on the first-run preset it dims the stage to about 15%, so default-on also means choosing a first-run preset that does not flash.
 2. **Re-measure parity and demote what fails.** The certified labels rest on a July results file that the September suite contradicts (see [Proof floor](#proof-floor--maintained-not-expanded)).
 3. **Recording that holds up.** Render 9:16 and 1:1 natively, keep frames coming when the tab is hidden, lift the power-saving frame cap while recording, and add a browser test that measures the file.
 4. **A projector window that mirrors the stage.** Today's second window is a separate session (see [Live performance](#live-performance-vjing--hardware-control)).
@@ -165,7 +165,7 @@ Shipped:
 
 Open:
 
-- **Default-on.** Reduce flashing follows the OS reduced-motion setting, so it is off for most visitors. It waits on async readback (item 1 in [Up next](#up-next-in-order)).
+- **Default-on.** Reduce flashing follows the OS reduced-motion setting, so it is off for most visitors. The cost that kept it opt-in is gone (#1375); see item 1 in [Up next](#up-next-in-order).
 - **The shield itself.** It is a CSS brightness filter that reacts after it detects a flash, so the first one or two get through. A clamp in the shader would act before the frame is shown.
 - **Calm filter.** A "Calm stimming" filter has no data to stand on: motion is measured for 50 presets and flashing for 40.
 - **Room controls.** Gamma and contrast are missing; CSS has no gamma filter, so this needs an SVG filter or a shader uniform.
