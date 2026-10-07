@@ -127,13 +127,17 @@ export function EditorPanel() {
 
   return (
     <>
-      <FirstEditGuide
-        key={engineSnapshot?.activePresetId}
-        source={sessionState?.source ?? ''}
-        onChange={(source) => engine.updateEditorSource(source)}
-      />
       {shared ? <RepositorySupport /> : null}
+      {/* The panel appends itself after these children. The guide lives in
+          the host so that, on a viewport too short for the code's minimum
+          height, it scrolls away with the panel instead of staying pinned
+          above it. */}
       <div ref={hostRef} className="stims-shell__editor-host">
+        <FirstEditGuide
+          key={engineSnapshot?.activePresetId}
+          source={sessionState?.source ?? ''}
+          onChange={(source) => engine.updateEditorSource(source)}
+        />
         <input
           ref={importInputRef}
           type="file"

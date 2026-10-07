@@ -860,6 +860,7 @@ export class EditorPanel {
   private readonly stage: HTMLElement;
   private readonly problems: HTMLElement;
   private readonly problemsCount: HTMLElement;
+  private readonly problemsBody: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly deleteButton: HTMLButtonElement;
   /** Relabelled per compile: what the link carries depends on `state.dirty`. */
@@ -1371,12 +1372,12 @@ export class EditorPanel {
     const quickFixBtn = this.renderQuickFix();
     this.quickFixBtn = quickFixBtn;
     problemsHead.append(problemsToggle, quickFixBtn);
-    const problemsBody = document.createElement('div');
-    problemsBody.className = 'stims-editor__problems-body';
+    this.problemsBody = document.createElement('div');
+    this.problemsBody.className = 'stims-editor__problems-body';
     this.diagnosticsList = document.createElement('div');
     this.diagnosticsList.className = 'stims-editor__problems-list';
-    problemsBody.appendChild(this.diagnosticsList);
-    this.problems.append(problemsHead, problemsBody);
+    this.problemsBody.appendChild(this.diagnosticsList);
+    this.problems.append(problemsHead, this.problemsBody);
 
     // ── Dock ──────────────────────────────────────────────────────
     // Four tabs replace six stacked rail sections. At this panel width
@@ -2351,67 +2352,62 @@ export class EditorPanel {
       ...derivedNotices,
     ];
 
-    if (consoleMessages.length === 0) {
+    // A clean compile is the header's "clean" and nothing else: the line
+    // under it cost the code two lines of height on every first open.
+    this.problemsBody.hidden = consoleMessages.length === 0;
+    consoleMessages.slice(0, 15).forEach((diagnostic) => {
       const item = document.createElement('div');
-      item.className = 'stims-editor__problems-empty';
-      item.textContent =
-        'No problems. Try bass_att, beat_pulse, or time to push the scene around.';
+      item.className = `stims-editor__problem stims-editor__problem--${diagnostic.severity}`;
+
+      // Severity as a fixed-width mono tag rather than a filled pill: the
+      // column reads as a log, and the tags stop competing with the code
+      // for attention. (These were inline styles before.)
+      const severityTag = document.createElement('span');
+      severityTag.className = 'stims-editor__problem-tag';
+      severityTag.textContent = diagnostic.severity;
+
+      const hasLine = 'line' in diagnostic && Boolean(diagnostic.line);
+      if (hasLine) {
+        const lineTag = document.createElement('span');
+        lineTag.className = 'stims-editor__problem-line';
+        lineTag.textContent = `Line ${diagnostic.line}`;
+        item.append(severityTag, lineTag);
+      } else {
+        item.append(severityTag);
+      }
+
+      const messageSpan = document.createElement('span');
+      messageSpan.textContent = diagnostic.message;
+      item.appendChild(messageSpan);
+
+      if (hasLine && diagnostic.line) {
+        const lineNum = diagnostic.line;
+        item.classList.add('stims-editor__problem--jump');
+        item.title = 'Jump to this line';
+        // The row acts as a button, so it must be reachable and operable
+        // from the keyboard like one.
+        item.setAttribute('role', 'button');
+        item.tabIndex = 0;
+        const jumpToLine = () => {
+          if (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) {
+            const line = this.editor.state.doc.line(lineNum);
+            this.editor.dispatch({
+              selection: { anchor: line.from },
+              scrollIntoView: true,
+            });
+            this.editor.focus();
+          }
+        };
+        item.addEventListener('click', jumpToLine);
+        item.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          event.stopPropagation();
+          jumpToLine();
+        });
+      }
       this.diagnosticsList.appendChild(item);
-    } else {
-      consoleMessages.slice(0, 15).forEach((diagnostic) => {
-        const item = document.createElement('div');
-        item.className = `stims-editor__problem stims-editor__problem--${diagnostic.severity}`;
-
-        // Severity as a fixed-width mono tag rather than a filled pill: the
-        // column reads as a log, and the tags stop competing with the code
-        // for attention. (These were inline styles before.)
-        const severityTag = document.createElement('span');
-        severityTag.className = 'stims-editor__problem-tag';
-        severityTag.textContent = diagnostic.severity;
-
-        const hasLine = 'line' in diagnostic && Boolean(diagnostic.line);
-        if (hasLine) {
-          const lineTag = document.createElement('span');
-          lineTag.className = 'stims-editor__problem-line';
-          lineTag.textContent = `Line ${diagnostic.line}`;
-          item.append(severityTag, lineTag);
-        } else {
-          item.append(severityTag);
-        }
-
-        const messageSpan = document.createElement('span');
-        messageSpan.textContent = diagnostic.message;
-        item.appendChild(messageSpan);
-
-        if (hasLine && diagnostic.line) {
-          const lineNum = diagnostic.line;
-          item.classList.add('stims-editor__problem--jump');
-          item.title = 'Jump to this line';
-          // The row acts as a button, so it must be reachable and operable
-          // from the keyboard like one.
-          item.setAttribute('role', 'button');
-          item.tabIndex = 0;
-          const jumpToLine = () => {
-            if (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) {
-              const line = this.editor.state.doc.line(lineNum);
-              this.editor.dispatch({
-                selection: { anchor: line.from },
-                scrollIntoView: true,
-              });
-              this.editor.focus();
-            }
-          };
-          item.addEventListener('click', jumpToLine);
-          item.addEventListener('keydown', (event) => {
-            if (event.key !== 'Enter' && event.key !== ' ') return;
-            event.preventDefault();
-            event.stopPropagation();
-            jumpToLine();
-          });
-        }
-        this.diagnosticsList.appendChild(item);
-      });
-    }
+    });
 
     this.updateSlidersFromDoc();
     this.updateColorsFromDoc();
