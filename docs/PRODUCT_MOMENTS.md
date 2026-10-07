@@ -93,6 +93,7 @@ There are two parts.
 | 2026-10-06 | The renderer stays faithful to MilkDrop. Phones are handled by choosing a first-run preset that works there. | #1376 |
 | 2026-10-06 | First-run audio reactivity is gated on dataflow; pixel deltas are recorded but not enforced. | #1376 |
 | 2026-10-07 | Beacons carry orientation, device class and audio source. Automated browsers do not post. | #1377 |
+| 2026-10-07 | Nothing plays a preset on arrival except attract mode. `/discover/` and `/author/` pages keep Browse open on their collection, `/` keeps its URL, and low-power or reduced-motion visitors get the static landing the attract gate always promised. | #1380 |
 | 2026-10-07 | Beacons carry an arrival class taken from the referrer's host, never the URL or the host itself, and each page load sends one `landing` event. | #1381 |
 
 ## Working with this file
