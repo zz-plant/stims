@@ -15,11 +15,10 @@
  * preserveDrawingBuffer outside agent mode) at about a quarter of its
  * on-screen brightness, so the governor never saw a flash in production.
  *
- * Sampling cost was measured at 10us per frame at the recommended grid
- * (`bun run lab:flash-sampler-bench`), but that bench runs in agent mode on
- * WebGL; the cost of a same-task read of a WebGPU canvas is recorded in the
- * PR that moved sampling onto frame-drawn. Re-measure before assuming either
- * still holds.
+ * The sample is a snapshot taken in the draw and read back off the main
+ * thread (`flash-sampler.ts` has the measurements), so its grid can arrive
+ * after the frame. It is judged as of the frame it was taken from: that
+ * frame's time, and the mitigation that was on screen with it.
  *
  * Gated on the existing `reduceFlashing` accessibility preference, which
  * already means "do not hand me strobing content" for the catalog. Clamping
@@ -119,6 +118,15 @@ export function createFlashSafetyController(
   let unsubscribeFrames: (() => void) | null = null;
   let lastApplied = 1;
   let lastSampleMs = Number.NEGATIVE_INFINITY;
+  // Bumped whenever the governor is reset, so a grid still being read when
+  // the preference goes off or the loop stops cannot dim the stage again.
+  let generation = 0;
+
+  function release() {
+    generation += 1;
+    governor.reset();
+    apply(1);
+  }
 
   function apply(scale: number) {
     // Only cross the DOM when the value actually moves; the common case is
@@ -132,14 +140,10 @@ export function createFlashSafetyController(
     if (!isEnabled()) {
       // Releasing rather than freezing: a preference turned off mid-strobe
       // should not leave the picture dimmed.
-      governor.reset();
-      apply(1);
+      release();
       return null;
     }
     if (nowMs - lastSampleMs < MIN_SAMPLE_INTERVAL_MS) return null;
-    lastSampleMs = nowMs;
-    const tiles = sampler.sample(canvas);
-    if (!tiles) return null;
 
     // Close the loop. The mitigation is applied at COMPOSITE time (a CSS
     // filter on the stage), so reading the canvas back gives the unmitigated
@@ -154,15 +158,26 @@ export function createFlashSafetyController(
     // viewer sees half of what `lastApplied` claims, and correcting by
     // `lastApplied` alone would leave the governor chasing brightness that is
     // already gone.
+    //
+    // Read now, with the frame, not when its grid arrives: by then the
+    // mitigation may have moved, and this frame was seen through this one.
     const applied = compositedScale ? compositedScale() : lastApplied;
-    if (applied !== 1) {
-      for (let i = 0; i < tiles.length; i += 1) {
-        tiles[i] = (tiles[i] as number) * applied;
+    const capturedIn = generation;
+    let decision: FlashGovernorDecision | null = null;
+    const captured = sampler.capture(canvas, (tiles) => {
+      if (!tiles || capturedIn !== generation) return;
+      if (applied !== 1) {
+        for (let i = 0; i < tiles.length; i += 1) {
+          tiles[i] = (tiles[i] as number) * applied;
+        }
       }
-    }
-
-    const decision = governor.sample(nowMs, tiles, sampler.cols, sampler.rows);
-    apply(decision.luminanceScale);
+      decision = governor.sample(nowMs, tiles, sampler.cols, sampler.rows);
+      apply(decision.luminanceScale);
+    });
+    // A capture refused because the last one is still being read is not a
+    // sample, so the next frame tries again rather than waiting a cadence.
+    if (captured) lastSampleMs = nowMs;
+    // Set only when the sampler answered before returning.
     return decision;
   }
 
@@ -178,17 +193,13 @@ export function createFlashSafetyController(
       unsubscribeFrames();
       unsubscribeFrames = null;
     }
-    governor.reset();
-    apply(1);
+    release();
     sampler.dispose();
   }
 
   // A preference change should take effect now, not on the next strobe.
   const unsubscribe = subscribeToAccessibilityPreference(() => {
-    if (!isEnabled()) {
-      governor.reset();
-      apply(1);
-    }
+    if (!isEnabled()) release();
   });
 
   return {
