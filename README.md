@@ -116,6 +116,17 @@ bun compile.ts public/milkdrop-presets/eos-glowsticks-v2-03-music.milk
 
 To learn the equation language, start with [the authoring curriculum](./docs/authoring/README.md); `bun run lab:dataflow -- --preset <id>` reports which audio signals reach each control of any catalog preset.
 
+### Standalone packages
+
+Four parts of Stims are also published on their own, with no dependency on the app, under [`packages/`](./packages/README.md):
+
+| Package | What it is |
+| --- | --- |
+| [`milkdrop-toolchain`](./packages/milkdrop-toolchain) | The parser, EEL2 interpreter and JIT, IR, HLSL analysis with GLSL emission, EEL-to-WGSL lowering, formatter and MilkDrop 2 exporter above, as an npm package. |
+| [`eel-conformance`](./packages/eel-conformance) | An executable specification of the preset expression language: 82 portable JSON cases any MilkDrop implementation can run. |
+| [`flash-guard`](./packages/flash-guard) | The WCAG 2.3.1 flash analysis behind the catalog's flash warnings, and the live governor behind Reduce flashing. |
+| [`audio-reactive`](./packages/audio-reactive) | The AudioWorklet FFT, harmonic/percussive separation, beat tracking and reactivity metrics behind the audio path. |
+
 ## Verification commands
 
 ```bash

@@ -117,3 +117,6 @@ thumbnails/
 
 # e2e failure diagnostics (tests/e2e/agent-api.ts writeAgentFailureArtifact)
 /test-results/
+
+# Build output of the standalone packages (bun --cwd packages/<name> run build)
+/packages/*/dist/

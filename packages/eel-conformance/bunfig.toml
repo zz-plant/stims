@@ -1,0 +1,3 @@
+[test]
+# No preload: the corpus and its harness run in plain Bun with no DOM shims.
+preload = []

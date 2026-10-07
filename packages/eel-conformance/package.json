@@ -1,0 +1,65 @@
+{
+  "name": "eel-conformance",
+  "version": "0.1.0",
+  "description": "Executable specification of EEL2, the expression language of MilkDrop presets: 82 portable JSON cases, a JSON Schema, and a runner contract any implementation can satisfy.",
+  "license": "Unlicense",
+  "type": "module",
+  "homepage": "https://github.com/zz-plant/stims/tree/main/packages/eel-conformance#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zz-plant/stims.git",
+    "directory": "packages/eel-conformance"
+  },
+  "bugs": {
+    "url": "https://github.com/zz-plant/stims/issues"
+  },
+  "keywords": [
+    "milkdrop",
+    "eel",
+    "eel2",
+    "ns-eel",
+    "conformance",
+    "specification",
+    "test-suite",
+    "projectm",
+    "butterchurn",
+    "visualizer"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema.json": "./schema.json",
+    "./cases/*": "./cases/*"
+  },
+  "bin": {
+    "eel-conformance": "./dist/cli.js"
+  },
+  "files": [
+    "cases",
+    "dist",
+    "docs",
+    "schema.json",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "bun test",
+    "coverage:svg": "bun run scripts/render-coverage.ts",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "typescript": "^7.0.2"
+  }
+}

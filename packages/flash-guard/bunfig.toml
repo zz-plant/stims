@@ -1,0 +1,3 @@
+[test]
+# No preload: every test here runs on synthetic frames with no DOM shims.
+preload = []
