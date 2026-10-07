@@ -1,3 +1,5 @@
+# Bun reads the bunfig.toml of the working directory, so running `bun test`
+# here does not load the repository root's test preload (DOM shims, fake
+# WebGPU). Nothing in this package needs one.
 [test]
-# No preload: the corpus and its harness run in plain Bun with no DOM shims.
-preload = []
+root = "./tests"
