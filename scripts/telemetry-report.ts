@@ -183,6 +183,24 @@ function buildReports(days: number): Report[] {
       columns: ['step', 'device', 'count'],
     },
     {
+      // Where visits come from and how far each kind gets: landings (one per
+      // page load, split by whether a deep link named a preset), audible
+      // starts, and preset views. `arrival` is a class of the referrer's host
+      // (search, assistant, social, internal, other, none); rows before it
+      // existed carry '' and are left out, as above.
+      title: `Arrivals and how far they get (last ${days}d)`,
+      sql: `SELECT blob9 AS arrival, blob1 AS step,
+                   IF(blob3 != '', 'preset link', 'no preset') AS landing,
+                   COUNT() AS count, AVG(double4) AS avg_dwell_ms
+            FROM ${DATASET}
+            WHERE timestamp > ${since}
+              AND blob1 IN ('growth-landing', 'growth-audio-started',
+                            'preset-dwell', 'preset-skip')
+              AND blob9 != ''
+            GROUP BY blob9, blob1, landing ORDER BY arrival, step`,
+      columns: ['arrival', 'step', 'landing', 'count', 'avg_dwell_ms'],
+    },
+    {
       title: `Dwell and frame rate by screen (last ${days}d)`,
       sql: `SELECT blob7 AS device, blob6 AS orientation, blob2 AS renderer,
                    COUNT() AS views, AVG(double4) AS avg_dwell_ms,

@@ -313,6 +313,13 @@ function StimsWorkspaceAppShell() {
 
   useEffect(() => {
     const route = ui.routeState;
+    // Once per page load, carrying the preset a deep link named: the
+    // denominator for every later step, split by where visitors came from
+    // (the `arrival` context field).
+    if (!growthLandingEventsRef.current.has('landing')) {
+      growthLandingEventsRef.current.add('landing');
+      noteGrowthEvent('landing', route.presetId ?? undefined);
+    }
     if (route.previewMode && !growthLandingEventsRef.current.has('embed')) {
       growthLandingEventsRef.current.add('embed');
       noteGrowthEvent('embed-landing');
