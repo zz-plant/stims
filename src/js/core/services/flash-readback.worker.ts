@@ -10,13 +10,19 @@
  * one file in every build.
  */
 
-type ReadbackRequest = { bitmap: ImageBitmap; cols: number; rows: number };
+/** `id` is echoed back so the sampler can match answers to captures. */
+type ReadbackRequest = {
+  id: number;
+  bitmap: ImageBitmap;
+  cols: number;
+  rows: number;
+};
 
 let canvas: OffscreenCanvas | null = null;
 let context: OffscreenCanvasRenderingContext2D | null = null;
 
 self.onmessage = (event: MessageEvent<ReadbackRequest>) => {
-  const { bitmap, cols, rows } = event.data;
+  const { id, bitmap, cols, rows } = event.data;
   let pixels: Uint8ClampedArray | null = null;
   try {
     if (!canvas || canvas.width !== cols || canvas.height !== rows) {
@@ -35,8 +41,8 @@ self.onmessage = (event: MessageEvent<ReadbackRequest>) => {
     bitmap.close();
   }
   if (pixels) {
-    self.postMessage(pixels, { transfer: [pixels.buffer] });
+    self.postMessage({ id, pixels }, { transfer: [pixels.buffer] });
   } else {
-    self.postMessage(null);
+    self.postMessage({ id, pixels: null });
   }
 };

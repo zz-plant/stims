@@ -290,6 +290,36 @@ describe('flash safety controller', () => {
     );
   });
 
+  test('a 60Hz display with jittery frame times is compared every frame', () => {
+    // Frame timestamps wander around 16.7ms. Skipping the one that lands at
+    // 15.5ms makes the next comparison span two frames, doubling the motion
+    // it judges: content moving 0.06 a frame, under the 0.1 threshold, then
+    // reads as 0.12 swings.
+    let frame = 0;
+    const tiles = new Float32Array(GRID * GRID);
+    let sampled = 0;
+    const controller = createFlashSafetyController({
+      canvas: {} as HTMLCanvasElement,
+      sampler: answering(() => {
+        sampled += 1;
+        // A field that rises then falls 0.06 a frame, in alternating
+        // three-frame runs: never a flash at 60Hz.
+        return tiles.fill(0.3 + 0.06 * Math.min(frame % 6, 6 - (frame % 6)));
+      }),
+      isEnabled: () => true,
+      applyLuminanceScale: () => {},
+      subscribeToFrames: () => () => {},
+    });
+    let now = 0;
+    for (frame = 0; frame < 240; frame += 1) {
+      controller.tick(now);
+      now += frame % 2 === 0 ? 17.9 : 15.5;
+    }
+    expect(sampled).toBe(240);
+    expect(controller.getState().flashesInWindow).toBe(0);
+    expect(controller.getState().engaged).toBe(false);
+  });
+
   describe('with a grid that arrives after the frame', () => {
     function deferredHarness() {
       let enabled = true;

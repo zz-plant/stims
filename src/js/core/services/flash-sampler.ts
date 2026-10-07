@@ -78,9 +78,10 @@ export type FlashGridCallback = (tiles: Float32Array | null) => void;
 export type FlashSampler = {
   /**
    * Snapshots the canvas now, so call it inside the draw (see
-   * `core/frame-drawn.ts`), and hands its luminance grid to `onGrid`, either
-   * before returning or once a worker has read it. Returns false, capturing
-   * nothing, while the previous capture is still being read. The grid is
+   * `core/frame-drawn.ts`), and hands its luminance field to `onGrid`, either
+   * before returning or once a worker has read it, in the order captures
+   * were taken. Returns false, capturing nothing, while
+   * MAX_CAPTURES_IN_FLIGHT captures are still being read. The field is
    * reused by the next capture: read it in the callback.
    */
   capture: (canvas: HTMLCanvasElement, onGrid: FlashGridCallback) => boolean;
@@ -216,6 +217,30 @@ function canReadOffThread() {
   );
 }
 
+/**
+ * Captures that may wait on the worker at once.
+ *
+ * One at a time refused the next frame's capture whenever a readback
+ * outlasted a frame, so the governor compared frames 33ms apart instead of
+ * 16.7ms, which doubles the motion in each comparison. On the first-run
+ * preset (shifter-curlique, demo audio, a loaded machine where the readback
+ * took 13ms median and 20ms p95), 348 of 1,154 comparisons in 25s spanned
+ * two frames, from this and from the sampling gate (`MIN_SAMPLE_INTERVAL_MS`
+ * in flash-safety.ts), and all 6 flashes the governor counted were across
+ * one; no comparison of consecutive frames qualified. Letting a few captures
+ * queue turns a slow readback into a late sample instead of a missing one;
+ * the cap keeps a stalled worker from queueing without bound.
+ */
+export const MAX_CAPTURES_IN_FLIGHT = 3;
+
+type InFlightCapture = {
+  id: number;
+  onGrid: FlashGridCallback;
+  since: number;
+  /** Undefined until the worker answers; null if it could not read it. */
+  pixels?: Uint8ClampedArray | null;
+};
+
 export function createFlashSampler(
   grid: number = RECOMMENDED_GRID,
   density: number = RECOMMENDED_SAMPLE_DENSITY,
@@ -226,22 +251,34 @@ export function createFlashSampler(
 
   let offThread = canReadOffThread();
   let worker: Worker | null = null;
-  let pending: FlashGridCallback | null = null;
-  let pendingSince = 0;
+  /** Oldest first: answers are handed on in the order frames were taken. */
+  const inFlight: InFlightCapture[] = [];
+  let nextId = 0;
   let disposed = false;
 
-  function settle(pixels: Uint8ClampedArray | null) {
-    const onGrid = pending;
-    pending = null;
-    if (!onGrid || disposed) return;
-    onGrid(pixels ? fillLuminance(luminance, pixels) : null);
+  function deliver() {
+    while (inFlight.length > 0 && inFlight[0]?.pixels !== undefined) {
+      const { onGrid, pixels } = inFlight.shift() as InFlightCapture;
+      if (disposed) return;
+      onGrid(pixels ? fillLuminance(luminance, pixels) : null);
+    }
+  }
+
+  function settle(id: number, pixels: Uint8ClampedArray | null) {
+    const capture = inFlight.find((entry) => entry.id === id);
+    if (!capture) return;
+    capture.pixels = pixels;
+    deliver();
   }
 
   function abandonOffThread() {
     offThread = false;
     worker?.terminate();
     worker = null;
-    settle(null);
+    for (const capture of inFlight) {
+      if (capture.pixels === undefined) capture.pixels = null;
+    }
+    deliver();
   }
 
   function ensureWorker(): Worker | null {
@@ -254,8 +291,10 @@ export function createFlashSampler(
     } catch {
       return null;
     }
-    worker.onmessage = (event: MessageEvent<Uint8ClampedArray | null>) => {
-      settle(event.data);
+    worker.onmessage = (
+      event: MessageEvent<{ id: number; pixels: Uint8ClampedArray | null }>,
+    ) => {
+      settle(event.data.id, event.data.pixels);
     };
     worker.onerror = () => abandonOffThread();
     return worker;
@@ -265,10 +304,11 @@ export function createFlashSampler(
     canvas: HTMLCanvasElement,
     onGrid: FlashGridCallback,
   ): boolean {
-    if (pending && performance.now() - pendingSince > READBACK_TIMEOUT_MS) {
+    const oldest = inFlight[0];
+    if (oldest && performance.now() - oldest.since > READBACK_TIMEOUT_MS) {
       abandonOffThread();
     }
-    if (pending) return false;
+    if (inFlight.length >= MAX_CAPTURES_IN_FLIGHT) return false;
     if (canvas.width <= 0 || canvas.height <= 0) {
       onGrid(null);
       return true;
@@ -295,24 +335,25 @@ export function createFlashSampler(
       onGrid(null);
       return true;
     }
-    pending = onGrid;
-    pendingSince = performance.now();
+    const id = nextId;
+    nextId += 1;
+    inFlight.push({ id, onGrid, since: performance.now() });
     snapshot.then(
       (bitmap) => {
         if (disposed || worker !== target) {
           bitmap.close();
           return;
         }
-        target.postMessage({ bitmap, cols: width, rows: height }, [bitmap]);
+        target.postMessage({ id, bitmap, cols: width, rows: height }, [bitmap]);
       },
-      () => settle(null),
+      () => settle(id, null),
     );
     return true;
   }
 
   function dispose() {
     disposed = true;
-    pending = null;
+    inFlight.length = 0;
     worker?.terminate();
     worker = null;
     mainThread.dispose();
