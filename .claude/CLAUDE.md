@@ -172,6 +172,7 @@ Always use `http://localhost:5173/?agent=true` for browser-based QA. It persists
 | Bootstrap + handoffs | `docs/agents/agent-handoffs.md` | Delegating work |
 | Capability index | `docs/agents/custom-capabilities.md` | Choosing skills/workflows |
 | System map | `docs/ARCHITECTURE.md` | Boot path, engine seam, per-frame data flow |
+| Product moments | `docs/PRODUCT_MOMENTS.md` | Choosing or scoping work: which visitor moment it serves, what counts as correct there, standing product policies |
 | Tooling reference | `docs/agents/tooling-and-quality.md` | Command details |
 | Visual testing | `docs/agents/visual-testing.md` | Browser QA procedures |
 | Deep reference | `docs/agents/reference-docs.md` | Unfamiliar code areas |

@@ -2,6 +2,8 @@
 
 Stims is building a browser-native studio around the original MilkDrop presets. The roadmap prioritizes user-visible workflow improvements and measurable compatibility before speculative rendering or hardware breadth.
 
+[`PRODUCT_MOMENTS.md`](./PRODUCT_MOMENTS.md) names the visitor moments this work serves, what counts as correct in each, and the policies agents apply without asking.
+
 ## Product principles
 
 1. **Fidelity before parity claims.** Loading and compiling a preset is not proof that it looks correct.
@@ -34,7 +36,7 @@ The proof loop below is a floor, not a frontier: it stays green and does not gro
 
 Each of these needs a real GPU, a second display, or a product decision.
 
-1. **Reduce flashing on by default.** The governor sees real frames (#1370), and its read now costs the main thread 0.1 ms instead of 2–3.6 ms (#1375). What remains is a product call: on the first-run preset it dims the stage to about 15%, so default-on also means choosing a first-run preset that does not flash.
+1. **Reduce flashing on by default.** The governor sees real frames (#1370), and its read now costs the main thread 0.1 ms instead of 2–3.6 ms (#1375). The first-run preset is now one the WCAG audit reads at 0 flashes/s (`shifter-curlique`, #1376; the previous one read 38/s). The governor still dims it to about half brightness, 65% of the time, in silence as well as with music, while leaving `geiss-casino` and `eos-glowsticks-v2-03-music` alone. Settle whether the governor or the audit is right before turning it on for everyone (see [Product moments](./PRODUCT_MOMENTS.md#open-questions)).
 2. **Re-measure parity and demote what fails.** The certified labels rest on a July results file that the September suite contradicts (see [Proof floor](#proof-floor--maintained-not-expanded)).
 3. **Recording that holds up.** Render 9:16 and 1:1 natively, keep frames coming when the tab is hidden, lift the power-saving frame cap while recording, and add a browser test that measures the file.
 4. **A projector window that mirrors the stage.** Today's second window is a separate session (see [Live performance](#live-performance-vjing--hardware-control)).
