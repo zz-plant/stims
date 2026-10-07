@@ -33,25 +33,69 @@
  *
  * A GPU-backed scratch canvas (`willReadFrequently: false`) moved WebGPU to
  * 1.6ms: the cost is the wait, not the bytes. Sampling less often is not the
- * answer either, because at 15Hz a 30Hz strobe aliases away. The fix that
- * removes the wait is an asynchronous downscaled readback in the renderer;
- * until then this is why Reduce flashing stays opt-in rather than on for
- * everyone.
+ * answer either, because at 15Hz a 30Hz strobe aliases away.
+ *
+ * So the wait moves off the main thread. `createImageBitmap` snapshots the
+ * canvas synchronously, inside the draw, already downscaled to the grid; the
+ * bitmap goes to a worker (`flash-readback.worker.ts`) whose readback does
+ * the waiting. Per sample at the 16x16 grid, same machine, two sessions
+ * (`bun run lab:flash-sampler-bench` prints the comparison):
+ *
+ *     backend   main thread before   main thread now   grid arrives after
+ *     WebGPU    1.9-2.3ms            0.1ms             2.1-2.3ms
+ *     WebGL     2.7-3.6ms            0.1ms             2.8-3.2ms
+ *
+ * The snapshot's grid matched the same-task synchronous read exactly (max
+ * difference 0 over 12 frames on each backend), so the governor sees the
+ * same numbers a frame or so later. Where the off-thread pieces are missing
+ * the synchronous read is used, as before.
  */
 import { relativeLuminance } from '../flash-thresholds.ts';
 import { RECOMMENDED_GRID } from './flash-governor.ts';
 
+/** Receives a captured frame's luminance grid, or null if it could not be read. */
+export type FlashGridCallback = (tiles: Float32Array | null) => void;
+
 export type FlashSampler = {
-  /** Fills and returns the luminance grid, or null if sampling failed. */
-  sample: (canvas: HTMLCanvasElement) => Float32Array | null;
+  /**
+   * Snapshots the canvas now, so call it inside the draw (see
+   * `core/frame-drawn.ts`), and hands its luminance grid to `onGrid`, either
+   * before returning or once a worker has read it. Returns false, capturing
+   * nothing, while the previous capture is still being read. The grid is
+   * reused by the next capture: read it in the callback.
+   */
+  capture: (canvas: HTMLCanvasElement, onGrid: FlashGridCallback) => boolean;
   readonly cols: number;
   readonly rows: number;
+  /** Whether captures are read off the main thread right now. */
+  readonly offThread: boolean;
   dispose: () => void;
 };
 
-export function createFlashSampler(
-  grid: number = RECOMMENDED_GRID,
-): FlashSampler {
+/**
+ * A capture the worker never answers within this long is abandoned and the
+ * sampler falls back to reading on the main thread: a governor waiting
+ * forever on a lost message would be blind without saying so.
+ */
+const READBACK_TIMEOUT_MS = 1000;
+
+function fillLuminance(target: Float32Array, pixels: Uint8ClampedArray) {
+  for (let i = 0; i < target.length; i += 1) {
+    const idx = i * 4;
+    target[i] = relativeLuminance(
+      pixels[idx] as number,
+      pixels[idx + 1] as number,
+      pixels[idx + 2] as number,
+    );
+  }
+  return target;
+}
+
+/**
+ * Reads the canvas on the calling thread and waits for the GPU to finish
+ * the frame. The fallback, and what the off-thread path is measured against.
+ */
+export function createMainThreadFlashReader(grid: number = RECOMMENDED_GRID) {
   const cols = Math.max(1, Math.floor(grid));
   const rows = cols;
   const luminance = new Float32Array(cols * rows);
@@ -71,7 +115,7 @@ export function createFlashSampler(
     return context;
   }
 
-  function sample(canvas: HTMLCanvasElement): Float32Array | null {
+  function read(canvas: HTMLCanvasElement): Float32Array | null {
     const sourceWidth = canvas.width;
     const sourceHeight = canvas.height;
     if (sourceWidth <= 0 || sourceHeight <= 0) return null;
@@ -89,16 +133,7 @@ export function createFlashSampler(
       // rather than as a calm frame.
       return null;
     }
-
-    for (let i = 0; i < luminance.length; i += 1) {
-      const idx = i * 4;
-      luminance[i] = relativeLuminance(
-        pixels[idx] as number,
-        pixels[idx + 1] as number,
-        pixels[idx + 2] as number,
-      );
-    }
-    return luminance;
+    return fillLuminance(luminance, pixels);
   }
 
   function dispose() {
@@ -110,5 +145,124 @@ export function createFlashSampler(
     }
   }
 
-  return { sample, cols, rows, dispose };
+  return { read, cols, rows, dispose };
+}
+
+function canReadOffThread() {
+  return (
+    typeof Worker !== 'undefined' &&
+    typeof OffscreenCanvas !== 'undefined' &&
+    typeof createImageBitmap === 'function'
+  );
+}
+
+export function createFlashSampler(
+  grid: number = RECOMMENDED_GRID,
+): FlashSampler {
+  const mainThread = createMainThreadFlashReader(grid);
+  const { cols, rows } = mainThread;
+  const luminance = new Float32Array(cols * rows);
+
+  let offThread = canReadOffThread();
+  let worker: Worker | null = null;
+  let pending: FlashGridCallback | null = null;
+  let pendingSince = 0;
+  let disposed = false;
+
+  function settle(pixels: Uint8ClampedArray | null) {
+    const onGrid = pending;
+    pending = null;
+    if (!onGrid || disposed) return;
+    onGrid(pixels ? fillLuminance(luminance, pixels) : null);
+  }
+
+  function abandonOffThread() {
+    offThread = false;
+    worker?.terminate();
+    worker = null;
+    settle(null);
+  }
+
+  function ensureWorker(): Worker | null {
+    if (worker) return worker;
+    try {
+      worker = new Worker(
+        new URL('./flash-readback.worker.ts', import.meta.url),
+        { type: 'module', name: 'stims-flash-readback' },
+      );
+    } catch {
+      return null;
+    }
+    worker.onmessage = (event: MessageEvent<Uint8ClampedArray | null>) => {
+      settle(event.data);
+    };
+    worker.onerror = () => abandonOffThread();
+    return worker;
+  }
+
+  function capture(
+    canvas: HTMLCanvasElement,
+    onGrid: FlashGridCallback,
+  ): boolean {
+    if (pending && performance.now() - pendingSince > READBACK_TIMEOUT_MS) {
+      abandonOffThread();
+    }
+    if (pending) return false;
+    if (canvas.width <= 0 || canvas.height <= 0) {
+      onGrid(null);
+      return true;
+    }
+
+    const target = offThread ? ensureWorker() : null;
+    if (!target) {
+      offThread = false;
+      onGrid(mainThread.read(canvas));
+      return true;
+    }
+
+    let snapshot: Promise<ImageBitmap>;
+    try {
+      // The snapshot is taken now, in the draw; only the bitmap resolves
+      // later. 'low' matches the main-thread read's drawImage downscale.
+      snapshot = createImageBitmap(canvas, {
+        resizeWidth: cols,
+        resizeHeight: rows,
+        resizeQuality: 'low',
+      });
+    } catch {
+      onGrid(null);
+      return true;
+    }
+    pending = onGrid;
+    pendingSince = performance.now();
+    snapshot.then(
+      (bitmap) => {
+        if (disposed || worker !== target) {
+          bitmap.close();
+          return;
+        }
+        target.postMessage({ bitmap, cols, rows }, [bitmap]);
+      },
+      () => settle(null),
+    );
+    return true;
+  }
+
+  function dispose() {
+    disposed = true;
+    pending = null;
+    worker?.terminate();
+    worker = null;
+    mainThread.dispose();
+  }
+
+  return {
+    capture,
+    cols,
+    rows,
+    get offThread() {
+      return offThread;
+    },
+    dispose,
+  };
 }
