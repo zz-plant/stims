@@ -62,6 +62,7 @@
     "check:css-tokens": "bun run scripts/check-css-tokens.ts",
     "check:doc-references": "bun run scripts/check-doc-references.ts",
     "check:duplicate-css": "bun run scripts/check-duplicate-css.ts",
+    "check:e2e-ports": "bun run scripts/check-e2e-ports.ts",
     "audit:fix-categories": "bun run scripts/audit-fix-categories.ts",
     "check:skill-index": "bun run scripts/check-skill-index.ts",
     "check:first-run-evidence": "bun run scripts/generate-first-run-evidence.ts --check",

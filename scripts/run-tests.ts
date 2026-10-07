@@ -315,7 +315,8 @@ function resolveParallelism(): number | true {
  *
  * On CI's 2-core runner the files must also run one at a time or they starve
  * each other. A developer machine has the CPU and GPU to overlap a few — and
- * every e2e file owns a unique dev-server port, so they don't collide.
+ * every e2e file owns a unique dev-server port (`check:e2e-ports`), so they
+ * don't collide.
  * Default is 2, not more: these suites carry 5–45s timeout budgets that
  * start flaking when the machine is also running other sessions' browser
  * work. STIMS_E2E_CONCURRENCY overrides (1 restores strictly serial runs).

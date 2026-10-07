@@ -27,6 +27,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:dead-code`](#checkdead-code) | `check` | Report unused files, exports, and dependencies across the whole tree with knip (config: knip.jsonc). |
 | [`check:doc-references`](#checkdoc-references) | `check:quick` | Guard against docs that point at files and commands which no longer exist. |
 | [`check:duplicate-css`](#checkduplicate-css) | `check:quick` | Detect duplicate CSS keyframes and rule blocks — the "merge duplicate CSS, remove duplicate keyframes" pattern recurred multiple times in the last 400 commits (`0cc04211`, `6b39eb2f`, `1d2fa2af`). Duplicates bloat the bundle and cause maintenance drift where one copy is updated and the other is forgotten. |
+| [`check:e2e-ports`](#checke2e-ports) | `check:quick` | Fail when two e2e test files claim the same dev-server port. |
 | [`check:first-run-evidence`](#checkfirst-run-evidence) | `check:quick` | Record the measured evidence behind the first-run preset. |
 | [`check:guard-registry`](#checkguard-registry) | `check:quick` | Blocks banned patterns in changed source files before they land. |
 | [`check:guardrails-doc`](#checkguardrails-doc) | `check:quick` | Generates `docs/GUARDRAILS.md` — the rules this repo enforces — from the guard scripts themselves. |
@@ -316,6 +317,29 @@ of the global `fade-in`. Duplicates *within* a single file are still
 caught (two `@keyframes spin` in the same file is always a mistake).
 
 Run it directly: `bun run check:duplicate-css`
+
+## check:e2e-ports
+
+Fail when two e2e test files claim the same dev-server port.
+
+Each browser e2e file starts its own vite on a fixed `TEST_PORT`, and
+`scripts/run-tests.ts` runs two files at once locally on the promise that no
+two share one. Nothing enforced that, and two did: agent-boot-smoke and
+flash-sampler-readback both took 5186. Run together, the second file's vite
+exits on --strictPort; the harness used to accept the first file's server
+as its own, and the second suite lost its server the moment the first one
+finished and stopped it.
+
+The rule: every `tests/e2e/*.test.ts` that calls `startDevServer` declares
+a top-level `const TEST_PORT = <n>;`, and no two declare the same number.
+A port passed any other way is reported, because this scan could not see it.
+Picking a port: run this script, which lists the ones taken.
+
+Collisions between checkouts (another session's worktree on the same port)
+are outside what a source scan can see; `tests/e2e/dev-server.ts` refuses a
+port that is already taken and names the process holding it.
+
+Run it directly: `bun run check:e2e-ports`
 
 ## check:first-run-evidence
 
