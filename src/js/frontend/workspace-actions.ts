@@ -21,7 +21,9 @@ import type {
   AudioSource,
   PanelState,
   PresetCatalogEntry,
+  SessionRouteState,
 } from './contracts.ts';
+import type { QueuedCrossfadeResult } from './performance-hardware-controls.ts';
 import {
   leaveSyncSession,
   setSyncUrlParam,
@@ -203,6 +205,36 @@ export function toggleReduceFlashingAction(
       ? 'Reduce flashing is on: flashing presets are skipped and strobes are dimmed.'
       : 'Reduce flashing is off.',
   );
+}
+
+/**
+ * Take the next queued preset with a hand-driven crossfade: pop it, arm the
+ * manual fade, then switch, in that order — arming has to land before the
+ * switch, which is when the outgoing frame is captured. Shared by the cue
+ * deck's "Fade by hand" and a hardware crossfader.
+ */
+export function startQueuedCrossfade({
+  queue,
+  startManualCrossfade,
+  setRouteState,
+  activePresetId,
+}: {
+  queue: { entries: ReadonlyArray<{ id: string }>; popNext: () => unknown };
+  startManualCrossfade: () => void;
+  setRouteState: (
+    update: (current: SessionRouteState) => SessionRouteState,
+  ) => void;
+  activePresetId: string | null;
+}): QueuedCrossfadeResult {
+  const presetId = queue.entries[0]?.id;
+  if (!presetId) return 'empty';
+  // The route push is a no-op for the preset already on stage, so the armed
+  // fade would never fire.
+  if (presetId === activePresetId) return 'already-active';
+  queue.popNext();
+  startManualCrossfade();
+  setRouteState((current) => ({ ...current, presetId }));
+  return 'started';
 }
 
 export function endWatchParty(announce: (message: string) => void): void {

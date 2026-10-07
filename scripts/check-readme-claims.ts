@@ -153,7 +153,7 @@ export async function validateReadmeProductClaims(
     {
       pattern: /WebMIDI & VJ Controls/iu,
       issue:
-        'README presents MIDI control as fully shipped, but the current integration still lacks device-backed verification and persistent mappings.',
+        'README presents MIDI control as fully shipped, but no physical controller has verified it and its control latency is unmeasured (mappings do persist per device).',
     },
     {
       pattern: /4K \/ 60FPS Video Export/iu,

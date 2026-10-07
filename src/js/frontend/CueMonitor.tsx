@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/CueMonitor.module.css';
+import { webMidiService } from '../core/services/webmidi-controller.ts';
 import { hadSessionBeforeBoot } from '../core/state/last-session-store.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useBottomOverlaySignal } from './hooks/use-escape-handler.ts';
 import { useLivePresetTile } from './hooks/use-live-preset-tile.ts';
 import { dismissStageHint, useStageHintDismissed } from './stage-hint-cards.ts';
+import { startQueuedCrossfade } from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
 /**
@@ -88,12 +90,16 @@ export function CueMonitor() {
   }, [arming, ui]);
   useEffect(() => {
     const timer = window.setInterval(() => {
-      const live = engine.getCrossfade() !== null;
+      const position = engine.getCrossfade();
+      const live = position !== null;
       if (live !== fadingRef.current) {
         fadingRef.current = live;
         setFading(live);
         if (live) setArming(false);
       }
+      // A hardware crossfader moves the fade too; the on-screen fader
+      // follows it rather than showing where the mouse last left it.
+      if (position !== null) setFader(position);
     }, 120);
     return () => window.clearInterval(timer);
   }, [engine]);
@@ -125,20 +131,21 @@ export function CueMonitor() {
   // happen before the switch is applied, because that is the moment the
   // outgoing frame is captured and the cover starts.
   const startFade = useCallback(() => {
-    const presetId = queue.entries[0]?.id;
-    if (!presetId) return;
-    if (presetId === activePresetId) {
-      // The route push is a no-op for the preset already on stage, so the
-      // armed fade would never fire. Say so instead of consuming the queue
-      // entry and appearing to do nothing.
+    const result = startQueuedCrossfade({
+      queue,
+      startManualCrossfade: () => engine.startManualCrossfade(),
+      setRouteState: ui.setRouteState,
+      activePresetId,
+    });
+    if (result === 'already-active') {
+      // Said rather than consuming the queue entry and appearing to do
+      // nothing.
       ui.setStatusMessage('That preset is already on the stage.');
       return;
     }
-    queue.popNext();
-    engine.startManualCrossfade();
+    if (result !== 'started') return;
     setFader(0);
     setArming(true);
-    ui.setRouteState((current) => ({ ...current, presetId }));
   }, [activePresetId, engine, queue, ui]);
 
   const moveFader = useCallback(
@@ -246,6 +253,9 @@ export function CueMonitor() {
             step={0.01}
             value={fader}
             onChange={(event) => moveFader(Number(event.target.value))}
+            // Touching it while MIDI learn is armed maps a fader to it.
+            onPointerDown={() => webMidiService.setLearnTarget('crossfade')}
+            onFocus={() => webMidiService.setLearnTarget('crossfade')}
             aria-label="Crossfade to the incoming preset"
             data-action="crossfade"
           />
