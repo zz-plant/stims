@@ -4797,7 +4797,8 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
   min-width: 0;
 }
 
-.stims-preset-grid__fav {
+.stims-preset-grid__fav,
+.stims-preset-grid__queue {
   position: absolute;
   top: var(--space-xs, 4px);
   left: var(--space-xs, 4px);
@@ -4825,18 +4826,29 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
 .stims-preset-grid__cell:hover .stims-preset-grid__fav,
 .stims-preset-grid__cell:focus-within .stims-preset-grid__fav,
 .stims-preset-grid__fav[data-saved="true"],
-.stims-preset-grid__fav:focus-visible {
+.stims-preset-grid__fav:focus-visible,
+.stims-preset-grid__cell:hover .stims-preset-grid__queue,
+.stims-preset-grid__cell:focus-within .stims-preset-grid__queue,
+.stims-preset-grid__queue[data-queued="true"],
+.stims-preset-grid__queue:focus-visible {
   opacity: 1;
 }
 
-.stims-preset-grid__fav:focus-visible {
+.stims-preset-grid__fav:focus-visible,
+.stims-preset-grid__queue:focus-visible {
   outline: 2px solid var(--stims-accent);
   outline-offset: 1px;
 }
 
+/* Beside the star, one disc and a gap along. */
+.stims-preset-grid__queue {
+  left: calc(var(--space-xs, 4px) + 30px);
+}
+
 @media (any-hover: none) and (any-pointer: coarse) {
   /* No hover to reveal it on touch. */
-  .stims-preset-grid__fav {
+  .stims-preset-grid__fav,
+  .stims-preset-grid__queue {
     opacity: 1;
   }
 }
@@ -4853,7 +4865,13 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
      artwork is a much heavier mark than this needs; the pseudo-element is
      part of the button's own box, so it takes the taps without changing
      anything the eye sees. */
-  .stims-preset-grid__fav::after {
+  /* Spaced so the two 44px hit areas meet without overlapping. */
+  .stims-preset-grid__queue {
+    left: calc(var(--space-xs, 4px) + 44px);
+  }
+
+  .stims-preset-grid__fav::after,
+  .stims-preset-grid__queue::after {
     content: "";
     position: absolute;
     top: 50%;

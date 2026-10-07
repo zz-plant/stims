@@ -37,6 +37,7 @@ import {
 } from './quick-select.ts';
 import { SkeletonPresetCard } from './SkeletonPresetCard.tsx';
 import { UiIcon } from './UiIcon.tsx';
+import { togglePresetQueuedAction } from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
   type BrowseSortMode,
@@ -48,6 +49,7 @@ import {
   getFeaturedCollectionTags,
   matchesAuthor,
   matchesPreset,
+  parseBrowseSortMode,
   passesFlashPreference,
   prettifyCollectionTag,
   sortBrowseEntries,
@@ -83,7 +85,7 @@ const PRESET_ROW_OVERSCAN = 8;
 const browseScrollMemory: { grid: number; list: number } = { grid: 0, list: 0 };
 
 function readSortMode(): SortMode {
-  return (readStored('stims:browse-sort') as SortMode | null) ?? 'curated';
+  return parseBrowseSortMode(readStored('stims:browse-sort')) ?? 'curated';
 }
 
 /**
@@ -269,9 +271,20 @@ export function BrowseSheetPanel({
   ]);
 
   const sorted = useMemo(
-    () => sortBrowseEntries(browseEntries, sortMode, randomSeed),
-    [browseEntries, sortMode, randomSeed],
+    () =>
+      sortBrowseEntries(browseEntries, sortMode, randomSeed, deferredSearch),
+    [browseEntries, sortMode, randomSeed, deferredSearch],
   );
+
+  // At most the queue's cap (50) ids, so a scan per mounted row is free.
+  const queuedPresetIds = ui.presetQueue.presetIds;
+  const toggleQueued = (entry: PresetCatalogEntry) => {
+    togglePresetQueuedAction({
+      queue: ui.presetQueue,
+      entry,
+      announce: ui.setStatusMessage,
+    });
+  };
 
   // In list view this panel is what the digit keys index; in grid view the
   // grid publishes its own (variant-collapsed) order. Only one is mounted.
@@ -781,12 +794,11 @@ export function BrowseSheetPanel({
             }}
           >
             <option value="curated">Curated first</option>
-            <option value="relevance">Recommended</option>
+            <option value="relevance">Best match</option>
             <option value="title">Title</option>
             <option value="author">Author</option>
             <option value="recent">Recently opened</option>
             <option value="favorites-first">Saved first</option>
-            <option value="webgpu-supported">High fidelity first</option>
             <option value="random">Random</option>
           </select>
 
@@ -981,6 +993,8 @@ export function BrowseSheetPanel({
             onToggleFavorite={(entry) => {
               void engine.toggleFavoritePreset(entry.id, !entry.isFavorite);
             }}
+            queuedPresetIds={queuedPresetIds}
+            onToggleQueued={toggleQueued}
             initialScrollTop={browseScrollMemory.grid}
             onScrollTopChange={(top) => {
               browseScrollMemory.grid = top;
@@ -1123,6 +1137,28 @@ export function BrowseSheetPanel({
                           <PresetSignals entry={entry} />
                         </span>
                       </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="ctl-preset__queue"
+                      data-queued={String(queuedPresetIds.includes(entry.id))}
+                      aria-label={
+                        queuedPresetIds.includes(entry.id)
+                          ? `Remove ${entry.title} from the queue`
+                          : `Queue ${entry.title}`
+                      }
+                      title={
+                        queuedPresetIds.includes(entry.id)
+                          ? 'Remove from queue'
+                          : 'Add to queue'
+                      }
+                      aria-pressed={queuedPresetIds.includes(entry.id)}
+                      onClick={() => toggleQueued(entry)}
+                    >
+                      <span
+                        className="ctl-preset__queue-icon"
+                        aria-hidden="true"
+                      />
                     </button>
                     <button
                       type="button"
