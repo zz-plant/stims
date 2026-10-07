@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eel-conformance</title>
+<meta name="description" content="An executable specification of EEL2, the expression language of MilkDrop presets: 82 portable JSON cases, a schema, and a runner contract any implementation can satisfy.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%233b6ea5'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='16' font-weight='700' text-anchor='middle' fill='%23fff'%3E%3D%3D%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="./styles.css">
+<style>
+  .case { padding: 12px 14px; }
+  .case header { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .case .id { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .case .name { margin: 2px 0 8px; font-weight: 600; }
+  .case pre { margin: 6px 0; }
+  .case .note { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 22px 0 8px; }
+  .section-head h3 { margin: 0; font-family: var(--mono); }
+  .section-head p { margin: 0; font-size: 13px; color: var(--muted); }
+  .corpus-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .corpus-controls input[type="search"] { min-width: 240px; flex: 1; }
+  ol.contract li { margin-bottom: 8px; }
+  ul.gotchas li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./">eel-conformance <small>EEL2 executable specification</small></a>
+    <nav>
+      <a href="#corpus">Corpus</a>
+      <a href="#contract">Runner contract</a>
+      <a href="#run">Run it</a>
+      <a href="#gotchas">Gotchas</a>
+      <a href="#open">Open questions</a>
+      <a href="https://github.com/zz-plant/stims/tree/main/packages/eel-conformance">GitHub</a>
+      <a href="https://www.npmjs.com/package/eel-conformance">npm</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <h1>The expression language of MilkDrop presets, as cases you can run.</h1>
+    <p class="lead">There has never been a written specification for the dialect of ns-eel that <code>per_frame</code>, <code>per_pixel</code>, <code>per_point</code> and <code>init</code> blocks use, only implementations that disagree. This corpus is one: every rule is a program, an input state and a required output state, in plain JSON, so conformance is something you run rather than something you argue about.</p>
+    <div class="row">
+      <span class="install"><span>npm install eel-conformance</span><button type="button" class="btn" data-copy="npm install eel-conformance">copy</button></span>
+      <a class="btn" href="./cases/">Browse the JSON</a>
+      <a class="btn" href="./schema.json">schema.json</a>
+    </div>
+    <figure>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="./docs/coverage-dark.svg">
+        <img alt="82 cases in 9 sections; solid bars are pinned cases, hatched are provisional" src="./docs/coverage-light.svg" width="716" height="304">
+      </picture>
+      <figcaption>Generated from the corpus by <code>bun run coverage:svg</code>. Solid: pinned. Hatched: provisional.</figcaption>
+    </figure>
+  </div>
+
+  <section id="corpus">
+    <h2>The corpus</h2>
+    <p class="sub">Every case, read live from the same <code>cases/*.json</code> files the package ships. Search by id, name, program text or note.</p>
+    <div class="corpus-controls">
+      <input id="search" type="search" placeholder="Search cases, e.g. megabuf, truthiness, pow" aria-label="Search cases">
+      <select id="section" aria-label="Section"><option value="">All sections</option></select>
+      <label><input id="provisional-only" type="checkbox"> provisional only</label>
+      <span id="count" class="muted stat"></span>
+    </div>
+    <div id="cases"><p class="muted">Loading cases…</p></div>
+  </section>
+
+  <section id="contract">
+    <h2>Runner contract</h2>
+    <p class="sub">A conforming runner executes one case like this.</p>
+    <ol class="contract">
+      <li><strong>Start from zero.</strong> Every variable is 0 until assigned. Reading an unknown name is legal and yields 0, never an error. Apply the case's <code>env</code> on top.</li>
+      <li><strong>Allocate both guest buffers</strong> at 1,048,576 f32 slots each, zero-filled, then apply <code>megabuf</code> and <code>gmegabuf</code> from the case. <code>megabuf</code> is per-preset scratch; <code>gmegabuf</code> is shared across presets.</li>
+      <li><strong>Execute <code>program</code> as one block</strong>, in order. It is a single program, not independent lines: state carries from each statement to the next.</li>
+      <li><strong>Use the fixed RNG.</strong> Every <code>rand()</code> / <code>randint()</code> draw returns exactly <code>0.5</code>. Randomness is not what these cases test, and a fixed draw is what makes them portable.</li>
+      <li><strong>Compare.</strong> For each entry in <code>expected</code>, the variable must be within <code>1e-12 + |expected| * 1e-9</code>. Same for <code>expectedMegabuf</code> / <code>expectedGmegabuf</code> against buffer slots. Absent variables read as 0, so <code>{"x": 0}</code> is a real assertion.</li>
+    </ol>
+    <p>Buffer size is part of the contract, not an implementation detail. Bounds behaviour is only defined against a declared size, and a runner that allocates a short buffer will read past its end and produce garbage where the specification requires 0.</p>
+    <div class="grid">
+      <div class="card"><h3>pinned</h3><p>Derived from documented MilkDrop 2.x / ns-eel behaviour. A conforming implementation must produce this value.</p></div>
+      <div class="card"><h3>provisional</h3><p>This corpus's observed behaviour, not yet confirmed against ns-eel. A question, not a requirement. Enforcing it still has value, since silent drift is worse than a known value, but check upstream before porting one.</p></div>
+    </div>
+  </section>
+
+  <section id="run">
+    <h2>Run it against your engine</h2>
+    <p class="sub">The TypeScript harness does the seeding and comparing; you supply the one thing that is yours. A runner in any other language reads the JSON directly.</p>
+<pre><code>import { conforms, formatReport, runConformance } from 'eel-conformance';
+import { execute } from './my-eel-engine';
+
+const report = await runConformance(({ program, env, megabuf, gmegabuf, random }) =&gt; {
+  execute(program.join('\n'), { env, megabuf, gmegabuf, rand: random });
+});
+
+console.log(formatReport(report));
+process.exit(conforms(report) ? 0 : 1);</code></pre>
+    <p>A thrown error is recorded on that case and the run continues, because the useful output is the whole table. <code>conforms</code> is true when every pinned case passed; provisional failures are reported separately and never count. Variable names in <code>env</code> are lower-cased, matching the language's case-insensitivity.</p>
+    <p>The <code>eel-conformance</code> CLI lists sections and cases, shows one case as JSON, and validates the shape of a corpus against the schema's rules without a schema library.</p>
+  </section>
+
+  <section id="gotchas">
+    <h2>Rules that catch new implementations</h2>
+    <ul class="gotchas">
+      <li><strong>Division by zero is 0</strong>, but the guard is exact zero: <code>1 / 0.0000001</code> divides normally. A tolerance guard silently zeroes results real presets depend on.</li>
+      <li><strong><code>%</code> truncates both operands to integers first</strong>; float remainder is <code>mod()</code> / <code>fmod()</code>.</li>
+      <li><strong>Truthiness is <code>|v| &gt; 1e-5</code></strong>, not <code>v != 0</code>, for <code>if</code>, <code>&amp;&amp;</code>, <code>||</code>, <code>!</code> and <code>bnot</code>.</li>
+      <li><strong><code>==</code> is exact; <code>equal()</code> uses the close factor.</strong> Only one of them is tolerant.</li>
+      <li><strong><code>bor()</code> and <code>band()</code> are logical, not bitwise</strong>, despite the names. <code>bor(2,4)</code> is 1, not 6.</li>
+      <li><strong><code>frac()</code> subtracts the floor</strong>, so <code>frac(-0.25)</code> is <code>0.75</code>.</li>
+      <li><strong><code>step(edge, v)</code> takes the edge first.</strong></li>
+      <li><strong><code>pi</code> and <code>e</code> are ordinary prepopulated variables</strong>, and assignments to them stick.</li>
+      <li><strong>Names are case-insensitive.</strong> <code>contVol</code> and <code>contvol</code> are one variable.</li>
+      <li><strong>Non-finite values are clamped to 0 at the statement boundary</strong>, so one escaped Infinity cannot poison a variable for the preset's lifetime.</li>
+      <li><strong><code>smoothstep()</code> with equal edges</strong> is defined here as <code>v &lt; edge ? 0 : 1</code>; GLSL and WGSL leave it undefined, so a GPU backend must special-case it.</li>
+    </ul>
+  </section>
+
+  <section id="open">
+    <h2>Open questions</h2>
+    <p class="sub">The provisional cases are places where the originating implementation had to pick a behaviour and the reference is unverified. Resolving them against ns-eel would be the most useful contribution.</p>
+    <ol>
+      <li><strong><code>while</code> condition truthiness.</strong> A <code>while()</code> condition is tested against exact zero, while every other boolean context uses the close-factor threshold. If the threshold turns out to be correct, a class of presets is currently spinning to the iteration cap every frame.</li>
+      <li><strong>Unary minus versus <code>^</code>.</strong> <code>-2 ^ 2</code> parses as <code>(-2)^2 = 4</code>. Most languages that spell exponentiation as an operator bind unary minus more loosely.</li>
+      <li><strong><code>^</code> associativity.</strong> <code>2 ^ 3 ^ 2</code> parses left-associatively as 64, not the more usual 512.</li>
+    </ol>
+  </section>
+
+  <footer>
+    <p>Extracted from <a href="https://github.com/zz-plant/stims">zz-plant/stims</a>, the source of the visualizer at <a href="https://toil.fyi">toil.fyi</a>, where the corpus pins the semantics shared by its interpreter, JIT and WGSL generator. The sibling package <a href="https://www.npmjs.com/package/milkdrop-toolchain">milkdrop-toolchain</a> runs it in its test suite. Public domain (Unlicense).</p>
+  </footer>
+</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

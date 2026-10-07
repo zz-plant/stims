@@ -120,3 +120,5 @@ thumbnails/
 
 # Build output of the standalone packages (bun --cwd packages/<name> run build)
 /packages/*/dist/
+# Output of `bun run site:packages` (all package sites, for GitHub Pages)
+/_site/

@@ -42,6 +42,29 @@ can only be configured on an existing package.
 The versions in each `package.json` are the source of truth. The workflow
 refuses a tag whose version does not match.
 
+## Sites
+
+Every package has a static site under `site/` with a working demo on the
+real library: a corpus browser for `eel-conformance`, an in-browser video
+flash checker and the live governor for `flash-guard`, a compile playground
+for `milkdrop-toolchain`, and a live worklet demo for `audio-reactive`. They
+share one stylesheet (`site/styles.css`, kept identical in each package) and
+need no build tooling beyond Bun.
+
+```bash
+bun --cwd packages/flash-guard run site:build     # one site, into packages/flash-guard/_site/
+bun --cwd packages/flash-guard run site:preview   # ...served on http://localhost:8787
+bun run site:packages                             # all four plus an index, into ./_site/
+bun run site:packages -- --serve                  # ...served on http://localhost:8788
+```
+
+`.github/workflows/pages-packages.yml` deploys `./_site` to this repository's
+GitHub Pages on every push to `main` that touches `packages/`, so the sites
+live at `https://zz-plant.github.io/stims/<name>/` once Pages is enabled with
+"GitHub Actions" as the source. Each package also carries its own
+`.github/workflows/pages.yml`, which takes over after a subtree split and
+publishes the same site from the package's own repository.
+
 ## Relationship to the app
 
 Stims still runs on its own copies of this code under `src/js/`. The
