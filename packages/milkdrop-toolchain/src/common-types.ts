@@ -1,0 +1,329 @@
+export type MilkdropPresetOrigin =
+  | 'bundled'
+  | 'imported'
+  | 'user'
+  | 'draft'
+  | 'generated';
+
+export type MilkdropDiagnosticSeverity = 'error' | 'warning' | 'info';
+
+export type MilkdropDiagnosticCategory =
+  | 'io'
+  | 'parse'
+  | 'eel-compile'
+  | 'shader-lower'
+  | 'backend-compat';
+
+export type MilkdropCompatibilityIssueCategory =
+  | 'unsupported-syntax'
+  | 'unsupported-shader'
+  | 'runtime-divergence'
+  | 'backend-degradation'
+  | 'acceptable-approximation';
+
+export type MilkdropDiagnostic = {
+  severity: MilkdropDiagnosticSeverity;
+  code: string;
+  message: string;
+  line?: number;
+  field?: string;
+  category?: MilkdropDiagnosticCategory;
+};
+
+/** A pointer to the preset a derivative was made from. Parents may since
+ * have been deleted, so the ref carries enough to render the lineage
+ * ("remix of Aderrasi - Airhandler") without resolving the id. */
+export type MilkdropPresetLineageRef = {
+  id: string;
+  title: string;
+  author?: string;
+};
+
+export type MilkdropPresetSource = {
+  id: string;
+  title: string;
+  raw: string;
+  origin: MilkdropPresetOrigin;
+  author?: string;
+  authorUrl?: string;
+  fileName?: string;
+  path?: string;
+  updatedAt?: number;
+  /** Immediate parents of this preset: one entry for a remix, two for a
+   * blend/mashup. Absent for root works and bundled catalog entries. */
+  derivedFrom?: MilkdropPresetLineageRef[];
+};
+
+export type MilkdropPresetField = {
+  key: string;
+  rawValue: string;
+  line: number;
+  section: string | null;
+  /** A `//` comment stripped from the end of the line, including the `//`. */
+  comment?: string;
+};
+
+export type MilkdropPresetAST = {
+  source: string;
+  fields: MilkdropPresetField[];
+  sections: string[];
+};
+
+export type MilkdropExpressionNode =
+  | { type: 'literal'; value: number }
+  | { type: 'identifier'; name: string }
+  | {
+      type: 'unary';
+      operator: '+' | '-' | '!';
+      operand: MilkdropExpressionNode;
+    }
+  | {
+      type: 'binary';
+      operator:
+        | '+'
+        | '-'
+        | '*'
+        | '/'
+        | '%'
+        | '^'
+        | '|'
+        | '&'
+        | '<'
+        | '<='
+        | '>'
+        | '>='
+        | '=='
+        | '!='
+        | '&&'
+        | '||'
+        | '=';
+      left: MilkdropExpressionNode;
+      right: MilkdropExpressionNode;
+    }
+  | {
+      type: 'call';
+      name: string;
+      args: MilkdropExpressionNode[];
+    };
+
+export type MilkdropControlFlowStatement = {
+  kind: 'loop' | 'while';
+  /** Present for `loop(count, body)`. When absent the loop is unbounded and
+   * relies on the `while`-style condition or the runtime iteration cap. */
+  count?: MilkdropExpressionNode;
+  /** Present for `while(cond, body)` and used as the continuing condition for
+   * `loop` forms that were emitted from a C-style `for` with a condition. */
+  condition?: MilkdropExpressionNode;
+  body: MilkdropCompiledStatement[];
+};
+
+export type MilkdropCompiledStatement = {
+  target: string;
+  targetExpression?: MilkdropExpressionNode;
+  expression: MilkdropExpressionNode;
+  line: number;
+  source: string;
+  /** When present, this statement is an iterative control-flow wrapper
+   * (`loop`/`while`) and `expression` holds the count or condition. The
+   * `target` is a sentinel and is not stored. */
+  control?: MilkdropControlFlowStatement;
+};
+
+export type MilkdropProgramBlock = {
+  statements: MilkdropCompiledStatement[];
+  sourceLines: string[];
+  /**
+   * `//` comments the author wrote on this block's lines, anchored to
+   * `sourceLines`: a trailing comment follows statement `index` on its line; a
+   * standalone one (a comment-only line, or one inside a statement still
+   * being continued) is written as its own line before statement `index`.
+   * Nothing executes them — they are kept so Format does not delete them.
+   */
+  comments?: Array<{ index: number; text: string; trailing: boolean }>;
+};
+
+export type MilkdropFeatureKey =
+  | 'base-globals'
+  | 'per-frame-equations'
+  | 'per-pixel-equations'
+  | 'custom-waves'
+  | 'custom-shapes'
+  | 'shape-texture-controls'
+  | 'borders'
+  | 'motion-vectors'
+  | 'video-echo'
+  | 'post-effects'
+  | 'volume-textures'
+  | 'unsupported-shader-text';
+
+export type MilkdropCompatibilityFeatureKey =
+  | MilkdropFeatureKey
+  | 'video-echo-orientation';
+
+export type MilkdropSupportStatus = 'supported' | 'partial' | 'unsupported';
+
+export type MilkdropFidelityClass =
+  | 'exact'
+  | 'near-exact'
+  | 'partial'
+  | 'fallback';
+
+export type MilkdropVisualEvidenceTier =
+  | 'none'
+  | 'compile'
+  | 'runtime'
+  | 'visual';
+
+export type MilkdropParitySourceFamily =
+  | 'bundled'
+  | 'local-custom-shape'
+  | 'parity-corpus'
+  | 'projectm-fixture'
+  | 'external-pack'
+  | 'ad-hoc';
+
+export type MilkdropParityToleranceProfile =
+  | 'default'
+  | 'strict'
+  | 'loose'
+  | (string & {});
+
+export type MilkdropBlockingConstruct = {
+  kind: 'field' | 'shader';
+  value: string;
+  system: 'preset-field' | 'shader-text';
+  allowlisted: boolean;
+  feature?: MilkdropCompatibilityFeatureKey;
+  classification?: 'soft-unknown' | 'hard-unsupported';
+};
+
+export type MilkdropDegradationReason = {
+  code:
+    | 'unknown-field'
+    | 'unsupported-field'
+    | 'unsupported-hard-feature'
+    | 'shader-approximation'
+    | 'allowlisted-gap'
+    | 'backend-divergence'
+    | 'backend-partial'
+    | 'backend-unsupported'
+    | 'visual-fallback';
+  category: MilkdropCompatibilityIssueCategory;
+  message: string;
+  system: 'compiler' | 'shader' | 'backend' | 'runtime';
+  blocking: boolean;
+};
+
+export type MilkdropCompatibilityEvidence = {
+  compile: 'verified' | 'issues';
+  runtime: 'not-run' | 'smoke-tested';
+  visual: 'not-captured' | 'reference-suite';
+};
+
+export type MilkdropRenderBackend = 'webgl' | 'webgpu';
+
+/** The backend's name as people read it, for messages and labels. */
+export function formatRenderBackendName(backend: MilkdropRenderBackend) {
+  return backend === 'webgpu' ? 'WebGPU' : 'WebGL';
+}
+
+export type MilkdropSemanticSupport = {
+  fidelityClass: MilkdropFidelityClass;
+  evidence: MilkdropCompatibilityEvidence;
+  visualEvidenceTier: MilkdropVisualEvidenceTier;
+};
+
+export type MilkdropVisualCertification = {
+  status: 'certified' | 'uncertified';
+  measured: boolean;
+  source: 'inferred' | 'reference-suite';
+  fidelityClass: MilkdropFidelityClass;
+  visualEvidenceTier: MilkdropVisualEvidenceTier;
+  requiredBackend: MilkdropRenderBackend | null;
+  actualBackend: MilkdropRenderBackend | null;
+  reasons: string[];
+  /**
+   * Measured pixel mismatch ratio against the projectM reference image, when a
+   * reference-suite capture exists. Values are in [0, 1] where 0 means a
+   * perfect pixel match and 1 means every measured pixel differed beyond the
+   * tolerance threshold. `null` when no measurement has been recorded yet.
+   */
+  mismatchRatio?: number | null;
+  /**
+   * Pixel-difference tolerance threshold (e.g. 0.02 for "two percent of
+   * pixels are allowed to differ before the preset fails the parity gate")
+   * applied when the suite produced this measurement. `null` when no
+   * measurement has been recorded yet.
+   */
+  failThreshold?: number | null;
+};
+
+export type MilkdropBackendSupportEvidenceCode =
+  | 'unknown-field'
+  | 'unknown-function'
+  | 'unsupported-hard-feature'
+  | 'unsupported-shader-text-gap'
+  | 'shader-text-translated'
+  | 'volume-sampler-gap'
+  | 'shape-texture-gap'
+  | 'video-echo-gap'
+  | 'post-effects-gap';
+
+export type MilkdropBackendSupportEvidence = {
+  backend: MilkdropRenderBackend;
+  scope: 'shared' | 'backend';
+  status: Exclude<MilkdropSupportStatus, 'supported'>;
+  code: MilkdropBackendSupportEvidenceCode;
+  message: string;
+  feature?: MilkdropCompatibilityFeatureKey;
+};
+
+export type MilkdropParityReport = {
+  ignoredFields: string[];
+  approximatedShaderLines: string[];
+  missingAliasesOrFunctions: string[];
+  backendDivergence: string[];
+  visualFallbacks: string[];
+  blockedConstructs: string[];
+  blockingConstructDetails: MilkdropBlockingConstruct[];
+  degradationReasons: MilkdropDegradationReason[];
+  fidelityClass: MilkdropFidelityClass;
+  evidence: MilkdropCompatibilityEvidence;
+  visualEvidenceTier: MilkdropVisualEvidenceTier;
+  semanticSupport: MilkdropSemanticSupport;
+  visualCertification: MilkdropVisualCertification;
+};
+
+export type MilkdropCompileOptions = {
+  aspect?: number;
+  /**
+   * Force the raw-string compile cache even when the caller passes source
+   * metadata (id, origin, …). Used by the preset load path so re-loading a
+   * preset skips the full parse+IR rebuild. Safe only when no other options
+   * vary between calls for the same raw text.
+   */
+  cacheCompile?: boolean;
+};
+
+export type MilkdropBackendSupport = {
+  status: MilkdropSupportStatus;
+  reasons: string[];
+  evidence: MilkdropBackendSupportEvidence[];
+  requiredFeatures: MilkdropFeatureKey[];
+  unsupportedFeatures: MilkdropCompatibilityFeatureKey[];
+  recommendedFallback?: MilkdropRenderBackend;
+};
+
+export type MilkdropFeatureAnalysis = {
+  featuresUsed: MilkdropFeatureKey[];
+  unsupportedShaderText: boolean;
+  supportedShaderText: boolean;
+  shaderTextExecution: Record<
+    MilkdropRenderBackend,
+    'none' | 'translated' | 'direct' | 'unsupported'
+  >;
+  registerUsage: {
+    q: number;
+    t: number;
+  };
+};

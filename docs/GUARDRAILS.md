@@ -32,6 +32,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:guardrails-doc`](#checkguardrails-doc) | `check:quick` | Generates `docs/GUARDRAILS.md` — the rules this repo enforces — from the guard scripts themselves. |
 | [`check:module-docs`](#checkmodule-docs) | `check:quick` | Requires a file-level docblock on the `src/` modules big enough to need one. |
 | [`check:no-ts-nocheck`](#checkno-ts-nocheck) | `check:quick` | Fails the build if a whole-file TypeScript suppression directive is present under src/, scripts/, or tests/. |
+| [`check:packages`](#checkpackages) | `check` | Typechecks and tests every standalone package under packages/, each in its own directory so its bunfig.toml and tsconfig apply rather than the root's. |
 | [`check:production-edge`](#checkproduction-edge) | on demand | Verifies the deployed site's edge is reachable and not gated behind a Cloudflare challenge. |
 | [`check:readme-claims`](#checkreadme-claims) | `check:quick` | Keeps the repo's public claims aligned with what it actually ships. |
 | [`check:reference-audio-header`](#checkreference-audio-header) | `check:quick` | Generates the C++ harness's copy of the parity reference audio signal. |
@@ -438,6 +439,21 @@ already started working around it by splicing the string
 ('@ts-' + 'nocheck') wherever it needed to be named.
 
 Run it directly: `bun run check:no-ts-nocheck`
+
+## check:packages
+
+Typechecks and tests every standalone package under packages/, each in its own directory so its bunfig.toml and tsconfig apply rather than the root's.
+
+The packages are extracted from this repo and published on their own, so
+nothing else in the gate exercises them: the root tsconfig does not include
+packages/, and the root test runner only walks tests/. This is the guard
+that keeps them green between releases.
+
+  bun run check:packages              # typecheck + test each package
+  bun run check:packages -- --build   # also emit dist/ to prove tsc can
+  bun run check:packages -- flash-guard   # one package
+
+Run it directly: `bun run check:packages`
 
 ## check:production-edge
 

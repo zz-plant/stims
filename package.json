@@ -69,6 +69,7 @@
     "check:guardrails-doc": "bun run scripts/generate-guardrails-doc.ts --check",
     "check:module-docs": "bun run scripts/check-module-docs.ts",
     "check:no-ts-nocheck": "bun run scripts/check-no-ts-nocheck.ts",
+    "check:packages": "bun run scripts/check-packages.ts",
     "check:production-edge": "bun run scripts/check-production-edge.ts",
     "check:quick": "bun run scripts/run-quality-gate.ts --quick",
     "check:readme-claims": "bun run scripts/check-readme-claims.ts",

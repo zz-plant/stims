@@ -1,0 +1,62 @@
+{
+  "name": "flash-guard",
+  "version": "0.1.0",
+  "description": "WCAG 2.3.1 flash and red-flash analysis for frame sequences, plus a live governor that holds a canvas under the threshold while it is being shown. Pure TypeScript, no dependencies.",
+  "license": "Unlicense",
+  "type": "module",
+  "homepage": "https://github.com/zz-plant/stims/tree/main/packages/flash-guard#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zz-plant/stims.git",
+    "directory": "packages/flash-guard"
+  },
+  "bugs": {
+    "url": "https://github.com/zz-plant/stims/issues"
+  },
+  "keywords": [
+    "wcag",
+    "photosensitive",
+    "photosensitivity",
+    "epilepsy",
+    "flash",
+    "strobe",
+    "accessibility",
+    "a11y",
+    "harding",
+    "peat",
+    "canvas",
+    "webgl",
+    "webgpu",
+    "visualizer"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./worker": "./dist/readback.worker.js"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "./dist/readback.worker.js"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "bun test",
+    "figure:svg": "bun run scripts/render-figure.ts",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "typescript": "^7.0.2"
+  }
+}

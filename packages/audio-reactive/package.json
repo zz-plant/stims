@@ -1,0 +1,57 @@
+{
+  "name": "audio-reactive",
+  "version": "0.1.0",
+  "description": "Audio analysis for visualizers: an AudioWorklet FFT with harmonic/percussive separation, per-band beat tracking, spectral features, reactivity metrics and packet interpolation. No dependencies.",
+  "type": "module",
+  "license": "Unlicense",
+  "keywords": [
+    "web-audio",
+    "audioworklet",
+    "fft",
+    "beat-detection",
+    "hpss",
+    "harmonic-percussive",
+    "spectral-features",
+    "visualizer",
+    "audio-reactive"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zz-plant/stims.git",
+    "directory": "packages/audio-reactive"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./worklet": {
+      "types": "./dist/frequency-analyser-processor.d.ts",
+      "default": "./dist/frequency-analyser-processor.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "./dist/frequency-analyser-processor.js",
+    "./src/frequency-analyser-processor.ts"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "bun run clean && bun run typecheck && bun run test && bun run build"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2",
+    "typescript": "7.0.2"
+  }
+}

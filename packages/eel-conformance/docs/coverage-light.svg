@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="712" height="300" viewBox="0 0 712 300" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" role="img" aria-label="EEL conformance corpus: 82 cases across 9 sections, 3 provisional">
+<defs>
+  <pattern id="hatch-light" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="6" height="6" fill="#ffffff"/>
+    <line x1="0" y1="0" x2="0" y2="6" stroke="#c9a227" stroke-width="2"/>
+  </pattern>
+</defs>
+<rect width="712" height="300" fill="#ffffff" rx="8"/>
+<text x="16" y="24" fill="#1f2328" font-weight="600" font-size="14">82 cases in 9 sections</text>
+<text x="696" y="24" text-anchor="end" fill="#656d76" font-size="12">solid: pinned · hatched: provisional</text>
+<line x1="186.0" y1="46" x2="186.0" y2="284" stroke="#d0d7de" stroke-dasharray="2 4"/><text x="186.0" y="42" text-anchor="middle" fill="#656d76" font-size="11">0</text>
+<line x1="291.9" y1="46" x2="291.9" y2="284" stroke="#d0d7de" stroke-dasharray="2 4"/><text x="291.9" y="42" text-anchor="middle" fill="#656d76" font-size="11">5</text>
+<line x1="397.8" y1="46" x2="397.8" y2="284" stroke="#d0d7de" stroke-dasharray="2 4"/><text x="397.8" y="42" text-anchor="middle" fill="#656d76" font-size="11">10</text>
+<line x1="503.6" y1="46" x2="503.6" y2="284" stroke="#d0d7de" stroke-dasharray="2 4"/><text x="503.6" y="42" text-anchor="middle" fill="#656d76" font-size="11">15</text>
+<text x="176" y="67" text-anchor="end" fill="#1f2328">operators-arithmetic</text><rect x="186" y="54" width="317.6" height="16" rx="2" fill="#3b6ea5"/><rect x="503.6" y="54" width="42.4" height="16" rx="2" fill="url(#hatch-light)" stroke="#c9a227" stroke-width="1"/><text x="554.0" y="67" fill="#656d76">17 (2 provisional)</text>
+<text x="176" y="93" text-anchor="end" fill="#1f2328">operators-logical</text><rect x="186" y="80" width="148.2" height="16" rx="2" fill="#3b6ea5"/><text x="342.2" y="93" fill="#656d76">7</text>
+<text x="176" y="119" text-anchor="end" fill="#1f2328">truthiness</text><rect x="186" y="106" width="148.2" height="16" rx="2" fill="#3b6ea5"/><text x="342.2" y="119" fill="#656d76">7</text>
+<text x="176" y="145" text-anchor="end" fill="#1f2328">functions-math</text><rect x="186" y="132" width="254.1" height="16" rx="2" fill="#3b6ea5"/><text x="448.1" y="145" fill="#656d76">12</text>
+<text x="176" y="171" text-anchor="end" fill="#1f2328">functions-utility</text><rect x="186" y="158" width="296.5" height="16" rx="2" fill="#3b6ea5"/><text x="490.5" y="171" fill="#656d76">14</text>
+<text x="176" y="197" text-anchor="end" fill="#1f2328">variables</text><rect x="186" y="184" width="127.1" height="16" rx="2" fill="#3b6ea5"/><text x="321.1" y="197" fill="#656d76">6</text>
+<text x="176" y="223" text-anchor="end" fill="#1f2328">buffers</text><rect x="186" y="210" width="211.8" height="16" rx="2" fill="#3b6ea5"/><text x="405.8" y="223" fill="#656d76">10</text>
+<text x="176" y="249" text-anchor="end" fill="#1f2328">control-flow</text><rect x="186" y="236" width="105.9" height="16" rx="2" fill="#3b6ea5"/><rect x="291.9" y="236" width="21.2" height="16" rx="2" fill="url(#hatch-light)" stroke="#c9a227" stroke-width="1"/><text x="321.1" y="249" fill="#656d76">6 (1 provisional)</text>
+<text x="176" y="275" text-anchor="end" fill="#1f2328">random</text><rect x="186" y="262" width="63.5" height="16" rx="2" fill="#3b6ea5"/><text x="257.5" y="275" fill="#656d76">3</text>
+</svg>

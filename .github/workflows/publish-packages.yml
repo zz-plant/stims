@@ -1,0 +1,103 @@
+name: Publish package
+
+# Publishes one package from packages/ to npm when a tag of the form
+# <name>@<version> is pushed, e.g. `flash-guard@0.1.0`. Authentication is npm
+# trusted publishing (OpenID Connect): no token is stored anywhere, and the
+# published tarball carries provenance that links it to this workflow run.
+# Each package has to be registered once on npmjs.com with this repository
+# and this workflow file as its trusted publisher; until then the job fails at
+# the publish step and nothing else happens.
+#
+# It can also be run by hand from the Actions tab with a package name, as a
+# dry run or for real, which is the way to try the pipeline without a tag.
+
+on:
+  push:
+    tags: ['*@[0-9]*.[0-9]*.[0-9]*']
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Directory under packages/ to publish'
+        required: true
+        type: choice
+        options:
+          - eel-conformance
+          - flash-guard
+          - milkdrop-toolchain
+          - audio-reactive
+      dry_run:
+        description: 'Build and pack without publishing'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish ${{ inputs.package || github.ref_name }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for trusted publishing: npm exchanges the OIDC token for a
+      # short-lived publish credential.
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
+        with:
+          checkout: 'false'
+
+      # npm 11.5 or newer is needed for trusted publishing; Node 24 ships it.
+      - name: Set up npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Resolve package and version
+        id: target
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ github.ref_name }}
+          INPUT_PACKAGE: ${{ inputs.package }}
+        run: |
+          if [ "$EVENT" = "push" ]; then
+            name="${TAG%@*}"
+            version="${TAG##*@}"
+          else
+            name="$INPUT_PACKAGE"
+            version="$(jq -r .version "packages/$name/package.json")"
+          fi
+          if [ ! -f "packages/$name/package.json" ]; then
+            echo "::error::packages/$name/package.json does not exist."
+            exit 1
+          fi
+          declared="$(jq -r .version "packages/$name/package.json")"
+          if [ "$declared" != "$version" ]; then
+            echo "::error::Tag says $version but packages/$name/package.json says $declared."
+            exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Typecheck, test and build
+        env:
+          NAME: ${{ steps.target.outputs.name }}
+        run: |
+          bun --cwd "packages/$NAME" run typecheck
+          bun --cwd "packages/$NAME" test
+          bun --cwd "packages/$NAME" run build
+
+      - name: Pack
+        working-directory: packages/${{ steps.target.outputs.name }}
+        run: npm pack --dry-run
+
+      - name: Publish
+        if: github.event_name == 'push' || inputs.dry_run == false
+        working-directory: packages/${{ steps.target.outputs.name }}
+        run: npm publish --provenance --access public

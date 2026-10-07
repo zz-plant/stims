@@ -1,0 +1,62 @@
+{
+  "name": "milkdrop-toolchain",
+  "version": "0.1.0",
+  "description": "Parse, compile, analyze, format and export MilkDrop .milk presets in TypeScript: EEL2 interpreter and JIT, IR, HLSL shader analysis, GLSL and WGSL generation.",
+  "keywords": [
+    "milkdrop",
+    "milk",
+    "preset",
+    "eel",
+    "eel2",
+    "ns-eel",
+    "projectm",
+    "butterchurn",
+    "visualizer",
+    "hlsl",
+    "glsl",
+    "wgsl",
+    "compiler",
+    "parser",
+    "jit"
+  ],
+  "license": "Unlicense",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zz-plant/stims.git",
+    "directory": "packages/milkdrop-toolchain"
+  },
+  "homepage": "https://github.com/zz-plant/stims/tree/main/packages/milkdrop-toolchain#readme",
+  "bugs": "https://github.com/zz-plant/stims/issues",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "data",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

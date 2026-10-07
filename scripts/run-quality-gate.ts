@@ -235,6 +235,13 @@ export function buildGatePlan(
               label: 'Dead code scan (knip)',
               cmd: ['bun', 'run', 'check:dead-code'],
             },
+            // The standalone packages under packages/ have their own
+            // tsconfig and tests that nothing else in the gate reaches.
+            // Full mode only: ~3s, and quick is for the file you just edited.
+            {
+              label: 'Standalone packages (typecheck + tests)',
+              cmd: ['bun', 'run', 'check:packages'],
+            },
           ]),
       {
         label: 'Unbounded cache check',
