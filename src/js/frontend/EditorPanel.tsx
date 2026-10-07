@@ -61,9 +61,8 @@ export function EditorPanel() {
         onSetStageFrozen: (frozen: boolean) =>
           engineRef.current.setPlaybackPaused(frozen),
         onStepFrame: () => engineRef.current.stepPlaybackFrame(),
-        onRevertToActive: () => {
-          engineRef.current.revertEditorSource();
-        },
+        getOriginalSource: () =>
+          Promise.resolve(engineRef.current.getOriginalPresetSource()),
         onExport: () => {
           engineRef.current.exportPreset();
         },

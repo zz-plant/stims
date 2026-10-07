@@ -11,6 +11,7 @@ import {
 import { formatRenderBackendName } from '../common-types.ts';
 import { compileMilkdropPresetSource } from '../compiler';
 import { prewarmMilkdropPrograms } from '../expression-jit.ts';
+import { samePresetSource } from '../overlay/source-diff.ts';
 import {
   isShaderApproximated,
   resolveShaderExecutionMode,
@@ -205,10 +206,19 @@ export function createMilkdropPresetNavigationController({
       }
       trace.adapter('source origin', source.origin);
 
-      const draft = await catalogStore.getDraft(id);
+      let draft = await catalogStore.getDraft(id);
       if (requestRevision !== currentLoadRequestRevision) {
         trace.done('superseded');
         return;
+      }
+      // A draft identical to the file changes nothing today but would pin
+      // this preset to its current copy when the file is updated. This is
+      // the cheap, exact case; the runtime clears drafts equal to the
+      // *formatted* original (what loads used to save) once the stage is
+      // idle, since that comparison needs a compile.
+      if (draft !== null && samePresetSource(draft, source.raw)) {
+        void catalogStore.clearDraft(id);
+        draft = null;
       }
       if (draft) {
         trace.adapter(

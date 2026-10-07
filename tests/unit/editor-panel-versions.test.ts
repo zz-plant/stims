@@ -52,7 +52,6 @@ describe('editor panel named versions', () => {
     const panel = new EditorPanel(
       {
         onEditorSourceChange,
-        onRevertToActive: mock(() => {}),
         onDuplicatePreset: mock(() => {}),
         onExport: mock(() => {}),
         onDeletePreset: mock(() => {}),
