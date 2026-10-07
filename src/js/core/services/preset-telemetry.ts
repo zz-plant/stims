@@ -7,7 +7,10 @@
  * One beacon per preset change (and one on pagehide), sent fire-and-forget
  * via sendBeacon so it never blocks a transition.
  */
-import { resolveOptionalApiUrl } from './optional-api.ts';
+import {
+  readTelemetryContext,
+  resolveTelemetryEndpoint,
+} from './telemetry-context.ts';
 
 /** Below this dwell the event reports as a skip rather than a view. */
 const SKIP_THRESHOLD_MS = 8000;
@@ -43,10 +46,11 @@ export function noteGrowthEvent(
   presetId?: string,
 ) {
   if (growthTransmitted >= MAX_GROWTH_TRANSMITS_PER_SESSION) return;
-  const endpoint = resolveOptionalApiUrl('/api/telemetry');
+  const endpoint = resolveTelemetryEndpoint();
   if (!endpoint) return;
   const payload: { event: string; presetId?: string } = {
     event: `growth-${event}`,
+    ...readTelemetryContext(),
   };
   if (presetId) payload.presetId = presetId.slice(0, 64);
   try {
@@ -91,7 +95,7 @@ export function notePresetFrame(deltaMs: number) {
 
 function send(presetId: string, dwellMs: number) {
   if (transmitted >= MAX_TRANSMITS_PER_SESSION) return;
-  const endpoint = resolveOptionalApiUrl('/api/telemetry');
+  const endpoint = resolveTelemetryEndpoint();
   if (!endpoint) return;
   const fps =
     frameSpanMsSinceShown >= MIN_FPS_SPAN_MS
@@ -103,6 +107,7 @@ function send(presetId: string, dwellMs: number) {
     dwellMs: Math.round(dwellMs),
     renderer: activeRenderer,
     fps,
+    ...readTelemetryContext(),
   });
   try {
     if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
@@ -177,7 +182,7 @@ export function noteShaderExecution(
 ) {
   if (mode === null || mode === 'none') return;
   if (transmitted >= MAX_TRANSMITS_PER_SESSION) return;
-  const endpoint = resolveOptionalApiUrl('/api/telemetry');
+  const endpoint = resolveTelemetryEndpoint();
   if (!endpoint) return;
   try {
     if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
@@ -194,6 +199,7 @@ export function noteShaderExecution(
               // dataset uses for the WebGL path.
               renderer: backend === 'webgpu' ? 'webgpu' : 'webgl2',
               presetId,
+              ...readTelemetryContext(),
             }),
           ],
           { type: 'application/json' },
@@ -218,7 +224,7 @@ export function noteSubstitution(
   detail: string,
 ) {
   if (transmitted >= MAX_TRANSMITS_PER_SESSION) return;
-  const endpoint = resolveOptionalApiUrl('/api/telemetry');
+  const endpoint = resolveTelemetryEndpoint();
   if (!endpoint) return;
   try {
     if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
@@ -232,6 +238,7 @@ export function noteSubstitution(
             JSON.stringify({
               event: `substitution-${kind}`,
               error: detail.slice(0, 200),
+              ...readTelemetryContext(),
             }),
           ],
           { type: 'application/json' },

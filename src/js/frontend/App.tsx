@@ -37,6 +37,7 @@ import {
 } from '../core/services/audio-matcher.ts';
 import { setCrashTelemetryPreset } from '../core/services/crash-telemetry.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
+import { setTelemetryAudioSource } from '../core/services/telemetry-context.ts';
 import {
   VIRTUAL_CLAUDE_DEVICE_ID,
   webMidiService,
@@ -321,6 +322,20 @@ function StimsWorkspaceAppShell() {
       noteGrowthEvent('discovery-landing');
     }
   }, [ui.routeState]);
+
+  // Declared before the audio-started beacon so that event carries its own
+  // source.
+  useEffect(() => {
+    setTelemetryAudioSource(
+      engineSnapshot?.audioActive
+        ? (engineSnapshot.audioSource ?? ui.routeState.audioSource)
+        : null,
+    );
+  }, [
+    engineSnapshot?.audioActive,
+    engineSnapshot?.audioSource,
+    ui.routeState.audioSource,
+  ]);
 
   useEffect(() => {
     if (

@@ -4,6 +4,11 @@ import {
   notePresetShown,
   noteShaderExecution,
 } from '../../src/js/core/services/preset-telemetry.ts';
+import {
+  resetTelemetryContextForTests,
+  setTelemetryAudioSource,
+} from '../../src/js/core/services/telemetry-context.ts';
+import { resetDeviceDetectCache } from '../../src/js/utils/browser/device-detect.ts';
 
 /**
  * The beacons production queries depend on. The endpoint only resolves on a
@@ -78,7 +83,7 @@ describe('noteShaderExecution', () => {
 
     expect(beacons).toHaveLength(1);
     expect(beacons[0]?.url).toBe('https://toil.fyi/api/telemetry');
-    expect(beacons[0]?.body).toEqual({
+    expect(beacons[0]?.body).toMatchObject({
       event: 'shader-exec-translated',
       renderer: 'webgpu',
       presetId: 'conway-preset',
@@ -95,6 +100,15 @@ describe('noteShaderExecution', () => {
     expect(beacons[0]?.body.renderer).toBe('webgl2');
   });
 
+  test('sends nothing from an automated browser', async () => {
+    // Our own Playwright runs against toil.fyi were counted as visitors.
+    Object.assign(navigator, { webdriver: true });
+    noteShaderExecution('probe-preset', 'direct', 'webgpu');
+    await flush();
+
+    expect(beacons).toEqual([]);
+  });
+
   test('sends nothing for a preset with no shader text', async () => {
     noteShaderExecution('plain-preset', 'none', 'webgpu');
     noteShaderExecution('unknown-preset', null, 'webgpu');
@@ -103,12 +117,15 @@ describe('noteShaderExecution', () => {
     expect(beacons).toEqual([]);
   });
 
-  test('carries no identifying data beyond the catalog slug', async () => {
+  test('carries no identifying data beyond the slug and coarse context', async () => {
     noteShaderExecution('some-preset', 'unsupported', 'webgpu');
     await flush();
 
     expect(Object.keys(beacons[0]?.body ?? {}).sort()).toEqual([
+      'audioSource',
+      'device',
       'event',
+      'orientation',
       'presetId',
       'renderer',
     ]);
@@ -157,6 +174,41 @@ describe('preset dwell beacons', () => {
     await flush();
 
     expect(beacons.map((beacon) => beacon.body.fps)).toEqual([60, 24]);
+  });
+
+  test('says how the screen was held and what audio was live', async () => {
+    const width = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+    const height = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
+    });
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: 844,
+    });
+    Object.assign(navigator, {
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',
+    });
+    resetDeviceDetectCache();
+    try {
+      await startFresh('phone-preset', 'webgpu');
+      setTelemetryAudioSource('demo');
+      notePresetShown('next-preset', 'webgpu');
+      await flush();
+
+      expect(beacons[0]?.body).toMatchObject({
+        presetId: 'phone-preset',
+        orientation: 'portrait',
+        device: 'phone',
+        audioSource: 'demo',
+      });
+    } finally {
+      if (width) Object.defineProperty(window, 'innerWidth', width);
+      if (height) Object.defineProperty(window, 'innerHeight', height);
+      resetDeviceDetectCache();
+      resetTelemetryContextForTests();
+    }
   });
 
   test('omits fps when too little was rendered to measure a rate', async () => {

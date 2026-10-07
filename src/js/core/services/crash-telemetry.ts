@@ -2,7 +2,10 @@ import { getDeviceEnvironmentProfile } from '../../utils/browser/device-detect.t
 import { getDevicePerformanceProfile } from '../device-profile.ts';
 import type { TelemetryEvent } from '../edge-contracts.ts';
 import { createLogger } from '../logger.ts';
-import { resolveOptionalApiUrl } from './optional-api.ts';
+import {
+  readTelemetryContext,
+  resolveTelemetryEndpoint,
+} from './telemetry-context.ts';
 
 const logger = createLogger('CrashTelemetry');
 
@@ -113,6 +116,7 @@ export function buildCrashTelemetryTransmitPayload(
     presetId: activePresetId ?? undefined,
     userAgent:
       typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+    ...readTelemetryContext(),
   };
 }
 
@@ -120,9 +124,9 @@ function transmitEntry(entry: CrashTelemetryEntry) {
   if (transmittedCount >= MAX_TRANSMITS_PER_SESSION) {
     return;
   }
-  // Optional service: resolves to null in dev, on localhost, and in tests,
-  // so crash reporting only leaves the device on configured deployments.
-  const endpoint = resolveOptionalApiUrl('/api/telemetry');
+  // Resolves to null in dev, on localhost, in tests and under automation, so
+  // crash reports only leave real visitors' devices on configured deployments.
+  const endpoint = resolveTelemetryEndpoint();
   if (!endpoint) {
     return;
   }

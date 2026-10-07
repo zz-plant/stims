@@ -194,9 +194,38 @@ export type TelemetryEvent = {
   dwellMs?: number;
   error?: string;
   userAgent?: string;
+  /** How the screen is held when the event fires (telemetry-context.ts). */
+  orientation?: (typeof TELEMETRY_ORIENTATIONS)[number];
+  device?: (typeof TELEMETRY_DEVICES)[number];
+  /** The audio source that is live, or 'none'. */
+  audioSource?: (typeof TELEMETRY_AUDIO_SOURCES)[number];
 };
 
 const RENDERER_VALUES = ['webgpu', 'webgl2', 'webgl1', 'canvas'] as const;
+
+export const TELEMETRY_ORIENTATIONS = [
+  'portrait',
+  'landscape',
+  'square',
+] as const;
+export const TELEMETRY_DEVICES = ['phone', 'tablet', 'desktop'] as const;
+export const TELEMETRY_AUDIO_SOURCES = [
+  'none',
+  'demo',
+  'file',
+  'microphone',
+  'tab',
+  'youtube',
+] as const;
+
+function isOneOf<T extends string>(
+  values: readonly T[],
+  input: unknown,
+): input is T {
+  return (
+    typeof input === 'string' && (values as readonly string[]).includes(input)
+  );
+}
 
 export const TelemetryEventSchema = contractSchema<TelemetryEvent>((input) => {
   if (!isObject(input)) return null;
@@ -235,6 +264,18 @@ export const TelemetryEventSchema = contractSchema<TelemetryEvent>((input) => {
   if (input.userAgent !== undefined) {
     if (!isString(input.userAgent)) return null;
     result.userAgent = input.userAgent;
+  }
+  if (input.orientation !== undefined) {
+    if (!isOneOf(TELEMETRY_ORIENTATIONS, input.orientation)) return null;
+    result.orientation = input.orientation;
+  }
+  if (input.device !== undefined) {
+    if (!isOneOf(TELEMETRY_DEVICES, input.device)) return null;
+    result.device = input.device;
+  }
+  if (input.audioSource !== undefined) {
+    if (!isOneOf(TELEMETRY_AUDIO_SOURCES, input.audioSource)) return null;
+    result.audioSource = input.audioSource;
   }
   return result;
 });
