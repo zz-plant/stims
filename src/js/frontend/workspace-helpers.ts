@@ -232,8 +232,31 @@ export type BrowseSortMode =
   | 'author'
   | 'recent'
   | 'favorites-first'
-  | 'webgpu-supported'
   | 'random';
+
+const BROWSE_SORT_MODES: ReadonlySet<string> = new Set<BrowseSortMode>([
+  'relevance',
+  'curated',
+  'title',
+  'author',
+  'recent',
+  'favorites-first',
+  'random',
+]);
+
+/**
+ * A stored sort choice, or null for anything this build no longer offers.
+ * "High fidelity first" (`webgpu-supported`) sorted on WebGPU support, which
+ * every bundled preset reports, so it never reordered anything; it was
+ * removed, and a visitor who had chosen it gets the default again.
+ */
+export function parseBrowseSortMode(
+  value: string | null,
+): BrowseSortMode | null {
+  return value !== null && BROWSE_SORT_MODES.has(value)
+    ? (value as BrowseSortMode)
+    : null;
+}
 
 /**
  * Order browse results for a given sort mode. Lives here beside
@@ -256,6 +279,8 @@ export function sortBrowseEntries(
   entries: PresetCatalogEntry[],
   sort: BrowseSortMode,
   seed: number,
+  /** The search in force, which 'relevance' ranks by. */
+  query = '',
 ): PresetCatalogEntry[] {
   const sorted = [...entries];
   switch (sort) {
@@ -267,6 +292,27 @@ export function sortBrowseEntries(
           (b.quality?.score ?? 0) - (a.quality?.score ?? 0) ||
           a.title.localeCompare(b.title),
       );
+    // "Best match": strongest match for the search first. It had no case
+    // here and fell through to the unsorted default, so search only ever
+    // filtered and never ranked. Without a search there is nothing to match,
+    // so the incoming order stands; ties keep it too (the sort is stable).
+    case 'relevance': {
+      if (!query.trim()) return sorted;
+      const matcher = createFieldMatcher(query, { allowSubsequence: false });
+      const scores = new Map<string, number>();
+      for (const entry of sorted) {
+        scores.set(
+          entry.id,
+          scorePresetEntry(entry, matcher) ?? Number.NEGATIVE_INFINITY,
+        );
+      }
+      const scoreOf = (entry: PresetCatalogEntry) =>
+        scores.get(entry.id) ?? Number.NEGATIVE_INFINITY;
+      // Compared, not subtracted: two non-matches would subtract to NaN.
+      return sorted.sort((a, b) =>
+        scoreOf(a) === scoreOf(b) ? 0 : scoreOf(a) > scoreOf(b) ? -1 : 1,
+      );
+    }
     case 'title':
       return sorted.sort((a, b) => a.title.localeCompare(b.title));
     case 'author':
@@ -280,12 +326,6 @@ export function sortBrowseEntries(
     case 'favorites-first':
       return sorted.sort(
         (a, b) => Number(Boolean(b.isFavorite)) - Number(Boolean(a.isFavorite)),
-      );
-    case 'webgpu-supported':
-      return sorted.sort(
-        (a, b) =>
-          Number(Boolean(b.supports?.webgpu)) -
-          Number(Boolean(a.supports?.webgpu)),
       );
     case 'random': {
       const hashes = new Map<string, number>();

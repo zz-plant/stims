@@ -6,6 +6,7 @@ import {
   getFeaturedCollectionTags,
   getPresetCardSupportLabel,
   matchesPreset,
+  parseBrowseSortMode,
   prettifyCollectionTag,
   sortBrowseEntries,
 } from '../../src/js/frontend/workspace-helpers.ts';
@@ -175,8 +176,21 @@ describe('sortBrowseEntries', () => {
   const ids = (sort: Parameters<typeof sortBrowseEntries>[1]) =>
     sortBrowseEntries(entries, sort, 0).map((entry) => entry.id);
 
-  test('relevance preserves the incoming catalog order', () => {
+  test('relevance with no search keeps the incoming catalog order', () => {
     expect(ids('relevance')).toEqual(['alpha', 'beta', 'gamma']);
+  });
+
+  test('relevance ranks the strongest match for the search first', () => {
+    // The palette's tiers: a title that is the query, then one that starts
+    // with it, then one that only contains it.
+    const results = [
+      makePreset({ id: 'contains', title: 'Deep Tunnel Ride' }),
+      makePreset({ id: 'prefix', title: 'Tunnel Vision' }),
+      makePreset({ id: 'exact', title: 'Tunnel' }),
+    ];
+    expect(
+      sortBrowseEntries(results, 'relevance', 0, 'tunnel').map((e) => e.id),
+    ).toEqual(['exact', 'prefix', 'contains']);
   });
 
   test('curated lifts curated picks and sinks unranked presets', () => {
@@ -225,8 +239,12 @@ describe('sortBrowseEntries', () => {
     expect(ids('favorites-first')[0]).toBe('beta');
   });
 
-  test('webgpu-supported lifts presets that support webgpu', () => {
-    expect(ids('webgpu-supported')[0]).toBe('gamma');
+  test('a stored sort this build no longer offers reads as no choice', () => {
+    // "High fidelity first" sorted on WebGPU support, which every bundled
+    // preset reports; it was removed rather than left as a no-op.
+    expect(parseBrowseSortMode('webgpu-supported')).toBeNull();
+    expect(parseBrowseSortMode(null)).toBeNull();
+    expect(parseBrowseSortMode('recent')).toBe('recent');
   });
 
   test('random is deterministic for a given seed and varies across seeds', () => {

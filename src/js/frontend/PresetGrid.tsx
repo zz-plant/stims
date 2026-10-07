@@ -72,6 +72,8 @@ const GridTile = memo(function GridTile({
   onOpen,
   onFocusIndex,
   onToggleFavorite,
+  queued,
+  onToggleQueued,
   quickSelectKey,
 }: {
   entry: PresetCatalogEntry;
@@ -87,13 +89,16 @@ const GridTile = memo(function GridTile({
   onOpen: (id: string) => void;
   onFocusIndex: (index: number) => void;
   onToggleFavorite: (entry: PresetCatalogEntry) => void;
+  queued: boolean;
+  onToggleQueued: (entry: PresetCatalogEntry) => void;
   /** The digit that plays this card from the keyboard, or null. */
   quickSelectKey: string | null;
 }) {
   return (
     // List semantics, matching the list view, rather than listbox/option.
-    // A tile carries two controls — open and save — and a listbox may only
-    // contain options, so the star could never have lived inside one. The
+    // A tile carries three controls — open, save and queue — and a listbox
+    // may only contain options, so the star could never have lived inside
+    // one. The
     // listitem wrapper is also where the set-size/position pair belongs:
     // without it a screen reader reports only the handful of mounted tiles
     // as the entire result set.
@@ -174,6 +179,23 @@ const GridTile = memo(function GridTile({
       >
         <span className="ctl-preset__fav-icon" aria-hidden="true" />
       </button>
+      {/* Same placement rules as the star, for the same reasons. */}
+      <button
+        type="button"
+        className="stims-preset-grid__queue"
+        data-queued={String(queued)}
+        aria-label={
+          queued
+            ? `Remove ${entry.title} from the queue`
+            : `Queue ${entry.title}`
+        }
+        title={queued ? 'Remove from queue' : 'Add to queue'}
+        aria-pressed={queued}
+        tabIndex={tabbable ? 0 : -1}
+        onClick={() => onToggleQueued(entry)}
+      >
+        <span className="ctl-preset__queue-icon" aria-hidden="true" />
+      </button>
     </div>
   );
 });
@@ -203,6 +225,8 @@ export function PresetGrid({
   setRouteState,
   currentPresetId = null,
   onToggleFavorite,
+  queuedPresetIds,
+  onToggleQueued,
   initialScrollTop = 0,
   onScrollTopChange,
   filterEpoch = 0,
@@ -218,6 +242,8 @@ export function PresetGrid({
   }) => void;
   currentPresetId?: string | null;
   onToggleFavorite: (entry: PresetCatalogEntry) => void;
+  queuedPresetIds: readonly string[];
+  onToggleQueued: (entry: PresetCatalogEntry) => void;
   /** Offset this view was left at, restored on mount. */
   initialScrollTop?: number;
   onScrollTopChange?: (top: number) => void;
@@ -626,6 +652,8 @@ export function PresetGrid({
                     onOpen={handleOpen}
                     onFocusIndex={handleFocusIndex}
                     onToggleFavorite={onToggleFavorite}
+                    queued={queuedPresetIds.includes(entry.id)}
+                    onToggleQueued={onToggleQueued}
                     quickSelectKey={
                       showQuickSelectKeys ? quickSelectDigit(index) : null
                     }
