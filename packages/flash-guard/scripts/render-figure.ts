@@ -44,11 +44,13 @@ export function runTrace(): Trace {
   for (let f = 0; f < FRAMES; f += 1) {
     const luminance = Math.floor(f / 3) % 2 === 1 ? 0.95 : 0.02;
     raw.push(luminance);
-    // The viewer sees the frame through the mitigation already in force.
-    const seen = luminance * scale;
-    governed.push(seen);
-    tiles.fill(seen);
-    const decision = governor.sample(f * FRAME_MS, tiles, GRID, GRID);
+    // The viewer sees the frame through the mitigation already in force,
+    // and the governor is told that scale rather than handed the product.
+    governed.push(luminance * scale);
+    tiles.fill(luminance);
+    const decision = governor.sample(f * FRAME_MS, tiles, GRID, GRID, {
+      viewScale: scale,
+    });
     scale = decision.luminanceScale;
     hold.push(decision.hold);
   }

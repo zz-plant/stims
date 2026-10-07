@@ -29,8 +29,8 @@ import {
 import { createFlashSampler, type FlashSampler } from './sampler.ts';
 
 /**
- * Shortest gap between the frames the governor compares: one 60 Hz frame,
- * less a millisecond of timer jitter.
+ * Shortest gap between the frames the governor compares: three quarters of
+ * a 60 Hz frame.
  *
  * WCAG counts a flash as a pair of opposing luminance changes, and comparing
  * consecutive frames on a fast display counts changes no one can see. On a
@@ -39,8 +39,17 @@ import { createFlashSampler, type FlashSampler } from './sampler.ts';
  * it read 2.4, while content that really strobed read the same either way.
  * A 60 Hz cadence still resolves strobes up to 30 Hz, and on a fast display
  * it also halves what sampling costs.
+ *
+ * Not a whole frame less a millisecond, which is what this was: frame
+ * timestamps on a 60 Hz display jitter by more than that, so a frame drawn
+ * 15.5 ms after the last sample was skipped and the next comparison spanned
+ * 33 ms, twice the motion the offline analysis compares. Measured on a
+ * MilkDrop preset with music, 30 of 1,470 comparisons in 25 s skipped a
+ * drawn frame (the render loop itself dropped none), and the one flash the
+ * governor counted was across one of them. 12.5 ms is clear of that jitter
+ * at 60 Hz and still skips every other frame at 120 Hz (8.3 ms).
  */
-export const MIN_SAMPLE_INTERVAL_MS = 1000 / 60 - 1;
+export const MIN_SAMPLE_INTERVAL_MS = (1000 / 60) * 0.75;
 
 export type FrameListener = (nowMs: number) => void;
 
@@ -164,26 +173,24 @@ export function createFlashController(
     // reading the canvas back gives the unmitigated pixels: the governor
     // would never see its own effect, would keep counting flashes it had
     // already suppressed, and would escalate to the ceiling and stay there.
-    // Scaling the sample by the mitigation in force reconstructs what the
-    // viewer is actually looking at.
+    // Handing it the mitigation in force lets it judge the content as the
+    // viewer is actually seeing it.
     //
     // Read the scale now, with the frame, not when its grid arrives: by then
     // the mitigation may have moved, and this frame was seen through this one.
     const applied = compositedScale ? compositedScale() : lastApplied;
     const capturedIn = generation;
     let decision: FlashGovernorDecision | null = null;
-    const captured = sampler.capture(canvas, (tiles) => {
-      if (!tiles || capturedIn !== generation) return;
-      if (applied !== 1) {
-        for (let i = 0; i < tiles.length; i += 1) {
-          tiles[i] = (tiles[i] as number) * applied;
-        }
-      }
-      decision = governor.sample(nowMs, tiles, sampler.cols, sampler.rows);
+    const captured = sampler.capture(canvas, (samples) => {
+      if (!samples || capturedIn !== generation) return;
+      decision = governor.sample(nowMs, samples, sampler.cols, sampler.rows, {
+        density: sampler.density,
+        viewScale: applied,
+      });
       apply(decision.luminanceScale);
     });
-    // A capture refused because the last one is still being read is not a
-    // sample, so the next frame tries again rather than waiting a cadence.
+    // A capture refused because the readback is backed up is not a sample,
+    // so the next frame tries again rather than waiting a cadence.
     if (captured) lastSampleMs = nowMs;
     return decision;
   }
