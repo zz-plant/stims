@@ -36,7 +36,7 @@ The proof loop below is a floor, not a frontier: it stays green and does not gro
 
 Each of these needs a real GPU, a second display, or a product decision.
 
-1. **Reduce flashing on by default.** The governor sees real frames (#1370), and its read now costs the main thread 0.1 ms instead of 2–3.6 ms (#1375). The first-run preset is now one the WCAG audit reads at 0 flashes/s (`shifter-curlique`, #1376; the previous one read 38/s). The governor still dims it to about half brightness, 65% of the time, in silence as well as with music, while leaving `geiss-casino` and `eos-glowsticks-v2-03-music` alone. Settle whether the governor or the audit is right before turning it on for everyone (see [Product moments](./PRODUCT_MOMENTS.md#open-questions)).
+1. **Reduce flashing on by default.** The governor sees real frames (#1370), and its read costs the main thread 0.1 ms (#1375). It disagreed with the WCAG audit on the first-run preset (`shifter-curlique`, #1376), and the governor was wrong three ways (#1383). It judged one sample per tile, so moving texture read as flashing. It counted its own dimming step as the content darkening. And it skipped frames, so some comparisons spanned 33 ms and doubled the motion they judged. It now counts what the audit counts on the same frames: 0, 13 and 52 flashes/s on `shifter-curlique`, psychaos and krash. Live with Reduce flashing on, `shifter-curlique` had a mean brightness of 0.30 to 0.71; it now stays at full brightness in silence, on WebGL and at 390×844. With demo audio on WebGPU, one run in five still dimmed it briefly, to 0.62 at the lowest (see [Product moments](./PRODUCT_MOMENTS.md#open-questions)). What is left is the product call to turn it on for everyone.
 2. **Re-measure parity and demote what fails.** The certified labels rest on a July results file that the September suite contradicts (see [Proof floor](#proof-floor--maintained-not-expanded)).
 3. **Recording that holds up.** Render 9:16 and 1:1 natively, keep frames coming when the tab is hidden, lift the power-saving frame cap while recording, and add a browser test that measures the file.
 4. **A projector window that mirrors the stage.** Today's second window is a separate session (see [Live performance](#live-performance-vjing--hardware-control)).
@@ -159,7 +159,7 @@ The bundled corpus was imported from the community without any photosensitive-se
 
 Shipped:
 
-- The flash governor checks frames against WCAG 2.3.1 and dims the stage. Before #1370 it read the canvas outside the draw, so outside agent mode it saw a blank frame on WebGPU and a dimmed one on WebGL. It now reads inside the draw, at a 60 Hz cadence whatever the display rate.
+- The flash governor checks frames against WCAG 2.3.1 and dims the stage. Before #1370 it read the canvas outside the draw, so outside agent mode it saw a blank frame on WebGPU and a dimmed one on WebGL. It now reads inside the draw, at a 60 Hz cadence whatever the display rate, and thresholds 64 pixels per tile rather than one value (#1383). `scripts/analyze-preset-flash.ts --governor` prints the governor's own count beside the audit's, from the same frames.
 - While it dims, a "Dimming flashes" notice shows on stage. Reduce flashing can be switched from the dock menu and the command palette (#1370).
 - With Reduce flashing on, shuffle and autoplay skip presets measured as flashing, as Browse already did (#1370).
 - A motion dampener slider (0–100%), defaulting to 40% when the OS asks for reduced motion.
@@ -177,7 +177,7 @@ Exit criteria:
 
 - the audit tool's resource-exhaustion pattern is fixed and a full-corpus run completes without a large unmeasured tail. *Not met: the last local run lost 21 of 60 presets, mostly to 90-second timeouts clustered at the end. Page recycling exists but reuses one browser and context.*
 - a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape. *Not met; it would fail today on the one high-risk preset.*
-- a real-time luminance clamp passes a synthetic 15Hz square-wave flash torture test with zero frames exceeding WCAG 2.3.1 thresholds. *Partly met: unit tests cover 10 Hz and 30 Hz on a 6×6 grid; none covers 15 Hz, the 16×16 grid the app uses, or the real filter in a browser.* And
+- a real-time luminance clamp passes a synthetic 15Hz square-wave flash torture test with zero frames exceeding WCAG 2.3.1 thresholds. *Partly met: unit tests cover 10 Hz and 30 Hz on a 6×6 grid, and 5 Hz on the app's 16×16 grid at its sample density; none covers 15 Hz or the real filter in a browser.* And
 - the motion dampener scales camera transforms down to full stillness without halting audio-reactive shape generation. *Mostly met: transforms come to rest at 0, but no test checks that waves and shapes still react.*
 
 ## Next: compatibility depth & runtime compiler milestones

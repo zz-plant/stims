@@ -16,7 +16,7 @@ These are settled. Apply them without asking; change them here, with a reason, w
 2. **A phone held upright is a measured context.** Anything a visitor sees first (the first-run preset, the attract preview, the landing) is measured at 390x844 as well as 1280x720.
 3. **Both backends count.** Over the 30 days to 2026-10-07, renderer-tagged events split 640 WebGPU to 632 WebGL. Evidence for anything visitors see by default covers both backends.
 4. **Audio reactivity is gated on dataflow, not pixels.** A preset answers the music when audio drives a variable the whole frame moves with (`lab:reactivity`, `lab:dataflow`). The pixel luminance delta between two separate runs mostly measures where a colour-cycling preset is in its cycle: identical runs of `shifter-curlique` read −21 and −0.7.
-5. **Default surfaces do not flash.** The WCAG audit (`scripts/analyze-preset-flash.ts`) must read 0 flashes/s, and the live flash governor must leave the surface undimmed. The second half is not met today; see [Open questions](#open-questions).
+5. **Default surfaces do not flash.** The WCAG audit (`scripts/analyze-preset-flash.ts`) must read 0 flashes/s, and the live flash governor must leave the surface undimmed. The audit's per-pixel rule is the reference: the governor applies the same rule and must count what the audit counts on the same frames (`--governor` prints both).
 6. **Telemetry counts visitors only.** Automated browsers do not post (#1377).
 
 ## The moments
@@ -29,9 +29,9 @@ These are settled. Apply them without asking; change them here, with a reason, w
 - **Instruments.**
   - `src/data/first-run-preset-evidence.json`, gated by `tests/unit/bundled-first-run-preset.test.ts`.
   - `tests/e2e/first-run-portrait.test.ts` (local, WebGPU).
-  - `scripts/analyze-preset-flash.ts` on the first-run preset.
+  - `scripts/analyze-preset-flash.ts --governor` on the first-run preset: the audit's count and the governor's, from the same frames.
 - **Telemetry, 30 days.** 14 demo starts and 254 audible starts from any source. Both counts include our own automated runs from before #1377.
-- **Gap.** With Reduce flashing on, the governor dims the first-run preset about half the time.
+- **Gap.** With demo audio, Reduce flashing occasionally dims the first-run preset for a few seconds; see [Open questions](#open-questions).
 
 ### 2. My music
 
@@ -81,7 +81,7 @@ There are two parts.
 
 ## Open questions
 
-- **The governor and the audit disagree on `shifter-curlique`.** The WCAG audit reads 0 flashes/s over 30 s with beat transients. With Reduce flashing on, the live governor dims the stage to a mean brightness of about 0.5, for 65% of samples, in silence as well as with demo audio, and it did the same before #1375. On `geiss-casino` and `eos-glowsticks-v2-03-music` it does not dim at all. Reduce flashing already defaults on for visitors whose OS asks for reduced motion, so they see the first-run preset dimmed. One of the two instruments is wrong, and which one decides roadmap item 1.
+- **Does the flash rule count churn?** At its busiest under the demo track, `shifter-curlique` has about a quarter of a visual field brightening in the same frame as another quarter darkens. The audit and the governor both take the larger direction in each frame and count every switch as a flash, so this churn can add up to two flashes in a second and dim the stage for a few seconds: one live run in five on WebGPU, to 0.62 at the lowest. WCAG speaks of opposing changes in the same area, which a per-area pairing would follow more closely than a per-frame one. The audit has only been run on synthetic audio, under which it reads this preset at 0 (roadmap item 5).
 - **No page says what telemetry records.** Nothing user-facing describes the beacons, before or after #1377.
 - **WebGL's warp centre ignores the aspect.** The CPU mesh places cx/cy without MilkDrop's aspect squeeze, so the backends disagree on presets that write them per pixel. Making WebGL faithful also makes some landscape-only presets dark on phones, which policy 1 accepts.
 
@@ -92,6 +92,7 @@ There are two parts.
 | 2026-10-06 | The renderer stays faithful to MilkDrop. Phones are handled by choosing a first-run preset that works there. | #1376 |
 | 2026-10-06 | First-run audio reactivity is gated on dataflow; pixel deltas are recorded but not enforced. | #1376 |
 | 2026-10-07 | Beacons carry orientation, device class and audio source. Automated browsers do not post. | #1377 |
+| 2026-10-07 | The governor and the audit disagreed on `shifter-curlique`, and the governor was wrong: it judged one sample per tile, counted its own dimming, and skipped frames. The audit's per-pixel rule is the reference; the governor now applies it to 64 pixels per tile on every frame. | #1383 |
 
 ## Working with this file
 
