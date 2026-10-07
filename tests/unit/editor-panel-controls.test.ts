@@ -40,7 +40,6 @@ describe('editor panel colour groups and value-source chips', () => {
 
   const createMockCallbacks = (): EditorPanelCallbacks => ({
     onEditorSourceChange: mock(() => {}),
-    onRevertToActive: mock(() => {}),
     onDuplicatePreset: mock(() => {}),
     onExport: mock(() => {}),
     onDeletePreset: mock(() => {}),
@@ -554,7 +553,6 @@ describe('editor panel toggles, modes, ranges and modulation', () => {
 
   const createMockCallbacks = (): EditorPanelCallbacks => ({
     onEditorSourceChange: mock(() => {}),
-    onRevertToActive: mock(() => {}),
     onDuplicatePreset: mock(() => {}),
     onExport: mock(() => {}),
     onDeletePreset: mock(() => {}),
@@ -777,7 +775,6 @@ describe('editor panel live drag feedback', () => {
 
   const createMockCallbacks = (): EditorPanelCallbacks => ({
     onEditorSourceChange: mock(() => {}),
-    onRevertToActive: mock(() => {}),
     onDuplicatePreset: mock(() => {}),
     onExport: mock(() => {}),
     onDeletePreset: mock(() => {}),
@@ -909,7 +906,6 @@ describe('editor panel live overwrite hint', () => {
 
   const createMockCallbacks = (): EditorPanelCallbacks => ({
     onEditorSourceChange: mock(() => {}),
-    onRevertToActive: mock(() => {}),
     onDuplicatePreset: mock(() => {}),
     onExport: mock(() => {}),
     onDeletePreset: mock(() => {}),

@@ -580,8 +580,8 @@ export function createMilkdropEngineAdapter() {
       experience?.exportPreset();
     },
 
-    revertEditorSource() {
-      experience?.revertEditorSource();
+    async getOriginalPresetSource(): Promise<string | null> {
+      return (await experience?.getOriginalPresetSource()) ?? null;
     },
 
     async duplicatePreset() {

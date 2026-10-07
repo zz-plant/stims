@@ -133,7 +133,7 @@ export function makeEngineValue(
 
     exportPreset: noop,
     exportUserPresets: async () => 0,
-    revertEditorSource: noop,
+    getOriginalPresetSource: async () => null,
     duplicatePreset: asyncNoop,
     deleteActivePreset: asyncNoop,
     getVideoExportRuntime: () => null,

@@ -263,3 +263,13 @@ function collapseContext(lines: SourceDiffLine[]): SourceDiffLine[] {
   flushRun(true);
   return out;
 }
+
+/** Equal as preset code: line endings and trailing whitespace aside. */
+export function samePresetSource(a: string, b: string): boolean {
+  const normalize = (source: string) =>
+    source
+      .replace(/\r\n?/gu, '\n')
+      .replace(/[ \t]+$/gmu, '')
+      .trimEnd();
+  return normalize(a) === normalize(b);
+}

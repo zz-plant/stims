@@ -142,7 +142,6 @@ describe('Inspect tab: reactivity and frame stepping', () => {
     const onStepFrame = mock(() => true);
     const panel = new EditorPanel({
       onEditorSourceChange: mock(() => {}),
-      onRevertToActive: mock(() => {}),
       onDuplicatePreset: mock(() => {}),
       onExport: mock(() => {}),
       onDeletePreset: mock(() => {}),

@@ -34,7 +34,6 @@ describe('editor panel preset parameter knobs', () => {
     const panel = new EditorPanel({
       onEditorSourceChange,
       onLiveFieldChange,
-      onRevertToActive: mock(() => {}),
       onDuplicatePreset: mock(() => {}),
       onExport: mock(() => {}),
       onDeletePreset: mock(() => {}),
