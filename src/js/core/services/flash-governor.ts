@@ -1,5 +1,6 @@
 /**
- * Runtime photosensitive-flash governor.
+ * Runtime photosensitive-flash governor: applies the WCAG 2.3.1 flash rule to
+ * the frames being shown and decides how far to dim the stage.
  *
  * `scripts/flash-analysis.ts` audits presets offline: it can tell you that
  * fifty presets are fine. It cannot say anything about the preset an LLM
@@ -8,7 +9,7 @@
  * that matter. This module closes that gap by applying the SAME WCAG 2.3.1
  * rule to the frames actually being shown, while they are being shown.
  *
- * Feed it a coarse luminance grid per frame; it returns how hard to hold the
+ * Feed it a luminance field per frame; it returns how hard to hold the
  * previous frame. Temporal integration is what a strobe cannot survive, so
  * holding is both the mitigation and (once the renderer applies it) the
  * reason the next sample stops qualifying as a flash.
@@ -19,10 +20,10 @@
  * and testable without a GPU.
  *
  * Semantics inherited from flash-thresholds.ts, matching the offline audit:
- *   - a tile transition qualifies when |dL| >= 0.1 and the darker end < 0.8
- *   - a FRAME transition qualifies when qualifying tiles cover >= 25% of any
- *     10-degree visual field (a sliding third-by-third window, not the whole
- *     screen)
+ *   - a SAMPLE transition qualifies when |dL| >= 0.1 and the darker end < 0.8
+ *   - a FRAME transition qualifies when qualifying samples cover >= 25% of
+ *     any 10-degree visual field (a sliding third-by-third window of tiles,
+ *     not the whole screen)
  *   - a *flash* is a PAIR of opposing transitions, so a monotonic fade is
  *     not a flash
  *   - more than 3 flashes in any 1-second window fails
@@ -148,6 +149,59 @@ export type FlashGovernorDecision = {
 export const MIN_USEFUL_GRID = 8;
 export const RECOMMENDED_GRID = 16;
 
+/**
+ * Samples along each tile edge, so a tile is judged on 8x8 = 64 points and a
+ * visual field on 1,600.
+ *
+ * One sample per tile looked like a tile measurement and was not one: the
+ * browser's downscale to a 16x16 grid is a bilinear read of about four
+ * pixels at each tile centre, so the governor judged a 10-degree field on
+ * 25 points and took the worst of 144 overlapping fields. Fine moving
+ * texture puts a few of those points through a 0.1 swing every frame, and
+ * the worst field crossed 25% often enough to count flashes the per-pixel
+ * audit never sees. On the first-run preset (shifter-curlique, 600 frames
+ * at 60fps, WebGPU and WebGL, 1280x720 and 390x844) the audit read 0
+ * flashes on every run and the 16x16 read 12 to 49, enough to clamp the
+ * stage to 3%. At 4 and 8 samples per edge the same frames read 0, and on
+ * presets that do strobe the count tracks the audit's (psychaos 51 against
+ * 51; krash 258 against 248, where one sample per tile read 380). 8 rather
+ * than 4 for headroom: at 4 a field holds 400 samples, not 1,600, so its
+ * estimate of the qualifying share has twice the standard error, and the
+ * governor acts on the worst of 144 fields.
+ *
+ * Averaging each tile instead is not the fix either: WCAG decides magnitude
+ * per pixel, and a tile mean scales a partial-coverage swing by its coverage
+ * (see `peakWindowFraction`). Denser point samples, thresholded one by one,
+ * are the audit's own method at a coarser stride.
+ */
+export const RECOMMENDED_SAMPLE_DENSITY = 8;
+
+export type FlashSampleOptions = {
+  /**
+   * Samples along each tile edge. The field is `cols * density` wide and
+   * `rows * density` tall, row-major, and tile (tx, ty) owns the
+   * density x density block at (tx * density, ty * density). Defaults to 1:
+   * one value per tile.
+   */
+  density?: number;
+  /**
+   * The luminance scale the viewer is seeing these samples through (the
+   * stage's whole brightness filter), 0..1. Defaults to 1.
+   *
+   * Passed rather than pre-multiplied into the samples so the governor can
+   * tell content from its own step. Both frames of a comparison are judged at
+   * THIS frame's scale: a swing the content makes is measured as the viewer
+   * now sees it, which is what lets the loop converge, while the drop the
+   * governor itself just applied does not register as content darkening.
+   * Pre-scaled, that drop was a qualifying darkening across most of the
+   * frame (189 of 256 tiles at the first engagement on the first-run preset,
+   * none of it from content). Paired with the content's next brightening it
+   * is a flash the content never made, which the governor answered by
+   * clamping harder; tests/unit/flash-safety.test.ts reproduces it.
+   */
+  viewScale?: number;
+};
+
 const DEFAULTS = {
   limit: FLASHES_PER_SECOND_LIMIT,
   windowMs: 1000,
@@ -172,9 +226,11 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
   const releasePerFrame = options.releasePerFrame ?? DEFAULTS.releasePerFrame;
   const releaseDelayMs = options.releaseDelayMs ?? DEFAULTS.releaseDelayMs;
 
+  /** The last field as sampled, before any view scale. */
   let previous: Float32Array | null = null;
   let previousCols = 0;
   let previousRows = 0;
+  let previousDensity = 0;
   /** Direction of the last qualifying transition; null until one happens. */
   let lastDirection: boolean | null = null;
   /** Timestamps of completed flashes, oldest first. */
@@ -184,8 +240,15 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
   let clearSince: number | null = null;
 
   // Reused across frames so the hot path allocates nothing per sample.
+  /** Qualifying samples per tile, by direction. */
   let rising: Float32Array | null = null;
   let falling: Float32Array | null = null;
+  /** Each sample's signed swing at the view scale, for the solved step. */
+  let swings: Float32Array | null = null;
+  /** Tile index of each sample. */
+  let tileOf: Uint32Array | null = null;
+  /** Scratch per-tile counts for the solved step. */
+  let solveCounts: Float32Array | null = null;
 
   /**
    * Pre-applies a hold before any flash has been observed.
@@ -210,6 +273,7 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     previous = null;
     previousCols = 0;
     previousRows = 0;
+    previousDensity = 0;
     lastDirection = null;
     flashTimes.length = 0;
     hold = 0;
@@ -227,55 +291,123 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
   }
 
   /**
+   * The extra luminance scale, on top of what the viewer already sees, that
+   * puts the transition just observed under the area rule: the largest
+   * scale at which samples swinging `direction` by at least the margin-scaled
+   * threshold cover less than 25% of every visual field.
+   *
+   * Solved from the whole field rather than from its single largest swing.
+   * One bright point crossing one sample is not what made the frame a flash,
+   * and clamping until even that point stops qualifying took the first-run
+   * preset from full brightness to 9% on the first flash it saw. On a
+   * uniform strobe the two agree.
+   *
+   * Assumes every scaled swing has its darker end below 0.8, which only
+   * dimming makes truer, so the answer errs toward clamping.
+   */
+  function solveScale(
+    direction: boolean,
+    cols: number,
+    rows: number,
+    density: number,
+  ): number {
+    const field = swings as Float32Array;
+    const counts = solveCounts as Float32Array;
+    const target = FLASH_LUMINANCE_DELTA * safetyMargin;
+    const tilePixels = density * density;
+    const coverage = (scale: number) => {
+      counts.fill(0);
+      for (let i = 0; i < field.length; i += 1) {
+        const swing = field[i] as number;
+        if (swing > 0 !== direction || swing === 0) continue;
+        if (Math.abs(swing) * scale >= target) {
+          counts[(tileOf as Uint32Array)[i] as number] += 1;
+        }
+      }
+      return peakWindowFraction(counts, tilePixels, cols, rows);
+    };
+    // Coverage only grows with scale, so bisect for the largest scale that
+    // stays under the area threshold. 12 steps resolve it to 1/4096.
+    let low = 0;
+    let high = 1;
+    for (let step = 0; step < 12; step += 1) {
+      const mid = (low + high) / 2;
+      if (coverage(mid) < FLASH_AREA_FRACTION) low = mid;
+      else high = mid;
+    }
+    return low;
+  }
+
+  /**
    * @param nowMs   Monotonic timestamp for this frame (performance.now()).
-   * @param tiles   Row-major relative luminance per tile, each 0..1.
+   * @param samples Row-major relative luminance, each 0..1, laid out as
+   *                described on `FlashSampleOptions.density`.
+   * @param cols    Tiles across.
+   * @param rows    Tiles down.
    */
   function sample(
     nowMs: number,
-    tiles: Float32Array | readonly number[],
+    samples: Float32Array | readonly number[],
     cols: number,
     rows: number,
+    options: FlashSampleOptions = {},
   ): FlashGovernorDecision {
-    const count = cols * rows;
-    if (count <= 0 || tiles.length < count) {
+    const density = Math.max(1, Math.floor(options.density ?? 1));
+    const viewScale = Math.min(1, Math.max(0, options.viewScale ?? 1));
+    const tileCount = cols * rows;
+    const width = cols * density;
+    const count = tileCount * density * density;
+    if (tileCount <= 0 || samples.length < count) {
       return decision(false);
     }
 
     // A resolution change invalidates the comparison basis; treat it as a
-    // fresh start rather than diffing grids of different shapes.
-    if (!previous || previousCols !== cols || previousRows !== rows) {
+    // fresh start rather than diffing fields of different shapes.
+    if (
+      !previous ||
+      previousCols !== cols ||
+      previousRows !== rows ||
+      previousDensity !== density
+    ) {
       previous = new Float32Array(count);
-      for (let i = 0; i < count; i += 1) previous[i] = tiles[i] as number;
+      for (let i = 0; i < count; i += 1) previous[i] = samples[i] as number;
       previousCols = cols;
       previousRows = rows;
-      rising = new Float32Array(count);
-      falling = new Float32Array(count);
+      previousDensity = density;
+      rising = new Float32Array(tileCount);
+      falling = new Float32Array(tileCount);
+      solveCounts = new Float32Array(tileCount);
+      swings = new Float32Array(count);
+      tileOf = new Uint32Array(count);
+      for (let i = 0; i < count; i += 1) {
+        const x = i % width;
+        const y = Math.floor(i / width);
+        tileOf[i] = Math.floor(y / density) * cols + Math.floor(x / density);
+      }
       return decision(false);
     }
 
     const up = rising as Float32Array;
     const down = falling as Float32Array;
-    // Largest qualifying swing this frame, in the luminance the VIEWER is
-    // seeing — the caller scales the sample by the mitigation already in
-    // force. This is what lets the response below be solved rather than
-    // ramped.
-    let peakDelta = 0;
+    const field = swings as Float32Array;
+    const tiles = tileOf as Uint32Array;
+    up.fill(0);
+    down.fill(0);
+    // Magnitude is decided per sample, before any spatial aggregation, as
+    // the offline audit does per pixel; see RECOMMENDED_SAMPLE_DENSITY.
     for (let i = 0; i < count; i += 1) {
-      const before = previous[i] as number;
-      const after = tiles[i] as number;
+      const before = (previous[i] as number) * viewScale;
+      const after = (samples[i] as number) * viewScale;
       const qualifies = isFlashTransition(before, after);
-      up[i] = qualifies && after > before ? 1 : 0;
-      down[i] = qualifies && after < before ? 1 : 0;
-      if (qualifies) {
-        const delta = Math.abs(after - before);
-        if (delta > peakDelta) peakDelta = delta;
-      }
+      field[i] = qualifies ? after - before : 0;
+      if (!qualifies) continue;
+      if (after > before) up[tiles[i] as number] += 1;
+      else down[tiles[i] as number] += 1;
     }
 
-    // tilePixels = 1: a tile IS the unit here, unlike the offline harness
-    // which counts qualifying pixels within each tile.
-    const upFraction = peakWindowFraction(up, 1, cols, rows);
-    const downFraction = peakWindowFraction(down, 1, cols, rows);
+    const tilePixels = density * density;
+    const upFraction = peakWindowFraction(up, tilePixels, cols, rows);
+    const downFraction = peakWindowFraction(down, tilePixels, cols, rows);
 
     let direction: boolean | null = null;
     if (upFraction >= FLASH_AREA_FRACTION && upFraction >= downFraction) {
@@ -310,20 +442,17 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
       const severity = Math.min(1, (inWindow - engageAt + 1) / span);
       hold = Math.max(hold, engageHold * severity);
       clearSince = null;
-      if (flashed) {
+      if (flashed && direction !== null) {
         // A flash landed despite the clamp, so the clamp is not strong
-        // enough for this content. Solve for the scale that puts the swing
-        // just observed under the threshold, and compose it with whatever
-        // is already applied (the sample was measured THROUGH that).
-        let next = hold + escalatePerFlash;
-        if (peakDelta > 0) {
-          const currentScale = 1 - hold;
-          const needed = (FLASH_LUMINANCE_DELTA * safetyMargin) / peakDelta;
-          if (needed < 1) {
-            next = Math.max(next, 1 - currentScale * needed);
-          }
-        }
-        hold = Math.min(holdCeiling, next);
+        // enough for this content. Solve for the scale that puts the
+        // transition just observed under the threshold, and compose it with
+        // whatever is already applied (the sample was measured THROUGH that).
+        const currentScale = 1 - hold;
+        const needed = solveScale(direction, cols, rows, density);
+        hold = Math.min(
+          holdCeiling,
+          Math.max(hold + escalatePerFlash, 1 - currentScale * needed),
+        );
       }
     } else if (hold > 0) {
       // Only start easing off once the window has been quiet for a while:
@@ -336,7 +465,7 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
       }
     }
 
-    previous.set(tiles as Float32Array, 0);
+    for (let i = 0; i < count; i += 1) previous[i] = samples[i] as number;
     return decision(flashed);
   }
 

@@ -45,8 +45,8 @@ import {
 } from './stage-luminance.ts';
 
 /**
- * Shortest gap between the frames the governor compares: one 60Hz frame,
- * less a millisecond of timer jitter.
+ * Shortest gap between the frames the governor compares: three quarters of
+ * a 60Hz frame.
  *
  * WCAG counts a flash as a pair of opposing luminance changes, and comparing
  * consecutive frames on a fast display counts changes no one can see. On a
@@ -56,8 +56,17 @@ import {
  * Psychaos, 7.6) read the same either way. Measured 2026-10-06, headed
  * Chromium on a 120Hz display. A 60Hz cadence still resolves strobes up to
  * 30Hz, and on a fast display it also halves what sampling costs.
+ *
+ * Not a whole frame less a millisecond, which is what this was: frame
+ * timestamps on a 60Hz display jitter by more than that, so a frame drawn
+ * 15.5ms after the last sample was skipped and the next comparison spanned
+ * 33ms, twice the motion the audit compares. On the first-run preset with
+ * demo audio, 30 of 1,470 comparisons in 25s skipped a drawn frame (the
+ * render loop itself dropped none), and the flash the governor counted was
+ * across one of them. 12.5ms is clear of that jitter at 60Hz and still
+ * skips every other frame at 120Hz (8.3ms).
  */
-export const MIN_SAMPLE_INTERVAL_MS = 1000 / 60 - 1;
+export const MIN_SAMPLE_INTERVAL_MS = (1000 / 60) * 0.75;
 
 export type FlashSafetyOptions = {
   /** The presented canvas to observe. */
@@ -149,9 +158,9 @@ export function createFlashSafetyController(
     // filter on the stage), so reading the canvas back gives the unmitigated
     // pixels — the governor would never see its own effect, would keep
     // counting flashes it had already suppressed, and would escalate to the
-    // ceiling and stay there. Scaling the sample by the mitigation currently
-    // in force reconstructs what the viewer is actually looking at, which is
-    // the same thing tests/unit/flash-governor.test.ts feeds it.
+    // ceiling and stay there. Handing it the mitigation currently in force
+    // lets it judge the content as the viewer is actually seeing it, which
+    // is the same thing tests/unit/flash-governor.test.ts feeds it.
     //
     // The scale to correct by is everything on the filter, not just this
     // controller's contribution: with a visitor brightness ceiling of 0.5 the
@@ -164,18 +173,16 @@ export function createFlashSafetyController(
     const applied = compositedScale ? compositedScale() : lastApplied;
     const capturedIn = generation;
     let decision: FlashGovernorDecision | null = null;
-    const captured = sampler.capture(canvas, (tiles) => {
-      if (!tiles || capturedIn !== generation) return;
-      if (applied !== 1) {
-        for (let i = 0; i < tiles.length; i += 1) {
-          tiles[i] = (tiles[i] as number) * applied;
-        }
-      }
-      decision = governor.sample(nowMs, tiles, sampler.cols, sampler.rows);
+    const captured = sampler.capture(canvas, (samples) => {
+      if (!samples || capturedIn !== generation) return;
+      decision = governor.sample(nowMs, samples, sampler.cols, sampler.rows, {
+        density: sampler.density,
+        viewScale: applied,
+      });
       apply(decision.luminanceScale);
     });
-    // A capture refused because the last one is still being read is not a
-    // sample, so the next frame tries again rather than waiting a cadence.
+    // A capture refused because the readback is backed up is not a sample,
+    // so the next frame tries again rather than waiting a cadence.
     if (captured) lastSampleMs = nowMs;
     // Set only when the sampler answered before returning.
     return decision;

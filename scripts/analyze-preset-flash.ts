@@ -82,7 +82,13 @@
  * (src/js/core/services/flash-governor.ts) would have presented it. That is
  * the only honest way to check the governor against real content -- its unit
  * tests use synthetic full-field strobes, which have none of the texture,
- * localized flicker, or motion that real presets do.
+ * localized flicker, or motion that real presets do. It also reports what the
+ * governor itself counts on the raw frames (`governor counts N/s`), which
+ * should equal this audit's peak: both apply the same rule to the same
+ * frames. This track used to hand the governor tile means while the live
+ * sampler read one point per tile, so it could not show that the live
+ * governor counted 12 flashes on a preset this audit reads at 0. It now
+ * reads the live sampler's field, pixel for pixel.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -130,6 +136,7 @@ type CapturedFrames = {
   redFalling: number[][];
   govRising: number[][];
   govFalling: number[][];
+  governorRawPeak: number;
   tilePixels: number;
   frameMeanLuminance: number[];
   frameMeanDelta: number[];
@@ -141,6 +148,12 @@ export interface PresetFlashReport extends FlashAnalysis {
   repeatRedPeaks?: number[];
   /** Peak flashes/s the runtime governor would have presented (--governor). */
   governedPeakFlashesPerSecond?: number;
+  /**
+   * Peak flashes/s the governor itself counts on the same unmitigated frames
+   * (--governor). It applies the same WCAG rule, so it should match
+   * `peakFlashesPerSecond`; a gap means the two instruments disagree.
+   */
+  governorRawPeakFlashesPerSecond?: number;
   governedExceedsThreshold?: boolean;
   presetId: string;
   title: string;
@@ -430,14 +443,21 @@ async function main() {
               // with the runtime governor engaged. Computed alongside the raw
               // track from ONE render pass, so both are measured against
               // identical pixels.
-              let governor: {
+              type Governor = {
                 sample: (
                   t: number,
-                  tiles: Float32Array,
+                  samples: Float32Array,
                   c: number,
                   r: number,
-                ) => { luminanceScale: number };
-              } | null = null;
+                  options: { density: number; viewScale: number },
+                ) => { luminanceScale: number; flashesInWindow: number };
+              };
+              let governor: Governor | null = null;
+              // A second governor, never mitigated: its own flash count on
+              // the raw frames, to set beside this audit's.
+              let rawGovernor: Governor | null = null;
+              let governorRawPeak = 0;
+              let governorDensity = 1;
               if (useGovernor) {
                 // Vite serves this from the dev server; the specifier is a URL
                 // rather than a path tsc can resolve, so it goes through a
@@ -447,17 +467,35 @@ async function main() {
                 const mod = (await import(
                   /* @vite-ignore */ governorModule
                 )) as {
-                  createFlashGovernor: () => typeof governor;
+                  createFlashGovernor: () => Governor;
                   RECOMMENDED_GRID: number;
+                  RECOMMENDED_SAMPLE_DENSITY: number;
                 };
                 governor = mod.createFlashGovernor();
+                rawGovernor = mod.createFlashGovernor();
                 governorGrid = mod.RECOMMENDED_GRID;
+                governorDensity = mod.RECOMMENDED_SAMPLE_DENSITY;
               }
-              const govTiles = new Float32Array(governorGrid * governorGrid);
-              const govTileAcc = new Float64Array(governorGrid * governorGrid);
-              const govTileCount = new Float64Array(
-                governorGrid * governorGrid,
-              );
+              // The field the live sampler reads: one pixel per sample,
+              // nearest the centre of each cell of a (grid * density)-square
+              // lattice over the frame. readPixels rows run bottom-up, which
+              // flips the field and changes nothing the governor measures.
+              const govEdge = governorGrid * governorDensity;
+              const govOffsets = new Uint32Array(govEdge * govEdge);
+              for (let gy = 0; gy < govEdge; gy += 1) {
+                const y = Math.min(
+                  h - 1,
+                  Math.floor(((gy + 0.5) * h) / govEdge),
+                );
+                for (let gx = 0; gx < govEdge; gx += 1) {
+                  const x = Math.min(
+                    w - 1,
+                    Math.floor(((gx + 0.5) * w) / govEdge),
+                  );
+                  govOffsets[gy * govEdge + gx] = (y * w + x) * 4;
+                }
+              }
+              const govField = new Float32Array(govEdge * govEdge);
               let govScale = 1;
               let prevGovLum: Float64Array | null = null;
               const curGovLum = new Float64Array(sampleCount);
@@ -500,42 +538,35 @@ async function main() {
                 frameMeanLuminance.push(lumSum / sampleCount);
 
                 if (governor) {
-                  // Reduce the sampled pixels to the governor's coarse grid,
-                  // scaled by the mitigation already in force — the governor
-                  // must observe what the viewer sees, not the raw frame, or
-                  // it never registers its own effect.
-                  govTileAcc.fill(0);
-                  govTileCount.fill(0);
-                  // Separate scales per axis: the audit grid is 32x18, not
-                  // square, so reusing one factor left the bottom half of the
-                  // governor's grid permanently zero and under-reported the
-                  // flashing area.
-                  const gx = governorGrid / cols;
-                  const gy = governorGrid / rows;
-                  for (let i = 0; i < sampleCount; i += 1) {
-                    const tile = sampleTile[i];
-                    const tx = Math.min(
-                      governorGrid - 1,
-                      Math.floor((tile % cols) * gx),
-                    );
-                    const ty = Math.min(
-                      governorGrid - 1,
-                      Math.floor(Math.floor(tile / cols) * gy),
-                    );
-                    const g = ty * governorGrid + tx;
-                    govTileAcc[g] += curLum[i] * govScale;
-                    govTileCount[g] += 1;
+                  for (let g = 0; g < govField.length; g += 1) {
+                    const o = govOffsets[g];
+                    govField[g] =
+                      0.2126 * LUT[px[o]] +
+                      0.7152 * LUT[px[o + 1]] +
+                      0.0722 * LUT[px[o + 2]];
                   }
-                  for (let g = 0; g < govTiles.length; g += 1) {
-                    govTiles[g] =
-                      govTileCount[g] > 0 ? govTileAcc[g] / govTileCount[g] : 0;
-                  }
+                  // Judged through the mitigation already in force: the
+                  // governor must observe what the viewer sees, not the raw
+                  // frame, or it never registers its own effect.
                   govScale = governor.sample(
                     f * deltaMs,
-                    govTiles,
+                    govField,
                     governorGrid,
                     governorGrid,
+                    { density: governorDensity, viewScale: govScale },
                   ).luminanceScale;
+                  if (rawGovernor) {
+                    governorRawPeak = Math.max(
+                      governorRawPeak,
+                      rawGovernor.sample(
+                        f * deltaMs,
+                        govField,
+                        governorGrid,
+                        governorGrid,
+                        { density: governorDensity, viewScale: 1 },
+                      ).flashesInWindow,
+                    );
+                  }
                   for (let i = 0; i < sampleCount; i += 1) {
                     curGovLum[i] = curLum[i] * govScale;
                   }
@@ -621,6 +652,7 @@ async function main() {
                 redFalling,
                 govRising,
                 govFalling,
+                governorRawPeak,
                 tilePixels,
                 frameMeanLuminance,
                 frameMeanDelta,
@@ -668,6 +700,7 @@ async function main() {
             redFalling: number[][];
             govRising: number[][];
             govFalling: number[][];
+            governorRawPeak: number;
             tilePixels: number;
             frameMeanLuminance: number[];
             frameMeanDelta: number[];
@@ -738,6 +771,7 @@ async function main() {
             ? {
                 governedPeakFlashesPerSecond: governed.peakFlashesPerSecond,
                 governedExceedsThreshold: governed.exceedsThreshold,
+                governorRawPeakFlashesPerSecond: cap.governorRawPeak,
               }
             : {}),
         });
@@ -747,7 +781,10 @@ async function main() {
             (args.repeat > 1
               ? `(runs ${repeatPeaks.join('/')}, red ${repeatRedPeaks.join('/')}) `
               : '') +
-            (governed ? `governed=${governed.peakFlashesPerSecond}/s ` : '') +
+            (governed
+              ? `governor counts ${cap.governorRawPeak}/s, ` +
+                `governed=${governed.peakFlashesPerSecond}/s `
+              : '') +
             `red=${analysis.peakRedFlashesPerSecond}/s ` +
             `motion=${analysis.motionEnergy.toFixed(4)} ` +
             `vol=${analysis.luminanceVolatility.toFixed(4)}` +
