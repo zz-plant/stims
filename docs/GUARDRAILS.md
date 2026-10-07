@@ -329,17 +329,28 @@ audio as in silence, and every parameter that drives visible motion — zoom,
 rot, warp, sx, sy, decay — was static.
 
 So the choice is pinned to measurement instead of judgement, and the
-measurement is checked in. `tests/unit/first-run-preset.test.ts` reads this
+measurement is checked in. `tests/unit/bundled-first-run-preset.test.ts` reads this
 file and fails when the shipped default no longer matches the evidence, the
 preset's bytes change, or the numbers fall below the bar. Regenerating is
 the deliberate act of re-measuring.
 
-Merges one backend at a time, because `lab:visual` writes both renderers to
-the same path. Full refresh:
+Every backend is measured at two viewports: the 1280x720 landscape default
+and a 390x844 phone held upright. The second exists because the previous
+default was lit on landscape and black on every phone: its per-pixel warp
+centre sits in MilkDrop's aspect-squeezed space, so on a tall screen it
+samples only the top and bottom rows. A landscape-only measurement cannot
+see that, and most first visits come from phones.
 
-  bun run lab:visual -- --preset <id> --renderer webgl
+Merges one run at a time, because `lab:visual` writes every renderer and
+viewport to the same path. Full refresh:
+
+  bun run lab:visual -- --preset <id> --renderer webgl --settle-ms 30000
   bun run generate:first-run-evidence
-  bun run lab:visual -- --preset <id> --renderer webgpu
+  bun run lab:visual -- --preset <id> --renderer webgpu --settle-ms 30000
+  bun run generate:first-run-evidence
+  bun run lab:visual -- --preset <id> --renderer webgl --settle-ms 30000 --viewport 390x844
+  bun run generate:first-run-evidence
+  bun run lab:visual -- --preset <id> --renderer webgpu --settle-ms 30000 --viewport 390x844
   bun run generate:first-run-evidence
   bun run lab:reactivity -- --preset <id>
   bun run generate:first-run-evidence

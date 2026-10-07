@@ -10,17 +10,28 @@
  * rot, warp, sx, sy, decay — was static.
  *
  * So the choice is pinned to measurement instead of judgement, and the
- * measurement is checked in. `tests/unit/first-run-preset.test.ts` reads this
+ * measurement is checked in. `tests/unit/bundled-first-run-preset.test.ts` reads this
  * file and fails when the shipped default no longer matches the evidence, the
  * preset's bytes change, or the numbers fall below the bar. Regenerating is
  * the deliberate act of re-measuring.
  *
- * Merges one backend at a time, because `lab:visual` writes both renderers to
- * the same path. Full refresh:
+ * Every backend is measured at two viewports: the 1280x720 landscape default
+ * and a 390x844 phone held upright. The second exists because the previous
+ * default was lit on landscape and black on every phone: its per-pixel warp
+ * centre sits in MilkDrop's aspect-squeezed space, so on a tall screen it
+ * samples only the top and bottom rows. A landscape-only measurement cannot
+ * see that, and most first visits come from phones.
  *
- *   bun run lab:visual -- --preset <id> --renderer webgl
+ * Merges one run at a time, because `lab:visual` writes every renderer and
+ * viewport to the same path. Full refresh:
+ *
+ *   bun run lab:visual -- --preset <id> --renderer webgl --settle-ms 30000
  *   bun run generate:first-run-evidence
- *   bun run lab:visual -- --preset <id> --renderer webgpu
+ *   bun run lab:visual -- --preset <id> --renderer webgpu --settle-ms 30000
+ *   bun run generate:first-run-evidence
+ *   bun run lab:visual -- --preset <id> --renderer webgl --settle-ms 30000 --viewport 390x844
+ *   bun run generate:first-run-evidence
+ *   bun run lab:visual -- --preset <id> --renderer webgpu --settle-ms 30000 --viewport 390x844
  *   bun run generate:first-run-evidence
  *   bun run lab:reactivity -- --preset <id>
  *   bun run generate:first-run-evidence
@@ -34,6 +45,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FIRST_RUN_PRESET_ID } from '../src/js/milkdrop/runtime/first-run-preset.ts';
+import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 
 const REPO_ROOT = join(import.meta.dir, '..');
 const EVIDENCE_PATH = join(
@@ -77,11 +89,29 @@ export function resolveFirstRunPresetPath(): string {
   return join(REPO_ROOT, 'public', entry.file.replace(/^\//u, ''));
 }
 
+type Backend = 'webgl' | 'webgpu';
+
+/** The viewports every backend is measured at; see the header. */
+export const FIRST_RUN_VIEWPORTS = {
+  landscape: { width: DEFAULT_VIEWPORT.width, height: DEFAULT_VIEWPORT.height },
+  portrait: { width: 390, height: 844 },
+} as const;
+
+type ViewportName = keyof typeof FIRST_RUN_VIEWPORTS;
+
 type BackendEvidence = {
+  /** Silence: what the landing page's attract preview shows. */
   meanLuminance: number;
   visiblePixelRatio: number;
   nearBlackFrameRatio: number;
   colorfulness: number;
+  /**
+   * Demo audio after ~30s: what a visitor watches once they press Play demo.
+   * A preset can be lit in silence and black here — the previous default was,
+   * on portrait.
+   */
+  steadyMeanLuminance: number;
+  steadyVisiblePixelRatio: number;
   /** demo − silence. The visible answer to "does it respond to audio?". */
   luminanceDelta: number;
   /** demo ÷ silence pixel motion. 1.0 means audio changed nothing. */
@@ -90,10 +120,16 @@ type BackendEvidence = {
   captureBackend: string;
 };
 
+type ViewportEvidence = {
+  width: number;
+  height: number;
+  backends: Partial<Record<Backend, BackendEvidence>>;
+};
+
 type Evidence = {
   presetId: string;
   presetSha256: string;
-  backends: Partial<Record<'webgl' | 'webgpu', BackendEvidence>>;
+  viewports: Partial<Record<ViewportName, ViewportEvidence>>;
   reactivity?: {
     reactiveVariables: number;
     totalVariables: number;
@@ -135,16 +171,26 @@ function round(value: number, places = 4): number {
 }
 
 function loadExisting(): Evidence {
+  const fresh = (): Evidence => ({
+    presetId: FIRST_RUN_PRESET_ID,
+    presetSha256: '',
+    viewports: {},
+  });
   if (!existsSync(EVIDENCE_PATH)) {
-    return { presetId: FIRST_RUN_PRESET_ID, presetSha256: '', backends: {} };
+    return fresh();
   }
-  const existing = readJson(EVIDENCE_PATH) as Evidence;
-  // A different preset means the old numbers describe something else. Start
-  // clean rather than carrying a stale backend forward under a new id.
-  if (existing.presetId !== FIRST_RUN_PRESET_ID) {
-    return { presetId: FIRST_RUN_PRESET_ID, presetSha256: '', backends: {} };
+  const existing = readJson(EVIDENCE_PATH) as Partial<Evidence>;
+  // A different preset means the old numbers describe something else, and a
+  // file without `viewports` predates the portrait measurement. Start clean
+  // rather than carrying either forward.
+  if (existing.presetId !== FIRST_RUN_PRESET_ID || !existing.viewports) {
+    return fresh();
   }
-  return existing;
+  return existing as Evidence;
+}
+
+function viewportName(viewport: { width: number; height: number }) {
+  return viewport.height > viewport.width ? 'portrait' : 'landscape';
 }
 
 function mergeVisualReport(evidence: Evidence): void {
@@ -155,7 +201,8 @@ function mergeVisualReport(evidence: Evidence): void {
 
   const report = readJson(reportPath) as {
     presetId: string;
-    renderer: 'webgl' | 'webgpu';
+    renderer: Backend;
+    viewport?: { width: number; height: number };
     captureBackend: string | null;
     scenarios: Record<
       'silence' | 'demo',
@@ -165,7 +212,9 @@ function mergeVisualReport(evidence: Evidence): void {
         nearBlackFrameRatio: number;
         colorfulness: number;
       }
-    >;
+    > & {
+      steady?: { meanLuminance: number; visiblePixelRatio: number };
+    };
     summary: {
       luminanceDelta: number;
       audioMotionRatio: number;
@@ -176,12 +225,32 @@ function mergeVisualReport(evidence: Evidence): void {
   if (report.presetId !== FIRST_RUN_PRESET_ID) {
     return;
   }
+  const steady = report.scenarios.steady;
+  if (!steady) {
+    throw new Error(
+      `${reportPath} has no steady scenario; re-run lab:visual to measure the settled frame.`,
+    );
+  }
 
-  evidence.backends[report.renderer] = {
+  // Reports written before lab:visual took --viewport all used the default.
+  const viewport = report.viewport ?? DEFAULT_VIEWPORT;
+  const name = viewportName(viewport);
+  const existing = evidence.viewports[name];
+  // Numbers taken at another size describe another frame; drop them rather
+  // than mix two sizes under one name.
+  const entry: ViewportEvidence =
+    existing?.width === viewport.width && existing.height === viewport.height
+      ? existing
+      : { width: viewport.width, height: viewport.height, backends: {} };
+  evidence.viewports[name] = entry;
+
+  entry.backends[report.renderer] = {
     meanLuminance: round(report.scenarios.silence.meanLuminance, 2),
     visiblePixelRatio: round(report.scenarios.silence.visiblePixelRatio),
     nearBlackFrameRatio: round(report.scenarios.silence.nearBlackFrameRatio),
     colorfulness: round(report.scenarios.silence.colorfulness),
+    steadyMeanLuminance: round(steady.meanLuminance, 2),
+    steadyVisiblePixelRatio: round(steady.visiblePixelRatio),
     luminanceDelta: round(report.summary.luminanceDelta, 2),
     audioMotionRatio: round(report.summary.audioMotionRatio),
     verdict: report.summary.verdict,
@@ -245,7 +314,23 @@ function build(): Evidence {
     .digest('hex');
   mergeVisualReport(evidence);
   mergeReactivityReport(evidence);
-  return evidence;
+  return normalizeOrder(evidence);
+}
+
+/** Merge order varies run to run; the file's key order must not. */
+function normalizeOrder(evidence: Evidence): Evidence {
+  const viewports: Evidence['viewports'] = {};
+  for (const name of Object.keys(FIRST_RUN_VIEWPORTS) as ViewportName[]) {
+    const entry = evidence.viewports[name];
+    if (!entry) continue;
+    const backends: ViewportEvidence['backends'] = {};
+    for (const backend of ['webgl', 'webgpu'] as const) {
+      const measured = entry.backends[backend];
+      if (measured) backends[backend] = measured;
+    }
+    viewports[name] = { width: entry.width, height: entry.height, backends };
+  }
+  return { ...evidence, viewports };
 }
 
 function serialize(evidence: Evidence): string {

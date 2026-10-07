@@ -14,6 +14,11 @@
  *
  * All numbers land in scratch/preset-lab/<presetId>/visual/visual.json and on
  * stdout, so agents without vision can iterate on the same loop.
+ *
+ * `--viewport 390x844` measures at a phone's portrait size instead of the
+ * 1280x720 default. Presets written for a landscape screen can render black
+ * on portrait — MilkDrop's warp centre (cx/cy) sits in aspect-squeezed space —
+ * and a landscape-only measurement cannot see it.
  */
 
 import fs from 'node:fs';
@@ -94,6 +99,9 @@ export type PresetVisualReport = {
   version: 1;
   presetId: string;
   renderer: 'webgl' | 'webgpu';
+  /** CSS-pixel viewport the preset was measured at. Absent before 2026-10-06,
+   * when every run used DEFAULT_VIEWPORT. */
+  viewport?: { width: number; height: number };
   /**
    * WebGL renderer string of the capturing browser ("ANGLE Metal Renderer…"
    * vs "SwiftShader…"). Absent in reports written before 2026-08-11.
@@ -663,7 +671,12 @@ function comparisonMetrics(report: PresetVisualReport): Record<string, number> {
 
 export function formatVisualReportText(report: PresetVisualReport): string {
   const lines: string[] = [];
-  lines.push(`# Visual report — ${report.presetId} (${report.renderer})`);
+  const viewport = report.viewport
+    ? `, ${report.viewport.width}x${report.viewport.height}`
+    : '';
+  lines.push(
+    `# Visual report — ${report.presetId} (${report.renderer}${viewport})`,
+  );
   lines.push('');
   for (const scenario of ['silence', 'demo'] as const) {
     const summary = report.scenarios[scenario];
@@ -729,6 +742,7 @@ export async function runPresetVisualLab({
   settleMs,
   steadySettleMs,
   headless,
+  viewport = DEFAULT_VIEWPORT,
 }: {
   repoRoot: string;
   presetId: string;
@@ -740,6 +754,7 @@ export async function runPresetVisualLab({
   settleMs: number;
   steadySettleMs: number;
   headless: boolean;
+  viewport?: { width: number; height: number };
 }): Promise<PresetVisualReport> {
   const visualDir = path.join(outputDir, presetId, 'visual');
   const framesDir = path.join(visualDir, 'frames');
@@ -756,7 +771,9 @@ export async function runPresetVisualLab({
   let captureBackend: string | null = null;
 
   try {
-    const context = await browser.newContext({ viewport: DEFAULT_VIEWPORT });
+    const context = await browser.newContext({
+      viewport: { width: viewport.width, height: viewport.height },
+    });
     await context.addInitScript(() => {
       window.localStorage.setItem('stims:onboarding-complete', 'true');
     });
@@ -816,6 +833,7 @@ export async function runPresetVisualLab({
     version: 1,
     presetId,
     renderer,
+    viewport: { width: viewport.width, height: viewport.height },
     captureBackend,
     samples,
     intervalMs,
@@ -846,6 +864,7 @@ type CliOptions = {
   settleMs: number;
   steadySettleMs: number;
   headless: boolean;
+  viewport: { width: number; height: number };
   writeBaseline: boolean;
   compare: boolean;
   json: boolean;
@@ -856,7 +875,17 @@ function readArg(argv: string[], name: string, fallback: string) {
   return index >= 0 ? (argv[index + 1] ?? fallback) : fallback;
 }
 
+function parseViewport(raw: string | undefined) {
+  if (raw === undefined) return DEFAULT_VIEWPORT;
+  const match = /^(\d+)x(\d+)$/u.exec(raw);
+  if (!match) {
+    throw new Error(`--viewport expects <width>x<height>, got "${raw}"`);
+  }
+  return { width: Number(match[1]), height: Number(match[2]) };
+}
+
 function parseArgs(argv: string[]): CliOptions {
+  const viewportIndex = argv.indexOf('--viewport');
   return {
     presetIds: argv.flatMap((arg, index) =>
       arg === '--preset' && argv[index + 1] ? [argv[index + 1] as string] : [],
@@ -882,6 +911,9 @@ function parseArgs(argv: string[]): CliOptions {
       10,
     ),
     headless: !argv.includes('--no-headless'),
+    viewport: parseViewport(
+      viewportIndex >= 0 ? argv[viewportIndex + 1] : undefined,
+    ),
     writeBaseline: argv.includes('--baseline'),
     compare: argv.includes('--compare'),
     json: argv.includes('--json'),
@@ -894,7 +926,7 @@ async function main() {
     console.error(
       'Usage: bun run lab:visual -- --preset <id> [--preset <id> …]\n' +
         '  [--samples 8] [--interval-ms 700] [--settle-ms 1500]\n' +
-        '  [--steady-settle-ms 30000]\n' +
+        '  [--steady-settle-ms 30000] [--viewport 390x844]\n' +
         '  [--renderer webgl|webgpu] [--port 5197] [--out scratch/preset-lab]\n' +
         '  [--baseline] [--compare] [--json] [--no-headless]',
     );
@@ -914,6 +946,7 @@ async function main() {
       settleMs: options.settleMs,
       steadySettleMs: options.steadySettleMs,
       headless: options.headless,
+      viewport: options.viewport,
     });
 
     const visualDir = path.join(options.outputDir, presetId, 'visual');

@@ -215,6 +215,11 @@ const ROUTES: Array<{ when: string[]; run: string[]; note: string }> = [
     note: 'lab:dataflow reads the equations and says instantly which audio can reach which control or drawn program (dead code and disabled waves included); lab:reactivity (~15s, no browser) measures how strongly it reacts; lab:visual (1-3 min) confirms the reaction is visible in pixels, not just in the numbers.',
   },
   {
+    when: ['portrait', 'phone', 'mobile', 'tall screen', 'aspect'],
+    run: ['lab:visual', 'lab:backend-diff'],
+    note: "lab:visual --viewport 390x844 measures a preset on a phone held upright; lab:backend-diff takes --width/--height. A preset that is black only on tall screens is usually MilkDrop's own maths (cx/cy sit in aspect-squeezed space), not a renderer bug: compare with the 1280x720 run before changing the renderer.",
+  },
+  {
     when: [
       'nan',
       'black',

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   FIRST_RUN_EVIDENCE_PATH,
+  FIRST_RUN_VIEWPORTS,
   resolveFirstRunPresetPath,
 } from '../../scripts/generate-first-run-evidence.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
@@ -89,33 +90,37 @@ describe('bundled first-run preset', () => {
 /**
  * The measured bar the first-run preset has to clear.
  *
- * The default has now been wrong twice for the same reason — chosen on a
- * proxy (curated sort order, then a count of audio-reading variables) that
- * did not predict what the visitor sees. These thresholds are the product
- * requirement stated numerically, checked against evidence recorded by
+ * The default has been wrong repeatedly for one reason: what was measured did
+ * not predict what a visitor sees. Curated sort order picked a near-black
+ * preset, a count of audio-reading variables picked one whose picture did not
+ * move with the music, and a landscape-only measurement picked one that is
+ * black on every phone held upright. These thresholds state the requirement
+ * numerically and are checked against evidence recorded by
  * `bun run generate:first-run-evidence`, so the next change to
  * FIRST_RUN_PRESET_ID has to come with a measurement.
  *
- * They are set well clear of the run-to-run variance of `lab:visual` (repeat
- * runs of the shipped preset put mean luminance at 33-46 and ΔL at -17 to
- * -25) and well above the preset they replaced (ΔL -1.9, motion ratio 0.93).
+ * Audio response is gated on variables, not pixels. The evidence records
+ * `lab:visual`'s pixel signals but nothing enforces them: the demo/silence
+ * motion ratio saturates at 1.0 for any preset that moves the whole frame,
+ * and ΔL (demo minus silence luminance, from two separate runs) mostly
+ * measures where a colour-cycling preset is in its cycle. Two identical runs
+ * of shifter-curlique, whose zoom follows the music at correlation 0.84, read
+ * ΔL −21 and −0.7.
  */
 const EVIDENCE_BAR = {
   /** Below this the frame is too dark to be the product's first impression. */
   minMeanLuminance: 25,
   /** Below this the frame is a few lit pixels on black, not an image. */
   minVisiblePixelRatio: 0.3,
-  /**
-   * Either of these clears "the visuals move to what you're listening to":
-   * audio changes the frame's brightness, or it changes how much of the
-   * frame is moving. One of them must hold on the production backend.
-   */
-  minLuminanceDelta: 8,
-  minMotionRatioDelta: 0.12,
 } as const;
 
-/** WebGPU is what production selects wherever it is available. */
-const PRODUCTION_BACKEND = 'webgpu';
+type MeasuredBackend = {
+  meanLuminance: number;
+  visiblePixelRatio: number;
+  nearBlackFrameRatio: number;
+  steadyMeanLuminance: number;
+  steadyVisiblePixelRatio: number;
+};
 
 describe('first-run preset evidence', () => {
   const evidence = JSON.parse(
@@ -123,20 +128,26 @@ describe('first-run preset evidence', () => {
   ) as {
     presetId: string;
     presetSha256: string;
-    backends: Record<
+    viewports: Record<
       string,
       {
-        meanLuminance: number;
-        visiblePixelRatio: number;
-        nearBlackFrameRatio: number;
-        luminanceDelta: number;
-        audioMotionRatio: number;
+        width: number;
+        height: number;
+        backends: Record<string, MeasuredBackend>;
       }
     >;
     reactivity?: {
       motionBearing: Array<{ variable: string; correlation: number }>;
     };
   };
+
+  const measurements = () =>
+    Object.entries(evidence.viewports).flatMap(([viewport, entry]) =>
+      Object.entries(entry.backends).map(([backend, measured]) => ({
+        label: `${viewport} ${backend}`,
+        measured,
+      })),
+    );
 
   test('describes the preset that actually ships', () => {
     // Swapping the id without re-measuring leaves the landing page making a
@@ -154,44 +165,58 @@ describe('first-run preset evidence', () => {
     expect(evidence.presetSha256).toBe(sha);
   });
 
-  test('is measured on both backends', () => {
-    expect(Object.keys(evidence.backends).sort()).toEqual(['webgl', 'webgpu']);
-  });
-
-  test('is bright enough to look at on both backends', () => {
-    for (const [backend, measured] of Object.entries(evidence.backends)) {
-      expect(
-        measured.meanLuminance,
-        `${backend} mean luminance`,
-      ).toBeGreaterThanOrEqual(EVIDENCE_BAR.minMeanLuminance);
-      expect(
-        measured.visiblePixelRatio,
-        `${backend} visible pixels`,
-      ).toBeGreaterThanOrEqual(EVIDENCE_BAR.minVisiblePixelRatio);
-      expect(measured.nearBlackFrameRatio, `${backend} near-black`).toBe(0);
+  test('is measured on both backends, on a landscape screen and a phone', () => {
+    // The previous default was measured on landscape only and rendered black
+    // on every phone held upright, where most first visits happen.
+    expect(Object.keys(evidence.viewports).sort()).toEqual(
+      Object.keys(FIRST_RUN_VIEWPORTS).sort(),
+    );
+    for (const [name, size] of Object.entries(FIRST_RUN_VIEWPORTS)) {
+      const entry = evidence.viewports[name];
+      expect({ width: entry?.width, height: entry?.height }, name).toEqual(
+        size,
+      );
+      expect(Object.keys(entry?.backends ?? {}).sort(), name).toEqual([
+        'webgl',
+        'webgpu',
+      ]);
     }
   });
 
-  test('visibly answers to audio on the production backend', () => {
-    const measured = evidence.backends[PRODUCTION_BACKEND];
-    expect(measured).toBeDefined();
-    if (!measured) return;
-
-    const brightnessResponse = Math.abs(measured.luminanceDelta);
-    const motionResponse = Math.abs(1 - measured.audioMotionRatio);
-
-    // Deliberately an OR: a preset may answer the music by changing what is
-    // lit or by changing how much moves, and either one is visible.
-    expect(
-      brightnessResponse >= EVIDENCE_BAR.minLuminanceDelta ||
-        motionResponse >= EVIDENCE_BAR.minMotionRatioDelta,
-    ).toBe(true);
+  test('is bright enough to look at in silence, as the attract preview', () => {
+    for (const { label, measured } of measurements()) {
+      expect(
+        measured.meanLuminance,
+        `${label} mean luminance`,
+      ).toBeGreaterThanOrEqual(EVIDENCE_BAR.minMeanLuminance);
+      expect(
+        measured.visiblePixelRatio,
+        `${label} visible pixels`,
+      ).toBeGreaterThanOrEqual(EVIDENCE_BAR.minVisiblePixelRatio);
+      expect(measured.nearBlackFrameRatio, `${label} near-black`).toBe(0);
+    }
   });
 
-  test('drives at least one variable the whole frame moves with', () => {
-    // The trap that produced the last default: eight "reactive" variables,
-    // none of which moved the picture. q-vars and wave deviation do not
-    // count here — zoom, rot, warp, sx, sy, cx, cy, dx, dy and decay do.
+  test('stays bright once demo audio has played for ~30s', () => {
+    // What a visitor watches after pressing Play demo. The previous default
+    // passed every silence check on a phone and settled at luminance 6 here.
+    for (const { label, measured } of measurements()) {
+      expect(
+        measured.steadyMeanLuminance,
+        `${label} settled mean luminance`,
+      ).toBeGreaterThanOrEqual(EVIDENCE_BAR.minMeanLuminance);
+      expect(
+        measured.steadyVisiblePixelRatio,
+        `${label} settled visible pixels`,
+      ).toBeGreaterThanOrEqual(EVIDENCE_BAR.minVisiblePixelRatio);
+    }
+  });
+
+  test('answers to audio through a variable the whole frame moves with', () => {
+    // The landing page promises visuals that move to the music. q-vars and
+    // wave deviation do not count: the 08-22 default had eight "reactive"
+    // variables and none of them moved the picture. zoom, rot, warp, sx, sy,
+    // cx, cy, dx, dy, decay and shape motion do.
     expect(evidence.reactivity?.motionBearing?.length ?? 0).toBeGreaterThan(0);
   });
 });
