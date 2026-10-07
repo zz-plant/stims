@@ -165,6 +165,24 @@ function buildReports(days: number): Report[] {
       columns: ['device', 'orientation', 'audio', 'count'],
     },
     {
+      // The "Open one up" funnel (docs/PRODUCT_MOMENTS.md): audible start,
+      // editor opened, first edit applied, then shared or saved. Grouped by
+      // device so phones and desktops are not averaged together. Rows from
+      // before the context fields existed are left out, as above. AE cannot
+      // type a blob no row has yet unless the query filters on it, and it
+      // rejects ORDER BY on the raw blob, hence the alias.
+      title: `Open one up funnel by device (last ${days}d)`,
+      sql: `SELECT blob1 AS step, blob7 AS device, COUNT() AS count
+            FROM ${DATASET}
+            WHERE timestamp > ${since}
+              AND blob1 IN ('growth-audio-started', 'growth-editor-opened',
+                            'growth-first-edit-applied', 'growth-share-shared',
+                            'growth-share-copied', 'growth-video-saved')
+              AND blob7 != ''
+            GROUP BY blob1, blob7 ORDER BY device, count DESC`,
+      columns: ['step', 'device', 'count'],
+    },
+    {
       title: `Dwell and frame rate by screen (last ${days}d)`,
       sql: `SELECT blob7 AS device, blob6 AS orientation, blob2 AS renderer,
                    COUNT() AS views, AVG(double4) AS avg_dwell_ms,
