@@ -300,6 +300,13 @@ export function createMilkdropCatalogStore({
       return (await persistence.readMeta(id))?.draft ?? null;
     },
 
+    async clearDraft(id) {
+      const current = await persistence.readMeta(id);
+      if (current?.draft === undefined) return;
+      const { draft: _draft, ...rest } = current;
+      await writeMeta(rest);
+    },
+
     async setFavorite(id, favorite) {
       const current = (await persistence.readMeta(id)) ?? { id };
       await writeMeta({ ...current, favorite });

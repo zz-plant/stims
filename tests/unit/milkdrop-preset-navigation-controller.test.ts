@@ -331,6 +331,7 @@ describe('milkdrop preset navigation controller', () => {
     // resolves to that same id.
     const buildSkipHarness = (draft: string | null) => {
       const fetched: string[] = [];
+      const cleared: string[] = [];
       const applied: string[] = [];
       const transitions: number[] = [];
       const controller = createMilkdropPresetNavigationController({
@@ -343,6 +344,9 @@ describe('milkdrop preset navigation controller', () => {
             return draft;
           },
           async saveDraft() {},
+          async clearDraft(id: string) {
+            cleared.push(id);
+          },
         } as unknown as MilkdropCatalogStore,
         catalogCoordinator: {
           async syncCatalog() {},
@@ -374,7 +378,7 @@ describe('milkdrop preset navigation controller', () => {
         },
       });
 
-      return { controller, fetched, applied, transitions };
+      return { controller, fetched, applied, transitions, cleared };
     };
 
     test('does not reload the preset that is already active', async () => {
@@ -403,6 +407,22 @@ describe('milkdrop preset navigation controller', () => {
 
       expect(fetched).toEqual(['active-preset']);
       expect(applied).toEqual(['active-preset']);
+    });
+
+    test('drops a draft that is only the source itself', async () => {
+      // Every load used to save one of these, pinning the preset to the copy
+      // first seen.
+      const { controller, cleared } = buildSkipHarness('title=other-preset\n');
+      await controller.selectPreset('other-preset');
+      expect(cleared).toEqual(['other-preset']);
+    });
+
+    test('keeps a draft that is a real edit', async () => {
+      const { controller, cleared } = buildSkipHarness(
+        'title=other-preset\nzoom=2\n',
+      );
+      await controller.selectPreset('other-preset');
+      expect(cleared).toEqual([]);
     });
 
     test('loads normally for a different preset', async () => {

@@ -21,7 +21,7 @@ const FORWARDED = {
   exportPreset: { fallback: undefined },
   exportUserPresets: { fallback: 0, async: true },
   goBackPreset: { fallback: undefined, async: true },
-  revertEditorSource: { fallback: undefined },
+  getOriginalPresetSource: { fallback: null, async: true },
   duplicatePreset: { fallback: undefined, async: true },
   deleteActivePreset: { fallback: undefined, async: true },
   getVideoExportRuntime: { fallback: null },

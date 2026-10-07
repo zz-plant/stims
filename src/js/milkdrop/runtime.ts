@@ -45,9 +45,15 @@ import type { QualityPresetManager } from '../core/toy-quality';
 import { createRendererQualityManager } from '../core/toy-quality.ts';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createToyRuntimeStarter } from '../core/toy-runtime-starter.ts';
+import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
 import { setShaderBranchDesugarEnabled } from './compiler/shader-branch-desugar';
+import {
+  createDraftPersistence,
+  createOriginalSourceResolver,
+  dropRedundantDraft,
+} from './draft-persistence.ts';
 import { createMilkdropEditorSession } from './editor-session';
 import type { MilkdropPresetRenderPreview } from './preset-preview.ts';
 import { encodePresetPreviewImage } from './preset-preview.ts';
@@ -965,6 +971,22 @@ export function createMilkdropExperience({
     },
   });
 
+  // The editor's starting text is the compiler's formatted source, so that
+  // is what "the original" is for revert, A/B and drafts. A source that
+  // fails to compile is shown as-is, so it is its own original.
+  const resolveOriginalSource = createOriginalSourceResolver(
+    catalogStore,
+    (source) => {
+      const compiled = compileMilkdropPresetSource(source.raw, source);
+      return compiled.diagnostics.some((d) => d.severity === 'error')
+        ? source.raw
+        : compiled.formattedSource;
+    },
+  );
+  const persistDraft = createDraftPersistence(
+    catalogStore,
+    resolveOriginalSource,
+  );
   _disposeSessionSubscription = session.subscribe((state) => {
     if (!lifetime.isActive()) {
       return;
@@ -997,8 +1019,23 @@ export function createMilkdropExperience({
         void catalogCoordinator.rememberSelection(nextCompiled.source.id);
         preferences.rememberLastPreset(nextCompiled.source.id);
       }
+      // A load is not an edit, so no draft. Saving the loaded source here
+      // pinned every preset a visitor had opened to that copy for good; the
+      // idle check below clears the ones already stored. Idle because it
+      // compiles the original, and this is the start of a transition.
       applyCompiledPreset(nextCompiled);
-      void catalogStore.saveDraft(nextCompiled.source.id, state.source);
+      if (!previewMode) {
+        const loadedId = nextCompiled.source.id;
+        scheduleIdleTask(
+          () =>
+            void dropRedundantDraft(
+              catalogStore,
+              resolveOriginalSource,
+              loadedId,
+            ).catch((error: unknown) => log.info('Draft check skipped', error)),
+          { idleTimeout: 4000 },
+        );
+      }
       scheduleDeferredCatalogSync();
       emitChange();
       return;
@@ -1009,7 +1046,9 @@ export function createMilkdropExperience({
       );
       applyPresetPerformanceOverride(nextCompiled.source.id);
       applyCompiledPreset(nextCompiled);
-      void catalogStore.saveDraft(nextCompiled.source.id, state.source);
+      void persistDraft(nextCompiled.source.id, state.source).catch(
+        (error: unknown) => log.warn('Draft could not be saved', error),
+      );
     }
     emitChange();
   });
@@ -1120,6 +1159,7 @@ export function createMilkdropExperience({
     setQualityPresetById,
     previewCaptureRevision,
     emitChange,
+    getOriginalPresetSource: () => resolveOriginalSource(activePresetId),
     clearDeferredCatalogSync,
     disposePostprocessingPipeline,
     // setLiveField/applyFields drive the running VM directly (Tune drags,
@@ -1300,11 +1340,10 @@ function buildExperienceController(
       });
       deps.emitChange();
     },
-    revertEditorSource() {
-      void deps.session.resetToActive().catch((error: unknown) => {
-        log.warn('Editor revert failed', error);
-      });
-      deps.emitChange();
+    /** The active preset's source before any edit: the bundled file, or the
+     * saved copy of a preset the visitor made. Revert and A/B read it. */
+    getOriginalPresetSource(): Promise<string | null> {
+      return deps.getOriginalPresetSource();
     },
     updateInspectorField(key: string, value: string | number) {
       // Live-first: MIDI faders and the inspector feed continuous values and

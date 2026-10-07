@@ -25,7 +25,6 @@ describe('editor panel Compat tab', () => {
   const mount = (source: string) => {
     const panel = new EditorPanel({
       onEditorSourceChange: mock(() => {}),
-      onRevertToActive: mock(() => {}),
       onDuplicatePreset: mock(() => {}),
       onExport: mock(() => {}),
       onDeletePreset: mock(() => {}),

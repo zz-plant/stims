@@ -1,4 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  computeSourceDiff,
+  samePresetSource,
+} from '../milkdrop/overlay/source-diff.ts';
 import {
   analyzePresetMath,
   type PresetMathAnalysis,
@@ -19,9 +23,55 @@ export function RefinePanel() {
   );
   const [response, setResponse] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<PresetMathAnalysis | null>(null);
+  // A restyle or AI edit is shown as a diff first and applied only on
+  // Apply. It used to replace the running preset directly, with no way to
+  // see what changed and nothing to undo it with, and the result was saved
+  // as the preset's draft.
+  const [proposal, setProposal] = useState<{
+    label: string;
+    base: string;
+    next: string;
+    applied: string;
+  } | null>(null);
   const { engine, ui } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
   const currentSource = engineSnapshot?.currentSource ?? '';
+
+  // Only state setters inside, so one identity serves every render.
+  const propose = useCallback(
+    (label: string, base: string, next: string, applied: string) => {
+      setAnalysis(null);
+      if (samePresetSource(base, next)) {
+        setProposal(null);
+        setResponse(`${label} would not change this preset.`);
+        return;
+      }
+      setResponse(null);
+      setProposal({ label, base, next, applied });
+    },
+    [],
+  );
+
+  const applyProposal = () => {
+    if (!proposal) return;
+    // The diff was computed against `base`; applying it over anything else
+    // (an edit made meanwhile, another preset) would discard that.
+    if (!samePresetSource(proposal.base, currentSource)) {
+      setProposal(null);
+      setResponse(
+        `${proposal.label}: the preset changed while this was open, so nothing was applied. Run it again.`,
+      );
+      return;
+    }
+    engine.updateEditorSource(proposal.next);
+    setResponse(proposal.applied);
+    setProposal(null);
+  };
+
+  const proposalDiff = useMemo(
+    () => (proposal ? computeSourceDiff(proposal.base, proposal.next) : []),
+    [proposal],
+  );
 
   const handleApplyMutation = useCallback(
     async (style: PresetMutationStyle) => {
@@ -31,9 +81,7 @@ export function RefinePanel() {
       ui.setStatusMessage(`Applying ${label}…`);
       try {
         const mutatedSource = mutatePresetStyle(currentSource, style);
-        await engine.updateEditorSource(mutatedSource);
-        setResponse(`Applied ${label}.`);
-        setAnalysis(null);
+        propose(label, currentSource, mutatedSource, `Applied ${label}.`);
       } catch (err) {
         const error = err as Error;
         setResponse(`Could not apply ${label}: ${error.message}`);
@@ -42,7 +90,7 @@ export function RefinePanel() {
         ui.setStatusMessage(null);
       }
     },
-    [currentSource, engine, ui],
+    [currentSource, propose, ui],
   );
 
   const handleRefine = useCallback(async () => {
@@ -60,13 +108,14 @@ export function RefinePanel() {
         );
         return;
       }
-      await engine.updateEditorSource(refinement.milkSource);
-      setResponse(
+      propose(
+        refinement.method === 'ai' ? 'AI refinement' : refinement.label,
+        currentSource,
+        refinement.milkSource,
         refinement.method === 'ai'
           ? `Refined: ${refinement.title || 'untitled preset'}`
           : `AI is unavailable, so the ${refinement.label} restyle was applied.`,
       );
-      setAnalysis(null);
     } catch (err) {
       const error = err as Error;
       setResponse(`Could not apply the change: ${error.message}`);
@@ -74,7 +123,7 @@ export function RefinePanel() {
       setState('idle');
       ui.setStatusMessage(null);
     }
-  }, [currentSource, engine, instruction, ui]);
+  }, [currentSource, instruction, propose, ui]);
 
   const handleExplain = useCallback(async () => {
     if (!currentSource) return;
@@ -174,6 +223,52 @@ export function RefinePanel() {
           {state === 'explaining' ? 'Reading…' : 'Explain'}
         </button>
       </div>
+
+      {proposal ? (
+        <section
+          className="stims-shell__refine-proposal"
+          aria-label={`${proposal.label}: proposed change`}
+        >
+          <p className="stims-shell__refine-proposal-head">
+            {proposal.label} — review the change
+          </p>
+          <pre className="stims-shell__refine-diff">
+            {proposalDiff.map((line, index) => (
+              <span
+                // biome-ignore lint/suspicious/noArrayIndexKey: diff rows are positional and re-rendered whole
+                key={index}
+                className={`stims-shell__refine-diff-line stims-shell__refine-diff-line--${line.kind}`}
+              >
+                {line.kind === 'add'
+                  ? '+ '
+                  : line.kind === 'del'
+                    ? '- '
+                    : line.kind === 'gap'
+                      ? '\u22EF '
+                      : '  '}
+                {line.text}
+                {'\n'}
+              </span>
+            ))}
+          </pre>
+          <div className="stims-shell__refine-actions">
+            <button
+              type="button"
+              className="stims-shell__refine-btn"
+              onClick={applyProposal}
+            >
+              Apply
+            </button>
+            <button
+              type="button"
+              className="stims-shell__refine-btn stims-shell__refine-btn--secondary"
+              onClick={() => setProposal(null)}
+            >
+              Discard
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       {response && (
         <div

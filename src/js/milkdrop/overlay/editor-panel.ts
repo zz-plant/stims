@@ -18,6 +18,7 @@ import {
   history,
   historyKeymap,
   indentWithTab,
+  isolateHistory,
   redo,
   toggleComment,
   undo,
@@ -42,6 +43,7 @@ import {
   Prec,
   StateEffect,
   StateField,
+  Transaction,
 } from '@codemirror/state';
 import {
   oneDarkHighlightStyle,
@@ -156,7 +158,11 @@ import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
 } from './preset-row';
-import { computeSourceDiff, type SourceDiffLine } from './source-diff.ts';
+import {
+  computeSourceDiff,
+  type SourceDiffLine,
+  samePresetSource,
+} from './source-diff.ts';
 
 /**
  * Kept as the module's public names because tests, the MIDI layer and the MCP
@@ -191,7 +197,12 @@ export type EditorPanelCallbacks = {
   onSetStageFrozen?: (frozen: boolean) => boolean;
   /** Render exactly one frame while the stage is held. */
   onStepFrame?: () => boolean;
-  onRevertToActive: () => void;
+  /**
+   * The preset's source as it was before any edit: the bundled file, or the
+   * saved version of a preset the visitor made. Revert and A/B compare read
+   * it. Resolves null when there is nothing to compare against.
+   */
+  getOriginalSource?: () => Promise<string | null>;
   onDuplicatePreset: () => void;
   onExport: () => void;
   onDeletePreset: () => void;
@@ -574,6 +585,12 @@ function createEditorView({
   let debounceId: number | null = null;
   let view: EditorView;
   const syntaxThemeCompartment = new Compartment();
+  // Undo history lives in its own compartment so a preset load can start it
+  // over (see resetHistory below).
+  const historyCompartment = new Compartment();
+  // Read-only while A/B shows the original: it is there to look at, and an
+  // edit made to it would have no slot to belong to.
+  const readOnlyCompartment = new Compartment();
   const syntaxHighlightStyleForTheme = (theme: 'light' | 'dark') =>
     syntaxHighlighting(
       theme === 'light' ? milkdropLightHighlightStyle : oneDarkHighlightStyle,
@@ -614,7 +631,8 @@ function createEditorView({
         highlightActiveLine(),
         highlightActiveLineGutter(),
         highlightSpecialChars(),
-        history(),
+        historyCompartment.of(history()),
+        readOnlyCompartment.of(EditorState.readOnly.of(false)),
         createMilkdropLanguage(),
         oneDarkTheme,
         syntaxThemeCompartment.of(syntaxHighlightStyleForTheme(resolveTheme())),
@@ -734,6 +752,44 @@ function createEditorView({
 
   return {
     view,
+    /**
+     * Start undo history over. A preset load replaces the whole buffer, and
+     * as an undoable step it let Undo on a freshly opened editor empty the
+     * code, or paste the previous preset's text over this one — which the
+     * debounce then committed and saved as this preset's draft. Removing the
+     * extension drops its state; adding it back starts an empty stack.
+     */
+    resetHistory() {
+      view.dispatch({ effects: historyCompartment.reconfigure([]) });
+      view.dispatch({ effects: historyCompartment.reconfigure(history()) });
+    },
+    /**
+     * Show `source` read-only and hand back the state it replaced, undo
+     * history included, for `restoreState` to put back exactly. Swapping the
+     * text in as an ordinary change made it an undo step, and keeping it out
+     * of history was worse: undo then remapped the real edits through a
+     * whole-document replacement and produced garbage.
+     */
+    showReadOnly(source: string): EditorState {
+      const previous = view.state;
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: source },
+        effects: readOnlyCompartment.reconfigure(EditorState.readOnly.of(true)),
+        annotations: Transaction.addToHistory.of(false),
+      });
+      return previous;
+    },
+    restoreState(state: EditorState) {
+      view.setState(state);
+    },
+    /** Make the buffer editable again without restoring anything. */
+    endReadOnly() {
+      view.dispatch({
+        effects: readOnlyCompartment.reconfigure(
+          EditorState.readOnly.of(false),
+        ),
+      });
+    },
     clearDebounce() {
       if (debounceId !== null) {
         window.clearTimeout(debounceId);
@@ -810,6 +866,12 @@ export class EditorPanel {
   private readonly shareLinkItem: HTMLButtonElement;
   private readonly editor: EditorView;
   private readonly clearEditorDebounce: () => void;
+  private readonly resetEditorHistory: () => void;
+  private readonly showReadOnlySource: (source: string) => EditorState;
+  private readonly restoreEditorState: (state: EditorState) => void;
+  private readonly endReadOnly: () => void;
+  /** The edit, with its undo history, while A/B shows the original. */
+  private abEditState: EditorState | null = null;
   private readonly unsubscribeTheme: () => void;
   private readonly flushEditorDocChange: () => boolean;
   private readonly setEditorDiagnostics: (
@@ -826,7 +888,11 @@ export class EditorPanel {
   private lastSessionState: MilkdropEditorSessionState | null = null;
   private quickFixBtn: HTMLButtonElement | null = null;
   private mostRecentDiagnostic: MilkdropDiagnostic | null = null;
+  /** Checkpoints, each tagged with the preset it was taken on: Restore
+   * pastes the whole buffer, so a checkpoint from another preset would
+   * replace this one's code with that one's. */
   private snapshots: Array<{
+    presetId: string | null;
     source: string;
     timestamp: number;
     label: string;
@@ -947,6 +1013,10 @@ export class EditorPanel {
   // started from the Performance hardware panel doesn't light up a slider.
   private learningSliderKey: string | null = null;
   private snapshotSlot: 'A' | 'B' = 'A';
+  /** Whether slot A was seeded from the original preset (labels read
+   * "Original" / "Your edit") or captured by hand ("Slot A" / "Slot B"). */
+  private abBaseline: 'original' | 'snapshot' = 'snapshot';
+  private abNoticeTimer: number | undefined;
   private snapshotSourceA: string | null = null;
   private snapshotSourceB: string | null = null;
   private abButton: HTMLButtonElement | null = null;
@@ -1014,11 +1084,16 @@ export class EditorPanel {
     });
     applyButton.dataset.action = 'apply';
 
-    const revertButton = this.createButton('Reset', {
-      title: 'Reset draft to the active preset source',
-      ariaLabel: 'Reset draft to the active preset source',
-      onClick: () => this.callbacks.onRevertToActive(),
+    // Back to the preset as shipped (or as saved, for one you made). This
+    // used to reset to the *active* source, which with edits applied as you
+    // type was the edit itself — so it did nothing, and an edited preset had
+    // no way back. Undoable like any other edit.
+    const revertButton = this.createButton('Revert', {
+      title: 'Revert to the original preset (Cmd/Ctrl+Z undoes it)',
+      ariaLabel: 'Revert to the original preset',
+      onClick: () => void this.revertToOriginal(),
     });
+    revertButton.dataset.action = 'editor-revert-original';
 
     // CodeMirror's history() extension already answers to Cmd/Ctrl+Z, but
     // that was invisible outside the editor — no button, no way to tell
@@ -1179,9 +1254,9 @@ export class EditorPanel {
     };
 
     this.abButton = this.createButton('A/B', {
-      title: 'Compare A/B snapshots (Cmd/Ctrl+Shift+B)',
-      ariaLabel: 'Compare A/B snapshots (Cmd/Ctrl+Shift+B)',
-      onClick: () => this.toggleAbSnapshot(),
+      title: 'Compare with the original (Cmd/Ctrl+Shift+B)',
+      ariaLabel: 'Compare with the original (Cmd/Ctrl+Shift+B)',
+      onClick: () => void this.toggleAbSnapshot(),
     });
     this.abButton.dataset.action = 'ab-toggle';
 
@@ -1250,9 +1325,13 @@ export class EditorPanel {
       // dropping focus on <body>.
       onEscapeBlur: () => applyButton.focus(),
       onJumpToVariable: () => this.openVariableJump(),
-      onToggleAbSnapshot: () => this.toggleAbSnapshot(),
+      onToggleAbSnapshot: () => void this.toggleAbSnapshot(),
     });
     this.editor = editorViewState.view;
+    this.resetEditorHistory = editorViewState.resetHistory;
+    this.showReadOnlySource = editorViewState.showReadOnly;
+    this.restoreEditorState = editorViewState.restoreState;
+    this.endReadOnly = editorViewState.endReadOnly;
     this.clearEditorDebounce = editorViewState.clearDebounce;
     this.unsubscribeTheme = editorViewState.unsubscribeTheme;
     this.flushEditorDocChange = editorViewState.flushDocChange;
@@ -1942,6 +2021,7 @@ export class EditorPanel {
     this.pushSnapshot(currentSource, 'Before restore');
     this.editor.dispatch({
       changes: { from: 0, to: this.editor.state.doc.length, insert: source },
+      annotations: isolateHistory.of('full'),
     });
     this.callbacks.onEditorSourceChange(source);
     this.editor.focus();
@@ -2074,23 +2154,25 @@ export class EditorPanel {
       state.latestCompiled?.source.id ??
       state.activeCompiled?.source.id ??
       null;
-    const presetChanged =
-      nextPresetId !== null &&
-      this.lastPresetId !== null &&
-      nextPresetId !== this.lastPresetId;
+    // The first load counts as well as a switch: before it the buffer is
+    // empty, and that empty buffer must not be one Undo away.
+    const presetLoaded =
+      nextPresetId !== null && nextPresetId !== this.lastPresetId;
+    const presetChanged = presetLoaded && this.lastPresetId !== null;
     if (presetChanged) {
       // Old preset's variables, min/max and sparklines would mislead.
       this.inspectPane.resetHistory();
       this.hasBufferedEdits = false;
       this.clearEditorDebounce();
     }
-    if (nextPresetId !== null) {
-      const changed = nextPresetId !== this.lastPresetId;
+    if (presetLoaded) {
+      // A/B slots hold whole buffers. Carried across a switch, toggling
+      // pasted the previous preset's code into this one.
+      this.clearSnapshots();
       this.lastPresetId = nextPresetId;
-      if (changed) {
-        if (this.versionStatus) this.versionStatus.textContent = '';
-        this.paintVersions();
-      }
+      if (this.versionStatus) this.versionStatus.textContent = '';
+      this.paintVersions();
+      this.renderHistorySnapshots();
     }
 
     const preserveBufferedDraft =
@@ -2129,6 +2211,9 @@ export class EditorPanel {
     }
     if (nextSource === this.editor.state.doc.toString()) {
       this.hasBufferedEdits = false;
+    }
+    if (presetLoaded) {
+      this.resetEditorHistory();
     }
     this.setEditorDiagnostics(combinedDiagnostics);
     this.renderSessionState({
@@ -2573,6 +2658,7 @@ export class EditorPanel {
     this.disposeMidiListener = null;
     this.disposeMenuDismiss?.();
     this.disposeMenuDismiss = null;
+    window.clearTimeout(this.abNoticeTimer);
     this.clearEditorDebounce();
     if (this.bufferedEditDebounceId !== null) {
       window.clearTimeout(this.bufferedEditDebounceId);
@@ -2597,82 +2683,172 @@ export class EditorPanel {
     this.editor.focus();
   }
 
-  public toggleAbSnapshot(): void {
+  /**
+   * Flip between the two A/B slots. The first press with nothing captured
+   * compares against the original preset: slot A is the source as shipped
+   * (or saved), slot B the buffer as it stands. It used to seed slot A with
+   * whatever the buffer happened to hold, so "A/B" compared an edit with
+   * itself until you thought to snapshot something first.
+   *
+   * Swaps stay out of undo history: they change which version is showing,
+   * not the code, and as undo steps they interleaved with real edits.
+   */
+  public async toggleAbSnapshot(): Promise<void> {
+    if (this.abBaseline === 'original') {
+      this.toggleOriginalComparison();
+      return;
+    }
+    if (this.snapshotSourceA === null && this.snapshotSourceB === null) {
+      const presetId = this.lastPresetId;
+      const original = (await this.callbacks.getOriginalSource?.()) ?? null;
+      // A preset switch while the original was loading owns the editor now.
+      if (presetId !== this.lastPresetId) return;
+      if (original !== null) {
+        const currentDoc = this.editor.state.doc.toString();
+        if (samePresetSource(original, currentDoc)) {
+          this.paintAbButton('No edits yet');
+          return;
+        }
+        this.snapshotSourceA = original;
+        this.snapshotSourceB = currentDoc;
+        this.abBaseline = 'original';
+        this.toggleOriginalComparison();
+        return;
+      }
+    }
+
     const currentDoc = this.editor.state.doc.toString();
     if (this.snapshotSourceA === null) {
       this.snapshotSourceA = currentDoc;
     }
-
     if (this.snapshotSlot === 'A') {
       this.snapshotSourceA = currentDoc;
-      if (this.snapshotSourceB !== null) {
-        this.suppressEditorChange = true;
-        this.editor.dispatch({
-          changes: {
-            from: 0,
-            to: this.editor.state.doc.length,
-            insert: this.snapshotSourceB,
-          },
-        });
-        this.suppressEditorChange = false;
+      if (this.snapshotSourceB === null) {
         this.snapshotSlot = 'B';
-      } else {
-        this.snapshotSlot = 'B';
+        this.paintAbButton();
+        this.applyCurrentSource();
+        return;
       }
+      this.showAbSlot('B');
     } else {
       this.snapshotSourceB = currentDoc;
-      if (this.snapshotSourceA !== null) {
-        this.suppressEditorChange = true;
-        this.editor.dispatch({
-          changes: {
-            from: 0,
-            to: this.editor.state.doc.length,
-            insert: this.snapshotSourceA,
-          },
-        });
-        this.suppressEditorChange = false;
-      }
+      this.showAbSlot('A');
+    }
+  }
+
+  /**
+   * Original ⇄ your edit. The original is shown read-only; going back puts
+   * the edited state back exactly as it was, cursor and undo history too.
+   */
+  private toggleOriginalComparison() {
+    if (this.abEditState === null) {
+      if (this.snapshotSourceA === null) return;
+      this.abEditState = this.showReadOnlySource(this.snapshotSourceA);
       this.snapshotSlot = 'A';
+    } else {
+      this.restoreEditorState(this.abEditState);
+      this.abEditState = null;
+      this.snapshotSourceB = this.editor.state.doc.toString();
+      this.snapshotSlot = 'B';
     }
-
-    if (this.abButton) {
-      this.abButton.dataset.slot = this.snapshotSlot;
-      this.abButton.textContent = `Slot ${this.snapshotSlot}`;
-      this.abButton.title = `Active Slot ${this.snapshotSlot} (Cmd/Ctrl+Shift+B to toggle)`;
-    }
-
+    this.paintAbButton();
     this.applyCurrentSource();
+  }
+
+  /** Put one slot's source in the buffer and on the stage. */
+  private showAbSlot(slot: 'A' | 'B') {
+    const source = slot === 'A' ? this.snapshotSourceA : this.snapshotSourceB;
+    if (source !== null) {
+      this.suppressEditorChange = true;
+      this.editor.dispatch({
+        changes: { from: 0, to: this.editor.state.doc.length, insert: source },
+        annotations: isolateHistory.of('full'),
+      });
+      this.suppressEditorChange = false;
+    }
+    this.snapshotSlot = slot;
+    this.paintAbButton();
+    this.applyCurrentSource();
+  }
+
+  private paintAbButton(notice?: string) {
+    const button = this.abButton;
+    if (!button) return;
+    window.clearTimeout(this.abNoticeTimer);
+    if (notice) {
+      button.textContent = notice;
+      this.abNoticeTimer = window.setTimeout(() => this.paintAbButton(), 2400);
+      return;
+    }
+    if (this.snapshotSourceA === null && this.snapshotSourceB === null) {
+      button.dataset.slot = 'none';
+      button.textContent = 'A/B';
+      button.title = 'Compare with the original (Cmd/Ctrl+Shift+B)';
+      return;
+    }
+    button.dataset.slot = this.snapshotSlot;
+    const original = this.abBaseline === 'original';
+    const showing =
+      this.snapshotSlot === 'A'
+        ? original
+          ? 'Original'
+          : 'Slot A'
+        : original
+          ? 'Your edit'
+          : 'Slot B';
+    const other =
+      this.snapshotSlot === 'A'
+        ? original
+          ? 'your edit'
+          : 'slot B'
+        : original
+          ? 'the original'
+          : 'slot A';
+    button.textContent = showing;
+    button.title = `Showing ${showing.toLowerCase()} (Cmd/Ctrl+Shift+B shows ${other})`;
   }
 
   public snapshotSlotA(): void {
     this.snapshotSourceA = this.editor.state.doc.toString();
     this.snapshotSlot = 'A';
-    if (this.abButton) {
-      this.abButton.dataset.slot = 'A';
-      this.abButton.textContent = 'Slot A';
-      this.abButton.title = 'Active Slot A (Cmd/Ctrl+Shift+B to toggle)';
-    }
+    this.abBaseline = 'snapshot';
+    this.paintAbButton();
   }
 
   public snapshotSlotB(): void {
     this.snapshotSourceB = this.editor.state.doc.toString();
     this.snapshotSlot = 'B';
-    if (this.abButton) {
-      this.abButton.dataset.slot = 'B';
-      this.abButton.textContent = 'Slot B';
-      this.abButton.title = 'Active Slot B (Cmd/Ctrl+Shift+B to toggle)';
-    }
+    this.abBaseline = 'snapshot';
+    this.paintAbButton();
   }
 
   public clearSnapshots(): void {
+    if (this.abEditState !== null) {
+      // Dropped, not restored: whatever replaces the buffer next (a preset
+      // load, a revert) is what should be there.
+      this.abEditState = null;
+      this.endReadOnly();
+    }
     this.snapshotSourceA = null;
     this.snapshotSourceB = null;
     this.snapshotSlot = 'A';
-    if (this.abButton) {
-      this.abButton.dataset.slot = 'none';
-      this.abButton.textContent = 'A/B';
-      this.abButton.title = 'Compare A/B snapshots (Cmd/Ctrl+Shift+B)';
+    this.abBaseline = 'snapshot';
+    this.paintAbButton();
+  }
+
+  /** Replace the buffer with the original preset, as one undoable edit. */
+  private async revertToOriginal(): Promise<void> {
+    const presetId = this.lastPresetId;
+    const original = (await this.callbacks.getOriginalSource?.()) ?? null;
+    if (original === null || presetId !== this.lastPresetId) return;
+    // Mid-comparison, put the edit back first so the revert is a step its
+    // undo history can take back.
+    if (this.abEditState !== null) {
+      this.restoreEditorState(this.abEditState);
+      this.abEditState = null;
     }
+    this.clearSnapshots();
+    this.restoreSource(original);
   }
 
   public getSnapshotState(): {
@@ -4115,11 +4291,24 @@ export class EditorPanel {
   }
 
   private pushSnapshot(source: string, label: string) {
-    this.snapshots.push({ source, timestamp: Date.now(), label });
+    this.snapshots.push({
+      presetId: this.lastPresetId,
+      source,
+      timestamp: Date.now(),
+      label,
+    });
     // Cap history so a long editing session doesn't grow this unbounded;
-    // only the most recent checkpoints are ever useful to restore.
-    if (this.snapshots.length > 8) {
-      this.snapshots.splice(0, this.snapshots.length - 8);
+    // only the most recent checkpoints are ever useful to restore. Eight per
+    // preset, across the last few presets touched.
+    if (this.snapshots.length > 32) {
+      this.snapshots.splice(0, this.snapshots.length - 32);
+    }
+    const mine = this.snapshots.filter(
+      (snapshot) => snapshot.presetId === this.lastPresetId,
+    );
+    if (mine.length > 8) {
+      const drop = new Set(mine.slice(0, mine.length - 8));
+      this.snapshots = this.snapshots.filter((snapshot) => !drop.has(snapshot));
     }
     this.renderHistorySnapshots();
   }
@@ -4127,14 +4316,17 @@ export class EditorPanel {
   private renderHistorySnapshots() {
     if (!this.historyList) return;
     this.historyList.replaceChildren();
-    if (this.snapshots.length === 0) {
+    const snapshots = this.snapshots.filter(
+      (snapshot) => snapshot.presetId === this.lastPresetId,
+    );
+    if (snapshots.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'stims-editor__history-empty';
       empty.textContent = 'No checkpoints yet.';
       this.historyList.appendChild(empty);
       return;
     }
-    [...this.snapshots].reverse().forEach((snapshot) => {
+    [...snapshots].reverse().forEach((snapshot) => {
       const row = document.createElement('div');
       row.className = 'stims-editor__history-row';
 
