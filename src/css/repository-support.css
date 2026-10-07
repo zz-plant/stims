@@ -8,24 +8,36 @@
   font-size: 0.8125rem;
 }
 
-.stims-repository-support p,
-.stims-editor-intro p {
+.stims-repository-support p {
   margin: 0 0 8px;
   line-height: 1.5;
 }
 
 .stims-repository-support > div,
-.stims-editor-intro__heading,
-.stims-editor-intro__actions {
+.stims-editor-intro__heading {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.stims-editor-intro__heading {
-  justify-content: space-between;
-  margin-bottom: 8px;
+/* The guide sits above the code, so it keeps to two rows: the title with
+   its actions, then one line of text. */
+.stims-editor-intro {
+  padding: 10px 12px;
+}
+
+.stims-editor-intro__heading strong {
+  margin-right: auto;
+}
+
+.stims-editor-intro p {
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+
+.stims-editor-intro p:empty {
+  margin: 0;
 }
 
 .stims-repository-support a,
@@ -56,4 +68,12 @@
 .stims-editor-intro button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* A mouse does not need a 44px target, and the code below needs the room. */
+@media (pointer: fine) {
+  .stims-editor-intro button {
+    min-height: 30px;
+    padding: 4px 10px;
+  }
 }

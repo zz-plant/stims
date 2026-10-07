@@ -85,6 +85,13 @@
   .panel[data-exiting="true"] {
     animation: slide-down 0.2s ease forwards;
   }
+
+  /* The editor sheet is always full height. Sized to its content, the
+     sheet's height was never definite, so the code view's percentage height
+     fell back to the whole document and its scroller never scrolled. */
+  .panel[data-stage-anchored="true"] {
+    height: 92dvh;
+  }
 }
 
 @keyframes slide-in-right {

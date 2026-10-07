@@ -6,7 +6,9 @@
  * its code while it runs." This suite checks that promise from the first-run
  * state, with no deep link:
  *
- *   1. Play demo, then open the editor from the stage dock.
+ *   1. Play demo, then open the editor from the stage dock. The code shows
+ *      at least eight lines with the Tune tab on screen, at 1280x720 here
+ *      and at the 1366x657 a 1366x768 laptop leaves after browser chrome.
  *   2. Read the audio sources the Tune pane shows for every control and
  *      compare them with `analyzePresetDataflow` for the same preset.
  *   3. Type one edit into the code.
@@ -104,6 +106,13 @@ const EDIT_FRAME_BUDGET = 150;
 const AUDIO_SAMPLES = 6;
 const AUDIO_SAMPLE_FRAMES = 5;
 
+/**
+ * The fewest lines of code the editor shows. With the first-edit guide and a
+ * fixed-height dock above and below it, the code got 13px at 1280x720 and 0px
+ * at 1366x657; it now keeps its height and the dock gives way.
+ */
+const MIN_CODE_LINES = 8;
+
 const LAUNCH_TIMEOUT_MS = 60_000;
 /** The home page's Play demo lives in a lazy chunk a cold vite transforms. */
 const HOME_CHUNK_TIMEOUT_MS = 90_000;
@@ -168,6 +177,42 @@ async function waitForFrames(page: Page, frames: number): Promise<void> {
     },
     { start, frames },
     { timeout: FRAME_WAIT_TIMEOUT_MS, polling: 100 },
+  );
+}
+
+/**
+ * How many of its own lines the code area is tall, and whether the Tune tab is
+ * inside the viewport: the code must not get its room by pushing the dock off
+ * screen.
+ */
+async function readEditorRoom(
+  page: Page,
+): Promise<{ codeLines: number; tuneOnScreen: boolean }> {
+  return bounded(
+    page.evaluate(() => {
+      const code = document.querySelector('.stims-editor__code');
+      const content = document.querySelector('.stims-editor__code .cm-content');
+      const tune = document.querySelector('#stims-editor-tab-tune');
+      // The type's line height, not a rendered line's box: long equations
+      // wrap, and a wrapped line is two rows tall.
+      const lineHeight = content
+        ? Number.parseFloat(getComputedStyle(content).lineHeight)
+        : 0;
+      const tuneBox = tune?.getBoundingClientRect();
+      return {
+        codeLines:
+          lineHeight > 0
+            ? (code?.getBoundingClientRect().height ?? 0) / lineHeight
+            : 0,
+        tuneOnScreen: Boolean(
+          tuneBox &&
+            tuneBox.height > 0 &&
+            tuneBox.top >= 0 &&
+            tuneBox.bottom <= window.innerHeight,
+        ),
+      };
+    }),
+    'measuring the editor',
   );
 }
 
@@ -339,6 +384,16 @@ requiredBrowserTest(
       await page
         .locator('#stims-editor-tab-tune[aria-selected="true"]')
         .waitFor({ timeout: EDITOR_TIMEOUT_MS });
+      await page
+        .locator('.stims-editor__code .cm-content')
+        .waitFor({ timeout: EDITOR_TIMEOUT_MS });
+
+      const room = await readEditorRoom(page);
+      expect(
+        room.codeLines,
+        'lines of code at 1280x720',
+      ).toBeGreaterThanOrEqual(MIN_CODE_LINES);
+      expect(room.tuneOnScreen, 'the Tune tab at 1280x720').toBe(true);
 
       // The chips fill in once the compiled preset reaches the panel. Read
       // them every few engine frames until they settle on the expectation or
@@ -422,6 +477,18 @@ requiredBrowserTest(
         new Set(levels).size,
         `audio levels ${levels}`,
       ).toBeGreaterThanOrEqual(3);
+
+      // Last, because a resize restarts the stage's feedback: the shortest
+      // common laptop viewport. The editor is still open with the guide
+      // above the code, and since the edit a draft note sits over it too.
+      await page.setViewportSize({ width: 1366, height: 657 });
+      await waitForFrames(page, 2);
+      const laptop = await readEditorRoom(page);
+      expect(
+        laptop.codeLines,
+        'lines of code at 1366x657',
+      ).toBeGreaterThanOrEqual(MIN_CODE_LINES);
+      expect(laptop.tuneOnScreen, 'the Tune tab at 1366x657').toBe(true);
     } catch (error) {
       await writeAgentFailureArtifact(page, 'open-one-up');
       throw error;
@@ -431,10 +498,10 @@ requiredBrowserTest(
   },
   // Worst case, every bound reached in sequence: launch 60 + goto 60 + home
   // chunk 90 + click 30 + live 60 + stage box 30 + Edit 30 + panel 60 + Tune
-  // 60 + chips 60 (+ a last frame wait 60) + 4 page reads 60 + code click 30
-  // + edit frames 60 + audio frames 60 + failure dump 30 + teardown 30 =
-  // 900s, against a stage that stops rendering at the worst moment. Each step
-  // fails at its own deadline with a message naming it; this backstop only
-  // exists so the first real error wins.
-  { timeout: 960_000 },
+  // 60 + code lines 60 + chips 60 (+ a last frame wait 60) + 6 page reads 90
+  // + code click 30 + edit frames 60 + audio frames 60 + resize frames 60 +
+  // failure dump 30 + teardown 30 = 1050s, against a stage that stops
+  // rendering at the worst moment. Each step fails at its own deadline with a
+  // message naming it; this backstop only exists so the first real error wins.
+  { timeout: 1_110_000 },
 );
