@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>milkdrop-toolchain</title>
+<meta name="description" content="Parse, compile, analyze, format and export MilkDrop .milk presets in TypeScript: EEL2 interpreter and JIT, IR, HLSL shader analysis with GLSL emission, EEL to WGSL. Try it in the browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%233b6ea5'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='16' font-weight='700' text-anchor='middle' fill='%23fff'%3E%7B%7D%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="./styles.css">
+<style>
+  /* Pipeline figure */
+  .pipeline { color: var(--muted); font-family: var(--sans); }
+  .pipeline .node { fill: var(--card); stroke: var(--line); }
+  .pipeline .node.ir { fill: var(--accent); stroke: var(--accent); }
+  .pipeline .node.out { fill: var(--bg); stroke: var(--accent-2); stroke-width: 1.5; }
+  .pipeline .name { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
+  .pipeline .ir .name, .pipeline .ir .role, .pipeline text.on-ir { fill: var(--accent-ink); }
+  .pipeline .role { font-size: 11px; fill: var(--muted); }
+  .pipeline .edge { stroke: var(--muted); stroke-width: 1.2; fill: none; }
+  .pipeline .label { font-size: 11px; fill: var(--muted); }
+
+  /* Playground */
+  .pg { display: grid; gap: 14px; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+  .pg-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .pg-toolbar .status { font-size: 13px; color: var(--muted); }
+  #source { min-height: 420px; resize: vertical; line-height: 1.45; tab-size: 2; }
+  .panel h3 { margin: 0 0 8px; font-size: 15px; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .panel h3 code { font-size: 12px; color: var(--muted); font-weight: 400; background: none; padding: 0; }
+  .panel + .panel { margin-top: 14px; }
+  .panel pre { margin: 0; max-height: 360px; }
+  .panel table { font-size: 13px; }
+  .panel th, .panel td { padding: 5px 8px; }
+  .panel .empty { color: var(--muted); font-size: 13px; margin: 0; }
+  .pg-grid { margin-top: 14px; }
+  ul.diag { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+  ul.diag li { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; align-items: start; padding: 7px 0; border-top: 1px solid var(--line); }
+  ul.diag li:first-child { border-top: 0; padding-top: 0; }
+  ul.diag .where { font-family: var(--mono); font-size: 12px; color: var(--muted); grid-column: 2; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs .tab { font: inherit; font-size: 13px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); cursor: pointer; }
+  .tabs .tab[aria-selected="true"] { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+  .wgsl-main { max-height: none; }
+  details.more { margin-top: 8px; font-size: 13px; }
+  details.more summary { color: var(--muted); cursor: pointer; }
+  details.more pre { margin-top: 8px; max-height: 420px; }
+  .scratch .expr-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .scratch .expr-row input[type="text"] { flex: 1; min-width: 260px; font-family: var(--mono); font-size: 13px; }
+  .scratch .env { display: flex; gap: 8px 14px; flex-wrap: wrap; margin-bottom: 10px; }
+  .scratch .env label { font-family: var(--mono); font-size: 13px; }
+  .scratch .env input { width: 84px; font: inherit; font-size: 13px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; }
+  .scratch .value { font-family: var(--mono); font-size: 22px; margin: 0 0 6px; color: var(--fg); font-variant-numeric: tabular-nums; }
+  .scratch .value.bad { color: var(--bad); }
+  .badge.kind-audio { color: var(--accent); border-color: var(--accent); }
+  .badge.kind-clockwork { color: var(--accent-2); border-color: var(--accent-2); }
+  .err { color: var(--bad); font-size: 13px; white-space: pre-wrap; margin: 0; }
+  .api table td:first-child { white-space: nowrap; }
+  .api table td:first-child code { white-space: normal; }
+  ol.gotchas li { margin-bottom: 6px; }
+  @media (max-width: 760px) {
+    .pg { grid-template-columns: 1fr; }
+    #source { min-height: 280px; }
+    .api table td:first-child { white-space: normal; }
+    .api table td code, dl.kv dd { overflow-wrap: anywhere; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./">milkdrop-toolchain <small>MilkDrop preset compiler, analyzers and exporters</small></a>
+    <nav>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#playground">Playground</a>
+      <a href="#api">API</a>
+      <a href="#not-here">Not here</a>
+      <a href="#semantics">Semantics</a>
+      <a href="https://github.com/zz-plant/stims/tree/main/packages/milkdrop-toolchain">GitHub</a>
+      <a href="https://www.npmjs.com/package/milkdrop-toolchain">npm</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <h1>The part of a MilkDrop engine that never touches a GPU.</h1>
+    <p class="lead">A TypeScript toolchain for <code>.milk</code> presets: a lossless parser, an EEL2 interpreter and JIT, an intermediate representation, HLSL analysis of the warp and composite shaders with GLSL emission, EEL-to-WGSL compute lowering, a formatter, exact MilkDrop 2 export, and dataflow analysis that reads which audio reaches which control. It keeps presets as <code>.milk</code> files, so anything it writes still opens in MilkDrop, projectM or Butterchurn. Born in <a href="https://toil.fyi">Stims</a>, where the same code compiles every preset the visualizer plays.</p>
+    <div class="row">
+      <span class="install"><span>npm install milkdrop-toolchain</span><button type="button" class="btn" data-copy="npm install milkdrop-toolchain">copy</button></span>
+      <a class="btn primary" href="#playground">Try it in the browser</a>
+      <a class="btn" href="https://github.com/zz-plant/stims/tree/main/packages/milkdrop-toolchain#readme">Read the README</a>
+    </div>
+  </div>
+
+  <section id="pipeline">
+    <h2>Pipeline</h2>
+    <p class="sub">Preset text goes through a lossless line tree, a field parser and the IR builder, which also parses every equation and classifies the shader text. From the IR, three execution tiers agree on one semantics, and the formatter and exporter turn it back into text.</p>
+    <figure>
+      <svg class="pipeline" viewBox="0 0 900 260" width="900" height="260" role="img" aria-labelledby="pipeline-title">
+        <title id="pipeline-title">The compile pipeline: .milk text to syntax tree to fields to IR, then to the interpreter, JIT, WGSL, text and dataflow outputs; shader text to HLSL parse to GLSL and into the IR.</title>
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <!-- Row 1: preset text -->
+        <rect class="node" x="10" y="36" width="90" height="56" rx="8"/>
+        <text class="name" x="55" y="60" text-anchor="middle">.milk text</text>
+        <text class="role" x="55" y="77" text-anchor="middle">preset file</text>
+
+        <path class="edge" d="M100 64 H123" marker-end="url(#arrow)"/>
+
+        <rect class="node" x="125" y="36" width="160" height="56" rx="8"/>
+        <text class="name" x="205" y="60" text-anchor="middle">parsePresetSyntax</text>
+        <text class="role" x="205" y="77" text-anchor="middle">lossless line tree</text>
+
+        <path class="edge" d="M285 64 H308" marker-end="url(#arrow)"/>
+
+        <rect class="node" x="310" y="36" width="180" height="56" rx="8"/>
+        <text class="name" x="400" y="60" text-anchor="middle">parseMilkdropPreset</text>
+        <text class="role" x="400" y="77" text-anchor="middle">fields + diagnostics</text>
+
+        <path class="edge" d="M490 64 H513" marker-end="url(#arrow)"/>
+
+        <g class="ir">
+          <rect class="node ir" x="515" y="36" width="135" height="56" rx="8"/>
+          <text class="name" x="582" y="60" text-anchor="middle">MilkdropPresetIR</text>
+          <text class="role" x="582" y="77" text-anchor="middle">createIR</text>
+        </g>
+
+        <!-- Fan-out from the IR -->
+        <path class="edge" d="M650 60 C 670 60, 670 30, 688 30" marker-end="url(#arrow)"/>
+        <path class="edge" d="M650 64 C 670 64, 670 80, 688 80" marker-end="url(#arrow)"/>
+        <path class="edge" d="M650 68 C 670 68, 670 130, 688 130" marker-end="url(#arrow)"/>
+        <path class="edge" d="M650 72 C 670 72, 670 180, 688 180" marker-end="url(#arrow)"/>
+        <path class="edge" d="M650 76 C 670 76, 670 230, 688 230" marker-end="url(#arrow)"/>
+
+        <rect class="node out" x="690" y="10" width="200" height="40" rx="8"/>
+        <text class="name" x="790" y="27" text-anchor="middle">evaluateMilkdropExpression</text>
+        <text class="role" x="790" y="42" text-anchor="middle">EEL2 interpreter</text>
+
+        <rect class="node out" x="690" y="60" width="200" height="40" rx="8"/>
+        <text class="name" x="790" y="77" text-anchor="middle">compileMilkdropProgram</text>
+        <text class="role" x="790" y="92" text-anchor="middle">EEL2 to JavaScript (JIT)</text>
+
+        <rect class="node out" x="690" y="110" width="200" height="40" rx="8"/>
+        <text class="name" x="790" y="127" text-anchor="middle">compileProgramToWgsl</text>
+        <text class="role" x="790" y="142" text-anchor="middle">EEL2 to WGSL compute</text>
+
+        <rect class="node out" x="690" y="160" width="200" height="40" rx="8"/>
+        <text class="name" x="790" y="177" text-anchor="middle">format / exportMilkdrop2</text>
+        <text class="role" x="790" y="192" text-anchor="middle">.milk text back out</text>
+
+        <rect class="node out" x="690" y="210" width="200" height="40" rx="8"/>
+        <text class="name" x="790" y="227" text-anchor="middle">analyzePresetDataflow</text>
+        <text class="role" x="790" y="242" text-anchor="middle">which audio reaches what</text>
+
+        <!-- Row 2: shader text -->
+        <rect class="node" x="10" y="170" width="160" height="56" rx="8"/>
+        <text class="name" x="90" y="194" text-anchor="middle">warp / comp shader</text>
+        <text class="role" x="90" y="211" text-anchor="middle">HLSL text</text>
+
+        <path class="edge" d="M170 198 H193" marker-end="url(#arrow)"/>
+
+        <rect class="node" x="195" y="170" width="205" height="56" rx="8"/>
+        <text class="name" x="297" y="194" text-anchor="middle">parseMilkdropShaderStatement</text>
+        <text class="role" x="297" y="211" text-anchor="middle">shader AST + extractShaderControls</text>
+
+        <path class="edge" d="M400 198 H423" marker-end="url(#arrow)"/>
+
+        <rect class="node out" x="425" y="170" width="165" height="56" rx="8"/>
+        <text class="name" x="507" y="194" text-anchor="middle">normalizeHlslToGlsl</text>
+        <text class="role" x="507" y="211" text-anchor="middle">GLSL ES for WebGL</text>
+
+        <!-- Shader analysis feeds the IR -->
+        <path class="edge" d="M370 170 C 410 125, 490 110, 553 95" marker-end="url(#arrow)"/>
+        <text class="label" x="465" y="156" text-anchor="middle">shader controls + classification</text>
+      </svg>
+      <figcaption>Hand-drawn from the module graph in <code>src/</code>. Gold outlines are outputs; the IR is the one shared reading of what a preset means.</figcaption>
+    </figure>
+  </section>
+
+  <section id="playground">
+    <h2>Playground</h2>
+    <p class="sub">The library, bundled from the same <code>dist/</code> the package ships, running in your tab. Edit the preset; everything below recompiles as you type.</p>
+    <div class="pg" id="pg" data-state="loading">
+      <div class="pg-editor">
+        <div class="pg-toolbar">
+          <button id="compile" class="btn primary" type="button">Compile</button>
+          <span id="status" class="status stat">Loading the library…</span>
+        </div>
+        <textarea id="source" spellcheck="false" aria-label="Preset source">[preset00]
+fRating=3
+fDecay=0.98
+nWaveMode=7
+fWaveAlpha=0.8
+bAdditiveWaves=1
+per_frame_init_1=q1 = 0.5;
+per_frame_1=zoom = 1 + 0.02 * bass_att; // bass pumps the zoom
+per_frame_2=rot = sin(time * 0.3) * 0.02;
+per_frame_3=wave_r = 0.5 + 0.5 * sin(time);
+per_frame_4=q2 = foo(1); // unknown function: a warning, evaluates to 0
+per_pixel_1=warp = q1 * (1 - rad);
+per_pixel_2=zoom = zoom + 0.01 * treb;
+warp_1=`shader_body {
+warp_2=`  ret = tex2D(sampler_main, uv + 0.01 * sin(time)).xyz;
+warp_3=`}
+comp_1=`shader_body {
+comp_2=`  float3 c = tex2D(sampler_main, uv).xyz;
+comp_3=`  ret = c * (1 + 0.2 * bass);
+comp_4=`}
+</textarea>
+      </div>
+      <div class="pg-side">
+        <div class="card panel">
+          <h3>Diagnostics <code>compiled.diagnostics</code></h3>
+          <div id="diagnostics"><p class="empty">Waiting for the first compile.</p></div>
+        </div>
+        <div class="card panel">
+          <h3>IR summary <code>compiled.ir</code></h3>
+          <div id="ir"><p class="empty">Waiting for the first compile.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid pg-grid">
+      <div class="card panel">
+        <h3>Dataflow <code>analyzePresetDataflow</code></h3>
+        <div id="dataflow"><p class="empty">Waiting for the first compile.</p></div>
+      </div>
+      <div class="card panel">
+        <h3>Per-frame block as WGSL <code>compileProgramToWgsl</code></h3>
+        <div id="wgsl"><p class="empty">Waiting for the first compile.</p></div>
+      </div>
+    </div>
+
+    <div class="card panel">
+      <h3>Text back out</h3>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" type="button" data-tab="formatted" aria-selected="true">formatMilkdropPreset</button>
+        <button class="tab" role="tab" type="button" data-tab="md2" aria-selected="false">exportMilkdrop2Preset</button>
+        <button class="tab" role="tab" type="button" data-tab="glsl" aria-selected="false">shader GLSL</button>
+      </div>
+      <div id="tab-formatted" role="tabpanel"><p class="empty">Waiting for the first compile.</p></div>
+      <div id="tab-md2" role="tabpanel" hidden></div>
+      <div id="tab-glsl" role="tabpanel" hidden></div>
+    </div>
+
+    <div class="card panel scratch">
+      <h3>Expression scratchpad <code>parseMilkdropExpression + evaluateMilkdropExpression</code></h3>
+      <div class="expr-row">
+        <input id="expr" type="text" value="zoom * (1 + 0.1 * if(above(bass, 1), bass - 1, 0)) + 3 / 0" aria-label="EEL2 expression" spellcheck="false">
+      </div>
+      <div class="env" id="env">
+        <label>bass <input type="number" step="0.1" name="bass" value="1.4"></label>
+        <label>mid <input type="number" step="0.1" name="mid" value="1"></label>
+        <label>treb <input type="number" step="0.1" name="treb" value="1"></label>
+        <label>time <input type="number" step="0.5" name="time" value="12"></label>
+        <label>zoom <input type="number" step="0.01" name="zoom" value="1"></label>
+      </div>
+      <p class="value" id="expr-value">…</p>
+      <div id="expr-diag"></div>
+      <p class="empty">Every other name reads as 0. <code>3 / 0</code> contributes 0, not Infinity; that is EEL2, not a bug.</p>
+    </div>
+  </section>
+
+  <section id="api" class="api">
+    <h2>API at a glance</h2>
+    <p class="sub">Everything is exported from the package root; every module under <code>src/</code> is also importable as <code>milkdrop-toolchain/src/&lt;file&gt;.ts</code>. The main entries, grouped as in the README.</p>
+
+    <h3>Preset text</h3>
+    <table>
+      <tr><th>Export</th><th>Purpose</th></tr>
+      <tr><td><code>parsePresetSyntax(source)</code> / <code>printPresetSyntax(tree)</code></td><td>Lossless line-level syntax tree of a <code>.milk</code> file; printing gives back the exact bytes.</td></tr>
+      <tr><td><code>fieldAssignments(tree)</code>, <code>isShaderSection(name)</code>, <code>splitInlineComment(line)</code></td><td>Helpers over the syntax tree.</td></tr>
+      <tr><td><code>parseMilkdropPreset(source)</code></td><td>Fields and sections of a preset, with parse diagnostics.</td></tr>
+    </table>
+
+    <h3>Compiler</h3>
+    <table>
+      <tr><th>Export</th><th>Purpose</th></tr>
+      <tr><td><code>compileMilkdropPresetSource(raw, source?, options?)</code></td><td>Parse, build the IR, format, and cache; returns a <code>MilkdropCompiledPreset</code>.</td></tr>
+      <tr><td><code>createIR(ast, diagnostics, source?, options?)</code>, <code>createMilkdropIr(...)</code></td><td>The IR builder without the cache or formatter.</td></tr>
+      <tr><td><code>buildParityReport(ir, options)</code></td><td>Per-backend parity report: what runs as written, what is approximated, what is blocked.</td></tr>
+      <tr><td><code>classifyFidelity</code>, <code>buildBackendDivergence</code>, <code>buildVisualFallbacks</code>, <code>buildDegradationReasons</code></td><td>The pieces of the compatibility classification.</td></tr>
+      <tr><td><code>DEFAULT_MILKDROP_STATE</code>, <code>createDefaultCustomWaveSlot()</code>, <code>createDefaultShapeSlot()</code></td><td>MilkDrop's default per-frame state and slot templates.</td></tr>
+      <tr><td><code>clearCompiledPresetCache()</code>, <code>warmupCompiledPresetCache(presets)</code></td><td>Control the compile cache.</td></tr>
+    </table>
+
+    <h3>EEL2 expressions</h3>
+    <table>
+      <tr><th>Export</th><th>Purpose</th></tr>
+      <tr><td><code>parseMilkdropExpression(source, line)</code></td><td>Parse one expression to an AST, with diagnostics.</td></tr>
+      <tr><td><code>parseMilkdropStatement(source, line)</code>, <code>splitMilkdropStatements(source)</code></td><td>Parse <code>target = expr;</code> statements, split a block on <code>;</code>.</td></tr>
+      <tr><td><code>evaluateMilkdropExpression(node, env, helpers?)</code></td><td>Tree-walking interpreter.</td></tr>
+      <tr><td><code>compileMilkdropProgram(block)</code></td><td>JIT a program block to a JavaScript function; falls back to the interpreter when <code>new Function</code> is blocked by CSP.</td></tr>
+      <tr><td><code>compileProgramToWgsl(block, options?)</code>, <code>buildWgslExpressionString(node, ...)</code></td><td>Lower a program block, or one expression, to WGSL.</td></tr>
+      <tr><td><code>MILKDROP_WGSL_SIGNAL_FIELDS</code>, <code>MILKDROP_WGSL_SIGNAL_ALIAS_MAP</code></td><td>The <code>VmSignals</code> uniform layout and its aliases.</td></tr>
+      <tr><td><code>EEL_FUNCTIONS</code>, <code>EEL_BINARY_OPERATORS</code>, <code>EEL_UNARY_OPERATORS</code>, <code>getEelFunctionSpec(name)</code></td><td>The one function table the interpreter, JIT and WGSL generator all read.</td></tr>
+      <tr><td><code>MILKDROP_FIELDS</code>, <code>buildFieldAliasMap()</code>, <code>MILKDROP2_FIELD_PAIRS</code></td><td>The field table: every known preset field, its type, default and spellings.</td></tr>
+      <tr><td><code>MILKDROP_BUILTIN_DOCS</code>, <code>MILKDROP_INTRINSIC_FUNCTION_NAMES</code>, <code>findNearestMatch(name, candidates)</code></td><td>Documentation of every builtin, and spelling suggestions, for editors and linters.</td></tr>
+    </table>
+
+    <h3>Shader text</h3>
+    <table>
+      <tr><th>Export</th><th>Purpose</th></tr>
+      <tr><td><code>extractShaderSource(fields, stage)</code>, <code>ensureShaderBody(text)</code></td><td>Recover the warp or comp shader text from the preset's backtick lines.</td></tr>
+      <tr><td><code>parseMilkdropShaderStatement(line)</code>, <code>evaluateMilkdropShaderExpression(node, env)</code></td><td>Parse one HLSL statement to a shader AST; constant-evaluate a shader expression.</td></tr>
+      <tr><td><code>extractShaderControls(...)</code>, <code>evaluateMilkdropShaderControlProgram(...)</code></td><td>Read, and evaluate per frame, the colour, texture and warp controls a shader body sets.</td></tr>
+      <tr><td><code>normalizeHlslToGlsl(body, ...)</code>, <code>generateGlslFromShaderStatements(statements, stage)</code></td><td>Translate an HLSL shader body to GLSL ES, or rebuild GLSL from parsed statements.</td></tr>
+      <tr><td><code>describeShaderTranslations(compiled)</code>, <code>resolveShaderExecutionMode(compiled, backend)</code></td><td>Per-stage summary: source, GLSL, which path produced it, and whether each backend runs it as written.</td></tr>
+      <tr><td><code>MILKDROP_SHADER_TEXTURE_SAMPLERS</code>, <code>MILKDROP_TEXTURE_FILES</code></td><td>The sampler name tables and the texture files MilkDrop ships.</td></tr>
+    </table>
+
+    <h3>Formatting and export</h3>
+    <table>
+      <tr><th>Export</th><th>Purpose</th></tr>
+      <tr><td><code>formatMilkdropPreset(compiled)</code></td><td>Serialize a compiled preset back to <code>.milk</code> text in the editor dialect.</td></tr>
+      <tr><td><code>exportMilkdrop2Preset(compiled)</code></td><td>Write the MilkDrop 2 file format: <code>MILKDROP_PRESET_VERSION</code>, MilkDrop's key names, backtick shader lines.</td></tr>
+      <tr><td><code>readMilkdropField(source, key)</code>, <code>upsertMilkdropField(source, key, value)</code>, <code>upsertMilkdropFields(source, entries)</code></td><td>Read or set fields in preset text without disturbing the rest.</td></tr>
+      <tr><td><code>isFieldShadowedByEquations(...)</code>, <code>getFieldOverwriteKind(...)</code></td><td>Which fields an equation overwrites each frame.</td></tr>
+      <tr><td><code>lineageFromFields(fields)</code>, <code>lineageFieldLines(refs)</code></td><td>Remix lineage metadata stored in the preset.</td></tr>
+    </table>
+
+    <h3>Static analysis</h3>
+    <table>
+      <tr><th>Export</th><th>Purpose</th></tr>
+      <tr><td><code>analyzePresetDataflow(ir)</code></td><td>Which audio signals reach which control or drawn part, read from the equations.</td></tr>
+      <tr><td><code>controlAudio</code>, <code>drawnPartAudio</code>, <code>frameValueName</code>, <code>dataflowSignature</code></td><td>Query and fingerprint a dataflow result.</td></tr>
+      <tr><td><code>analyzePresetMath(source)</code></td><td>Motion, reactivity and complexity summary of a preset's equations.</td></tr>
+    </table>
+    <p>The <code>MilkdropCompiledPreset</code>, <code>MilkdropPresetIR</code>, <code>MilkdropProgramBlock</code>, <code>MilkdropExpressionNode</code>, <code>MilkdropDiagnostic</code>, <code>MilkdropShaderStatement</code> and <code>MilkdropRuntimeSignals</code> types are exported from the root.</p>
+  </section>
+
+  <section id="not-here">
+    <h2>What is not here</h2>
+    <p class="sub">The package stops where the GPU starts. Four things a complete engine needs that live in the host instead.</p>
+    <div class="grid">
+      <div class="card"><h3>The renderer</h3><p>Drawing waves, shapes, the warp mesh and the composite pass, and feeding audio into the signal environment, is the host's job. Stims does it with three.js on WebGL and WebGPU.</p></div>
+      <div class="card"><h3>The CPU VM</h3><p><code>compileMilkdropProgram</code> gives you a function per program block; the loop that runs init, per-frame, per-pixel and the custom wave and shape programs in order, with the right register bank, and blends between presets, lives in Stims (<code>vm.ts</code>).</p></div>
+      <div class="card"><h3>The GPU compute VM</h3><p>Dispatching the WGSL this package generates and reading the state buffer back.</p></div>
+      <div class="card"><h3>HLSL to WGSL</h3><p>In Stims the shader text becomes WGSL through three.js TSL nodes, which this package does not depend on. The HLSL side here stops at the GLSL translation and the control analysis.</p></div>
+    </div>
+  </section>
+
+  <section id="semantics">
+    <h2>Semantics</h2>
+    <p class="sub">The EEL2 semantics the interpreter, the JIT and the WGSL generator implement are specified by the sibling package <a href="../eel-conformance/">eel-conformance</a> (<a href="https://www.npmjs.com/package/eel-conformance">npm</a>): portable JSON cases, a JSON Schema and a runner contract, which this package runs in its test suite. Five behaviours that differ from JavaScript and trip up most reimplementations:</p>
+    <ol class="gotchas">
+      <li><strong>Division by exact zero yields <code>0</code></strong>, not <code>Infinity</code> or <code>NaN</code> (<code>3 / 0</code> is <code>0</code>).</li>
+      <li><strong><code>%</code> truncates both operands to integers first</strong>, and a zero divisor yields <code>0</code>.</li>
+      <li><strong>Truthiness is <code>|v| &gt; 0.00001</code></strong>: <code>if(0.000001, a, b)</code> takes the <code>b</code> branch.</li>
+      <li><strong><code>bor</code> and <code>band</code> are logical, not bitwise</strong>: <code>bor(0.5, 0)</code> is <code>1</code>.</li>
+      <li><strong>Identifiers are case-insensitive</strong>: <code>Zoom</code>, <code>ZOOM</code> and <code>zoom</code> are the same variable, and <code>pi</code> and <code>e</code> are ordinary prepopulated variables a preset may overwrite.</li>
+    </ol>
+    <p>Try any of them in the scratchpad above.</p>
+  </section>
+
+  <footer>
+    <p>Extracted from <a href="https://github.com/zz-plant/stims">zz-plant/stims</a>, <code>src/js/milkdrop/</code>, the source of the visualizer at <a href="https://toil.fyi">toil.fyi</a>, where the same compiler reads every preset the renderer plays. 24 of its unit test files came along (510 tests). Public domain (Unlicense).</p>
+  </footer>
+</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

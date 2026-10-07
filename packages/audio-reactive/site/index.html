@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>audio-reactive</title>
+<meta name="description" content="Audio analysis for visualizers: an AudioWorklet FFT with harmonic/percussive separation, per-band beat tracking, spectral features, reactivity metrics and Hermite packet interpolation. No dependencies.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23c9a227'/%3E%3Cpath d='M4 16c3-7 5-7 8 0s5 7 8 0 5-7 8 0' fill='none' stroke='%231f2328' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./styles.css">
+<style>
+  /* Signal path figure */
+  figure.path svg { width: 100%; height: auto; font-family: var(--sans); }
+  figure.path .box { fill: var(--card); stroke: var(--line); }
+  figure.path .box.worklet { fill: none; stroke: var(--accent); stroke-dasharray: 4 3; }
+  figure.path .box.packet { stroke: var(--accent-2); stroke-width: 1.5; }
+  figure.path .arrow { stroke: var(--muted); fill: none; stroke-width: 1.25; marker-end: url(#arrowhead); }
+  figure.path .arrow.recycle { stroke-dasharray: 3 3; }
+  figure.path text { fill: currentColor; font-size: 11px; }
+  figure.path text.title { font-weight: 600; font-size: 12px; }
+  figure.path text.muted { fill: var(--muted); font-size: 10px; }
+  figure.path text.mono { font-family: var(--mono); font-size: 10px; }
+
+  /* Demo layout */
+  .demo-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 14px; }
+  .demo-controls .spacer { flex: 1; }
+  .demo-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .demo-grid .wide { grid-column: 1 / -1; }
+  .card h3 small { color: var(--muted); font-weight: 400; margin-left: 6px; font-size: 13px; }
+  .meter { display: grid; grid-template-columns: 64px 1fr 56px; gap: 10px; align-items: center; font-size: 14px; margin: 6px 0; }
+  .meter .label { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+  .meter .track { position: relative; height: 10px; border-radius: 5px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; }
+  .meter .track::after { content: ""; position: absolute; inset: 0; background: var(--accent); transform-origin: left; transform: scaleX(var(--level, 0)); border-radius: 5px; }
+  .meter.alt .track::after { background: var(--accent-2); }
+  .meter .value { font-variant-numeric: tabular-nums; text-align: right; }
+  .meter .avg { grid-column: 2; color: var(--muted); font-size: 12px; margin-top: -4px; }
+  .beat { display: flex; gap: 16px; align-items: center; margin-top: 8px; }
+  .beat-dot { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--line); background: color-mix(in srgb, var(--accent-2) calc(var(--intensity, 0) * 100%), var(--card)); transform: scale(calc(0.85 + var(--intensity, 0) * 0.3)); transition: transform 60ms linear; flex: none; }
+  .beat dl.kv { flex: 1; }
+  .bands { display: flex; gap: 6px; margin-top: 8px; }
+  .bands .badge.on { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+  .ratio { position: relative; height: 10px; margin: 10px 0 4px; border-radius: 5px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); opacity: 0.85; }
+  .ratio-marker { position: absolute; top: -4px; left: calc(var(--ratio, 0.5) * 100%); width: 4px; height: 18px; margin-left: -2px; border-radius: 2px; background: var(--fg); }
+  .ratio-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  canvas.plot { width: 100%; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); }
+  canvas#spectrum { height: 170px; }
+  canvas#waveform { height: 90px; margin-top: 10px; }
+  canvas#offline-chart { height: 180px; }
+  .compare { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+  .compare canvas { height: 70px; margin-top: 6px; }
+  .compare h4 { margin: 0 0 4px; font-size: 14px; }
+  .compare p { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+  .readouts dl.kv { grid-template-columns: max-content 1fr max-content 1fr; }
+  .readouts dl.kv dd { white-space: nowrap; }
+  .summary { font-family: var(--mono); font-size: 14px; margin: 10px 0 0; }
+  .legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  .legend span::before { content: ""; display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: var(--accent); }
+  .legend span.dot::before { width: 9px; height: 9px; border-radius: 50%; background: var(--accent-2); }
+  table.api td:first-child { white-space: nowrap; }
+  @media (max-width: 640px) {
+    .compare { grid-template-columns: 1fr; }
+    .readouts dl.kv { grid-template-columns: max-content 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./">audio-reactive <small>AudioWorklet analysis for visualizers</small></a>
+    <nav>
+      <a href="#path">Signal path</a>
+      <a href="#demo">Live demo</a>
+      <a href="#offline">Offline</a>
+      <a href="#api">API</a>
+      <a href="#design">Design notes</a>
+      <a href="https://github.com/zz-plant/stims/tree/main/packages/audio-reactive">GitHub</a>
+      <a href="https://www.npmjs.com/package/audio-reactive">npm</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <h1>From an <code>AudioNode</code> to numbers a renderer can use.</h1>
+    <p class="lead">An <code>AudioWorkletProcessor</code> that computes an FFT, harmonic/percussive separation, spectral features and per-band beat envelopes off the main thread, plus the pure functions behind it for band levels, transients and beat tracking that run anywhere, and a Hermite interpolator that turns 43 Hz packets into a continuous curve for 240 Hz displays. Zero dependencies. The spectrum bytes match <code>AnalyserNode.getByteFrequencyData</code>, so it drops in without retuning anything downstream. Born in Stims, the visualizer at <a href="https://toil.fyi">toil.fyi</a>.</p>
+    <div class="row">
+      <span class="install"><span>npm install audio-reactive</span><button class="btn" type="button" data-copy="npm install audio-reactive">copy</button></span>
+      <a class="btn primary" href="#demo">Try the live demo</a>
+      <a class="btn" href="./lib/worklet.js">worklet.js</a>
+    </div>
+  </div>
+
+  <section id="path">
+    <h2>Signal path</h2>
+    <p class="sub">Everything inside the dashed box runs on the audio thread with no per-frame allocation; one packet per FFT block crosses to the main thread with its buffers transferred, not copied.</p>
+    <figure class="path">
+      <svg viewBox="0 0 900 260" role="img" aria-labelledby="path-title" xmlns="http://www.w3.org/2000/svg">
+        <title id="path-title">Signal path: AudioNode into the worklet (Hann window, FFT, dB bytes, HPSS, beat envelopes), a packet to the main thread, then interpolator, band levels and spectral features into the renderer.</title>
+        <defs>
+          <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+          </marker>
+        </defs>
+
+        <!-- Source -->
+        <rect class="box" x="6" y="98" width="106" height="64" rx="8"/>
+        <text class="title" x="59" y="122" text-anchor="middle">AudioNode</text>
+        <text class="muted" x="59" y="138" text-anchor="middle">mic, media element,</text>
+        <text class="muted" x="59" y="151" text-anchor="middle">stream, oscillator</text>
+        <path class="arrow" d="M112 130 H140"/>
+
+        <!-- Worklet -->
+        <rect class="box worklet" x="142" y="14" width="278" height="232" rx="10"/>
+        <text class="mono" x="152" y="30">AudioWorkletGlobalScope: FrequencyAnalyserProcessor</text>
+
+        <rect class="box" x="156" y="44" width="250" height="48" rx="8"/>
+        <text class="title" x="281" y="63" text-anchor="middle">128-frame quanta into fftSize ring</text>
+        <text class="muted" x="281" y="80" text-anchor="middle">Hann window, radix-2 FFT, magnitude to dB to byte</text>
+
+        <path class="arrow" d="M220 92 V108"/>
+        <path class="arrow" d="M342 92 V108"/>
+
+        <rect class="box" x="156" y="110" width="118" height="56" rx="8"/>
+        <text class="title" x="215" y="130" text-anchor="middle">HPSS</text>
+        <text class="muted" x="215" y="144" text-anchor="middle">time and frequency</text>
+        <text class="muted" x="215" y="157" text-anchor="middle">medians, Wiener masks</text>
+
+        <rect class="box" x="288" y="110" width="118" height="56" rx="8"/>
+        <text class="title" x="347" y="130" text-anchor="middle">band averages</text>
+        <text class="muted" x="347" y="144" text-anchor="middle">bass / mid / treble</text>
+        <text class="muted" x="347" y="157" text-anchor="middle">subBass / kick</text>
+
+        <path class="arrow" d="M347 166 V182"/>
+        <path class="arrow" d="M215 166 V182"/>
+
+        <rect class="box" x="156" y="184" width="118" height="48" rx="8"/>
+        <text class="title" x="215" y="204" text-anchor="middle">spectral features</text>
+        <text class="muted" x="215" y="217" text-anchor="middle">flux, crest,</text>
+        <text class="muted" x="215" y="228" text-anchor="middle">centroid, rolloff</text>
+
+        <rect class="box" x="288" y="184" width="118" height="48" rx="8"/>
+        <text class="title" x="347" y="204" text-anchor="middle">beat envelopes</text>
+        <text class="muted" x="347" y="219" text-anchor="middle">per band, transients</text>
+
+        <!-- Worklet to packet -->
+        <path class="arrow" d="M420 130 H446"/>
+
+        <rect class="box packet" x="448" y="98" width="96" height="64" rx="8"/>
+        <text class="title" x="496" y="120" text-anchor="middle">packet</text>
+        <text class="mono" x="496" y="136" text-anchor="middle">port.postMessage</text>
+        <text class="muted" x="496" y="151" text-anchor="middle">transferred buffers</text>
+
+        <path class="arrow" d="M544 130 H572"/>
+
+        <!-- Main thread -->
+        <rect class="box" x="574" y="98" width="84" height="64" rx="8"/>
+        <text class="title" x="616" y="126" text-anchor="middle">main</text>
+        <text class="title" x="616" y="141" text-anchor="middle">thread</text>
+
+        <!-- Fan-out -->
+        <path class="arrow" d="M658 118 C680 118, 680 54, 702 54"/>
+        <path class="arrow" d="M658 130 H702"/>
+        <path class="arrow" d="M658 142 C680 142, 680 206, 702 206"/>
+
+        <rect class="box" x="704" y="30" width="118" height="48" rx="8"/>
+        <text class="title" x="763" y="50" text-anchor="middle">interpolator</text>
+        <text class="muted" x="763" y="65" text-anchor="middle">Hermite between packets</text>
+
+        <rect class="box" x="704" y="106" width="118" height="48" rx="8"/>
+        <text class="title" x="763" y="124" text-anchor="middle">band levels</text>
+        <text class="muted" x="763" y="139" text-anchor="middle">getFrequencyBandLevels</text>
+
+        <rect class="box" x="704" y="182" width="118" height="48" rx="8"/>
+        <text class="title" x="763" y="200" text-anchor="middle">features, beats</text>
+        <text class="muted" x="763" y="215" text-anchor="middle">extractSpectralFeatures</text>
+
+        <!-- Renderer -->
+        <path class="arrow" d="M822 54 C836 54, 836 118, 848 118"/>
+        <path class="arrow" d="M822 130 H848"/>
+        <path class="arrow" d="M822 206 C836 206, 836 142, 848 142"/>
+        <rect class="box" x="850" y="98" width="44" height="64" rx="8"/>
+        <text class="title" x="872" y="123" text-anchor="middle" transform="rotate(-90 872 130)">renderer</text>
+
+        <!-- Recycle -->
+        <path class="arrow recycle" d="M616 162 V256 H281 V248"/>
+        <text class="mono" x="448" y="250" text-anchor="middle">recycle-buffers</text>
+      </svg>
+      <figcaption>Each box is a named export or a packet field; the live demo below shows every one of them in motion.</figcaption>
+    </figure>
+  </section>
+
+  <section id="demo">
+    <h2>Live demo</h2>
+    <p class="sub">The real <code>FrequencyAnalyserProcessor</code>, loaded from <a href="./lib/worklet.js"><code>lib/worklet.js</code></a> (the package's worklet entry bundled into one file), analysing audio in this tab. Nothing leaves the page.</p>
+    <p class="notice" id="worklet-notice" hidden>This browser does not expose <code>AudioWorklet</code>, so the live demo cannot run here. The offline demo below uses the same maths without it.</p>
+    <div class="demo-controls">
+      <label>Source
+        <select id="source" aria-label="Audio source">
+          <option value="builtin" selected>Built-in test signal</option>
+          <option value="microphone">Microphone</option>
+        </select>
+      </label>
+      <button class="btn primary" id="start" type="button">Start</button>
+      <button class="btn" id="stop" type="button" disabled>Stop</button>
+      <span class="badge" id="demo-status">idle</span>
+      <span class="spacer"></span>
+      <span class="muted stat">packets <strong id="packets">0</strong> · <span id="packet-rate">–</span> · <span id="sample-rate">–</span> · fft <span id="fft-size">–</span></span>
+    </div>
+
+    <div class="demo-grid">
+      <div class="card">
+        <h3>Band energy <small>packet.energy</small></h3>
+        <div class="meter"><span class="label">bass</span><div class="track" id="meter-bass" aria-hidden="true"></div><span class="value stat" id="val-bass">–</span><span class="avg">running mean <span class="stat" id="avg-bass">–</span></span></div>
+        <div class="meter"><span class="label">mid</span><div class="track" id="meter-mid" aria-hidden="true"></div><span class="value stat" id="val-mid">–</span><span class="avg">running mean <span class="stat" id="avg-mid">–</span></span></div>
+        <div class="meter"><span class="label">treble</span><div class="track" id="meter-treble" aria-hidden="true"></div><span class="value stat" id="val-treble">–</span><span class="avg">running mean <span class="stat" id="avg-treble">–</span></span></div>
+        <p>Weighted averages of the dB-scaled bytes over 24–320, 320–2800 and 2800–12000 Hz. <code>energyAverages</code> is the mean over the last 64 packets.</p>
+      </div>
+
+      <div class="card">
+        <h3>Beats <small>packet.beatDetection</small></h3>
+        <div class="beat">
+          <div class="beat-dot" id="beat-dot" aria-hidden="true"></div>
+          <dl class="kv">
+            <dt>beats</dt><dd id="beat-count">0</dd>
+            <dt>beatIntensity</dt><dd id="beat-intensity">–</dd>
+          </dl>
+        </div>
+        <div class="bands">
+          <span class="badge" id="beat-bass">bass</span>
+          <span class="badge" id="beat-mid">mid</span>
+          <span class="badge" id="beat-treble">treble</span>
+        </div>
+        <p class="stat" id="transients">transientMetrics –</p>
+        <p>The dot fills with <code>beatIntensity</code>; the badges light while a band's own envelope is above 0.3. Each band compares itself to its running average with a 150 ms refractory interval.</p>
+      </div>
+
+      <div class="card">
+        <h3>Harmonic / percussive <small>packet.harmonicPercussive</small></h3>
+        <div class="meter"><span class="label">harmonic</span><div class="track" id="meter-harmonic" aria-hidden="true"></div><span class="value stat" id="val-harmonic">–</span></div>
+        <div class="meter alt"><span class="label">percussive</span><div class="track" id="meter-percussive" aria-hidden="true"></div><span class="value stat" id="val-percussive">–</span></div>
+        <div class="ratio" aria-hidden="true"><div class="ratio-marker" id="ratio-marker"></div></div>
+        <div class="ratio-ends"><span>harmonic</span><span>percussiveRatio <strong class="stat" id="val-ratio">–</strong></span><span>percussive</span></div>
+        <p class="stat muted" id="hp-split">percussive by region –</p>
+        <p>Median-filter HPSS over the last 7 spectra: sustained tonal content versus broadband transients. 0.5 in silence.</p>
+      </div>
+
+      <div class="card readouts">
+        <h3>Spectral features</h3>
+        <dl class="kv">
+          <dt>spectralCentroid</dt><dd id="val-centroid">–</dd>
+          <dt>spectralFlatness</dt><dd id="val-flatness">–</dd>
+          <dt>spectralRolloff</dt><dd id="val-rolloff">–</dd>
+          <dt>spectralFlux</dt><dd id="val-flux">–</dd>
+          <dt>spectralCrest</dt><dd id="val-crest">–</dd>
+          <dt>rms</dt><dd id="val-rms">–</dd>
+          <dt>zeroCrossingRate</dt><dd id="val-zcr">–</dd>
+        </dl>
+        <p>Centroid and rolloff in Hz; flatness 0 (a tone) to 1 (noise); flux is the positive magnitude change since the previous packet.</p>
+      </div>
+
+      <div class="card wide">
+        <h3>Spectrum and waveform <small>packet.frequencyData, packet.waveformData</small></h3>
+        <canvas class="plot" id="spectrum" aria-label="Byte spectrum on a log-frequency axis"></canvas>
+        <canvas class="plot" id="waveform" aria-label="Byte waveform, 128 is silence"></canvas>
+        <p>512 bytes on the <code>AnalyserNode</code> scale (<code>[-100, -30]</code> dB), drawn on a log-frequency axis; below it the 1024-byte waveform, 128 = silence.</p>
+      </div>
+
+      <div class="card wide">
+        <h3>Interpolator <small>createAudioReactivityInterpolator</small></h3>
+        <div class="compare">
+          <div>
+            <h4>Latest packet</h4>
+            <p>Reading <code>energy.bass</code> straight off the newest packet, once per frame. Steps at the ~43 Hz block rate.</p>
+            <div class="meter"><span class="label">raw</span><div class="track" id="meter-raw" aria-hidden="true"></div><span class="value stat" id="val-raw">–</span></div>
+            <canvas class="plot" id="trace-raw" aria-label="Raw bass over the last few seconds"></canvas>
+          </div>
+          <div>
+            <h4>Hermite spline</h4>
+            <p><code>interpolator.sample(performance.now())</code> on every <code>requestAnimationFrame</code>. C1-continuous, extrapolates up to 25 % past the newest packet.</p>
+            <div class="meter"><span class="label">smooth</span><div class="track" id="meter-smooth" aria-hidden="true"></div><span class="value stat" id="val-smooth">–</span></div>
+            <canvas class="plot" id="trace-smooth" aria-label="Interpolated bass over the last few seconds"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Wiring, as the page does it</h3>
+<pre><code>const context = new AudioContext();
+await context.audioWorklet.addModule('./lib/worklet.js'); // audio-reactive/worklet, bundled
+const node = new AudioWorkletNode(context, 'frequency-analyser', {
+  numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1],
+  processorOptions: { fftSize: 1024, sampleRate: context.sampleRate, messageEvery: 1 },
+});
+source.connect(node);
+node.connect(context.destination); // output is silence; keeps the node alive
+
+node.port.onmessage = ({ data: packet }) =&gt; {
+  const frequencyData = new Uint8Array(packet.frequencyData); // 512 bytes
+  const waveformData = new Uint8Array(packet.waveformData);   // 1024 bytes
+  const timeDomainData = new Float32Array(packet.timeDomainData);
+  draw(packet.energy, packet.beatDetection, packet.harmonicPercussive, frequencyData);
+  node.port.postMessage(
+    { type: 'recycle-buffers', freq: [frequencyData.buffer], wave: [waveformData.buffer], timeDomain: [timeDomainData.buffer] },
+    [frequencyData.buffer, waveformData.buffer, timeDomainData.buffer],
+  );
+};</code></pre>
+  </section>
+
+  <section id="offline">
+    <h2>Offline, no browser audio</h2>
+    <p class="sub">The README's offline example, run by this page on load from <a href="./lib/audio-reactive.js"><code>lib/audio-reactive.js</code></a> (the main entry). Two seconds of a 440 Hz sine at -20 dBFS with a 10 ms click every 500 ms, analysed block by block with the same functions the worklet uses. The same code runs under Bun or Node.</p>
+    <div class="card">
+      <canvas class="plot" id="offline-chart" aria-label="Weighted energy per FFT block, with detected beats marked"></canvas>
+      <div class="legend"><span>weighted energy per 1024-sample block</span><span class="dot">beat detected by createBeatTracker</span></div>
+      <p class="summary" id="offline-summary">running…</p>
+    </div>
+    <h3>Frames 20–22, around the second click</h3>
+    <pre><code id="offline-frames">…</code></pre>
+    <p>The frame holding the click reads as broadband (flatness near 1, centroid near 11 kHz) and percussive (ratio near 1); the frames around it read as a tone near 440 Hz with a percussive ratio near 0.4.</p>
+<pre><code>import {
+  analyseBlockBytes, buildHannWindow, buildTwiddleTable, createBeatTracker,
+  createHarmonicPercussiveAnalyser, extractSpectralFeatures, getFrequencyBandLevels, getWeightedEnergy,
+} from 'audio-reactive';
+
+const window = buildHannWindow(fftSize);
+const twiddles = buildTwiddleTable(fftSize);
+const scratch = { real: new Float32Array(fftSize), imag: new Float32Array(fftSize) };
+const spectrum = new Uint8Array(fftSize / 2);
+const hpss = createHarmonicPercussiveAnalyser();
+const beats = createBeatTracker();
+
+for (let start = 0; start + fftSize &lt;= samples.length; start += fftSize) {
+  const block = samples.subarray(start, start + fftSize);
+  analyseBlockBytes(block, window, twiddles, spectrum, scratch);
+  const bands = getFrequencyBandLevels(spectrum, sampleRate);
+  const energy = getWeightedEnergy(bands);
+  const hp = hpss.analyse(spectrum, sampleRate);
+  const beat = beats.update({ bands, weightedEnergy: energy, deltaMs: blockMs }, (start / sampleRate) * 1000);
+}</code></pre>
+  </section>
+
+  <section id="api">
+    <h2>API at a glance</h2>
+    <p class="sub">Everything comes from <code>audio-reactive</code> except the processor, which is the <code>audio-reactive/worklet</code> entry. The <a href="https://github.com/zz-plant/stims/tree/main/packages/audio-reactive#api">README</a> has the full table and every type.</p>
+    <h3>Spectrum maths</h3>
+    <table class="api">
+      <thead><tr><th>Export</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>buildHannWindow(length)</code></td><td>Hann window as a <code>Float32Array</code>.</td></tr>
+        <tr><td><code>buildTwiddleTable(length)</code></td><td>Precomputed <code>{ cos, sin }</code> twiddles for <code>analyseBlockBytes</code>.</td></tr>
+        <tr><td><code>validateFftSize(value)</code></td><td>A power-of-two FFT size or a <code>RangeError</code>; defaults to 1024.</td></tr>
+        <tr><td><code>analyseBlockBytes(block, window, twiddles, out, scratch)</code></td><td>Hann, radix-2 FFT, magnitude / binCount, dB-to-byte; writes <code>block.length / 2</code> bytes into <code>out</code>.</td></tr>
+        <tr><td><code>computeBandAverage(bytes, sampleRate, fftSize, minHz, maxHz, bandType)</code></td><td>Weighted mean of a byte spectrum over a Hz range, 0..1.</td></tr>
+        <tr><td><code>createHarmonicPercussiveAnalyser(options?)</code></td><td>Median-filter HPSS over successive byte spectra; <code>analyse(bytes, sampleRate)</code> returns <code>HarmonicPercussiveLevels</code>.</td></tr>
+      </tbody>
+    </table>
+    <h3>Features and reactivity</h3>
+    <table class="api">
+      <thead><tr><th>Export</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>extractSpectralFeatures(timeDomain, amplitudes, sampleRate, fftSize?)</code></td><td>RMS, centroid, flatness and rolloff in one pass; each also exported alone (<code>computeRms</code>, <code>computeSpectralCentroid</code>, …).</td></tr>
+        <tr><td><code>getFrequencyBandLevels(bytes, sampleRate?, bandRanges?, fftSize?)</code></td><td><code>{ bass, mid, treble }</code> in 0..1 from Hz ranges (<code>DEFAULT_FREQUENCY_BAND_RANGES</code>).</td></tr>
+        <tr><td><code>getExtendedFrequencyBandLevels(...)</code></td><td>Adds <code>subBass</code> (24–60 Hz) and <code>kick</code> (60–250 Hz).</td></tr>
+        <tr><td><code>getFourBandTransientMetrics(bytes, previousBytes?, sampleRate?)</code></td><td><code>{ subBassEnv, kickTransient, vocalMidEnv, snareSnap }</code> from frame-to-frame deltas.</td></tr>
+        <tr><td><code>getWeightedEnergy(bands, { weights?, boost? })</code></td><td>A single 0..1 energy from weighted bands.</td></tr>
+        <tr><td><code>updateEnergyPeak(currentPeak, weightedEnergy, { decay?, floor? })</code></td><td>Decaying peak tracker.</td></tr>
+        <tr><td><code>createBeatTracker(options?)</code></td><td>Multi-band onset tracker; <code>update({ bands, weightedEnergy, deltaMs }, timeMs)</code> returns a <code>BeatTrackerUpdate</code>. <code>mode: 'projectM'</code> selects a single running-average threshold.</td></tr>
+        <tr><td><code>createWaveformAutoGain(options?)</code></td><td>Boost-only auto-gain for byte waveforms: <code>measure(wave)</code>, <code>apply(in, out, gain)</code>.</td></tr>
+        <tr><td><code>createAudioReactivityInterpolator()</code></td><td>Hermite spline over <code>{ bass, mid, treble, rms }</code>: <code>pushSample(sample, timeMs)</code>, <code>sample(timeMs)</code>, <code>reset()</code>.</td></tr>
+      </tbody>
+    </table>
+    <h3>Lifecycle and the worklet</h3>
+    <table class="api">
+      <thead><tr><th>Export</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>AudioLifecycleTracker</code>, <code>AudioGenerationToken</code></td><td>State machine for the <code>AudioContext</code> lifecycle with leak and ordering assertions, and a generation counter for superseded async mounts. Intended for tests.</td></tr>
+        <tr><td><code>isAudioAwaitingGesture()</code>, <code>subscribeAudioGestureGate(fn)</code>, …</td><td>Observable flag for "audio is set up but suspended until a user gesture".</td></tr>
+        <tr><td><code>FrequencyAnalyserProcessor</code> <span class="badge">/worklet</span></td><td>The <code>AudioWorkletProcessor</code>; the module registers it as <code>'frequency-analyser'</code> on load. Options: <code>fftSize</code>, <code>sampleRate</code>, <code>messageEvery</code>. Stereo input adds <code>frequencyDataL/R</code> and <code>waveformDataL/R</code>.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="design">
+    <h2>Design notes</h2>
+    <p class="sub">Condensed from the source docblocks; the README carries the long form.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Zero allocation in the worklet</h3>
+        <p><code>process()</code> runs on the real-time audio thread every 128 frames. Ring buffers, window, twiddles, scratch arrays and HPSS history are allocated once in the constructor. The only per-packet allocation is the set of <code>ArrayBuffer</code>s posted to the main thread, and those are transferred, not copied; send them back with <code>recycle-buffers</code> and the processor pools up to 16 of each, so a steady state allocates nothing.</p>
+      </div>
+      <div class="card">
+        <h3>The AnalyserNode dB window</h3>
+        <p><code>AnalyserNode.getByteFrequencyData</code> maps magnitude through 20·log10 into <code>[-100, -30]</code> dB. Band levels, beat thresholds and the downstream signal processors in Stims were tuned against those bytes. An earlier linear mapping left realistic music (-20 to -40 dBFS) at byte values of 0–12 and flatlined every band, so <code>analyseBlockBytes</code> applies the same window and the worklet can replace an <code>AnalyserNode</code> on the same scale.</p>
+      </div>
+      <div class="card">
+        <h3>Median-filter HPSS</h3>
+        <p>Fitzgerald (2010): a median across time (per bin, over 7 frames) suppresses transients and estimates sustained content; a median across frequency (9 neighbouring bins) suppresses narrow peaks and estimates broadband content. Wiener-style soft masks split each frame's energy into harmonic and percussive. It is a spectrogram measurement, not stem separation. Medians over at most 9 values use insertion sort. <code>percussiveRatio</code> is 0.5 in silence so it never emits NaN.</p>
+      </div>
+      <div class="card">
+        <h3>Hermite interpolation between packets</h3>
+        <p>Packets arrive at the FFT block rate, about 43 Hz at 44.1 kHz / 1024, while displays refresh at 60–240 Hz; sampling the last packet produces staircase stepping. The interpolator keeps the last two packets with finite-difference velocities and evaluates a cubic Hermite spline between them: C1-continuous, clamped at zero, allowed to extrapolate 25 % past the newest packet so rendering never waits on audio.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Extracted from <a href="https://github.com/zz-plant/stims">zz-plant/stims</a>, the source of the visualizer at <a href="https://toil.fyi">toil.fyi</a>, where this code feeds every preset's bass, mid, treble and beat variables. Files carried over unchanged apart from flattened import paths; the main-thread <code>FrequencyAnalyser</code> wrapper and the lab tooling stayed in Stims. Public domain (Unlicense).</p>
+    <p>Sibling packages: <a href="../flash-guard/">flash-guard</a> · <a href="../milkdrop-toolchain/">milkdrop-toolchain</a> · <a href="../eel-conformance/">eel-conformance</a>.</p>
+  </footer>
+</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
