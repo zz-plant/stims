@@ -6,6 +6,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import styles from '../../css/PerformSurface.module.css';
+import { webMidiService } from '../core/services/webmidi-controller.ts';
 import { hadSessionBeforeBoot } from '../core/state/last-session-store.ts';
 import { readMilkdropField } from '../milkdrop/formatter.ts';
 import { listModulators } from './live-modulation.ts';
@@ -253,6 +254,11 @@ export function PerformSurface() {
               step={field.step}
               value={value}
               onChange={(event) => move(target, Number(event.target.value))}
+              // Touching a fader while MIDI learn is armed maps a knob to it
+              // (a no-op otherwise) — the "or on the stage" the learn hint
+              // in Settings promises.
+              onPointerDown={() => webMidiService.setLearnTarget(target)}
+              onFocus={() => webMidiService.setLearnTarget(target)}
               aria-label={field.label}
               // Both the state chip and, when present, the "has no effect"
               // warning — otherwise a screen reader announces the word

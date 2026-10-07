@@ -16,12 +16,15 @@ import {
   setAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
+import { upsertMilkdropField } from '../milkdrop/formatter.ts';
 import { shareOrCopyLink } from '../utils/media/share-link.ts';
 import type {
   AudioSource,
   PanelState,
   PresetCatalogEntry,
+  SessionRouteState,
 } from './contracts.ts';
+import type { QueuedCrossfadeResult } from './performance-hardware-controls.ts';
 import {
   leaveSyncSession,
   setSyncUrlParam,
@@ -132,6 +135,8 @@ export function startOrCopyWatchPartyAction(
 export async function copyRemixLinkAction({
   source,
   dirty,
+  local = false,
+  title,
   announce,
   onSuccess,
   share = shareOrCopyLink,
@@ -139,6 +144,15 @@ export async function copyRemixLinkAction({
 }: {
   source: string;
   dirty: boolean;
+  /**
+   * The preset exists only in this browser (made or imported here). Its id
+   * means nothing to anyone else, so the link has to carry the code even
+   * when there are no unsaved edits — without it the recipient got "could
+   * not be loaded".
+   */
+  local?: boolean;
+  /** The preset's own title, written into a local preset's shared code. */
+  title?: string;
   announce: (message: string) => void;
   onSuccess?: () => void;
   /** Test seam for the clipboard/native-share path. */
@@ -146,9 +160,13 @@ export async function copyRemixLinkAction({
   href?: string;
 }): Promise<void> {
   if (!href) return;
+  const carriesCode = dirty || local;
   let url: string;
   try {
-    url = buildRemixShareUrl(href, dirty ? source : null);
+    url = buildRemixShareUrl(
+      href,
+      carriesCode ? codeForLocalShare(source, { local, dirty, title }) : null,
+    );
   } catch (error) {
     announce(error instanceof Error ? error.message : REMIX_URL_FAILED);
     return;
@@ -156,7 +174,7 @@ export async function copyRemixLinkAction({
   const carriesDraft = dirty;
   const result = await share(url, {
     title: 'Stims preset',
-    text: dirty
+    text: carriesCode
       ? 'Open this Stims preset draft in the editor.'
       : 'Open this Stims preset.',
   });
@@ -177,7 +195,9 @@ export async function copyRemixLinkAction({
     announce(
       carriesDraft
         ? `Link ${verb} — it carries your unsaved edits and opens in their editor.`
-        : `Link ${verb}.`,
+        : carriesCode
+          ? `Link ${verb} — it carries this preset's code, since it exists only in your browser.`
+          : `Link ${verb}.`,
     );
     onSuccess?.();
     return;
@@ -186,10 +206,25 @@ export async function copyRemixLinkAction({
   // URL synchronization can lag behind the latest keystroke; do not claim
   // the address bar already contains this draft.
   announce(
-    carriesDraft
-      ? 'Could not share this link or reach the clipboard. Export the .milk file to share your edits.'
+    carriesCode
+      ? 'Could not share this link or reach the clipboard. Export the .milk file to share this preset.'
       : 'Could not reach the clipboard. Copy the link from the address bar.',
   );
+}
+
+/**
+ * The code a link carries for a preset that exists only in this browser.
+ * Without edits the buffer still holds the title it was made from — a
+ * remix's buffer names its parent — so the preset's own title is written in
+ * for the recipient's copy. With edits the buffer is shared as it stands.
+ */
+export function codeForLocalShare(
+  source: string,
+  { local, dirty, title }: { local: boolean; dirty: boolean; title?: string },
+): string {
+  return local && !dirty && title
+    ? upsertMilkdropField(source, 'title', title)
+    : source;
 }
 
 /** Flip Reduce flashing and say what it now does. */
@@ -203,6 +238,36 @@ export function toggleReduceFlashingAction(
       ? 'Reduce flashing is on: flashing presets are skipped and strobes are dimmed.'
       : 'Reduce flashing is off.',
   );
+}
+
+/**
+ * Take the next queued preset with a hand-driven crossfade: pop it, arm the
+ * manual fade, then switch, in that order — arming has to land before the
+ * switch, which is when the outgoing frame is captured. Shared by the cue
+ * deck's "Fade by hand" and a hardware crossfader.
+ */
+export function startQueuedCrossfade({
+  queue,
+  startManualCrossfade,
+  setRouteState,
+  activePresetId,
+}: {
+  queue: { entries: ReadonlyArray<{ id: string }>; popNext: () => unknown };
+  startManualCrossfade: () => void;
+  setRouteState: (
+    update: (current: SessionRouteState) => SessionRouteState,
+  ) => void;
+  activePresetId: string | null;
+}): QueuedCrossfadeResult {
+  const presetId = queue.entries[0]?.id;
+  if (!presetId) return 'empty';
+  // The route push is a no-op for the preset already on stage, so the armed
+  // fade would never fire.
+  if (presetId === activePresetId) return 'already-active';
+  queue.popNext();
+  startManualCrossfade();
+  setRouteState((current) => ({ ...current, presetId }));
+  return 'started';
 }
 
 export function endWatchParty(announce: (message: string) => void): void {

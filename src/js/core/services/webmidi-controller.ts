@@ -308,6 +308,9 @@ export class WebMidiControllerService {
   private readonly deviceRecords = new Map<string, DeviceRecord>();
   private readonly hardwareDevices = new Map<string, MidiDeviceInfo>();
   private learnTarget: string | null = null;
+  private learnRangeResolver:
+    | ((target: string) => { min: number; max: number } | null)
+    | null = null;
   private globalLearn: GlobalLearnState = { phase: 'idle' };
   private readonly globalLearnListeners = new Set<GlobalLearnListener>();
   private readonly noteListeners = new Set<MidiNoteListener>();
@@ -539,6 +542,26 @@ export class WebMidiControllerService {
     return this.learnTarget;
   }
 
+  /**
+   * Where a learned control's range comes from. Set by the shell, which
+   * knows what range each parameter is playable over; the service itself
+   * does not. Without one, or for a target it does not know, a learned
+   * control sweeps 0-1 — which for zoom is mostly past anything a preset
+   * can use.
+   */
+  public setLearnRangeResolver(
+    resolver: ((target: string) => { min: number; max: number } | null) | null,
+  ): void {
+    this.learnRangeResolver = resolver;
+  }
+
+  private learnRange(target: string): [number, number] {
+    const range = this.learnRangeResolver?.(target);
+    return range && Number.isFinite(range.min) && Number.isFinite(range.max)
+      ? [range.min, range.max]
+      : [0, 1];
+  }
+
   // ── Global "touch + turn" learn ──────────────────────────────────
   /** Arm global learn: the next designated target (setLearnTarget, or any
    * per-field beginLearn call) pairs with the next CC message, in either
@@ -591,7 +614,7 @@ export class WebMidiControllerService {
     // one that's about to flip.
     this.globalLearn = { phase: 'bound', target, cc, deviceId };
     this.notifyGlobalLearn();
-    this.bindCc(deviceId, cc, target, 0, 1);
+    this.bindCc(deviceId, cc, target, ...this.learnRange(target));
   }
 
   private notifyGlobalLearn(): void {
@@ -781,7 +804,7 @@ export class WebMidiControllerService {
       // cleared a line later.
       const target = this.learnTarget;
       this.learnTarget = null;
-      this.bindCc(deviceId, cc, target, 0, 1);
+      this.bindCc(deviceId, cc, target, ...this.learnRange(target));
     }
 
     const rec = this.ensureDeviceRecord(deviceId, {
