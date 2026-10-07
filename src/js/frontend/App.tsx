@@ -313,6 +313,13 @@ function StimsWorkspaceAppShell() {
 
   useEffect(() => {
     const route = ui.routeState;
+    // Once per page load, carrying the preset a deep link named: the
+    // denominator for every later step, split by where visitors came from
+    // (the `arrival` context field).
+    if (!growthLandingEventsRef.current.has('landing')) {
+      growthLandingEventsRef.current.add('landing');
+      noteGrowthEvent('landing', route.presetId ?? undefined);
+    }
     if (route.previewMode && !growthLandingEventsRef.current.has('embed')) {
       growthLandingEventsRef.current.add('embed');
       noteGrowthEvent('embed-landing');
@@ -426,7 +433,6 @@ function StimsWorkspaceAppShell() {
   );
   const quietAtRef = useRef<number | null>(null);
   const quietDemoSuggestedRef = useRef(false);
-  const autoPlayedRef = useRef(false);
   // ShortcutsDialog owns the focus trap and initial focus placement via
   // `useFocusTrap` while this shell controls when it opens.
   const shortcutsRef = useRef<HTMLDivElement | null>(null);
@@ -936,31 +942,6 @@ function StimsWorkspaceAppShell() {
   ]);
 
   useEffect(() => {
-    if (
-      !ui.routeState.agentMode &&
-      !ui.routeState.previewMode &&
-      engine.engineReady &&
-      engine.catalogReady &&
-      engine.featuredPreset &&
-      !liveMode &&
-      !autoPlayedRef.current
-    ) {
-      autoPlayedRef.current = true;
-      const presetId = engine.featuredPreset.id;
-      const request = () => void engine.handlePlayPreset(presetId);
-      return scheduleIdleTask(request, { fallbackDelay: 1500 });
-    }
-  }, [
-    engine.engineReady,
-    engine.catalogReady,
-    engine.featuredPreset,
-    engine.handlePlayPreset,
-    liveMode,
-    ui.routeState.agentMode,
-    ui.routeState.previewMode,
-  ]);
-
-  useEffect(() => {
     if (ui.toast && !ui.toast.quiet && visibleHint) {
       dismissHint();
     }
@@ -972,12 +953,11 @@ function StimsWorkspaceAppShell() {
   // now describing something you have already done.
   //
   // Driven by the panel reporting a real choice, not by watching which preset
-  // is playing. That weaker signal moves on its own — the idle autoplay above
-  // starts the featured preset on arrival, and on a mobile or low-power
-  // `/discover/…` visit (no attract mode) it lands while the browse panel is
-  // open and nothing has been tapped. Since showing a hint also marks it seen
-  // for good, dismissing on that would have burned the guidance permanently,
-  // for exactly the visitors who most need it.
+  // is playing. That weaker signal moves on its own: the engine's autoplay
+  // can advance the preset while the browse panel is open and nothing has
+  // been tapped. Since showing a hint also marks it seen for good, dismissing
+  // on that would have burned the guidance permanently, for exactly the
+  // visitors who most need it.
   const dismissBrowseHint = useCallback(() => {
     if (visibleHintRef.current?.id === 'browse-open') dismissHint();
   }, [dismissHint]);

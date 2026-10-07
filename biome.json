@@ -47,16 +47,6 @@
       }
     },
     {
-      "includes": ["terminal/**"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noNonNullAssertion": "off"
-          }
-        }
-      }
-    },
-    {
       "includes": [
         "public/preset-meta.json",
         "public/milkdrop-presets/**/*.json",

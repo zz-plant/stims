@@ -122,6 +122,7 @@ describe('noteShaderExecution', () => {
     await flush();
 
     expect(Object.keys(beacons[0]?.body ?? {}).sort()).toEqual([
+      'arrival',
       'audioSource',
       'device',
       'event',

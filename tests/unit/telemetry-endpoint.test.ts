@@ -23,7 +23,7 @@ async function post(body: Record<string, unknown>) {
 }
 
 describe('/api/telemetry', () => {
-  test('appends orientation, device and audio source after the original blobs', async () => {
+  test('appends orientation, device, audio source and arrival after the original blobs', async () => {
     const { response, points } = await post({
       event: 'preset-dwell',
       renderer: 'webgpu',
@@ -31,6 +31,7 @@ describe('/api/telemetry', () => {
       orientation: 'portrait',
       device: 'phone',
       audioSource: 'demo',
+      arrival: 'search',
     });
 
     expect(response.status).toBe(204);
@@ -43,6 +44,7 @@ describe('/api/telemetry', () => {
       'portrait',
       'phone',
       'demo',
+      'search',
     ]);
   });
 
@@ -52,15 +54,16 @@ describe('/api/telemetry', () => {
       orientation: 'sideways',
       device: '<script>',
       audioSource: 'spotify',
+      arrival: 'https://www.google.com/',
     });
 
-    expect(points[0]?.blobs?.slice(5)).toEqual(['', '', '']);
+    expect(points[0]?.blobs?.slice(5)).toEqual(['', '', '', '']);
   });
 
   test('keeps accepting beacons from clients that send no context', async () => {
     const { response, points } = await post({ event: 'growth-demo-started' });
 
     expect(response.status).toBe(204);
-    expect(points[0]?.blobs?.slice(5)).toEqual(['', '', '']);
+    expect(points[0]?.blobs?.slice(5)).toEqual(['', '', '', '']);
   });
 });
