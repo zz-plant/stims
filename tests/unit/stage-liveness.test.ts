@@ -9,7 +9,9 @@
  * evidence would break the landing page for everyone it currently works for,
  * so "no alpha anywhere" must report unknown, never blank.
  */
+
 import { describe, expect, test } from 'bun:test';
+import { notifyFrameDrawn } from '../../src/js/core/frame-drawn.ts';
 import {
   sampleStageLiveness,
   shouldRetireAttractRender,
@@ -147,27 +149,40 @@ describe('shouldRetireAttractRender', () => {
  * could never retire a blank attract render.
  */
 describe('sampleStageLiveness scheduling', () => {
-  test('defers the read to a frame callback', async () => {
-    const calls: string[] = [];
+  // A zero-sized canvas short-circuits before any 2D work, which keeps these
+  // about when the read happens rather than about canvas support.
+  const emptyCanvas = { width: 0, height: 0 } as HTMLCanvasElement;
+
+  test('reads inside the next drawn frame, not a frame callback of its own', async () => {
     const originalRaf = globalThis.requestAnimationFrame;
-    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
-      calls.push('scheduled');
-      setTimeout(() => {
-        calls.push('read');
-        cb(0);
-      }, 0);
+    let rafCalls = 0;
+    globalThis.requestAnimationFrame = (() => {
+      rafCalls += 1;
       return 1;
     }) as typeof globalThis.requestAnimationFrame;
-
     try {
-      // A zero-sized canvas short-circuits before any 2D work, which keeps
-      // this about the scheduling rather than about canvas support.
-      const canvas = { width: 0, height: 0 } as HTMLCanvasElement;
-      const pending = sampleStageLiveness(canvas);
-      expect(calls).toEqual(['scheduled']);
+      const pending = sampleStageLiveness(emptyCanvas, { frameWaitMs: 1000 });
+      notifyFrameDrawn(0);
       const result = await pending;
-      expect(calls).toEqual(['scheduled', 'read']);
       expect(result.readable).toBe(false);
+      expect(rafCalls).toBe(0);
+    } finally {
+      globalThis.requestAnimationFrame = originalRaf;
+    }
+  });
+
+  test('falls back to a frame callback when no frame is drawn', async () => {
+    const originalRaf = globalThis.requestAnimationFrame;
+    let rafCalls = 0;
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      rafCalls += 1;
+      cb(0);
+      return 1;
+    }) as typeof globalThis.requestAnimationFrame;
+    try {
+      const result = await sampleStageLiveness(emptyCanvas, { frameWaitMs: 0 });
+      expect(result.readable).toBe(false);
+      expect(rafCalls).toBe(1);
     } finally {
       globalThis.requestAnimationFrame = originalRaf;
     }
@@ -178,10 +193,7 @@ describe('sampleStageLiveness scheduling', () => {
     (globalThis as { requestAnimationFrame?: unknown }).requestAnimationFrame =
       undefined;
     try {
-      const result = await sampleStageLiveness({
-        width: 0,
-        height: 0,
-      } as HTMLCanvasElement);
+      const result = await sampleStageLiveness(emptyCanvas, { frameWaitMs: 0 });
       expect(result.readable).toBe(false);
     } finally {
       globalThis.requestAnimationFrame = originalRaf;

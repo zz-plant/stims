@@ -1646,6 +1646,32 @@ body[data-page="workspace"][data-live="true"] {
     }
   }
 
+  /* While Reduce flashing dims the stage. Drawn on the stage's own dark
+     surface whatever the theme, beside the canvas rather than inside it so
+     the filter that dims the picture does not dim the notice too. */
+  .stims-shell__flash-notice {
+    position: absolute;
+    top: calc(var(--stims-chrome-top, 16px) + env(safe-area-inset-top, 0px));
+    right: 16px;
+    z-index: var(--z-frame-chrome);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 6px 10px;
+    border: 1px solid var(--stims-on-stage-line-strong);
+    border-radius: var(--radius-round);
+    background: var(--stims-on-stage-panel-strong);
+    color: var(--stims-on-stage-ink-strong);
+    font-size: 0.75rem;
+    font-weight: 600;
+    pointer-events: none;
+  }
+
+  .stims-shell__flash-notice .stims-icon-slot {
+    color: var(--stims-on-stage-cool);
+  }
+
   .stims-shell__launch-actions-minimal {
     display: flex;
     flex-wrap: wrap;

@@ -23,10 +23,14 @@
  * promise composites fully transparent — measured 0 of 1024 opaque pixels
  * against 1024 of 1024 for the same frame read one rAF later, while the
  * frame itself was visibly at luminance 165. That is why
- * {@link sampleStageLiveness} is async and schedules its own frame callback:
- * a synchronous read is unreadable by construction on the default backend,
- * which left the attract-mode guard permanently unable to reach a verdict.
+ * {@link sampleStageLiveness} is async and reads inside the render loop's
+ * frame-drawn notification (`core/frame-drawn.ts`), in the same task as the
+ * draw. A frame callback of its own worked only when it happened to run
+ * after the renderer's in that frame; the flash governor, which used one,
+ * read transparent frames for exactly that reason.
  */
+
+import { readAfterNextFrameDrawn } from '../frame-drawn.ts';
 
 /** Longest edge of the downsample used for the readback. */
 const SAMPLE_DIMENSION = 32;
@@ -166,19 +170,25 @@ export function sampleStageLivenessNow(
 }
 
 /**
- * Read the stage inside a frame callback, which is the only moment a WebGPU
- * canvas can be composited. Resolves to an unreadable verdict rather than
- * rejecting, so callers keep treating "unknown" as "leave things alone".
+ * Read the stage right after the next frame is drawn, the one moment a
+ * WebGPU canvas still holds its image. When no frame is drawn within
+ * `frameWaitMs` (a paused or gated loop) it falls back to a frame callback
+ * of its own. Resolves to an unreadable verdict rather than rejecting, so
+ * callers keep treating "unknown" as "leave things alone".
  */
-export function sampleStageLiveness(
+export async function sampleStageLiveness(
   canvas: HTMLCanvasElement,
+  { frameWaitMs = 500 }: { frameWaitMs?: number } = {},
 ): Promise<StageLiveness> {
+  const read = () => sampleStageLivenessNow(canvas);
+  const drawn = await readAfterNextFrameDrawn(read, frameWaitMs);
+  if (drawn) return drawn;
   if (typeof requestAnimationFrame !== 'function') {
-    return Promise.resolve(sampleStageLivenessNow(canvas));
+    return read();
   }
   return new Promise((resolve) => {
     requestAnimationFrame(() => {
-      resolve(sampleStageLivenessNow(canvas));
+      resolve(read());
     });
   });
 }

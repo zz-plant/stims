@@ -12,8 +12,15 @@
  * canvas on a real GPU, at several grid sizes, and reports microseconds per
  * sample plus what fraction of a 16.7ms frame that is.
  *
+ * Each sample is taken the way the app takes it: once per drawn frame,
+ * inside the render loop's frame-drawn notification, outside agent mode.
+ * The first version timed 20 reads back to back in agent mode; only the
+ * first of each batch waited for the GPU and the rest read a copy the
+ * browser already held, so it reported ~10us for a read that costs
+ * milliseconds.
+ *
  *   bun run lab:flash-sampler-bench
- *   bun run lab:flash-sampler-bench -- --iterations 400
+ *   bun run lab:flash-sampler-bench -- --iterations 200 --renderer webgl
  */
 import { chromium } from 'playwright';
 import { ensureDevServer } from './dev-server.ts';
@@ -26,12 +33,22 @@ const ITERATIONS = inline
   ? Number(inline.split('=')[1])
   : idx >= 0 && args[idx + 1]
     ? Number(args[idx + 1])
-    : 200;
+    : 120;
+const rendererIdx = args.indexOf('--renderer');
+const RENDERER = rendererIdx >= 0 ? args[rendererIdx + 1] : null;
 
 const server = await ensureDevServer(PORT, process.cwd());
+// channel 'chromium': the default headless shell has no usable WebGPU and
+// reads an all-zero canvas, which would time a fake outage.
 const browser = await chromium.launch({
   headless: true,
-  args: ['--use-gl=angle', '--enable-gpu', '--ignore-gpu-blocklist'],
+  channel: 'chromium',
+  args: [
+    '--use-gl=angle',
+    '--enable-gpu',
+    '--ignore-gpu-blocklist',
+    '--enable-unsafe-webgpu',
+  ],
 });
 
 try {
@@ -41,7 +58,8 @@ try {
   page.on('console', (m) => {
     if (m.type() === 'error') console.error(`  [page] ${m.text()}`);
   });
-  await page.goto(`http://127.0.0.1:${PORT}/?agent=true&mockAudio=1`, {
+  const rendererQuery = RENDERER ? `&renderer=${RENDERER}` : '';
+  await page.goto(`http://127.0.0.1:${PORT}/?mockAudio=1${rendererQuery}`, {
     waitUntil: 'domcontentloaded',
   });
 
@@ -58,16 +76,16 @@ try {
 
   const results = await page.evaluate(
     async ({ iterations }) => {
-      const load = (s: string) =>
-        import(/* @vite-ignore */ s) as Promise<{
-          createFlashSampler: (grid: number) => {
-            sample: (canvas: HTMLCanvasElement) => void;
-            dispose: () => void;
-          };
-        }>;
-      const { createFlashSampler } = await load(
-        '/src/js/core/services/flash-sampler.ts',
-      );
+      const load = <T>(s: string) => import(/* @vite-ignore */ s) as Promise<T>;
+      const { createFlashSampler } = await load<{
+        createFlashSampler: (grid: number) => {
+          sample: (canvas: HTMLCanvasElement) => void;
+          dispose: () => void;
+        };
+      }>('/src/js/core/services/flash-sampler.ts');
+      const { subscribeToFrameDrawn } = await load<{
+        subscribeToFrameDrawn: (listener: () => void) => () => void;
+      }>('/src/js/core/frame-drawn.ts');
       const canvas = document.querySelector('canvas') as HTMLCanvasElement;
       if (!canvas) return { error: 'no canvas' };
 
@@ -78,23 +96,37 @@ try {
         return { median: at(0.5), p95: at(0.95) };
       };
 
+      // One sample per drawn frame, timed alone: the cost being measured is
+      // the wait for the GPU to finish that frame, which a batch of reads of
+      // the same frame would pay once and then hide.
+      const timeInFrames = (
+        sampler: { sample: (c: HTMLCanvasElement) => void },
+        count: number,
+      ) =>
+        new Promise<number[]>((resolve, reject) => {
+          const times: number[] = [];
+          const timer = setTimeout(() => {
+            stop();
+            reject(new Error(`only ${times.length} frames drawn in 30s`));
+          }, 30_000);
+          const stop = subscribeToFrameDrawn(() => {
+            const t0 = performance.now();
+            sampler.sample(canvas);
+            times.push((performance.now() - t0) * 1000);
+            if (times.length >= count) {
+              clearTimeout(timer);
+              stop();
+              resolve(times);
+            }
+          });
+        });
+
       type BenchResultRow = { grid: number; median: number; p95: number };
       const rows: BenchResultRow[] = [];
       for (const grid of [8, 16, 32, 64]) {
         const sampler = createFlashSampler(grid);
-        for (let i = 0; i < 30; i += 1) sampler.sample(canvas);
-        // performance.now() is clamped to ~100us, so time a batch and divide.
-        const BATCH = 20;
-        const times: number[] = [];
-        for (
-          let b = 0;
-          b < Math.max(1, Math.floor(iterations / BATCH));
-          b += 1
-        ) {
-          const t0 = performance.now();
-          for (let i = 0; i < BATCH; i += 1) sampler.sample(canvas);
-          times.push(((performance.now() - t0) * 1000) / BATCH);
-        }
+        await timeInFrames(sampler, 10);
+        const times = await timeInFrames(sampler, iterations);
         sampler.dispose();
         rows.push({ grid, ...stats(times) });
       }
