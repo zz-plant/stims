@@ -18,6 +18,7 @@
  * users read as the app being broken.
  */
 import {
+  getActiveAccessibilityPreference,
   getMotionScale,
   isFreezeFrameActive,
 } from '../core/accessibility-preferences.ts';
@@ -29,6 +30,7 @@ import {
 import { createLogger } from '../core/logger.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
 import { isPresetLocked, setPresetLocked } from '../core/preset-lock.ts';
+import { hiddenByFlashPreference } from '../core/sensory-profile.ts';
 import type {
   AdaptiveQualityController,
   AdaptiveQualityState,
@@ -841,6 +843,9 @@ export function createMilkdropExperience({
     noteSelectionReason: (reason) => {
       presetSelectionReason = reason;
     },
+    excludeFromRandom: (entry) =>
+      getActiveAccessibilityPreference().reduceFlashing &&
+      hiddenByFlashPreference(entry.sensoryProfile),
   });
 
   const presetFileActions = createMilkdropPresetFileActions({

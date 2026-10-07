@@ -17,6 +17,7 @@ import {
   resolveShaderExecutionMode,
 } from '../shader-execution-mode.ts';
 import type {
+  MilkdropCatalogEntry,
   MilkdropCatalogStore,
   MilkdropCompiledPreset,
   MilkdropEditorSession,
@@ -43,6 +44,7 @@ export function createMilkdropPresetNavigationController({
   triggerWebglFallback,
   rememberLastPreset,
   noteSelectionReason,
+  excludeFromRandom,
 }: {
   catalogStore: MilkdropCatalogStore;
   catalogCoordinator: MilkdropCatalogCoordinator;
@@ -68,6 +70,12 @@ export function createMilkdropPresetNavigationController({
    * Purely observational — optional so callers that do not surface it (tests,
    * preview runtimes) need not supply a stub. */
   noteSelectionReason?: (reason: MilkdropPresetSelectionReason) => void;
+  /**
+   * Presets autoplay must never pick, whatever their weight: those the
+   * catalog measured as high flash risk while Reduce flashing is on. The
+   * setting already hid them from Browse; autoplay could still land on one.
+   */
+  excludeFromRandom?: (entry: MilkdropCatalogEntry) => boolean;
 }) {
   const syncCatalog = () =>
     catalogCoordinator.scheduleCatalogSync({
@@ -383,7 +391,12 @@ export function createMilkdropPresetNavigationController({
     }
     const activePresetId = getActivePresetId();
     const activeBackend = getActiveBackend();
-    const pool = catalogEntries.filter((entry) => {
+    // Excluded before the backend fallback below, so that fallback can
+    // never reach an excluded preset either.
+    const eligible = excludeFromRandom
+      ? catalogEntries.filter((entry) => !excludeFromRandom(entry))
+      : catalogEntries;
+    const pool = eligible.filter((entry) => {
       if (entry.id === activePresetId) {
         return false;
       }
@@ -391,7 +404,7 @@ export function createMilkdropPresetNavigationController({
     });
     const candidates = pool.length
       ? pool
-      : catalogEntries.filter((entry) => entry.id !== activePresetId);
+      : eligible.filter((entry) => entry.id !== activePresetId);
     if (!candidates.length) {
       return null;
     }

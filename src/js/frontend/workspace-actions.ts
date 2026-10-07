@@ -11,6 +11,10 @@
  * call in.
  */
 
+import {
+  getActiveAccessibilityPreference,
+  setAccessibilityPreference,
+} from '../core/accessibility-preferences.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { shareOrCopyLink } from '../utils/media/share-link.ts';
 import type {
@@ -185,6 +189,19 @@ export async function copyRemixLinkAction({
     carriesDraft
       ? 'Could not share this link or reach the clipboard. Export the .milk file to share your edits.'
       : 'Could not reach the clipboard. Copy the link from the address bar.',
+  );
+}
+
+/** Flip Reduce flashing and say what it now does. */
+export function toggleReduceFlashingAction(
+  announce: (message: string) => void,
+): void {
+  const next = !getActiveAccessibilityPreference().reduceFlashing;
+  setAccessibilityPreference({ reduceFlashing: next });
+  announce(
+    next
+      ? 'Reduce flashing is on: flashing presets are skipped and strobes are dimmed.'
+      : 'Reduce flashing is off.',
   );
 }
 

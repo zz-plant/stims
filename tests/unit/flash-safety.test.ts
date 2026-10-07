@@ -47,8 +47,7 @@ function harness(getLuminance: (frame: number) => number, enabled = true) {
     sampler: scriptedSampler(getLuminance),
     isEnabled: () => enabled,
     applyLuminanceScale: (scale) => applied.push(scale),
-    scheduleFrame: () => 1,
-    cancelFrame: () => {},
+    subscribeToFrames: () => () => {},
   });
   return { controller, applied };
 }
@@ -100,8 +99,7 @@ describe('flash safety controller', () => {
         governorChannel = scale;
       },
       compositedScale: () => governorChannel * 0.25,
-      scheduleFrame: () => 1,
-      cancelFrame: () => {},
+      subscribeToFrames: () => () => {},
     });
 
     for (let i = 0; i < 600; i += 1) {
@@ -164,12 +162,77 @@ describe('flash safety controller', () => {
       },
       isEnabled: () => true,
       applyLuminanceScale: (scale) => applied.push(scale),
-      scheduleFrame: () => 1,
-      cancelFrame: () => {},
+      subscribeToFrames: () => () => {},
     });
     controller.tick(0);
     returnNull = true;
     expect(controller.tick(FRAME_MS)).toBeNull();
     expect(applied).toEqual([]);
+  });
+
+  test('samples once per drawn frame, from the render loop', () => {
+    // Its own animation-frame loop read the canvas outside the draw: a
+    // WebGPU canvas came back transparent and a WebGL one dimmed, so the
+    // governor never saw what was on screen.
+    const listeners = new Set<(now: number) => void>();
+    let samples = 0;
+    const controller = createFlashSafetyController({
+      canvas: {} as HTMLCanvasElement,
+      sampler: {
+        cols: GRID,
+        rows: GRID,
+        sample: () => {
+          samples += 1;
+          return new Float32Array(GRID * GRID);
+        },
+        dispose: () => {},
+      },
+      isEnabled: () => true,
+      applyLuminanceScale: () => {},
+      subscribeToFrames: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    });
+    controller.start();
+    for (const listener of listeners) listener(0);
+    for (const listener of listeners) listener(FRAME_MS);
+    expect(samples).toBe(2);
+    controller.stop();
+    expect(listeners.size).toBe(0);
+    expect(controller.isRunning()).toBe(false);
+  });
+
+  test('compares frames a 60Hz frame apart, whatever the display rate', () => {
+    // On a 120Hz display, content that changes every frame alternates at
+    // 60Hz, above flicker fusion. Compared frame to frame it reads as a
+    // flash every frame; compared 16.7ms apart it reads as what it is.
+    const HZ120 = 1000 / 120;
+    const timed = (luminanceAt: (frame120: number) => number) => {
+      let frame120 = 0;
+      const tiles = new Float32Array(GRID * GRID);
+      const controller = createFlashSafetyController({
+        canvas: {} as HTMLCanvasElement,
+        sampler: {
+          cols: GRID,
+          rows: GRID,
+          sample: () => tiles.fill(luminanceAt(frame120)),
+          dispose: () => {},
+        },
+        isEnabled: () => true,
+        applyLuminanceScale: () => {},
+        subscribeToFrames: () => () => {},
+      });
+      for (frame120 = 0; frame120 < 240; frame120 += 1) {
+        controller.tick(frame120 * HZ120);
+      }
+      return controller.getState().engaged;
+    };
+    // Bright on even 120Hz frames, dark on odd: a 60Hz alternation.
+    expect(timed((f) => (f % 2 === 0 ? 0.9 : 0.05))).toBe(false);
+    // A 5Hz strobe on the same display: 12 frames on, 12 off.
+    expect(timed((f) => (Math.floor(f / 12) % 2 === 1 ? 0.95 : 0.02))).toBe(
+      true,
+    );
   });
 });

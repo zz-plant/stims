@@ -7,17 +7,19 @@
  * tests/unit/flash-governor.test.ts) while the part that must touch a real
  * canvas stays small enough to read.
  *
- * It runs its OWN requestAnimationFrame loop rather than threading through
- * the milkdrop frame loop. Two reasons: the governor's subject is whatever is
- * actually on screen — which is what rAF is timed to — and it is renderer
- * agnostic, so a WebGL session, a WebGPU session, and any future backend get
- * the same protection without any of them knowing it exists.
+ * It samples on the render loops' frame-drawn notification
+ * (`core/frame-drawn.ts`), in the same task as the draw, and stays renderer
+ * agnostic: neither backend knows it exists. It used to run its own
+ * requestAnimationFrame loop, which read the canvas outside that task — a
+ * WebGPU canvas came back fully transparent and a WebGL one (no
+ * preserveDrawingBuffer outside agent mode) at about a quarter of its
+ * on-screen brightness, so the governor never saw a flash in production.
  *
- * Sampling cost is 10us per frame at the recommended grid on a 1217x760
- * canvas, 0.06% of a 16.7ms budget (`bun run lab:flash-sampler-bench`). That
- * measurement is why this is a synchronous read rather than a fenced
- * asynchronous one: the async path is more code and more per-backend surface
- * for no measurable gain. Re-run the bench before assuming that still holds.
+ * Sampling cost was measured at 10us per frame at the recommended grid
+ * (`bun run lab:flash-sampler-bench`), but that bench runs in agent mode on
+ * WebGL; the cost of a same-task read of a WebGPU canvas is recorded in the
+ * PR that moved sampling onto frame-drawn. Re-measure before assuming either
+ * still holds.
  *
  * Gated on the existing `reduceFlashing` accessibility preference, which
  * already means "do not hand me strobing content" for the catalog. Clamping
@@ -30,6 +32,10 @@ import {
   subscribeToAccessibilityPreference,
 } from '../accessibility-preferences.ts';
 import {
+  type FrameDrawnListener,
+  subscribeToFrameDrawn,
+} from '../frame-drawn.ts';
+import {
   createFlashGovernor,
   type FlashGovernorDecision,
 } from './flash-governor.ts';
@@ -38,6 +44,21 @@ import {
   setStageLuminanceChannel,
   stageLuminanceScale,
 } from './stage-luminance.ts';
+
+/**
+ * Shortest gap between the frames the governor compares: one 60Hz frame,
+ * less a millisecond of timer jitter.
+ *
+ * WCAG counts a flash as a pair of opposing luminance changes, and comparing
+ * consecutive frames on a fast display counts changes no one can see. On a
+ * 120Hz screen the default preset's frame-to-frame twinkle read as 82
+ * flashes a second and clamped it to a tenth of its brightness; compared
+ * 16.7ms apart it read 2.4, while a preset that really strobes (Abstract
+ * Psychaos, 7.6) read the same either way. Measured 2026-10-06, headed
+ * Chromium on a 120Hz display. A 60Hz cadence still resolves strobes up to
+ * 30Hz, and on a fast display it also halves what sampling costs.
+ */
+export const MIN_SAMPLE_INTERVAL_MS = 1000 / 60 - 1;
 
 export type FlashSafetyOptions = {
   /** The presented canvas to observe. */
@@ -57,9 +78,8 @@ export type FlashSafetyOptions = {
   compositedScale?: () => number;
   /** Overridable for tests; defaults to the accessibility preference. */
   isEnabled?: () => boolean;
-  /** Overridable for tests. */
-  scheduleFrame?: (callback: (time: number) => void) => number;
-  cancelFrame?: (handle: number) => void;
+  /** Where drawn frames come from. Overridable for tests. */
+  subscribeToFrames?: (listener: FrameDrawnListener) => () => void;
   /**
    * Overridable for tests: the default reads real pixels, which needs a
    * canvas with a GPU behind it. Injecting a grid source lets the loop, the
@@ -90,15 +110,15 @@ export function createFlashSafetyController(
     canvas,
     applyLuminanceScale,
     isEnabled = () => getActiveAccessibilityPreference().reduceFlashing,
-    scheduleFrame = (callback) => requestAnimationFrame(callback),
-    cancelFrame = (handle) => cancelAnimationFrame(handle),
+    subscribeToFrames = subscribeToFrameDrawn,
     sampler = createFlashSampler(),
     compositedScale,
   } = options;
 
   const governor = createFlashGovernor();
-  let handle: number | null = null;
+  let unsubscribeFrames: (() => void) | null = null;
   let lastApplied = 1;
+  let lastSampleMs = Number.NEGATIVE_INFINITY;
 
   function apply(scale: number) {
     // Only cross the DOM when the value actually moves; the common case is
@@ -116,6 +136,8 @@ export function createFlashSafetyController(
       apply(1);
       return null;
     }
+    if (nowMs - lastSampleMs < MIN_SAMPLE_INTERVAL_MS) return null;
+    lastSampleMs = nowMs;
     const tiles = sampler.sample(canvas);
     if (!tiles) return null;
 
@@ -144,24 +166,17 @@ export function createFlashSafetyController(
     return decision;
   }
 
-  function frame(time: number) {
-    tick(time);
-    if (handle !== null) {
-      handle = scheduleFrame(frame);
-    }
-  }
-
   function start() {
-    if (handle !== null) return;
-    // Non-null before the first schedule so `frame` knows it is still live.
-    handle = 0;
-    handle = scheduleFrame(frame);
+    if (unsubscribeFrames !== null) return;
+    unsubscribeFrames = subscribeToFrames((time) => {
+      tick(time);
+    });
   }
 
   function stop() {
-    if (handle !== null) {
-      cancelFrame(handle);
-      handle = null;
+    if (unsubscribeFrames !== null) {
+      unsubscribeFrames();
+      unsubscribeFrames = null;
     }
     governor.reset();
     apply(1);
@@ -192,7 +207,7 @@ export function createFlashSafetyController(
     },
     tick,
     getState: () => governor.getState(),
-    isRunning: () => handle !== null,
+    isRunning: () => unsubscribeFrames !== null,
   };
 }
 
