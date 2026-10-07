@@ -415,93 +415,32 @@ browserTest(
 );
 
 /**
- * Opens the home page's audio-source disclosure.
+ * Waits for the home page's audio-source chips.
  *
- * On a first visit the alternatives to the primary CTA (mic, tab, file,
- * YouTube) sit behind a `<details>` so "Play demo" ranks above them, which
- * means a real user opens it before choosing mic — and a click on a
- * collapsed descendant does nothing. No-op when already open, or where the
- * controls render without the disclosure: the Settings panel, and the
- * returning-visitor launch page, which ranks the same sources as chips
- * under "Resume with…" and so has nothing to open.
+ * Every variant of the launch page renders the alternatives to the primary
+ * CTA (mic, tab, file, YouTube) as a row of chips with no disclosure around
+ * them, so there is nothing to open — but they come from the lazily-imported
+ * NewHomePage chunk, which a cold vite dev server on a 2-vCPU runner can take
+ * a while to transform. Waiting on `.stims-shell__stage-hero` does not cover
+ * it: the shell renders the hero before the chunk resolves, and an immediate
+ * locator count() on a `domcontentloaded` page returns 0.
  */
-async function openAudioSourceDisclosure(
+async function waitForAudioSources(
   page: import('playwright').Page,
   { attachTimeoutMs = 90000 }: { attachTimeoutMs?: number } = {},
 ) {
-  // The chips surface renders the same source buttons with no disclosure
-  // around them. Racing the two means this helper stays correct whichever
-  // launch variant the test's storage state produces, instead of timing out
-  // for 90s on a page where there is deliberately nothing to open.
-  const chipGrid = page.locator('.stims-shell__source-grid--chips');
-  if ((await chipGrid.count()) > 0) return;
-  const details = page.locator('details.stims-shell__launch-source-minimal');
-  // Wait for it rather than probing once: callers navigate with
-  // `domcontentloaded`, and the home page is a lazy chunk, so an immediate
-  // count() returns 0 and the disclosure silently stays shut — which then
-  // fails much later as "element is not visible" on the button inside it.
-  //
-  // 15s was not enough on CI, and the `catch { return }` below used to hide
-  // that: the helper returned having opened nothing, the caller's click()
-  // found a card that would never exist, and — with no timeout of its own —
-  // auto-waited until the whole 240s test budget expired. The log showed a
-  // hung test with no error. Two things went wrong and both are fixed here.
-  //
-  // The wait is longer because `.stims-shell__stage-hero`, which callers
-  // wait on first, is rendered by the *shell* (workspace-ui.tsx) while this
-  // disclosure comes from the lazily-imported NewHomePage. Reaching the hero
-  // says nothing about that chunk having arrived, and a cold vite dev server
-  // on a 2-vCPU runner can take a while to transform it.
   try {
-    await details
+    await page
+      .locator('.stims-shell__source-grid--chips')
       .first()
       .waitFor({ state: 'attached', timeout: attachTimeoutMs });
   } catch {
-    // The chunk may have landed on the returning-visitor variant, which has
-    // chips and no disclosure. Check once more before blaming the chunk.
-    if ((await chipGrid.count()) > 0) return;
     throw new Error(
-      'The audio-source disclosure never appeared. It lives inside the lazy ' +
+      'The audio-source chips never appeared. They live inside the lazy ' +
         'NewHomePage chunk, so this usually means that chunk failed or was ' +
-        'still loading — not that the disclosure is missing from the markup. ' +
-        'Waiting on .stims-shell__stage-hero does not cover it: the shell ' +
-        'renders the hero before the chunk resolves.',
+        'still loading — not that the chips are missing from the markup.',
     );
   }
-  const first = details.first();
-  // evaluate() has no timeout in Playwright at all, and click() has none of
-  // its own — so if the page's main thread is wedged (which is precisely the
-  // state a failing visualizer test is in), either call waits forever and the
-  // test reports a bare budget timeout naming no step. Give both a deadline
-  // so the failure says which call stopped and what that implies.
-  // Opened by setting the property rather than clicking <summary>, because
-  // opening it is *setup* — no test here asserts that the disclosure is
-  // clickable; they assert what the controls inside it do.
-  //
-  // The click was the single worst offender in #1123. Playwright reported
-  // the element visible, enabled, stable and scrolled, then hung on
-  // "performing click action": dispatching a real input event needs the
-  // page's main thread, and these tests deliberately run a WebGL visualizer
-  // that saturates it under software rendering on a small CI runner. So the
-  // suite was gambling the whole test budget on input latency in order to
-  // toggle a <details>. Setting .open does the same thing without the wager,
-  // and the interactions a test is actually about stay real clicks.
-  const opened = await withDeadline(
-    first.evaluate((el) => {
-      const details = el as HTMLDetailsElement;
-      if (!details.open) details.open = true;
-      return details.open;
-    }),
-    15000,
-    'opening the audio-source disclosure',
-  );
-  if (!opened) {
-    throw new Error(
-      'The audio-source disclosure would not open. It is attached, so this ' +
-        'is not the lazy-chunk case above.',
-    );
-  }
-  await page.waitForTimeout(150);
 }
 
 async function verifySmartphoneMicrophoneAccess({
@@ -591,7 +530,7 @@ async function verifySmartphoneMicrophoneAccess({
     // tests are localOnlyBrowserTest, so they never run there; on a dev box
     // the chunk is ready in well under 20s, and the shorter wait keeps the
     // worst-case sum below this test's budget.
-    await openAudioSourceDisclosure(page, { attachTimeoutMs: 20000 });
+    await waitForAudioSources(page, { attachTimeoutMs: 20000 });
     const micButton = page.locator('[data-mic-audio-btn]');
     await micButton.scrollIntoViewIfNeeded({ timeout: 15000 });
     await page.waitForFunction(
@@ -780,8 +719,8 @@ browserTest(
       });
 
       // Demo audio needs no mic permission. Click() auto-waits for engineReady.
-      step('open audio disclosure');
-      await openAudioSourceDisclosure(page);
+      step('await audio sources');
+      await waitForAudioSources(page);
       step('click demo-audio');
       // click() carries no deadline of its own, so a card that never becomes
       // actionable used to consume the whole test budget and report a timeout
@@ -790,8 +729,10 @@ browserTest(
       // the card is absent rather than slow (Playwright's call log stops at
       // "waiting for locator", never resolving it), so waiting longer only
       // buys a later identical failure. See #1123.
+      // Play demo is the launch page's primary button; there is no separate
+      // demo card among the sources.
       await page
-        .locator('.stims-shell__source-card[data-demo-audio-btn]')
+        .locator('.stims-shell__launch-cta[data-demo-audio-btn]')
         .click({ timeout: 30000 });
 
       step('await audioActive=true');

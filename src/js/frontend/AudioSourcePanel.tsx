@@ -442,6 +442,7 @@ export function AudioSourcePanel({
           data-mic-audio-btn="true"
           type="button"
           className={cardClassName}
+          title={chips ? 'Whatever is playing in the room' : undefined}
           disabled={!engineReady}
           aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() =>
@@ -484,6 +485,7 @@ export function AudioSourcePanel({
         id={fileCardId}
         data-file-audio-btn="true"
         className={cardClassName}
+        title={chips ? 'Pick a track, or drop one here' : undefined}
         data-drag-active={dragActive || undefined}
         disabled={!engineReady || fileState?.loading}
         aria-describedby={!engineReady ? disabledDescription : undefined}
@@ -529,6 +531,10 @@ export function AudioSourcePanel({
           id={`${sourcePanelId}-use-tab-audio`}
           data-tab-audio-btn="true"
           className={cardClassName}
+          // A chip has no subtitle line, and this is where Spotify lives:
+          // it plays in a tab or a desktop app, so tab or system capture is
+          // how it reaches the visuals.
+          title={chips ? 'Any tab, Spotify, or your system audio' : undefined}
           disabled={!engineReady}
           aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() => onAudioStart('tab')}

@@ -37,10 +37,13 @@ const HINTS: HelpHintDef[] = [
     // dock is hidden until something asks for it. Tab reaches the same dock.
     // `?` is named here because nothing else on the stage ever mentions it,
     // and it is the one key that lists every other one.
+    //
+    // Two keys, not four. Listing →, Space, ? and Tab in one toast taught
+    // none of them; ? opens the list of every other key, Tab included.
     message: () =>
       isMobileDevice()
         ? 'Swipe to change the visuals — double-tap to fill the screen.'
-        : 'Press → for a different visual, Space to pause, ? for every key. Tab (or move the mouse) for the controls.',
+        : 'Press → for another visual, or ? for every key.',
     autoHideMs: 7000,
     anchor: 'stage',
   },

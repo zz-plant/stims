@@ -120,11 +120,7 @@ const PALETTE_ONLY_EXEMPT = new Set([
  *   rungs inside it carry the palette ids (transition-cut / -1s / -2.5s /
  *   -5s); the trigger itself only discloses them.
  */
-const DOCK_ONLY_EXEMPT = new Set([
-  'toggle-pip',
-  'open-palette',
-  'transition-menu',
-]);
+const DOCK_ONLY_EXEMPT = new Set(['toggle-pip', 'open-palette']);
 
 function extractPaletteActionIds(source: string): string[] {
   const startMarker = 'export function buildPaletteActions(';

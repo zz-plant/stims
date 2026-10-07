@@ -1134,12 +1134,13 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
     inset: clamp(84px, 12vh, 128px) 44px 44px;
     width: auto;
-    /* Optically centred rather than top-anchored: the column is ~420px tall
-       in a 900px frame, and starting it at 108px left the whole lower half
-       empty with the composition ending mid-page. `safe` keeps the top of the
-       column reachable when it is taller than the frame instead of clipping
-       both ends, which is what plain `center` does to an overflowing grid. */
-    align-content: safe center;
+    /* Top-anchored at an offset that lands the column near the optical
+       centre (the padding-top in shell-launch.css), rather than centred by
+       the grid. Centring moved the whole column whenever it changed height:
+       opening the YouTube field re-centred everything above it, so the
+       heading the visitor was reading jumped up by half the field's height.
+       Anchored, the column only ever grows downward. */
+    align-content: start;
     align-items: start;
     justify-items: center;
   }
@@ -1360,12 +1361,14 @@ body[data-page="workspace"][data-live="true"] {
 
   /* The wordmark is set like a nameplate: heavy and condensed on Archivo's
      width axis, the same axis the panel legends and the title card use.
+     Nameplate-sized, not display-sized: at 6.5rem it was the loudest thing
+     on the page and said nothing to anyone who had not heard of Stims.
      index.html's boot cover repeats these metrics so the hand-off from the
      cover to this page does not jump. */
-  .stims-shell__launch-title {
-    margin: 0;
+  .stims-shell__launch-nameplate {
+    margin: 0 0 6px;
     font-family: var(--stims-display);
-    font-size: clamp(3.5rem, 8vw, 6.5rem);
+    font-size: clamp(1.75rem, 2.6vw, 2.25rem);
     font-weight: 820;
     font-stretch: 72%;
     line-height: 0.88;
@@ -1373,14 +1376,30 @@ body[data-page="workspace"][data-live="true"] {
     color: var(--stims-ink-strong);
   }
 
+  /* The promise. Condensed less than the nameplate so a sentence still reads
+     as a sentence, and balanced so a two-line headline never leaves one word
+     on its own line. */
+  .stims-shell__launch-title {
+    margin: 0;
+    max-width: 16ch;
+    font-family: var(--stims-display);
+    font-size: clamp(2.25rem, 4.4vw, 3.75rem);
+    font-weight: 760;
+    font-stretch: 86%;
+    line-height: 0.98;
+    letter-spacing: -0.016em;
+    text-wrap: balance;
+    color: var(--stims-ink-strong);
+  }
+
   .stims-shell__launch-tagline {
     margin: 0;
-    max-width: 30rem;
+    max-width: 34rem;
     color: var(--stims-ink-strong);
-    font-size: clamp(1.125rem, 1.6vw, 1.375rem);
-    line-height: 1.35;
-    letter-spacing: -0.011em;
-    text-wrap: balance;
+    font-size: clamp(1.0625rem, 1.3vw, 1.25rem);
+    line-height: 1.42;
+    letter-spacing: -0.008em;
+    text-wrap: pretty;
   }
 
   /* Signal trace under the wordmark: the doubled 600-unit strip drifts one
@@ -1507,8 +1526,9 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   /* Demo audio under Resume: an escape hatch for someone without their usual
-     source to hand, sized like one. */
+     source to hand, sized like one. Its own row, under the button pair. */
   .stims-shell__launch-demo-link {
+    flex-basis: 100%;
     align-self: flex-start;
     padding: 6px 0;
     border: 0;
@@ -1547,39 +1567,83 @@ body[data-page="workspace"][data-live="true"] {
     border-radius: var(--stims-radius-control);
   }
 
-  /* The other sources, as chips, directly under Resume — no disclosure. */
+  /* The other sources, as chips under the buttons — no disclosure. The gap
+     above is a group joint: these are alternatives, not part of the pair. */
   .stims-shell__launch-sources-inline {
     width: 100%;
-    margin-top: 8px;
+    margin-top: 18px;
   }
 
-  /* "Browse presets" on the returning-visitor page changes context; it is
-     not a second way to start, so it must not pair with Resume as an equal
-     outlined button. Doubled class: the 480px rule above stretches every
-     launch-secondary to full width. */
-  .stims-shell__launch-secondary.stims-shell__launch-secondary--quiet {
-    width: auto;
-    min-height: 40px;
-    padding: 8px 0;
-    border: 0;
-    background: none;
-    color: var(--stims-muted);
-    text-decoration: underline;
-    text-decoration-color: var(--stims-line-strong);
-    text-underline-offset: 3px;
+  /* The sources legend sits on the stage like everything else here, so it
+     takes the dark theme's legend colour in both themes. Without this the
+     light theme's cool-legend rule (shell-theme.css) won, and the same
+     landing page labelled its sources coral or blue depending on the OS
+     setting. Three classes deep to outrank that html.light rule. */
+  .stims-shell__launch
+    .stims-shell__source-heading
+    .stims-shell__section-label {
+    color: color-mix(in srgb, var(--stims-accent) 72%, var(--stims-ink));
   }
 
-  .stims-shell__launch-secondary.stims-shell__launch-secondary--quiet:hover {
-    background: none;
-    color: var(--stims-ink-strong);
-  }
-
-  .stims-shell__launch-explainer {
-    margin: 4px 0 0;
+  /* What the demo is, said under the button that starts it. */
+  .stims-shell__launch-note {
+    margin: 2px 0 0;
     max-width: 34rem;
     color: var(--stims-muted);
     font-size: 0.875rem;
-    line-height: 1.6;
+    line-height: 1.5;
+  }
+
+  /* Labels the preset running behind the first-visit hero, in the corner
+     the copy leaves empty. The legend style matches the panel legends:
+     uppercase, condensed on the width axis, cool for "this is what is
+     playing". Desktop only — one column wide there is no empty corner, and
+     it would sit on top of the copy. */
+  .stims-shell__attract-caption {
+    position: absolute;
+    right: 28px;
+    bottom: 28px;
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    max-width: min(26rem, 40%);
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    background: rgba(3, 5, 11, 0.72);
+    text-align: right;
+    pointer-events: none;
+  }
+
+  .stims-shell__attract-caption-label {
+    color: var(--stims-cool);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    font-stretch: var(--font-stretch-legend);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .stims-shell__attract-caption-title {
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--stims-ink-strong);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    font-stretch: var(--font-stretch-compact);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stims-shell__attract-caption-byline {
+    color: var(--stims-muted);
+    font-size: 0.8125rem;
+  }
+
+  @media (max-width: 900px) {
+    .stims-shell__attract-caption {
+      display: none;
+    }
   }
 
   .stims-shell__launch-actions-minimal {
@@ -1666,6 +1730,14 @@ body[data-page="workspace"][data-live="true"] {
     box-shadow: 0 0 0 3px rgba(3, 5, 11, 0.9);
   }
 
+  /* Until the visitor presses a key, focus the page placed itself shows no
+     ring (see Actions in NewHomePage.tsx). The first keystroke clears the
+     attribute and the ring above returns. */
+  .stims-shell__launch-cta[data-quiet-focus="true"]:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
   .stims-shell__launch-secondary {
     border: 1px solid var(--stims-line-strong);
     background: var(--stims-control-fill);
@@ -1679,57 +1751,6 @@ body[data-page="workspace"][data-live="true"] {
       var(--stims-line-strong)
     );
     background: var(--stims-control-fill-hover);
-  }
-
-  .stims-shell__launch-source-minimal {
-    width: 100%;
-    margin-top: 22px;
-  }
-
-  /* A quiet line of text, not a card or a button: it must read as the
-     secondary path so the primary CTA above keeps its rank. */
-  .stims-shell__launch-sources-summary {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 0;
-    color: var(--stims-muted);
-    font-size: 0.875rem;
-    cursor: pointer;
-    list-style: none;
-    transition: color var(--transition-fast);
-  }
-
-  .stims-shell__launch-sources-summary::-webkit-details-marker {
-    display: none;
-  }
-
-  /* Own marker so it points down when closed and up when open — the native
-     one is suppressed above to keep the row on a single baseline. */
-  .stims-shell__launch-sources-summary::after {
-    content: "▾";
-    font-size: 0.95em;
-    line-height: 1;
-    transition: transform var(--transition-fast);
-  }
-
-  .stims-shell__launch-source-minimal[open]
-    .stims-shell__launch-sources-summary::after {
-    transform: rotate(180deg);
-  }
-
-  .stims-shell__launch-sources-summary:hover {
-    color: var(--stims-ink);
-  }
-
-  .stims-shell__launch-sources-summary:focus-visible {
-    outline: 2px solid var(--stims-accent);
-    outline-offset: 3px;
-    border-radius: var(--stims-radius-control);
-  }
-
-  .stims-shell__launch-sources-body {
-    margin-top: 12px;
   }
 
   .stims-shell__launch-meta {
@@ -3352,8 +3373,12 @@ body[data-page="workspace"][data-live="true"] {
     env(safe-area-inset-bottom, 0px) +
     8px
   );
-  left: 50%;
-  transform: translateX(-50%);
+  /* Inset from both edges and centred by align-items, not left:50% plus a
+     -50% translate: a fixed box at left:50% with auto width can only grow
+     to the right half of the viewport, so on a 390px phone every toast in
+     here was shrink-wrapped into 195px and wrapped one word per line. */
+  left: 16px;
+  right: 16px;
   /* The same layer as the status toast. At --z-toast this column sat below
      --z-modal-backdrop, so an audio match found while a panel was open
      rendered behind it and ran its dismiss timer out unseen. */
@@ -3369,35 +3394,75 @@ body[data-page="workspace"][data-live="true"] {
   pointer-events: auto;
 }
 
+/* Same surface as the contextual hint above it (ContextualHelp.module.css):
+   the two share this stack, and they used to be drawn from two systems — a
+   hard-coded near-black bar whose label and button followed the theme, which
+   in the light theme put a cream pill and a 3:1 dark-teal label on black. */
 .stims-shell__audio-match {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  border: 1px solid var(--stims-white-12);
-  border-radius: var(--radius-pill);
-  background: rgba(3, 5, 11, 0.96);
+  display: grid;
+  gap: 4px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 14px 12px;
+  border: 1px solid var(--stims-line-strong);
+  border-left: 3px solid var(--stims-cool);
+  border-radius: var(--radius-lg);
+  background: var(--stims-panel-strong);
+  box-shadow: var(--stims-shadow);
+  color: var(--stims-ink);
   font-size: 0.8125rem;
   animation: fade-in 0.3s ease;
 }
 
 .stims-shell__audio-match .stims-shell__eyebrow {
-  color: var(--stims-accent-blue);
+  margin: 0;
+  color: var(--stims-muted);
   font-size: 0.6875rem;
+  font-weight: 700;
+  font-stretch: var(--font-stretch-legend);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-stretch: var(--font-stretch-legend);
-  margin: 0;
 }
 
-.stims-shell__audio-match .stims-shell__text-button {
-  background: none;
-  border: none;
-  color: var(--stims-ink);
-  cursor: pointer;
-  font-size: 0.8125rem;
-  font-weight: 500;
+/* The whole title block is the button: one target, not a link-styled word. */
+.stims-shell__audio-match-action {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
   padding: 0;
+  border: 0;
+  background: none;
+  color: var(--stims-ink-strong);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stims-shell__audio-match-title {
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-stretch: var(--font-stretch-compact);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stims-shell__audio-match-byline {
+  overflow: hidden;
+  color: var(--stims-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stims-shell__audio-match-action:hover .stims-shell__audio-match-title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.stims-shell__audio-match-action:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
 }
 
 /* ── MIDI performance HUD ─────────────────────────────────────────

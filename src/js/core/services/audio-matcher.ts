@@ -230,3 +230,45 @@ export async function searchByAudioProfile(
   const parsed = VisualSearchResponseSchema.safeParse(await res.json());
   return parsed.success ? parsed.data.results : [];
 }
+
+/** The similarity a suggestion must reach before it is offered at all. */
+export const AUDIO_MATCH_MIN_SCORE = 0.75;
+
+/**
+ * How close to the best score a result must be to count as tied with it.
+ * The search compares a three-clause description of the audio against
+ * preset descriptions, so dozens of presets land within a hair of each
+ * other on the same clauses: the ordering inside that band is noise.
+ */
+const AUDIO_MATCH_TIE_BAND = 0.02;
+
+/**
+ * Choose the one preset to suggest from a search's results.
+ *
+ * Within the band of results the similarity cannot tell apart, the
+ * best-curated preset wins (lowest rank; unranked presets last). Taking
+ * results[0] blindly suggested whichever near-tie came back first, which in
+ * practice was often an unmeasured preset from deep in the catalog with a
+ * raw mashup filename for a title.
+ */
+export function pickAudioMatch(
+  results: ReadonlyArray<{ presetId: string; score: number }>,
+  rankOf: (presetId: string) => number | undefined,
+): { presetId: string; score: number } | null {
+  const top = results.reduce<{ presetId: string; score: number } | null>(
+    (best, result) => (!best || result.score > best.score ? result : best),
+    null,
+  );
+  if (!top || top.score < AUDIO_MATCH_MIN_SCORE) return null;
+  const floor = Math.max(
+    AUDIO_MATCH_MIN_SCORE,
+    top.score - AUDIO_MATCH_TIE_BAND,
+  );
+  const rankKey = (presetId: string) =>
+    rankOf(presetId) ?? Number.MAX_SAFE_INTEGER;
+  return results
+    .filter((result) => result.score >= floor)
+    .reduce((best, result) =>
+      rankKey(result.presetId) < rankKey(best.presetId) ? result : best,
+    );
+}

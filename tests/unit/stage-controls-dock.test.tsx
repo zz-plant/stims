@@ -136,7 +136,12 @@ describe('stage dock transport', () => {
       },
     );
     try {
-      rendered.click(rendered.byLabel('Edit this visual'));
+      const edit = rendered.byLabel('Edit this visual');
+      // A control in the bar, labelled with the word it does, not a pill
+      // floating over the bar's end.
+      expect(pill(rendered)?.contains(edit)).toBe(true);
+      expect(edit?.textContent).toBe('Edit');
+      rendered.click(edit);
       expect(updatePanel).toHaveBeenCalledWith('editor');
       expect(updateEditorSource).not.toHaveBeenCalled();
       expect(handleAudioStart).not.toHaveBeenCalled();
@@ -244,25 +249,9 @@ describe('stage dock transport', () => {
 });
 
 describe('stage dock transition control', () => {
-  test('prints the engine value, not the nearest rung', () => {
-    const rendered = mount(liveSnapshot({ blendDuration: 2.5 }));
-
-    const trigger = rendered.container.querySelector<HTMLElement>(
-      '[data-action="transition-menu"]',
-    );
-    expect(trigger?.textContent).toBe('2.5s');
-    expect(trigger?.getAttribute('aria-label')).toBe(
-      'Transition: Blend 2.5s. Choose a duration.',
-    );
-
-    rendered.dispose();
-  });
-
-  test('opens the ladder as a popover with the current rung checked', () => {
+  test('the transition lives in the menu, not on the bar', () => {
     const setTransitionMode = jest.fn();
     const setBlendDuration = jest.fn();
-    // The product default. It used to be off the ladder, so a fresh visitor
-    // opened this popover to four rungs with none of them marked.
     const rendered = renderWorkspace(
       createElement(StageControls, {
         isFullscreen: false,
@@ -273,43 +262,42 @@ describe('stage dock transition control', () => {
         engine: { setTransitionMode, setBlendDuration },
       },
     );
+    try {
+      // The bar used to print "2.5s" in a chip a first-time visitor could not
+      // read as anything; nothing on it names the transition now.
+      expect(pill(rendered)?.textContent).not.toContain('2.5s');
+      expect(
+        pill(rendered)?.querySelector('[aria-label^="Transition"]'),
+      ).toBeNull();
 
-    const trigger = rendered.container.querySelector<HTMLElement>(
-      '[data-action="transition-menu"]',
-    );
-    expect(trigger?.getAttribute('aria-expanded')).toBe('false');
-    rendered.click(trigger);
-    expect(trigger?.getAttribute('aria-expanded')).toBe('true');
+      rendered.click(rendered.byLabel('More actions'));
+      const group = rendered.container.querySelector<HTMLElement>(
+        '[role="menu"] [role="group"][aria-label^="Transition"]',
+      );
+      const options = [
+        ...(group?.querySelectorAll('[role="menuitemradio"]') ?? []),
+      ];
+      expect(options.map((option) => option.textContent)).toEqual([
+        'Cut',
+        '1s',
+        '2.5s',
+        '5s',
+      ]);
+      expect(
+        options.map((option) => option.getAttribute('aria-checked')),
+      ).toEqual(['false', 'false', 'true', 'false']);
 
-    const popover = rendered.container.querySelector<HTMLElement>(
-      '[data-menu="transition"]',
-    );
-    const options = [
-      ...(popover?.querySelectorAll('[role="menuitemradio"]') ?? []),
-    ];
-    expect(options.map((option) => option.textContent)).toEqual([
-      'Cut',
-      '1s',
-      '2.5s',
-      '5s',
-    ]);
-    expect(
-      options.map((option) => option.getAttribute('aria-checked')),
-    ).toEqual(['false', 'false', 'true', 'false']);
-
-    // One click reaches any rung, and the popover closes on it.
-    rendered.click(options[3]);
-    expect(setBlendDuration).toHaveBeenCalledWith(5);
-    expect(
-      rendered.container.querySelector('[data-menu="transition"]'),
-    ).toBeNull();
-
-    rendered.dispose();
+      // One click reaches any rung.
+      rendered.click(options[3]);
+      expect(setBlendDuration).toHaveBeenCalledWith(5);
+    } finally {
+      rendered.dispose();
+    }
   });
 
-  test('the overflow menu marks the same rung as the popover, and names an off-ladder value', () => {
-    // The menu's copy of the ladder marked the *nearest* rung while the
-    // popover marked an exact one: three answers for one state.
+  test('the overflow menu marks only an exact rung, and names an off-ladder value', () => {
+    // The menu's copy of the ladder used to mark the *nearest* rung, so 3s
+    // read as 2.5s.
     const checkedIn = (blendDuration: number) => {
       const rendered = mount(liveSnapshot({ blendDuration }));
       rendered.click(rendered.byLabel('More actions'));

@@ -36,12 +36,15 @@ describe('PresetGrid', () => {
     const live = renderGrid([entry('one'), entry('two')]);
     expect(live).toContain('stims-preset-grid__quick-key');
     expect(live).toContain('aria-keyshortcuts="1"');
+    // A pointer user learns what the badge is from the tooltip.
+    expect(live).toContain('title="two (2)"');
 
     const typing = renderGrid([entry('one'), entry('two')], {
       showQuickSelectKeys: false,
     });
     expect(typing).not.toContain('stims-preset-grid__quick-key');
     expect(typing).not.toContain('aria-keyshortcuts');
+    expect(typing).toContain('title="two"');
   });
 
   test('renders tiles in the order given (sort parity with the list view)', () => {

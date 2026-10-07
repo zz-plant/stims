@@ -913,6 +913,15 @@ export function BrowseSheetPanel({
               <kbd>End</kbd> jump
             </>
           )}
+          {/* The numbered corner badges on the first nine cards are these
+              keys. Named only while the badges are drawn, so the line never
+              advertises a key that is not answering. */}
+          {showQuickSelectKeys ? (
+            <>
+              {' · '}
+              <kbd>1</kbd>–<kbd>9</kbd> play a numbered card
+            </>
+          ) : null}
         </p>
 
         {!catalogReady && !catalogError ? (

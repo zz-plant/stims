@@ -215,7 +215,6 @@ export function StageControls({
       : null;
 
   const [showMenu, setShowMenu] = useState(false);
-  const [showTransitionMenu, setShowTransitionMenu] = useState(false);
   // A pointer resting on the bar, or focus inside it. Measured before this
   // existed: hover the pill, hold still for the 3s timer, and the bar faded
   // out from under the cursor (`:hover` true, `data-visible` false) — the
@@ -238,11 +237,7 @@ export function StageControls({
   const { visible, signalActivity } = useAutoHideActivity(
     3000,
     true,
-    showMenu ||
-      showTransitionMenu ||
-      pointerOnBar ||
-      focusOnBar ||
-      playbackPaused,
+    showMenu || pointerOnBar || focusOnBar || playbackPaused,
   );
   const transition = usePresetTransition();
   // Handed the transport so the popout can carry real controls where the
@@ -256,30 +251,17 @@ export function StageControls({
   const energyRef = useRef<HTMLSpanElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
-  const transitionMenuRef = useRef<HTMLDivElement>(null);
-  const transitionBtnRef = useRef<HTMLButtonElement>(null);
-  // Where the popover sits: centred over its trigger, measured on open. The
-  // pill is centred and its width follows the title, so the trigger has no
-  // fixed x to style against.
-  const [transitionAnchor, setTransitionAnchor] = useState<{
-    left: number;
-    bottom: number;
-  } | null>(null);
 
   // Toasts render above every overlay, so they have to know when something
   // occupies the bottom of the screen and move out of its way. Sheets publish
   // that from the shell as data-sheet-open; this menu is bottom-anchored too.
-  useBottomOverlaySignal(showMenu || showTransitionMenu);
+  useBottomOverlaySignal(showMenu);
 
   // A stable registration: the menu must keep Escape while it is open, even
   // as the shell re-renders around it.
   useEscapeHandler(showMenu, () => {
     setShowMenu(false);
     menuBtnRef.current?.focus();
-  });
-  useEscapeHandler(showTransitionMenu, () => {
-    setShowTransitionMenu(false);
-    transitionBtnRef.current?.focus();
   });
 
   // ARIA already promises menu semantics (role="menu"/"menuitem"); this
@@ -300,76 +282,6 @@ export function StageControls({
       menuRef.current?.querySelector<HTMLElement>('[role^="menuitem"]');
     firstItem?.focus();
   }, [showMenu]);
-
-  useListKeyboardNav(transitionMenuRef, {
-    itemSelector: '[role="menuitemradio"]',
-    orientation: 'horizontal',
-    deps: [showTransitionMenu],
-  });
-
-  // Land on the rung that is active, not the first one: the popover exists
-  // to move one step from where you are, and a keyboard user should start
-  // there.
-  useEffect(() => {
-    if (!showTransitionMenu) return;
-    const current =
-      transitionMenuRef.current?.querySelector<HTMLElement>(
-        '[role="menuitemradio"][aria-checked="true"]',
-      ) ??
-      transitionMenuRef.current?.querySelector<HTMLElement>(
-        '[role="menuitemradio"]',
-      );
-    current?.focus();
-  }, [showTransitionMenu]);
-
-  useEffect(() => {
-    if (!showTransitionMenu) return;
-    const handlePointerDown = (event: PointerEvent) => {
-      if (
-        event.target instanceof Element &&
-        (transitionMenuRef.current?.contains(event.target) ||
-          transitionBtnRef.current?.contains(event.target))
-      ) {
-        return;
-      }
-      setShowTransitionMenu(false);
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Tab') setShowTransitionMenu(false);
-    };
-    document.addEventListener('pointerdown', handlePointerDown, {
-      passive: true,
-    });
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [showTransitionMenu]);
-
-  // One popover at a time.
-  useEffect(() => {
-    if (showMenu) setShowTransitionMenu(false);
-  }, [showMenu]);
-
-  useEffect(() => {
-    if (!showTransitionMenu) {
-      setTransitionAnchor(null);
-      return;
-    }
-    const measure = () => {
-      const rect = transitionBtnRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      setTransitionAnchor({
-        left: rect.left + rect.width / 2,
-        bottom: window.innerHeight - rect.top + 8,
-      });
-    };
-    measure();
-    const handleResize = () => setShowTransitionMenu(false);
-    window.addEventListener('resize', handleResize, { passive: true });
-    return () => window.removeEventListener('resize', handleResize);
-  }, [showTransitionMenu]);
 
   // Opening this menu is the strongest signal of intent the UI gets before a
   // click: nearly every item in it opens a code-split panel, and the download
@@ -842,25 +754,6 @@ export function StageControls({
             />
           ) : null}
           <AudioStatusControl onActivity={signalActivity} />
-          {panel !== 'editor' ? (
-            <button
-              type="button"
-              className={styles.editEntry}
-              data-action="open-editor"
-              aria-label="Edit this visual"
-              aria-keyshortcuts={ariaKeyShortcutsFor('open-editor')}
-              onClick={() => {
-                signalActivity();
-                ui.updatePanel('editor');
-              }}
-            >
-              <UiIcon
-                name="pencil"
-                className="stims-icon-slot stims-icon-slot--sm"
-              />
-              Edit this visual
-            </button>
-          ) : null}
           <button
             type="button"
             className={styles.navBtn}
@@ -911,30 +804,33 @@ export function StageControls({
             />
           </button>
 
-          {/* Opens the ladder rather than cycling it. A four-state cycle
-              needed up to three clicks to reach a rung, could not go back,
-              and printed the nearest rung — "2s" while the engine held 2.5s.
-              The trigger now prints the engine's actual value and the popover
-              is the same radio row the overflow menu already draws. */}
-          <button
-            ref={transitionBtnRef}
-            type="button"
-            className={styles.transitionBtn}
-            data-action="transition-menu"
-            aria-haspopup="menu"
-            aria-expanded={showTransitionMenu}
-            aria-label={`Transition: ${transitionLabel}. Choose a duration.`}
-            title={`Transition: ${transitionLabel}`}
-            onClick={() => {
-              signalActivity();
-              pulseHaptic(10);
-              setShowTransitionMenu((open) => !open);
-            }}
-          >
-            <span className={styles.transitionBtnText}>
-              {transitionShortLabel}
-            </span>
-          </button>
+          {/* In the bar, not floating above it. As a separate pill over the
+              bar's right end it read as a notification rather than a control,
+              and it took the slot where the transition length used to sit —
+              a setting first-time visitors could not decode as "2.5s", which
+              lives in the menu's Transition row now. The label stays: an
+              icon alone would not say that the visual is code you can edit,
+              which is the claim the landing page makes. */}
+          {panel !== 'editor' ? (
+            <button
+              type="button"
+              className={styles.editEntry}
+              data-action="open-editor"
+              aria-label="Edit this visual"
+              title={withHint('Edit this visual', 'open-editor')}
+              aria-keyshortcuts={ariaKeyShortcutsFor('open-editor')}
+              onClick={() => {
+                signalActivity();
+                ui.updatePanel('editor');
+              }}
+            >
+              <UiIcon
+                name="pencil"
+                className="stims-icon-slot stims-icon-slot--sm"
+              />
+              Edit
+            </button>
+          ) : null}
 
           <button
             type="button"
@@ -1079,65 +975,6 @@ export function StageControls({
         </div>
       </div>
 
-      {showTransitionMenu ? (
-        <div
-          ref={transitionMenuRef}
-          className={styles.popover}
-          role="menu"
-          aria-label="Transition"
-          data-menu="transition"
-          style={
-            transitionAnchor
-              ? {
-                  left: `${transitionAnchor.left}px`,
-                  bottom: `${transitionAnchor.bottom}px`,
-                }
-              : undefined
-          }
-        >
-          <span className={styles.menuGroupLabel} aria-hidden="true">
-            Transition
-          </span>
-          <div className={styles.menuGroupOptions}>
-            {TRANSITION_STEPS.map((step) => {
-              const checked = isTransitionStep(
-                step,
-                transitionMode,
-                blendDuration,
-              );
-              return (
-                <button
-                  key={describeTransitionStep(step)}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={checked}
-                  aria-label={`Transition: ${describeTransitionStep(step)}`}
-                  className={styles.menuOption}
-                  data-action={transitionActionId(step)}
-                  data-active={String(checked)}
-                  onClick={() => {
-                    signalActivity();
-                    pulseHaptic(10);
-                    setShowTransitionMenu(false);
-                    transitionBtnRef.current?.focus();
-                    setTransition(
-                      engine,
-                      ui.setStatusMessage,
-                      step.mode,
-                      step.seconds,
-                    );
-                  }}
-                >
-                  {step.mode === 'cut'
-                    ? 'Cut'
-                    : `${formatSeconds(step.seconds)}s`}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-
       {showMenu ? (
         // Presentational only: the document pointerdown listener above already
         // closes the menu on any press outside it, and this sits underneath.
@@ -1165,10 +1002,10 @@ export function StageControls({
               Live VJ and audio
             </div>
             {/* Direct picks, not a cycle: mid-set there is no time to click
-              through the ladder to reach the rung you want. Marked by the
-              same exact rule as the popover; when Settings holds a value
-              off this ladder the label carries it, because on a phone this
-              menu is the only place the transition is shown at all. */}
+              through the ladder to reach the rung you want. A rung is marked
+              only on an exact match; when Settings holds a value off this
+              ladder the label carries it, because this menu is the only
+              place the transition is shown at all. */}
             {/* biome-ignore lint/a11y/useSemanticElements: role=group is the ARIA menu pattern for menuitemradio sets; fieldset carries form semantics a menu must not have */}
             <div
               className={styles.menuGroup}

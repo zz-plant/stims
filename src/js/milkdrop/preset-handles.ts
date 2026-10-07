@@ -146,6 +146,11 @@ const CANONICAL_HANDLES: Record<string, string> = {
   // ("xmuzack + martin + Mig + Eo.S. - look inside the stained glass flame").
   // The leading underscores are the usual sort-order hack.
   mig: 'Mig',
+  // Registered so their variants below display in the spelling the author
+  // used, and so "Reenen Geiss" splits into the two hands it credits.
+  anandamide: 'Anandamide',
+  tobiaswolfboi: 'TobiasWolfBoi',
+  reenen: 'Reenen',
 };
 
 /**
@@ -162,6 +167,20 @@ const HANDLE_ALIASES: Record<string, string> = {
   'adam fx': 'adamfx',
   'adam fx 2': 'adamfx',
   fishbrian: 'fishbrain',
+  // Each of these showed up as its own entry in the Browse author filter
+  // beside the handle it belongs to.
+  anandmide: 'anandamide', // misspelling, 2 presets beside 1 spelled right
+  'tobias wolfboi': 'tobiaswolfboi',
+  'e.o.s': 'eo.s',
+  mig_304: 'mig', // the numbered `_Mig_NNN` output, see `mig` above
+  // A title fragment that landed in the author field: the handle, then the
+  // name of the piece.
+  'an adamfx': 'adamfx',
+  'eos planetfunk-07': 'eo.s',
+  'eos planetfunk-10': 'eo.s',
+  'cope-wip': 'cope',
+  "goody's portfolio": 'goody',
+  'phat cubetrace': 'phat',
 };
 
 /** Resolve a raw fragment to its registry key, following aliases. */

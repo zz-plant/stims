@@ -32,7 +32,7 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 /** How long the card holds before it starts leaving. */
 export const TITLE_CARD_HOLD_MS = 2600;
 /** Matches the exit transition in app-shell.css. */
-const TITLE_CARD_EXIT_MS = 450;
+export const TITLE_CARD_EXIT_MS = 450;
 
 /** Archivo's narrowest width, and the widest the card will open a short name
  * to: past ~112% a short title stops reading as a name and starts reading as

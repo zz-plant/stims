@@ -124,6 +124,7 @@ export function makeEngineValue(
     featuredPreset: null,
     filteredCatalog: [],
     audioActive: false,
+    attractPreviewLive: false,
     loadingRequestedPreset: false,
     missingRequestedPreset: false,
     recentPresets: [],

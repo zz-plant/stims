@@ -1319,6 +1319,44 @@ html.light .stims-shell {
     margin-left: auto;
   }
 
+  /* A wide panel puts the collection chips and the refine selects on one
+     row. Stacked, the header ran to ~300px (title, hint, search, chips,
+     selects) before the first thumbnail, so the panel opened onto its own
+     controls rather than onto presets. A container query, not a viewport
+     one: the panel's width is what decides whether both fit. */
+  .stims-shell__sheet-panel--browse {
+    container: browse-panel / inline-size;
+  }
+
+  @container browse-panel (min-width: 820px) {
+    .ctl-browse-filters {
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 12px;
+    }
+
+    .ctl-browse-filters > * {
+      grid-column: 1 / -1;
+    }
+
+    /* Bleeds to the panel's left edge only; its right edge now meets the
+       selects instead of the panel border. */
+    .ctl-browse-filters > .ctl-scroller {
+      grid-column: 1;
+      margin-right: 0;
+      padding-right: 0;
+      scroll-padding-inline: 16px 0;
+    }
+
+    .ctl-browse-filters > .ctl-browse-refine {
+      grid-column: 2;
+    }
+
+    .ctl-browse-filters > .ctl-browse-refine .ctl-select {
+      flex: 0 0 auto;
+      width: 11.5rem;
+    }
+  }
+
   .ctl-browse-applied {
     display: flex;
     align-items: center;

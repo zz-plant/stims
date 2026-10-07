@@ -32,6 +32,7 @@ import { describeHiddenTabFreezeRisk } from '../core/live-performance-mode.ts';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
   buildAudioProfile,
+  pickAudioMatch,
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
 import { setCrashTelemetryPreset } from '../core/services/crash-telemetry.ts';
@@ -49,6 +50,7 @@ import {
   type ThemeChoice,
 } from '../core/theme-preferences.ts';
 import { parseURLParams } from '../core/url-params.ts';
+import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import { initAgentBridge, updateAgentTelemetry } from './agent-bridge.ts';
@@ -80,6 +82,7 @@ import { LiveParameterHud } from './LiveParameterHud.tsx';
 import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { dismissLoadingScreen } from './loading-screen.ts';
+import { TITLE_CARD_EXIT_MS, TITLE_CARD_HOLD_MS } from './PresetTitleCard.tsx';
 import { buildPaletteActions } from './palette-actions.ts';
 import { prefetchPanelChunk } from './panel-chunks.ts';
 import { watchPerformanceHardware } from './performance-hardware-connect.ts';
@@ -173,6 +176,12 @@ try {
 // 0.04 is the value audio-matcher.ts already uses internally for its own
 // beatIntensity gate, so it's the canonical threshold, not an arbitrary pick.
 const QUIET_AUDIO_RMS_THRESHOLD = 0.04;
+
+// When a source starts, the stage introduces itself: the preset's title
+// card, then the first-play hint. These are the earliest moments the next
+// notice may take the screen, so nothing piles onto that introduction.
+const FIRST_PLAY_HINT_DELAY_MS = TITLE_CARD_HOLD_MS + TITLE_CARD_EXIT_MS;
+const AUDIO_MATCH_EARLIEST_MS = 12_000;
 
 /** Stable keys for the browse skeleton's placeholder tiles. */
 const BROWSE_SKELETON_TILES = [
@@ -351,14 +360,23 @@ function StimsWorkspaceAppShell() {
   // so the title is resolved at render time against whatever catalog is
   // current: the toast re-labels itself when the full catalog arrives
   // instead of freezing the raw id it was born with.
+  // Split like every other title surface: a raw catalog title is the whole
+  // credit chain ("suksma - fiShbRaiN - white sceam firefly - …"), and as a
+  // one-line suggestion it ran to two lines on a desktop and nine on a phone.
   const audioMatchWithName = useMemo(() => {
     if (!audioMatch) return null;
     const preset = engine.catalog.find((e) => e.id === audioMatch.presetId);
+    const display = preset
+      ? splitPresetDisplay(preset.title, preset.author)
+      : { title: audioMatch.presetId.replace(/-/g, ' '), byline: null };
     return {
       ...audioMatch,
-      name: preset?.title ?? audioMatch.presetId.replace(/-/g, ' '),
+      name: display.title,
+      byline: display.byline,
     };
   }, [audioMatch, engine.catalog]);
+  const catalogRef = useRef(engine.catalog);
+  catalogRef.current = engine.catalog;
   const [thumbMode, setThumbMode] = useState(() => {
     const stored = readStored('stims:mobile-thumb-mode');
     return stored !== null ? stored === 'true' : prefersThumbModeByDefault();
@@ -1021,19 +1039,35 @@ function StimsWorkspaceAppShell() {
     });
   }, [isFullscreen, liveMode, engineSnapshot?.audioActive]);
 
+  const audioLiveSinceRef = useRef<number | null>(null);
   useEffect(() => {
     // Deferred, not skipped: re-running once showRotateHint or the "click
     // to turn the sound on" notice clears (both are dependencies) lets them
     // land one after another instead of stacking over the stage. The sound
     // notice goes first because nothing reacts until it is answered.
-    if (
-      liveMode &&
-      engineSnapshot?.audioActive &&
-      !showRotateHint &&
-      !awaitingAudioGesture
-    ) {
-      showHint('first-play');
+    //
+    // Also deferred past the preset's title card: shown at once, the hint
+    // and the card arrived in the same instant at opposite ends of the
+    // screen, on top of a stage the visitor had pressed Play to watch. The
+    // wait counts from when the audio started, which is when the card
+    // appeared — counted from a later re-run (the rotate notice clearing on
+    // a phone) it only added dead air after a card that was long gone.
+    if (!liveMode || !engineSnapshot?.audioActive) {
+      audioLiveSinceRef.current = null;
+      return;
     }
+    audioLiveSinceRef.current ??= performance.now();
+    if (showRotateHint || awaitingAudioGesture) return;
+    const timer = window.setTimeout(
+      () => showHint('first-play'),
+      Math.max(
+        0,
+        audioLiveSinceRef.current +
+          FIRST_PLAY_HINT_DELAY_MS -
+          performance.now(),
+      ),
+    );
+    return () => window.clearTimeout(timer);
   }, [
     liveMode,
     engineSnapshot?.audioActive,
@@ -1139,13 +1173,19 @@ function StimsWorkspaceAppShell() {
   const AUDIO_MATCH_RETRY_SCHEDULE_MS = [400, 400, 800, 800, 1200, 1600, 2000];
   // biome-ignore lint/correctness/useExhaustiveDependencies: ignore snapshot sub-properties
   useEffect(() => {
-    if (!engineSnapshot?.audioActive) {
+    // Not for demo audio: "suggested for this audio" about the app's own
+    // synth loop says nothing about the visitor's music, and on a first
+    // visit it offered a different preset two seconds into the one they had
+    // just been shown.
+    if (!engineSnapshot?.audioActive || engineSnapshot.audioSource === 'demo') {
       setAudioMatch(null);
       return;
     }
     const controller = new AbortController();
+    const startedAt = performance.now();
     let attempts = 0;
     let retryTimer: number | null = null;
+    let revealTimer: number | null = null;
 
     const tryMatch = () => {
       if (controller.signal.aborted) return;
@@ -1170,10 +1210,19 @@ function StimsWorkspaceAppShell() {
       }
       void searchByAudioProfile(profile, controller.signal).then((results) => {
         if (controller.signal.aborted) return;
-        if (results.length === 0) return;
-        const top = results[0];
-        if (top.score < 0.75) return;
-        setAudioMatch({ presetId: top.presetId, score: top.score });
+        const match = pickAudioMatch(
+          results,
+          (presetId) =>
+            catalogRef.current.find((entry) => entry.id === presetId)
+              ?.curatedRank,
+        );
+        if (!match) return;
+        // The search is eager so the answer is ready; the offer waits until
+        // the opening title card and first hint have had the screen.
+        revealTimer = window.setTimeout(
+          () => setAudioMatch({ presetId: match.presetId, score: match.score }),
+          Math.max(0, startedAt + AUDIO_MATCH_EARLIEST_MS - performance.now()),
+        );
       });
     };
 
@@ -1182,6 +1231,7 @@ function StimsWorkspaceAppShell() {
     return () => {
       controller.abort();
       if (retryTimer !== null) window.clearTimeout(retryTimer);
+      if (revealTimer !== null) window.clearTimeout(revealTimer);
     };
   }, [engineSnapshot?.audioActive, engineSnapshot?.audioSource]);
 
@@ -1409,8 +1459,10 @@ function StimsWorkspaceAppShell() {
       <div className="stims-shell__toast-stack">
         <SilentAudioNotice active={liveMode} />
         <ContextualHelp hint={visibleHint} anchor="stage" />
+        {/* One notice at a time: the match waits while a stage hint is up
+            (its dismiss clock waits with it). */}
         <AudioMatchToast
-          match={audioMatchWithName}
+          match={visibleHint?.anchor === 'stage' ? null : audioMatchWithName}
           onSelect={engine.handlePresetSelection}
           onDismiss={() => setAudioMatch(null)}
         />
