@@ -246,6 +246,7 @@ jobs:
           - file: chrome-visual-contract.test.ts
           - file: embed-bridge.test.ts
           - file: landing-route.test.ts
+          - file: open-one-up.test.ts
           - file: e2e-engine-mount.test.ts
             tests: '^(?!switches preset)'
           - file: e2e-engine-mount.test.ts

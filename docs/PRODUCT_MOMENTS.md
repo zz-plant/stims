@@ -46,8 +46,9 @@ These are settled. Apply them without asking; change them here, with a reason, w
 - **Context.** From a running preset, the visitor opens the editor, sees which sounds drive each control, changes the code and watches the change run.
 - **Claim.** The landing's distinctive promise: "Open one to see which sounds drive it, then change its code while it runs." It rests on the corpus being analysed as programs, the third contribution in [Lineage & Credits](./LINEAGE_AND_CREDITS.md#what-stims-contributes).
 - **Correct.** The audio sources the editor shows for each control match the static dataflow (`src/js/milkdrop/preset-dataflow.ts`). For `shifter-curlique`, `lab:dataflow` reports zoom driven by bass, mid and treble with history. An edit shows on stage without losing the audio or the session.
-- **Instruments.** Unit tests of the editor panel (`editor-panel-inspect`, `editor-panel-knobs`, `editor-panel-compare-safety`). Nothing end to end. See [Measuring Open one up](#measuring-open-one-up).
-- **Telemetry, 30 days.** 6 editor opens and no applied first edit, against 254 audible starts.
+- **Instruments.** `tests/e2e/open-one-up.test.ts` walks the moment end to end on WebGL, in CI. Unit tests cover the editor panel (`editor-panel-controls`, `editor-panel-inspect`, `editor-panel-knobs`, `editor-panel-compare-safety`). See [Measuring Open one up](#measuring-open-one-up).
+- **Telemetry, 30 days.** 6 editor opens and no applied first edit, against 254 audible starts. The first-edit event counts one button, not edits; see [Open questions](#open-questions).
+- **Gap.** The path works but is hard to find; see [What makes it hard to find](#what-makes-it-hard-to-find).
 
 ### 4. Perform
 
@@ -71,17 +72,29 @@ These are settled. Apply them without asking; change them here, with a reason, w
 There are two parts.
 
 - **The funnel.** Audible start, then editor opened, then first edit applied, then shared or saved, by device: the "Open one up funnel" report in `bun run telemetry:report` (#1377). No target until a month of clean data exists.
-- **The end-to-end check.** Not built yet.
-  1. From the first-run state, open the editor.
-  2. Read the audio sources it shows for each control.
-  3. Compare them with `analyzePresetDataflow` for the same preset.
-  4. Apply one edit through the editor.
-  5. Assert that the stage changes within a bounded number of frames (`__stims_agent.captureStats`) and that the audio and the session continue.
+- **The end-to-end check.** `tests/e2e/open-one-up.test.ts`, in CI's integration matrix on WebGL.
+  1. From the first-run state, with no deep link, it plays the demo, moves the pointer over the stage to bring the dock back, and opens the editor with the dock's Edit button.
+  2. It reads the chip on every Tune control: whether the draft or the equations own the value, and the full list of sounds from the chip's accessible name.
+  3. It derives the same readings without the editor, from `analyzePresetDataflow` on the preset file and the control definitions in `preset-controls.ts`, and requires them to match. Zoom is pinned to bass, mid and treble, as `lab:dataflow` reports.
+  4. It types one line at the end of the code: a red border half the screen deep, with `decay = 0`. The preset cannot produce that frame on its own, and neither can a black or washed-out stage.
+  5. The stage must show it within 150 engine frames. It took 33 on a laptop GPU and 2 on SwiftShader, whose frames are slow enough to cover the same debounce and compile. Afterwards the preset, the demo audio and the open editor must be unchanged, and the audio level must keep moving.
 
-  It belongs in the e2e suite on WebGL, so CI runs it.
+  Making the chips skip per-pixel outputs fails step 3 (Shift X and Shift Y lose their sounds). Disconnecting the editor from the engine fails step 5, and so does freezing the audio level the runtime reports.
+
+### What makes it hard to find
+
+Measured on 2026-10-07 against the dev server on WebGL, walking the same path. These are candidate explanations for the funnel, not measured causes of it.
+
+- **The landing promises the editor and offers no way in.** The promise sits above Play demo and Browse presets, and no control on the landing opens the editor. The `E` shortcut does, and the page does not mention it.
+- **Edit hides while the visitor watches.** After a few seconds without pointer movement the dock folds into a "Controls" pill and Edit leaves the accessibility tree. The hint shown then names → and ?, not E.
+- **On a phone the editor covers the stage.** Below 480 px wide, Edit moves into ≡ More actions. At 390x844 the editor sheet then covers all but the top 70 px of the stage, so the change cannot be watched while it runs.
+- **The code barely shows.** The editor stacks the "Try one edit" guide, a toolbar, the Problems strip and a fixed-height Tune dock around the code, and the code gets what is left: 0 px at 1366x657 (roughly what a 1366x768 screen leaves after browser chrome), 13 px at 1280x720, 4 lines at 1440x789, 12 lines at 1920x960, and part of one line at 390x844.
+- **The sounds sit below the fold.** Tune opens on a paragraph and a wave-or-shape picker, so at 1280x720 its first control starts at the bottom edge of the window. A chip reads `eq · bass +2`; mid and treble appear only in its tooltip and accessible name.
 
 ## Open questions
 
+- **The governor and the audit disagree on `shifter-curlique`.** The WCAG audit reads 0 flashes/s over 30 s with beat transients. With Reduce flashing on, the live governor dims the stage to a mean brightness of about 0.5, for 65% of samples, in silence as well as with demo audio, and it did the same before #1375. On `geiss-casino` and `eos-glowsticks-v2-03-music` it does not dim at all. Reduce flashing already defaults on for visitors whose OS asks for reduced motion, so they see the first-run preset dimmed. One of the two instruments is wrong, and which one decides roadmap item 1.
+- **The funnel's first-edit step counts one button.** `growth-first-edit-applied` is sent only by "Add a slow spin" in the editor's "Try one edit" guide (`src/js/frontend/FirstEditGuide.tsx`). Typing in the code or moving a Tune control sends nothing, so the 0 in 30 days says no one clicked that button. Counting every applied edit would change the event's meaning partway through the first clean month after #1377.
 - **Does the flash rule count churn?** At its busiest under the demo track, `shifter-curlique` has about a quarter of a visual field brightening in the same frame as another quarter darkens. The audit and the governor both take the larger direction in each frame and count every switch as a flash, so this churn can add up to two flashes in a second and dim the stage for a few seconds: one live run in five on WebGPU, to 0.62 at the lowest. WCAG speaks of opposing changes in the same area, which a per-area pairing would follow more closely than a per-frame one. The audit has only been run on synthetic audio, under which it reads this preset at 0 (roadmap item 5).
 - **No page says what telemetry records.** Nothing user-facing describes the beacons, before or after #1377.
 - **WebGL's warp centre ignores the aspect.** The CPU mesh places cx/cy without MilkDrop's aspect squeeze, so the backends disagree on presets that write them per pixel. Making WebGL faithful also makes some landscape-only presets dark on phones, which policy 1 accepts.
@@ -95,6 +108,7 @@ There are two parts.
 | 2026-10-07 | Beacons carry orientation, device class and audio source. Automated browsers do not post. | #1377 |
 | 2026-10-07 | Nothing plays a preset on arrival except attract mode. `/discover/` and `/author/` pages keep Browse open on their collection, `/` keeps its URL, and low-power or reduced-motion visitors get the static landing the attract gate always promised. | #1380 |
 | 2026-10-07 | Beacons carry an arrival class taken from the referrer's host, never the URL or the host itself, and each page load sends one `landing` event. | #1381 |
+| 2026-10-07 | The editor's per-control sounds are gated on static dataflow end to end, in CI on WebGL. | `tests/e2e/open-one-up.test.ts` |
 | 2026-10-07 | The governor and the audit disagreed on `shifter-curlique`, and the governor was wrong: it judged one sample per tile, counted its own dimming, and skipped frames. The audit's per-pixel rule is the reference; the governor now applies it to 64 pixels per tile on every frame. | #1383 |
 
 ## Working with this file
