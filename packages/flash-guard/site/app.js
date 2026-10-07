@@ -87,7 +87,38 @@ function showResult(analysis, meanLuminance, label) {
   window.__flashGuardSite.lastAnalysis = analysis;
 }
 
+/**
+ * Only the latest analysis may drive the shared <video> and scratch canvas.
+ * Each run takes a generation number; after every await it checks it is
+ * still current and stops if a newer run has started. Listeners are added
+ * per wait with `once`, so a superseded run's promise still settles instead
+ * of hanging on a handler the newer run replaced.
+ */
+let analysisGeneration = 0;
+
+function waitForEvent(target, resolveOn, rejectOn, error) {
+  return new Promise((resolve, reject) => {
+    const onResolve = () => {
+      target.removeEventListener(rejectOn, onReject);
+      resolve();
+    };
+    const onReject = () => {
+      target.removeEventListener(resolveOn, onResolve);
+      reject(error());
+    };
+    target.addEventListener(resolveOn, onResolve, { once: true });
+    target.addEventListener(rejectOn, onReject, { once: true });
+  });
+}
+
+function setCheckerBusy(busy) {
+  $('file').disabled = busy;
+  $('synthetic').disabled = busy;
+}
+
 async function analyseVideo(file) {
+  const generation = ++analysisGeneration;
+  const current = () => generation === analysisGeneration;
   const video = $('video');
   const scratch = $('scratch');
   const status = $('status');
@@ -97,15 +128,18 @@ async function analyseVideo(file) {
   status.textContent = `Decoding ${file.name}…`;
   progress.hidden = false;
   progress.value = 0;
+  setCheckerBusy(true);
 
   const url = URL.createObjectURL(file);
   try {
     video.src = url;
-    await new Promise((resolve, reject) => {
-      video.onloadedmetadata = resolve;
-      video.onerror = () =>
-        reject(new Error('the browser could not decode this file'));
-    });
+    await waitForEvent(
+      video,
+      'loadedmetadata',
+      'error',
+      () => new Error('the browser could not decode this file'),
+    );
+    if (!current()) return;
     const width = SAMPLE_WIDTH;
     const height = Math.max(
       1,
@@ -124,10 +158,15 @@ async function analyseVideo(file) {
     const frames = Math.floor(span * SAMPLE_FPS);
     const meanLuminance = [];
     for (let f = 0; f < frames; f += 1) {
-      await new Promise((resolve) => {
-        video.onseeked = resolve;
-        video.currentTime = f / SAMPLE_FPS;
-      });
+      const seeked = waitForEvent(
+        video,
+        'seeked',
+        'error',
+        () => new Error('the browser stopped decoding this file'),
+      );
+      video.currentTime = f / SAMPLE_FPS;
+      await seeked;
+      if (!current()) return;
       ctx.drawImage(video, 0, 0, width, height);
       counter.push(ctx.getImageData(0, 0, width, height).data);
       meanLuminance.push(counter.input().frameMeanLuminance[f]);
@@ -135,16 +174,19 @@ async function analyseVideo(file) {
         progress.value = f / frames;
         status.textContent = `Analysing ${file.name}: ${(f / SAMPLE_FPS).toFixed(1)} of ${span.toFixed(1)} s`;
         await new Promise((r) => requestAnimationFrame(r));
+        if (!current()) return;
       }
     }
     progress.hidden = true;
     status.textContent = `${file.name}, ${video.videoWidth}x${video.videoHeight}, sampled at ${width}x${height}.`;
     showResult(counter.analyze(), meanLuminance, file.name);
   } catch (error) {
+    if (!current()) return;
     progress.hidden = true;
     status.textContent = `Could not analyse: ${error.message}`;
   } finally {
     URL.revokeObjectURL(url);
+    if (current()) setCheckerBusy(false);
   }
 }
 
