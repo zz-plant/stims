@@ -17,6 +17,7 @@
  * would be worse than rendering them imperfectly.
  */
 
+import { isLineageFieldKey } from '../preset-lineage-fields.ts';
 import { extractShaderSource } from '../shader-source.ts';
 import type {
   MilkdropDegradationReason,
@@ -558,6 +559,13 @@ export function createMilkdropIr({
           line: field.line,
         });
       }
+      return;
+    }
+
+    // Remix lineage (preset-lineage-fields.ts) is metadata, like title=:
+    // kept with the preset, not an unknown field counted against it.
+    if (isLineageFieldKey(normalizedKey)) {
+      preserveField(field);
       return;
     }
 

@@ -890,13 +890,35 @@ function StimsWorkspaceAppShell() {
     // every time the session settles on something else, and stop once the
     // snapshot reflects it — later loads are then real user actions and
     // must win.
-    if (!pendingCode || !engine.engineReady) return;
+    //
+    // Waits for the catalog: only then is it known whether the link's preset
+    // exists here. When it does not — a preset the sender made or imported —
+    // the code is imported as a preset of its own. Applied to whatever loaded
+    // instead (the featured preset, after the missing id healed to it), it
+    // would have been saved as that preset's draft.
+    if (!pendingCode || !engine.engineReady || !engine.catalogReady) return;
+    if (engine.missingRequestedPreset) {
+      const name = ui.routeState.presetId ?? 'shared-preset';
+      setPendingCode(null);
+      void engine.importPresetFiles([
+        new File([pendingCode], `${name}.milk`, { type: 'text/plain' }),
+      ]);
+      return;
+    }
     if (engineSnapshot?.currentSource === pendingCode) {
       setPendingCode(null);
       return;
     }
     engine.updateEditorSource(pendingCode);
-  }, [pendingCode, engine.engineReady, engineSnapshot?.currentSource, engine]);
+  }, [
+    pendingCode,
+    engine.engineReady,
+    engine.catalogReady,
+    engine.missingRequestedPreset,
+    engineSnapshot?.currentSource,
+    engine,
+    ui.routeState.presetId,
+  ]);
 
   useEffect(() => {
     if (
