@@ -1,0 +1,59 @@
+name: Package sites
+
+# Deploys every standalone package's site to this repository's GitHub Pages,
+# one site per package under /<name>/ plus an index page, built by
+# `bun run site:packages`. Enable Pages with "GitHub Actions" as the source
+# in the repository settings; until then the deploy job fails and nothing
+# else happens. After a package is split into its own repository, the
+# `.github/workflows/pages.yml` inside it deploys the same site on its own.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - 'scripts/build-packages-site.ts'
+      - '.github/workflows/pages-packages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: package-sites
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build sites
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
+        with:
+          checkout: 'false'
+
+      - name: Build every package site
+        run: bun run site:packages
+
+      - name: Upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

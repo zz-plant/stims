@@ -53,7 +53,9 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "bun test",
     "figure:svg": "bun run scripts/render-figure.ts",
-    "prepublishOnly": "bun run typecheck && bun test && bun run build"
+    "prepublishOnly": "bun run typecheck && bun test && bun run build",
+    "site:build": "bun run scripts/build-site.ts",
+    "site:preview": "bun run scripts/build-site.ts && bunx serve _site -l 8787"
   },
   "devDependencies": {
     "@types/bun": "^1.4.2",
