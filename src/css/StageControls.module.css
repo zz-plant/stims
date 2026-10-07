@@ -85,22 +85,27 @@
     rgba(119, 201, 255, calc(var(--energy, 0) * 0.25));
 }
 
+/* A labelled control inside the bar. Fixed size like the nav buttons: the
+   title is the one element that gives way when the pill is tight. */
 .editEntry {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  right: 0;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 8px 14px;
+  gap: 6px;
+  height: 36px;
+  flex-shrink: 0;
+  padding: 0 12px 0 10px;
   border: 1px solid var(--ctl-line);
   border-radius: var(--radius-round);
-  background: var(--ctl-panel-bg);
+  background: transparent;
   color: var(--ctl-ink);
   font: inherit;
   font-size: 0.8125rem;
+  font-weight: 600;
   cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .editEntry:hover {
@@ -110,6 +115,16 @@
 .editEntry:focus-visible {
   outline: 2px solid var(--stims-accent);
   outline-offset: 2px;
+}
+
+/* Phones drop it from the bar, as they drop save and full screen (see the
+   480px block below): every 44px control there comes out of the title,
+   which is the one thing the bar exists to show, and with Edit in the row it
+   read "Cere…". "Edit preset code" stays one tap away in the menu. */
+@media (max-width: 480px) {
+  .editEntry {
+    display: none;
+  }
 }
 
 .navBtn {
@@ -172,52 +187,6 @@
 
 .navBtn[data-saved="true"] {
   color: var(--stims-cool, #77c9ff);
-}
-
-.transitionBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 32px;
-  padding: 0 8px;
-  flex-shrink: 0;
-  border: none;
-  border-radius: var(--radius-round);
-  background: var(--ctl-fill, rgba(255, 255, 255, 0.05));
-  color: var(--ctl-ink-2);
-  font: inherit;
-  font-size: var(--text-xs, 0.75rem);
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    background 0.15s ease,
-    transform 0.1s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.transitionBtn:hover {
-  color: var(--ctl-ink);
-  background: var(--ctl-fill-hover);
-}
-
-.transitionBtn:active {
-  transform: scale(0.92);
-}
-
-.transitionBtn:focus-visible {
-  outline: 2px solid var(--stims-accent);
-  outline-offset: 1px;
-}
-
-.transitionBtnText {
-  letter-spacing: 0.02em;
-}
-
-@media (max-width: 480px) {
-  .transitionBtn {
-    display: none;
-  }
 }
 
 .titleBtn {
@@ -595,32 +564,6 @@
   }
 }
 
-/* ── Transition popover ──────────────────────────────────────────────
-   The overflow menu's radio row, on its own, anchored over the pill's
-   transition trigger. Positioned by the component (left/bottom inline),
-   which measures the trigger on open; the pill is centred and sized by its
-   title, so the trigger has no fixed x. */
-.popover {
-  position: fixed;
-  transform: translateX(-50%);
-  z-index: var(--z-stage-menu);
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 200px;
-  padding: 8px 10px 10px;
-  border-radius: var(--radius-lg);
-  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
-  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-  animation: menu-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1) both;
-}
-
-.popover .menuOption {
-  min-width: 40px;
-  padding: 7px 8px;
-}
-
 .menuLabel {
   padding: 6px 12px 2px;
   font-size: 0.6875rem;
@@ -756,7 +699,8 @@
     height: 44px;
   }
 
-  .titleBtn {
+  .titleBtn,
+  .editEntry {
     height: 44px;
   }
 
@@ -830,6 +774,11 @@
     height: 40px;
   }
 
+  .editEntry {
+    height: 40px;
+    margin: 0 4px;
+  }
+
   .navBtn[data-primary="true"] {
     width: 48px;
     height: 48px;
@@ -844,12 +793,6 @@
   .navBtn[data-primary="true"] :global(.stims-icon-slot--sm) {
     width: 1.5rem;
     height: 1.5rem;
-  }
-
-  .transitionBtn {
-    height: 40px;
-    padding: 0 12px;
-    font-size: var(--text-sm, 0.875rem);
   }
 
   .titleBtn {

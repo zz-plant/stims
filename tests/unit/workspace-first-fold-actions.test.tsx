@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { act } from 'react';
 import { saveLastSession } from '../../src/js/core/state/last-session-store.ts';
 import { AudioSourcePanel } from '../../src/js/frontend/AudioSourcePanel.tsx';
+import { createEmptyEngineSnapshot } from '../../src/js/frontend/engine/engine-snapshot.ts';
 import { NewHomePage } from '../../src/js/frontend/NewHomePage.tsx';
 import { makePresetEntry, renderWorkspace } from '../frontend-harness.tsx';
 
@@ -55,6 +57,121 @@ describe('workspace first-fold launch hierarchy', () => {
     } finally {
       rendered.dispose();
     }
+  });
+
+  test('a first visit leads with the promise, not the product name', () => {
+    const rendered = renderWorkspace(<NewHomePage />);
+    try {
+      const { container } = rendered;
+      const heading = container.querySelector('h1');
+      expect(heading?.textContent).toBe('A music visualizer you can open up');
+      // The name is still on the page, as a nameplate rather than the h1.
+      expect(
+        container.querySelector('.stims-shell__launch-nameplate')?.textContent,
+      ).toBe('Stims');
+      // What the demo is, said directly under the pair of buttons — not as
+      // the last sentence of a paragraph below them.
+      const actions = container.querySelector(
+        '.stims-shell__launch-actions-minimal',
+      );
+      expect(actions?.nextElementSibling?.textContent).toContain(
+        'built-in synth loop',
+      );
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('a first visit offers the other sources as chips, with no disclosure and no second demo', () => {
+    const rendered = renderWorkspace(<NewHomePage />);
+    try {
+      const { container } = rendered;
+      expect(container.querySelector('details')).toBeNull();
+      expect(rendered.text()).toContain('Or play your own audio');
+      expect(
+        container.querySelector('.stims-shell__source-grid--chips'),
+      ).not.toBeNull();
+      // Play demo is the primary button; a "Demo audio" chip under it was a
+      // second way to press the same thing.
+      const demoButtons = container.querySelectorAll('[data-demo-audio-btn]');
+      expect(demoButtons.length).toBe(1);
+      expect(demoButtons[0].className).toContain('stims-shell__launch-cta');
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('Browse presets is the same button beside the primary on both variants', () => {
+    const browseOf = (rendered: ReturnType<typeof renderWorkspace>) =>
+      [...rendered.container.querySelectorAll('button')].find(
+        (button) => button.textContent === 'Browse presets',
+      );
+    const first = renderWorkspace(<NewHomePage />);
+    const returning = renderReturningVisitor('microphone');
+    try {
+      for (const rendered of [first, returning]) {
+        const browse = browseOf(rendered);
+        expect(browse?.className).toBe('stims-shell__launch-secondary');
+        expect(browse?.parentElement?.className).toBe(
+          'stims-shell__launch-actions-minimal',
+        );
+        expect(
+          browse?.parentElement?.querySelector('.stims-shell__launch-cta'),
+        ).not.toBeNull();
+      }
+    } finally {
+      first.dispose();
+      returning.dispose();
+    }
+  });
+
+  test('the focus the page places itself shows no ring until a key is pressed', () => {
+    const rendered = renderWorkspace(<NewHomePage />);
+    try {
+      const cta = rendered.container.querySelector<HTMLButtonElement>(
+        '.stims-shell__launch-cta',
+      );
+      expect(document.activeElement).toBe(cta);
+      expect(cta?.getAttribute('data-quiet-focus')).toBe('true');
+      // The test DOM has no KeyboardEvent; the listener reads no key.
+      act(() => {
+        document.dispatchEvent(new Event('keydown', { bubbles: true }));
+      });
+      expect(cta?.hasAttribute('data-quiet-focus')).toBe(false);
+      expect(document.activeElement).toBe(cta);
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('names the preset running behind a first visit, only while it runs', () => {
+    const entry = makePresetEntry({
+      id: 'krash-rovastar-cerebral-demons-stars',
+      title: 'Krash & Rovastar - Cerebral Demons (Stars Remix)',
+      author: 'Krash',
+    });
+    const caption = (attractPreviewLive: boolean, runtimeReady: boolean) => {
+      const rendered = renderWorkspace(<NewHomePage />, {
+        engine: { attractPreviewLive, selectedPreset: entry, catalog: [entry] },
+        snapshot: {
+          ...createEmptyEngineSnapshot(),
+          runtimeReady,
+          activePresetId: entry.id,
+        },
+      });
+      const text =
+        rendered.container.querySelector('.stims-shell__attract-caption')
+          ?.textContent ?? null;
+      rendered.dispose();
+      return text;
+    };
+    expect(caption(true, true)).toBe(
+      'Running nowCerebral Demons (Stars Remix)Krash + Rovastar',
+    );
+    // Gated off (low power, reduced motion) or paused as blank: nothing is
+    // running, so nothing is named.
+    expect(caption(false, true)).toBeNull();
+    expect(caption(true, false)).toBeNull();
   });
 
   test('the audio panel keeps YouTube first-class and drops the demo fallback', () => {
@@ -132,13 +249,10 @@ describe('workspace first-fold launch hierarchy', () => {
       expect(demoButtons[0].className).toContain(
         'stims-shell__launch-demo-link',
       );
-      // Browse presets changes context; it is a quiet action, not Resume's equal.
-      const browse = [...container.querySelectorAll('button')].find(
-        (button) => button.textContent === 'Browse presets',
-      );
-      expect(browse?.className).toContain(
-        'stims-shell__launch-secondary--quiet',
-      );
+      // The returning card names the preset itself, so no second caption.
+      expect(
+        container.querySelector('.stims-shell__attract-caption'),
+      ).toBeNull();
     } finally {
       rendered.dispose();
     }
@@ -185,7 +299,7 @@ describe('workspace first-fold launch hierarchy', () => {
         'stims-shell__launch-sources-inline',
         'stims-shell__source-grid--chips',
         'stims-shell__source-card--chip',
-        'stims-shell__launch-secondary--quiet',
+        'stims-shell__launch-secondary',
       ]) {
         expect(
           rendered.container.querySelector(`.${className}`),
@@ -209,7 +323,9 @@ describe('workspace first-fold launch hierarchy', () => {
     try {
       for (const className of [
         'stims-shell__launch-center',
-        'stims-shell__launch-source-minimal',
+        'stims-shell__launch-nameplate',
+        'stims-shell__launch-note',
+        'stims-shell__launch-sources-inline',
       ]) {
         expect(
           rendered.container.querySelector(`.${className}`),

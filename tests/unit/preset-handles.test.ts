@@ -173,3 +173,19 @@ describe('resolveHandleKey', () => {
     expect(resolveHandleKey('shadow harlequin')).toBe('shadowharlequin');
   });
 });
+
+describe('author-filter variants', () => {
+  test('folds misspellings and title fragments into the handle they credit', () => {
+    expect(canonicalHandle('Anandmide')).toBe('Anandamide');
+    expect(canonicalHandle('tobias wolfboi')).toBe('TobiasWolfBoi');
+    expect(canonicalHandle('e.o.s')).toBe('Eo.S.');
+    expect(canonicalHandle('_Mig_304')).toBe('Mig');
+    expect(canonicalHandle('EoS planetfunk-07')).toBe('Eo.S.');
+    expect(canonicalHandle('Cope-WIP')).toBe('cope');
+    expect(canonicalHandle("Goody's Portfolio")).toBe('Goody');
+  });
+
+  test('a space-joined pair splits once both hands are registered', () => {
+    expect(creditedHandles('Reenen Geiss')).toEqual(['Reenen', 'Geiss']);
+  });
+});

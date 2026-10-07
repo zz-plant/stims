@@ -7,6 +7,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import type { ResumableAudioSource } from '../core/state/last-session-store.ts';
 import { getLastSession } from '../core/state/last-session-store.ts';
+import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import { getArrivalAudioSource, getArrivalPresetId } from './arrival-url.ts';
@@ -15,7 +16,7 @@ import { PresetArtwork } from './PresetArtwork.tsx';
 import { LaunchSignalTrace } from './SignalField.tsx';
 import { resolveSharedArrival } from './shared-arrival.ts';
 import { UiIcon } from './UiIcon.tsx';
-import { useWorkspace } from './workspace-context.tsx';
+import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import { describePresetMood, STIMS_REPO_URL } from './workspace-helpers.ts';
 
 const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
@@ -225,30 +226,57 @@ export function NewHomePage() {
           isStarting={audioStarting}
           onBrowsePresets={handleBrowsePresets}
         />
+        {/* Sits under the button it describes. As the last sentence of a
+            paragraph below both buttons it arrived after the choice it was
+            meant to inform. */}
         {resume ? null : (
-          <p className="stims-shell__launch-explainer">
-            Every scene is a MilkDrop preset, a small program that turns sound
-            into motion. Stims runs the original file, shows which part of the
-            sound drives what, and lets you edit it while it plays. The demo is
-            a built-in synth loop, not a song.
+          <p className="stims-shell__launch-note">
+            The demo plays a built-in synth loop, not a song, and asks for no
+            permissions.
           </p>
         )}
         <AudioSources resume={resume} />
-        {/* Returning visitor: switching preset changes context, it is not
-            a second way to start, so it ranks below the sources as a quiet
-            text action rather than pairing with Resume as an equal. */}
-        {resume ? (
-          <button
-            type="button"
-            className="stims-shell__launch-secondary stims-shell__launch-secondary--quiet"
-            onClick={handleBrowsePresets}
-          >
-            Browse presets
-          </button>
-        ) : null}
         <ProjectMeta />
       </div>
+      {resume || deepLink ? null : <AttractCaption />}
     </section>
+  );
+}
+
+/**
+ * Names the preset running behind the first-visit hero. Without it the
+ * backdrop read as an unexplained texture, when it is the product running
+ * live. The returning and deep-link variants already name their preset in
+ * the column, so they do not get a second label.
+ *
+ * Hidden from assistive tech: the stage's own status region already
+ * announces "Now playing: …" for the same preset.
+ */
+function AttractCaption() {
+  const { engine } = useWorkspace();
+  const { engineSnapshot } = useEngineSnapshot();
+  const title = engine.selectedPreset?.title;
+  if (
+    !engine.attractPreviewLive ||
+    !engineSnapshot?.runtimeReady ||
+    !engineSnapshot.activePresetId ||
+    !title
+  ) {
+    return null;
+  }
+  const display = splitPresetDisplay(title, engine.selectedPreset?.author);
+  return (
+    <p className="stims-shell__attract-caption" aria-hidden="true">
+      <span className="stims-shell__attract-caption-label">Running now</span>
+      <span className="stims-shell__attract-caption-title">
+        {display.title}
+      </span>
+      {display.byline ? (
+        <span className="stims-shell__attract-caption-byline">
+          {display.byline}
+        </span>
+      ) : null}
+    </p>
   );
 }
 
@@ -328,15 +356,21 @@ function Header({
     );
   }
 
+  // The name is a nameplate and the headline is the promise. With the
+  // wordmark as the h1 the loudest thing on the page was a word a first-time
+  // visitor has never heard, and the line explaining it assumed they already
+  // knew what MilkDrop was.
   return (
     <>
+      <p className="stims-shell__launch-nameplate">Stims</p>
       <h1 id="stims-launch-title" className="stims-shell__launch-title">
-        Stims
+        A music visualizer you can open up
       </h1>
       <LaunchSignalTrace />
       <p className="stims-shell__launch-tagline">
-        Play MilkDrop presets, see what moves them, and change them while they
-        play.
+        Thousands of presets for MilkDrop, the visualizer that shipped with
+        Winamp, reacting to whatever you play. Open one to see which sounds
+        drive it, then change its code while it runs.
       </p>
     </>
   );
@@ -381,11 +415,27 @@ function Actions({
       document.removeEventListener('keydown', claim);
     };
   }, []);
+  // Focus placed by the page, not by the visitor, carries no ring until a
+  // key is pressed. Chrome treats load-time programmatic focus as
+  // :focus-visible, so the ring was in every first impression of the page
+  // and read as a pressed state; the first keystroke brings it back.
+  const [quietFocus, setQuietFocus] = useState(false);
   useEffect(() => {
     if (isEngineReady && !focusClaimedRef.current) {
       ctaRef.current?.focus();
+      setQuietFocus(true);
     }
   }, [isEngineReady]);
+  useEffect(() => {
+    if (!quietFocus) return;
+    const reveal = () => setQuietFocus(false);
+    document.addEventListener('keydown', reveal, true);
+    return () => document.removeEventListener('keydown', reveal, true);
+  }, [quietFocus]);
+  const ctaFocusProps = {
+    'data-quiet-focus': quietFocus ? 'true' : undefined,
+    onBlur: () => setQuietFocus(false),
+  };
   const resumeHook = resume ? RESUME_SOURCE_HOOK[resume.session.source] : null;
   return (
     <div className="stims-shell__launch-actions-minimal">
@@ -409,6 +459,7 @@ function Actions({
           aria-busy={isStarting}
           aria-describedby={!isEngineReady ? engineStatusId : undefined}
           onClick={onResume}
+          {...ctaFocusProps}
         >
           {isStarting
             ? 'Starting…'
@@ -434,6 +485,7 @@ function Actions({
           aria-busy={isStarting}
           aria-describedby={!isEngineReady ? engineStatusId : undefined}
           onClick={onPlayDemo}
+          {...ctaFocusProps}
         >
           {isStarting ? 'Starting…' : 'Play demo'}
         </button>
@@ -452,10 +504,21 @@ function Actions({
           Audio engine is starting. This will unlock in a moment.
         </p>
       ) : null}
+      {/* The same pair on every variant of this page. The returning visitor
+          used to get Browse as an underlined text link under the sources
+          while first-time visitors got it as a button beside Play, so one
+          action had two ranks and two looks depending on history. */}
+      <button
+        type="button"
+        className="stims-shell__launch-secondary"
+        onClick={onBrowsePresets}
+      >
+        Browse presets
+      </button>
       {/* Demo audio is not the visitor's own audio, so it does not belong
           among "use a different source". For someone resuming with a real
           source it is the no-permission escape hatch, and lives here as a
-          small action under Resume. */}
+          small action under the pair. */}
       {resume && resume.session.source !== 'demo' ? (
         <button
           type="button"
@@ -469,58 +532,37 @@ function Actions({
           Try demo audio instead, no permission needed
         </button>
       ) : null}
-      {resume ? null : (
-        <button
-          type="button"
-          className="stims-shell__launch-secondary"
-          onClick={onBrowsePresets}
-        >
-          Browse presets
-        </button>
-      )}
     </div>
   );
 }
 
 /**
- * The alternatives to the primary CTA.
+ * The alternatives to the primary CTA, as a row of compact chips on every
+ * variant of the page.
  *
- * The pitch is "press one button and it plays" — but the YouTube field and
- * the four source cards rendered flat underneath the CTA at roughly equal
- * visual weight, so the page offered six ways to start and ranked none of
- * them. On a first visit they collapse behind a disclosure: the summary
- * names every source inside, so nothing becomes undiscoverable.
+ * The pitch is "press one button and it plays", so the alternatives are
+ * ranked by size alone: a chip each, under the buttons. They used to be a
+ * flat stack of cards (six ways to start, none ranked), then a disclosure on
+ * the first visit. The disclosure hid them behind a 6px triangle, grew the
+ * page by a full card grid when opened (which re-centred the column and
+ * moved everything the visitor was reading), and its summary promised a
+ * Spotify option that was really the tab-audio card.
  *
- * A returning visitor gets them as a row of compact chips instead. Their
- * usual source is already the primary button ("Resume with your mic"), so
- * the chips are ranked by size alone and need no disclosure — which also
- * removes the page-length jump between its closed and open states, and the
- * second "Microphone" that the open state used to show a few lines under
- * "Resume with your mic". Demo audio is not their own audio and is offered
- * under Resume instead (see `Actions`).
+ * Demo audio is never a chip: on a first visit it is the primary button, and
+ * for a returning visitor it is the small no-permission action under Resume
+ * (see `Actions`). Their usual source is the primary button too, so it is
+ * not offered again here under another name.
  */
 function AudioSources({ resume }: { resume: ResumeState }) {
-  if (resume) {
-    return (
-      <div className="stims-shell__launch-sources-inline">
-        <AudioSourcePanel
-          showHelp={false}
-          layout="chips"
-          heading="Use a different source"
-          omitSources={['demo', resume.session.source]}
-        />
-      </div>
-    );
-  }
   return (
-    <details className="stims-shell__launch-source-minimal">
-      <summary className="stims-shell__launch-sources-summary">
-        Or use your own audio — YouTube, mic, a file, a tab, or Spotify
-      </summary>
-      <div className="stims-shell__launch-sources-body">
-        <AudioSourcePanel showHelp={false} />
-      </div>
-    </details>
+    <div className="stims-shell__launch-sources-inline">
+      <AudioSourcePanel
+        showHelp={false}
+        layout="chips"
+        heading={resume ? 'Use a different source' : 'Or play your own audio'}
+        omitSources={resume ? ['demo', resume.session.source] : ['demo']}
+      />
+    </div>
   );
 }
 

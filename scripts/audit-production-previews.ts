@@ -15,6 +15,12 @@
  *
  * Usage:
  *   bun run scripts/audit-production-previews.ts [--sample N] [--concurrency N] [--stale-only] [--verbose]
+ *   bun run scripts/audit-production-previews.ts --write-scores [path]
+ *
+ * `--write-scores` also saves every served preview's frameScore() as
+ * `{ presetId: score }` (default scratch/preview-scores.json), which
+ * score-catalog-quality.ts reads: the thumbnail is what a visitor judges a
+ * preset by in Browse, so how readable it is belongs in the curated order.
  *
  * `missing-local` (production serves it, the repo has no capture) is the
  * expected state wherever previews live only in R2, so by default it is one
@@ -22,8 +28,8 @@
  * `--verbose` lists them.
  * Env: PREVIEW_BASE (default https://toil.fyi), CATALOG_URL
  */
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import {
   analyzeFrame,
   badFrameReason,
@@ -157,6 +163,7 @@ async function main() {
   );
 
   const findings: Finding[] = [];
+  const scores = new Map<string, number>();
   let checked = 0;
   let cursor = 0;
 
@@ -180,6 +187,7 @@ async function main() {
         }
         const body = Buffer.from(await res.arrayBuffer());
         prodStats = await analyzeFrame(body);
+        scores.set(id, Number(frameScore(prodStats).toFixed(2)));
       } catch (err) {
         findings.push({
           id,
@@ -208,6 +216,21 @@ async function main() {
   await Promise.all(
     Array.from({ length: Math.min(concurrency, ids.length) }, worker),
   );
+
+  const scoresFlag = args.indexOf('--write-scores');
+  if (scoresFlag !== -1) {
+    const next = args[scoresFlag + 1];
+    const scoresPath =
+      next && !next.startsWith('--')
+        ? next
+        : join('scratch', 'preview-scores.json');
+    mkdirSync(dirname(scoresPath), { recursive: true });
+    const sorted = Object.fromEntries(
+      [...scores].sort(([a], [b]) => a.localeCompare(b)),
+    );
+    writeFileSync(scoresPath, `${JSON.stringify(sorted, null, 2)}\n`);
+    console.log(`Wrote ${scores.size} preview scores to ${scoresPath}`);
+  }
 
   const byKind = (kind: Finding['kind']) =>
     findings.filter((f) => f.kind === kind);

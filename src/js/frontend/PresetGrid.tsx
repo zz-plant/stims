@@ -118,8 +118,15 @@ const GridTile = memo(function GridTile({
             : entry.title || entry.id
         }
         aria-keyshortcuts={quickSelectKey ?? undefined}
-        // the caption clips long names; hovering shows the whole one
-        title={entry.title || entry.id}
+        // The caption clips long names; hovering shows the whole one, and
+        // names the key the corner badge stands for, the same "Label (key)"
+        // form the dock's tooltips use. A bare number in the corner read as
+        // a rank.
+        title={
+          quickSelectKey
+            ? `${entry.title || entry.id} (${quickSelectKey})`
+            : entry.title || entry.id
+        }
         onPointerEnter={() => onAudition(entry.id)}
         onPointerLeave={() => onAuditionEnd(entry.id)}
         onFocus={() => {

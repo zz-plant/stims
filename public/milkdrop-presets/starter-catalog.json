@@ -31,7 +31,7 @@
         ]
       },
       "quality": {
-        "score": 0.47,
+        "score": 0.5077,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -39,7 +39,8 @@
           "measuredReactivity": 0.9999999999999974,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.377
         }
       },
       "sensoryProfile": {
@@ -84,7 +85,7 @@
         "reasons": []
       },
       "quality": {
-        "score": 0.8046,
+        "score": 0.8357,
         "components": {
           "fidelity": 1,
           "evidence": 1,
@@ -92,7 +93,8 @@
           "measuredReactivity": 0.820097789061796,
           "motion": 0.05711144271102454,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.311
         }
       }
     },
@@ -133,7 +135,7 @@
         ]
       },
       "quality": {
-        "score": 0.4524,
+        "score": 0.5084,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -141,7 +143,8 @@
           "measuredReactivity": 0.9413047014053231,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.56
         }
       }
     },
@@ -182,7 +185,7 @@
         ]
       },
       "quality": {
-        "score": 0.4674,
+        "score": 0.5674,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -190,7 +193,8 @@
           "measuredReactivity": 0.9913234854204358,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 1
         }
       }
     },
@@ -231,7 +235,7 @@
         ]
       },
       "quality": {
-        "score": 0.4674,
+        "score": 0.5674,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -239,7 +243,8 @@
           "measuredReactivity": 0.9913234854204399,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 1
         }
       }
     },
@@ -276,7 +281,7 @@
         ]
       },
       "quality": {
-        "score": 0.432,
+        "score": 0.4931,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -284,7 +289,8 @@
           "measuredReactivity": 0.8733758265416562,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.611
         }
       }
     },
@@ -321,7 +327,7 @@
         ]
       },
       "quality": {
-        "score": 0.4522,
+        "score": 0.5522,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -329,7 +335,8 @@
           "measuredReactivity": 0.9408086615319529,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 1
         }
       }
     },
@@ -366,7 +373,7 @@
         ]
       },
       "quality": {
-        "score": 0.47,
+        "score": 0.515,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -374,7 +381,8 @@
           "measuredReactivity": 0.9999999999999972,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.45
         }
       }
     },
@@ -411,7 +419,7 @@
         ]
       },
       "quality": {
-        "score": 0.4537,
+        "score": 0.5537,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -419,7 +427,8 @@
           "measuredReactivity": 0.9455354841976273,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 1
         }
       }
     },
@@ -456,7 +465,7 @@
         ]
       },
       "quality": {
-        "score": 0.47,
+        "score": 0.57,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -464,7 +473,8 @@
           "measuredReactivity": 1,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 1
         }
       }
     },
@@ -502,7 +512,7 @@
         ]
       },
       "quality": {
-        "score": 0.4338,
+        "score": 0.5338,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -510,7 +520,8 @@
           "measuredReactivity": 0.8793382950863673,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 1
         }
       }
     },
@@ -548,7 +559,7 @@
         ]
       },
       "quality": {
-        "score": 0.4674,
+        "score": 0.4695,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -556,7 +567,8 @@
           "measuredReactivity": 0.9912873749225325,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.021
         }
       }
     },
@@ -593,7 +605,7 @@
         ]
       },
       "quality": {
-        "score": 0.4656,
+        "score": 0.5049,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -601,7 +613,8 @@
           "measuredReactivity": 0.9851799184295131,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.393
         }
       }
     },
@@ -637,7 +650,7 @@
         ]
       },
       "quality": {
-        "score": 0.4674,
+        "score": 0.4973,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -645,7 +658,8 @@
           "measuredReactivity": 0.9913234854204347,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.299
         }
       }
     },
@@ -679,7 +693,7 @@
         ]
       },
       "quality": {
-        "score": 0.445,
+        "score": 0.4467,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -687,7 +701,8 @@
           "measuredReactivity": 0.9167559612895001,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.017
         }
       }
     },
@@ -721,7 +736,7 @@
         ]
       },
       "quality": {
-        "score": 0.445,
+        "score": 0.4468,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -729,7 +744,8 @@
           "measuredReactivity": 0.9167559612895001,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.018
         }
       }
     },
@@ -763,7 +779,7 @@
         ]
       },
       "quality": {
-        "score": 0.445,
+        "score": 0.4541,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -771,7 +787,8 @@
           "measuredReactivity": 0.9167559612895001,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.091
         }
       }
     },
@@ -806,7 +823,7 @@
         ]
       },
       "quality": {
-        "score": 0.4529,
+        "score": 0.5529,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -814,7 +831,8 @@
           "measuredReactivity": 0.9430446118824816,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 1
         }
       }
     },
@@ -850,7 +868,7 @@
         ]
       },
       "quality": {
-        "score": 0.4529,
+        "score": 0.4655,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -858,7 +876,8 @@
           "measuredReactivity": 0.9430446118824816,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.126
         }
       }
     },
@@ -893,7 +912,7 @@
         ]
       },
       "quality": {
-        "score": 0.416,
+        "score": 0.516,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -901,7 +920,8 @@
           "measuredReactivity": 0.820097789061796,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 1
         }
       }
     },
@@ -937,7 +957,7 @@
         ]
       },
       "quality": {
-        "score": 0.4674,
+        "score": 0.5016,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -945,7 +965,8 @@
           "measuredReactivity": 0.9912873749225325,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.342
         }
       }
     },
@@ -980,7 +1001,7 @@
         ]
       },
       "quality": {
-        "score": 0.4674,
+        "score": 0.5674,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -988,7 +1009,8 @@
           "measuredReactivity": 0.9913234854204362,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 1
         }
       }
     },
@@ -1023,7 +1045,7 @@
         ]
       },
       "quality": {
-        "score": 0.4529,
+        "score": 0.4974,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -1031,7 +1053,8 @@
           "measuredReactivity": 0.9430446118824816,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.445
         }
       }
     },
@@ -1066,7 +1089,7 @@
         ]
       },
       "quality": {
-        "score": 0.4676,
+        "score": 0.5583,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -1074,7 +1097,8 @@
           "measuredReactivity": 0.992026393126689,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.907
         }
       }
     },
@@ -1109,7 +1133,7 @@
         ]
       },
       "quality": {
-        "score": 0.4529,
+        "score": 0.5061,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
@@ -1117,7 +1141,8 @@
           "measuredReactivity": 0.9430446118824816,
           "motion": null,
           "flashPenalty": 0,
-          "duplicatePenalty": 0
+          "duplicatePenalty": 0,
+          "preview": 0.532
         }
       }
     }

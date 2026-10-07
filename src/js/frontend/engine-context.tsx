@@ -45,6 +45,10 @@ export interface EngineContextValue extends ForwardedEngineActions {
   featuredPreset: PresetCatalogEntry | null;
   filteredCatalog: PresetCatalogEntry[];
   audioActive: boolean;
+  /** The landing page's decorative preview is allowed to render: false on
+   * low-power and reduced-motion devices, and once a blank preview has been
+   * paused. */
+  attractPreviewLive: boolean;
   loadingRequestedPreset: boolean;
   missingRequestedPreset: boolean;
   recentPresets: PresetCatalogEntry[];

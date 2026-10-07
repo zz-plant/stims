@@ -422,9 +422,10 @@ chromeTest(
         // brightest the stage gets under the copy.
         const backdrop = [96, 96, 96];
         const targets = [
+          '.stims-shell__launch-nameplate',
           '.stims-shell__launch-title',
           '.stims-shell__launch-tagline',
-          '.stims-shell__launch-explainer',
+          '.stims-shell__launch-note',
         ];
         return targets.flatMap((sel) => {
           const el = document.querySelector(sel);

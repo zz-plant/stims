@@ -13,7 +13,7 @@ export function AudioMatchToast({
   onSelect,
   onDismiss,
 }: {
-  match: { presetId: string; name: string } | null;
+  match: { presetId: string; name: string; byline?: string | null } | null;
   onSelect: (presetId: string) => void;
   onDismiss: () => void;
 }) {
@@ -60,10 +60,18 @@ export function AudioMatchToast({
           match" claimed a precision the search does not have. */}
       <button
         type="button"
-        className="stims-shell__text-button"
+        className="stims-shell__audio-match-action"
+        // The visible title can be clipped to one line; hovering shows it
+        // whole.
+        title={match.name}
         onClick={() => onSelect(match.presetId)}
       >
-        {match.name}
+        <span className="stims-shell__audio-match-title">{match.name}</span>
+        {match.byline ? (
+          <span className="stims-shell__audio-match-byline">
+            {match.byline}
+          </span>
+        ) : null}
       </button>
     </div>
   );

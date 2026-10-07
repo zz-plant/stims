@@ -10,6 +10,9 @@
  *  - measured reactivity from scratch/preset-lab/<id>/reactivity.json
  *  - flash audit metrics from scratch/flash-audit-*.json (motion, flash risk)
  *  - near-duplicate penalty from dedup-catalog.ts similarity annotations
+ *  - preview readability from scratch/preview-scores.json, written by
+ *    `audit-production-previews.ts --write-scores`: the served thumbnail's
+ *    frameScore, since a thumbnail is what Browse is judged by
  *
  * Usage:
  *   bun run scripts/score-catalog-quality.ts          # write quality + curatedRank
@@ -40,6 +43,8 @@ type QualityComponents = {
   duplicatePenalty: number;
   /** 1 - skip rate from live telemetry; absent until enough samples exist. */
   engagement?: number;
+  /** Served-thumbnail readability, 0-1; absent until measured. */
+  preview?: number;
 };
 
 type CatalogPresetEntry = {
@@ -54,6 +59,7 @@ type CatalogPresetEntry = {
     visualEvidenceTier?: string;
   };
   similarity?: { clusterId: string; duplicateOf?: string };
+  preview?: boolean;
   quality?: { score: number; components: QualityComponents };
   curatedRank?: number;
 };
@@ -141,6 +147,34 @@ function loadFlashReports(): Map<
   return out;
 }
 
+/**
+ * frameScore at which a thumbnail counts as fully readable. Measured on the
+ * served previews of the top 40 curated presets: the ones that read clearly
+ * at Browse size scored 36-93, the near-black ones 0.7-7.
+ */
+const PREVIEW_SCORE_FULL = 40;
+
+/** Optional served-preview frame scores: { presetId: frameScore }. */
+function loadPreviewScores(): Map<string, number> {
+  const file = path.join(SCRATCH_DIR, 'preview-scores.json');
+  const out = new Map<string, number>();
+  if (!fs.existsSync(file)) return out;
+  try {
+    const rows = JSON.parse(fs.readFileSync(file, 'utf8')) as Record<
+      string,
+      unknown
+    >;
+    for (const [presetId, score] of Object.entries(rows)) {
+      if (typeof score === 'number' && Number.isFinite(score)) {
+        out.set(presetId, Math.min(1, Math.max(0, score / PREVIEW_SCORE_FULL)));
+      }
+    }
+  } catch {
+    // preview scores are optional; a malformed file just means unscored
+  }
+  return out;
+}
+
 /** Optional engagement rows saved from the telemetry report's
  * "Preset engagement" query: [{presetId, events, skips, avg_dwell_ms}]. */
 function loadEngagement(): Map<string, number> {
@@ -167,6 +201,7 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
   );
   const flashReports = loadFlashReports();
   const engagement = loadEngagement();
+  const previewScores = loadPreviewScores();
   let measuredCount = 0;
 
   const scored = catalog.presets.map((entry) => {
@@ -209,6 +244,12 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
 
     const engagementScore =
       engagement.get(entry.id) ?? previous?.engagement ?? undefined;
+    // A preset with no thumbnail shows a placeholder in Browse, which is the
+    // least readable tile there is.
+    const previewScore =
+      entry.preview === false
+        ? 0
+        : (previewScores.get(entry.id) ?? previous?.preview ?? undefined);
     const components: QualityComponents = {
       fidelity: FIDELITY_SCORES[fidelityClass] ?? 0.2,
       evidence: EVIDENCE_SCORES[evidenceTier] ?? 0,
@@ -218,6 +259,9 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
       flashPenalty,
       duplicatePenalty,
       ...(engagementScore !== undefined ? { engagement: engagementScore } : {}),
+      ...(previewScore !== undefined
+        ? { preview: Number(previewScore.toFixed(3)) }
+        : {}),
     };
 
     // Weighted blend; measured signals substitute for their static proxies
@@ -230,7 +274,12 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
       reactivity * 0.3 +
       (motion ?? 0.5 * components.fidelity) * 0.15 +
       // Real-user keep rate outranks any proxy when we have it.
-      (components.engagement !== undefined ? components.engagement * 0.25 : 0) -
+      (components.engagement !== undefined ? components.engagement * 0.25 : 0) +
+      // Small on purpose: enough to order the presets the other signals
+      // cannot separate (the top of the curated list sat within 0.003 of
+      // itself), never enough to lift a weak preset over a measured one.
+      // Unmeasured counts as middling rather than as a failed thumbnail.
+      (components.preview ?? 0.5) * 0.1 -
       flashPenalty -
       duplicatePenalty;
 

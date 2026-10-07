@@ -776,6 +776,7 @@ export function useWorkspaceSessionState({
     // spread so each action is still reachable by name.
     ...forwardedEngineActions,
     forwardedEngineActions,
+    attractPreviewLive: attractModeEnabled,
     deferredSearch,
     dismissToast,
     engineSnapshot,

@@ -11,9 +11,13 @@
     background: #05070c;
   }
 
+  /* The top padding is where the column starts: half the viewport less
+     about half the first-visit column's height, so it sits slightly above
+     centre on a tall screen and at the old 64-96px floor on a short one. */
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
     inset: 0;
-    padding: clamp(64px, 8vh, 96px) clamp(20px, 6vw, 72px) 42px;
+    padding: max(clamp(64px, 8vh, 96px), calc(50dvh - 20rem))
+      clamp(20px, 6vw, 72px) 42px;
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-panel {
