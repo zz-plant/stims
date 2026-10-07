@@ -128,7 +128,6 @@ describe('Compat tab: Beyond Stims', () => {
   const mount = (source: string) => {
     const panel = new EditorPanel({
       onEditorSourceChange: mock(() => {}),
-      onRevertToActive: mock(() => {}),
       onDuplicatePreset: mock(() => {}),
       onExport: mock(() => {}),
       onDeletePreset: mock(() => {}),

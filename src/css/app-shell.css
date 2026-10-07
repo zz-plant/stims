@@ -1646,6 +1646,32 @@ body[data-page="workspace"][data-live="true"] {
     }
   }
 
+  /* While Reduce flashing dims the stage. Drawn on the stage's own dark
+     surface whatever the theme, beside the canvas rather than inside it so
+     the filter that dims the picture does not dim the notice too. */
+  .stims-shell__flash-notice {
+    position: absolute;
+    top: calc(var(--stims-chrome-top, 16px) + env(safe-area-inset-top, 0px));
+    right: 16px;
+    z-index: var(--z-frame-chrome);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 6px 10px;
+    border: 1px solid var(--stims-on-stage-line-strong);
+    border-radius: var(--radius-round);
+    background: var(--stims-on-stage-panel-strong);
+    color: var(--stims-on-stage-ink-strong);
+    font-size: 0.75rem;
+    font-weight: 600;
+    pointer-events: none;
+  }
+
+  .stims-shell__flash-notice .stims-icon-slot {
+    color: var(--stims-on-stage-cool);
+  }
+
   .stims-shell__launch-actions-minimal {
     display: flex;
     flex-wrap: wrap;
@@ -4430,6 +4456,58 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
 
 .stims-shell__refine-btn--secondary {
   background: transparent;
+}
+
+/* A proposed restyle or AI edit, as the line diff the editor's own
+   proposals use (editor-panel.css), so a change reads the same wherever it
+   was asked for. */
+.stims-shell__refine-proposal {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--stims-cool);
+  border-radius: var(--stims-radius-control);
+  background: var(--stims-panel-strong);
+}
+
+.stims-shell__refine-proposal-head {
+  margin: 0;
+  color: var(--stims-cool);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-stretch: var(--font-stretch-legend);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.stims-shell__refine-diff {
+  max-height: 16rem;
+  margin: 0;
+  overflow: auto;
+  font-family: var(--font-family-mono);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+.stims-shell__refine-diff-line {
+  display: block;
+  color: var(--stims-muted);
+}
+
+.stims-shell__refine-diff-line--add {
+  background: color-mix(in srgb, var(--stims-good) 14%, transparent);
+  color: var(--stims-good);
+}
+
+.stims-shell__refine-diff-line--del {
+  background: color-mix(in srgb, var(--stims-bad) 14%, transparent);
+  color: var(--stims-bad);
+}
+
+.stims-shell__refine-diff-line--gap {
+  opacity: 0.6;
 }
 
 .stims-shell__refine-response {

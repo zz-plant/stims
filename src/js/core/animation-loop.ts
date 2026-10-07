@@ -1,5 +1,6 @@
 import type { AudioInitOptions, FrequencyAnalyser } from './audio-handler';
 import { getFrequencyFrame } from './audio-handler';
+import { notifyFrameDrawn } from './frame-drawn.ts';
 import { createFrameGate } from './frame-pacing';
 import { getPowerSavingFrameCapHz } from './power-state';
 
@@ -150,6 +151,7 @@ export async function startAudioLoop(
     try {
       animate(ctx);
       failureStreak = 0;
+      notifyFrameDrawn(nowMs);
     } catch (error) {
       failureStreak += 1;
       if (failureStreak === 1) {

@@ -141,7 +141,6 @@ describe('EditorPanel class integration', () => {
 
   const createMockCallbacks = (): EditorPanelCallbacks => ({
     onEditorSourceChange: mock(() => {}),
-    onRevertToActive: mock(() => {}),
     onDuplicatePreset: mock(() => {}),
     onExport: mock(() => {}),
     onDeletePreset: mock(() => {}),

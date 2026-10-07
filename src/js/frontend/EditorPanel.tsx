@@ -61,9 +61,8 @@ export function EditorPanel() {
         onSetStageFrozen: (frozen: boolean) =>
           engineRef.current.setPlaybackPaused(frozen),
         onStepFrame: () => engineRef.current.stepPlaybackFrame(),
-        onRevertToActive: () => {
-          engineRef.current.revertEditorSource();
-        },
+        getOriginalSource: () =>
+          Promise.resolve(engineRef.current.getOriginalPresetSource()),
         onExport: () => {
           engineRef.current.exportPreset();
         },
@@ -81,9 +80,17 @@ export function EditorPanel() {
         // values: this callback is handed to the panel once, on mount, and a
         // captured source would freeze at whatever was on screen then.
         onCopyShareLink: () => {
+          const activeId =
+            sessionStateRef.current?.activeCompiled?.source.id ?? null;
+          const entry = engineRef.current.catalog.find(
+            (candidate) => candidate.id === activeId,
+          );
           void copyRemixLinkAction({
             source: sessionStateRef.current?.source ?? '',
             dirty: sessionStateRef.current?.dirty ?? false,
+            // Bundled presets are the ones anyone can load by id.
+            local: Boolean(entry && !entry.bundledFile),
+            title: entry?.title,
             announce: (message) => uiRef.current.setStatusMessage(message),
             onSuccess: () => setShared(true),
           });

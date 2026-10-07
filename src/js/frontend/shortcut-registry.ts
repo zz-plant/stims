@@ -21,6 +21,7 @@ export type ShortcutActionId =
   | 'help'
   | 'close'
   | 'compile'
+  | 'editor-compare'
   | 'queue-add'
   | 'preset-lock'
   | 'autoplay'
@@ -190,6 +191,14 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     id: 'compile',
     label: 'Compile in editor',
     defaultKeys: ['Cmd+Enter'],
+    configurable: false,
+  },
+  // Bound inside the code editor (editor-panel.ts), listed here so the one
+  // way to compare an edit with the original is written down somewhere.
+  {
+    id: 'editor-compare',
+    label: 'Compare your edit with the original (in the editor)',
+    defaultKeys: ['Cmd+Shift+B'],
     configurable: false,
   },
   // Bound by dispatching the palette action of the same name.

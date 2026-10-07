@@ -143,7 +143,6 @@ describe('editor panel change propagation', () => {
     const onEditorSourceChange = mock();
     const panel = new EditorPanel({
       onEditorSourceChange,
-      onRevertToActive: mock(),
       onDuplicatePreset: mock(),
       onExport: mock(),
       onDeletePreset: mock(),

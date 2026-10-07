@@ -233,7 +233,6 @@ export interface MilkdropEditorSession {
   updateFieldsWithOutcome(
     updates: Record<string, string | number>,
   ): Promise<MilkdropEditorCommitOutcome>;
-  resetToActive(): Promise<MilkdropEditorSessionState>;
   subscribe(listener: (state: MilkdropEditorSessionState) => void): () => void;
   dispose(): void;
 }
@@ -337,7 +336,7 @@ export interface MilkdropExperienceController {
   ): Promise<MilkdropEditorSessionState>;
   getEditorSessionState(): MilkdropEditorSessionState;
   updateEditorSource(source: string): void;
-  revertEditorSource(): void;
+  getOriginalPresetSource(): Promise<string | null>;
   updateInspectorField(key: string, value: string | number): void;
   setLiveField(key: string, value: number): void;
   setQualityPreset(presetId: string): unknown;

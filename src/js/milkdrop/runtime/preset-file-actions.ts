@@ -1,4 +1,5 @@
 import { compileMilkdropPresetSource } from '../compiler';
+import { FALLBACK_TITLE } from '../formatter';
 import { exportMilkdrop2Preset } from '../milkdrop2-export';
 import { expandPresetSelection, writePresetArchive } from '../preset-archive';
 import {
@@ -6,6 +7,7 @@ import {
   formatPresetCredit,
   parsePresetCredit,
 } from '../preset-credit';
+import { lineageFromFields } from '../preset-lineage-fields.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
@@ -70,13 +72,21 @@ export function createMilkdropPresetFileActions({
             title: file.name.replace(/\.[^.]+$/u, ''),
             origin: 'imported',
           });
+          // A title= in the file wins over the file name: Stims writes one
+          // only when it is the preset's real title (milkdrop2-export.ts),
+          // and a shared link's file is named after the preset id. MilkDrop
+          // files rarely carry one and keep their filename.
+          const title =
+            compiled.ir.title && compiled.ir.title !== FALLBACK_TITLE
+              ? compiled.ir.title
+              : compiled.title;
           // Most .milk files omit author= but carry the credit convention
           // in their filename ("Rovastar - Bytes 03.milk"), so the byline
           // falls back to the chain parsed from the title.
-          const credit = parsePresetCredit(compiled.title);
+          const credit = parsePresetCredit(title);
           const saved = await catalogStore.savePreset({
             id: `${compiled.source.id}-${Date.now()}`,
-            title: compiled.title,
+            title,
             raw,
             origin: 'imported',
             author:
@@ -85,8 +95,8 @@ export function createMilkdropPresetFileActions({
                 ? credit.authors.join(' + ')
                 : undefined),
             fileName: file.name,
+            derivedFrom: lineageFromFields(compiled.ir.preservedFields),
           });
-          await catalogStore.saveDraft(saved.id, compiled.formattedSource);
           importedCount += 1;
           lastImportedId = saved.id;
         } catch (error) {

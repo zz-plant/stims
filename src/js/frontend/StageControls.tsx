@@ -12,6 +12,10 @@ import {
 } from 'react';
 import styles from '../../css/StageControls.module.css';
 import {
+  getActiveAccessibilityPreference,
+  subscribeToAccessibilityPreference,
+} from '../core/accessibility-preferences.ts';
+import {
   isPresetLocked,
   subscribePresetLock,
   togglePresetLock,
@@ -50,6 +54,7 @@ import {
   startOrCopyWatchPartyAction,
   toggleCameraAction,
   togglePanel,
+  toggleReduceFlashingAction,
 } from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
@@ -207,6 +212,11 @@ export function StageControls({
   const presetLocked = useSyncExternalStore(
     subscribePresetLock,
     isPresetLocked,
+    () => false,
+  );
+  const reduceFlashing = useSyncExternalStore(
+    subscribeToAccessibilityPreference,
+    () => getActiveAccessibilityPreference().reduceFlashing,
     () => false,
   );
   const hostingRoom =
@@ -582,6 +592,15 @@ export function StageControls({
       actionId: 'toggle-fullscreen',
       action: () => run(() => onToggleFullscreen()),
       sectionLabel: 'Display and streaming',
+    },
+    // A safety setting, so a tap from the stage rather than the last switch
+    // on the fourth Settings tab.
+    {
+      icon: 'sun' as const,
+      label: 'Reduce flashing',
+      actionId: 'toggle-reduce-flashing',
+      action: () => run(() => toggleReduceFlashingAction(ui.setStatusMessage)),
+      active: reduceFlashing,
     },
     ...(pip.supported
       ? [

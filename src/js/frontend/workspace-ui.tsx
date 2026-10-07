@@ -5,6 +5,7 @@ import {
 } from '../core/stage-overlay-preferences.ts';
 import { parseURLParams } from '../core/url-params.ts';
 import { CueMonitor } from './CueMonitor.tsx';
+import { FlashProtectionNotice } from './FlashProtectionNotice.tsx';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { PerformSurface } from './PerformSurface.tsx';
 import { PresetTitleCard } from './PresetTitleCard.tsx';
@@ -125,6 +126,7 @@ export function WorkspaceStagePanel({
             </div>
           </div>
         ) : null}
+        <FlashProtectionNotice />
         <WorkspaceToast toast={ui.toast} />
         {strudelLabEnabled ? <StrudelLabPanel /> : null}
       </StimsStageFrame>

@@ -26,7 +26,6 @@ describe('editor panel Inspect tab', () => {
   const mount = () => {
     const panel = new EditorPanel({
       onEditorSourceChange: mock(() => {}),
-      onRevertToActive: mock(() => {}),
       onDuplicatePreset: mock(() => {}),
       onExport: mock(() => {}),
       onDeletePreset: mock(() => {}),

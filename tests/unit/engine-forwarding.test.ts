@@ -46,7 +46,7 @@ describe('forwarded engine actions', () => {
   test('async actions stay async and sync ones stay sync', () => {
     const actions = createForwardedEngineActions(() => null);
     expect(actions.duplicatePreset()).toBeInstanceOf(Promise);
-    expect(actions.revertEditorSource()).toBeUndefined();
+    expect(actions.exportPreset()).toBeUndefined();
     expect(FORWARDED_ENGINE_ACTION_NAMES).toContain('exportUserPresets');
   });
 });

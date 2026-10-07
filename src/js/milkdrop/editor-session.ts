@@ -417,12 +417,6 @@ export function createMilkdropEditorSession({
       return commit(upsertMilkdropFields(pendingSource, updates));
     },
 
-    async resetToActive() {
-      const activeSource =
-        state.activeCompiled?.formattedSource ?? state.source;
-      return (await commit(activeSource, { markClean: true })).state;
-    },
-
     subscribe(listener) {
       if (disposed) {
         listener(state);

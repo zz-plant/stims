@@ -103,6 +103,8 @@ export interface MilkdropCatalogStore {
   deletePreset(id: string): Promise<void>;
   saveDraft(id: string, raw: string): Promise<void>;
   getDraft(id: string): Promise<string | null>;
+  /** Drop the preset's draft so its original source loads again. */
+  clearDraft(id: string): Promise<void>;
   setFavorite(id: string, favorite: boolean): Promise<void>;
   setRating(id: string, rating: number): Promise<void>;
   recordRecent(id: string): Promise<void>;

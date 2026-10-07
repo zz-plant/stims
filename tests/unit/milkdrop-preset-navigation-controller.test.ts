@@ -331,6 +331,7 @@ describe('milkdrop preset navigation controller', () => {
     // resolves to that same id.
     const buildSkipHarness = (draft: string | null) => {
       const fetched: string[] = [];
+      const cleared: string[] = [];
       const applied: string[] = [];
       const transitions: number[] = [];
       const controller = createMilkdropPresetNavigationController({
@@ -343,6 +344,9 @@ describe('milkdrop preset navigation controller', () => {
             return draft;
           },
           async saveDraft() {},
+          async clearDraft(id: string) {
+            cleared.push(id);
+          },
         } as unknown as MilkdropCatalogStore,
         catalogCoordinator: {
           async syncCatalog() {},
@@ -374,7 +378,7 @@ describe('milkdrop preset navigation controller', () => {
         },
       });
 
-      return { controller, fetched, applied, transitions };
+      return { controller, fetched, applied, transitions, cleared };
     };
 
     test('does not reload the preset that is already active', async () => {
@@ -403,6 +407,22 @@ describe('milkdrop preset navigation controller', () => {
 
       expect(fetched).toEqual(['active-preset']);
       expect(applied).toEqual(['active-preset']);
+    });
+
+    test('drops a draft that is only the source itself', async () => {
+      // Every load used to save one of these, pinning the preset to the copy
+      // first seen.
+      const { controller, cleared } = buildSkipHarness('title=other-preset\n');
+      await controller.selectPreset('other-preset');
+      expect(cleared).toEqual(['other-preset']);
+    });
+
+    test('keeps a draft that is a real edit', async () => {
+      const { controller, cleared } = buildSkipHarness(
+        'title=other-preset\nzoom=2\n',
+      );
+      await controller.selectPreset('other-preset');
+      expect(cleared).toEqual([]);
     });
 
     test('loads normally for a different preset', async () => {
@@ -645,5 +665,60 @@ describe('milkdrop preset navigation controller', () => {
 
     await controller.selectRandomPreset();
     expect(applied).toEqual(['other-preset']);
+  });
+
+  test('autoplay never picks a preset the exclusion rules out', async () => {
+    // Reduce flashing hides measured high-risk presets from Browse; the
+    // runtime passes the same rule here so autoplay cannot land on one.
+    const entries = ['active-preset', 'flashy', 'calm'].map((id) =>
+      createCatalogEntry(id, { webgl: 'supported', webgpu: 'supported' }),
+    );
+    const applied: string[] = [];
+    const controller = createMilkdropPresetNavigationController({
+      catalogStore: {
+        async getPresetSource(id: string) {
+          return { id, title: id, raw: `title=${id}\n`, origin: 'bundled' };
+        },
+        async getDraft() {
+          return null;
+        },
+      } as unknown as MilkdropCatalogStore,
+      catalogCoordinator: {
+        async syncCatalog() {},
+        scheduleCatalogSync: async () => undefined,
+        async rememberSelection() {},
+        async consumePreviousSelection() {
+          return null;
+        },
+        getCatalogEntries: () => entries,
+        getActiveCatalogEntry: () => null,
+        dispose() {},
+      } as unknown as MilkdropCatalogCoordinator,
+      session: createSession({
+        flashy: createCompiledPreset('flashy'),
+        calm: createCompiledPreset('calm'),
+      }),
+      getActivePresetId: () => 'active-preset',
+      getActiveBackend: () => 'webgl',
+      applyCompiledPreset: (next) => {
+        applied.push(next.source.id);
+      },
+      applyPresetPerformanceOverride: () => undefined,
+      setOverlayStatus: () => undefined,
+      shouldFallbackToWebgl: () => false,
+      triggerWebglFallback: () => undefined,
+      rememberLastPreset: () => undefined,
+      beginPresetTransition: () => ({
+        mode: 'blend' as const,
+        durationSeconds: 1,
+      }),
+      excludeFromRandom: (entry) => entry.id === 'flashy',
+    });
+
+    for (let i = 0; i < 20; i += 1) {
+      await controller.selectRandomPreset();
+    }
+    expect(applied.length).toBe(20);
+    expect(applied).not.toContain('flashy');
   });
 });
