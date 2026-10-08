@@ -1,7 +1,7 @@
 /**
  * The page a `?preset=` URL stands for, set below the stage: the playing
- * preset's name as the document's one h1, its author, more presets by that
- * author, and the topic hubs.
+ * preset's name as the document's one h1, its author, its .milk file, and
+ * more presets by that author. The site index follows it (SiteIndexFooter).
  *
  * Search engines render this page and skip <noscript>, which is the only
  * place the edge middleware could put this content. Without this section
@@ -15,11 +15,14 @@
  * reached by scrolling the page, by Tab, or from a screen reader's headings.
  */
 import { Fragment, useId, useMemo } from 'react';
-import type { PresetMetaTable } from '../../../functions/shared/preset-meta.ts';
+import {
+  type PresetMetaTable,
+  presetFileDirIndex,
+} from '../../../functions/shared/preset-meta.ts';
 import {
   buildPresetPageContent,
   CREDIT_SEPARATOR,
-  PRESET_PAGE_HUB_LINKS,
+  PRESET_DOWNLOAD_LABEL,
   type PresetPageContent,
 } from '../../../functions/shared/preset-page.ts';
 import styles from '../../css/PresetPageDetails.module.css';
@@ -37,7 +40,11 @@ export function presetMetaTableFromCatalog(
   const table: PresetMetaTable = {};
   for (const entry of catalog) {
     if (table[entry.id]) continue;
-    table[entry.id] = [entry.title, entry.author ?? ''];
+    table[entry.id] = [
+      entry.title,
+      entry.author ?? '',
+      presetFileDirIndex(entry.file ?? entry.bundledFile, entry.id),
+    ];
   }
   return table;
 }
@@ -91,6 +98,13 @@ export function PresetPageDetails({
           'A MilkDrop preset.'
         )}
       </p>
+      {content.download ? (
+        <p className={styles.download}>
+          <a href={content.download} download>
+            {PRESET_DOWNLOAD_LABEL}
+          </a>
+        </p>
+      ) : null}
       {content.related.map((group) => (
         <Fragment key={group.author}>
           <h2 className={styles.heading}>More presets by {group.author}</h2>
@@ -114,15 +128,6 @@ export function PresetPageDetails({
           </ul>
         </Fragment>
       ))}
-      <nav className={styles.hubs} aria-label="Related pages">
-        <ul>
-          {PRESET_PAGE_HUB_LINKS.map((link) => (
-            <li key={link.href}>
-              <a href={link.href}>{link.label}</a>
-            </li>
-          ))}
-        </ul>
-      </nav>
     </section>
   );
 }

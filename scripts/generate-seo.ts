@@ -3,10 +3,12 @@
  * images, and the preset-meta map.
  *
  * Sitemap chunk 1 holds the hand-written app routes and presets start at chunk
- * 2, 1000 URLs apiece. Also renders the OG cards via resvg (with the bundled
- * fonts), the icon PNGs via sharp, the hero
- * screenshots, and the generated route pages under public/toys, tags, moods,
- * capabilities, and discover. Idempotent — rerun after catalog changes.
+ * 2, 1000 URLs apiece. The preset chunks, preset-meta.json and the /presets/
+ * index all come from one catalog table (buildPresetMetaMap), and the site
+ * index footer in index.html from functions/shared/site-index.ts. Also renders
+ * the OG cards via resvg (with the bundled fonts), the icon PNGs via sharp, the
+ * hero screenshots, and the generated route pages under public/toys, tags,
+ * moods, capabilities, and discover. Idempotent — rerun after catalog changes.
  *
  * `--check` writes nothing: it delegates to check-seo.ts, which compares every
  * generated artifact against a fresh in-memory build and exits non-zero on
@@ -28,7 +30,24 @@ import { promisify } from 'node:util';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import sharp from 'sharp';
 import { AUTHOR_ROUTES, DISCOVER_ROUTES } from '../functions/discover-slugs.ts';
+import {
+  indexablePresetIds,
+  NOINDEX,
+  type PresetMetaEntry,
+  type PresetMetaTable,
+  presetFileDirIndex,
+} from '../functions/shared/preset-meta.ts';
+import { presentTitle } from '../functions/shared/preset-title.ts';
+import {
+  PRESET_INDEX_PATH,
+  siteIndexHtml,
+} from '../functions/shared/site-index.ts';
+import { discoveryRouteFilter } from '../src/js/frontend/workspace-helpers.ts';
 import { LEARN_PAGES, learnPagePath } from './generate-learn-pages.ts';
+import {
+  PRESET_INDEX_OUT_FILE,
+  renderPresetIndexPage,
+} from './preset-index-page.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -36,9 +55,10 @@ export const DEFAULT_BASE_URL = 'https://toil.fyi';
 export const GENERATED_SITEMAP_CHUNK_PATH = 'public/sitemap-1.xml';
 export const GENERATED_SITEMAP_INDEX_PATH = 'public/sitemap.xml';
 export const PRESET_CATALOG_PATH = 'public/milkdrop-presets/catalog.json';
-// A 177KB id -> [title, author] map carved out of the 1.6MB catalog so the
-// edge middleware can put real preset titles in <title>/OG tags without
-// parsing the full catalog on every cold isolate.
+// The catalog table (~290KB, ~75KB gzipped) carved out of the catalogs so the
+// edge can title, index and list presets without parsing the full catalog on
+// every cold isolate. Its shape is PresetMetaEntry in
+// functions/shared/preset-meta.ts.
 export const GENERATED_PRESET_META_PATH = 'public/preset-meta.json';
 export const PRESET_PREVIEW_DIR = 'public/milkdrop-presets/previews';
 export const PRESET_LIBRARIES_DIR = 'public/milkdrop-presets/libraries';
@@ -677,6 +697,23 @@ export function getSitemapRouteSpecs(): SitemapRouteSpec[] {
       sourcePaths: ['performance/index.html', 'src/css/performance.css'],
       includeInSitemap: true,
     },
+    // Every indexable preset, A–Z (scripts/preset-index-page.ts): the page
+    // that links each preset the sitemap lists.
+    {
+      path: PRESET_INDEX_PATH,
+      imagePath: '/og/milkdrop.png',
+      imageTitle: 'MilkDrop Presets, A–Z | Stims',
+      imageCaption:
+        'MilkDrop presets on Stims, by collection, by author and A–Z.',
+      changefreq: 'weekly',
+      priority: '0.8',
+      sourcePaths: [
+        PRESET_CATALOG_PATH,
+        'scripts/preset-index-page.ts',
+        'functions/shared/collection-page.ts',
+      ],
+      includeInSitemap: true,
+    },
     {
       path: '/milkdrop/',
       imagePath: '/og/milkdrop.png',
@@ -819,6 +856,8 @@ type PresetCatalogEntry = {
   id: string;
   title: string;
   author?: string;
+  file?: string;
+  tags?: string[];
 };
 
 // 121 catalog entries carry the literal author "Unknown". Crediting a preset
@@ -827,29 +866,52 @@ const isNamedAuthor = (author?: string) =>
   Boolean(author) && author !== 'Unknown';
 
 /**
- * One sitemap entry per catalog preset.
+ * The tag on the vendored projectM test presets ("000 Empty", "001 Line"):
+ * fixtures for the engine, not presets anyone searches for.
+ */
+const PROJECTM_FIXTURE_TAG = 'projectm-fixture';
+
+/**
+ * A title with no letter in it, such as "11" or "124", is the preset's file
+ * name, not a name. 53 presets have one, and no catalog field (author, tags,
+ * description) names them either: the generated descriptions read "dominant
+ * monochrome orange, smooth gradients, moderate motion" for five of the eight
+ * in the root catalog. Their pages stay playable and stay in Browse and on
+ * hub lists, but carry noindex and stay out of the sitemap and /presets/,
+ * because a page titled "11 — MilkDrop Preset on Stims" answers no search.
+ */
+export const isNamelessPresetTitle = (title: string) => !/\p{L}/u.test(title);
+
+const nameKey = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, ' ')
+    .trim();
+
+/**
+ * One sitemap entry per indexable preset in the catalog table.
  *
  * These pages already exist and already serve per-preset titles, descriptions,
- * and OG cards — they were simply never advertised to a crawler, so a
- * 1,791-preset catalog was represented in search by two URLs. The `?preset=`
- * query form is used rather than a `/preset/<id>` path because the query form
- * is what the app actually serves; the path form is a redirect.
+ * and OG cards. The `?preset=` query form is used rather than a `/preset/<id>`
+ * path because the query form is what the app actually serves; the path form
+ * is a redirect. The entries come from the same table as the related links,
+ * the hub lists and /presets/, so a preset is in the sitemap exactly when
+ * /presets/ links it.
  */
 export async function buildPresetSitemapEntries(
   rootDir = repoRoot,
   {
     baseUrl = DEFAULT_BASE_URL,
     lastmod,
-  }: { baseUrl?: string; lastmod?: string } = {},
+    presetMeta,
+  }: { baseUrl?: string; lastmod?: string; presetMeta?: PresetMetaTable } = {},
 ): Promise<SitemapEntry[]> {
+  const table = presetMeta ?? (await buildPresetMetaMap(rootDir));
   const catalogRaw = await readFile(
     path.join(rootDir, PRESET_CATALOG_PATH),
     'utf8',
   );
-  const catalog = JSON.parse(catalogRaw) as {
-    generatedAt?: string;
-    presets?: PresetCatalogEntry[];
-  };
+  const catalog = JSON.parse(catalogRaw) as { generatedAt?: string };
 
   const generatedAt =
     lastmod ??
@@ -863,34 +925,37 @@ export async function buildPresetSitemapEntries(
     await readdir(path.join(rootDir, PRESET_PREVIEW_DIR)).catch(() => []),
   );
 
-  // The catalog currently ships 15 ids twice. Emitting each twice would put
-  // duplicate <loc> entries in the sitemap, so collapse on id here.
-  const seen = new Set<string>();
-  const uniquePresets = (catalog.presets ?? []).filter((preset) => {
-    if (seen.has(preset.id)) {
-      return false;
-    }
-    seen.add(preset.id);
-    return true;
-  });
-
-  return uniquePresets.map((preset) => {
-    const credit = isNamedAuthor(preset.author) ? ` by ${preset.author}` : '';
+  return indexablePresetIds(table).map((id) => {
+    const [title, author] = table[id] as PresetMetaEntry;
+    const credit = author ? ` by ${author}` : '';
     return {
-      loc: `${baseUrl}/?preset=${encodeURIComponent(preset.id)}`,
+      loc: `${baseUrl}/?preset=${encodeURIComponent(id)}`,
       lastmod: generatedAt,
       changefreq: 'monthly' as const,
       priority: '0.6',
-      imageLoc: previews.has(`${preset.id}.png`)
-        ? `${baseUrl}/milkdrop-presets/previews/${preset.id}.png`
-        : `${baseUrl}/api/og-preset?id=${encodeURIComponent(preset.id)}`,
-      imageTitle: `${preset.title} | Stims`,
-      imageCaption: `${preset.title}${credit}, a MilkDrop preset running live in the browser on Stims.`,
+      imageLoc: previews.has(`${id}.png`)
+        ? `${baseUrl}/milkdrop-presets/previews/${id}.png`
+        : `${baseUrl}/api/og-preset?id=${encodeURIComponent(id)}`,
+      imageTitle: `${title} | Stims`,
+      imageCaption: `${title}${credit}, a MilkDrop preset running live in the browser on Stims.`,
     };
   });
 }
 
-export async function buildPresetMetaMap(rootDir = repoRoot) {
+/**
+ * The catalog table (functions/shared/preset-meta.ts): every bundled preset,
+ * the root catalog first and then each library, first entry wins.
+ *
+ * Each entry records its title and author, where its .milk file is served,
+ * which topic hubs list it (by Browse's own filter, discoveryRouteFilter), and
+ * whether its page is indexed: fixtures and nameless presets carry noindex,
+ * and a preset with the same name and credit as an earlier indexable one
+ * names that one as canonical. 72 library presets repeat a root preset that
+ * way: the same preset, re-encoded with a version header.
+ */
+export async function buildPresetMetaMap(
+  rootDir = repoRoot,
+): Promise<PresetMetaTable> {
   // Root catalog plus the bundled libraries, discovered by directory the same
   // way generate-thumbnails does. The libraries are ~a third of the browsable
   // catalog, and reading only the root left 932 presets — the whole
@@ -912,7 +977,9 @@ export async function buildPresetMetaMap(rootDir = repoRoot) {
     .sort()
     .map((name) => path.join(libraryDir, name, 'catalog.json'));
 
-  const meta: Record<string, [string, string]> = {};
+  const topicFilters = DISCOVER_ROUTES.map(discoveryRouteFilter);
+  const primaryByName = new Map<string, string>();
+  const meta: PresetMetaTable = {};
   for (const catalogPath of [
     path.join(rootDir, PRESET_CATALOG_PATH),
     ...libraryCatalogs,
@@ -923,11 +990,36 @@ export async function buildPresetMetaMap(rootDir = repoRoot) {
     for (const preset of catalog.presets ?? []) {
       // First catalog wins, matching the runtime's own precedence.
       if (meta[preset.id]) continue;
-      const author = preset.author;
-      meta[preset.id] = [
-        preset.title,
-        author && isNamedAuthor(author) ? author : '',
-      ];
+      const author = isNamedAuthor(preset.author) ? (preset.author ?? '') : '';
+      const fileDir = presetFileDirIndex(preset.file, preset.id);
+      if (preset.file && fileDir === undefined) {
+        throw new Error(
+          `${preset.id}: ${preset.file} is not in a directory PRESET_FILE_DIRS lists (functions/shared/preset-meta.ts)`,
+        );
+      }
+      let topics = 0;
+      topicFilters.forEach((matches, bit) => {
+        if (matches(preset)) topics |= 1 << bit;
+      });
+      let indexing = '';
+      if (
+        preset.tags?.includes(PROJECTM_FIXTURE_TAG) ||
+        isNamelessPresetTitle(preset.title)
+      ) {
+        indexing = NOINDEX;
+      } else {
+        const key = `${nameKey(presentTitle(preset.title, author || undefined))}|${nameKey(author)}`;
+        const primary = primaryByName.get(key);
+        if (primary) indexing = primary;
+        else primaryByName.set(key, preset.id);
+      }
+      const entry: PresetMetaEntry = [preset.title, author];
+      // Positional fields, each written only when it or a later one is set.
+      if (fileDir !== undefined || topics || indexing)
+        entry.push(fileDir ?? -1);
+      if (topics || indexing) entry.push(topics);
+      if (indexing) entry.push(indexing);
+      meta[preset.id] = entry;
     }
   }
   return meta;
@@ -963,15 +1055,40 @@ export function buildRobotsTxt(baseUrl = DEFAULT_BASE_URL) {
   ].join('\n');
 }
 
+/** The app shell, whose site index footer this script keeps current. */
+export const SITE_SHELL_PATH = 'index.html';
+const SITE_INDEX_START =
+  '<!-- site-index: written by `bun run generate:seo` from functions/shared/site-index.ts -->';
+const SITE_INDEX_END = '<!-- /site-index -->';
+
+/**
+ * The shell with its site index footer brought up to date. The footer sits
+ * inside #app, so the raw HTML of every shell page links /presets/ and every
+ * hub, and React replaces it on mount with SiteIndexFooter, which renders the
+ * same sections.
+ */
+export function withSiteIndex(html: string): string {
+  const start = html.indexOf(SITE_INDEX_START);
+  const end = html.indexOf(SITE_INDEX_END);
+  if (start === -1 || end < start) {
+    throw new Error(
+      `${SITE_SHELL_PATH} has no site index markers: put ${SITE_INDEX_START} and ${SITE_INDEX_END} inside <div id="app">`,
+    );
+  }
+  return `${html.slice(0, start + SITE_INDEX_START.length)}
+${siteIndexHtml()}
+${html.slice(end)}`;
+}
+
 export async function buildSeoArtifacts(
   rootDir = repoRoot,
   { baseUrl = DEFAULT_BASE_URL }: { baseUrl?: string } = {},
 ): Promise<SeoArtifacts> {
   const sitemapEntries = await buildSitemapEntries(rootDir, { baseUrl });
-  const presetChunks = chunkSitemapEntries(
-    await buildPresetSitemapEntries(rootDir, { baseUrl }),
-  );
   const presetMeta = await buildPresetMetaMap(rootDir);
+  const presetChunks = chunkSitemapEntries(
+    await buildPresetSitemapEntries(rootDir, { baseUrl, presetMeta }),
+  );
   const presetCount = formatPresetCountClaim(Object.keys(presetMeta).length);
   const homeSubline = [
     `${presetCount} MilkDrop visuals that react`,
@@ -1161,6 +1278,16 @@ export async function buildSeoArtifacts(
       {
         relativePath: GENERATED_ROBOTS_PATH,
         contents: buildRobotsTxt(baseUrl),
+      },
+      {
+        relativePath: PRESET_INDEX_OUT_FILE,
+        contents: renderPresetIndexPage(presetMeta, baseUrl),
+      },
+      {
+        relativePath: SITE_SHELL_PATH,
+        contents: withSiteIndex(
+          await readFile(path.join(rootDir, SITE_SHELL_PATH), 'utf8'),
+        ),
       },
     ],
   };

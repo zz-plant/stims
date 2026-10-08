@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import { existsSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   isAllowedAuthorSlug,
   isAllowedDiscoverSlug,
 } from '../../functions/discover-slugs.ts';
+import { PRESET_INDEX_PATH } from '../../functions/shared/site-index.ts';
 import {
   LEARN_PAGES,
   learnPagePath,
@@ -29,18 +31,25 @@ describe('generate-seo sitemap routes', () => {
       .map((route) => route.path);
 
     expect(canonicalPaths).not.toContain('/milkdrop/');
-    expect(canonicalPaths.slice(0, 2)).toEqual(['/', '/performance/']);
+    expect(canonicalPaths.slice(0, 3)).toEqual([
+      '/',
+      '/performance/',
+      PRESET_INDEX_PATH,
+    ]);
     // Curated /discover/ hubs join the sitemap; every one must be on the
     // middleware allowlist so the sitemap never advertises a slug the edge
-    // won't rewrite. /learn/ routes must each be a generated static page.
+    // won't rewrite. /learn/ routes and /presets/ must each be a generated
+    // static page.
     const learnPaths = new Set(LEARN_PAGES.map(learnPagePath));
     for (const path of canonicalPaths.slice(2)) {
       const allowed = path.startsWith('/learn/')
         ? learnPaths.has(path)
-        : path.startsWith('/discover/')
-          ? isAllowedDiscoverSlug(path.slice('/discover/'.length))
-          : path.startsWith('/author/') &&
-            isAllowedAuthorSlug(path.slice('/author/'.length));
+        : path === PRESET_INDEX_PATH
+          ? existsSync(join(import.meta.dir, '../../public/presets/index.html'))
+          : path.startsWith('/discover/')
+            ? isAllowedDiscoverSlug(path.slice('/discover/'.length))
+            : path.startsWith('/author/') &&
+              isAllowedAuthorSlug(path.slice('/author/'.length));
       expect(allowed).toBe(true);
     }
   });

@@ -8,6 +8,11 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 
 ### Added
 
+- `/presets/` lists every indexable preset, A–Z with its credit, and every collection and author page with its count. It is static HTML in the `/learn/` shell (`scripts/preset-index-page.ts`).
+- Each `/author/<slug>` and `/discover/<slug>` page lists every preset in its collection as links: in the raw HTML, written by the edge into `#app`, and below the stage once the app mounts (`CollectionPageDetails`). Long lists are grouped under letter headings with jump links. Before, the only list was Browse's, rendered client-side and virtualized, so a hub's raw HTML held no preset link and a rendering crawler saw 30 to 36.
+- Every page ends with a site index linking `/presets/` and every hub. The home page, the hubs and the preset pages carry it in their raw HTML, and the app renders it below the stage. It replaces a nav clipped to one pixel and marked `inert`, which listed six of the thirteen topic pages and no author page.
+- A preset page links its `.milk` file ("Download .milk"), below the stage and in the `<noscript>` copy. `.milk` files carry `X-Robots-Tag: noindex`, so the page ranks for the preset rather than its source.
+- Author pages for the 19 credited hands with 10 or more indexable presets and no page yet, from Royal (58) to ShadowHarlequin (10). A test fails when the catalog grows another.
 - The Release workflow can be run from the Actions tab on `main`, for anyone who cannot push tags: it tags a commit on `main` (by default its head) as `v<that commit's package.json version>` and publishes the same notes a tag push would. It refuses a commit that is not on `main`, or a tag that already points at another commit.
 - The Tune pane says which audio drives each control. When the preset's equations recompute a field, its chip names the signals that reach it (`eq · bass`, all of them in the tooltip and accessible name), or says no audio does. It reads the static dataflow analysis (`src/js/milkdrop/preset-dataflow.ts`) of the compile on stage. So it follows a signal through `q` variables, persistent state and per-pixel equations, works before any music plays, and reruns only when the equations change (`dataflowSignature()`), not on every fader move.
 - A Tune fader whose field the per-frame code recomputes shows the value the frame used, as a tick on its track beside the base value the fader holds. The tick follows the running preset only while Tune is on screen and some fader has a tick. A field per-pixel code varies across the mesh gets none, since no single number is what was drawn.
@@ -18,6 +23,9 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 
 ### Changed
 
+- The sitemap, `/presets/`, the hub lists and the related links all read one catalog table, `public/preset-meta.json`, built from the root catalog and every library. The sitemap used to read the root catalog alone, so 144 library presets linked from preset pages were missing from it and 72 sitemap presets had no inbound link. It now lists 2,488 presets, each linked from `/presets/`; it listed 1,787.
+- 53 presets named only by a number ("11", "124") and the 37 projectM test fixtures ("000 Empty") stay playable and listed, but carry `noindex` and are left out of the sitemap. No catalog field names the numbered ones; their generated descriptions repeat ("dominant monochrome orange, smooth gradients, moderate motion").
+- A preset with the same name and credit as an earlier one names that one as canonical and is left out of the sitemap. 72 library presets repeat a root preset this way, re-encoded with a version header.
 - Every public surface now tells the same story about what Stims is and what is new in it. [`docs/LINEAGE_AND_CREDITS.md`](./docs/LINEAGE_AND_CREDITS.md#what-stims-contributes) states the three contributions: per-pixel equations on the GPU, held to the CPU's answer by differential fuzzing; fidelity measured against native projectM; and the preset corpus analysed as programs. The README, both `llms` files and the comparison page repeat them. Running presets in a browser (Butterchurn was first) and editing them live (MilkDrop 2 had an editor) are no longer presented as new.
 - `llms.txt` and `llms-full.txt` drop the "high-performance" and AI-first framing, the `?tweak=` flag and `toil:apply_tweak` message (neither does anything), and catalog fields that do not exist; the model-backed API routes are marked optional. The home screen's tagline names MilkDrop, the MCP endpoint stops calling itself "Stim Webtoys", and "MilkDrop-inspired" is gone from the docs.
 - The compiler case study is deleted: its IR type, JIT output and WGSL kernel were invented, it described a dead-store pass that does not exist, and it credited the browser MilkDrop to a WebAssembly projectM port instead of Butterchurn. Its accurate parts are in [`docs/TECHNICAL_ACHIEVEMENTS.md`](./docs/TECHNICAL_ACHIEVEMENTS.md), which also now says the per-frame compute VM is off by default and documents the corpus analysis.
@@ -25,6 +33,8 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 - Docs pages no longer open by narrating themselves: sentences like "This document describes…" are removed where the title, outline, or a table's header row already says it (24 pages across `docs/` and `CONTRIBUTING.md`); where an opener mixed narration with substance, the substance stays. The rule is recorded in `docs/DOCS_MAINTENANCE.md`.
 
 ### Removed
+
+- `/discover/retro`. Its search matched no preset's title, author, id or tags, so the page and its Browse list were empty; it redirects to `/presets/`.
 
 - **Breaking for MCP clients:** the tools left over from the toy library. They described a one-entry registry and a loader that no longer exists. Calling one now returns an unknown-tool error. Replacements:
   - `get_toys` → `list_presets` / `get_preset_info`.

@@ -1,0 +1,51 @@
+/* Site index — the footer every page ends with (SiteIndexFooter).
+ *
+ * Inside the shell, below the page details, on the dark ground the shell
+ * paints in every theme, so it uses the on-stage ink. The bottom clears the
+ * stage dock, which stays fixed to the viewport. */
+
+.root {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-sm);
+  justify-items: start;
+  text-align: start;
+  padding: var(--space-xl) clamp(20px, 6vw, 72px)
+    calc(var(--space-4xl) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--stims-on-stage-line);
+  font-size: var(--text-sm);
+  color: var(--stims-on-stage-muted);
+}
+
+.heading {
+  margin: var(--space-md) 0 0;
+  font-size: var(--text-xs-plus);
+  font-weight: var(--font-weight-bold);
+  font-stretch: var(--font-stretch-legend);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stims-on-stage-ink);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-lg);
+  max-width: 72rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.links a {
+  color: var(--stims-on-stage-muted);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.18em;
+}
+
+.links a:hover,
+.links a:focus-visible {
+  color: var(--stims-on-stage-ink-strong);
+  text-decoration-color: currentColor;
+}

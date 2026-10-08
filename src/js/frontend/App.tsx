@@ -57,6 +57,10 @@ import { AudioMatchToast } from './AudioMatchToast.tsx';
 import { initAgentBridge, updateAgentTelemetry } from './agent-bridge.ts';
 import { buildAgentBridgeCallbacks } from './agent-bridge-handlers.ts';
 import { emitAgentCommit } from './agent-state.ts';
+import {
+  CollectionPageDetails,
+  useCollectionPageContent,
+} from './CollectionPageDetails.tsx';
 import { CommandPalette, useCommandPaletteHotkey } from './CommandPalette.tsx';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
 import { CreditsDialog } from './CreditsDialog.tsx';
@@ -95,6 +99,7 @@ import {
   SilentAudioNotice,
   useAudioAwaitingGesture,
 } from './SilentAudioNotice.tsx';
+import { SiteIndexFooter } from './SiteIndexFooter.tsx';
 
 const NewHomePage = lazy(() =>
   import('./NewHomePage.tsx').then((m) => ({
@@ -439,6 +444,13 @@ function StimsWorkspaceAppShell() {
     liveMode && !ui.routeState.previewMode
       ? (engine.selectedPreset?.id ?? null)
       : null,
+  );
+  // A hub page's list, until a preset page takes the space under the stage.
+  const collectionPage = useCollectionPageContent(
+    engine.catalog,
+    presetPage || ui.routeState.previewMode
+      ? null
+      : (ui.routeState.discovery ?? null),
   );
   const currentAudioSource =
     engineSnapshot?.audioSource ?? ui.routeState.audioSource;
@@ -1428,7 +1440,15 @@ function StimsWorkspaceAppShell() {
           content={presetPage}
           onSelectPreset={engine.handlePresetSelection}
         />
+      ) : collectionPage && collectionPage.count > 0 ? (
+        <CollectionPageDetails
+          content={collectionPage}
+          onSelectPreset={engine.handlePresetSelection}
+        />
       ) : null}
+      {/* On the dark ground the shell paints in every theme, as the details
+          above are. Embeds are chromeless and get none. */}
+      {ui.routeState.previewMode ? null : <SiteIndexFooter />}
 
       {ui.routeState.previewMode ? (
         <a

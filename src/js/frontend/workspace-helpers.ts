@@ -3,6 +3,7 @@
  * query normalization, route state transitions, catalog transformation, and accessibility filtering.
  */
 
+import type { SemanticDiscoveryRoute } from '../../../functions/discover-slugs.ts';
 import type { MotionPreference } from '../core/motion-preferences.ts';
 import { hiddenByFlashPreference } from '../core/sensory-profile.ts';
 import {
@@ -372,6 +373,29 @@ export function matchesAuthor(
 ) {
   if (!author) return true;
   return creditsHandle(entry.author, author);
+}
+
+/**
+ * The presets a curated `/discover/` or `/author/` page stands for: the list
+ * Browse opens on there (the route's collection tag, search and author), with
+ * neither the visitor's own filters nor the flash preference applied. The
+ * sitemap build, the edge's hub lists and the section under the stage all
+ * list a hub's presets through this one rule.
+ */
+export function discoveryRouteFilter(
+  route: Pick<
+    SemanticDiscoveryRoute,
+    'collectionTag' | 'searchQuery' | 'author'
+  >,
+): (entry: PresetCatalogEntry) => boolean {
+  const matcher = route.searchQuery
+    ? createFieldMatcher(route.searchQuery, { allowSubsequence: false })
+    : null;
+  return (entry) =>
+    (!route.collectionTag ||
+      Boolean(entry.tags?.includes(route.collectionTag))) &&
+    (!matcher || matchesPreset(entry, matcher)) &&
+    matchesAuthor(entry, route.author ?? null);
 }
 
 /**

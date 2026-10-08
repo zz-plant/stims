@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked, type Tokens } from 'marked';
-import { AUTHOR_ROUTES, DISCOVER_ROUTES } from '../functions/discover-slugs.ts';
+import { siteIndexHtml } from '../functions/shared/site-index.ts';
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -360,37 +360,74 @@ const NAV_LINKS: Array<[string, string]> = [
 const anchor = (href: string, label: string) =>
   `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
 
-function renderFooter(): string {
-  const list = (
-    routes: ReadonlyArray<{ slug: string; label: string }>,
-    base: string,
-  ) =>
-    `<ul>${routes.map((route) => `<li>${anchor(`${base}${route.slug}`, route.label)}</li>`).join('')}</ul>`;
-  return [
-    '<footer class="site-footer">',
-    '<h2>Stims</h2>',
-    `<ul>${[
-      ['/', 'Visualizer'],
-      ['/learn/', 'Learn to write presets'],
-      ['/learn/milkdrop-online/', 'MilkDrop online'],
-      [
-        '/learn/milkdrop-vs-butterchurn-projectm/',
-        'Stims vs Butterchurn vs projectM',
-      ],
-      ['/performance/', 'Compatibility and performance'],
-      ['https://github.com/zz-plant/stims', 'Source on GitHub'],
-    ]
-      .map(
-        ([href, label]) =>
-          `<li>${anchor(href as string, label as string)}</li>`,
-      )
-      .join('')}</ul>`,
-    '<h2>Browse presets by look</h2>',
-    list(DISCOVER_ROUTES, '/discover/'),
-    '<h2>Browse presets by author</h2>',
-    list(AUTHOR_ROUTES, '/author/'),
-    '</footer>',
-  ].join('\n');
+/** What a static page puts in its document around the shared shell. */
+export type StaticPage = {
+  /** The full <title>, "… | Stims". */
+  title: string;
+  description: string;
+  /** Absolute canonical URL. */
+  url: string;
+  ogType: 'article' | 'website';
+  /** The JSON-LD graph, serialized. */
+  jsonLd: string;
+  /** Inner HTML of <main>. */
+  main: string;
+  /** Rules this page adds to the shared stylesheet. */
+  extraStyle?: string;
+};
+
+/**
+ * A static page in the site's shell: head tags, the shared stylesheet, the
+ * header and the site index footer. The /learn/ pages and /presets/ use it.
+ */
+export function renderStaticPage(page: StaticPage): string {
+  const image = `${BASE_URL}/og/milkdrop.png`;
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>${escapeHtml(page.title)}</title>
+<meta name="description" content="${escapeHtml(page.description)}" />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="canonical" href="${page.url}" />
+<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<meta property="og:site_name" content="Stims" />
+<meta property="og:type" content="${page.ogType}" />
+<meta property="og:title" content="${escapeHtml(page.title)}" />
+<meta property="og:description" content="${escapeHtml(page.description)}" />
+<meta property="og:url" content="${page.url}" />
+<meta property="og:image" content="${image}" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${escapeHtml(page.title)}" />
+<meta name="twitter:description" content="${escapeHtml(page.description)}" />
+<meta name="twitter:image" content="${image}" />
+<script type="application/ld+json">
+${page.jsonLd}
+</script>
+<style>${STYLE}${page.extraStyle ?? ''}</style>
+</head>
+<body>
+<header class="site-header">
+<a class="brand" href="/">Stims</a>
+<nav class="links" aria-label="Site">${NAV_LINKS.map(([href, label]) => anchor(href, label)).join('')}</nav>
+<a class="nav-cta" href="/">Open Stims</a>
+</header>
+<main>
+${page.main}
+</main>
+${siteIndexHtml()}
+</body>
+</html>
+`;
 }
 
 /** Ordered pages that get previous/next links: the hub, then the tracks. */
@@ -491,56 +528,18 @@ export function renderLearnPage(page: LearnPage): string {
   const tryIt =
     '<aside class="try" aria-label="Try Stims"><p><strong>Try it now.</strong> Stims plays MilkDrop presets in your browser, with nothing to install.</p><p><a class="cta" href="/">Open Stims</a></p></aside>';
 
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>${escapeHtml(title)}</title>
-<meta name="description" content="${escapeHtml(page.description)}" />
-<meta name="robots" content="index,follow" />
-<meta name="theme-color" content="#0b0f1a" />
-<link rel="canonical" href="${url}" />
-<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
-<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-<meta property="og:site_name" content="Stims" />
-<meta property="og:type" content="article" />
-<meta property="og:title" content="${escapeHtml(title)}" />
-<meta property="og:description" content="${escapeHtml(page.description)}" />
-<meta property="og:url" content="${url}" />
-<meta property="og:image" content="${image}" />
-<meta property="og:image:type" content="image/png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${escapeHtml(title)}" />
-<meta name="twitter:description" content="${escapeHtml(page.description)}" />
-<meta name="twitter:image" content="${image}" />
-<script type="application/ld+json">
-${jsonLd}
-</script>
-<style>${STYLE}</style>
-</head>
-<body>
-<header class="site-header">
-<a class="brand" href="/">Stims</a>
-<nav class="links" aria-label="Site">${NAV_LINKS.map(([href, label]) => anchor(href, label)).join('')}</nav>
-<a class="nav-cta" href="/">Open Stims</a>
-</header>
-<main>
-<article>
+  return renderStaticPage({
+    title,
+    description: page.description,
+    url,
+    ogType: 'article',
+    jsonLd,
+    main: `<article>
 ${body}
 ${tryIt}
 </article>
-${pager}
-</main>
-${renderFooter()}
-</body>
-</html>
-`;
+${pager}`,
+  });
 }
 
 /** Every generated file: repo-relative path → contents. */

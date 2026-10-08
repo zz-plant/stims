@@ -23,8 +23,10 @@ describe('Search Console canonical intent', () => {
   test('keeps the homepage crawl path on canonical URLs instead of the milkdrop alias', () => {
     const homepage = readRepoFile('index.html');
 
-    expect(homepage).toContain('aria-label="Crawlable site links"');
+    // The site index footer inside #app (functions/shared/site-index.ts).
+    expect(homepage).toContain('<footer class="site-footer">');
     expect(homepage).toContain('href="/"');
+    expect(homepage).toContain('href="/presets/"');
     expect(homepage).toContain('href="/performance/"');
     expect(homepage).not.toContain('href="/milkdrop/"');
   });

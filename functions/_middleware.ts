@@ -6,9 +6,11 @@
 //   2. `/?preset=<id>` gets real per-preset <title>, description, canonical,
 //      og:url and OG image. Before, canonical and og:url stayed pinned to the
 //      site root, so every preset told crawlers it was the same page and every
-//      social share collapsed onto `/`.
+//      social share collapsed onto `/`. A preset the catalog table marks
+//      noindex, or as a copy of another, says so in its robots or canonical.
 //   3. Curated `/discover/<slug>` and `/author/<slug>` routes get the app
-//      shell plus their own metadata (there is no file behind those paths).
+//      shell plus their own metadata (there is no file behind those paths),
+//      and every preset in their collection as links inside #app.
 //   4. A retired `/discover/<slug>` redirects to the page that replaced it.
 
 import {
@@ -16,11 +18,16 @@ import {
   retiredDiscoverTarget,
   semanticRouteHeading,
 } from './discover-slugs.ts';
-import { loadPresetMeta } from './shared/preset-meta.ts';
+import {
+  buildHubCollectionContent,
+  collectionSectionHtml,
+} from './shared/collection-page.ts';
+import { loadPresetMeta, presetIndexing } from './shared/preset-meta.ts';
 import {
   buildPresetPageContent,
   CREDIT_SEPARATOR,
-  PRESET_PAGE_HUB_LINKS,
+  PRESET_DOWNLOAD_LABEL,
+  presetPageHref,
 } from './shared/preset-page.ts';
 
 /**
@@ -30,6 +37,13 @@ import {
  * build adds, so every page shipped its heading several times over.
  */
 export const NOSCRIPT_FALLBACK_SELECTOR = 'noscript#stims-noscript';
+
+/**
+ * The React root. Content the edge writes here is real DOM in the raw HTML,
+ * not <noscript>; React replaces it on mount with the same content, rendered
+ * by the workspace (CollectionPageDetails, SiteIndexFooter).
+ */
+export const APP_ROOT_SELECTOR = 'div#app';
 
 interface EventContext {
   request: Request;
@@ -130,7 +144,16 @@ export async function onRequest(context: EventContext): Promise<Response> {
       url.origin,
     ).toString();
 
-    let response = await next();
+    // The catalog table (memoized per isolate) and the shell, in parallel.
+    const [presetMeta, shellResponse] = await Promise.all([
+      loadPresetMeta(context.env?.ASSETS, url.origin),
+      next(),
+    ]);
+    const collection = presetMeta
+      ? buildHubCollectionContent(presetMeta, semanticRoute)
+      : null;
+
+    let response = shellResponse;
     // Worker static assets, unlike the Pages project this site ran on, do not
     // fall back to index.html for unknown paths, so a curated route such as
     // /discover/fractal has no file and `next()` answers 404 with an empty
@@ -211,6 +234,16 @@ export async function onRequest(context: EventContext): Promise<Response> {
           );
         },
       })
+      // The collection itself, as links a crawler reads from the raw HTML.
+      // Before, the only list was Browse's, rendered client-side and
+      // virtualized, so the raw HTML of every hub held no preset link.
+      .on(APP_ROOT_SELECTOR, {
+        element(el) {
+          if (collection && collection.count > 0) {
+            el.prepend(collectionSectionHtml(collection), { html: true });
+          }
+        },
+      })
       .transform(response);
     return allowExternalFraming(rewritten, embedRequest);
   }
@@ -265,10 +298,13 @@ export async function onRequest(context: EventContext): Promise<Response> {
   const imageAlt = `Social card for the ${title} preset on Stims`;
 
   // The URL this page should be indexed and shared as. Must match the form
-  // emitted into the sitemap, or the two disagree about what the page is.
-  const canonicalUrl = new URL('/', url.origin);
-  canonicalUrl.searchParams.set('preset', presetId);
-  const canonical = canonicalUrl.toString();
+  // emitted into the sitemap, or the two disagree about what the page is. A
+  // copy of another preset (same name, same credit) names that one.
+  const indexing = presetIndexing(presetMeta?.[presetId] ?? ['', '']);
+  const canonical = new URL(
+    presetPageHref(indexing.kind === 'canonical' ? indexing.id : presetId),
+    url.origin,
+  ).toString();
 
   const oembedUrl = new URL(
     `/api/oembed?url=${encodeURIComponent(canonical)}`,
@@ -359,13 +395,10 @@ export async function onRequest(context: EventContext): Promise<Response> {
           .join('')}</ul>`,
     )
     .join('');
-  const hubLinks = [
-    ...PRESET_PAGE_HUB_LINKS,
-    { href: '/', label: 'Open the visualizer' },
-  ]
-    .map((link) => linkHtml(link.href, link.label))
-    .join(' · ');
-  const presetBodyHtml = `<h1>${escapeAttribute(title)}</h1><p>${byline}</p><p><img src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(imageAlt)}" width="1200" height="630"></p>${relatedSection}<p>${hubLinks}</p>`;
+  const download = page.download
+    ? `<p><a href="${escapeAttribute(page.download)}" download>${escapeAttribute(PRESET_DOWNLOAD_LABEL)}</a></p>`
+    : '';
+  const presetBodyHtml = `<h1>${escapeAttribute(title)}</h1><p>${byline}</p>${download}<p><img src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(imageAlt)}" width="1200" height="630"></p>${relatedSection}`;
 
   const rewritten = new HTMLRewriter()
     .on('title', {
@@ -379,6 +412,14 @@ export async function onRequest(context: EventContext): Promise<Response> {
       },
     })
     .on('meta[name="description"]', setContent(description))
+    // Nameless presets ("11") and the projectM test fixtures stay playable
+    // and listed, but out of the index (see buildPresetMetaMap).
+    .on(
+      'meta[name="robots"]',
+      setContent(
+        indexing.kind === 'noindex' ? 'noindex,follow' : 'index,follow',
+      ),
+    )
     .on('meta[property="og:title"]', setContent(fullTitle))
     .on('meta[property="og:description"]', setContent(description))
     .on('meta[property="og:url"]', setContent(canonical))
