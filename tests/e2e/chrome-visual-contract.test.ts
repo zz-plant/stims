@@ -563,7 +563,7 @@ chromeTest(
   async () => {
     type CoverRecord = {
       shifts: { at: number; value: number; sources: string[] }[];
-      coverGoneAt: number | null;
+      shellAt: number | null;
     };
     for (const path of ['/', '/discover/fractal']) {
       const page = await (browser as Browser).newPage({
@@ -571,7 +571,7 @@ chromeTest(
       });
       try {
         await page.addInitScript(() => {
-          const record: CoverRecord = { shifts: [], coverGoneAt: null };
+          const record: CoverRecord = { shifts: [], shellAt: null };
           (window as unknown as { __cover: CoverRecord }).__cover = record;
           new PerformanceObserver((list) => {
             for (const entry of list.getEntries() as unknown as {
@@ -588,15 +588,15 @@ chromeTest(
               });
             }
           }).observe({ type: 'layout-shift', buffered: true });
-          new MutationObserver(() => {
-            if (
-              record.coverGoneAt === null &&
-              document.body &&
-              !document.getElementById('stims-loading')
-            ) {
-              record.coverGoneAt = performance.now();
+          // React's first commit replaces the crawl copy. Shifts after it
+          // belong to the app, which the cover is already fading off.
+          window.addEventListener('stims:load-status', (event) => {
+            const phase = (event as CustomEvent<{ phase?: string }>).detail
+              ?.phase;
+            if (phase === 'shell-rendered' && record.shellAt === null) {
+              record.shellAt = performance.now();
             }
-          }).observe(document, { childList: true, subtree: true });
+          });
         });
         await page.goto(`${server?.url}${path}`, { waitUntil: 'load' });
         await page.waitForSelector('#stims-loading', {
@@ -606,11 +606,20 @@ chromeTest(
         const record = await page.evaluate(
           () => (window as unknown as { __cover: CoverRecord }).__cover,
         );
+        expect(record.shellAt).not.toBeNull();
         const underCover = record.shifts.filter(
-          (shift) =>
-            shift.value > 0 && shift.at < (record.coverGoneAt ?? Infinity),
+          (shift) => shift.value > 0 && shift.at < (record.shellAt ?? 0),
         );
-        expect({ path, underCover }).toEqual({ path, underCover: [] });
+        // Below 0.001, which Lighthouse reports as 0.000. The cover's own
+        // text can move a fraction of a pixel when Archivo swaps in for a
+        // fallback with other metrics (0.000002 on Linux CI); the reflow
+        // this guards against scored 0.01-0.47.
+        const total = underCover.reduce((sum, shift) => sum + shift.value, 0);
+        if (total >= 0.001) {
+          throw new Error(
+            `${path} shifted ${total.toFixed(4)} under the boot cover: ${JSON.stringify(underCover)}`,
+          );
+        }
       } finally {
         await page.close();
       }
