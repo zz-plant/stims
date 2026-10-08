@@ -1,4 +1,6 @@
 /** Curated semantic routes shared by the edge and browser workspace. */
+import { resolveHandleKey } from '../src/js/milkdrop/preset-handles.ts';
+
 export type SemanticDiscoveryRoute = {
   kind: 'topic' | 'author';
   slug: string;
@@ -294,16 +296,17 @@ export function retiredDiscoverTarget(pathname: string): string | null {
 }
 
 /**
- * The curated author page for a catalog author string, matched whole and
- * case-insensitively, or null. A chain such as "Stahlregen + Geiss" has no
- * page of its own.
+ * The curated author page for one credited handle, or null. Spelling drift
+ * ("_Geiss", "eo.s") resolves through the handle registry, the same way the
+ * author pages decide which presets they list. A whole chain such as
+ * "Stahlregen + Geiss" is not a handle; split it with creditedHandles first.
  */
-export function findAuthorRoute(author: string): SemanticDiscoveryRoute | null {
-  const needle = author.trim().toLowerCase();
-  if (!needle) return null;
+export function findAuthorRoute(handle: string): SemanticDiscoveryRoute | null {
+  const key = resolveHandleKey(handle);
+  if (!key) return null;
   return (
     AUTHOR_ROUTES.find(
-      (route) => (route.author ?? route.label).toLowerCase() === needle,
+      (route) => resolveHandleKey(route.author ?? route.label) === key,
     ) ?? null
   );
 }

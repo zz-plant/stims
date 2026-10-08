@@ -7,7 +7,11 @@ import {
   presetMetaTableFromCatalog,
   usePresetPageContent,
 } from '../../src/js/frontend/PresetPageDetails.tsx';
-import { makePresetEntry, renderWorkspace } from '../frontend-harness.tsx';
+import {
+  makePresetEntry,
+  mouseClick,
+  renderWorkspace,
+} from '../frontend-harness.tsx';
 
 // The section under the stage is what search engines index for a /?preset=
 // page: they render the page and skip the <noscript> copy the edge writes.
@@ -28,6 +32,11 @@ const CATALOG: PresetCatalogEntry[] = [
     title: 'Stahlregen + Geiss - Pair',
     author: 'Stahlregen + Geiss',
   }),
+  makePresetEntry({
+    id: 'stahlregen-solo',
+    title: 'Stahlregen - Solo',
+    author: 'Stahlregen',
+  }),
   makePresetEntry({ id: 'nobody', title: 'Nobody', author: 'Unknown' }),
 ];
 
@@ -42,22 +51,6 @@ function Harness({
   return content ? (
     <PresetPageDetails content={content} onSelectPreset={onSelect} />
   ) : null;
-}
-
-/** A click with mouse fields; the test DOM has no MouseEvent constructor. */
-function clickWith(modifiers: { metaKey?: boolean }) {
-  const event = new Event('click', { bubbles: true, cancelable: true });
-  for (const [name, value] of Object.entries({
-    button: 0,
-    metaKey: false,
-    ctrlKey: false,
-    shiftKey: false,
-    altKey: false,
-    ...modifiers,
-  })) {
-    Object.defineProperty(event, name, { value });
-  }
-  return event;
 }
 
 function renderDetails(presetId: string, onSelect: (id: string) => void) {
@@ -112,14 +105,28 @@ describe('preset page details', () => {
     expect(fromCatalog).toEqual(fromEdgeTable);
   });
 
-  test('a chain author with no curated page is credited without a link', () => {
+  test('a credit chain links each hand to its own page and lists more by each', () => {
     const rendered = renderDetails('stahlregen-geiss-pair', () => {});
     try {
-      const byline = rendered.container.querySelector('p');
+      const { container } = rendered;
+      const byline = container.querySelector('p');
       expect(byline?.textContent).toBe(
         'A MilkDrop preset by Stahlregen + Geiss.',
       );
-      expect(byline?.querySelectorAll('a').length).toBe(0);
+      expect(
+        [...(byline?.querySelectorAll('a') ?? [])].map(
+          (link) => `${link.textContent} ${link.getAttribute('href')}`,
+        ),
+      ).toEqual(['Stahlregen /author/stahlregen', 'Geiss /author/geiss']);
+      // One sibling group per hand, in chain order.
+      expect(
+        [...container.querySelectorAll('h2')].map((h) => h.textContent),
+      ).toEqual(['More presets by Stahlregen', 'More presets by Geiss']);
+      const hrefs = [...container.querySelectorAll('ul a')].map((link) =>
+        link.getAttribute('href'),
+      );
+      expect(hrefs).toContain('/?preset=geiss-one');
+      expect(hrefs).not.toContain('/?preset=stahlregen-geiss-pair');
     } finally {
       rendered.dispose();
     }
@@ -148,14 +155,14 @@ describe('preset page details', () => {
       );
       if (!link) throw new Error('missing sibling link');
 
-      const plain = clickWith({});
+      const plain = mouseClick({});
       act(() => {
         link.dispatchEvent(plain);
       });
       expect(selected).toEqual(['geiss-two']);
       expect(plain.defaultPrevented).toBe(true);
 
-      const newTab = clickWith({ metaKey: true });
+      const newTab = mouseClick({ metaKey: true });
       act(() => {
         link.dispatchEvent(newTab);
       });

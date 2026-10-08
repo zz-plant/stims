@@ -19,6 +19,7 @@ import {
 import { loadPresetMeta } from './shared/preset-meta.ts';
 import {
   buildPresetPageContent,
+  CREDIT_SEPARATOR,
   PRESET_PAGE_HUB_LINKS,
 } from './shared/preset-page.ts';
 
@@ -339,29 +340,30 @@ export async function onRequest(context: EventContext): Promise<Response> {
   // heading, byline, sibling presets and topic hubs the workspace renders
   // below the stage (PresetPageDetails.tsx), plus the preview card and a link
   // into the app.
-  const byline = author
-    ? `A MilkDrop preset by ${
-        page.authorHref
-          ? `<a href="${escapeAttribute(page.authorHref)}">${escapeAttribute(author)}</a>`
-          : escapeAttribute(author)
-      }.`
-    : 'A MilkDrop preset.';
-  const relatedSection = page.related.length
-    ? `<h2>More presets by ${escapeAttribute(author ?? '')}</h2><ul>${page.related
-        .map(
-          (related) =>
-            `<li><a href="${escapeAttribute(related.href)}">${escapeAttribute(related.title)}</a></li>`,
+  const linkHtml = (href: string, text: string) =>
+    `<a href="${escapeAttribute(href)}">${escapeAttribute(text)}</a>`;
+  const byline = page.credits.length
+    ? `A MilkDrop preset by ${page.credits
+        .map((credit) =>
+          credit.href
+            ? linkHtml(credit.href, credit.name)
+            : escapeAttribute(credit.name),
         )
-        .join('')}</ul>`
-    : '';
+        .join(escapeAttribute(CREDIT_SEPARATOR))}.`
+    : 'A MilkDrop preset.';
+  const relatedSection = page.related
+    .map(
+      (group) =>
+        `<h2>More presets by ${escapeAttribute(group.author)}</h2><ul>${group.presets
+          .map((related) => `<li>${linkHtml(related.href, related.title)}</li>`)
+          .join('')}</ul>`,
+    )
+    .join('');
   const hubLinks = [
     ...PRESET_PAGE_HUB_LINKS,
     { href: '/', label: 'Open the visualizer' },
   ]
-    .map(
-      (link) =>
-        `<a href="${escapeAttribute(link.href)}">${escapeAttribute(link.label)}</a>`,
-    )
+    .map((link) => linkHtml(link.href, link.label))
     .join(' · ');
   const presetBodyHtml = `<h1>${escapeAttribute(title)}</h1><p>${byline}</p><p><img src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(imageAlt)}" width="1200" height="630"></p>${relatedSection}<p>${hubLinks}</p>`;
 

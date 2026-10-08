@@ -29,6 +29,7 @@ import { PresetArtwork } from './PresetArtwork.tsx';
 import { PresetGrid } from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
 import { PresetSignals } from './PresetSignals.tsx';
+import { openPresetInPlace, presetPageHref } from './preset-link.ts';
 import { runPresetPromoteTransition } from './promote-transition.ts';
 import {
   clearQuickSelectEntries,
@@ -879,17 +880,19 @@ export function BrowseSheetPanel({
           >
             {recentEntries.map((entry) => (
               <li key={entry.id}>
-                <button
-                  type="button"
+                <a
+                  href={presetPageHref(entry.id)}
                   className="ctl-recent-rail__item"
                   title={entry.title}
-                  onClick={(event) => {
-                    runPresetPromoteTransition({
-                      sourceElement: event.currentTarget,
-                      presetId: entry.id,
-                    });
-                    selectPreset(entry.id);
-                  }}
+                  onClick={(event) =>
+                    openPresetInPlace(event, () => {
+                      runPresetPromoteTransition({
+                        sourceElement: event.currentTarget,
+                        presetId: entry.id,
+                      });
+                      selectPreset(entry.id);
+                    })
+                  }
                 >
                   <PresetArtwork
                     entry={entry}
@@ -897,7 +900,7 @@ export function BrowseSheetPanel({
                     preview={presetPreviews[entry.id] ?? null}
                   />
                   <span className="ctl-recent-rail__title">{entry.title}</span>
-                </button>
+                </a>
               </li>
             ))}
           </ul>
@@ -1077,8 +1080,10 @@ export function BrowseSheetPanel({
                       transform: `translateY(${virtualRow.start - rowVirtualizer.options.scrollMargin}px)`,
                     }}
                   >
-                    <button
-                      type="button"
+                    {/* A link to the preset's page, like the grid tiles:
+                        crawlable, and openable in a new tab. */}
+                    <a
+                      href={presetPageHref(entry.id)}
                       className="ctl-preset__open"
                       tabIndex={virtualRow.index === rovingIndex ? 0 : -1}
                       aria-current={
@@ -1089,14 +1094,16 @@ export function BrowseSheetPanel({
                           ? (quickSelectDigit(virtualRow.index) ?? undefined)
                           : undefined
                       }
-                      onClick={(event) => {
-                        setRovingIndex(virtualRow.index);
-                        runPresetPromoteTransition({
-                          sourceElement: event.currentTarget,
-                          presetId: entry.id,
-                        });
-                        selectPreset(entry.id);
-                      }}
+                      onClick={(event) =>
+                        openPresetInPlace(event, () => {
+                          setRovingIndex(virtualRow.index);
+                          runPresetPromoteTransition({
+                            sourceElement: event.currentTarget,
+                            presetId: entry.id,
+                          });
+                          selectPreset(entry.id);
+                        })
+                      }
                     >
                       <span className="ctl-preset__art">
                         <PresetArtwork
@@ -1137,7 +1144,7 @@ export function BrowseSheetPanel({
                           <PresetSignals entry={entry} />
                         </span>
                       </span>
-                    </button>
+                    </a>
                     <button
                       type="button"
                       className="ctl-preset__queue"

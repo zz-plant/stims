@@ -191,6 +191,33 @@ export type RenderedWorkspace = {
   text: () => string;
 };
 
+/**
+ * A click event carrying mouse fields, for links that tell a plain click from
+ * a new-tab one. The test DOM has no MouseEvent constructor.
+ */
+export function mouseClick(
+  modifiers: {
+    button?: number;
+    metaKey?: boolean;
+    ctrlKey?: boolean;
+    shiftKey?: boolean;
+    altKey?: boolean;
+  } = {},
+): Event {
+  const event = new Event('click', { bubbles: true, cancelable: true });
+  for (const [name, value] of Object.entries({
+    button: 0,
+    metaKey: false,
+    ctrlKey: false,
+    shiftKey: false,
+    altKey: false,
+    ...modifiers,
+  })) {
+    Object.defineProperty(event, name, { value });
+  }
+  return event;
+}
+
 export function renderWorkspace(
   node: ReactNode,
   options: {

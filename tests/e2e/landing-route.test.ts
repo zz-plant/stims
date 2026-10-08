@@ -100,21 +100,29 @@ requiredBrowserTest(
         viewport: { width: 1280, height: 720 },
       });
 
+      // Each page is closed once read. A page left open keeps its attract
+      // preview rendering, and on a two-core runner that starved the next
+      // page's catalog load past arrive()'s deadline.
       const home = await context.newPage();
       const homeWrites = await arrive(home, '/?renderer=webgl');
+      const homeUrl = home.url();
+      const homePanel = (await getAgentState(home)).panel;
+      await home.close();
       expect(homeWrites.filter((url) => url.includes('preset='))).toEqual([]);
-      expect(new URL(home.url()).searchParams.get('preset')).toBeNull();
-      expect((await getAgentState(home)).panel).toBeNull();
+      expect(new URL(homeUrl).searchParams.get('preset')).toBeNull();
+      expect(homePanel).toBeNull();
 
       for (const hub of ['/discover/trippy', '/author/geiss']) {
         const page = await context.newPage();
         const writes = await arrive(page, `${hub}?renderer=webgl`);
-        expect(writes.filter((url) => url.includes('preset='))).toEqual([]);
         const url = new URL(page.url());
+        const panel = (await getAgentState(page)).panel;
+        await page.close();
+        expect(writes.filter((url) => url.includes('preset='))).toEqual([]);
         expect(url.pathname).toBe(hub);
         expect(url.searchParams.get('preset')).toBeNull();
         // The hub's route opens Browse on its collection; it must stay open.
-        expect((await getAgentState(page)).panel).toBe('browse');
+        expect(panel).toBe('browse');
       }
     } finally {
       await closeQuietly(browser);
@@ -181,8 +189,11 @@ function readRenderedPage(page: Page): Promise<RenderedPage> {
   });
 }
 
+/** A preset whose credit chain names two hands, each with an author page. */
+const CHAIN_PRESET = 'stahlregen-geiss-old-school-baby-flower-v2-1';
+
 requiredBrowserTest(
-  'arrival pages render one visible h1 naming them, and a preset page its byline and links',
+  'arrival pages render one visible h1 naming them, and links a crawler can follow',
   async () => {
     const presetMeta = JSON.parse(
       readFileSync(
@@ -191,30 +202,44 @@ requiredBrowserTest(
       ),
     ) as PresetMetaTable;
     // What the edge writes into <noscript> for this page.
-    const expected = buildPresetPageContent(presetMeta, 'geiss-casino');
-    if (!expected) throw new Error('geiss-casino is missing from preset-meta');
-    expect(expected.authorHref).toBe('/author/geiss');
-    expect(expected.related.length).toBeGreaterThan(0);
+    const expected = buildPresetPageContent(presetMeta, CHAIN_PRESET);
+    if (!expected) throw new Error(`${CHAIN_PRESET} is missing`);
+    expect(expected.credits.map((credit) => credit.href)).toEqual([
+      '/author/stahlregen',
+      '/author/geiss',
+    ]);
+    const relatedHrefs = expected.related.flatMap((group) =>
+      group.presets.map((preset) => preset.href),
+    );
+    expect(expected.related.map((group) => group.author)).toEqual([
+      'Stahlregen',
+      'Geiss',
+    ]);
 
     const browser = await chromium.launch({
       headless: HEADLESS,
       args: WEBGL_RENDERER_ARGS,
     });
     try {
+      // One page at a time, each closed once read: on a two-core runner a
+      // page left rendering in the background starves the next page's
+      // catalog load past its deadline.
       const context = await browser.newContext({
         viewport: { width: 1280, height: 720 },
       });
-
       const page = await context.newPage();
-      await page.goto(`${SERVER_URL}/?preset=geiss-casino&renderer=webgl`, {
+      await page.goto(`${SERVER_URL}/?preset=${CHAIN_PRESET}&renderer=webgl`, {
         waitUntil: 'domcontentloaded',
       });
       await waitForAgentState(
         page,
-        (state) => state.engineState === 'live' && state.catalogSize > 0,
+        (state) =>
+          state.engineState === 'live' &&
+          state.catalogSize > 0 &&
+          state.presetId === CHAIN_PRESET,
         90000,
       );
-      // The sibling list settles once the whole catalog (libraries included)
+      // The sibling lists settle once the whole catalog (libraries included)
       // has landed. A timeout falls through to the assertions, which say what
       // the page rendered instead.
       await page
@@ -222,27 +247,29 @@ requiredBrowserTest(
           (count) =>
             document.querySelectorAll('section h1 ~ ul a[href^="/?preset="]')
               .length === count,
-          expected.related.length,
+          relatedHrefs.length,
           { timeout: 30000 },
         )
         .catch(() => {});
 
       const rendered = await readRenderedPage(page);
+      await context.close();
       expect(rendered.headings).toEqual([
         { text: expected.title, visible: true },
       ]);
-      expect(rendered.byline).toBe(`A MilkDrop preset by ${expected.author}.`);
+      expect(rendered.byline).toBe(
+        `A MilkDrop preset by ${expected.credits.map((credit) => credit.name).join(' + ')}.`,
+      );
       // Under the stage, never over it.
       expect(rendered.belowStage).toBe(true);
       const presetLinks = rendered.links.filter((link) =>
         link.href?.startsWith('/?preset='),
       );
-      expect(presetLinks.map((link) => link.href)).toEqual(
-        expected.related.map((related) => related.href),
-      );
+      expect(presetLinks.map((link) => link.href)).toEqual(relatedHrefs);
       for (const href of [
-        expected.authorHref,
-        ...expected.related.map((related) => related.href),
+        '/author/stahlregen',
+        '/author/geiss',
+        ...relatedHrefs,
         '/discover/audio-reactive',
       ]) {
         expect(rendered.links.find((link) => link.href === href)?.visible).toBe(
@@ -250,20 +277,36 @@ requiredBrowserTest(
         );
       }
 
-      // A fresh profile: the preset page just stored a resumable session, and
-      // a returning visitor's launch column greets them instead.
-      const firstVisit = await browser.newContext({
-        viewport: { width: 1280, height: 720 },
-      });
+      // A fresh profile per hub: the preset page stored a resumable session.
       for (const hub of ['/author/geiss', '/discover/fractal']) {
         const route = resolveSemanticRoute(hub);
         if (!route) throw new Error(`${hub} is not a curated route`);
-        const hubPage = await firstVisit.newPage();
+        const hubContext = await browser.newContext({
+          viewport: { width: 1280, height: 720 },
+        });
+        const hubPage = await hubContext.newPage();
         await arrive(hubPage, `${hub}?renderer=webgl`);
         const hubRendered = await readRenderedPage(hubPage);
+        // Browse is open on the collection; its presets are links.
+        const browseLinks = await hubPage.evaluate(() =>
+          [
+            ...document.querySelectorAll<HTMLAnchorElement>(
+              '.stims-preset-grid__item, .ctl-preset__open',
+            ),
+          ].map((link) => ({
+            tag: link.tagName.toLowerCase(),
+            href: link.getAttribute('href') ?? '',
+          })),
+        );
+        await hubContext.close();
         expect(hubRendered.headings).toEqual([
           { text: semanticRouteHeading(route), visible: true },
         ]);
+        expect(browseLinks.length).toBeGreaterThan(0);
+        for (const link of browseLinks) {
+          expect(link.tag).toBe('a');
+          expect(link.href).toMatch(/^\/\?preset=[^&]+$/);
+        }
       }
     } finally {
       await closeQuietly(browser);

@@ -5,6 +5,7 @@ import {
   findPresetFamily,
 } from '../milkdrop/preset-lineage.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
+import { openPresetInPlace, presetPageHref } from './preset-link.ts';
 
 /**
  * The remix family of the preset currently playing.
@@ -47,6 +48,31 @@ export function PresetLineageSection({
   const renderNode = (node: ForkTreeNode) => {
     const { member } = node;
     const isCurrent = member.id === currentPresetId;
+    const credit = (
+      <>
+        <span className="ctl-lineage__label">
+          {member.isRoot ? (
+            <span className="ctl-lineage__root-tag">the original</span>
+          ) : null}
+          {node.link === 'recorded' ? (
+            <span className="ctl-lineage__root-tag">remixed here</span>
+          ) : null}
+          {member.label}
+          {member.shaderModel ? (
+            <span className="ctl-lineage__shader">{member.shaderModel}</span>
+          ) : null}
+        </span>
+        <span className="ctl-lineage__byline">
+          {member.authors.join(' + ') || 'unattributed'}
+          {member.addedAuthors.length > 0 ? (
+            <span className="ctl-lineage__added">
+              {' '}
+              +{member.addedAuthors.join(', ')}
+            </span>
+          ) : null}
+        </span>
+      </>
+    );
     return (
       <li
         key={member.id}
@@ -55,35 +81,23 @@ export function PresetLineageSection({
         data-root={String(member.isRoot)}
         data-link={node.link}
       >
-        <button
-          type="button"
-          className="ctl-lineage__btn"
-          aria-current={isCurrent ? 'true' : undefined}
-          disabled={isCurrent}
-          onClick={() => onSelect(member.id)}
-        >
-          <span className="ctl-lineage__label">
-            {member.isRoot ? (
-              <span className="ctl-lineage__root-tag">the original</span>
-            ) : null}
-            {node.link === 'recorded' ? (
-              <span className="ctl-lineage__root-tag">remixed here</span>
-            ) : null}
-            {member.label}
-            {member.shaderModel ? (
-              <span className="ctl-lineage__shader">{member.shaderModel}</span>
-            ) : null}
+        {/* The member already playing is marked, not linked; the others
+            link to their preset pages and switch in place on a plain click. */}
+        {isCurrent ? (
+          <span className="ctl-lineage__btn" aria-current="true">
+            {credit}
           </span>
-          <span className="ctl-lineage__byline">
-            {member.authors.join(' + ') || 'unattributed'}
-            {member.addedAuthors.length > 0 ? (
-              <span className="ctl-lineage__added">
-                {' '}
-                +{member.addedAuthors.join(', ')}
-              </span>
-            ) : null}
-          </span>
-        </button>
+        ) : (
+          <a
+            href={presetPageHref(member.id)}
+            className="ctl-lineage__btn"
+            onClick={(event) =>
+              openPresetInPlace(event, () => onSelect(member.id))
+            }
+          >
+            {credit}
+          </a>
+        )}
         {node.children.length > 0 ? (
           <ul className="ctl-lineage__list ctl-lineage__children">
             {node.children.map(renderNode)}

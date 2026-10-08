@@ -111,6 +111,38 @@ describe('workspace first-fold launch hierarchy', () => {
     }
   });
 
+  test('a returning visitor on a hub page still gets the collection as the h1', () => {
+    const entry = makePresetEntry({
+      id: 'geiss-casino',
+      title: 'Geiss - Casino',
+    });
+    saveLastSession({
+      presetId: entry.id,
+      presetTitle: entry.title,
+      source: 'demo',
+    });
+    const rendered = renderWorkspace(<NewHomePage />, {
+      engine: { catalog: [entry] },
+      ui: {
+        routeState: {
+          ...makeUiValue().routeState,
+          panel: 'browse',
+          discovery: resolveSemanticRoute('/author/geiss') ?? undefined,
+        },
+      },
+    });
+    try {
+      const headings = rendered.container.querySelectorAll('h1');
+      expect(headings.length).toBe(1);
+      expect(headings[0]?.textContent).toBe('Geiss MilkDrop Presets');
+      // The last session is still offered.
+      expect(rendered.text()).toContain('Resume with demo audio');
+    } finally {
+      rendered.dispose();
+      localStorage.removeItem(LAST_SESSION_KEY);
+    }
+  });
+
   test('once the visualizer is live, the launch title stops being a heading', () => {
     // The launch page stays mounted, faded and inert, behind the live stage;
     // the playing preset's name below the stage is the page's h1 then.
