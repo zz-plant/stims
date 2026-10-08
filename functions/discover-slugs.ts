@@ -74,14 +74,6 @@ export const DISCOVER_ROUTES: readonly SemanticDiscoveryRoute[] = [
   },
   {
     kind: 'topic',
-    slug: 'retro',
-    label: 'Retro',
-    searchQuery: 'retro',
-    description:
-      'Retro MilkDrop presets in the style of early music visualizers.',
-  },
-  {
-    kind: 'topic',
     slug: 'space',
     label: 'Space',
     searchQuery: 'space',
@@ -257,7 +249,168 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     description:
       'MilkDrop presets credited to Krash, playing live in your browser.',
   },
+  // Every credited hand with at least AUTHOR_HUB_MIN_PRESETS indexable presets
+  // has a page; tests/unit/preset-catalog-index.test.ts fails when the catalog
+  // grows one that does not. Labels are spelled as the catalog credits them,
+  // the way Browse's author filter lists them.
+  {
+    kind: 'author',
+    slug: 'royal',
+    label: 'Royal',
+    author: 'Royal',
+    description:
+      'MilkDrop presets credited to Royal, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'amandio-c',
+    label: 'amandio c',
+    author: 'amandio c',
+    description:
+      'MilkDrop presets credited to amandio c, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'bdrv',
+    label: 'BDRV',
+    author: 'BDRV',
+    description:
+      'MilkDrop presets credited to BDRV, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'hexcollie',
+    label: 'Hexcollie',
+    author: 'Hexcollie',
+    description:
+      'MilkDrop presets credited to Hexcollie, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'yin',
+    label: 'Yin',
+    author: 'Yin',
+    description:
+      'MilkDrop presets credited to Yin, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'luxxx',
+    label: 'LuxXx',
+    author: 'LuxXx',
+    description:
+      'MilkDrop presets credited to LuxXx, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'adamfx',
+    label: 'AdamFX',
+    author: 'AdamFX',
+    description:
+      'MilkDrop presets credited to AdamFX, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'beta106i',
+    label: 'beta106i',
+    author: 'beta106i',
+    description:
+      'MilkDrop presets credited to beta106i, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'tonymilkdrop',
+    label: 'TonyMilkdrop',
+    author: 'TonyMilkdrop',
+    description:
+      'MilkDrop presets credited to TonyMilkdrop, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'loadus',
+    label: 'Loadus',
+    author: 'Loadus',
+    description:
+      'MilkDrop presets credited to Loadus, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'pieturp',
+    label: 'PieturP',
+    author: 'PieturP',
+    description:
+      'MilkDrop presets credited to PieturP, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'evet',
+    label: 'Evet',
+    author: 'Evet',
+    description:
+      'MilkDrop presets credited to Evet, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'rozzor',
+    label: 'Rozzor',
+    author: 'Rozzor',
+    description:
+      'MilkDrop presets credited to Rozzor, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'tripgnosis',
+    label: 'Tripgnosis',
+    author: 'Tripgnosis',
+    description:
+      'MilkDrop presets credited to Tripgnosis, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'bmelgren',
+    label: 'Bmelgren',
+    author: 'Bmelgren',
+    description:
+      'MilkDrop presets credited to Bmelgren, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'idiot',
+    label: 'Idiot',
+    author: 'Idiot',
+    description:
+      'MilkDrop presets credited to Idiot, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'illusion',
+    label: 'Illusion',
+    author: 'Illusion',
+    description:
+      'MilkDrop presets credited to Illusion, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'esotic',
+    label: 'Esotic',
+    author: 'Esotic',
+    description:
+      'MilkDrop presets credited to Esotic, playing live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'shadowharlequin',
+    label: 'ShadowHarlequin',
+    author: 'ShadowHarlequin',
+    description:
+      'MilkDrop presets credited to ShadowHarlequin, playing live in your browser.',
+  },
 ];
+
+/**
+ * A credited hand with this many indexable presets gets an /author/ page.
+ */
+export const AUTHOR_HUB_MIN_PRESETS = 10;
 
 export const DISCOVER_SLUGS = DISCOVER_ROUTES.map((route) => route.slug);
 export const AUTHOR_SLUGS = AUTHOR_ROUTES.map((route) => route.slug);
@@ -278,21 +431,24 @@ export function isAllowedAuthorSlug(slug: string): boolean {
 }
 
 /**
- * Retired discover slugs and the page each now redirects to, so a retired
+ * Retired discover slugs and the path each now redirects to, so a retired
  * page keeps its inbound links instead of turning into a 404.
  */
 const RETIRED_DISCOVER_SLUGS = new Map<string, string>([
   // Held exactly the hall of fame's presets, because every preset runs on
   // the WebGPU renderer.
-  ['webgpu-showcase', 'hall-of-fame'],
+  ['webgpu-showcase', '/discover/hall-of-fame'],
+  // Its search ("retro") matched no preset's title, author, id or tags, so
+  // the page and its Browse list were empty. The catalog has no tag for the
+  // style; the full index is the nearest page that lists anything.
+  ['retro', '/presets/'],
 ]);
 
 /** Where a retired `/discover/<slug>` path now lives, or null. */
 export function retiredDiscoverTarget(pathname: string): string | null {
   const [, namespace, slug, extra] = pathname.split('/');
   if (namespace !== 'discover' || !slug || extra) return null;
-  const target = RETIRED_DISCOVER_SLUGS.get(slug);
-  return target ? `/discover/${target}` : null;
+  return RETIRED_DISCOVER_SLUGS.get(slug) ?? null;
 }
 
 /**

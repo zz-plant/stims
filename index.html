@@ -43,7 +43,6 @@
       .stims-loading__dots span{width:4px;height:4px;display:inline-block;border-radius:50%;background:rgba(119,201,255,.8);opacity:.6;animation:stims-bounce 1.4s ease-in-out infinite both}
       .stims-loading__dots span:first-child{animation-delay:-.32s}
       .stims-loading__dots span:nth-child(2){animation-delay:-.16s}
-      .stims-crawl-links{position:absolute;top:0;left:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
       @keyframes stims-spin{to{transform:rotate(360deg)}}
       @keyframes stims-pulse{0%,to{opacity:.5}50%{opacity:.85}}
       @keyframes stims-bounce{0%,80%,to{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:.9}}
@@ -212,25 +211,18 @@
         </div>
       </div>
     </div>
-    <div id="app"></div>
-
-
-    <!-- inert: these exist for crawlers reading the HTML source; without it
-         they are invisible tab stops in front of the app, and Enter on one
-         navigates the page away. -->
-    <nav class="stims-crawl-links" aria-label="Crawlable site links" inert>
-      <a href="/">Visualizer</a>
-      <a href="/performance/">Compatibility and performance</a>
-      <a href="/learn/">Learn to write MilkDrop presets</a>
-      <a href="/learn/milkdrop-online/">MilkDrop online</a>
-      <a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a>
-      <a href="/discover/audio-reactive">Audio-reactive visualizers</a>
-      <a href="/discover/hall-of-fame">Hall of fame presets</a>
-      <a href="/discover/fractal">Fractal visualizers</a>
-      <a href="/discover/tunnel">Tunnel visualizers</a>
-      <a href="/discover/psychedelic">Psychedelic visualizers</a>
-      <a href="/discover/ambient">Ambient visualizers</a>
-    </nav>
+    <div id="app">
+      <!-- site-index: written by `bun run generate:seo` from functions/shared/site-index.ts -->
+<footer class="site-footer">
+<h2>Stims</h2>
+<ul><li><a href="/">Visualizer</a></li><li><a href="/presets/">All presets, A–Z</a></li><li><a href="/learn/">Learn to write presets</a></li><li><a href="/learn/milkdrop-online/">MilkDrop online</a></li><li><a href="/learn/milkdrop-vs-butterchurn-projectm/">Stims vs Butterchurn vs projectM</a></li><li><a href="/performance/">Compatibility and performance</a></li><li><a href="https://github.com/zz-plant/stims">Source on GitHub</a></li></ul>
+<h2>Browse presets by look</h2>
+<ul><li><a href="/discover/audio-reactive">Audio-Reactive</a></li><li><a href="/discover/ambient">Ambient</a></li><li><a href="/discover/fractal">Fractal</a></li><li><a href="/discover/geometric">Geometric</a></li><li><a href="/discover/hall-of-fame">Hall of Fame</a></li><li><a href="/discover/neon">Neon</a></li><li><a href="/discover/particles">Particle</a></li><li><a href="/discover/psychedelic">Psychedelic</a></li><li><a href="/discover/space">Space</a></li><li><a href="/discover/trippy">Trippy</a></li><li><a href="/discover/tunnel">Tunnel</a></li><li><a href="/discover/waveform">Waveform</a></li></ul>
+<h2>Browse presets by author</h2>
+<ul><li><a href="/author/geiss">Geiss</a></li><li><a href="/author/flexi">Flexi</a></li><li><a href="/author/martin">Martin</a></li><li><a href="/author/rovastar">Rovastar</a></li><li><a href="/author/eo-s">Eo.S.</a></li><li><a href="/author/phat">Phat</a></li><li><a href="/author/stahlregen">Stahlregen</a></li><li><a href="/author/unchained">Unchained</a></li><li><a href="/author/fishbrain">Fishbrain</a></li><li><a href="/author/aderrasi">Aderrasi</a></li><li><a href="/author/zylot">Zylot</a></li><li><a href="/author/shifter">Shifter</a></li><li><a href="/author/mig">Mig</a></li><li><a href="/author/orb">ORB</a></li><li><a href="/author/suksma">Suksma</a></li><li><a href="/author/cope">Cope</a></li><li><a href="/author/goody">Goody</a></li><li><a href="/author/krash">Krash</a></li><li><a href="/author/royal">Royal</a></li><li><a href="/author/amandio-c">amandio c</a></li><li><a href="/author/bdrv">BDRV</a></li><li><a href="/author/hexcollie">Hexcollie</a></li><li><a href="/author/yin">Yin</a></li><li><a href="/author/luxxx">LuxXx</a></li><li><a href="/author/adamfx">AdamFX</a></li><li><a href="/author/beta106i">beta106i</a></li><li><a href="/author/tonymilkdrop">TonyMilkdrop</a></li><li><a href="/author/loadus">Loadus</a></li><li><a href="/author/pieturp">PieturP</a></li><li><a href="/author/evet">Evet</a></li><li><a href="/author/rozzor">Rozzor</a></li><li><a href="/author/tripgnosis">Tripgnosis</a></li><li><a href="/author/bmelgren">Bmelgren</a></li><li><a href="/author/idiot">Idiot</a></li><li><a href="/author/illusion">Illusion</a></li><li><a href="/author/esotic">Esotic</a></li><li><a href="/author/shadowharlequin">ShadowHarlequin</a></li></ul>
+</footer>
+<!-- /site-index -->
+    </div>
     <!-- id: the edge middleware appends each page's crawler copy to this one
          element (NOSCRIPT_FALLBACK_SELECTOR in functions/_middleware.ts). -->
     <noscript id="stims-noscript">

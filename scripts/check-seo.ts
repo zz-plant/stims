@@ -40,7 +40,9 @@ import {
   GENERATED_SCREENSHOT_HERO_WIDE_PATH,
   GENERATED_SITEMAP_CHUNK_PATH,
   GENERATED_SITEMAP_INDEX_PATH,
+  SITE_SHELL_PATH,
 } from './generate-seo.ts';
+import { PRESET_INDEX_OUT_FILE } from './preset-index-page.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,10 +69,11 @@ const requiredInIndexHtml = [
 ];
 
 const requiredHomepageCrawlLinks = [
-  // `inert` is load-bearing: crawlers read the links from the HTML source,
-  // while keyboard/AT users must not tab through 8 invisible links.
-  '<nav class="stims-crawl-links" aria-label="Crawlable site links" inert>',
-  '<a href="/">Visualizer</a>',
+  // The site index footer inside #app (functions/shared/site-index.ts):
+  // visible links, which React replaces with the same footer on mount. Its
+  // contents are compared whole with the SITE_SHELL_PATH artifact below.
+  '<div id="app">',
+  '<a href="/presets/">All presets, A–Z</a>',
   '<a href="/performance/">Compatibility and performance</a>',
 ];
 
@@ -328,6 +331,44 @@ export async function runSeoChecks(rootDir = repoRoot) {
     rootDir,
     GENERATED_PRESET_META_PATH,
     expectedFiles.get(GENERATED_PRESET_META_PATH) ?? '',
+    results,
+  );
+  // The preset chunks, /presets/ and the shell's site index all come from the
+  // catalog table above; a stale one lists presets the others do not.
+  for (const [relativePath, contents] of expectedFiles) {
+    if (
+      /^public\/sitemap-\d+\.xml$/u.test(relativePath) &&
+      relativePath !== GENERATED_SITEMAP_CHUNK_PATH
+    ) {
+      await compareGeneratedFile(rootDir, relativePath, contents, results, {
+        normalize: normalizeSitemapXml,
+      });
+    }
+  }
+  const committedChunks = (await fs.readdir(path.join(rootDir, 'public')))
+    .filter((name) => /^sitemap-\d+\.xml$/u.test(name))
+    .map((name) => `public/${name}`);
+  const staleChunks = committedChunks.filter(
+    (relativePath) => !expectedFiles.has(relativePath),
+  );
+  results.push({
+    name: 'No sitemap chunk outlives the catalog that produced it',
+    passed: staleChunks.length === 0,
+    details:
+      staleChunks.length > 0
+        ? `stale: ${staleChunks.join(', ')} — run ${REGENERATE_COMMAND}`
+        : undefined,
+  });
+  await compareGeneratedFile(
+    rootDir,
+    PRESET_INDEX_OUT_FILE,
+    expectedFiles.get(PRESET_INDEX_OUT_FILE) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    SITE_SHELL_PATH,
+    expectedFiles.get(SITE_SHELL_PATH) ?? '',
     results,
   );
 

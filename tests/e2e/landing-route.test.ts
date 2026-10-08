@@ -29,8 +29,10 @@ import {
   resolveSemanticRoute,
   semanticRouteHeading,
 } from '../../functions/discover-slugs.ts';
+import { buildHubCollectionContent } from '../../functions/shared/collection-page.ts';
 import type { PresetMetaTable } from '../../functions/shared/preset-meta.ts';
 import { buildPresetPageContent } from '../../functions/shared/preset-page.ts';
+import { SITE_INDEX_SECTIONS } from '../../functions/shared/site-index.ts';
 import { getAgentState, waitForAgentState } from './agent-api.ts';
 import { hasChromium, requiredBrowserTest } from './browser-availability.ts';
 import { closeQuietly } from './deadline.ts';
@@ -137,6 +139,10 @@ type RenderedPage = {
   byline: string | null;
   links: RenderedLink[];
   belowStage: boolean;
+  /** The hub list under the stage, when the page has one. */
+  collection: { links: RenderedLink[]; belowStage: boolean } | null;
+  /** The site index every page ends with. */
+  footerLinks: RenderedLink[];
 };
 
 /**
@@ -168,23 +174,31 @@ function readRenderedPage(page: Page): Promise<RenderedPage> {
     const headings = [...document.querySelectorAll('h1')];
     const section = headings[0]?.closest('section') ?? null;
     const stage = document.getElementById('stims-visualizer');
+    const readLinks = (root: Element | null) =>
+      [...(root?.querySelectorAll('a') ?? [])].map((a) => ({
+        href: a.getAttribute('href'),
+        text: a.textContent ?? '',
+        // Inert links read as text but cannot be followed.
+        visible: visible(a) && !a.closest('[inert]'),
+      }));
+    const below = (el: Element | null) =>
+      el !== null &&
+      stage !== null &&
+      el.getBoundingClientRect().top >=
+        stage.getBoundingClientRect().bottom - 1;
+    const collection = document.querySelector('[data-collection-page]');
     return {
       headings: headings.map((h) => ({
         text: h.textContent ?? '',
         visible: visible(h),
       })),
       byline: section?.querySelector('p')?.textContent ?? null,
-      links: [...(section?.querySelectorAll('a') ?? [])].map((a) => ({
-        href: a.getAttribute('href'),
-        text: a.textContent ?? '',
-        // Inert links read as text but cannot be followed.
-        visible: visible(a) && !a.closest('[inert]'),
-      })),
-      belowStage:
-        section !== null &&
-        stage !== null &&
-        section.getBoundingClientRect().top >=
-          stage.getBoundingClientRect().bottom - 1,
+      links: readLinks(section),
+      belowStage: below(section),
+      collection: collection
+        ? { links: readLinks(collection), belowStage: below(collection) }
+        : null,
+      footerLinks: readLinks(document.querySelector('[data-site-index]')),
     };
   });
 }
@@ -270,12 +284,23 @@ requiredBrowserTest(
         '/author/stahlregen',
         '/author/geiss',
         ...relatedHrefs,
-        '/discover/audio-reactive',
+        expected.download,
       ]) {
         expect(rendered.links.find((link) => link.href === href)?.visible).toBe(
           true,
         );
       }
+      expect(
+        rendered.links.find((link) => link.href === expected.download)?.text,
+      ).toBe('Download .milk');
+      // The site index follows: /presets/ and every hub, visible.
+      expect(
+        rendered.footerLinks.filter((link) => link.visible).map((l) => l.href),
+      ).toEqual(
+        SITE_INDEX_SECTIONS.flatMap((section) =>
+          section.links.map((link) => link.href),
+        ),
+      );
 
       // A fresh profile per hub: the preset page stored a resumable session.
       for (const hub of ['/author/geiss', '/discover/fractal']) {
@@ -286,6 +311,22 @@ requiredBrowserTest(
         });
         const hubPage = await hubContext.newPage();
         await arrive(hubPage, `${hub}?renderer=webgl`);
+        // What the edge writes into #app for this hub, from the same table.
+        const expectedHrefs = buildHubCollectionContent(
+          presetMeta,
+          route,
+        ).groups.flatMap((group) => group.presets.map((preset) => preset.href));
+        // The list settles once the libraries have landed too.
+        await hubPage
+          .waitForFunction(
+            (count) =>
+              document.querySelectorAll(
+                '[data-collection-page] a[href^="/?preset="]',
+              ).length === count,
+            expectedHrefs.length,
+            { timeout: 30000 },
+          )
+          .catch(() => {});
         const hubRendered = await readRenderedPage(hubPage);
         // Browse is open on the collection; its presets are links.
         const browseLinks = await hubPage.evaluate(() =>
@@ -302,6 +343,14 @@ requiredBrowserTest(
         expect(hubRendered.headings).toEqual([
           { text: semanticRouteHeading(route), visible: true },
         ]);
+        // Every preset in the collection, as a visible link under the stage,
+        // in the order the edge writes them.
+        expect(hubRendered.collection?.belowStage).toBe(true);
+        const collectionLinks = (hubRendered.collection?.links ?? []).filter(
+          (link) => link.href?.startsWith('/?preset='),
+        );
+        expect(collectionLinks.map((link) => link.href)).toEqual(expectedHrefs);
+        expect(collectionLinks.every((link) => link.visible)).toBe(true);
         expect(browseLinks.length).toBeGreaterThan(0);
         for (const link of browseLinks) {
           expect(link.tag).toBe('a');

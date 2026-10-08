@@ -7,6 +7,8 @@ Stims plays and live-edits the original MilkDrop `.milk` presets in a browser, o
 
 Static, crawlable guides live under https://toil.fyi/learn/: the ten-track authoring course (start at /learn/), /learn/milkdrop-online/, /learn/milkdrop-vs-butterchurn-projectm/, and /learn/reference/ (the language reference).
 
+https://toil.fyi/presets/ links every indexable preset page, A–Z, and every `/discover/<slug>` and `/author/<slug>` page. Each hub page lists every preset in its collection, and each preset page links its `.milk` file.
+
 ## MCP integration
 The repository provides two MCP server implementations:
 1. **Stdio server (`scripts/mcp-server.ts`)**: Run via `bun run mcp`. Full session control through a headless Playwright browser session (`start_agent_session`, `session_capture_frame`, `session_tweak`, `session_vibe`, `run_quality_gate`).

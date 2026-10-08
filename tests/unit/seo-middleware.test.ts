@@ -2,16 +2,23 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  APP_ROOT_SELECTOR,
   NOSCRIPT_FALLBACK_SELECTOR,
   onRequest,
 } from '../../functions/_middleware.ts';
 import {
   AUTHOR_SLUGS,
+  DISCOVER_ROUTES,
   DISCOVER_SLUGS,
   isAllowedAuthorSlug,
   isAllowedDiscoverSlug,
 } from '../../functions/discover-slugs.ts';
-import { __resetPresetMetaForTest } from '../../functions/shared/preset-meta.ts';
+import {
+  __resetPresetMetaForTest,
+  NOINDEX,
+  type PresetMetaTable,
+} from '../../functions/shared/preset-meta.ts';
+import { SITE_INDEX_SECTIONS } from '../../functions/shared/site-index.ts';
 
 // The edge middleware is the only thing standing between 1,787 preset URLs
 // and a collapsed root canonical — and until now it had zero test coverage,
@@ -25,9 +32,11 @@ type FakeElement = {
   attributes: Map<string, string>;
   innerContent: string | null;
   appended: string[];
+  prepended: string[];
   setAttribute: (name: string, value: string) => void;
   setInnerContent: (value: string) => void;
   append: (value: string, options?: { html?: boolean }) => void;
+  prepend: (value: string, options?: { html?: boolean }) => void;
 };
 
 function createFakeElement(): FakeElement {
@@ -35,6 +44,7 @@ function createFakeElement(): FakeElement {
     attributes: new Map(),
     innerContent: null,
     appended: [],
+    prepended: [],
     setAttribute(name, value) {
       el.attributes.set(name, value);
     },
@@ -43,6 +53,9 @@ function createFakeElement(): FakeElement {
     },
     append(value) {
       el.appended.push(value);
+    },
+    prepend(value) {
+      el.prepended.push(value);
     },
   };
   return el;
@@ -202,6 +215,41 @@ describe('/discover/<slug> middleware', () => {
     expect(transformCalls).toBe(0);
   });
 
+  test('the empty retro hub redirects to the full index', async () => {
+    const response = await onRequest(
+      makeContext('https://toil.fyi/discover/retro'),
+    );
+
+    expect(response.status).toBe(301);
+    expect(response.headers.get('location')).toBe('https://toil.fyi/presets/');
+  });
+
+  test('writes every preset in the collection into #app, outside <noscript>', async () => {
+    const fractalBit =
+      1 << DISCOVER_ROUTES.findIndex((r) => r.slug === 'fractal');
+    await onRequest(
+      makeContext('https://toil.fyi/discover/fractal', {
+        'mandel-b': ['Mandel B', 'Geiss', 0, fractalBit],
+        'mandel-a': ['Mandel A', '', 0, fractalBit, NOINDEX],
+        'tunnel-only': ['Tunnel Only', 'Geiss', 0, 0],
+      } satisfies PresetMetaTable),
+    );
+
+    const app = applyHandlers(APP_ROOT_SELECTOR).prepended.join('');
+    expect(app).toContain(
+      '<h2 id="stims-collection-heading">All 2 presets</h2>',
+    );
+    // A–Z, with the credit on a topic page; a noindex preset is still part
+    // of the collection Browse shows, so it is listed too.
+    expect(app).toContain(
+      '<ul><li><a href="/?preset=mandel-a">Mandel A</a></li><li><a href="/?preset=mandel-b">Mandel B</a> <span>by Geiss</span></li></ul>',
+    );
+    expect(app).not.toContain('tunnel-only');
+    expect(
+      applyHandlers(NOSCRIPT_FALLBACK_SELECTOR).appended.join(''),
+    ).not.toContain('?preset=');
+  });
+
   test('leaves non-allowlisted slugs untouched — no doorway-page generation', async () => {
     const response = await onRequest(
       makeContext('https://toil.fyi/discover/some-random-invented-slug'),
@@ -222,7 +270,8 @@ describe('curated routes on Worker static assets (no SPA fallback)', () => {
     const response = await onRequest(context);
 
     expect(response.status).toBe(200);
-    expect(assetsFetched).toEqual(['/']);
+    // The catalog table for the hub's list, then the shell.
+    expect(assetsFetched).toEqual(['/preset-meta.json', '/']);
     expect(transformCalls).toBe(1);
     expect(applyHandlers('link[rel="canonical"]').attributes.get('href')).toBe(
       url,
@@ -374,6 +423,68 @@ describe('/?preset=<id> middleware', () => {
     );
   });
 
+  test('links the .milk file the catalog table names', async () => {
+    await onRequest(
+      makeContext('https://toil.fyi/?preset=geiss-one', {
+        'geiss-one': ['Geiss - One', 'Geiss', 1],
+      } satisfies PresetMetaTable),
+    );
+
+    expect(
+      applyHandlers(NOSCRIPT_FALLBACK_SELECTOR).appended.join(''),
+    ).toContain(
+      '<p><a href="/milkdrop-presets/butterchurn/geiss-one.milk" download>Download .milk</a></p>',
+    );
+  });
+
+  test('a nameless preset stays playable but carries noindex', async () => {
+    await onRequest(
+      makeContext('https://toil.fyi/?preset=11', {
+        '11': ['11', '', 1, 0, NOINDEX],
+      } satisfies PresetMetaTable),
+    );
+
+    expect(applyHandlers('meta[name="robots"]').attributes.get('content')).toBe(
+      'noindex,follow',
+    );
+    expect(applyHandlers('link[rel="canonical"]').attributes.get('href')).toBe(
+      'https://toil.fyi/?preset=11',
+    );
+  });
+
+  test('an indexable preset says index', async () => {
+    await onRequest(
+      makeContext('https://toil.fyi/?preset=geiss-one', {
+        'geiss-one': ['Geiss - One', 'Geiss', 0],
+      } satisfies PresetMetaTable),
+    );
+
+    expect(applyHandlers('meta[name="robots"]').attributes.get('content')).toBe(
+      'index,follow',
+    );
+  });
+
+  test('a copy of another preset names that one as canonical', async () => {
+    await onRequest(
+      makeContext('https://toil.fyi/?preset=cotc-geiss-one', {
+        'geiss-one': ['Geiss - One', 'Geiss', 1],
+        'cotc-geiss-one': ['Geiss - One', 'Geiss', 2, 0, 'geiss-one'],
+      } satisfies PresetMetaTable),
+    );
+
+    for (const [selector, attribute] of [
+      ['link[rel="canonical"]', 'href'],
+      ['meta[property="og:url"]', 'content'],
+    ] as const) {
+      expect(applyHandlers(selector).attributes.get(attribute)).toBe(
+        'https://toil.fyi/?preset=geiss-one',
+      );
+    }
+    expect(applyHandlers('meta[name="robots"]').attributes.get('content')).toBe(
+      'index,follow',
+    );
+  });
+
   test('escapes titles in the server-rendered body', async () => {
     await onRequest(
       makeContext('https://toil.fyi/?preset=xss', {
@@ -477,4 +588,49 @@ describe('shipped shell (real HTMLRewriter)', () => {
       expect(fallback).toContain('<h1>');
     },
   );
+
+  /** The markup inside <div id="app">, which React replaces on mount. */
+  function appRoot(html: string): string {
+    const start = html.indexOf('<div id="app">');
+    const end = html.indexOf('<noscript id="stims-noscript">');
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    return html.slice(start, end);
+  }
+
+  test.each(['/', '/?preset=geiss-one', '/author/geiss', '/discover/fractal'])(
+    '%s links /presets/ and every hub in its raw HTML, outside <noscript>',
+    async (path) => {
+      const response = await onRequest(
+        shellContext(`https://toil.fyi${path}`, {
+          'geiss-one': ['Geiss - One', 'Geiss'],
+        }),
+      );
+      const app = appRoot(await response.text());
+      for (const section of SITE_INDEX_SECTIONS) {
+        for (const link of section.links) {
+          expect(app).toContain(`<a href="${link.href}">`);
+        }
+      }
+    },
+  );
+
+  test('an author page lists its presets inside #app, ahead of the site index', async () => {
+    const response = await onRequest(
+      shellContext('https://toil.fyi/author/geiss', {
+        'geiss-two': ['Geiss - Two', 'Geiss'],
+        'stahlregen-geiss': ['Stahlregen + Geiss - Pair', 'Stahlregen + Geiss'],
+        'flexi-one': ['Flexi - One', 'Flexi'],
+      } satisfies PresetMetaTable),
+    );
+    const app = appRoot(await response.text());
+    const links = [...app.matchAll(/href="(\/\?preset=[^"]+)"/gu)].map(
+      (match) => match[1],
+    );
+    // Every preset crediting Geiss, chains included, A–Z by title.
+    expect(links).toEqual(['/?preset=stahlregen-geiss', '/?preset=geiss-two']);
+    expect(app.indexOf('stims-collection')).toBeLessThan(
+      app.indexOf('<footer'),
+    );
+  });
 });
