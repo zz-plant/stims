@@ -467,3 +467,163 @@ chromeTest(
   },
   60000,
 );
+
+/**
+ * The boot cover paints the first-visit header from HTML, so the largest text
+ * on the page does not wait for the app bundle, then crossfades into the
+ * React launch page drawing the same lines. Wherever the two disagree on a
+ * line's box, the 220ms fade shows both copies offset from each other. The
+ * cover's 14px/24px offsets were once stale against the launch column, and
+ * base.css's scrollbar gutter narrowed the cover by 15px on desktops with
+ * classic scrollbars.
+ */
+chromeTest(
+  'the boot cover hands off to the launch page without moving a line',
+  async () => {
+    const lines: [cover: string, launch: string][] = [
+      ['.stims-loading__brand', '.stims-shell__launch-nameplate'],
+      ['.stims-loading__title', '.stims-shell__launch-title'],
+      ['.stims-loading__tagline', '.stims-shell__launch-tagline'],
+    ];
+    const boxes = (page: Page, selectors: string[]) =>
+      page.evaluate(async (sels) => {
+        await document.fonts.ready;
+        return sels.map((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return [r.left, r.top, r.width, r.height].map(Math.round);
+        });
+      }, selectors);
+
+    for (const viewport of [
+      { width: 412, height: 823 },
+      { width: 1440, height: 900 },
+    ]) {
+      // The cover alone: with the app entry blocked it never leaves.
+      const coverPage = await (browser as Browser).newPage({ viewport });
+      let coverBoxes: (number[] | null)[];
+      try {
+        await coverPage.route('**/src/js/app.ts', (route) => route.abort());
+        await coverPage.goto(`${server?.url}/`, { waitUntil: 'load' });
+        coverBoxes = await boxes(
+          coverPage,
+          lines.map(([cover]) => cover),
+        );
+      } finally {
+        await coverPage.close();
+      }
+
+      const launchPage = await (browser as Browser).newPage({ viewport });
+      try {
+        await launchPage.goto(`${server?.url}/`, {
+          waitUntil: 'domcontentloaded',
+        });
+        await launchPage.waitForSelector('.stims-shell__launch-tagline', {
+          timeout: 30000,
+        });
+        await launchPage.waitForSelector('#stims-loading', {
+          state: 'detached',
+          timeout: 30000,
+        });
+        const launchBoxes = await boxes(
+          launchPage,
+          lines.map(([, launch]) => launch),
+        );
+        lines.forEach(([cover, launch], index) => {
+          const from = coverBoxes[index];
+          const to = launchBoxes[index];
+          if (!from || !to) {
+            throw new Error(`${from ? launch : cover} did not render`);
+          }
+          const drift = Math.max(...from.map((v, i) => Math.abs(v - to[i])));
+          if (drift > 1) {
+            throw new Error(
+              `${cover} [${from}] lands ${drift}px away from ${launch} [${to}] at ${viewport.width}x${viewport.height}`,
+            );
+          }
+        });
+      } finally {
+        await launchPage.close();
+      }
+    }
+  },
+  90000,
+);
+
+/**
+ * The raw HTML carries crawl copy in #app (the site index footer, and on a
+ * hub route its preset list) that React replaces on mount. Laid out under
+ * the boot cover, it reflowed when the deferred stylesheets landed: a layout
+ * shift of 0.2-0.47 on a desktop home page that nobody could see, but that
+ * CLS counted all the same.
+ */
+chromeTest(
+  'nothing shifts under the boot cover',
+  async () => {
+    type CoverRecord = {
+      shifts: { at: number; value: number; sources: string[] }[];
+      shellAt: number | null;
+    };
+    for (const path of ['/', '/discover/fractal']) {
+      const page = await (browser as Browser).newPage({
+        viewport: { width: 1440, height: 900 },
+      });
+      try {
+        await page.addInitScript(() => {
+          const record: CoverRecord = { shifts: [], shellAt: null };
+          (window as unknown as { __cover: CoverRecord }).__cover = record;
+          new PerformanceObserver((list) => {
+            for (const entry of list.getEntries() as unknown as {
+              startTime: number;
+              value: number;
+              sources?: { node?: Node | null }[];
+            }[]) {
+              record.shifts.push({
+                at: entry.startTime,
+                value: entry.value,
+                sources: (entry.sources ?? []).map(
+                  (source) => source.node?.nodeName ?? '?',
+                ),
+              });
+            }
+          }).observe({ type: 'layout-shift', buffered: true });
+          // React's first commit replaces the crawl copy. Shifts after it
+          // belong to the app, which the cover is already fading off.
+          window.addEventListener('stims:load-status', (event) => {
+            const phase = (event as CustomEvent<{ phase?: string }>).detail
+              ?.phase;
+            if (phase === 'shell-rendered' && record.shellAt === null) {
+              record.shellAt = performance.now();
+            }
+          });
+        });
+        await page.goto(`${server?.url}${path}`, { waitUntil: 'load' });
+        await page.waitForSelector('#stims-loading', {
+          state: 'detached',
+          timeout: 30000,
+        });
+        const record = await page.evaluate(
+          () => (window as unknown as { __cover: CoverRecord }).__cover,
+        );
+        expect(record.shellAt).not.toBeNull();
+        const underCover = record.shifts.filter(
+          (shift) => shift.value > 0 && shift.at < (record.shellAt ?? 0),
+        );
+        // Below 0.001, which Lighthouse reports as 0.000. The cover's own
+        // text can move a fraction of a pixel when Archivo swaps in for a
+        // fallback with other metrics (0.000002 on Linux CI); the reflow
+        // this guards against scored 0.01-0.47.
+        const total = underCover.reduce((sum, shift) => sum + shift.value, 0);
+        if (total >= 0.001) {
+          throw new Error(
+            `${path} shifted ${total.toFixed(4)} under the boot cover: ${JSON.stringify(underCover)}`,
+          );
+        }
+      } finally {
+        await page.close();
+      }
+    }
+  },
+  90000,
+);

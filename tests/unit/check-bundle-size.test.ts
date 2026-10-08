@@ -70,6 +70,17 @@ describe('check:bundle-size boot-path rules', () => {
     expect(leaks[0]).toContain('vendor-codemirror is in the eager load set');
   });
 
+  test('flags three.js reached statically from the entry', () => {
+    const { read, assetPaths } = build({
+      ...CLEAN_BUILD,
+      'assets/index-a1.js':
+        'import{a}from"./vendor-react-b2.js";import{t}from"./vendor-three-f6.js";',
+    });
+    const leaks = findBootPathLeaks(INDEX_HTML, assetPaths, read);
+    expect(leaks).toHaveLength(1);
+    expect(leaks[0]).toContain('vendor-three is in the eager load set');
+  });
+
   test('flags three/webgpu in the runtime closure WebGL sessions load', () => {
     const { read, assetPaths } = build({
       ...CLEAN_BUILD,

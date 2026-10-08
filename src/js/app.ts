@@ -12,6 +12,7 @@ import './frontend/arrival-url.ts';
 import { reportLoadStatus } from './frontend/load-status.ts';
 import { StimsWorkspaceRouterProvider } from './frontend/workspace-router.tsx';
 import { isSmartTvDevice } from './utils/browser/device-detect.ts';
+import { scheduleAfterPaint } from './utils/browser/idle-task.ts';
 
 type StimsAppGlobals = typeof globalThis & {
   __stimsAppDispose?: () => void;
@@ -49,11 +50,7 @@ function ensureRootContainer() {
 
 function waitForFirstPaint() {
   return new Promise<void>((resolve) => {
-    if (document.visibilityState === 'hidden') {
-      window.setTimeout(resolve, 0);
-      return;
-    }
-    window.requestAnimationFrame(() => window.setTimeout(resolve, 0));
+    scheduleAfterPaint(resolve);
   });
 }
 

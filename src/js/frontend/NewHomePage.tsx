@@ -3,7 +3,14 @@
  * curated starter presets, audio source selectors, and quick-start actions.
  */
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useEffectEvent,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   type SemanticDiscoveryRoute,
   semanticRouteHeading,
@@ -13,9 +20,11 @@ import type { ResumableAudioSource } from '../core/state/last-session-store.ts';
 import { getLastSession } from '../core/state/last-session-store.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
+import { scheduleAfterPaint } from '../utils/browser/idle-task.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import { getArrivalAudioSource, getArrivalPresetId } from './arrival-url.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
+import { reportLoadStatus } from './load-status.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { LaunchSignalTrace } from './SignalField.tsx';
 import { resolveSharedArrival } from './shared-arrival.ts';
@@ -57,6 +66,24 @@ export function NewHomePage() {
   const [lastSession] = useState(() => getLastSession());
   const appliedResumeRef = useRef(false);
   const autoStartedRef = useRef(false);
+  // The engine mount for a deep link waits on this (workspace-hooks.ts), so
+  // the page naming the preset paints before the engine's chunks claim the
+  // connection.
+  useEffect(() => {
+    reportLoadStatus('launch-rendered');
+  }, []);
+
+  // Set once a live session has ended, or a deep link's auto-start failed:
+  // from then on a `?preset=` arrival's header gives way (see `deepLink`).
+  const [deepLinkReleased, setDeepLinkReleased] = useState(false);
+  const wentLiveRef = useRef(false);
+  useEffect(() => {
+    if (engine.audioActive) {
+      wentLiveRef.current = true;
+    } else if (wentLiveRef.current) {
+      setDeepLinkReleased(true);
+    }
+  }, [engine.audioActive]);
 
   // The URL the visitor actually arrived on — captured at document load by
   // `arrival-url.ts`, not at component mount and not at this chunk's eval.
@@ -122,6 +149,15 @@ export function NewHomePage() {
     [engine.catalog, deepLinkPresetId],
   );
 
+  const startDeepLinkSession = useEffectEvent(() => {
+    void engine.handleAudioStart('demo').then((outcome) => {
+      if (!outcome.ok) setDeepLinkReleased(true);
+    });
+    if (sharedArrival.kind !== 'offer' && sharedArrival.notice) {
+      ui.setStatusMessage(sharedArrival.notice);
+    }
+  });
+
   useEffect(() => {
     if (autoStartedRef.current) return;
     if (!deepLinkPresetId) return;
@@ -138,18 +174,17 @@ export function NewHomePage() {
     // recipient's gesture, and starting the demo over them said nothing.
     if (sharedArrival.kind === 'offer') return;
     autoStartedRef.current = true;
-    void engine.handleAudioStart('demo');
-    if (sharedArrival.notice) {
-      ui.setStatusMessage(sharedArrival.notice);
-    }
+    // The starter catalog usually resolves the preset in this page's first
+    // commit, so starting here pulled the engine's chunks in before the
+    // header naming the preset had painted. Not cancelled on cleanup: once
+    // decided, the start must happen even if a dependency changes first.
+    scheduleAfterPaint(startDeepLinkSession);
   }, [
     deepLinkPresetId,
     deepLinkEntry,
     engine.engineReady,
     engine.missingRequestedPreset,
-    engine.handleAudioStart,
     sharedArrival,
-    ui.setStatusMessage,
   ]);
 
   // Without attract mode (mobile, low-power) the engine only boots when this
@@ -203,11 +238,18 @@ export function NewHomePage() {
   // me" and then replaces itself without explanation when demo audio
   // auto-starts. The catalog title wins once it lands; before that, the slug
   // is prettified so the wait is still acknowledged.
+  //
+  // The header holds until the session the arrival led to has ended, or the
+  // auto-start failed. It used to drop on the first render after auto-start,
+  // so the generic pitch painted in during the engine boot and again under
+  // the stage's fade-in. That late paint was the page's largest contentful
+  // paint, several seconds after the preset's name was already on screen.
   const deepLink =
-    !resume && deepLinkPresetId && !autoStartedRef.current
+    !resume && deepLinkPresetId && !deepLinkReleased
       ? {
           title: deepLinkEntry?.title ?? prettifyPresetSlug(deepLinkPresetId),
           entry: deepLinkEntry,
+          artworkPending: !deepLinkEntry && !engine.missingRequestedPreset,
         }
       : null;
 
@@ -300,6 +342,8 @@ type ResumeState = {
 type DeepLinkState = {
   title: string;
   entry: PresetCatalogEntry | null;
+  /** The catalog may still resolve the preset, so its artwork may still arrive. */
+  artworkPending: boolean;
 } | null;
 
 /** "aderrasi-potion-of-spirits" → "Aderrasi Potion Of Spirits". */
@@ -338,9 +382,21 @@ function Header({
         <p className="stims-shell__launch-tagline" aria-live="polite">
           Starting with demo audio…
         </p>
+        {/* The artwork's box is held while the catalog resolves the
+            preset. Inserted on arrival, it pushed the buttons, the note and
+            the source list down by its height: a layout shift of 0.05-0.15
+            on every ?preset= load. */}
         {deepLink.entry ? (
           <div className="stims-shell__launch-resume-art">
             <PresetArtwork entry={deepLink.entry} compact />
+          </div>
+        ) : deepLink.artworkPending ? (
+          <div className="stims-shell__launch-resume-art">
+            <div
+              className="stims-shell__preset-art"
+              data-compact="true"
+              aria-hidden="true"
+            />
           </div>
         ) : null}
       </>
