@@ -7,7 +7,7 @@
   "homepage": "https://github.com/zz-plant/stims/tree/main/packages/flash-guard#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zz-plant/stims.git",
+    "url": "git+https://github.com/zz-plant/stims.git",
     "directory": "packages/flash-guard"
   },
   "bugs": {
@@ -36,7 +36,7 @@
       "stims-source": "./src/index.ts",
       "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./worker": {
       "stims-source": "./src/readback.worker.ts",

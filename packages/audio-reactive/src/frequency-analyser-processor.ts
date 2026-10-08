@@ -1,3 +1,5 @@
+// Kept in the emitted .d.ts (preserve) so consumers see the worklet globals.
+/// <reference path="./audio-worklet.d.ts" preserve="true" />
 /**
  * AudioWorklet Frequency Analyser Processor — runs zero-allocation audio analysis in an isolated
  * AudioWorklet thread, computing multi-band FFT spectra, harmonic/percussive separation, and beat envelopes.

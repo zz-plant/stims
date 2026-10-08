@@ -22,7 +22,7 @@
   "license": "Unlicense",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zz-plant/stims.git",
+    "url": "git+https://github.com/zz-plant/stims.git",
     "directory": "packages/milkdrop-toolchain"
   },
   "homepage": "https://github.com/zz-plant/stims/tree/main/packages/milkdrop-toolchain#readme",
@@ -46,6 +46,7 @@
     "src",
     "data",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
