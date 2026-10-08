@@ -37,7 +37,9 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 ### Fixed
 
 - A `?preset=` page names its preset. Below the stage, in normal flow, it shows the preset's name as the page's one h1, its author (linked to the author page where one exists), more presets by the same author, and the topic hubs. Search engines render the page and skip `<noscript>`, which held the only copy of this content, so the sitemap's preset URLs read as one page under the heading "Stims visualizer". The edge now writes its no-JavaScript copy into one `<noscript>` instead of all four in the shell, and both copies come from `functions/shared/preset-page.ts`.
-- `/author/<slug>` and `/discover/<slug>` pages name their collection in the h1 ("Geiss MilkDrop Presets") instead of the home page's headline.
+- `/author/<slug>` and `/discover/<slug>` pages name their collection in the h1 ("Geiss MilkDrop Presets") instead of the home page's headline, for returning visitors too.
+- Presets in Browse (grid tiles, list rows, the recently-played rail and the remix family) are links to their `?preset=` pages, so crawlers on the hub pages can follow them and a preset opens in a new tab with a modifier click. A plain click still switches presets in place.
+- A preset credited to a chain such as "Stahlregen + Geiss" links each hand in its byline to that hand's author page. Its related presets come in one group per hand, drawn from the presets crediting that hand, the rule the author pages already use.
 
 ### Planned — studio first, parity as a floor
 

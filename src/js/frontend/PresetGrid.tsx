@@ -16,6 +16,7 @@ import {
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { PresetIdentity } from './PresetIdentity.tsx';
+import { openPresetInPlace, presetPageHref } from './preset-link.ts';
 import {
   clearQuickSelectEntries,
   publishQuickSelectEntries,
@@ -109,8 +110,11 @@ const GridTile = memo(function GridTile({
       aria-setsize={setSize}
       aria-posinset={index + 1}
     >
-      <button
-        type="button"
+      {/* A link to the preset's page, so crawlers can follow the list and a
+          visitor can open a tile in a new tab; a plain click still switches
+          in place (preset-link.ts). */}
+      <a
+        href={presetPageHref(entry.id)}
         className="stims-preset-grid__item"
         data-preset-id={entry.id}
         data-preset-index={index}
@@ -139,7 +143,7 @@ const GridTile = memo(function GridTile({
           onAudition(entry.id);
         }}
         onBlur={() => onAuditionEnd(entry.id)}
-        onClick={() => onOpen(entry.id)}
+        onClick={(event) => openPresetInPlace(event, () => onOpen(entry.id))}
       >
         <PresetIdentity entry={entry} preview={preview} audition={audition} />
         {quickSelectKey ? (
@@ -157,9 +161,9 @@ const GridTile = memo(function GridTile({
             +{variants}
           </span>
         ) : null}
-      </button>
+      </a>
       {/* A sibling of the tile, never a child: nesting an interactive
-          control inside the tile button is invalid, and every save would
+          control inside the tile link is invalid, and every save would
           also select the preset. Follows the roving index rather than being
           statically tabbable — otherwise each mounted tile adds a tab stop
           and Tab walks a wall of stars instead of leaving the grid. */}

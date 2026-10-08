@@ -353,6 +353,27 @@ describe('/?preset=<id> middleware', () => {
     expect(body).not.toContain('href="/?preset=geiss-one"');
   });
 
+  test('links each hand of a credit chain and lists more by each', async () => {
+    await onRequest(
+      makeContext('https://toil.fyi/?preset=pair', {
+        pair: ['Stahlregen + Geiss - Pair', 'Stahlregen + Geiss'],
+        'geiss-one': ['Geiss - One', 'Geiss'],
+        'stahlregen-one': ['Stahlregen - One', 'Stahlregen'],
+      }),
+    );
+
+    const body = applyHandlers(NOSCRIPT_FALLBACK_SELECTOR).appended.join('');
+    expect(body).toContain(
+      '<p>A MilkDrop preset by <a href="/author/stahlregen">Stahlregen</a> + <a href="/author/geiss">Geiss</a>.</p>',
+    );
+    expect(body).toContain(
+      '<h2>More presets by Stahlregen</h2><ul><li><a href="/?preset=stahlregen-one">One</a></li></ul>',
+    );
+    expect(body).toContain(
+      '<h2>More presets by Geiss</h2><ul><li><a href="/?preset=geiss-one">One</a></li></ul>',
+    );
+  });
+
   test('escapes titles in the server-rendered body', async () => {
     await onRequest(
       makeContext('https://toil.fyi/?preset=xss', {

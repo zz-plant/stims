@@ -4892,6 +4892,9 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
   background: var(--stims-panel-strong);
   overflow: hidden;
   cursor: pointer;
+  /* A link to the preset's page: card ink, not link ink. */
+  color: inherit;
+  text-decoration: none;
   text-align: left;
   transition:
     border-color var(--transition-fast),

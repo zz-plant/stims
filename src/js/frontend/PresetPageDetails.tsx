@@ -14,15 +14,17 @@
  * visuals, and the stage keeps its wheel and touch gestures; the section is
  * reached by scrolling the page, by Tab, or from a screen reader's headings.
  */
-import { type MouseEvent, useId, useMemo } from 'react';
+import { Fragment, useId, useMemo } from 'react';
 import type { PresetMetaTable } from '../../../functions/shared/preset-meta.ts';
 import {
   buildPresetPageContent,
+  CREDIT_SEPARATOR,
   PRESET_PAGE_HUB_LINKS,
   type PresetPageContent,
 } from '../../../functions/shared/preset-page.ts';
 import styles from '../../css/PresetPageDetails.module.css';
 import type { PresetCatalogEntry } from './contracts.ts';
+import { openPresetInPlace } from './preset-link.ts';
 
 /**
  * The catalog in the shape the edge reads from /preset-meta.json. First entry
@@ -56,16 +58,6 @@ export function usePresetPageContent(
   );
 }
 
-function isPlainClick(event: MouseEvent) {
-  return (
-    event.button === 0 &&
-    !event.metaKey &&
-    !event.ctrlKey &&
-    !event.shiftKey &&
-    !event.altKey
-  );
-}
-
 export function PresetPageDetails({
   content,
   onSelectPreset,
@@ -80,45 +72,48 @@ export function PresetPageDetails({
         {content.title}
       </h1>
       <p className={styles.byline}>
-        {content.author ? (
+        {content.credits.length > 0 ? (
           <>
             A MilkDrop preset by{' '}
-            {content.authorHref ? (
-              <a href={content.authorHref}>{content.author}</a>
-            ) : (
-              content.author
-            )}
+            {content.credits.map((credit, index) => (
+              <Fragment key={credit.name}>
+                {index > 0 ? CREDIT_SEPARATOR : null}
+                {credit.href ? (
+                  <a href={credit.href}>{credit.name}</a>
+                ) : (
+                  credit.name
+                )}
+              </Fragment>
+            ))}
             .
           </>
         ) : (
           'A MilkDrop preset.'
         )}
       </p>
-      {content.related.length > 0 ? (
-        <>
-          <h2 className={styles.heading}>More presets by {content.author}</h2>
+      {content.related.map((group) => (
+        <Fragment key={group.author}>
+          <h2 className={styles.heading}>More presets by {group.author}</h2>
           <ul className={styles.related}>
-            {content.related.map((preset) => (
+            {group.presets.map((preset) => (
               <li key={preset.id}>
                 <a
                   href={preset.href}
-                  onClick={(event) => {
-                    if (!isPlainClick(event)) return;
-                    // Following the link would reload the app and end the
-                    // audio session; switch presets in place instead, and
-                    // bring the stage back into view.
-                    event.preventDefault();
-                    onSelectPreset(preset.id);
-                    window.scrollTo({ top: 0 });
-                  }}
+                  onClick={(event) =>
+                    openPresetInPlace(event, () => {
+                      onSelectPreset(preset.id);
+                      // Bring the stage, now playing this preset, into view.
+                      window.scrollTo({ top: 0 });
+                    })
+                  }
                 >
                   {preset.title}
                 </a>
               </li>
             ))}
           </ul>
-        </>
-      ) : null}
+        </Fragment>
+      ))}
       <nav className={styles.hubs} aria-label="Related pages">
         <ul>
           {PRESET_PAGE_HUB_LINKS.map((link) => (

@@ -427,7 +427,13 @@ function StimsWorkspaceAppShell() {
 
   const liveMode = engine.audioActive;
   // The playing preset's page: its name is the document's h1 and the section
-  // under the stage. Embeds are chromeless and get neither.
+  // under the stage. Embeds are chromeless and get neither. Keyed on the
+  // selection, which is what the URL names, rather than on what the engine
+  // has on stage: a ?preset= arrival goes live while the attract preset is
+  // still rendering, and keying on the engine named that preset in the h1 of
+  // another preset's page until the requested one compiled. The two differ
+  // only for that moment; autoplay moves the route with the engine
+  // (engine-route-publish.ts).
   const presetPage = usePresetPageContent(
     engine.catalog,
     liveMode && !ui.routeState.previewMode

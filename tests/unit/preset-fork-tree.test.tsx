@@ -112,7 +112,7 @@ describe('PresetLineageSection', () => {
       Array.from(host.querySelectorAll<HTMLElement>('.ctl-lineage__item')).find(
         (li) =>
           li
-            .querySelector('button')
+            .querySelector('.ctl-lineage__btn')
             ?.textContent?.includes(
               id === 'mine-2' ? '[remix 2]' : '[remix]',
             ) && li.dataset.link === 'recorded',
@@ -130,7 +130,14 @@ describe('PresetLineageSection', () => {
     expect(nested?.textContent).toContain('[remix 2]');
     expect(item('mine-2')).toBeDefined();
 
-    nested?.querySelector('button')?.click();
+    // Each relative is a link to its preset page; the one playing is not.
+    const relativeLink =
+      nested?.querySelector<HTMLAnchorElement>('a.ctl-lineage__btn');
+    expect(relativeLink?.getAttribute('href')).toBe('/?preset=mine-2');
+    expect(
+      mine?.querySelector(':scope > .ctl-lineage__btn')?.tagName.toLowerCase(),
+    ).toBe('span');
+    relativeLink?.click();
     expect(onSelect).toHaveBeenCalledWith('mine-2');
     expect(host.textContent).toContain('a remix made here is linked');
   });

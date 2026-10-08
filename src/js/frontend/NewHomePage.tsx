@@ -354,8 +354,15 @@ function Header({
     const { entry } = resume;
     return (
       <>
+        {/* A curated hub page names its collection for returning visitors
+            too, as its page title does; the card below still offers the
+            last session. */}
         <Title id="stims-launch-title" className="stims-shell__launch-title">
-          {resume.shared ? 'Shared with you' : 'Welcome back'}
+          {discovery
+            ? semanticRouteHeading(discovery)
+            : resume.shared
+              ? 'Shared with you'
+              : 'Welcome back'}
         </Title>
         <div className="stims-shell__launch-resume-card">
           {entry ? <PresetArtwork entry={entry} compact /> : null}
