@@ -58,7 +58,8 @@ const MANIFEST_GZIP_BUDGETS: ReadonlyArray<{ file: string; max: number }> = [
  * Byte totals cannot see a chunk moving onto the boot path, and two did:
  * CodeMirror (~121 kB gz) became eager through vendor-other, and
  * three/webgpu (~189 kB gz) entered the runtime closure every WebGL session
- * loads. Each rule names a chunk prefix that must stay out of a load set.
+ * loads. Each rule names a chunk prefix that must stay out of a load set
+ * (a prefix: `vendor-three` also matches `vendor-three-webgpu`).
  */
 export const BOOT_PATH_RULES: ReadonlyArray<{
   forbidden: string;
@@ -69,6 +70,11 @@ export const BOOT_PATH_RULES: ReadonlyArray<{
     forbidden: 'vendor-codemirror',
     set: 'eager',
     why: 'the editor is prewarmed at idle; first paint must not wait for it',
+  },
+  {
+    forbidden: 'vendor-three',
+    set: 'eager',
+    why: 'the landing page paints and takes input before any engine mounts; three.js loads with the engine',
   },
   {
     forbidden: 'vendor-three-webgpu',

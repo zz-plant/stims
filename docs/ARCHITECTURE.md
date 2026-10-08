@@ -146,6 +146,7 @@ Primary implementation:
 - [`src/js/app.ts`](../src/js/app.ts) installs telemetry persistence, the agent API, and gamepad navigation.
 - It renders [`src/js/frontend/App.tsx`](../src/js/frontend/App.tsx) into `#app`.
 - It no longer delegates root ownership to the old DOM loader stack.
+- The engine's chunks load only once a session needs them. A bare landing boots the decorative attract render in idle time; a `?preset=` or `?audio=` arrival mounts once the launch page has painted (`afterLoadPhasePainted('launch-rendered')` in [`workspace-hooks.ts`](../src/js/frontend/workspace-hooks.ts)), so the page naming the preset is not sharing the connection with them. `bun run check:bundle-size` fails a build that puts three.js or its WebGPU bundle on the eager path.
 
 ### Workspace UI
 
