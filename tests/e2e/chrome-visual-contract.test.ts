@@ -550,3 +550,71 @@ chromeTest(
   },
   90000,
 );
+
+/**
+ * The raw HTML carries crawl copy in #app (the site index footer, and on a
+ * hub route its preset list) that React replaces on mount. Laid out under
+ * the boot cover, it reflowed when the deferred stylesheets landed: a layout
+ * shift of 0.2-0.47 on a desktop home page that nobody could see, but that
+ * CLS counted all the same.
+ */
+chromeTest(
+  'nothing shifts under the boot cover',
+  async () => {
+    type CoverRecord = {
+      shifts: { at: number; value: number; sources: string[] }[];
+      coverGoneAt: number | null;
+    };
+    for (const path of ['/', '/discover/fractal']) {
+      const page = await (browser as Browser).newPage({
+        viewport: { width: 1440, height: 900 },
+      });
+      try {
+        await page.addInitScript(() => {
+          const record: CoverRecord = { shifts: [], coverGoneAt: null };
+          (window as unknown as { __cover: CoverRecord }).__cover = record;
+          new PerformanceObserver((list) => {
+            for (const entry of list.getEntries() as unknown as {
+              startTime: number;
+              value: number;
+              sources?: { node?: Node | null }[];
+            }[]) {
+              record.shifts.push({
+                at: entry.startTime,
+                value: entry.value,
+                sources: (entry.sources ?? []).map(
+                  (source) => source.node?.nodeName ?? '?',
+                ),
+              });
+            }
+          }).observe({ type: 'layout-shift', buffered: true });
+          new MutationObserver(() => {
+            if (
+              record.coverGoneAt === null &&
+              document.body &&
+              !document.getElementById('stims-loading')
+            ) {
+              record.coverGoneAt = performance.now();
+            }
+          }).observe(document, { childList: true, subtree: true });
+        });
+        await page.goto(`${server?.url}${path}`, { waitUntil: 'load' });
+        await page.waitForSelector('#stims-loading', {
+          state: 'detached',
+          timeout: 30000,
+        });
+        const record = await page.evaluate(
+          () => (window as unknown as { __cover: CoverRecord }).__cover,
+        );
+        const underCover = record.shifts.filter(
+          (shift) =>
+            shift.value > 0 && shift.at < (record.coverGoneAt ?? Infinity),
+        );
+        expect({ path, underCover }).toEqual({ path, underCover: [] });
+      } finally {
+        await page.close();
+      }
+    }
+  },
+  90000,
+);
