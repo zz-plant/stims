@@ -52,7 +52,7 @@ import { usePresetPreviews } from './hooks/use-preset-previews.ts';
 import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
 import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
-import { reportLoadStatus } from './load-status.ts';
+import { afterLoadPhasePainted, reportLoadStatus } from './load-status.ts';
 import { warmFavoriteForOffline } from './offline-favorites.ts';
 import { decidePresetRoutePush } from './preset-route-push.ts';
 import { ensurePersistentStorage } from './storage-persistence.ts';
@@ -78,6 +78,12 @@ const ATTRACT_LIVENESS_SETTLE_MS = 2500;
 
 /** Gap before the confirming sample, so one unlucky frame cannot condemn it. */
 const ATTRACT_LIVENESS_CONFIRM_MS = 1200;
+
+/**
+ * Longest a deep link's engine mount waits for the launch page to paint. The
+ * page is one small lazy chunk; this only bounds a chunk that never arrives.
+ */
+const LAUNCH_PAINT_WAIT_MS = 1500;
 
 export function useWorkspaceRouteState() {
   const [routeState, setRouteState] = useState<SessionRouteState>(() =>
@@ -485,11 +491,23 @@ export function useWorkspaceSessionState({
       });
     }
 
-    mountEngine();
+    // A deep link does not wait for idle, but it does wait for the launch
+    // page that names its preset to paint. Started in the same tick, the
+    // engine's chunks (~300 kB gz on WebGL, more on WebGPU) shared the
+    // connection with that page's chunk and delayed it. An embed hides the
+    // launch page, so it has nothing to wait for.
+    if (routeState.previewMode) {
+      mountEngine();
+      return;
+    }
+    return afterLoadPhasePainted('launch-rendered', mountEngine, {
+      timeoutMs: LAUNCH_PAINT_WAIT_MS,
+    });
   }, [
     engineSnapshot?.runtimeReady,
     routeState.presetId,
     routeState.audioSource,
+    routeState.previewMode,
     attractModeEnabled,
     setStatusMessage,
   ]);

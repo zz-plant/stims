@@ -783,3 +783,118 @@ browserTest(
   },
   { timeout: 240000 },
 );
+
+/**
+ * Not in the starter catalog, so its catalog entry — and the artwork the
+ * launch header shows for it — resolves only once the full catalog lands.
+ */
+const LATE_RESOLVING_PRESET = 'stahlregen-geiss-old-school-baby-flower-v2-1';
+
+type DeepLinkRecord = {
+  /** Times the generic first-visit tagline was in the React page. */
+  generic: number[];
+  /** Layout shifts, and whether any source sat in the launch column. */
+  shifts: { at: number; launch: boolean }[];
+  /** When the body first reported a live audio session. */
+  liveAt: number | null;
+};
+
+browserTest(
+  'a deep link names its preset until the stage takes over, without shifting',
+  async () => {
+    const browser = await sharedRendererBrowser();
+    const ctx = await browser.newContext({
+      viewport: { width: 412, height: 823 },
+      deviceScaleFactor: 1,
+    });
+    const page = await ctx.newPage();
+    // Two regressions on the ?preset= arrival, both seen from outside:
+    // - the header dropped to the generic first-visit pitch on the first
+    //   render after auto-start, so the pitch showed while the engine booted
+    //   and again under the stage's fade (that late paint was the page's
+    //   largest contentful paint);
+    // - the preset's artwork was inserted when the catalog resolved it,
+    //   pushing the buttons and note down (a 0.05-0.15 layout shift).
+    await page.addInitScript(() => {
+      const record: DeepLinkRecord = { generic: [], shifts: [], liveAt: null };
+      (window as unknown as { __deepLink: DeepLinkRecord }).__deepLink = record;
+      const check = () => {
+        for (const el of document.querySelectorAll(
+          '#app .stims-shell__launch-tagline',
+        )) {
+          if (el.textContent?.startsWith('Thousands of presets for MilkDrop')) {
+            record.generic.push(performance.now());
+          }
+        }
+        if (
+          record.liveAt === null &&
+          document.body?.dataset.audioActive === 'true'
+        ) {
+          record.liveAt = performance.now();
+        }
+      };
+      new MutationObserver(check).observe(document, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['data-audio-active'],
+      });
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries() as unknown as {
+          startTime: number;
+          sources?: { node?: Node | null }[];
+        }[]) {
+          const launch = (entry.sources ?? []).some((source) => {
+            const node = source.node;
+            const el = node instanceof Element ? node : node?.parentElement;
+            return Boolean(el?.closest('.stims-shell__launch-center'));
+          });
+          record.shifts.push({ at: entry.startTime, launch });
+        }
+      }).observe({ type: 'layout-shift', buffered: true });
+    });
+
+    try {
+      await page.goto(
+        `${SERVER_URL}/?preset=${LATE_RESOLVING_PRESET}&renderer=webgl&${CHEAP_RENDER_PARAMS}`,
+        { waitUntil: 'domcontentloaded' },
+      );
+      await page.waitForSelector(
+        '.stims-shell__launch-center[data-variant="deep-link"]',
+        { timeout: 30000 },
+      );
+      await page.waitForFunction(
+        () => document.body.dataset.audioActive === 'true',
+        undefined,
+        { timeout: 120000 },
+      );
+      // Past the launch column's fade under the stage, where the generic
+      // pitch used to paint.
+      await page.waitForFunction(
+        () => {
+          const launch = document.querySelector('.stims-shell__launch');
+          return launch !== null && getComputedStyle(launch).opacity === '0';
+        },
+        undefined,
+        { timeout: 30000 },
+      );
+
+      const record = await page.evaluate(
+        () => (window as unknown as { __deepLink: DeepLinkRecord }).__deepLink,
+      );
+      expect(record.liveAt).not.toBeNull();
+      expect(record.generic).toEqual([]);
+      const launchShiftsBeforeLive = record.shifts.filter(
+        (shift) => shift.launch && shift.at < (record.liveAt ?? 0),
+      );
+      expect(launchShiftsBeforeLive).toEqual([]);
+    } catch (error) {
+      await writeAgentFailureArtifact(page, 'e2e-engine-mount-deep-link-hold');
+      throw error;
+    } finally {
+      await closeQuietly(ctx);
+    }
+  },
+  { timeout: 240000 },
+);
