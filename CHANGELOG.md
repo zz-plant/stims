@@ -34,6 +34,11 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
   - `capture_toy_screenshot`, `test_toy_interactivity`, `get_toy_health` (stdio only) → `capture_preset`, which now lists the page's console errors on success and on failure.
 - `src/data/toys.json`, which nothing reads once those tools are gone. The sitemap's MilkDrop image title is now a constant in `scripts/generate-seo.ts`, and the Vite build no longer derives inputs from it.
 
+### Fixed
+
+- A `?preset=` page names its preset. Below the stage, in normal flow, it shows the preset's name as the page's one h1, its author (linked to the author page where one exists), more presets by the same author, and the topic hubs. Search engines render the page and skip `<noscript>`, which held the only copy of this content, so the sitemap's preset URLs read as one page under the heading "Stims visualizer". The edge now writes its no-JavaScript copy into one `<noscript>` instead of all four in the shell, and both copies come from `functions/shared/preset-page.ts`.
+- `/author/<slug>` and `/discover/<slug>` pages name their collection in the h1 ("Geiss MilkDrop Presets") instead of the home page's headline.
+
 ### Planned — studio first, parity as a floor
 
 - **Remix studio**: dependable undo/redo and named snapshots, side-by-side A/B against the source preset, remix provenance retained in exported `.milk`.

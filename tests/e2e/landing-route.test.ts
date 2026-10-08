@@ -13,9 +13,24 @@
  *
  * The effect was skipped under `?agent=true`, so every agent-mode suite missed
  * it. These pages load the way a visitor does, without agent mode.
+ *
+ * The same arrivals are the pages search engines index, and they index the
+ * DOM after JavaScript runs, skipping <noscript>. Until 2026-10-08 every
+ * `?preset=` page rendered the same h1 ("Stims visualizer", screen-reader
+ * only) plus a hidden second one, and named its preset only in a status line;
+ * the heading, byline and links the edge wrote lived in <noscript> alone. The
+ * second test reads what a rendering crawler gets.
  */
 import { afterAll, beforeAll, expect } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { chromium, type Page } from 'playwright';
+import {
+  resolveSemanticRoute,
+  semanticRouteHeading,
+} from '../../functions/discover-slugs.ts';
+import type { PresetMetaTable } from '../../functions/shared/preset-meta.ts';
+import { buildPresetPageContent } from '../../functions/shared/preset-page.ts';
 import { getAgentState, waitForAgentState } from './agent-api.ts';
 import { hasChromium, requiredBrowserTest } from './browser-availability.ts';
 import { closeQuietly } from './deadline.ts';
@@ -106,4 +121,153 @@ requiredBrowserTest(
     }
   },
   { timeout: 180000 },
+);
+
+type RenderedLink = { href: string | null; text: string; visible: boolean };
+type RenderedPage = {
+  headings: { text: string; visible: boolean }[];
+  byline: string | null;
+  links: RenderedLink[];
+  belowStage: boolean;
+};
+
+/**
+ * The h1s on the page and, for the section holding the first, its byline and
+ * links. "Visible" means a person can see it: rendered with a box, not
+ * display:none / visibility:hidden / opacity 0 up the tree, not clipped to a
+ * screen-reader-only pixel, and not inside <noscript>.
+ */
+function readRenderedPage(page: Page): Promise<RenderedPage> {
+  return page.evaluate(() => {
+    const visible = (el: Element) => {
+      if (el.closest('noscript')) return false;
+      if (
+        !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })
+      )
+        return false;
+      const box = el.getBoundingClientRect();
+      if (box.width < 2 || box.height < 2) return false;
+      for (let node: Element | null = el; node; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        if (
+          style.clipPath === 'inset(50%)' ||
+          style.clip === 'rect(0px, 0px, 0px, 0px)'
+        )
+          return false;
+      }
+      return true;
+    };
+    const headings = [...document.querySelectorAll('h1')];
+    const section = headings[0]?.closest('section') ?? null;
+    const stage = document.getElementById('stims-visualizer');
+    return {
+      headings: headings.map((h) => ({
+        text: h.textContent ?? '',
+        visible: visible(h),
+      })),
+      byline: section?.querySelector('p')?.textContent ?? null,
+      links: [...(section?.querySelectorAll('a') ?? [])].map((a) => ({
+        href: a.getAttribute('href'),
+        text: a.textContent ?? '',
+        // Inert links read as text but cannot be followed.
+        visible: visible(a) && !a.closest('[inert]'),
+      })),
+      belowStage:
+        section !== null &&
+        stage !== null &&
+        section.getBoundingClientRect().top >=
+          stage.getBoundingClientRect().bottom - 1,
+    };
+  });
+}
+
+requiredBrowserTest(
+  'arrival pages render one visible h1 naming them, and a preset page its byline and links',
+  async () => {
+    const presetMeta = JSON.parse(
+      readFileSync(
+        join(import.meta.dir, '../../public/preset-meta.json'),
+        'utf8',
+      ),
+    ) as PresetMetaTable;
+    // What the edge writes into <noscript> for this page.
+    const expected = buildPresetPageContent(presetMeta, 'geiss-casino');
+    if (!expected) throw new Error('geiss-casino is missing from preset-meta');
+    expect(expected.authorHref).toBe('/author/geiss');
+    expect(expected.related.length).toBeGreaterThan(0);
+
+    const browser = await chromium.launch({
+      headless: HEADLESS,
+      args: WEBGL_RENDERER_ARGS,
+    });
+    try {
+      const context = await browser.newContext({
+        viewport: { width: 1280, height: 720 },
+      });
+
+      const page = await context.newPage();
+      await page.goto(`${SERVER_URL}/?preset=geiss-casino&renderer=webgl`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await waitForAgentState(
+        page,
+        (state) => state.engineState === 'live' && state.catalogSize > 0,
+        90000,
+      );
+      // The sibling list settles once the whole catalog (libraries included)
+      // has landed. A timeout falls through to the assertions, which say what
+      // the page rendered instead.
+      await page
+        .waitForFunction(
+          (count) =>
+            document.querySelectorAll('section h1 ~ ul a[href^="/?preset="]')
+              .length === count,
+          expected.related.length,
+          { timeout: 30000 },
+        )
+        .catch(() => {});
+
+      const rendered = await readRenderedPage(page);
+      expect(rendered.headings).toEqual([
+        { text: expected.title, visible: true },
+      ]);
+      expect(rendered.byline).toBe(`A MilkDrop preset by ${expected.author}.`);
+      // Under the stage, never over it.
+      expect(rendered.belowStage).toBe(true);
+      const presetLinks = rendered.links.filter((link) =>
+        link.href?.startsWith('/?preset='),
+      );
+      expect(presetLinks.map((link) => link.href)).toEqual(
+        expected.related.map((related) => related.href),
+      );
+      for (const href of [
+        expected.authorHref,
+        ...expected.related.map((related) => related.href),
+        '/discover/audio-reactive',
+      ]) {
+        expect(rendered.links.find((link) => link.href === href)?.visible).toBe(
+          true,
+        );
+      }
+
+      // A fresh profile: the preset page just stored a resumable session, and
+      // a returning visitor's launch column greets them instead.
+      const firstVisit = await browser.newContext({
+        viewport: { width: 1280, height: 720 },
+      });
+      for (const hub of ['/author/geiss', '/discover/fractal']) {
+        const route = resolveSemanticRoute(hub);
+        if (!route) throw new Error(`${hub} is not a curated route`);
+        const hubPage = await firstVisit.newPage();
+        await arrive(hubPage, `${hub}?renderer=webgl`);
+        const hubRendered = await readRenderedPage(hubPage);
+        expect(hubRendered.headings).toEqual([
+          { text: semanticRouteHeading(route), visible: true },
+        ]);
+      }
+    } finally {
+      await closeQuietly(browser);
+    }
+  },
+  { timeout: 240000 },
 );

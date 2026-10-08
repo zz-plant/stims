@@ -293,6 +293,28 @@ export function retiredDiscoverTarget(pathname: string): string | null {
   return target ? `/discover/${target}` : null;
 }
 
+/**
+ * The curated author page for a catalog author string, matched whole and
+ * case-insensitively, or null. A chain such as "Stahlregen + Geiss" has no
+ * page of its own.
+ */
+export function findAuthorRoute(author: string): SemanticDiscoveryRoute | null {
+  const needle = author.trim().toLowerCase();
+  if (!needle) return null;
+  return (
+    AUTHOR_ROUTES.find(
+      (route) => (route.author ?? route.label).toLowerCase() === needle,
+    ) ?? null
+  );
+}
+
+/** The page heading for a curated route: "Geiss MilkDrop Presets". */
+export function semanticRouteHeading(route: SemanticDiscoveryRoute): string {
+  return route.kind === 'author'
+    ? `${route.label} MilkDrop Presets`
+    : `${route.label} Music Visualizers`;
+}
+
 export function resolveSemanticRoute(
   pathname: string,
 ): SemanticDiscoveryRoute | null {

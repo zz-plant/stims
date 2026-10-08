@@ -61,6 +61,9 @@ const requiredInIndexHtml = [
   '<meta name="twitter:card" content="summary_large_image"',
   '<meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />',
   '<script type="application/ld+json">',
+  // The edge middleware writes each page's crawler copy into this element
+  // (NOSCRIPT_FALLBACK_SELECTOR); without the id it silently writes nothing.
+  '<noscript id="stims-noscript">',
 ];
 
 const requiredHomepageCrawlLinks = [

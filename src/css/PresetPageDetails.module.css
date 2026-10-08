@@ -1,0 +1,93 @@
+/* Preset page details — the section under the full-viewport stage.
+ *
+ * In normal flow below the stage, on the dark ground the live shell already
+ * paints in every theme, so it uses the on-stage ink that never flips. A
+ * reading column, not chrome: no panel, no fill, nothing positioned. */
+
+.root {
+  display: grid;
+  /* A fixed track: an auto one sizes to the sibling grid's intrinsic width,
+     which is wider than a phone. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+  justify-items: start;
+  /* The bottom clears the stage dock, which stays fixed to the viewport. */
+  padding: var(--space-3xl) clamp(20px, 6vw, 72px)
+    calc(var(--space-4xl) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--stims-on-stage-line);
+  color: var(--stims-on-stage-ink);
+}
+
+.root > * {
+  max-width: 46rem;
+}
+
+.root a {
+  color: var(--stims-on-stage-cool);
+  text-decoration: underline;
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--stims-on-stage-cool) 45%,
+    transparent
+  );
+  text-underline-offset: 0.18em;
+}
+
+.root a:hover {
+  text-decoration-color: currentColor;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--stims-display);
+  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
+  font-weight: 760;
+  font-stretch: 86%;
+  line-height: 1.05;
+  letter-spacing: -0.012em;
+  /* Corpus titles run from one word to a run of unbroken tokens. */
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  color: var(--stims-on-stage-ink-strong);
+}
+
+.byline {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--stims-on-stage-muted);
+}
+
+.heading {
+  margin: var(--space-lg) 0 0;
+  font-size: var(--text-xs-plus);
+  font-weight: var(--font-weight-bold);
+  font-stretch: var(--font-stretch-legend);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stims-on-stage-muted);
+}
+
+.related {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+  gap: var(--space-sm) var(--space-xl);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
+.hubs {
+  margin-top: var(--space-lg);
+  font-size: var(--text-sm);
+}
+
+.hubs ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

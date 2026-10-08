@@ -83,6 +83,10 @@ import { LiveParameterHud } from './LiveParameterHud.tsx';
 import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { dismissLoadingScreen } from './loading-screen.ts';
+import {
+  PresetPageDetails,
+  usePresetPageContent,
+} from './PresetPageDetails.tsx';
 import { TITLE_CARD_EXIT_MS, TITLE_CARD_HOLD_MS } from './PresetTitleCard.tsx';
 import { buildPaletteActions } from './palette-actions.ts';
 import { prefetchPanelChunk } from './panel-chunks.ts';
@@ -422,6 +426,14 @@ function StimsWorkspaceAppShell() {
   >([]);
 
   const liveMode = engine.audioActive;
+  // The playing preset's page: its name is the document's h1 and the section
+  // under the stage. Embeds are chromeless and get neither.
+  const presetPage = usePresetPageContent(
+    engine.catalog,
+    liveMode && !ui.routeState.previewMode
+      ? (engine.selectedPreset?.id ?? null)
+      : null,
+  );
   const currentAudioSource =
     engineSnapshot?.audioSource ?? ui.routeState.audioSource;
   // What the OS is told is playing. Same three-source lookup the save-current
@@ -1386,9 +1398,12 @@ function StimsWorkspaceAppShell() {
       <a href="#stims-visualizer" className="skip-link">
         Skip to visualizer
       </a>
-      {/* The launch screen's visible h1 unmounts once the visualizer goes
-          live; keep a screen-reader heading so the document always has one. */}
-      {liveMode ? (
+      {/* One h1 per state. The launch title is the heading until the
+          visualizer goes live (NewHomePage demotes it then); live, the
+          playing preset's name below the stage takes over. The screen-reader
+          heading covers a live session with no catalog preset to name, and
+          embeds. */}
+      {liveMode && !presetPage ? (
         <h1 className="stims-shell__sr-only">Stims visualizer</h1>
       ) : null}
       <WorkspaceStagePanel
@@ -1402,6 +1417,12 @@ function StimsWorkspaceAppShell() {
         onToggleFullscreen={handleToggleFullscreen}
         onOpenPalette={() => setPaletteOpen(true)}
       />
+      {presetPage ? (
+        <PresetPageDetails
+          content={presetPage}
+          onSelectPreset={engine.handlePresetSelection}
+        />
+      ) : null}
 
       {ui.routeState.previewMode ? (
         <a
