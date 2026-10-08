@@ -467,3 +467,86 @@ chromeTest(
   },
   60000,
 );
+
+/**
+ * The boot cover paints the first-visit header from HTML, so the largest text
+ * on the page does not wait for the app bundle, then crossfades into the
+ * React launch page drawing the same lines. Wherever the two disagree on a
+ * line's box, the 220ms fade shows both copies offset from each other. The
+ * cover's 14px/24px offsets were once stale against the launch column, and
+ * base.css's scrollbar gutter narrowed the cover by 15px on desktops with
+ * classic scrollbars.
+ */
+chromeTest(
+  'the boot cover hands off to the launch page without moving a line',
+  async () => {
+    const lines: [cover: string, launch: string][] = [
+      ['.stims-loading__brand', '.stims-shell__launch-nameplate'],
+      ['.stims-loading__title', '.stims-shell__launch-title'],
+      ['.stims-loading__tagline', '.stims-shell__launch-tagline'],
+    ];
+    const boxes = (page: Page, selectors: string[]) =>
+      page.evaluate(async (sels) => {
+        await document.fonts.ready;
+        return sels.map((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return [r.left, r.top, r.width, r.height].map(Math.round);
+        });
+      }, selectors);
+
+    for (const viewport of [
+      { width: 412, height: 823 },
+      { width: 1440, height: 900 },
+    ]) {
+      // The cover alone: with the app entry blocked it never leaves.
+      const coverPage = await (browser as Browser).newPage({ viewport });
+      let coverBoxes: (number[] | null)[];
+      try {
+        await coverPage.route('**/src/js/app.ts', (route) => route.abort());
+        await coverPage.goto(`${server?.url}/`, { waitUntil: 'load' });
+        coverBoxes = await boxes(
+          coverPage,
+          lines.map(([cover]) => cover),
+        );
+      } finally {
+        await coverPage.close();
+      }
+
+      const launchPage = await (browser as Browser).newPage({ viewport });
+      try {
+        await launchPage.goto(`${server?.url}/`, {
+          waitUntil: 'domcontentloaded',
+        });
+        await launchPage.waitForSelector('.stims-shell__launch-tagline', {
+          timeout: 30000,
+        });
+        await launchPage.waitForSelector('#stims-loading', {
+          state: 'detached',
+          timeout: 30000,
+        });
+        const launchBoxes = await boxes(
+          launchPage,
+          lines.map(([, launch]) => launch),
+        );
+        lines.forEach(([cover, launch], index) => {
+          const from = coverBoxes[index];
+          const to = launchBoxes[index];
+          if (!from || !to) {
+            throw new Error(`${from ? launch : cover} did not render`);
+          }
+          const drift = Math.max(...from.map((v, i) => Math.abs(v - to[i])));
+          if (drift > 1) {
+            throw new Error(
+              `${cover} [${from}] lands ${drift}px away from ${launch} [${to}] at ${viewport.width}x${viewport.height}`,
+            );
+          }
+        });
+      } finally {
+        await launchPage.close();
+      }
+    }
+  },
+  90000,
+);
