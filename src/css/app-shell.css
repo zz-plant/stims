@@ -2384,9 +2384,14 @@ body[data-page="workspace"][data-live="true"] {
        leaves for the name through the measure probe below, and fits the
        name's width axis to it. */
     --title-card-measure: min(72vw, 52rem);
+    /* Named so the phone scrim below can reach back up to the stage edge. */
+    --title-card-top: calc(
+      clamp(16px, 5vh, 56px) +
+      env(safe-area-inset-top, 0px)
+    );
     position: absolute;
     left: clamp(16px, 4vw, 56px);
-    top: calc(clamp(16px, 5vh, 56px) + env(safe-area-inset-top, 0px));
+    top: var(--title-card-top);
     z-index: var(--z-overlay);
     isolation: isolate;
     display: grid;
@@ -2448,6 +2453,13 @@ body[data-page="workspace"][data-live="true"] {
     font-weight: 760;
     line-height: 0.98;
     letter-spacing: -0.02em;
+    /* The line clamp needs overflow: hidden, and that clipped the card's
+       inherited 24px text-shadow to the title's tight line boxes: every line
+       sat in a hard-edged dark slab. A filter shadow is drawn from the
+       clipped result, so it can spread past the box. */
+    text-shadow: none;
+    filter: drop-shadow(0 1px 2px rgba(3, 5, 11, 0.8))
+      drop-shadow(0 2px 14px rgba(3, 5, 11, 0.6));
   }
 
   /* Fitted to one line: the width axis has absorbed the name's length, so
@@ -2459,7 +2471,13 @@ body[data-page="workspace"][data-live="true"] {
     text-overflow: ellipsis;
   }
 
+  /* A name too long for one line even condensed drops a size before it
+     wraps: at full size two lines held about 50 characters on a phone, so
+     "Sunflower Passion (Simple Mix) phat+Eo.S. werid angle mix" lost its
+     end to the ellipsis. */
   .stims-shell__title-card-title[data-fit="wrap"] {
+    font-size: clamp(var(--text-2xl), 4.2vw, 3.5rem);
+    line-height: 1.02;
     text-wrap: balance;
   }
 
@@ -2487,6 +2505,21 @@ body[data-page="workspace"][data-live="true"] {
       right: 16px;
       left: 16px;
       max-width: none;
+    }
+
+    /* Spanning the width, the feathered pool became a dark oval floating
+       across the top of the picture. Here the card is a full-width band, so
+       its shade is one too: a scrim from the stage's top edge, the way video
+       players shade a title. Still about 0.65 behind the byline, which is
+       what keeps it legible on a white frame. */
+    .stims-shell__title-card::before {
+      inset: calc(-1 * var(--title-card-top)) -16px -60% -16px;
+      background: linear-gradient(
+        to bottom,
+        rgba(3, 5, 11, 0.74),
+        rgba(3, 5, 11, 0.62) 70%,
+        rgba(3, 5, 11, 0)
+      );
     }
 
     .stims-shell__title-card-byline {

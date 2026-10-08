@@ -101,6 +101,50 @@ describe('parsePresetCredit', () => {
     expect(credit.title).toBe('(untitled)');
     expect(credit.mixName).toBeNull();
   });
+
+  test('a trailing "- Name Tweak" is an edit marker, not the work', () => {
+    // The stage card read "Bitcore Tweak", bylined "Eo.S. + Phat Emergent
+    // factors": the first dash split put the tweak in the title slot.
+    const credit = parsePresetCredit(
+      'Eo.S.+Phat Emergent factors - Bitcore Tweak',
+      'Eo.S. + Phat',
+    );
+    expect(credit.authors).toEqual(['Eo.S.', 'Phat']);
+    expect(credit.title).toBe('Emergent factors');
+    expect(credit.editNote).toBe('Bitcore Tweak');
+
+    const mixed = parsePresetCredit(
+      'Aderrasi - The Lurker (Twin Mix) - Bitcore Tweak',
+    );
+    expect(mixed.title).toBe('The Lurker');
+    expect(mixed.mixName).toBe('Twin Mix');
+    expect(mixed.editNote).toBe('Bitcore Tweak');
+  });
+
+  test('a tweak suffix stays in the title when nothing else names the work', () => {
+    const credit = parsePresetCredit('Geiss - Rose tweak', 'Geiss');
+    expect(credit.title).toBe('Rose tweak');
+    expect(credit.editNote).toBeNull();
+  });
+
+  test('an author chain run into the title is lifted out by the hint', () => {
+    const credit = parsePresetCredit(
+      'Phat_Zylot_Eo.S. spiral_faces_v2',
+      'Phat + Zylot + Eo.S.',
+    );
+    expect(credit.authors).toEqual(['Phat', 'Zylot', 'Eo.S.']);
+    expect(credit.title).toBe('spiral_faces_v2');
+    expect(
+      parsePresetCredit('Eo.S.+Phat -Eater_v2', 'Eo.S. + Phat').title,
+    ).toBe('Eater_v2');
+  });
+
+  test('a hint only lifts whole names off the front of the title', () => {
+    expect(parsePresetCredit('Phatty Waves', 'Phat').title).toBe(
+      'Phatty Waves',
+    );
+    expect(parsePresetCredit('Rovastar', 'Rovastar').title).toBe('Rovastar');
+  });
 });
 
 describe('format round-trips', () => {
@@ -157,6 +201,27 @@ describe('splitPresetDisplay', () => {
       byline: null,
     });
     expect(splitPresetDisplay('Orbasonic', 'ORB').byline).toBe('ORB');
+  });
+
+  test('filename underscores read as spaces, version underscores stay', () => {
+    expect(
+      splitPresetDisplay(
+        'Rovastar - Sunflower Passion (Simple Mix)_phat+Eo.S. werid_angle_mix',
+        'Rovastar',
+      ).title,
+    ).toBe('Sunflower Passion (Simple Mix) phat+Eo.S. werid angle mix');
+    expect(
+      splitPresetDisplay('AdamFX 2 Geiss - Angelic Glass Chapters 6_1').title,
+    ).toBe('Angelic Glass Chapters 6_1');
+  });
+
+  test('no joiner is left dangling after a component credit', () => {
+    expect(
+      splitPresetDisplay(
+        'Eo.S.+Phat Cool Bug v2 + (Krash′s beat detection)',
+        'Eo.S. + Phat',
+      ),
+    ).toEqual({ title: 'Cool Bug v2', byline: 'Eo.S. + Phat' });
   });
 });
 

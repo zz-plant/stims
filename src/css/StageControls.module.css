@@ -669,8 +669,36 @@
     display: none;
   }
 
+  /* Title over byline, the way a phone's now-playing strip sets a track and
+     its artist. Side by side, the two split the ~130px line between them in
+     proportion to their lengths, so a long author chain left the name
+     reading "Bitco…" beside "Eo.S. + Phat …". Stacked, each gets the whole
+     width, and the 44px button already has the height for two lines. */
   .titleBtn {
     max-width: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-content: center;
+    justify-items: start;
+    gap: 1px 6px;
+    line-height: 1.2;
+    text-align: left;
+  }
+
+  .titleText {
+    grid-column: 1 / -1;
+    max-width: 100%;
+  }
+
+  .authorText,
+  .statusText {
+    grid-column: 1;
+    max-width: 100%;
+  }
+
+  .fidelityMark {
+    grid-row: 2;
+    grid-column: 2;
   }
 
   .menu {
