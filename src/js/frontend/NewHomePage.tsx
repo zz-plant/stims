@@ -4,6 +4,10 @@
  */
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  type SemanticDiscoveryRoute,
+  semanticRouteHeading,
+} from '../../../functions/discover-slugs.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import type { ResumableAudioSource } from '../core/state/last-session-store.ts';
 import { getLastSession } from '../core/state/last-session-store.ts';
@@ -217,7 +221,12 @@ export function NewHomePage() {
         className="stims-shell__launch-center"
         data-variant={resume ? 'resume' : deepLink ? 'deep-link' : 'launch'}
       >
-        <Header resume={resume} deepLink={deepLink} />
+        <Header
+          resume={resume}
+          deepLink={deepLink}
+          discovery={ui.routeState.discovery ?? null}
+          live={engine.audioActive}
+        />
         <Actions
           resume={resume}
           onPlayDemo={handlePlayDemo}
@@ -305,16 +314,27 @@ function prettifyPresetSlug(slug: string) {
 function Header({
   resume,
   deepLink,
+  discovery,
+  live,
 }: {
   resume: ResumeState;
   deepLink: DeepLinkState;
+  /** The curated `/discover/` or `/author/` page the visitor arrived on. */
+  discovery: SemanticDiscoveryRoute | null;
+  /**
+   * The visualizer is live. This page stays mounted behind the stage (faded
+   * and inert) and the playing preset's name below the stage is the page's
+   * h1, so the launch title stops being one.
+   */
+  live: boolean;
 }) {
+  const Title = live ? 'p' : 'h1';
   if (deepLink) {
     return (
       <>
-        <h1 id="stims-launch-title" className="stims-shell__launch-title">
+        <Title id="stims-launch-title" className="stims-shell__launch-title">
           {deepLink.title}
-        </h1>
+        </Title>
         <p className="stims-shell__launch-tagline" aria-live="polite">
           Starting with demo audio…
         </p>
@@ -334,9 +354,9 @@ function Header({
     const { entry } = resume;
     return (
       <>
-        <h1 id="stims-launch-title" className="stims-shell__launch-title">
+        <Title id="stims-launch-title" className="stims-shell__launch-title">
           {resume.shared ? 'Shared with you' : 'Welcome back'}
-        </h1>
+        </Title>
         <div className="stims-shell__launch-resume-card">
           {entry ? <PresetArtwork entry={entry} compact /> : null}
           <div className="stims-shell__launch-resume-card-copy">
@@ -360,17 +380,22 @@ function Header({
   // wordmark as the h1 the loudest thing on the page was a word a first-time
   // visitor has never heard, and the line explaining it assumed they already
   // knew what MilkDrop was.
+  //
+  // A curated hub page is about its collection, which Browse shows open
+  // beside this column; the heading names it, as the page title does.
   return (
     <>
       <p className="stims-shell__launch-nameplate">Stims</p>
-      <h1 id="stims-launch-title" className="stims-shell__launch-title">
-        A music visualizer you can open up
-      </h1>
+      <Title id="stims-launch-title" className="stims-shell__launch-title">
+        {discovery
+          ? semanticRouteHeading(discovery)
+          : 'A music visualizer you can open up'}
+      </Title>
       <LaunchSignalTrace />
       <p className="stims-shell__launch-tagline">
-        Thousands of presets for MilkDrop, the visualizer that shipped with
-        Winamp, reacting to whatever you play. Open one to see which sounds
-        drive it, then change its code while it runs.
+        {discovery
+          ? discovery.description
+          : 'Thousands of presets for MilkDrop, the visualizer that shipped with Winamp, reacting to whatever you play. Open one to see which sounds drive it, then change its code while it runs.'}
       </p>
     </>
   );

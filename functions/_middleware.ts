@@ -12,13 +12,23 @@
 //   4. A retired `/discover/<slug>` redirects to the page that replaced it.
 
 import {
-  AUTHOR_ROUTES,
   resolveSemanticRoute,
   retiredDiscoverTarget,
+  semanticRouteHeading,
 } from './discover-slugs.ts';
 import { loadPresetMeta } from './shared/preset-meta.ts';
-import { relatedPresetIds } from './shared/preset-related.ts';
-import { presentTitle } from './shared/preset-title.ts';
+import {
+  buildPresetPageContent,
+  PRESET_PAGE_HUB_LINKS,
+} from './shared/preset-page.ts';
+
+/**
+ * The one <noscript> that carries page content for crawlers that run no
+ * JavaScript: the body's fallback in index.html. A bare `noscript` selector
+ * also matched the stylesheet fallback in <head> and any other <noscript> the
+ * build adds, so every page shipped its heading several times over.
+ */
+export const NOSCRIPT_FALLBACK_SELECTOR = 'noscript#stims-noscript';
 
 interface EventContext {
   request: Request;
@@ -110,9 +120,8 @@ export async function onRequest(context: EventContext): Promise<Response> {
   const semanticRoute = resolveSemanticRoute(url.pathname);
   if (semanticRoute) {
     const isAuthor = semanticRoute.kind === 'author';
-    const fullTitle = isAuthor
-      ? `${semanticRoute.label} MilkDrop Presets — Stims`
-      : `${semanticRoute.label} Music Visualizers — Stims`;
+    const heading = semanticRouteHeading(semanticRoute);
+    const fullTitle = `${heading} — Stims`;
     const description = semanticRoute.description;
     const canonical = new URL(url.pathname, url.origin).toString();
     const oembedUrl = new URL(
@@ -193,14 +202,10 @@ export async function onRequest(context: EventContext): Promise<Response> {
           );
         },
       })
-      .on('noscript', {
+      .on(NOSCRIPT_FALLBACK_SELECTOR, {
         element(el) {
           el.append(
-            `<h1>${escapeAttribute(
-              isAuthor
-                ? `${semanticRoute.label} MilkDrop Presets`
-                : `${semanticRoute.label} Music Visualizers`,
-            )}</h1><p>${escapeAttribute(description)}</p>`,
+            `<h1>${escapeAttribute(heading)}</h1><p>${escapeAttribute(description)}</p>`,
             { html: true },
           );
         },
@@ -228,19 +233,19 @@ export async function onRequest(context: EventContext): Promise<Response> {
   }
 
   const presetMeta = await loadPresetMeta(context.env?.ASSETS, url.origin);
-  const entry = presetMeta?.[presetId];
+  const page = presetMeta ? buildPresetPageContent(presetMeta, presetId) : null;
 
   // Unknown ids are left with the site's default metadata. Generating a unique
   // title and canonical for arbitrary `?preset=` values would turn the query
   // string into unbounded crawlable space full of near-duplicate pages.
-  if (!entry) {
+  if (!page) {
     return allowExternalFraming(response, embedRequest);
   }
 
-  const [rawTitle, author] = entry;
   // preset-meta titles carry the author as a prefix ("Rovastar - Parallel
-  // Universe"), so using them raw next to a byline printed the name twice.
-  const title = presentTitle(rawTitle, author);
+  // Universe"); the page model strips it so the byline does not print the
+  // name twice.
+  const { title, author } = page;
   const authorCredit = author ? ` by ${author}` : '';
   const fullTitle = `${title}${authorCredit} — MilkDrop Preset on Stims`;
   const description = `${title}${authorCredit} — a MilkDrop preset you can watch react to any song, your microphone, or audio from another tab. Live in your browser, no install.`;
@@ -330,32 +335,35 @@ export async function onRequest(context: EventContext): Promise<Response> {
     ],
   });
 
-  // What a crawler that reads only the HTML sees for this preset: a heading,
-  // the preview card, a byline linking the author's page, sibling presets by
-  // the same author, and the topic hubs. Before this the page was one
-  // sentence and no outgoing links, so nothing distinguished 1,800 presets
-  // beyond their titles.
-  const authorRoute = author
-    ? AUTHOR_ROUTES.find(
-        (route) =>
-          (route.author ?? route.label).toLowerCase() === author.toLowerCase(),
-      )
-    : undefined;
-  const byline = authorRoute
-    ? `<p>By <a href="/author/${escapeAttribute(authorRoute.slug)}">${escapeAttribute(author)}</a>. See <a href="/author/${escapeAttribute(authorRoute.slug)}">more ${escapeAttribute(author)} presets</a>.</p>`
+  // What a crawler that reads only the HTML sees for this preset: the same
+  // heading, byline, sibling presets and topic hubs the workspace renders
+  // below the stage (PresetPageDetails.tsx), plus the preview card and a link
+  // into the app.
+  const byline = author
+    ? `A MilkDrop preset by ${
+        page.authorHref
+          ? `<a href="${escapeAttribute(page.authorHref)}">${escapeAttribute(author)}</a>`
+          : escapeAttribute(author)
+      }.`
+    : 'A MilkDrop preset.';
+  const relatedSection = page.related.length
+    ? `<h2>More presets by ${escapeAttribute(author ?? '')}</h2><ul>${page.related
+        .map(
+          (related) =>
+            `<li><a href="${escapeAttribute(related.href)}">${escapeAttribute(related.title)}</a></li>`,
+        )
+        .join('')}</ul>`
     : '';
-  const relatedLinks = relatedPresetIds(presetMeta, presetId)
-    .map((id) => {
-      const [relatedTitle, relatedAuthor] = presetMeta[id] ?? ['', ''];
-      return `<li><a href="/?preset=${encodeURIComponent(id)}">${escapeAttribute(presentTitle(relatedTitle, relatedAuthor))}</a></li>`;
-    })
-    .join('');
-  const relatedSection = relatedLinks
-    ? `<h2>More presets${author ? ` by ${escapeAttribute(author)}` : ''}</h2><ul>${relatedLinks}</ul>`
-    : '';
-  const presetBodyHtml = `<h1>${escapeAttribute(title)}</h1><p>${escapeAttribute(
-    `${title}${authorCredit} is a MilkDrop preset you can run live in your browser on Stims.`,
-  )}</p><p><img src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(imageAlt)}" width="1200" height="630"></p>${byline}${relatedSection}<p><a href="/discover/audio-reactive">Audio-reactive visualizers</a> · <a href="/discover/hall-of-fame">Hall of fame presets</a> · <a href="/learn/">Learn to write MilkDrop presets</a> · <a href="/">Open the visualizer</a></p>`;
+  const hubLinks = [
+    ...PRESET_PAGE_HUB_LINKS,
+    { href: '/', label: 'Open the visualizer' },
+  ]
+    .map(
+      (link) =>
+        `<a href="${escapeAttribute(link.href)}">${escapeAttribute(link.label)}</a>`,
+    )
+    .join(' · ');
+  const presetBodyHtml = `<h1>${escapeAttribute(title)}</h1><p>${byline}</p><p><img src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(imageAlt)}" width="1200" height="630"></p>${relatedSection}<p>${hubLinks}</p>`;
 
   const rewritten = new HTMLRewriter()
     .on('title', {
@@ -392,9 +400,9 @@ export async function onRequest(context: EventContext): Promise<Response> {
       },
     })
     // A crawler that renders no JavaScript otherwise sees 212 characters of
-    // "JavaScript is required". This gives the preset page a real indexable
-    // sentence naming the preset and its author.
-    .on('noscript', {
+    // "JavaScript is required". Crawlers that do render JavaScript skip
+    // <noscript> and read the copy the workspace renders instead.
+    .on(NOSCRIPT_FALLBACK_SELECTOR, {
       element(el) {
         el.append(presetBodyHtml, { html: true });
       },

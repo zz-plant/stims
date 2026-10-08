@@ -190,7 +190,9 @@
       <a href="/discover/psychedelic">Psychedelic visualizers</a>
       <a href="/discover/ambient">Ambient visualizers</a>
     </nav>
-    <noscript>
+    <!-- id: the edge middleware appends each page's crawler copy to this one
+         element (NOSCRIPT_FALLBACK_SELECTOR in functions/_middleware.ts). -->
+    <noscript id="stims-noscript">
       <div class="stims-loading" role="alert">
         <div class="stims-loading__fallback">
           <p>JavaScript is required to run Stims.</p>

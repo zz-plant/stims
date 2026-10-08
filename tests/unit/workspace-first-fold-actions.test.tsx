@@ -2,11 +2,16 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act } from 'react';
+import { resolveSemanticRoute } from '../../functions/discover-slugs.ts';
 import { saveLastSession } from '../../src/js/core/state/last-session-store.ts';
 import { AudioSourcePanel } from '../../src/js/frontend/AudioSourcePanel.tsx';
 import { createEmptyEngineSnapshot } from '../../src/js/frontend/engine/engine-snapshot.ts';
 import { NewHomePage } from '../../src/js/frontend/NewHomePage.tsx';
-import { makePresetEntry, renderWorkspace } from '../frontend-harness.tsx';
+import {
+  makePresetEntry,
+  makeUiValue,
+  renderWorkspace,
+} from '../frontend-harness.tsx';
 
 const LAST_SESSION_KEY = 'stims:last-session';
 
@@ -77,6 +82,47 @@ describe('workspace first-fold launch hierarchy', () => {
       expect(actions?.nextElementSibling?.textContent).toContain(
         'built-in synth loop',
       );
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('a curated hub arrival names its collection in the h1', () => {
+    const discovery = resolveSemanticRoute('/author/geiss');
+    const rendered = renderWorkspace(<NewHomePage />, {
+      ui: {
+        routeState: {
+          ...makeUiValue().routeState,
+          panel: 'browse',
+          discovery: discovery ?? undefined,
+        },
+      },
+    });
+    try {
+      const headings = rendered.container.querySelectorAll('h1');
+      expect(headings.length).toBe(1);
+      expect(headings[0]?.textContent).toBe('Geiss MilkDrop Presets');
+      expect(
+        rendered.container.querySelector('.stims-shell__launch-tagline')
+          ?.textContent,
+      ).toBe(discovery?.description);
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('once the visualizer is live, the launch title stops being a heading', () => {
+    // The launch page stays mounted, faded and inert, behind the live stage;
+    // the playing preset's name below the stage is the page's h1 then.
+    const rendered = renderWorkspace(<NewHomePage />, {
+      engine: { audioActive: true },
+    });
+    try {
+      // Counted, not matched: a failing matcher prints the whole element.
+      expect(rendered.container.querySelectorAll('h1').length).toBe(0);
+      expect(
+        rendered.container.querySelector('#stims-launch-title')?.textContent,
+      ).toBe('A music visualizer you can open up');
     } finally {
       rendered.dispose();
     }

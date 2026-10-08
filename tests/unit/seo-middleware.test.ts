@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { onRequest } from '../../functions/_middleware.ts';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  NOSCRIPT_FALLBACK_SELECTOR,
+  onRequest,
+} from '../../functions/_middleware.ts';
 import {
   AUTHOR_SLUGS,
   DISCOVER_SLUGS,
@@ -10,10 +15,11 @@ import { __resetPresetMetaForTest } from '../../functions/shared/preset-meta.ts'
 
 // The edge middleware is the only thing standing between 1,787 preset URLs
 // and a collapsed root canonical — and until now it had zero test coverage,
-// so a silent no-op would have shipped unnoticed. Bun has no HTMLRewriter,
-// so these tests install a recording mock: selectors and handlers are
-// captured, then invoked against fake elements to assert the values the
-// middleware would write.
+// so a silent no-op would have shipped unnoticed. Most tests here install a
+// recording mock HTMLRewriter: selectors and handlers are captured, then
+// invoked against fake elements to assert the values the middleware would
+// write. The shipped-shell tests at the end run Bun's real HTMLRewriter over
+// index.html, because which elements a selector matches is the behaviour.
 
 type FakeElement = {
   attributes: Map<string, string>;
@@ -328,8 +334,12 @@ describe('/?preset=<id> middleware', () => {
       }),
     );
 
-    const body = applyHandlers('noscript').appended.join('');
-    expect(body).toContain('<h1>');
+    const body = applyHandlers(NOSCRIPT_FALLBACK_SELECTOR).appended.join('');
+    // The heading drops the "Geiss - " prefix the byline already carries.
+    expect(body).toContain('<h1>One</h1>');
+    expect(body).toContain(
+      '<p>A MilkDrop preset by <a href="/author/geiss">Geiss</a>.</p>',
+    );
     expect(body).toContain(
       '<img src="https://toil.fyi/api/og-preset?id=geiss-one"',
     );
@@ -351,7 +361,7 @@ describe('/?preset=<id> middleware', () => {
       }),
     );
 
-    const body = applyHandlers('noscript').appended.join('');
+    const body = applyHandlers(NOSCRIPT_FALLBACK_SELECTOR).appended.join('');
     expect(body).not.toContain('<script>');
     expect(body).not.toContain('<img src=x');
     expect(body).toContain('&lt;script&gt;');
@@ -384,4 +394,66 @@ describe('embedded player framing', () => {
     );
     expect(ordinary.headers.get('x-frame-options')).toBe('SAMEORIGIN');
   });
+});
+
+describe('shipped shell (real HTMLRewriter)', () => {
+  // The index.html every page is served from. It holds more than one
+  // <noscript> (the stylesheet fallback in <head>, the JavaScript-required
+  // notice in <body>), and a bare `noscript` selector wrote the page's
+  // heading into each of them.
+  const shell = readFileSync(join(import.meta.dir, '../../index.html'), 'utf8');
+
+  function shellContext(url: string, presetMeta?: Record<string, unknown>) {
+    return {
+      request: new Request(url),
+      next: () =>
+        Promise.resolve(
+          new Response(shell, {
+            status: 200,
+            headers: { 'content-type': 'text/html; charset=utf-8' },
+          }),
+        ),
+      env: {
+        ASSETS: {
+          fetch: (request: Request) =>
+            Promise.resolve(
+              new URL(request.url).pathname === '/preset-meta.json' &&
+                presetMeta
+                ? new Response(JSON.stringify(presetMeta), {
+                    status: 200,
+                    headers: { 'content-type': 'application/json' },
+                  })
+                : new Response(null, { status: 404 }),
+            ),
+        },
+      },
+    };
+  }
+
+  beforeEach(() => {
+    globalWithRewriter.HTMLRewriter = originalRewriter;
+  });
+
+  test.each(['/?preset=geiss-one', '/author/geiss', '/discover/fractal'])(
+    '%s writes its heading once, into the body fallback',
+    async (path) => {
+      expect(typeof globalWithRewriter.HTMLRewriter).toBe('function');
+      const response = await onRequest(
+        shellContext(`https://toil.fyi${path}`, {
+          'geiss-one': ['Geiss - One', 'Geiss'],
+          'geiss-two': ['Geiss - Two', 'Geiss'],
+        }),
+      );
+      const html = await response.text();
+
+      expect(html.match(/<h1[\s>]/g) ?? []).toHaveLength(1);
+      const fallbackStart = html.indexOf('<noscript id="stims-noscript">');
+      expect(fallbackStart).toBeGreaterThan(html.indexOf('<body'));
+      const fallback = html.slice(
+        fallbackStart,
+        html.indexOf('</noscript>', fallbackStart),
+      );
+      expect(fallback).toContain('<h1>');
+    },
+  );
 });
