@@ -92,6 +92,14 @@ const SERIAL_PARENTHETICAL = /^[\d\s.-]+$/;
 /** "-ps2", "ps3", "(ps2.0)" — the MilkDrop 2 shader-model variants. */
 const SHADER_MODEL = /[\s(-]-?\s?ps\s?([23])(?:\.0)?\s*\)?(?=\s|$)/i;
 
+/** "... - Bitcore Tweak": a later hand's tweak credited after the work, in
+ * the slot the author split would otherwise read as the work's title. */
+const TRAILING_TWEAK = /\s[-—–]\s(\S+\s+tweak)\s*$/i;
+
+/** What may sit between two names of a chain run into the title, as in
+ * "Phat_Zylot_Eo.S. rainbow bubble". */
+const CHAIN_JOIN = /^\s*(?:\+|&|,|_|and\s)\s*/i;
+
 function extractAll(
   text: string,
   pattern: RegExp,
@@ -116,6 +124,32 @@ function splitAuthors(part: string): string[] {
     .split(AUTHOR_SPLIT)
     .map((name) => name.trim())
     .filter((name) => name.length > 0);
+}
+
+/**
+ * The work title left after a known author chain, for titles that run the
+ * chain straight into the name with no dash ("Eo.S.+Phat Emergent factors").
+ * Null unless every name matches in order and a title follows at a word
+ * boundary, so "Phatty" never loses "Phat" and a bare chain stays a title.
+ */
+function titleAfterChain(text: string, authors: string[]): string | null {
+  if (authors.length === 0) return null;
+  let index = 0;
+  for (const [position, author] of authors.entries()) {
+    if (position > 0) {
+      const join = CHAIN_JOIN.exec(text.slice(index));
+      if (!join) return null;
+      index += join[0].length;
+    }
+    const candidate = text.slice(index, index + author.length);
+    if (candidate.toLowerCase() !== author.toLowerCase()) return null;
+    index += author.length;
+  }
+  const rest = text.slice(index);
+  if (!/^[\s_]/.test(rest)) return null;
+  // "Eo.S.+Phat -Eater_v2": a dash stuck to the name is the separator.
+  const title = rest.replace(/^[\s_]+(?:[-—–]\s*)?/, '').trim();
+  return title.length > 0 ? title : null;
 }
 
 function firstDashSplit(
@@ -182,6 +216,20 @@ export function parsePresetCredit(
     rest = rest.slice(0, bracketMatch.index).trim();
   }
 
+  const hintAuthors = authorHint ? splitAuthors(authorHint) : [];
+
+  // A trailing "- Bitcore Tweak" is an edit marker in dash form. Lifted out
+  // only when what is left still holds a work title, so "Geiss - Rose tweak"
+  // keeps its name rather than collapsing to its author.
+  const tweakMatch = editNote ? null : rest.match(TRAILING_TWEAK);
+  if (tweakMatch) {
+    const remainder = rest.slice(0, tweakMatch.index).trim();
+    if (firstDashSplit(remainder) || titleAfterChain(remainder, hintAuthors)) {
+      editNote = tweakMatch[1].trim();
+      rest = remainder;
+    }
+  }
+
   let mixName: string | null = null;
   const parenMatch = rest.match(/\s*\(([^()]*)\)\s*$/);
   // Only treat a trailing parenthetical as a mix name when a base title
@@ -206,10 +254,12 @@ export function parsePresetCredit(
   if (split) {
     authors = splitAuthors(split.before);
     title = split.after;
-  } else if (authorHint) {
+  } else if (hintAuthors.length > 0) {
     // Titles that never carried the convention (user drafts, imports) fall
-    // back to the catalog's author field for the chain.
-    authors = splitAuthors(authorHint);
+    // back to the catalog's author field for the chain — and when the title
+    // opens with that chain, the chain is the credit, not part of the name.
+    authors = hintAuthors;
+    title = titleAfterChain(rest, hintAuthors) ?? rest;
   }
 
   const mashupParts = title
@@ -249,6 +299,16 @@ export function formatPresetWorkTitle(credit: PresetCredit): string {
   return `${credit.title}${mixPart}${notePart}`;
 }
 
+/** Filename underscores ("werid_angle_mix") read as spaces in a shown name.
+ * One between two digits stays: "Chapters 6_1" is a version, not two words. */
+function displaySpacing(title: string): string {
+  return tidy(title.replace(/(?<!\d)_|_(?!\d)/g, ' ')).replace(
+    // a joiner left dangling once a component credit was lifted out
+    /\s*[+&,]$/,
+    '',
+  );
+}
+
 /**
  * Split one raw catalog title into what a title/byline surface should show.
  * The byline prefers the chain parsed from the title itself, because it can
@@ -260,10 +320,11 @@ export function splitPresetDisplay(
   authorField?: string,
 ): { title: string; byline: string | null } {
   const credit = parsePresetCredit(rawTitle, authorField);
-  const title =
+  const title = displaySpacing(
     credit.authors.length === 0
       ? rawTitle.trim()
-      : formatPresetWorkTitle(credit);
+      : formatPresetWorkTitle(credit),
+  );
   const byline =
     credit.authors.length === 0
       ? authorField?.trim() || null
