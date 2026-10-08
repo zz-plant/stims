@@ -7,7 +7,7 @@
   "homepage": "https://github.com/zz-plant/stims/tree/main/packages/eel-conformance#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zz-plant/stims.git",
+    "url": "git+https://github.com/zz-plant/stims.git",
     "directory": "packages/eel-conformance"
   },
   "bugs": {
@@ -32,13 +32,13 @@
       "stims-source": "./src/index.ts",
       "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./schema.json": "./schema.json",
     "./cases/*": "./cases/*"
   },
   "bin": {
-    "eel-conformance": "./dist/cli.js"
+    "eel-conformance": "dist/cli.js"
   },
   "files": [
     "cases",

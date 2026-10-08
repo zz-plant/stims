@@ -17,13 +17,18 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/zz-plant/stims.git",
+    "url": "git+https://github.com/zz-plant/stims.git",
     "directory": "packages/audio-reactive"
+  },
+  "homepage": "https://github.com/zz-plant/stims/tree/main/packages/audio-reactive#readme",
+  "bugs": {
+    "url": "https://github.com/zz-plant/stims/issues"
   },
   "files": [
     "dist",
     "src",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "main": "./dist/index.js",
