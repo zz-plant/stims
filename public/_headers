@@ -21,6 +21,13 @@
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
 
+/presets/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
@@ -28,8 +35,12 @@
 # Cache them long enough to avoid repeat transfers during normal use, then
 # revalidate in the background so an in-place asset correction still reaches
 # returning users.
+#
+# Each preset page links its .milk file. The page is what should rank for a
+# preset; the raw source is a download, not a search result.
 /milkdrop-presets/*.milk
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  X-Robots-Tag: noindex
 
 # Catalog manifests are the largest payloads in the app (catalog.json ~2.4 MB
 # raw / ~100 KB gzipped, search-index.json ~1.1 MB / ~61 KB gzipped) and change

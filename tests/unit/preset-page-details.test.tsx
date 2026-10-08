@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { act } from 'react';
+import type { PresetMetaTable } from '../../functions/shared/preset-meta.ts';
 import { buildPresetPageContent } from '../../functions/shared/preset-page.ts';
 import type { PresetCatalogEntry } from '../../src/js/frontend/contracts.ts';
 import {
@@ -19,8 +20,18 @@ import {
 // gets.
 
 const CATALOG: PresetCatalogEntry[] = [
-  makePresetEntry({ id: 'geiss-one', title: 'Geiss - One', author: 'Geiss' }),
-  makePresetEntry({ id: 'geiss-two', title: 'Geiss - Two', author: 'Geiss' }),
+  makePresetEntry({
+    id: 'geiss-one',
+    title: 'Geiss - One',
+    author: 'Geiss',
+    file: '/milkdrop-presets/geiss-one.milk',
+  }),
+  makePresetEntry({
+    id: 'geiss-two',
+    title: 'Geiss - Two',
+    author: 'Geiss',
+    file: '/milkdrop-presets/butterchurn/geiss-two.milk',
+  }),
   makePresetEntry({
     id: 'geiss-three',
     title: 'Geiss - Three',
@@ -74,7 +85,11 @@ describe('preset page details', () => {
       expect(hrefs).toContain('/author/geiss');
       expect(hrefs).toContain('/?preset=geiss-two');
       expect(hrefs).toContain('/?preset=geiss-three');
-      expect(hrefs).toContain('/discover/audio-reactive');
+      const download = container.querySelector('a[download]');
+      expect(download?.textContent).toBe('Download .milk');
+      expect(download?.getAttribute('href')).toBe(
+        '/milkdrop-presets/geiss-one.milk',
+      );
       // Same author only, and never itself.
       expect(hrefs).not.toContain('/?preset=flexi-one');
       expect(hrefs).not.toContain('/?preset=geiss-one');
@@ -92,17 +107,25 @@ describe('preset page details', () => {
       'geiss-two',
     );
     // What scripts/generate-seo.ts ships as /preset-meta.json for the same
-    // catalog: "Unknown" is stored as no author.
+    // catalog: "Unknown" is stored as no author, and the file as the index of
+    // its directory.
     const fromEdgeTable = buildPresetPageContent(
       Object.fromEntries(
         CATALOG.map((entry) => [
           entry.id,
-          [entry.title, entry.author === 'Unknown' ? '' : (entry.author ?? '')],
+          [
+            entry.title,
+            entry.author === 'Unknown' ? '' : (entry.author ?? ''),
+            entry.id === 'geiss-two' ? 1 : entry.id === 'geiss-one' ? 0 : -1,
+          ],
         ]),
-      ) as Record<string, [string, string]>,
+      ) as PresetMetaTable,
       'geiss-two',
     );
     expect(fromCatalog).toEqual(fromEdgeTable);
+    expect(fromCatalog?.download).toBe(
+      '/milkdrop-presets/butterchurn/geiss-two.milk',
+    );
   });
 
   test('a credit chain links each hand to its own page and lists more by each', () => {

@@ -51,6 +51,17 @@ function indexByHandle(table: PresetMetaTable): Map<string, string[]> {
 }
 
 /**
+ * Every preset whose credit chain names `handle`, sorted by id: the presets an
+ * /author/<slug> page lists.
+ */
+export function presetIdsCreditingHandle(
+  table: PresetMetaTable,
+  handle: string,
+): string[] {
+  return [...(indexByHandle(table).get(resolveHandleKey(handle)) ?? [])];
+}
+
+/**
  * Up to `limit` other presets crediting the same hands as `presetId`, grouped
  * by handle in credit-chain order. One handle gets the whole limit; a chain
  * splits it across its first MAX_RELATED_GROUPS handles, and a preset already

@@ -7,7 +7,7 @@
 
 import { creditedHandles } from '../../src/js/milkdrop/preset-handles.ts';
 import { findAuthorRoute } from '../discover-slugs.ts';
-import type { PresetMetaTable } from './preset-meta.ts';
+import { type PresetMetaTable, presetFileHref } from './preset-meta.ts';
 import { relatedPresetGroups } from './preset-related.ts';
 import { presentTitle } from './preset-title.ts';
 
@@ -33,15 +33,12 @@ export type PresetPageContent = {
   credits: PresetPageCredit[];
   /** Other presets by the same hands, one group per credited handle. */
   related: { author: string; presets: PresetPageLink[] }[];
+  /** Where the preset's .milk file is served, or null when none is bundled. */
+  download: string | null;
 };
 
-/** Topic hubs every preset page links to. */
-export const PRESET_PAGE_HUB_LINKS: readonly { href: string; label: string }[] =
-  [
-    { href: '/discover/audio-reactive', label: 'Audio-reactive visualizers' },
-    { href: '/discover/hall-of-fame', label: 'Hall of fame presets' },
-    { href: '/learn/', label: 'Learn to write MilkDrop presets' },
-  ];
+/** The label of the link to a preset's .milk file. */
+export const PRESET_DOWNLOAD_LABEL = 'Download .milk';
 
 /** The canonical URL path of a preset page, as the sitemap lists it. */
 export function presetPageHref(presetId: string): string {
@@ -78,6 +75,7 @@ export function buildPresetPageContent(
     title: presentTitle(entry[0], author ?? undefined),
     author,
     credits,
+    download: presetFileHref(presetId, entry),
     related: relatedPresetGroups(table, presetId).map((group) => ({
       author: group.handle,
       presets: group.ids.map((id) => {

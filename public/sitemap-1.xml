@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://toil.fyi/</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -13,7 +13,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/performance/</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -23,8 +23,19 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/learn/</loc>
+    <loc>https://toil.fyi/presets/</loc>
     <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>MilkDrop Presets, A–Z | Stims</image:title>
+      <image:caption>MilkDrop presets on Stims, by collection, by author and A–Z.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/learn/</loc>
+    <lastmod>2026-10-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -35,7 +46,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/milkdrop-online/</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -46,7 +57,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/milkdrop-vs-butterchurn-projectm/</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -57,7 +68,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/play/</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -101,7 +112,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/warp-fields/</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -112,7 +123,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/waves-and-shapes/</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -145,7 +156,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/shipping/</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -167,7 +178,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/reference/</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -178,7 +189,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/audio-reactive</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -189,7 +200,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/ambient</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -200,7 +211,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/fractal</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -211,7 +222,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/geometric</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -222,7 +233,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/hall-of-fame</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -233,7 +244,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/neon</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -244,7 +255,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/particles</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -255,7 +266,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/psychedelic</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -265,19 +276,8 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/discover/retro</loc>
-    <lastmod>2026-10-06</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
-      <image:title>Retro Music Visualizers | Stims</image:title>
-      <image:caption>Retro MilkDrop presets in the style of early music visualizers.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/discover/space</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -288,7 +288,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/trippy</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -299,7 +299,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/tunnel</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -310,7 +310,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/waveform</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -321,7 +321,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/geiss</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -332,7 +332,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/flexi</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -343,7 +343,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/martin</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -354,7 +354,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/rovastar</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -365,7 +365,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/eo-s</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -376,7 +376,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/phat</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -387,7 +387,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/stahlregen</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -398,7 +398,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/unchained</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -409,7 +409,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/fishbrain</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -420,7 +420,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/aderrasi</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -431,7 +431,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/zylot</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -442,7 +442,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/shifter</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -453,7 +453,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/mig</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -464,7 +464,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/orb</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -475,7 +475,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/suksma</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -486,7 +486,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/cope</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -497,7 +497,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/goody</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -508,13 +508,222 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/krash</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Krash MilkDrop Presets | Stims</image:title>
       <image:caption>MilkDrop presets credited to Krash, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/royal</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Royal MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to Royal, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/amandio-c</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>amandio c MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to amandio c, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/bdrv</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>BDRV MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to BDRV, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/hexcollie</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Hexcollie MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to Hexcollie, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/yin</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Yin MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to Yin, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/luxxx</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>LuxXx MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to LuxXx, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/adamfx</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>AdamFX MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to AdamFX, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/beta106i</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>beta106i MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to beta106i, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/tonymilkdrop</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>TonyMilkdrop MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to TonyMilkdrop, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/loadus</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Loadus MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to Loadus, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/pieturp</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>PieturP MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to PieturP, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/evet</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Evet MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to Evet, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/rozzor</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Rozzor MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to Rozzor, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/tripgnosis</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Tripgnosis MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to Tripgnosis, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/bmelgren</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Bmelgren MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to Bmelgren, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/idiot</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Idiot MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to Idiot, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/illusion</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Illusion MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to Illusion, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/esotic</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Esotic MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to Esotic, playing live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/shadowharlequin</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>ShadowHarlequin MilkDrop Presets | Stims</image:title>
+      <image:caption>MilkDrop presets credited to ShadowHarlequin, playing live in your browser.</image:caption>
     </image:image>
   </url>
 </urlset>

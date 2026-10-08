@@ -13,6 +13,7 @@ Butterchurn ran MilkDrop presets in a browser first, and MilkDrop 2 already had 
 - **Full agent documentation**: https://toil.fyi/llms-full.txt
 - **MCP server (stdio)**: run `bun run mcp` from a clone of the repository; setup is in https://github.com/zz-plant/stims/blob/main/docs/MCP_SERVER.md
 - **Preset catalog**: https://toil.fyi/milkdrop-presets/catalog.json
+- **Every preset page, A–Z, with author and collection pages**: https://toil.fyi/presets/
 - **Source code**: https://github.com/zz-plant/stims
 
 ## Guides (static pages)
