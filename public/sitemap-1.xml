@@ -24,7 +24,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/presets/</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -189,7 +189,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/audio-reactive</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -200,7 +200,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/ambient</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -211,7 +211,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/fractal</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -222,7 +222,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/geometric</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -233,7 +233,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/hall-of-fame</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -244,7 +244,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/neon</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -255,7 +255,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/particles</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -266,7 +266,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/psychedelic</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -277,7 +277,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/space</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -288,7 +288,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/trippy</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -299,7 +299,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/tunnel</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -310,7 +310,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/waveform</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
@@ -321,409 +321,409 @@
   </url>
   <url>
     <loc>https://toil.fyi/author/geiss</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Geiss MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Geiss, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Geiss. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/flexi</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Flexi MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Flexi, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Flexi. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/martin</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Martin MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Martin, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Martin. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/rovastar</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Rovastar MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Rovastar, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Rovastar. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/eo-s</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Eo.S. MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Eo.S., playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Eo.S.. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/phat</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Phat MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Phat, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Phat. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/stahlregen</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Stahlregen MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Stahlregen, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Stahlregen. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/unchained</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Unchained MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Unchained, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Unchained. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/fishbrain</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Fishbrain MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Fishbrain, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Fishbrain. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/aderrasi</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Aderrasi MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Aderrasi, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Aderrasi. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/zylot</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Zylot MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Zylot, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Zylot. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/shifter</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Shifter MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Shifter, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Shifter. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/mig</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Mig MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Mig, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Mig. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/orb</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>ORB MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to ORB, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to ORB. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/suksma</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Suksma MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Suksma, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Suksma. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/cope</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Cope MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Cope, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Cope. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/goody</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Goody MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Goody, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Goody. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/krash</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Krash MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Krash, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Krash. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/royal</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Royal MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Royal, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Royal. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/amandio-c</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>amandio c MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to amandio c, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to amandio c. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/bdrv</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>BDRV MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to BDRV, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to BDRV. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/hexcollie</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Hexcollie MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Hexcollie, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Hexcollie. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/yin</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Yin MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Yin, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Yin. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/luxxx</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>LuxXx MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to LuxXx, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to LuxXx. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/adamfx</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>AdamFX MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to AdamFX, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to AdamFX. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/beta106i</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>beta106i MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to beta106i, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to beta106i. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/tonymilkdrop</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>TonyMilkdrop MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to TonyMilkdrop, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to TonyMilkdrop. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/loadus</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Loadus MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Loadus, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Loadus. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/pieturp</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>PieturP MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to PieturP, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to PieturP. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/evet</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Evet MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Evet, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Evet. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/rozzor</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Rozzor MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Rozzor, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Rozzor. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/tripgnosis</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Tripgnosis MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Tripgnosis, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Tripgnosis. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/bmelgren</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Bmelgren MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Bmelgren, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Bmelgren. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/idiot</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Idiot MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Idiot, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Idiot. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/illusion</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Illusion MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Illusion, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Illusion. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/esotic</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Esotic MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to Esotic, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to Esotic. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/author/shadowharlequin</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>ShadowHarlequin MilkDrop Presets | Stims</image:title>
-      <image:caption>MilkDrop presets credited to ShadowHarlequin, playing live in your browser.</image:caption>
+      <image:caption>MilkDrop presets credited to ShadowHarlequin. Each one plays live in your browser.</image:caption>
     </image:image>
   </url>
 </urlset>

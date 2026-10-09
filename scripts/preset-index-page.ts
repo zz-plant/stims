@@ -56,7 +56,7 @@ export function renderPresetIndexPage(
   const count = formatCount(content.count);
   const url = `${baseUrl}${PRESET_INDEX_PATH}`;
   const title = 'MilkDrop Presets, A–Z | Stims';
-  const description = `${count} MilkDrop presets on Stims, by collection, by author and A–Z. Each one plays in your browser and links its .milk file.`;
+  const description = `${count} MilkDrop presets on Stims, by collection, by author and A–Z. Each one plays in your browser, and its page links the .milk file.`;
 
   const hubList = (routes: readonly SemanticDiscoveryRoute[], base: string) =>
     `<ul class="hub-list">${routes
@@ -106,7 +106,7 @@ export function renderPresetIndexPage(
     main: [
       '<h1>MilkDrop presets</h1>',
       `<p>Browse ${count} presets by collection, by author, or A–Z.</p>`,
-      '<p>Each one reacts to any song, your microphone, or audio from another tab, live in your browser. Its page links the .milk file.</p>',
+      '<p>Each one plays live in your browser and reacts to any song, your microphone, or audio from another tab. Its page links the .milk file.</p>',
       '<h2 id="collections">Collections</h2>',
       hubList(DISCOVER_ROUTES, '/discover/'),
       '<h2 id="authors">Authors</h2>',
