@@ -111,7 +111,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Geiss',
     author: 'Geiss',
     description:
-      'MilkDrop presets credited to Geiss, playing live in your browser.',
+      'MilkDrop presets credited to Geiss. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -119,7 +119,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Flexi',
     author: 'Flexi',
     description:
-      'MilkDrop presets credited to Flexi, playing live in your browser.',
+      'MilkDrop presets credited to Flexi. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -127,7 +127,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Martin',
     author: 'Martin',
     description:
-      'MilkDrop presets credited to Martin, playing live in your browser.',
+      'MilkDrop presets credited to Martin. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -135,7 +135,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Rovastar',
     author: 'Rovastar',
     description:
-      'MilkDrop presets credited to Rovastar, playing live in your browser.',
+      'MilkDrop presets credited to Rovastar. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -143,7 +143,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Eo.S.',
     author: 'Eo.S.',
     description:
-      'MilkDrop presets credited to Eo.S., playing live in your browser.',
+      'MilkDrop presets credited to Eo.S.. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -151,7 +151,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Phat',
     author: 'Phat',
     description:
-      'MilkDrop presets credited to Phat, playing live in your browser.',
+      'MilkDrop presets credited to Phat. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -159,7 +159,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Stahlregen',
     author: 'Stahlregen',
     description:
-      'MilkDrop presets credited to Stahlregen, playing live in your browser.',
+      'MilkDrop presets credited to Stahlregen. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -167,7 +167,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Unchained',
     author: 'Unchained',
     description:
-      'MilkDrop presets credited to Unchained, playing live in your browser.',
+      'MilkDrop presets credited to Unchained. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -175,7 +175,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Fishbrain',
     author: 'Fishbrain',
     description:
-      'MilkDrop presets credited to Fishbrain, playing live in your browser.',
+      'MilkDrop presets credited to Fishbrain. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -183,7 +183,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Aderrasi',
     author: 'Aderrasi',
     description:
-      'MilkDrop presets credited to Aderrasi, playing live in your browser.',
+      'MilkDrop presets credited to Aderrasi. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -191,7 +191,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Zylot',
     author: 'Zylot',
     description:
-      'MilkDrop presets credited to Zylot, playing live in your browser.',
+      'MilkDrop presets credited to Zylot. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -199,7 +199,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Shifter',
     author: 'Shifter',
     description:
-      'MilkDrop presets credited to Shifter, playing live in your browser.',
+      'MilkDrop presets credited to Shifter. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -207,7 +207,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Mig',
     author: 'Mig',
     description:
-      'MilkDrop presets credited to Mig, playing live in your browser.',
+      'MilkDrop presets credited to Mig. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -215,7 +215,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'ORB',
     author: 'ORB',
     description:
-      'MilkDrop presets credited to ORB, playing live in your browser.',
+      'MilkDrop presets credited to ORB. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -223,7 +223,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Suksma',
     author: 'suksma',
     description:
-      'MilkDrop presets credited to Suksma, playing live in your browser.',
+      'MilkDrop presets credited to Suksma. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -231,7 +231,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Cope',
     author: 'cope',
     description:
-      'MilkDrop presets credited to Cope, playing live in your browser.',
+      'MilkDrop presets credited to Cope. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -239,7 +239,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Goody',
     author: 'Goody',
     description:
-      'MilkDrop presets credited to Goody, playing live in your browser.',
+      'MilkDrop presets credited to Goody. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -247,7 +247,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Krash',
     author: 'Krash',
     description:
-      'MilkDrop presets credited to Krash, playing live in your browser.',
+      'MilkDrop presets credited to Krash. Each one plays live in your browser.',
   },
   // Every credited hand with at least AUTHOR_HUB_MIN_PRESETS indexable presets
   // has a page; tests/unit/preset-catalog-index.test.ts fails when the catalog
@@ -259,7 +259,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Royal',
     author: 'Royal',
     description:
-      'MilkDrop presets credited to Royal, playing live in your browser.',
+      'MilkDrop presets credited to Royal. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -267,7 +267,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'amandio c',
     author: 'amandio c',
     description:
-      'MilkDrop presets credited to amandio c, playing live in your browser.',
+      'MilkDrop presets credited to amandio c. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -275,7 +275,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'BDRV',
     author: 'BDRV',
     description:
-      'MilkDrop presets credited to BDRV, playing live in your browser.',
+      'MilkDrop presets credited to BDRV. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -283,7 +283,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Hexcollie',
     author: 'Hexcollie',
     description:
-      'MilkDrop presets credited to Hexcollie, playing live in your browser.',
+      'MilkDrop presets credited to Hexcollie. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -291,7 +291,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Yin',
     author: 'Yin',
     description:
-      'MilkDrop presets credited to Yin, playing live in your browser.',
+      'MilkDrop presets credited to Yin. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -299,7 +299,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'LuxXx',
     author: 'LuxXx',
     description:
-      'MilkDrop presets credited to LuxXx, playing live in your browser.',
+      'MilkDrop presets credited to LuxXx. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -307,7 +307,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'AdamFX',
     author: 'AdamFX',
     description:
-      'MilkDrop presets credited to AdamFX, playing live in your browser.',
+      'MilkDrop presets credited to AdamFX. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -315,7 +315,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'beta106i',
     author: 'beta106i',
     description:
-      'MilkDrop presets credited to beta106i, playing live in your browser.',
+      'MilkDrop presets credited to beta106i. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -323,7 +323,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'TonyMilkdrop',
     author: 'TonyMilkdrop',
     description:
-      'MilkDrop presets credited to TonyMilkdrop, playing live in your browser.',
+      'MilkDrop presets credited to TonyMilkdrop. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -331,7 +331,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Loadus',
     author: 'Loadus',
     description:
-      'MilkDrop presets credited to Loadus, playing live in your browser.',
+      'MilkDrop presets credited to Loadus. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -339,7 +339,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'PieturP',
     author: 'PieturP',
     description:
-      'MilkDrop presets credited to PieturP, playing live in your browser.',
+      'MilkDrop presets credited to PieturP. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -347,7 +347,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Evet',
     author: 'Evet',
     description:
-      'MilkDrop presets credited to Evet, playing live in your browser.',
+      'MilkDrop presets credited to Evet. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -355,7 +355,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Rozzor',
     author: 'Rozzor',
     description:
-      'MilkDrop presets credited to Rozzor, playing live in your browser.',
+      'MilkDrop presets credited to Rozzor. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -363,7 +363,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Tripgnosis',
     author: 'Tripgnosis',
     description:
-      'MilkDrop presets credited to Tripgnosis, playing live in your browser.',
+      'MilkDrop presets credited to Tripgnosis. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -371,7 +371,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Bmelgren',
     author: 'Bmelgren',
     description:
-      'MilkDrop presets credited to Bmelgren, playing live in your browser.',
+      'MilkDrop presets credited to Bmelgren. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -379,7 +379,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Idiot',
     author: 'Idiot',
     description:
-      'MilkDrop presets credited to Idiot, playing live in your browser.',
+      'MilkDrop presets credited to Idiot. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -387,7 +387,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Illusion',
     author: 'Illusion',
     description:
-      'MilkDrop presets credited to Illusion, playing live in your browser.',
+      'MilkDrop presets credited to Illusion. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -395,7 +395,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'Esotic',
     author: 'Esotic',
     description:
-      'MilkDrop presets credited to Esotic, playing live in your browser.',
+      'MilkDrop presets credited to Esotic. Each one plays live in your browser.',
   },
   {
     kind: 'author',
@@ -403,7 +403,7 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     label: 'ShadowHarlequin',
     author: 'ShadowHarlequin',
     description:
-      'MilkDrop presets credited to ShadowHarlequin, playing live in your browser.',
+      'MilkDrop presets credited to ShadowHarlequin. Each one plays live in your browser.',
   },
 ];
 
