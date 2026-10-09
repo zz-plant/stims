@@ -97,7 +97,12 @@ jobs:
         working-directory: packages/${{ steps.target.outputs.name }}
         run: npm pack --dry-run
 
+      # Node's npm, not the bun-backed npm that setup-bun puts first in PATH:
+      # bun's cannot do the OIDC exchange trusted publishing needs.
       - name: Publish
         if: github.event_name == 'push' || inputs.dry_run == false
         working-directory: packages/${{ steps.target.outputs.name }}
-        run: npm publish --provenance --access public
+        run: |
+          NPM="$(dirname "$(which node)")/npm"
+          "$NPM" --version
+          "$NPM" publish --provenance --access public
