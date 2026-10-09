@@ -116,12 +116,12 @@ function coverVariantScript(html: string): string {
   return script;
 }
 
-/** Runs the real script for one arrival; true when it kept the first-visit copy. */
-function coverShowsFirstVisitCopy(
+/** Runs the real script for one arrival; the classes it put on <html>. */
+function coverClasses(
   script: string,
   url: string,
   storage: Record<string, string> | 'throws' = {},
-): boolean {
+): Set<string> {
   const { pathname, search } = new URL(url, 'https://toil.fyi');
   const classes = new Set<string>();
   const localStorageStub = {
@@ -135,7 +135,16 @@ function coverShowsFirstVisitCopy(
     { documentElement: { classList: { add: (c: string) => classes.add(c) } } },
     localStorageStub,
   );
-  return !classes.has('stims-cover-minimal');
+  return classes;
+}
+
+/** True when the cover kept the first-visit copy for this arrival. */
+function coverShowsFirstVisitCopy(
+  script: string,
+  url: string,
+  storage: Record<string, string> | 'throws' = {},
+): boolean {
+  return !coverClasses(script, url, storage).has('stims-cover-minimal');
 }
 
 test('the cover keeps its first-visit copy only where the app shows it', async () => {
@@ -163,4 +172,24 @@ test('the cover keeps its first-visit copy only where the app shows it', async (
   ).toBe(false);
   // Unreadable storage might be hiding a saved session: stay generic.
   expect(coverShowsFirstVisitCopy(script, '/', 'throws')).toBe(false);
+});
+
+test('the cover drops the scrollbar gutter only where the embed stage does', async () => {
+  const script = coverVariantScript(await readFile('index.html', 'utf8'));
+  const dropsGutter = (url: string, storage?: 'throws') =>
+    coverClasses(script, url, storage).has('stims-cover-chromeless');
+
+  // Preview mode's flags (src/js/core/url-params.ts): the stage fills the
+  // frame and app-shell.css drops the gutter.
+  for (const flag of ['embedded', 'preview', 'embed', 'chromeless']) {
+    expect(dropsGutter(`/?${flag}=true`)).toBe(true);
+    expect(dropsGutter(`/?${flag}=false`)).toBe(false);
+  }
+  // The saved-session read can throw after the flag is read; the flag holds.
+  expect(dropsGutter('/?embed=true', 'throws')).toBe(true);
+
+  // Every other arrival opens on a home view that keeps the gutter.
+  expect(dropsGutter('/')).toBe(false);
+  expect(dropsGutter('/?preset=geiss-casino')).toBe(false);
+  expect(dropsGutter('/discover/fractal')).toBe(false);
 });

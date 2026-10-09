@@ -23,13 +23,15 @@ html:has(body[data-page="workspace"]) {
   min-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-  /* base.css reserves a stable scrollbar gutter document-wide, which is right
-     for the prose pages: content grows past the fold there and a gutter that
-     appears on load would shift the whole layout sideways. The workspace is
-     the opposite case — it is sized to the viewport and does not scroll, so
-     the gutter never fills, and a permanent 15px strip of page ground down the
-     right edge is the one thing standing between this and an actual
-     full-screen stage. */
+}
+
+/* base.css reserves a stable scrollbar gutter document-wide. The home view
+   keeps it: the launch page scrolls past the fold, and the boot cover
+   reserves the same gutter (index.html), so the launch column does not move
+   when React mounts and the scrollbar appears. Live mode and the embed
+   preview drop it: there the stage is meant to fill the viewport or frame,
+   and an empty gutter is a strip of page ground down its right edge. */
+html:has(.stims-shell:is([data-mode="live"], [data-preview="true"])) {
   scrollbar-gutter: auto;
 }
 

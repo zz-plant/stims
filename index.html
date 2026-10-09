@@ -18,8 +18,10 @@
       @font-face{font-family:Archivo;font-style:normal;font-weight:100 900;font-stretch:62% 125%;font-display:swap;src:url(/fonts/archivo-latin-var.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
       *,:after,:before{box-sizing:border-box}
       body,html{margin:0;padding:0;min-height:100%}
-      /* base.css reserves a scrollbar gutter for the prose pages; the workspace drops it once it mounts (app-shell.css), so the cover drops it too or the hand-off slides sideways where scrollbars take space. */
-      html:has(#stims-loading){scrollbar-gutter:auto}
+      /* The launch page scrolls, so on desktops with classic scrollbars its scrollbar takes space once React mounts. The cover reserves the same gutter from the first paint (base.css, which also sets it, is deferred), or the hand-off slides the column sideways by half the scrollbar's width. The width rule mirrors base.css so the gutter does not change size when that stylesheet lands; where tokens.css's scrollbar-color applies, the browser ignores it and both use the standard width. An embed's stage fills its frame without a gutter (app-shell.css), so its cover drops it too; the pre-paint script below sets the class. */
+      html{scrollbar-gutter:stable}
+      html.stims-cover-chromeless{scrollbar-gutter:auto}
+      ::-webkit-scrollbar{width:6px;height:6px}
       /* The crawl copy written into #app (the site index footer, a hub's preset list) sits under the cover until React replaces it. Laid out there, it reflowed when the deferred stylesheets landed: a layout shift of up to 0.47 that nobody could see but CLS still counted. */
       html:has(#stims-loading) #app>:is(.site-footer,.stims-collection){display:none}
       body{background:#05070c;color:#e9fbff;font-family:system-ui,sans-serif}
@@ -141,12 +143,18 @@
       // only for a bare "/" with no saved session; a ?preset= link, a
       // returning visitor, a /discover or /author hub and an embed each open
       // on a different header, so they keep the plain wordmark cover rather
-      // than flash copy the app then replaces.
+      // than flash copy the app then replaces. An embed's cover also drops
+      // the scrollbar gutter, as its stage does.
       (() => {
         let minimal = true;
+        let chromeless = false;
         try {
           const query = new URLSearchParams(window.location.search);
           const path = window.location.pathname;
+          // The flags that put the app in preview mode (src/js/core/url-params.ts).
+          chromeless = ['embedded', 'preview', 'embed', 'chromeless'].some(
+            (name) => query.get(name) === 'true',
+          );
           const other = ['preset', 'embedded', 'preview', 'experience'].some(
             (name) => query.has(name),
           );
@@ -156,6 +164,7 @@
             localStorage.getItem('stims:last-session') !== null;
         } catch (_e) {}
         if (minimal) document.documentElement.classList.add('stims-cover-minimal');
+        if (chromeless) document.documentElement.classList.add('stims-cover-chromeless');
       })();
     </script>
     <script type="application/ld+json">
