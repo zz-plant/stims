@@ -4,7 +4,8 @@
  * Shader translation is this repo's most frequent kind of bug, and every
  * preset stage lab:glsl-corpus-scan reports as failing is a ready-made task:
  * the preset's shader source, the GLSL the runtime currently derives from
- * it, and the compiler's error. A model answers with a corrected GLSL body
+ * it, the compiler's error, and the line of that GLSL the error points at
+ * (`errorLine`). A model answers with a corrected GLSL body
  * for that stage; this scores it exactly the way the scan judges the
  * runtime's own output (same assembly into the fragment shader, same
  * glslangValidator invocation).
@@ -45,6 +46,7 @@ import { assembleMilkdropDirectFragmentShaders } from '../src/js/milkdrop/feedba
 import {
   deriveStageGlsl,
   type ShaderStage,
+  VALIDATOR_PREAMBLE,
   validateFragmentShader,
 } from './preset-lab-glsl-corpus-scan.ts';
 import { loadCatalogEntries } from './preset-lab-reactivity.ts';
@@ -61,9 +63,15 @@ export type ShaderFixTask = {
   glsl: string;
   /** glslangValidator's first error for the assembled stage. */
   error: string;
+  /**
+   * The 1-based line of `glsl` the error points at, or null when it points
+   * into the shared prelude. The error's own line number counts the
+   * assembled shader, hundreds of lines above the body an answer edits.
+   */
+  errorLine: number | null;
 };
 
-type StageBodies = { warp: string | null; comp: string | null };
+export type StageBodies = { warp: string | null; comp: string | null };
 
 function stageBodies(
   raw: string,
@@ -88,6 +96,18 @@ function stageBodies(
   };
 }
 
+/** One stage of a preset as compiled, with `body` in place of its derived GLSL. */
+function assembleStage(
+  bodies: StageBodies,
+  stage: ShaderStage,
+  body: string | null,
+): string {
+  const warp = stage === 'warp' ? body : bodies.warp;
+  const comp = stage === 'composite' ? body : bodies.comp;
+  const assembled = assembleMilkdropDirectFragmentShaders(warp, comp);
+  return stage === 'warp' ? assembled.warp : assembled.composite;
+}
+
 /** Compiles one stage of a preset with `body` in place of its derived GLSL. */
 export function compileStage(
   bodies: StageBodies,
@@ -96,10 +116,56 @@ export function compileStage(
   /** Injected in tests; the CLI uses glslangValidator. */
   validate: (glsl: string) => string | null = validateFragmentShader,
 ): string | null {
-  const warp = stage === 'warp' ? body : bodies.warp;
-  const comp = stage === 'composite' ? body : bodies.comp;
-  const assembled = assembleMilkdropDirectFragmentShaders(warp, comp);
-  return validate(stage === 'warp' ? assembled.warp : assembled.composite);
+  return validate(assembleStage(bodies, stage, body));
+}
+
+/**
+ * Compiles one stage with `body` in place, as the scorer does: null if it
+ * compiles, else glslang's first error and the line of `body` it points at.
+ */
+export function diagnoseStage(
+  bodies: StageBodies,
+  stage: ShaderStage,
+  body: string,
+): { error: string; errorLine: number | null } | null {
+  const assembled = assembleStage(bodies, stage, body);
+  const error = validateFragmentShader(assembled);
+  if (!error) return null;
+  return {
+    error,
+    errorLine: locateErrorInBody(
+      error,
+      `${VALIDATOR_PREAMBLE}${assembled}`,
+      body,
+    ),
+  };
+}
+
+/**
+ * The 1-based line of `body` that an error in `validated` (the exact text
+ * glslang compiled, numbered from 1) points at, or null when that line is
+ * not in the body. Assembly moves function definitions above main() and
+ * retargets comp-stage `currentTex` samples, so this matches line text
+ * (whitespace-insensitive), not offsets.
+ */
+export function locateErrorInBody(
+  error: string,
+  validated: string,
+  body: string,
+): number | null {
+  const lineNumber = Number(/\b\d+:(\d+):/.exec(error)?.[1]);
+  const target = validated.split('\n')[lineNumber - 1];
+  if (target === undefined) return null;
+  const normalize = (line: string) =>
+    line
+      .replace(/\btexture2D\s*\(\s*currentTex\s*,/g, 'sampleCompFrame(')
+      .replace(/\s+/g, '');
+  const wanted = normalize(target);
+  if (!wanted) return null;
+  const index = body
+    .split('\n')
+    .findIndex((line) => normalize(line) === wanted);
+  return index >= 0 ? index + 1 : null;
 }
 
 /**
@@ -231,8 +297,8 @@ export function buildTasks(
       const key = stage === 'warp' ? 'warp' : 'comp';
       const glsl = derived.bodies[key];
       if (!glsl) continue;
-      const error = compileStage(derived.bodies, stage, glsl);
-      if (!error) continue;
+      const failure = diagnoseStage(derived.bodies, stage, glsl);
+      if (!failure) continue;
       out.push({
         task: {
           taskId: `${entry.id}:${stage}`,
@@ -240,7 +306,7 @@ export function buildTasks(
           stage,
           source: derived.sources[key] ?? '',
           glsl,
-          error,
+          ...failure,
         },
         bodies: derived.bodies,
       });
