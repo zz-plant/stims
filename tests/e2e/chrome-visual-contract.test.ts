@@ -475,7 +475,13 @@ chromeTest(
  * line's box, the 220ms fade shows both copies offset from each other. The
  * cover's 14px/24px offsets were once stale against the launch column, and
  * base.css's scrollbar gutter narrowed the cover by 15px on desktops with
- * classic scrollbars.
+ * classic scrollbars. Then the cover dropped the gutter while the launch page,
+ * which scrolls, raised a scrollbar on mount: the column slid 7.5px left at
+ * 1440px and the tagline lost 15px of measure at 412px.
+ *
+ * Headless Chromium hides scrollbars, so the default browser only checks the
+ * overlay case (phones, macOS). A second browser launched without
+ * `--hide-scrollbars` lays out classic scrollbars, as Windows and Linux do.
  */
 chromeTest(
   'the boot cover hands off to the launch page without moving a line',
@@ -496,59 +502,79 @@ chromeTest(
         });
       }, selectors);
 
-    for (const viewport of [
-      { width: 412, height: 823 },
-      { width: 1440, height: 900 },
-    ]) {
-      // The cover alone: with the app entry blocked it never leaves.
-      const coverPage = await (browser as Browser).newPage({ viewport });
-      let coverBoxes: (number[] | null)[];
-      try {
-        await coverPage.route('**/src/js/app.ts', (route) => route.abort());
-        await coverPage.goto(`${server?.url}/`, { waitUntil: 'load' });
-        coverBoxes = await boxes(
-          coverPage,
-          lines.map(([cover]) => cover),
-        );
-      } finally {
-        await coverPage.close();
-      }
+    const classicScrollbars = await chromium.launch({
+      headless: true,
+      ignoreDefaultArgs: ['--hide-scrollbars'],
+    });
+    try {
+      for (const [scrollbars, viewport] of [
+        ['overlay', { width: 412, height: 823 }],
+        ['overlay', { width: 1440, height: 900 }],
+        ['classic', { width: 412, height: 823 }],
+        ['classic', { width: 1440, height: 900 }],
+      ] as const) {
+        const host =
+          scrollbars === 'classic' ? classicScrollbars : (browser as Browser);
+        // The cover alone: with the app entry blocked it never leaves.
+        const coverPage = await host.newPage({ viewport });
+        let coverBoxes: (number[] | null)[];
+        try {
+          await coverPage.route('**/src/js/app.ts', (route) => route.abort());
+          await coverPage.goto(`${server?.url}/`, { waitUntil: 'load' });
+          coverBoxes = await boxes(
+            coverPage,
+            lines.map(([cover]) => cover),
+          );
+        } finally {
+          await coverPage.close();
+        }
 
-      const launchPage = await (browser as Browser).newPage({ viewport });
-      try {
-        await launchPage.goto(`${server?.url}/`, {
-          waitUntil: 'domcontentloaded',
-        });
-        await launchPage.waitForSelector('.stims-shell__launch-tagline', {
-          timeout: 30000,
-        });
-        await launchPage.waitForSelector('#stims-loading', {
-          state: 'detached',
-          timeout: 30000,
-        });
-        const launchBoxes = await boxes(
-          launchPage,
-          lines.map(([, launch]) => launch),
-        );
-        lines.forEach(([cover, launch], index) => {
-          const from = coverBoxes[index];
-          const to = launchBoxes[index];
-          if (!from || !to) {
-            throw new Error(`${from ? launch : cover} did not render`);
-          }
-          const drift = Math.max(...from.map((v, i) => Math.abs(v - to[i])));
-          if (drift > 1) {
-            throw new Error(
-              `${cover} [${from}] lands ${drift}px away from ${launch} [${to}] at ${viewport.width}x${viewport.height}`,
+        const launchPage = await host.newPage({ viewport });
+        try {
+          await launchPage.goto(`${server?.url}/`, {
+            waitUntil: 'domcontentloaded',
+          });
+          await launchPage.waitForSelector('.stims-shell__launch-tagline', {
+            timeout: 30000,
+          });
+          await launchPage.waitForSelector('#stims-loading', {
+            state: 'detached',
+            timeout: 30000,
+          });
+          if (scrollbars === 'classic') {
+            // Without a scrollbar in the layout this case would pass for the
+            // overlay reason, proving nothing about the gutter.
+            const scrollbarWidth = await launchPage.evaluate(
+              () => window.innerWidth - document.documentElement.clientWidth,
             );
+            expect(scrollbarWidth).toBeGreaterThan(0);
           }
-        });
-      } finally {
-        await launchPage.close();
+          const launchBoxes = await boxes(
+            launchPage,
+            lines.map(([, launch]) => launch),
+          );
+          lines.forEach(([cover, launch], index) => {
+            const from = coverBoxes[index];
+            const to = launchBoxes[index];
+            if (!from || !to) {
+              throw new Error(`${from ? launch : cover} did not render`);
+            }
+            const drift = Math.max(...from.map((v, i) => Math.abs(v - to[i])));
+            if (drift > 1) {
+              throw new Error(
+                `${cover} [${from}] lands ${drift}px away from ${launch} [${to}] at ${viewport.width}x${viewport.height} with ${scrollbars} scrollbars`,
+              );
+            }
+          });
+        } finally {
+          await launchPage.close();
+        }
       }
+    } finally {
+      await classicScrollbars.close();
     }
   },
-  90000,
+  150000,
 );
 
 /**
