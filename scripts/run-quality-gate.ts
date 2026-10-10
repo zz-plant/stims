@@ -261,6 +261,12 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:no-source-seams'],
       },
       {
+        // The four package sites promise one shared stylesheet; this keeps
+        // that promise enforced instead of remembered.
+        label: 'Package site stylesheet',
+        cmd: ['bun', 'run', 'check:site-styles-identical'],
+      },
+      {
         // Diff-scoped, so this gates new and changed code without demanding a
         // repo-wide cleanup first.
         label: 'Banned pattern guard (changed files)',

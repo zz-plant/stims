@@ -40,6 +40,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:reference-audio-header`](#checkreference-audio-header) | `check:quick` | Generates the C++ harness's copy of the parity reference audio signal. |
 | [`check:script-docs`](#checkscript-docs) | `check:quick` | Lists package.json scripts grouped by namespace, pulling each script's one-line purpose from the docblock atop its target file. |
 | [`check:seo`](#checkseo) | `check:quick` | Asserts the shipped SEO surface still matches what `generate:seo` would produce. |
+| [`check:site-styles-identical`](#checksite-styles-identical) | `check:quick` | Fails when the package sites' shared stylesheet diverges. |
 | [`check:skill-index`](#checkskill-index) | `check:quick` | Keep the agent skill set discoverable and well-formed. |
 | [`check:stale-paths`](#checkstale-paths) | `check:quick` | Guard against references to the pre-`src/` tree. |
 | [`check:test-source-greps`](#checktest-source-greps) | `check:quick` | Fails when a test reads a production source file as text. |
@@ -607,6 +608,20 @@ generated OG/icon PNG dimensions.
 Failures exit non-zero and point at `bun run generate:seo`.
 
 Run it directly: `bun run check:seo`
+
+## check:site-styles-identical
+
+Fails when the package sites' shared stylesheet diverges.
+
+packages/README.md promises the four site/ directories "share one stylesheet
+(site/styles.css, kept identical in each package)". Identical by hand is how
+copies drift: a fix lands in one package's copy and the other three keep the
+old rule until someone notices the sites look different. This compares the
+copies byte for byte, so the promise is enforced instead of remembered.
+
+  bun run check:site-styles-identical
+
+Run it directly: `bun run check:site-styles-identical`
 
 ## check:skill-index
 

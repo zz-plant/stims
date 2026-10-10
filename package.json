@@ -82,6 +82,7 @@
     "check:reference-audio-header": "bun run scripts/generate-reference-audio-header.ts --check",
     "check:script-docs": "bun run scripts/scripts-list.ts --check",
     "check:seo": "bun run scripts/check-seo.ts",
+    "check:site-styles-identical": "bun run scripts/check-site-styles-identical.ts",
     "check:stale-paths": "bun run scripts/check-stale-paths.ts",
     "check:test-source-greps": "bun run scripts/check-test-source-greps.ts",
     "check:unused-exports": "bun run scripts/check-unused-exports.ts",
