@@ -71,6 +71,7 @@ Shipped:
 - Revert to original, as an undoable edit. A draft that matches the original is cleared, so a fix to a bundled preset reaches visitors who once opened it (#1369).
 - Named versions in the editor's History tab.
 - Assisted edits, from the editor's Assist tab and from the Refine panel, appear as a diff before they apply (#1369).
+- The stage watch HUD: the variables pinned in the Inspect tab plot over the running stage at display rate — a canvas on its own `requestAnimationFrame` loop, off the render path, one polyline per variable stroked straight from fixed-capacity `Float32Array` rings (which also replaced the `Array.shift` history in the Inspect tab's own feed). Toggled from the command palette ("Toggle the variable watch HUD"), including with the editor closed; the watched set is the pin list and survives the editor closing.
 - Exported `.milk` files keep remix lineage (`remix_of_N_id`/`title`/`author`), and import reads it back (#1371).
 - Share links carry remix lineage too: the `#code=` payload embeds the same `remix_of_N_*` fields an export writes, and the recipient's import reads them back (`tests/unit/share-link-lineage.test.ts`).
 - A link to a preset that lives only in this browser carries its code, so the recipient can open it (#1371).
@@ -78,16 +79,15 @@ Shipped:
 
 Open:
 
-- **Watcher HUD.** The Inspect tab draws 120-sample sparklines, repaints at most every 150 ms, and exists only while the editor is open. Missing: a stage overlay, plots at display rate, and history kept in typed ring buffers instead of `Array.shift` on the render path.
 - **Shader tab (WGSL/GLSL).** Partial. The editor's Shader tab lists a preset's warp/comp blocks with jumps, shows the engine's structured compile diagnostics (program, stage, driver message) mapped to the authored block, and a read-only view of the GLSL the WebGL path compiles. Missing: the WGSL a WebGPU pipeline actually runs — the WebGPU path lowers shaders through three's TSL node graphs at render time, so per-block WGSL text needs a live GPUDevice plumbing path that does not exist yet.
 - **Custom textures.** Missing. Textures are a fixed bundled table.
 - **Short links.** Links are long (p95 5,215 characters even compressed); a short-link service would still wait on moderation.
-- **The loop as a whole.** No end-to-end test of browse → edit → compare → save → share.
+- **The loop as a whole.** `tests/e2e/studio-loop.test.ts` walks browse → edit → compare → save → share; CI's e2e matrix does not run it yet.
 
 Exit criteria:
 
-- browse → edit → compare → save → share works without leaving the running session. *Each step works; nothing tests the whole loop.* And
-- variable watch graphs update at delivered display frame rates without hitching the main JS thread. *Not met.*
+- browse → edit → compare → save → share works without leaving the running session. *Walked end to end by `tests/e2e/studio-loop.test.ts`; CI's e2e matrix does not run it yet.* And
+- variable watch graphs update at delivered display frame rates without hitching the main JS thread. *Met in construction: the stage watch HUD paints on its own `requestAnimationFrame` loop, one polyline per watched variable stroked straight from typed rings with no steady-state allocation, and the frame loop's own path is unchanged beyond the per-frame variable publish the Inspect tab already rode (a no-op with nobody listening). No browser measurement yet; the frame-budget tooling measures the render loop, not this paint.*
 
 ### Creator-grade export & vertical formats
 

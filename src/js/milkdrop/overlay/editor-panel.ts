@@ -96,6 +96,7 @@ import {
   type SourceDiffLine,
   samePresetSource,
 } from './source-diff.ts';
+import { setWatchedVariables } from './watcher-hud.ts';
 
 /**
  * Kept as the module's public names because tests, the MIDI layer and the MCP
@@ -756,6 +757,9 @@ export class EditorPanel {
     this.inspectPane = new InspectPane(host, {
       onSetStageFrozen: callbacks.onSetStageFrozen,
       onStepFrame: callbacks.onStepFrame,
+      // Pins are the stage HUD's watch set (watcher-hud.ts), which keeps
+      // plotting after the editor closes, so the names leave the pane.
+      onPinsChanged: (names) => setWatchedVariables(names),
     });
     this.shaderPane = new ShaderPane(host);
 

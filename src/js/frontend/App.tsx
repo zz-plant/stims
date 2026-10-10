@@ -28,6 +28,9 @@ import '../../css/shell/preset-grid.css';
 import '../../css/shell-theme.css';
 import '../../css/shell-launch.css';
 import '../../css/chrome.css';
+// The stage watch HUD toggles from the command palette and is meant to run
+// with the editor closed, so its styles cannot wait for the editor chunk.
+import '../../css/watcher-hud.css';
 import {
   applyAccessibility,
   getActiveAccessibilityPreference,
