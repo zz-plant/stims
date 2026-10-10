@@ -252,6 +252,15 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:cache-bounds'],
       },
       {
+        // A promoted package (scripts/package-manifest.ts) must be consumed
+        // from the registry: a workspace: dependency or a src/ subpath import
+        // is a seam that breaks the moment its directory moves to its own
+        // repository. Cheap while every package is standalone — it skips the
+        // scan entirely.
+        label: 'Package source seams',
+        cmd: ['bun', 'run', 'check:no-source-seams'],
+      },
+      {
         // Diff-scoped, so this gates new and changed code without demanding a
         // repo-wide cleanup first.
         label: 'Banned pattern guard (changed files)',

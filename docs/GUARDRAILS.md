@@ -32,6 +32,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:guard-registry`](#checkguard-registry) | `check:quick` | Blocks banned patterns in changed source files before they land. |
 | [`check:guardrails-doc`](#checkguardrails-doc) | `check:quick` | Generates `docs/GUARDRAILS.md` — the rules this repo enforces — from the guard scripts themselves. |
 | [`check:module-docs`](#checkmodule-docs) | `check:quick` | Requires a file-level docblock on the `src/` modules big enough to need one. |
+| [`check:no-source-seams`](#checkno-source-seams) | `check:quick` | Fails on source seams left behind by a promoted package — the references that only work while the package's source still lives in packages/ here. |
 | [`check:no-ts-nocheck`](#checkno-ts-nocheck) | `check:quick` | Fails the build if a whole-file TypeScript suppression directive is present under src/, scripts/, or tests/. |
 | [`check:packages`](#checkpackages) | `check` | Typechecks and tests every standalone package under packages/, each in its own directory so its bunfig.toml and tsconfig apply rather than the root's. |
 | [`check:production-edge`](#checkproduction-edge) | on demand | Verifies the deployed site's edge is reachable and not gated behind a Cloudflare challenge. |
@@ -449,6 +450,32 @@ nobody anything, so the guard also rejects summaries that are merely the
 filename echoed back.
 
 Run it directly: `bun run check:module-docs`
+
+## check:no-source-seams
+
+Fails on source seams left behind by a promoted package — the references that only work while the package's source still lives in packages/ here.
+
+A package whose role is `promoted` in scripts/package-manifest.ts has its
+own repository; this repo consumes a published version. Two references are
+seams, and each fails this check:
+
+ 1. a `workspace:`-protocol dependency in any package.json — the app must
+    depend on a version range resolved from the registry, not the workspace
+    link that stopped existing with the directory.
+ 2. a subpath import into the package's source (`audio-reactive/src/...`)
+    or a relative import reaching into `packages/<name>/...` — the
+    published package exports its public entry points (`.` and `./worklet`
+    for audio-reactive), not its internals. This is the seam that makes
+    milkdrop-toolchain the hard case: dozens of `src/` subpath imports
+    would each have to move behind a public entry point first.
+
+Standalone packages are exempt by design: deep `src/` subpaths are their
+in-repo consumption path (see packages/README.md), and the `stims-source`
+export condition depends on it.
+
+  bun run check:no-source-seams
+
+Run it directly: `bun run check:no-source-seams`
 
 ## check:no-ts-nocheck
 
