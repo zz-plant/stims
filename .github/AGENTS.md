@@ -88,7 +88,10 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./
 
 The quality gate (`bun run check`) runs these guards automatically. New code must pass them. All `check:*` scripts are read-only — when a check reports stale output, regenerate via the corresponding `generate:*` script or `--write` flag rather than editing the artifact.
 
-- `check:ci-config` — workflow/build config drift (deleted scripts, npm leakage, conflict markers).
+- `check:ci-config` — workflow/build config drift (deleted scripts, npm leakage, conflict markers), plus agreement between `scripts/package-manifest.ts` and every package surface (mirror/publish workflow matrices, `packages/` directory, README table).
+- `check:no-source-seams` — a package marked `promoted` in the manifest must be consumed from the registry: no `workspace:` dependency, no `src/` subpath import, no relative path into `packages/<name>/`.
+- `check:site-styles-identical` — the package sites' shared `site/styles.css` stays byte-identical across packages.
+- `check:dist-determinism` — release-time, in `publish-packages.yml` (not the gate): builds a package twice from clean and fails if the two dists differ.
 - `check:duplicate-css` — duplicate `@keyframes` / `@font-face` across global CSS.
 - `check:stale-paths` — references to the removed `assets/` tree, including the root entry HTML files.
 - `check:architecture` — no import cycles, no production code importing test helpers, and the `frontend/*` → engine seam enforced via `.dependency-cruiser.mjs` boundary rules (`frontend-engine-seam` and `engine-runtime-only-via-adapter`). See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for the boundary design.
