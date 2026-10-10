@@ -29,7 +29,7 @@ const PANEL_CHUNKS: Record<PanelChunkId, () => void> = {
   browse: () => void import('./BrowseSheetPanel.tsx'),
   capture: () => void import('./CapturePanel.tsx'),
   editor: () => {
-    void import('./EditorPanel.tsx');
+    void import('./EditorSurface.tsx');
     // The editor is the one panel whose chunk is not the whole cost: the
     // overlay carries the CodeMirror/compiler graph behind it.
     void import('../milkdrop/overlay/editor-panel.ts');

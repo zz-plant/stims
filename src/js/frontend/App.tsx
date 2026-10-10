@@ -148,8 +148,8 @@ const BrowseSheetPanel = lazy(() =>
 const CapturePanel = lazy(() =>
   import('./CapturePanel.tsx').then((m) => ({ default: m.CapturePanel })),
 );
-const EditorPanel = lazy(() =>
-  import('./EditorPanel.tsx').then((m) => ({ default: m.EditorPanel })),
+const EditorSurface = lazy(() =>
+  import('./EditorSurface.tsx').then((m) => ({ default: m.EditorSurface })),
 );
 const RefinePanel = lazy(() =>
   import('./RefinePanel.tsx').then((m) => ({ default: m.RefinePanel })),
@@ -1478,7 +1478,7 @@ function StimsWorkspaceAppShell() {
         <Suspense
           fallback={<PanelLoadingFallback panel={ui.routeState.panel} />}
         >
-          {ui.routeState.panel === 'editor' ? <EditorPanel /> : null}
+          {ui.routeState.panel === 'editor' ? <EditorSurface /> : null}
           {ui.routeState.panel === 'capture' ? <CapturePanel /> : null}
           {ui.routeState.panel === 'browse' ? (
             <BrowseSheetPanel

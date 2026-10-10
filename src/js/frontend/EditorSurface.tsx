@@ -10,7 +10,16 @@ import { RepositorySupport } from './RepositorySupport.tsx';
 import { copyRemixLinkAction } from './workspace-actions.ts';
 import { useWorkspace } from './workspace-context.tsx';
 
-export function EditorPanel() {
+/**
+ * Workspace surface that hosts the MilkDrop editor overlay panel.
+ *
+ * The overlay's `EditorPanel` class (src/js/milkdrop/overlay/) owns the
+ * CodeMirror IDE; this component is the React shell that mounts it into the
+ * workspace, wires it to engine/session state, and renders the first-edit
+ * guide and repository support around it. Named "surface" after
+ * PerformSurface — the name EditorPanel belongs to the engine class.
+ */
+export function EditorSurface() {
   const [shared, setShared] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
