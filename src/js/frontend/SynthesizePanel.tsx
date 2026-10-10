@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import styles from '../../css/SynthesizePanel.module.css';
+import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import {
   type generatePreset,
   generatePresetFromImage,
@@ -44,12 +45,13 @@ const PALETTES = [
 ];
 
 type Palette = (typeof PALETTES)[number]['value'];
-type ProviderKind = 'hosted' | 'local';
+type ProviderKind = 'hosted' | 'local' | 'openrouter';
 
 const viteEnv = (import.meta as unknown as { env?: { DEV?: boolean } }).env;
 const DEFAULT_PROVIDER: ProviderKind = viteEnv?.DEV ? 'local' : 'hosted';
 const DEFAULT_LOCAL_ENDPOINT = 'http://127.0.0.1:11434/v1';
 const DEFAULT_LOCAL_MODEL = 'gemma4:e4b-32k';
+const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini';
 
 const SYNTH_SETTINGS_STORAGE_KEY = 'stims:synthesize-settings';
 
@@ -60,12 +62,18 @@ type StoredSynthesizeSettings = {
   provider: ProviderKind;
   localEndpoint: string;
   localModel: string;
+  openrouterApiKey: string;
+  openrouterModel: string;
 };
 
 function clampControl(value: unknown, fallback: number) {
   return typeof value === 'number' && Number.isFinite(value)
     ? Math.min(2, Math.max(0, value))
     : fallback;
+}
+
+function storedString(value: unknown, fallback: string) {
+  return typeof value === 'string' && value.trim() ? value : fallback;
 }
 
 function readStoredSynthesizeSettings(): StoredSynthesizeSettings {
@@ -76,9 +84,11 @@ function readStoredSynthesizeSettings(): StoredSynthesizeSettings {
     provider: DEFAULT_PROVIDER,
     localEndpoint: DEFAULT_LOCAL_ENDPOINT,
     localModel: DEFAULT_LOCAL_MODEL,
+    openrouterApiKey: '',
+    openrouterModel: DEFAULT_OPENROUTER_MODEL,
   };
   try {
-    const raw = localStorage.getItem(SYNTH_SETTINGS_STORAGE_KEY);
+    const raw = readStored(SYNTH_SETTINGS_STORAGE_KEY);
     if (!raw) return defaults;
     const parsed = JSON.parse(raw) as Partial<StoredSynthesizeSettings>;
     return {
@@ -88,17 +98,21 @@ function readStoredSynthesizeSettings(): StoredSynthesizeSettings {
       intensity: clampControl(parsed.intensity, defaults.intensity),
       reactivity: clampControl(parsed.reactivity, defaults.reactivity),
       provider:
-        parsed.provider === 'hosted' || parsed.provider === 'local'
+        parsed.provider === 'hosted' ||
+        parsed.provider === 'local' ||
+        parsed.provider === 'openrouter'
           ? parsed.provider
           : defaults.provider,
-      localEndpoint:
-        typeof parsed.localEndpoint === 'string' && parsed.localEndpoint.trim()
-          ? parsed.localEndpoint
-          : defaults.localEndpoint,
-      localModel:
-        typeof parsed.localModel === 'string' && parsed.localModel.trim()
-          ? parsed.localModel
-          : defaults.localModel,
+      localEndpoint: storedString(parsed.localEndpoint, defaults.localEndpoint),
+      localModel: storedString(parsed.localModel, defaults.localModel),
+      openrouterApiKey:
+        typeof parsed.openrouterApiKey === 'string'
+          ? parsed.openrouterApiKey
+          : '',
+      openrouterModel: storedString(
+        parsed.openrouterModel,
+        defaults.openrouterModel,
+      ),
     };
   } catch {
     return defaults;
@@ -111,7 +125,9 @@ function providerStatus(provider: ProviderKind, offline: boolean) {
   }
   return provider === 'local'
     ? 'Local mode sends this prompt directly to Ollama on your computer.'
-    : 'Hosted mode uses the model service on the deployed Stims site.';
+    : provider === 'openrouter'
+      ? 'Prompts and your key go to OpenRouter. The key stays in this browser and never touches Stims servers.'
+      : 'Hosted mode uses the model service on the deployed Stims site.';
 }
 
 export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
@@ -124,6 +140,12 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
   const [provider, setProvider] = useState<ProviderKind>(stored.provider);
   const [localEndpoint, setLocalEndpoint] = useState(stored.localEndpoint);
   const [localModel, setLocalModel] = useState(stored.localModel);
+  const [openrouterApiKey, setOpenrouterApiKey] = useState(
+    stored.openrouterApiKey,
+  );
+  const [openrouterModel, setOpenrouterModel] = useState(
+    stored.openrouterModel,
+  );
   const [generating, setGenerating] = useState(false);
   const [isPending, startTransition] = useTransition();
   const isGenerating = generating || isPending;
@@ -135,7 +157,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(
+      writeStored(
         SYNTH_SETTINGS_STORAGE_KEY,
         JSON.stringify({
           palette,
@@ -144,19 +166,30 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           provider,
           localEndpoint,
           localModel,
+          openrouterApiKey,
+          openrouterModel,
         } satisfies StoredSynthesizeSettings),
       );
     } catch (err) {
       console.debug('Failed to persist synthesize settings:', err);
     }
-  }, [palette, intensity, reactivity, provider, localEndpoint, localModel]);
+  }, [
+    palette,
+    intensity,
+    reactivity,
+    provider,
+    localEndpoint,
+    localModel,
+    openrouterApiKey,
+    openrouterModel,
+  ]);
 
   const handleProviderChange = useCallback(
     (next: ProviderKind) => {
       setProvider(next);
       // The image route only exists on the hosted deployment; drop a pending
-      // image rather than silently ignoring it in local mode.
-      if (next === 'local') {
+      // image rather than silently ignoring it in local or OpenRouter mode.
+      if (next !== 'hosted') {
         setImageFile(null);
       }
       setStatus(providerStatus(next, offline));
@@ -192,7 +225,9 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         ? 'Describing the image and generating with the hosted model…'
         : provider === 'local'
           ? `Generating with ${localModel.trim() || 'the local model'}…`
-          : 'Generating with the hosted model…',
+          : provider === 'openrouter'
+            ? `Generating with ${openrouterModel.trim() || 'OpenRouter'}…`
+            : 'Generating with the hosted model…',
     );
     try {
       // The prompt and control sliders steer both paths: as the generation
@@ -224,7 +259,13 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                   endpoint: localEndpoint.trim(),
                   model: localModel.trim(),
                 }
-              : { kind: 'hosted' },
+              : provider === 'openrouter'
+                ? {
+                    kind: 'openrouter',
+                    apiKey: openrouterApiKey.trim(),
+                    model: openrouterModel.trim(),
+                  }
+                : { kind: 'hosted' },
         });
         compiled = outcome.winner;
       }
@@ -257,6 +298,8 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     provider,
     localEndpoint,
     localModel,
+    openrouterApiKey,
+    openrouterModel,
     engine,
     offline,
     ui,
@@ -313,12 +356,12 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
 
       <details
         className="stims-shell__settings-advanced"
-        open={provider === 'local' || undefined}
+        open={provider !== 'hosted' || undefined}
       >
         <summary className="stims-shell__settings-summary">
           <span>Advanced</span>
           <span className="stims-shell__meta-copy">
-            Run generation on your own machine
+            Hosted, local, or bring-your-own-key
           </span>
         </summary>
         <div className="stims-shell__settings-advanced-body">
@@ -345,11 +388,23 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                 />
                 <span>Local Ollama</span>
               </label>
+              <label className={styles.palette}>
+                <input
+                  type="radio"
+                  name="model-provider"
+                  value="openrouter"
+                  checked={provider === 'openrouter'}
+                  onChange={() => handleProviderChange('openrouter')}
+                />
+                <span>OpenRouter</span>
+              </label>
             </div>
             <p className={styles.providerNote}>
               {provider === 'local'
                 ? 'No API key is used. Direct requests are limited to loopback addresses; Ollama must allow this browser origin.'
-                : 'Available on deployments configured with the Cloudflare AI binding. Stims does not substitute a template if the model is unavailable.'}
+                : provider === 'openrouter'
+                  ? 'Prompts and your key go to OpenRouter. The key is sent straight from this browser to openrouter.ai and stored only in this browser.'
+                  : 'Available on deployments configured with the Cloudflare AI binding. Stims does not substitute a template if the model is unavailable.'}
             </p>
           </fieldset>
 
@@ -377,6 +432,39 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                   spellCheck={false}
                 />
               </label>
+            </div>
+          ) : null}
+
+          {provider === 'openrouter' ? (
+            <div className={styles.localSettings}>
+              <label className={styles.field}>
+                <span className={styles.label}>OpenRouter API key</span>
+                <input
+                  className={styles.input}
+                  type="password"
+                  value={openrouterApiKey}
+                  onChange={(event) => setOpenrouterApiKey(event.target.value)}
+                  disabled={isGenerating}
+                  placeholder="sk-or-…"
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              </label>
+              <label className={styles.field}>
+                <span className={styles.label}>Model</span>
+                <input
+                  className={styles.input}
+                  type="text"
+                  value={openrouterModel}
+                  onChange={(event) => setOpenrouterModel(event.target.value)}
+                  disabled={isGenerating}
+                  spellCheck={false}
+                />
+              </label>
+              <p className={styles.providerNote}>
+                Prompts and your key go to OpenRouter (openrouter.ai) directly
+                from this browser.
+              </p>
             </div>
           ) : null}
         </div>
@@ -454,7 +542,9 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           (!prompt.trim() && !(provider === 'hosted' && imageFile)) ||
           (provider === 'hosted' && offline) ||
           (provider === 'local' &&
-            (!localEndpoint.trim() || !localModel.trim()))
+            (!localEndpoint.trim() || !localModel.trim())) ||
+          (provider === 'openrouter' &&
+            (!openrouterApiKey.trim() || !openrouterModel.trim()))
         }
         onClick={() => void handleGenerate()}
       >
