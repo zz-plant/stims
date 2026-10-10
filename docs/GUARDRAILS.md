@@ -194,6 +194,8 @@ Checks:
  4. No git conflict markers in build/config files — `build.mjs` shipped
     with `<<<<<<<` markers once (`5e4fb1df`).
  5. the lefthook config the postinstall hook installer expects exists.
+ 6. every test category reaches CI.
+ 7. the package surfaces agree with scripts/package-manifest.ts.
 
 Run it directly: `bun run check:ci-config`
 
