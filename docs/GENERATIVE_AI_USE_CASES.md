@@ -21,6 +21,7 @@ Companion docs: [`api.md`](./api.md) (endpoint reference), [`MCP_SERVER.md`](./M
 | Client generation core | [`src/js/milkdrop/preset-generator.ts`](../src/js/milkdrop/preset-generator.ts), [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) | Provider abstraction; prompt scaffolding shared by client and Worker; compiles returned source before loading |
 | Deterministic fallback | [`src/js/milkdrop/ai-preset-synthesizer.ts`](../src/js/milkdrop/ai-preset-synthesizer.ts) | Non-LLM themed template synthesizer; offline fallback and eval control |
 | Measurement labs | [`scripts/preset-lab-reactivity.ts`](../scripts/preset-lab-reactivity.ts), [`scripts/preset-lab-visual.ts`](../scripts/preset-lab-visual.ts) | Headless per-variable reactivity verdicts; browser pixel/reactivity metrics; both support baseline/compare |
+| Generation benchmark | [`scripts/preset-lab-generation-bench.ts`](../scripts/preset-lab-generation-bench.ts) | `lab:generation-bench` scores any generation provider (default: the deterministic synthesizer as control) against a frozen prompt set on real-compiler compile success and the reactivity probe, with baseline/compare; render-based visual metrics remain an open stub (`--visual`) |
 | Agent tooling | [`scripts/mcp-server.ts`](../scripts/mcp-server.ts), [`docs/MCP_SERVER.md`](./MCP_SERVER.md) | MCP tools including a describe → see → tweak → compare loop |
 
 ### Evidence boundaries
@@ -72,7 +73,7 @@ Exit criteria:
 ### Closed-loop iteration and a generation benchmark
 
 - Chain generate → validate → measure → regenerate as an agent-facing loop, building on the MCP server's existing describe → see → tweak → compare tooling, with lab compare modes ("movers" tables, side-by-side contact sheets) as the iteration signal.
-- Establish a generation benchmark corpus mirroring the certification-corpus pattern: a fixed prompt set, scored on compile success, reactivity verdicts, and visual metrics, tracked over time so model routing and prompt changes are regressions-tested like renderer changes.
+- Done in part: [`lab:generation-bench`](../scripts/preset-lab-generation-bench.ts) establishes the corpus half — a frozen 20-prompt set scored per generation on real-compiler compile success and the reactivity probe, with baseline/compare and the deterministic synthesizer as the control provider; model-backed providers run behind flags. Still missing: render-based visual metrics (`--visual` is a documented stub pending the browser path) and the closed agent loop itself.
 
 Exit criteria:
 

@@ -126,6 +126,7 @@
     "lab:blend-gate": "bun run scripts/preset-lab-blend-gate.ts",
     "lab:edit-eval": "bun run scripts/preset-lab-edit-eval.ts",
     "lab:flash-audit": "bun run scripts/analyze-preset-flash.ts",
+    "lab:generation-bench": "bun run scripts/preset-lab-generation-bench.ts",
     "lab:flash-risk": "bun run scripts/preset-lab-flash-risk.ts",
     "lab:sensitivity": "bun run scripts/preset-lab-sensitivity.ts",
     "lab:shader-fix-bench": "bun run scripts/preset-lab-shader-fix-bench.ts",

@@ -267,7 +267,13 @@ async function requestOpenRouterPreset(
   return extractMilkSource(content);
 }
 
-async function requestPresetFromProvider(
+/**
+ * Request raw `.milk` source for one prompt from any provider, without
+ * compiling it. The Generate flow compiles inside `generatePreset`; the
+ * generation bench needs the raw source so it can score the model's actual
+ * output against the real compiler.
+ */
+export async function requestPresetFromProvider(
   description: string,
   options: GeneratePresetOptions,
   provider: PresetGenerationProvider,
