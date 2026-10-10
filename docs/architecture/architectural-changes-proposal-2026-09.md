@@ -461,7 +461,7 @@ and need nothing extra.
   internals. Change 2 measures that coupling and change 5 narrows it.
 - **Docs drift noted, not fixed here.** [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md)
   says the repo has 127 scripts; `package.json` has 154.
-  [`FULL_REFACTOR_PLAN.md`](../FULL_REFACTOR_PLAN.md) still describes the
+  [`archive/FULL_REFACTOR_PLAN.md`](../archive/FULL_REFACTOR_PLAN.md) still describes the
   retired toy stage. Both belong in a docs-only change.
 
 ## Open questions for maintainers

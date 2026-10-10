@@ -142,5 +142,5 @@
 
 - This file is the authoritative, editable status checklist for roadmap/refactor/debt/UX execution.
 - Update this file in the same PR when item status changes.
-- Keep `docs/FULL_REFACTOR_PLAN.md` for detailed strategy and rationale (non-authoritative for checklist state).
+- Keep [`docs/archive/FULL_REFACTOR_PLAN.md`](./archive/FULL_REFACTOR_PLAN.md) for detailed strategy and rationale (non-authoritative for checklist state).
 - Recent changes (2026-05-17): Overlay theme CSS variables extraction for improved maintainability and consistency.

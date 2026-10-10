@@ -101,7 +101,7 @@ Apply the matching skill whenever a PR touches that category — reviewing with 
 - Day-to-day repo commands: [`../DEVELOPMENT.md`](../DEVELOPMENT.md)
 - Visualizer runtime and preset details: [`../MILKDROP_PRESET_RUNTIME.md`](../MILKDROP_PRESET_RUNTIME.md)
 - Runtime architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
-- Current project status and next targets: [`../STATUS_2026-05.md`](../STATUS_2026-05.md)
+- Current project status and next targets: [`../ROADMAP.md`](../ROADMAP.md)
 - Release evidence ledger (certified/open/pending): [`../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md`](../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md)
 - Public claim audit findings: [`../evidence/public-claim-audit.md`](../evidence/public-claim-audit.md)
 - Shader compiler support inventory: [`../architecture/shader-support-inventory.md`](../architecture/shader-support-inventory.md)
