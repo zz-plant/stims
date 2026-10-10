@@ -1,23 +1,19 @@
 # Stims Developer Documentation Portal
 
-Welcome to the **Stims** developer documentation portal.
-
 ---
 
-## 🧭 Developer Tracks
-
-Choose a track below based on what you are looking to accomplish:
+## Developer Tracks
 
 ```mermaid
 flowchart LR
   Start(["Stims Developer Hub"])
 
-  Start --> GS["🚀 Getting Started"]
-  Start --> Arch["🏛️ Architecture & Engine"]
-  Start --> Preset["🎨 Preset Authoring"]
-  Start --> API["🔌 Optional APIs"]
-  Start --> Strat["📊 Strategy & QA"]
-  Start --> Access["♿ Accessibility & Sensory Research"]
+  Start --> GS["Getting Started"]
+  Start --> Arch["Architecture & Engine"]
+  Start --> Preset["Preset Authoring"]
+  Start --> API["Optional APIs"]
+  Start --> Strat["Strategy & QA"]
+  Start --> Access["Accessibility & Sensory Research"]
 
   GS --> GS0["ONBOARDING.md<br/>learning curve map"]
   GS --> GS3["GUARDRAILS.md<br/>enforced rules (generated)"]
@@ -47,103 +43,103 @@ flowchart LR
 
 ---
 
-### 🚀 1. Getting Started & Workflows
+### 1. Getting Started & Workflows
 
-Everything you need to set up your environment, run the local dev server, run quality gates, and deploy.
-
-| Document | Description |
-| --- | --- |
-| 🧭 [**Onboarding Map**](./ONBOARDING.md) | Which parts of the codebase are hard, why, and what order to learn them in — read first |
-| 🛠️ [**Development Setup**](./DEVELOPMENT.md) | Local environment setup (Bun 1.3+), scripts, dev server, and troubleshooting |
-| 🚀 [**Deployment Guide**](./DEPLOYMENT.md) | Cloudflare Workers Builds pipeline, build cache, environment variables, and Wrangler configuration |
-| 🧪 [**Testing & Quality Gate**](./TESTING.md) | Running unit/integration tests, `bun run check`, and automated verification matrices |
-| 🛡️ [**Guardrails**](./GUARDRAILS.md) | Every rule the repo enforces and why — generated from the guard scripts, so it cannot go stale |
-| 📝 [**Commit & Review Conventions**](./COMMIT_CONVENTIONS.md) | Git workflow, Conventional Commits format, and PR contribution rules |
-
----
-
-### 🏛️ 2. Core Architecture & Engine Internals
-
-Deep-dive specifications into the JIT VM, dual WebGPU/WebGL2 rendering pipeline, and audio processing.
+Environment setup, local dev server, quality gates, and deploy.
 
 | Document | Description |
 | --- | --- |
-| 📐 [**Architecture Overview**](./ARCHITECTURE.md) | High-level system architecture, SPA URL state, React workspace, and engine seams |
-| 🧱 [**Technical Foundations**](./TECHNICAL_ACHIEVEMENTS.md) | System diagram, implemented systems, evidence boundaries, beta behavior, optional services, and non-shipped scaffolding |
-| ⚡ [**MilkDrop Preset Runtime**](./MILKDROP_PRESET_RUNTIME.md) | Preset compiler lifecycle, EEL2 expression execution, memory buffers, and signal contracts |
-| 📈 [**Runtime Performance Evidence**](./RUNTIME_PERFORMANCE.md) | Repeated production FPS methodology, hardware GPU timing, adaptive resource tiers, measured JIT result, caveats, and reproduction command |
-| 🖥️ [**WebGPU Architectural Revamp**](./WEBGPU_ARCHITECTURAL_REVAMP.md) | WebGPU TSL/WGSL pipeline design, feature rollout flags, and WebGL2 fallback chains |
-| 🎯 [**Renderer Capability Contract**](./architecture/fallback-state-machine.md) | Fallback state machine, capability probing, and the renderScale propagation contract |
-| 🔍 [**Shader Support Inventory**](./architecture/shader-support-inventory.md) | MilkDrop compiler shader-capability audit |
-| 📐 [**Rasterization Fidelity Audit**](./architecture/rasterization-fidelity-audit.md) | WebGL vs WebGPU output divergence across waves, shapes, and borders |
-| 🧭 [**Architectural Changes Proposal (2026-09)**](./architecture/architectural-changes-proposal-2026-09.md) | Measured proposal to type the engine seam, enforce the frontend → engine boundary, unify catalog projections, decompose the shell, and reshape the engine directory |
+| [**Onboarding Map**](./ONBOARDING.md) | Which parts of the codebase are hard, why, and what order to learn them in — read first |
+| [**Development Setup**](./DEVELOPMENT.md) | Local environment setup (Bun 1.3+), scripts, dev server, and troubleshooting |
+| [**Deployment Guide**](./DEPLOYMENT.md) | Cloudflare Workers Builds pipeline, build cache, environment variables, and Wrangler configuration |
+| [**Testing & Quality Gate**](./TESTING.md) | Running unit/integration tests, `bun run check`, and automated verification matrices |
+| [**Guardrails**](./GUARDRAILS.md) | Every rule the repo enforces and why — generated from the guard scripts, so it cannot go stale |
+| [**Commit & Review Conventions**](./COMMIT_CONVENTIONS.md) | Git workflow, Conventional Commits format, and PR contribution rules |
 
 ---
 
-### 🎨 3. Preset Authoring & Parity
+### 2. Core Architecture & Engine Internals
+
+JIT VM, dual WebGPU/WebGL2 rendering pipeline, and audio processing.
+
+| Document | Description |
+| --- | --- |
+| [**Architecture Overview**](./ARCHITECTURE.md) | High-level system architecture, SPA URL state, React workspace, and engine seams |
+| [**Technical Foundations**](./TECHNICAL_ACHIEVEMENTS.md) | System diagram, implemented systems, evidence boundaries, beta behavior, optional services, and non-shipped scaffolding |
+| [**MilkDrop Preset Runtime**](./MILKDROP_PRESET_RUNTIME.md) | Preset compiler lifecycle, EEL2 expression execution, memory buffers, and signal contracts |
+| [**Runtime Performance Evidence**](./RUNTIME_PERFORMANCE.md) | Repeated production FPS methodology, hardware GPU timing, adaptive resource tiers, measured JIT result, caveats, and reproduction command |
+| [**WebGPU Architectural Revamp**](./WEBGPU_ARCHITECTURAL_REVAMP.md) | WebGPU TSL/WGSL pipeline design, feature rollout flags, and WebGL2 fallback chains |
+| [**Renderer Capability Contract**](./architecture/fallback-state-machine.md) | Fallback state machine, capability probing, and the renderScale propagation contract |
+| [**Shader Support Inventory**](./architecture/shader-support-inventory.md) | MilkDrop compiler shader-capability audit |
+| [**Rasterization Fidelity Audit**](./architecture/rasterization-fidelity-audit.md) | WebGL vs WebGPU output divergence across waves, shapes, and borders |
+| [**Architectural Changes Proposal (2026-09)**](./architecture/architectural-changes-proposal-2026-09.md) | Measured proposal to type the engine seam, enforce the frontend → engine boundary, unify catalog projections, decompose the shell, and reshape the engine directory |
+
+---
+
+### 3. Preset Authoring & Parity
 
 Guides for writing MilkDrop equations, shader math, and projectM compatibility specs.
 
 | Document | Description |
 | --- | --- |
-| 🎓 [**Preset Authoring Curriculum**](./authoring/README.md) | Learn-by-doing course with live runnable examples — start here if you're new to writing presets |
-| 📖 [**Language Reference**](./authoring/reference.md) | Generated from the compiler's builtin table: every function, signal, state variable, and register |
-| ✒️ [**MilkDrop Coding Guide**](./MILKDROP_CODING_GUIDE.md) | Authoring visualizer presets, MilkDrop math functions, per-frame/per-pixel equations, and top 1% patterns |
-| 🗺️ [**Authoring Docs Master Plan**](./PRESET_AUTHORING_DOCS_PLAN.md) | Landscape assessment and the roadmap for the full curriculum, cookbook, and compatibility matrix |
-| 🎯 [**ProjectM Parity Plan**](./MILKDROP_PROJECTM_PARITY_PLAN.md) | Parity milestone objectives, feature coverage targets, and test suites |
-| 📋 [**ProjectM Parity Backlog**](./MILKDROP_PROJECTM_PARITY_BACKLOG.md) | Detailed feature audit and parity item checklist against original Winamp MilkDrop / projectM |
+| [**Preset Authoring Curriculum**](./authoring/README.md) | Learn-by-doing course with live runnable examples — start here if you're new to writing presets |
+| [**Language Reference**](./authoring/reference.md) | Generated from the compiler's builtin table: every function, signal, state variable, and register |
+| [**MilkDrop Coding Guide**](./MILKDROP_CODING_GUIDE.md) | Authoring visualizer presets, MilkDrop math functions, per-frame/per-pixel equations, and top 1% patterns |
+| [**Authoring Docs Master Plan**](./PRESET_AUTHORING_DOCS_PLAN.md) | Landscape assessment and the roadmap for the full curriculum, cookbook, and compatibility matrix |
+| [**ProjectM Parity Plan**](./MILKDROP_PROJECTM_PARITY_PLAN.md) | Parity milestone objectives, feature coverage targets, and test suites |
+| [**ProjectM Parity Backlog**](./MILKDROP_PROJECTM_PARITY_BACKLOG.md) | Detailed feature audit and parity item checklist against original Winamp MilkDrop / projectM |
 
 ---
 
-### 🔌 4. Optional APIs
+### 4. Optional APIs
 
 Deployment-dependent generation, search, community, and Model Context Protocol (MCP) integrations. Local playback, browsing, editing, and import/export do not require these services.
 
 | Document | Description |
 | --- | --- |
-| 🌐 [**API Reference**](./api.md) | Cloudflare Worker endpoints for `generate-preset`, `blend-presets`, `visual-search`, and `batch-generate` |
-| 🔌 [**MCP Server Guide**](./MCP_SERVER.md) | Integrating Stims with AI coding tools, LLM tools, and MCP servers |
+| [**API Reference**](./api.md) | Cloudflare Worker endpoints for `generate-preset`, `blend-presets`, `visual-search`, and `batch-generate` |
+| [**MCP Server Guide**](./MCP_SERVER.md) | Integrating Stims with AI coding tools, LLM tools, and MCP servers |
 
 ---
 
-### 📊 5. Strategy, QA & Project Lineage
+### 5. Strategy, QA & Project Lineage
 
 Roadmap priorities, QA verification suites, and historical context.
 
 | Document | Description |
 | --- | --- |
-| 🗺️ [**Project Roadmap**](./ROADMAP.md) | Quarterly milestones, feature roadmap, and active architectural priorities |
-| 🎯 [**Product Moments**](./PRODUCT_MOMENTS.md) | The visitor moments work is judged by: the claim each proves, what counts as correct, its instruments and telemetry, plus standing policies |
-| 🧪 [**Training and Evaluating Models**](./guides/training-models.md) | Headless datasets, baselines, and benchmarks for ML work on the preset corpus: sync pairs, family splits, memory classes, blind spots, licensing |
-| 🤖 [**Generative AI Use Cases**](./GENERATIVE_AI_USE_CASES.md) | Proposal for extending the shipped AI surface: quality gates, new UI surfaces, closed-loop iteration, and benchmarks |
-| 📈 [**Implementation Status**](./IMPLEMENTATION_STATUS.md) | Consolidated tracking of refactor milestones, completed features, and active debt queues |
-| 🧰 [**Tech Stack Modernization (2026-09)**](./TECH_STACK_MODERNIZATION_2026-09.md) | Ranked dependency and toolchain audit: what landed (TS 7, MCP v2, lefthook, knip), what is next, and what to keep |
-| 📊 [**Release Evidence Ledger**](./evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md) | Source of truth on certified, baseline-measured, and unmeasured presets plus fidelity gaps by subsystem |
-| 🧹 [**Recurring Fix Patterns Audit**](./evidence/RECURRING_FIX_PATTERNS_AUDIT_2026-05.md) | Root-cause analysis of the recurring regression clusters |
-| 🔍 [**QA Plan & Baseline**](./QA_PLAN.md) | Manual smoke testing baseline, automated verification suites, and regression matrices |
-| 📜 [**Lineage & Credits**](./LINEAGE_AND_CREDITS.md) | Project history, homage to Ryan Geiss's MilkDrop, Butterchurn, and projectM |
+| [**Project Roadmap**](./ROADMAP.md) | Quarterly milestones, feature roadmap, and active architectural priorities |
+| [**Product Moments**](./PRODUCT_MOMENTS.md) | The visitor moments work is judged by: the claim each proves, what counts as correct, its instruments and telemetry, plus standing policies |
+| [**Training and Evaluating Models**](./guides/training-models.md) | Headless datasets, baselines, and benchmarks for ML work on the preset corpus: sync pairs, family splits, memory classes, blind spots, licensing |
+| [**Generative AI Use Cases**](./GENERATIVE_AI_USE_CASES.md) | Proposal for extending the shipped AI surface: quality gates, new UI surfaces, closed-loop iteration, and benchmarks |
+| [**Implementation Status**](./IMPLEMENTATION_STATUS.md) | Consolidated tracking of refactor milestones, completed features, and active debt queues |
+| [**Tech Stack Modernization (2026-09)**](./TECH_STACK_MODERNIZATION_2026-09.md) | Ranked dependency and toolchain audit: what landed (TS 7, MCP v2, lefthook, knip), what is next, and what to keep |
+| [**Release Evidence Ledger**](./evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md) | Source of truth on certified, baseline-measured, and unmeasured presets plus fidelity gaps by subsystem |
+| [**Recurring Fix Patterns Audit**](./evidence/RECURRING_FIX_PATTERNS_AUDIT_2026-05.md) | Root-cause analysis of the recurring regression clusters |
+| [**QA Plan & Baseline**](./QA_PLAN.md) | Manual smoke testing baseline, automated verification suites, and regression matrices |
+| [**Lineage & Credits**](./LINEAGE_AND_CREDITS.md) | Project history, homage to Ryan Geiss's MilkDrop, Butterchurn, and projectM |
 
 ---
 
-### ♿ 6. Accessibility & Sensory Research
+### 6. Accessibility & Sensory Research
 
 Research grounding for Stims' sensory-control claims, open research questions, and the flash-safety specification — no therapeutic claims.
 
 | Document | Description |
 | --- | --- |
-| 🧠 [**Sensory Accessibility & Control Research**](./SENSORY_ACCESSIBILITY.md) | The distinctive-control claim, layered research program, literature status table, and flash-safety spec |
-| 📚 [**Literature Reference Map**](./LITERATURE.md) | Citation list grouped by theme, for UI-copy grounding and the research program above |
-| ♿ [**Sensory Control Guide**](./guides/accessibility.md) | User-facing story of how Stims lets you decide how much is on screen |
+| [**Sensory Accessibility & Control Research**](./SENSORY_ACCESSIBILITY.md) | The distinctive-control claim, layered research program, literature status table, and flash-safety spec |
+| [**Literature Reference Map**](./LITERATURE.md) | Citation list grouped by theme, for UI-copy grounding and the research program above |
+| [**Sensory Control Guide**](./guides/accessibility.md) | User-facing story of how Stims lets you decide how much is on screen |
 
 ---
 
-### 🗄️ Archive
+### Archive
 
 Superseded plans, dated audits, and historical critiques live in [docs/archive/](./archive/) so they stay reachable without crowding the index.
 
 ---
 
-## ⚡ Quick Reference Commands
+## Quick Reference Commands
 
 ```bash
 bun install           # Install dependencies
@@ -155,7 +151,7 @@ bun run build         # Production web bundle build
 
 ---
 
-## 📂 Codebase Directory Overview
+## Codebase Directory Overview
 
 ```
 stims/

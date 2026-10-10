@@ -47,7 +47,7 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 
 ## How it compares
 
-Butterchurn and projectM are where most people meet MilkDrop presets today, and both are good at what they do: they're renderers you embed or run. Stims is a whole app, on a renderer of its own.
+Butterchurn and projectM are the renderers most people embed or run today. Stims is a whole app, on a renderer of its own.
 
 | | Stims | Butterchurn | projectM |
 | --- | --- | --- | --- |
