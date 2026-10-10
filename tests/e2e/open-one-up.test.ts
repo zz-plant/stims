@@ -29,6 +29,11 @@ import {
 } from 'milkdrop-toolchain/src/preset-dataflow.ts';
 import { chromium, type Page } from 'playwright';
 import type { FrameStats } from '../../src/js/core/services/visual-embedding.ts';
+import { addSpinExample } from '../../src/js/frontend/first-edit.ts';
+import {
+  buildPresetCodeHash,
+  decodePresetCodeFromHash,
+} from '../../src/js/frontend/url-state.ts';
 import {
   COLOR_GROUPS,
   ENUM_CONTROLS,
@@ -265,6 +270,85 @@ function chipText({ state, audio }: ChipReading): string {
   if (audio.length === 0) return 'eq';
   return `eq · ${audio[0]}${audio.length > 1 ? ` +${audio.length - 1}` : ''}`;
 }
+
+requiredBrowserTest(
+  'shared spin draft waits for its requested preset on a cold reload',
+  async () => {
+    const presetId = 'krash-rovastar-cerebral-demons-stars';
+    const raw = readFileSync(
+      path.join('public/milkdrop-presets', `${presetId}.milk`),
+      'utf8',
+    );
+    const source = addSpinExample(
+      compileMilkdropPresetSource(raw, { id: presetId }).formattedSource,
+    ).after;
+    const browser = await chromium.launch({
+      headless: HEADLESS,
+      args: WEBGL_RENDERER_ARGS,
+    });
+    const ctx = await browser.newContext({
+      viewport: { width: 800, height: 600 },
+      deviceScaleFactor: 1,
+    });
+    const page = await ctx.newPage();
+    let releaseSource: () => void = () => {};
+    const sourceHeld = new Promise<void>((resolve) => {
+      releaseSource = resolve;
+    });
+    try {
+      // Catalog readiness precedes the requested .milk fetch. Hold that
+      // fetch so the draft cannot accidentally win by loading on a fast GPU.
+      await page.route(
+        `**/milkdrop-presets/${presetId}.milk`,
+        async (route) => {
+          await sourceHeld;
+          await route.continue();
+        },
+      );
+      await page.goto(
+        `${SERVER_URL}/?agent=true&renderer=webgl&lockQualityStep=6&preset=${presetId}&audio=demo${buildPresetCodeHash(source)}`,
+      );
+      await waitForAgentState(
+        page,
+        agentPredicates.engineLive(),
+        LIVE_TIMEOUT_MS,
+      );
+      await waitForFrames(page, 10);
+      const beforeLoad = await page.evaluate(() =>
+        window.__stims_agent?.getVariables(),
+      );
+      expect(
+        beforeLoad?.flip,
+        'the shared draft must not run as the fallback preset',
+      ).toBeUndefined();
+      expect(
+        decodePresetCodeFromHash(await page.evaluate(() => location.hash)),
+      ).toBe(source);
+      releaseSource();
+      await bounded(
+        page.evaluate(() => window.stims?.agent?.ready()),
+        'waiting for startup selection',
+      );
+      await waitForFrames(page, 10);
+      expect((await getAgentState(page)).presetId).toBe(presetId);
+      const variables = await page.evaluate(() =>
+        window.__stims_agent?.getVariables(),
+      );
+      expect(Math.abs(variables?.flip ?? 0)).toBe(1);
+      expect(variables?.rot, 'the restored spin equation runs').toBeCloseTo(
+        0.12,
+      );
+      const stats = await captureAgentStats(page);
+      expect(stats).not.toBeNull();
+      expect(stats?.histogram[0]).toBeLessThan(0.95);
+      expect((await getAgentState(page)).audioSource).toBe('demo');
+    } finally {
+      releaseSource();
+      await closeQuietly(ctx, browser);
+    }
+  },
+  { timeout: 180_000 },
+);
 
 requiredBrowserTest(
   'open one up: the editor names the sounds dataflow finds, and an edit runs without stopping the music',

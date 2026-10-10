@@ -1120,6 +1120,7 @@ export function createMilkdropExperience({
     navigation,
     presetFileActions,
     session,
+    startupSettled,
     applyFieldValues,
     activeCompiled,
     activePresetId,
@@ -1310,6 +1311,10 @@ function buildExperienceController(
      * returning that read as a clean compile of a source that never landed.
      */
     async applyEditorSourceAwaited(source: string) {
+      // A shared draft arrives while the startup preset may still be
+      // loading. Compiling against the fallback here gives it the wrong
+      // identity, and the pending load can then replace the edited visual.
+      await deps.startupSettled;
       const { state, applied } =
         await deps.session.applySourceWithOutcome(source);
       deps.emitChange();
