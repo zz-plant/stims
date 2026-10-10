@@ -68,7 +68,7 @@ lifecycle) is tested in `packages/audio-reactive/tests/`. Here:
 
 ## Editor / authoring / presets
 
-`editor-panel.test.ts` · `editor-panel-controls.test.ts` · `milkdrop-editor-session.test.ts` ·
+`editor-panel.test.ts` · `editor-panel-controls.test.ts` · `editor-panel-textures.test.ts` · `milkdrop-editor-session.test.ts` ·
 `preset-controls.test.ts` · (formatter tests: `packages/milkdrop-toolchain/tests/`) ·
 `live-modulation.test.ts` · `preset-modulation.test.ts` · `preset-sharing.test.ts` ·
 `preset-file-actions.test.ts` · `preset-id-resolution.test.ts` · `preset-handles.test.ts` ·

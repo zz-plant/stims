@@ -87,6 +87,7 @@ import { InspectPane } from './editor-pane-inspect.ts';
 import { OutlinePane } from './editor-pane-outline.ts';
 import { ReferencePane } from './editor-pane-reference.ts';
 import { ShaderPane } from './editor-pane-shader.ts';
+import { TexturesPane } from './editor-pane-textures.ts';
 import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
@@ -96,6 +97,11 @@ import {
   type SourceDiffLine,
   samePresetSource,
 } from './source-diff.ts';
+import {
+  formatAudioReachSummary,
+  summarizeAudioReach,
+} from './version-compare-summary.ts';
+import { setWatchedVariables } from './watcher-hud.ts';
 
 /**
  * Kept as the module's public names because tests, the MIDI layer and the MCP
@@ -116,6 +122,19 @@ function escapeHtml(value: string): string {
 
 export type EditorPanelCallbacks = {
   onEditorSourceChange: (source: string) => void;
+  /**
+   * A code edit the visitor typed, pasted, cut or dropped into the buffer has
+   * been committed down the apply path (the same debounce that hands the draft
+   * to the engine). Panel-driven writes — Tune controls, session reloads, AI
+   * proposals — dispatch without a user annotation and never fire this.
+   */
+  onUserCodeEditApplied?: () => void;
+  /**
+   * A Tune-pane control committed a value into the draft: a fader, swatch,
+   * switch, mode, range, parameter knob, or modulation. Fired when the value
+   * actually changed the buffer, whatever the commit cadence.
+   */
+  onTuneControlCommit?: () => void;
   /** Live feedback for a numeric field during a drag: applied to the running
    * VM without a recompile. The value is committed to the source separately
    * (on release), so the runtime staying absent only degrades to the old
@@ -132,6 +151,13 @@ export type EditorPanelCallbacks = {
    * it. Resolves null when there is nothing to compare against.
    */
   getOriginalSource?: () => Promise<string | null>;
+  /**
+   * The backend the stage is currently rendering with, or null when the
+   * caller cannot tell. Panes that report per-backend behavior (volume
+   * texture samples differ: WebGL slices a bundled 2D atlas, WebGPU reads
+   * native 3D volumes) say which view they are showing instead of guessing.
+   */
+  getActiveBackend?: () => 'webgl' | 'webgpu' | null;
   onDuplicatePreset: () => void;
   onExport: () => void;
   onDeletePreset: () => void;
@@ -189,6 +215,7 @@ export class EditorPanel {
   private readonly referencePane: ReferencePane;
   private readonly insertPane: InsertPane;
   private readonly compatPane: CompatPane;
+  private readonly texturesPane: TexturesPane;
   private readonly outlinePane: OutlinePane;
   private readonly inspectPane: InspectPane;
   private readonly shaderPane: ShaderPane;
@@ -200,6 +227,7 @@ export class EditorPanel {
   private readonly stage: HTMLElement;
   private readonly problems: HTMLElement;
   private readonly problemsCount: HTMLElement;
+  private readonly problemsBody: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly deleteButton: HTMLButtonElement;
   /** Relabelled per compile: what the link carries depends on `state.dirty`. */
@@ -630,6 +658,7 @@ export class EditorPanel {
     const editorViewState = createEditorView({
       parent: editorHost,
       onDocChange: (source) => this.callbacks.onEditorSourceChange(source),
+      onUserCodeEditApplied: () => this.callbacks.onUserCodeEditApplied?.(),
       onBufferedEdit: () => {
         // The flag must flip synchronously (commit logic reads it), but the
         // diagnostics + control re-render below cost a full preset parse and
@@ -711,12 +740,12 @@ export class EditorPanel {
     const quickFixBtn = this.renderQuickFix();
     this.quickFixBtn = quickFixBtn;
     problemsHead.append(problemsToggle, quickFixBtn);
-    const problemsBody = document.createElement('div');
-    problemsBody.className = 'stims-editor__problems-body';
+    this.problemsBody = document.createElement('div');
+    this.problemsBody.className = 'stims-editor__problems-body';
     this.diagnosticsList = document.createElement('div');
     this.diagnosticsList.className = 'stims-editor__problems-list';
-    problemsBody.appendChild(this.diagnosticsList);
-    this.problems.append(problemsHead, problemsBody);
+    this.problemsBody.appendChild(this.diagnosticsList);
+    this.problems.append(problemsHead, this.problemsBody);
 
     // ── Dock ──────────────────────────────────────────────────────
     // Four tabs replace six stacked rail sections. At this panel width
@@ -735,12 +764,18 @@ export class EditorPanel {
     this.referencePane = new ReferencePane(host);
     this.insertPane = new InsertPane(host);
     this.compatPane = new CompatPane(host);
+    this.texturesPane = new TexturesPane(host, {
+      getActiveBackend: callbacks.getActiveBackend,
+    });
     this.outlinePane = new OutlinePane(host, {
       onTuneSlot: (slot) => this.showSlotInTune(slot),
     });
     this.inspectPane = new InspectPane(host, {
       onSetStageFrozen: callbacks.onSetStageFrozen,
       onStepFrame: callbacks.onStepFrame,
+      // Pins are the stage HUD's watch set (watcher-hud.ts), which keeps
+      // plotting after the editor closes, so the names leave the pane.
+      onPinsChanged: (names) => setWatchedVariables(names),
     });
     this.shaderPane = new ShaderPane(host);
 
@@ -757,6 +792,11 @@ export class EditorPanel {
       { id: 'inspect', label: 'Inspect', content: this.inspectPane.element },
       { id: 'shader', label: 'Shader', content: this.shaderPane.element },
       { id: 'compat', label: 'Compat', content: this.compatPane.element },
+      {
+        id: 'textures',
+        label: 'Textures',
+        content: this.texturesPane.element,
+      },
       { id: 'history', label: 'History', content: this.renderHistoryPane() },
     ];
     const tabButtons: HTMLButtonElement[] = [];
@@ -793,6 +833,7 @@ export class EditorPanel {
       tab.dataset.pane = pane.id;
       if (pane.id === 'compat') this.compatPane.bindTab(tab);
       if (pane.id === 'shader') this.shaderPane.bindTab(tab);
+      if (pane.id === 'textures') this.texturesPane.bindTab(tab);
       pane.content.classList.add('stims-editor__pane');
       pane.content.id = `stims-editor-pane-${pane.id}`;
       pane.content.setAttribute('role', 'tabpanel');
@@ -1459,10 +1500,10 @@ export class EditorPanel {
           const output = document.createElement('div');
           const paintDiff = () => {
             const target = saved.find((other) => other.id === picker.value);
-            const diff = computeSourceDiff(
-              version.source,
-              target ? target.source : this.editor.state.doc.toString(),
-            );
+            const targetSource = target
+              ? target.source
+              : this.editor.state.doc.toString();
+            const diff = computeSourceDiff(version.source, targetSource);
             if (diff.length === 0) {
               const same = document.createElement('p');
               same.className = 'stims-editor__hint';
@@ -1472,6 +1513,20 @@ export class EditorPanel {
               output.replaceChildren(same);
             } else {
               output.replaceChildren(buildDiffElement(diff));
+            }
+            // The audio-reach summary (version-compare-summary.ts): a
+            // plain-language reading of how the preset's relationship with
+            // the music changed, under the line diff it is derived from.
+            const reach = summarizeAudioReach(version.source, targetSource);
+            if (reach.length > 0) {
+              const note = document.createElement('p');
+              note.className = 'stims-editor__version-listen';
+              note.title =
+                'Derived from the static dataflow of both sources: which sounds each control and drawn part can reach, not what is audible right now.';
+              const heading = document.createElement('strong');
+              heading.textContent = 'What changed in how it listens: ';
+              note.append(heading, `${formatAudioReachSummary(reach)}.`);
+              output.appendChild(note);
             }
           };
           picker.addEventListener('change', paintDiff);
@@ -1642,6 +1697,7 @@ export class EditorPanel {
     this.updateControlDataflow(state.activeCompiled);
     this.compatPane.update(state);
     this.shaderPane.update(state);
+    this.texturesPane.update(state);
     const dataflow = this.controlDataflow?.dataflow ?? null;
     this.outlinePane.update(
       state,
@@ -1695,67 +1751,62 @@ export class EditorPanel {
       ...derivedNotices,
     ];
 
-    if (consoleMessages.length === 0) {
+    // A clean compile is the header's "clean" and nothing else: the line
+    // under it cost the code two lines of height on every first open.
+    this.problemsBody.hidden = consoleMessages.length === 0;
+    consoleMessages.slice(0, 15).forEach((diagnostic) => {
       const item = document.createElement('div');
-      item.className = 'stims-editor__problems-empty';
-      item.textContent =
-        'No problems. Try bass_att, beat_pulse, or time to push the scene around.';
+      item.className = `stims-editor__problem stims-editor__problem--${diagnostic.severity}`;
+
+      // Severity as a fixed-width mono tag rather than a filled pill: the
+      // column reads as a log, and the tags stop competing with the code
+      // for attention. (These were inline styles before.)
+      const severityTag = document.createElement('span');
+      severityTag.className = 'stims-editor__problem-tag';
+      severityTag.textContent = diagnostic.severity;
+
+      const hasLine = 'line' in diagnostic && Boolean(diagnostic.line);
+      if (hasLine) {
+        const lineTag = document.createElement('span');
+        lineTag.className = 'stims-editor__problem-line';
+        lineTag.textContent = `Line ${diagnostic.line}`;
+        item.append(severityTag, lineTag);
+      } else {
+        item.append(severityTag);
+      }
+
+      const messageSpan = document.createElement('span');
+      messageSpan.textContent = diagnostic.message;
+      item.appendChild(messageSpan);
+
+      if (hasLine && diagnostic.line) {
+        const lineNum = diagnostic.line;
+        item.classList.add('stims-editor__problem--jump');
+        item.title = 'Jump to this line';
+        // The row acts as a button, so it must be reachable and operable
+        // from the keyboard like one.
+        item.setAttribute('role', 'button');
+        item.tabIndex = 0;
+        const jumpToLine = () => {
+          if (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) {
+            const line = this.editor.state.doc.line(lineNum);
+            this.editor.dispatch({
+              selection: { anchor: line.from },
+              scrollIntoView: true,
+            });
+            this.editor.focus();
+          }
+        };
+        item.addEventListener('click', jumpToLine);
+        item.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          event.stopPropagation();
+          jumpToLine();
+        });
+      }
       this.diagnosticsList.appendChild(item);
-    } else {
-      consoleMessages.slice(0, 15).forEach((diagnostic) => {
-        const item = document.createElement('div');
-        item.className = `stims-editor__problem stims-editor__problem--${diagnostic.severity}`;
-
-        // Severity as a fixed-width mono tag rather than a filled pill: the
-        // column reads as a log, and the tags stop competing with the code
-        // for attention. (These were inline styles before.)
-        const severityTag = document.createElement('span');
-        severityTag.className = 'stims-editor__problem-tag';
-        severityTag.textContent = diagnostic.severity;
-
-        const hasLine = 'line' in diagnostic && Boolean(diagnostic.line);
-        if (hasLine) {
-          const lineTag = document.createElement('span');
-          lineTag.className = 'stims-editor__problem-line';
-          lineTag.textContent = `Line ${diagnostic.line}`;
-          item.append(severityTag, lineTag);
-        } else {
-          item.append(severityTag);
-        }
-
-        const messageSpan = document.createElement('span');
-        messageSpan.textContent = diagnostic.message;
-        item.appendChild(messageSpan);
-
-        if (hasLine && diagnostic.line) {
-          const lineNum = diagnostic.line;
-          item.classList.add('stims-editor__problem--jump');
-          item.title = 'Jump to this line';
-          // The row acts as a button, so it must be reachable and operable
-          // from the keyboard like one.
-          item.setAttribute('role', 'button');
-          item.tabIndex = 0;
-          const jumpToLine = () => {
-            if (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) {
-              const line = this.editor.state.doc.line(lineNum);
-              this.editor.dispatch({
-                selection: { anchor: line.from },
-                scrollIntoView: true,
-              });
-              this.editor.focus();
-            }
-          };
-          item.addEventListener('click', jumpToLine);
-          item.addEventListener('keydown', (event) => {
-            if (event.key !== 'Enter' && event.key !== ' ') return;
-            event.preventDefault();
-            event.stopPropagation();
-            jumpToLine();
-          });
-        }
-        this.diagnosticsList.appendChild(item);
-      });
-    }
+    });
 
     this.updateSlidersFromDoc();
     this.updateColorsFromDoc();
@@ -1816,11 +1867,12 @@ export class EditorPanel {
               ? 'bound'
               : 'static';
       // What the equations feed into a driven field: the audio, by the names
-      // the code uses, so the chip answers "why does this move?" too.
+      // the code uses, so the chip answers "why does this move?" too. Every
+      // driving band, not a count: "eq · bass +2" hid mid and treble in a
+      // tooltip while the visible chip claimed to name the sounds
+      // (docs/PRODUCT_MOMENTS.md, "Open one up").
       const audio = state === 'driven' ? audioReaching(dataflow, driven) : null;
-      const follows = audio?.length
-        ? ` · ${audio[0]}${audio.length > 1 ? ` +${audio.length - 1}` : ''}`
-        : '';
+      const audioList = audio?.length ? ` · ${audio.join(', ')}` : '';
 
       cell.chip.dataset.state = state;
       cell.chip.textContent =
@@ -1829,7 +1881,7 @@ export class EditorPanel {
           : state === 'bound'
             ? 'midi'
             : state === 'driven'
-              ? `eq${follows}`
+              ? `eq${audioList}`
               : 'eq ⚠';
       // Only the equation states have somewhere to jump to.
       cell.chip.disabled = driven.length === 0;
@@ -2248,12 +2300,6 @@ export class EditorPanel {
     panel.setAttribute('role', 'group');
     panel.setAttribute('aria-label', 'Parameter sliders');
 
-    const hint = document.createElement('p');
-    hint.className = 'stims-editor__hint';
-    hint.textContent =
-      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value (set) or the preset recomputes it per frame (eq), and from which audio (eq · bass).';
-    panel.appendChild(hint);
-
     this.sliderInputs.clear();
     this.colorInputs.clear();
     this.toggleInputs.clear();
@@ -2262,14 +2308,25 @@ export class EditorPanel {
     this.modulationRows.clear();
     this.fieldStateCells = [];
 
-    // The preset's own parameters come first: they are what its author
-    // meant to be tuned. Empty (and hidden) for presets without any.
+    // Controls lead. With the intro paragraph and the wave-or-shape picker
+    // above them, Tune's first control started at the bottom edge of a
+    // 1280x720 window and the sounds the chips name sat below the fold
+    // (docs/PRODUCT_MOMENTS.md, "Open one up"). The picker now follows the
+    // labelled controls it can wait behind, and the teaching copy folds
+    // into a disclosure at the bottom.
+
+    // The preset's own parameters: they are what its author meant to be
+    // tuned. Empty (and hidden) for presets without any.
     this.knobsWrap = document.createElement('section');
     this.knobsWrap.className = 'stims-editor__section';
     this.knobsWrap.dataset.section = 'knobs';
     this.knobsWrap.setAttribute('aria-label', 'Preset parameters');
     this.knobsWrap.hidden = true;
     panel.appendChild(this.knobsWrap);
+
+    for (const section of CONTROL_SECTIONS) {
+      panel.appendChild(this.renderSection(section));
+    }
 
     // One custom wave's or shape's own settings, picked here or from its
     // Outline row. Hidden for presets that have none.
@@ -2295,9 +2352,19 @@ export class EditorPanel {
     this.slotWrap.append(pickerRow, this.slotControlsWrap);
     panel.appendChild(this.slotWrap);
 
-    for (const section of CONTROL_SECTIONS) {
-      panel.appendChild(this.renderSection(section));
-    }
+    // The pane's one explanation, folded behind a summary so it costs one
+    // row instead of three: what the chips say and where a click on one
+    // goes. Still present for whoever opens it; no longer in the way of
+    // the controls it explains.
+    const hint = document.createElement('details');
+    hint.className = 'stims-editor__hint-details';
+    const hintSummary = document.createElement('summary');
+    hintSummary.textContent = 'How Tune works';
+    const hintBody = document.createElement('p');
+    hintBody.textContent =
+      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value (set) or the preset recomputes it per frame (eq), and from which audio — naming every driving band (eq · bass, mid, treb). Click a chip to jump to the equation doing it.';
+    hint.append(hintSummary, hintBody);
+    panel.appendChild(hint);
 
     return panel;
   }
@@ -2508,6 +2575,7 @@ export class EditorPanel {
     // repaint, and flush to the engine at the control rate rather than the
     // typing debounce, so a drag recompiles steadily instead of in bursts.
     this.hasBufferedEdits = true;
+    this.callbacks.onTuneControlCommit?.();
     if (this.lastSessionState) {
       this.renderSessionState(this.lastSessionState);
     }
@@ -2916,6 +2984,7 @@ export class EditorPanel {
       scrollIntoView: false,
     });
     this.hasBufferedEdits = true;
+    this.callbacks.onTuneControlCommit?.();
     if (this.lastSessionState) {
       this.renderSessionState(this.lastSessionState);
     }
@@ -3427,6 +3496,7 @@ export class EditorPanel {
         scrollIntoView: false,
       });
       this.hasBufferedEdits = true;
+      this.callbacks.onTuneControlCommit?.();
       if (this.lastSessionState) {
         this.renderSessionState(this.lastSessionState);
       }
