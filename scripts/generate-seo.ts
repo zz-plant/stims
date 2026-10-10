@@ -60,7 +60,8 @@ export const PRESET_CATALOG_PATH = 'public/milkdrop-presets/catalog.json';
 // every cold isolate. Its shape is PresetMetaEntry in
 // functions/shared/preset-meta.ts.
 export const GENERATED_PRESET_META_PATH = 'public/preset-meta.json';
-export const PRESET_PREVIEW_DIR = 'public/milkdrop-presets/previews';
+export const PRESET_PREVIEW_FAILURES_PATH =
+  'public/milkdrop-presets/preview-failures.json';
 export const PRESET_LIBRARIES_DIR = 'public/milkdrop-presets/libraries';
 // Presets start at chunk 2; chunk 1 stays reserved for the hand-written app
 // routes so their priorities and lastmods are not buried under 1,791 entries.
@@ -921,8 +922,23 @@ export async function buildPresetSitemapEntries(
 
   // Only advertise an image when the preview actually shipped; a sitemap that
   // points at missing images is worse than one with no image block at all.
-  const previews = new Set(
-    await readdir(path.join(rootDir, PRESET_PREVIEW_DIR)).catch(() => []),
+  // The shipped set is decided by the *tracked* preview-failures report that
+  // generate:thumbnails maintains — not by scanning the local previews
+  // directory, which is gitignored and only exists on machines that ran
+  // generate:previews. Reading the directory made the artifact depend on the
+  // machine that generated it: CI and fresh checkouts produced
+  // api/og-preset URLs while a previews-equipped checkout produced preview
+  // URLs, so check:seo failed on one of the two depending on what was
+  // committed. The failures report is generated, tracked, and identical
+  // everywhere, so the committed sitemap now matches every environment.
+  const failuresRaw = await readFile(
+    path.join(rootDir, PRESET_PREVIEW_FAILURES_PATH),
+    'utf8',
+  ).catch(() => '[]');
+  const failedPreviews = new Set(
+    (JSON.parse(failuresRaw) as Array<{ presetId: string }>).map(
+      (entry) => entry.presetId,
+    ),
   );
 
   return indexablePresetIds(table).map((id) => {
@@ -933,9 +949,9 @@ export async function buildPresetSitemapEntries(
       lastmod: generatedAt,
       changefreq: 'monthly' as const,
       priority: '0.6',
-      imageLoc: previews.has(`${id}.png`)
-        ? `${baseUrl}/milkdrop-presets/previews/${id}.png`
-        : `${baseUrl}/api/og-preset?id=${encodeURIComponent(id)}`,
+      imageLoc: failedPreviews.has(id)
+        ? `${baseUrl}/api/og-preset?id=${encodeURIComponent(id)}`
+        : `${baseUrl}/milkdrop-presets/previews/${id}.png`,
       imageTitle: `${title} | Stims`,
       imageCaption: `${title}${credit}, a MilkDrop preset running live in the browser on Stims.`,
     };
