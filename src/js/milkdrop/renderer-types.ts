@@ -14,6 +14,7 @@ import type {
 } from 'milkdrop-toolchain/src/compiler-types.ts';
 import type { Camera, Scene, Texture } from 'three';
 import type { MilkdropRuntimeSignals } from './runtime-types.ts';
+import type { MilkdropShaderCompileDiagnostic } from './shader-compile-diagnostics.ts';
 
 export type MilkdropPostprocessingProfile = {
   enabled: boolean;
@@ -573,6 +574,13 @@ export interface MilkdropRendererAdapter {
   readonly backend: 'webgl' | 'webgpu';
   attach(): void;
   setPreset(preset: MilkdropCompiledPreset): void;
+  /**
+   * Structured shader compile failures this backend recorded, oldest first:
+   * one entry per program that failed to build, with the MilkDrop program
+   * label ('warp', 'comp', …), the failing stage, and the driver message.
+   * The editor reads this instead of inferring "something fell back".
+   */
+  getShaderCompileDiagnostics?(): MilkdropShaderCompileDiagnostic[];
   setAdaptiveQuality?(
     multipliers: Partial<{
       feedbackResolutionMultiplier: number;

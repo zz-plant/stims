@@ -93,6 +93,10 @@ import {
   syncLineObject as syncLineObjectHelper,
   syncWaveObject as syncWaveObjectHelper,
 } from './renderer-helpers/wave-renderer';
+import {
+  getMilkdropShaderCompileDiagnostics,
+  type MilkdropShaderCompileDiagnostic,
+} from './shader-compile-diagnostics.ts';
 import type {
   MilkdropBorderVisual,
   MilkdropColor,
@@ -524,6 +528,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     if (!this.scene.children.includes(this.root)) {
       this.scene.add(this.root);
     }
+  }
+
+  /**
+   * Structured shader compile failures recorded for this adapter's
+   * backend, oldest first. Pull-only: recording happens in the feedback
+   * managers where a failing program is actually observed.
+   */
+  getShaderCompileDiagnostics(): MilkdropShaderCompileDiagnostic[] {
+    return getMilkdropShaderCompileDiagnostics(this.backend);
   }
 
   setPreset(preset: MilkdropCompiledPreset) {
