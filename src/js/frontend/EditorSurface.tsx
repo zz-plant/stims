@@ -117,6 +117,9 @@ export function EditorSurface() {
             // Bundled presets are the ones anyone can load by id.
             local: Boolean(entry && !entry.bundledFile),
             title: entry?.title,
+            // A remixed draft keeps crediting the preset it came from when
+            // the link is shared (see url-state.ts's lineage contract).
+            derivedFrom: entry?.derivedFrom,
             announce: (message) => uiRef.current.setStatusMessage(message),
             onSuccess: () => setShared(true),
           });
