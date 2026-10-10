@@ -54,6 +54,8 @@ const ALLOWED: Record<string, string> = {
     'Every Set is per repaint over one preset: the parts already tagged or given Solo/Mute, and one part’s signal names. Each is rebuilt from the buffer on every paint and discarded, so it is bounded by the outline it describes; expandedShaderStages holds at most the two shader stages.',
   'packages/milkdrop-toolchain/src/compiler/shader-analysis-glsl.ts':
     'TEMPLATE_OWNED_TARGETS is a two-element literal fixed at module load, and declaredLocals is a per-call Set scoped to one shader program — both are bounded by the source they read, not by runtime accumulation.',
+  'src/js/milkdrop/overlay/editor-codemirror.ts':
+    'MILKDROP_DOC_LOOKUP and the completion arrays derive once at module load from the constant builtin-docs table; they are fixed lookup tables, not growth containers.',
 };
 
 type DiffLine = { kind: 'file' | 'hunk' | 'added' | 'other'; text: string };
