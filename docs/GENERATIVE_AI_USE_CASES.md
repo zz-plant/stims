@@ -16,11 +16,12 @@ Companion docs: [`api.md`](./api.md) (endpoint reference), [`MCP_SERVER.md`](./M
 | Blend two presets | [`functions/api/blend-presets.ts`](../functions/api/blend-presets.ts) | Waves/motion from A, palette/atmosphere from B; called from the editor panel |
 | Batch variations | [`functions/api/batch-generate.ts`](../functions/api/batch-generate.ts) | Up to 5 parallel seeded variations; called from the editor panel |
 | Semantic search | [`functions/api/visual-search.ts`](../functions/api/visual-search.ts) | Embedding search over preset descriptions; called from the visual-embedding and audio-matcher services |
-| Syntax pre-check | [`functions/api/validate-preset.ts`](../functions/api/validate-preset.ts) | POST source → line-level diagnostics (assignments, parentheses); a lightweight check that does not run the preset compiler |
-| Generate panel | [`src/js/frontend/SynthesizePanel.tsx`](../src/js/frontend/SynthesizePanel.tsx) | Bundled UI; hosted route or loopback OpenAI-compatible (local) provider |
+| Real-compiler validation | [`functions/api/validate-preset.ts`](../functions/api/validate-preset.ts) | POST source → compiles with the real preset compiler and returns its diagnostics (parse + EEL compile errors, warnings); shader GLSL itself still only classifies statically |
+| Generate panel | [`src/js/frontend/SynthesizePanel.tsx`](../src/js/frontend/SynthesizePanel.tsx) | Bundled UI; hosted route, loopback OpenAI-compatible (local) provider, or a BYOK OpenRouter provider (browser sends the key straight to openrouter.ai) |
 | Client generation core | [`src/js/milkdrop/preset-generator.ts`](../src/js/milkdrop/preset-generator.ts), [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) | Provider abstraction; prompt scaffolding shared by client and Worker; compiles returned source before loading |
 | Deterministic fallback | [`src/js/milkdrop/ai-preset-synthesizer.ts`](../src/js/milkdrop/ai-preset-synthesizer.ts) | Non-LLM themed template synthesizer; offline fallback and eval control |
 | Measurement labs | [`scripts/preset-lab-reactivity.ts`](../scripts/preset-lab-reactivity.ts), [`scripts/preset-lab-visual.ts`](../scripts/preset-lab-visual.ts) | Headless per-variable reactivity verdicts; browser pixel/reactivity metrics; both support baseline/compare |
+| Generation benchmark | [`scripts/preset-lab-generation-bench.ts`](../scripts/preset-lab-generation-bench.ts) | `lab:generation-bench` scores any generation provider (default: the deterministic synthesizer as control) against a frozen prompt set on real-compiler compile success and the reactivity probe, with baseline/compare; render-based visual metrics remain an open stub (`--visual`) |
 | Agent tooling | [`scripts/mcp-server.ts`](../scripts/mcp-server.ts), [`docs/MCP_SERVER.md`](./MCP_SERVER.md) | MCP tools including a describe → see → tweak → compare loop |
 
 ### Evidence boundaries
@@ -30,7 +31,7 @@ Per [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md), the Generate pan
 ### Gaps this document targets
 
 1. The endpoint surfaces are wired but unverified. Generate and image-guided generation live in the Generate panel, refine, blend, and batch variations have editor-panel actions, and visual search backs the optional embedding/audio-matcher services — but none of these flows has end-to-end proof or quality gating.
-2. Nothing gates generated presets on quality. The hosted [`validate-preset`](../functions/api/validate-preset.ts) route is syntax-only (it never runs the real compiler), `lab:reactivity` and `lab:visual` run nowhere in the generation path, and no chain runs generate → diagnose → measure → regenerate before a generated preset reaches the user.
+2. Nothing gates generated presets on quality. The hosted [`validate-preset`](../functions/api/validate-preset.ts) route now runs the real compiler (Done, see above), but `lab:reactivity` and `lab:visual` still run nowhere in the generation path, and no chain runs generate → diagnose → measure → regenerate before a generated preset reaches the user.
 3. There is no eval corpus or benchmark for generation quality, in contrast to the mature parity/certification corpus for rendering.
 4. Shader generation is unverified. [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) already documents the GLSL `[warp_shader]`/`[comp_shader]` blocks but tells models to avoid them unless asked, ships no worked examples, and nothing verifies that emitted GLSL actually compiles — the static compiler only classifies shader text; the GPU compiles it at render time.
 5. Provenance and attribution for generated or remixed presets is unspecified, though [`src/js/milkdrop/preset-credit.ts`](../src/js/milkdrop/preset-credit.ts) and the roadmap's "record remix provenance" bullet point at where it belongs.
@@ -41,8 +42,8 @@ Per [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md), the Generate pan
 
 Before adding surfaces, make the existing text → preset path trustworthy.
 
-- Done in part: the Generate panel now chains compile diagnostics with an in-browser reactivity probe ([`src/js/milkdrop/reactivity-probe.ts`](../src/js/milkdrop/reactivity-probe.ts)) that steps the VM silent-vs-audio and labels presets whose equations ignore audio. Near-black detection still needs a render-based check.
-- Wire the hosted [`validate-preset`](../functions/api/validate-preset.ts) route to the real compiler (or route validation through client-side compilation) before anything treats it as a quality gate — today it is a line-level syntax check that passes invalid expressions and shader programs.
+- Done: the Generate panel now chains compile diagnostics with an in-browser reactivity probe ([`src/js/milkdrop/reactivity-probe.ts`](../src/js/milkdrop/reactivity-probe.ts)) that steps the VM silent-vs-audio and labels presets whose equations ignore audio, plus a render-based near-black check ([`src/js/frontend/generated-preset-visual-check.ts`](../src/js/frontend/generated-preset-visual-check.ts)) that samples the live stage for a few seconds after load and labels presets whose picture never lights up as low-confidence. The bench-side visual metric remains open (`--visual` stub in `lab:generation-bench`).
+- Done: the hosted [`validate-preset`](../functions/api/validate-preset.ts) route now compiles the submitted source with the real preset compiler and maps its diagnostics onto the same response shape — `valid` reflects the compile result, so invalid expressions and shader control programs are rejected instead of passing a paren counter.
 - Reuse the deterministic synthesizer as a control: generation should measurably beat the template fallback on reactivity and visual-variance metrics, or the model call was not worth it.
 - Complete the end-to-end verification the achievements doc calls out: hosted availability, loopback/local configuration, and the full browser flow.
 
@@ -72,7 +73,7 @@ Exit criteria:
 ### Closed-loop iteration and a generation benchmark
 
 - Chain generate → validate → measure → regenerate as an agent-facing loop, building on the MCP server's existing describe → see → tweak → compare tooling, with lab compare modes ("movers" tables, side-by-side contact sheets) as the iteration signal.
-- Establish a generation benchmark corpus mirroring the certification-corpus pattern: a fixed prompt set, scored on compile success, reactivity verdicts, and visual metrics, tracked over time so model routing and prompt changes are regressions-tested like renderer changes.
+- Done in part: [`lab:generation-bench`](../scripts/preset-lab-generation-bench.ts) establishes the corpus half — a frozen 20-prompt set scored per generation on real-compiler compile success and the reactivity probe, with baseline/compare and the deterministic synthesizer as the control provider; model-backed providers run behind flags. Still missing: render-based visual metrics (`--visual` is a documented stub pending the browser path) and the closed agent loop itself.
 
 Exit criteria:
 
