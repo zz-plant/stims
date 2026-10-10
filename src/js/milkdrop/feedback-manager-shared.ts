@@ -89,6 +89,7 @@ import {
   createMilkdropNoiseTexture,
   createMilkdropNoiseVolumeAtlasTexture,
 } from './milkdrop-native-noise.ts';
+import { installMilkdropWebglShaderErrorTracking } from './shader-compile-diagnostics.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -1845,6 +1846,14 @@ class SharedMilkdropFeedbackManager
   protected rememberRenderer(renderer: unknown) {
     this.lastRenderer =
       renderer as SharedMilkdropFeedbackManager['lastRenderer'];
+    // A warp/comp program that fails to link currently only console.errors
+    // (core/webgl-renderer.ts) while the stage keeps showing the previous
+    // frame. The tracking hook turns that into a structured diagnostic with
+    // the program's stage template attributed; idempotent per renderer, so
+    // decks and manager swaps install it exactly once.
+    installMilkdropWebglShaderErrorTracking(
+      renderer as object | null | undefined,
+    );
   }
 
   getDisplayTexture(): Texture {

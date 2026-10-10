@@ -22,6 +22,16 @@ let shownAt = 0;
 let transmitted = 0;
 let pagehideInstalled = false;
 
+/**
+ * The funnel's first-edit step, three ways. `first-edit-applied` keeps its
+ * original meaning — the "Add a slow spin" button in the first-edit guide —
+ * so the first clean month of post-#1377 data stays comparable. The two
+ * finer-grained events count what that button never could: the first code
+ * edit the visitor typed into the editor (`first-code-edit-applied`) and
+ * the first Tune control they committed (`first-tune-edit-applied`). Both
+ * fire once per page load (the guards live in src/js/frontend/first-edit.ts,
+ * where the first-edit semantics already lived).
+ */
 export type GrowthTelemetryEvent =
   | 'share-shared'
   | 'share-copied'
@@ -34,6 +44,8 @@ export type GrowthTelemetryEvent =
   | 'demo-started'
   | 'editor-opened'
   | 'first-edit-applied'
+  | 'first-code-edit-applied'
+  | 'first-tune-edit-applied'
   | 'github-clicked'
   | 'video-saved';
 

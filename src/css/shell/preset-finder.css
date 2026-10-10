@@ -202,11 +202,15 @@
   cursor: not-allowed;
 }
 
-/* The host only has to hand its height down; the panel's own regions
-   (editor-panel.css) decide what scrolls. */
+/* Holds the first-edit guide and the panel. The panel's own regions
+   (editor-panel.css) decide what scrolls; the host scrolls only when the
+   viewport is too short for the code's and the dock's minimum heights, and
+   the guide scrolls away with it. */
 .stims-shell__editor-host {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }

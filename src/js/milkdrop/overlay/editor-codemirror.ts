@@ -427,6 +427,7 @@ export function createEditorView({
   parent,
   onDocChange,
   onBufferedEdit,
+  onUserCodeEditApplied,
   isChangeSuppressed,
   onQuickFixDiagnostic,
   onEscapeBlur,
@@ -436,6 +437,11 @@ export function createEditorView({
   parent: HTMLElement;
   onDocChange: (source: string) => void;
   onBufferedEdit: () => void;
+  /** Fired once when a doc change that commits down the apply path carries
+   * CodeMirror's own user annotation — the visitor's keys, paste, cut or
+   * drop. Lets the panel count the visitor's first code edit without
+   * counting the app's own buffer writes. */
+  onUserCodeEditApplied?: () => void;
   isChangeSuppressed: () => boolean;
   onQuickFixDiagnostic: (diagnostic: MilkdropDiagnostic) => void;
   /** Called when Escape leaves the editor so the panel can park focus on a
@@ -447,6 +453,13 @@ export function createEditorView({
   onToggleAbSnapshot?: () => void;
 }) {
   let debounceId: number | null = null;
+  // Set when a doc change carries CodeMirror's own user annotation — the
+  // visitor's keys, paste, cut or drop. Every other doc change here is the
+  // app writing the buffer (Tune controls, session reloads, A/B swaps) and
+  // dispatches without one. Cleared when the change commits down the apply
+  // path, so the distinction is only consumed by the commit, never by the
+  // paint.
+  let pendingVisitorEdit = false;
   let view: EditorView;
   const syntaxThemeCompartment = new Compartment();
   // Undo history lives in its own compartment so a preset load can start it
@@ -467,6 +480,10 @@ export function createEditorView({
     if (debounceId !== null) {
       window.clearTimeout(debounceId);
       debounceId = null;
+    }
+    if (pendingVisitorEdit) {
+      pendingVisitorEdit = false;
+      onUserCodeEditApplied?.();
     }
     onDocChange(view.state.doc.toString());
     return true;
@@ -566,6 +583,14 @@ export function createEditorView({
           if (!update.docChanged || isChangeSuppressed()) {
             return;
           }
+          // The visitor's own edit, by CodeMirror's annotation: undo and redo
+          // excluded, since neither makes the first edit the funnel asks
+          // about (undo is only reachable after one).
+          const visitorEdit = update.transactions.some((tr) => {
+            const event = tr.annotation(Transaction.userEvent);
+            return event !== undefined && event !== 'undo' && event !== 'redo';
+          });
+          if (visitorEdit) pendingVisitorEdit = true;
           // Two independent debounced timers restart on every keystroke, not
           // one: onBufferedEdit's 80ms (above, in createEditorView's caller)
           // repaints local UI (diagnostics, Tune controls) — cheap and wants
@@ -580,6 +605,10 @@ export function createEditorView({
           }
           debounceId = window.setTimeout(() => {
             debounceId = null;
+            if (pendingVisitorEdit) {
+              pendingVisitorEdit = false;
+              onUserCodeEditApplied?.();
+            }
             onDocChange(update.state.doc.toString());
           }, 120);
         }),

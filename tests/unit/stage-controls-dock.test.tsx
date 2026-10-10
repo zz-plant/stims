@@ -117,6 +117,50 @@ describe('stage dock auto-hide', () => {
 
     rendered.dispose();
   });
+
+  test('a folded dock still offers an Edit that opens the editor', () => {
+    // The bar is visibility:hidden while folded, so its Edit left the
+    // accessibility tree exactly when nothing else on the stage named the
+    // way in (docs/PRODUCT_MOMENTS.md, "Open one up"). The folded dock
+    // carries its own Edit, active only while the bar is away.
+    jest.useFakeTimers();
+    const panels: Array<string | null> = [];
+    const rendered = renderWorkspace(
+      createElement(StageControls, {
+        isFullscreen: false,
+        onToggleFullscreen: () => {},
+      }),
+      {
+        snapshot: liveSnapshot(),
+        ui: { updatePanel: (panel) => panels.push(panel) },
+      },
+    );
+    try {
+      const dockBar = bar(rendered);
+      const foldedEdit = () =>
+        [
+          ...rendered.container.querySelectorAll<HTMLElement>(
+            '[data-action="open-editor"]',
+          ),
+        ].find((edit) => !dockBar?.contains(edit)) ?? null;
+
+      // While the bar is up, the folded Edit is parked out of the tree.
+      expect(foldedEdit()).not.toBeNull();
+      expect(foldedEdit()?.dataset.visible).toBe('false');
+      expect(foldedEdit()?.hasAttribute('inert')).toBe(true);
+
+      elapse(AUTO_HIDE_MS + 50);
+      expect(bar(rendered)?.dataset.visible).toBe('false');
+      expect(foldedEdit()?.dataset.visible).toBe('true');
+      expect(foldedEdit()?.hasAttribute('inert')).toBe(false);
+      expect(foldedEdit()?.getAttribute('aria-label')).toBe('Edit this visual');
+
+      rendered.click(foldedEdit());
+      expect(panels).toEqual(['editor']);
+    } finally {
+      rendered.dispose();
+    }
+  });
 });
 
 describe('stage dock transport', () => {

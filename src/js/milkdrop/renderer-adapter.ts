@@ -4,7 +4,6 @@ export type {
   MilkdropRendererAdapterConfig,
   MilkdropRendererBatcher,
 } from './renderer-adapter-core.ts';
-
 export {
   __milkdropRendererAdapterTestUtils,
   createMilkdropRendererAdapterCore,
@@ -12,3 +11,4 @@ export {
   WEBGL_MILKDROP_BACKEND_BEHAVIOR,
   WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
 } from './renderer-adapter-core.ts';
+export type { MilkdropShaderCompileDiagnostic } from './shader-compile-diagnostics.ts';

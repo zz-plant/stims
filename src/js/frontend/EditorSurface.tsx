@@ -6,6 +6,10 @@ import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import type { MilkdropEditorSessionState } from '../milkdrop/types.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { FirstEditGuide } from './FirstEditGuide.tsx';
+import {
+  noteFirstCodeEditAppliedOnce,
+  noteFirstTuneEditAppliedOnce,
+} from './first-edit.ts';
 import { RepositorySupport } from './RepositorySupport.tsx';
 import { copyRemixLinkAction } from './workspace-actions.ts';
 import { useWorkspace } from './workspace-context.tsx';
@@ -42,6 +46,12 @@ export function EditorSurface() {
   uiRef.current = ui;
 
   const sessionState = engineSnapshot?.sessionState ?? null;
+  const backend = engineSnapshot?.backend ?? null;
+  // Same read-through-a-ref contract as sessionStateRef: this callback is
+  // handed to the panel once, on mount, and the panel re-reads it on every
+  // paint, so the Textures pane's per-backend notes track backend switches.
+  const backendRef = useRef(backend);
+  backendRef.current = backend;
   // The panel is code-split, so it appends itself a tick or two after this
   // component renders. Session state only changes identity when a compile
   // commits, so by mount time the state that opened the editor will never be
@@ -64,6 +74,12 @@ export function EditorSurface() {
         onEditorSourceChange: (source: string) => {
           engineRef.current.updateEditorSource(source);
         },
+        // The funnel's first-edit step, finer-grained than the guide's frozen
+        // button event: the first code edit the visitor typed, and the first
+        // Tune control they committed. Each notes itself once per page load
+        // (see first-edit.ts), so this wiring only reports the moment.
+        onUserCodeEditApplied: () => noteFirstCodeEditAppliedOnce(),
+        onTuneControlCommit: () => noteFirstTuneEditAppliedOnce(),
         onLiveFieldChange: (key: string, value: number) => {
           engineRef.current.updateFieldLive(key, value);
         },
@@ -72,6 +88,7 @@ export function EditorSurface() {
         onStepFrame: () => engineRef.current.stepPlaybackFrame(),
         getOriginalSource: () =>
           Promise.resolve(engineRef.current.getOriginalPresetSource()),
+        getActiveBackend: () => backendRef.current,
         onExport: () => {
           engineRef.current.exportPreset();
         },
@@ -100,6 +117,9 @@ export function EditorSurface() {
             // Bundled presets are the ones anyone can load by id.
             local: Boolean(entry && !entry.bundledFile),
             title: entry?.title,
+            // A remixed draft keeps crediting the preset it came from when
+            // the link is shared (see url-state.ts's lineage contract).
+            derivedFrom: entry?.derivedFrom,
             announce: (message) => uiRef.current.setStatusMessage(message),
             onSuccess: () => setShared(true),
           });
@@ -136,13 +156,17 @@ export function EditorSurface() {
 
   return (
     <>
-      <FirstEditGuide
-        key={engineSnapshot?.activePresetId}
-        source={sessionState?.source ?? ''}
-        onChange={(source) => engine.updateEditorSource(source)}
-      />
       {shared ? <RepositorySupport /> : null}
+      {/* The panel appends itself after these children. The guide lives in
+          the host so that, on a viewport too short for the code's minimum
+          height, it scrolls away with the panel instead of staying pinned
+          above it. */}
       <div ref={hostRef} className="stims-shell__editor-host">
+        <FirstEditGuide
+          key={engineSnapshot?.activePresetId}
+          source={sessionState?.source ?? ''}
+          onChange={(source) => engine.updateEditorSource(source)}
+        />
         <input
           ref={importInputRef}
           type="file"

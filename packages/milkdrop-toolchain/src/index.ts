@@ -163,6 +163,7 @@ export {
   frameValueName,
 } from './preset-dataflow.ts';
 export {
+  embedLineageFields,
   isLineageFieldKey,
   lineageFieldLines,
   lineageFromFields,

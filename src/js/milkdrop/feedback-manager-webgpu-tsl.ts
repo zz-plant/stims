@@ -66,6 +66,7 @@ import {
   renderWithoutOutputConversion,
 } from './output-conversion-passthrough.ts';
 import type { TslNode } from './renderer-helpers/tsl-node-types.ts';
+import { recordMilkdropWebgpuPipelineError } from './shader-compile-diagnostics.ts';
 
 export {
   resolveDirectShaderSamplerBinding,
@@ -4140,20 +4141,36 @@ class WebGPUMilkdropFeedbackManager
     warmComposite.outputNode = compositeNode as typeof warmComposite.outputNode;
     warmComposite.needsUpdate = true;
 
-    const warmScene = new Scene();
-    warmScene.matrixAutoUpdate = false;
-    warmScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, warmBlend));
-    warmScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, warmComposite));
+    const warmSceneFor = (material: NodeMaterial) => {
+      const scene = new Scene();
+      scene.matrixAutoUpdate = false;
+      scene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, material));
+      return scene;
+    };
 
     // Compile against the real feedback target so the pipeline cache key
     // (color format, sample count) matches the live passes.
     const previousTarget = renderer.getRenderTarget?.() ?? null;
     try {
       renderer.setRenderTarget(this.writeTarget);
-      await renderer.compileAsync(warmScene, this.camera);
-    } catch {
-      // Warm-up is best-effort: on failure the swap below still happens and
-      // the first frame compiles synchronously, which is the old behavior.
+      // Each material warms on its own scene so a rejection names its
+      // program: the blend node runs the warp shader, the composite node
+      // the comp one.
+      for (const [material, program] of [
+        [warmBlend, 'warp'],
+        [warmComposite, 'comp'],
+      ] as const) {
+        try {
+          await renderer.compileAsync(warmSceneFor(material), this.camera);
+        } catch (error) {
+          // Warm-up is best-effort: on failure the swap below still happens
+          // and the first frame compiles synchronously, which is the old
+          // behavior. The structured record is the only trace a failing
+          // pipeline otherwise leaves — WebGPU has no per-program error
+          // hook, and reading a WGSL compile log needs a live GPUDevice.
+          recordMilkdropWebgpuPipelineError(program, error);
+        }
+      }
     } finally {
       try {
         renderer.setRenderTarget(previousTarget);

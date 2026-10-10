@@ -70,8 +70,10 @@ try {
   await page.waitForTimeout(3500);
   // The dock auto-hides while watching; a pointer movement reveals it.
   await page.mouse.move(630, 680);
+  // The dock has expanded and folded Edit buttons. The inactive copy is
+  // inert; choose the interactive one even during its visibility transition.
   await page
-    .getByRole('button', { name: 'Edit this visual', exact: true })
+    .locator('[aria-label="Edit this visual"]:not([inert]):visible')
     .click();
   const spin = page.getByRole('button', {
     name: 'Add a slow spin',

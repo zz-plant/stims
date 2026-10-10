@@ -205,6 +205,7 @@ export function NewHomePage() {
     startWithFeedback('demo');
   };
   const handleBrowsePresets = () => ui.updatePanel('browse');
+  const handleEditVisual = () => ui.updatePanel('editor');
 
   // A shared source outranks the visitor's own last session: they followed
   // a link to this preset with this source, and the sender's preset is what
@@ -276,6 +277,8 @@ export function NewHomePage() {
           isEngineReady={engine.engineReady}
           isStarting={audioStarting}
           onBrowsePresets={handleBrowsePresets}
+          onEditVisual={handleEditVisual}
+          showEditVisual={engine.attractPreviewLive}
         />
         {/* Sits under the button it describes. As the last sentence of a
             paragraph below both buttons it arrived after the choice it was
@@ -471,6 +474,8 @@ interface ActionsProps {
   isEngineReady: boolean;
   isStarting: boolean;
   onBrowsePresets: () => void;
+  onEditVisual: () => void;
+  showEditVisual: boolean;
 }
 
 function Actions({
@@ -480,6 +485,8 @@ function Actions({
   isEngineReady,
   isStarting,
   onBrowsePresets,
+  onEditVisual,
+  showEditVisual,
 }: ActionsProps) {
   const engineStatusId = useId();
   const ctaRef = useRef<HTMLButtonElement>(null);
@@ -603,6 +610,25 @@ function Actions({
       >
         Browse presets
       </button>
+      {/* The promise above ("Open one to see which sounds drive it, then
+          change its code while it runs") had no control on this page that
+          kept it: the only ways into the editor were the E key and a dock
+          button that appears after audio starts. Offer the promise's own
+          action here, by pointer. Only while the attract preview is actually
+          running — on low-power devices and phones nothing is on stage to
+          open up yet, and an Edit button with nothing behind it is a dead
+          end (the phone editor also covers the whole stage; see
+          docs/PRODUCT_MOMENTS.md). */}
+      {showEditVisual ? (
+        <button
+          type="button"
+          className="stims-shell__launch-secondary"
+          data-action="open-editor"
+          onClick={onEditVisual}
+        >
+          Edit this one
+        </button>
+      ) : null}
       {/* Demo audio is not the visitor's own audio, so it does not belong
           among "use a different source". For someone resuming with a real
           source it is the no-permission escape hatch, and lives here as a

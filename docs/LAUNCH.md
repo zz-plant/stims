@@ -80,7 +80,7 @@ The telemetry report already includes audible starts, editor opens, applied exam
 - Recording is a beta feature; the launch clip is a silent browser capture, not a claim about exported audio/video fidelity.
 - Most presets lack native projectM visual measurements and flash-risk measurements.
 - A report on October 10 in the remix thread describes a black stage after the spin example in the Codex in-app browser. A successful Chromium capture does not resolve that report or prove all browsers work. [The browser verification issue](https://github.com/zz-plant/stims/issues/1408) tracks the remaining checks; [PR #1407](https://github.com/zz-plant/stims/pull/1407) fixes a separately confirmed startup restoration race.
-- The current capture can include unrelated local fixes. Its evidence records what ran locally; it is not proof that the deployed site has the same revision.
+- The workflow was recaptured against main's studio and sharing changes on October 10. It is local evidence; it does not prove that the deployed site has the same revision.
 
 ## Publication record
 
