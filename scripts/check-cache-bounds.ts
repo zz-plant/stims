@@ -56,6 +56,8 @@ const ALLOWED: Record<string, string> = {
     'TEMPLATE_OWNED_TARGETS is a two-element literal fixed at module load, and declaredLocals is a per-call Set scoped to one shader program — both are bounded by the source they read, not by runtime accumulation.',
   'src/js/milkdrop/overlay/editor-codemirror.ts':
     'MILKDROP_DOC_LOOKUP and the completion arrays derive once at module load from the constant builtin-docs table; they are fixed lookup tables, not growth containers.',
+  'src/js/milkdrop/overlay/editor-language.ts':
+    'The SHADER_* word sets are fixed vocabulary literals built once at module load (the GLSL/HLSL keywords, types, stage variables, and intrinsics the highlighter recognises) — lookup tables derived from the shader translation layer, never grown at runtime.',
 };
 
 type DiffLine = { kind: 'file' | 'hunk' | 'added' | 'other'; text: string };
