@@ -12,9 +12,11 @@
  *   bun run lab:link-reach              # human summary, JSON to --out
  *   bun run lab:link-reach -- --json    # JSON to stdout instead
  *
- * The compressed payload models a hypothetical `z1~<base64url>` encoding
- * the shipped decoder does not yet read; it exists to size the decision,
- * not to claim it ships.
+ * The compressed numbers measure the `z1~<base64url>` payload the shipped
+ * encoder now falls back to for over-budget drafts
+ * (src/js/frontend/url-state.ts) — the measurement is what justified
+ * shipping it, and re-running keeps the shipped budget honest as the
+ * catalog grows.
  */
 import fs from 'node:fs';
 import path from 'node:path';

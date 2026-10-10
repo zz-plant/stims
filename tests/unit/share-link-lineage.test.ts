@@ -43,6 +43,18 @@ const DRAFT = [
   '',
 ].join('\n');
 
+/** Pseudo-varied digits deflate cannot fold away, so the compressed
+ * fallback cannot rescue a budget failure built from them. */
+function fillerLines(count: number): string {
+  const filler: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    filler.push(
+      `// ${index} ${(index * 7919) % 99_991} ${(index * 10_007) % 99_989}`,
+    );
+  }
+  return `${filler.join('\n')}\n`;
+}
+
 function importHarness() {
   const saved: MilkdropPresetSource[] = [];
   const actions = createMilkdropPresetFileActions({
@@ -158,37 +170,61 @@ describe('remix lineage in share links', () => {
     expect(second).toBe(first);
   });
 
+  test('an over-budget remix travels compressed with its lineage intact', () => {
+    // Both lanes of a big share at once: the lineage embed runs before
+    // encoding, and the compressed fallback carries what the raw budget
+    // rejects — the fields must survive both.
+    const big = `${DRAFT}${'// a padded draft line\n'.repeat(700)}`;
+    const url = buildRemixShareUrl('https://toil.fyi/', big, PARENTS);
+
+    expect(new URL(url).hash).toContain('#code=z1~');
+    expect(url.length).toBeLessThanOrEqual(16_000);
+
+    const decoded = decodePresetCodeFromHash(new URL(url).hash);
+    if (decoded === null) throw new Error('the link decoded to nothing');
+    const compiled = compileMilkdropPresetSource(decoded, {
+      id: 'geiss-casino-remix-42',
+      title: 'Geiss - Casino (Remix)',
+      origin: 'imported',
+    });
+    expect(lineageFromFields(compiled.ir.preservedFields)).toEqual(PARENTS);
+  });
+
   test('lineage counts against the sharing budget, not around it', () => {
     // The largest draft whose plain link still fits can be one whose
-    // lineage fields do not. The honest answer is the same "too long"
-    // refusal as any over-budget draft — never a link that quietly drops
-    // the lineage to fit, and never a silently truncated one.
-    let chosen: string | null = null;
-    for (let step = 1; step <= 500; step += 1) {
-      const candidate = `${DRAFT}${'// padding line\n'.repeat(step * 10)}`;
-      let lineageOver = false;
+    // lineage fields do not — lineage is embedded in the source before
+    // either encoding runs, so it consumes budget rather than escaping it.
+    // The filler is incompressible so the compressed fallback cannot
+    // rescue the lineage case: the honest answer stays "too long".
+    const draftFor = (lines: number) => `${DRAFT}${fillerLines(lines)}`;
+    const plainFits = (lines: number) => {
       try {
-        buildRemixShareUrl('https://toil.fyi/', candidate, PARENTS);
+        return (
+          buildRemixShareUrl('https://toil.fyi/', draftFor(lines)).length <=
+          16_000
+        );
       } catch {
-        lineageOver = true;
+        return false;
       }
-      if (!lineageOver) continue;
-      try {
-        if (
-          buildRemixShareUrl('https://toil.fyi/', candidate).length <= 16_000
-        ) {
-          chosen = candidate;
-        }
-      } catch {
-        // both encodings over budget: the window is behind us
+    };
+
+    // Largest line count whose plain link fits — link length is monotonic
+    // in the filler, so a binary search finds the edge.
+    let lo = 0;
+    let hi = 5_000;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      if (plainFits(mid)) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
       }
-      break;
     }
 
-    expect(chosen).not.toBeNull();
-    expect(chosen).not.toBe(DRAFT);
+    expect(plainFits(lo)).toBe(true);
+    expect(plainFits(lo + 1)).toBe(false);
     expect(() =>
-      buildRemixShareUrl('https://toil.fyi/', chosen as string, PARENTS),
+      buildRemixShareUrl('https://toil.fyi/', draftFor(lo), PARENTS),
     ).toThrow('too long');
   });
 });
