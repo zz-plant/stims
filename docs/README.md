@@ -55,6 +55,9 @@ Environment setup, local dev server, quality gates, and deploy.
 | [**Testing & Quality Gate**](./TESTING.md) | Running unit/integration tests, `bun run check`, and automated verification matrices |
 | [**Guardrails**](./GUARDRAILS.md) | Every rule the repo enforces and why — generated from the guard scripts, so it cannot go stale |
 | [**Commit & Review Conventions**](./COMMIT_CONVENTIONS.md) | Git workflow, Conventional Commits format, and PR contribution rules |
+| [**Launch Material**](./LAUNCH.md) | Workflow clip, audience-specific post copy, and before/after measurement |
+| [**OBS Setup**](./OBS.md) | Browser Source demo recipe, regular-browser capture, audio routing, and verification limits |
+| [**Package Launch Drafts**](./PACKAGE_LAUNCHES.md) | Four library-specific announcements, demo links, and release checks |
 
 ---
 

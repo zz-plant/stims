@@ -10,6 +10,10 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 
 <sub>Stims lives at toil.fyi. Any WebGL2 browser; no account, no install.</sub>
 
+<a href="./docs/assets/clips/stims-workflow.mp4"><img src="./docs/assets/clips/stims-workflow.gif" alt="Play Shifter's Curlique, add a rotation equation in the live editor, and copy a link carrying the edited source" width="640"></a>
+
+<sub>Play → edit → share. This preview is accelerated; <a href="./docs/assets/clips/stims-workflow.mp4">watch the 25-second workflow</a> at recorded speed. The capture is silent.</sub>
+
 <table>
   <tr>
     <td width="50%"><a href="https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.gif" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></a></td>
@@ -145,6 +149,8 @@ The most useful things, roughly in order of effort:
 - **Send code.** Start with [CONTRIBUTING.md](./CONTRIBUTING.md); [docs/ONBOARDING.md](./docs/ONBOARDING.md) maps the codebase and says which parts are hard. The [good first issues](https://github.com/zz-plant/stims/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) are scoped small on purpose. Compatibility changes should bring a test and its evidence.
 
 What changed recently is in [the changelog](./CHANGELOG.md).
+
+For recording or streaming, start with [the OBS setup recipe](./docs/OBS.md). It covers a Browser Source demo, regular-browser capture, and separate audio routing; native OBS verification is still pending.
 
 ## Acknowledgments and lineage
 
