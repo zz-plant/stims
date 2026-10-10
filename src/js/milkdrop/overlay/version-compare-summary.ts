@@ -13,12 +13,12 @@
  * always textual and always shows.
  */
 
-import { compileMilkdropPresetSource } from '../compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   analyzePresetDataflow,
   controlAudio,
   drawnPartAudio,
-} from '../preset-dataflow.ts';
+} from 'milkdrop-toolchain/src/preset-dataflow.ts';
 
 /** Lines shown at once; the rest fold into one "and N more". */
 export const MAX_AUDIO_REACH_LINES = 6;

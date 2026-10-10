@@ -28,10 +28,10 @@ import {
   resolveCustomSamplerSampleMode,
   resolveCustomSamplerTextureFile,
   resolveFallbackSamplerTextureFile,
-} from './compiler/custom-samplers.ts';
-import type { MilkdropPresetIR } from './compiler-types.ts';
-import { normalizeMilkdropShaderSamplerName } from './shader-samplers.ts';
-import { MILKDROP_TEXTURE_FILES } from './texture-files';
+} from 'milkdrop-toolchain/src/compiler/custom-samplers.ts';
+import type { MilkdropPresetIR } from 'milkdrop-toolchain/src/compiler-types.ts';
+import { normalizeMilkdropShaderSamplerName } from 'milkdrop-toolchain/src/shader-samplers.ts';
+import { MILKDROP_TEXTURE_FILES } from 'milkdrop-toolchain/src/texture-files.ts';
 
 export type MilkdropTextureBinding = {
   /** The sampler exactly as the preset spells it, e.g. `sampler_fw_clouds`. */
