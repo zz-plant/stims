@@ -116,6 +116,19 @@ function escapeHtml(value: string): string {
 
 export type EditorPanelCallbacks = {
   onEditorSourceChange: (source: string) => void;
+  /**
+   * A code edit the visitor typed, pasted, cut or dropped into the buffer has
+   * been committed down the apply path (the same debounce that hands the draft
+   * to the engine). Panel-driven writes — Tune controls, session reloads, AI
+   * proposals — dispatch without a user annotation and never fire this.
+   */
+  onUserCodeEditApplied?: () => void;
+  /**
+   * A Tune-pane control committed a value into the draft: a fader, swatch,
+   * switch, mode, range, parameter knob, or modulation. Fired when the value
+   * actually changed the buffer, whatever the commit cadence.
+   */
+  onTuneControlCommit?: () => void;
   /** Live feedback for a numeric field during a drag: applied to the running
    * VM without a recompile. The value is committed to the source separately
    * (on release), so the runtime staying absent only degrades to the old
@@ -631,6 +644,7 @@ export class EditorPanel {
     const editorViewState = createEditorView({
       parent: editorHost,
       onDocChange: (source) => this.callbacks.onEditorSourceChange(source),
+      onUserCodeEditApplied: () => this.callbacks.onUserCodeEditApplied?.(),
       onBufferedEdit: () => {
         // The flag must flip synchronously (commit logic reads it), but the
         // diagnostics + control re-render below cost a full preset parse and
@@ -2520,6 +2534,7 @@ export class EditorPanel {
     // repaint, and flush to the engine at the control rate rather than the
     // typing debounce, so a drag recompiles steadily instead of in bursts.
     this.hasBufferedEdits = true;
+    this.callbacks.onTuneControlCommit?.();
     if (this.lastSessionState) {
       this.renderSessionState(this.lastSessionState);
     }
@@ -2928,6 +2943,7 @@ export class EditorPanel {
       scrollIntoView: false,
     });
     this.hasBufferedEdits = true;
+    this.callbacks.onTuneControlCommit?.();
     if (this.lastSessionState) {
       this.renderSessionState(this.lastSessionState);
     }
@@ -3439,6 +3455,7 @@ export class EditorPanel {
         scrollIntoView: false,
       });
       this.hasBufferedEdits = true;
+      this.callbacks.onTuneControlCommit?.();
       if (this.lastSessionState) {
         this.renderSessionState(this.lastSessionState);
       }

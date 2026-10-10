@@ -6,6 +6,10 @@ import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import type { MilkdropEditorSessionState } from '../milkdrop/types.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { FirstEditGuide } from './FirstEditGuide.tsx';
+import {
+  noteFirstCodeEditAppliedOnce,
+  noteFirstTuneEditAppliedOnce,
+} from './first-edit.ts';
 import { RepositorySupport } from './RepositorySupport.tsx';
 import { copyRemixLinkAction } from './workspace-actions.ts';
 import { useWorkspace } from './workspace-context.tsx';
@@ -64,6 +68,12 @@ export function EditorSurface() {
         onEditorSourceChange: (source: string) => {
           engineRef.current.updateEditorSource(source);
         },
+        // The funnel's first-edit step, finer-grained than the guide's frozen
+        // button event: the first code edit the visitor typed, and the first
+        // Tune control they committed. Each notes itself once per page load
+        // (see first-edit.ts), so this wiring only reports the moment.
+        onUserCodeEditApplied: () => noteFirstCodeEditAppliedOnce(),
+        onTuneControlCommit: () => noteFirstTuneEditAppliedOnce(),
         onLiveFieldChange: (key: string, value: number) => {
           engineRef.current.updateFieldLive(key, value);
         },
