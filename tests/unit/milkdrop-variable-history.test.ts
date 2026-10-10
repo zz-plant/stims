@@ -38,7 +38,11 @@ describe('variable history', () => {
   test('caps history length and sanitises non-finite values', () => {
     const h = createVariableHistory(3);
     for (const v of [1, 2, 3, Number.NaN, 5]) h.push({ x: v });
-    expect(h.rows()[0].history).toEqual([3, 0, 5]);
+    const history = h.rows()[0]?.history;
+    // The window is a fixed-capacity ring: oldest → newest, three samples.
+    expect(history?.count).toBe(3);
+    expect([history?.at(0), history?.at(1), history?.at(2)]).toEqual([3, 0, 5]);
+    expect(history?.newest()).toBe(5);
   });
 
   test('pins survive the filter and reset', () => {

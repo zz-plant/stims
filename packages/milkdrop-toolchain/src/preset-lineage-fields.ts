@@ -17,6 +17,12 @@
  */
 
 import { serializeString } from './formatter.ts';
+import {
+  isShaderSection,
+  type PresetSyntaxLine,
+  parsePresetSyntax,
+  printPresetSyntax,
+} from './preset-syntax.ts';
 import type { MilkdropPresetLineageRef } from './types.ts';
 
 const LINEAGE_FIELD = /^remix_of_(\d+)_(id|title|author)$/u;
@@ -77,4 +83,82 @@ export function lineageFromFields(
       author ? { id, title, author } : { id, title },
     );
   return parents.length > 0 ? parents : undefined;
+}
+
+/**
+ * A source prepared to carry its own lineage as `remix_of_N_*` lines — the
+ * same fields an export writes — so a share link's `#code=` payload can
+ * carry them the way a `.milk` file does. The receiving import reads the
+ * fields back out of the compiled preset (see `lineageFromFields`).
+ *
+ * Any copy already inside the source is replaced in place, exactly as export
+ * drops it before writing fresh, so re-sharing a re-import neither stacks
+ * duplicates nor disturbs the surrounding text. With no lineage to write
+ * the source comes back unchanged.
+ */
+export function embedLineageFields(
+  source: string,
+  derivedFrom: readonly MilkdropPresetLineageRef[] | undefined,
+): string {
+  if (!derivedFrom || derivedFrom.length === 0) {
+    return source;
+  }
+  const isEmbeddedLineage = (line: PresetSyntaxLine) =>
+    line.kind === 'assignment' &&
+    line.key != null &&
+    isLineageFieldKey(line.key);
+
+  const lines = parsePresetSyntax(source).lines;
+  const kept = lines.filter((line) => !isEmbeddedLineage(line));
+  const fresh = lineageFieldLines(derivedFrom);
+
+  const firstLineageIndex = lines.findIndex(isEmbeddedLineage);
+  let insertAt: number;
+  if (firstLineageIndex >= 0) {
+    // A copy already sits in the scalar portion: the fresh block replaces
+    // it where it is, so re-embedding is byte-stable.
+    insertAt = lines
+      .slice(0, firstLineageIndex)
+      .filter((line) => !isEmbeddedLineage(line)).length;
+  } else {
+    // No copy to replace: into the scalar portion, before the first shader
+    // section — appending at the end would place the lines inside it, where
+    // the parser would swallow them as shader text.
+    insertAt = kept.findIndex(
+      (line) => line.kind === 'section' && isShaderSection(line.section),
+    );
+    if (insertAt < 0) {
+      insertAt = kept.length;
+    }
+  }
+
+  // Match the file's own line endings where they are known.
+  const referenceEol = lines.find((line) => line.eol !== '')?.eol ?? '\n';
+  const next = [
+    ...kept.slice(0, insertAt),
+    ...fresh.map((text) => {
+      const equalsAt = text.indexOf('=');
+      const line: PresetSyntaxLine = {
+        number: 0,
+        text,
+        eol: referenceEol,
+        kind: 'assignment',
+        section: null,
+        key: text.slice(0, equalsAt),
+        rawValue: text.slice(equalsAt + 1),
+      };
+      return line;
+    }),
+    ...kept.slice(insertAt),
+  ];
+
+  // The line that used to end the file may no longer; without a terminator
+  // the inserted text would glue onto it.
+  for (let index = 0; index < next.length - 1; index += 1) {
+    if (next[index].eol === '') {
+      next[index] = { ...next[index], eol: referenceEol };
+    }
+  }
+
+  return printPresetSyntax({ lines: next });
 }

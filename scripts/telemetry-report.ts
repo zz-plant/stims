@@ -10,9 +10,26 @@
 //
 // Usage: bun run telemetry:report [--days=7]
 
-export {};
-
 const DATASET = 'stims_telemetry';
+
+/**
+ * The steps of the "Open one up" funnel (docs/PRODUCT_MOMENTS.md), in the
+ * order a visitor walks them: audible start → editor opened → first edit
+ * (three events since the 2026-10-09 split — the frozen guide-button
+ * `growth-first-edit-applied`, plus the first typed code edit and the first
+ * committed Tune control) → shared or saved. Exported so its test can pin
+ * both the membership and the meaning of each step.
+ */
+export const OPEN_ONE_UP_FUNNEL_STEPS = [
+  'growth-audio-started',
+  'growth-editor-opened',
+  'growth-first-code-edit-applied',
+  'growth-first-tune-edit-applied',
+  'growth-first-edit-applied',
+  'growth-share-shared',
+  'growth-share-copied',
+  'growth-video-saved',
+] as const;
 
 // Falls back to the OAuth token `wrangler login` already stored, so
 // `bun run telemetry:report` works out of the box for anyone who has
@@ -63,7 +80,8 @@ interface Report {
   columns: string[];
 }
 
-function buildReports(days: number): Report[] {
+/** The reports `main` prints, parameterized by the lookback window. */
+export function buildReports(days: number): Report[] {
   const since = `NOW() - INTERVAL '${days}' DAY`;
   return [
     {
@@ -166,18 +184,19 @@ function buildReports(days: number): Report[] {
     },
     {
       // The "Open one up" funnel (docs/PRODUCT_MOMENTS.md): audible start,
-      // editor opened, first edit applied, then shared or saved. Grouped by
-      // device so phones and desktops are not averaged together. Rows from
-      // before the context fields existed are left out, as above. AE cannot
-      // type a blob no row has yet unless the query filters on it, and it
-      // rejects ORDER BY on the raw blob, hence the alias.
+      // editor opened, first edit — three events since the 2026-10-09
+      // split (the guide button's frozen `growth-first-edit-applied`, plus
+      // the first code edit and the first Tune edit) — then shared or
+      // saved. Grouped by device so phones and desktops are not averaged
+      // together. Rows from before the context fields existed are left
+      // out, as above. AE cannot type a blob no row has yet unless the
+      // query filters on it, and it rejects ORDER BY on the raw blob,
+      // hence the alias.
       title: `Open one up funnel by device (last ${days}d)`,
       sql: `SELECT blob1 AS step, blob7 AS device, COUNT() AS count
             FROM ${DATASET}
             WHERE timestamp > ${since}
-              AND blob1 IN ('growth-audio-started', 'growth-editor-opened',
-                            'growth-first-edit-applied', 'growth-share-shared',
-                            'growth-share-copied', 'growth-video-saved')
+              AND blob1 IN (${OPEN_ONE_UP_FUNNEL_STEPS.map((step) => `'${step}'`).join(', ')})
               AND blob7 != ''
             GROUP BY blob1, blob7 ORDER BY device, count DESC`,
       columns: ['step', 'device', 'count'],
@@ -299,4 +318,8 @@ async function main() {
   }
 }
 
-main();
+// Run when invoked as the `telemetry:report` script, not when a test imports
+// the report definitions.
+if (import.meta.main) {
+  await main();
+}
