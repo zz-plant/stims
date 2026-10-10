@@ -93,6 +93,15 @@ jobs:
           bun --cwd "packages/$NAME" test
           bun --cwd "packages/$NAME" run build
 
+      # The tarball should be a function of the source, not of the machine:
+      # build twice from clean and fail if the two dists differ, before
+      # anything is packed. Two tsc runs per publish, so release-time only —
+      # not part of the quality gate.
+      - name: Verify the build is deterministic
+        env:
+          NAME: ${{ steps.target.outputs.name }}
+        run: bun run check:dist-determinism -- "$NAME"
+
       - name: Pack
         working-directory: packages/${{ steps.target.outputs.name }}
         run: npm pack --dry-run

@@ -87,6 +87,7 @@
     "check:test-source-greps": "bun run scripts/check-test-source-greps.ts",
     "check:unused-exports": "bun run scripts/check-unused-exports.ts",
     "check:webgpu-target-sampling": "bun run scripts/check-webgpu-target-sampling.ts",
+    "check:dist-determinism": "bun run scripts/check-dist-determinism.ts",
     "embed:backfill": "bun run scripts/trigger-embed-backfill.ts",
     "embed:check": "bunx wrangler deploy --dry-run --config wrangler.embed.jsonc",
     "embed:deploy": "bunx wrangler deploy --config wrangler.embed.jsonc",

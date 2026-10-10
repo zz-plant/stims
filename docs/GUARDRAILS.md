@@ -25,6 +25,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:css-scale`](#checkcss-scale) | `check:quick` | Fail on `border-radius` and `font-size` values that are not on the scale. |
 | [`check:css-tokens`](#checkcss-tokens) | `check:quick` | Fail on `var(--token)` references that resolve to nothing. |
 | [`check:dead-code`](#checkdead-code) | `check` | Report unused files, exports, and dependencies across the whole tree with knip (config: knip.jsonc). |
+| [`check:dist-determinism`](#checkdist-determinism) | on demand | Builds a package twice from clean and fails if the two dists differ — the published tarball should be a function of the source, not of the machine that built it. Wired into publish-packages.yml ahead of npm pack, and not part of the quality gate because it pays for two full tsc runs per package. |
 | [`check:doc-references`](#checkdoc-references) | `check:quick` | Guard against docs that point at files and commands which no longer exist. |
 | [`check:duplicate-css`](#checkduplicate-css) | `check:quick` | Detect duplicate CSS keyframes and rule blocks — the "merge duplicate CSS, remove duplicate keyframes" pattern recurred multiple times in the last 400 commits (`0cc04211`, `6b39eb2f`, `1d2fa2af`). Duplicates bloat the bundle and cause maintenance drift where one copy is updated and the other is forgotten. |
 | [`check:e2e-ports`](#checke2e-ports) | `check:quick` | Fail when two e2e test files claim the same dev-server port. |
@@ -273,6 +274,21 @@ so treat that section as a review aid rather than a gate.
   bun run check:dead-code -- --fix   # let knip delete unused exports/files
 
 Run it directly: `bun run check:dead-code`
+
+## check:dist-determinism
+
+Builds a package twice from clean and fails if the two dists differ — the published tarball should be a function of the source, not of the machine that built it. Wired into publish-packages.yml ahead of npm pack, and not part of the quality gate because it pays for two full tsc runs per package.
+
+Uses each package's own `build` script (what publishing runs), cleans
+`dist/` between builds, and snapshots both outputs to a temporary directory
+before comparing byte for byte. Non-determinism in a sourceMap or
+declarationMap shows up here rather than as a tarball that differs from the
+last release in ways no changelog explains.
+
+  bun run check:dist-determinism                # every standalone package
+  bun run check:dist-determinism -- flash-guard # one package
+
+Run it directly: `bun run check:dist-determinism`
 
 ## check:doc-references
 
