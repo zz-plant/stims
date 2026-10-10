@@ -31,6 +31,14 @@ get `dist/`, or the TypeScript sources under Bun. Wrangler's bundler honours
 neither condition, so code bundled for a Worker reaches the toolchain only
 through its `src/*` subpath.
 
+The list of packages — and, once one is promoted, where its source of truth
+lives — is `scripts/package-manifest.ts`. The mirror and publish workflow
+matrices, the `packages/` directory and the table above are all validated
+against it by `check:ci-config`; `check:no-source-seams` fails on any
+`workspace:` dependency or `src/` subpath import left pointing at a package
+whose source of truth moved to its own repository
+(`docs/PACKAGE_PROMOTION.md`). Adding or promoting a package starts there.
+
 Each package's tests run on their own (TypeScript and `@types/bun` are the
 only dev dependencies):
 
