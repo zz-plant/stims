@@ -133,6 +133,7 @@
     "lab:glsl-corpus-scan": "bun run scripts/preset-lab-glsl-corpus-scan.ts",
     "lab:gpu-differential": "bun run scripts/preset-lab-gpu-differential.ts",
     "lab:format-roundtrip": "bun run scripts/preset-lab-format-roundtrip.ts",
+    "lab:link-reach": "bun run scripts/preset-lab-link-reach.ts",
     "lab:memory-probe": "bun run scripts/preset-lab-memory-probe.ts",
     "lab:nan-sweep": "bun run scripts/preset-lab-nan-sweep.ts",
     "lab:preset-map": "bun run scripts/preset-lab-map.ts",

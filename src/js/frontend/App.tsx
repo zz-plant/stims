@@ -1226,6 +1226,11 @@ function StimsWorkspaceAppShell() {
   // history-entry ownership belongs to the route-sync effect (workspace-hooks),
   // and a keystroke must not add an entry.
   const sessionSource = engineSnapshot?.currentSource ?? '';
+  // The draft's remix parents, from the session's compile of its preset.
+  // Embedded in the hash so a link copied from the address bar carries the
+  // lineage an export would — the same channel, the same fields.
+  const sessionLineage =
+    engineSnapshot?.sessionState?.activeCompiled?.source.derivedFrom;
   const remixUrlFailure = useRef<string | null>(null);
   useEffect(() => {
     if (!engine.engineReady) return;
@@ -1233,6 +1238,7 @@ function StimsWorkspaceAppShell() {
       const nextHref = buildRemixShareUrl(
         window.location.href,
         editorDirty ? sessionSource : null,
+        sessionLineage,
       );
       if (nextHref !== window.location.href) {
         window.history.replaceState(window.history.state, '', nextHref);
@@ -1252,7 +1258,7 @@ function StimsWorkspaceAppShell() {
         remixUrlFailure.current = message;
       }
     }
-  }, [engine.engineReady, editorDirty, sessionSource]);
+  }, [engine.engineReady, editorDirty, sessionSource, sessionLineage]);
 
   useEffect(() => {
     reportLoadStatus('shell-rendered');

@@ -663,6 +663,7 @@ export function useWorkspaceShellOrchestration({
             dirty: false,
             title: sharedPreset?.title,
           }),
+          sharedPreset?.derivedFrom,
         );
       } catch (error) {
         setStatusMessage(
