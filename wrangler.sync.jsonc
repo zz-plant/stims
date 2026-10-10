@@ -11,5 +11,8 @@
     "bindings": [{ "name": "SYNC_ROOM", "class_name": "SyncRoom" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SyncRoom"] }],
-  "observability": { "enabled": true }
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
 }
