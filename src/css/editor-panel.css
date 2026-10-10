@@ -678,7 +678,10 @@ html.light .stims-editor {
 .stims-editor__dock-body {
   flex: 1;
   min-height: 0;
-  padding: 10px 2px 4px;
+  /* 6px, not 10: top padding is chrome above the content, and on the
+     shortest common laptop viewport (1366x657) the first driven chip's
+     last pixels sat under exactly this padding's worth of fold. */
+  padding: 6px 2px 4px;
   overflow-y: auto;
 }
 
@@ -692,6 +695,31 @@ html.light .stims-editor {
 
 .stims-editor__hint {
   margin: 0 0 8px;
+  color: var(--ed-dim);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+/* The Tune pane's explanation, folded behind a summary. Up top as three
+   lines it pushed the pane's first control below the fold at 1280x720;
+   down here it costs one row and still explains the chips on demand. */
+.stims-editor__hint-details {
+  margin: 10px 0 0;
+}
+
+.stims-editor__hint-details summary {
+  cursor: pointer;
+  color: var(--ed-dim);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.stims-editor__hint-details summary:hover {
+  color: var(--stims-ink);
+}
+
+.stims-editor__hint-details p {
+  margin: 6px 0 0;
   color: var(--ed-dim);
   font-size: 0.75rem;
   line-height: 1.45;
@@ -944,9 +972,11 @@ html.light .stims-editor {
   margin-top: 10px;
 }
 
-/* The first heading in the pane has the hint paragraph above it already. */
+/* The first heading in the pane. The margin is gone: it existed to clear
+   the hint paragraph that used to sit above it, and with the controls
+   leading now it only pushed the first chip lower into the fold. */
 .stims-editor__section:first-of-type .stims-editor__subhead {
-  margin-top: 4px;
+  margin-top: 0;
   padding-top: 0;
   border-top: 0;
 }

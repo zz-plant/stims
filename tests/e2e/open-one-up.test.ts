@@ -181,24 +181,32 @@ async function waitForFrames(page: Page, frames: number): Promise<void> {
 }
 
 /**
- * How many of its own lines the code area is tall, and whether the Tune tab is
+ * How many of its own lines the code area is tall, whether the Tune tab is
  * inside the viewport: the code must not get its room by pushing the dock off
- * screen.
+ * screen — and whether the first driven audio chip is on screen without
+ * scrolling the pane: the sounds the Tune pane exists to name must not sit
+ * below the fold (docs/PRODUCT_MOMENTS.md, "Open one up").
  */
-async function readEditorRoom(
-  page: Page,
-): Promise<{ codeLines: number; tuneOnScreen: boolean }> {
+async function readEditorRoom(page: Page): Promise<{
+  codeLines: number;
+  tuneOnScreen: boolean;
+  chipOnScreen: boolean;
+}> {
   return bounded(
     page.evaluate(() => {
       const code = document.querySelector('.stims-editor__code');
       const content = document.querySelector('.stims-editor__code .cm-content');
       const tune = document.querySelector('#stims-editor-tab-tune');
+      const chip = document.querySelector(
+        '#stims-editor-pane-tune .stims-editor__state-chip[data-state="driven"]',
+      );
       // The type's line height, not a rendered line's box: long equations
       // wrap, and a wrapped line is two rows tall.
       const lineHeight = content
         ? Number.parseFloat(getComputedStyle(content).lineHeight)
         : 0;
       const tuneBox = tune?.getBoundingClientRect();
+      const chipBox = chip?.getBoundingClientRect();
       return {
         codeLines:
           lineHeight > 0
@@ -209,6 +217,12 @@ async function readEditorRoom(
             tuneBox.height > 0 &&
             tuneBox.top >= 0 &&
             tuneBox.bottom <= window.innerHeight,
+        ),
+        chipOnScreen: Boolean(
+          chipBox &&
+            chipBox.height > 0 &&
+            chipBox.top >= 0 &&
+            chipBox.bottom <= window.innerHeight,
         ),
       };
     }),
@@ -221,9 +235,9 @@ type ChipReading = { label: string; state: string; audio: string[] };
 /**
  * What the Tune pane says about every control: its label, whether the draft
  * owns the value or the equations do, and the audio it names. The visible
- * chip shortens the list to `eq · bass +2`; the full list is in the chip's
- * accessible name (and its tooltip), so that is what is read here, and the
- * visible text is checked against it separately.
+ * chip names every driving band; the same list is in the chip's accessible
+ * name (and its tooltip), so that is what is read here, and the visible
+ * text is checked against it separately.
  */
 async function readTuneChips(
   page: Page,
@@ -304,11 +318,11 @@ function byLabel(chips: ChipReading[]): string[] {
     .sort();
 }
 
-/** The visible chip text the pane's own hint documents: `eq · bass`. */
+/** The visible chip text the pane's own hint documents: `eq · bass, mid, treb`. */
 function chipText({ state, audio }: ChipReading): string {
   if (state === 'static') return 'set';
   if (audio.length === 0) return 'eq';
-  return `eq · ${audio[0]}${audio.length > 1 ? ` +${audio.length - 1}` : ''}`;
+  return `eq · ${audio.join(', ')}`;
 }
 
 requiredBrowserTest(
@@ -414,6 +428,15 @@ requiredBrowserTest(
         expect(chip.text, `${chip.label}'s visible chip`).toBe(chipText(chip));
       }
 
+      // The controls lead: with the intro paragraph and the wave picker
+      // above them, the first driven chip started at the bottom edge of
+      // the window and the sounds sat below the fold.
+      const withChips = await readEditorRoom(page);
+      expect(
+        withChips.chipOnScreen,
+        'a driven chip on screen without scrolling at 1280x720',
+      ).toBe(true);
+
       // The edit. Baseline first: the stage must not already look edited,
       // or the check below would pass on a frame the edit never touched.
       const baseline = await bounded(captureAgentStats(page));
@@ -489,6 +512,11 @@ requiredBrowserTest(
         'lines of code at 1366x657',
       ).toBeGreaterThanOrEqual(MIN_CODE_LINES);
       expect(laptop.tuneOnScreen, 'the Tune tab at 1366x657').toBe(true);
+      // The chip reading is asserted at 1280x720 above, on the first open
+      // the finding measured. Here a draft note has sat over the editor
+      // since the edit, and that note — not the pane's order — owns those
+      // pixels; asserting the chip through it would fail on the note, not
+      // on the fold.
     } catch (error) {
       await writeAgentFailureArtifact(page, 'open-one-up');
       throw error;

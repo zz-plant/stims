@@ -1812,11 +1812,12 @@ export class EditorPanel {
               ? 'bound'
               : 'static';
       // What the equations feed into a driven field: the audio, by the names
-      // the code uses, so the chip answers "why does this move?" too.
+      // the code uses, so the chip answers "why does this move?" too. Every
+      // driving band, not a count: "eq · bass +2" hid mid and treble in a
+      // tooltip while the visible chip claimed to name the sounds
+      // (docs/PRODUCT_MOMENTS.md, "Open one up").
       const audio = state === 'driven' ? audioReaching(dataflow, driven) : null;
-      const follows = audio?.length
-        ? ` · ${audio[0]}${audio.length > 1 ? ` +${audio.length - 1}` : ''}`
-        : '';
+      const audioList = audio?.length ? ` · ${audio.join(', ')}` : '';
 
       cell.chip.dataset.state = state;
       cell.chip.textContent =
@@ -1825,7 +1826,7 @@ export class EditorPanel {
           : state === 'bound'
             ? 'midi'
             : state === 'driven'
-              ? `eq${follows}`
+              ? `eq${audioList}`
               : 'eq ⚠';
       // Only the equation states have somewhere to jump to.
       cell.chip.disabled = driven.length === 0;
@@ -2244,12 +2245,6 @@ export class EditorPanel {
     panel.setAttribute('role', 'group');
     panel.setAttribute('aria-label', 'Parameter sliders');
 
-    const hint = document.createElement('p');
-    hint.className = 'stims-editor__hint';
-    hint.textContent =
-      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value (set) or the preset recomputes it per frame (eq), and from which audio (eq · bass).';
-    panel.appendChild(hint);
-
     this.sliderInputs.clear();
     this.colorInputs.clear();
     this.toggleInputs.clear();
@@ -2258,14 +2253,25 @@ export class EditorPanel {
     this.modulationRows.clear();
     this.fieldStateCells = [];
 
-    // The preset's own parameters come first: they are what its author
-    // meant to be tuned. Empty (and hidden) for presets without any.
+    // Controls lead. With the intro paragraph and the wave-or-shape picker
+    // above them, Tune's first control started at the bottom edge of a
+    // 1280x720 window and the sounds the chips name sat below the fold
+    // (docs/PRODUCT_MOMENTS.md, "Open one up"). The picker now follows the
+    // labelled controls it can wait behind, and the teaching copy folds
+    // into a disclosure at the bottom.
+
+    // The preset's own parameters: they are what its author meant to be
+    // tuned. Empty (and hidden) for presets without any.
     this.knobsWrap = document.createElement('section');
     this.knobsWrap.className = 'stims-editor__section';
     this.knobsWrap.dataset.section = 'knobs';
     this.knobsWrap.setAttribute('aria-label', 'Preset parameters');
     this.knobsWrap.hidden = true;
     panel.appendChild(this.knobsWrap);
+
+    for (const section of CONTROL_SECTIONS) {
+      panel.appendChild(this.renderSection(section));
+    }
 
     // One custom wave's or shape's own settings, picked here or from its
     // Outline row. Hidden for presets that have none.
@@ -2291,9 +2297,19 @@ export class EditorPanel {
     this.slotWrap.append(pickerRow, this.slotControlsWrap);
     panel.appendChild(this.slotWrap);
 
-    for (const section of CONTROL_SECTIONS) {
-      panel.appendChild(this.renderSection(section));
-    }
+    // The pane's one explanation, folded behind a summary so it costs one
+    // row instead of three: what the chips say and where a click on one
+    // goes. Still present for whoever opens it; no longer in the way of
+    // the controls it explains.
+    const hint = document.createElement('details');
+    hint.className = 'stims-editor__hint-details';
+    const hintSummary = document.createElement('summary');
+    hintSummary.textContent = 'How Tune works';
+    const hintBody = document.createElement('p');
+    hintBody.textContent =
+      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value (set) or the preset recomputes it per frame (eq), and from which audio — naming every driving band (eq · bass, mid, treb). Click a chip to jump to the equation doing it.';
+    hint.append(hintSummary, hintBody);
+    panel.appendChild(hint);
 
     return panel;
   }
