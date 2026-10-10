@@ -143,7 +143,7 @@ export const MILKDROP_NOISE_VOLUME_HELPERS = `
  * output is exactly its own 180-degree rotation (projectM reference:
  * self-correlation 0.9994; ours before this fix: 0.66).
  */
-export const MILKDROP_VIDEO_ECHO_HELPER = `
+const MILKDROP_VIDEO_ECHO_HELPER = `
         vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
           float flipU = step(0.5, mod(orientation, 2.0));
           float flipV = step(1.5, mod(orientation, 4.0));
@@ -191,7 +191,7 @@ export const MILKDROP_VIDEO_ECHO_HELPER = `
  * a form: same width, vector/scalar, the six mismatched pairs, and the
  * matrix products `mul()` lowers to.
  */
-export function buildMilkdropArithmeticHelpers(): string {
+function buildMilkdropArithmeticHelpers(): string {
   const ops = [
     ['milkdropAdd', '+'],
     ['milkdropSub', '-'],
@@ -231,7 +231,7 @@ export function buildMilkdropArithmeticHelpers(): string {
   return lines.map((line) => `        ${line}`).join('\n');
 }
 
-export const MILKDROP_HLSL_PROMOTION_HELPERS = `
+const MILKDROP_HLSL_PROMOTION_HELPERS = `
         // MilkDrop 2's shader preamble (include.fx) defines these, so preset
         // bodies use them undeclared. Note M_PI_2 is 2*pi, not C's pi/2.
         // Missing, they were hoisted as zero uniforms and angle math such as

@@ -45,7 +45,7 @@ import docsEvidenceClaimAudit from '../docs/evidence/public-claim-audit.md';
 import docsEvidenceLedger202605 from '../docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md';
 import docsMcpServer from '../docs/MCP_SERVER.md';
 import docsReadme from '../docs/README.md';
-import docsStatus202605 from '../docs/STATUS_2026-05.md';
+import docsRoadmap from '../docs/ROADMAP.md';
 import readme from '../README.md';
 
 const defaultInstructions = [
@@ -89,7 +89,7 @@ const markdownSources = {
   'docs/MCP_SERVER.md': docsMcpServer,
   'docs/ARCHITECTURE.md': docsArchitecture,
   'docs/DEVELOPMENT.md': docsDevelopment,
-  'docs/STATUS_2026-05.md': docsStatus202605,
+  'docs/ROADMAP.md': docsRoadmap,
   'docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md': docsEvidenceLedger202605,
   'docs/evidence/public-claim-audit.md': docsEvidenceClaimAudit,
   'docs/agents/README.md': docsAgentsReadme,
