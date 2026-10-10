@@ -46,6 +46,12 @@ export function EditorSurface() {
   uiRef.current = ui;
 
   const sessionState = engineSnapshot?.sessionState ?? null;
+  const backend = engineSnapshot?.backend ?? null;
+  // Same read-through-a-ref contract as sessionStateRef: this callback is
+  // handed to the panel once, on mount, and the panel re-reads it on every
+  // paint, so the Textures pane's per-backend notes track backend switches.
+  const backendRef = useRef(backend);
+  backendRef.current = backend;
   // The panel is code-split, so it appends itself a tick or two after this
   // component renders. Session state only changes identity when a compile
   // commits, so by mount time the state that opened the editor will never be
@@ -82,6 +88,7 @@ export function EditorSurface() {
         onStepFrame: () => engineRef.current.stepPlaybackFrame(),
         getOriginalSource: () =>
           Promise.resolve(engineRef.current.getOriginalPresetSource()),
+        getActiveBackend: () => backendRef.current,
         onExport: () => {
           engineRef.current.exportPreset();
         },

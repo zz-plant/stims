@@ -81,7 +81,7 @@ Shipped:
 Open:
 
 - **Shader tab (WGSL/GLSL).** Partial. The editor's Shader tab lists a preset's warp/comp blocks with jumps, shows the engine's structured compile diagnostics (program, stage, driver message) mapped to the authored block, and a read-only view of the GLSL the WebGL path compiles. Missing: the WGSL a WebGPU pipeline actually runs — the WebGPU path lowers shaders through three's TSL node graphs at render time, so per-block WGSL text needs a live GPUDevice plumbing path that does not exist yet.
-- **Custom textures.** Missing. Textures are a fixed bundled table.
+- **Custom textures.** Partly shipped: the editor's Textures pane inspects what exists — every `sampler_*` a preset's warp/comp blocks reference, resolved to the bundled texture file the engine binds (with a preview, alias/substitute/rand notes, per-backend volume honesty, and built-in samplers folded into a collapsed group; `texture-bindings.ts`). Still missing: remapping a slot to another bundled texture, user-uploaded textures, and any override persisted in the preset — textures remain a fixed bundled table (`texture-files.ts`).
 - **Short links.** Links are long (p95 5,215 characters even compressed); a short-link service would still wait on moderation.
 - **The loop as a whole.** `tests/e2e/studio-loop.test.ts` walks browse → edit → compare → save → share; CI's e2e matrix does not run it yet.
 

@@ -87,6 +87,7 @@ import { InspectPane } from './editor-pane-inspect.ts';
 import { OutlinePane } from './editor-pane-outline.ts';
 import { ReferencePane } from './editor-pane-reference.ts';
 import { ShaderPane } from './editor-pane-shader.ts';
+import { TexturesPane } from './editor-pane-textures.ts';
 import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
@@ -150,6 +151,13 @@ export type EditorPanelCallbacks = {
    * it. Resolves null when there is nothing to compare against.
    */
   getOriginalSource?: () => Promise<string | null>;
+  /**
+   * The backend the stage is currently rendering with, or null when the
+   * caller cannot tell. Panes that report per-backend behavior (volume
+   * texture samples differ: WebGL slices a bundled 2D atlas, WebGPU reads
+   * native 3D volumes) say which view they are showing instead of guessing.
+   */
+  getActiveBackend?: () => 'webgl' | 'webgpu' | null;
   onDuplicatePreset: () => void;
   onExport: () => void;
   onDeletePreset: () => void;
@@ -207,6 +215,7 @@ export class EditorPanel {
   private readonly referencePane: ReferencePane;
   private readonly insertPane: InsertPane;
   private readonly compatPane: CompatPane;
+  private readonly texturesPane: TexturesPane;
   private readonly outlinePane: OutlinePane;
   private readonly inspectPane: InspectPane;
   private readonly shaderPane: ShaderPane;
@@ -755,6 +764,9 @@ export class EditorPanel {
     this.referencePane = new ReferencePane(host);
     this.insertPane = new InsertPane(host);
     this.compatPane = new CompatPane(host);
+    this.texturesPane = new TexturesPane(host, {
+      getActiveBackend: callbacks.getActiveBackend,
+    });
     this.outlinePane = new OutlinePane(host, {
       onTuneSlot: (slot) => this.showSlotInTune(slot),
     });
@@ -780,6 +792,11 @@ export class EditorPanel {
       { id: 'inspect', label: 'Inspect', content: this.inspectPane.element },
       { id: 'shader', label: 'Shader', content: this.shaderPane.element },
       { id: 'compat', label: 'Compat', content: this.compatPane.element },
+      {
+        id: 'textures',
+        label: 'Textures',
+        content: this.texturesPane.element,
+      },
       { id: 'history', label: 'History', content: this.renderHistoryPane() },
     ];
     const tabButtons: HTMLButtonElement[] = [];
@@ -816,6 +833,7 @@ export class EditorPanel {
       tab.dataset.pane = pane.id;
       if (pane.id === 'compat') this.compatPane.bindTab(tab);
       if (pane.id === 'shader') this.shaderPane.bindTab(tab);
+      if (pane.id === 'textures') this.texturesPane.bindTab(tab);
       pane.content.classList.add('stims-editor__pane');
       pane.content.id = `stims-editor-pane-${pane.id}`;
       pane.content.setAttribute('role', 'tabpanel');
@@ -1679,6 +1697,7 @@ export class EditorPanel {
     this.updateControlDataflow(state.activeCompiled);
     this.compatPane.update(state);
     this.shaderPane.update(state);
+    this.texturesPane.update(state);
     const dataflow = this.controlDataflow?.dataflow ?? null;
     this.outlinePane.update(
       state,

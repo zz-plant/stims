@@ -1817,6 +1817,102 @@ button.stims-editor__compat-row:focus-visible {
   opacity: 0.85;
 }
 
+/* ── Textures pane ─────────────────────────────────────────────────── */
+
+.stims-editor__texture-headline {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.stims-editor__textures {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.stims-editor__texture-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+}
+
+.stims-editor__texture-swatch {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--ed-tint-2);
+}
+
+.stims-editor__texture-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stims-editor__texture-name {
+  margin: 0;
+  font-size: var(--text-xs-plus);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stims-editor__texture-name code {
+  font-size: var(--text-xs);
+}
+
+.stims-editor__texture-file {
+  font-size: var(--text-xs);
+  color: var(--ed-dim);
+  word-break: break-all;
+}
+
+.stims-editor__texture-notes {
+  margin: 0;
+  font-size: var(--text-2xs);
+  color: var(--ed-dim);
+}
+
+.stims-editor__texture-internal {
+  margin: 10px 0 0;
+}
+
+.stims-editor__texture-internal summary {
+  cursor: pointer;
+  color: var(--ed-dim);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.stims-editor__texture-internal summary:hover {
+  color: var(--stims-ink);
+}
+
+.stims-editor__texture-internal-list {
+  display: grid;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.stims-editor__texture-builtin-row {
+  font-size: var(--text-xs);
+  color: var(--ed-dim);
+  padding: 2px 0;
+}
+
+.stims-editor__texture-builtin-row code {
+  color: inherit;
+}
+
 /* ── Outline pane ─────────────────────────────────────────────────── */
 
 .stims-editor__outline {
