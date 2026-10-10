@@ -79,7 +79,7 @@ Shipped:
 Open:
 
 - **Watcher HUD.** The Inspect tab draws 120-sample sparklines, repaints at most every 150 ms, and exists only while the editor is open. Missing: a stage overlay, plots at display rate, and history kept in typed ring buffers instead of `Array.shift` on the render path.
-- **Shader tab (WGSL/GLSL).** Missing. `compiler/custom-shader-block.ts` parses a block but nothing calls it.
+- **Shader tab (WGSL/GLSL).** Partial. The editor's Shader tab lists a preset's warp/comp blocks with jumps, shows the engine's structured compile diagnostics (program, stage, driver message) mapped to the authored block, and a read-only view of the GLSL the WebGL path compiles. Missing: the WGSL a WebGPU pipeline actually runs — the WebGPU path lowers shaders through three's TSL node graphs at render time, so per-block WGSL text needs a live GPUDevice plumbing path that does not exist yet.
 - **Custom textures.** Missing. Textures are a fixed bundled table.
 - **Short links.** Links are long (p95 5,215 characters even compressed); a short-link service would still wait on moderation.
 - **The loop as a whole.** No end-to-end test of browse → edit → compare → save → share.

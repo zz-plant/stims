@@ -86,6 +86,7 @@ import { InsertPane } from './editor-pane-insert.ts';
 import { InspectPane } from './editor-pane-inspect.ts';
 import { OutlinePane } from './editor-pane-outline.ts';
 import { ReferencePane } from './editor-pane-reference.ts';
+import { ShaderPane } from './editor-pane-shader.ts';
 import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
@@ -190,6 +191,7 @@ export class EditorPanel {
   private readonly compatPane: CompatPane;
   private readonly outlinePane: OutlinePane;
   private readonly inspectPane: InspectPane;
+  private readonly shaderPane: ShaderPane;
   private readonly callbacks: EditorPanelCallbacks;
   private readonly note: HTMLElement;
   private readonly stateEl: HTMLElement;
@@ -740,6 +742,7 @@ export class EditorPanel {
       onSetStageFrozen: callbacks.onSetStageFrozen,
       onStepFrame: callbacks.onStepFrame,
     });
+    this.shaderPane = new ShaderPane(host);
 
     const panes: Array<{ id: string; label: string; content: HTMLElement }> = [
       { id: 'tune', label: 'Tune', content: this.renderSliders() },
@@ -752,6 +755,7 @@ export class EditorPanel {
       },
       { id: 'assist', label: 'Assist', content: this.renderAssistPane() },
       { id: 'inspect', label: 'Inspect', content: this.inspectPane.element },
+      { id: 'shader', label: 'Shader', content: this.shaderPane.element },
       { id: 'compat', label: 'Compat', content: this.compatPane.element },
       { id: 'history', label: 'History', content: this.renderHistoryPane() },
     ];
@@ -788,6 +792,7 @@ export class EditorPanel {
       tab.tabIndex = index === 0 ? 0 : -1;
       tab.dataset.pane = pane.id;
       if (pane.id === 'compat') this.compatPane.bindTab(tab);
+      if (pane.id === 'shader') this.shaderPane.bindTab(tab);
       pane.content.classList.add('stims-editor__pane');
       pane.content.id = `stims-editor-pane-${pane.id}`;
       pane.content.setAttribute('role', 'tabpanel');
@@ -1636,6 +1641,7 @@ export class EditorPanel {
 
     this.updateControlDataflow(state.activeCompiled);
     this.compatPane.update(state);
+    this.shaderPane.update(state);
     const dataflow = this.controlDataflow?.dataflow ?? null;
     this.outlinePane.update(
       state,

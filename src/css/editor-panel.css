@@ -1930,3 +1930,78 @@ button.stims-editor__compat-row:focus-visible {
   color: var(--stims-ink);
   background: var(--stims-control-fill-hover);
 }
+
+/* ── Shader pane ─────────────────────────────────────────────────── */
+
+.stims-editor__shader-pane {
+  display: grid;
+  gap: 4px;
+}
+
+.stims-editor__shader-list {
+  display: grid;
+  gap: 2px;
+}
+
+/* Same shape as an Outline row: a code label with the line range on the
+   right, the whole row a jump target. */
+.stims-editor__shader-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-xs-plus);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stims-editor__shader-row:hover,
+.stims-editor__shader-row:focus-visible {
+  border-color: var(--stims-line-soft);
+  background: var(--stims-surface-2, rgba(255, 255, 255, 0.05));
+}
+
+/* A compile failure carries the driver's message, which can run long:
+   pre-wrap keeps it readable without widening the dock. */
+.stims-editor__shader-diag {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 7px 9px;
+  border: 1px solid var(--stims-line-soft);
+  border-left-width: 3px;
+  border-left-color: var(--stims-danger, #e5484d);
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+button.stims-editor__shader-diag {
+  cursor: pointer;
+}
+
+button.stims-editor__shader-diag:hover,
+button.stims-editor__shader-diag:focus-visible {
+  background: var(--stims-surface-2, rgba(255, 255, 255, 0.05));
+}
+
+.stims-editor__shader-diag-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--text-xs-plus);
+}
+
+.stims-editor__shader-diag-message {
+  font-family: var(--font-family-mono);
+  font-size: var(--text-xs);
+  opacity: 0.85;
+  white-space: pre-wrap;
+}
