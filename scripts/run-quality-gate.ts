@@ -252,6 +252,13 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:cache-bounds'],
       },
       {
+        // Monolith ratchet: no source file may grow past the size limit, and
+        // the known-largest files are frozen at their landing size so they
+        // can only shrink. Cheap (line counting), runs in every gate mode.
+        label: 'File size ratchet',
+        cmd: ['bun', 'run', 'check:file-size'],
+      },
+      {
         // A promoted package (scripts/package-manifest.ts) must be consumed
         // from the registry: a workspace: dependency or a src/ subpath import
         // is a seam that breaks the moment its directory moves to its own

@@ -11,12 +11,12 @@ import {
   MILKDROP_INTRINSIC_FUNCTIONS,
   MILKDROP_INTRINSIC_IDENTIFIERS,
 } from 'milkdrop-toolchain/src/expression.ts';
+import { MILKDROP_BUILTIN_OPTIONS } from '../../src/js/milkdrop/overlay/editor-codemirror.ts';
 import {
   ATOM_WORDS,
   BUILTIN_WORDS,
   KEYWORD_WORDS,
 } from '../../src/js/milkdrop/overlay/editor-language.ts';
-import { MILKDROP_BUILTIN_OPTIONS } from '../../src/js/milkdrop/overlay/editor-panel.ts';
 import { buildMilkdropInputSignalOverrides } from '../../src/js/milkdrop/runtime/interaction-response.ts';
 
 describe('milkdrop builtin table integrity', () => {

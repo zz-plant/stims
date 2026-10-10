@@ -6,7 +6,7 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 
 1. Root [`AGENTS.md`](../../AGENTS.md) for non-negotiable defaults.
 2. [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md) for the single-page Cline quick start.
-3. [`../STATUS_2026-05.md`](../STATUS_2026-05.md) for the current project state (what changed, certified corpus, known gaps, next targets).
+3. [`../ROADMAP.md`](../ROADMAP.md) for product and engineering priorities and next targets.
 4. [`../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md`](../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md) for the single source of truth on certified, baseline-measured, and unmeasured presets plus fidelity gaps by subsystem.
 5. [`agent-handoffs.md`](./agent-handoffs.md) for the fastest safe bootstrap plus delegation and return-contract guidance.
 6. [`custom-capabilities.md`](./custom-capabilities.md) when the task may map to repo-local `.agent` skills/workflows.

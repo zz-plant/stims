@@ -29,6 +29,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:doc-references`](#checkdoc-references) | `check:quick` | Guard against docs that point at files and commands which no longer exist. |
 | [`check:duplicate-css`](#checkduplicate-css) | `check:quick` | Detect duplicate CSS keyframes and rule blocks — the "merge duplicate CSS, remove duplicate keyframes" pattern recurred multiple times in the last 400 commits (`0cc04211`, `6b39eb2f`, `1d2fa2af`). Duplicates bloat the bundle and cause maintenance drift where one copy is updated and the other is forgotten. |
 | [`check:e2e-ports`](#checke2e-ports) | `check:quick` | Fail when two e2e test files claim the same dev-server port. |
+| [`check:file-size`](#checkfile-size) | `check:quick` | Fails when a source file grows past a monolith threshold. |
 | [`check:first-run-evidence`](#checkfirst-run-evidence) | `check:quick` | Record the measured evidence behind the first-run preset. |
 | [`check:guard-registry`](#checkguard-registry) | `check:quick` | Blocks banned patterns in changed source files before they land. |
 | [`check:guardrails-doc`](#checkguardrails-doc) | `check:quick` | Generates `docs/GUARDRAILS.md` — the rules this repo enforces — from the guard scripts themselves. |
@@ -360,6 +361,29 @@ are outside what a source scan can see; `tests/e2e/dev-server.ts` refuses a
 port that is already taken and names the process holding it.
 
 Run it directly: `bun run check:e2e-ports`
+
+## check:file-size
+
+Fails when a source file grows past a monolith threshold.
+
+A file's length is the strongest cheap proxy for the costs that actually
+hurt: every change touches more context, every review reads more code, and
+every git-blame funnels through one path. The repo's largest files are also
+its most-changed ones — the evidence that size and maintenance pain travel
+together here.
+
+The default limit is 5000 lines across src/, scripts/, tests/, and
+functions/ (.ts/.tsx/.js/.jsx/.mjs, plus .css under src/). Files already
+over it are listed in KNOWN_EXCEEDANCES frozen at their current size: they
+pass, but any growth fails immediately. The list is a ratchet, not an
+amnesty — entries are removed as the files are split, and the limit they
+return to is the default.
+
+Split targets are named in the docblock rationale of each entry. New
+deliberately-large files are not addable by editing this script alone;
+an entry needs a reason that will still be true in a year.
+
+Run it directly: `bun run check:file-size`
 
 ## check:first-run-evidence
 

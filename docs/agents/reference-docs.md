@@ -5,7 +5,7 @@
 - `docs/DEVELOPMENT.md` — scripts and contributor workflow baseline.
 - `docs/MILKDROP_PRESET_RUNTIME.md` — preset runtime, editor, compiler, and compatibility behavior.
 - `docs/ARCHITECTURE.md` — runtime architecture and flow.
-- `docs/STATUS_2026-05.md` — current project state: what changed, certified corpus, known gaps, next targets.
+- `docs/ROADMAP.md` — product and engineering priorities and next targets.
 - `docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md` — single source of truth: certified/baseline-measured/semantic/unmeasured presets, fidelity gaps by subsystem.
 - `docs/evidence/public-claim-audit.md` — overclaim findings and recommended fixes for public-facing naming and evidence claims.
 - `docs/MANUAL_SMOKE_BASELINE.md` — milestone sign-off checklist for startup/shell/runtime changes.
