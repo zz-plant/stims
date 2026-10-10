@@ -3,7 +3,7 @@
  * and tournament candidate evaluation with reactivity metrics and direct canvas stage updates.
  */
 
-import { useCallback, useEffect, useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import styles from '../../css/SynthesizePanel.module.css';
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import {
@@ -13,6 +13,7 @@ import {
 } from '../milkdrop/preset-generator.ts';
 import { probePresetReactivity } from '../milkdrop/reactivity-probe.ts';
 import { AIBadge } from './AIBadge.tsx';
+import { checkStageForNearBlack } from './generated-preset-visual-check.ts';
 import { ParametricIdenticon } from './ParametricIdenticon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -149,6 +150,9 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
   const [generating, setGenerating] = useState(false);
   const [isPending, startTransition] = useTransition();
   const isGenerating = generating || isPending;
+  /** Run id for the in-flight near-black check, so a stale run's verdict
+   * cannot relabel a preset the user has already replaced. */
+  const visualCheckRunRef = useRef(0);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [canRegenerate, setCanRegenerate] = useState(false);
   const [status, setStatus] = useState(() =>
@@ -220,6 +224,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     }
     setGenerating(true);
     setCanRegenerate(false);
+    let postLoadCheck: (() => Promise<void>) | null = null;
     setStatus(
       useImage
         ? 'Describing the image and generating with the hosted model…'
@@ -274,20 +279,50 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
       // regenerate instead of wondering why nothing moves to the beat.
       const probeResult = probePresetReactivity(compiled);
       await engine.importPresetFiles(toFileList(compiled.source.raw));
-      startTransition(() => {
-        if (probeResult.verdict === 'static') {
+      if (probeResult.verdict === 'static') {
+        startTransition(() => {
           setStatus(
             'Loaded, but this preset barely reacts to sound. Try generating again with wording like “strong beat reaction”.',
           );
           setCanRegenerate(true);
-        } else {
-          ui.updatePanel(null);
-        }
-      });
+        });
+      } else {
+        // Second gate: a reactive preset can still render near-black
+        // (over-driven decay, everything warped off-screen). The stage it
+        // is already playing on is sampled for a couple of seconds; a
+        // preset whose picture never lights up gets a low-confidence label
+        // instead of silently looking broken. Run it after the generating
+        // state clears so the button does not claim to be generating
+        // while the preset is already playing.
+        const runId = visualCheckRunRef.current + 1;
+        visualCheckRunRef.current = runId;
+        startTransition(() => {
+          setStatus('Loaded — checking the render…');
+        });
+        postLoadCheck = async () => {
+          const visualVerdict = await checkStageForNearBlack(
+            ui.stageRef.current,
+          );
+          if (runId !== visualCheckRunRef.current) return;
+          startTransition(() => {
+            if (visualVerdict === 'near-black') {
+              setStatus(
+                'Loaded, but the picture stays near black. Low confidence — try generating again.',
+              );
+              setCanRegenerate(true);
+            } else {
+              ui.updatePanel(null);
+            }
+          });
+        };
+      }
     } catch (err) {
       setStatus(`Error: ${(err as Error).message}`);
     } finally {
       setGenerating(false);
+    }
+    if (postLoadCheck) {
+      void postLoadCheck();
     }
   }, [
     prompt,

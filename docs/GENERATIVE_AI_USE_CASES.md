@@ -42,7 +42,7 @@ Per [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md), the Generate pan
 
 Before adding surfaces, make the existing text → preset path trustworthy.
 
-- Done in part: the Generate panel now chains compile diagnostics with an in-browser reactivity probe ([`src/js/milkdrop/reactivity-probe.ts`](../src/js/milkdrop/reactivity-probe.ts)) that steps the VM silent-vs-audio and labels presets whose equations ignore audio. Near-black detection still needs a render-based check.
+- Done: the Generate panel now chains compile diagnostics with an in-browser reactivity probe ([`src/js/milkdrop/reactivity-probe.ts`](../src/js/milkdrop/reactivity-probe.ts)) that steps the VM silent-vs-audio and labels presets whose equations ignore audio, plus a render-based near-black check ([`src/js/frontend/generated-preset-visual-check.ts`](../src/js/frontend/generated-preset-visual-check.ts)) that samples the live stage for a few seconds after load and labels presets whose picture never lights up as low-confidence. The bench-side visual metric remains open (`--visual` stub in `lab:generation-bench`).
 - Done: the hosted [`validate-preset`](../functions/api/validate-preset.ts) route now compiles the submitted source with the real preset compiler and maps its diagnostics onto the same response shape — `valid` reflects the compile result, so invalid expressions and shader control programs are rejected instead of passing a paren counter.
 - Reuse the deterministic synthesizer as a control: generation should measurably beat the template fallback on reactivity and visual-variance metrics, or the model call was not worth it.
 - Complete the end-to-end verification the achievements doc calls out: hosted availability, loopback/local configuration, and the full browser flow.
