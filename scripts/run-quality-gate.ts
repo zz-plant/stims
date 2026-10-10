@@ -252,6 +252,13 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:cache-bounds'],
       },
       {
+        // Monolith ratchet: no source file may grow past the size limit, and
+        // the known-largest files are frozen at their landing size so they
+        // can only shrink. Cheap (line counting), runs in every gate mode.
+        label: 'File size ratchet',
+        cmd: ['bun', 'run', 'check:file-size'],
+      },
+      {
         // Diff-scoped, so this gates new and changed code without demanding a
         // repo-wide cleanup first.
         label: 'Banned pattern guard (changed files)',
