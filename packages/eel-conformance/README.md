@@ -89,7 +89,7 @@ process.exit(conforms(report) ? 0 : 1);
 
 `runConformance` records a thrown error as an error on that case and keeps going, because the useful output is the whole table, not the first crash. `conforms` is true when every pinned case passed; provisional failures are reported separately and never count against conformance. Variable names in `env` are lower-cased, matching the language's case-insensitivity.
 
-The sibling package [`milkdrop-toolchain`](../milkdrop-toolchain) runs this corpus against its interpreter, JIT and WGSL generator in its own test suite, and is where the cases were first written.
+The sibling package [`milkdrop-toolchain`](../milkdrop-toolchain) runs this corpus against its interpreter, JIT and WGSL generator in its own test suite. The cases were first written there.
 
 ## What the corpus covers
 
