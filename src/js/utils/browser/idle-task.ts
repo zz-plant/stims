@@ -24,6 +24,36 @@ export function scheduleIdleTask(
 }
 
 /**
+ * Schedule a non-critical effect to run during browser idle time, where the
+ * effect returns its own disposal. Cancelling before the task runs, or after
+ * it ran, both invoke that disposal exactly once — the shape React effect
+ * cleanup needs, so a scheduled effect can never leak its resource by being
+ * cancelled late.
+ *
+ * Falls back to a short setTimeout when requestIdleCallback is unavailable.
+ */
+export function deferToIdle(
+  fn: () => undefined | (() => void),
+  options?: { idleTimeout?: number; fallbackDelay?: number },
+): () => void {
+  let cancelled = false;
+  let dispose: (() => void) | undefined;
+  const run = () => {
+    if (cancelled) return;
+    dispose = fn();
+  };
+  const cancel = scheduleIdleTask(run, {
+    idleTimeout: options?.idleTimeout ?? 2000,
+    fallbackDelay: options?.fallbackDelay ?? 80,
+  });
+  return () => {
+    cancelled = true;
+    cancel();
+    dispose?.();
+  };
+}
+
+/**
  * Run `callback` once the browser has painted and presented the current
  * frame. One animation frame is not enough: its callback runs before that
  * frame's paint, and a timeout queued from it can still land before the

@@ -38,10 +38,6 @@ import {
 import { setCrashTelemetryPreset } from '../core/services/crash-telemetry.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { setTelemetryAudioSource } from '../core/services/telemetry-context.ts';
-import {
-  VIRTUAL_CLAUDE_DEVICE_ID,
-  webMidiService,
-} from '../core/services/webmidi-controller.ts';
 import { saveLastSession } from '../core/state/last-session-store.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
@@ -52,7 +48,7 @@ import {
 } from '../core/theme-preferences.ts';
 import { parseURLParams } from '../core/url-params.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
-import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
+import { deferToIdle } from '../utils/browser/idle-task.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import { initAgentBridge, updateAgentTelemetry } from './agent-bridge.ts';
 import { buildAgentBridgeCallbacks } from './agent-bridge-handlers.ts';
@@ -74,6 +70,7 @@ import {
 import { HudOverlay } from './HudOverlay.tsx';
 import { useAgentStateInstall } from './hooks/use-agent-state-install.ts';
 import { useMediaSession } from './hooks/use-media-session.ts';
+import { usePerformanceHardware } from './hooks/use-performance-hardware.ts';
 import {
   useFileHandlerLaunch,
   useSharedLaunch,
@@ -84,7 +81,6 @@ import { useFullscreen } from './hooks/useFullscreen';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useStageGesture } from './hooks/useStageGesture';
 import { LiveParameterHud } from './LiveParameterHud.tsx';
-import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { dismissLoadingScreen } from './loading-screen.ts';
 import {
@@ -94,7 +90,6 @@ import {
 import { TITLE_CARD_EXIT_MS, TITLE_CARD_HOLD_MS } from './PresetTitleCard.tsx';
 import { buildPaletteActions } from './palette-actions.ts';
 import { prefetchPanelChunk } from './panel-chunks.ts';
-import { watchPerformanceHardware } from './performance-hardware-connect.ts';
 import {
   SilentAudioNotice,
   useAudioAwaitingGesture,
@@ -108,12 +103,6 @@ const NewHomePage = lazy(() =>
 );
 
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
-import {
-  bindMidiToMilkdropControls,
-  createHardwareCrossfader,
-  createPerformanceControlApplier,
-  learnRangeFor,
-} from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
@@ -123,7 +112,6 @@ import {
   REMIX_URL_FAILED,
 } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
-import { startQueuedCrossfade } from './workspace-actions.ts';
 import {
   useEngineSnapshot,
   useWorkspace,
@@ -271,32 +259,6 @@ function prefersThumbModeByDefault() {
   } catch {
     return false;
   }
-}
-
-/**
- * Schedule a non-critical effect to run during browser idle time.
- * Falls back to a short setTimeout when requestIdleCallback is unavailable.
- * Returns a cleanup function that cancels the pending task.
- */
-function deferToIdle(
-  fn: () => undefined | (() => void),
-  options?: { idleTimeout?: number; fallbackDelay?: number },
-): () => void {
-  let cancelled = false;
-  let dispose: (() => void) | undefined;
-  const run = () => {
-    if (cancelled) return;
-    dispose = fn();
-  };
-  const cancel = scheduleIdleTask(run, {
-    idleTimeout: options?.idleTimeout ?? 2000,
-    fallbackDelay: options?.fallbackDelay ?? 80,
-  });
-  return () => {
-    cancelled = true;
-    cancel();
-    dispose?.();
-  };
 }
 
 function StimsWorkspaceAppShell() {
@@ -791,105 +753,9 @@ function StimsWorkspaceAppShell() {
     );
   }, [runtimeReadyForPrewarm]);
 
-  // Physical and virtual (MCP) MIDI both drive the engine through this one
-  // binding. It used to live inside PerformanceHardwareSection, which only
-  // stayed mounted while Settings was open — closing Settings silently cut
-  // the live wire between a controller and the visuals.
-  // Deferred to idle: MIDI init and live performance setup are not needed for
-  // first paint and can safely wait until the browser is idle.
-  useEffect(() => {
-    return deferToIdle(() => {
-      webMidiService.initialize();
-
-      // The live-performance runtime owns `window.__stims_live` (ramps, Strudel
-      // patterns, signal measurement) on top of the four controls this effect
-      // used to publish inline.
-      const uninstallLive =
-        typeof window === 'undefined'
-          ? () => {}
-          : installLivePerformance({
-              setTarget: (target, value) => {
-                engine.updateInspectorField(target, value);
-              },
-              injectMidiCC: (cc, value) => {
-                webMidiService.injectControlChange(
-                  VIRTUAL_CLAUDE_DEVICE_ID,
-                  cc,
-                  value,
-                );
-              },
-              nextPreset: () => {
-                engine.handleShufflePreset();
-              },
-              previousPreset: () => {
-                engine.handlePreviousPreset();
-              },
-              startStreamAudio: async (stream) => {
-                const nextRoute = {
-                  ...uiRef.current.routeState,
-                  audioSource: 'file' as const,
-                };
-                uiRef.current.commitRoute(nextRoute);
-                await engine.startAudioSource({
-                  source: 'file',
-                  stream,
-                  launchState: nextRoute,
-                });
-              },
-            });
-
-      const crossfader = createHardwareCrossfader({
-        getPosition: () => engine.getCrossfade(),
-        setPosition: (position) => engine.setCrossfade(position),
-        startQueued: () =>
-          startQueuedCrossfade({
-            queue: uiRef.current.presetQueue,
-            startManualCrossfade: () => engine.startManualCrossfade(),
-            setRouteState: uiRef.current.setRouteState,
-            activePresetId: engineSnapshotRef.current?.activePresetId ?? null,
-          }),
-        announce: (message) => uiRef.current.setStatusMessage(message),
-      });
-      const controls = createPerformanceControlApplier({
-        setFieldLive: (target, value) => engine.updateFieldLive(target, value),
-        commitField: (target, value) =>
-          engine.updateInspectorField(target, value),
-        crossfade: (position) => crossfader.move(position),
-      });
-      webMidiService.setLearnRangeResolver(learnRangeFor);
-      const unbindMidi = bindMidiToMilkdropControls(
-        webMidiService,
-        controls.apply,
-      );
-
-      // A gamepad drives parameters through the same binding/learn machinery
-      // as a MIDI controller — it arrives as the `virtual:gamepad` device, so
-      // the line above already handles it once it starts injecting.
-      let stopGamepad: (() => void) | null = null;
-      void import('../core/services/gamepad-performance-source.ts').then(
-        (mod) => {
-          if (!mod.isGamepadPerformanceSupported()) return;
-          stopGamepad = mod.startGamepadPerformanceSource(webMidiService);
-        },
-      );
-
-      // Neither of the two lines above used to say anything, so the only way
-      // to find out a controller was live was to move one and watch.
-      const stopHardwareWatch = watchPerformanceHardware({
-        midi: webMidiService,
-        announce: (message) => uiRef.current.setStatusMessage(message),
-      });
-
-      return () => {
-        uninstallLive();
-        unbindMidi();
-        controls.dispose();
-        webMidiService.setLearnRangeResolver(null);
-        stopGamepad?.();
-        stopHardwareWatch();
-      };
-    });
-  }, [engine]);
+  // Physical and virtual (MCP) MIDI both drive the engine through the one
+  // binding installed by this hook, for the shell's whole lifetime.
+  usePerformanceHardware({ engine, uiRef, engineSnapshotRef });
 
   useEffect(() => {
     // `fps` is deliberately omitted: useAgentFrameRate owns that field and
