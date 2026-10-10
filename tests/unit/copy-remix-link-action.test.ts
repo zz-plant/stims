@@ -206,6 +206,27 @@ describe('copyRemixLinkAction', () => {
     expect(new URL(bundled.calls[0] ?? '').hash).toBe('');
   });
 
+  it('carries the remix lineage an exported file would', async () => {
+    // The same remix_of_N_* fields an export writes, embedded in the shared
+    // code — without them the recipient's import named no parent.
+    const { calls, share } = captureShare('copied');
+    await copyRemixLinkAction({
+      source: SOURCE,
+      dirty: true,
+      derivedFrom: [
+        { id: 'geiss-casino', title: 'Geiss - Casino', author: 'Geiss' },
+      ],
+      announce: () => {},
+      href: HREF,
+      share,
+    });
+
+    const decoded = decodePresetCodeFromHash(new URL(calls[0]).hash);
+    expect(decoded).toContain('remix_of_1_id=geiss-casino');
+    expect(decoded).toContain('remix_of_1_title="Geiss - Casino"');
+    expect(decoded).toContain('remix_of_1_author=Geiss');
+  });
+
   it("a clean local preset's code carries its own title, an edited one is left alone", () => {
     const buffer = 'title="Geiss - Casino"\nzoom=1.01\n';
     expect(

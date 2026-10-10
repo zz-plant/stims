@@ -1,5 +1,7 @@
+import { embedLineageFields } from 'milkdrop-toolchain/src/preset-lineage-fields.ts';
 import { resolveSemanticRoute } from '../../../functions/discover-slugs.ts';
 import { normalizeCollectionTag, parseURLParams } from '../core/url-params.ts';
+import type { MilkdropPresetLineageRef } from '../milkdrop/types.ts';
 import type {
   AudioSource,
   PanelState,
@@ -182,17 +184,27 @@ export const REMIX_URL_FAILED =
   'Could not put your edits in a link. Your edits are still in the editor. Export the .milk file to share them.';
 
 /** Full session URL with the live draft, or no hash when source is null.
+ *
+ * `lineage` names the draft's remix parents (`derivedFrom` on the preset's
+ * catalog entry). A `.milk` export carries them as `remix_of_N_*` fields and
+ * import reads them back; a share link had no such channel, so a remix
+ * shared as a link arrived as a root work. The fields are embedded in the
+ * hashed source — the same channel an export uses — so the receiving import
+ * restores them with no changes on its side.
+ *
  * Throws on failure so callers cannot mistake a stale URL for the draft. */
 export function buildRemixShareUrl(
   input: string | URL,
   source: string | null,
+  lineage?: readonly MilkdropPresetLineageRef[],
 ): string {
   const url =
     typeof input === 'string'
       ? new URL(input, 'https://toil.fyi')
       : new URL(input.toString());
   if (source !== null) {
-    const hash = buildPresetCodeHash(source);
+    const carried = embedLineageFields(source, lineage);
+    const hash = buildPresetCodeHash(carried);
     if (!hash) throw new Error(REMIX_URL_FAILED);
     url.hash = hash;
   } else {

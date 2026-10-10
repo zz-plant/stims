@@ -72,6 +72,7 @@ Shipped:
 - Named versions in the editor's History tab.
 - Assisted edits, from the editor's Assist tab and from the Refine panel, appear as a diff before they apply (#1369).
 - Exported `.milk` files keep remix lineage (`remix_of_N_id`/`title`/`author`), and import reads it back (#1371).
+- Share links carry remix lineage too: the `#code=` payload embeds the same `remix_of_N_*` fields an export writes, and the recipient's import reads them back (`tests/unit/share-link-lineage.test.ts`).
 - A link to a preset that lives only in this browser carries its code, so the recipient can open it (#1371).
 
 Open:
@@ -79,7 +80,6 @@ Open:
 - **Watcher HUD.** The Inspect tab draws 120-sample sparklines, repaints at most every 150 ms, and exists only while the editor is open. Missing: a stage overlay, plots at display rate, and history kept in typed ring buffers instead of `Array.shift` on the render path.
 - **Shader tab (WGSL/GLSL).** Missing. `compiler/custom-shader-block.ts` parses a block but nothing calls it.
 - **Custom textures.** Missing. Textures are a fixed bundled table.
-- **Lineage in links.** Lineage survives a file round trip but not a share link.
 - **Share-link reach.** Links stop at 16,000 characters, and short links wait on moderation.
 - **The loop as a whole.** No end-to-end test of browse → edit → compare → save → share.
 
