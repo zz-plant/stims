@@ -25,6 +25,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:css-scale`](#checkcss-scale) | `check:quick` | Fail on `border-radius` and `font-size` values that are not on the scale. |
 | [`check:css-tokens`](#checkcss-tokens) | `check:quick` | Fail on `var(--token)` references that resolve to nothing. |
 | [`check:dead-code`](#checkdead-code) | `check` | Report unused files, exports, and dependencies across the whole tree with knip (config: knip.jsonc). |
+| [`check:dist-determinism`](#checkdist-determinism) | on demand | Builds a package twice from clean and fails if the two dists differ — the published tarball should be a function of the source, not of the machine that built it. Wired into publish-packages.yml ahead of npm pack, and not part of the quality gate because it pays for two full tsc runs per package. |
 | [`check:doc-references`](#checkdoc-references) | `check:quick` | Guard against docs that point at files and commands which no longer exist. |
 | [`check:duplicate-css`](#checkduplicate-css) | `check:quick` | Detect duplicate CSS keyframes and rule blocks — the "merge duplicate CSS, remove duplicate keyframes" pattern recurred multiple times in the last 400 commits (`0cc04211`, `6b39eb2f`, `1d2fa2af`). Duplicates bloat the bundle and cause maintenance drift where one copy is updated and the other is forgotten. |
 | [`check:e2e-ports`](#checke2e-ports) | `check:quick` | Fail when two e2e test files claim the same dev-server port. |
@@ -33,6 +34,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:guard-registry`](#checkguard-registry) | `check:quick` | Blocks banned patterns in changed source files before they land. |
 | [`check:guardrails-doc`](#checkguardrails-doc) | `check:quick` | Generates `docs/GUARDRAILS.md` — the rules this repo enforces — from the guard scripts themselves. |
 | [`check:module-docs`](#checkmodule-docs) | `check:quick` | Requires a file-level docblock on the `src/` modules big enough to need one. |
+| [`check:no-source-seams`](#checkno-source-seams) | `check:quick` | Fails on source seams left behind by a promoted package — the references that only work while the package's source still lives in packages/ here. |
 | [`check:no-ts-nocheck`](#checkno-ts-nocheck) | `check:quick` | Fails the build if a whole-file TypeScript suppression directive is present under src/, scripts/, or tests/. |
 | [`check:packages`](#checkpackages) | `check` | Typechecks and tests every standalone package under packages/, each in its own directory so its bunfig.toml and tsconfig apply rather than the root's. |
 | [`check:production-edge`](#checkproduction-edge) | on demand | Verifies the deployed site's edge is reachable and not gated behind a Cloudflare challenge. |
@@ -40,6 +42,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:reference-audio-header`](#checkreference-audio-header) | `check:quick` | Generates the C++ harness's copy of the parity reference audio signal. |
 | [`check:script-docs`](#checkscript-docs) | `check:quick` | Lists package.json scripts grouped by namespace, pulling each script's one-line purpose from the docblock atop its target file. |
 | [`check:seo`](#checkseo) | `check:quick` | Asserts the shipped SEO surface still matches what `generate:seo` would produce. |
+| [`check:site-styles-identical`](#checksite-styles-identical) | `check:quick` | Fails when the package sites' shared stylesheet diverges. |
 | [`check:skill-index`](#checkskill-index) | `check:quick` | Keep the agent skill set discoverable and well-formed. |
 | [`check:stale-paths`](#checkstale-paths) | `check:quick` | Guard against references to the pre-`src/` tree. |
 | [`check:test-source-greps`](#checktest-source-greps) | `check:quick` | Fails when a test reads a production source file as text. |
@@ -195,6 +198,8 @@ Checks:
  4. No git conflict markers in build/config files — `build.mjs` shipped
     with `<<<<<<<` markers once (`5e4fb1df`).
  5. the lefthook config the postinstall hook installer expects exists.
+ 6. every test category reaches CI.
+ 7. the package surfaces agree with scripts/package-manifest.ts.
 
 Run it directly: `bun run check:ci-config`
 
@@ -270,6 +275,21 @@ so treat that section as a review aid rather than a gate.
   bun run check:dead-code -- --fix   # let knip delete unused exports/files
 
 Run it directly: `bun run check:dead-code`
+
+## check:dist-determinism
+
+Builds a package twice from clean and fails if the two dists differ — the published tarball should be a function of the source, not of the machine that built it. Wired into publish-packages.yml ahead of npm pack, and not part of the quality gate because it pays for two full tsc runs per package.
+
+Uses each package's own `build` script (what publishing runs), cleans
+`dist/` between builds, and snapshots both outputs to a temporary directory
+before comparing byte for byte. Non-determinism in a sourceMap or
+declarationMap shows up here rather than as a tarball that differs from the
+last release in ways no changelog explains.
+
+  bun run check:dist-determinism                # every standalone package
+  bun run check:dist-determinism -- flash-guard # one package
+
+Run it directly: `bun run check:dist-determinism`
 
 ## check:doc-references
 
@@ -472,6 +492,32 @@ filename echoed back.
 
 Run it directly: `bun run check:module-docs`
 
+## check:no-source-seams
+
+Fails on source seams left behind by a promoted package — the references that only work while the package's source still lives in packages/ here.
+
+A package whose role is `promoted` in scripts/package-manifest.ts has its
+own repository; this repo consumes a published version. Two references are
+seams, and each fails this check:
+
+ 1. a `workspace:`-protocol dependency in any package.json — the app must
+    depend on a version range resolved from the registry, not the workspace
+    link that stopped existing with the directory.
+ 2. a subpath import into the package's source (`audio-reactive/src/...`)
+    or a relative import reaching into `packages/<name>/...` — the
+    published package exports its public entry points (`.` and `./worklet`
+    for audio-reactive), not its internals. This is the seam that makes
+    milkdrop-toolchain the hard case: dozens of `src/` subpath imports
+    would each have to move behind a public entry point first.
+
+Standalone packages are exempt by design: deep `src/` subpaths are their
+in-repo consumption path (see packages/README.md), and the `stims-source`
+export condition depends on it.
+
+  bun run check:no-source-seams
+
+Run it directly: `bun run check:no-source-seams`
+
 ## check:no-ts-nocheck
 
 Fails the build if a whole-file TypeScript suppression directive is present under src/, scripts/, or tests/.
@@ -602,6 +648,20 @@ generated OG/icon PNG dimensions.
 Failures exit non-zero and point at `bun run generate:seo`.
 
 Run it directly: `bun run check:seo`
+
+## check:site-styles-identical
+
+Fails when the package sites' shared stylesheet diverges.
+
+packages/README.md promises the four site/ directories "share one stylesheet
+(site/styles.css, kept identical in each package)". Identical by hand is how
+copies drift: a fix lands in one package's copy and the other three keep the
+old rule until someone notices the sites look different. This compares the
+copies byte for byte, so the promise is enforced instead of remembered.
+
+  bun run check:site-styles-identical
+
+Run it directly: `bun run check:site-styles-identical`
 
 ## check:skill-index
 

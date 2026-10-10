@@ -30,5 +30,8 @@
       "bucket_name": "stims-static"
     }
   ],
-  "observability": { "enabled": true }
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
 }

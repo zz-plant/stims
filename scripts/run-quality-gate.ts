@@ -259,6 +259,21 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:file-size'],
       },
       {
+        // A promoted package (scripts/package-manifest.ts) must be consumed
+        // from the registry: a workspace: dependency or a src/ subpath import
+        // is a seam that breaks the moment its directory moves to its own
+        // repository. Cheap while every package is standalone — it skips the
+        // scan entirely.
+        label: 'Package source seams',
+        cmd: ['bun', 'run', 'check:no-source-seams'],
+      },
+      {
+        // The four package sites promise one shared stylesheet; this keeps
+        // that promise enforced instead of remembered.
+        label: 'Package site stylesheet',
+        cmd: ['bun', 'run', 'check:site-styles-identical'],
+      },
+      {
         // Diff-scoped, so this gates new and changed code without demanding a
         // repo-wide cleanup first.
         label: 'Banned pattern guard (changed files)',

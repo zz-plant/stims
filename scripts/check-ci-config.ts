@@ -14,9 +14,12 @@
  *  4. No git conflict markers in build/config files — `build.mjs` shipped
  *     with `<<<<<<<` markers once (`5e4fb1df`).
  *  5. the lefthook config the postinstall hook installer expects exists.
+ *  6. every test category reaches CI.
+ *  7. the package surfaces agree with scripts/package-manifest.ts.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { packageNames } from './package-manifest.ts';
 
 const ROOT = process.cwd();
 const errors: string[] = [];
@@ -227,6 +230,174 @@ if (ciWorkflow) {
           `category — add a step invoking a profile that includes it ` +
           `(see PROFILES in scripts/run-tests.ts)`,
       );
+    }
+  }
+}
+
+/*
+ * 7: the package surfaces agree with the manifest.
+ *
+ * The package list used to be hand-maintained in four places — the mirror
+ * workflow's matrix, the publish workflow's choices, the packages/README.md
+ * table and the packages/ directory itself — with nothing checking that they
+ * said the same thing. scripts/package-manifest.ts is now the source of truth
+ * and every one of those surfaces is validated against it, so adding or
+ * promoting a package is a one-file edit and drift is a red build instead of
+ * a workflow silently publishing nothing.
+ */
+
+/**
+ * The block-style YAML list items under `key:` — e.g. the packages under
+ * `matrix: package:` in mirror-packages.yml or `options:` in
+ * publish-packages.yml. Items stop at the first line indented no deeper than
+ * the key itself. Regex rather than a YAML parser on purpose: these files are
+ * two small, stable lists and this whole check is regex-based.
+ */
+export function yamlBlockList(text: string, key: string): string[] {
+  const lines = text.split('\n');
+  const keyIndex = lines.findIndex((line) =>
+    new RegExp(`^\\s*${key}:\\s*$`).test(line),
+  );
+  if (keyIndex === -1) return [];
+  const keyIndent = lines[keyIndex].match(/^\s*/u)?.[0].length ?? 0;
+  const items: string[] = [];
+  for (let i = keyIndex + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+    const indent = line.match(/^\s*/u)?.[0].length ?? 0;
+    if (indent <= keyIndent) break;
+    const item = line.match(/^\s*-\s*(\S+)\s*$/u);
+    if (item) items.push(item[1]);
+  }
+  return items;
+}
+
+/** Package names from the packages/README.md table (`| [\`name\`](./name) |`). */
+export function readmeTableNames(readme: string): string[] {
+  return [
+    ...readme.matchAll(/^\|\s*\[`([a-z0-9-]+)`\]\(\.\/[a-z0-9-]+\)/gmu),
+  ].map((match) => match[1]);
+}
+
+/** Names present in `a` but not `b`, and vice versa, as error strings. */
+function listDrift(label: string, actual: string[], expected: string[]) {
+  const missing = expected.filter((name) => !actual.includes(name));
+  const extra = actual.filter((name) => !expected.includes(name));
+  const errors: string[] = [];
+  if (missing.length > 0) {
+    errors.push(`${label} is missing: ${missing.sort().join(', ')}`);
+  }
+  if (extra.length > 0) {
+    errors.push(
+      `${label} lists unmanifested packages: ${extra.sort().join(', ')}`,
+    );
+  }
+  return errors;
+}
+
+/**
+ * The package-surface agreement rules, taking every surface as input so the
+ * check runs against synthetic states in tests as well as the real repo.
+ */
+export function verifyPackageSurfaces(surfaces: {
+  standalone: string[];
+  promoted: string[];
+  onDisk: string[];
+  mirrorMatrix: string[];
+  publishChoices: string[];
+  readmeTable: string[];
+}): string[] {
+  const errors: string[] = [];
+  const standalone = [...surfaces.standalone].sort();
+
+  // The directory is the source of truth's home: a standalone entry with no
+  // directory cannot be built or published, a promoted one with a directory
+  // means the promotion was reverted in one place but not the other, and an
+  // on-disk package missing from the manifest is exactly the drift that let
+  // four hand-maintained lists disagree.
+  for (const error of listDrift(
+    'packages/ directory',
+    surfaces.onDisk,
+    standalone,
+  )) {
+    errors.push(error);
+  }
+  for (const name of surfaces.promoted) {
+    if (surfaces.onDisk.includes(name)) {
+      errors.push(
+        `${name} is promoted but packages/${name}/ still exists — delete the ` +
+          `directory or move it back to standalone in package-manifest.ts`,
+      );
+    }
+  }
+
+  for (const error of listDrift(
+    'mirror-packages.yml matrix',
+    surfaces.mirrorMatrix,
+    standalone,
+  )) {
+    errors.push(error);
+  }
+  for (const error of listDrift(
+    'publish-packages.yml choices',
+    surfaces.publishChoices,
+    standalone,
+  )) {
+    errors.push(error);
+  }
+  for (const error of listDrift(
+    'packages/README.md table',
+    surfaces.readmeTable,
+    standalone,
+  )) {
+    errors.push(error);
+  }
+  return errors;
+}
+
+const packagesDir = join(ROOT, 'packages');
+const onDisk = existsSync(packagesDir)
+  ? readdirSync(packagesDir, { withFileTypes: true })
+      .filter(
+        (entry) =>
+          entry.isDirectory() &&
+          existsSync(join(packagesDir, entry.name, 'package.json')),
+      )
+      .map((entry) => entry.name)
+      .sort()
+  : [];
+
+const mirrorWorkflow = readText(
+  join(ROOT, '.github/workflows/mirror-packages.yml'),
+);
+const publishWorkflow = readText(
+  join(ROOT, '.github/workflows/publish-packages.yml'),
+);
+const packagesReadme = readText(join(ROOT, 'packages/README.md'));
+
+if (packageNames('standalone').length > 0) {
+  if (!mirrorWorkflow) {
+    errors.push(
+      'package-manifest.ts lists standalone packages but ' +
+        '.github/workflows/mirror-packages.yml is missing',
+    );
+  }
+  if (!publishWorkflow) {
+    errors.push(
+      'package-manifest.ts lists standalone packages but ' +
+        '.github/workflows/publish-packages.yml is missing',
+    );
+  }
+  if (mirrorWorkflow && publishWorkflow) {
+    for (const error of verifyPackageSurfaces({
+      standalone: packageNames('standalone'),
+      promoted: packageNames('promoted'),
+      onDisk,
+      mirrorMatrix: yamlBlockList(mirrorWorkflow, 'package'),
+      publishChoices: yamlBlockList(publishWorkflow, 'options'),
+      readmeTable: readmeTableNames(packagesReadme),
+    })) {
+      errors.push(error);
     }
   }
 }
