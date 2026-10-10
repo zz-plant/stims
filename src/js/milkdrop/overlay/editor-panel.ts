@@ -96,6 +96,10 @@ import {
   type SourceDiffLine,
   samePresetSource,
 } from './source-diff.ts';
+import {
+  formatAudioReachSummary,
+  summarizeAudioReach,
+} from './version-compare-summary.ts';
 import { setWatchedVariables } from './watcher-hud.ts';
 
 /**
@@ -1478,10 +1482,10 @@ export class EditorPanel {
           const output = document.createElement('div');
           const paintDiff = () => {
             const target = saved.find((other) => other.id === picker.value);
-            const diff = computeSourceDiff(
-              version.source,
-              target ? target.source : this.editor.state.doc.toString(),
-            );
+            const targetSource = target
+              ? target.source
+              : this.editor.state.doc.toString();
+            const diff = computeSourceDiff(version.source, targetSource);
             if (diff.length === 0) {
               const same = document.createElement('p');
               same.className = 'stims-editor__hint';
@@ -1491,6 +1495,20 @@ export class EditorPanel {
               output.replaceChildren(same);
             } else {
               output.replaceChildren(buildDiffElement(diff));
+            }
+            // The audio-reach summary (version-compare-summary.ts): a
+            // plain-language reading of how the preset's relationship with
+            // the music changed, under the line diff it is derived from.
+            const reach = summarizeAudioReach(version.source, targetSource);
+            if (reach.length > 0) {
+              const note = document.createElement('p');
+              note.className = 'stims-editor__version-listen';
+              note.title =
+                'Derived from the static dataflow of both sources: which sounds each control and drawn part can reach, not what is audible right now.';
+              const heading = document.createElement('strong');
+              heading.textContent = 'What changed in how it listens: ';
+              note.append(heading, `${formatAudioReachSummary(reach)}.`);
+              output.appendChild(note);
             }
           };
           picker.addEventListener('change', paintDiff);

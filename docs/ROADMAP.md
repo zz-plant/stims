@@ -70,6 +70,7 @@ Shipped:
 - A/B compares your edit with the preset's original (`Cmd/Ctrl+Shift+B`, listed in the shortcuts dialog). While A/B shows the original, it is read-only (#1369).
 - Revert to original, as an undoable edit. A draft that matches the original is cleared, so a fix to a bundled preset reaches visitors who once opened it (#1369).
 - Named versions in the editor's History tab.
+- Version compare in the History tab diffs any two named versions, or a version against the live draft, through the same line-diff machinery assisted edits use — and annotates the diff with how the preset's relationship with the music changed ("zoom stopped listening to bass"), derived from the static dataflow of both sources (`version-compare-summary.ts`).
 - Assisted edits, from the editor's Assist tab and from the Refine panel, appear as a diff before they apply (#1369).
 - The stage watch HUD: the variables pinned in the Inspect tab plot over the running stage at display rate — a canvas on its own `requestAnimationFrame` loop, off the render path, one polyline per variable stroked straight from fixed-capacity `Float32Array` rings (which also replaced the `Array.shift` history in the Inspect tab's own feed). Toggled from the command palette ("Toggle the variable watch HUD"), including with the editor closed; the watched set is the pin list and survives the editor closing.
 - Exported `.milk` files keep remix lineage (`remix_of_N_id`/`title`/`author`), and import reads it back (#1371).

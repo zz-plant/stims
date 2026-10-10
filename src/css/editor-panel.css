@@ -1927,6 +1927,20 @@ button.stims-editor__compat-row:focus-visible {
   overflow: auto;
 }
 
+/* The dataflow-aware reading under a version diff: derived, so quieter than
+   the diff it annotates, and clearly labeled as such by its heading. */
+.stims-editor__version-listen {
+  margin: 0 0 8px;
+  color: var(--ed-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.stims-editor__version-listen strong {
+  color: var(--ed-dim);
+  font-weight: 700;
+}
+
 /* ── Outline: shader translation ──────────────────────────────────── */
 
 .stims-editor__outline-shader {
