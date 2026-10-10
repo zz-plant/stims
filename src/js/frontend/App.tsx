@@ -21,6 +21,10 @@ import {
   useSyncExternalStore,
 } from 'react';
 import '../../css/app-shell.css';
+// The preset grid and stage-hero rules used to close app-shell.css; loading
+// them here preserves their position in the cascade between app-shell.css
+// and the theme/launch/chrome sheets below.
+import '../../css/shell/preset-grid.css';
 import '../../css/shell-theme.css';
 import '../../css/shell-launch.css';
 import '../../css/chrome.css';

@@ -42,9 +42,9 @@ type Exceedance = {
 const KNOWN_EXCEEDANCES: Exceedance[] = [
   {
     path: 'src/css/app-shell.css',
-    limit: 5102,
+    limit: 4559,
     reason:
-      'the pre-CSS-modules global stylesheet; surfaces are migrating to *.module.css files colocated with their components',
+      'the pre-CSS-modules global stylesheet; surfaces are migrating to per-surface files under src/css/shell/ and colocated *.module.css',
   },
   {
     path: 'tests/unit/milkdrop-renderer-adapter.test.ts',

@@ -1,0 +1,212 @@
+/* ── Preset finder ────────────────────────────────────────────────────
+   One panel for both catalog searches. Replaces the paired
+   __audiomatch- and __visualsearch- rules, which were the same block written
+   twice because the two panels were the same panel written twice. */
+
+.stims-finder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.stims-finder__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.stims-finder__icon {
+  flex-shrink: 0;
+  color: var(--stims-cool);
+}
+
+.stims-finder__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--stims-ink-strong);
+}
+
+.stims-finder__modes {
+  display: flex;
+  gap: 4px;
+}
+
+.stims-finder__mode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--stims-radius-control);
+  background: var(--stims-control-fill);
+  color: var(--stims-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.stims-finder__mode:hover {
+  border-color: var(--stims-line-strong);
+  color: var(--stims-ink-strong);
+}
+
+.stims-finder__mode:has(:focus-visible) {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+/* The input carries the semantics and keyboard behaviour; the label is the
+   visible control, so the box itself is hidden rather than removed. */
+.stims-finder__mode-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stims-finder__mode[data-on="true"] {
+  border-color: var(--stims-accent);
+  background: var(--stims-accent);
+  color: var(--stims-on-accent);
+}
+
+.stims-finder__hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--stims-muted);
+}
+
+.stims-finder__status {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--stims-muted);
+  font-size: var(--text-sm);
+}
+
+.stims-finder__status--error {
+  color: var(--stims-bad, #ff7b72);
+}
+
+.stims-finder__results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stims-finder__item {
+  list-style: none;
+}
+
+.stims-finder__empty {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--stims-muted);
+  font-size: var(--text-sm);
+}
+
+.stims-finder__result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: var(--stims-radius-control);
+  background: var(--stims-control-fill);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.stims-finder__result:hover {
+  border-color: var(--stims-line-strong);
+  background: var(--stims-control-fill-hover);
+}
+
+.stims-finder__result:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+.stims-finder__rank {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-round);
+  background: var(--stims-accent-soft);
+  color: var(--stims-accent);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Name + secondary line for any selectable preset control (PresetIdentity).
+   Sized here once; a surface that needs different metrics overrides in its
+   own block, as the grid tile does below. */
+.stims-preset-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.stims-preset-identity__title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  font-stretch: var(--font-stretch-compact);
+  color: var(--stims-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stims-preset-identity__subtitle {
+  font-size: var(--text-xs);
+  color: var(--stims-muted);
+}
+
+.stims-finder__run {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--stims-radius-control);
+  background: var(--stims-control-fill);
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.stims-finder__run:hover:not(:disabled) {
+  border-color: var(--stims-line-strong);
+  background: var(--stims-control-fill-hover);
+}
+
+.stims-finder__run:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* The host only has to hand its height down; the panel's own regions
+   (editor-panel.css) decide what scrolls. */
+.stims-shell__editor-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}

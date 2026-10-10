@@ -1,0 +1,330 @@
+/* ── Preset Grid View ─────────────────────────────────────────────── */
+/* Dedicated scroll region for the virtualized grid — the virtualizer needs a
+   bounded, measurable scroll element, which it gets from the
+   [data-fill="true"] flex chain in chrome.css. */
+/* The gallery wall.
+ *
+ * Preset artwork is dark — these are MilkDrop frames, mostly luminous marks on
+ * black — and in the light chrome theme the grid mounted them straight onto
+ * cream. Every tile read as a hole punched in the panel rather than as a lit
+ * image, which inverts the whole point of a browse view: the artwork is the
+ * product and it had the lowest contrast on screen.
+ *
+ * So the art surface is dark in both themes, the way an image app keeps a dark
+ * canvas inside light chrome, and the chrome around it still follows the
+ * visitor's theme. The token pins are the same technique `.stims-shell__launch`
+ * uses to hold ink readable over the stage: everything inside the well —
+ * tile fills, hairlines, captions — resolves against a dark ground without
+ * each needing a rule of its own.
+ */
+.stims-preset-grid-scroll {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-sm, 8px);
+  width: 100%;
+  border-radius: var(--radius-lg);
+  background: #080b12;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --stims-panel-strong: #12161f;
+  --stims-panel: #12161f;
+  --stims-line: rgba(255, 255, 255, 0.09);
+  --stims-line-strong: rgba(255, 255, 255, 0.2);
+  --stims-ink: #f2ede4;
+  --stims-muted: rgba(242, 237, 228, 0.62);
+  --stims-accent: #f47a54;
+  --stims-cool: #77c9ff;
+}
+
+/* Sized to the virtualizer's total content height; rows inside are absolutely
+   positioned at their measured offsets and carry the grid-template-columns
+   (column count is derived in PresetGrid.tsx to match what `auto-fill`
+   with minmax(132px, 1fr) would have chosen at this width). */
+.stims-preset-grid {
+  position: relative;
+  width: 100%;
+}
+
+/* Positioning context for the star, which overlays the tile rather than
+   taking caption space. The tile fills the cell. */
+.stims-preset-grid__cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.stims-preset-grid__cell > .stims-preset-grid__item {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.stims-preset-grid__fav,
+.stims-preset-grid__queue {
+  position: absolute;
+  top: var(--space-xs, 4px);
+  left: var(--space-xs, 4px);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-round);
+  /* Opaque-ish disc: the art underneath is arbitrary and often bright, so a
+     transparent star disappears against roughly half the catalog. */
+  background: color-mix(in srgb, var(--stims-panel-strong) 78%, transparent);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+/* Revealed on hover/focus of the tile, but a saved preset always shows its
+   star — otherwise there is no way to see what you have saved while
+   scanning, which is most of the point of saving. */
+.stims-preset-grid__cell:hover .stims-preset-grid__fav,
+.stims-preset-grid__cell:focus-within .stims-preset-grid__fav,
+.stims-preset-grid__fav[data-saved="true"],
+.stims-preset-grid__fav:focus-visible,
+.stims-preset-grid__cell:hover .stims-preset-grid__queue,
+.stims-preset-grid__cell:focus-within .stims-preset-grid__queue,
+.stims-preset-grid__queue[data-queued="true"],
+.stims-preset-grid__queue:focus-visible {
+  opacity: 1;
+}
+
+.stims-preset-grid__fav:focus-visible,
+.stims-preset-grid__queue:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+/* Beside the star, one disc and a gap along. */
+.stims-preset-grid__queue {
+  left: calc(var(--space-xs, 4px) + 30px);
+}
+
+@media (any-hover: none) and (any-pointer: coarse) {
+  /* No hover to reveal it on touch. */
+  .stims-preset-grid__fav,
+  .stims-preset-grid__queue {
+    opacity: 1;
+  }
+}
+
+@media (pointer: coarse) {
+  /* The star is a 26px disc layered on the full-tile "open preset" button,
+     so a near-miss does not do nothing — it opens and starts playing a
+     different preset, which is a bad surprise mid-set. The 44px bump in
+     chrome.css targets `.ctl-preset__fav`, the list-view star, and never
+     matched this one: the grid button only carries that class on its inner
+     icon span.
+
+     The hit area grows, not the disc. A 44px opaque circle on top of the
+     artwork is a much heavier mark than this needs; the pseudo-element is
+     part of the button's own box, so it takes the taps without changing
+     anything the eye sees. */
+  /* Spaced so the two 44px hit areas meet without overlapping. */
+  .stims-preset-grid__queue {
+    left: calc(var(--space-xs, 4px) + 44px);
+  }
+
+  .stims-preset-grid__fav::after,
+  .stims-preset-grid__queue::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.stims-preset-grid__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--stims-radius-card);
+  background: var(--stims-panel-strong);
+  overflow: hidden;
+  cursor: pointer;
+  /* A link to the preset's page: card ink, not link ink. */
+  color: inherit;
+  text-decoration: none;
+  text-align: left;
+  transition:
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.stims-preset-grid__item:hover {
+  border-color: var(--stims-line-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--stims-shadow-soft);
+}
+
+.stims-preset-grid__item:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 2px;
+}
+
+/* The grid is the default browse view, and until this it was the only one
+   that gave no indication which preset is currently playing — the list row
+   has had .ctl-preset[data-active] for a while. */
+.stims-preset-grid__item[data-active="true"] {
+  border-color: var(--stims-accent);
+  box-shadow: inset 0 0 0 1px var(--stims-accent);
+}
+
+.stims-preset-grid__item .stims-shell__preset-art {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 0;
+}
+
+/* The tile's caption sits under full-bleed art, so it carries the padding the
+   card itself cannot; its type is a size smaller than a list row's.
+
+   Title over byline, each on a line of its own. Sharing one line, the byline
+   took up to 45% of a 132–170px tile and left the title 62–88px: "Glowsticks
+   v…", "Dark Ri…", too little to tell presets apart. Stacked, the title gets
+   the tile's full width for one more line of caption. Both lines are always
+   reserved, even for a preset with no byline, because the grid sizes every
+   row from one measured row. */
+.stims-preset-grid__item .stims-preset-identity {
+  gap: 0;
+  padding: var(--space-xs, 4px) var(--space-sm, 8px);
+  font-size: var(--text-xs);
+  line-height: 1.35;
+  box-sizing: border-box;
+  min-height: calc(2 * 1.35em + 2 * var(--space-xs, 4px));
+}
+
+.stims-preset-grid__item .stims-preset-identity__title,
+.stims-preset-grid__item .stims-preset-identity__subtitle {
+  font-size: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stims-preset-grid__spacer {
+  grid-column: 1 / -1;
+}
+
+/* The digit that plays this card from the keyboard (1–9, while Browse is
+   open). Same chip language as the variant count and the same corner: the
+   top-left belongs to the save star, which sits above everything else on the
+   card and hid the digit entirely when it lived there. */
+.stims-preset-grid__quick-key,
+.ctl-preset__quick-key {
+  position: absolute;
+  top: var(--space-xs, 4px);
+  right: var(--space-xs, 4px);
+  /* Above the artwork's own positioned layers, level with the save star. */
+  z-index: 1;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--stims-panel-strong) 82%, transparent);
+  border: 1px solid var(--stims-line);
+  color: var(--stims-ink-soft, var(--stims-ink));
+  font-family: var(--font-family-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  text-align: center;
+  pointer-events: none;
+}
+
+.ctl-preset__quick-key {
+  top: 2px;
+  right: 2px;
+}
+
+/* Both chips in the same corner: the rarer variant count steps left. */
+.stims-preset-grid__item:has(.stims-preset-grid__quick-key)
+.stims-preset-grid__variants {
+  right: calc(var(--space-xs, 4px) + 26px);
+}
+
+.stims-preset-grid__variants {
+  position: absolute;
+  top: var(--space-xs, 4px);
+  right: var(--space-xs, 4px);
+  padding: 1px 6px;
+  border-radius: var(--radius-round);
+  background: color-mix(in srgb, var(--stims-panel-strong) 82%, transparent);
+  border: 1px solid var(--stims-line);
+  color: var(--stims-ink-soft, var(--stims-ink));
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  pointer-events: none;
+}
+
+/* Drop target feedback for the audio-file source card. Only the border and
+   ground shift — the card must not resize mid-drag, or it slips out from
+   under the pointer that is hovering it. */
+.stims-shell__source-card[data-drag-active] {
+  border-color: var(--stims-accent);
+  background: var(--stims-panel-strong);
+}
+
+/* Inline preset signals: photosensitivity warning and audio-reactivity band.
+   The flash chip is deliberately the only coloured one — it is the only
+   signal here that can matter to someone's safety, so it must not compete
+   with the neutral reactivity chip for attention. */
+.stims-preset-signals {
+  /* inline-flex, not flex: these sit alongside the credit on the row's
+     single metadata line. The browse list is virtualized at a fixed row
+     height, so anything that adds a line breaks row alignment. */
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin-left: 8px;
+  vertical-align: baseline;
+}
+
+.stims-preset-signals__chip {
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  padding: 1px 7px 2px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid var(--stims-line);
+  /* --stims-ink-2 is a chrome.css token (--ctl-ink-2) and undefined in this
+     sheet, so this declaration was being dropped entirely and the chip
+     inherited its colour. --stims-muted is what secondary text uses here. */
+  color: var(--stims-muted);
+  white-space: nowrap;
+}
+
+.stims-preset-signals__chip--flash {
+  border-color: var(--stims-accent);
+  color: var(--stims-accent);
+  font-weight: 600;
+}
+
+/* The hero recedes while a panel is open. It is still the page's backdrop —
+   not hidden — but it stops competing for attention with the sheet in front
+   of it. Paired with `inert`, which takes it out of the tab order at the
+   same moment. */
+.stims-shell__stage-hero[data-behind-panel] {
+  opacity: 0.32;
+  transition: opacity 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stims-shell__stage-hero[data-behind-panel] {
+    transition-duration: 0.01ms;
+  }
+}
