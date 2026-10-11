@@ -348,11 +348,18 @@ requiredBrowserTest(
     const ctx = await browser.newContext({
       viewport: { width: 800, height: 600 },
       deviceScaleFactor: 1,
+      // A controlling service worker can fetch around Playwright's route
+      // hold, especially while software rendering takes longer to boot.
+      serviceWorkers: 'block',
     });
     const page = await ctx.newPage();
     let releaseSource: () => void = () => {};
     const sourceHeld = new Promise<void>((resolve) => {
       releaseSource = resolve;
+    });
+    let noteSourceRequest: () => void = () => {};
+    const sourceRequested = new Promise<void>((resolve) => {
+      noteSourceRequest = resolve;
     });
     try {
       // Catalog readiness precedes the requested .milk fetch. Hold that
@@ -360,6 +367,7 @@ requiredBrowserTest(
       await page.route(
         `**/milkdrop-presets/${presetId}.milk`,
         async (route) => {
+          noteSourceRequest();
           await sourceHeld;
           await route.continue();
         },
@@ -372,7 +380,9 @@ requiredBrowserTest(
         agentPredicates.engineLive(),
         LIVE_TIMEOUT_MS,
       );
+      await bounded(sourceRequested, 'waiting for the held preset request');
       await waitForFrames(page, 10);
+      expect((await getAgentState(page)).presetId).toBe(FIRST_RUN_PRESET_ID);
       const beforeLoad = await page.evaluate(() =>
         window.__stims_agent?.getVariables(),
       );
