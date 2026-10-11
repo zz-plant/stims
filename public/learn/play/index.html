@@ -88,93 +88,76 @@
 <article>
 <h1 id="track-0--play">Track 0 — Play</h1>
 
-<nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#1--find-one-you-love">1 · Find one you love</a></li><li><a href="#2--open-it-in-the-editor">2 · Open it in the editor</a></li><li><a href="#3--turn-the-knobs">3 · Turn the knobs</a></li><li><a href="#4--remix-not-overwrite">4 · Remix, not overwrite</a></li><li><a href="#5--ask-the-ai-to-explain-what-youre-looking-at">5 · Ask the AI to explain what you're looking at</a></li><li><a href="#6--share-it">6 · Share it</a></li></ul></nav>
-<p>Fifteen minutes, no code. This track exists because it&#39;s how almost every real preset author started — including, going by the credits on half the catalog, people who now write raw GLSL from scratch. Remixing is not the beginner&#39;s version of authoring; it&#39;s the front door the whole hobby uses.</p>
+<nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#1--find-one-you-love">1 · Find one you love</a></li><li><a href="#2--open-it-in-the-editor">2 · Open it in the editor</a></li><li><a href="#3--turn-the-knobs">3 · Turn the knobs</a></li><li><a href="#4--remix-with-credit">4 · Remix with credit</a></li><li><a href="#5--optional-ai-help">5 · Optional AI help</a></li><li><a href="#6--share-it">6 · Share it</a></li><li><a href="#quick-reference">Quick reference</a></li></ul></nav>
+<p>Start with a preset you enjoy. Change one thing, watch the stage, and share the result. The later tracks explain the equations behind those edits.</p>
 <details class="diagram"><summary>Diagram (text form)</summary><pre><code>flowchart LR
-    A[Browse presets] --&gt; B[Find one you love]
-    B --&gt; C[Open Editor panel]
-    C --&gt; D[Drag live sliders]
-    D --&gt; E[See source change in real time]
-    E --&gt; F[Hit Remix — credit preserved]
-    F --&gt; G[Share #code= URL]
-    G --&gt; H[Anyone opens it live, no install]</code></pre></details>
+    A[Browse presets] --&gt; B[Edit this visual]
+    B --&gt; C[Tune or edit source]
+    C --&gt; D[Check the running stage]
+    D --&gt; E[Remix with credit]
+    E --&gt; F[Share link or export file]</code></pre></details>
 <h2 id="1--find-one-you-love">1 · Find one you love</h2>
-<p>Open <a href="https://toil.fyi">toil.fyi</a> and hit <strong>Browse presets</strong>. Scroll, or use the search — it&#39;s a semantic search, not just a keyword match against titles, so queries like &quot;spinning geometric shapes&quot; or &quot;warm slow color drift&quot; work. Pick anything that grabs you. The catalog credits its authors on every entry — a lot of what you&#39;ll see traces back to Ryan Geiss himself, or to the community members who kept the format alive after him (Rovastar, Flexi, and the &quot;cream of the crop&quot; curators, among many others).</p>
+<p>Open <a href="https://toil.fyi/">toil.fyi</a> and use Browse. Search matches catalog titles, authors, and tags; collections narrow the results. Hosted similarity search is an optional service, so a natural-language visual query may not be available in every deployment. Preset credits preserve the community&#39;s authors and accumulated remix names.</p>
 <h2 id="2--open-it-in-the-editor">2 · Open it in the editor</h2>
-<p>With a preset playing, open the <strong>Editor</strong> panel. What you&#39;re looking at is not a settings screen bolted on top of the preset — it&#39;s the actual <code>.milk</code> source, the same text format covered starting in Track 1. Every visual you&#39;re seeing is produced by the code in that panel, and nothing is hidden from you.</p>
+<p>Choose <strong>Edit this visual</strong>. The studio shows the <code>.milk</code> source used by the preset and tools for tuning, inspection, diagnostics, and versions. On a first edit, <strong>Add a slow spin</strong> gives you a visible change to try.</p>
 <h2 id="3--turn-the-knobs">3 · Turn the knobs</h2>
-<p>The editor rail has a dozen <strong>live sliders</strong> — zoom, warp, rot, decay, the pivot (<code>cx</code>/<code>cy</code>), the axis scales (<code>sx</code>/<code>sy</code>), the push (<code>dx</code>/<code>dy</code>), waveform alpha, and border size. Drag any of them and watch the visual change instantly; double-click one to reset it. Under the hood, each slider rewrites the corresponding line in the source text, so if you switch to reading the code after moving a slider, you&#39;ll see exactly what changed. This is deliberately the same interface as directly editing the values yourself; the sliders are just a friendlier way to turn knobs whose meaning Tracks 1–2 explain in depth.</p>
-<p>If you want to go further than the sliders reach, the editor&#39;s <strong>Insert</strong> tab is a cookbook of techniques — &quot;Zoom on the bass&quot;, &quot;Trigger on a beat, once&quot;, &quot;Tunnel&quot;, &quot;A clock that ignores frame rate&quot;, … Each says how it works and is added to the right part of the preset (per-frame or per-pixel code), a few lines at a time, the same scale as the lessons in this curriculum.</p>
-<h2 id="4--remix-not-overwrite">4 · Remix, not overwrite</h2>
-<p>Open the editor&#39;s <strong>⋯</strong> menu and choose <strong>Remix</strong>. This duplicates the preset into your own draft <em>and automatically preserves the credit lineage</em> — the new preset&#39;s authorship line records who you built on, in the same &quot;Author A + Author B&quot; convention the catalog itself uses everywhere (open a few preset titles in Browse and you&#39;ll see multi-author chains going back years). Nothing about editing a preset here erases whose work it started as.</p>
-<h2 id="5--ask-the-ai-to-explain-what-youre-looking-at">5 · Ask the AI to explain what you&#39;re looking at</h2>
-<p>If the code is unfamiliar, the editor&#39;s <strong>Explain</strong> button asks the model to describe the preset&#39;s motion, color, and reactivity in a few plain sentences — a fast way to get oriented before Track 1 gives you the underlying mental model. There&#39;s also a free-text <strong>Refine with AI</strong> box for &quot;make it faster&quot; or &quot;cooler colors&quot; — every AI edit lands as an inspectable line diff you approve or discard, never a silent rewrite.</p>
+<p>Use <strong>Tune</strong> to adjust controls for the loaded source, such as zoom, warp, rotation, decay, waveform, and shape parameters. Controls write changes into the draft. Compare the source and stage after a change; some equations override a base value each frame, so a slider may have less effect than you expect. Diagnostics and Inspect help explain that dependency.</p>
+<p>The <strong>Insert</strong> pane offers equation snippets. Add one at a time and watch the result before adding another. <a href="/learn/how-milkdrop-thinks/">Track 1</a> explains the per-frame and per-pixel sections they modify.</p>
+<h2 id="4--remix-with-credit">4 · Remix with credit</h2>
+<p>Open the editor&#39;s <strong>⋯</strong> menu and choose <strong>Remix</strong> to create a draft from the current preset. Keep the original credit and any remix lineage. Stims carries attribution metadata into supported remix and sharing flows; that metadata records the supplied lineage rather than verifying authorship independently.</p>
+<p>Keep a <code>.milk</code> export as a portable backup. Local drafts and version history stay in your browser and are not cross-device storage.</p>
+<h2 id="5--optional-ai-help">5 · Optional AI help</h2>
+<p><strong>Explain</strong> and <strong>Refine</strong> can help when a supported provider is configured. Explain describes the source; Refine proposes a source change. Inspect the change and check the stage before keeping it. Hosted service availability, local inference setup, and a supplied provider key affect which actions work. You can complete this course without AI.</p>
 <h2 id="6--share-it">6 · Share it</h2>
-<p>Export produces a <code>.milk</code> file you can hand to anyone with a copy of Winamp, projectM, Butterchurn, or Stims. But you don&#39;t need a file at all: <strong>copy the URL out of your browser&#39;s address bar.</strong> Stims encodes the entire preset source directly into the link (<code>#code=…</code>) — the same mechanism every run link in this curriculum uses. Send that URL to someone and it opens your exact remix, live, with nothing to install. This is also how you&#39;ll eventually publish your own original work — see the <a href="https://github.com/zz-plant/stims/blob/main/CONTRIBUTING.md#contributing-presets">contributing guide</a> when you&#39;re ready.</p>
-<hr>
-<h3 id="-quick-reference--track-0">🎯 Quick reference — Track 0</h3>
+<p>Use Share or <strong>Copy link to this preset</strong> to create a remix URL. Depending on the browser, sharing opens a native sheet or copies the link. Open the resulting URL in a fresh tab to confirm it carries your edit.</p>
+<p>The <code>#code=</code> payload supports legacy base64, UTF-8 source encoding, and compressed source. Share links have a size limit; export a <code>.milk</code> file for source that cannot fit. Format compatibility also varies across players, so test the exported file in the intended runtime before describing it as compatible.</p>
+<p>When ready to contribute a preset, see <a href="https://github.com/zz-plant/stims/blob/main/CONTRIBUTING.md#contributing-presets">contributing presets</a>.</p>
+<h2 id="quick-reference">Quick reference</h2>
 <div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
 <thead>
 <tr>
 <th>Action</th>
 <th>Where</th>
-<th>What it does</th>
+<th>Result</th>
 </tr>
 </thead>
 <tbody><tr>
 <td>Browse</td>
-<td>Top nav</td>
-<td>Semantic search over 1,787 presets</td>
+<td>Workspace</td>
+<td>Catalog search and collections</td>
 </tr>
 <tr>
-<td>Editor panel</td>
-<td>Right rail</td>
-<td>Live source + sliders + cues</td>
+<td>Edit</td>
+<td>Edit this visual</td>
+<td>Live source and studio panes</td>
+</tr>
+<tr>
+<td>Tune</td>
+<td>Studio</td>
+<td>Controls tied to the loaded source</td>
 </tr>
 <tr>
 <td>Remix</td>
 <td>Editor <strong>⋯</strong> menu</td>
-<td>Forks preset, preserves credit chain</td>
+<td>A draft retaining supplied credit lineage</td>
 </tr>
 <tr>
-<td>Explain button</td>
-<td>Editor toolbar</td>
-<td>AI describes motion/color/reactivity</td>
+<td>Explain / Refine</td>
+<td>Studio assistance</td>
+<td>Provider-dependent explanation or proposed edits</td>
 </tr>
 <tr>
-<td>Refine box</td>
-<td>Editor toolbar</td>
-<td>AI edits as line diffs you approve</td>
+<td>Share</td>
+<td>Share or Copy link</td>
+<td>Source in a portable URL, within size limits</td>
 </tr>
 <tr>
-<td>URL share</td>
-<td>Address bar</td>
-<td><code>#code=&lt;base64&gt;</code> = portable preset</td>
+<td>Export</td>
+<td>Editor menu</td>
+<td>A <code>.milk</code> source file</td>
 </tr>
 </tbody></table></div>
-<hr>
-<h3 id="-where-these-techniques-appear-in-the-wild">🔗 Where these techniques appear in the wild</h3>
-<div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
-<thead>
-<tr>
-<th>Technique</th>
-<th>Glossary entry</th>
-<th>Example presets</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Credit lineage</td>
-<td><a href="/learn/technique-glossary/#the-glossary">Track 9 — Technique glossary</a></td>
-<td><code>Aderrasi + Geiss - Airhandler (Painterly Relief Mix)</code></td>
-</tr>
-<tr>
-<td>Remix culture</td>
-<td><a href="/learn/technique-glossary/#the-glossary">Track 9 — Technique glossary</a></td>
-<td><code>Jelly V2</code> → <code>V3</code> → <code>V4</code> → <code>V5.5</code> version discipline</td>
-</tr>
-</tbody></table></div>
-<hr>
-<p><strong>Next: <a href="/learn/how-milkdrop-thinks/">Track 1 — How MilkDrop thinks</a></strong>, the mental model behind every knob you just turned.</p>
+<p>For audio and capture setup, see the <a href="https://github.com/zz-plant/stims/blob/main/docs/USER_GUIDE.md">user guide</a>. Next: <a href="/learn/how-milkdrop-thinks/">Track 1 — How MilkDrop thinks</a>.</p>
 
 <aside class="try" aria-label="Try Stims"><p><strong>Try it now.</strong> Stims plays MilkDrop presets in your browser, with nothing to install.</p><p><a class="cta" href="/">Open Stims</a></p></aside>
 </article>

@@ -89,9 +89,9 @@
 <h1 id="track-1--how-milkdrop-thinks">Track 1 — How MilkDrop thinks</h1>
 
 <nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#lesson-1--the-screen-is-the-memory">Lesson 1 · The screen is the memory</a></li><li><a href="#lesson-2--the-pipeline">Lesson 2 · The pipeline</a></li><li><a href="#lesson-3--decay--the-fade-knob">Lesson 3 · decay — the fade knob</a></li><li><a href="#lesson-4--time-is-the-heartbeat">Lesson 4 · time is the heartbeat</a></li><li><a href="#what-you-can-now-predict">What you can now predict</a></li></ul></nav>
-<p>A MilkDrop preset is a text file of small equations. The engine runs them every frame, sixty times a second, and the numbers they produce steer the picture. Before learning any variable names, learn the one idea that makes every preset make sense.</p>
+<p>A MilkDrop preset is a text file of small equations. The engine runs them every frame, at the runtime&#39;s frame rate, and the numbers they produce steer the picture. Before learning any variable names, learn the one idea that makes every preset make sense.</p>
 <h2 id="lesson-1--the-screen-is-the-memory">Lesson 1 · The screen is the memory</h2>
-<p>Every effect MilkDrop has ever produced — tunnels, trails, plasma, smoke — comes from one move, repeated forever:</p>
+<p>Many MilkDrop effects — tunnels, trails, plasma, smoke — build on one feedback loop:</p>
 <ol>
 <li>Take the image currently on screen.</li>
 <li>Redraw it, slightly transformed.</li>
@@ -103,7 +103,7 @@
 <p>Now the entire lesson, in one changed line:</p>
 <pre><code class="language-text">zoom=1.01</code></pre>
 <p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgbGVzc29uIGJlbmNoOiBhIGJyaWdodCB3YXZlZm9ybSwgbm8gbW90aW9uLCBub3RoaW5nIGhpZGRlbi4KLy8gRXZlcnkgVHJhY2sgMSBhbmQgVHJhY2sgMiBleGFtcGxlIGlzIHRoaXMgZmlsZSB3aXRoIG9uZSBvciB0d28gbGluZXMgY2hhbmdlZC4KZlJhdGluZz01CmZEZWNheT0wLjk4CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEuMDEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MAo%3D" title="examples/11-feedback-outward.milk"><strong>▶ Run zoom=1.01</strong></a></p>
-<p>Each frame, the previous image is redrawn 1% larger. One percent sounds like nothing, but it compounds sixty times a second — after one second the oldest paint is ~80% bigger and still growing. Every waveform the music draws becomes a trail streaming toward you.</p>
+<p>Each frame, the previous image is redrawn 1% larger. One percent sounds like nothing, but it compounds with the frame rate — at 60 fps, after one second the oldest paint is ~80% bigger and still growing. Every waveform the music draws becomes a trail streaming toward you.</p>
 <p>Reverse it:</p>
 <pre><code class="language-text">zoom=0.99</code></pre>
 <p><a class="run-link" href="https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgbGVzc29uIGJlbmNoOiBhIGJyaWdodCB3YXZlZm9ybSwgbm8gbW90aW9uLCBub3RoaW5nIGhpZGRlbi4KLy8gRXZlcnkgVHJhY2sgMSBhbmQgVHJhY2sgMiBleGFtcGxlIGlzIHRoaXMgZmlsZSB3aXRoIG9uZSBvciB0d28gbGluZXMgY2hhbmdlZC4KZlJhdGluZz01CmZEZWNheT0wLjk4CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTAuOTkKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MAo%3D" title="examples/12-feedback-inward.milk"><strong>▶ Run zoom=0.99</strong></a></p>
@@ -117,9 +117,9 @@
 <details class="diagram"><summary>Diagram (text form)</summary><pre><code>flowchart LR
     A[audio in] --&gt; PF[per_frame equations&lt;br/&gt;once per frame]
     PF --&gt; PV[per_pixel equations&lt;br/&gt;once per mesh point]
-    PV --&gt; WS[warp shader&lt;br/&gt;optional GLSL]
+    PV --&gt; WS[warp shader&lt;br/&gt;supported shader source]
     WS --&gt; DRAW[draw waveform,&lt;br/&gt;custom waves, shapes]
-    DRAW --&gt; CS[comp shader&lt;br/&gt;optional GLSL]
+    DRAW --&gt; CS[comp shader&lt;br/&gt;supported shader source]
     CS --&gt; OUT[screen]
     OUT -. becomes next frame's input .-&gt; PF</code></pre></details>
 <div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>

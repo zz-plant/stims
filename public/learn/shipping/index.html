@@ -91,155 +91,64 @@
 <nav class="toc" aria-label="On this page"><strong>On this page</strong><ul><li><a href="#compatibility-matrix">Compatibility matrix</a></li><li><a href="#performance-and-quality">Performance and quality</a></li><li><a href="#publishing">Publishing</a></li><li><a href="#what-you-can-now-do">What you can now do</a></li></ul></nav>
 <p>You can now write a preset from nothing. This track covers what happens after: knowing where it will and won&#39;t run correctly, keeping it fast, and publishing it.</p>
 <h2 id="compatibility-matrix">Compatibility matrix</h2>
-<p>MilkDrop presets travel between five active engines — the original Winamp MilkDrop 2, projectM, Butterchurn, and Stims on both its WebGL and WebGPU backends — and until now, no single place documented where a given feature works across all of them. This is that matrix, built directly from the Stims compiler&#39;s own compatibility/parity code and shader-support inventory.</p>
-<p><strong>Read the labels carefully.</strong> Cells for Stims are sourced from code (<code>compatibility.ts</code>, <code>parity.ts</code>, <code>shader-execution-classification.ts</code>, the <a href="https://github.com/zz-plant/stims/blob/main/docs/architecture/shader-support-inventory.md">shader support inventory</a>) and are exact. Cells for Winamp MilkDrop 2, projectM, and Butterchurn are marked <strong>[inferred]</strong> — reasoned from the format spec and public documentation, not verified by running those engines. Treat an inferred cell as &quot;should work, unconfirmed,&quot; not as tested fact.</p>
-<h3 id="registers-buffers-control-flow">Registers, buffers, control flow</h3>
+<p>A preset can compile, run, and still differ visibly across players. The table below describes implemented Stims paths and their limits. It is not a native Winamp, projectM, or Butterchurn test matrix. Verify your source in each intended player before claiming cross-engine compatibility.</p>
 <div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
 <thead>
 <tr>
 <th>Feature</th>
-<th>Winamp MD2</th>
-<th>projectM</th>
-<th>Butterchurn</th>
-<th>Stims WebGL</th>
-<th>Stims WebGPU</th>
+<th>Implemented path</th>
+<th>Limits to check</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>q1</code>–<code>q32</code>, <code>t1</code>–<code>t32</code></td>
-<td>Full [inferred]</td>
-<td>Full [inferred]</td>
-<td>Full [inferred]</td>
-<td>Full</td>
-<td>Full</td>
-</tr>
-<tr>
-<td><code>megabuf(i)</code> / <code>gmegabuf(i)</code></td>
-<td>Full [inferred]</td>
-<td>Full [inferred]</td>
-<td>Full [inferred]</td>
-<td>Full in EEL; <strong>partial</strong> when referenced directly inside shader text</td>
-<td>Same partial caveat</td>
+<td>EEL equations, registers, and buffers</td>
+<td>Toolchain interpreter and JIT; eligible per-pixel and wave-point programs also lower to WGSL</td>
+<td>GPU lowering has a support gate; stateful or unsupported programs can stay on the CPU</td>
 </tr>
 <tr>
 <td><code>loop()</code> / <code>while()</code></td>
-<td>Full [inferred]</td>
-<td>Full [inferred]</td>
-<td>Full [inferred]</td>
-<td>Full — bounded to ~2M iterations per block as a hang guard</td>
-<td>Full</td>
+<td>Bounded execution in the toolchain</td>
+<td>The iteration guard prevents an unbounded block from hanging the app</td>
+</tr>
+<tr>
+<td>HLSL-style and GLSL-style shader source</td>
+<td>Supported syntax is parsed and normalized; WebGL emits GLSL and WebGPU uses supported direct statements</td>
+<td>This is a subset, not a general HLSL/GLSL compiler; inspect shader diagnostics</td>
+</tr>
+<tr>
+<td>Matrix locals</td>
+<td>Supported matrix declarations, operations, and literal-index writes</td>
+<td>Runtime-index writes can leave the direct WebGPU path; local matrices are not arbitrary injected uniforms</td>
+</tr>
+<tr>
+<td>LOD, bias, and gradient sampling</td>
+<td>Selected HLSL sampling calls have backend implementations</td>
+<td>Support varies by sampler and backend; check the actual compiled shader</td>
+</tr>
+<tr>
+<td>Warp and composite stages</td>
+<td>Separate runtime targets and stage-specific sampler bindings</td>
+<td>Blend, coordinate, and rasterization differences still require measured comparison</td>
+</tr>
+<tr>
+<td>Built-in and custom sampler names</td>
+<td>Frame buffers, blur, noise, and bundled texture resolution</td>
+<td>Unknown or legacy aliases can use approximations; the Textures pane shows resolved bindings</td>
+</tr>
+<tr>
+<td>Arbitrary external texture files</td>
+<td>No general URL/file loader from preset source</td>
+<td>Custom names resolve within the bundled texture set; the pane previews those files</td>
+</tr>
+<tr>
+<td>3D volume sampling</td>
+<td>WebGL uses an atlas path; WebGPU uses native 3D textures on supported samplers</td>
+<td>Different sampling paths do not establish which output matches a native reference</td>
 </tr>
 </tbody></table></div>
-<h3 id="shaders">Shaders</h3>
-<div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>Winamp MD2</th>
-<th>projectM</th>
-<th>Butterchurn</th>
-<th>Stims WebGL</th>
-<th>Stims WebGPU</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>warp_shader</code>/<code>comp_shader</code> as <strong>separate GPU passes</strong></td>
-<td>Full [inferred]</td>
-<td>Full [inferred]</td>
-<td>Full [inferred]</td>
-<td><strong>Diverges: single-pass fusion.</strong> <code>sampler_pw_main</code>/<code>sampler_pc_main</code> both resolve to the same <code>previousTex</code>, an approximation of the original two-pass output</td>
-<td>Same fusion</td>
-</tr>
-<tr>
-<td>Direct shader-text execution (scalar controls, sample-blend patterns)</td>
-<td>Full [inferred]</td>
-<td>Full [inferred]</td>
-<td>Full [inferred]</td>
-<td>Full for the enumerated pattern set (see <a href="/learn/shaders/">Track 6</a>)</td>
-<td>Full via WGSL/TSL emission</td>
-</tr>
-<tr>
-<td><code>^</code>, `</td>
-<td><code>, </code>&amp;` operators</td>
-<td>Full [inferred]</td>
-<td>Full [inferred]</td>
-<td>Unverified</td>
-<td>Full — lowered to <code>pow()</code>/int-cast bitwise ops</td>
-</tr>
-<tr>
-<td><code>&amp;&amp;</code>/`</td>
-<td></td>
-<td><code>/</code>!` precision</td>
-<td>Reference semantics [inferred]</td>
-<td>Matches reference [inferred]</td>
-<td>Unverified</td>
-</tr>
-</tbody></table></div>
-<h3 id="shader-language-dialect">Shader-language dialect</h3>
-<div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>Stims WebGL / WebGPU</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Source language</td>
-<td><strong>GLSL 1.20</strong>, not HLSL — see <a href="/learn/shaders/#lesson-0--a-language-note-stated-plainly">Track 6, Lesson 0</a></td>
-</tr>
-<tr>
-<td><code>texture2D()</code> with explicit LOD</td>
-<td>Unsupported</td>
-</tr>
-<tr>
-<td>Matrix uniforms (<code>mat2</code>/<code>mat3</code>/<code>mat4</code>)</td>
-<td>Unsupported</td>
-</tr>
-<tr>
-<td><code>gl_FragCoord</code></td>
-<td>Unsupported</td>
-</tr>
-</tbody></table></div>
-<h3 id="textures">Textures</h3>
-<div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>Winamp MD2</th>
-<th>Stims (both backends)</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>External/custom textures (<code>textures.ini</code>, arbitrary PNGs)</td>
-<td>Full [inferred]</td>
-<td><strong>Unsupported by design</strong> — every texture is pre-authored and shipped with the app</td>
-</tr>
-<tr>
-<td>Standard samplers (<code>main</code>, <code>noise</code>, <code>perlin</code>, <code>voronoi</code>, <code>pattern</code>, …)</td>
-<td>Full [inferred]</td>
-<td>Full — 16 total</td>
-</tr>
-<tr>
-<td>Non-standard/legacy sampler names (~7.5% of the bundled catalog)</td>
-<td>Full, resolve to real distinct textures [inferred]</td>
-<td><strong>Aliased to the nearest of the 16 standard samplers</strong> — visually similar, not identical (e.g., <code>seaweed</code>/<code>lichen</code>/<code>moss1</code> → <code>organic</code>)</td>
-</tr>
-<tr>
-<td>3D noise volume sampling</td>
-<td>Full, native volume textures [inferred]</td>
-<td>WebGL: 2D-atlas approximation. <strong>WebGPU: native <code>Data3DTexture</code></strong> — the one row where WebGPU is measurably more faithful than WebGL, not less</td>
-</tr>
-</tbody></table></div>
-<h3 id="milkdrop3-extensions">MilkDrop3 extensions</h3>
-<p>MilkDrop3 (a separate, actively developed fork) extends the format with <code>.milk2</code> double presets, <code>q33</code>–<code>q64</code>, and shader-side FFT data. <strong>None of this is supported anywhere in Stims</strong> — confirmed by source search, not just omission. If you&#39;re targeting MilkDrop3 specifically, this curriculum and the Stims engine are not the right tool; everything here targets the MilkDrop2-era format MilkDrop3 itself still ships alongside its extensions.</p>
-<h3 id="the-five-things-worth-remembering">The five things worth remembering</h3>
-<ol>
-<li><strong>Single-pass fusion</strong> is Stims&#39;s biggest structural divergence — anything depending on a genuinely separate warp-pass buffer gets an approximation.</li>
-<li><strong>GLSL 1.20, not HLSL</strong> — stated plainly, not glossed over, in <a href="/learn/shaders/#lesson-0--a-language-note-stated-plainly">Track 6</a>.</li>
-<li><strong>No external textures, period.</strong></li>
-<li><strong>Sampler aliasing</strong> covers roughly 1 in 13 bundled presets — check the <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#engine-limitations">coding guide&#39;s alias table</a> if a preset references an unfamiliar sampler name.</li>
-<li><strong>&quot;Supported&quot; here means compiles and renders through Stims&#39;s own pipeline — not &quot;measured pixel-identical to a native MilkDrop render.&quot;</strong> Stims&#39;s own compatibility system deliberately keeps those two claims separate; so should you when describing your own preset&#39;s portability.</li>
-</ol>
+<p>Use <strong>Compat</strong>, <strong>Shader</strong>, and <strong>Textures</strong> in the studio to inspect the loaded preset. The implementation owners are <code>packages/milkdrop-toolchain/src/compiler/</code>, <code>src/js/milkdrop/feedback-manager-shared.ts</code>, and the WebGPU feedback modules. The <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#engine-limitations">coding guide</a> explains sampler and dialect limits.</p>
+<p>MilkDrop3 extensions such as <code>.milk2</code> double presets and <code>q33</code>–<code>q64</code> are outside this course&#39;s MilkDrop2-era target. Do not infer support for them from the ability to import a <code>.milk</code> file.</p>
+<p>For a fidelity claim, capture a native reference with controlled inputs, compare rendered output, and retain provenance. Certification target membership or a green compile is not a measured pass. See the <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_PROJECTM_PARITY_PLAN.md">parity plan</a>.</p>
 <h2 id="performance-and-quality">Performance and quality</h2>
 <ol>
 <li><strong>Frame-rate correction is not optional.</strong> Any accumulator advanced by a fixed amount per frame (<code>mtime</code>, custom clocks) needs an <code>fps</code>-relative term — <code>x*(75/fps)</code> for anything calibrated against 75fps, or derive your own factor as Track 3&#39;s RC filter does (<code>k/fps</code>). Skip it and the same preset runs at different speeds on different machines.</li>
@@ -250,7 +159,7 @@
 </ol>
 <h2 id="publishing">Publishing</h2>
 <ol>
-<li>Export your preset (or copy its <code>#code=</code> URL — see <a href="/learn/play/#6--share-it">Track 0</a>).</li>
+<li>Export your preset (or use Share to create its <code>#code=</code> URL — see <a href="/learn/play/#6--share-it">Track 0</a>).</li>
 <li>Run it through <code>bun run lab:reactivity -- --file your.milk</code> and aim for a <code>reactive</code> verdict on the variables meant to respond to audio.</li>
 <li>Open a PR adding the <code>.milk</code> file to <code>public/milkdrop-presets/</code>, or share the link directly — both paths are covered in the <a href="https://github.com/zz-plant/stims/blob/main/CONTRIBUTING.md#contributing-presets">contributing guide</a>.</li>
 <li>If you remixed someone else&#39;s work anywhere along the way, keep the credit chain — <strong>Remix</strong> in the editor&#39;s <strong>⋯</strong> menu does this automatically, and the multi-author filename convention (<code>&quot;Author A + Author B — Title&quot;</code>) is how the whole community has tracked lineage for over twenty years. It&#39;s not paperwork; it&#39;s the reason this hobby has a history at all.</li>

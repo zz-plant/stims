@@ -1,5 +1,7 @@
 # MilkDrop projectM parity plan
 
+> Evidence status: dated scoreboards below retain their capture revision and inputs. Current inventories are `src/data/milkdrop-parity/certification-corpus.json` (targets), `visual-reference-manifest.json` (references), and `measured-results.json` (recorded results). Recorded pass labels must be reconciled with later comparisons; counts of targets or references are not counts of passing presets.
+
 For milestone-by-milestone execution details, see [`MILKDROP_PROJECTM_PARITY_BACKLOG.md`](./MILKDROP_PROJECTM_PARITY_BACKLOG.md).
 For how parity work fits alongside runtime, browser UX, and proof/release work, see [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md).
 

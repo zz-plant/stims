@@ -157,10 +157,10 @@ blend-order changes.
 
 ## Related skills
 
-- [`modify-preset-workflow`](../../modify-preset-workflow/SKILL.md) — when the change is mainly preset content, not renderer parity
-- [`modify-visualizer-runtime`](../../modify-visualizer-runtime/SKILL.md) — when the change is broader runtime/shell work
-- [`test-visualizer`](../../test-visualizer/SKILL.md) — for running the full validation suite
-- [`improve-preset-fidelity`](../../improve-preset-fidelity/SKILL.md) — when the goal is a preset looking/reacting better rather than matching projectM
+- [`modify-preset-workflow`](../modify-preset-workflow/SKILL.md) — when the change is mainly preset content, not renderer parity
+- [`modify-visualizer-runtime`](../modify-visualizer-runtime/SKILL.md) — when the change is broader runtime/shell work
+- [`test-visualizer`](../test-visualizer/SKILL.md) — for running the full validation suite
+- [`improve-preset-fidelity`](../improve-preset-fidelity/SKILL.md) — when the goal is a preset looking/reacting better rather than matching projectM
 
 Current parity standings, open defects, and the measurement rules this
 checklist enforces live in

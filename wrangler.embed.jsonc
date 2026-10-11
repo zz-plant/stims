@@ -2,7 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "stims-embed-backfill",
   "main": "scripts/embed-backfill-worker.ts",
-  "compatibility_date": "2024-10-20",
+  "compatibility_date": "2026-02-24",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   // No scheduled trigger. Embeddings only need refreshing when catalog

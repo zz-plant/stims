@@ -1,5 +1,7 @@
 # Architectural changes proposal — September 2026
 
+> Historical September proposal. The typed runtime seam and frontend/adapter boundary guards have since landed. Use [Architecture](../ARCHITECTURE.md), [source map](../agents/src-map.md), and `.dependency-cruiser.mjs` for current contracts; original findings and measurements below are preserved.
+
 Status: proposal. No runtime code changes accompany this document. Every
 number below was measured on `main` at `3f8804e` (2026-09-01) with the
 commands in the [appendix](#appendix-how-the-numbers-were-measured), so a

@@ -21,11 +21,17 @@ flowchart LR
 
 Preset text goes through a lossless line-level syntax tree, then a field parser, then the IR builder, which also parses every equation into expression ASTs and classifies the shader text. From the IR, three execution tiers agree on the same semantics: the tree-walking interpreter, the JavaScript JIT (with an interpreter fallback when `new Function` is blocked by CSP), and the WGSL generator. The formatter and the MilkDrop 2 exporter turn the IR back into text.
 
-## Install
+## Use from this repository
+
+This package is not published on npm as of 2026-10-10 (the registry lookup returned 404). Build and test the workspace source from a clone of [Stims](https://github.com/zz-plant/stims):
 
 ```sh
-npm i milkdrop-toolchain
+bun install --frozen-lockfile
+bun --cwd packages/milkdrop-toolchain run build
+bun --cwd packages/milkdrop-toolchain test
 ```
+
+The examples below use the package name, which resolves through the Bun workspace after installation. For a separate consumer, pack the built package and install the resulting tarball. See [package release instructions](https://github.com/zz-plant/stims/blob/main/packages/README.md#publishing) for first-publication checks. Once a release exists, the intended registry command is `bun add milkdrop-toolchain`.
 
 The package ships compiled ESM in `dist/` with type declarations, and the TypeScript sources in `src/` for runtimes that execute `.ts` directly (`import ... from 'milkdrop-toolchain/src/expression.ts'`).
 

@@ -10,4 +10,5 @@ Quick essentials:
 - **Scoped verification:** `bun run verify --changed`
 - **Command discovery:** `bun run scripts:list` (alias `bun run help`)
 - **Visual testing:** `bun run dev` then visit `http://localhost:5173/?agent=true`
+- **Docs:** [Index](docs/README.md), [user guide](docs/USER_GUIDE.md), [testing profiles](docs/TESTING.md)
 - **Commit format:** Conventional Commits

@@ -1,16 +1,18 @@
-# Feature Specifications (Current Build)
+# Feature specifications
 
-## Audit snapshot
+See the [user guide](./USER_GUIDE.md) for usage and [implementation status](./IMPLEMENTATION_STATUS.md) for beta, optional, and unfinished work. These specifications describe expected behavior; browser checks establish which paths have been verified.
+
+## Capability map
 
 | Area | Current state | Primary sources |
 | --- | --- | --- |
 | Root app route | `/` is the canonical workspace route and owns launch, browse, session, and settings surfaces. | `index.html`, `src/js/app.ts`, `src/js/frontend/App.tsx` |
-| Legacy alias | `/milkdrop/` preserves older links by redirecting into `/` with query state intact. | `milkdrop/index.html`, `docs/PAGE_SPECIFICATIONS.md` |
+| Legacy alias | `/milkdrop/` preserves older links by redirecting into `/` with query and hash state intact. | `milkdrop/index.html`, `docs/PAGE_SPECIFICATIONS.md` |
 | URL normalization | Legacy `experience`, `panel`, `collection`, `preset`, `audio`, and `agent` params are read; canonical URLs are written back from typed route state. | `src/js/frontend/url-state.ts` |
-| Engine seam | The React shell talks to the MilkDrop engine only through the adapter contract. | `src/js/frontend/engine/milkdrop-engine-adapter.ts` |
+| Engine seam | The React shell talks to the MilkDrop engine through the adapter for runtime ownership and approved public engine modules for editor/catalog helpers; `.dependency-cruiser.mjs` enforces the boundary. | `src/js/frontend/engine/milkdrop-engine-adapter.ts` |
 | Preset runtime | MilkDrop compiler, runtime, and editor remain live behind the adapter. | `src/js/milkdrop/runtime.ts`, `src/js/milkdrop/overlay/` |
-| Audio inputs | Demo, microphone, tab capture, and YouTube-backed capture are available from the workspace launch surface. | `src/js/frontend/App.tsx`, `src/js/ui/audio-advanced-sources.ts`, `src/js/ui/youtube-controller.ts` |
-| Quality + fallback | WebGPU is preferred, WebGL fallback is supported, and users can tune quality, render scale, pixel ratio, and compatibility mode. | `src/js/core/renderer-capabilities.ts`, `src/js/core/settings-panel.ts`, `src/js/core/state/render-preference-store.ts` |
+| Audio inputs | Demo, microphone, local audio file, supported tab capture, and YouTube-backed capture are available from the workspace launch surface. | `src/js/frontend/App.tsx`, `src/js/ui/audio-advanced-sources.ts`, `src/js/ui/youtube-controller.ts` |
+| Quality + fallback | WebGL is the default, WebGPU is optional, and users can tune quality, render scale, pixel ratio, and compatibility mode. | `src/js/core/renderer-capabilities.ts`, `src/js/core/settings-panel.ts`, `src/js/core/state/render-preference-store.ts` |
 | Automation + QA | Agent mode, canonical route testing, and browser-backed smoke coverage are live on the root route. | `src/js/core/agent-api.ts`, `tests/e2e/agent-integration.test.ts` |
 
 ## Root workspace (`/`)
@@ -21,7 +23,8 @@
 - Launch controls expose:
   - demo audio
   - microphone
-  - tab capture
+  - local audio file
+  - supported tab capture
   - YouTube capture
 - The shell waits until the engine is mount-ready before enabling interactive launch controls.
 
@@ -53,12 +56,21 @@
   - render scale
   - pixel ratio cap
 
+## Editor and sharing
+
+- The studio supports source editing, Tune controls, diagnostics, shader tools, inspection, compatibility details, and versions. Applicable tools depend on the loaded preset.
+- Compilation errors remain visible and should not be mistaken for a working applied source.
+- Remix links serialize source into the URL hash, with supported attribution and lineage metadata. Size limits require a file-export fallback for large source.
+- Native sharing and clipboard behavior depend on the browser. A fresh-load browser test is required to establish successful restoration.
+- Local drafts and queues use browser storage; they are not cross-device synchronization.
+- AI assistance is optional and provider-dependent. Local playback and source editing remain independent of generation endpoints.
+
 ## Compatibility behavior
 
 ### Alias route
 
 - `/milkdrop/` redirects to `/`.
-- Query params survive the redirect.
+- Query and hash state survive the redirect, including shared draft source.
 - The alias is compatibility-only and not a separate product surface.
 
 ### Legacy query support

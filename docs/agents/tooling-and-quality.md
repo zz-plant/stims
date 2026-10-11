@@ -103,7 +103,7 @@ The full gate runs architecture dependency checks via `dependency-cruiser`, and 
 
 ## Task-specific checks
 
-- Toy registration, generated-doc, and public README claim consistency:
+- Catalog, generated-doc, and public README claim consistency:
 
   ```bash
   bun run check:readme-claims
@@ -231,7 +231,7 @@ bun run check
 # Architecture boundary violations
 bun run check:architecture
 
-# Toy manifest, generated docs, and public README claim drift
+# Catalog, generated docs, and public README claim drift
 bun run check:readme-claims
 
 # SEO surface issues

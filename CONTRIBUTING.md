@@ -1,10 +1,8 @@
 # Contributing to Stims
 
-Thanks for contributing.
-
 ## Quick start
 
-1. Install **Bun 1.3+** (the repo declares `bun@1.3.14` in `package.json`).
+1. Install **Bun 1.3.14**, pinned in `package.json`.
 2. Bootstrap the local workspace:
 
    ```bash
@@ -24,7 +22,7 @@ Thanks for contributing.
 3. Start the dev server:
 
    ```bash
-   bun run dev
+   bun run dev:agent
    ```
 
    For a warmer agent-oriented session on machines that expose the local helper commands, use:
@@ -43,6 +41,7 @@ Thanks for contributing.
 - Current command/reference docs: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)
 - MilkDrop runtime guidance: [`docs/MILKDROP_PRESET_RUNTIME.md`](./docs/MILKDROP_PRESET_RUNTIME.md)
 - Successor workstream map: [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md)
+- Play, edit, and share: [`docs/USER_GUIDE.md`](./docs/USER_GUIDE.md)
 - Canonical docs index: [`docs/README.md`](./docs/README.md)
 - Agent bootstrap and delegation guide: [`docs/agents/agent-handoffs.md`](./docs/agents/agent-handoffs.md)
 - Repo-local agent capabilities in `.agent/`: [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md)
@@ -75,7 +74,7 @@ Use these commands before opening a PR:
   bun run test tests/path/to/spec.test.ts
   ```
 
-> Use `bun run test` (not raw `bun test`) so the beforeEach/preload setup in `bunfig.toml` is always applied.
+Use the root `bun run test` wrapper to select profiles and isolate browser tests. It defaults to unit + compatibility. Package suites use their own configuration; run `bun --cwd packages/<name> test` or `bun run check:packages`. See [Testing](./docs/TESTING.md).
 
 ## Common dev commands
 
@@ -83,6 +82,7 @@ Use these commands before opening a PR:
 - `bun run setup -- --print-plan` — preview the local bootstrap plan without changing the workspace.
 - `bun run setup` — install dependencies and run `bun run check:quick`.
 - `bun run dev` — start local Vite server.
+- `bun run dev:agent` — start Vite, typecheck watch, and fast-test watch.
 - `bun run session:codex -- --profile review` — keep the dev server, local model roles, and a verification watcher warm for agent sessions.
 - `bun run model:codex -- --mode triage --no-exec` — route a task onto the fast or quality local model helper stack.
 - `bun run dev:host` — start Vite on LAN.
@@ -97,7 +97,7 @@ Use these commands before opening a PR:
 ## Branches, commits, and pull requests
 
 - Branch from `main` and keep PRs focused.
-- Commit messages should be sentence case with no trailing period.
+- Use Conventional Commits with sentence case and no trailing period, such as `docs: Update contributor setup`.
 - PR descriptions should include:
   - short summary,
   - explicit test command list,

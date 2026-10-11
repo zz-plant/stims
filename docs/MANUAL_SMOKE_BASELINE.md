@@ -1,8 +1,8 @@
-# Manual Smoke Baseline
+# Manual smoke baseline
 
 ## What counts as the baseline
 
-Milestone A baseline evidence is the combination of:
+For startup, routing, and lifecycle changes, collect:
 
 - The repo quality gates:
 

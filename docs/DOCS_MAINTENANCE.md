@@ -1,6 +1,6 @@
 # Documentation maintenance guide
 
-Use this guide as the single source of truth for keeping documentation aligned when workflows, scripts, structure, or toy inventory changes.
+Use this guide as the single source of truth for keeping documentation aligned when workflows, scripts, structure, or catalog inventory changes.
 
 ## Canonical docs index
 
@@ -33,6 +33,15 @@ When restructuring docs, keep these entry points in sync:
 | New or changed guard script | Update the guard's docblock — it is the source of truth. Regenerate with `bun run generate:guardrails`; `check:guardrails-doc` fails if `docs/GUARDRAILS.md` is stale. |
 | New `src/` module over 400 lines | Add a file-level docblock saying what it owns and what it leaves to others (`bun run check:module-docs`). |
 | Docs restructuring | Update links and references across all entry points listed above. |
+
+## Current guidance, proposals, and history
+
+- Keep usage and current capabilities in `docs/USER_GUIDE.md` and `docs/IMPLEMENTATION_STATUS.md`; link implementation owners and state support limits.
+- Treat dated reports and design studies as snapshots. Preserve measurements and provenance instead of rewriting them as current results. If an active checklist is superseded, retain its snapshot under `docs/archive/` and link the replacement.
+- Avoid copying changing script, test, catalog, or certification counts into prose. Link the runner, command discovery, or canonical manifest.
+- Edit canonical sources for generated references and public pages, then regenerate and check them. Do not hand-edit generated output.
+- Validate local Markdown links as well as repo-path literals. Site-root links in learn sources resolve against the generated website.
+- Check package publication separately from workspace builds; label install instructions for an unpublished release accordingly.
 
 ## Page voice
 

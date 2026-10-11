@@ -137,6 +137,6 @@ Requires the UI harness server to be running on `http://localhost:5174`.
 
 ## Related skills
 
-- [`verify-visualizer-work`](../../verify-visualizer-work/SKILL.md) — quick validation during implementation
-- [`play-visualizer`](../../play-visualizer/SKILL.md) — full browser verification with runtime
-- [`test-visualizer`](../../test-visualizer/SKILL.md) — run targeted tests and quality gate
+- [`verify-visualizer-work`](../verify-visualizer-work/SKILL.md) — quick validation during implementation
+- [`play-visualizer`](../play-visualizer/SKILL.md) — full browser verification with runtime
+- [`test-visualizer`](../test-visualizer/SKILL.md) — run targeted tests and quality gate

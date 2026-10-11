@@ -66,5 +66,5 @@ Use this skill when reviewing or authoring changes to renderer setup, capability
 
 ## Related skills
 
-- [`modify-visualizer-runtime`](../../modify-visualizer-runtime/SKILL.md) — for broader runtime changes
-- [`test-visualizer`](../../test-visualizer/SKILL.md) — for running integration coverage
+- [`modify-visualizer-runtime`](../modify-visualizer-runtime/SKILL.md) — for broader runtime changes
+- [`test-visualizer`](../test-visualizer/SKILL.md) — for running integration coverage

@@ -1,6 +1,6 @@
 # Stims Release Notes
 
-Detailed release notes and milestone breakdown for the Stims Webtoys Visualizer Library.
+Dated release records for Stims. Claims and measurements describe each release revision; see [implementation status](./IMPLEMENTATION_STATUS.md) for current capability limits. `bun run release:notes` manages release-note preparation.
 
 ---
 
