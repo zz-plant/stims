@@ -800,6 +800,7 @@ function StimsWorkspaceAppShell() {
     decodePresetCodeFromHash(),
   );
   const openedEditorForCodeRef = useRef(false);
+  const applyingCodeRef = useRef(false);
 
   useEffect(() => {
     if (!pendingCode || openedEditorForCodeRef.current) return;
@@ -808,19 +809,22 @@ function StimsWorkspaceAppShell() {
   }, [pendingCode, ui]);
 
   useEffect(() => {
-    // Boot-time preset loads (fallback, featured, ?preset=) land as async
-    // editor-session commits, so a single apply can be overwritten by a
-    // load that was already in flight. Re-assert the deep-linked source
-    // every time the session settles on something else, and stop once the
-    // snapshot reflects it — later loads are then real user actions and
-    // must win.
-    //
+    // Wait for an actual runtime, not just a loaded catalog. The awaited
+    // edit also waits for the runtime's startup selection, so the draft is
+    // compiled with the requested preset's identity. Only one compile may
+    // be in flight; snapshot updates must not keep superseding that edit.
     // Waits for the catalog: only then is it known whether the link's preset
     // exists here. When it does not — a preset the sender made or imported —
     // the code is imported as a preset of its own. Applied to whatever loaded
     // instead (the featured preset, after the missing id healed to it), it
     // would have been saved as that preset's draft.
-    if (!pendingCode || !engine.engineReady || !engine.catalogReady) return;
+    if (
+      !pendingCode ||
+      !engineSnapshot?.runtimeReady ||
+      !engine.catalogReady ||
+      applyingCodeRef.current
+    )
+      return;
     if (engine.missingRequestedPreset) {
       const name = ui.routeState.presetId ?? 'shared-preset';
       setPendingCode(null);
@@ -829,17 +833,26 @@ function StimsWorkspaceAppShell() {
       ]);
       return;
     }
-    if (engineSnapshot?.currentSource === pendingCode) {
-      setPendingCode(null);
-      return;
-    }
-    engine.updateEditorSource(pendingCode);
+    applyingCodeRef.current = true;
+    void engine.applyEditorSourceAwaited(pendingCode).then(
+      (state) => {
+        applyingCodeRef.current = false;
+        if (state?.source === pendingCode) setPendingCode(null);
+      },
+      (error: unknown) => {
+        applyingCodeRef.current = false;
+        uiRef.current.setStatusMessage(
+          error instanceof Error
+            ? error.message
+            : 'Shared preset could not be applied.',
+        );
+      },
+    );
   }, [
     pendingCode,
-    engine.engineReady,
+    engineSnapshot?.runtimeReady,
     engine.catalogReady,
     engine.missingRequestedPreset,
-    engineSnapshot?.currentSource,
     engine,
     ui.routeState.presetId,
   ]);
@@ -1236,7 +1249,9 @@ function StimsWorkspaceAppShell() {
     engineSnapshot?.sessionState?.activeCompiled?.source.derivedFrom;
   const remixUrlFailure = useRef<string | null>(null);
   useEffect(() => {
-    if (!engine.engineReady) return;
+    // Until the incoming draft lands, a clean fallback buffer must not erase
+    // the very hash we are still restoring.
+    if (!engine.engineReady || pendingCode) return;
     try {
       const nextHref = buildRemixShareUrl(
         window.location.href,
@@ -1261,7 +1276,13 @@ function StimsWorkspaceAppShell() {
         remixUrlFailure.current = message;
       }
     }
-  }, [engine.engineReady, editorDirty, sessionSource, sessionLineage]);
+  }, [
+    engine.engineReady,
+    editorDirty,
+    sessionSource,
+    sessionLineage,
+    pendingCode,
+  ]);
 
   useEffect(() => {
     reportLoadStatus('shell-rendered');
