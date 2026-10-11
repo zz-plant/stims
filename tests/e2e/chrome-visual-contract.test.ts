@@ -19,6 +19,7 @@
  */
 import { afterAll, beforeAll, expect } from 'bun:test';
 import { type Browser, chromium, type Page } from 'playwright';
+import { waitForAgentState } from './agent-api.ts';
 import { hasChromium, requiredBrowserTest } from './browser-availability.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
 
@@ -351,31 +352,97 @@ chromeTest(
 chromeTest(
   'short landscape: the launch hero scrolls instead of clipping',
   async () => {
-    const page = await (browser as Browser).newPage({
-      viewport: { width: 812, height: 375 },
-    });
-    try {
-      await page.goto(`${server?.url}/?agent=true`, {
-        waitUntil: 'domcontentloaded',
+    // Start each input path fresh: tabbing after wheeling to the bottom
+    // would only prove that the lower action can receive focus.
+    for (const input of ['keyboard', 'wheel'] as const) {
+      const page = await (browser as Browser).newPage({
+        viewport: { width: 812, height: 375 },
       });
-      await page.waitForSelector('.stims-shell__stage-hero', {
-        timeout: 30000,
-      });
-      // The shipped defect: at phone-landscape heights the hero was taller
-      // than the viewport with no scroll path, so the launch actions below
-      // the fold were unreachable.
-      const hero = await page.evaluate(() => {
-        const el = document.querySelector('.stims-shell__stage-hero');
-        if (!el) return null;
-        return {
-          overflowY: getComputedStyle(el).overflowY,
-          scrollable: el.scrollHeight > el.clientHeight,
-        };
-      });
-      expect(hero).not.toBeNull();
-      expect(['auto', 'scroll']).toContain(hero?.overflowY ?? 'missing');
-    } finally {
-      await page.close();
+      try {
+        await page.goto(`${server?.url}/?agent=true`, {
+          waitUntil: 'domcontentloaded',
+        });
+        await page.waitForSelector('.stims-shell__stage-hero', {
+          timeout: 30000,
+        });
+        await waitForAgentState(
+          page,
+          (state) => state.engineReady && state.catalogSize > 0,
+          30000,
+        );
+        await page.evaluate(() => document.fonts.ready);
+        // The shipped defect: at phone-landscape heights the hero was taller
+        // than the viewport with no scroll path, so the launch actions below
+        // the fold were unreachable.
+        const hero = await page.evaluate(() => {
+          const el = document.querySelector('.stims-shell__stage-hero');
+          if (!el) return null;
+          return {
+            overflowY: getComputedStyle(el).overflowY,
+            scrollable: el.scrollHeight > el.clientHeight,
+            scrollTop: el.scrollTop,
+            scrollHeight: el.scrollHeight,
+            rootScrollTop: document.scrollingElement?.scrollTop,
+          };
+        });
+        expect(hero).not.toBeNull();
+        expect(['auto', 'scroll']).toContain(hero?.overflowY ?? 'missing');
+        expect(hero?.scrollable).toBe(true);
+
+        if (input === 'keyboard') {
+          const lowerAction = page.locator('.stims-shell__launch-meta-link');
+          for (let press = 0; press < 20; press += 1) {
+            await page.keyboard.press('Tab');
+            if (
+              await lowerAction.evaluate((el) => el === document.activeElement)
+            ) {
+              break;
+            }
+          }
+        } else {
+          const tagline = await page
+            .locator('.stims-shell__launch-tagline')
+            .boundingBox();
+          if (!tagline) throw new Error('The launch tagline did not render');
+          await page.mouse.move(
+            tagline.x + tagline.width / 2,
+            tagline.y + tagline.height / 2,
+          );
+          await page.mouse.wheel(0, hero?.scrollHeight ?? 0);
+        }
+
+        await page.waitForFunction(
+          (needsFocus) => {
+            const el = document.querySelector('.stims-shell__launch-meta-link');
+            const hero = document.querySelector('.stims-shell__stage-hero');
+            if (!el || !hero || el.closest('[inert]')) return false;
+            const r = el.getBoundingClientRect();
+            const h = hero.getBoundingClientRect();
+            const hit = document.elementFromPoint(
+              r.left + r.width / 2,
+              r.top + r.height / 2,
+            );
+            return (
+              (!needsFocus || document.activeElement === el) &&
+              r.top >= Math.max(0, h.top) &&
+              r.bottom <= Math.min(window.innerHeight, h.bottom) &&
+              r.left >= 0 &&
+              r.right <= document.documentElement.clientWidth &&
+              (hit === el || (hit !== null && el.contains(hit)))
+            );
+          },
+          input === 'keyboard',
+          { timeout: 10000 },
+        );
+        const scrolled = await page.evaluate(() => ({
+          hero: document.querySelector('.stims-shell__stage-hero')?.scrollTop,
+          root: document.scrollingElement?.scrollTop,
+        }));
+        expect(scrolled.hero).toBeGreaterThan(hero?.scrollTop ?? 0);
+        expect(scrolled.root).toBe(hero?.rootScrollTop);
+      } finally {
+        await page.close();
+      }
     }
   },
   60000,
