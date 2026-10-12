@@ -74,15 +74,26 @@ describe('shouldSkipPresetForDeviceTier', () => {
     }
   });
 
-  test('the committed sidecar parses and holds no fabricated numbers', async () => {
-    // The signal ships before the hardware runs that will populate it, so the
-    // committed file must be schema-valid and empty. The coordinator fills it
-    // with `lab:cost-ingest`; a hand-edited number here would gate real
-    // devices on made-up data.
+  test('the committed sidecar parses and every entry carries measurement provenance', async () => {
+    // Anti-fabrication contract: a hand-typed number here would gate real
+    // devices on made-up data. Entries may only arrive via `lab:cost-ingest`
+    // from a perf run, so every committed entry must carry that run's
+    // provenance — an instrument, a tier label, a measuredAt date, and a
+    // finite positive frame-work figure. The bundled-id and canonical-format
+    // guards live in check:preset-cost and the guard test.
     const committed = parsePresetFrameCostData(
       await Bun.file('src/data/preset-frame-cost.json').json(),
     );
-    expect(Object.keys(committed.entries)).toEqual([]);
+    const ids = Object.keys(committed.entries);
+    expect(ids.length).toBeGreaterThan(0);
+    for (const [id, entry] of Object.entries(committed.entries)) {
+      expect(Number.isFinite(entry.frameWorkMs)).toBe(true);
+      expect(entry.frameWorkMs).toBeGreaterThan(0);
+      expect(entry.tier.length).toBeGreaterThan(0);
+      expect(entry.instrument.length).toBeGreaterThan(0);
+      expect(entry.measuredAt).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
+      expect(typeof id).toBe('string');
+    }
   });
 });
 
