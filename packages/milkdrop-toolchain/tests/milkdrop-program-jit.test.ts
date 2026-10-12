@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import type { MilkdropProgramBlock } from '../src/common-types.ts';
+import {
+  advanceEelRng,
+  type EelRngCell,
+} from '../src/compiler/eel-function-table.ts';
 import { compileMilkdropPresetSource } from '../src/compiler.ts';
 import { evaluateMilkdropExpression } from '../src/expression.ts';
 import {
@@ -120,8 +124,9 @@ function executeStatement(
 function runInterpreted(
   block: MilkdropProgramBlock,
   scopes: RunResult,
+  rng?: EelRngCell,
 ): RunResult {
-  const nextRandom = makeRandom();
+  const nextRandom = rng ? () => advanceEelRng(rng) : makeRandom();
   const helpers = {
     nextRandom,
     megabuf: (index: number) => {
@@ -183,6 +188,25 @@ function runCompiled(block: MilkdropProgramBlock, scopes: RunResult) {
     scopes.megabuf,
     scopes.gmegabuf,
     makeRandom(),
+  );
+  return scopes;
+}
+
+/** Inline-RNG tier: the compiled body advances the shared cell itself, no
+ * draw callable. Mirrors how the VM runs programs in production. */
+function runCompiledInline(
+  block: MilkdropProgramBlock,
+  scopes: RunResult,
+  rng: EelRngCell,
+) {
+  compileMilkdropProgram(block, { rng: 'inline' })(
+    scopes.env,
+    scopes.state,
+    scopes.registers,
+    scopes.locals,
+    scopes.megabuf,
+    scopes.gmegabuf,
+    rng,
   );
   return scopes;
 }
@@ -318,6 +342,148 @@ describe('compiled milkdrop programs', () => {
       runInterpreted(block, makeScopes(false)),
     );
   });
+
+  describe('inlined RNG', () => {
+    const RNG_SEED = 12345;
+
+    /** Runs one block on both tiers against separately-seeded cells and
+     * asserts the two runs agree on scopes AND on the cell they leave
+     * behind — the interleaving contract when programs share one VM. */
+    function expectInlineAgreement(lines: string[], withLocals = false) {
+      const block = blockFromSource(lines);
+      const cellJit: EelRngCell = { s: RNG_SEED };
+      const cellInterp: EelRngCell = { s: RNG_SEED };
+      const compiled = runCompiledInline(
+        block,
+        makeScopes(withLocals),
+        cellJit,
+      );
+      const interpreted = runInterpreted(
+        block,
+        makeScopes(withLocals),
+        cellInterp,
+      );
+      expectSameScopes(compiled, interpreted);
+      expect(cellJit.s).toBe(cellInterp.s);
+      return { compiled, cellJit };
+    }
+
+    test('straight-line draws match the interpreter and advance the cell', () => {
+      const { compiled, cellJit } = expectInlineAgreement([
+        'q1 = rand(10);',
+        'q2 = randint(10);',
+        't1 = rand(1) + q1;',
+        'zoom = rand(5) + randint(6);',
+      ]);
+      expect(cellJit.s).not.toBe(RNG_SEED);
+      expect(compiled.env.zoom).toBeGreaterThanOrEqual(0);
+      expect(compiled.env.zoom).toBeLessThan(11);
+    });
+
+    test('draws inside loop() match the interpreter, once per iteration', () => {
+      const { compiled } = expectInlineAgreement([
+        'i = 0;',
+        'loop(6, q1 = rand(1001); t1 = t1 + randint(3); i = i + 1;);',
+        'q2 = randint(7);',
+      ]);
+      expect(compiled.registers.q2).toBeGreaterThanOrEqual(0);
+      expect(compiled.registers.q2).toBeLessThan(7);
+    });
+
+    test('an untaken if() branch draws nothing on either tier', () => {
+      const { compiled } = expectInlineAgreement([
+        'q1 = if(0, rand(100), 7);',
+        'q2 = rand(9);',
+        'q3 = if(1, randint(50), -1);',
+        't1 = rand(4);',
+      ]);
+      expect(compiled.registers.q1).toBe(7);
+      expect(compiled.registers.q3).toBeGreaterThanOrEqual(0);
+      expect(compiled.registers.q3).toBeLessThan(50);
+    });
+
+    test('mixed with q-register writes the sequence still matches', () => {
+      const { compiled } = expectInlineAgreement([
+        'q1 = 2;',
+        'q2 = q1 * randint(20);',
+        'q3 = rand(q1 + 3);',
+        'q4 = q2 + randint(11);',
+        't2 = rand(1);',
+      ]);
+      expect(compiled.registers.q2).toBeGreaterThanOrEqual(0);
+      expect(compiled.registers.q2).toBeLessThan(20);
+      expect(compiled.registers.q4).toBeGreaterThanOrEqual(0);
+    });
+
+    test('the inlined LCG is bit-identical to the closure tier', () => {
+      // Same block, same seed: closure mode with a local-seeded callable
+      // must produce the same numbers as inline mode with a cell. This pins
+      // the inlined constants against the VM's historical LCG expression.
+      const lines = [
+        'q1 = rand(1001);',
+        'q2 = randint(1001);',
+        'q3 = rand(2);',
+        't1 = rand(1);',
+        'zoom = (q4 = rand(5)) + randint(6);',
+      ];
+      const block = blockFromSource(lines);
+
+      const closureScopes = makeScopes(false);
+      let closureSeed = RNG_SEED;
+      compileMilkdropProgram(block)(
+        closureScopes.env,
+        closureScopes.state,
+        closureScopes.registers,
+        closureScopes.locals,
+        closureScopes.megabuf,
+        closureScopes.gmegabuf,
+        () => {
+          closureSeed = (1664525 * closureSeed + 1013904223) >>> 0;
+          return closureSeed / 0x100000000;
+        },
+      );
+
+      const inlineScopes = makeScopes(false);
+      runCompiledInline(block, inlineScopes, { s: RNG_SEED });
+
+      for (const key of ['q1', 'q2', 'q3', 'q4', 't1', 'zoom'] as const) {
+        expect(inlineScopes.registers[key]).toBe(closureScopes.registers[key]);
+        expect(inlineScopes.env[key]).toBe(closureScopes.env[key]);
+      }
+    });
+
+    test('a shared cell carries the sequence across separate program runs', () => {
+      // Two invocations against ONE cell: the state written back by the
+      // first run must be the state the second run loads. Compiler code and
+      // interpreted code interleave through the same cell in production.
+      const first = blockFromSource(['q1 = rand(1001);', 'q2 = randint(31);']);
+      const second = blockFromSource(['t1 = rand(3);', 'q3 = randint(5);']);
+      const shared: EelRngCell = { s: RNG_SEED };
+
+      const jitScopes = makeScopes(false);
+      runCompiledInline(first, jitScopes, shared);
+      const afterFirst = shared.s;
+      const compiledSecond = runCompiledInline(second, jitScopes, shared);
+
+      const interpScopes = makeScopes(false);
+      const replayCell: EelRngCell = { s: RNG_SEED };
+      runInterpreted(first, interpScopes, replayCell);
+      expect(replayCell.s).toBe(afterFirst);
+      runInterpreted(second, interpScopes, replayCell);
+      expect(compiledSecond.registers.q3).toBe(interpScopes.registers.q3);
+      expect(replayCell.s).toBe(shared.s);
+    });
+
+    test('programs that never draw stay untouched by the cell', () => {
+      const block = blockFromSource(['q1 = sin(time) + 1;']);
+      const cell: EelRngCell = { s: RNG_SEED };
+      const scopes = makeScopes(false);
+      runCompiledInline(block, scopes, cell);
+      expect(cell.s).toBe(RNG_SEED);
+      expect(scopes.registers.q1).toBeCloseTo(Math.sin(3.25) + 1, 12);
+    });
+  });
+
   test('reuses the compiled function for a given block', () => {
     const block = blockFromSource(['q1 = 1;']);
     expect(compileMilkdropProgram(block)).toBe(compileMilkdropProgram(block));

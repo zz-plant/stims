@@ -189,6 +189,22 @@ function runCompiled(block: MilkdropProgramBlock, scopes: RunResult) {
   return scopes;
 }
 
+/** Inline-RNG tier of the same runner: the compiled body advances a seeded
+ * state cell instead of calling a draw closure — how the VM runs programs in
+ * production. */
+function runCompiledInline(block: MilkdropProgramBlock, scopes: RunResult) {
+  compileMilkdropProgram(block, { rng: 'inline' })(
+    scopes.env,
+    scopes.state,
+    scopes.registers,
+    scopes.locals,
+    scopes.megabuf,
+    scopes.gmegabuf,
+    { s: 12345 },
+  );
+  return scopes;
+}
+
 function expectSameScopes(compiled: RunResult, interpreted: RunResult) {
   expect(compiled.state).toEqual(interpreted.state);
   expect(compiled.registers).toEqual(interpreted.registers);
@@ -253,8 +269,14 @@ describe('compiled milkdrop programs', () => {
           continue;
         }
         checkedBlocks += 1;
+        // Both RNG modes: the closure tier is the conformance contract, the
+        // inline tier is what the VM ships. Both must match the interpreter.
         expectSameScopes(
           runCompiled(block, makeScopes(withLocals)),
+          runInterpreted(block, makeScopes(withLocals)),
+        );
+        expectSameScopes(
+          runCompiledInline(block, makeScopes(withLocals)),
           runInterpreted(block, makeScopes(withLocals)),
         );
       }

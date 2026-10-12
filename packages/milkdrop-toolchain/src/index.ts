@@ -100,7 +100,12 @@ export {
   splitMilkdropStatements,
   walkMilkdropExpression,
 } from './expression.ts';
-export type { MilkdropProgramFn } from './expression-jit.ts';
+export type {
+  MilkdropProgramFn,
+  MilkdropProgramOptions,
+  MilkdropProgramRng,
+  MilkdropProgramRngMode,
+} from './expression-jit.ts';
 export {
   compileMilkdropProgram,
   MILKDROP_GMEGABUF_SIZE,

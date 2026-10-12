@@ -46,10 +46,52 @@ export type EelEvalHelpers = {
   gmegabufWrite?: (index: number, value: number) => void;
 };
 
+/**
+ * The platform RNG: a Numerical Recipes linear congruential generator whose
+ * state is a single uint32. Its sequence is a platform semantic, not part of
+ * the portable conformance contract (which pins every draw to a fixed value):
+ * it advances exactly once per `rand()`/`randint()` call, in program order,
+ * so a preset's numbers depend on evaluation order. All CPU tiers must share
+ * one state cell for interleaved interpreter/compiled runs to agree.
+ */
+export const EEL_RNG_MULTIPLIER = 1664525;
+export const EEL_RNG_INCREMENT = 1013904223;
+/** 2^32: the divisor turning the uint32 state into a [0, 1) draw. */
+export const EEL_RNG_DIVISOR = 4294967296;
+
+/** Mutable cell holding the VM's RNG state; see the constants above. */
+export type EelRngCell = { s: number };
+
+/** Advances `cell` one step and returns the [0, 1) draw. Every tier's
+ * advancement must be this expression exactly — bit-identical sequences are
+ * what the golden traces and replay digests pin. */
+export function advanceEelRng(cell: EelRngCell): number {
+  cell.s = (EEL_RNG_MULTIPLIER * cell.s + EEL_RNG_INCREMENT) >>> 0;
+  return cell.s / EEL_RNG_DIVISOR;
+}
+
+/**
+ * Local variable the inline-compiled program body keeps the RNG state in
+ * during one invocation (loaded from and stored back to the cell at the
+ * program's edges). Declared in expression-jit's emitted source; the rand
+ * renderers splice it by name, so the two must move together.
+ */
+export const EEL_RNG_JIT_STATE = '_rs';
+
 /** Temporary-variable allocator for JIT renderers that must avoid splicing an
  * argument string twice (its side effects would run twice). */
 export type EelJitContext = {
   temp(): string;
+  /**
+   * How `rand`/`randint` draw: 'closure' (the default) calls the program's
+   * `rng` argument once per draw — the conformance-runner contract; 'inline'
+   * advances the LCG in place against the program's `rng` state cell, with
+   * no per-draw function call.
+   */
+  rng?: 'closure' | 'inline';
+  /** Set by the RNG renderers so the program compiler knows to thread the
+   * state cell through its prologue and epilogue. */
+  markRandomUsed?: () => void;
 };
 
 const CF = MILKDROP_EEL_CLOSE_FACTOR;
@@ -578,7 +620,15 @@ export const EEL_FUNCTIONS: Record<string, EelFunctionSpec> = {
   rand: {
     defaults: [1],
     interp: (a, helpers) => (helpers.nextRandom?.() ?? 0.5) * a[0],
-    jit: (a) => `(rnd() * (${a[0]}))`,
+    jit: (a, ctx) => {
+      if (ctx.rng === 'inline') {
+        ctx.markRandomUsed?.();
+        // Comma form keeps evaluation order: advance first, then the scale
+        // argument's side effects — matching the closure form's `rng() * a`.
+        return `(${EEL_RNG_JIT_STATE} = (${EEL_RNG_MULTIPLIER} * ${EEL_RNG_JIT_STATE} + ${EEL_RNG_INCREMENT}) >>> 0, ${EEL_RNG_JIT_STATE} / ${EEL_RNG_DIVISOR} * (${a[0]}))`;
+      }
+      return `(rng() * (${a[0]}))`;
+    },
     wgslVm: () => 'rand()',
     // The field path has no per-vertex RNG state; a hash of (seed, time)
     // stands in.
@@ -587,7 +637,13 @@ export const EEL_FUNCTIONS: Record<string, EelFunctionSpec> = {
   randint: {
     defaults: [1],
     interp: (a, helpers) => Math.floor((helpers.nextRandom?.() ?? 0.5) * a[0]),
-    jit: (a) => `Math.floor(rnd() * (${a[0]}))`,
+    jit: (a, ctx) => {
+      if (ctx.rng === 'inline') {
+        ctx.markRandomUsed?.();
+        return `Math.floor((${EEL_RNG_JIT_STATE} = (${EEL_RNG_MULTIPLIER} * ${EEL_RNG_JIT_STATE} + ${EEL_RNG_INCREMENT}) >>> 0, ${EEL_RNG_JIT_STATE} / ${EEL_RNG_DIVISOR}) * (${a[0]}))`;
+      }
+      return `Math.floor(rng() * (${a[0]}))`;
+    },
     wgslVm: (a) => `floor(rand() * max(0.0f, ${a[0]}))`,
   },
   megabuf: {

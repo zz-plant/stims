@@ -15,11 +15,13 @@
  */
 /* global GPUDevice */
 
+import type { EelRngCell } from 'milkdrop-toolchain/src/compiler/eel-function-table.ts';
 import { DEFAULT_MILKDROP_STATE } from 'milkdrop-toolchain/src/compiler.ts';
 import {
   compileMilkdropProgram,
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,
+  type MilkdropProgramOptions,
 } from 'milkdrop-toolchain/src/expression-jit.ts';
 import { normalizeProgramAssignmentTarget } from 'milkdrop-toolchain/src/field-normalization.ts';
 import { inspectableVariableNames } from './inspectable-variables.ts';
@@ -92,6 +94,12 @@ function resolveGlobalBuffer(preset: MilkdropCompiledPreset) {
   return sharedGlobalBuffer;
 }
 
+/** Program compilation options for every tier this VM runs: the LCG is
+ * inlined into compiled bodies against the shared state cell below, removing
+ * the per-draw closure call from per-vertex hot paths. The conformance
+ * harness keeps the closure tier (see MilkdropProgramOptions). */
+const VM_PROGRAM_OPTIONS: MilkdropProgramOptions = { rng: 'inline' };
+
 /**
  * Fields that close over their own VM instance — the variables proxy and the
  * callbacks bound for the frame builders. handOffRunningPreset swaps every
@@ -102,7 +110,6 @@ function resolveGlobalBuffer(preset: MilkdropCompiledPreset) {
 const INSTANCE_BOUND_FIELDS: ReadonlySet<string> = new Set([
   'variablesProxy',
   'frameCallbacks',
-  'nextRandom',
 ]);
 
 class MilkdropPresetVM implements MilkdropVM {
@@ -119,7 +126,14 @@ class MilkdropPresetVM implements MilkdropVM {
   private lastPreparedSignalSource: MilkdropRuntimeSignals | null = null;
   private lastPreparedSignalFrame = Number.NaN;
   private lastPreparedSignalTime = Number.NaN;
-  private randomState = 1;
+  /**
+   * RNG state for the whole VM, shared by every execution tier. One mutable
+   * cell rather than a closure so inline-compiled programs can advance the
+   * LCG in place (see VM_PROGRAM_OPTIONS) while interpreter code draws
+   * through `advanceEelRng` against the same cell — interleaved runs stay in
+   * one sequence. Swapped wholesale by hand-off, like every other field.
+   */
+  private randomCell: EelRngCell = { s: 1 };
   private readonly megabuf = new Float32Array(MILKDROP_MEGABUF_SIZE);
   private gmegabuf: Float32Array = EMPTY_BUFFER;
   private detailScale = 1;
@@ -402,7 +416,7 @@ class MilkdropPresetVM implements MilkdropVM {
       device,
       this.preset.ir.programs.perFrame,
       this.state,
-      this.randomState,
+      this.randomCell.s,
       this.registers,
       // Guest memory: the runner mirrors these into storage buffers and
       // copies GPU writes back after each dispatch, so the CPU tiers keep
@@ -459,7 +473,7 @@ class MilkdropPresetVM implements MilkdropVM {
     for (let index = 1; index <= MAX_CUSTOM_WAVE_SLOTS; index += 1) {
       this.registers[`t${index}`] = 0;
     }
-    this.randomState =
+    this.randomCell.s =
       hashSeed(this.preset.source.id || this.preset.title || 'milkdrop') || 1;
     this.waveState.mainWaveFrameIndex = -1;
     this.waveState.customWaveLocals = this.preset.ir.customWaves.map((wave) =>
@@ -635,11 +649,6 @@ class MilkdropPresetVM implements MilkdropVM {
     return snapshot;
   }
 
-  private nextRandom = () => {
-    this.randomState = (1664525 * this.randomState + 1013904223) >>> 0;
-    return this.randomState / 0x100000000;
-  };
-
   private seedCustomWaveState(
     wave: MilkdropWaveDefinition,
     target?: MutableState,
@@ -725,14 +734,14 @@ class MilkdropPresetVM implements MilkdropVM {
     env: MutableState,
     locals: MutableState | null = null,
   ) {
-    compileMilkdropProgram(block)(
+    compileMilkdropProgram(block, VM_PROGRAM_OPTIONS)(
       env as Record<string, number>,
       this.state as Record<string, number>,
       this.registers as Record<string, number>,
       (locals ?? null) as Record<string, number> | null,
       this.megabuf,
       this.gmegabuf,
-      this.nextRandom,
+      this.randomCell,
     );
   }
 
@@ -810,11 +819,11 @@ class MilkdropPresetVM implements MilkdropVM {
     ) {
       // GPU-resident state accumulated last frame's per-frame writes; upload
       // the restored CPU mirror so the reset applies there too.
-      this.gpuRunner.syncState(this.state, this.registers, this.randomState);
+      this.gpuRunner.syncState(this.state, this.registers, this.randomCell.s);
       const result = await this.gpuRunner.dispatch(signals);
       Object.assign(this.state, result.state);
       Object.assign(this.registers, result.registers);
-      this.randomState = result.randomState;
+      this.randomCell.s = result.randomState;
       this.prepareSignalEnv(signals);
     } else {
       this.runProgram(

@@ -19,8 +19,11 @@ import type {
   MilkdropProgramBlock,
 } from './common-types.ts';
 import {
+  advanceEelRng,
   EEL_BINARY_OPERATORS,
+  EEL_RNG_JIT_STATE,
   EEL_UNARY_OPERATORS,
+  type EelRngCell,
   emitEelCallJs,
 } from './compiler/eel-function-table.ts';
 import { evaluateMilkdropExpression } from './expression.ts';
@@ -51,6 +54,29 @@ export const MILKDROP_GMEGABUF_SIZE = 1_048_576;
  * the caller's locals when a local scope is active, and otherwise in the
  * register bank (`t` registers) or preset state.
  */
+/**
+ * How compiled programs draw random numbers.
+ *
+ * - `'closure'` (default): the `rng` argument is a `() => number` callable,
+ *   invoked once per draw. This is the conformance-runner contract — the
+ *   corpus pins every draw to a fixed value, which only a host-supplied
+ *   callable can reproduce.
+ * - `'inline'`: the `rng` argument is an `EelRngCell` sharing the VM's RNG
+ *   state. The program body loads the cell once, advances the LCG in place
+ *   at each `rand()`/`randint()` site (no per-draw function call), and stores
+ *   the state back on exit. The sequence is bit-identical to the closure
+ *   tier's; the seeded differential tests pin that equivalence.
+ */
+export type MilkdropProgramRngMode = 'closure' | 'inline';
+
+export type MilkdropProgramOptions = {
+  rng: MilkdropProgramRngMode;
+};
+
+/** The `rng` argument: a draw callable (closure mode) or the shared state
+ * cell (inline mode). */
+export type MilkdropProgramRng = (() => number) | EelRngCell;
+
 export type MilkdropProgramFn = (
   env: Record<string, number>,
   state: Record<string, number>,
@@ -58,15 +84,19 @@ export type MilkdropProgramFn = (
   locals: Record<string, number> | null,
   megabuf: Float32Array,
   gmegabuf: Float32Array,
-  nextRandom: () => number,
+  rng: MilkdropProgramRng,
 ) => void;
 
 const NO_OP: MilkdropProgramFn = () => {};
+
+const COMPILE_DEFAULTS: MilkdropProgramOptions = { rng: 'closure' };
 
 const REGISTER_PATTERN = /^([qt])(\d+)$/u;
 
 type CompileContext = {
   temporaries: string[];
+  rngMode: MilkdropProgramRngMode;
+  randomUsed: boolean;
 };
 
 function nextTemporary(context: CompileContext) {
@@ -172,6 +202,10 @@ function compileNode(
       const args = node.args.map((arg) => compileNode(arg, context));
       const emitted = emitEelCallJs(name, args, {
         temp: () => nextTemporary(context),
+        rng: context.rngMode,
+        markRandomUsed: () => {
+          context.randomUsed = true;
+        },
       });
       if (emitted !== null) {
         return emitted;
@@ -308,8 +342,15 @@ function compileStatementSource(
   }
 }
 
-function compileProgramSource(block: MilkdropProgramBlock) {
-  const context: CompileContext = { temporaries: [] };
+function compileProgramSource(
+  block: MilkdropProgramBlock,
+  rngMode: MilkdropProgramRngMode,
+) {
+  const context: CompileContext = {
+    temporaries: [],
+    rngMode,
+    randomUsed: false,
+  };
   const body: string[] = [];
 
   for (const statement of block.statements) {
@@ -323,10 +364,23 @@ function compileProgramSource(block: MilkdropProgramBlock) {
   if (blockUsesControlFlow(block)) {
     declarations.push('_g = 0');
   }
-  return `"use strict"; var ${declarations.join(', ')}; ${body.join('\n')}`;
+  // Inline RNG: one cell load on entry, one store on exit, so the whole
+  // program advances the shared state without a call per draw. Programs that
+  // never draw keep the zero-cost shape — no `_rs` traffic at all.
+  let rngPrologue = '';
+  let rngEpilogue = '';
+  if (rngMode === 'inline' && context.randomUsed) {
+    declarations.push(`${EEL_RNG_JIT_STATE} = 0`);
+    rngPrologue = `${EEL_RNG_JIT_STATE} = rng.s;`;
+    rngEpilogue = `rng.s = ${EEL_RNG_JIT_STATE};`;
+  }
+  return `"use strict"; var ${declarations.join(', ')}; ${rngPrologue} ${body.join('\n')} ${rngEpilogue}`;
 }
 
-const compiledPrograms = new WeakMap<MilkdropProgramBlock, MilkdropProgramFn>();
+const compiledPrograms = new WeakMap<
+  MilkdropProgramBlock,
+  Partial<Record<MilkdropProgramRngMode, MilkdropProgramFn>>
+>();
 
 /**
  * Whether `new Function` codegen is permitted. A strict Content-Security-
@@ -368,8 +422,10 @@ export function __setJitAvailableForTests(value: boolean | null): void {
  */
 function buildInterpretedProgram(
   block: MilkdropProgramBlock,
+  rngMode: MilkdropProgramRngMode,
 ): MilkdropProgramFn {
-  return (e, s, r, l, mb, gb, rnd) => {
+  const inlineRng = rngMode === 'inline';
+  return (e, s, r, l, mb, gb, rng) => {
     const mirroredEnv = new Proxy(e, {
       set(target, property, value) {
         if (typeof property === 'string') {
@@ -391,7 +447,12 @@ function buildInterpretedProgram(
       },
     });
     const helpers = {
-      nextRandom: rnd,
+      // Inline mode advances the shared cell — the same state the JIT tier
+      // mutates, so the two tiers interleave correctly when both run against
+      // one VM. Closure mode draws through the host callable unchanged.
+      nextRandom: inlineRng
+        ? () => advanceEelRng(rng as EelRngCell)
+        : (rng as () => number),
       megabuf: (index: number) =>
         index >= 0 && index < MILKDROP_MEGABUF_SIZE ? (mb[index] as number) : 0,
       gmegabuf: (index: number) =>
@@ -482,12 +543,17 @@ function buildInterpretedProgram(
 }
 
 /**
- * Compiles a program block into a single callable, memoised per block.
+ * Compiles a program block into a single callable, memoised per block and RNG
+ * mode. The default `'closure'` mode keeps the conformance contract (the
+ * caller supplies a draw callable); `'inline'` compiles the LCG into the body
+ * against a shared `EelRngCell`.
  */
 export function compileMilkdropProgram(
   block: MilkdropProgramBlock,
+  options: MilkdropProgramOptions = COMPILE_DEFAULTS,
 ): MilkdropProgramFn {
-  const cached = compiledPrograms.get(block);
+  const variants = compiledPrograms.get(block) ?? {};
+  const cached = variants[options.rng];
   if (cached) {
     return cached;
   }
@@ -503,12 +569,13 @@ export function compileMilkdropProgram(
             'l',
             'mb',
             'gb',
-            'rnd',
-            compileProgramSource(block),
+            'rng',
+            compileProgramSource(block, options.rng),
           ) as MilkdropProgramFn)
-        : buildInterpretedProgram(block);
+        : buildInterpretedProgram(block, options.rng);
 
-  compiledPrograms.set(block, compiled);
+  variants[options.rng] = compiled;
+  compiledPrograms.set(block, variants);
   return compiled;
 }
 
@@ -584,7 +651,11 @@ export async function prewarmMilkdropPrograms(
     if (block.statements.length === 0) {
       continue;
     }
+    // Both RNG modes: production runs the inline variant, the conformance
+    // and differential harnesses the closure variant. Warming one leaves the
+    // other's parse/compile on the first rendered frame.
     compileMilkdropProgram(block);
+    compileMilkdropProgram(block, { rng: 'inline' });
     await yieldToEventLoop();
   }
 }

@@ -17,6 +17,10 @@ import type {
   MilkdropProgramBlock,
 } from 'milkdrop-toolchain/src/common-types.ts';
 import {
+  advanceEelRng,
+  type EelRngCell,
+} from 'milkdrop-toolchain/src/compiler/eel-function-table.ts';
+import {
   evaluateMilkdropExpression,
   parseMilkdropStatement,
 } from 'milkdrop-toolchain/src/expression.ts';
@@ -131,13 +135,13 @@ const INTERP_HELPERS = {
 function runInterpreter(
   block: MilkdropProgramBlock,
   env: Record<string, number>,
+  rng?: EelRngCell,
 ) {
+  const helpers = rng
+    ? { ...INTERP_HELPERS, nextRandom: () => advanceEelRng(rng) }
+    : INTERP_HELPERS;
   for (const st of block.statements) {
-    const value = evaluateMilkdropExpression(
-      st.expression,
-      env,
-      INTERP_HELPERS,
-    );
+    const value = evaluateMilkdropExpression(st.expression, env, helpers);
     if (st.target && st.target !== '__control__') {
       // Statement-level finite clamp, matching the JIT (and MilkDrop).
       env[st.target.toLowerCase()] = Number.isFinite(value) ? value : 0;
@@ -149,6 +153,34 @@ function runJit(block: MilkdropProgramBlock, env: Record<string, number>) {
   const fn = compileMilkdropProgram(block);
   fn(env, {}, {}, null, new Float32Array(16), new Float32Array(16), () => 0.5);
 }
+
+/** Inline-RNG differential: the interpreter draws through a shared cell via
+ * advanceEelRng while the JIT advances the same LCG inside the compiled
+ * body. Both tiers must produce identical draws AND leave the cell in the
+ * same state — that is what lets interpreted and compiled programs
+ * interleave on one VM. */
+function runInlineDifferential(
+  block: MilkdropProgramBlock,
+  env: Record<string, number>,
+  rng: EelRngCell,
+) {
+  compileMilkdropProgram(block, { rng: 'inline' })(
+    env,
+    {},
+    {},
+    null,
+    new Float32Array(16),
+    new Float32Array(16),
+    rng,
+  );
+}
+
+/** rand/randint with a plain leaf argument. A random expression inside a
+ * random argument draws in opposite orders on the two tiers (the interpreter
+ * evaluates a call's arguments before dispatch; the JIT lowers the draw to
+ * the left of the argument) — a pre-existing divergence outside this
+ * suite's remit, so the fuzzer does not generate it. */
+const RANDOM_LEAVES = ['rand(1001)', 'rand()', 'randint(501)', 'randint(2)'];
 
 const closeEnough = (a: number, b: number) => {
   if (Number.isNaN(a) && Number.isNaN(b)) return true;
@@ -186,6 +218,91 @@ describe('EEL tier differential', () => {
           );
           break;
         }
+      }
+    }
+    expect(failures).toEqual([]);
+  }, 30000);
+
+  test('interpreter and inline-RNG JIT agree on 500 seeded random programs with rand calls', () => {
+    // Same generator, with rand/randint leaves spliced in, plus q-register
+    // targets so draws mix with register writes. The interpreter helper
+    // advances a seeded cell; the JIT advances its own same-seeded cell
+    // inside the compiled body. Everything must match, including the cell
+    // left behind — the shared-state contract for interleaved tiers.
+    const RANDOM_TARGETS = [...VARS.slice(0, 6), 'q1', 'q3', 't2'];
+    const genRandomExpr = (rnd: () => number, depth: number): string => {
+      const roll = rnd();
+      if (depth <= 0 || roll < 0.3) {
+        if (rnd() < 0.45) {
+          return RANDOM_LEAVES[
+            Math.floor(rnd() * RANDOM_LEAVES.length)
+          ] as string;
+        }
+        return rnd() < 0.5
+          ? (rnd() * 20 - 10).toFixed(4)
+          : (VARS[Math.floor(rnd() * VARS.length)] as string);
+      }
+      if (roll < 0.5) {
+        const fn = UNARY_FNS[Math.floor(rnd() * UNARY_FNS.length)] as string;
+        return `${fn}(${genRandomExpr(rnd, depth - 1)})`;
+      }
+      if (roll < 0.62) {
+        const fn = BINARY_FNS[Math.floor(rnd() * BINARY_FNS.length)] as string;
+        return `${fn}(${genRandomExpr(rnd, depth - 1)},${genRandomExpr(rnd, depth - 1)})`;
+      }
+      if (roll < 0.74) {
+        return `if(${genRandomExpr(rnd, depth - 1)},${genRandomExpr(rnd, depth - 1)},${genRandomExpr(rnd, depth - 1)})`;
+      }
+      if (roll < 0.84) {
+        return `(${VARS[Math.floor(rnd() * VARS.length)] as string} = ${genRandomExpr(rnd, depth - 1)})`;
+      }
+      const op = BIN_OPS[Math.floor(rnd() * BIN_OPS.length)] as string;
+      return `(${genRandomExpr(rnd, depth - 1)} ${op} ${genRandomExpr(rnd, depth - 1)})`;
+    };
+
+    const failures: string[] = [];
+    for (let seed = 1; seed <= 500; seed++) {
+      const rnd = mulberry32(seed);
+      const lines: string[] = [];
+      const count = 2 + Math.floor(rnd() * 5);
+      for (let i = 0; i < count; i += 1) {
+        const target = RANDOM_TARGETS[
+          Math.floor(rnd() * RANDOM_TARGETS.length)
+        ] as string;
+        lines.push(`${target} = ${genRandomExpr(rnd, 3)}`);
+      }
+      const block = parseProgram(lines);
+      if (!block) continue;
+      const inputRnd = mulberry32(seed * 7919);
+      const base: Record<string, number> = {};
+      for (const v of VARS) base[v] = inputRnd() * 4 - 2;
+      const envA = { ...base };
+      const envB = { ...base };
+      const cellInterp: EelRngCell = { s: seed };
+      const cellJit: EelRngCell = { s: seed };
+      try {
+        runInterpreter(block, envA, cellInterp);
+        runInlineDifferential(block, envB, cellJit);
+      } catch (error) {
+        failures.push(
+          `seed ${seed} threw: ${(error as Error).message}\n  ${lines.join('\n  ')}`,
+        );
+        continue;
+      }
+      let mismatched = false;
+      for (const key of new Set([...Object.keys(envA), ...Object.keys(envB)])) {
+        if (!closeEnough(envA[key] ?? 0, envB[key] ?? 0)) {
+          failures.push(
+            `seed ${seed}: ${key} interp=${envA[key]} jit=${envB[key]}\n  ${lines.join('\n  ')}`,
+          );
+          mismatched = true;
+          break;
+        }
+      }
+      if (!mismatched && cellInterp.s !== cellJit.s) {
+        failures.push(
+          `seed ${seed}: rng cell interp=${cellInterp.s} jit=${cellJit.s}\n  ${lines.join('\n  ')}`,
+        );
       }
     }
     expect(failures).toEqual([]);
