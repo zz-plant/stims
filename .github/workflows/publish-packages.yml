@@ -54,7 +54,7 @@ jobs:
 
       # npm 11.5 or newer is needed for trusted publishing; Node 24 ships it.
       - name: Set up npm
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
