@@ -142,18 +142,24 @@ renderScale 1.25, demo audio, `shifter-glassworms-flare` and `eos-apocalypse`.
 
 | Observation | Result |
 | --- | --- |
-| `shifter-glassworms-flare` cadence | p50 8.30 ms (exactly at budget), p95 9.3–10.3 ms across runs, one 16.6 ms skip. Zero headroom on top-tier hardware. |
-| `eos-apocalypse` cadence | p50 8.3 ms, p95 10.0 ms — roughly one frame in five misses vsync on the strongest consumer tier. |
+| `shifter-glassworms-flare` cadence | p50 8.30 ms — the vsync floor, not a work measurement. The tail (p95 9.3–10.3 ms across runs, one 16.6 ms skip) shows roughly one frame in ten missing vsync. Sub-budget frame work is not resolvable by cadence sampling. |
+| `eos-apocalypse` cadence | p50 8.3 ms (vsync floor), p95 10.0 ms — roughly one frame in five misses vsync on the strongest consumer tier; frame work under the budget is not resolvable from cadence. |
 | JS CPU profile, glassworms, 7.3 s | `runProgram` self ~2.0 s plus anonymous JIT program bodies ~2.5 s of 6.5 s sampled: ~68% of non-idle JavaScript in the VM/EEL, matching the ~59% share the 2026-08 profile found. The JIT bodies' self time is the largest single bucket. |
-| WebGPU render bundles A/B ×2 | p95 10.1–10.3 ms both conditions; the deltas are within run-to-run noise. No effect; the flag stays off. |
+| WebGPU render bundles A/B ×2 | p95 10.1–10.3 ms both conditions; the deltas are within run-to-run noise. No cadence-level effect (sub-budget work savings would be invisible to this method); the flag stays off. |
 | Blend crossfade cadence (×2) | During-blend p50/p95 (8.3/10.3) ≈ steady state (8.3/10.1): the outgoing preset's full VM step is invisible in cadence at this tier. |
 | Transition-start spike (×2, reproduced) | One to two single frames of 258–433 ms at blend start on every preset switch — the most user-visible artifact measured. |
 | `cloneBlendState` context | Its 2.5–8 ms synthetic tail is second-order next to the 250–430 ms transition-start spike; revisit after that is fixed. |
 
-Narrow claims: the two heaviest presets consume the entire frame budget on
-top-tier hardware, so every weaker tier inherits the deficit; EEL evaluation
-dominates the JavaScript profile, so JIT-side work targets the measured center
-of mass; the transition-start spike is real, reproducible, and outranks the
+Narrow claims: on the strongest consumer tier both presets ride the vsync
+ceiling with a missed-frame tail (one frame in ten and one in five), which
+bounds work *above* the budget only — cadence sampling cannot say how much
+headroom remains below it, and weaker devices also adapt to lower quality
+steps. The weaker-tier deficit is established by the fixed-tier runner
+instead (the 2026-08-24 table: `eos-apocalypse` at 15.31 ms of a 16.7 ms
+budget under 4× CPU throttle, locked step 2), not by this spot-check. What
+this spot-check does establish on its own: EEL evaluation dominates the
+JavaScript profile, so JIT-side work targets the measured center of mass;
+the transition-start spike is real, reproducible, and outranks the
 per-frame crossfade cost at this tier. The mid-range reality still requires
 the fixed-tier runner on a host whose headless browser is not
 software-rendering.
