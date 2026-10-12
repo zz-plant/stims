@@ -722,3 +722,101 @@ describe('milkdrop preset navigation controller', () => {
     expect(applied).not.toContain('flashy');
   });
 });
+
+describe('preset pipeline warm-up (waitForPresetWarmup)', () => {
+  const buildWarmupHarness = ({
+    warmup,
+  }: {
+    /** The runtime's gate: a controllable promise, or null for sync. */
+    warmup: (id: string) => Promise<boolean> | null;
+  }) => {
+    const order: string[] = [];
+    const compiled = createCompiledPreset('warm-target');
+    const controller = createMilkdropPresetNavigationController({
+      catalogStore: {
+        async getPresetSource(id: string) {
+          return { id, title: id, raw: `title=${id}\n`, origin: 'bundled' };
+        },
+        async getDraft() {
+          return null;
+        },
+      } as unknown as MilkdropCatalogStore,
+      catalogCoordinator: {
+        async syncCatalog() {},
+        scheduleCatalogSync: async () => undefined,
+        async rememberSelection() {},
+        async consumePreviousSelection() {
+          return null;
+        },
+        getCatalogEntries: () => [],
+        getActiveCatalogEntry: () => null,
+        dispose() {},
+      } as unknown as MilkdropCatalogCoordinator,
+      session: createSession({ 'warm-target': compiled }),
+      getActivePresetId: () => 'active-preset',
+      getActiveBackend: () => 'webgpu' as MilkdropRenderBackend,
+      applyCompiledPreset: (_next) => {
+        order.push('apply');
+      },
+      applyPresetPerformanceOverride: () => undefined,
+      setOverlayStatus: () => undefined,
+      shouldFallbackToWebgl: () => false,
+      triggerWebglFallback: () => undefined,
+      rememberLastPreset: () => undefined,
+      beginPresetTransition: () => {
+        order.push('begin');
+        return { mode: 'blend' as const, durationSeconds: 1 };
+      },
+      waitForPresetWarmup: (next) => {
+        order.push('warmup');
+        return warmup(next.source.id);
+      },
+    });
+    return { order, controller, compiled };
+  };
+
+  test('waits for the pipeline warm-up before the transition begins', async () => {
+    const release: Array<() => void> = [];
+    const { order, controller } = buildWarmupHarness({
+      warmup: () =>
+        new Promise<boolean>((resolve) => {
+          release.push(() => resolve(true));
+        }),
+    });
+    const selection = controller.selectPreset('warm-target');
+    // Flush the async preamble (fetch, compile, JIT prewarm) up to the gate.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    // The warm-up has been asked for, and neither the transition nor the
+    // apply has started: the fade cannot begin before the pipelines warm.
+    expect(order).toEqual(['warmup']);
+    release[0]?.();
+    await selection;
+    expect(order).toEqual(['warmup', 'begin', 'apply']);
+  });
+
+  test('a null gate keeps the synchronous switch, in order', async () => {
+    const { order, controller } = buildWarmupHarness({
+      warmup: () => null,
+    });
+    await controller.selectPreset('warm-target');
+    expect(order).toEqual(['warmup', 'begin', 'apply']);
+  });
+
+  test('a switch superseded during its warm-up applies nothing', async () => {
+    const release: Array<() => void> = [];
+    const { order, controller } = buildWarmupHarness({
+      warmup: () =>
+        new Promise<boolean>((resolve) => {
+          release.push(() => resolve(true));
+        }),
+    });
+    const first = controller.selectPreset('warm-target');
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    // A rapid second selection supersedes the first mid-warm-up: its source
+    // does not resolve, so the first switch can only ever end superseded.
+    const second = controller.selectPreset('missing-preset');
+    release[0]?.();
+    await Promise.allSettled([first, second]);
+    expect(order).toEqual(['warmup']);
+  });
+});
