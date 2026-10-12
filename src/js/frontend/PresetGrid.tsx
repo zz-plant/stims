@@ -51,7 +51,7 @@ const GRID_ROW_OVERSCAN = 3;
 const GRID_INITIAL_VIEWPORT_PX = 600;
 /** A screenful is ~12 tiles; anything beyond that came from a scroll jump. */
 const PREVIEW_REQUEST_BATCH = 12;
-const PREVIEW_REQUEST_DEBOUNCE_MS = 300;
+const PREVIEW_REQUEST_DEBOUNCE_MS = 120;
 
 /**
  * One tile, memoized: an audition (hover) state change on the grid must only

@@ -577,7 +577,9 @@ export function createToyRuntime({
       frameState.realTimeMs = currentTime;
       frameState.analyser = null;
       const previewDataIntervalMs = PREVIEW_DATA_INTERVAL_MS;
-      if (now - previewLastDataUpdate >= previewDataIntervalMs) {
+      // 4ms jitter tolerance (see FRAME_GATE_TOLERANCE_MS) prevents rAF vsync
+      // jitter from pushing frames past the deadline and halving effective rate.
+      if (now - previewLastDataUpdate >= previewDataIntervalMs - 4) {
         updatePreviewFrequencyData(frameState.time);
         previewLastDataUpdate = now;
       }
