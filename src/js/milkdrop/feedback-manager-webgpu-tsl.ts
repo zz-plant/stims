@@ -3799,10 +3799,14 @@ class WebGPUMilkdropFeedbackManager
       })
     | null = null;
   private compositeSwapRevision = 0;
-  // Warm-up materials from the previous preset swap. They are kept alive
-  // until the next swap (or dispose): releasing them immediately would
-  // decrement the renderer's code-keyed program refcounts and evict the very
-  // pipelines the warm-up just compiled before the live materials rebuild.
+  // Warm-up materials from the previous preset swap. Exactly one generation
+  // is retained at a time — the slot is replaced at every swap, by
+  // warmAndSwapCompositeNodes' start-of-swap cleanup and by a stashed swap's
+  // install alike — because releasing a generation immediately would
+  // decrement the renderer's code-keyed program refcounts and evict the
+  // very pipelines the warm-up just compiled before the live materials
+  // render; keeping every generation instead would grow with autoplay
+  // forever.
   private retiredWarmMaterials: NodeMaterial[] = [];
   /**
    * Pre-fade pipeline warm-up state (see feedback-manager-webgpu-prewarm.ts):
@@ -4160,10 +4164,7 @@ class WebGPUMilkdropFeedbackManager
     feedbackBlendNode: unknown,
     compositeNode: unknown,
   ) {
-    for (const material of this.retiredWarmMaterials) {
-      disposeMaterial(material);
-    }
-    this.retiredWarmMaterials = [];
+    this.releaseRetiredWarmMaterials();
 
     const warmBlend = new NodeMaterial();
     warmBlend.outputNode = feedbackBlendNode as typeof warmBlend.outputNode;
@@ -4227,6 +4228,25 @@ class WebGPUMilkdropFeedbackManager
   }
 
   /**
+   * Disposes the retained warm-material generation and empties the slot.
+   *
+   * Safe mid-frame, from applyCompositeState's call chain: the retained
+   * materials are never rendered — they exist only to hold program
+   * refcounts until the live materials' first render, and by the time a
+   * NEXT swap releases a generation, that render happened many frames ago
+   * and the live materials hold their own refcounts. The one thing this
+   * must not do is release the generation a swap just installed before its
+   * live materials have rendered once; every caller installs the new
+   * generation immediately after this, so the invariant holds by ordering.
+   */
+  private releaseRetiredWarmMaterials() {
+    for (const material of this.retiredWarmMaterials) {
+      disposeMaterial(material);
+    }
+    this.retiredWarmMaterials = [];
+  }
+
+  /**
    * Pre-warms an incoming preset's pipelines before the fade begins — see
    * feedback-manager-webgpu-prewarm.ts for the machinery and the contract.
    * The runtime's switch gate calls this while the outgoing preset still
@@ -4279,15 +4299,21 @@ class WebGPUMilkdropFeedbackManager
         // is a cache hit on the first blended frame, not a compile — the
         // node-graph build and pipeline creation that a 120Hz tab measured
         // as 258–433ms single frames at fade start have already been paid.
-        // The warm materials retire through retiredWarmMaterials so their
-        // program refcounts outlive the live materials' first render.
         //
         // The revision bump invalidates any still-warming swap from a
         // previous preset's apply: without it, that older async swap would
         // pass its own revision check here and overwrite the stash's graphs
         // with the OUTGOING preset's styling mid-blend.
         this.compositeSwapRevision += 1;
-        this.retiredWarmMaterials.push(...stashed.warmMaterials);
+        // One retained generation at a time, exactly like the single-slot
+        // stash itself: this path bypasses warmAndSwapCompositeNodes'
+        // start-of-swap cleanup, so without releasing here every stashed
+        // switch (autoplay!) would retain two more materials for the life
+        // of the manager. The previous generation kept its programs alive
+        // only until ITS live materials first rendered — many frames ago —
+        // so releasing it cannot evict anything the current frame needs.
+        this.releaseRetiredWarmMaterials();
+        this.retiredWarmMaterials = stashed.warmMaterials;
         this.feedbackBlendMaterial.outputNode =
           stashed.feedbackBlendNode as typeof this.feedbackBlendMaterial.outputNode;
         this.feedbackBlendMaterial.needsUpdate = true;
@@ -4714,10 +4740,7 @@ class WebGPUMilkdropFeedbackManager
     // Same for the pre-fade pre-warm: its warm materials and field objects
     // reference this manager's uniforms and targets.
     this.prewarm.discardPending();
-    for (const material of this.retiredWarmMaterials) {
-      disposeMaterial(material);
-    }
-    this.retiredWarmMaterials = [];
+    this.releaseRetiredWarmMaterials();
     if (
       this.adaptiveResizeFrameId !== null &&
       typeof cancelAnimationFrame === 'function'

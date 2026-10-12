@@ -377,6 +377,33 @@ describe('webgpu feedback manager: pre-fade pipeline warm-up', () => {
     }
   });
 
+  test('stashed swaps do not grow warm-material retention', async () => {
+    const { manager } = await createRenderedManager();
+    try {
+      const retained = () =>
+        (manager as unknown as { retiredWarmMaterials: unknown[] })
+          .retiredWarmMaterials;
+      for (let swap = 0; swap < 5; swap += 1) {
+        const warp = createShaderProgram('warp', 0.01 * (swap + 1));
+        const comp = createShaderProgram('comp', 0.02 * (swap + 1));
+        const warmed = await manager.warmupPresetPipelines(
+          createWarmupRequest({ warp, comp }),
+        );
+        expect(warmed).toBe(true);
+        manager.applyCompositeState(createCompositeState(warp, comp));
+        await drainAsyncWork();
+        // At most one generation of warm materials is retained, whatever
+        // the number of stashed swaps before this one — autoplay switches
+        // for the life of a session, and retention must not grow with it.
+        expect(retained().length).toBeLessThanOrEqual(2);
+      }
+      // Exactly the newest generation remains.
+      expect(retained().length).toBe(2);
+    } finally {
+      manager.dispose();
+    }
+  });
+
   test('a stash install supersedes an older in-flight in-blend swap', async () => {
     const { manager, fake } = await createRenderedManager();
     try {
