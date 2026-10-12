@@ -55,10 +55,13 @@ export type MilkdropPresetPipelineWarmupGate = (
 export const PRESET_PIPELINE_WARMUP_DEADLINE_MS = 1500;
 
 /**
- * Builds the gate. `wantsBlendTransition` should read the live preference
- * (transition mode plus duration, and any armed manual crossfade) — a switch
- * that asked for a cut asked for immediacy, and warming it would delay it
- * for nothing the performer asked to see.
+ * Builds the gate. `wantsBlendTransition` should answer the question
+ * "would this switch actually crossfade?" — the live preference (transition
+ * mode plus duration, and any armed manual crossfade) AND the blend gate's
+ * decision for the current frame (see `wouldMilkdropSwitchBlendNow`).
+ * A switch that asked for a cut asked for immediacy, and one the blend gate
+ * is about to refuse gains nothing from warming: in both cases the up-to-1.5s
+ * hold would be pure input latency.
  */
 export function createMilkdropPresetPipelineWarmupGate({
   getAdapter,

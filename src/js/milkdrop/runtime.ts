@@ -98,7 +98,11 @@ import {
 } from './runtime/preset-switch-warmup';
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
-import { cloneBlendState, evaluateBlendGate } from './runtime/session';
+import {
+  cloneBlendState,
+  evaluateBlendGate,
+  wouldMilkdropSwitchBlendNow,
+} from './runtime/session';
 import type { MilkdropPresetSelectionReason } from './runtime/startup.ts';
 import { shouldDeferStartupPresetFallback } from './runtime/startup.ts';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
@@ -746,11 +750,34 @@ export function createMilkdropExperience({
   } | null = null;
 
   /**
+   * The pressure inputs `evaluateBlendGate` reads, or null when the adaptive
+   * quality controller has no state yet. One snapshot source for both the
+   * transition decision and the warm-up gate's willingness check below, so
+   * the two cannot drift.
+   */
+  const blendPressureSnapshot = () => {
+    const quality = adaptiveQualityController?.getState() ?? null;
+    return (
+      quality && {
+        rollingAverageFrameMs: quality.rollingAverageFrameMs,
+        frameBudgetMs: quality.frameBudgetMs,
+        thermalState: quality.thermalState,
+      }
+    );
+  };
+
+  /**
    * Pre-fade pipeline warm-up gate for preset switches (WebGPU only): the
    * incoming preset's GPU pipelines compile before the fade begins, so the
    * first blended frames submit cache hits instead of the 258–433ms single
    * frames a 120Hz hardware tab measured at blend start. Bounded and
    * fallback-safe by construction — see runtime/preset-switch-warmup.ts.
+   *
+   * Armed only where a crossfade will actually happen: the same preference
+   * AND gate decision `beginPresetTransition` will consult moments later
+   * (`wouldMilkdropSwitchBlendNow`). A switch the blend gate is about to
+   * turn into a cut gains nothing from the up-to-1.5s warm-up hold — it
+   * would be pure input latency — so the gate stays synchronous there.
    */
   const warmIncomingPresetPipelines = createMilkdropPresetPipelineWarmupGate({
     getAdapter: () => adapter,
@@ -758,8 +785,13 @@ export function createMilkdropExperience({
     isAgentMode: () => agentModeEnabled,
     isPreviewMode: () => previewMode,
     wantsBlendTransition: () =>
-      pendingManualCrossfade ||
-      (transitionMode === 'blend' && blendDuration > 0),
+      wouldMilkdropSwitchBlendNow({
+        currentFrameState,
+        pressure: blendPressureSnapshot(),
+        manual: pendingManualCrossfade,
+        transitionMode,
+        blendDuration,
+      }),
   });
 
   const beginPresetTransition = () => {
@@ -794,15 +826,7 @@ export function createMilkdropExperience({
     }
     pendingLiveBlend = false;
 
-    const quality = adaptiveQualityController?.getState() ?? null;
-    const gate = evaluateBlendGate(
-      currentFrameState,
-      quality && {
-        rollingAverageFrameMs: quality.rollingAverageFrameMs,
-        frameBudgetMs: quality.frameBudgetMs,
-        thermalState: quality.thermalState,
-      },
-    );
+    const gate = evaluateBlendGate(currentFrameState, blendPressureSnapshot());
     const wantsBlend =
       (manual || transitionMode === 'blend') && (manual || blendDuration > 0);
     const canBlend = wantsBlend && gate.canBlend;

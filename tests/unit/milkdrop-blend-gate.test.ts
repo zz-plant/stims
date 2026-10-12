@@ -3,6 +3,7 @@ import {
   estimateFrameBlendWorkload,
   evaluateBlendGate,
   MAX_BLEND_WORKLOAD,
+  wouldMilkdropSwitchBlendNow,
 } from '../../src/js/milkdrop/runtime/session.ts';
 import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
 
@@ -152,5 +153,69 @@ describe('blend gate', () => {
 
   test('without a quality controller the timing gate abstains', () => {
     expect(evaluateBlendGate(CORPUS_MEDIAN, null).canBlend).toBe(true);
+  });
+});
+
+describe('switch blend willingness (warm-up arming)', () => {
+  /**
+   * `wouldMilkdropSwitchBlendNow` is the pre-apply half of the blend
+   * decision: the pre-fade pipeline warm-up arms only when the switch will
+   * actually crossfade, because a switch the gate is about to turn into a
+   * cut gains nothing from an up-to-1.5s warm-up hold — pure input latency.
+   */
+  const willingness = (overrides: {
+    frameState?: MilkdropFrameState;
+    pressure?: {
+      rollingAverageFrameMs: number;
+      frameBudgetMs: number;
+      thermalState: 'nominal' | 'elevated' | 'throttling';
+    } | null;
+    manual?: boolean;
+    transitionMode?: 'blend' | 'cut';
+    blendDuration?: number;
+  }) =>
+    wouldMilkdropSwitchBlendNow({
+      currentFrameState: overrides.frameState ?? CORPUS_MEDIAN,
+      pressure: overrides.pressure ?? HEALTHY,
+      manual: overrides.manual ?? false,
+      transitionMode: overrides.transitionMode ?? 'blend',
+      blendDuration: overrides.blendDuration ?? 2.5,
+    });
+
+  test('a switch the gate would blend arms the warm-up', () => {
+    expect(willingness({})).toBe(true);
+  });
+
+  test('a workload refusal disarms the warm-up', () => {
+    expect(willingness({ frameState: CORPUS_PEAK })).toBe(false);
+  });
+
+  test('a frame-pressure refusal disarms the warm-up', () => {
+    expect(
+      willingness({
+        pressure: { ...HEALTHY, rollingAverageFrameMs: 70 },
+      }),
+    ).toBe(false);
+  });
+
+  test('a throttling device disarms the warm-up', () => {
+    expect(
+      willingness({
+        pressure: { ...HEALTHY, thermalState: 'throttling' },
+      }),
+    ).toBe(false);
+  });
+
+  test('the cut preference and a zero duration keep the switch synchronous', () => {
+    expect(willingness({ transitionMode: 'cut' })).toBe(false);
+    expect(willingness({ blendDuration: 0 })).toBe(false);
+  });
+
+  test('a manual crossfade wants a blend regardless of duration, but not against a refusing gate', () => {
+    expect(willingness({ manual: true, blendDuration: 0 })).toBe(true);
+    // Manual + gate refusal is a cut in beginPresetTransition too: the
+    // fader never appears, and warming it would delay nothing the user
+    // gets to see.
+    expect(willingness({ manual: true, frameState: CORPUS_PEAK })).toBe(false);
   });
 });

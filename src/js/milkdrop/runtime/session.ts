@@ -235,6 +235,39 @@ export function evaluateBlendGate(
   return { canBlend: true, refusal: null, canLiveBlend };
 }
 
+/**
+ * Whether a preset switch wants a crossfade AND the blend gate would allow
+ * one right now — the same decision `beginPresetTransition` makes when the
+ * switch applies, expressed as a single boolean for callers that act BEFORE
+ * the apply: the pre-fade pipeline warm-up gate. A switch that will cut
+ * anyway (mode preference, zero duration, or a gate refusal from workload,
+ * frame pressure or thermal state) gains nothing from warming the incoming
+ * preset's pipelines — the up-to-`PRESET_PIPELINE_WARMUP_DEADLINE_MS` hold
+ * would be pure input latency — so the warm-up is not armed.
+ *
+ * Evaluates `evaluateBlendGate` directly rather than restating any of its
+ * thresholds; because it runs before the apply does, the decision it sees is
+ * the gate's best answer for the frame state at arm time, and the real
+ * `beginPresetTransition` call still makes the authoritative one.
+ */
+export function wouldMilkdropSwitchBlendNow({
+  currentFrameState,
+  pressure,
+  manual,
+  transitionMode,
+  blendDuration,
+}: {
+  currentFrameState: MilkdropFrameState | null;
+  pressure: BlendPressureSnapshot;
+  manual: boolean;
+  transitionMode: 'blend' | 'cut';
+  blendDuration: number;
+}): boolean {
+  const wantsBlend =
+    (manual || transitionMode === 'blend') && (manual || blendDuration > 0);
+  return wantsBlend && evaluateBlendGate(currentFrameState, pressure).canBlend;
+}
+
 export function isEditablePreset(
   entry: MilkdropCatalogEntry | undefined | null,
 ) {

@@ -22,8 +22,10 @@ import {
   createMilkdropPresetPipelineWarmupGate,
   scheduleMilkdropPresetSwitchThroughWarmup,
 } from '../../src/js/milkdrop/runtime/preset-switch-warmup.ts';
+import { wouldMilkdropSwitchBlendNow } from '../../src/js/milkdrop/runtime/session.ts';
 import type {
   MilkdropCompiledPreset,
+  MilkdropFrameState,
   MilkdropRendererAdapter,
 } from '../../src/js/milkdrop/types.ts';
 
@@ -247,5 +249,86 @@ describe('preset pipeline warm-up gate', () => {
     // A rapid second switch: the newest selection owns the next transition.
     await harness.gate(createCompiled('preset-b'));
     expect(harness.warmupCalls()).toBe(2);
+  });
+});
+
+describe('preset pipeline warm-up gate with the runtime blend predicate', () => {
+  /**
+   * runtime.ts wires `wantsBlendTransition` to `wouldMilkdropSwitchBlendNow`
+   * — the same preference AND blend-gate decision beginPresetTransition
+   * consults — so a switch the gate is about to turn into a cut never arms
+   * the up-to-1.5s warm-up hold. These tests compose the real pieces.
+   */
+  const heavyFrameState = {
+    // MAX_BLEND_WORKLOAD is 6000 segments; a main wave above it refuses.
+    mainWave: { positions: new Float32Array(3 * 6001) },
+    customWaves: [],
+    mesh: { positions: new Float32Array(0) },
+    motionVectors: [],
+    shapes: [],
+    borders: [],
+  } as unknown as MilkdropFrameState;
+  const lightFrameState = {
+    mainWave: { positions: new Float32Array(0) },
+    customWaves: [],
+    mesh: { positions: new Float32Array(0) },
+    motionVectors: [],
+    shapes: [],
+    borders: [],
+  } as unknown as MilkdropFrameState;
+
+  function createSwitchWithRuntimePredicate(
+    warmBehavior: (resolve: () => void) => void,
+  ) {
+    let currentFrameState = lightFrameState;
+    const gate = createMilkdropPresetPipelineWarmupGate({
+      getAdapter: () =>
+        ({
+          backend: 'webgpu',
+          warmupPreset: () =>
+            new Promise<void>((resolve) => warmBehavior(resolve)),
+        }) as unknown as MilkdropRendererAdapter,
+      getBackend: () => 'webgpu',
+      isAgentMode: () => false,
+      isPreviewMode: () => false,
+      wantsBlendTransition: () =>
+        wouldMilkdropSwitchBlendNow({
+          currentFrameState,
+          pressure: null,
+          manual: false,
+          transitionMode: 'blend',
+          blendDuration: 2.5,
+        }),
+    });
+    return {
+      gate,
+      refuseBlends: () => {
+        currentFrameState = heavyFrameState;
+      },
+    };
+  }
+
+  test('a switch the blend gate will cut applies synchronously, no warm-up', () => {
+    const { gate, refuseBlends } = createSwitchWithRuntimePredicate(() => {});
+    refuseBlends();
+    expect(gate(createCompiled('preset-a'))).toBe(null);
+  });
+
+  test('a switch the blend gate will blend arms the warm-up', async () => {
+    let released = false;
+    const { gate } = createSwitchWithRuntimePredicate((resolve) => {
+      if (released) {
+        resolve();
+        return;
+      }
+      // Resolve on a later macrotask: the warm-up must still be pending
+      // synchronously after the gate call.
+      setTimeout(resolve, 0);
+    });
+    const warmed = gate(createCompiled('preset-a'));
+    expect(warmed).not.toBe(null);
+    released = true;
+    await warmed;
+    expect(warmed).resolves.toBe(true);
   });
 });
