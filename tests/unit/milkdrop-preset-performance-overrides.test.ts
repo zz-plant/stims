@@ -26,4 +26,8 @@ test('resolves the S22-measured overrides for presets that stayed over budget at
   expect(resolvePresetPerformanceOverride('zylot-heaven-bloom-nz')).toEqual({
     qualityPresetId: 'performance',
   });
+  expect(resolvePresetPerformanceOverride('shifter-glassworms-flare')).toEqual({
+    qualityPresetId: 'performance',
+    disableBlendTransitions: true,
+  });
 });

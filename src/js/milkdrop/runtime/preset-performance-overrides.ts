@@ -45,6 +45,13 @@ const PRESET_PERFORMANCE_OVERRIDES = {
   'zylot-heaven-bloom-nz': {
     qualityPresetId: 'performance',
   },
+  // Heaviest preset in the certification corpus: calls randint 59 times and
+  // profiles at ~59% EEL VM time. Uses performance tier and cut transitions
+  // to prevent dual-VM transition stalls on low/mid tier devices.
+  'shifter-glassworms-flare': {
+    qualityPresetId: 'performance',
+    disableBlendTransitions: true,
+  },
 } as const satisfies Record<string, PresetPerformanceOverride>;
 
 export function resolvePresetPerformanceOverride(
