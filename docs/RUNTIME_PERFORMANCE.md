@@ -164,6 +164,76 @@ per-frame crossfade cost at this tier. The mid-range reality still requires
 the fixed-tier runner on a host whose headless browser is not
 software-rendering.
 
+## 2026-10-11 Inlined RNG and repeated-read caching in the JIT
+
+Two changes to the CPU JIT, aimed at the per-point/per-vertex hot path that
+the shifter-glassworms-flare profile attributes ~68% of non-idle JavaScript to
+(anonymous JIT bodies plus TurboFan-inlined bodies attributed to
+`runProgram`):
+
+- **Inlined RNG.** `rand()`/`randint()` drew through a per-call closure
+  (`vm.ts` `nextRandom`). The VM now passes its RNG state as a mutable cell
+  and the compiled body advances the LCG in place — one cell load on entry,
+  one store on exit, no call per draw. The interpreter-backed CSP fallback
+  draws through the same cell, so the two tiers interleave on one sequence.
+  The conformance contract is unchanged: `compileMilkdropProgram` keeps a
+  `'closure'` mode whose `rng` argument is a host-supplied draw callable, and
+  `spec/eel-conformance/` runs that tier (the corpus pins every draw to a
+  fixed 0.5, which only a callable can reproduce).
+- **Repeated-read caching.** Identifiers read two or more times within one
+  statement — the `x = if(x, x, ...)` idiom that dominates this preset's
+  per-point blocks — now read once into a temp and splice it for the repeats.
+  The cache is per-statement and invalidated by any store to the variable;
+  conditionally-evaluated regions (`if` branches, the right side of `&&`/
+  `||`, loop bodies) either compile from a snapshot or drop the cache, so a
+  temp assigned on an untaken path can never be observed. Identifiers read
+  once emit exactly what they did before.
+
+Evidence, all on this host (SwiftShader; timing numbers are INDICATIVE ONLY,
+never a hardware claim):
+
+- `lab:replay --record` on unchanged code, then replay after both changes:
+  240 frames of `shifter-glassworms-flare` verified **bit-for-bit** — the RNG
+  sequence and every cached read are semantically identical.
+- Emitted read count for the preset's two 74-statement per-point bodies:
+  410 → 326 env reads per 512-point pass (−20%); the isolated closure draw
+  cost ~16.6 ns/call (Bun/JSC microbench), so the inline form removes the
+  call boundary rather than measurable per-draw arithmetic.
+- Tier agreement: 500 seeded interpreter-vs-JIT programs with rand/randint
+  in loops, `if` branches, and mixed q-register writes (both RNG modes),
+  the CSP fallback on the same cell, and the bundled-fixture differential —
+  all green; mutation checks (LCG constant, store invalidation, region
+  barriers) confirmed each new test goes red on the corresponding bug.
+
+Known pre-existing divergence found during this work (not introduced, not
+fixed): a random call *inside another random call's argument* draws in
+opposite orders on the interpreter (args first) and the JIT (draw first);
+two bundled `cotc-suksma-*` presets nest `rand` but run on the JIT tier
+consistently, so production output is unaffected. The conformance corpus
+cannot express it (a fixed draw hides draw order).
+
+Browser-frame verification (V8, real WebGPU, per the 2026-08-24 setup above)
+was the outstanding item for both changes; the measured result follows.
+
+## 2026-10-12 hardware result: RNG inlining + statement-local read caching
+
+Measured on the same machine as the 2026-10-11 spot-check, with the runner
+itself (`perf:certification-corpus --no-headless`, real WebGPU,
+`timingMode: gpu-phase-timestamps`, quality step 1 locked, three trials):
+
+- Before (main, 2026-10-11 corpus sweep): `shifter-glassworms-flare`
+  **median 5.24 ms** average frame work.
+- After (this change): **median 4.51 ms** (trials 4.41 / 4.51 / 4.72;
+  `fallbackOccurred: false`; simulation phase 3.73 ms).
+
+That is a **14% reduction in median frame work for the heaviest preset in
+the certification corpus**, with output proven identical by the replay and
+differential instruments above. The claim stays narrow: it is this preset's
+shape (repeated identifier reads inside large per-point bodies plus RNG
+draws) on this hardware at one quality step — not a universal percentage
+for every preset, device, or renderer, and the delivered FPS stays
+display-capped either way (medianFps 120.48 before and after).
+
 ## Reproduce a tier
 
 The runner builds and serves production output by default. Run the same preset

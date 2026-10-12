@@ -75,6 +75,35 @@ function runTier(lines: string[], jit: boolean): RunResult {
   return { env, state, registers, megabuf };
 }
 
+/** Inline-RNG tier twin of runTier: the caller-seeded cell replaces the draw
+ * callable, so the run advances the real LCG whether it lands on the JIT body
+ * or the interpreter-backed fallback. */
+function runInlineTier(
+  lines: string[],
+  jit: boolean,
+  rng: { s: number },
+): RunResult & { rng: { s: number } } {
+  __setJitAvailableForTests(jit);
+  const env: Record<string, number> = {};
+  const state: Record<string, number> = {};
+  const registers: Record<string, number> = {};
+  const megabuf = new Float32Array(64);
+  try {
+    compileMilkdropProgram(parseProgram(lines), { rng: 'inline' })(
+      env,
+      state,
+      registers,
+      null,
+      megabuf,
+      new Float32Array(64),
+      rng,
+    );
+  } finally {
+    __setJitAvailableForTests(null);
+  }
+  return { env, state, registers, megabuf, rng };
+}
+
 const closeEnough = (a: number, b: number) => {
   if (Number.isNaN(a) && Number.isNaN(b)) return true;
   if (!Number.isFinite(a) || !Number.isFinite(b)) return a === b;
@@ -156,6 +185,33 @@ describe('EEL CSP interpreter-only fallback', () => {
     expect(fallback.env.a).toBe(jit.env.a as number);
     expect(fallback.env.b).toBe(jit.env.b as number);
     expect(fallback.env.c).toBe(jit.env.c as number);
+  });
+
+  test('the inlined RNG keeps the CSP fallback on the same LCG sequence', () => {
+    // Inline mode draws through the shared state cell. The interpreter-backed
+    // fallback must advance the same cell the JIT body would, or a strict-CSP
+    // session would visibly change the preset's numbers mid-run. Loops, an
+    // untaken branch (lazy: it must not draw), and q-register writes all
+    // touch the sequence.
+    const program = [
+      'q1 = rand(1001)',
+      'loop(4, q2 = q2 + randint(9););',
+      'q3 = if(0, rand(77), 3)',
+      'q4 = randint(501)',
+      't1 = rand(2)',
+    ];
+    const jit = runInlineTier(program, true, { s: 12345 });
+    const fallback = runInlineTier(program, false, { s: 12345 });
+
+    expect(fallback.env.q1).toBe(jit.env.q1);
+    expect(fallback.env.q2).toBe(jit.env.q2);
+    expect(fallback.env.q3).toBe(jit.env.q3);
+    expect(fallback.env.q3).toBe(3);
+    expect(fallback.env.q4).toBe(jit.env.q4);
+    expect(fallback.env.t1).toBe(jit.env.t1);
+    expect(fallback.registers.q2).toBe(jit.registers.q2);
+    expect(fallback.rng.s).toBe(jit.rng.s);
+    expect(fallback.rng.s).not.toBe(12345);
   });
 
   test('agrees with the JIT on 300 seeded random programs', () => {
