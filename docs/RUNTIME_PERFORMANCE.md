@@ -234,6 +234,31 @@ draws) on this hardware at one quality step — not a universal percentage
 for every preset, device, or renderer, and the delivered FPS stays
 display-capped either way (medianFps 120.48 before and after).
 
+## 2026-10-12 hardware result: unreferenced per-vertex built-ins skipped in the mesh transform
+
+The mesh lane's change (skip computing per-vertex built-ins the per-pixel
+program never references; seeded/derived values read frame constants that
+are bit-identical to the old per-vertex resets) is proven output-identical
+by trace and mesh digests. Measured with the same hardware protocol as the
+2026-10-11 spot-check (runner, `--no-headless`, real WebGPU, quality step 1
+locked, three trials), on `eos-apocalypse` (references few per-pixel
+built-ins):
+
+- Before (main, 2026-10-11 corpus sweep): median 4.14 ms average frame work
+  (trials 3.78 / 4.14 / 4.49).
+- After: **median 3.77 ms** (trials 3.37 / 3.77 / 4.18) — the entire
+  after-spread sits below the before-median, and min, median, and max all
+  moved down.
+
+That is a **9% median reduction on the mesh-heavy stress preset on top-tier
+hardware**, where the skipped stores and trig are relatively cheap — the
+structural reduction is larger in count (14 writes → 7, 13 post-reads → ~7,
+2 trig/frame → 0 on this preset), so weaker tiers, where property stores and
+`Math.cos`/`Math.sin` are relatively costlier, are the real target. Narrow
+claim: this preset, this hardware, one quality step; the microbench on
+presets that reference nearly all built-ins read ±1% (noise), as expected —
+their per-vertex loops are unchanged.
+
 ## Reproduce a tier
 
 The runner builds and serves production output by default. Run the same preset

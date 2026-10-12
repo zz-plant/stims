@@ -190,6 +190,8 @@ export {
   printPresetSyntax,
   splitInlineComment,
 } from './preset-syntax.ts';
+export type { ProgramReferences } from './program-references.ts';
+export { analyzeProgramReferences } from './program-references.ts';
 // --- HLSL shader text: parse, analyze, GLSL ------------------------------
 export {
   evaluateMilkdropShaderExpression,
