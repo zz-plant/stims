@@ -29,7 +29,15 @@ import {
 const PROCEDURAL_MESH_BOUNDS_RADIUS = Math.SQRT2 * 2;
 const proceduralMeshGeometryCache = new Map<number, BufferGeometry>();
 
-function getProceduralMeshGeometry(density: number) {
+/**
+ * The procedural mesh grid, shared per density. Exported for the WebGPU
+ * preset warm-up, which compiles the incoming preset's field-material
+ * pipeline against the exact geometry the live draw uses — three's pipeline
+ * cache key includes the geometry's attribute layout, so a lookalike
+ * geometry would warm a different pipeline than the one the first blended
+ * frame submits.
+ */
+export function getProceduralMeshGeometry(density: number) {
   const safeDensity = Math.max(2, Math.round(density));
   const cached = proceduralMeshGeometryCache.get(safeDensity);
   if (cached) {

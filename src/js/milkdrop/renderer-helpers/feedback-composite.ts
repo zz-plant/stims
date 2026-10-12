@@ -2,6 +2,7 @@ import { isMilkdropShaderProgramBackendExecutable } from 'milkdrop-toolchain/src
 import { getFeedbackBackendProfile } from '../backend-behavior';
 import type {
   MilkdropFeedbackCompositeState,
+  MilkdropFeedbackShaderPlan,
   MilkdropPostVisual,
   MilkdropRenderPayload,
 } from '../types';
@@ -23,6 +24,86 @@ function readWarpVariable(
 ): number {
   const value = variables?.[key];
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+/**
+ * Resolves which warp/comp shader programs and per-pixel statements a preset's
+ * feedback pass actually executes, and in which mode — the part of the
+ * composite state that is derived purely from the compiled preset and the
+ * descriptor plan, with no per-frame input.
+ *
+ * Split out of `buildFeedbackCompositeState` because the preset-warm-up seam
+ * (the transition pipeline pre-warm before a fade starts) needs the exact
+ * same decision, made the exact same way, before any frame of the incoming
+ * preset exists. The identity inputs the feedback managers compare against —
+ * shaderExecution, the program payloads, the per-pixel statements — must
+ * agree between warm-up and apply, or the pre-warmed pipelines never match
+ * the state that lands.
+ */
+export function resolveFeedbackShaderPlan({
+  shaderPrograms,
+  perPixelStatements,
+  backend,
+  directFeedbackShaders,
+  webgpuFeedbackPlanShaderExecution,
+  webgpuFeedbackPlanFallback = false,
+}: {
+  shaderPrograms: MilkdropPostVisual['shaderPrograms'];
+  perPixelStatements: MilkdropPostVisual['perPixelStatements'];
+  backend: 'webgl' | 'webgpu';
+  directFeedbackShaders: boolean;
+  webgpuFeedbackPlanShaderExecution: 'direct' | 'controls' | 'none' | undefined;
+  webgpuFeedbackPlanFallback?: boolean;
+}): MilkdropFeedbackShaderPlan {
+  const feedbackOptimizationEnabled =
+    backend !== 'webgpu' || directFeedbackShaders;
+  // When the descriptor plan reports shaderExecution === 'direct', the preset's
+  // warp/comp shader is already verified as WebGPU-executable. The
+  // webgpuFeedbackPlanFallback flag reflects broader compatibility concerns
+  // (video echo, feedback texture, shader textures, post effects) and must not
+  // override the explicit 'direct' execution mode — doing so discards the
+  // shader body and forces uniform-only evaluation, producing a major visual
+  // discrepancy with the WebGL backend for shader-heavy presets.
+  const plannedShaderExecution =
+    backend === 'webgpu'
+      ? feedbackOptimizationEnabled &&
+        (!webgpuFeedbackPlanFallback ||
+          webgpuFeedbackPlanShaderExecution === 'direct')
+        ? (webgpuFeedbackPlanShaderExecution ?? 'controls')
+        : 'controls'
+      : null;
+  const allowDirectShaderPrograms =
+    backend !== 'webgpu' || plannedShaderExecution === 'direct';
+  const executableShaderPrograms = {
+    warp:
+      feedbackOptimizationEnabled &&
+      allowDirectShaderPrograms &&
+      isMilkdropShaderProgramBackendExecutable(shaderPrograms.warp, backend)
+        ? shaderPrograms.warp
+        : null,
+    comp:
+      feedbackOptimizationEnabled &&
+      allowDirectShaderPrograms &&
+      isMilkdropShaderProgramBackendExecutable(shaderPrograms.comp, backend)
+        ? shaderPrograms.comp
+        : null,
+  };
+  const usesDirectShaderPrograms =
+    plannedShaderExecution === 'direct'
+      ? true
+      : plannedShaderExecution === 'controls'
+        ? false
+        : executableShaderPrograms.warp !== null ||
+          executableShaderPrograms.comp !== null;
+  return {
+    shaderExecution: usesDirectShaderPrograms
+      ? ('direct' as const)
+      : ('controls' as const),
+    shaderPrograms: executableShaderPrograms,
+    perPixelPrograms: perPixelStatements
+      ? { statements: perPixelStatements }
+      : null,
+  };
 }
 
 export function buildFeedbackCompositeState({
@@ -59,51 +140,15 @@ export function buildFeedbackCompositeState({
     dx: readWarpVariable(frameState.variables, 'dx', 0),
     dy: readWarpVariable(frameState.variables, 'dy', 0),
   };
-  const feedbackOptimizationEnabled =
-    backend !== 'webgpu' || directFeedbackShaders;
-  // When the descriptor plan reports shaderExecution === 'direct', the preset's
-  // warp/comp shader is already verified as WebGPU-executable. The
-  // webgpuFeedbackPlanFallback flag reflects broader compatibility concerns
-  // (video echo, feedback texture, shader textures, post effects) and must not
-  // override the explicit 'direct' execution mode — doing so discards the
-  // shader body and forces uniform-only evaluation, producing a major visual
-  // discrepancy with the WebGL backend for shader-heavy presets.
-  const plannedShaderExecution =
-    backend === 'webgpu'
-      ? feedbackOptimizationEnabled &&
-        (!webgpuFeedbackPlanFallback ||
-          webgpuFeedbackPlanShaderExecution === 'direct')
-        ? (webgpuFeedbackPlanShaderExecution ?? 'controls')
-        : 'controls'
-      : null;
-  const allowDirectShaderPrograms =
-    backend !== 'webgpu' || plannedShaderExecution === 'direct';
-  const shaderPrograms = {
-    warp:
-      feedbackOptimizationEnabled &&
-      allowDirectShaderPrograms &&
-      isMilkdropShaderProgramBackendExecutable(
-        frameState.post.shaderPrograms.warp,
-        backend,
-      )
-        ? frameState.post.shaderPrograms.warp
-        : null,
-    comp:
-      feedbackOptimizationEnabled &&
-      allowDirectShaderPrograms &&
-      isMilkdropShaderProgramBackendExecutable(
-        frameState.post.shaderPrograms.comp,
-        backend,
-      )
-        ? frameState.post.shaderPrograms.comp
-        : null,
-  };
-  const usesDirectShaderPrograms =
-    plannedShaderExecution === 'direct'
-      ? true
-      : plannedShaderExecution === 'controls'
-        ? false
-        : shaderPrograms.warp !== null || shaderPrograms.comp !== null;
+  const shaderPlan = resolveFeedbackShaderPlan({
+    shaderPrograms: frameState.post.shaderPrograms,
+    perPixelStatements: frameState.post.perPixelStatements ?? null,
+    backend,
+    directFeedbackShaders,
+    webgpuFeedbackPlanShaderExecution,
+    webgpuFeedbackPlanFallback,
+  });
+  const { shaderPrograms } = shaderPlan;
   const perPixelStatements = frameState.post.perPixelStatements ?? null;
 
   const feedbackSoftness = presetReferencesBlurTextures(
@@ -114,13 +159,9 @@ export function buildFeedbackCompositeState({
     : 0;
 
   return {
-    shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
+    shaderExecution: shaderPlan.shaderExecution,
     shaderPrograms,
-    perPixelPrograms: perPixelStatements
-      ? {
-          statements: perPixelStatements,
-        }
-      : null,
+    perPixelPrograms: shaderPlan.perPixelPrograms,
     perPixelVariables: frameState.variables,
     mixAlpha: controls.mixAlpha,
     videoEchoAlpha: frameState.post.videoEchoEnabled

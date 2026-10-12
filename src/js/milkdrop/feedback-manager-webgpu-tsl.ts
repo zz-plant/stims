@@ -62,6 +62,11 @@ import {
   sampleFeedbackTarget,
 } from './feedback-manager-webgpu-composite.ts';
 import {
+  type MilkdropPrewarmRenderer,
+  type MilkdropWebgpuCompositeIdentity,
+  MilkdropWebgpuPrewarmController,
+} from './feedback-manager-webgpu-prewarm';
+import {
   type OutputConversionRenderer,
   renderWithoutOutputConversion,
 } from './output-conversion-passthrough.ts';
@@ -99,6 +104,7 @@ import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
   MilkdropPostprocessingProfile,
+  MilkdropPresetPipelineWarmupRequest,
   MilkdropShaderExpressionNode,
   MilkdropShaderProgramPayload,
   MilkdropShaderStatement,
@@ -3718,12 +3724,7 @@ function applyPostFilmGrainNode(uniforms: CompositeUniformBag) {
  * an exact change signal — the previous multi-KB string key concatenated the
  * full shader sources every frame just to compare them.
  */
-type CompositeStateIdentity = {
-  shaderExecution: MilkdropFeedbackCompositeState['shaderExecution'];
-  warp: unknown;
-  comp: unknown;
-  perPixelStatements: unknown;
-};
+type CompositeStateIdentity = MilkdropWebgpuCompositeIdentity;
 
 // ~2s at 60fps: long enough to ride out beat-driven oscillation of the
 // scene-resolution predicates, short enough to reclaim the cheaper feedback
@@ -3803,6 +3804,36 @@ class WebGPUMilkdropFeedbackManager
   // decrement the renderer's code-keyed program refcounts and evict the very
   // pipelines the warm-up just compiled before the live materials rebuild.
   private retiredWarmMaterials: NodeMaterial[] = [];
+  /**
+   * Pre-fade pipeline warm-up state (see feedback-manager-webgpu-prewarm.ts):
+   * the incoming preset's node graphs and their throwaway materials,
+   * compiled before the fade begins and consumed by the first
+   * applyCompositeState whose identity matches.
+   */
+  private readonly prewarm = new MilkdropWebgpuPrewarmController({
+    getRenderer: () => this.lastRenderer as MilkdropPrewarmRenderer | null,
+    getCamera: () => this.camera,
+    getSourceCamera: () => this.lastSourceCamera,
+    getWriteTarget: () => this.writeTarget,
+    getSceneTarget: () => this.sceneTarget,
+    // The factories are closures over THIS manager's uniforms: nodes built
+    // against another manager's would bind its textures, which is
+    // corruption, not warm-up.
+    buildFeedbackBlendNode: (shaderPlan) =>
+      createFeedbackBlendOutputNode(
+        this.feedbackBlendMaterial.uniforms,
+        shaderPlan.shaderPrograms,
+        shaderPlan.perPixelPrograms,
+      ),
+    buildCompositeNode: (shaderPlan) =>
+      createCompositeOutputNode(
+        this.compositeMaterial.uniforms,
+        shaderPlan.shaderPrograms,
+      ),
+  });
+  /** The camera the source scene last rendered with; field-material warm
+   * objects compile against it so the generated code matches the live draw. */
+  private lastSourceCamera: Camera | null = null;
 
   constructor(
     width: number,
@@ -4195,6 +4226,20 @@ class WebGPUMilkdropFeedbackManager
     this.compositeMaterial.needsUpdate = true;
   }
 
+  /**
+   * Pre-warms an incoming preset's pipelines before the fade begins — see
+   * feedback-manager-webgpu-prewarm.ts for the machinery and the contract.
+   * The runtime's switch gate calls this while the outgoing preset still
+   * renders undisturbed; the first blended frame then installs the
+   * pre-built node graphs as a pipeline cache hit instead of compiling
+   * synchronously mid-blend.
+   */
+  async warmupPresetPipelines(
+    request: MilkdropPresetPipelineWarmupRequest,
+  ): Promise<boolean> {
+    return this.prewarm.warmup(request);
+  }
+
   applyCompositeState(state: MilkdropFeedbackCompositeState) {
     const blurShaderRanges = resolveMilkdropBlurShaderRanges(
       state.perPixelVariables,
@@ -4227,55 +4272,83 @@ class WebGPUMilkdropFeedbackManager
           Math.random(),
         );
       }
-      const nextFeedbackBlendNode = createFeedbackBlendOutputNode(
-        this.feedbackBlendMaterial.uniforms,
-        state.shaderPrograms,
-        state.perPixelPrograms,
-      );
-      const nextCompositeNode = createCompositeOutputNode(
-        this.compositeMaterial.uniforms,
-        state.shaderPrograms,
-      );
-      const revision = ++this.compositeSwapRevision;
-      const renderer = this.lastRenderer as
-        | (FeedbackRendererLike & {
-            compileAsync?: (
-              scene: Scene,
-              camera: OrthographicCamera,
-            ) => Promise<unknown>;
-            getRenderTarget?: () => RenderTarget | null;
-          })
-        | null;
-      // Agent mode (headless captures, labs, e2e) pumps simulation frames
-      // synchronously and reads the canvas immediately after a preset apply;
-      // a deferred swap would capture the previous preset's styling and trip
-      // duplicate-frame guards. Those environments run desktop GPUs where the
-      // synchronous pipeline compile is cheap, so they keep the direct path.
-      if (renderer?.compileAsync && !isAgentMode()) {
-        // Progressive apply, mirroring the WebGL manager: assigning the new
-        // output nodes directly makes the next render create their pipelines
-        // through the synchronous createRenderPipeline — on mobile drivers
-        // (Adreno) that is a multi-second GPU-task stall for shader-heavy
-        // presets. Warm the pipelines through compileAsync on throwaway
-        // materials first; the live swap then hits the renderer's
-        // code-keyed program cache and the driver's pipeline cache.
-        void this.warmAndSwapCompositeNodes(
-          renderer as FeedbackRendererLike & {
-            compileAsync: (
-              scene: Scene,
-              camera: OrthographicCamera,
-            ) => Promise<unknown>;
-            getRenderTarget?: () => RenderTarget | null;
-          },
-          revision,
-          nextFeedbackBlendNode,
-          nextCompositeNode,
-        );
-      } else {
-        this.feedbackBlendMaterial.outputNode = nextFeedbackBlendNode;
+      const stashed = this.prewarm.consumeFor(state);
+      if (stashed) {
+        // The pipelines for exactly these programs were compiled before the
+        // fade began (warmupPresetPipelines); installing the pre-built graphs
+        // is a cache hit on the first blended frame, not a compile — the
+        // node-graph build and pipeline creation that a 120Hz tab measured
+        // as 258–433ms single frames at fade start have already been paid.
+        // The warm materials retire through retiredWarmMaterials so their
+        // program refcounts outlive the live materials' first render.
+        //
+        // The revision bump invalidates any still-warming swap from a
+        // previous preset's apply: without it, that older async swap would
+        // pass its own revision check here and overwrite the stash's graphs
+        // with the OUTGOING preset's styling mid-blend.
+        this.compositeSwapRevision += 1;
+        this.retiredWarmMaterials.push(...stashed.warmMaterials);
+        this.feedbackBlendMaterial.outputNode =
+          stashed.feedbackBlendNode as typeof this.feedbackBlendMaterial.outputNode;
         this.feedbackBlendMaterial.needsUpdate = true;
-        this.compositeMaterial.outputNode = nextCompositeNode;
+        this.compositeMaterial.outputNode =
+          stashed.compositeNode as typeof this.compositeMaterial.outputNode;
         this.compositeMaterial.needsUpdate = true;
+      } else {
+        // No stash for this state — the pending one (if any) is stale, and
+        // any still-compiling warm-up for it must not stash a graph nobody
+        // will consume.
+        this.prewarm.discardPending();
+        const nextFeedbackBlendNode = createFeedbackBlendOutputNode(
+          this.feedbackBlendMaterial.uniforms,
+          state.shaderPrograms,
+          state.perPixelPrograms,
+        );
+        const nextCompositeNode = createCompositeOutputNode(
+          this.compositeMaterial.uniforms,
+          state.shaderPrograms,
+        );
+        const revision = ++this.compositeSwapRevision;
+        const renderer = this.lastRenderer as
+          | (FeedbackRendererLike & {
+              compileAsync?: (
+                scene: Scene,
+                camera: OrthographicCamera,
+              ) => Promise<unknown>;
+              getRenderTarget?: () => RenderTarget | null;
+            })
+          | null;
+        // Agent mode (headless captures, labs, e2e) pumps simulation frames
+        // synchronously and reads the canvas immediately after a preset apply;
+        // a deferred swap would capture the previous preset's styling and trip
+        // duplicate-frame guards. Those environments run desktop GPUs where the
+        // synchronous pipeline compile is cheap, so they keep the direct path.
+        if (renderer?.compileAsync && !isAgentMode()) {
+          // Progressive apply, mirroring the WebGL manager: assigning the new
+          // output nodes directly makes the next render create their pipelines
+          // through the synchronous createRenderPipeline — on mobile drivers
+          // (Adreno) that is a multi-second GPU-task stall for shader-heavy
+          // presets. Warm the pipelines through compileAsync on throwaway
+          // materials first; the live swap then hits the renderer's
+          // code-keyed program cache and the driver's pipeline cache.
+          void this.warmAndSwapCompositeNodes(
+            renderer as FeedbackRendererLike & {
+              compileAsync: (
+                scene: Scene,
+                camera: OrthographicCamera,
+              ) => Promise<unknown>;
+              getRenderTarget?: () => RenderTarget | null;
+            },
+            revision,
+            nextFeedbackBlendNode,
+            nextCompositeNode,
+          );
+        } else {
+          this.feedbackBlendMaterial.outputNode = nextFeedbackBlendNode;
+          this.feedbackBlendMaterial.needsUpdate = true;
+          this.compositeMaterial.outputNode = nextCompositeNode;
+          this.compositeMaterial.needsUpdate = true;
+        }
       }
     }
 
@@ -4469,6 +4542,7 @@ class WebGPUMilkdropFeedbackManager
     present: boolean,
   ) {
     this.lastRenderer = renderer;
+    this.lastSourceCamera = camera;
     this.compositeMaterial.uniforms.currentTex.value = this.sceneTarget.texture;
 
     const softness =
@@ -4637,6 +4711,9 @@ class WebGPUMilkdropFeedbackManager
     // Invalidate any in-flight pipeline warm-up so it cannot swap nodes onto
     // disposed materials.
     this.compositeSwapRevision += 1;
+    // Same for the pre-fade pre-warm: its warm materials and field objects
+    // reference this manager's uniforms and targets.
+    this.prewarm.discardPending();
     for (const material of this.retiredWarmMaterials) {
       disposeMaterial(material);
     }
