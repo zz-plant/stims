@@ -112,6 +112,8 @@ Apply the matching skill whenever a PR touches that category — reviewing with 
 - Visualizer workflow quick reference: [`./visualizer-workflows.md`](./visualizer-workflows.md)
 - MCP capability discovery for `.agent/*`: [`../MCP_SERVER.md`](../MCP_SERVER.md)
 
+Link-only and wording corrections do not require new MCP registrations. When a skill is added, removed, renamed, or changes its discovery contract, update the capability tables and MCP source mappings together. Run `bun run check:skill-index` to verify current discovery.
+
 ## Maintenance rules
 
 When you change `.agent/skills/*` or `.agent/workflows/*`, update in the same change:

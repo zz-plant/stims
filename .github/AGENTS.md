@@ -18,7 +18,7 @@ You're about to code on Stims. Before you dive into docs, grab these five things
 5. **Know your commands** — Bookmark the CLI quick reference in [`docs/agents/tooling-and-quality.md`](../docs/agents/tooling-and-quality.md#quick-cli-reference-for-agents). The three you'll use most:
    - `bun run check:quick` — Fast syntax/lint/type/guard check (~5-10s with fail-fast feedback)
    - `bun run test tests/path/to/file.test.ts` — Targeted test for a specific file (~1-3s)
-   - `bun run check` — Full quality gate before committing (guards + fast sharded test suite)
+   - `bun run check` — Full quality gate before committing (guards + package checks + unit, compatibility, and corpus tests)
 
    For anything else, `bun run scripts:list` (alias `bun run help`) prints every script grouped by namespace with a one-line purpose.
 
@@ -86,7 +86,7 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](..
 
 ## Regression guards
 
-The quality gate (`bun run check`) runs these guards automatically. New code must pass them. All `check:*` scripts are read-only — when a check reports stale output, regenerate via the corresponding `generate:*` script or `--write` flag rather than editing the artifact.
+The quality gate (`bun run check`) runs the required development guards automatically. Other listed checks, such as release determinism, have separate workflows. New code must pass the applicable checks. All `check:*` scripts are read-only — when a check reports stale output, regenerate via the corresponding `generate:*` script or `--write` flag rather than editing the artifact.
 
 - `check:ci-config` — workflow/build config drift (deleted scripts, npm leakage, conflict markers), plus agreement between `scripts/package-manifest.ts` and every package surface (mirror/publish workflow matrices, `packages/` directory, README table).
 - `check:no-source-seams` — a package marked `promoted` in the manifest must be consumed from the registry: no `workspace:` dependency, no `src/` subpath import, no relative path into `packages/<name>/`.

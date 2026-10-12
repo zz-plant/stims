@@ -2,7 +2,7 @@
 
 ## Commit and PR metadata
 
-- Commit titles: sentence case, no trailing period.
+- Commit titles: Conventional Commits, sentence case, no trailing period (for example, `docs: Update testing profiles`).
 - PR summaries must include:
   - short summary,
   - explicit list of tests run,
@@ -28,4 +28,4 @@ Use [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md) as the canonical checklis
 - cross-link alignment between root and agent entry points,
 - docs index synchronization in `docs/README.md`,
 - per-change documentation update requirements,
-- toy docs synchronization requirements.
+- catalog and generated-document synchronization requirements.

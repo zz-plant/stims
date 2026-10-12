@@ -14,6 +14,7 @@ Current capabilities are mapped to their implementation below. Source availabili
 | Quality, motion, and flashing controls | `src/js/core/state/`, `src/js/core/services/flash-safety.ts` | Controls reduce or tune output; they do not certify universal safety |
 | MIDI mapping and automation | `src/js/core/services/webmidi-controller.ts`, `scripts/mcp-server.ts` | Persistent local mappings and reconnect handling; hardware support needs device verification |
 | WebGL and optional WebGPU rendering | `src/js/milkdrop/renderer-adapter.ts`, `src/js/core/renderer-capabilities.ts` | Backend and preset support vary; WebGPU is not the default fidelity claim |
+| Preset frame-cost gating | `src/js/core/preset-cost-signal.ts`, `src/data/preset-frame-cost.json` | Recorded hardware measurements inform low-tier autoplay and shuffle; unmeasured presets remain eligible, and the measurements are not a performance guarantee on every device |
 | Standalone libraries | [Packages](../packages/README.md) | Workspace source, tests, builds, and demos; registry publication is a separate release step |
 
 ## Beta and deployment-dependent paths
@@ -31,9 +32,12 @@ Current capabilities are mapped to their implementation below. Source availabili
 - Complete first package publications and clean-consumer checks; [issue #1410](https://github.com/zz-plant/stims/issues/1410).
 - Build a credited community showcase from submitted work; [issue #1411](https://github.com/zz-plant/stims/issues/1411).
 - Extend local queues into named shareable sets; [issue #1412](https://github.com/zz-plant/stims/issues/1412).
-- Resolve the mobile startup-cover scrollbar-width regression; [issue #1414](https://github.com/zz-plant/stims/issues/1414).
 
 Stem-separation signal identifiers are reserved; no separation model currently supplies them. A unified composite shader IR remains proposed work. Neither should be described as shipped functionality.
+
+## Recent maintenance
+
+The mobile startup-cover scrollbar handoff was fixed in [PR #1416](https://github.com/zz-plant/stims/pull/1416), closing issue #1414. The shared-draft browser test interception was made deterministic in [PR #1415](https://github.com/zz-plant/stims/pull/1415). These completed fixes do not close the broader cross-browser reproduction in issue #1408.
 
 ## Maintain this map
 
