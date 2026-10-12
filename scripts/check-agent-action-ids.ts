@@ -109,6 +109,12 @@ const PALETTE_ONLY_EXEMPT = new Set([
   'nudge-wave-scale-down',
   'nudge-rotate-right',
   'nudge-rotate-left',
+  // Local file playlist navigation is only relevant when playing a multi-track
+  // audio file playlist; its controls live in the audio popover
+  // (AudioStatusControl.tsx) and AudioSourcePanel.tsx rather than occupying fixed
+  // dock buttons on the main stage bar.
+  'next-audio-track',
+  'prev-audio-track',
 ]);
 
 /**

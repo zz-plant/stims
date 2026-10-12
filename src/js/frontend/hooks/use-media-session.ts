@@ -29,6 +29,11 @@
  */
 
 import { useEffect, useRef } from 'react';
+import {
+  getActiveFilePlaylist,
+  nextFileTrack,
+  previousFileTrack,
+} from '../file-audio.ts';
 
 /** The size `scripts/generate-thumbnails.ts` writes previews at. */
 const PREVIEW_ARTWORK_SIZE = '480x270';
@@ -120,10 +125,22 @@ export function useMediaSession({
     setHandler(session, 'pause', () => {
       if (!pausedRef.current) handlersRef.current.onTogglePlayback();
     });
-    setHandler(session, 'nexttrack', () => handlersRef.current.onNextPreset());
-    setHandler(session, 'previoustrack', () =>
-      handlersRef.current.onPreviousPreset(),
-    );
+    setHandler(session, 'nexttrack', () => {
+      const playlist = getActiveFilePlaylist();
+      if (playlist && playlist.totalTracks > 1) {
+        void nextFileTrack();
+      } else {
+        handlersRef.current.onNextPreset();
+      }
+    });
+    setHandler(session, 'previoustrack', () => {
+      const playlist = getActiveFilePlaylist();
+      if (playlist && playlist.totalTracks > 1) {
+        void previousFileTrack();
+      } else {
+        handlersRef.current.onPreviousPreset();
+      }
+    });
     setHandler(session, 'stop', () => handlersRef.current.onStop());
 
     return () => {
@@ -154,9 +171,16 @@ export function useMediaSession({
       return;
     }
 
+    const playlist = getActiveFilePlaylist();
+    const effectiveTitle = playlist?.currentTrackName ?? presetTitle;
+    const effectiveArtist =
+      playlist && playlist.totalTracks > 1
+        ? `Track ${playlist.currentIndex + 1} of ${playlist.totalTracks} · ${presetTitle ?? 'Stims'}`
+        : (presetAuthor ?? 'MilkDrop preset');
+
     session.metadata = new MediaMetadata({
-      title: presetTitle,
-      artist: presetAuthor ?? 'MilkDrop preset',
+      title: effectiveTitle,
+      artist: effectiveArtist,
       album: 'Stims',
       // The same R2 thumbnail the browse grid uses as its default artwork.
       // A preset without one 404s and the OS simply shows no art, which is

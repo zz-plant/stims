@@ -20,6 +20,7 @@ import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-pr
 import type { CommandAction } from './command-palette-registry.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { EngineContextValue } from './engine-context.tsx';
+import { nextFileTrack, previousFileTrack } from './file-audio.ts';
 import { openPerformPicker } from './perform-pins.ts';
 import { cyclePresetWaveMode, nudgePresetField } from './preset-nudges.ts';
 import {
@@ -520,6 +521,24 @@ export function buildPaletteActions(
             label: playbackPaused ? 'Resume' : 'Pause',
             keywords: ['pause', 'resume', 'play', 'hold', 'freeze'],
             run: () => engineRef.current.handleTogglePlayback(),
+          } satisfies CommandAction,
+          {
+            id: 'next-audio-track',
+            group: 'Audio',
+            label: 'Next audio track',
+            keywords: ['next', 'song', 'track', 'playlist', 'skip'],
+            run: () => {
+              void nextFileTrack();
+            },
+          } satisfies CommandAction,
+          {
+            id: 'prev-audio-track',
+            group: 'Audio',
+            label: 'Previous audio track',
+            keywords: ['prev', 'previous', 'song', 'track', 'playlist', 'back'],
+            run: () => {
+              void previousFileTrack();
+            },
           } satisfies CommandAction,
           {
             id: 'stop-audio',
