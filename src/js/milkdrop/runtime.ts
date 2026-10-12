@@ -33,6 +33,7 @@ import {
 } from '../core/live-performance-mode.ts';
 import { createLogger } from '../core/logger.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
+import { shouldSkipPresetForDeviceTier } from '../core/preset-cost-signal.ts';
 import { isPresetLocked, setPresetLocked } from '../core/preset-lock.ts';
 import { hiddenByFlashPreference } from '../core/sensory-profile.ts';
 import type {
@@ -867,8 +868,13 @@ export function createMilkdropExperience({
       presetSelectionReason = reason;
     },
     excludeFromRandom: (entry) =>
-      getActiveAccessibilityPreference().reduceFlashing &&
-      hiddenByFlashPreference(entry.sensoryProfile),
+      (getActiveAccessibilityPreference().reduceFlashing &&
+        hiddenByFlashPreference(entry.sensoryProfile)) ||
+      // Low-tier devices also skip presets the perf corpus measured as too
+      // frame-hungry to hold 60fps on weak hardware. Inert while the
+      // frame-cost sidecar holds no measurement for the preset — see
+      // core/preset-cost-signal.ts for the no-signal contract.
+      shouldSkipPresetForDeviceTier(entry.id),
   });
 
   const presetFileActions = createMilkdropPresetFileActions({

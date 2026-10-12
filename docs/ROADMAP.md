@@ -124,7 +124,7 @@ Shipped:
 Open:
 
 - **Preview gaps.** Re-render the 193 presets listed in `preview-failures.json`.
-- **Ranking inputs.** Reactivity is measured for 47 of 1,787 presets, motion for 50, and engagement for none. There is no performance-cost signal. 99 of the top 100 by `curatedRank` are uncertified.
+- **Ranking inputs.** Reactivity is measured for 47 of 1,787 presets, motion for 50, and engagement for none. A performance-cost signal now ships (`src/data/preset-frame-cost.json`, read by autoplay and shuffle on low-tier devices via core/preset-cost-signal.ts), but its data population is ongoing and Browse ranking does not consume it yet. 99 of the top 100 by `curatedRank` are uncertified.
 - **Mood.** Mood comes from title keywords (`describePresetMood`). The autotagger's `category:*` tags can only be reached by typing them.
 - **Visual similarity.** The finder's "look" mode embeds a text description of each frame, not the frame. Those descriptions collapse 1,786 presets into 81 distinct strings.
 - **Community signals.** `setRating` has no UI, and there are no notes or glitch reports.
@@ -134,7 +134,7 @@ Open:
 Exit criteria:
 
 - a first-time user can find a strong preset without understanding MilkDrop naming conventions. *Partly met: starter picks, collections, and search synonyms exist; there is no mood browsing and no user testing.* And
-- low-confidence or expensive presets do not dominate default recommendations. *Not met: no cost signal, and almost no confidence signal.*
+- low-confidence or expensive presets do not dominate default recommendations. *Not met: the cost signal and its low-tier autoplay gate shipped, but the sidecar holds no measurements yet and there is almost no confidence signal.*
 
 ### Proof floor — maintained, not expanded
 

@@ -127,6 +127,43 @@ The result supports a narrow claim: the duplicate-store removal reduces frame
 work for this equation-heavy stress case across the measured tiers. It does not
 establish the same percentage for every preset, device, renderer, or display.
 
+## 2026-10-11 hardware spot-check (headed tab, not the fixed-tier runner)
+
+Method and its boundary: the host's headless tools render with SwiftShader, so
+this pass drove the live dev server (`806f8984`) in a headed,
+hardware-accelerated tab (native WebGPU, no fallback) and sampled delivered
+rAF cadence in-page over 240-frame windows via `__stims_agent`, plus one
+JavaScript CPU profile. It is a spot-check, not the certification runner:
+dev build, no CDP throttle, no three-trial median, single machine. Numbers
+below narrow what to measure next; they support no universal FPS claim.
+
+Setup: Apple M-series, 120 Hz display (8.33 ms budget), quality step 0,
+renderScale 1.25, demo audio, `shifter-glassworms-flare` and `eos-apocalypse`.
+
+| Observation | Result |
+| --- | --- |
+| `shifter-glassworms-flare` cadence | p50 8.30 ms — the vsync floor, not a work measurement. The tail (p95 9.3–10.3 ms across runs, one 16.6 ms skip) shows roughly one frame in ten missing vsync. Sub-budget frame work is not resolvable by cadence sampling. |
+| `eos-apocalypse` cadence | p50 8.3 ms (vsync floor), p95 10.0 ms — roughly one frame in five misses vsync on the strongest consumer tier; frame work under the budget is not resolvable from cadence. |
+| JS CPU profile, glassworms, 7.3 s | `runProgram` self ~2.0 s plus anonymous JIT program bodies ~2.5 s of 6.5 s sampled: ~68% of non-idle JavaScript in the VM/EEL, matching the ~59% share the 2026-08 profile found. The JIT bodies' self time is the largest single bucket. |
+| WebGPU render bundles A/B ×2 | p95 10.1–10.3 ms both conditions; the deltas are within run-to-run noise. No cadence-level effect (sub-budget work savings would be invisible to this method); the flag stays off. |
+| Blend crossfade cadence (×2) | During-blend p50/p95 (8.3/10.3) ≈ steady state (8.3/10.1): the outgoing preset's full VM step is invisible in cadence at this tier. |
+| Transition-start spike (×2, reproduced) | One to two single frames of 258–433 ms at blend start on every preset switch — the most user-visible artifact measured. |
+| `cloneBlendState` context | Its 2.5–8 ms synthetic tail is second-order next to the 250–430 ms transition-start spike; revisit after that is fixed. |
+
+Narrow claims: on the strongest consumer tier both presets ride the vsync
+ceiling with a missed-frame tail (one frame in ten and one in five), which
+bounds work *above* the budget only — cadence sampling cannot say how much
+headroom remains below it, and weaker devices also adapt to lower quality
+steps. The weaker-tier deficit is established by the fixed-tier runner
+instead (the 2026-08-24 table: `eos-apocalypse` at 15.31 ms of a 16.7 ms
+budget under 4× CPU throttle, locked step 2), not by this spot-check. What
+this spot-check does establish on its own: EEL evaluation dominates the
+JavaScript profile, so JIT-side work targets the measured center of mass;
+the transition-start spike is real, reproducible, and outranks the
+per-frame crossfade cost at this tier. The mid-range reality still requires
+the fixed-tier runner on a host whose headless browser is not
+software-rendering.
+
 ## Reproduce a tier
 
 The runner builds and serves production output by default. Run the same preset
