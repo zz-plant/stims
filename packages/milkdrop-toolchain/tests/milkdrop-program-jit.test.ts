@@ -484,6 +484,58 @@ describe('compiled milkdrop programs', () => {
     });
   });
 
+  describe('repeated-read caching', () => {
+    test('a nested store invalidates the cached read of the same variable', () => {
+      // x is read twice in one statement, with a store to x between the
+      // reads. The second read must see the stored value (6), not the
+      // hoisted temp from the first read (5). A stale-cache bug yields 11.
+      const block = blockFromSource(['x = 5;', 'y = (x = x + 1) + x;']);
+      const compiled = runCompiled(block, makeScopes(false));
+      expect(compiled.env.y).toBe(12); // (5+1) + 6
+      expect(compiled.env.x).toBe(6);
+    });
+
+    test('a conditional store on the right of && cannot poison a later read', () => {
+      // The trailing a-read must observe the store when && ran its right
+      // side and the original when it short-circuited.
+      const taken = blockFromSource(['a = 3; y = a + (1 && (a = 2)) + a;']);
+      const takenResult = runCompiled(taken, makeScopes(false));
+      expect(takenResult.env.y).toBe(6); // 3 + 1 + 2
+      expect(takenResult.env.a).toBe(2);
+
+      const skipped = blockFromSource(['a = 3; y = a + (0 && (a = 2)) + a;']);
+      const skippedResult = runCompiled(skipped, makeScopes(false));
+      expect(skippedResult.env.y).toBe(6); // 3 + 0 + 3
+      expect(skippedResult.env.a).toBe(3);
+    });
+
+    test('the untaken if() branch never observes a then-branch temp', () => {
+      // `if(c, a, a)` reads a in the condition and in the taken branch; the
+      // else-branch read must be emitted fresh (a then-branch temp would be
+      // unassigned there and read as NaN).
+      const block = blockFromSource(['a = 5; z = if(0, a, a);']);
+      const compiled = runCompiled(block, makeScopes(false));
+      expect(compiled.env.z).toBe(5);
+    });
+
+    test('if() cond-read reuse matches the interpreter across branches', () => {
+      // The shifter idiom: hoist the condition's read for the taken branch.
+      for (const c of [0, 1, 0.5, -0.5]) {
+        const block = blockFromSource(
+          ['x = if(c, c, 2 + 8 * rand(1001) * 0.001);'],
+          'per_pixel',
+        );
+        const compiledScopes = makeScopes(true);
+        compiledScopes.env.c = c;
+        runCompiled(block, compiledScopes);
+        const interpretedScopes = makeScopes(true);
+        interpretedScopes.env.c = c;
+        runInterpreted(block, interpretedScopes);
+        expect(compiledScopes.env.x).toBe(interpretedScopes.env.x);
+      }
+    });
+  });
+
   test('reuses the compiled function for a given block', () => {
     const block = blockFromSource(['q1 = 1;']);
     expect(compileMilkdropProgram(block)).toBe(compileMilkdropProgram(block));
