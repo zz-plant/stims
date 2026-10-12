@@ -62,13 +62,9 @@ In the commit/PR, explain:
 - Tests still passing
 - Performance impact (if any)
 
-## 7. Update Session Context
+## 7. Record the result
 
-Edit `/memories/session/stims-context.md`:
-- Module refactored
-- New structure/pattern
-- Test coverage confirmed
-- Files touched
+Include changed files, checks run, remaining gaps, and any PR link in the task handoff. Do not require a machine-specific session file.
 
 ---
 

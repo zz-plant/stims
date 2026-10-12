@@ -302,34 +302,26 @@ Audio drives the Julia constant (`fract(q1*0.1)`), creating reactive fractal dis
 
 ### Key insight for AI generation
 
-For simple requests ("blue spiral"), per_frame + per_pixel EEL code is sufficient. For complex requests ("reaction-diffusion with edge detection"), the AI must generate GLSL shader blocks alongside EEL code. The `[warp_shader]` and `[comp_shader]` sections use GLSL not EEL — they must be valid GLSL 1.20 (no matrix types, no `texture()` with LOD, sampler names as uniform identifiers).
+For simple requests ("blue spiral"), per_frame + per_pixel EEL code is sufficient. For complex requests ("reaction-diffusion with edge detection"), a generator may need shader blocks alongside EEL code. The `[warp_shader]` and `[comp_shader]` sections use supported shader syntax, not EEL. Stims normalizes supported HLSL-style source and accepts GLSL-style constructs; compile and inspect backend diagnostics before relying on generated source.
 
 ---
 
 ## Engine limitations
 
-### Custom texture samplers
+### Texture samplers and stage bindings
 
-**Stims supports 16 texture samplers.** The original MilkDrop/Winamp plugin allowed loading arbitrary custom textures via `textures.ini`. Stims uses pre-authored PNG files for the standard set. 140 presets (~7.5%) reference 25 non-standard sampler names.
+The compiler resolves built-in, legacy, and custom sampler declarations against its sampler and bundled-texture tables. The Textures pane shows the resolved files and built-in bindings for the loaded preset. Use those bindings rather than a fixed sampler count copied from an older catalog snapshot.
 
-| Standard (supported) | Aliased (mapped to standard) | Multi-pass (now supported) |
-|---|---|---|
-| `main`, `none` | `noise_mq`, `rand00`, `cells` | `pw_main` → `previousTex` |
-| `noise`, `perlin` | `seaweed`, `lichen`, `moss1` | `pc_main` → `previousTex` |
-| `simplex`, `voronoi` | `prayerwheel`, `fw_clouds` | `pw_noise_lq` → noise |
-| `aura`, `caustics` | `smalltiled_*`, `paper` | |
-| `pattern`, `fractal` | `sunrise` → pattern | |
-| `video`, `pw_main`, `pc_main` | `fw_noise_lq` → noise | |
+WebGL shader emission maps `main` to `currentTex`, `fc_main` to `warpTex`, and `pw_main`/`pc_main` to `previousTex`; the renderer supplies stage-specific targets. WebGPU routes frame samplers separately from auxiliary texture samplers. Successful binding does not establish equivalence with native MilkDrop's filtering, blend order, or output.
 
-`sampler_pw_main` and `sampler_pc_main` resolve to `previousTex` — the previous frame's composite output. In Stims's single-pass pipeline (warp + comp fused), this is the functional equivalent of the original multi-pass warp/composite output. Non-standard samplers are aliased to the closest standard texture where possible.
+Canonical resolution lives in `packages/milkdrop-toolchain/src/shader-samplers.ts`, `packages/milkdrop-toolchain/src/compiler/custom-samplers.ts`, and the GLSL emitter. Browser bindings live in the feedback managers. Unknown and legacy names can resolve to a fallback or an approximate bundled texture.
 
-### Warp shader texture coordinates
+### Shader dialect and backend support
 
-Stims's WebGL-to-WebGPU translation rewrites texture coordinates in warp shaders. The translation layer does not support `texture2D()` with explicit LOD or matrix type uniforms (GLSL 1.20+ features). Warp shaders must use:
-```glsl
-ret = texture2D(sampler_main, uv).xy * vec2(1.0, -1.0);
-```
+Supported HLSL-style source is normalized into the shader representation. WebGL emits GLSL; WebGPU executes supported statements through its material path. Matrix locals and selected LOD/bias/gradient texture calls have implemented paths. Runtime-indexed matrix writes and unsupported shader statements can force a fallback or approximation. Arbitrary uniforms and screen-coordinate builtins are not a portable preset contract.
 
-### No external texture loading
+Use the editor's Compat and Shader diagnostics for the actual source and backend. The [shipping guide](./authoring/08-shipping.md#compatibility-matrix) distinguishes compilation support from rendered fidelity.
 
-Presets cannot load textures from URLs, files, or data URIs. All textures must be pre-authored PNG files in `/public/textures/` and registered in `shader-samplers.ts`.
+### Bundled external textures
+
+Custom sampler declarations can resolve to files in the bundled texture set. Preset source cannot generally load arbitrary texture URLs, local files, or data URIs. The Textures pane previews the bundled files actually selected; adding a new asset requires repository asset and sampler-table changes.

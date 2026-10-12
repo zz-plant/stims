@@ -32,7 +32,7 @@ If anything fails, fix it before proceeding.
 ### Testing
 - [ ] Tests added for new behavior
 - [ ] Tests updated for changed behavior
-- [ ] All tests pass (`bun run check` confirms)
+- [ ] Required profiles pass; affected browser checks run separately
 - [ ] Edge cases covered (not just happy path)
 
 ### Performance
@@ -55,7 +55,7 @@ If anything fails, fix it before proceeding.
 
 ## 4. Commit Message Review
 
-- [ ] **Sentence case, no trailing period** (e.g., "Add preset search feature")
+- [ ] **Sentence case, no trailing period** (e.g., "feat: Add preset search feature")
 - [ ] Describes the change clearly
 - [ ] Includes issue ref if applicable (e.g., "Fixes #123")
 - [ ] Technical context in description (not just subject line)
@@ -76,7 +76,7 @@ Include:
 Added preset search filtering to the library view.
 
 ## Testing
-- Unit tests: `tests/milkdrop/search.test.ts`
+- Unit tests: `tests/unit/frontend-url-state.test.ts`
 - Integration test: `bun run test:integration` ✓
 - Visual verification: Tested at `?agent=true` URL with 10+ presets
 
@@ -92,22 +92,20 @@ Added preset search filtering to the library view.
 ## 6. Final Validation
 
 ```bash
-# One last check before pushing
+# Run the required gate after the final change; avoid repeating unchanged passing checks
 bun run check
 
 # Make sure you're on the right branch
 git status
 
 # Review your changes
-git diff HEAD~1
+git diff --stat
+git diff
 ```
 
-## 7. Update Session Context
+## 7. Record the result
 
-Edit `/memories/session/stims-context.md`:
-- Task complete ✓
-- Final commit hash
-- PR link (if opened)
+Include changed files, checks run, remaining gaps, and any PR link in the task handoff. Do not require a machine-specific session file.
 
 ---
 

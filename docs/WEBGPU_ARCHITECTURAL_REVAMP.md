@@ -1,5 +1,7 @@
 # WebGL/WebGPU Architectural Revamp Plan
 
+> Design and rollout plan. Proposed steps and earlier implementation notes are not a current certification report. See [implementation status](./IMPLEMENTATION_STATUS.md) for capability limits and the parity manifests for evidence.
+
 This plan addresses structural issues in the dual-backend rendering pipeline identified during the [Stims renderer evaluation](./ARCHITECTURE.md).
 
 ## Problem Summary

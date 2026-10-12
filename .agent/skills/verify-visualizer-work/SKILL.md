@@ -68,7 +68,7 @@ the alternatives below instead of skipping verification entirely:
 | Headless browser + vision | `bun run lab:visual -- --preset <id>` | Pixel-level metrics + contact-sheet PNGs |
 | UI/shell/chrome changes, any environment | `bun run ui:diff` | Captures + pixel-diffs component screenshots against a local baseline — no GPU/WebGL involved, works headless everywhere. First run creates the baseline; `-- --update-baseline` accepts an intentional change. |
 
-See [`../../docs/agents/visual-testing.md`](../../docs/agents/visual-testing.md#cloud-sandboxed-agents-without-a-gpu)
+See [`../../docs/agents/visual-testing.md`](../../../docs/agents/visual-testing.md#cloudsandboxed-agents-without-a-gpu)
 for the full breakdown of which tools need a GPU vs. software-render fine.
 
 **Manual path** (GUI browser available):
@@ -103,7 +103,7 @@ This runs the production-ready validation:
 - All tests (unit + integration + compat)
 - Architecture boundary verification
 - SEO surface validation
-- Toy manifest consistency
+- Catalog integrity and generated-document consistency
 
 **When to use**: Before pushing to a PR or final commit.
 
@@ -185,6 +185,6 @@ bun run check:readme-claims
 
 ## Next steps
 
-- Use [`../workflows/test-visualizer.md`](../workflows/test-visualizer.md) for a more detailed testing runbook
-- Use [`../workflows/ship-visualizer-change.md`](../workflows/ship-visualizer-change.md) for the full implementation→validation→PR-ready flow
-- See [`../../docs/DEVELOPMENT.md`](../../docs/DEVELOPMENT.md) for all available scripts
+- Use [`../workflows/test-visualizer.md`](../../workflows/test-visualizer.md) for a more detailed testing runbook
+- Use [`../workflows/ship-visualizer-change.md`](../../workflows/ship-visualizer-change.md) for the full implementation→validation→PR-ready flow
+- See [`../../docs/DEVELOPMENT.md`](../../../docs/DEVELOPMENT.md) for all available scripts

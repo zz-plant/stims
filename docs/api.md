@@ -1,57 +1,93 @@
 # Stims API
 
-All endpoints are served from `https://toil.fyi/api/` as Cloudflare Pages Functions.
+The site Worker exposes `/api/` handlers from `functions/api/`. The site build bundles Functions-style routes for Cloudflare Workers; this is not a separate Pages deployment. `wrangler.site.jsonc` and [deployment guidance](./DEPLOYMENT.md) define bindings. The example production base URL is `https://toil.fyi/api`; an endpoint's presence in source does not establish that its optional services are configured on every deployment.
 
-## POST /api/visual-search
+Playback, browsing, local editing, and file import/export do not require these endpoints. The [OpenAPI schema](../public/openapi.json) describes the preset endpoints below. Community and other routes under `functions/api/` have separate implementation contracts.
 
-Search for presets visually similar to a text description.
+## Deterministic source operations
 
-**Body:** `{ description: string, embedOnly?: boolean }`
-**Response:** `{ results: Array<{ presetId: string, score: number }> }`
+### POST /api/validate-preset
 
-When `embedOnly: true`, returns `{ embedding: number[] }` instead.
+Compile source with the real preset compiler without rendering it.
 
-## POST /api/generate-preset
+**JSON body:** `{ milkSource: string }`
 
-Generate MilkDrop preset equations from a text description.
+**Response:** `{ valid: boolean, fieldCount: number, sections: string[], errors: Diagnostic[], warnings: Diagnostic[] }`
 
-**Body:** `{ description: string, complexity?: 'simple' | 'moderate' | 'complex', model?: string }`
+A diagnostic has `severity`, `code`, `message`, and optional `line`. `valid` means the compiler produced no error diagnostics; unsupported features can remain warnings. Toolchain informational diagnostics map to route warnings. Compilation does not establish visible output, native parity, or support on every GPU backend.
+
+```bash
+curl -sS https://toil.fyi/api/validate-preset \
+  -H 'Content-Type: application/json' \
+  --data '{"milkSource":"[preset00]\nfDecay=0.98\n"}'
+```
+
+Malformed requests return 400; unsupported methods return 405. The handler also accepts CORS preflight requests.
+
+### POST /api/patch-preset
+
+Apply field overrides without a model or rendering.
+
+**JSON body:** `{ milkSource: string, patch: Record<string, number | string> }`
+
+**Response:** `{ milkSource: string }`
+
+Existing assignments are replaced and unmatched keys are appended. This is a deterministic text patch, not compilation; validate and render the returned source before relying on it.
+
+## Optional model-backed operations
+
+Generation routes require an `AI` binding. Search also depends on configured embedding/index storage. Where `AI_RATE_LIMITER` is configured, model requests can return 429 with `Retry-After: 60`; an absent or unavailable limiter does not impose that limit. Provider failures can return 500. Error bodies are not uniform across handlers, so check HTTP status before decoding a success payload.
+
+For routes accepting `model`, only names allowed by `functions/api/_ai-guard.ts` override server selection. An unknown name falls back to the route's default. Consult that policy and each handler for current model identifiers instead of treating a copied model name as a permanent API guarantee.
+
+### POST /api/generate-preset
+
+**JSON body:** `{ description: string, complexity?: 'simple' | 'moderate' | 'complex', model?: string }`
+
 **Response:** `{ milkSource: string, title?: string }`
 
-The `model` param overrides automatic classification-based model selection. Every request invokes the generation model — this route has no embedding cache. Includes an auto-generated preset title from the micro model.
+Generates source from a description. Automatic classification selects a model when no allowed override is supplied. Each request invokes generation rather than retrieving a cached preset.
 
-## POST /api/batch-generate
+### POST /api/refine-preset
 
-Generate multiple preset variations from a single description.
+**JSON body:** `{ currentSource: string, instruction: string, history?: Array<{ role: string, content: string }>, model?: string }`
 
-**Body:** `{ description: string, count?: number }` (count defaults to 3, max 5)
+**Response:** `{ milkSource: string, explanation?: string }`
+
+Instructions beginning with `explain` or `describe` return an explanation and the unchanged source through the explanation model. Other instructions return refined source. Returned source still needs compile and visual checks.
+
+### POST /api/batch-generate
+
+**JSON body:** `{ description: string, count?: number }`
+
 **Response:** `{ presets: string[] }`
 
-Generates `count` variations in parallel via qwen2.5-coder, each with a unique variation seed. Use for exploring different interpretations of a description.
+Count defaults to 3 and is bounded to 1–5. Supply an integer count. Variations use the handler's configured coding model and variation prompts.
 
-## POST /api/blend-presets
+### POST /api/blend-presets
 
-Combine two presets into one — take wave patterns from A, color scheme from B.
+**JSON body:** `{ sourceA: string, sourceB: string, instruction?: string }`
 
-**Body:** `{ sourceA: string, sourceB: string, instruction?: string }`
 **Response:** `{ milkSource: string }`
 
-Without an instruction, defaults to: "blend the wave patterns and motion from preset A with the color scheme and atmosphere of preset B". The micro model auto-names the result.
+Without an instruction, the prompt asks for wave patterns and motion from A with color and atmosphere from B. This describes the request to the model; it does not guarantee that every returned field follows that division.
 
-## POST /api/refine-preset
+### POST /api/image-to-preset
 
-Iteratively refine an existing MilkDrop preset using AI.
+**Body:** multipart form data with an `image` file, or JSON `{ image: string, guidance?: string }` with base64 image data. Multipart requests can also include `guidance`.
 
-**Body:** `{ currentSource: string, instruction: string, history?: Array<{ role: string, content: string }>, model?: string }`
-**Response:** `{ milkSource: string }`
-
-The `model` param overrides the default refine model (Llama 4 Scout). Explain/describe instructions use the micro model (`@cf/ibm-granite/granite-4.0-h-micro`) regardless of `model`.
-
-## POST /api/image-to-preset
-
-Generate a MilkDrop preset from an uploaded image.
-
-**Body:** FormData with `image` file OR JSON `{ image: string }` (base64); either form takes an optional `guidance` string (trimmed to 500 characters)
 **Response:** `{ description: string, milkSource: string }`
 
-Accepts both `multipart/form-data` (file upload from browser) and `application/json` (base64 for programmatic use). Uses Gemma 4 for vision description and Qwen 2.5 Coder for preset generation. Every request generates fresh source.
+Guidance is trimmed to 500 characters. A vision model describes the image, then a coding model generates source. Similarity to the image requires visual review.
+
+### POST /api/visual-search
+
+**JSON body:** `{ description: string, embedOnly?: boolean }`
+
+**Response:** `{ results: Array<{ presetId: string, score: number }>, source?: string }`, or `{ embedding: number[] }` when `embedOnly` is true.
+
+Search uses a configured Vectorize index or D1 embeddings. Empty results do not prove there are no matching presets; they may reflect unavailable or incomplete index data. Catalog keyword search remains a local browser feature.
+
+## Verify a consumer
+
+Exercise the intended deployment with a small request and inspect its status and payload. Use the matching route tests under `tests/unit/` for local validation and patch behavior. Endpoint checks do not replace browser verification of a generated or modified visual.

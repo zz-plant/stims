@@ -1,21 +1,23 @@
-# Development Guide
-
-This is the day-to-day implementation guide for Stims.
+# Development
 
 Stims is one browser-native app for playing and editing MilkDrop presets. Prefer changes that strengthen the shared runtime, preset workflows, and app shell over adding parallel product surfaces.
 
 For a concise parallel execution map across parity, runtime performance, browser-native product work, and proof/release work, see [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md).
 
+## Toolchain
+
+`package.json` pins Bun 1.3.14 and declares Node 22 for Node-based tooling. Run `bun install --frozen-lockfile` for a reproducible dependency install. Current tooling uses React 19, Vite 8, TypeScript 7, Biome 2, and Playwright; exact versions belong in `package.json` and `bun.lock`. Dependency-cruiser uses the SWC parser. The [September audit](./TECH_STACK_MODERNIZATION_2026-09.md) is historical and does not define today's version constraints.
+
 ## Core workflow
 
 1. Run `bun run doctor` for a fast readiness summary, then bootstrap with `bun run setup` when state is unknown. Use `bun install` only if you need dependencies without the quick validation pass.
-2. Start local development with `bun run dev` or `bun run session:codex -- --profile review` for a warmer agent session.
+2. Start local development with `bun run dev:agent` for dev, typecheck, and fast-test watchers, or `bun run dev` for the server alone.
 3. Open `http://localhost:5173/`.
 4. Run `bun run check:quick` while iterating (runs concurrent linting, typechecking, asset, catalog, SEO, and architecture checks with instant fail-fast feedback).
 5. For specific test coverage during iteration, run `bun run test tests/path/to/spec.test.ts`.
-6. Run `bun run check` before finalizing changes (includes asset checks, concurrent guards, and fast sharded test suite).
+6. Run `bun run check` before finalizing changes (includes asset checks, concurrent guards, package checks, and unit + compatibility + corpus tests).
 
-`bun run check` includes parallel asset validation (`assets:check`), the toy/docs/public-claim drift guard, SEO surface validation, and the architecture boundary guard. The quality gate runner executes checks concurrently and fails fast on the first error to provide sub-second feedback. The public-claim check keeps the README preset count aligned with the shipped catalog and rejects wording that promotes known experimental foundations as shipped features. The architecture check verifies the documented `app` (root entry point `src/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions.
+`bun run check` includes parallel asset validation (`assets:check`), documentation and public-claim guards, SEO surface validation, and the architecture boundary guard. The quality gate runs concurrent checks and stops that lane on failure; total duration depends on the checks and host. The public-claim check keeps the README preset count aligned with the shipped catalog and rejects wording that promotes known experimental foundations as shipped features. The architecture check verifies the documented `app` (root entry point `src/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions.
 
 Test files fan out across `bun test --parallel` workers sized to your CPU count; override with `STIMS_TEST_SHARDS=<count>` (e.g. `STIMS_TEST_SHARDS=8 bun run test:fast`, `STIMS_TEST_SHARDS=1` for a single-process run).
 
@@ -31,20 +33,24 @@ To regenerate the README's Play → Edit → Share clip, start `bun run dev`, th
 | Preview local bootstrap plan | `bun run setup -- --print-plan` |
 | Bootstrap local workspace | `bun run setup` |
 | Start dev server | `bun run dev` |
+| Start dev and verification watchers | `bun run dev:agent` |
 | Warm an agent session stack | `bun run session:codex -- --profile review` |
 | Route a task to a local model helper | `bun run model:codex -- --mode auto --task "triage a preset bug" --no-exec` |
 | Start dev server on all interfaces | `bun run dev:host` |
 | WebGPU-focused local session | `bun run dev:webgpu` |
 | Fast quality gate (lint + types + guards) | `bun run check:quick` |
-| Full quality gate (guards + fast test suite) | `bun run check` |
+| Full quality gate (guards + gate test suite) | `bun run check` |
 | Complete quality gate (guards + all test profiles) | `bun run check:all` |
 | README public-claim drift check | `bun run check:readme-claims` |
 | SEO surface check | `bun run check:seo` |
 | Architecture boundary check | `bun run check:architecture` |
 | Asset health check | `bun run assets:check` |
-| Run tests (all profiles) | `bun run test` |
+| Run default tests (unit + compat) | `bun run test` |
 | Run fast test suite (sharded unit + compat) | `bun run test:fast` |
 | Run a specific test file | `bun run test tests/path/to/spec.test.ts` |
+| Run gate tests (unit + compat + corpus) | `bun run test:gate` |
+| Run all test categories | `bun run test -- --profile all` |
+| Run corpus tests | `bun run test:corpus` |
 | Run browser integration tests | `bun run test:integration` |
 | Run compatibility/preset tests | `bun run test:compat` |
 | Run certification-corpus browser performance suite | `bun run perf:certification-corpus` |
@@ -121,13 +127,13 @@ bun scripts/play-toy.ts milkdrop \
 
 This keeps the capture focused on one preset and saves both the screenshot and the runtime debug snapshot for later comparison.
 
-To capture the certification corpus directly from `src/data/milkdrop-parity/certification-corpus.json` instead of the checked-in visual-reference manifest (note: only 4 of the 23 corpus presets have measured results; the corpus represents certification targets, not completed certifications), use:
+To capture the certification corpus directly from `src/data/milkdrop-parity/certification-corpus.json` instead of the checked-in visual-reference manifest (the corpus represents certification targets, not completed certifications; references and measured results are separate manifests), use:
 
 ```bash
 bun run parity:capture:corpus -- --group bundled-shipped
 ```
 
-This is the fastest way to refresh Stims-side capture artifacts for the four shipped bundled presets before importing matching `projectM` references.
+This is the fastest way to refresh Stims-side capture artifacts for the four presets in the initial `bundled-shipped` evidence lane before importing matching `projectM` references.
 
 You can import an external `projectM` reference render into the same artifact directory:
 
@@ -165,7 +171,7 @@ bun run parity:promote-reference -- \
 This copies the chosen reference artifact into `tests/fixtures/milkdrop/projectm-reference/` and upserts its entry in `src/data/milkdrop-parity/visual-reference-manifest.json`.
 The checked-in certification target set itself lives in `src/data/milkdrop-parity/certification-corpus.json`; visual references and measured results should only be added for presets in that bounded corpus.
 
-To run the parity suite against the checked-in visual reference manifest (currently 4 presets with projectM reference images):
+To run the parity suite against the checked-in visual reference manifest (the manifest is the current reference inventory, not a count of passing certifications):
 
 ```bash
 bun run parity:suite -- --output ./screenshots/parity --write-diff-images
@@ -193,9 +199,9 @@ This rewrites `public/milkdrop-presets/catalog.json` so presets with measured vi
 
 `bun run check:quick` and `bun run check` now verify that `public/milkdrop-presets/catalog.json` is still synced with `src/data/milkdrop-parity/measured-results.json`. If that check fails, rerun `bun run parity:sync-catalog`.
 
-### Bundled shipped preset lane
+### Initial bundled evidence lane
 
-The four bundled shipped presets in `public/milkdrop-presets/catalog.json` are the first parity/proof targets that should move from certification-corpus membership to checked-in `projectM` references and then to measured results:
+The `bundled-shipped` group in `src/data/milkdrop-parity/certification-corpus.json` contains the initial four parity/proof targets that should move from certification-corpus membership to checked-in `projectM` references and then to measured results:
 
 - `eos-glowsticks-v2-03-music`
 - `rovastar-parallel-universe`
@@ -211,7 +217,7 @@ For each preset, use the same evidence chain:
 5. Run `bun run parity:suite -- --output ./screenshots/parity --write-diff-images` and then promote the report with `bun run parity:promote-result -- --output ./screenshots/parity --preset <id>`.
 6. Sync the bundled catalog with `bun run parity:sync-catalog`.
 
-Keep the bundled shipped presets in evidence order:
+Use this lane to exercise these behaviors:
 
 - `eos-glowsticks-v2-03-music` for waveform and glowsticks behavior.
 - `rovastar-parallel-universe` for feedback and laser-heavy behavior.
@@ -238,9 +244,9 @@ Keep the bundled shipped presets in evidence order:
 Use the narrowest command that fits the change:
 
 - `bun run test tests/path/to/spec.test.ts` for a single unit or logic spec.
-- `bun run test` for the full non-browser suite, including DOM-sim coverage.
+- `bun run test` for unit and compatibility coverage; `bun run test:gate` adds corpus tests, including browser-backed files when supported.
 - `bun run test:integration` for browser-backed routing, renderer, audio, or shell behavior.
-- `bun run test:compat` for preset and renderer compatibility coverage.
+- `bun run test:compat` for compatibility coverage; `bun run test:corpus` for corpus and parity contracts.
 - `bun run dev` and `http://localhost:5173/?agent=true` for manual visual verification when the UI, runtime, or renderer changes.
 
 ## Docs to keep aligned

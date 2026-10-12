@@ -4,7 +4,7 @@
   // share the name or deploying it would overwrite the site.
   "name": "stims-mcp",
   "main": "scripts/mcp-worker.ts",
-  "compatibility_date": "2024-10-20",
+  "compatibility_date": "2026-02-24",
   "compatibility_flags": ["nodejs_compat"],
   "rules": [
     {
@@ -14,5 +14,9 @@
     }
   ],
   "workers_dev": true,
-  "preview_urls": true
+  "preview_urls": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
 }

@@ -49,7 +49,7 @@ bun run test:compat       # if preset-related
 
 # Visual verification (if UI-related)
 bun run dev
-# Test at: http://localhost:5173/milkdrop/?agent=true
+# Test at: http://localhost:5173/?agent=true
 ```
 
 ## 5. Full Validation
@@ -58,13 +58,9 @@ bun run dev
 bun run check
 ```
 
-## 6. Update Session Context
+## 6. Record the result
 
-Edit `/memories/session/stims-context.md`:
-- Root cause identified
-- Files changed
-- Test file path
-- Reproduction steps verified
+Include changed files, checks run, remaining gaps, and any PR link in the task handoff. Do not require a machine-specific session file.
 
 ## 7. Commit & PR
 

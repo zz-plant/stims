@@ -1,4 +1,4 @@
-# Verification Matrix
+# Verification matrix
 
 Keep this matrix aligned with `ARCHITECTURE.md` and `DEVELOPMENT.md` when
 those workflows change.
@@ -16,11 +16,14 @@ those workflows change.
 
 | Layer | Primary command | When to use |
 | --- | --- | --- |
-| Unit / logic | `bun run test` or `bun run test tests/path/to/spec.test.ts` | Pure function coverage, state transitions, and non-browser behavior. |
-| DOM-sim / environment | `bun run test` | Shell and environment behavior that can run in `happy-dom` or similar simulated DOM tests. |
+| Unit / logic | `bun run test:unit` or an explicit file through `bun run test` | Pure function coverage, state transitions, and non-browser behavior. |
+| DOM-sim / environment | `bun run test:unit` | Shell and environment behavior that can run in `happy-dom` or similar simulated DOM tests. |
 | Browser integration | `bun run test:integration` | Real page, router, audio, and renderer behavior that needs a browser. |
-| Compatibility / preset parity | `bun run test:compat` | Preset compatibility, corpus, and renderer parity paths. |
+| Compatibility semantics | `bun run test:compat` | Compatibility contracts. |
+| Corpus / parity contracts | `bun run test:corpus` | Corpus execution and parity tooling; browser-marked files run serially. |
 | Visual/parity proof | `bun run dev` plus the parity capture commands in `DEVELOPMENT.md` | Manual browser confirmation and reference capture for visual regressions. |
+
+Simulation checks do not establish actual layout, device permissions, audio routing, or GPU output. Record browser evidence separately. A skipped browser test leaves that path unverified.
 
 ## Default rule
 

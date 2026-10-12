@@ -31,13 +31,17 @@ flowchart LR
     main -. recycle-buffers .-> node
 ```
 
-## Install
+## Use from this repository
+
+This package is not published on npm as of 2026-10-10 (the registry lookup returned 404). Build and test the workspace source from a clone of [Stims](https://github.com/zz-plant/stims):
 
 ```sh
-npm install audio-reactive
-# or
-bun add audio-reactive
+bun install --frozen-lockfile
+bun --cwd packages/audio-reactive run build
+bun --cwd packages/audio-reactive test
 ```
+
+The examples below use the package name, which resolves through the Bun workspace after installation. For a separate consumer, pack the built package and install the resulting tarball. See [package release instructions](https://github.com/zz-plant/stims/blob/main/packages/README.md#publishing) for first-publication checks. Once a release exists, the intended registry command is `bun add audio-reactive`.
 
 Two entry points:
 

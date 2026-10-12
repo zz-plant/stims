@@ -20,7 +20,8 @@ Every place a stranger can read what Stims is, where its text comes from, and wh
 | Site index footer (home, hubs, preset pages, `/learn/`, `/presets/`) | [`functions/shared/site-index.ts`](../functions/shared/site-index.ts) | Links to `/presets/` and every hub | `bun run generate:seo` writes it into `index.html`; `check:seo` fails on a stale copy |
 | `/performance/` | [`performance/index.html`](../performance/index.html) | Browser and device support | Hand-edited |
 | `/llms.txt`, `/llms-full.txt` | [`public/llms.txt`](../public/llms.txt), [`public/llms-full.txt`](../public/llms-full.txt) | The pitch, what is new, URL flags, API routes, the embed protocol | Hand-edited; document only flags and messages that do something |
-| `/openapi.json` | [`public/openapi.json`](../public/openapi.json) | The optional API routes | Hand-edited |
+| User guide | [`docs/USER_GUIDE.md`](./USER_GUIDE.md) | Play, audio, editor, sharing, and beta capture limits | Source and browser-flow review |
+| `/openapi.json` | [`public/openapi.json`](../public/openapi.json) | Deterministic and optional model-backed preset endpoints | Hand-edited against route handlers |
 | `/mcp` | [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts), [`scripts/mcp-shared.ts`](../scripts/mcp-shared.ts) | Server instructions and tool descriptions | Hand-edited |
 | Installed app | [`public/manifest.json`](../public/manifest.json) | The pitch | Hand-edited |
 | GitHub README | [`README.md`](../README.md) | The pitch, then what is new | [`check-readme-claims.ts`](../scripts/check-readme-claims.ts) for counts and fidelity wording |

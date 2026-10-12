@@ -13,7 +13,7 @@ per area; read the file itself for details.
 | Quality / perf | `services/adaptive-quality-controller.ts`, `services/continuous-drs.ts`, `services/crash-telemetry.ts`, `services/performance-*.ts`, `frame-pacing.ts`, `power-state.ts`, `simulation-accumulator.ts` | `adaptive-quality-controller.test.ts`, `continuous-drs.test.ts`, `frame-pacing.test.ts`, `power-state.test.ts` | `check:quick` |
 | State | `state/` (`domain-store`, `browser-storage`, `last-session-store`, `quality-preset-store`, `render-preference-store`, `performance-settings-store`, `power-saver-store`) | `domain-store.test.ts`, `performance-settings-store.test.ts` | `check:quick` |
 | Services | `services/webmidi-controller.ts`, `services/picture-in-picture-service.ts`, `services/microphone-permission-service.ts`, `services/optional-api.ts`, `services/render-service.ts`, `services/visual-embedding.ts`, `services/audio-service.ts`, `services/audio-matcher.ts` | `webmidi-controller.test.ts`, `microphone-permission-service.test.ts`, `optional-api.test.ts`, `render-service-prewarm.test.ts`, `visual-embedding.test.ts`, `services-pool.test.ts` | `check:quick` |
-| Toy / app shell | `toy-*.ts`, `web-toy.ts`, `shared-initializer.ts`, `unified-input.ts`, `animation-loop.ts` | `toy-*.test.ts`, `shared-initializer.test.ts`, `unified-input.test.ts`, `sample-toy.test.ts` | `check:quick` |
+| Shared app lifecycle | `toy-*.ts`, `web-toy.ts`, `shared-initializer.ts`, `unified-input.ts`, `animation-loop.ts` | `toy-*.test.ts`, `shared-initializer.test.ts`, `unified-input.test.ts`, `sample-toy.test.ts` | `check:quick` |
 | Agent/automation | `agent-api.ts`, `edge-contracts.ts` | `agent-api.test.ts`, `agent-bridge.test.ts` | `check:quick` |
 
 ## `src/js/milkdrop/` — the preset engine (compiler + VM + renderers)
@@ -44,13 +44,13 @@ Each is a workspace package with its own tests, run by `bun run check:packages` 
 
 | What lives here | Tests | Guards |
 | --- | --- | --- |
-| `App.tsx`, app shell, workspace panels, `url-state.ts`, `engine/*` (video-export, preview), `HudOverlay.tsx`, `CapturePanel.tsx` | `app-shell.test.ts`, `app-shell-*.test.ts`, `frontend-url-state.test.ts`, `frontend-video-export-runtime.test.ts`, `split-view-browse.test.ts`, `workspace-*.test.ts`, `stage-*.test.tsx` | `check:architecture` (import cycles and production-to-test imports only; the frontend → engine seam rule is proposed in `docs/architecture/architectural-changes-proposal-2026-09.md`) |
+| `App.tsx`, app shell, workspace panels, `url-state.ts`, `engine/*` (video-export, preview), `HudOverlay.tsx`, `CapturePanel.tsx` | `app-shell.test.ts`, `app-shell-*.test.ts`, `frontend-url-state.test.ts`, `frontend-video-export-runtime.test.ts`, `split-view-browse.test.ts`, `workspace-*.test.ts`, `stage-*.test.tsx` | `check:architecture` (cycles, production-to-test imports, frontend engine seam, and runtime adapter ownership; see `.dependency-cruiser.mjs`) |
 
 ## `src/js/ui/`, `src/js/utils/`, `src/js/lighting/`
 
 | What lives here | Tests | Guards |
 | --- | --- | --- |
-| Framework-free UI helpers (audio controls, identicons, YouTube), browser/media/audio utilities, lighting-rig toys | `youtube-controller.test.ts`, `preset-artwork.test.ts`, `display-audio-capture.test.ts` | `check:quick` |
+| Framework-free UI helpers (audio controls, identicons, YouTube), browser/media/audio utilities, lighting helpers | `youtube-controller.test.ts`, `preset-artwork.test.ts`, `display-audio-capture.test.ts` | `check:quick` |
 
 ## Generated artifacts (edit the source, not these)
 

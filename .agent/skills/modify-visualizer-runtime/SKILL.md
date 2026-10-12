@@ -21,7 +21,7 @@ Use this skill when the request changes how the main visualizer product behaves,
 - renderer selection, performance controls, and capability/preflight flows
 - audio startup, shell controls, and app-level interaction behavior
 
-Treat `toy=<slug>` as a loader detail, not the product boundary.
+Use the canonical `/` workspace route; `/milkdrop/` is a redirect alias.
 
 ## Validation
 
