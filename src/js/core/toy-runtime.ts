@@ -48,13 +48,14 @@ const EMPTY_UINT8 = new Uint8Array(0);
 
 // Touch/mobile detection is static per session; evaluating the UA regex
 // inside the preview tick put it on the pre-audio hot path for no reason.
-// Mobile throttles the synthetic preview data to 30Hz; desktop runs every tick.
+// Mobile throttles the synthetic preview data to 30Hz; desktop throttles to 60Hz
+// to avoid redundant math on 120Hz/144Hz displays.
 const PREVIEW_DATA_INTERVAL_MS =
   typeof navigator !== 'undefined' &&
   ((navigator.maxTouchPoints ?? 0) > 0 ||
     /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent ?? ''))
     ? 1000 / 30
-    : 0;
+    : 1000 / 60;
 
 export type ToyRuntimeFrame = {
   toy: WebToy;
@@ -475,9 +476,16 @@ export function createToyRuntime({
   let previewLastDataUpdate = -Infinity;
   let previewVisibilityCleanup: (() => void) | null = null;
 
+  const previewBinCount = previewFrequencyData.length;
+  const previewNormalized = new Float32Array(previewBinCount);
+  for (let i = 0; i < previewBinCount; i += 1) {
+    previewNormalized[i] = i / previewBinCount;
+  }
+  const PI_MUL_6 = Math.PI * 6;
+  const PI_MUL_2 = Math.PI * 2;
   const updatePreviewFrequencyData = (time: number) => {
-    for (let i = 0; i < previewFrequencyData.length; i += 1) {
-      const normalized = i / previewFrequencyData.length;
+    for (let i = 0; i < previewBinCount; i += 1) {
+      const normalized = previewNormalized[i];
       const wave =
         (Math.sin(time * (0.9 + normalized) + normalized * 6.2) +
           Math.sin(time * 1.7 + normalized * 10.5) * 0.4 +
@@ -489,19 +497,14 @@ export function createToyRuntime({
         0,
         Math.min(1, (wave * 0.5 + 0.5) * (0.6 + envelope) + shimmer),
       );
-      previewFrequencyData[i] = Math.round(value * 220 + 12);
-      previewWaveformData[i] = Math.round(
-        Math.max(
-          0,
-          Math.min(
-            255,
-            128 +
-              (Math.sin(time * 3.2 + normalized * Math.PI * 6) * 0.55 +
-                Math.sin(time * 1.4 + normalized * Math.PI * 2) * 0.25) *
-                96,
-          ),
-        ),
-      );
+      previewFrequencyData[i] = (value * 220 + 12.5) | 0;
+      const waveVal =
+        128.5 +
+        (Math.sin(time * 3.2 + normalized * PI_MUL_6) * 0.55 +
+          Math.sin(time * 1.4 + normalized * PI_MUL_2) * 0.25) *
+          96;
+      previewWaveformData[i] =
+        waveVal < 0 ? 0 : waveVal > 255 ? 255 : waveVal | 0;
     }
   };
 
@@ -574,7 +577,9 @@ export function createToyRuntime({
       frameState.realTimeMs = currentTime;
       frameState.analyser = null;
       const previewDataIntervalMs = PREVIEW_DATA_INTERVAL_MS;
-      if (now - previewLastDataUpdate >= previewDataIntervalMs) {
+      // 4ms jitter tolerance (see FRAME_GATE_TOLERANCE_MS) prevents rAF vsync
+      // jitter from pushing frames past the deadline and halving effective rate.
+      if (now - previewLastDataUpdate >= previewDataIntervalMs - 4) {
         updatePreviewFrequencyData(frameState.time);
         previewLastDataUpdate = now;
       }

@@ -1165,6 +1165,31 @@ export function buildMeshField({
     aspectY,
   });
 
+  if (transformFrame.isIdentity) {
+    const invDensityMinusOne = 1 / Math.max(1, density - 1);
+    for (let row = 0; row < density; row += 1) {
+      const y = row * invDensityMinusOne * 2 - 1;
+      const rowOffset = row * density;
+      for (let col = 0; col < density; col += 1) {
+        const x = col * invDensityMinusOne * 2 - 1;
+        const pointIndex = rowOffset + col;
+        let pointEntry = points[pointIndex];
+        if (!pointEntry) {
+          pointEntry = { sourceX: x, sourceY: y, x, y, warpU: x, warpV: y };
+          points[pointIndex] = pointEntry;
+        } else {
+          pointEntry.sourceX = x;
+          pointEntry.sourceY = y;
+          pointEntry.x = x;
+          pointEntry.y = y;
+          pointEntry.warpU = x;
+          pointEntry.warpV = y;
+        }
+      }
+    }
+    return { density, points, program: null, signals: null };
+  }
+
   const latticeCache = geometryState.lattice as StaticMeshLattice;
   for (let row = 0; row < density; row += 1) {
     for (let col = 0; col < density; col += 1) {
