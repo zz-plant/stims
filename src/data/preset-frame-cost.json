@@ -1,0 +1,306 @@
+{
+  "version": 1,
+  "entries": {
+    "aderrasi-potion-of-spirits": {
+      "frameWorkMs": 1.36,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "dbleja-hovering-over-mars": {
+      "frameWorkMs": 1.28,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "dbleja-hovering-over-pluto": {
+      "frameWorkMs": 1.38,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "dbleja-inside-the-tree-blue-mix": {
+      "frameWorkMs": 1.74,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-apocalypse": {
+      "frameWorkMs": 4.14,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-dark-side-of-the-moon-clean-mix": {
+      "frameWorkMs": 2.18,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-ether": {
+      "frameWorkMs": 1.97,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-ether-posession-phat-edit-v3": {
+      "frameWorkMs": 2.25,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-glowsticks-v2-03-music": {
+      "frameWorkMs": 1.33,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-heater-core-c": {
+      "frameWorkMs": 2.53,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-matrix-cube-c": {
+      "frameWorkMs": 3.59,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-phat-cat-scan-nirvana": {
+      "frameWorkMs": 2.71,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-phat-cubetrace-v2": {
+      "frameWorkMs": 1.83,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-phat-dark-heart": {
+      "frameWorkMs": 2.64,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-phat-linear-clouds-v2": {
+      "frameWorkMs": 1.68,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-phat-magnetosphere-13-pulsar": {
+      "frameWorkMs": 2.14,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-phat-vacuum-deification": {
+      "frameWorkMs": 1.58,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-quasar": {
+      "frameWorkMs": 1.56,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "eos-starburst-05-phasing": {
+      "frameWorkMs": 2.41,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "evet-proteus-core-element-5": {
+      "frameWorkMs": 1.5,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "evet-responsive-acid-iris": {
+      "frameWorkMs": 1.52,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "geiss-bipolar-x": {
+      "frameWorkMs": 1.34,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "geiss-casino": {
+      "frameWorkMs": 1.47,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "geiss-happy-drops": {
+      "frameWorkMs": 1.4,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "krash-rovastar-cerebral-demons-stars": {
+      "frameWorkMs": 2.18,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "orb-acid-in-my-eyes": {
+      "frameWorkMs": 1.94,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "orb-cloud-scope": {
+      "frameWorkMs": 1.38,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "orb-radiation": {
+      "frameWorkMs": 1.51,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "orbasonic": {
+      "frameWorkMs": 1.37,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "phat-rovastar-eos-square-faces-v2": {
+      "frameWorkMs": 1.42,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "phat-zylot-eos-trippy-rotation": {
+      "frameWorkMs": 1.16,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "pieturp-sunflare": {
+      "frameWorkMs": 1.12,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "rovastar-and-idiot24-7-abstract-psychaos": {
+      "frameWorkMs": 1.2,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "rovastar-dark-ritual-star-of-destiny-denied-mix": {
+      "frameWorkMs": 1.39,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "rovastar-harlequins-liquid-dragon": {
+      "frameWorkMs": 1.22,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "rovastar-mosaics-of-ages": {
+      "frameWorkMs": 1.15,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "rovastar-oozing-resistance": {
+      "frameWorkMs": 1.23,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "rovastar-parallel-universe": {
+      "frameWorkMs": 1.38,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "shifter-curlique": {
+      "frameWorkMs": 1.35,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "shifter-glassworms-flare": {
+      "frameWorkMs": 5.24,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "shifter-snakeskin": {
+      "frameWorkMs": 1.31,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "shifter-spectro": {
+      "frameWorkMs": 3.1,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    },
+    "shifter-swarm": {
+      "frameWorkMs": 1.68,
+      "tier": "m-series-high-end-webgpu",
+      "qualityStep": 1,
+      "measuredAt": "2026-10-12",
+      "instrument": "perf:certification-corpus"
+    }
+  }
+}

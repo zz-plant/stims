@@ -46,6 +46,7 @@ mock.module('audio-reactive/worklet?worklet', () => ({
 import { resetDeviceProfileCache } from '../src/js/core/device-profile.ts';
 import { resetMotionPreferenceState } from '../src/js/core/motion-preferences.ts';
 import { resetPerformancePanelState } from '../src/js/core/performance-panel.ts';
+import { resetPresetFrameCostData } from '../src/js/core/preset-cost-signal.ts';
 import { resetSettingsPanelState } from '../src/js/core/settings-panel.ts';
 import { resetRenderPreferenceStore } from '../src/js/core/state/render-preference-store.ts';
 import { resetThemePreferenceState } from '../src/js/core/theme-preferences.ts';
@@ -57,6 +58,7 @@ beforeEach(() => {
   resetSettingsPanelState();
   resetPerformancePanelState();
   resetThemePreferenceState();
+  resetPresetFrameCostData();
   // isMobileDevice() memoises its answer (397e4545), so a test that swaps in a
   // mobile navigator gets the previous test's verdict unless the memo is
   // cleared. Tests that carefully build a fake navigator in their own
@@ -71,6 +73,7 @@ afterEach(() => {
   resetSettingsPanelState();
   resetPerformancePanelState();
   resetThemePreferenceState();
+  resetPresetFrameCostData();
   // isMobileDevice() memoises its answer (397e4545), so a test that swaps in a
   // mobile navigator gets the previous test's verdict unless the memo is
   // cleared. Tests that carefully build a fake navigator in their own

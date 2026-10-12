@@ -37,6 +37,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:no-source-seams`](#checkno-source-seams) | `check:quick` | Fails on source seams left behind by a promoted package — the references that only work while the package's source still lives in packages/ here. |
 | [`check:no-ts-nocheck`](#checkno-ts-nocheck) | `check:quick` | Fails the build if a whole-file TypeScript suppression directive is present under src/, scripts/, or tests/. |
 | [`check:packages`](#checkpackages) | `check` | Typechecks and tests every standalone package under packages/, each in its own directory so its bunfig.toml and tsconfig apply rather than the root's. |
+| [`check:preset-cost`](#checkpreset-cost) | `check:quick` | Merges a perf-certification run into the committed per-preset frame-cost sidecar (`src/data/preset-frame-cost.json`), the signal autoplay and shuffle read to keep frame-hungry presets away from low-tier devices. |
 | [`check:production-edge`](#checkproduction-edge) | on demand | Verifies the deployed site's edge is reachable and not gated behind a Cloudflare challenge. |
 | [`check:readme-claims`](#checkreadme-claims) | `check:quick` | Keeps the repo's public claims aligned with what it actually ships. |
 | [`check:reference-audio-header`](#checkreference-audio-header) | `check:quick` | Generates the C++ harness's copy of the parity reference audio signal. |
@@ -548,6 +549,44 @@ that keeps them green between releases.
   bun run check:packages -- flash-guard   # one package
 
 Run it directly: `bun run check:packages`
+
+## check:preset-cost
+
+Merges a perf-certification run into the committed per-preset frame-cost sidecar (`src/data/preset-frame-cost.json`), the signal autoplay and shuffle read to keep frame-hungry presets away from low-tier devices.
+
+The sidecar is a sidecar because the catalog cannot carry these numbers:
+`public/milkdrop-presets/catalog.json` is generated from .milk sources and
+guarded byte-for-byte (check:catalog-integrity, check:catalog-fidelity), and
+a frame cost is a property of a measurement run, not of the preset file.
+Keying a separate file by preset id adds the signal without touching the
+generator — the same separation the flash audit took (catalog field, fed by
+catalog:merge-flash) would have needed a third party to re-run for.
+
+Input is a `perf:certification-corpus` summary.json (one file holding every
+per-preset report, see scripts/run-certification-corpus-perf-suite.ts).
+Reports without aggregate metrics (status 'error') are ignored, and preset
+ids that are not in the bundled catalog are skipped with a note — the
+certification corpus deliberately includes fixtures the shipped catalog
+does not contain, and the gate would never look those ids up.
+
+Coordinator command to populate the sidecar with real hardware data
+(run on the measurement machine, from the repo root):
+
+  bun run perf:certification-corpus -- --output ./scratch/cost-signal --lock-quality-step 1
+  bun run lab:cost-ingest -- --summary ./scratch/cost-signal/summary.json \
+      --tier <hardware-label> --quality-step 1
+
+`--quality-step` records the step the perf run pinned with
+`--lock-quality-step`; pass neither when the run let quality adapt, and
+record `null`. After ingesting, `bun run check:preset-cost` verifies the
+committed file (schema, catalog ids, canonical formatting) and
+`bun run test` runs the behavioural gate tests over it.
+
+Usage:
+  bun run scripts/preset-lab-cost-ingest.ts --summary <path> --tier <label> [--quality-step <n>] [--instrument <name>]
+  bun run scripts/preset-lab-cost-ingest.ts --check [--summary <path> --tier <label> [--quality-step <n>]]
+
+Run it directly: `bun run check:preset-cost`
 
 ## check:production-edge
 
