@@ -36,15 +36,23 @@ export type MilkdropPresetPipelineWarmupGate = (
  * How long a preset switch may hold the fade back while the incoming
  * preset's WebGPU pipelines pre-warm.
  *
- * The measured cost this bounds is real but finite — single frames of
- * 258–433ms at blend start on a 120Hz hardware tab — which the warm-up turns
- * into a pipeline-cache hit when it completes. 300ms keeps the extra
- * pre-fade delay under the spike it removes and small next to the blend's
- * own duration (seconds), and it is far under the transition controller's
- * presentable-hold cap, so a slow compile can never wedge a switch: past the
- * deadline the fade starts exactly as it does today, with cold pipelines.
+ * The measured cost this bounds is real but finite—single frames of
+ * 258–433ms at blend start on a 120Hz hardware tab—which the warm-up turns
+ * into a pipeline-cache hit when it completes. Measured hardware warm-up
+ * durations (2026-10-12, M-series, real WebGPU, incoming-preset composite
+ * and field materials): 236ms on a light comp-shader preset, 855ms on a
+ * mid-weight one, 1122ms and 1611ms on the heaviest switched to; the first
+ * 300ms
+ * deadline timed out on the heavy tail and fell back to exactly the spikes
+ * it exists to remove. 1500ms misses only the rare 1.6s-class compile, and
+ * a deadline miss degrades gracefully: 1500ms of the work is already paid,
+ * so the measured fallback hitch was 50–68ms, not the 258–1008ms of a
+ * cold build. The wait is invisible in the way that matters — the old
+ * preset keeps playing until the fade starts — and the bound stays well
+ * under the transition controller's presentable-hold cap, past which a
+ * wedged compile falls back to today's behavior, cold pipelines and all.
  */
-export const PRESET_PIPELINE_WARMUP_DEADLINE_MS = 300;
+export const PRESET_PIPELINE_WARMUP_DEADLINE_MS = 1500;
 
 /**
  * Builds the gate. `wantsBlendTransition` should read the live preference
