@@ -151,8 +151,9 @@ cannot see.
   compatible path until RNG state or a parity-validated equivalent exists.
   This is a semantic boundary rather than an unfinished optimisation: the VM's
   RNG is a linear congruential generator advanced once per call in program
-  order (`vm.ts` `nextRandom`), so its sequence is defined by evaluation order,
-  which per-pixel GPU execution does not have. Lowering it would change what
+  order (the shared `randomCell` in `vm.ts`, inlined into compiled program
+  bodies — see RUNTIME_PERFORMANCE.md, "Inlined RNG"), so its sequence is
+  defined by evaluation order, which per-pixel GPU execution does not have. Lowering it would change what
   these presets draw, not merely where they draw it — and it is not a small
   cost: the heaviest preset in the certification corpus,
   `shifter-glassworms-flare`, calls `randint` 59 times and profiles at ~59%
