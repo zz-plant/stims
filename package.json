@@ -234,7 +234,7 @@
     "@webgpu/types": "^0.1.74",
     "butterchurn": "^2.6.7",
     "butterchurn-presets": "^2.4.7",
-    "dependency-cruiser": "^18.4.0",
+    "dependency-cruiser": "^18.5.0",
     "eel-conformance": "workspace:*",
     "esbuild": "^0.28.2",
     "happy-dom": "20.14.5",
