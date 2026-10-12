@@ -213,8 +213,26 @@ consistently, so production output is unaffected. The conformance corpus
 cannot express it (a fixed draw hides draw order).
 
 Browser-frame verification (V8, real WebGPU, per the 2026-08-24 setup above)
-is still pending for both changes; treat them as sequence-identical and
-read-cheaper, not yet as measured frame-work wins.
+was the outstanding item for both changes; the measured result follows.
+
+## 2026-10-12 hardware result: RNG inlining + statement-local read caching
+
+Measured on the same machine as the 2026-10-11 spot-check, with the runner
+itself (`perf:certification-corpus --no-headless`, real WebGPU,
+`timingMode: gpu-phase-timestamps`, quality step 1 locked, three trials):
+
+- Before (main, 2026-10-11 corpus sweep): `shifter-glassworms-flare`
+  **median 5.24 ms** average frame work.
+- After (this change): **median 4.51 ms** (trials 4.41 / 4.51 / 4.72;
+  `fallbackOccurred: false`; simulation phase 3.73 ms).
+
+That is a **14% reduction in median frame work for the heaviest preset in
+the certification corpus**, with output proven identical by the replay and
+differential instruments above. The claim stays narrow: it is this preset's
+shape (repeated identifier reads inside large per-point bodies plus RNG
+draws) on this hardware at one quality step — not a universal percentage
+for every preset, device, or renderer, and the delivered FPS stays
+display-capped either way (medianFps 120.48 before and after).
 
 ## Reproduce a tier
 
