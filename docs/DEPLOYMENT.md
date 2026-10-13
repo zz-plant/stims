@@ -1,33 +1,28 @@
 # Deployment Guide
 
-Stims ships a single MilkDrop-led visualizer product. Commands reference the scripts in `package.json` so you can copy/paste without drift.
+The site is one Cloudflare Worker serving the built app; the MCP endpoint is an optional second Worker. Every command below is a `package.json` script.
 
 ## Choose your deployment track
 
 | Track | Use when | Primary path |
 | --- | --- | --- |
-| **Track A (default): Site Worker via Cloudflare Workers Builds** | Nearly all toy/site releases. | Cloudflare Workers Builds runs `bun run site:build` and `wrangler deploy` on every push — production from `main`, preview URLs from other branches. GitHub Actions only gates merges; it no longer deploys. |
+| **Track A (default): Site Worker via Cloudflare Workers Builds** | Nearly every release. | Cloudflare Workers Builds runs `bun run site:build:gated` and `wrangler deploy` on every push — production from `main`, preview URLs from other branches. GitHub Actions only gates merges; it does not deploy. |
 | **Track B (optional): MCP Worker transport** | You changed MCP HTTP/WebSocket transport behavior or Worker-only MCP deployment settings. | Track A flow for the site plus `bun run mcp:check` and `bun run mcp:deploy` when you need the remote MCP endpoint updated. |
 
-If you only need to deploy the toy site, follow Track A and skip the Worker sections.
+To deploy only the site, follow Track A and skip Track B.
 
 ## Track A quick path (default production flow)
 
 The site deploys as the `stims` Worker with static assets, configured in [`wrangler.site.jsonc`](../wrangler.site.jsonc). Cloudflare Workers Builds watches the GitHub repo and builds/deploys on push, so a release is:
 
-1. Run the quality gate:
+1. Run the quality gate, which includes the README claim and generated-artifact checks:
 
    ```bash
    bun run check
    ```
 
-2. Confirm manifest and generated artifacts remain aligned:
-
-   ```bash
-   bun run check:readme-claims
-   ```
-
-3. Push the branch and open a pull request. Workers Builds publishes a preview URL for the branch (`wrangler versions upload`); CI runs the test gates in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) but does not deploy.
+2. Push the branch and open a pull request. Workers Builds publishes a preview URL for the branch (`wrangler versions upload`); CI runs the test gates in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) but does not deploy.
+3. Check the production build locally and on that preview URL with the [release steps of the QA plan](./QA_PLAN.md#before-a-release).
 4. Merge to `main` after the preview is good. Workers Builds builds `main` and runs `wrangler deploy` to production.
 
 To validate or ship the same thing from your machine:
@@ -48,7 +43,7 @@ bun run site:dev
 
 ### How the Worker build works
 
-`bun run site:build` runs the Vite app build and the Pages Functions compiler concurrently because neither consumes the other's output. The Worker compiler writes to an isolated temporary directory; after both builds succeed, the script moves that bundle into `dist/_worker.js` and writes `dist/.assetsignore` so the compiled Worker and `.vite/` metadata are not uploaded as public static assets. `wrangler.site.jsonc` points `main` at that bundle, serves `dist/` as assets, and uses `assets.run_worker_first` so the OG-rewrite middleware still sees HTML navigations while pure asset paths skip the Worker.
+`bun run site:build` (which `site:build:gated` runs after the fast tests) runs the Vite app build and the Pages Functions compiler concurrently because neither consumes the other's output. The Worker compiler writes to an isolated temporary directory; after both builds succeed, the script moves that bundle into `dist/_worker.js` and writes `dist/.assetsignore` so the compiled Worker and `.vite/` metadata are not uploaded as public static assets. `wrangler.site.jsonc` points `main` at that bundle, serves `dist/` as assets, and uses `assets.run_worker_first` so the OG-rewrite middleware still sees HTML navigations while pure asset paths skip the Worker.
 
 Keep the orchestration in `scripts/build-site.mjs`. Running both compilers as a shell chain makes deploy builds unnecessarily serial, while writing both into `dist/` concurrently creates a race because Vite clears that directory at startup.
 
@@ -73,9 +68,9 @@ Run the production build to emit optimized assets:
 bun run build
 ```
 
-The Vite build outputs to `dist/` and also writes a `.vite/manifest.json` file. Keep the manifest alongside the hashed assets—it powers any server-side integrations or debug tooling that map back to the compiled files.
+The Vite build writes `dist/`, including `dist/.vite/manifest.json`, which maps sources to their hashed output files. Nothing at runtime reads the manifest, and the site Worker does not upload it (`site:build` lists `.vite` in `dist/.assetsignore`).
 
-If you already have a valid `dist/` folder and want to skip the rebuild (for example, when deploying prebuilt artifacts), use the reuse flag:
+To skip the rebuild when `dist/` is already complete (for example, when deploying prebuilt artifacts), use the reuse flag; it treats `dist/index.html` plus the manifest as the sign of a finished build:
 
 ```bash
 bun run build -- --reuse
@@ -86,9 +81,9 @@ bun run build -- --reuse
 After `bun run build`, expect the following structure:
 
 - `dist/`: HTML entry points and hashed JS/CSS assets under `dist/assets/`.
-- `dist/.vite/manifest.json`: Vite manifest mapping original sources to their output filenames.
+- `dist/.vite/manifest.json`: build metadata that `--reuse` checks for.
 
-When deploying to static hosting, serve the contents of `dist/` directly. Do not strip the `.vite` directory or rename the asset paths.
+When deploying to static hosting, serve the contents of `dist/` directly and keep the asset paths as built.
 
 ## Verify Locally
 
@@ -108,24 +103,12 @@ Use the same scripts defined in `package.json` to validate the production output
 
 Both commands expect a fresh `bun run build` and read from `dist/`.
 
-## Prime-time preflight checks
-
-Track A quick path above is the default release preflight. Use this section as the same checklist reference before production deploys:
-
-1. `bun run check`
-2. `bun run check:readme-claims`
-3. `bun run build`
-4. `bun run preview`
-
-If any step fails, fix the issue and restart from step 1 so downstream checks reflect the final state.
-
 ## Static Hosting Expectations
 
 Any static host should point its document root to the `dist/` directory and preserve the following:
 
 - `dist/index.html` (and other HTML entry points).
 - `dist/assets/**` for hashed JS/CSS.
-- `dist/.vite/manifest.json` for asset lookups.
 
 If your platform supports immutable caching, enable it for `dist/assets/**`; keep HTML un-cached or lightly cached so updates propagate.
 Cloudflare Workers static assets read caching rules from `public/_headers`, which Vite copies into `dist/_headers` at build time. The repo ships defaults that set long-term caching for `assets/*` and force revalidation for HTML and `.vite` metadata; adjust those if your host requires a different policy.
@@ -188,28 +171,16 @@ Expected artifacts and checkpoints:
 
 - Worker script bundled by Wrangler (appears as `stims-mcp` in the dashboard; `stims` is the site Worker).
 - Preview URL surfaced by `wrangler dev` for local testing and a production URL after `wrangler deploy`.
-- Compatibility date pinned to `2024-10-20` so WebSocket support is enabled for the MCP server.
+- The compatibility date and flags live in [`wrangler.mcp.jsonc`](../wrangler.mcp.jsonc); WebSocket support depends on them.
 - No KV, Durable Objects, or secrets are required today; if you introduce bindings, add them to `wrangler.mcp.jsonc`.
 
 ## Preview-per-PR workflow
 
-Workers Builds uploads a new version for every push to a non-production branch and publishes a preview URL for it (no production traffic shifts). Use that URL to validate the production bundle before merging:
-
-1. Open the preview link from the Workers Builds run in the Cloudflare dashboard (or the commit status it posts back to GitHub).
-2. Confirm that all static assets load without 404s and that console logs remain clean.
-3. Smoke-test a representative sample of HTML entry points (see below) to ensure routing and asset resolution work in the CDN environment.
-
-## Validate workspace routes before merge
-
-The project now treats `/` as the canonical workspace route and `/milkdrop/` as the compatibility alias. Validate representative routes locally and on the PR preview:
-
-1. Run `bun run build` followed by `bun run preview` and open representative routes manually (for example, `http://localhost:4173/`, `http://localhost:4173/?preset=eos-glowsticks-v2-03-music`, and `http://localhost:4173/milkdrop/?audio=demo`).
-2. Repeat the checks against the branch’s Workers Builds preview URL to ensure CDN caching and hashed asset references behave the same as local preview.
-3. If any route relies on audio or interaction-specific features, perform at least one interaction test (mic input, pointer/touch) to confirm runtime permissions and event handling.
+Workers Builds uploads a new version for every push to a non-production branch and publishes a preview URL for it (no production traffic shifts). The link is on the Workers Builds run in the Cloudflare dashboard and in the commit status it posts to GitHub; the Cloudflare bot also comments it on the PR. Step 3 of the quick path runs there; on the preview, also check that no asset returns 404 and the console stays clean.
 
 ## Release Checklist
 
 - In the release PR, move the `[Unreleased]` entries of [`CHANGELOG.md`](../CHANGELOG.md) under a new `## [X.Y.Z] - date` heading, add a `## Release vX.Y.Z (date)` section with the highlights to [`RELEASE_NOTES.md`](./RELEASE_NOTES.md), and set `version` in `package.json` to `X.Y.Z`. `tests/unit/release-notes.test.ts` fails the PR if the version has no notes.
 - Tag the merge commit after merging: `git tag vX.Y.Z <merge-sha> && git push origin vX.Y.Z`. The [Release workflow](../.github/workflows/release.yml) then publishes a GitHub Release with that version's `RELEASE_NOTES.md` section (`bun run release:notes -- vX.Y.Z` prints the same text locally). It refuses a tag that disagrees with `package.json` or has no notes. A bare tag without the workflow is not a Release; that is why v1.1.0–v1.3.0 never showed on the repo page.
 - Can't push tags? Run the Release workflow from the Actions tab on `main` instead, with `commit` set to the merge commit (it defaults to the head of `main`). It tags that commit as `v<its package.json version>` and publishes the same notes. It refuses a commit that is not on `main`, or a tag that already points elsewhere.
-- Smoke test the production URL at [https://toil.fyi](https://toil.fyi) after deploy (basic load, a few toys, and audio input checks).
+- After deploy, run steps 1–5 of the [QA checklist](./QA_PLAN.md#manual-checklist) against [https://toil.fyi](https://toil.fyi) with one real audio input.
