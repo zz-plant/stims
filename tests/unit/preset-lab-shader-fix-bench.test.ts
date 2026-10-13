@@ -9,11 +9,13 @@ import { describe, expect, test } from 'bun:test';
 import {
   compileStage,
   editFraction,
+  locateErrorInBody,
   type ShaderFixTask,
   sampledTextures,
   scoreAnswer,
   summarize,
 } from '../../scripts/preset-lab-shader-fix-bench.ts';
+import { assembleMilkdropDirectFragmentShaders } from '../../src/js/milkdrop/feedback-manager-shared.ts';
 
 // A stand-in compiler that rejects the one mistake these fixtures contain:
 // dot() over mismatched vector sizes.
@@ -38,6 +40,7 @@ const task: ShaderFixTask = {
   source: '',
   glsl: broken,
   error: 'dot',
+  errorLine: 2,
 };
 
 describe('compileStage', () => {
@@ -46,6 +49,35 @@ describe('compileStage', () => {
     expect(compileStage(bodies, 'warp', fixed, validate)).toBeNull();
     // The other stage keeps its own body.
     expect(compileStage(bodies, 'composite', null, validate)).toBeNull();
+  });
+});
+
+describe('locateErrorInBody', () => {
+  // glslang numbers the assembled shader; an error on its line n reads like this.
+  const errorAt = (assembled: string, needle: string) =>
+    `ERROR: 0:${assembled.split('\n').findIndex((line) => line.includes(needle)) + 1}: 'x' : bad`;
+
+  test('maps an assembled line number back to the body line', () => {
+    const { warp } = assembleMilkdropDirectFragmentShaders(broken, null);
+    expect(errorAt(warp, 'dot(uv')).not.toContain('0:2:');
+    expect(locateErrorInBody(errorAt(warp, 'dot(uv'), warp, broken)).toBe(2);
+  });
+
+  test('finds comp-stage lines whose currentTex samples assembly retargets', () => {
+    const comp = [
+      '  vec3 a = vec3(texture2D(currentTex, uv));',
+      '  ret = a;',
+    ].join('\n');
+    const { composite } = assembleMilkdropDirectFragmentShaders(null, comp);
+    expect(composite).not.toContain('texture2D(currentTex, uv)');
+    const error = errorAt(composite, 'vec3 a = ');
+    expect(locateErrorInBody(error, composite, comp)).toBe(1);
+  });
+
+  test('is null when the error points outside the body', () => {
+    const { warp } = assembleMilkdropDirectFragmentShaders(broken, null);
+    expect(locateErrorInBody("ERROR: 0:1: 'x' : bad", warp, broken)).toBeNull();
+    expect(locateErrorInBody('no line number', warp, broken)).toBeNull();
   });
 });
 
