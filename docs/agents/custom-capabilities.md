@@ -101,7 +101,7 @@ Apply the matching skill whenever a PR touches that category — reviewing with 
 - Day-to-day repo commands: [`../DEVELOPMENT.md`](../DEVELOPMENT.md)
 - Visualizer runtime and preset details: [`../MILKDROP_PRESET_RUNTIME.md`](../MILKDROP_PRESET_RUNTIME.md)
 - Runtime architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
-- Current project status and next targets: [`../STATUS_2026-05.md`](../STATUS_2026-05.md)
+- Current project status and next targets: [`../ROADMAP.md`](../ROADMAP.md)
 - Release evidence ledger (certified/open/pending): [`../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md`](../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md)
 - Public claim audit findings: [`../evidence/public-claim-audit.md`](../evidence/public-claim-audit.md)
 - Shader compiler support inventory: [`../architecture/shader-support-inventory.md`](../architecture/shader-support-inventory.md)
@@ -111,6 +111,8 @@ Apply the matching skill whenever a PR touches that category — reviewing with 
 - Agent bootstrap and handoffs: [`./agent-handoffs.md`](./agent-handoffs.md)
 - Visualizer workflow quick reference: [`./visualizer-workflows.md`](./visualizer-workflows.md)
 - MCP capability discovery for `.agent/*`: [`../MCP_SERVER.md`](../MCP_SERVER.md)
+
+Link-only and wording corrections do not require new MCP registrations. When a skill is added, removed, renamed, or changes its discovery contract, update the capability tables and MCP source mappings together. Run `bun run check:skill-index` to verify current discovery.
 
 ## Maintenance rules
 

@@ -5,6 +5,9 @@
  * services, and sample delivery lives in the engine audio store.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+// Ships with this lazy chunk: visitors who never open the finder panel never
+// fetch these styles.
+import '../../css/shell/preset-finder.css';
 import {
   type AudioWindowSample,
   buildWindowAudioProfile,

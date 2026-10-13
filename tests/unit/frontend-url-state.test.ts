@@ -5,11 +5,24 @@ import {
   buildRemixShareUrl,
   buildSessionRouteSearch,
   decodePresetCodeFromHash,
+  MAX_REMIX_URL_LENGTH,
   normalizeCollectionTag,
   parsePlainSearch,
   readSessionRouteState,
   stringifyPlainSearch,
 } from '../../src/js/frontend/url-state.ts';
+
+/** Pseudo-varied digits deflate cannot fold away — a payload the compressed
+ * encoding genuinely cannot fit needs incompressible bulk, not 'yyyy…'. */
+function incompressibleDraft(lines: number): string {
+  const filler: string[] = [];
+  for (let index = 0; index < lines; index += 1) {
+    filler.push(
+      `// ${index} ${(index * 7919) % 99_991} ${(index * 10_007) % 99_989}`,
+    );
+  }
+  return `[preset00]\nzoom=1.02\nwarp=0.9\n${filler.join('\n')}\n`;
+}
 
 describe('frontend url state', () => {
   test('reads legacy query params into canonical session state', () => {
@@ -352,13 +365,49 @@ describe('frontend url state', () => {
 
     expect(decodePresetCodeFromHash(new URL(shared).hash)).toBe(source);
   });
+  test('a draft that fits the budget keeps the exact raw hash', () => {
+    // The compressed encoding only pays where the raw one fails, so every
+    // link that already fit keeps the bytes previous builds wrote.
+    const remixed = '[preset00]\nfRating=9.900\nwave_r=0.9';
+    const url = buildRemixShareUrl(
+      'https://toil.fyi/?preset=signal-bloom&audio=demo',
+      remixed,
+    );
+    expect(new URL(url).hash).toContain('#code=u1~');
+    expect(decodePresetCodeFromHash(new URL(url).hash)).toBe(remixed);
+  });
+
+  test('an over-budget draft travels as a compressed payload and round-trips', () => {
+    // 17% of the bundled catalog cannot fit raw; compressing carries all
+    // of it. The source carries text beyond Latin-1 to prove the compressed
+    // path keeps the UTF-8 guarantee the u1~ encoder added.
+    const source = `// 🎛 ゆらぎ — café\n${incompressibleDraft(1_000)}`;
+    // The raw encoding is over budget; that is what makes this draft a
+    // compressed link rather than a refused one.
+    expect(
+      'https://toil.fyi/'.length + buildPresetCodeHash(source).length,
+    ).toBeGreaterThan(MAX_REMIX_URL_LENGTH);
+
+    const url = buildRemixShareUrl('https://toil.fyi/', source);
+    expect(url.length).toBeLessThanOrEqual(MAX_REMIX_URL_LENGTH);
+    const hash = new URL(url).hash;
+    expect(hash).toContain('#code=z1~');
+    expect(decodePresetCodeFromHash(hash)).toBe(source);
+  });
+
   test('rejects impractical URLs instead of returning a stale draft', () => {
     expect(() =>
       buildRemixShareUrl(
         'https://toil.fyi/?preset=signal-bloom#code=stale',
-        '// 🎛'.repeat(5000),
+        incompressibleDraft(3_000),
       ),
     ).toThrow('too long');
+  });
+
+  test('a corrupt compressed payload decodes to nothing, not garbage', () => {
+    // Valid base64url, not a deflate stream: inflate fails, and the link
+    // must read as empty rather than handing back source nobody wrote.
+    expect(decodePresetCodeFromHash('#code=z1~bm9wZQ')).toBeNull();
   });
 
   test('counts the complete escaped URL against the sharing budget', () => {

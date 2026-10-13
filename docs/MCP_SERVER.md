@@ -4,6 +4,8 @@ The repository includes an MCP stdio server at `scripts/mcp-server.ts` and a Clo
 
 ## Tool Categories
 
+For end-user flows, see the [user guide](./USER_GUIDE.md). The [docs index](./README.md) distinguishes current references from plans and historical evidence. Use [Testing](./TESTING.md) when choosing a quality-gate profile.
+
 ### Documentation & Commands (Worker + Stdio)
 
 | Tool | Input | Output |

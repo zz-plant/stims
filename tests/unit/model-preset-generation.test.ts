@@ -80,6 +80,98 @@ describe('model-backed preset generation', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  test('rejects the generic kind pointed at OpenRouter itself — only the named kind is allowed', async () => {
+    // The allowlist is by provider kind, not by host: a user (or a bug)
+    // routing the generic openai-compatible kind at openrouter.ai must
+    // still hit the loopback rule.
+    const fetchMock = mock();
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(
+      generatePreset('private prompt', {
+        provider: {
+          kind: 'openai-compatible',
+          endpoint: 'https://openrouter.ai/api/v1',
+          model: 'openai/gpt-4o-mini',
+        },
+      } as never),
+    ).rejects.toThrow('loopback');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('sends the OpenRouter key straight to openrouter.ai with the model', async () => {
+    const fetchMock = mock(async () =>
+      Response.json({
+        choices: [{ message: { content: validMilkSource } }],
+      }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const compiled = await generatePreset(
+      'slow violet rings responding to bass',
+      {
+        provider: {
+          kind: 'openrouter',
+          apiKey: 'sk-or-test',
+          model: 'openai/gpt-4o-mini',
+        },
+      },
+    );
+
+    expect(compiled.source.raw).toBe(validMilkSource.trim());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
+    expect(init.headers).toEqual({
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer sk-or-test',
+    });
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      model: 'openai/gpt-4o-mini',
+      stream: false,
+    });
+  });
+
+  test('surfaces OpenRouter auth failures with a key hint', async () => {
+    const fetchMock = mock(
+      async () =>
+        new Response(JSON.stringify({ error: 'Invalid API key' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(
+      generatePreset('private prompt', {
+        provider: {
+          kind: 'openrouter',
+          apiKey: 'sk-or-wrong',
+          model: 'openai/gpt-4o-mini',
+        },
+      }),
+    ).rejects.toThrow(/401.*OpenRouter API key/u);
+  });
+
+  test('keeps provider capability visible in the rendered panel', () => {
+    // Renders the real panel through the workspace harness instead of
+    // grepping its source. The template-synthesizer ban that used to live
+    // here as a text assertion is covered by the generation tests above:
+    // every route goes through generatePreset/generatePresetFromImage, whose
+    // fetch calls these tests intercept and inspect.
+    const rendered = renderWorkspace(createElement(SynthesizePanel));
+    try {
+      expect(rendered.text()).toContain('Hosted model');
+      expect(rendered.text()).toContain('Local Ollama');
+      expect(rendered.text()).toContain('OpenRouter');
+    } finally {
+      rendered.dispose();
+    }
+  });
+
   test('reports the hosted generator as unavailable instead of returning a template', async () => {
     const response = await generatePresetRequest({
       request: new Request('https://toil.fyi/api/generate-preset', {
@@ -96,17 +188,27 @@ describe('model-backed preset generation', () => {
     });
   });
 
-  test('keeps provider capability visible in the rendered panel', () => {
-    // Renders the real panel through the workspace harness instead of
-    // grepping its source. The template-synthesizer ban that used to live
-    // here as a text assertion is covered by the generation tests above:
-    // every route goes through generatePreset/generatePresetFromImage, whose
-    // fetch calls these tests intercept and inspect.
+  test('shows OpenRouter key and consent copy when the stored provider is openrouter', () => {
+    localStorage.setItem(
+      'stims:synthesize-settings',
+      JSON.stringify({
+        provider: 'openrouter',
+        openrouterApiKey: 'sk-or-stored',
+        openrouterModel: 'openai/gpt-4o-mini',
+      }),
+    );
     const rendered = renderWorkspace(createElement(SynthesizePanel));
     try {
-      expect(rendered.text()).toContain('Hosted model');
-      expect(rendered.text()).toContain('Local Ollama');
+      const text = rendered.text();
+      expect(text).toContain('OpenRouter API key');
+      expect(text).toContain('Prompts and your key go to OpenRouter');
+      const keyInput = rendered.container.querySelector(
+        'input[type="password"]',
+      ) as HTMLInputElement | null;
+      expect(keyInput).not.toBeNull();
+      expect(keyInput?.value).toBe('sk-or-stored');
     } finally {
+      localStorage.removeItem('stims:synthesize-settings');
       rendered.dispose();
     }
   });

@@ -2,12 +2,17 @@
  * Rolling per-variable history behind the editor's Inspect tab.
  *
  * Pure so it can be tested without a DOM: feed it frames, read back rows.
+ * Each variable's window is a `SampleRing` — a fixed-capacity Float32Array
+ * ring, so the per-frame push the render loop drives is O(1) with no
+ * reallocation (the old `Array.shift` grew or slid a backing store every
+ * frame per variable).
  *
  * Frames can carry the audio levels they were rendered with. Each variable's
  * recent history is then correlated with every band, and a variable that
  * clearly follows one is tagged with it — the answer to "why doesn't my
  * preset react?" is usually that nothing in it follows the audio.
  */
+import { SampleRing } from './sample-ring.ts';
 
 /** The audio a frame was rendered with, under the names equations use. */
 export type AudioLevels = Readonly<Record<AudioBand, number>>;
@@ -41,7 +46,7 @@ export type VariableRow = {
   min: number;
   max: number;
   /** Oldest → newest, at most `capacity` samples. */
-  history: readonly number[];
+  history: SampleRing;
   /** True once the value has ever moved; constants are usually noise. */
   changing: boolean;
   pinned: boolean;
@@ -50,7 +55,7 @@ export type VariableRow = {
 };
 
 type Track = {
-  history: number[];
+  history: SampleRing;
   min: number;
   max: number;
   first: number;
@@ -70,18 +75,25 @@ function compareNames(a: string, b: string) {
 
 /**
  * Pearson correlation of the last `n` samples of two series, or 0 when either
- * is flat over that window (a constant follows nothing).
+ * is flat over that window (a constant follows nothing). Each series is read
+ * newest-aligned, so a long history correlates correctly against a short one.
  */
-export function correlate(a: readonly number[], b: readonly number[]): number {
-  const n = Math.min(a.length, b.length);
+type RingSeries = SampleRing | readonly number[];
+const seriesCount = (s: RingSeries): number =>
+  s instanceof SampleRing ? s.count : s.length;
+const seriesAt = (s: RingSeries, index: number): number =>
+  s instanceof SampleRing ? s.at(index) : (s[index] as number);
+
+export function correlate(a: RingSeries, b: RingSeries): number {
+  const n = Math.min(seriesCount(a), seriesCount(b));
   if (n < 2) return 0;
-  const offA = a.length - n;
-  const offB = b.length - n;
+  const offA = seriesCount(a) - n;
+  const offB = seriesCount(b) - n;
   let meanA = 0;
   let meanB = 0;
   for (let i = 0; i < n; i += 1) {
-    meanA += a[offA + i] as number;
-    meanB += b[offB + i] as number;
+    meanA += seriesAt(a, offA + i);
+    meanB += seriesAt(b, offB + i);
   }
   meanA /= n;
   meanB /= n;
@@ -89,8 +101,8 @@ export function correlate(a: readonly number[], b: readonly number[]): number {
   let varA = 0;
   let varB = 0;
   for (let i = 0; i < n; i += 1) {
-    const da = (a[offA + i] as number) - meanA;
-    const db = (b[offB + i] as number) - meanB;
+    const da = seriesAt(a, offA + i) - meanA;
+    const db = seriesAt(b, offB + i) - meanB;
     cov += da * db;
     varA += da * da;
     varB += db * db;
@@ -99,32 +111,58 @@ export function correlate(a: readonly number[], b: readonly number[]): number {
   return cov / Math.sqrt(varA * varB);
 }
 
-function differences(series: readonly number[]): number[] {
-  const out: number[] = [];
-  for (let i = 1; i < series.length; i += 1) {
-    out.push((series[i] as number) - (series[i - 1] as number));
+/**
+ * Pearson correlation of the frame-to-frame changes of two rings, newest
+ * aligned: two slow drifts correlate in level by coincidence all the time,
+ * while a variable actually driven by a band also moves when the band moves.
+ * Reads the rings in place — no differenced copies are materialized.
+ */
+function correlateRingChanges(a: SampleRing, b: SampleRing): number {
+  const n = Math.min(a.count, b.count);
+  if (n < 3) return 0;
+  const diffs = n - 1;
+  const offA = a.count - diffs;
+  const offB = b.count - diffs;
+  let meanA = 0;
+  let meanB = 0;
+  for (let i = 0; i < diffs; i += 1) {
+    meanA += a.at(offA + i) - a.at(offA + i - 1);
+    meanB += b.at(offB + i) - b.at(offB + i - 1);
   }
-  return out;
+  meanA /= diffs;
+  meanB /= diffs;
+  let cov = 0;
+  let varA = 0;
+  let varB = 0;
+  for (let i = 0; i < diffs; i += 1) {
+    const da = a.at(offA + i) - a.at(offA + i - 1) - meanA;
+    const db = b.at(offB + i) - b.at(offB + i - 1) - meanB;
+    cov += da * db;
+    varA += da * da;
+    varB += db * db;
+  }
+  if (varA < 1e-12 || varB < 1e-12) return 0;
+  return cov / Math.sqrt(varA * varB);
 }
 
 export function createVariableHistory(capacity = 120) {
   const tracks = new Map<string, Track>();
   const pins = new Set<string>();
-  const audio = new Map<AudioBand, number[]>(
-    AUDIO_BANDS.map((band) => [band, []]),
+  const audio = new Map<AudioBand, SampleRing>(
+    AUDIO_BANDS.map((band) => [band, new SampleRing(capacity)]),
   );
 
   const reactivityOf = (track: Track): Reactivity | null => {
-    if (!track.changing || track.history.length < REACTIVITY_MIN_SAMPLES) {
+    if (!track.changing || track.history.count < REACTIVITY_MIN_SAMPLES) {
       return null;
     }
     let best: Reactivity | null = null;
     for (const band of AUDIO_BANDS) {
-      const levels = audio.get(band) ?? [];
-      if (levels.length < REACTIVITY_MIN_SAMPLES) continue;
+      const levels = audio.get(band);
+      if (!levels || levels.count < REACTIVITY_MIN_SAMPLES) continue;
       const r = correlate(track.history, levels);
       if (Math.abs(r) < REACTIVITY_THRESHOLD) continue;
-      const change = correlate(differences(track.history), differences(levels));
+      const change = correlateRingChanges(track.history, levels);
       if (change * Math.sign(r) < REACTIVITY_CHANGE_THRESHOLD) continue;
       if (
         Math.abs(r) >= REACTIVITY_THRESHOLD &&
@@ -140,10 +178,10 @@ export function createVariableHistory(capacity = 120) {
     push(variables: Readonly<Record<string, number>>, levels?: AudioLevels) {
       if (levels) {
         for (const band of AUDIO_BANDS) {
-          const series = audio.get(band) as number[];
+          const series = audio.get(band);
+          if (!series) continue;
           const raw = levels[band];
           series.push(Number.isFinite(raw) ? raw : 0);
-          if (series.length > capacity) series.shift();
         }
       }
       for (const name of Object.keys(variables)) {
@@ -152,7 +190,7 @@ export function createVariableHistory(capacity = 120) {
         let track = tracks.get(name);
         if (!track) {
           track = {
-            history: [],
+            history: new SampleRing(capacity),
             min: value,
             max: value,
             first: value,
@@ -161,7 +199,6 @@ export function createVariableHistory(capacity = 120) {
           tracks.set(name, track);
         }
         track.history.push(value);
-        if (track.history.length > capacity) track.history.shift();
         if (value < track.min) track.min = value;
         if (value > track.max) track.max = value;
         if (value !== track.first) track.changing = true;
@@ -185,11 +222,18 @@ export function createVariableHistory(capacity = 120) {
           state: 'measured';
           followers: Array<{ name: string } & Reactivity>;
         } {
-      const bass = audio.get('bass') ?? [];
-      if (bass.length < REACTIVITY_MIN_SAMPLES) return { state: 'measuring' };
+      const bass = audio.get('bass');
+      if (!bass || bass.count < REACTIVITY_MIN_SAMPLES) {
+        return { state: 'measuring' };
+      }
       const moving = AUDIO_BANDS.some((band) => {
-        const series = audio.get(band) ?? [];
-        return series.some((value) => value !== series[0]);
+        const series = audio.get(band);
+        if (!series || series.count === 0) return false;
+        const first = series.at(0);
+        for (let i = 1; i < series.count; i += 1) {
+          if (series.at(i) !== first) return true;
+        }
+        return false;
       });
       if (!moving) return { state: 'silent' };
       const followers: Array<{ name: string } & Reactivity> = [];
@@ -202,7 +246,7 @@ export function createVariableHistory(capacity = 120) {
     },
     reset() {
       tracks.clear();
-      for (const series of audio.values()) series.length = 0;
+      for (const series of audio.values()) series.clear();
     },
     /**
      * Pinned first, then q-vars in numeric order, then the rest by name.
@@ -221,7 +265,7 @@ export function createVariableHistory(capacity = 120) {
         }
         rows.push({
           name,
-          value: track.history[track.history.length - 1] ?? 0,
+          value: track.history.newest(),
           min: track.min,
           max: track.max,
           history: track.history,

@@ -38,12 +38,16 @@ const HINTS: HelpHintDef[] = [
     // `?` is named here because nothing else on the stage ever mentions it,
     // and it is the one key that lists every other one.
     //
-    // Two keys, not four. Listing →, Space, ? and Tab in one toast taught
-    // none of them; ? opens the list of every other key, Tab included.
+    // `E` is named because of when this hint is up: a few seconds into
+    // playback the dock has folded into the "Controls" pill, so the
+    // promise's action — opening the code — is otherwise nowhere on the
+    // screen and nothing else ever names the key. Two keys still teach
+    // better than four, but the one action that distinguishes this app from
+    // a screensaver cannot be left to ?'s list.
     message: () =>
       isMobileDevice()
         ? 'Swipe to change the visuals — double-tap to fill the screen.'
-        : 'Press → for another visual, or ? for every key.',
+        : 'Press → for another visual, E to edit its code, or ? for every key.',
     autoHideMs: 7000,
     anchor: 'stage',
   },

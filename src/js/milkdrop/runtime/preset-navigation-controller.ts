@@ -39,6 +39,7 @@ export function createMilkdropPresetNavigationController({
   applyCompiledPreset,
   applyPresetPerformanceOverride,
   beginPresetTransition,
+  waitForPresetWarmup,
   setOverlayStatus,
   shouldFallbackToWebgl,
   triggerWebglFallback,
@@ -53,6 +54,18 @@ export function createMilkdropPresetNavigationController({
   getActiveBackend: () => MilkdropRenderBackend;
   applyCompiledPreset: (compiled: MilkdropCompiledPreset) => void;
   applyPresetPerformanceOverride: (presetId: string) => void;
+  /**
+   * Starts the pre-fade pipeline warm-up for the incoming preset (the
+   * runtime's seam), or returns null when this switch stays synchronous.
+   * Awaited before the blend begins: both arrivals of one switch must wait
+   * on the SAME warm-up, or this (the later arrival) would apply cold
+   * pipelines while the session subscriber's apply is still waiting to
+   * start the fade. Optional so stub callers (tests, preview runtimes) need
+   * no stub of their own.
+   */
+  waitForPresetWarmup?: (
+    compiled: MilkdropCompiledPreset,
+  ) => Promise<boolean> | null;
   /**
    * Starts the crossfade into the preset about to be applied and reports what
    * it decided. The blend-vs-cut policy lives with the frame state it reads,
@@ -279,6 +292,25 @@ export function createMilkdropPresetNavigationController({
 
       trace.step('performanceOverride');
       applyPresetPerformanceOverride(nextCompiled.source.id);
+
+      // Pre-fade pipeline warm-up: the session subscriber (this switch's
+      // first arrival) already started it when the compile published, and
+      // the runtime dedupes, so this joins the same warm-up. Awaiting here
+      // overlaps it with the history and JIT steps below — and the
+      // transition decision under it deliberately waits, because
+      // beginPresetTransition is what starts the fade: it must not begin
+      // until the incoming preset's pipelines are warm or the warm-up's
+      // deadline has passed. Absent (WebGL, agent mode, cut preference),
+      // the switch below is exactly today's, synchronously.
+      const warmed = waitForPresetWarmup?.(nextCompiled) ?? null;
+      if (warmed !== null) {
+        trace.step('pipelineWarmup');
+        await warmed;
+        if (requestRevision !== currentLoadRequestRevision) {
+          trace.done('superseded');
+          return;
+        }
+      }
 
       trace.step('blendTransition');
       const transition = beginPresetTransition();

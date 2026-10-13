@@ -574,13 +574,79 @@
   color: var(--ctl-ink-3);
 }
 
-/* Reveal handle (when bar is hidden) */
-.handle {
+/* ── Folded dock (when the bar is hidden) ─────────────────────────────
+   One container, two controls: the reveal handle and the Edit entry that
+   keeps the promise's action available while the transport is away. The
+   container owns the shared fixed placement the handle used to carry. */
+.foldedDock {
   position: fixed;
   bottom: max(10px, env(safe-area-inset-bottom));
   left: calc(50% - var(--stage-tool-inset, 0px) / 2);
   transform: translateX(-50%);
   z-index: var(--z-dock);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 16px);
+}
+
+/* The container's box sits over the same patch of screen as the dock's
+   Edit and Prev buttons, so it must not catch their clicks while the bar
+   is up. visibility — delayed like the children's fade below — takes the
+   whole box out of the hit-test once the bar has claimed the space; the
+   children manage their own opacity/transform handoff. */
+.foldedDock[data-visible="false"] {
+  visibility: hidden;
+  transition: visibility 0s linear 0.3s;
+}
+
+.foldedDock[data-visible="true"] {
+  visibility: visible;
+  transition: visibility 0s linear 0s;
+}
+
+/* The Edit chip on the folded dock. Same panel language as the handle so
+   the two read as one surface, with the word that says what it does. */
+.foldedEdit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  color: var(--stims-ink);
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition:
+    opacity 0.25s ease,
+    transform var(--spring-enter),
+    border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Phones drop the bar's own Edit below 480px (the editor sheet covers the
+   stage there); the folded chip follows it rather than advertising harder
+   into the same open problem. */
+@media (max-width: 480px) {
+  .foldedEdit {
+    display: none;
+  }
+}
+
+.foldedEdit:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 2px;
+}
+
+/* Reveal handle (when bar is hidden) */
+.handle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -609,9 +675,10 @@
    waits out the one that is leaving instead of stacking on top of it.
    `visibility` (not opacity alone) is what keeps the hidden one from catching
    taps and tab stops — the same reason .bar uses it. */
-.handle[data-visible="false"] {
+.handle[data-visible="false"],
+.foldedEdit[data-visible="false"] {
   opacity: 0;
-  transform: translateX(-50%) translateY(8px);
+  transform: translateY(8px);
   visibility: hidden;
   transition:
     opacity 0.2s ease,
@@ -619,9 +686,10 @@
     visibility 0s linear 0.2s;
 }
 
-.handle[data-visible="true"] {
+.handle[data-visible="true"],
+.foldedEdit[data-visible="true"] {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
   visibility: visible;
   transition:
     opacity 0.25s ease 0.15s,
@@ -631,7 +699,7 @@
 
 .handle[data-visible="true"]:hover {
   border-color: var(--ctl-line);
-  transform: translateX(-50%) translateY(-1px);
+  transform: translateY(-1px);
 }
 
 .handleIcon {
@@ -647,7 +715,8 @@
    an un-tokenized leftover. Do not swap it for --ctl-ink: that token is
    near-black in light theme, which lands at 1.32:1 on this background.
    guard-allow-hex: theme-independent surface, so the ink is too. */
-:global(html.light) .handle {
+:global(html.light) .handle,
+:global(html.light) .foldedEdit {
   background: rgba(8, 14, 22, 0.92);
   color: #f7f4eb;
   border-color: var(--ctl-line-strong);
@@ -744,7 +813,8 @@
 @media (prefers-reduced-motion: reduce) {
   .bar,
   .menu,
-  .handle {
+  .handle,
+  .foldedEdit {
     transition-duration: 0.01ms;
     animation-duration: 0.01ms;
   }

@@ -87,23 +87,23 @@ Run before commit:
 bun run check
 ```
 
-This runs a no-`@ts-nocheck` guard, Biome checks, toy/docs drift validation, SEO surface checks, the architecture boundary guard, TypeScript typechecking, and tests.
+The quality gate has three tiers — pick the one that matches the risk of the change:
 
-Useful fast path while iterating:
-
-```bash
-bun run check:quick
-```
+| Command | Tier | What runs |
+| --- | --- | --- |
+| `bun run check:quick` | Edit-time (seconds, diff-scoped lint + typecheck) | Fast syntax/lint/type/guard feedback while iterating. |
+| `bun run check` | Pre-commit (default full gate) | Lint + typecheck + every guard + the gate test suite (unit + compat + corpus, which carries the dual-backend parity and golden-snapshot tests). |
+| `bun run check:all` | Pre-merge for engine work | Everything above plus e2e and every test profile (~5min+). Run before merging changes to the MilkDrop compiler, renderer adapters, or the parity pipeline. |
 
 `check:quick` also includes the no-`@ts-nocheck` guard.
 It also verifies that `public/milkdrop-presets/catalog.json` stays synced with `src/data/milkdrop-parity/measured-results.json`.
 Its independent checks run in parallel by default; add `-- --serial` when debugging a specific failing step.
 
-The quality gate now also runs architecture dependency checks via `dependency-cruiser`.
+The full gate runs architecture dependency checks via `dependency-cruiser`, and every `check:*` guard is documented with its tier in [`docs/GUARDRAILS.md`](../GUARDRAILS.md).
 
 ## Task-specific checks
 
-- Toy registration, generated-doc, and public README claim consistency:
+- Catalog, generated-doc, and public README claim consistency:
 
   ```bash
   bun run check:readme-claims
@@ -231,7 +231,7 @@ bun run check
 # Architecture boundary violations
 bun run check:architecture
 
-# Toy manifest, generated docs, and public README claim drift
+# Catalog, generated docs, and public README claim drift
 bun run check:readme-claims
 
 # SEO surface issues

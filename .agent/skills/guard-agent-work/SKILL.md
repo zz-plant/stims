@@ -28,7 +28,7 @@ git status --short && git diff --name-only HEAD
 
 | Touched paths | Guard to apply |
 | --- | --- |
-| `src/js/milkdrop/feedback-*`, `renderer-adapter*`, `compiler/*` | parity guard |
+| `src/js/milkdrop/feedback-*`, `renderer-adapter*`, `packages/milkdrop-toolchain/src/compiler/*` | parity guard |
 | `src/js/core/renderer-*`, `core/audio-handler.ts`, `milkdrop/runtime/backend-fallback.ts` | fallback guard |
 | `src/js/frontend/*`, `src/css/*` | UI guard |
 | `tests/*`, fixture-generating `scripts/*` | test guard |
@@ -45,15 +45,15 @@ If you think you need it, you are wrong. Fix the type error or ask for help.
 
 ### 2. Never import across the engine boundary
 
-`src/js/frontend/*` must not import from `src/js/milkdrop/runtime.ts`, `vm.ts`, or `compiler/*`. Only `milkdrop-engine-adapter.ts` is allowed.
+Runtime ownership crosses through `milkdrop-engine-adapter.ts`. Frontend imports may use approved public engine/editor modules; direct imports of internal runtime and VM modules are blocked by `.dependency-cruiser.mjs`. Compiler source lives in `packages/milkdrop-toolchain/`.
 
 ### 3. Never leave `console.log` in production code
 
 Use the debug snapshot system (`stimState.getDebugSnapshot`) or the agent API instead.
 
-### 4. Never change a skill without updating MCP
+### 4. Keep skill discovery aligned
 
-If you touch `.agent/skills/*` or `.agent/workflows/*`, you must update:
+When adding, removing, renaming, or changing the discovery contract of a skill or workflow, align:
 - `scripts/mcp-shared.ts` (import + `markdownSources` + `agentCapabilities`)
 - `docs/agents/custom-capabilities.md`
 - `docs/agents/visualizer-workflows.md`
@@ -65,7 +65,7 @@ had never been served over MCP at all.
 
 ## Surface-specific guards
 
-### Parity guard (`milkdrop/feedback-*`, `milkdrop/renderer-adapter*`, `compiler/gpu-descriptor-plan.ts`)
+### Parity guard (`milkdrop/feedback-*`, `milkdrop/renderer-adapter*`, `packages/milkdrop-toolchain/src/compiler/gpu-descriptor-plan.ts`)
 
 Before saving any file in this surface:
 

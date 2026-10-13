@@ -50,4 +50,35 @@ describe('palette actions', () => {
     expect(first).not.toHaveBeenCalled();
     expect(later).toHaveBeenCalledTimes(1);
   });
+
+  test('the watch HUD action toggles against the stage read at run time', () => {
+    const announce = mock(() => {});
+    const stage = document.createElement('div');
+    const uiRef = {
+      current: {
+        stageRef: { current: stage },
+        setStatusMessage: announce,
+      },
+    } as unknown as Parameters<typeof buildPaletteActions>[0]['uiRef'];
+    const actions = buildPaletteActions(context({ uiRef }));
+
+    actions.find((action) => action.id === 'toggle-watcher-hud')?.run();
+    expect(announce).toHaveBeenCalledWith(
+      'Variable watch HUD on — it plots the variables you pin in Inspect.',
+    );
+    expect(stage.querySelector('.stims-watch-hud')).not.toBeNull();
+
+    actions.find((action) => action.id === 'toggle-watcher-hud')?.run();
+    expect(announce).toHaveBeenCalledWith('Variable watch HUD off.');
+    expect(stage.querySelector('.stims-watch-hud')).toBeNull();
+
+    // Without a running stage the action reports that rather than throwing.
+    const noStageUiRef = {
+      current: { stageRef: { current: null }, setStatusMessage: announce },
+    } as unknown as Parameters<typeof buildPaletteActions>[0]['uiRef'];
+    buildPaletteActions(context({ uiRef: noStageUiRef }))
+      .find((action) => action.id === 'toggle-watcher-hud')
+      ?.run();
+    expect(announce).toHaveBeenCalledWith('The stage is not running yet.');
+  });
 });

@@ -2,11 +2,14 @@
  * The Inspect pane: live values of the preset's own variables with history,
  * pins and the audio band each follows, plus Freeze and Step for the stage.
  */
-import { createVariableHistory } from '../variable-history.ts';
+import {
+  createVariableHistory,
+  type VariableRow,
+} from '../variable-history.ts';
 import { subscribeVariables } from '../variable-probe.ts';
 import type { EditorPaneHost } from './editor-pane-host.ts';
 
-function formatInspectNumber(value: number): string {
+export function formatInspectNumber(value: number): string {
   if (value === 0) return '0';
   const abs = Math.abs(value);
   if (abs >= 1000 || abs < 0.001) return value.toExponential(2);
@@ -15,28 +18,26 @@ function formatInspectNumber(value: number): string {
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-function buildSparkline(
-  history: readonly number[],
-  min: number,
-  max: number,
-): SVGElement {
+function buildSparkline(row: VariableRow): SVGElement {
   const width = 80;
   const height = 18;
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   svg.setAttribute('class', 'stims-editor__inspect-spark');
   svg.setAttribute('aria-hidden', 'true');
-  if (history.length < 2) return svg;
-  const span = max - min || 1;
-  const step = width / (history.length - 1);
-  const points = history
-    .map((v, i) => {
-      const y = height - 1 - ((v - min) / span) * (height - 2);
-      return `${(i * step).toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
+  const history = row.history;
+  if (history.count < 2) return svg;
+  const span = row.max - row.min || 1;
+  const step = width / (history.count - 1);
+  // The polyline is written straight from the ring buffer, oldest → newest,
+  // without materializing an array per repaint.
+  const points: string[] = [];
+  for (let i = 0; i < history.count; i += 1) {
+    const y = height - 1 - ((history.at(i) - row.min) / span) * (height - 2);
+    points.push(`${(i * step).toFixed(1)},${y.toFixed(1)}`);
+  }
   const line = document.createElementNS(SVG_NS, 'polyline');
-  line.setAttribute('points', points);
+  line.setAttribute('points', points.join(' '));
   line.setAttribute('fill', 'none');
   line.setAttribute('stroke', 'currentColor');
   line.setAttribute('stroke-width', '1');
@@ -65,6 +66,12 @@ export class InspectPane {
     private readonly callbacks: {
       onSetStageFrozen?: (frozen: boolean) => boolean;
       onStepFrame?: () => boolean;
+      /**
+       * The pinned set changed. The stage watch HUD plots exactly these
+       * variables (see watcher-hud.ts), including while the editor is
+       * closed, so the pins must leave the pane when they change.
+       */
+      onPinsChanged?: (names: readonly string[]) => void;
     },
   ) {
     this.element = this.renderInspectPane();
@@ -77,7 +84,7 @@ export class InspectPane {
     const hint = document.createElement('p');
     hint.className = 'stims-editor__hint';
     hint.textContent =
-      'Live values of q1–q32 and every variable your equations set. Pin the ones you are tuning.';
+      'Live values of q1–q32 and every variable your equations set. Pin the ones you are tuning — pinned variables also plot on the stage HUD (command palette: “variable watch”).';
 
     const bar = document.createElement('div');
     bar.className = 'stims-editor__inspect-bar';
@@ -170,6 +177,7 @@ export class InspectPane {
       if (!target?.dataset.pin) return;
       event.preventDefault();
       this.variableHistory.togglePin(target.dataset.pin);
+      this.callbacks.onPinsChanged?.(this.pinnedNames());
       this.paintInspect(true);
     });
     pane.append(
@@ -258,7 +266,7 @@ export class InspectPane {
         }`;
       }
       el.appendChild(tag);
-      el.appendChild(buildSparkline(row.history, row.min, row.max));
+      el.appendChild(buildSparkline(row));
       fragment.appendChild(el);
     }
     list.replaceChildren(fragment);
@@ -293,6 +301,14 @@ export class InspectPane {
   /** Forget recorded values: they belong to the preset that made them. */
   resetHistory() {
     this.variableHistory.reset();
+  }
+
+  /** The pinned set in pinned-first order, as the stage HUD should plot it. */
+  private pinnedNames(): string[] {
+    return this.variableHistory
+      .rows()
+      .filter((row) => row.pinned)
+      .map((row) => row.name);
   }
 
   dispose() {

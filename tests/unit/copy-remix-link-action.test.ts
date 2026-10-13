@@ -13,6 +13,18 @@ import {
 const SOURCE = '[preset00]\nzoom=1.02\nwarp=0.9\n';
 const HREF = 'https://toil.fyi/?preset=geiss-aurora&tool=editor';
 
+/** Too large for any encoding, on purpose: pseudo-varied digits deflate
+ * cannot fold away, so the compressed fallback cannot rescue it either. */
+function unsharableDraft(): string {
+  const filler: string[] = [];
+  for (let index = 0; index < 2_500; index += 1) {
+    filler.push(
+      `// ${index} ${(index * 7919) % 99_991} ${(index * 10_007) % 99_989}`,
+    );
+  }
+  return `${SOURCE}${filler.join('\n')}\n`;
+}
+
 function captureShare(
   result: 'copied' | 'shared' | 'cancelled' | 'unavailable',
 ) {
@@ -45,7 +57,7 @@ describe('copyRemixLinkAction', () => {
       });
     }
     await copyRemixLinkAction({
-      source: SOURCE.repeat(1000),
+      source: unsharableDraft(),
       dirty: true,
       announce: () => {},
       href: HREF,
@@ -148,6 +160,28 @@ describe('copyRemixLinkAction', () => {
     expect(messages).toEqual([]);
   });
 
+  it('shares a draft the raw encoding cannot fit, via the compressed payload', async () => {
+    // 17% of the bundled catalog is over the raw budget; before the
+    // compressed payload these drafts got the refusal, not a link.
+    const large = `${SOURCE}${'// a padded draft line\n'.repeat(700)}`;
+    const { calls, share } = captureShare('copied');
+    const messages: string[] = [];
+
+    await copyRemixLinkAction({
+      source: large,
+      dirty: true,
+      announce: (message) => messages.push(message),
+      href: HREF,
+      share,
+    });
+
+    const url = new URL(calls[0]);
+    expect(url.hash).toContain('#code=z1~');
+    expect(calls[0].length).toBeLessThanOrEqual(16_000);
+    expect(decodePresetCodeFromHash(url.hash)).toBe(large);
+    expect(messages[0]).toContain('carries your unsaved edits');
+  });
+
   it('offers file export when there is no clipboard', async () => {
     const { share } = captureShare('unavailable');
     const messages: string[] = [];
@@ -167,7 +201,7 @@ describe('copyRemixLinkAction', () => {
     const { calls, share } = captureShare('copied');
     const messages: string[] = [];
     await copyRemixLinkAction({
-      source: SOURCE.repeat(1000),
+      source: unsharableDraft(),
       dirty: true,
       announce: (message) => messages.push(message),
       share,
@@ -204,6 +238,27 @@ describe('copyRemixLinkAction', () => {
       share: bundled.share,
     });
     expect(new URL(bundled.calls[0] ?? '').hash).toBe('');
+  });
+
+  it('carries the remix lineage an exported file would', async () => {
+    // The same remix_of_N_* fields an export writes, embedded in the shared
+    // code — without them the recipient's import named no parent.
+    const { calls, share } = captureShare('copied');
+    await copyRemixLinkAction({
+      source: SOURCE,
+      dirty: true,
+      derivedFrom: [
+        { id: 'geiss-casino', title: 'Geiss - Casino', author: 'Geiss' },
+      ],
+      announce: () => {},
+      href: HREF,
+      share,
+    });
+
+    const decoded = decodePresetCodeFromHash(new URL(calls[0]).hash);
+    expect(decoded).toContain('remix_of_1_id=geiss-casino');
+    expect(decoded).toContain('remix_of_1_title="Geiss - Casino"');
+    expect(decoded).toContain('remix_of_1_author=Geiss');
   });
 
   it("a clean local preset's code carries its own title, an edited one is left alone", () => {

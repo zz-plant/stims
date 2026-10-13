@@ -111,6 +111,12 @@ export interface ParsedURLParams {
    * bisect which pick triggered the failure. See core/deterministic-random.ts.
    */
   seed: number | null;
+  /**
+   * `?reduceFlashing=1` turns the reduce-flashing preference on for this visit
+   * without saving it. A link can only turn it on: `?reduceFlashing=0` is
+   * ignored, so no link can strobe someone who chose the setting.
+   */
+  reduceFlashing: boolean;
   performance: PerformanceURLParams;
   audioMock: MockAudioURLParams;
   /**
@@ -352,6 +358,7 @@ export function parseURLParams(
     renderer,
     corpus: get('corpus')?.trim() || null,
     seed: parseNumberParam(get('seed')),
+    reduceFlashing: parseBoolParam(get('reduceFlashing')) === true,
     performance: {
       maxPixelRatio: parseNumberParam(get('maxPixelRatio')),
       particleBudget: parseNumberParam(get('particleBudget')),
@@ -429,6 +436,12 @@ export function getPowerSaverOverride(
   input?: string | URL | Location | URLSearchParams | Record<string, unknown>,
 ): string | null {
   return parseURLParams(input).performance.powerSaver;
+}
+
+export function isReduceFlashingRequested(
+  input?: string | URL | Location | URLSearchParams | Record<string, unknown>,
+): boolean {
+  return parseURLParams(input).reduceFlashing;
 }
 
 export function getMockAudioParams(

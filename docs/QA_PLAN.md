@@ -4,7 +4,7 @@ QA should protect the canonical root workspace on `/`, the `/milkdrop/` compatib
 
 For the full testing reference — speed tiers, quality gate commands, per-change checklists, and CI behavior — see [`TESTING.md`](./TESTING.md).
 
-For Milestone A refactor sign-off, use [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md) as the authoritative manual baseline and artifact-capture checklist.
+For artifact capture and lifecycle sign-off, use [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md) as the manual baseline and artifact-capture checklist.
 
 ## High-value flows
 
@@ -16,7 +16,7 @@ For Milestone A refactor sign-off, use [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMO
   - What to verify: the reusable settings state remembers the user-selected quality preset across workspace reloads and live-session reuse and notifies subscribers exactly when the user changes presets.
   - Automation: `tests/unit/settings-panel.test.ts` covers subscription notifications plus panel reuse without losing the selected preset.
 - **Microphone readiness and fallbacks**
-  - What to verify: microphone setup resolves permissions, falls back to demo audio when blocked, and emits state changes that toys can react to.
+  - What to verify: microphone setup reports permission outcomes, offers a demo fallback when blocked, and communicates the actual playing source. Exercise granted, denied, and unavailable cases.
 
 ## Quick manual checklist (UI smoke pass)
 
@@ -26,7 +26,9 @@ When you touch the root workspace or session UI, run this short manual pass:
 2. **Canonical state**: Start demo audio from `/` and confirm the route stays on `/`, not `/milkdrop/`.
 3. **Preset deep link**: Open `/?preset=rovastar-parallel-universe&audio=demo` and confirm the requested preset becomes the live session.
 4. **Alias compatibility**: Open `/milkdrop/?preset=eos-glowsticks-v2-03-music&audio=demo` and confirm it lands in the same root workspace state.
-5. **Settings persistence**: Change a quality preset or compatibility toggle and verify it persists after reload.
+5. **Play → Edit → Share**: Open Edit this visual, apply a visible source change, share it, and reload the resulting link in a fresh tab. Confirm source and visible effect, then check undo or version restoration.
+6. **Keyboard and mobile**: Exercise focus, panel dismissal, and the same flow at a narrow viewport; check stage and controls for overflow.
+7. **Settings persistence**: Change a quality preset or compatibility toggle and verify it persists after reload.
 
 If the change is part of architecture or runtime refactor work, also run the artifact-capture and sign-off flow in [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md).
 
@@ -34,12 +36,12 @@ If the change is part of architecture or runtime refactor work, also run the art
 
 Use Bun to match the repository tooling:
 
-- For the standard pre-commit check (lint + typecheck + fast tests):
+- For the standard pre-commit check (guards + typecheck + package checks + unit/compat/corpus tests):
   ```bash
   bun run check
   ```
 
-- For lint and typecheck only (fastest, use constantly):
+- For lint, types, and guards without tests:
   ```bash
   bun run check:quick
   ```
@@ -54,7 +56,7 @@ Use Bun to match the repository tooling:
   bun run test tests/unit/frontend-url-state.test.ts tests/e2e/agent-integration.test.ts tests/unit/app-shell-route-sync.test.ts
   ```
 
-- Run the integration harness (real Chromium — also runs in CI on every PR):
+- Run the integration harness (real Chromium — runs in CI for code changes):
   ```bash
   bun run test:integration
   ```

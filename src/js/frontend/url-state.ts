@@ -1,5 +1,8 @@
+import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
+import { embedLineageFields } from 'milkdrop-toolchain/src/preset-lineage-fields.ts';
 import { resolveSemanticRoute } from '../../../functions/discover-slugs.ts';
 import { normalizeCollectionTag, parseURLParams } from '../core/url-params.ts';
+import type { MilkdropPresetLineageRef } from '../milkdrop/types.ts';
 import type {
   AudioSource,
   PanelState,
@@ -174,7 +177,9 @@ export function buildCanonicalUrl(
 }
 
 // Product sharing budget, including the query and percent-escaped payload.
-// Larger drafts can still be edited and exported as .milk files.
+// A draft whose raw encoding exceeds it travels as a compressed payload
+// instead; the rare one that still exceeds it can be edited and exported
+// as a .milk file.
 export const MAX_REMIX_URL_LENGTH = 16_000;
 export const REMIX_URL_TOO_LONG =
   'This remix link is too long to share reliably. Your edits are still in the editor. Export the .milk file to share them.';
@@ -182,19 +187,39 @@ export const REMIX_URL_FAILED =
   'Could not put your edits in a link. Your edits are still in the editor. Export the .milk file to share them.';
 
 /** Full session URL with the live draft, or no hash when source is null.
+ *
+ * `lineage` names the draft's remix parents (`derivedFrom` on the preset's
+ * catalog entry). A `.milk` export carries them as `remix_of_N_*` fields and
+ * import reads them back; a share link had no such channel, so a remix
+ * shared as a link arrived as a root work. The fields are embedded in the
+ * hashed source — the same channel an export uses — so the receiving import
+ * restores them with no changes on its side.
+ *
  * Throws on failure so callers cannot mistake a stale URL for the draft. */
 export function buildRemixShareUrl(
   input: string | URL,
   source: string | null,
+  lineage?: readonly MilkdropPresetLineageRef[],
 ): string {
   const url =
     typeof input === 'string'
       ? new URL(input, 'https://toil.fyi')
       : new URL(input.toString());
   if (source !== null) {
-    const hash = buildPresetCodeHash(source);
-    if (!hash) throw new Error(REMIX_URL_FAILED);
-    url.hash = hash;
+    const carried = embedLineageFields(source, lineage);
+    const rawHash = buildPresetCodeHash(carried);
+    if (!rawHash) throw new Error(REMIX_URL_FAILED);
+    url.hash = rawHash;
+    // The raw encoding carries 83% of the bundled catalog under the
+    // sharing budget; the rest still fits as a deflate-raw payload. Only
+    // over-budget drafts pay the switch, so every link that already fit
+    // keeps the exact bytes previous builds wrote.
+    if (url.toString().length > MAX_REMIX_URL_LENGTH) {
+      const compressedHash = buildCompressedPresetCodeHash(carried);
+      if (compressedHash) {
+        url.hash = compressedHash;
+      }
+    }
   } else {
     url.hash = '';
   }
@@ -232,8 +257,8 @@ export function decodePresetCodeFromHash(
  *
  * `~` is not in the base64 alphabet and `encodeURIComponent` leaves it
  * alone, so it cannot appear in a legacy payload and cannot change the shape
- * of the encoded hash. The digit is there so a third encoding, if one is
- * ever needed, does not have to guess again.
+ * of the encoded hash. The digit is there so another encoding does not have
+ * to guess again — the third one exists now, below.
  *
  * The alternative — decoding as UTF-8 and falling back when that throws —
  * looks equivalent but is not: a Latin-1 source containing `Ã©` was stored
@@ -242,6 +267,31 @@ export function decodePresetCodeFromHash(
  * explicit marker is the only way to tell the two apart.
  */
 const PRESET_CODE_UTF8_PREFIX = 'u1~';
+
+/**
+ * The third encoding: the same UTF-8 bytes as `u1~`, deflate-raw-compressed
+ * and base64url-encoded. Compressing only pays on the drafts the raw
+ * encoding cannot fit under the sharing budget, but those were unsharable
+ * before — 17% of the bundled catalog could not travel in a link at all
+ * (`bun run lab:link-reach`). Decode reads all three formats, forever, so
+ * no link ever goes dark: bare base64 from the first build, `u1~` from the
+ * second, `z1~` from this one.
+ */
+const PRESET_CODE_COMPRESSED_PREFIX = 'z1~';
+
+/**
+ * Base64 for arbitrary bytes, chunked: `btoa` takes a Latin-1 byte string,
+ * and a large payload would otherwise hit the argument limit of a single
+ * spread call.
+ */
+function bytesToBase64(bytes: Uint8Array): string {
+  const CHUNK = 0x8000;
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + CHUNK));
+  }
+  return btoa(binary);
+}
 
 /**
  * Base64 for arbitrary text, via UTF-8.
@@ -254,13 +304,7 @@ const PRESET_CODE_UTF8_PREFIX = 'u1~';
  * limit of a single spread call.
  */
 function encodeTextToBase64(text: string): string {
-  const bytes = new TextEncoder().encode(text);
-  const CHUNK = 0x8000;
-  let binary = '';
-  for (let offset = 0; offset < bytes.length; offset += CHUNK) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + CHUNK));
-  }
-  return btoa(binary);
+  return bytesToBase64(new TextEncoder().encode(text));
 }
 
 /**
@@ -270,6 +314,13 @@ function encodeTextToBase64(text: string): string {
  * with, exactly as that build read it.
  */
 function decodeBase64ToText(payload: string): string {
+  if (payload.startsWith(PRESET_CODE_COMPRESSED_PREFIX)) {
+    const compressed = atob(
+      base64UrlToBase64(payload.slice(PRESET_CODE_COMPRESSED_PREFIX.length)),
+    );
+    const bytes = Uint8Array.from(compressed, (c) => c.charCodeAt(0));
+    return strFromU8(inflateSync(bytes));
+  }
   if (!payload.startsWith(PRESET_CODE_UTF8_PREFIX)) {
     return atob(payload);
   }
@@ -282,6 +333,30 @@ export function buildPresetCodeHash(milkSource: string): string {
   try {
     const base64 = encodeTextToBase64(milkSource);
     return `#code=${encodeURIComponent(`${PRESET_CODE_UTF8_PREFIX}${base64}`)}`;
+  } catch (_err) {
+    return '';
+  }
+}
+
+/** URL-safe base64: every character survives `encodeURIComponent`
+ * untouched, so a `z1~` payload never grows when the hash is written. */
+function base64UrlFromBase64(base64: string): string {
+  return base64.replace(/\+/gu, '-').replace(/\//gu, '_').replace(/=+$/u, '');
+}
+
+function base64UrlToBase64(base64Url: string): string {
+  const bare = base64Url.replace(/-/gu, '+').replace(/_/gu, '/');
+  return `${bare}${'='.repeat((4 - (bare.length % 4)) % 4)}`;
+}
+
+/** The share hash for a deflate-raw-compressed source, or '' when the
+ * payload cannot be built. Mirrors `buildPresetCodeHash`'s contract. */
+function buildCompressedPresetCodeHash(milkSource: string): string {
+  try {
+    const base64Url = base64UrlFromBase64(
+      bytesToBase64(deflateSync(strToU8(milkSource))),
+    );
+    return `#code=${encodeURIComponent(`${PRESET_CODE_COMPRESSED_PREFIX}${base64Url}`)}`;
   } catch (_err) {
     return '';
   }

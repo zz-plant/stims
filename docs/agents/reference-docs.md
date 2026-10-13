@@ -2,11 +2,15 @@
 
 ## Primary docs
 
+- `docs/README.md` — task-oriented index and document status.
+- `docs/USER_GUIDE.md` — play, audio, editor, sharing, and capture.
+- `docs/TESTING.md` — actual test profiles, quality gates, and CI coverage.
+
 - `docs/DEVELOPMENT.md` — scripts and contributor workflow baseline.
 - `docs/MILKDROP_PRESET_RUNTIME.md` — preset runtime, editor, compiler, and compatibility behavior.
 - `docs/ARCHITECTURE.md` — runtime architecture and flow.
-- `docs/STATUS_2026-05.md` — current project state: what changed, certified corpus, known gaps, next targets.
-- `docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md` — single source of truth: certified/baseline-measured/semantic/unmeasured presets, fidelity gaps by subsystem.
+- `docs/ROADMAP.md` — product and engineering priorities and next targets.
+- `docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md` — historical May snapshot of fidelity evidence, not the current certification inventory.
 - `docs/evidence/public-claim-audit.md` — overclaim findings and recommended fixes for public-facing naming and evidence claims.
 - `docs/MANUAL_SMOKE_BASELINE.md` — milestone sign-off checklist for startup/shell/runtime changes.
 - `docs/QA_PLAN.md` — broader QA map and focused regression coverage.
@@ -18,14 +22,14 @@
 - `docs/architecture/shader-support-inventory.md` — full compiler support audit: ~50 supported patterns, 10 unsupported/partial, 6 silent fallback locations, priority-ranked fixes.
 - `docs/architecture/fallback-state-machine.md` — renderer setup FSM design: 28 transitions across 12 states, 6 implicit ordering risks, implementation plan.
 - `docs/architecture/rasterization-fidelity-audit.md` — WebGL vs WebGPU divergence: 7 known divergence points, blend order audit, 10 object-count-only tests identified.
-- `docs/architecture/architectural-changes-proposal-2026-09.md` — measured architecture proposal: `any`-typed engine seam, unenforced frontend → engine boundary, four hand-listed catalog projections, 33-effect `App.tsx`, flat engine directory; six changes with guards and sequencing.
+- `docs/architecture/architectural-changes-proposal-2026-09.md` — September proposal and measurements. The typed runtime seam and boundary guards have since landed; consult `.dependency-cruiser.mjs` and current adapter types.
 
 ## High-signal code locations
 
 - `src/js/frontend/` — route state, workspace UI, and the React app shell.
 - `src/js/frontend/engine/` — strict engine seam between the React shell and MilkDrop runtime.
 - `src/js/core/` — shared renderer, audio, settings, automation, and capability systems.
-- `src/js/milkdrop/` — preset compiler, VM, runtime, editor, overlay, and catalog behavior.
+- `src/js/milkdrop/` — VM, runtime, editor, overlay, and catalog behavior; compiler source lives in `packages/milkdrop-toolchain/`.
 - `src/css/` — `tokens.css` (design tokens), `chrome.css` (panel/dock control system), `app-shell.css` (workspace shell, wrapped in `@scope (.stims-shell)`), `index.css` and `base.css` (older page-level styles), plus `*.module.css` for component-scoped styles.
 - `public/milkdrop-presets/` — bundled preset corpus and catalog assets.
 

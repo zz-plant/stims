@@ -1,5 +1,7 @@
 # Architectural changes proposal — September 2026
 
+> Historical September proposal. The typed runtime seam and frontend/adapter boundary guards have since landed. Use [Architecture](../ARCHITECTURE.md), [source map](../agents/src-map.md), and `.dependency-cruiser.mjs` for current contracts; original findings and measurements below are preserved.
+
 Status: proposal. No runtime code changes accompany this document. Every
 number below was measured on `main` at `3f8804e` (2026-09-01) with the
 commands in the [appendix](#appendix-how-the-numbers-were-measured), so a
@@ -461,7 +463,7 @@ and need nothing extra.
   internals. Change 2 measures that coupling and change 5 narrows it.
 - **Docs drift noted, not fixed here.** [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md)
   says the repo has 127 scripts; `package.json` has 154.
-  [`FULL_REFACTOR_PLAN.md`](../FULL_REFACTOR_PLAN.md) still describes the
+  [`archive/FULL_REFACTOR_PLAN.md`](../archive/FULL_REFACTOR_PLAN.md) still describes the
   retired toy stage. Both belong in a docs-only change.
 
 ## Open questions for maintainers

@@ -18,6 +18,8 @@
     inset: 0;
     padding: max(clamp(64px, 8vh, 96px), calc(50dvh - 20rem))
       clamp(20px, 6vw, 72px) 42px;
+    /* Match the boot cover's inner gutter before the launch content overflows. */
+    scrollbar-gutter: stable;
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-panel {

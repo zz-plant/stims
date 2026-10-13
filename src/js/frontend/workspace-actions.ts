@@ -18,6 +18,7 @@ import {
 } from '../core/accessibility-preferences.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
+import type { MilkdropPresetLineageRef } from '../milkdrop/types.ts';
 import { shareOrCopyLink } from '../utils/media/share-link.ts';
 import type {
   AudioSource,
@@ -138,6 +139,7 @@ export async function copyRemixLinkAction({
   dirty,
   local = false,
   title,
+  derivedFrom,
   announce,
   onSuccess,
   share = shareOrCopyLink,
@@ -152,8 +154,16 @@ export async function copyRemixLinkAction({
    * not be loaded".
    */
   local?: boolean;
-  /** The preset's own title, written into a local preset's shared code. */
+  /**
+   * The preset's own title, written into a local preset's shared code.
+   */
   title?: string;
+  /**
+   * The preset's remix parents, from its catalog entry's `derivedFrom`.
+   * Embedded in the shared code as `remix_of_N_*` fields — the same channel
+   * an export uses — so the recipient's import restores the lineage.
+   */
+  derivedFrom?: readonly MilkdropPresetLineageRef[];
   announce: (message: string) => void;
   onSuccess?: () => void;
   /** Test seam for the clipboard/native-share path. */
@@ -167,6 +177,7 @@ export async function copyRemixLinkAction({
     url = buildRemixShareUrl(
       href,
       carriesCode ? codeForLocalShare(source, { local, dirty, title }) : null,
+      derivedFrom,
     );
   } catch (error) {
     announce(error instanceof Error ? error.message : REMIX_URL_FAILED);

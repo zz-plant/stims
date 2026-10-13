@@ -15,8 +15,13 @@ import {
   AUDIO_FILE_ACCEPT,
   canProbablyPlay,
   disposeActiveFileAudio,
+  type FilePlaylistSnapshot,
   getActiveFileAudioName,
+  getActiveFilePlaylist,
+  nextFileTrack,
+  previousFileTrack,
   startFileAudio,
+  subscribeFilePlaylist,
 } from './file-audio.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
@@ -128,32 +133,48 @@ export function AudioSourcePanel({
     const playing = getActiveFileAudioName();
     return playing ? { name: playing, error: null, loading: false } : null;
   });
+  const [playlist, setPlaylist] = useState<FilePlaylistSnapshot | null>(() =>
+    getActiveFilePlaylist(),
+  );
+  useEffect(() => {
+    return subscribeFilePlaylist(setPlaylist);
+  }, []);
   const [dragActive, setDragActive] = useState(false);
 
   // One handle at a time: picking a second track must tear the first one's
   // graph down, or both keep playing into the analyser at once.
-  const playFile = async (file: File) => {
-    if (!canProbablyPlay(file)) {
+  const playFile = async (fileOrFiles: File | File[]) => {
+    const rawFiles = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
+    const files = rawFiles.filter(canProbablyPlay);
+    if (files.length === 0) {
+      const first = rawFiles[0];
       setFileState({
-        name: file.name,
-        error: `This browser can't play ${file.type || 'that file type'}.`,
+        name: first?.name ?? 'File',
+        error: `This browser can't play ${first?.type || 'that file type'}.`,
         loading: false,
       });
       return;
     }
-    setFileState({ name: file.name, error: null, loading: true });
+    const count = files.length;
+    const label =
+      count > 1 ? `${files[0].name} (+${count - 1} more)` : files[0].name;
+    setFileState({ name: label, error: null, loading: true });
     try {
-      const handle = await startFileAudio(file, {
+      const handle = await startFileAudio(files, {
         routeState: ui.routeState,
         commitRoute: ui.commitRoute,
         startAudioSource: engine.startAudioSource,
       });
       setFileState({ name: handle.name, error: null, loading: false });
-      ui.setStatusMessage(`Playing ${handle.name}`);
+      ui.setStatusMessage(
+        count > 1
+          ? `Playing ${handle.name} (1 of ${count})`
+          : `Playing ${handle.name}`,
+      );
     } catch (error) {
       disposeActiveFileAudio();
       setFileState({
-        name: file.name,
+        name: files[0].name,
         error: error instanceof Error ? error.message : 'Could not play file.',
         loading: false,
       });
@@ -406,9 +427,11 @@ export function AudioSourcePanel({
     ? 'Loading…'
     : fileState?.error
       ? fileState.error
-      : fileState
-        ? `Playing ${fileState.name}`
-        : 'Pick a track, or drop one here';
+      : playlist && playlist.totalTracks > 1
+        ? `Track ${playlist.currentIndex + 1} of ${playlist.totalTracks}: ${playlist.currentTrackName}`
+        : fileState
+          ? `Playing ${fileState.name}`
+          : 'Pick a track, or drop files here';
 
   const sourceGrid = (
     <div
@@ -498,8 +521,8 @@ export function AudioSourcePanel({
         onDrop={(event) => {
           event.preventDefault();
           setDragActive(false);
-          const file = event.dataTransfer.files?.[0];
-          if (file) void playFile(file);
+          const files = event.dataTransfer.files;
+          if (files && files.length > 0) void playFile(Array.from(files));
         }}
       >
         <UiIcon
@@ -515,16 +538,70 @@ export function AudioSourcePanel({
         ref={fileInputRef}
         type="file"
         accept={AUDIO_FILE_ACCEPT}
+        multiple
         className="stims-shell__sr-only"
         tabIndex={-1}
         aria-hidden="true"
         onChange={(event) => {
-          const file = event.target.files?.[0];
+          const files = event.target.files;
+          if (files && files.length > 0) void playFile(Array.from(files));
           // Clear so re-picking the same file fires change again.
           event.target.value = '';
-          if (file) void playFile(file);
         }}
       />
+      {playlist && playlist.totalTracks > 1 && !chips ? (
+        <fieldset
+          className="stims-shell__chip stims-shell__chip--media"
+          aria-label="Playlist transport"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            marginTop: '4px',
+            padding: '4px 8px',
+            border: 'none',
+          }}
+        >
+          <button
+            type="button"
+            className="stims-shell__chip"
+            aria-label="Previous track"
+            title="Previous track"
+            style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              void previousFileTrack();
+            }}
+          >
+            <UiIcon
+              name="arrow-left"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            <span>Prev track</span>
+          </button>
+          <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+            {playlist.currentIndex + 1} / {playlist.totalTracks}
+          </span>
+          <button
+            type="button"
+            className="stims-shell__chip"
+            aria-label="Next track"
+            title="Next track"
+            style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              void nextFileTrack();
+            }}
+          >
+            <span>Next track</span>
+            <UiIcon
+              name="arrow-right"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+          </button>
+        </fieldset>
+      ) : null}
       {canCaptureDisplayAudio && offers('tab') ? (
         <button
           type="button"

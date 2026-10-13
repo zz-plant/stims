@@ -414,4 +414,44 @@ describe('workspace first-fold launch hierarchy', () => {
       rendered.dispose();
     }
   });
+
+  test('the landing offers the promise its own action: Edit, in the same row as Play', () => {
+    const panels: Array<string | null> = [];
+    const rendered = renderWorkspace(<NewHomePage />, {
+      engine: { attractPreviewLive: true },
+      ui: { updatePanel: (panel) => panels.push(panel) },
+    });
+    try {
+      const edit = rendered.container.querySelector<HTMLButtonElement>(
+        '.stims-shell__launch-actions-minimal [data-action="open-editor"]',
+      );
+      // The word it does, carrying the promise's "one", beside the ranked
+      // pair — same shape as Browse presets, so the row reads as three
+      // pointer-reachable choices.
+      expect(edit?.textContent).toBe('Edit this one');
+      expect(edit?.className).toBe('stims-shell__launch-secondary');
+      expect(
+        rendered.container.querySelector('.stims-shell__launch-cta'),
+      ).not.toBeNull();
+      rendered.click(edit);
+      expect(panels).toEqual(['editor']);
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('Edit is not offered when nothing runs behind the landing', () => {
+    // Low power, reduced motion, or a blank-attract pause: no preset is on
+    // stage to open up, and a dead-end Edit button is worse than none.
+    const rendered = renderWorkspace(<NewHomePage />, {
+      engine: { attractPreviewLive: false },
+    });
+    try {
+      expect(
+        rendered.container.querySelector('[data-action="open-editor"]'),
+      ).toBeNull();
+    } finally {
+      rendered.dispose();
+    }
+  });
 });

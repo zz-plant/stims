@@ -65,11 +65,17 @@ Each case is `pinned` (the default) or `provisional`.
 - **pinned**: derived from documented MilkDrop 2.x / ns-eel behaviour. A conforming implementation must produce this value.
 - **provisional**: this corpus's *observed* behaviour, not yet confirmed against ns-eel. A provisional case is a question, not a requirement. Enforcing it still has value, since silent drift is worse than a wrong-but-known value, but do not port one into another implementation without checking upstream first.
 
-## Install
+## Use from this repository
+
+This package is not published on npm as of 2026-10-10 (the registry lookup returned 404). Build and test the workspace source from a clone of [Stims](https://github.com/zz-plant/stims):
 
 ```sh
-npm install eel-conformance
+bun install --frozen-lockfile
+bun --cwd packages/eel-conformance run build
+bun --cwd packages/eel-conformance test
 ```
+
+The examples below use the package name, which resolves through the Bun workspace after installation. For a separate consumer, pack the built package and install the resulting tarball. See [package release instructions](https://github.com/zz-plant/stims/blob/main/packages/README.md#publishing) for first-publication checks. Once a release exists, the intended registry command is `bun add eel-conformance`.
 
 ## Running it against your engine
 
@@ -89,7 +95,7 @@ process.exit(conforms(report) ? 0 : 1);
 
 `runConformance` records a thrown error as an error on that case and keeps going, because the useful output is the whole table, not the first crash. `conforms` is true when every pinned case passed; provisional failures are reported separately and never count against conformance. Variable names in `env` are lower-cased, matching the language's case-insensitivity.
 
-The sibling package [`milkdrop-toolchain`](../milkdrop-toolchain) runs this corpus against its interpreter, JIT and WGSL generator in its own test suite, and is where the cases were first written.
+The sibling package [`milkdrop-toolchain`](../milkdrop-toolchain) runs this corpus against its interpreter, JIT and WGSL generator in its own test suite. The cases were first written there.
 
 ## What the corpus covers
 

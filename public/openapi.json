@@ -2,20 +2,20 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Stims (toil.fyi) API",
-    "description": "API endpoints for validating, generating, refining, patching, and searching MilkDrop music visualizer presets on toil.fyi.",
+    "description": "Preset source operations exposed by the site Worker. Model-backed routes depend on configured bindings; compilation does not establish visual fidelity.",
     "version": "1.0.0"
   },
   "servers": [
     {
       "url": "https://toil.fyi/api",
-      "description": "Production edge server"
+      "description": "Example production base URL; optional endpoint availability depends on deployment bindings"
     }
   ],
   "paths": {
     "/validate-preset": {
       "post": {
         "summary": "Validate MilkDrop preset syntax",
-        "description": "Parse and dry-run validate MilkDrop .milk source code without rendering.",
+        "description": "Compile MilkDrop source and return diagnostics without GPU rendering. Valid means no compiler error diagnostics.",
         "operationId": "validatePreset",
         "requestBody": {
           "required": true,
@@ -42,24 +42,79 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "valid": { "type": "boolean" },
-                    "fieldCount": { "type": "integer" },
+                    "valid": {
+                      "type": "boolean"
+                    },
+                    "fieldCount": {
+                      "type": "integer"
+                    },
                     "sections": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": {
+                        "type": "string"
+                      }
                     },
                     "errors": {
                       "type": "array",
-                      "items": { "type": "object" }
+                      "items": {
+                        "type": "object",
+                        "required": ["severity", "code", "message"],
+                        "properties": {
+                          "severity": {
+                            "type": "string",
+                            "enum": ["error", "warning"]
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "line": {
+                            "type": "integer"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     },
                     "warnings": {
                       "type": "array",
-                      "items": { "type": "object" }
+                      "items": {
+                        "type": "object",
+                        "required": ["severity", "code", "message"],
+                        "properties": {
+                          "severity": {
+                            "type": "string",
+                            "enum": ["error", "warning"]
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "line": {
+                            "type": "integer"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     }
-                  }
+                  },
+                  "required": [
+                    "valid",
+                    "fieldCount",
+                    "sections",
+                    "errors",
+                    "warnings"
+                  ]
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid or missing request fields"
+          },
+          "405": {
+            "description": "Unsupported method; use POST or OPTIONS"
           }
         }
       }
@@ -77,11 +132,20 @@
                 "type": "object",
                 "required": ["milkSource", "patch"],
                 "properties": {
-                  "milkSource": { "type": "string" },
+                  "milkSource": {
+                    "type": "string"
+                  },
                   "patch": {
                     "type": "object",
                     "additionalProperties": {
-                      "oneOf": [{ "type": "string" }, { "type": "number" }]
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
                     }
                   }
                 }
@@ -97,11 +161,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "milkSource": { "type": "string" }
+                    "milkSource": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid or missing request fields"
+          },
+          "405": {
+            "description": "Unsupported method; use POST or OPTIONS"
           }
         }
       }
@@ -119,10 +191,16 @@
                 "type": "object",
                 "required": ["description"],
                 "properties": {
-                  "description": { "type": "string" },
+                  "description": {
+                    "type": "string"
+                  },
                   "complexity": {
                     "type": "string",
                     "enum": ["simple", "moderate", "complex"]
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "Allowed model override; unsupported names fall back to server selection."
                   }
                 }
               }
@@ -137,12 +215,36 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "milkSource": { "type": "string" },
-                    "title": { "type": "string" }
+                    "milkSource": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid or missing request fields"
+          },
+          "405": {
+            "description": "Unsupported method; use POST or OPTIONS"
+          },
+          "429": {
+            "description": "Configured model rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Retry delay in seconds"
+              }
+            }
+          },
+          "500": {
+            "description": "Provider or service failure"
           }
         }
       }
@@ -160,8 +262,31 @@
                 "type": "object",
                 "required": ["currentSource", "instruction"],
                 "properties": {
-                  "currentSource": { "type": "string" },
-                  "instruction": { "type": "string" }
+                  "currentSource": {
+                    "type": "string"
+                  },
+                  "instruction": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "Allowed model override; unsupported names fall back to server selection."
+                  },
+                  "history": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["role", "content"],
+                      "properties": {
+                        "role": {
+                          "type": "string"
+                        },
+                        "content": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -175,11 +300,37 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "milkSource": { "type": "string" }
+                    "milkSource": {
+                      "type": "string"
+                    },
+                    "explanation": {
+                      "type": "string",
+                      "description": "Present for explain/describe instructions; milkSource is unchanged."
+                    }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid or missing request fields"
+          },
+          "405": {
+            "description": "Unsupported method; use POST or OPTIONS"
+          },
+          "429": {
+            "description": "Configured model rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Retry delay in seconds"
+              }
+            }
+          },
+          "500": {
+            "description": "Provider or service failure"
           }
         }
       }
@@ -197,9 +348,15 @@
                 "type": "object",
                 "required": ["sourceA", "sourceB"],
                 "properties": {
-                  "sourceA": { "type": "string" },
-                  "sourceB": { "type": "string" },
-                  "instruction": { "type": "string" }
+                  "sourceA": {
+                    "type": "string"
+                  },
+                  "sourceB": {
+                    "type": "string"
+                  },
+                  "instruction": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -213,11 +370,33 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "milkSource": { "type": "string" }
+                    "milkSource": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid or missing request fields"
+          },
+          "405": {
+            "description": "Unsupported method; use POST or OPTIONS"
+          },
+          "429": {
+            "description": "Configured model rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Retry delay in seconds"
+              }
+            }
+          },
+          "500": {
+            "description": "Provider or service failure"
           }
         }
       }
@@ -235,7 +414,13 @@
                 "type": "object",
                 "required": ["description"],
                 "properties": {
-                  "description": { "type": "string" }
+                  "description": {
+                    "type": "string"
+                  },
+                  "embedOnly": {
+                    "type": "boolean",
+                    "default": false
+                  }
                 }
               }
             }
@@ -247,22 +432,218 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "presetId": {
+                                "type": "string"
+                              },
+                              "score": {
+                                "type": "number"
+                              }
+                            }
+                          }
+                        },
+                        "source": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["results"]
+                    },
+                    {
+                      "type": "object",
+                      "required": ["embedding"],
+                      "properties": {
+                        "embedding": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or missing request fields"
+          },
+          "405": {
+            "description": "Unsupported method; use POST or OPTIONS"
+          },
+          "429": {
+            "description": "Configured model rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Retry delay in seconds"
+              }
+            }
+          },
+          "500": {
+            "description": "Provider or service failure"
+          }
+        }
+      }
+    },
+    "/batch-generate": {
+      "post": {
+        "summary": "Generate preset variations",
+        "operationId": "batchGenerate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["description"],
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "default": 3
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success payload",
+            "content": {
+              "application/json": {
+                "schema": {
                   "type": "object",
+                  "required": ["presets"],
                   "properties": {
-                    "results": {
+                    "presets": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "presetId": { "type": "string" },
-                          "score": { "type": "number" }
-                        }
+                        "type": "string"
                       }
                     }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid or missing request fields"
+          },
+          "405": {
+            "description": "Unsupported method; use POST or OPTIONS"
+          },
+          "429": {
+            "description": "Configured model rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Retry delay in seconds"
+              }
+            }
+          },
+          "500": {
+            "description": "Provider or service failure"
+          }
+        }
+      }
+    },
+    "/image-to-preset": {
+      "post": {
+        "summary": "Generate source from an image",
+        "operationId": "imageToPreset",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["image"],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "description": "Base64 image data"
+                  },
+                  "guidance": {
+                    "type": "string",
+                    "description": "Trimmed to 500 characters"
+                  }
+                }
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["image"],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "guidance": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["description", "milkSource"],
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "milkSource": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or missing request fields"
+          },
+          "405": {
+            "description": "Unsupported method; use POST or OPTIONS"
+          },
+          "429": {
+            "description": "Configured model rate limit exceeded",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Retry delay in seconds"
+              }
+            }
+          },
+          "500": {
+            "description": "Provider or service failure"
           }
         }
       }

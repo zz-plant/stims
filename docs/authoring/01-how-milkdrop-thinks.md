@@ -1,10 +1,10 @@
 # Track 1 — How MilkDrop thinks
 
-A MilkDrop preset is a text file of small equations. The engine runs them every frame, sixty times a second, and the numbers they produce steer the picture. Before learning any variable names, learn the one idea that makes every preset make sense.
+A MilkDrop preset is a text file of small equations. The engine runs them every frame, at the runtime's frame rate, and the numbers they produce steer the picture. Before learning any variable names, learn the one idea that makes every preset make sense.
 
 ## Lesson 1 · The screen is the memory
 
-Every effect MilkDrop has ever produced — tunnels, trails, plasma, smoke — comes from one move, repeated forever:
+Many MilkDrop effects — tunnels, trails, plasma, smoke — build on one feedback loop:
 
 1. Take the image currently on screen.
 2. Redraw it, slightly transformed.
@@ -23,7 +23,7 @@ zoom=1.01
 
 [**▶ Run zoom=1.01**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgbGVzc29uIGJlbmNoOiBhIGJyaWdodCB3YXZlZm9ybSwgbm8gbW90aW9uLCBub3RoaW5nIGhpZGRlbi4KLy8gRXZlcnkgVHJhY2sgMSBhbmQgVHJhY2sgMiBleGFtcGxlIGlzIHRoaXMgZmlsZSB3aXRoIG9uZSBvciB0d28gbGluZXMgY2hhbmdlZC4KZlJhdGluZz01CmZEZWNheT0wLjk4CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEuMDEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MAo%3D "examples/11-feedback-outward.milk")
 
-Each frame, the previous image is redrawn 1% larger. One percent sounds like nothing, but it compounds sixty times a second — after one second the oldest paint is ~80% bigger and still growing. Every waveform the music draws becomes a trail streaming toward you.
+Each frame, the previous image is redrawn 1% larger. One percent sounds like nothing, but it compounds with the frame rate — at 60 fps, after one second the oldest paint is ~80% bigger and still growing. Every waveform the music draws becomes a trail streaming toward you.
 
 Reverse it:
 
@@ -47,9 +47,9 @@ The loop has stations, and each section of a preset file runs at exactly one of 
 flowchart LR
     A[audio in] --> PF[per_frame equations<br/>once per frame]
     PF --> PV[per_pixel equations<br/>once per mesh point]
-    PV --> WS[warp shader<br/>optional GLSL]
+    PV --> WS[warp shader<br/>supported shader source]
     WS --> DRAW[draw waveform,<br/>custom waves, shapes]
-    DRAW --> CS[comp shader<br/>optional GLSL]
+    DRAW --> CS[comp shader<br/>supported shader source]
     CS --> OUT[screen]
     OUT -. becomes next frame's input .-> PF
 ```

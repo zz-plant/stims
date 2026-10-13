@@ -10,6 +10,10 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 
 <sub>Stims lives at toil.fyi. Any WebGL2 browser; no account, no install.</sub>
 
+<a href="./docs/assets/clips/stims-workflow.mp4"><img src="./docs/assets/clips/stims-workflow.gif" alt="Play Shifter's Curlique, add a rotation equation in the live editor, and copy a link carrying the edited source" width="640"></a>
+
+<sub>Play → edit → share. This preview is accelerated; <a href="./docs/assets/clips/stims-workflow.mp4">watch the 25-second workflow</a> at recorded speed. The capture is silent.</sub>
+
 <table>
   <tr>
     <td width="50%"><a href="https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.gif" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></a></td>
@@ -47,7 +51,7 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 
 ## How it compares
 
-Butterchurn and projectM are where most people meet MilkDrop presets today, and both are good at what they do: they're renderers you embed or run. Stims is a whole app, on a renderer of its own.
+Butterchurn and projectM are the renderers most people embed or run today. Stims is a whole app, on a renderer of its own.
 
 | | Stims | Butterchurn | projectM |
 | --- | --- | --- | --- |
@@ -118,7 +122,7 @@ To learn the equation language, start with [the authoring curriculum](./docs/aut
 
 ### Standalone packages
 
-Four parts of Stims are standalone packages under [`packages/`](./packages/README.md): the app imports them, they have no dependency on the app, and each has a read-only mirror repository, a demo site and an npm-ready build.
+Four parts of Stims are standalone packages under [`packages/`](./packages/README.md): the app imports them, they have no dependency on the app, and each has a read-only mirror repository, a demo site and an npm-ready build. They are unpublished as of the registry check on 2026-10-10; use the workspace source and the [release instructions](./packages/README.md#publishing).
 
 | Package | What it is |
 | --- | --- |
@@ -131,8 +135,9 @@ Four parts of Stims are standalone packages under [`packages/`](./packages/READM
 
 ```bash
 bun run check:quick   # lint, types and repo guards; no tests (under a minute)
-bun run check         # the PR gate: check:quick plus unit, compatibility and corpus tests (2,800+)
-bun run test          # every test, including the slower browser e2e suite
+bun run check         # full checks, package suites, unit + compatibility + corpus
+bun run test          # default: unit + compatibility
+bun run check:all     # full checks and all profiles, including browser e2e
 bun run build         # production bundle
 ```
 
@@ -140,11 +145,15 @@ bun run build         # production bundle
 
 The most useful things, roughly in order of effort:
 
-- **Tell us when a preset looks wrong.** The link in your address bar reproduces the exact session, so that link, plus a screenshot of the same preset in MilkDrop or projectM if you have one, is a complete bug report: [report a preset that renders wrong](https://github.com/zz-plant/stims/issues/new?template=preset-renders-wrong.yml).
+- **Tell us when a preset looks wrong.** Use Share to preserve edited source, then include the link, browser, backend, audio source, and steps to reproduce. A matching MilkDrop or projectM screenshot helps compare output: [report a preset that renders wrong](https://github.com/zz-plant/stims/issues/new?template=preset-renders-wrong.yml).
 - **Share presets and finds** in [Discussions](https://github.com/zz-plant/stims/discussions): a preset you wrote or restored, a collection worth curating, a song that makes one sing. [The remix thread](https://github.com/zz-plant/stims/discussions/1341) collects one-equation edits of a featured preset.
 - **Send code.** Start with [CONTRIBUTING.md](./CONTRIBUTING.md); [docs/ONBOARDING.md](./docs/ONBOARDING.md) maps the codebase and says which parts are hard. The [good first issues](https://github.com/zz-plant/stims/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) are scoped small on purpose. Compatibility changes should bring a test and its evidence.
 
 What changed recently is in [the changelog](./CHANGELOG.md).
+
+For audio, editing, and sharing, start with [the user guide](./docs/USER_GUIDE.md); [the docs index](./docs/README.md) links current references and historical evidence.
+
+For recording or streaming, start with [the OBS setup recipe](./docs/OBS.md). It covers a Browser Source demo, regular-browser capture, and separate audio routing; native OBS verification is still pending.
 
 ## Acknowledgments and lineage
 

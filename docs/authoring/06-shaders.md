@@ -1,12 +1,12 @@
 # Track 6 — Shaders
 
-Everything through Track 5 is EEL: small equations, evaluated on the CPU-side VM, one value per knob per frame (or per pixel, at most). Shaders are different in kind, not just in syntax — GLSL code that runs on the GPU, once per *screen pixel*, every frame. This is where reaction-diffusion, edge detection, and fractal iteration live: effects that need every pixel to see its neighbors. EEL's per-pixel context can't do that.
+Everything through Track 5 is EEL: small equations evaluated by the VM, with eligible per-pixel and wave-point programs lowered to the GPU on WebGPU. Shaders are different in kind, not just in syntax — GLSL code that runs on the GPU, once per *screen pixel*, every frame. This is where reaction-diffusion, edge detection, and fractal iteration live: effects that need every pixel to see its neighbors. EEL's per-pixel context can't do that.
 
 **64% of the bundled catalog uses this pair of shaders.** This is the cliff every existing MilkDrop resource has left unbridged — the [authoring docs assessment](../PRESET_AUTHORING_DOCS_PLAN.md) found exactly two worked shader examples in the entire canonical reference. Here's the missing tutorial.
 
 ## Lesson 0 · A language note, stated plainly
 
-MilkDrop's original shaders are HLSL (DirectX). **Stims compiles a GLSL 1.20 dialect, not HLSL.** Presets written against real MilkDrop/Winamp use HLSL syntax that Stims's parser accepts where the two languages overlap (which is most day-to-day code — the examples below are valid in both). Where they diverge, Stims has firm limits: no matrix uniforms, no `texture2D()` with an explicit LOD argument, and no `gl_FragCoord`. Every example in this track stays inside those limits and inside GLSL 1.20 (`texture2D`, not `texture`).
+MilkDrop's original shaders are HLSL (DirectX). Stims normalizes supported HLSL-style types, calls, and shader bodies into its shader representation, then emits GLSL for WebGL or executes supported statements through WebGPU materials. The lessons use GLSL-style `vec2`, `vec3`, and `texture2D` notation. They are not a claim of full HLSL or GLSL support. Matrix locals and selected explicit LOD/gradient sampling paths are supported, with backend-specific limits. Use the studio's Compat and Shader diagnostics for the source you actually load; see [Shipping](./08-shipping.md#compatibility-matrix).
 
 ## Lesson 1 · The smallest possible warp shader
 
@@ -93,13 +93,13 @@ Nothing new syntactically — `q1` is read on the GLSL side exactly like any oth
 
 - **16 texture samplers total**, not the arbitrary custom-texture loading original MilkDrop allowed. `sampler_main` (frame buffer), `sampler_blur1`–`sampler_blur3` (the blur chain, used above), `sampler_noise_lq`/`sampler_noisevol_hq` (2D/3D noise), plus named procedural textures (`perlin`, `simplex`, `voronoi`, `pattern`, `fractal`, …). The full list and the alias table for legacy/non-standard names are in the [coding guide](../MILKDROP_CODING_GUIDE.md#engine-limitations).
 - **No external texture loading.** Every texture is pre-authored and shipped with the app; presets can't reference a URL or a data URI.
-- **`sampler_pw_main`/`sampler_pc_main`** resolve to `previousTex` — Stims fuses the warp and comp passes into one, unlike the original two-pass pipeline, so "the previous warp pass's output" and "the previous frame's output" are the same buffer here.
-- **`texture2D()` only** — no LOD argument, no `texture()`. No matrix uniforms, no `gl_FragCoord`.
+- **Frame samplers** bind to previous, warp, or current frame targets according to the sampler and backend. The runtime has distinct warp and composite targets; do not infer native parity from a successful sampler binding.
+- **Advanced shader constructs** depend on the backend and parsed program. Matrix locals and selected LOD/bias/gradient calls have supported paths; runtime-indexed matrix writes and other unsupported statements can force a fallback. Arbitrary custom uniforms and screen-coordinate builtins are not a portable authoring contract.
 
 The full cross-engine picture — what changes if the same preset runs in Winamp, projectM, or Butterchurn instead — is in [Track 8](08-shipping.md#compatibility-matrix).
 
 ## What you can now build
 
-You can now read and write both halves of the modern preset pipeline: EEL equations for motion, audio, and per-pixel variation, and GLSL shaders for anything that needs to see the whole frame — edge detection, blur-based effects, reaction-diffusion, and fractal iteration. Between this track and Tracks 1–5, there is no longer a construct in the bundled catalog you can't at least partially read.
+You can now read and write both halves of the modern preset pipeline: EEL equations for motion, audio, and per-pixel variation, and GLSL shaders for anything that needs to see the whole frame — edge detection, blur-based effects, reaction-diffusion, and fractal iteration. Use diagnostics and the compatibility guide when moving beyond these examples.
 
 **Next: [Track 7 — Taste](07-taste.md)**, where the question stops being "what does this line do" and becomes "why is this preset good."

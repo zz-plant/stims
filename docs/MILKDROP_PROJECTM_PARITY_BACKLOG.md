@@ -5,6 +5,8 @@ This backlog turns the parity roadmap into concrete milestones for the repositor
 Use [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) for the high-level direction. Use this file for implementation order, ownership boundaries, concrete file targets, and acceptance criteria.
 Use [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md) when you need to see how parity work is coordinated with runtime, product, and proof tracks.
 
+Current target, reference, and result inventories live under `src/data/milkdrop-parity/`. The dated snapshot below is historical; later comparisons in the [parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md) can supersede its labels. See [Development](./DEVELOPMENT.md#compatibility-capture-workflow) for current commands.
+
 ## Operating rule
 
 Semantic compatibility remains necessary, but it is no longer sufficient for claiming preset fidelity.
@@ -17,7 +19,7 @@ to:
 
 - "matches projectM within an explicit visual tolerance"
 
-## Current status snapshot
+## Historical status snapshot
 
 > **2026-08-26 update.** The snapshot below predates the corpus re-certification
 > and understates what exists. Since it was written: all nine references were
@@ -42,19 +44,19 @@ Completed foundation:
 - Milestones 0 through 3 are implemented in the repo: deterministic parity artifacts, checked-in certification manifests, native projectM reference promotion, measured-result promotion, backend-aware diffing, and honest fidelity labeling are all wired.
 
 Bundled shipped preset lane:
-- The four shipped bundled IDs in `public/milkdrop-presets/catalog.json` are the first corpus to push through reference import and measured-result promotion:
+- The four IDs in the initial `bundled-shipped` evidence lane are the first sample to push through reference import and measured-result promotion:
   - `eos-glowsticks-v2-03-music`
   - `rovastar-parallel-universe`
   - `eos-phat-cubetrace-v2`
   - `krash-rovastar-cerebral-demons-stars`
-  - Each of those presets has now moved through the reference-import and native-promotion sequence:
+  - The intended reference-import and native-promotion sequence for each preset is:
   - capture a Stims artifact,
   - import the matching `projectM` reference,
   - promote the reference into `tests/fixtures/milkdrop/projectm-reference/`,
   - run `bun run parity:suite`,
   - promote the suite result into `src/data/milkdrop-parity/measured-results.json`,
   - sync `public/milkdrop-presets/catalog.json`.
-  - The current report certifies `eos-glowsticks-v2-03-music` on both backends and classifies the other three as uncertified because their latest captures fail visual tolerance (`rovastar-parallel-universe` at ~98% pixel mismatch on both backends). They must not be described as WebGPU-certified.
+  - The report described by this snapshot certifies `eos-glowsticks-v2-03-music` on both backends and classifies the other three as uncertified because their latest captures fail visual tolerance (`rovastar-parallel-universe` at ~98% pixel mismatch on both backends). They must not be described as WebGPU-certified.
 
 Completed parity slices:
 - Milestone 4 has partial completion: feedback blur/boost alignment, explicit separation of video-echo state from generic comp-shader mixing, and removal of stale blanket WebGPU fallback cases are in place.

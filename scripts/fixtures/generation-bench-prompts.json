@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "description": "Frozen prompt set for bun run lab:generation-bench. One-line preset descriptions, deliberately diverse across mood, motion, palette and audio targets. Regressions in prompt scaffolding, model routing or the synthesizer are scored against this set; edit it only deliberately, since baselines stop being comparable the moment it changes.",
+  "prompts": [
+    "slow swirling deep-ocean currents with glowing jellyfish drifting to the bass",
+    "neon cyberpunk grid scrolling at night, treble sparks on the horizon",
+    "gentle golden-hour clouds pulsing softly with the mid range",
+    "vibrant tie-dye kaleidoscope blooming on every kick drum",
+    "cold blue starfield with slow parallax and rare treble twinkles",
+    "molten lava tunnel that surges forward when the bass drops",
+    "underwater cathedral of light rays swaying with the music",
+    "retro CRT scanlines and phosphor trails flickering to hi-hats",
+    "ink diffusing in water, blooming on the beat",
+    "aurora curtains rippling over an icy horizon, bass-driven waves",
+    "spiral galaxy arms winding tighter as the song builds",
+    "warm analog film grain with slow drifting dust motes",
+    "electric plasma arcs crawling across the screen with treble",
+    "black-and-white op-art tunnel pulsing to the kick",
+    "bouncing gel blobs squishing on every downbeat",
+    "shimmering soap-bubble iridescence wobbling gently with the vocals",
+    "dark forest fireflies blinking in time with the snare",
+    "vaporwave sunset with palm silhouettes and slow horizontal wave",
+    "particle swarm flocking that scatters on drum fills",
+    "crystal cave refractions rotating slowly, flashing on cymbals"
+  ]
+}

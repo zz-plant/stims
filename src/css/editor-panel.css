@@ -5,6 +5,12 @@
  * viewport, the problems list, and the dock body. Before this, the whole
  * panel was one unbounded document — a 400-line preset made the host 14000px
  * tall, which pushed every tool below the code out of reach.
+ *
+ * Height goes to the code first. The code keeps --ed-code-floor, the dock
+ * gives up height before the code does (down to --ed-dock-floor), and only a
+ * viewport too short for both floors scrolls the host as a whole. With a
+ * fixed 236px dock the code got whatever was left, which was 0px at
+ * 1366x657 and 13px at 1280x720.
  */
 
 /* Panel-local aliases derived from tokens that both themes define.
@@ -21,11 +27,16 @@
   --ed-tint-6: color-mix(in srgb, var(--stims-ink) 10%, transparent);
   --ed-focus: var(--stims-accent);
   --ed-on-accent: var(--stims-on-accent);
+  /* Eight lines at the code's type (--text-sm at line-height 1.6), plus
+     CodeMirror's 4px top padding and the 22px fade under the last line. */
+  --ed-code-floor: calc(8 * 1.6 * var(--text-sm) + 26px);
+  /* The tab row and the first few lines of the open pane. */
+  --ed-dock-floor: 6rem;
 
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-height: 0;
-  height: 100%;
   color: var(--stims-ink);
   font-size: 0.8125rem;
 }
@@ -302,12 +313,13 @@ html.light .stims-editor {
 
 /* ── Stage: the code, and anything layered over it ────────────────── */
 
+/* No min-height of its own: its automatic minimum is the note plus the
+   code's floor, so a live-draft note does not eat into the code's lines. */
 .stims-editor__stage {
   position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 0;
 }
 
 /* The one-line state message. It sits directly above the code because it
@@ -342,8 +354,11 @@ html.light .stims-editor {
 
 .stims-editor__code {
   flex: 1;
-  min-height: 0;
+  min-height: var(--ed-code-floor);
   overflow: hidden;
+  /* Its size comes from the layout, never from the document: without this
+     a 300-line preset would make the stage's minimum 300 lines tall. */
+  contain: size;
   /* Reads as an inset well rather than a rectangle pasted into the panel. The
      code surface stays dark in light chrome for the same reason the preset
      grid does — it is content, not chrome — so it gets the same treatment as
@@ -512,7 +527,8 @@ html.light .stims-editor {
   overflow-y: auto;
 }
 
-.stims-editor__problems[data-open="false"] .stims-editor__problems-body {
+.stims-editor__problems[data-open="false"] .stims-editor__problems-body,
+.stims-editor__problems-body[hidden] {
   display: none;
 }
 
@@ -576,24 +592,21 @@ html.light .stims-editor {
   color: var(--ed-dim);
 }
 
-.stims-editor__problems-empty {
-  padding: 4px 2px;
-  color: var(--ed-dim);
-  font-size: 0.75rem;
-}
-
 /* ── Bottom dock ──────────────────────────────────────────────────── */
 
 .stims-editor__dock {
   display: flex;
   flex-direction: column;
-  flex: none;
-  height: 236px;
+  /* 236px when the panel has room for it; shorter panels take height from
+     here before the code drops under its floor. */
+  flex: 0 1 236px;
+  min-height: var(--ed-dock-floor);
   border-top: 1px solid var(--stims-line-soft);
 }
 
 .stims-editor__dock[data-open="false"] {
-  height: auto;
+  flex-basis: auto;
+  min-height: 0;
 }
 
 /* Holds the tablist and the collapse toggle side by side. The toggle used to
@@ -665,7 +678,10 @@ html.light .stims-editor {
 .stims-editor__dock-body {
   flex: 1;
   min-height: 0;
-  padding: 10px 2px 4px;
+  /* 6px, not 10: top padding is chrome above the content, and on the
+     shortest common laptop viewport (1366x657) the first driven chip's
+     last pixels sat under exactly this padding's worth of fold. */
+  padding: 6px 2px 4px;
   overflow-y: auto;
 }
 
@@ -679,6 +695,31 @@ html.light .stims-editor {
 
 .stims-editor__hint {
   margin: 0 0 8px;
+  color: var(--ed-dim);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+/* The Tune pane's explanation, folded behind a summary. Up top as three
+   lines it pushed the pane's first control below the fold at 1280x720;
+   down here it costs one row and still explains the chips on demand. */
+.stims-editor__hint-details {
+  margin: 10px 0 0;
+}
+
+.stims-editor__hint-details summary {
+  cursor: pointer;
+  color: var(--ed-dim);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.stims-editor__hint-details summary:hover {
+  color: var(--stims-ink);
+}
+
+.stims-editor__hint-details p {
+  margin: 6px 0 0;
   color: var(--ed-dim);
   font-size: 0.75rem;
   line-height: 1.45;
@@ -931,9 +972,11 @@ html.light .stims-editor {
   margin-top: 10px;
 }
 
-/* The first heading in the pane has the hint paragraph above it already. */
+/* The first heading in the pane. The margin is gone: it existed to clear
+   the hint paragraph that used to sit above it, and with the controls
+   leading now it only pushed the first chip lower into the fold. */
 .stims-editor__section:first-of-type .stims-editor__subhead {
-  margin-top: 4px;
+  margin-top: 0;
   padding-top: 0;
   border-top: 0;
 }
@@ -1463,7 +1506,7 @@ html.light .stims-editor {
 
 @media (max-width: 767px) {
   .stims-editor__dock {
-    height: 200px;
+    flex-basis: 200px;
   }
 
   .stims-editor__toolbar {
@@ -1774,6 +1817,102 @@ button.stims-editor__compat-row:focus-visible {
   opacity: 0.85;
 }
 
+/* ── Textures pane ─────────────────────────────────────────────────── */
+
+.stims-editor__texture-headline {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.stims-editor__textures {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.stims-editor__texture-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+}
+
+.stims-editor__texture-swatch {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--ed-tint-2);
+}
+
+.stims-editor__texture-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stims-editor__texture-name {
+  margin: 0;
+  font-size: var(--text-xs-plus);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stims-editor__texture-name code {
+  font-size: var(--text-xs);
+}
+
+.stims-editor__texture-file {
+  font-size: var(--text-xs);
+  color: var(--ed-dim);
+  word-break: break-all;
+}
+
+.stims-editor__texture-notes {
+  margin: 0;
+  font-size: var(--text-2xs);
+  color: var(--ed-dim);
+}
+
+.stims-editor__texture-internal {
+  margin: 10px 0 0;
+}
+
+.stims-editor__texture-internal summary {
+  cursor: pointer;
+  color: var(--ed-dim);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.stims-editor__texture-internal summary:hover {
+  color: var(--stims-ink);
+}
+
+.stims-editor__texture-internal-list {
+  display: grid;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.stims-editor__texture-builtin-row {
+  font-size: var(--text-xs);
+  color: var(--ed-dim);
+  padding: 2px 0;
+}
+
+.stims-editor__texture-builtin-row code {
+  color: inherit;
+}
+
 /* ── Outline pane ─────────────────────────────────────────────────── */
 
 .stims-editor__outline {
@@ -1884,6 +2023,20 @@ button.stims-editor__compat-row:focus-visible {
   overflow: auto;
 }
 
+/* The dataflow-aware reading under a version diff: derived, so quieter than
+   the diff it annotates, and clearly labeled as such by its heading. */
+.stims-editor__version-listen {
+  margin: 0 0 8px;
+  color: var(--ed-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.stims-editor__version-listen strong {
+  color: var(--ed-dim);
+  font-weight: 700;
+}
+
 /* ── Outline: shader translation ──────────────────────────────────── */
 
 .stims-editor__outline-shader {
@@ -1929,4 +2082,79 @@ button.stims-editor__compat-row:focus-visible {
   border-color: var(--stims-accent);
   color: var(--stims-ink);
   background: var(--stims-control-fill-hover);
+}
+
+/* ── Shader pane ─────────────────────────────────────────────────── */
+
+.stims-editor__shader-pane {
+  display: grid;
+  gap: 4px;
+}
+
+.stims-editor__shader-list {
+  display: grid;
+  gap: 2px;
+}
+
+/* Same shape as an Outline row: a code label with the line range on the
+   right, the whole row a jump target. */
+.stims-editor__shader-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-xs-plus);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stims-editor__shader-row:hover,
+.stims-editor__shader-row:focus-visible {
+  border-color: var(--stims-line-soft);
+  background: var(--stims-surface-2, rgba(255, 255, 255, 0.05));
+}
+
+/* A compile failure carries the driver's message, which can run long:
+   pre-wrap keeps it readable without widening the dock. */
+.stims-editor__shader-diag {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 7px 9px;
+  border: 1px solid var(--stims-line-soft);
+  border-left-width: 3px;
+  border-left-color: var(--stims-danger, #e5484d);
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+button.stims-editor__shader-diag {
+  cursor: pointer;
+}
+
+button.stims-editor__shader-diag:hover,
+button.stims-editor__shader-diag:focus-visible {
+  background: var(--stims-surface-2, rgba(255, 255, 255, 0.05));
+}
+
+.stims-editor__shader-diag-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--text-xs-plus);
+}
+
+.stims-editor__shader-diag-message {
+  font-family: var(--font-family-mono);
+  font-size: var(--text-xs);
+  opacity: 0.85;
+  white-space: pre-wrap;
 }

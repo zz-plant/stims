@@ -283,9 +283,11 @@ export function createMilkdropExperienceFrameLoop({
         const adaptiveDensityMultiplier =
           runtime.toy.rendererInfo?.adaptiveDensityMultiplier ?? 1;
         vm.setDetailScale(detailScale * adaptiveDensityMultiplier);
+        // Fading-out preset detail is scaled down (75%) so stepping two VMs
+        // concurrently during a live crossfade does not double geometry load.
         liveBlend
           ?.getOutgoingVm()
-          ?.setDetailScale(detailScale * adaptiveDensityMultiplier);
+          ?.setDetailScale(detailScale * adaptiveDensityMultiplier * 0.75);
         if (frame.resetHistory) {
           // A clean start has no outgoing preset to carry: a live blend's
           // second VM would bring its evolved state into the capture.

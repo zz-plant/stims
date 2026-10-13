@@ -14,7 +14,7 @@ You're updating or adding documentation. Follow this flow.
 | Agent guidance | `docs/agents/*.md` | Agent workflows, tools, task routing | Links stay current |
 | Architecture | `docs/*.md` | Runtime behavior, design decisions | Accuracy with code |
 | README alignment | `README.md`, `AGENTS.md`, etc. | When adding/moving docs | `docs/DOCS_MAINTENANCE.md` |
-| In-code comments | `assets/`, `scripts/`, `tests/` | Complex logic, non-obvious patterns | Stays in sync with code |
+| In-code comments | `src/`, `packages/`, `scripts/`, `tests/` | Complex logic, non-obvious patterns | Stays in sync with code |
 
 ## 2. Plan Your Changes
 
@@ -24,7 +24,7 @@ You're updating or adding documentation. Follow this flow.
 
 ## 3. Write or Edit the Doc
 
-- [ ] Clear purpose statement (1 sentence at top)
+- [ ] Start with useful content; avoid repeating the title as a purpose statement
 - [ ] Progressive disclosure (start simple, drill into detail)
 - [ ] Links to related docs are relative paths
 - [ ] Code examples are current and tested
@@ -33,16 +33,16 @@ You're updating or adding documentation. Follow this flow.
 - [ ] Headings hierarchy is logical (h1 → h2 → h3)
 - [ ] Lists use consistent formatting
 - [ ] Code blocks have language tags (```bash, ```typescript)
-- [ ] Links use relative paths: `[text](../docs/file.md)`
+- [ ] Links use relative paths: `[Testing](../../docs/TESTING.md)`
 
 ## 4. Validate Links and Format
 
 ```bash
-# Quick format check (Biome validates markdown too)
-bun run check:quick
+# Documentation references and public claims
+bun run check:doc-references
+bun run check:readme-claims
 
-# Full check
-bun run check
+# Also run affected generator checks and verify changed command examples
 ```
 
 ## 5. Cross-Link Maintenance
@@ -64,16 +64,13 @@ Read through:
 - [ ] `docs/agents/README.md` — Does task routing link to it?
 - [ ] `AGENTS.md` — Should it be mentioned in quick-start?
 
-## 7. Update Session Context
+## 7. Record the result
 
-Edit `/memories/session/stims-context.md`:
-- Doc files changed
-- Links updated
-- Alignment checked
+Include changed files, checks run, remaining gaps, and any PR link in the task handoff. Do not require a machine-specific session file.
 
 ## 8. Commit & PR
 
-- Commit message: Sentence case (e.g., "Document visual testing workflows")
+- Commit message: Conventional Commits, sentence case, no trailing period (e.g., "docs: Update visual testing workflows")
 - PR description: List which docs changed, why, and any cross-links updated
 
 ---
@@ -92,7 +89,7 @@ Edit `/memories/session/stims-context.md`:
 
 **For README changes:**
 - Follow `docs/DOCS_MAINTENANCE.md` checklist entirely
-- Update all 5 READMEs in same commit
+- Update affected entry points in the same commit; keep package docs aligned when relevant
 
 ---
 

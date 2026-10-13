@@ -100,7 +100,12 @@ export {
   splitMilkdropStatements,
   walkMilkdropExpression,
 } from './expression.ts';
-export type { MilkdropProgramFn } from './expression-jit.ts';
+export type {
+  MilkdropProgramFn,
+  MilkdropProgramOptions,
+  MilkdropProgramRng,
+  MilkdropProgramRngMode,
+} from './expression-jit.ts';
 export {
   compileMilkdropProgram,
   MILKDROP_GMEGABUF_SIZE,
@@ -163,6 +168,7 @@ export {
   frameValueName,
 } from './preset-dataflow.ts';
 export {
+  embedLineageFields,
   isLineageFieldKey,
   lineageFieldLines,
   lineageFromFields,
@@ -184,6 +190,8 @@ export {
   printPresetSyntax,
   splitInlineComment,
 } from './preset-syntax.ts';
+export type { ProgramReferences } from './program-references.ts';
+export { analyzeProgramReferences } from './program-references.ts';
 // --- HLSL shader text: parse, analyze, GLSL ------------------------------
 export {
   evaluateMilkdropShaderExpression,

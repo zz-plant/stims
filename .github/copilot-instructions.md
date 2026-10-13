@@ -4,7 +4,7 @@ Fast conventions for agents working on Stims (browser-native MilkDrop visualizer
 
 ## What is Stims?
 
-Single-page app for playing and live-editing MilkDrop presets against any audio. Built with Three.js/WebGL. Core features: preset browser, live editing, import/export, audio reactivity.
+Single-page app for playing and live-editing MilkDrop presets with supported audio inputs. Built with Three.js/WebGL. Core features: preset browser, live editing, import/export, audio reactivity.
 
 ## Stack & Tools
 
@@ -13,7 +13,7 @@ Single-page app for playing and live-editing MilkDrop presets against any audio.
 | Package manager | Bun (`bun install`, `bun run <script>`) |
 | Language + types | TypeScript (strict mode, no `@ts-nocheck`) |
 | Formatter/linter | Biome (via `bun run lint`, `bun run format`) |
-| Testing | Vitest (unit), Playwright (integration) |
+| Testing | Bun (`bun:test`), happy-dom (simulation), Playwright (browser) |
 | Dev server | Vite (`bun run dev` → http://localhost:5173) |
 
 ## Iteration Loop (Fast → Full)
@@ -21,10 +21,10 @@ Single-page app for playing and live-editing MilkDrop presets against any audio.
 Use these in sequence during implementation:
 
 ```bash
-# 1. Syntax + types + lint + guards (5-10s, fail-fast)
+# 1. Lint + types + guards, no tests
 bun run check:quick
 
-# 2. Targeted test for your change (1-3s)
+# 2. Targeted test for your change
 bun run test tests/path/to/spec.test.ts
 
 # 3. Visual verification (launch dev server)
@@ -33,7 +33,7 @@ bun run dev
 # - http://localhost:5173/           (root workspace)
 # - http://localhost:5173/?agent=true (agent testing mode)
 
-# 4. Full quality gate (before commit, 1-2 min)
+# 4. Full quality gate (includes corpus and package checks)
 bun run check
 ```
 
@@ -41,20 +41,21 @@ bun run check
 
 ## Code Conventions
 
-- **Commit messages**: Sentence case, no trailing period (e.g., "Add audio frequency detection")
+- **Commit messages**: Conventional Commits, sentence case, no trailing period (e.g., "feat: Add audio frequency detection")
 - **PR title**: Same style, include test/docs summary in description
-- **Imports**: Relative paths within `src/js/`, absolute paths for sibling packages
+- **Imports**: Relative paths within the app; package-name imports for workspace libraries
 - **No `@ts-nocheck`**: All code must pass strict typecheck
-- **Tests**: Match your code file path (e.g., `foo.ts` → `tests/foo.test.ts`)
+- **Tests**: Use `tests/unit`, `tests/compat`, `tests/corpus`, or `tests/e2e`; package suites stay inside the package
 
 ## Project Structure (Key Paths)
 
 | Path | Purpose |
 |------|---------|
 | `src/js/core/` | Shared runtime (loader, shell, renderer, audio) |
-| `src/js/milkdrop/` | Preset engine (runner, editor, compiler, VM) |
-| `src/js/bootstrap/` | Page wiring (home, library, visualizer) |
-| `tests/` | Test suite (unit + integration) |
+| `src/js/milkdrop/` | Preset engine (runner, editor, VM; compiler in `packages/milkdrop-toolchain/`) |
+| `src/js/frontend/` | React workspace, URL state, and runtime adapter |
+| `packages/` | Standalone compiler, DSP, flash-analysis, and conformance libraries |
+| `tests/` | Unit, compatibility, corpus, and browser E2E suites |
 | `docs/agents/` | Agent guidance (task routing, tools, verification) |
 | `.agent/skills/` | Reusable agent workflows |
 | `public/milkdrop-presets/` | Shipped preset catalog |
@@ -68,8 +69,8 @@ Pick the right starting point:
 | Runtime/loader/renderer/audio changes | [`docs/agents/custom-capabilities.md`](../docs/agents/custom-capabilities.md) → modify-visualizer-runtime skill |
 | Preset/editor/catalog/compatibility | [`docs/agents/custom-capabilities.md`](../docs/agents/custom-capabilities.md) → modify-preset-workflow skill |
 | UI/styling/layout | [`docs/agents/visual-testing.md`](../docs/agents/visual-testing.md) + `bun run dev` |
-| Testing approach | [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) |
-| End-to-end change (code + docs + validation) | [`.agent/skills/ship-visualizer-change/SKILL.md`](./.agent/skills/ship-visualizer-change/SKILL.md) |
+| Testing approach | [`.agent/skills/verify-visualizer-work/SKILL.md`](../.agent/skills/verify-visualizer-work/SKILL.md) |
+| End-to-end change (code + docs + validation) | [`.agent/skills/ship-visualizer-change/SKILL.md`](../.agent/skills/ship-visualizer-change/SKILL.md) |
 | Unclear which docs to use | [`docs/agents/README.md`](../docs/agents/README.md) (progressive-disclosure index) |
 
 ## Quality Gate Commands
@@ -87,8 +88,8 @@ bun run check:seo          # SEO surface
 
 **URLs to test**:
 - `http://localhost:5173/` — Home + library
-- `http://localhost:5173/milkdrop/` — Main visualizer
-- `http://localhost:5173/milkdrop/?agent=true` — Agent testing mode (persistent state, cleaner UI)
+- `http://localhost:5173/` — Main visualizer
+- `http://localhost:5173/?agent=true` — Agent browser verification on the canonical route
 
 **Browser DevTools** (F12): Check console for errors, Network for asset loading, Performance for frame rate.
 
@@ -110,7 +111,7 @@ Each prompt provides a checklist to keep you focused and avoid common mistakes.
 ## When to Read Full Docs
 
 - **Before writing code**: skim [`docs/agents/README.md`](../docs/agents/README.md) (2 min read-order)
-- **Unsure about testing**: open [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md)
+- **Unsure about testing**: open [`.agent/skills/verify-visualizer-work/SKILL.md`](../.agent/skills/verify-visualizer-work/SKILL.md)
 - **Visual/UI changes**: see [`docs/agents/visual-testing.md`](../docs/agents/visual-testing.md)
 - **Architecture questions**: check [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
 - **Docs/cross-linking**: follow [`docs/DOCS_MAINTENANCE.md`](../docs/DOCS_MAINTENANCE.md)

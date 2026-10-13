@@ -34,7 +34,7 @@ bun run test tests/path/to/new.test.ts
 
 # 4. Visual check (if UI-related)
 bun run dev
-# Visit: http://localhost:5173/milkdrop/?agent=true
+# Visit: http://localhost:5173/?agent=true
 ```
 
 Repeat until locally confident.
@@ -48,16 +48,13 @@ bun run check
 # If it passes, you're ready
 ```
 
-## 5. Update Task Context
+## 5. Record the result
 
-Edit `/memories/session/stims-context.md`:
-- List files changed
-- List tests added
-- Note any gotchas
+Include changed files, checks run, remaining gaps, and any PR link in the task handoff.
 
 ## 6. Commit & PR
 
-- Commit message: Sentence case, no period (e.g., "Add preset search filtering")
+- Commit message: Sentence case, no period (e.g., "feat: Add preset search filtering")
 - PR: Include what changed, which tests passed, and link to the issue
 
 ---

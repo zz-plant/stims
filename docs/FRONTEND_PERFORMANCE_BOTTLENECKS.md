@@ -107,6 +107,40 @@ Not measured: a real browser transition (V8, real GC, real frame timing). This
 container has no GPU, so that needs a hardware run before any optimisation.
 Until then this is a bounded, unproven concern, not a confirmed spike.
 
+Update 2026-10-11 (hardware spot-check, see
+[`RUNTIME_PERFORMANCE.md`](./RUNTIME_PERFORMANCE.md)): real transitions on a
+hardware WebGPU tab reproduce a much larger, different artifact — one to two
+single frames of 258–433 ms at blend start (section 2 below). Until that
+spike is fixed, `cloneBlendState`'s millisecond-scale tail is second-order;
+its pre-allocated-buffer idea remains open but deprioritised.
+
+### 2. Transition-start spike — 250–430 ms single frames on every preset switch
+
+Measured 2026-10-11 on a headed, hardware-accelerated tab (native WebGPU,
+120 Hz): each `next-preset` crossfade showed one 316 ms frame (run 1) and two
+spikes of 258 ms and 433 ms at ~0.3 s and ~0.75 s into the blend (run 2),
+while the blend's steady per-frame cadence stayed at baseline (p50 8.3 ms,
+p95 10.3 ms). The spike is at the transition *start*, not in the per-frame
+double-step: the incoming preset's WebGPU pipeline compilation plus blend
+setup landing on the first blend frames is the prime suspect — the same
+class of first-draw pipeline cost the feedback managers already warm up
+asynchronously for their own materials. Fix shape: pre-compile the incoming
+preset's materials before the visible fade begins, with a deadline so a
+compile failure falls back to today's behavior. Verify with the same
+headed-tab cadence sampling; the target is to move the 250–430 ms spikes
+under one 8.3 ms frame's worth of visible hitch (or eliminate them), without
+changing what the blend draws.
+
+### 3. WebGPU render bundles — measured, no effect, leave off
+
+`renderBundles` (off by default) was A/B-tested on the heaviest preset on
+hardware 2026-10-11: p95 10.3/10.2 ms with the flag on versus 10.1 ms off,
+deltas within run-to-run noise, no outlier removed (the first flagless run's
+9.3 ms p95 did not reproduce). With only a few static draws, no measurable
+cadence gain exists to buy back the flag's risk. Do not re-evaluate without a
+component-level profile showing CPU submission time that cadence sampling
+cannot see.
+
 ## Deliberate boundaries and remaining approximations
 
 - **Random per-pixel equations stay off the procedural field path.** Six of
@@ -117,8 +151,9 @@ Until then this is a bounded, unproven concern, not a confirmed spike.
   compatible path until RNG state or a parity-validated equivalent exists.
   This is a semantic boundary rather than an unfinished optimisation: the VM's
   RNG is a linear congruential generator advanced once per call in program
-  order (`vm.ts` `nextRandom`), so its sequence is defined by evaluation order,
-  which per-pixel GPU execution does not have. Lowering it would change what
+  order (the shared `randomCell` in `vm.ts`, inlined into compiled program
+  bodies — see RUNTIME_PERFORMANCE.md, "Inlined RNG"), so its sequence is
+  defined by evaluation order, which per-pixel GPU execution does not have. Lowering it would change what
   these presets draw, not merely where they draw it — and it is not a small
   cost: the heaviest preset in the certification corpus,
   `shifter-glassworms-flare`, calls `randint` 59 times and profiles at ~59%

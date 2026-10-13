@@ -10,6 +10,8 @@
  *  - mobile controls visible during expanded actions (`3ca90ef8`)
  *  - workspace sidecar actions wrap (no horizontal overflow) (`5619d17a`)
  *  - safe-area-inset handled for notch devices
+ *  - the stage watch HUD stays clear of the bottom control dock
+ *    (watcher-hud.css; top-anchored with a bounded height)
  *
  * Each test maps to a commit that broke and was fixed. If the CSS
  * regresses, the test that guards it fails by name.
@@ -28,6 +30,13 @@ import { join } from 'node:path';
 function readAppShellCss(): string {
   return readFileSync(
     join(import.meta.dir, '..', '..', 'src', 'css', 'app-shell.css'),
+    'utf8',
+  );
+}
+
+function readStageWatchHudCss(): string {
+  return readFileSync(
+    join(import.meta.dir, '..', '..', 'src', 'css', 'watcher-hud.css'),
     'utf8',
   );
 }
@@ -99,6 +108,24 @@ describe('mobile viewport edge-case matrix', () => {
     );
     expect(css).toMatch(
       /--mobile-control-offset:\s*var\(--mobile-bar-height\)/u,
+    );
+  });
+
+  test('the stage watch HUD stays clear of the mobile control dock', () => {
+    const css = readStageWatchHudCss();
+    // The HUD (watcher-hud.ts) is top-anchored with a bounded height, so it
+    // can never grow down over the bottom control dock at 390x844. A rendered
+    // check cannot observe this in jsdom/happy-dom (no layout engine), so the
+    // structural declarations are the invariant: a top anchor (never a
+    // bottom one) and a max-height cap inside the coarse-pointer block.
+    expect(css).toMatch(/\.stims-watch-hud\s*\{[^}]*?top:\s*max\(/u);
+    expect(css).not.toMatch(/\.stims-watch-hud\s*\{[^}]*?bottom:/u);
+    const coarseBlock = css.match(
+      /@media \(width < 768px\) and \(pointer: coarse\)\s*\{([\s\S]*)$/,
+    );
+    expect(coarseBlock?.[1]).toBeTruthy();
+    expect(coarseBlock?.[1]).toMatch(
+      /\.stims-watch-hud\s*\{[^}]*?max-height:\s*30%/u,
     );
   });
 });

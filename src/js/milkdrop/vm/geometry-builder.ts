@@ -16,6 +16,7 @@
  */
 
 import { normalizeProgramAssignmentTarget } from 'milkdrop-toolchain/src/field-normalization.ts';
+import { analyzeProgramReferences } from 'milkdrop-toolchain/src/program-references.ts';
 import { getDevicePerformanceProfile } from '../../core/device-profile.ts';
 import { isMobileDevice } from '../../utils/browser/device-detect';
 import type {
@@ -189,6 +190,138 @@ export function buildParticleFieldVisual({
 
 type MilkdropProgramBlock = MilkdropCompiledPreset['ir']['programs']['init'];
 
+/**
+ * Which of the built-in per-pixel variables a preset's per-pixel program
+ * actually references. Computed once per compiled block from the program's
+ * IR (analyzeProgramReferences) and memoised, so the per-vertex loop below
+ * can skip seeding and re-reading the built-ins the program never touches.
+ *
+ * The split that matters to the loop:
+ *  - `writes*` (read OR write anywhere in the program): the program may
+ *    leave a value behind on one vertex that the next vertex must not see,
+ *    so the reset stays per-vertex and the post-program read reads scratch.
+ *  - referenced but never written: nothing can change it between vertices,
+ *    so it is seeded on the scratch ONCE PER PASS (the program's reads must
+ *    still see the frame base) and the post-program read uses the
+ *    precomputed frame constant.
+ *  - never referenced: skipped entirely; the transform uses the frame
+ *    constant, which is bit-identical to the value the reset would have
+ *    written (same base, same normalize/clamp/Math.cos applied once per
+ *    frame instead of once per vertex).
+ *
+ * `rad`/`ang` are lattice inputs rather than frame bases; they are seeded
+ * per vertex while referenced. `rad` additionally has an internal consumer
+ * (the warp ripple) that needs it whenever the per-vertex `warp` can be
+ * non-zero — that bit is per-frame, see `seedRad` on MeshTransformFrame.
+ * `x`/`y` are always referenced by the transform itself and stay
+ * unconditional.
+ */
+export type MeshBuiltinMask = {
+  writesZoom: boolean;
+  writesZoomExp: boolean;
+  writesRot: boolean;
+  writesWarp: boolean;
+  writesCx: boolean;
+  writesCy: boolean;
+  writesSx: boolean;
+  writesSy: boolean;
+  writesDx: boolean;
+  writesDy: boolean;
+  /** Referenced (read or written) anywhere in the program. */
+  refsRad: boolean;
+  refsAng: boolean;
+  /** Referenced but never written: seed on scratch once per pass. */
+  seedZoom: boolean;
+  seedZoomExp: boolean;
+  seedRot: boolean;
+  seedWarp: boolean;
+  seedCx: boolean;
+  seedCy: boolean;
+  seedSx: boolean;
+  seedSy: boolean;
+  seedDx: boolean;
+  seedDy: boolean;
+};
+
+const EMPTY_MASK: MeshBuiltinMask = {
+  writesZoom: false,
+  writesZoomExp: false,
+  writesRot: false,
+  writesWarp: false,
+  writesCx: false,
+  writesCy: false,
+  writesSx: false,
+  writesSy: false,
+  writesDx: false,
+  writesDy: false,
+  refsRad: false,
+  refsAng: false,
+  seedZoom: false,
+  seedZoomExp: false,
+  seedRot: false,
+  seedWarp: false,
+  seedCx: false,
+  seedCy: false,
+  seedSx: false,
+  seedSy: false,
+  seedDx: false,
+  seedDy: false,
+};
+
+const meshBuiltinMaskCache = new WeakMap<
+  MilkdropCompiledPreset['ir']['programs']['perPixel'],
+  MeshBuiltinMask
+>();
+
+/**
+ * The per-pixel program is the only program that can read or write the
+ * per-vertex built-ins: waves and shapes run on their own locals objects,
+ * and the GPU field path consumes the compiled IR, not the scratch (see the
+ * consumer notes on MeshTransformFrame). One block → one mask.
+ */
+export function getMeshBuiltinMask(
+  block: MilkdropCompiledPreset['ir']['programs']['perPixel'],
+): MeshBuiltinMask {
+  let mask = meshBuiltinMaskCache.get(block);
+  if (mask) {
+    return mask;
+  }
+  if (block.statements.length === 0) {
+    mask = EMPTY_MASK;
+  } else {
+    const { reads, writes } = analyzeProgramReferences(block);
+    const written = (name: string) => writes.has(name);
+    const referenced = (name: string) => reads.has(name) || writes.has(name);
+    const seedOnly = (name: string) => referenced(name) && !writes.has(name);
+    mask = {
+      writesZoom: written('zoom'),
+      writesZoomExp: written('zoomexp'),
+      writesRot: written('rot'),
+      writesWarp: written('warp'),
+      writesCx: written('cx'),
+      writesCy: written('cy'),
+      writesSx: written('sx'),
+      writesSy: written('sy'),
+      writesDx: written('dx'),
+      writesDy: written('dy'),
+      refsRad: referenced('rad'),
+      refsAng: referenced('ang'),
+      seedZoom: seedOnly('zoom'),
+      seedZoomExp: seedOnly('zoomexp'),
+      seedRot: seedOnly('rot'),
+      seedWarp: seedOnly('warp'),
+      seedCx: seedOnly('cx'),
+      seedCy: seedOnly('cy'),
+      seedSx: seedOnly('sx'),
+      seedSy: seedOnly('sy'),
+      seedDx: seedOnly('dx'),
+      seedDy: seedOnly('dy'),
+    };
+  }
+  meshBuiltinMaskCache.set(block, mask);
+  return mask;
+}
+
 type RunProgramFn = (
   block: MilkdropProgramBlock,
   env: MutableState,
@@ -207,6 +340,18 @@ type CreateEnvFn = (
  * Everything a mesh-point transform needs that is CONSTANT for every vertex in
  * a frame. Built once per pass by createMeshTransformFrame, then reused by
  * transformMeshPoint for each of the ~1.7k vertices.
+ *
+ * CONSUMERS of the per-vertex built-ins (why the skip mask is safe): the
+ * built-in values live on `scratch`, and only two things ever read that
+ * object — the per-pixel program itself (the mask is computed from its IR)
+ * and the post-program transform math in transformMeshPoint (a skipped
+ * built-in reads a frame constant that is bit-identical to the reset value
+ * it used to be given). Custom waves and shapes run on their own locals
+ * (waveState/shapeState), sharing only q/t registers and megabuf, which the
+ * program still writes as before; the GPU procedural field path consumes
+ * the compiled IR and never runs transformMeshPoint. Both passes that DO
+ * run it (mesh + motion vectors) go through createMeshTransformFrame, so
+ * one mask covers every call.
  *
  * WHY this exists (do not fold it back into the per-vertex path): a CPU profile
  * (CDP, 200 stepped frames) put transformMeshPoint at 2.5ms of a 4.0ms frame —
@@ -262,11 +407,11 @@ type MeshTransformFrame = {
   translateY: number;
   isIdentity: boolean;
   // Per-frame BASE values of the built-in per-pixel variables, read raw off
-  // `state` once per pass. Only used by the per-pixel path, which must reset
-  // every one of them on EVERY vertex (per-pixel code may overwrite them and
-  // the next vertex has to start from the frame base, not the neighbour's
-  // leftovers). Hoisting removes only the repeated prototype-chain lookup and
-  // nullish check, not the reset.
+  // `state` once per pass. Only the ones the per-pixel program WRITES are
+  // still reset per vertex (the per-pixel code may overwrite them and the
+  // next vertex has to start from the frame base, not the neighbour's
+  // leftovers); the rest are either seeded on the scratch once per pass
+  // (referenced but never written) or skipped entirely.
   baseZoom: number;
   baseZoomExp: number;
   baseRot: number;
@@ -277,6 +422,30 @@ type MeshTransformFrame = {
   baseSy: number;
   baseDx: number;
   baseDy: number;
+  /**
+   * Which built-ins the preset's per-pixel program writes (per-vertex reset +
+   * post-read from scratch) — see MeshBuiltinMask. The frame constants above
+   * serve the ones it does not.
+   */
+  writesZoom: boolean;
+  writesZoomExp: boolean;
+  writesRot: boolean;
+  writesWarp: boolean;
+  writesCx: boolean;
+  writesCy: boolean;
+  writesSx: boolean;
+  writesSy: boolean;
+  writesDx: boolean;
+  writesDy: boolean;
+  /**
+   * Seed local.rad per vertex: the program references rad, or the warp ripple
+   * can run (the program writes warp, or the frame base warp is non-zero) and
+   * needs the radius. When false, `warp` is exactly 0 for every vertex and the
+   * ripple never reads rad.
+   */
+  seedRad: boolean;
+  /** The program references ang (the transform itself never reads it). */
+  refsAng: boolean;
   /**
    * Per-cell constants for the mesh lattice (gridX/gridY/milkdropX/milkdropY/rad),
    * rebuilt only when density or aspect changes. Precomputed once so the hot
@@ -312,8 +481,10 @@ function createMeshTransformFrame({
   const resolvedAspectY = aspectY ?? (aspectRatio > 1 ? 1 / aspectRatio : 1);
   const perPixel = preset.ir.programs.perPixel;
   const hasPerPixel = perPixel.statements.length > 0;
+  const mask = getMeshBuiltinMask(perPixel);
   const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
   const rot = state.rot ?? 0;
+  const warp = state.warp ?? 0;
   const scratch = geometryState.pointScratch;
   // Wire the scratch prototype (and refresh the VM signal env, which
   // prepareSignalEnv memoises per signals/frame/time) exactly once per pass.
@@ -322,13 +493,21 @@ function createMeshTransformFrame({
     : null;
   const zoom = Math.max(state.zoom ?? 1, 0);
   const zoomExponent = Math.max(state.zoomexp ?? 1, 0.0001);
-  const warp = state.warp ?? 0;
   const centerX = normalizeTransformCenter(state.cx ?? 0.5);
   const centerY = normalizeTransformCenterY(state.cy ?? 0.5);
   const scaleX = state.sx ?? 1;
   const scaleY = state.sy ?? 1;
   const translateX = state.dx ?? 0;
   const translateY = state.dy ?? 0;
+  const baseZoom = state.zoom ?? 1;
+  const baseZoomExp = state.zoomexp ?? 1;
+  const baseWarp = warp;
+  const baseCx = state.cx ?? 0.5;
+  const baseCy = state.cy ?? 0.5;
+  const baseSx = scaleX;
+  const baseSy = scaleY;
+  const baseDx = translateX;
+  const baseDy = translateY;
   const isIdentity =
     !hasPerPixel &&
     zoom === 1 &&
@@ -341,6 +520,26 @@ function createMeshTransformFrame({
     translateY === 0 &&
     centerX === 0 &&
     centerY === 0;
+
+  // Referenced-but-never-written built-ins are seeded ONCE PER PASS here
+  // instead of reset per vertex: nothing can change them between vertices,
+  // but the program's reads must still see the frame base (scratch reads do
+  // not fall back to the frame state — an unseeded read would yield 0).
+  // `scratch` is fresh each frame for the mesh pass; the motion-vector pass
+  // re-seeds over whatever the mesh pass left, so cross-pass leftovers of
+  // these never-written variables cannot survive either.
+  if (hasPerPixel) {
+    if (mask.seedZoom) scratch.zoom = baseZoom;
+    if (mask.seedZoomExp) scratch.zoomexp = baseZoomExp;
+    if (mask.seedRot) scratch.rot = rot;
+    if (mask.seedWarp) scratch.warp = baseWarp;
+    if (mask.seedCx) scratch.cx = baseCx;
+    if (mask.seedCy) scratch.cy = baseCy;
+    if (mask.seedSx) scratch.sx = baseSx;
+    if (mask.seedSy) scratch.sy = baseSy;
+    if (mask.seedDx) scratch.dx = baseDx;
+    if (mask.seedDy) scratch.dy = baseDy;
+  }
 
   return {
     signals,
@@ -364,16 +563,31 @@ function createMeshTransformFrame({
     translateX,
     translateY,
     isIdentity,
-    baseZoom: state.zoom ?? 1,
-    baseZoomExp: state.zoomexp ?? 1,
+    baseZoom,
+    baseZoomExp,
     baseRot: rot,
-    baseWarp: state.warp ?? 0,
-    baseCx: state.cx ?? 0.5,
-    baseCy: state.cy ?? 0.5,
-    baseSx: state.sx ?? 1,
-    baseSy: state.sy ?? 1,
-    baseDx: state.dx ?? 0,
-    baseDy: state.dy ?? 0,
+    baseWarp,
+    baseCx,
+    baseCy,
+    baseSx,
+    baseSy,
+    baseDx,
+    baseDy,
+    writesZoom: mask.writesZoom,
+    writesZoomExp: mask.writesZoomExp,
+    writesRot: mask.writesRot,
+    writesWarp: mask.writesWarp,
+    writesCx: mask.writesCx,
+    writesCy: mask.writesCy,
+    writesSx: mask.writesSx,
+    writesSy: mask.writesSy,
+    writesDx: mask.writesDx,
+    writesDy: mask.writesDy,
+    // The ripple needs rad whenever per-vertex warp can be non-zero: the
+    // program may write warp (even when the frame base is 0), or the frame
+    // base itself is non-zero.
+    seedRad: mask.refsRad || mask.writesWarp || warp !== 0,
+    refsAng: mask.refsAng,
     lattice: geometryState.lattice ?? null,
   };
 }
@@ -451,29 +665,42 @@ function transformMeshPoint(
     // rad/ang are fixed per vertex, as MilkDrop and projectM precompute them
     // once per grid: measured from the screen centre over the aspect-scaled
     // [-1,1] mesh (y up), never from cx/cy — those move the zoom/rot centre.
-    if (latticeSample) {
-      local.rad = latticeSample.rad;
-      local.ang = latticeSample.ang;
-    } else {
-      const aspectGridX = gridX * aspectX;
-      const aspectGridY = gridY * aspectY;
-      local.rad = Math.sqrt(
-        aspectGridX * aspectGridX + aspectGridY * aspectGridY,
-      );
-      local.ang = Math.atan2(aspectGridY, aspectGridX);
+    // Both are seeded only when referenced: rad by the program or by the
+    // warp ripple, ang by the program alone (the transform never reads it).
+    if (frame.seedRad) {
+      if (latticeSample) {
+        local.rad = latticeSample.rad;
+      } else {
+        const aspectGridX = gridX * aspectX;
+        const aspectGridY = gridY * aspectY;
+        local.rad = Math.sqrt(
+          aspectGridX * aspectGridX + aspectGridY * aspectGridY,
+        );
+      }
     }
-    // Reset every built-in per-pixel variable from the frame bases: per-pixel
-    // code may have overwritten them on the previous vertex.
-    local.zoom = frame.baseZoom;
-    local.zoomexp = frame.baseZoomExp;
-    local.rot = frame.baseRot;
-    local.warp = frame.baseWarp;
-    local.cx = frame.baseCx;
-    local.cy = frame.baseCy;
-    local.sx = frame.baseSx;
-    local.sy = frame.baseSy;
-    local.dx = frame.baseDx;
-    local.dy = frame.baseDy;
+    if (frame.refsAng) {
+      if (latticeSample) {
+        local.ang = latticeSample.ang;
+      } else {
+        const aspectGridX = gridX * aspectX;
+        const aspectGridY = gridY * aspectY;
+        local.ang = Math.atan2(aspectGridY, aspectGridX);
+      }
+    }
+    // Reset only the built-ins the program can write: a conditional write on
+    // one vertex must not leak into the next. The rest were either seeded
+    // once per pass (referenced) or left untouched (never referenced — the
+    // post-program reads below then use the identical frame constants).
+    if (frame.writesZoom) local.zoom = frame.baseZoom;
+    if (frame.writesZoomExp) local.zoomexp = frame.baseZoomExp;
+    if (frame.writesRot) local.rot = frame.baseRot;
+    if (frame.writesWarp) local.warp = frame.baseWarp;
+    if (frame.writesCx) local.cx = frame.baseCx;
+    if (frame.writesCy) local.cy = frame.baseCy;
+    if (frame.writesSx) local.sx = frame.baseSx;
+    if (frame.writesSy) local.sy = frame.baseSy;
+    if (frame.writesDx) local.dx = frame.baseDx;
+    if (frame.writesDy) local.dy = frame.baseDy;
 
     // frame.perPixelEnv is `local` itself, prototype already wired at pass
     // setup, so no per-vertex createEnv / setPrototypeOf.
@@ -483,18 +710,30 @@ function transformMeshPoint(
     // transform math below runs in renderer [-1,1] space, so invert the mapping.
     rendererX = (((local.x ?? 0.5) - 0.5) * 2) / aspectX;
     rendererY = -((((local.y ?? 0.5) - 0.5) * 2) / aspectY);
-    rad = local.rad;
-    warp = local.warp;
-    centerX = normalizeTransformCenter(local.cx ?? 0.5);
-    centerY = normalizeTransformCenterY(local.cy ?? 0.5);
-    scaleX = local.sx ?? 1;
-    scaleY = local.sy ?? 1;
-    translateX = local.dx ?? 0;
-    translateY = local.dy ?? 0;
-    cosRot = Math.cos(local.rot);
-    sinRot = Math.sin(local.rot);
-    zoomExponent = Math.max(local.zoomexp ?? 1, 0.0001);
-    zoom = Math.max(local.zoom ?? 1, 0);
+    // Not-seeded rad is never read: seedRad false means warp is exactly 0 for
+    // every vertex (see createMeshTransformFrame), so the ripple is skipped.
+    rad = frame.seedRad ? local.rad : 0;
+    // Written built-ins come off the scratch (the program may have rewritten
+    // them); the rest read the frame constant, which is the same base run
+    // through the same normalize/clamp/trig once per frame instead of once
+    // per vertex — bit-identical to the reset value they used to read.
+    warp = frame.writesWarp ? local.warp : frame.warp;
+    centerX = frame.writesCx
+      ? normalizeTransformCenter(local.cx ?? 0.5)
+      : frame.centerX;
+    centerY = frame.writesCy
+      ? normalizeTransformCenterY(local.cy ?? 0.5)
+      : frame.centerY;
+    scaleX = frame.writesSx ? (local.sx ?? 1) : frame.scaleX;
+    scaleY = frame.writesSy ? (local.sy ?? 1) : frame.scaleY;
+    translateX = frame.writesDx ? (local.dx ?? 0) : frame.translateX;
+    translateY = frame.writesDy ? (local.dy ?? 0) : frame.translateY;
+    cosRot = frame.writesRot ? Math.cos(local.rot) : frame.cosRot;
+    sinRot = frame.writesRot ? Math.sin(local.rot) : frame.sinRot;
+    zoomExponent = frame.writesZoomExp
+      ? Math.max(local.zoomexp ?? 1, 0.0001)
+      : frame.zoomExponent;
+    zoom = frame.writesZoom ? Math.max(local.zoom ?? 1, 0) : frame.zoom;
   } else {
     // No per-pixel program: nothing can rewrite x/y/rad/zoom/rot/... per vertex,
     // so skip the env wiring and the NO_OP program call entirely. The geometric
@@ -925,6 +1164,31 @@ export function buildMeshField({
     aspectX,
     aspectY,
   });
+
+  if (transformFrame.isIdentity) {
+    const invDensityMinusOne = 1 / Math.max(1, density - 1);
+    for (let row = 0; row < density; row += 1) {
+      const y = row * invDensityMinusOne * 2 - 1;
+      const rowOffset = row * density;
+      for (let col = 0; col < density; col += 1) {
+        const x = col * invDensityMinusOne * 2 - 1;
+        const pointIndex = rowOffset + col;
+        let pointEntry = points[pointIndex];
+        if (!pointEntry) {
+          pointEntry = { sourceX: x, sourceY: y, x, y, warpU: x, warpV: y };
+          points[pointIndex] = pointEntry;
+        } else {
+          pointEntry.sourceX = x;
+          pointEntry.sourceY = y;
+          pointEntry.x = x;
+          pointEntry.y = y;
+          pointEntry.warpU = x;
+          pointEntry.warpV = y;
+        }
+      }
+    }
+    return { density, points, program: null, signals: null };
+  }
 
   const latticeCache = geometryState.lattice as StaticMeshLattice;
   for (let row = 0; row < density; row += 1) {

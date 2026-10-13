@@ -7,12 +7,12 @@ imports them; this directory is the only copy of their code. Each also has a
 read-only mirror repository, github.com/zz-plant/<name>, and a site with a
 live demo.
 
-| Package | What it is | Tests |
+| Package | What it is | Test suite |
 | --- | --- | --- |
-| [`eel-conformance`](./eel-conformance) | Executable specification of EEL2, the MilkDrop preset expression language: 82 portable JSON cases, a schema, a runner contract and a harness. | 22 |
-| [`flash-guard`](./flash-guard) | WCAG 2.3.1 flash and red-flash analysis for frame sequences, plus a live governor that keeps a canvas under the threshold. | 74 |
-| [`milkdrop-toolchain`](./milkdrop-toolchain) | Parser, EEL2 interpreter and JIT, IR, HLSL analysis with GLSL emission, EEL-to-WGSL, formatter, MilkDrop 2 exporter and dataflow analysis for `.milk` presets. | 510 |
-| [`audio-reactive`](./audio-reactive) | AudioWorklet FFT with harmonic/percussive separation, per-band beat tracking, spectral features, reactivity metrics and packet interpolation. | 55 |
+| [`eel-conformance`](./eel-conformance) | Executable specification of EEL2, the MilkDrop preset expression language: 82 portable JSON cases, a schema, a runner contract and a harness. | `packages/eel-conformance/tests/` |
+| [`flash-guard`](./flash-guard) | WCAG 2.3.1 flash and red-flash analysis for frame sequences, plus a sampling-based live governor that reduces detected flashing. | `packages/flash-guard/tests/` |
+| [`milkdrop-toolchain`](./milkdrop-toolchain) | Parser, EEL2 interpreter and JIT, IR, HLSL analysis with GLSL emission, EEL-to-WGSL, formatter, MilkDrop 2 exporter and dataflow analysis for `.milk` presets. | `packages/milkdrop-toolchain/tests/` |
+| [`audio-reactive`](./audio-reactive) | AudioWorklet FFT with harmonic/percussive separation, per-band beat tracking, spectral features, reactivity metrics and packet interpolation. | `packages/audio-reactive/tests/` |
 
 ## Working on them
 
@@ -30,6 +30,14 @@ Vite (`resolve.conditions`) and TypeScript (`customConditions`) use, and
 get `dist/`, or the TypeScript sources under Bun. Wrangler's bundler honours
 neither condition, so code bundled for a Worker reaches the toolchain only
 through its `src/*` subpath.
+
+The list of packages — and, once one is promoted, where its source of truth
+lives — is `scripts/package-manifest.ts`. The mirror and publish workflow
+matrices, the `packages/` directory and the table above are all validated
+against it by `check:ci-config`; `check:no-source-seams` fails on any
+`workspace:` dependency or `src/` subpath import left pointing at a package
+whose source of truth moved to its own repository
+(`docs/PACKAGE_PROMOTION.md`). Adding or promoting a package starts there.
 
 Each package's tests run on their own (TypeScript and `@types/bun` are the
 only dev dependencies):
@@ -90,7 +98,7 @@ npm login
 cd packages/flash-guard && bun run build && npm publish --access public
 ```
 
-None of the four is on npm yet, and all four names are free.
+As of 2026-10-10, registry lookups for all four names returned 404. That is a dated publication check, not a reservation or a guarantee that a name will remain available. Verify the registry and clean-consumer build before publishing. See [package launch drafts](../docs/PACKAGE_LAUNCHES.md) and [release issue #1410](https://github.com/zz-plant/stims/issues/1410).
 
 The versions in each `package.json` are the source of truth. The workflow
 refuses a tag whose version does not match.

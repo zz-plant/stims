@@ -32,6 +32,11 @@ export type PresetGenerationProvider =
       kind: 'openai-compatible';
       endpoint: string;
       model: string;
+    }
+  | {
+      kind: 'openrouter';
+      apiKey: string;
+      model: string;
     };
 
 export type GeneratePresetOptions = {
@@ -81,6 +86,19 @@ function getLoopbackChatEndpoint(endpoint: string) {
   url.pathname = `${url.pathname.replace(/\/$/u, '')}/chat/completions`;
   return url.href;
 }
+
+/**
+ * Named remote chat providers a user can explicitly opt into. This allowlist
+ * is deliberately separate from the loopback rule above: the generic
+ * `openai-compatible` kind stays restricted to loopback hosts so prompts and
+ * credentials can never be sent to an arbitrary host, while each entry here
+ * is a specific service the user consents to by name. The browser sends the
+ * API key straight to the named host in the Authorization header — it must
+ * never transit a Stims Worker endpoint.
+ */
+const REMOTE_CHAT_COMPLETIONS_ALLOWLIST = {
+  openrouter: 'https://openrouter.ai/api/v1/chat/completions',
+} as const;
 
 async function responseError(response: Response) {
   const body = await response.text();
@@ -190,6 +208,86 @@ async function requestOpenAiCompatiblePreset(
   return extractMilkSource(content);
 }
 
+async function requestOpenRouterPreset(
+  description: string,
+  options: GeneratePresetOptions,
+  provider: Extract<PresetGenerationProvider, { kind: 'openrouter' }>,
+) {
+  const endpoint = REMOTE_CHAT_COMPLETIONS_ALLOWLIST.openrouter;
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${provider.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: provider.model,
+        messages: [
+          {
+            role: 'system',
+            content: buildGeneratePrompt(
+              description,
+              options.complexity || 'moderate',
+            ),
+          },
+          {
+            role: 'user',
+            content: `Generate a MilkDrop preset that: ${description}`,
+          },
+        ],
+        stream: false,
+      }),
+    });
+  } catch {
+    throw new Error(
+      'OpenRouter could not be reached. Check your connection and try again.',
+    );
+  }
+
+  if (!response.ok) {
+    const detail = await responseError(response);
+    // 401/403 from OpenRouter mean the key, not the network; a bare status
+    // leaves the user guessing which of the two to fix.
+    const keyHint =
+      response.status === 401 || response.status === 403
+        ? ' Check the OpenRouter API key in the panel.'
+        : '';
+    throw new Error(
+      `OpenRouter request failed (${response.status})${detail ? `: ${detail}` : '.'}${keyHint}`,
+    );
+  }
+
+  const data = (await response.json()) as OpenAiGenerationResponse;
+  const content = data.choices?.[0]?.message?.content?.trim();
+  if (!content) {
+    throw new Error('OpenRouter returned no preset source.');
+  }
+  return extractMilkSource(content);
+}
+
+/**
+ * Request raw `.milk` source for one prompt from any provider, without
+ * compiling it. The Generate flow compiles inside `generatePreset`; the
+ * generation bench needs the raw source so it can score the model's actual
+ * output against the real compiler.
+ */
+export async function requestPresetFromProvider(
+  description: string,
+  options: GeneratePresetOptions,
+  provider: PresetGenerationProvider,
+) {
+  switch (provider.kind) {
+    case 'openai-compatible':
+      return requestOpenAiCompatiblePreset(description, options, provider);
+    case 'openrouter':
+      return requestOpenRouterPreset(description, options, provider);
+    default:
+      return requestHostedPreset(description, options, provider);
+  }
+}
+
 export async function generatePreset(
   description: string,
   options: GeneratePresetOptions = {},
@@ -202,10 +300,11 @@ export async function generatePreset(
   let milkSource: string;
   let usedFallback = false;
   try {
-    milkSource =
-      provider.kind === 'openai-compatible'
-        ? await requestOpenAiCompatiblePreset(description, options, provider)
-        : await requestHostedPreset(description, options, provider);
+    milkSource = await requestPresetFromProvider(
+      description,
+      options,
+      provider,
+    );
   } catch (error) {
     if (options.fallbackToTemplate) {
       const { synthesizeEELPreset, synthesizedPresetToMilkSource } =
@@ -415,14 +514,12 @@ export async function generatePresetTournament(
     model: options.model,
   };
   // Local models process requests serially, so extra candidates cost the
-  // user linear wall-clock time; the hosted endpoint fans out.
+  // user linear wall-clock time; remote endpoints fan out.
   const attempted =
     options.candidateCount ?? (provider.kind === 'openai-compatible' ? 2 : 3);
 
   const requests = Array.from({ length: attempted }, () =>
-    provider.kind === 'openai-compatible'
-      ? requestOpenAiCompatiblePreset(description, options, provider)
-      : requestHostedPreset(description, options, provider),
+    requestPresetFromProvider(description, options, provider),
   );
   const settled = await Promise.allSettled(requests);
 

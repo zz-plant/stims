@@ -33,6 +33,7 @@ import {
 } from '../core/live-performance-mode.ts';
 import { createLogger } from '../core/logger.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
+import { shouldSkipPresetForDeviceTier } from '../core/preset-cost-signal.ts';
 import { isPresetLocked, setPresetLocked } from '../core/preset-lock.ts';
 import { hiddenByFlashPreference } from '../core/sensory-profile.ts';
 import type {
@@ -92,6 +93,10 @@ import { createMilkdropPresetFileActions } from './runtime/preset-file-actions';
 import { createMilkdropPresetNavigationController } from './runtime/preset-navigation-controller';
 import { resolvePresetPerformanceOverride } from './runtime/preset-performance-overrides';
 import { createMilkdropPresetPreviewService } from './runtime/preset-preview-service.ts';
+import {
+  createMilkdropPresetPipelineWarmupGate,
+  scheduleMilkdropPresetSwitchThroughWarmup,
+} from './runtime/preset-switch-warmup';
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState, evaluateBlendGate } from './runtime/session';
@@ -741,6 +746,23 @@ export function createMilkdropExperience({
     durationSeconds: number;
   } | null = null;
 
+  /**
+   * Pre-fade pipeline warm-up gate for preset switches (WebGPU only): the
+   * incoming preset's GPU pipelines compile before the fade begins, so the
+   * first blended frames submit cache hits instead of the 258–433ms single
+   * frames a 120Hz hardware tab measured at blend start. Bounded and
+   * fallback-safe by construction — see runtime/preset-switch-warmup.ts.
+   */
+  const warmIncomingPresetPipelines = createMilkdropPresetPipelineWarmupGate({
+    getAdapter: () => adapter,
+    getBackend: () => activeBackend,
+    isAgentMode: () => agentModeEnabled,
+    isPreviewMode: () => previewMode,
+    wantsBlendTransition: () =>
+      pendingManualCrossfade ||
+      (transitionMode === 'blend' && blendDuration > 0),
+  });
+
   const beginPresetTransition = () => {
     // A hand-driven crossfade is a gesture, not a persisted mode: it applies
     // to the one switch that armed it and then clears. Making it a third
@@ -833,6 +855,7 @@ export function createMilkdropExperience({
     applyCompiledPreset,
     applyPresetPerformanceOverride,
     beginPresetTransition,
+    waitForPresetWarmup: warmIncomingPresetPipelines,
     setOverlayStatus,
     shouldFallbackToWebgl,
     triggerWebglFallback,
@@ -845,8 +868,13 @@ export function createMilkdropExperience({
       presetSelectionReason = reason;
     },
     excludeFromRandom: (entry) =>
-      getActiveAccessibilityPreference().reduceFlashing &&
-      hiddenByFlashPreference(entry.sensoryProfile),
+      (getActiveAccessibilityPreference().reduceFlashing &&
+        hiddenByFlashPreference(entry.sensoryProfile)) ||
+      // Low-tier devices also skip presets the perf corpus measured as too
+      // frame-hungry to hold 60fps on weak hardware. Inert while the
+      // frame-cost sidecar holds no measurement for the preset — see
+      // core/preset-cost-signal.ts for the no-signal contract.
+      shouldSkipPresetForDeviceTier(entry.id),
   });
 
   const presetFileActions = createMilkdropPresetFileActions({
@@ -1014,31 +1042,50 @@ export function createMilkdropExperience({
       log.log(
         `${nextCompiled.source.id}: subscriber: preset ID change, applying`,
       );
-      applyPresetPerformanceOverride(nextCompiled.source.id);
-      beginPresetTransition();
-      if (!previewMode) {
-        void catalogCoordinator.rememberSelection(nextCompiled.source.id);
-        preferences.rememberLastPreset(nextCompiled.source.id);
-      }
-      // A load is not an edit, so no draft. Saving the loaded source here
-      // pinned every preset a visitor had opened to that copy for good; the
-      // idle check below clears the ones already stored. Idle because it
-      // compiles the original, and this is the start of a transition.
-      applyCompiledPreset(nextCompiled);
-      if (!previewMode) {
-        const loadedId = nextCompiled.source.id;
-        scheduleIdleTask(
-          () =>
-            void dropRedundantDraft(
-              catalogStore,
-              resolveOriginalSource,
-              loadedId,
-            ).catch((error: unknown) => log.info('Draft check skipped', error)),
-          { idleTimeout: 4000 },
-        );
-      }
-      scheduleDeferredCatalogSync();
-      emitChange();
+      // The switch proceeds once the incoming preset's pipelines have warmed
+      // (or the warm-up's deadline passed, or no warm-up applied at all):
+      // the fade starts inside apply, so the first blended frame submits
+      // pipeline cache hits instead of compiling mid-blend.
+      scheduleMilkdropPresetSwitchThroughWarmup({
+        compiled: nextCompiled,
+        gate: warmIncomingPresetPipelines,
+        // Re-checked when the warm-up resolves: a rapid second switch
+        // supersedes this one by publishing a newer session state, and this
+        // switch must not apply out of order after it.
+        isSwitchStillCurrent: () =>
+          lifetime.isActive() &&
+          session.getState().activeCompiled === nextCompiled,
+        apply: () => {
+          applyPresetPerformanceOverride(nextCompiled.source.id);
+          beginPresetTransition();
+          if (!previewMode) {
+            void catalogCoordinator.rememberSelection(nextCompiled.source.id);
+            preferences.rememberLastPreset(nextCompiled.source.id);
+          }
+          // A load is not an edit, so no draft. Saving the loaded source
+          // here pinned every preset a visitor had opened to that copy for
+          // good; the idle check below clears the ones already stored. Idle
+          // because it compiles the original, and this is the start of a
+          // transition.
+          applyCompiledPreset(nextCompiled);
+          if (!previewMode) {
+            const loadedId = nextCompiled.source.id;
+            scheduleIdleTask(
+              () =>
+                void dropRedundantDraft(
+                  catalogStore,
+                  resolveOriginalSource,
+                  loadedId,
+                ).catch((error: unknown) =>
+                  log.info('Draft check skipped', error),
+                ),
+              { idleTimeout: 4000 },
+            );
+          }
+          scheduleDeferredCatalogSync();
+          emitChange();
+        },
+      });
       return;
     }
     if (didSourceChange) {
@@ -1120,6 +1167,7 @@ export function createMilkdropExperience({
     navigation,
     presetFileActions,
     session,
+    startupSettled,
     applyFieldValues,
     activeCompiled,
     activePresetId,
@@ -1310,6 +1358,10 @@ function buildExperienceController(
      * returning that read as a clean compile of a source that never landed.
      */
     async applyEditorSourceAwaited(source: string) {
+      // A shared draft arrives while the startup preset may still be
+      // loading. Compiling against the fallback here gives it the wrong
+      // identity, and the pending load can then replace the edited visual.
+      await deps.startupSettled;
       const { state, applied } =
         await deps.session.applySourceWithOutcome(source);
       deps.emitChange();

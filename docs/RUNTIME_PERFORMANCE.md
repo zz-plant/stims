@@ -127,6 +127,138 @@ The result supports a narrow claim: the duplicate-store removal reduces frame
 work for this equation-heavy stress case across the measured tiers. It does not
 establish the same percentage for every preset, device, renderer, or display.
 
+## 2026-10-11 hardware spot-check (headed tab, not the fixed-tier runner)
+
+Method and its boundary: the host's headless tools render with SwiftShader, so
+this pass drove the live dev server (`806f8984`) in a headed,
+hardware-accelerated tab (native WebGPU, no fallback) and sampled delivered
+rAF cadence in-page over 240-frame windows via `__stims_agent`, plus one
+JavaScript CPU profile. It is a spot-check, not the certification runner:
+dev build, no CDP throttle, no three-trial median, single machine. Numbers
+below narrow what to measure next; they support no universal FPS claim.
+
+Setup: Apple M-series, 120 Hz display (8.33 ms budget), quality step 0,
+renderScale 1.25, demo audio, `shifter-glassworms-flare` and `eos-apocalypse`.
+
+| Observation | Result |
+| --- | --- |
+| `shifter-glassworms-flare` cadence | p50 8.30 ms — the vsync floor, not a work measurement. The tail (p95 9.3–10.3 ms across runs, one 16.6 ms skip) shows roughly one frame in ten missing vsync. Sub-budget frame work is not resolvable by cadence sampling. |
+| `eos-apocalypse` cadence | p50 8.3 ms (vsync floor), p95 10.0 ms — roughly one frame in five misses vsync on the strongest consumer tier; frame work under the budget is not resolvable from cadence. |
+| JS CPU profile, glassworms, 7.3 s | `runProgram` self ~2.0 s plus anonymous JIT program bodies ~2.5 s of 6.5 s sampled: ~68% of non-idle JavaScript in the VM/EEL, matching the ~59% share the 2026-08 profile found. The JIT bodies' self time is the largest single bucket. |
+| WebGPU render bundles A/B ×2 | p95 10.1–10.3 ms both conditions; the deltas are within run-to-run noise. No cadence-level effect (sub-budget work savings would be invisible to this method); the flag stays off. |
+| Blend crossfade cadence (×2) | During-blend p50/p95 (8.3/10.3) ≈ steady state (8.3/10.1): the outgoing preset's full VM step is invisible in cadence at this tier. |
+| Transition-start spike (×2, reproduced) | One to two single frames of 258–433 ms at blend start on every preset switch — the most user-visible artifact measured. |
+| `cloneBlendState` context | Its 2.5–8 ms synthetic tail is second-order next to the 250–430 ms transition-start spike; revisit after that is fixed. |
+
+Narrow claims: on the strongest consumer tier both presets ride the vsync
+ceiling with a missed-frame tail (one frame in ten and one in five), which
+bounds work *above* the budget only — cadence sampling cannot say how much
+headroom remains below it, and weaker devices also adapt to lower quality
+steps. The weaker-tier deficit is established by the fixed-tier runner
+instead (the 2026-08-24 table: `eos-apocalypse` at 15.31 ms of a 16.7 ms
+budget under 4× CPU throttle, locked step 2), not by this spot-check. What
+this spot-check does establish on its own: EEL evaluation dominates the
+JavaScript profile, so JIT-side work targets the measured center of mass;
+the transition-start spike is real, reproducible, and outranks the
+per-frame crossfade cost at this tier. The mid-range reality still requires
+the fixed-tier runner on a host whose headless browser is not
+software-rendering.
+
+## 2026-10-11 Inlined RNG and repeated-read caching in the JIT
+
+Two changes to the CPU JIT, aimed at the per-point/per-vertex hot path that
+the shifter-glassworms-flare profile attributes ~68% of non-idle JavaScript to
+(anonymous JIT bodies plus TurboFan-inlined bodies attributed to
+`runProgram`):
+
+- **Inlined RNG.** `rand()`/`randint()` drew through a per-call closure
+  (`vm.ts` `nextRandom`). The VM now passes its RNG state as a mutable cell
+  and the compiled body advances the LCG in place — one cell load on entry,
+  one store on exit, no call per draw. The interpreter-backed CSP fallback
+  draws through the same cell, so the two tiers interleave on one sequence.
+  The conformance contract is unchanged: `compileMilkdropProgram` keeps a
+  `'closure'` mode whose `rng` argument is a host-supplied draw callable, and
+  `spec/eel-conformance/` runs that tier (the corpus pins every draw to a
+  fixed 0.5, which only a callable can reproduce).
+- **Repeated-read caching.** Identifiers read two or more times within one
+  statement — the `x = if(x, x, ...)` idiom that dominates this preset's
+  per-point blocks — now read once into a temp and splice it for the repeats.
+  The cache is per-statement and invalidated by any store to the variable;
+  conditionally-evaluated regions (`if` branches, the right side of `&&`/
+  `||`, loop bodies) either compile from a snapshot or drop the cache, so a
+  temp assigned on an untaken path can never be observed. Identifiers read
+  once emit exactly what they did before.
+
+Evidence, all on this host (SwiftShader; timing numbers are INDICATIVE ONLY,
+never a hardware claim):
+
+- `lab:replay --record` on unchanged code, then replay after both changes:
+  240 frames of `shifter-glassworms-flare` verified **bit-for-bit** — the RNG
+  sequence and every cached read are semantically identical.
+- Emitted read count for the preset's two 74-statement per-point bodies:
+  410 → 326 env reads per 512-point pass (−20%); the isolated closure draw
+  cost ~16.6 ns/call (Bun/JSC microbench), so the inline form removes the
+  call boundary rather than measurable per-draw arithmetic.
+- Tier agreement: 500 seeded interpreter-vs-JIT programs with rand/randint
+  in loops, `if` branches, and mixed q-register writes (both RNG modes),
+  the CSP fallback on the same cell, and the bundled-fixture differential —
+  all green; mutation checks (LCG constant, store invalidation, region
+  barriers) confirmed each new test goes red on the corresponding bug.
+
+Known pre-existing divergence found during this work (not introduced, not
+fixed): a random call *inside another random call's argument* draws in
+opposite orders on the interpreter (args first) and the JIT (draw first);
+two bundled `cotc-suksma-*` presets nest `rand` but run on the JIT tier
+consistently, so production output is unaffected. The conformance corpus
+cannot express it (a fixed draw hides draw order).
+
+Browser-frame verification (V8, real WebGPU, per the 2026-08-24 setup above)
+was the outstanding item for both changes; the measured result follows.
+
+## 2026-10-12 hardware result: RNG inlining + statement-local read caching
+
+Measured on the same machine as the 2026-10-11 spot-check, with the runner
+itself (`perf:certification-corpus --no-headless`, real WebGPU,
+`timingMode: gpu-phase-timestamps`, quality step 1 locked, three trials):
+
+- Before (main, 2026-10-11 corpus sweep): `shifter-glassworms-flare`
+  **median 5.24 ms** average frame work.
+- After (this change): **median 4.51 ms** (trials 4.41 / 4.51 / 4.72;
+  `fallbackOccurred: false`; simulation phase 3.73 ms).
+
+That is a **14% reduction in median frame work for the heaviest preset in
+the certification corpus**, with output proven identical by the replay and
+differential instruments above. The claim stays narrow: it is this preset's
+shape (repeated identifier reads inside large per-point bodies plus RNG
+draws) on this hardware at one quality step — not a universal percentage
+for every preset, device, or renderer, and the delivered FPS stays
+display-capped either way (medianFps 120.48 before and after).
+
+## 2026-10-12 hardware result: unreferenced per-vertex built-ins skipped in the mesh transform
+
+The mesh lane's change (skip computing per-vertex built-ins the per-pixel
+program never references; seeded/derived values read frame constants that
+are bit-identical to the old per-vertex resets) is proven output-identical
+by trace and mesh digests. Measured with the same hardware protocol as the
+2026-10-11 spot-check (runner, `--no-headless`, real WebGPU, quality step 1
+locked, three trials), on `eos-apocalypse` (references few per-pixel
+built-ins):
+
+- Before (main, 2026-10-11 corpus sweep): median 4.14 ms average frame work
+  (trials 3.78 / 4.14 / 4.49).
+- After: **median 3.77 ms** (trials 3.37 / 3.77 / 4.18) — the entire
+  after-spread sits below the before-median, and min, median, and max all
+  moved down.
+
+That is a **9% median reduction on the mesh-heavy stress preset on top-tier
+hardware**, where the skipped stores and trig are relatively cheap — the
+structural reduction is larger in count (14 writes → 7, 13 post-reads → ~7,
+2 trig/frame → 0 on this preset), so weaker tiers, where property stores and
+`Math.cos`/`Math.sin` are relatively costlier, are the real target. Narrow
+claim: this preset, this hardware, one quality step; the microbench on
+presets that reference nearly all built-ins read ±1% (noise), as expected —
+their per-vertex loops are unchanged.
+
 ## Reproduce a tier
 
 The runner builds and serves production output by default. Run the same preset

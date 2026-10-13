@@ -215,4 +215,37 @@ describe('editor panel named versions', () => {
     expect(reopened.textContent).not.toContain('+ warp=0.5');
     panel.dispose();
   });
+
+  test('Compare adds the audio-reach reading under the diff', () => {
+    // The listening summary is derived from the two sources' dataflow, so a
+    // version whose zoom followed bass, compared against the live draft
+    // whose zoom is a constant, must say so under the changed lines.
+    const id = 'versions-listen-test';
+    const v1 = `[preset]\ntitle=${id}\nzoom=1.0\n[preset]\nper_frame_1=zoom = 1 + 0.1*bass;\n`;
+    const v2 = `[preset]\ntitle=${id}-draft\nzoom=1.05\n[preset]\nper_frame_1=zoom = 1.04;\n`;
+    const { panel } = mount(memoryStorage());
+    load(panel, v1, id);
+    save(panel, 'follows bass');
+    load(panel, v2, id);
+
+    const row = versionRows(panel)[0] as HTMLElement;
+    button(row, 'Compare').click();
+    const compare = row.querySelector('[data-version-diff]') as HTMLElement;
+    expect(compare?.textContent).toContain(
+      '- per_frame_1=zoom = 1 + 0.1*bass;',
+    );
+    const note = compare?.querySelector('.stims-editor__version-listen');
+    expect(note?.textContent).toContain('What changed in how it listens');
+    expect(note?.textContent).toContain('zoom stopped listening to bass');
+
+    // Identical sources: the diff says identical and the summary stays out.
+    // (Close the open panel first: a second Compare click would toggle it.)
+    button(row, 'Compare').click();
+    load(panel, v1, id);
+    button(row, 'Compare').click();
+    const identical = row.querySelector('[data-version-diff]') as HTMLElement;
+    expect(identical.textContent).toContain('Identical to the current source.');
+    expect(identical.querySelector('.stims-editor__version-listen')).toBeNull();
+    panel.dispose();
+  });
 });

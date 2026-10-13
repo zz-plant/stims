@@ -32,6 +32,27 @@ async function classify(
         },
         { role: 'user', content: description },
       ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'preset_classification',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              complexity: {
+                type: 'string',
+                enum: ['simple', 'moderate', 'complex'],
+              },
+              needsReasoning: {
+                type: 'boolean',
+              },
+            },
+            required: ['complexity', 'needsReasoning'],
+            additionalProperties: false,
+          },
+        },
+      },
     });
     try {
       const parsed = JSON.parse(

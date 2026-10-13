@@ -1,5 +1,11 @@
 // POST /api/validate-preset
-// Dry-run parser and syntax validator for MilkDrop .milk source code
+// Compiles MilkDrop .milk source with the real preset compiler and returns
+// its diagnostics. `valid` reflects the compile result — errors are only
+// what the compiler rejects (EEL compile failures, parse failures), never a
+// heuristic line check.
+
+import type { MilkdropDiagnostic as ToolchainDiagnostic } from 'milkdrop-toolchain/src/common-types.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 
 interface MilkdropDiagnostic {
   severity: 'error' | 'warning';
@@ -44,136 +50,41 @@ export async function onRequest(context: {
   }
 }
 
+/** Map a toolchain diagnostic onto the route's wire shape. Toolchain `info`
+ * diagnostics stay visible but never affect `valid`. */
+function toRouteDiagnostic(
+  diagnostic: ToolchainDiagnostic,
+): MilkdropDiagnostic {
+  return {
+    severity: diagnostic.severity === 'error' ? 'error' : 'warning',
+    code: diagnostic.code,
+    ...(diagnostic.line === undefined ? {} : { line: diagnostic.line }),
+    message: diagnostic.message,
+  };
+}
+
 export function validatePresetSource(source: string) {
-  const diagnostics: MilkdropDiagnostic[] = [];
-  const sections: string[] = [];
-  let fieldCount = 0;
-  let currentSection: string | null = null;
-
-  const lines = source.split(/\r?\n/u);
-
-  lines.forEach((line, lineIndex) => {
-    const lineNumber = lineIndex + 1;
-    const trimmed = line.trim();
-
-    if (!trimmed) {
-      return;
-    }
-
-    // Skip comment lines
-    if (
-      trimmed.startsWith('//') ||
-      trimmed.startsWith('#') ||
-      trimmed.startsWith(';')
-    ) {
-      return;
-    }
-
-    // Section headers e.g. [preset00]
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      currentSection = trimmed.slice(1, -1).trim().toLowerCase();
-      if (currentSection && !sections.includes(currentSection)) {
-        sections.push(currentSection);
-      }
-      return;
-    }
-
-    const stripComments = (str: string) => {
-      let inQuote = false;
-      for (let i = 0; i < str.length; i += 1) {
-        if (str[i] === '"' || str[i] === "'") {
-          inQuote = !inQuote;
-        } else if (!inQuote && str[i] === '/' && str[i + 1] === '/') {
-          return str.slice(0, i).trimEnd();
-        }
-      }
-      return str;
-    };
-
-    const cleanLine = stripComments(line).trim();
-    if (!cleanLine) {
-      return;
-    }
-
-    const equalsIndex = cleanLine.indexOf('=');
-
-    if (equalsIndex < 0) {
-      if (
-        currentSection === 'warp_shader' ||
-        currentSection === 'comp_shader'
-      ) {
-        fieldCount += 1;
-        return;
-      }
-      diagnostics.push({
-        severity: 'warning',
-        code: 'preset_line_ignored',
-        line: lineNumber,
-        message: `Line without assignment ignored: "${trimmed.slice(0, 60)}"`,
-      });
-      return;
-    }
-
-    const key =
-      currentSection === 'warp_shader' || currentSection === 'comp_shader'
-        ? currentSection
-        : cleanLine.slice(0, equalsIndex).trim();
-
-    const rawValue =
-      currentSection === 'warp_shader' || currentSection === 'comp_shader'
-        ? cleanLine
-        : cleanLine.slice(equalsIndex + 1).trim();
-
-    if (!key) {
-      diagnostics.push({
-        severity: 'error',
-        code: 'preset_missing_key',
-        line: lineNumber,
-        message: 'Assignment line is missing a key before "=".',
-      });
-      return;
-    }
-
-    // Unbalanced parentheses check in equation lines
-    if (
-      key.includes('init') ||
-      key.includes('per_frame') ||
-      key.includes('per_pixel')
-    ) {
-      let openParen = 0;
-      for (let i = 0; i < rawValue.length; i += 1) {
-        if (rawValue[i] === '(') openParen += 1;
-        if (rawValue[i] === ')') openParen -= 1;
-        if (openParen < 0) {
-          diagnostics.push({
-            severity: 'error',
-            code: 'unbalanced_parentheses',
-            line: lineNumber,
-            message: `Unbalanced parentheses in equation: "${rawValue.slice(0, 60)}"`,
-          });
-          break;
-        }
-      }
-      if (openParen > 0) {
-        diagnostics.push({
-          severity: 'error',
-          code: 'unclosed_parentheses',
-          line: lineNumber,
-          message: `Unclosed parenthesis in equation: "${rawValue.slice(0, 60)}"`,
-        });
-      }
-    }
-
-    fieldCount += 1;
+  const compiled = compileMilkdropPresetSource(source, {
+    id: 'validate-preset',
+    title: 'validation',
+    origin: 'imported',
   });
 
-  const errors = diagnostics.filter((d) => d.severity === 'error');
-  const warnings = diagnostics.filter((d) => d.severity === 'warning');
+  const errors: MilkdropDiagnostic[] = [];
+  const warnings: MilkdropDiagnostic[] = [];
+  for (const diagnostic of compiled.diagnostics) {
+    const mapped = toRouteDiagnostic(diagnostic);
+    if (mapped.severity === 'error') {
+      errors.push(mapped);
+    } else {
+      warnings.push(mapped);
+    }
+  }
 
   return {
     valid: errors.length === 0,
-    fieldCount,
-    sections,
+    fieldCount: compiled.ast.fields.length,
+    sections: compiled.ast.sections,
     errors,
     warnings,
   };

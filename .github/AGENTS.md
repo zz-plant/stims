@@ -6,19 +6,19 @@ Stims is a browser-native app for playing and live-editing MilkDrop presets, bui
 
 You're about to code on Stims. Before you dive into docs, grab these five things:
 
-1. **Cline fast path** — If you're using Cline, start with [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) for a single-page quick start, then return here for non-negotiable defaults.
+1. **Cline fast path** — If you're using Cline, start with [`.claude/CLAUDE.md`](../.claude/CLAUDE.md) for a single-page quick start, then return here for non-negotiable defaults.
 
-2. **Bootstrap the repo state first** — Run `bun run setup:codex --status` for a quick local readiness read, then `bun run setup:codex --print-plan` to see the install/check plan, then `bun run setup:codex` when the workspace state is unknown. See [`docs/agents/agent-handoffs.md`](./docs/agents/agent-handoffs.md) for the fast-start and delegation contract.
+2. **Bootstrap the repo state first** — Run `bun run setup:codex --status` for a quick local readiness read, then `bun run setup:codex --print-plan` to see the install/check plan, then `bun run setup:codex` when the workspace state is unknown. See [`docs/agents/agent-handoffs.md`](../docs/agents/agent-handoffs.md) for the fast-start and delegation contract.
    On higher-memory local machines, use `bun run session:codex -- --profile review` when you want to keep the dev server, local model roles, and a verification watcher warm between edits.
 
-3. **Verify your code as you go** — Use [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) during implementation to catch bugs early. Don't wait until the end for the full quality gate.
+3. **Verify your code as you go** — Use [`.agent/skills/verify-visualizer-work/SKILL.md`](../.agent/skills/verify-visualizer-work/SKILL.md) during implementation to catch bugs early. Don't wait until the end for the full quality gate.
 
-4. **Test visually in the browser** — For a live edit loop, run `bun run dev:agent` (one warm loop: dev server + typecheck watch + fast tests watch). For visual QA only, run `bun run dev` and visit `http://localhost:5173/?agent=true` to test your changes with persistent state on the canonical workspace route. Use `http://localhost:5173/milkdrop/?agent=true` only when verifying the compatibility alias redirect. See [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) for the full visual testing guide.
+4. **Test visually in the browser** — For a live edit loop, run `bun run dev:agent` (one warm loop: dev server + typecheck watch + fast tests watch). For visual QA only, run `bun run dev` and visit `http://localhost:5173/?agent=true` to test your changes with persistent state on the canonical workspace route. Use `http://localhost:5173/milkdrop/?agent=true` only when verifying the compatibility alias redirect. See [`docs/agents/visual-testing.md`](../docs/agents/visual-testing.md) for the full visual testing guide.
 
-5. **Know your commands** — Bookmark the CLI quick reference in [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md#quick-cli-reference-for-agents). The three you'll use most:
+5. **Know your commands** — Bookmark the CLI quick reference in [`docs/agents/tooling-and-quality.md`](../docs/agents/tooling-and-quality.md#quick-cli-reference-for-agents). The three you'll use most:
    - `bun run check:quick` — Fast syntax/lint/type/guard check (~5-10s with fail-fast feedback)
    - `bun run test tests/path/to/file.test.ts` — Targeted test for a specific file (~1-3s)
-   - `bun run check` — Full quality gate before committing (guards + fast sharded test suite)
+   - `bun run check` — Full quality gate before committing (guards + package checks + unit, compatibility, and corpus tests)
 
    For anything else, `bun run scripts:list` (alias `bun run help`) prints every script grouped by namespace with a one-line purpose.
 
@@ -53,17 +53,17 @@ Run exactly what your change can break instead of the whole gate:
 
 ## Task routing
 
-Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md) when the task maps to a repeatable workflow. Fast path:
+Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](../docs/agents/custom-capabilities.md) when the task maps to a repeatable workflow. Fast path:
 
 | If the task is mainly about... | Start here |
 | --- | --- |
-| shared runtime, renderer, shell, controls, audio, MIDI/hardware controllers, or URL state | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](./.agent/skills/modify-visualizer-runtime/SKILL.md) |
-| bundled presets, catalog/editor behavior, import/export, or compatibility | [`.agent/skills/modify-preset-workflow/SKILL.md`](./.agent/skills/modify-preset-workflow/SKILL.md) |
-| browser QA or visual confirmation | [`.agent/skills/play-visualizer/SKILL.md`](./.agent/skills/play-visualizer/SKILL.md) and [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) |
-| quick implementation-time verification | [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) |
-| end-to-end product-facing change that should go to PR-ready | [`.agent/skills/ship-visualizer-change/SKILL.md`](./.agent/skills/ship-visualizer-change/SKILL.md) |
-| workspace UI, shell chrome, or CSS iteration | [`.agent/skills/iterate-visualizer-ui/SKILL.md`](./.agent/skills/iterate-visualizer-ui/SKILL.md) |
-| knowing which guardrails apply before you start editing | [`.agent/skills/guard-agent-work/SKILL.md`](./.agent/skills/guard-agent-work/SKILL.md) |
+| shared runtime, renderer, shell, controls, audio, MIDI/hardware controllers, or URL state | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](../.agent/skills/modify-visualizer-runtime/SKILL.md) |
+| bundled presets, catalog/editor behavior, import/export, or compatibility | [`.agent/skills/modify-preset-workflow/SKILL.md`](../.agent/skills/modify-preset-workflow/SKILL.md) |
+| browser QA or visual confirmation | [`.agent/skills/play-visualizer/SKILL.md`](../.agent/skills/play-visualizer/SKILL.md) and [`docs/agents/visual-testing.md`](../docs/agents/visual-testing.md) |
+| quick implementation-time verification | [`.agent/skills/verify-visualizer-work/SKILL.md`](../.agent/skills/verify-visualizer-work/SKILL.md) |
+| end-to-end product-facing change that should go to PR-ready | [`.agent/skills/ship-visualizer-change/SKILL.md`](../.agent/skills/ship-visualizer-change/SKILL.md) |
+| workspace UI, shell chrome, or CSS iteration | [`.agent/skills/iterate-visualizer-ui/SKILL.md`](../.agent/skills/iterate-visualizer-ui/SKILL.md) |
+| knowing which guardrails apply before you start editing | [`.agent/skills/guard-agent-work/SKILL.md`](../.agent/skills/guard-agent-work/SKILL.md) |
 
 ## Essentials
 
@@ -86,15 +86,19 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./
 
 ## Regression guards
 
-The quality gate (`bun run check`) runs these guards automatically. New code must pass them. All `check:*` scripts are read-only — when a check reports stale output, regenerate via the corresponding `generate:*` script or `--write` flag rather than editing the artifact.
+The quality gate (`bun run check`) runs the required development guards automatically. Other listed checks, such as release determinism, have separate workflows. New code must pass the applicable checks. All `check:*` scripts are read-only — when a check reports stale output, regenerate via the corresponding `generate:*` script or `--write` flag rather than editing the artifact.
 
-- `check:ci-config` — workflow/build config drift (deleted scripts, npm leakage, conflict markers).
+- `check:ci-config` — workflow/build config drift (deleted scripts, npm leakage, conflict markers), plus agreement between `scripts/package-manifest.ts` and every package surface (mirror/publish workflow matrices, `packages/` directory, README table).
+- `check:no-source-seams` — a package marked `promoted` in the manifest must be consumed from the registry: no `workspace:` dependency, no `src/` subpath import, no relative path into `packages/<name>/`.
+- `check:site-styles-identical` — the package sites' shared `site/styles.css` stays byte-identical across packages.
+- `check:dist-determinism` — release-time, in `publish-packages.yml` (not the gate): builds a package twice from clean and fails if the two dists differ.
 - `check:duplicate-css` — duplicate `@keyframes` / `@font-face` across global CSS.
 - `check:stale-paths` — references to the removed `assets/` tree, including the root entry HTML files.
-- `check:architecture` — no import cycles, no production code importing test helpers, and the `frontend/*` → engine seam enforced via `.dependency-cruiser.mjs` boundary rules (`frontend-engine-seam` and `engine-runtime-only-via-adapter`). See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for the boundary design.
+- `check:architecture` — no import cycles, no production code importing test helpers, and the `frontend/*` → engine seam enforced via `.dependency-cruiser.mjs` boundary rules (`frontend-engine-seam` and `engine-runtime-only-via-adapter`). See [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) for the boundary design.
 - `check:no-ts-nocheck` — no new `@ts-nocheck` escapes.
 - `check:css-tokens` — CSS custom properties resolve to a defined token.
 - `check:cache-bounds` — new `Map`/`Set`/`WeakMap` growth containers added in the diff must share their file with an explicit bound (a `MAX_*`/`*_LIMIT`/`capacity`/`maxSize` constant or an eviction path), or be allowlisted with a reason. Strict mode runs at commit; advisory in `bun run check`.
+- `check:file-size` — monolith ratchet: no source file may exceed 5000 lines, and the known-largest files (`app-shell.css`, `milkdrop-renderer-adapter.test.ts`) are frozen at their current size so they can only shrink.
 - `catalog-compiler-smoke` (unit) — every bundled preset compiles; samplers normalize; wave per-point programs work. Catches shader/sampler regressions pre-merge.
 - `mobile-viewport-matrix` (unit) — mobile layout invariants (viewport-safe stage, control dock visibility, sidecar wrap, safe-area insets).
 - `audio-lifecycle` (unit) — audio ordering contract (no leaked contexts, permission-before-mount, generation race detection).
@@ -102,17 +106,17 @@ The quality gate (`bun run check`) runs these guards automatically. New code mus
 
 ## Recommended execution order
 
-1. **Understand the task**: Open [`docs/agents/README.md`](./docs/agents/README.md) for progressive-disclosure guidance.
-2. **Bootstrap and slice work**: Use [`docs/agents/agent-handoffs.md`](./docs/agents/agent-handoffs.md) when the repo state is unclear or the task may be delegated.
-3. **Plan and route**: Use [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md) when the task maps to a repo-local skill/workflow, then use [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md) before editing code.
-4. **Verify during dev**: Use [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) after each change to validate quickly.
-5. **Test visually**: Use [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) when you need browser-based verification.
-6. **Finalize**: Use [`docs/agents/metadata-and-docs.md`](./docs/agents/metadata-and-docs.md) before commit/PR text.
-7. **Coordinate successor work**: Use [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md) when a task spans parity, runtime performance, browser-native UX, or proof/release claims.
-8. **Docs changes**: Use [`docs/README.md`](./docs/README.md) as the canonical index when restructuring docs.
-9. **Synchronize**: Follow [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md) for cross-link alignment.
+1. **Understand the task**: Open [`docs/agents/README.md`](../docs/agents/README.md) for progressive-disclosure guidance.
+2. **Bootstrap and slice work**: Use [`docs/agents/agent-handoffs.md`](../docs/agents/agent-handoffs.md) when the repo state is unclear or the task may be delegated.
+3. **Plan and route**: Use [`docs/agents/custom-capabilities.md`](../docs/agents/custom-capabilities.md) when the task maps to a repo-local skill/workflow, then use [`docs/agents/tooling-and-quality.md`](../docs/agents/tooling-and-quality.md) before editing code.
+4. **Verify during dev**: Use [`.agent/skills/verify-visualizer-work/SKILL.md`](../.agent/skills/verify-visualizer-work/SKILL.md) after each change to validate quickly.
+5. **Test visually**: Use [`docs/agents/visual-testing.md`](../docs/agents/visual-testing.md) when you need browser-based verification.
+6. **Finalize**: Use [`docs/agents/metadata-and-docs.md`](../docs/agents/metadata-and-docs.md) before commit/PR text.
+7. **Coordinate successor work**: Use [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](../docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md) when a task spans parity, runtime performance, browser-native UX, or proof/release claims.
+8. **Docs changes**: Use [`docs/README.md`](../docs/README.md) as the canonical index when restructuring docs.
+9. **Synchronize**: Follow [`docs/DOCS_MAINTENANCE.md`](../docs/DOCS_MAINTENANCE.md) for cross-link alignment.
 
 ## Alignment requirements
 
-- Keep links and workflow docs aligned according to [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md).
-- If `.agent/skills/*` or `.agent/workflows/*` changes, update [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md) and any route/command docs that mention the changed capability in the same change.
+- Keep links and workflow docs aligned according to [`docs/DOCS_MAINTENANCE.md`](../docs/DOCS_MAINTENANCE.md).
+- If `.agent/skills/*` or `.agent/workflows/*` changes, update [`docs/agents/custom-capabilities.md`](../docs/agents/custom-capabilities.md) and any route/command docs that mention the changed capability in the same change.

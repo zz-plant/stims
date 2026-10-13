@@ -1,6 +1,6 @@
 # Stims — play and live-edit MilkDrop presets in your browser (toil.fyi)
 
-> Stims plays the original MilkDrop `.milk` presets in a browser tab against any audio (the demo loop, a microphone, a tab, a YouTube link, or a file), with a live editor and the session carried in the URL. It is an independent implementation in the lineage of Ryan Geiss's MilkDrop, Butterchurn, and projectM.
+> Stims plays the original MilkDrop `.milk` presets in a browser tab with demo, microphone, local file, and supported browser audio capture, with a live editor and the session carried in the URL. It is an independent implementation in the lineage of Ryan Geiss's MilkDrop, Butterchurn, and projectM.
 
 ## What is new in Stims
 Butterchurn ran MilkDrop presets in a browser first, and MilkDrop 2 already had a live editor. What Stims adds:
@@ -8,12 +8,16 @@ Butterchurn ran MilkDrop presets in a browser first, and MilkDrop 2 already had 
 - **Measured fidelity.** Frames are compared with native projectM on a fixed clock, a difference counts only above the preset's own run-to-run noise, and every per-preset result is published, failures included.
 - **The corpus analyzed as programs.** `lab:dataflow` reads which audio reaches each control from the equations alone; model-training findings (presets behave as threshold programs; trees beat networks; 41% of memoryless audio controls recoverable as exact equations) are in https://github.com/zz-plant/stims/blob/main/docs/guides/training-models.md
 
+The numeric coverage and model-training results above are dated measurements; see the linked technical docs for their sample and limits. They do not certify the whole catalog.
+
 ## Core links and resources
 - **Live visualizer**: https://toil.fyi/
 - **Full agent documentation**: https://toil.fyi/llms-full.txt
 - **MCP server (stdio)**: run `bun run mcp` from a clone of the repository; setup is in https://github.com/zz-plant/stims/blob/main/docs/MCP_SERVER.md
 - **Preset catalog**: https://toil.fyi/milkdrop-presets/catalog.json
 - **Every preset page, A–Z, with author and collection pages**: https://toil.fyi/presets/
+- **Play, edit, and share guide**: https://github.com/zz-plant/stims/blob/main/docs/USER_GUIDE.md
+- **API request and response contracts**: https://github.com/zz-plant/stims/blob/main/docs/api.md
 - **Source code**: https://github.com/zz-plant/stims
 
 ## Guides (static pages)
@@ -27,7 +31,7 @@ Butterchurn ran MilkDrop presets in a browser first, and MilkDrop 2 already had 
 - `?agent=true`: Keeps rendering while the tab reports itself hidden, as headless and embedded browsers often do. `window.__stims_agent` (`getState`, `waitFor`, `run`) is available in every mode.
 - `?preset=<id>`: Loads a specific preset by ID (e.g., `?preset=shifter-snakeskin`).
 - `?renderer=webgpu` or `?renderer=webgl`: Forces a specific rendering backend.
-- `#code=<base64>`: Instant URL deep link containing base64-encoded `.milk` source code.
+- `#code=<payload>`: Shared `.milk` source. Decoding accepts legacy base64, `u1~` UTF-8 base64, and `z1~` deflate-raw base64url. Use the app share action; URLs exceeding its size budget need a file export.
 
 ## API endpoints
 - `POST /api/validate-preset`: Validate MilkDrop `.milk` code syntax and return diagnostic JSON.

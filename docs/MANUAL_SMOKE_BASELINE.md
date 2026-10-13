@@ -1,8 +1,8 @@
-# Manual Smoke Baseline
+# Manual smoke baseline
 
 ## What counts as the baseline
 
-Milestone A baseline evidence is the combination of:
+For startup, routing, and lifecycle changes, collect:
 
 - The repo quality gates:
 
@@ -126,4 +126,4 @@ Milestone A baseline
 
 - [`QA_PLAN.md`](./QA_PLAN.md) for the broader QA map.
 - [`DEVELOPMENT.md`](./DEVELOPMENT.md) for parity-capture and day-to-day commands.
-- [`FULL_REFACTOR_PLAN.md`](./FULL_REFACTOR_PLAN.md) for milestone intent and acceptance criteria.
+- [`archive/FULL_REFACTOR_PLAN.md`](./archive/FULL_REFACTOR_PLAN.md) for milestone intent and acceptance criteria.

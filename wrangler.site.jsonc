@@ -53,17 +53,14 @@
   // Semantic preset search; /api/visual-search falls back to a brute-force
   // D1 cosine scan when this binding is absent.
   "vectorize": [{ "binding": "VECTOR_INDEX", "index_name": "stims-presets" }],
-  // Per-IP limiter for the Workers AI endpoints (open-beta ratelimit binding).
-  "unsafe": {
-    "bindings": [
-      {
-        "name": "AI_RATE_LIMITER",
-        "type": "ratelimit",
-        "namespace_id": "1001",
-        "simple": { "limit": 20, "period": 60 }
-      }
-    ]
-  },
+  // Per-IP limiter for the Workers AI endpoints (GA ratelimit binding).
+  "ratelimits": [
+    {
+      "name": "AI_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 20, "period": 60 }
+    }
+  ],
   // Holds preset_embeddings (written by the embed-backfill cron) for the
   // /api/visual-search fallback. The `stims-gallery` name predates its use.
   "d1_databases": [
@@ -81,5 +78,8 @@
   ],
   "workers_dev": true,
   "preview_urls": true,
-  "observability": { "enabled": true }
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
 }

@@ -21,6 +21,13 @@ import {
   useAudioSignalState,
 } from './audio-signal-state.ts';
 import { subscribeEasedAudioEnergy } from './engine-audio-energy-store.ts';
+import {
+  type FilePlaylistSnapshot,
+  getActiveFilePlaylist,
+  nextFileTrack,
+  previousFileTrack,
+  subscribeFilePlaylist,
+} from './file-audio.ts';
 import { pulseHaptic } from './haptics.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { UiIcon } from './UiIcon.tsx';
@@ -103,6 +110,13 @@ export function AudioStatusControl({
   const audioSource = engineSnapshot?.audioSource ?? null;
   const state = useAudioSignalState(Boolean(audioSource));
   const sourceName = audioSource ? (SOURCE_NAMES[audioSource] ?? null) : null;
+  const [playlist, setPlaylist] = useState<FilePlaylistSnapshot | null>(() =>
+    getActiveFilePlaylist(),
+  );
+  useEffect(() => {
+    return subscribeFilePlaylist(setPlaylist);
+  }, []);
+
   const described = describeAudioSignal(state, sourceName);
   const label = described.label;
   // A held stage is not "reacting" to anything, whatever the meter says: the
@@ -113,7 +127,9 @@ export function AudioStatusControl({
           ? ', and the track with it'
           : ''
       }. Press Space or Resume to carry on.`
-    : described.detail;
+    : audioSource === 'file' && playlist && playlist.totalTracks > 1
+      ? `Track ${playlist.currentIndex + 1} of ${playlist.totalTracks}: ${playlist.currentTrackName}`
+      : described.detail;
   const nextStep = engineSnapshot?.playbackPaused
     ? null
     : nextStepFor(state, audioSource);
@@ -232,9 +248,14 @@ export function AudioStatusControl({
           className="stims-icon-slot stims-icon-slot--sm"
         />
         <span className={styles.label}>
-          {state === 'live' && audioSource
-            ? (SOURCE_SHORT[audioSource] ?? label)
-            : label}
+          {state === 'live' &&
+          audioSource === 'file' &&
+          playlist &&
+          playlist.totalTracks > 1
+            ? `File · ${playlist.currentIndex + 1}/${playlist.totalTracks}`
+            : state === 'live' && audioSource
+              ? (SOURCE_SHORT[audioSource] ?? label)
+              : label}
         </span>
       </button>
 
@@ -283,6 +304,30 @@ export function AudioStatusControl({
               >
                 {engineSnapshot?.playbackPaused ? 'Resume' : 'Pause'}
               </button>
+              {audioSource === 'file' &&
+              playlist &&
+              playlist.totalTracks > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={styles.item}
+                    data-action="previous-track"
+                    onClick={() => run(() => void previousFileTrack())}
+                  >
+                    Previous track
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={styles.item}
+                    data-action="next-track"
+                    onClick={() => run(() => void nextFileTrack())}
+                  >
+                    Next track
+                  </button>
+                </>
+              ) : null}
               {/* Same verb as the dock menu, same label: this unmounts the
                   engine and returns to the start page, and as "Stop audio"
                   it read as mute. */}

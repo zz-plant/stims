@@ -105,6 +105,10 @@ declare namespace Cloudflare {
         image?: number[] | Uint8Array;
         max_tokens?: number;
         temperature?: number;
+        response_format?: {
+          type: 'json_object' | 'json_schema';
+          json_schema?: Record<string, unknown>;
+        };
       },
     ): Promise<{
       response?: string;

@@ -19,11 +19,17 @@ import type {
   MilkdropProgramBlock,
 } from './common-types.ts';
 import {
+  advanceEelRng,
   EEL_BINARY_OPERATORS,
+  EEL_RNG_JIT_STATE,
   EEL_UNARY_OPERATORS,
+  type EelRngCell,
   emitEelCallJs,
 } from './compiler/eel-function-table.ts';
-import { evaluateMilkdropExpression } from './expression.ts';
+import {
+  evaluateMilkdropExpression,
+  walkMilkdropExpression,
+} from './expression.ts';
 import { aliasMap } from './field-normalization.ts';
 
 /**
@@ -51,6 +57,29 @@ export const MILKDROP_GMEGABUF_SIZE = 1_048_576;
  * the caller's locals when a local scope is active, and otherwise in the
  * register bank (`t` registers) or preset state.
  */
+/**
+ * How compiled programs draw random numbers.
+ *
+ * - `'closure'` (default): the `rng` argument is a `() => number` callable,
+ *   invoked once per draw. This is the conformance-runner contract — the
+ *   corpus pins every draw to a fixed value, which only a host-supplied
+ *   callable can reproduce.
+ * - `'inline'`: the `rng` argument is an `EelRngCell` sharing the VM's RNG
+ *   state. The program body loads the cell once, advances the LCG in place
+ *   at each `rand()`/`randint()` site (no per-draw function call), and stores
+ *   the state back on exit. The sequence is bit-identical to the closure
+ *   tier's; the seeded differential tests pin that equivalence.
+ */
+export type MilkdropProgramRngMode = 'closure' | 'inline';
+
+export type MilkdropProgramOptions = {
+  rng: MilkdropProgramRngMode;
+};
+
+/** The `rng` argument: a draw callable (closure mode) or the shared state
+ * cell (inline mode). */
+export type MilkdropProgramRng = (() => number) | EelRngCell;
+
 export type MilkdropProgramFn = (
   env: Record<string, number>,
   state: Record<string, number>,
@@ -58,16 +87,114 @@ export type MilkdropProgramFn = (
   locals: Record<string, number> | null,
   megabuf: Float32Array,
   gmegabuf: Float32Array,
-  nextRandom: () => number,
+  rng: MilkdropProgramRng,
 ) => void;
 
 const NO_OP: MilkdropProgramFn = () => {};
+
+const COMPILE_DEFAULTS: MilkdropProgramOptions = { rng: 'closure' };
 
 const REGISTER_PATTERN = /^([qt])(\d+)$/u;
 
 type CompileContext = {
   temporaries: string[];
+  rngMode: MilkdropProgramRngMode;
+  randomUsed: boolean;
+  /**
+   * Repeated-identifier-read cache for the statement being compiled, keyed by
+   * read identity (see identifierReadInfo). A hit splices the temp instead of
+   * re-reading, which only preserves semantics when nothing between the two
+   * reads can have stored to the variable — so every store invalidates and
+   * every conditionally-evaluated region (if branches, the right side of
+   * &&/||) either restores a snapshot or drops the cache. Per statement the
+   * cache starts empty, so reuse never crosses a store the interpreter would
+   * observe.
+   */
+  cse: Map<string, { temp: string; readKeys: readonly string[] }>;
+  /** Identities read at least twice in the current statement — only those
+   * pay for the extra temp; single-read identifiers emit exactly as before. */
+  cseEligible: ReadonlySet<string>;
 };
+
+const EMPTY_CSE_ELIGIBLE: ReadonlySet<string> = new Set();
+
+/** Read identity for one identifier node: the cache key plus the env keys
+ * the emitted read observes (used by store invalidation). Shared by the
+ * emitter and the per-statement eligibility counter so the two cannot
+ * disagree on what counts as "the same read". */
+function identifierReadInfo(
+  node: MilkdropExpressionNode & { type: 'identifier' },
+) {
+  const name = node.name.toLowerCase();
+  // Env-first like the interpreter: pi/e are ordinary prepopulated EEL
+  // variables and preset assignments to them must stick (see expression.ts
+  // identifier resolution for the rationale).
+  if (name === 'pi') {
+    return { identity: 'pi', read: '(e["pi"] ?? Math.PI)', readKeys: ['pi'] };
+  }
+  if (name === 'e') {
+    return { identity: 'e', read: '(e["e"] ?? Math.E)', readKeys: ['e'] };
+  }
+  const normalized = name.replace(/[^a-z0-9_]+/gu, '_');
+  const aliased = aliasMap[normalized] || normalized;
+  if (aliased !== node.name) {
+    return {
+      identity: `${node.name}|${aliased}`,
+      read: `(e[${JSON.stringify(node.name)}] ?? e[${JSON.stringify(aliased)}] ?? 0)`,
+      readKeys: [node.name, aliased],
+    };
+  }
+  return {
+    identity: node.name,
+    read: `(e[${JSON.stringify(node.name)}] ?? 0)`,
+    readKeys: [node.name],
+  };
+}
+
+/** Drops cached reads whose value a store to `target` could have changed.
+ * Conservative across spellings and aliases: an invalidated entry just
+ * re-emits the read. */
+function invalidateCseReads(context: CompileContext, target: string) {
+  if (context.cse.size === 0) {
+    return;
+  }
+  const normalized = target.toLowerCase();
+  const aliased = aliasMap[normalized] || normalized;
+  const storeKeys = new Set([target, normalized, aliased]);
+  for (const [identity, entry] of context.cse) {
+    if (entry.readKeys.some((key) => storeKeys.has(key))) {
+      context.cse.delete(identity);
+    }
+  }
+}
+
+/** Counts identifier reads per statement (expression and, for buffer
+ * targets, the index expression); identities read twice or more become
+ * CSE-eligible for this statement. */
+function collectCseEligible(
+  statement: MilkdropCompiledStatement,
+): ReadonlySet<string> {
+  const counts = new Map<string, number>();
+  const visit = (node: MilkdropExpressionNode) => {
+    if (node.type === 'identifier') {
+      const { identity } = identifierReadInfo(node);
+      counts.set(identity, (counts.get(identity) ?? 0) + 1);
+    }
+  };
+  if (statement.expression) {
+    walkMilkdropExpression(statement.expression, visit);
+  }
+  if (statement.targetExpression) {
+    walkMilkdropExpression(statement.targetExpression, visit);
+  }
+  const eligible = new Set<string>();
+  for (const [identity, count] of counts) {
+    if (count >= 2) {
+      eligible.add(identity);
+    }
+  }
+  return eligible;
+}
 
 function nextTemporary(context: CompileContext) {
   const name = `_i${context.temporaries.length}`;
@@ -94,18 +221,17 @@ function compileNode(
     case 'literal':
       return Object.is(node.value, -0) ? '-0.0' : String(node.value);
     case 'identifier': {
-      const name = node.name.toLowerCase();
-      // Env-first like the interpreter: pi/e are ordinary prepopulated EEL
-      // variables and preset assignments to them must stick (see
-      // expression.ts identifier resolution for the rationale).
-      if (name === 'pi') return '(e["pi"] ?? Math.PI)';
-      if (name === 'e') return '(e["e"] ?? Math.E)';
-      const normalized = name.replace(/[^a-z0-9_]+/gu, '_');
-      const aliased = aliasMap[normalized] || normalized;
-      if (aliased !== node.name) {
-        return `(e[${JSON.stringify(node.name)}] ?? e[${JSON.stringify(aliased)}] ?? 0)`;
+      const info = identifierReadInfo(node);
+      if (!context.cseEligible.has(info.identity)) {
+        return info.read;
       }
-      return `(e[${JSON.stringify(node.name)}] ?? 0)`;
+      const cached = context.cse.get(info.identity);
+      if (cached) {
+        return cached.temp;
+      }
+      const temp = nextTemporary(context);
+      context.cse.set(info.identity, { temp, readKeys: info.readKeys });
+      return `(${temp} = ${info.read}, ${temp})`;
     }
     case 'unary': {
       const x = compileNode(node.operand, context);
@@ -113,6 +239,20 @@ function compileNode(
     }
     case 'binary': {
       if (node.operator !== '=') {
+        // && and || evaluate their right operand conditionally (JS
+        // short-circuit), so anything cached while compiling it must not
+        // survive the operator. The left operand always runs, so its cached
+        // reads may be reused on the right.
+        if (node.operator === '&&' || node.operator === '||') {
+          const l = compileNode(node.left, context);
+          const r = compileNode(node.right, context);
+          context.cse.clear();
+          return (
+            EEL_BINARY_OPERATORS[node.operator]?.jit?.(l, r, {
+              temp: () => nextTemporary(context),
+            }) ?? '(0)'
+          );
+        }
         const l = compileNode(node.left, context);
         const r = compileNode(node.right, context);
         return (
@@ -137,7 +277,11 @@ function compileNode(
         const tempVar = nextTemporary(context);
         const clamped = `${tempVar} = (${rvalue}), ${tempVar} = Number.isFinite(${tempVar}) ? ${tempVar} : 0`;
         if (node.left.type === 'identifier') {
-          const store = compileStoreExpression(node.left.name, tempVar);
+          const store = compileStoreExpression(
+            node.left.name,
+            tempVar,
+            context,
+          );
           return `(${clamped}, ${store}, ${tempVar})`;
         }
         if (
@@ -169,9 +313,46 @@ function compileNode(
       if (name === 'gmegabuf') {
         return compileBufferRead(node, context, 'gb', MILKDROP_GMEGABUF_SIZE);
       }
+      if (name === 'if') {
+        // Lazy branches: each branch is a conditionally-evaluated region for
+        // the read cache. The condition always runs first, so its cached
+        // reads are reusable in either branch; the else-branch compiles from
+        // the post-condition snapshot so a temp first assigned in the
+        // then-branch can never reach it; nothing survives the call.
+        const cond = node.args[0] ? compileNode(node.args[0], context) : '0';
+        const snapshot = new Map(context.cse);
+        const thenBranch = node.args[1]
+          ? compileNode(node.args[1], context)
+          : '0';
+        context.cse = snapshot;
+        const elseBranch = node.args[2]
+          ? compileNode(node.args[2], context)
+          : '0';
+        context.cse.clear();
+        // Extra caller args are compiled (matching the eager path) and then
+        // dropped by the renderer, so their cache entries must die with the
+        // call's.
+        const extraArgs = node.args
+          .slice(3)
+          .map((arg) => compileNode(arg, context));
+        context.cse.clear();
+        return (
+          emitEelCallJs('if', [cond, thenBranch, elseBranch, ...extraArgs], {
+            temp: () => nextTemporary(context),
+            rng: context.rngMode,
+            markRandomUsed: () => {
+              context.randomUsed = true;
+            },
+          }) ?? '(0)'
+        );
+      }
       const args = node.args.map((arg) => compileNode(arg, context));
       const emitted = emitEelCallJs(name, args, {
         temp: () => nextTemporary(context),
+        rng: context.rngMode,
+        markRandomUsed: () => {
+          context.randomUsed = true;
+        },
       });
       if (emitted !== null) {
         return emitted;
@@ -193,7 +374,12 @@ function compileNode(
  * reads resolve. Must stay semantically aligned with compileStore and
  * compileStatementSource.
  */
-function compileStoreExpression(target: string, valueVar: string) {
+function compileStoreExpression(
+  target: string,
+  valueVar: string,
+  context: CompileContext,
+) {
+  invalidateCseReads(context, target);
   const rawKey = JSON.stringify(target);
   const normalized = target.toLowerCase();
   const registerMatch = normalized.match(REGISTER_PATTERN);
@@ -228,6 +414,7 @@ function compileStore(
     return `${index} = Math.trunc(${indexSource}); if (${index} >= 0 && ${index} < ${size}) { ${buffer}[${index}] = _v; }`;
   }
 
+  invalidateCseReads(context, target);
   const rawKey = JSON.stringify(target);
   const normalized = target.toLowerCase();
   const registerMatch = normalized.match(REGISTER_PATTERN);
@@ -256,6 +443,12 @@ function compileStatementSource(
   body: string[],
 ) {
   if (statement.control) {
+    // Control flow: the condition and every inner statement are re-executed
+    // per iteration, and whether the body runs at all is dynamic, so read
+    // caching is disabled across the whole construct (emptied before and
+    // after; the condition compiles with no eligible identities).
+    context.cse.clear();
+    context.cseEligible = EMPTY_CSE_ELIGIBLE;
     const { kind, body: innerBody } = statement.control;
 
     if (kind === 'loop') {
@@ -283,8 +476,14 @@ function compileStatementSource(
       compileStatementSource(inner, context, body);
     }
     body.push('}');
+    context.cse.clear();
     return;
   }
+
+  // Straight-line statement: the cache is per-statement, and only identities
+  // read twice or more within this statement pay for a hoisted temp.
+  context.cse.clear();
+  context.cseEligible = collectCseEligible(statement);
 
   // The value is evaluated before the target index, matching the order the
   // interpreter used. Non-finite results (e.g. pow(-1, 0.5), ^ with a
@@ -308,8 +507,17 @@ function compileStatementSource(
   }
 }
 
-function compileProgramSource(block: MilkdropProgramBlock) {
-  const context: CompileContext = { temporaries: [] };
+function compileProgramSource(
+  block: MilkdropProgramBlock,
+  rngMode: MilkdropProgramRngMode,
+) {
+  const context: CompileContext = {
+    temporaries: [],
+    rngMode,
+    randomUsed: false,
+    cse: new Map(),
+    cseEligible: EMPTY_CSE_ELIGIBLE,
+  };
   const body: string[] = [];
 
   for (const statement of block.statements) {
@@ -323,10 +531,23 @@ function compileProgramSource(block: MilkdropProgramBlock) {
   if (blockUsesControlFlow(block)) {
     declarations.push('_g = 0');
   }
-  return `"use strict"; var ${declarations.join(', ')}; ${body.join('\n')}`;
+  // Inline RNG: one cell load on entry, one store on exit, so the whole
+  // program advances the shared state without a call per draw. Programs that
+  // never draw keep the zero-cost shape — no `_rs` traffic at all.
+  let rngPrologue = '';
+  let rngEpilogue = '';
+  if (rngMode === 'inline' && context.randomUsed) {
+    declarations.push(`${EEL_RNG_JIT_STATE} = 0`);
+    rngPrologue = `${EEL_RNG_JIT_STATE} = rng.s;`;
+    rngEpilogue = `rng.s = ${EEL_RNG_JIT_STATE};`;
+  }
+  return `"use strict"; var ${declarations.join(', ')}; ${rngPrologue} ${body.join('\n')} ${rngEpilogue}`;
 }
 
-const compiledPrograms = new WeakMap<MilkdropProgramBlock, MilkdropProgramFn>();
+const compiledPrograms = new WeakMap<
+  MilkdropProgramBlock,
+  Partial<Record<MilkdropProgramRngMode, MilkdropProgramFn>>
+>();
 
 /**
  * Whether `new Function` codegen is permitted. A strict Content-Security-
@@ -368,8 +589,10 @@ export function __setJitAvailableForTests(value: boolean | null): void {
  */
 function buildInterpretedProgram(
   block: MilkdropProgramBlock,
+  rngMode: MilkdropProgramRngMode,
 ): MilkdropProgramFn {
-  return (e, s, r, l, mb, gb, rnd) => {
+  const inlineRng = rngMode === 'inline';
+  return (e, s, r, l, mb, gb, rng) => {
     const mirroredEnv = new Proxy(e, {
       set(target, property, value) {
         if (typeof property === 'string') {
@@ -391,7 +614,12 @@ function buildInterpretedProgram(
       },
     });
     const helpers = {
-      nextRandom: rnd,
+      // Inline mode advances the shared cell — the same state the JIT tier
+      // mutates, so the two tiers interleave correctly when both run against
+      // one VM. Closure mode draws through the host callable unchanged.
+      nextRandom: inlineRng
+        ? () => advanceEelRng(rng as EelRngCell)
+        : (rng as () => number),
       megabuf: (index: number) =>
         index >= 0 && index < MILKDROP_MEGABUF_SIZE ? (mb[index] as number) : 0,
       gmegabuf: (index: number) =>
@@ -482,12 +710,17 @@ function buildInterpretedProgram(
 }
 
 /**
- * Compiles a program block into a single callable, memoised per block.
+ * Compiles a program block into a single callable, memoised per block and RNG
+ * mode. The default `'closure'` mode keeps the conformance contract (the
+ * caller supplies a draw callable); `'inline'` compiles the LCG into the body
+ * against a shared `EelRngCell`.
  */
 export function compileMilkdropProgram(
   block: MilkdropProgramBlock,
+  options: MilkdropProgramOptions = COMPILE_DEFAULTS,
 ): MilkdropProgramFn {
-  const cached = compiledPrograms.get(block);
+  const variants = compiledPrograms.get(block) ?? {};
+  const cached = variants[options.rng];
   if (cached) {
     return cached;
   }
@@ -503,12 +736,13 @@ export function compileMilkdropProgram(
             'l',
             'mb',
             'gb',
-            'rnd',
-            compileProgramSource(block),
+            'rng',
+            compileProgramSource(block, options.rng),
           ) as MilkdropProgramFn)
-        : buildInterpretedProgram(block);
+        : buildInterpretedProgram(block, options.rng);
 
-  compiledPrograms.set(block, compiled);
+  variants[options.rng] = compiled;
+  compiledPrograms.set(block, variants);
   return compiled;
 }
 
@@ -584,7 +818,11 @@ export async function prewarmMilkdropPrograms(
     if (block.statements.length === 0) {
       continue;
     }
+    // Both RNG modes: production runs the inline variant, the conformance
+    // and differential harnesses the closure variant. Warming one leaves the
+    // other's parse/compile on the first rendered frame.
     compileMilkdropProgram(block);
+    compileMilkdropProgram(block, { rng: 'inline' });
     await yieldToEventLoop();
   }
 }

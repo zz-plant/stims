@@ -230,7 +230,7 @@ describe('editor panel colour groups and value-source chips', () => {
         ),
       );
       const chip = chipFor(panel, 'Zoom');
-      expect(chip?.textContent).toBe('eq · harmonic +1');
+      expect(chip?.textContent).toBe('eq · harmonic, percussive');
       expect(chip?.title).toContain('every frame from harmonic, percussive,');
       expect(chip?.getAttribute('aria-label')).toBe(
         'Zoom value source: driven, computed from harmonic, percussive',
@@ -276,7 +276,7 @@ describe('editor panel colour groups and value-source chips', () => {
     );
 
     const chip = chipFor(panel, 'Rot');
-    expect(chip?.textContent).toBe('eq · mid +1');
+    expect(chip?.textContent).toBe('eq · mid, treb_att');
     expect(chip?.title).toContain('every frame from mid, treb_att,');
 
     panel.dispose();

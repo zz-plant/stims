@@ -214,6 +214,14 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:first-run-evidence'],
       },
       {
+        // The per-preset frame-cost sidecar the autoplay/shuffle gate reads:
+        // schema, bundled-catalog ids, canonical formatting. Validity without
+        // a summary input, so CI can gate what ships even though the perf run
+        // that produced it is not committed.
+        label: 'Preset frame-cost sidecar',
+        cmd: ['bun', 'run', 'check:preset-cost'],
+      },
+      {
         label: 'Authoring examples and reference',
         cmd: ['bun', 'run', 'check:authoring-docs'],
       },
@@ -250,6 +258,28 @@ export function buildGatePlan(
       {
         label: 'Unbounded cache check',
         cmd: ['bun', 'run', 'check:cache-bounds'],
+      },
+      {
+        // Monolith ratchet: no source file may grow past the size limit, and
+        // the known-largest files are frozen at their landing size so they
+        // can only shrink. Cheap (line counting), runs in every gate mode.
+        label: 'File size ratchet',
+        cmd: ['bun', 'run', 'check:file-size'],
+      },
+      {
+        // A promoted package (scripts/package-manifest.ts) must be consumed
+        // from the registry: a workspace: dependency or a src/ subpath import
+        // is a seam that breaks the moment its directory moves to its own
+        // repository. Cheap while every package is standalone — it skips the
+        // scan entirely.
+        label: 'Package source seams',
+        cmd: ['bun', 'run', 'check:no-source-seams'],
+      },
+      {
+        // The four package sites promise one shared stylesheet; this keeps
+        // that promise enforced instead of remembered.
+        label: 'Package site stylesheet',
+        cmd: ['bun', 'run', 'check:site-styles-identical'],
       },
       {
         // Diff-scoped, so this gates new and changed code without demanding a

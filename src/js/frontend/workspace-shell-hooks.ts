@@ -9,6 +9,7 @@ import {
   acquireMicrophoneStream,
   describeInputProcessingWarning,
 } from '../core/audio-constants.ts';
+import { shouldSkipPresetForDeviceTier } from '../core/preset-cost-signal.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
@@ -318,12 +319,17 @@ export function useWorkspaceShellOrchestration({
       routeState.presetId ?? engineSnapshot?.activePresetId;
     // Reduce flashing hid measured high-risk presets from Browse while
     // shuffle could still land on one. Filtered before every pool below so
-    // no fallback reaches them.
+    // no fallback reaches them. The frame-cost gate below follows the same
+    // shape: it only ever removes presets the perf corpus *measured* as too
+    // frame-hungry for the tier this device is on, so a sparse sidecar
+    // leaves the pool exactly as wide as before.
     const reduceFlashing = getActiveAccessibilityPreference().reduceFlashing;
     const allowed = (entries: PresetCatalogEntry[]) =>
-      reduceFlashing
-        ? entries.filter((entry) => passesFlashPreference(entry, true))
-        : entries;
+      entries.filter(
+        (entry) =>
+          (!reduceFlashing || passesFlashPreference(entry, true)) &&
+          !shouldSkipPresetForDeviceTier(entry.id),
+      );
     const filteredCatalog = allowed(shellState.filteredCatalog);
     const catalog = allowed(shellState.catalog);
     const preferredPool =
@@ -663,6 +669,7 @@ export function useWorkspaceShellOrchestration({
             dirty: false,
             title: sharedPreset?.title,
           }),
+          sharedPreset?.derivedFrom,
         );
       } catch (error) {
         setStatusMessage(

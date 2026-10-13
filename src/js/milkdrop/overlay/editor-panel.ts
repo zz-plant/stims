@@ -3,77 +3,14 @@
  * autocompletions, AST diagnostics, parameter sliders, A/B snapshot toggling, and instant compilation.
  */
 
-import type { Completion, CompletionSource } from '@codemirror/autocomplete';
-import {
-  autocompletion,
-  clearSnippet,
-  closeBrackets,
-  closeBracketsKeymap,
-  nextSnippetField,
-  prevSnippetField,
-  snippetCompletion,
-} from '@codemirror/autocomplete';
-import {
-  defaultKeymap,
-  history,
-  historyKeymap,
-  indentWithTab,
-  isolateHistory,
-  redo,
-  toggleComment,
-  undo,
-} from '@codemirror/commands';
-import {
-  bracketMatching,
-  foldGutter,
-  HighlightStyle,
-  indentOnInput,
-  syntaxHighlighting,
-} from '@codemirror/language';
-import type { Diagnostic as CmDiagnostic } from '@codemirror/lint';
-import { lintGutter, lintKeymap, setDiagnostics } from '@codemirror/lint';
-import {
-  highlightSelectionMatches,
-  search,
-  searchKeymap,
-} from '@codemirror/search';
-import {
-  Compartment,
-  EditorState,
-  Prec,
-  StateEffect,
-  StateField,
-  Transaction,
-} from '@codemirror/state';
-import {
-  oneDarkHighlightStyle,
-  oneDarkTheme,
-} from '@codemirror/theme-one-dark';
-import type { KeyBinding } from '@codemirror/view';
-import {
-  crosshairCursor,
-  EditorView,
-  GutterMarker,
-  gutter,
-  highlightActiveLine,
-  highlightActiveLineGutter,
-  highlightSpecialChars,
-  hoverTooltip,
-  keymap,
-  lineNumbers,
-  rectangularSelection,
-} from '@codemirror/view';
-import { tags } from '@lezer/highlight';
-import {
-  MILKDROP_BUILTIN_DOCS,
-  MILKDROP_FUNCTION_SNIPPET_TEMPLATES,
-} from 'milkdrop-toolchain/src/builtin-docs.ts';
+import { isolateHistory, redo, undo } from '@codemirror/commands';
+import type { EditorState } from '@codemirror/state';
+import type { EditorView } from '@codemirror/view';
 import {
   computeMidiGutterInfo,
   findMilkdropEquationLine,
   getFieldOverwriteKind,
   isFieldShadowedByEquations,
-  type MidiGutterEntry,
   readMilkdropField,
   upsertMilkdropFields,
 } from 'milkdrop-toolchain/src/formatter.ts';
@@ -87,10 +24,6 @@ import {
 } from 'milkdrop-toolchain/src/preset-dataflow.ts';
 import { analyzePresetMath } from 'milkdrop-toolchain/src/preset-math-analyzer.ts';
 import { webMidiService } from '../../core/services/webmidi-controller.ts';
-import {
-  resolveTheme,
-  subscribeToThemePreference,
-} from '../../core/theme-preferences';
 import { renderIconSvg } from '../../ui/icon-library.ts';
 import {
   COLOR_GROUPS,
@@ -127,8 +60,7 @@ import {
 import { parseSlotName, slotControls } from '../slot-controls.ts';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { subscribeVariables } from '../variable-probe.ts';
-import { createMilkdropLanguage } from './editor-language';
-import { numberScrubExtension } from './editor-number-scrub.ts';
+import { createEditorView, setMidiGutterInfo } from './editor-codemirror.ts';
 import { computeAstDiagnostics, mergeDiagnostics } from './editor-parser';
 import {
   type AssignedVariable,
@@ -154,6 +86,8 @@ import { InsertPane } from './editor-pane-insert.ts';
 import { InspectPane } from './editor-pane-inspect.ts';
 import { OutlinePane } from './editor-pane-outline.ts';
 import { ReferencePane } from './editor-pane-reference.ts';
+import { ShaderPane } from './editor-pane-shader.ts';
+import { TexturesPane } from './editor-pane-textures.ts';
 import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
@@ -163,6 +97,11 @@ import {
   type SourceDiffLine,
   samePresetSource,
 } from './source-diff.ts';
+import {
+  formatAudioReachSummary,
+  summarizeAudioReach,
+} from './version-compare-summary.ts';
+import { setWatchedVariables } from './watcher-hud.ts';
 
 /**
  * Kept as the module's public names because tests, the MIDI layer and the MCP
@@ -174,10 +113,6 @@ export const DEFAULT_EDITOR_SLIDERS: ScalarControlConfig[] = SCALAR_CONTROLS;
 export const DEFAULT_EDITOR_COLOR_GROUPS: ColorGroupConfig[] = COLOR_GROUPS;
 export type { ColorGroupConfig };
 
-const defaultEditorKeymap = defaultKeymap as readonly KeyBinding[];
-const historyEditorKeymap = historyKeymap as readonly KeyBinding[];
-const indentWithTabKeybinding = indentWithTab as KeyBinding;
-
 function escapeHtml(value: string): string {
   return value
     .replace(/&/gu, '&amp;')
@@ -187,6 +122,19 @@ function escapeHtml(value: string): string {
 
 export type EditorPanelCallbacks = {
   onEditorSourceChange: (source: string) => void;
+  /**
+   * A code edit the visitor typed, pasted, cut or dropped into the buffer has
+   * been committed down the apply path (the same debounce that hands the draft
+   * to the engine). Panel-driven writes — Tune controls, session reloads, AI
+   * proposals — dispatch without a user annotation and never fire this.
+   */
+  onUserCodeEditApplied?: () => void;
+  /**
+   * A Tune-pane control committed a value into the draft: a fader, swatch,
+   * switch, mode, range, parameter knob, or modulation. Fired when the value
+   * actually changed the buffer, whatever the commit cadence.
+   */
+  onTuneControlCommit?: () => void;
   /** Live feedback for a numeric field during a drag: applied to the running
    * VM without a recompile. The value is committed to the source separately
    * (on release), so the runtime staying absent only degrades to the old
@@ -203,6 +151,13 @@ export type EditorPanelCallbacks = {
    * it. Resolves null when there is nothing to compare against.
    */
   getOriginalSource?: () => Promise<string | null>;
+  /**
+   * The backend the stage is currently rendering with, or null when the
+   * caller cannot tell. Panes that report per-backend behavior (volume
+   * texture samples differ: WebGL slices a bundled 2D atlas, WebGPU reads
+   * native 3D volumes) say which view they are showing instead of guessing.
+   */
+  getActiveBackend?: () => 'webgl' | 'webgpu' | null;
   onDuplicatePreset: () => void;
   onExport: () => void;
   onDeletePreset: () => void;
@@ -218,596 +173,6 @@ export type EditorPanelCallbacks = {
    */
   onCopyShareLink: () => void;
 };
-
-const MILKDROP_TO_CM_SEVERITY: Record<
-  MilkdropDiagnostic['severity'],
-  CmDiagnostic['severity']
-> = {
-  error: 'error',
-  warning: 'warning',
-  info: 'info',
-};
-
-function toLintDiagnostics(
-  state: EditorState,
-  diagnostics: MilkdropDiagnostic[],
-  onQuickFix: (diagnostic: MilkdropDiagnostic) => void,
-): CmDiagnostic[] {
-  return diagnostics
-    .filter(
-      (diagnostic) =>
-        typeof diagnostic.line === 'number' &&
-        diagnostic.line >= 1 &&
-        diagnostic.line <= state.doc.lines,
-    )
-    .map((diagnostic) => {
-      const line = state.doc.line(diagnostic.line as number);
-      const from =
-        line.from + (line.text.length - line.text.trimStart().length);
-      return {
-        from: Math.min(from, line.to),
-        to: line.to,
-        severity: MILKDROP_TO_CM_SEVERITY[diagnostic.severity],
-        message: diagnostic.message,
-        source: diagnostic.code,
-        actions:
-          diagnostic.severity === 'error'
-            ? [
-                {
-                  name: 'Fix with AI',
-                  markClass: 'cm-quickfix-action',
-                  apply: () => onQuickFix(diagnostic),
-                },
-              ]
-            : undefined,
-      };
-    });
-}
-
-// ── MIDI gutter markers ───────────────────────────────────────────
-// A filled diamond marks a line MIDI/MCP is actively driving; a hollow
-// one marks a binding the preset's own per_frame/per_pixel equations
-// reassign every frame, so the knob has no visible effect. See
-// isFieldShadowedByEquations in formatter.ts for why that happens.
-const setMidiGutterInfo = StateEffect.define<MidiGutterEntry[]>();
-
-const midiGutterField = StateField.define<MidiGutterEntry[]>({
-  create: () => [],
-  update(value, tr) {
-    for (const effect of tr.effects) {
-      if (effect.is(setMidiGutterInfo)) {
-        return effect.value;
-      }
-    }
-    return value;
-  },
-});
-
-class MidiGutterMarker extends GutterMarker {
-  constructor(
-    private readonly status: MidiGutterEntry['status'],
-    private readonly target: string,
-  ) {
-    super();
-  }
-
-  eq(other: MidiGutterMarker): boolean {
-    return other.status === this.status && other.target === this.target;
-  }
-
-  toDOM(): Node {
-    const span = document.createElement('span');
-    span.className = `cm-midi-gutter-marker cm-midi-gutter-marker--${this.status}`;
-    span.textContent = this.status === 'live' ? '◆' : '◇';
-    span.title =
-      this.status === 'live'
-        ? `MIDI/MCP is driving ${this.target}.`
-        : `MIDI/MCP is bound to ${this.target}, but this preset's own equations reassign it every frame — the binding has no visible effect.`;
-    return span;
-  }
-}
-
-function midiGutterExtension() {
-  return [
-    midiGutterField,
-    gutter({
-      class: 'cm-midi-gutter',
-      lineMarker(view, line) {
-        const entries = view.state.field(midiGutterField);
-        if (entries.length === 0) return null;
-        const lineNumber = view.state.doc.lineAt(line.from).number;
-        const entry = entries.find((e) => e.line === lineNumber);
-        return entry ? new MidiGutterMarker(entry.status, entry.target) : null;
-      },
-      lineMarkerChange: (update) =>
-        update.startState.field(midiGutterField) !==
-        update.state.field(midiGutterField),
-    }),
-  ];
-}
-
-// Multi-argument functions get a snippet template so accepting the
-// completion drops in placeholder args the user can Tab through, instead of
-// leaving them to hand-type parens and commas. Derived from the params
-// declared in the shared builtin table.
-const FUNCTION_SNIPPET_TEMPLATES: Readonly<Record<string, string>> =
-  MILKDROP_FUNCTION_SNIPPET_TEMPLATES;
-
-// Autocomplete options and hover docs derive from the shared builtin table in
-// builtin-docs.ts, so the editor always offers exactly what the compiler and
-// VM accept (all intrinsic functions, runtime signals, q1..q32/t1..t32,
-// per-frame state, constants). Exported for the derivation test in
-// tests/unit/milkdrop-builtin-docs.test.ts.
-export const MILKDROP_BUILTIN_OPTIONS: Array<{
-  label: string;
-  type: string;
-  detail?: string;
-}> = MILKDROP_BUILTIN_DOCS.map((entry) => ({
-  label: entry.name,
-  type: entry.kind,
-  detail: entry.doc,
-}));
-
-// Keeps the dropdown grouped by kind (functions, then variables, then
-// constants) instead of letting fuzzy-match score interleave them; doc-derived
-// variables (see below) sort after all of these.
-const COMPLETION_TYPE_SORT_TIER: Record<string, string> = {
-  function: '0',
-  variable: '1',
-  constant: '2',
-};
-const DOC_VARIABLE_SORT_TIER = '3';
-
-const MILKDROP_BUILTIN_COMPLETIONS: Completion[] = MILKDROP_BUILTIN_OPTIONS.map(
-  (opt) => {
-    const withTier: Completion = {
-      ...opt,
-      sortText: `${COMPLETION_TYPE_SORT_TIER[opt.type] ?? '9'}${opt.label}`,
-    };
-    const template = FUNCTION_SNIPPET_TEMPLATES[opt.label];
-    if (!template) return withTier;
-    return snippetCompletion(template, withTier);
-  },
-);
-
-const MILKDROP_BUILTIN_LABELS = new Set(
-  MILKDROP_BUILTIN_OPTIONS.map((opt) => opt.label.toLowerCase()),
-);
-
-const MILKDROP_COMPLETIONS: CompletionSource = (context) => {
-  const word = context.matchBefore(/\w*/);
-  if (!word || (word.from === word.to && !context.explicit)) return null;
-
-  return {
-    from: word.from,
-    options: MILKDROP_BUILTIN_COMPLETIONS.filter((opt) =>
-      opt.label.toLowerCase().startsWith(word.text.toLowerCase()),
-    ),
-  };
-};
-
-// Surfaces identifiers the user already assigned elsewhere in this preset
-// (custom accumulators, reused field names) so they don't have to scroll
-// back up to recall the exact spelling.
-const DOC_VARIABLE_PATTERN = /(?:^|\n|;)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=(?!=)/g;
-
-const MILKDROP_DOC_VARIABLE_COMPLETIONS: CompletionSource = (context) => {
-  const word = context.matchBefore(/\w*/);
-  if (!word || (word.from === word.to && !context.explicit)) return null;
-
-  const doc = context.state.doc.toString();
-  const seen = new Set<string>();
-  const options: Completion[] = [];
-  for (const match of doc.matchAll(DOC_VARIABLE_PATTERN)) {
-    const name = match[1];
-    const key = name.toLowerCase();
-    if (MILKDROP_BUILTIN_LABELS.has(key) || seen.has(key)) continue;
-    seen.add(key);
-    options.push({
-      label: name,
-      type: 'variable',
-      detail: 'used in this preset',
-      sortText: `${DOC_VARIABLE_SORT_TIER}${name}`,
-    });
-  }
-
-  return {
-    from: word.from,
-    options: options.filter((opt) =>
-      opt.label.toLowerCase().startsWith(word.text.toLowerCase()),
-    ),
-  };
-};
-
-// Reuses the same label/type/detail already authored for autocomplete so
-// hovering a builtin doesn't require the completion popup to be open.
-const MILKDROP_DOC_LOOKUP = new Map(
-  MILKDROP_BUILTIN_OPTIONS.map((opt) => [opt.label.toLowerCase(), opt]),
-);
-
-function wordAtPos(view: EditorView, pos: number) {
-  const { text, from } = view.state.doc.lineAt(pos);
-  let start = pos - from;
-  let end = pos - from;
-  while (start > 0 && /\w/.test(text[start - 1])) start -= 1;
-  while (end < text.length && /\w/.test(text[end])) end += 1;
-  if (start === end) return null;
-  return { from: from + start, to: from + end, word: text.slice(start, end) };
-}
-
-const milkdropHoverTooltip = hoverTooltip((view, pos) => {
-  const match = wordAtPos(view, pos);
-  if (!match) return null;
-  const entry = MILKDROP_DOC_LOOKUP.get(match.word.toLowerCase());
-  if (!entry) return null;
-  return {
-    pos: match.from,
-    end: match.to,
-    above: true,
-    create() {
-      const dom = document.createElement('div');
-      dom.className = 'cm-milkdrop-hover-doc';
-      const label = document.createElement('strong');
-      label.textContent = entry.label;
-      dom.appendChild(label);
-      if (entry.detail) {
-        const detail = document.createElement('span');
-        detail.textContent = ` — ${entry.detail}`;
-        dom.appendChild(detail);
-      }
-      const kind = document.createElement('div');
-      kind.className = 'cm-milkdrop-hover-doc__kind';
-      kind.textContent = entry.type;
-      dom.appendChild(kind);
-      return { dom };
-    },
-  };
-});
-
-// oneDark bundles both chrome colors and token colors into a single
-// Extension; we only want its token colors for dark mode, and swap in an
-// equivalent light-mode HighlightStyle when the app theme flips, using the
-// same lezer tags the milkdrop StreamLanguage tokens resolve to (see
-// editor-language.ts): heading, comment, keyword, atom, variableName
-// (registers) / variableName.standard (the legacy "builtin" token, used for
-// pi/e), number, operator, propertyName.
-const milkdropLightHighlightStyle = HighlightStyle.define([
-  { tag: tags.heading, color: '#0f766e', fontWeight: 'bold' },
-  { tag: tags.comment, color: '#64748b', fontStyle: 'italic' },
-  { tag: tags.keyword, color: '#9333ea' },
-  { tag: tags.atom, color: '#0891b2' },
-  { tag: tags.variableName, color: '#b45309' },
-  { tag: tags.standard(tags.variableName), color: '#be185d' },
-  { tag: tags.number, color: '#059669' },
-  { tag: tags.operator, color: '#475569' },
-  { tag: tags.propertyName, color: '#1d4ed8' },
-]);
-
-function createEditorTheme() {
-  return EditorView.theme({
-    '&': {
-      color: '#eff6ff',
-      background:
-        'linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(8, 47, 73, 0.68))',
-      // Martian Mono runs ~8% wider per character than the mono it replaced,
-      // with a taller x-height; one step down keeps the same columns per line
-      // and the same apparent size.
-      fontSize: 'var(--text-sm)',
-    },
-    '.cm-scroller': {
-      fontFamily: 'var(--font-family-mono)',
-      lineHeight: '1.6',
-    },
-    '.cm-gutters': {
-      backgroundColor: 'rgba(8, 47, 73, 0.42)',
-      color: 'rgba(125, 211, 252, 0.65)',
-      borderRight: '1px solid rgba(125, 211, 252, 0.14)',
-    },
-    '.cm-activeLine': {
-      backgroundColor: 'rgba(34, 211, 238, 0.08)',
-    },
-    '.cm-activeLineGutter': {
-      backgroundColor: 'rgba(34, 211, 238, 0.12)',
-    },
-    '.cm-content': {
-      caretColor: '#67e8f9',
-    },
-    '&.cm-focused .cm-cursor': {
-      borderLeftColor: '#67e8f9',
-    },
-    '&.cm-focused': {
-      outline: '2px solid rgba(34, 211, 238, 0.4)',
-      outlineOffset: '-2px',
-    },
-    '&.cm-focused .cm-selectionBackground, ::selection': {
-      backgroundColor: 'rgba(34, 211, 238, 0.22)',
-    },
-    '.cm-quickfix-action': {
-      backgroundColor: 'rgba(34, 211, 238, 0.16)',
-      color: '#67e8f9',
-    },
-    '.cm-milkdrop-hover-doc': {
-      maxWidth: '280px',
-      padding: '6px 8px',
-      fontSize: '0.82rem',
-      lineHeight: '1.4',
-    },
-    '.cm-milkdrop-hover-doc__kind': {
-      marginTop: '2px',
-      fontSize: '0.7rem',
-      textTransform: 'uppercase',
-      letterSpacing: '0.04em',
-      opacity: 0.65,
-    },
-    '.cm-midi-gutter': {
-      width: '14px',
-    },
-    '.cm-midi-gutter-marker': {
-      display: 'inline-block',
-      width: '100%',
-      textAlign: 'center',
-      fontSize: '0.72rem',
-      lineHeight: '1',
-      cursor: 'default',
-    },
-    '.cm-midi-gutter-marker--live': {
-      color: '#4ade80',
-    },
-    '.cm-midi-gutter-marker--shadowed': {
-      color: 'rgba(148, 163, 184, 0.55)',
-    },
-  });
-}
-
-function createEditorView({
-  parent,
-  onDocChange,
-  onBufferedEdit,
-  isChangeSuppressed,
-  onQuickFixDiagnostic,
-  onEscapeBlur,
-  onJumpToVariable,
-  onToggleAbSnapshot,
-}: {
-  parent: HTMLElement;
-  onDocChange: (source: string) => void;
-  onBufferedEdit: () => void;
-  isChangeSuppressed: () => boolean;
-  onQuickFixDiagnostic: (diagnostic: MilkdropDiagnostic) => void;
-  /** Called when Escape leaves the editor so the panel can park focus on a
-   * sensible control instead of dropping it on <body>. */
-  onEscapeBlur: () => void;
-  /** Opens the panel's "Jump to variable" popover (Cmd/Ctrl+J). */
-  onJumpToVariable: () => void;
-  /** Toggles A/B snapshot comparison (Cmd/Ctrl+Shift+B). */
-  onToggleAbSnapshot?: () => void;
-}) {
-  let debounceId: number | null = null;
-  let view: EditorView;
-  const syntaxThemeCompartment = new Compartment();
-  // Undo history lives in its own compartment so a preset load can start it
-  // over (see resetHistory below).
-  const historyCompartment = new Compartment();
-  // Read-only while A/B shows the original: it is there to look at, and an
-  // edit made to it would have no slot to belong to.
-  const readOnlyCompartment = new Compartment();
-  const syntaxHighlightStyleForTheme = (theme: 'light' | 'dark') =>
-    syntaxHighlighting(
-      theme === 'light' ? milkdropLightHighlightStyle : oneDarkHighlightStyle,
-    );
-
-  const flushDocChange = () => {
-    if (isChangeSuppressed()) {
-      return true;
-    }
-    if (debounceId !== null) {
-      window.clearTimeout(debounceId);
-      debounceId = null;
-    }
-    onDocChange(view.state.doc.toString());
-    return true;
-  };
-
-  view = new EditorView({
-    state: EditorState.create({
-      doc: '',
-      extensions: [
-        // CodeMirror's editable surface is a role="textbox" with no name of
-        // its own, so a screen reader announced it as an unlabelled edit
-        // field (axe: aria-input-field-name). The dialog title does not
-        // carry over — the control needs its own name.
-        EditorView.contentAttributes.of({
-          // Tab indents in here (indentWithTabKeybinding, below), so it
-          // cannot also move focus out — this is the one control in the app
-          // Tab will not leave. WCAG 2.1.2 permits that only where the way
-          // out is told to the user, and the way out (Escape, handled on
-          // contentDOM further down) was documented nowhere. The name
-          // carries it, and `aria-keyshortcuts` publishes it as a binding.
-          'aria-label':
-            'MilkDrop preset code. Tab indents; press Escape to leave the editor.',
-          'aria-keyshortcuts': 'Escape',
-        }),
-        lineNumbers(),
-        highlightActiveLine(),
-        highlightActiveLineGutter(),
-        highlightSpecialChars(),
-        historyCompartment.of(history()),
-        readOnlyCompartment.of(EditorState.readOnly.of(false)),
-        createMilkdropLanguage(),
-        oneDarkTheme,
-        syntaxThemeCompartment.of(syntaxHighlightStyleForTheme(resolveTheme())),
-        createEditorTheme(),
-        bracketMatching(),
-        closeBrackets(),
-        autocompletion({
-          activateOnTyping: true,
-          override: [MILKDROP_COMPLETIONS, MILKDROP_DOC_VARIABLE_COMPLETIONS],
-        }),
-        milkdropHoverTooltip,
-        search(),
-        highlightSelectionMatches(),
-        foldGutter(),
-        indentOnInput(),
-        lintGutter(),
-        midiGutterExtension(),
-        // Editing MilkDrop presets means repeatedly touching aligned
-        // per-channel triples (wave_r/g/b, shapecode_N_border_r/g/b, ...);
-        // multi-cursor + column selection make that a single edit instead
-        // of N repetitive ones.
-        EditorState.allowMultipleSelections.of(true),
-        rectangularSelection(),
-        crosshairCursor(),
-        // Alt-drag a numeric literal to scrub it like a slider (Alt+Arrow
-        // Up/Down is the keyboard equivalent). Registered before the keymaps
-        // so its Prec.highest bindings resolve ahead of moveLineUp/copyLineUp.
-        numberScrubExtension(),
-        keymap.of([
-          ...closeBracketsKeymap,
-          ...searchKeymap,
-          ...lintKeymap,
-          {
-            key: 'Mod-Enter',
-            run: () => flushDocChange(),
-          },
-          { key: 'Mod-/', run: toggleComment },
-          {
-            key: 'Mod-j',
-            run: () => {
-              onJumpToVariable();
-              return true;
-            },
-          },
-          {
-            key: 'Mod-Shift-b',
-            run: () => {
-              if (onToggleAbSnapshot) {
-                onToggleAbSnapshot();
-                return true;
-              }
-              return false;
-            },
-          },
-          ...defaultEditorKeymap,
-          ...historyEditorKeymap,
-          indentWithTabKeybinding,
-        ]),
-        Prec.highest(
-          keymap.of([
-            { key: 'Tab', run: nextSnippetField, shift: prevSnippetField },
-            { key: 'Escape', run: clearSnippet },
-          ]),
-        ),
-        EditorView.lineWrapping,
-        EditorView.updateListener.of((update) => {
-          if (!update.docChanged || isChangeSuppressed()) {
-            return;
-          }
-          // Two independent debounced timers restart on every keystroke, not
-          // one: onBufferedEdit's 80ms (above, in createEditorView's caller)
-          // repaints local UI (diagnostics, Tune controls) — cheap and wants
-          // to feel responsive. onDocChange 120ms below propagates the draft
-          // upstream to the actual preset recompile — heavier, and doesn't
-          // need to run more often than the local repaint. 120ms > 80ms is
-          // deliberate so the recompile settles just after the UI has
-          // already caught up, not simultaneously fighting it for the CPU.
-          onBufferedEdit();
-          if (debounceId !== null) {
-            window.clearTimeout(debounceId);
-          }
-          debounceId = window.setTimeout(() => {
-            debounceId = null;
-            onDocChange(update.state.doc.toString());
-          }, 120);
-        }),
-      ],
-    }),
-    parent,
-  });
-
-  // Escape inside the code must never fall through to the document-level
-  // handler that closes the whole editor panel. CodeMirror's own listener is
-  // registered first, so its Escape bindings (snippet clear, search close,
-  // selection simplify) have already run — and preventDefault'ed — by the
-  // time this fires; when none of them claimed the key, Escape becomes
-  // "leave the editor": blur the content DOM and hand focus back to the
-  // panel. The listener dies with contentDOM on view.destroy().
-  view.contentDOM.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    event.stopPropagation();
-    if (event.defaultPrevented) return;
-    event.preventDefault();
-    view.contentDOM.blur();
-    onEscapeBlur();
-  });
-
-  // resolveTheme(), not the raw choice: "system" is a preference, not a
-  // palette, and CodeMirror needs the one actually being painted.
-  const unsubscribeTheme = subscribeToThemePreference((preference) => {
-    view.dispatch({
-      effects: syntaxThemeCompartment.reconfigure(
-        syntaxHighlightStyleForTheme(resolveTheme(preference)),
-      ),
-    });
-  });
-
-  return {
-    view,
-    /**
-     * Start undo history over. A preset load replaces the whole buffer, and
-     * as an undoable step it let Undo on a freshly opened editor empty the
-     * code, or paste the previous preset's text over this one — which the
-     * debounce then committed and saved as this preset's draft. Removing the
-     * extension drops its state; adding it back starts an empty stack.
-     */
-    resetHistory() {
-      view.dispatch({ effects: historyCompartment.reconfigure([]) });
-      view.dispatch({ effects: historyCompartment.reconfigure(history()) });
-    },
-    /**
-     * Show `source` read-only and hand back the state it replaced, undo
-     * history included, for `restoreState` to put back exactly. Swapping the
-     * text in as an ordinary change made it an undo step, and keeping it out
-     * of history was worse: undo then remapped the real edits through a
-     * whole-document replacement and produced garbage.
-     */
-    showReadOnly(source: string): EditorState {
-      const previous = view.state;
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: source },
-        effects: readOnlyCompartment.reconfigure(EditorState.readOnly.of(true)),
-        annotations: Transaction.addToHistory.of(false),
-      });
-      return previous;
-    },
-    restoreState(state: EditorState) {
-      view.setState(state);
-    },
-    /** Make the buffer editable again without restoring anything. */
-    endReadOnly() {
-      view.dispatch({
-        effects: readOnlyCompartment.reconfigure(
-          EditorState.readOnly.of(false),
-        ),
-      });
-    },
-    clearDebounce() {
-      if (debounceId !== null) {
-        window.clearTimeout(debounceId);
-        debounceId = null;
-      }
-    },
-    unsubscribeTheme,
-    flushDocChange,
-    setDiagnostics(diagnostics: MilkdropDiagnostic[]) {
-      view.dispatch(
-        setDiagnostics(
-          view.state,
-          toLintDiagnostics(view.state, diagnostics, onQuickFixDiagnostic),
-        ),
-      );
-    },
-  };
-}
 
 /**
  * Transient hint shown under a control while it is being dragged. It only
@@ -850,8 +215,10 @@ export class EditorPanel {
   private readonly referencePane: ReferencePane;
   private readonly insertPane: InsertPane;
   private readonly compatPane: CompatPane;
+  private readonly texturesPane: TexturesPane;
   private readonly outlinePane: OutlinePane;
   private readonly inspectPane: InspectPane;
+  private readonly shaderPane: ShaderPane;
   private readonly callbacks: EditorPanelCallbacks;
   private readonly note: HTMLElement;
   private readonly stateEl: HTMLElement;
@@ -860,6 +227,7 @@ export class EditorPanel {
   private readonly stage: HTMLElement;
   private readonly problems: HTMLElement;
   private readonly problemsCount: HTMLElement;
+  private readonly problemsBody: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly deleteButton: HTMLButtonElement;
   /** Relabelled per compile: what the link carries depends on `state.dirty`. */
@@ -1290,6 +658,7 @@ export class EditorPanel {
     const editorViewState = createEditorView({
       parent: editorHost,
       onDocChange: (source) => this.callbacks.onEditorSourceChange(source),
+      onUserCodeEditApplied: () => this.callbacks.onUserCodeEditApplied?.(),
       onBufferedEdit: () => {
         // The flag must flip synchronously (commit logic reads it), but the
         // diagnostics + control re-render below cost a full preset parse and
@@ -1371,12 +740,12 @@ export class EditorPanel {
     const quickFixBtn = this.renderQuickFix();
     this.quickFixBtn = quickFixBtn;
     problemsHead.append(problemsToggle, quickFixBtn);
-    const problemsBody = document.createElement('div');
-    problemsBody.className = 'stims-editor__problems-body';
+    this.problemsBody = document.createElement('div');
+    this.problemsBody.className = 'stims-editor__problems-body';
     this.diagnosticsList = document.createElement('div');
     this.diagnosticsList.className = 'stims-editor__problems-list';
-    problemsBody.appendChild(this.diagnosticsList);
-    this.problems.append(problemsHead, problemsBody);
+    this.problemsBody.appendChild(this.diagnosticsList);
+    this.problems.append(problemsHead, this.problemsBody);
 
     // ── Dock ──────────────────────────────────────────────────────
     // Four tabs replace six stacked rail sections. At this panel width
@@ -1395,13 +764,20 @@ export class EditorPanel {
     this.referencePane = new ReferencePane(host);
     this.insertPane = new InsertPane(host);
     this.compatPane = new CompatPane(host);
+    this.texturesPane = new TexturesPane(host, {
+      getActiveBackend: callbacks.getActiveBackend,
+    });
     this.outlinePane = new OutlinePane(host, {
       onTuneSlot: (slot) => this.showSlotInTune(slot),
     });
     this.inspectPane = new InspectPane(host, {
       onSetStageFrozen: callbacks.onSetStageFrozen,
       onStepFrame: callbacks.onStepFrame,
+      // Pins are the stage HUD's watch set (watcher-hud.ts), which keeps
+      // plotting after the editor closes, so the names leave the pane.
+      onPinsChanged: (names) => setWatchedVariables(names),
     });
+    this.shaderPane = new ShaderPane(host);
 
     const panes: Array<{ id: string; label: string; content: HTMLElement }> = [
       { id: 'tune', label: 'Tune', content: this.renderSliders() },
@@ -1414,7 +790,13 @@ export class EditorPanel {
       },
       { id: 'assist', label: 'Assist', content: this.renderAssistPane() },
       { id: 'inspect', label: 'Inspect', content: this.inspectPane.element },
+      { id: 'shader', label: 'Shader', content: this.shaderPane.element },
       { id: 'compat', label: 'Compat', content: this.compatPane.element },
+      {
+        id: 'textures',
+        label: 'Textures',
+        content: this.texturesPane.element,
+      },
       { id: 'history', label: 'History', content: this.renderHistoryPane() },
     ];
     const tabButtons: HTMLButtonElement[] = [];
@@ -1450,6 +832,8 @@ export class EditorPanel {
       tab.tabIndex = index === 0 ? 0 : -1;
       tab.dataset.pane = pane.id;
       if (pane.id === 'compat') this.compatPane.bindTab(tab);
+      if (pane.id === 'shader') this.shaderPane.bindTab(tab);
+      if (pane.id === 'textures') this.texturesPane.bindTab(tab);
       pane.content.classList.add('stims-editor__pane');
       pane.content.id = `stims-editor-pane-${pane.id}`;
       pane.content.setAttribute('role', 'tabpanel');
@@ -2116,10 +1500,10 @@ export class EditorPanel {
           const output = document.createElement('div');
           const paintDiff = () => {
             const target = saved.find((other) => other.id === picker.value);
-            const diff = computeSourceDiff(
-              version.source,
-              target ? target.source : this.editor.state.doc.toString(),
-            );
+            const targetSource = target
+              ? target.source
+              : this.editor.state.doc.toString();
+            const diff = computeSourceDiff(version.source, targetSource);
             if (diff.length === 0) {
               const same = document.createElement('p');
               same.className = 'stims-editor__hint';
@@ -2129,6 +1513,20 @@ export class EditorPanel {
               output.replaceChildren(same);
             } else {
               output.replaceChildren(buildDiffElement(diff));
+            }
+            // The audio-reach summary (version-compare-summary.ts): a
+            // plain-language reading of how the preset's relationship with
+            // the music changed, under the line diff it is derived from.
+            const reach = summarizeAudioReach(version.source, targetSource);
+            if (reach.length > 0) {
+              const note = document.createElement('p');
+              note.className = 'stims-editor__version-listen';
+              note.title =
+                'Derived from the static dataflow of both sources: which sounds each control and drawn part can reach, not what is audible right now.';
+              const heading = document.createElement('strong');
+              heading.textContent = 'What changed in how it listens: ';
+              note.append(heading, `${formatAudioReachSummary(reach)}.`);
+              output.appendChild(note);
             }
           };
           picker.addEventListener('change', paintDiff);
@@ -2298,6 +1696,8 @@ export class EditorPanel {
 
     this.updateControlDataflow(state.activeCompiled);
     this.compatPane.update(state);
+    this.shaderPane.update(state);
+    this.texturesPane.update(state);
     const dataflow = this.controlDataflow?.dataflow ?? null;
     this.outlinePane.update(
       state,
@@ -2351,67 +1751,62 @@ export class EditorPanel {
       ...derivedNotices,
     ];
 
-    if (consoleMessages.length === 0) {
+    // A clean compile is the header's "clean" and nothing else: the line
+    // under it cost the code two lines of height on every first open.
+    this.problemsBody.hidden = consoleMessages.length === 0;
+    consoleMessages.slice(0, 15).forEach((diagnostic) => {
       const item = document.createElement('div');
-      item.className = 'stims-editor__problems-empty';
-      item.textContent =
-        'No problems. Try bass_att, beat_pulse, or time to push the scene around.';
+      item.className = `stims-editor__problem stims-editor__problem--${diagnostic.severity}`;
+
+      // Severity as a fixed-width mono tag rather than a filled pill: the
+      // column reads as a log, and the tags stop competing with the code
+      // for attention. (These were inline styles before.)
+      const severityTag = document.createElement('span');
+      severityTag.className = 'stims-editor__problem-tag';
+      severityTag.textContent = diagnostic.severity;
+
+      const hasLine = 'line' in diagnostic && Boolean(diagnostic.line);
+      if (hasLine) {
+        const lineTag = document.createElement('span');
+        lineTag.className = 'stims-editor__problem-line';
+        lineTag.textContent = `Line ${diagnostic.line}`;
+        item.append(severityTag, lineTag);
+      } else {
+        item.append(severityTag);
+      }
+
+      const messageSpan = document.createElement('span');
+      messageSpan.textContent = diagnostic.message;
+      item.appendChild(messageSpan);
+
+      if (hasLine && diagnostic.line) {
+        const lineNum = diagnostic.line;
+        item.classList.add('stims-editor__problem--jump');
+        item.title = 'Jump to this line';
+        // The row acts as a button, so it must be reachable and operable
+        // from the keyboard like one.
+        item.setAttribute('role', 'button');
+        item.tabIndex = 0;
+        const jumpToLine = () => {
+          if (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) {
+            const line = this.editor.state.doc.line(lineNum);
+            this.editor.dispatch({
+              selection: { anchor: line.from },
+              scrollIntoView: true,
+            });
+            this.editor.focus();
+          }
+        };
+        item.addEventListener('click', jumpToLine);
+        item.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          event.stopPropagation();
+          jumpToLine();
+        });
+      }
       this.diagnosticsList.appendChild(item);
-    } else {
-      consoleMessages.slice(0, 15).forEach((diagnostic) => {
-        const item = document.createElement('div');
-        item.className = `stims-editor__problem stims-editor__problem--${diagnostic.severity}`;
-
-        // Severity as a fixed-width mono tag rather than a filled pill: the
-        // column reads as a log, and the tags stop competing with the code
-        // for attention. (These were inline styles before.)
-        const severityTag = document.createElement('span');
-        severityTag.className = 'stims-editor__problem-tag';
-        severityTag.textContent = diagnostic.severity;
-
-        const hasLine = 'line' in diagnostic && Boolean(diagnostic.line);
-        if (hasLine) {
-          const lineTag = document.createElement('span');
-          lineTag.className = 'stims-editor__problem-line';
-          lineTag.textContent = `Line ${diagnostic.line}`;
-          item.append(severityTag, lineTag);
-        } else {
-          item.append(severityTag);
-        }
-
-        const messageSpan = document.createElement('span');
-        messageSpan.textContent = diagnostic.message;
-        item.appendChild(messageSpan);
-
-        if (hasLine && diagnostic.line) {
-          const lineNum = diagnostic.line;
-          item.classList.add('stims-editor__problem--jump');
-          item.title = 'Jump to this line';
-          // The row acts as a button, so it must be reachable and operable
-          // from the keyboard like one.
-          item.setAttribute('role', 'button');
-          item.tabIndex = 0;
-          const jumpToLine = () => {
-            if (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) {
-              const line = this.editor.state.doc.line(lineNum);
-              this.editor.dispatch({
-                selection: { anchor: line.from },
-                scrollIntoView: true,
-              });
-              this.editor.focus();
-            }
-          };
-          item.addEventListener('click', jumpToLine);
-          item.addEventListener('keydown', (event) => {
-            if (event.key !== 'Enter' && event.key !== ' ') return;
-            event.preventDefault();
-            event.stopPropagation();
-            jumpToLine();
-          });
-        }
-        this.diagnosticsList.appendChild(item);
-      });
-    }
+    });
 
     this.updateSlidersFromDoc();
     this.updateColorsFromDoc();
@@ -2472,11 +1867,12 @@ export class EditorPanel {
               ? 'bound'
               : 'static';
       // What the equations feed into a driven field: the audio, by the names
-      // the code uses, so the chip answers "why does this move?" too.
+      // the code uses, so the chip answers "why does this move?" too. Every
+      // driving band, not a count: "eq · bass +2" hid mid and treble in a
+      // tooltip while the visible chip claimed to name the sounds
+      // (docs/PRODUCT_MOMENTS.md, "Open one up").
       const audio = state === 'driven' ? audioReaching(dataflow, driven) : null;
-      const follows = audio?.length
-        ? ` · ${audio[0]}${audio.length > 1 ? ` +${audio.length - 1}` : ''}`
-        : '';
+      const audioList = audio?.length ? ` · ${audio.join(', ')}` : '';
 
       cell.chip.dataset.state = state;
       cell.chip.textContent =
@@ -2485,7 +1881,7 @@ export class EditorPanel {
           : state === 'bound'
             ? 'midi'
             : state === 'driven'
-              ? `eq${follows}`
+              ? `eq${audioList}`
               : 'eq ⚠';
       // Only the equation states have somewhere to jump to.
       cell.chip.disabled = driven.length === 0;
@@ -2904,12 +2300,6 @@ export class EditorPanel {
     panel.setAttribute('role', 'group');
     panel.setAttribute('aria-label', 'Parameter sliders');
 
-    const hint = document.createElement('p');
-    hint.className = 'stims-editor__hint';
-    hint.textContent =
-      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value (set) or the preset recomputes it per frame (eq), and from which audio (eq · bass).';
-    panel.appendChild(hint);
-
     this.sliderInputs.clear();
     this.colorInputs.clear();
     this.toggleInputs.clear();
@@ -2918,14 +2308,25 @@ export class EditorPanel {
     this.modulationRows.clear();
     this.fieldStateCells = [];
 
-    // The preset's own parameters come first: they are what its author
-    // meant to be tuned. Empty (and hidden) for presets without any.
+    // Controls lead. With the intro paragraph and the wave-or-shape picker
+    // above them, Tune's first control started at the bottom edge of a
+    // 1280x720 window and the sounds the chips name sat below the fold
+    // (docs/PRODUCT_MOMENTS.md, "Open one up"). The picker now follows the
+    // labelled controls it can wait behind, and the teaching copy folds
+    // into a disclosure at the bottom.
+
+    // The preset's own parameters: they are what its author meant to be
+    // tuned. Empty (and hidden) for presets without any.
     this.knobsWrap = document.createElement('section');
     this.knobsWrap.className = 'stims-editor__section';
     this.knobsWrap.dataset.section = 'knobs';
     this.knobsWrap.setAttribute('aria-label', 'Preset parameters');
     this.knobsWrap.hidden = true;
     panel.appendChild(this.knobsWrap);
+
+    for (const section of CONTROL_SECTIONS) {
+      panel.appendChild(this.renderSection(section));
+    }
 
     // One custom wave's or shape's own settings, picked here or from its
     // Outline row. Hidden for presets that have none.
@@ -2951,9 +2352,19 @@ export class EditorPanel {
     this.slotWrap.append(pickerRow, this.slotControlsWrap);
     panel.appendChild(this.slotWrap);
 
-    for (const section of CONTROL_SECTIONS) {
-      panel.appendChild(this.renderSection(section));
-    }
+    // The pane's one explanation, folded behind a summary so it costs one
+    // row instead of three: what the chips say and where a click on one
+    // goes. Still present for whoever opens it; no longer in the way of
+    // the controls it explains.
+    const hint = document.createElement('details');
+    hint.className = 'stims-editor__hint-details';
+    const hintSummary = document.createElement('summary');
+    hintSummary.textContent = 'How Tune works';
+    const hintBody = document.createElement('p');
+    hintBody.textContent =
+      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value (set) or the preset recomputes it per frame (eq), and from which audio — naming every driving band (eq · bass, mid, treb). Click a chip to jump to the equation doing it.';
+    hint.append(hintSummary, hintBody);
+    panel.appendChild(hint);
 
     return panel;
   }
@@ -3164,6 +2575,7 @@ export class EditorPanel {
     // repaint, and flush to the engine at the control rate rather than the
     // typing debounce, so a drag recompiles steadily instead of in bursts.
     this.hasBufferedEdits = true;
+    this.callbacks.onTuneControlCommit?.();
     if (this.lastSessionState) {
       this.renderSessionState(this.lastSessionState);
     }
@@ -3572,6 +2984,7 @@ export class EditorPanel {
       scrollIntoView: false,
     });
     this.hasBufferedEdits = true;
+    this.callbacks.onTuneControlCommit?.();
     if (this.lastSessionState) {
       this.renderSessionState(this.lastSessionState);
     }
@@ -4083,6 +3496,7 @@ export class EditorPanel {
         scrollIntoView: false,
       });
       this.hasBufferedEdits = true;
+      this.callbacks.onTuneControlCommit?.();
       if (this.lastSessionState) {
         this.renderSessionState(this.lastSessionState);
       }

@@ -6,8 +6,8 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 
 1. Root [`AGENTS.md`](../../AGENTS.md) for non-negotiable defaults.
 2. [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md) for the single-page Cline quick start.
-3. [`../STATUS_2026-05.md`](../STATUS_2026-05.md) for the current project state (what changed, certified corpus, known gaps, next targets).
-4. [`../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md`](../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md) for the single source of truth on certified, baseline-measured, and unmeasured presets plus fidelity gaps by subsystem.
+3. [`../ROADMAP.md`](../ROADMAP.md) for product and engineering priorities and next targets.
+4. [`../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md`](../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md) for historical evidence at that revision. For current inventories, inspect the target, reference, and measured-result manifests under `src/data/milkdrop-parity/`; reconcile them with the latest dated comparison before claiming a pass.
 5. [`agent-handoffs.md`](./agent-handoffs.md) for the fastest safe bootstrap plus delegation and return-contract guidance.
 6. [`custom-capabilities.md`](./custom-capabilities.md) when the task may map to repo-local `.agent` skills/workflows.
 7. [`tooling-and-quality.md`](./tooling-and-quality.md) before code edits.
@@ -20,7 +20,7 @@ When the repo state is unknown, run `bun run setup:codex --status` for a quick r
 
 ## Task routing
 
-[`custom-capabilities.md`](./custom-capabilities.md#skills) holds the canonical skill/workflow routing table (15 skills, 5 workflows) — open it first when the task matches a repeatable repo-local pattern. If you need the five most common entry points before opening that file:
+[`custom-capabilities.md`](./custom-capabilities.md#skills) holds the canonical skill/workflow routing table — open it first when the task matches a repeatable repo-local pattern. If you need the five most common entry points before opening that file:
 
 | If the task is mainly about... | Start here |
 | --- | --- |
@@ -40,6 +40,8 @@ When the repo state is unknown, run `bun run setup:codex --status` for a quick r
 - [`visualizer-workflows.md`](./visualizer-workflows.md) (includes `/ship-visualizer-change` for end-to-end product updates)
 - [`reference-docs.md`](./reference-docs.md)
 - [`../MILKDROP_SUCCESSOR_WORKSTREAMS.md`](../MILKDROP_SUCCESSOR_WORKSTREAMS.md) (parallel successor execution map)
+
+For current user behavior, read the [user guide](../USER_GUIDE.md) and [capability map](../IMPLEMENTATION_STATUS.md). For test profiles, read [Testing](../TESTING.md).
 
 ### Documentation or metadata changes
 

@@ -15,10 +15,12 @@ import {
   setThemePreference,
   type ThemeChoice,
 } from '../core/theme-preferences.ts';
+import { toggleWatcherHud } from '../milkdrop/overlay/watcher-hud.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import type { CommandAction } from './command-palette-registry.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { EngineContextValue } from './engine-context.tsx';
+import { nextFileTrack, previousFileTrack } from './file-audio.ts';
 import { openPerformPicker } from './perform-pins.ts';
 import { cyclePresetWaveMode, nudgePresetField } from './preset-nudges.ts';
 import {
@@ -152,6 +154,26 @@ export function buildPaletteActions(
       group: 'Create',
       label: 'Edit preset code',
       run: () => togglePanel(paletteSurface, 'editor'),
+    },
+    {
+      // The stage watch HUD (watcher-hud.ts): the variables pinned in the
+      // editor's Inspect tab, plotted over the running stage at display rate.
+      // Reachable with the editor closed — watching a tweak play out full
+      // screen is the point of the overlay.
+      id: 'toggle-watcher-hud',
+      group: 'Create',
+      label: 'Toggle the variable watch HUD',
+      keywords: ['watch', 'graph', 'plot', 'inspect', 'pin', 'hud', 'stage'],
+      run: () => {
+        const on = toggleWatcherHud(uiRef.current.stageRef?.current ?? null);
+        uiRef.current.setStatusMessage(
+          on
+            ? 'Variable watch HUD on — it plots the variables you pin in Inspect.'
+            : uiRef.current.stageRef?.current
+              ? 'Variable watch HUD off.'
+              : 'The stage is not running yet.',
+        );
+      },
     },
     {
       id: 'open-refine',
@@ -499,6 +521,24 @@ export function buildPaletteActions(
             label: playbackPaused ? 'Resume' : 'Pause',
             keywords: ['pause', 'resume', 'play', 'hold', 'freeze'],
             run: () => engineRef.current.handleTogglePlayback(),
+          } satisfies CommandAction,
+          {
+            id: 'next-audio-track',
+            group: 'Audio',
+            label: 'Next audio track',
+            keywords: ['next', 'song', 'track', 'playlist', 'skip'],
+            run: () => {
+              void nextFileTrack();
+            },
+          } satisfies CommandAction,
+          {
+            id: 'prev-audio-track',
+            group: 'Audio',
+            label: 'Previous audio track',
+            keywords: ['prev', 'previous', 'song', 'track', 'playlist', 'back'],
+            run: () => {
+              void previousFileTrack();
+            },
           } satisfies CommandAction,
           {
             id: 'stop-audio',

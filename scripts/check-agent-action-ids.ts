@@ -89,6 +89,11 @@ const PALETTE_ONLY_EXEMPT = new Set([
   'open-shortcuts',
   'cycle-theme',
   'use-webgl',
+  // An authoring instrument, not a mid-performance move (StageControls.tsx
+  // has no watch control of any kind, confirmed: no "watch" occurrence in
+  // the file). The HUD plots over the stage from the palette; its watch set
+  // comes from the editor's Inspect pins, not from a dock control.
+  'toggle-watcher-hud',
   // Keyboard-first tuning of the playing preset (shortcut-registry.ts binds
   // H, W, I, O, J and < >). The dock's transition control opens the ladder
   // of durations, which covers blend-vs-cut; a bar button per nudge would
@@ -104,6 +109,12 @@ const PALETTE_ONLY_EXEMPT = new Set([
   'nudge-wave-scale-down',
   'nudge-rotate-right',
   'nudge-rotate-left',
+  // Local file playlist navigation is only relevant when playing a multi-track
+  // audio file playlist; its controls live in the audio popover
+  // (AudioStatusControl.tsx) and AudioSourcePanel.tsx rather than occupying fixed
+  // dock buttons on the main stage bar.
+  'next-audio-track',
+  'prev-audio-track',
 ]);
 
 /**

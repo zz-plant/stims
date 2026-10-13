@@ -1,3 +1,5 @@
+import { isReduceFlashingRequested } from './url-params.ts';
+
 export type TextScale = 1 | 1.25 | 1.5 | 2;
 
 export type AccessibilityPreference = {
@@ -59,6 +61,10 @@ const subscribers = new Set<AccessibilitySubscriber>();
 let activePreference: AccessibilityPreference | null = null;
 let freezeFrameFlag = false;
 let motionScaleFlag = 1;
+// The visitor's own reduce-flashing choice. It can differ from the active
+// value while `?reduceFlashing=1` is in force, and it is the one saved, so a
+// shared screen's link never rewrites the setting on that device.
+let savedReduceFlashing = false;
 
 function getStorage(): Storage | null {
   try {
@@ -89,6 +95,15 @@ function prefersMoreContrast(): boolean {
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-contrast: more)').matches
     );
+  } catch {
+    return false;
+  }
+}
+
+function urlRequestsReduceFlashing(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return isReduceFlashingRequested();
   } catch {
     return false;
   }
@@ -154,7 +169,13 @@ function persistToStorage(preference: AccessibilityPreference) {
 
 export function getActiveAccessibilityPreference(): AccessibilityPreference {
   if (!activePreference) {
-    activePreference = readFromStorage();
+    const stored = readFromStorage();
+    savedReduceFlashing = stored.reduceFlashing;
+    // A shared screen (a party display, an OBS source, an embed) is watched
+    // by people who never opened Settings, so its link can ask for this.
+    activePreference = urlRequestsReduceFlashing()
+      ? { ...stored, reduceFlashing: true }
+      : stored;
     freezeFrameFlag = activePreference.freezeFrame;
     motionScaleFlag = activePreference.motionScale;
   }
@@ -166,10 +187,14 @@ export function setAccessibilityPreference(
 ) {
   const current = getActiveAccessibilityPreference();
   const next = { ...current, ...update };
+  // An explicit in-app toggle wins over the link for the rest of the visit.
+  if (typeof update.reduceFlashing === 'boolean') {
+    savedReduceFlashing = update.reduceFlashing;
+  }
   activePreference = next;
   freezeFrameFlag = next.freezeFrame;
   motionScaleFlag = next.motionScale;
-  persistToStorage(next);
+  persistToStorage({ ...next, reduceFlashing: savedReduceFlashing });
   applyAccessibility(next);
   subscribers.forEach((subscriber) => subscriber(next));
   return next;
@@ -214,5 +239,6 @@ export function resetAccessibilityPreferenceState() {
   activePreference = null;
   freezeFrameFlag = false;
   motionScaleFlag = 1;
+  savedReduceFlashing = false;
   subscribers.clear();
 }

@@ -70,7 +70,10 @@ import {
   updateBorderFill as updateBorderFillHelper,
   updateBorderLine as updateBorderLineHelper,
 } from './renderer-helpers/border-renderer';
-import { buildFeedbackCompositeState as buildFeedbackCompositeStateHelper } from './renderer-helpers/feedback-composite';
+import {
+  buildFeedbackCompositeState as buildFeedbackCompositeStateHelper,
+  resolveFeedbackShaderPlan,
+} from './renderer-helpers/feedback-composite';
 import { renderMesh as renderMeshHelper } from './renderer-helpers/mesh-renderer';
 import { renderMotionVectors as renderMotionVectorsHelper } from './renderer-helpers/motion-vector-renderer';
 import { renderParticleFieldGroup as renderParticleFieldGroupHelper } from './renderer-helpers/particle-field-renderer';
@@ -93,15 +96,21 @@ import {
   syncLineObject as syncLineObjectHelper,
   syncWaveObject as syncWaveObjectHelper,
 } from './renderer-helpers/wave-renderer';
+import {
+  getMilkdropShaderCompileDiagnostics,
+  type MilkdropShaderCompileDiagnostic,
+} from './shader-compile-diagnostics.ts';
 import type {
   MilkdropBorderVisual,
   MilkdropColor,
   MilkdropCompiledPreset,
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
+  MilkdropGpuFieldProgramDescriptor,
   MilkdropGpuGeometryHints,
   MilkdropGpuInteractionTransform,
   MilkdropParticleFieldVisual,
+  MilkdropPresetPipelineWarmupRequest,
   MilkdropProceduralCustomWaveVisual,
   MilkdropProceduralWaveVisual,
   MilkdropRendererAdapter,
@@ -526,6 +535,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
   }
 
+  /**
+   * Structured shader compile failures recorded for this adapter's
+   * backend, oldest first. Pull-only: recording happens in the feedback
+   * managers where a failing program is actually observed.
+   */
+  getShaderCompileDiagnostics(): MilkdropShaderCompileDiagnostic[] {
+    return getMilkdropShaderCompileDiagnostics(this.backend);
+  }
+
   setPreset(preset: MilkdropCompiledPreset) {
     // The adapter factory already folded native-feedback availability into
     // directFeedbackShaders; mirror it here so the per-preset plan doesn't
@@ -537,6 +555,76 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       nativeWebGpuFeedbackEnabled:
         this.webgpuOptimizationFlags.directFeedbackShaders,
     }).effectiveWebGpuDescriptorPlan;
+  }
+
+  /**
+   * WebGPU-only pre-fade pipeline warm-up: resolves the incoming preset's
+   * descriptor plan exactly like setPreset does, then hands the feedback
+   * manager the shader-plan identity inputs and the plan's per-preset field
+   * programs. Warming runs through both the live deck and the spare deck —
+   * a live crossfade renders the incoming preset on the spare, while a
+   * snapshot blend keeps the current manager — so whichever deck ends up
+   * drawing the fade finds its node graphs pre-built; the renderer's
+   * code-keyed pipeline cache is shared by both.
+   *
+   * Resolves rather than rejects (the manager is best-effort by contract);
+   * the caller owns the deadline and proceeds either way.
+   */
+  async warmupPreset(preset: MilkdropCompiledPreset) {
+    if (this.backend !== 'webgpu') {
+      return;
+    }
+    const feedback = this.feedback;
+    const spare = this.spareDeck?.feedback ?? null;
+    const warmers = [feedback, spare].filter(
+      (
+        manager: MilkdropFeedbackManager | null,
+      ): manager is MilkdropFeedbackManager & {
+        warmupPresetPipelines: NonNullable<
+          MilkdropFeedbackManager['warmupPresetPipelines']
+        >;
+      } => Boolean(manager?.warmupPresetPipelines),
+    );
+    if (warmers.length === 0) {
+      return;
+    }
+    const descriptorPlan = resolveMilkdropRendererExecutionPlan({
+      backend: this.backend,
+      descriptorPlan: preset.ir.compatibility.gpuDescriptorPlans.webgpu,
+      flags: this.webgpuOptimizationFlags,
+      nativeWebGpuFeedbackEnabled:
+        this.webgpuOptimizationFlags.directFeedbackShaders,
+    }).effectiveWebGpuDescriptorPlan;
+    const shaderPlan = resolveFeedbackShaderPlan({
+      shaderPrograms: preset.ir.post.shaderPrograms,
+      perPixelStatements: preset.ir.perPixelStatements ?? null,
+      backend: this.backend,
+      directFeedbackShaders: this.webgpuOptimizationFlags.directFeedbackShaders,
+      webgpuFeedbackPlanShaderExecution:
+        descriptorPlan?.feedback?.shaderExecution,
+      webgpuFeedbackPlanFallback:
+        descriptorPlan?.feedback?.fallbackToLegacyFeedback ?? false,
+    });
+    const request: MilkdropPresetPipelineWarmupRequest = {
+      shaderPlan,
+      fieldPrograms: {
+        mesh: descriptorPlan?.proceduralMesh?.fieldProgram ?? null,
+        motionVectors:
+          descriptorPlan?.proceduralMotionVectors?.fieldProgram ?? null,
+        customWaves: (descriptorPlan?.proceduralWaves ?? [])
+          .filter(
+            (entry) => entry.target === 'custom-wave' && entry.fieldProgram,
+          )
+          .map((entry) => entry.fieldProgram)
+          .filter(
+            (program): program is MilkdropGpuFieldProgramDescriptor =>
+              program != null,
+          ),
+      },
+    };
+    await Promise.all(
+      warmers.map((manager) => manager.warmupPresetPipelines(request)),
+    );
   }
 
   saveFeedbackFrame(): void {

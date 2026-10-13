@@ -1,5 +1,7 @@
 # Tech Stack Modernization — September 2026
 
+> Historical audit from 2026-09-02. Version constraints and parser choices have since changed; use `package.json`, `.dependency-cruiser.mjs`, and [Development](./DEVELOPMENT.md#toolchain) for current setup. The original measurements below are preserved.
+
 A ranked audit of what could level up the Stims toolchain and third-party
 stack, grounded in a full usage map of every dependency plus the state of
 each ecosystem as of 2026-09-02. Each entry records what was **done in the

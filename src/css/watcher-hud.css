@@ -1,0 +1,81 @@
+/* Stage watch HUD (watcher-hud.ts) — the pinned variables of the editor's
+ * Inspect tab, plotted over the running stage at display rate.
+ *
+ * Loaded with the app shell rather than the editor chunk because the HUD
+ * toggles from the command palette and is meant to run with the editor
+ * closed. The element is aria-hidden (a read-only instrument over the
+ * visuals) and pointer-transparent, so it can never eat a stage tap. */
+
+.stims-watch-hud {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  width: min(236px, 42vw);
+  /* Bounded so even a full watch list can never grow down into the control
+     dock on a phone (the 390x844 invariant in mobile-viewport-matrix). */
+  max-height: 42%;
+  padding: 8px 10px;
+  overflow: hidden;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: var(--radius-md);
+  background: var(--stims-panel);
+  color: var(--stims-ink);
+  font-size: 0.6875rem;
+  pointer-events: none;
+}
+
+.stims-watch-hud__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stims-watch-hud__row {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(2.2rem, max-content) 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.stims-watch-hud__name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--stims-muted);
+  font-family: var(--font-family-mono);
+  font-size: 0.6875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stims-watch-hud__value {
+  color: var(--stims-ink-strong);
+  font-family: var(--font-family-mono);
+  font-size: 0.6875rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.stims-watch-hud__graph {
+  display: block;
+  width: 100%;
+  height: 22px;
+}
+
+.stims-watch-hud__hint {
+  margin: 0;
+  color: var(--stims-muted);
+  font-size: 0.6875rem;
+  line-height: 1.45;
+}
+
+@media (width < 768px) and (pointer: coarse) {
+  .stims-watch-hud {
+    /* Phones keep the HUD clear of the bottom control bar and the editor
+       sheet: top-anchored with the same safe-area lift the shell's own
+       stage overlays use, and a tighter cap than the desktop rule. */
+    top: max(8px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left));
+    width: min(180px, 52vw);
+    max-height: 30%;
+  }
+}

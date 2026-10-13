@@ -1,6 +1,6 @@
 # flash-guard
 
-WCAG 2.3.1 flash analysis for frame sequences, and a live governor that keeps a canvas under the threshold while it is being shown. It measures what the standard measures: pairs of opposing luminance changes of 10% or more, in any 10-degree visual field, more than three times in any second, plus the PEAT/Harding red-flash criterion. The offline half audits recorded or rendered frames and returns a flash rate and a risk band. The live half watches a canvas, counts the same flashes as they happen, and solves for the brightness scale that puts the next swing under the limit. Pure TypeScript, no dependencies, tested without a GPU. It was built for [Stims](https://toil.fyi), where MilkDrop presets can strobe and the viewer may not have asked for that, and it is extracted here because every game, video player and visualizer has the same problem.
+WCAG 2.3.1 flash analysis for frame sequences, and a live governor that adjusts canvas output toward the configured threshold while it is being shown. It measures what the standard measures: pairs of opposing luminance changes of 10% or more, in any 10-degree visual field, more than three times in any second, plus the PEAT/Harding red-flash criterion. The offline half audits recorded or rendered frames and returns a flash rate and a risk band. The live half watches a canvas, counts the same flashes as they happen, and solves for the brightness scale that puts the next swing under the limit. Pure TypeScript, no dependencies, tested without a GPU. It was built for [Stims](https://toil.fyi), where MilkDrop presets can strobe and the viewer may not have asked for that, and it is extracted here because every game, video player and visualizer has the same problem.
 
 These are screen-content heuristics, not a medical device. They flag content worth review and reduce measured flash rate; they do not certify anything as safe.
 
@@ -40,13 +40,21 @@ flowchart LR
 
 Magnitude is decided per pixel before any spatial aggregation. Averaging luminance over a tile first scales every swing down by the flashing region's coverage, and on sparse bright-on-black content that pushed real flashes two orders of magnitude under the threshold.
 
-## Install
+## Use from this repository
+
+This package is not published on npm as of 2026-10-10 (the registry lookup returned 404). Build and test the workspace source from a clone of [Stims](https://github.com/zz-plant/stims):
 
 ```sh
-npm install flash-guard
+bun install --frozen-lockfile
+bun --cwd packages/flash-guard run build
+bun --cwd packages/flash-guard test
 ```
 
+The examples below use the package name, which resolves through the Bun workspace after installation. For a separate consumer, pack the built package and install the resulting tarball. See [package release instructions](https://github.com/zz-plant/stims/blob/main/packages/README.md#publishing) for first-publication checks. Once a release exists, the intended registry command is `bun add flash-guard`.
+
 Two entry points: `flash-guard` for everything, and `flash-guard/worker` for the readback worker the live sampler uses (bundlers pick it up from the `new URL('./readback.worker.js', import.meta.url)` pattern automatically; pass `createWorker` to load it another way).
+
+The analyzer reports threshold crossings in sampled frames. The live governor depends on sampling, display output, and adaptation timing; it is not a guarantee of safety for every viewer.
 
 ## Quick start
 

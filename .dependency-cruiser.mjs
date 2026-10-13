@@ -1,4 +1,50 @@
 /** @type {import('dependency-cruiser').IConfiguration} */
+
+/**
+ * The milkdrop modules the frontend shell may import directly. Everything
+ * else under src/js/milkdrop/ is engine internals: only frontend/engine/ (the
+ * adapter layer) may import those.
+ *
+ * Entries are path fragments relative to src/js/milkdrop/, matched up to a
+ * `.ts` extension boundary — `overlay/.*` admits the whole overlay subtree.
+ *
+ * This list *is* the public surface, so each addition is a design decision
+ * made in review, not a convenience. When it grows, ask first whether the
+ * shell should instead receive the capability through frontend/engine/.
+ */
+const MILKDROP_SHELL_SURFACE = [
+  'catalog-store',
+  'catalog-store-analysis',
+  'catalog-types',
+  'compiler-types',
+  'formatter',
+  'live-tile-pool',
+  'overlay/.*',
+  'preset-credit',
+  'preset-generator',
+  'preset-handles',
+  'preset-id-resolution',
+  'preset-lineage',
+  'preset-math-analyzer',
+  'preset-modulation',
+  'preset-mutations',
+  'preset-preview',
+  'reactivity-probe',
+  'runtime-types',
+  'runtime/first-run-preset',
+  'runtime/interaction-response',
+  'runtime/preset-preview-service',
+  'shader-execution-mode',
+  'types',
+  'variable-probe',
+];
+
+/** Negative-lookahead pattern admitting exactly the shell surface modules. */
+function milkdropShellSurfacePattern() {
+  const alternatives = MILKDROP_SHELL_SURFACE.join('|');
+  return `^src/js/milkdrop/(?!(${alternatives})\\.ts$)`;
+}
+
 const config = {
   options: {
     parser: 'swc',
@@ -47,7 +93,7 @@ const config = {
         path: '^src/js/frontend/(?!engine/)',
       },
       to: {
-        path: '^src/js/milkdrop/(?!(catalog-store-analysis|catalog-store|catalog-types|compiler-types|formatter|live-tile-pool|overlay/.*|preset-credit|preset-generator|preset-handles|preset-id-resolution|preset-lineage|preset-math-analyzer|preset-modulation|preset-mutations|preset-preview|reactivity-probe|runtime/first-run-preset|runtime/interaction-response|runtime/preset-preview-service|runtime-types|shader-execution-mode|types|variable-probe)\\.ts$)',
+        path: milkdropShellSurfacePattern(),
       },
     },
     {

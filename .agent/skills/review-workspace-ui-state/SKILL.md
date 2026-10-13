@@ -55,5 +55,5 @@ Use this skill when reviewing or authoring changes to the React workspace shell,
 
 ## Related skills
 
-- [`modify-visualizer-runtime`](../../modify-visualizer-runtime/SKILL.md) — when the change is mainly engine-side
-- [`ship-visualizer-change`](../../ship-visualizer-change/SKILL.md) — for end-to-end product changes
+- [`modify-visualizer-runtime`](../modify-visualizer-runtime/SKILL.md) — when the change is mainly engine-side
+- [`ship-visualizer-change`](../ship-visualizer-change/SKILL.md) — for end-to-end product changes

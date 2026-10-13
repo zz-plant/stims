@@ -1124,35 +1124,65 @@ export function StageControls({
         </div>
       ) : null}
 
-      {/* Always mounted, never conditional. The handle and the transport are
-          two states of one control, and rendering the handle only while
-          `visible` is false let both occupy the same patch of screen at once:
-          the bar takes 300ms to fade out, the handle appeared instantly, and
-          for that window the preset title sat underneath the word "Controls".
-          Driving both from the same flag lets the CSS hand off cleanly — the
-          incoming one waits for the outgoing one to clear. */}
-      <button
-        type="button"
-        className={styles.handle}
-        data-visible={String(!visible)}
-        aria-label="Show controls"
-        title="Show controls"
-        // Hidden by `visibility` in CSS, which already removes it from the
-        // tab order; `inert` additionally keeps a mid-transition frame from
-        // catching a click aimed at the transport underneath it.
-        inert={visible || undefined}
-        onClick={() => signalActivity()}
-      >
-        <span className={styles.handleIcon} aria-hidden="true">
+      {/* The folded dock. Always mounted, never conditional — the handle and
+          the transport are two states of one control, and rendering the
+          handle only while `visible` is false let both occupy the same patch
+          of screen at once: the bar takes 300ms to fade out, the handle
+          appeared instantly, and for that window the preset title sat
+          underneath the word "Controls". Driving both from the same flag
+          lets the CSS hand off cleanly — the incoming one waits for the
+          outgoing one to clear. */}
+      <div className={styles.foldedDock} data-visible={String(!visible)}>
+        {/* The bar is `visibility: hidden` while folded, so its Edit button
+            leaves the accessibility tree exactly when a visitor reading the
+            stage would most need to find it (docs/PRODUCT_MOMENTS.md,
+            "Open one up"). A second Edit, shown only in the folded state,
+            keeps the promise's action in the tree and on the screen. Phones
+            drop it with the bar's own Edit: the editor sheet covers the
+            stage there, and that finding is still open. */}
+        <button
+          type="button"
+          className={styles.foldedEdit}
+          data-action="open-editor"
+          data-visible={String(!visible)}
+          aria-label="Edit this visual"
+          title={withHint('Edit this visual', 'open-editor')}
+          aria-keyshortcuts={ariaKeyShortcutsFor('open-editor')}
+          inert={visible || undefined}
+          onClick={() => {
+            signalActivity();
+            ui.updatePanel('editor');
+          }}
+        >
           <UiIcon
-            name="chevron-up"
+            name="pencil"
             className="stims-icon-slot stims-icon-slot--sm"
           />
-        </span>
-        {/* A bare chevron on an unlabeled pill was the only visible UI on
-            an idle stage; first-time visitors had to guess what it did. */}
-        <span>Controls</span>
-      </button>
+          Edit
+        </button>
+        <button
+          type="button"
+          className={styles.handle}
+          data-visible={String(!visible)}
+          aria-label="Show controls"
+          title="Show controls"
+          // Hidden by `visibility` in CSS, which already removes it from the
+          // tab order; `inert` additionally keeps a mid-transition frame from
+          // catching a click aimed at the transport underneath it.
+          inert={visible || undefined}
+          onClick={() => signalActivity()}
+        >
+          <span className={styles.handleIcon} aria-hidden="true">
+            <UiIcon
+              name="chevron-up"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+          </span>
+          {/* A bare chevron on an unlabeled pill was the only visible UI on
+              an idle stage; first-time visitors had to guess what it did. */}
+          <span>Controls</span>
+        </button>
+      </div>
     </>
   );
 }

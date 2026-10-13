@@ -21,9 +21,16 @@ import {
   useSyncExternalStore,
 } from 'react';
 import '../../css/app-shell.css';
+// The preset grid and stage-hero rules used to close app-shell.css; loading
+// them here preserves their position in the cascade between app-shell.css
+// and the theme/launch/chrome sheets below.
+import '../../css/shell/preset-grid.css';
 import '../../css/shell-theme.css';
 import '../../css/shell-launch.css';
 import '../../css/chrome.css';
+// The stage watch HUD toggles from the command palette and is meant to run
+// with the editor closed, so its styles cannot wait for the editor chunk.
+import '../../css/watcher-hud.css';
 import {
   applyAccessibility,
   getActiveAccessibilityPreference,
@@ -38,10 +45,6 @@ import {
 import { setCrashTelemetryPreset } from '../core/services/crash-telemetry.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { setTelemetryAudioSource } from '../core/services/telemetry-context.ts';
-import {
-  VIRTUAL_CLAUDE_DEVICE_ID,
-  webMidiService,
-} from '../core/services/webmidi-controller.ts';
 import { saveLastSession } from '../core/state/last-session-store.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
@@ -52,7 +55,7 @@ import {
 } from '../core/theme-preferences.ts';
 import { parseURLParams } from '../core/url-params.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
-import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
+import { deferToIdle } from '../utils/browser/idle-task.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import { initAgentBridge, updateAgentTelemetry } from './agent-bridge.ts';
 import { buildAgentBridgeCallbacks } from './agent-bridge-handlers.ts';
@@ -74,6 +77,7 @@ import {
 import { HudOverlay } from './HudOverlay.tsx';
 import { useAgentStateInstall } from './hooks/use-agent-state-install.ts';
 import { useMediaSession } from './hooks/use-media-session.ts';
+import { usePerformanceHardware } from './hooks/use-performance-hardware.ts';
 import {
   useFileHandlerLaunch,
   useSharedLaunch,
@@ -84,7 +88,6 @@ import { useFullscreen } from './hooks/useFullscreen';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useStageGesture } from './hooks/useStageGesture';
 import { LiveParameterHud } from './LiveParameterHud.tsx';
-import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { dismissLoadingScreen } from './loading-screen.ts';
 import {
@@ -94,7 +97,6 @@ import {
 import { TITLE_CARD_EXIT_MS, TITLE_CARD_HOLD_MS } from './PresetTitleCard.tsx';
 import { buildPaletteActions } from './palette-actions.ts';
 import { prefetchPanelChunk } from './panel-chunks.ts';
-import { watchPerformanceHardware } from './performance-hardware-connect.ts';
 import {
   SilentAudioNotice,
   useAudioAwaitingGesture,
@@ -108,12 +110,6 @@ const NewHomePage = lazy(() =>
 );
 
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
-import {
-  bindMidiToMilkdropControls,
-  createHardwareCrossfader,
-  createPerformanceControlApplier,
-  learnRangeFor,
-} from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
@@ -123,7 +119,6 @@ import {
   REMIX_URL_FAILED,
 } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
-import { startQueuedCrossfade } from './workspace-actions.ts';
 import {
   useEngineSnapshot,
   useWorkspace,
@@ -148,8 +143,8 @@ const BrowseSheetPanel = lazy(() =>
 const CapturePanel = lazy(() =>
   import('./CapturePanel.tsx').then((m) => ({ default: m.CapturePanel })),
 );
-const EditorPanel = lazy(() =>
-  import('./EditorPanel.tsx').then((m) => ({ default: m.EditorPanel })),
+const EditorSurface = lazy(() =>
+  import('./EditorSurface.tsx').then((m) => ({ default: m.EditorSurface })),
 );
 const RefinePanel = lazy(() =>
   import('./RefinePanel.tsx').then((m) => ({ default: m.RefinePanel })),
@@ -271,32 +266,6 @@ function prefersThumbModeByDefault() {
   } catch {
     return false;
   }
-}
-
-/**
- * Schedule a non-critical effect to run during browser idle time.
- * Falls back to a short setTimeout when requestIdleCallback is unavailable.
- * Returns a cleanup function that cancels the pending task.
- */
-function deferToIdle(
-  fn: () => undefined | (() => void),
-  options?: { idleTimeout?: number; fallbackDelay?: number },
-): () => void {
-  let cancelled = false;
-  let dispose: (() => void) | undefined;
-  const run = () => {
-    if (cancelled) return;
-    dispose = fn();
-  };
-  const cancel = scheduleIdleTask(run, {
-    idleTimeout: options?.idleTimeout ?? 2000,
-    fallbackDelay: options?.fallbackDelay ?? 80,
-  });
-  return () => {
-    cancelled = true;
-    cancel();
-    dispose?.();
-  };
 }
 
 function StimsWorkspaceAppShell() {
@@ -791,105 +760,9 @@ function StimsWorkspaceAppShell() {
     );
   }, [runtimeReadyForPrewarm]);
 
-  // Physical and virtual (MCP) MIDI both drive the engine through this one
-  // binding. It used to live inside PerformanceHardwareSection, which only
-  // stayed mounted while Settings was open — closing Settings silently cut
-  // the live wire between a controller and the visuals.
-  // Deferred to idle: MIDI init and live performance setup are not needed for
-  // first paint and can safely wait until the browser is idle.
-  useEffect(() => {
-    return deferToIdle(() => {
-      webMidiService.initialize();
-
-      // The live-performance runtime owns `window.__stims_live` (ramps, Strudel
-      // patterns, signal measurement) on top of the four controls this effect
-      // used to publish inline.
-      const uninstallLive =
-        typeof window === 'undefined'
-          ? () => {}
-          : installLivePerformance({
-              setTarget: (target, value) => {
-                engine.updateInspectorField(target, value);
-              },
-              injectMidiCC: (cc, value) => {
-                webMidiService.injectControlChange(
-                  VIRTUAL_CLAUDE_DEVICE_ID,
-                  cc,
-                  value,
-                );
-              },
-              nextPreset: () => {
-                engine.handleShufflePreset();
-              },
-              previousPreset: () => {
-                engine.handlePreviousPreset();
-              },
-              startStreamAudio: async (stream) => {
-                const nextRoute = {
-                  ...uiRef.current.routeState,
-                  audioSource: 'file' as const,
-                };
-                uiRef.current.commitRoute(nextRoute);
-                await engine.startAudioSource({
-                  source: 'file',
-                  stream,
-                  launchState: nextRoute,
-                });
-              },
-            });
-
-      const crossfader = createHardwareCrossfader({
-        getPosition: () => engine.getCrossfade(),
-        setPosition: (position) => engine.setCrossfade(position),
-        startQueued: () =>
-          startQueuedCrossfade({
-            queue: uiRef.current.presetQueue,
-            startManualCrossfade: () => engine.startManualCrossfade(),
-            setRouteState: uiRef.current.setRouteState,
-            activePresetId: engineSnapshotRef.current?.activePresetId ?? null,
-          }),
-        announce: (message) => uiRef.current.setStatusMessage(message),
-      });
-      const controls = createPerformanceControlApplier({
-        setFieldLive: (target, value) => engine.updateFieldLive(target, value),
-        commitField: (target, value) =>
-          engine.updateInspectorField(target, value),
-        crossfade: (position) => crossfader.move(position),
-      });
-      webMidiService.setLearnRangeResolver(learnRangeFor);
-      const unbindMidi = bindMidiToMilkdropControls(
-        webMidiService,
-        controls.apply,
-      );
-
-      // A gamepad drives parameters through the same binding/learn machinery
-      // as a MIDI controller — it arrives as the `virtual:gamepad` device, so
-      // the line above already handles it once it starts injecting.
-      let stopGamepad: (() => void) | null = null;
-      void import('../core/services/gamepad-performance-source.ts').then(
-        (mod) => {
-          if (!mod.isGamepadPerformanceSupported()) return;
-          stopGamepad = mod.startGamepadPerformanceSource(webMidiService);
-        },
-      );
-
-      // Neither of the two lines above used to say anything, so the only way
-      // to find out a controller was live was to move one and watch.
-      const stopHardwareWatch = watchPerformanceHardware({
-        midi: webMidiService,
-        announce: (message) => uiRef.current.setStatusMessage(message),
-      });
-
-      return () => {
-        uninstallLive();
-        unbindMidi();
-        controls.dispose();
-        webMidiService.setLearnRangeResolver(null);
-        stopGamepad?.();
-        stopHardwareWatch();
-      };
-    });
-  }, [engine]);
+  // Physical and virtual (MCP) MIDI both drive the engine through the one
+  // binding installed by this hook, for the shell's whole lifetime.
+  usePerformanceHardware({ engine, uiRef, engineSnapshotRef });
 
   useEffect(() => {
     // `fps` is deliberately omitted: useAgentFrameRate owns that field and
@@ -927,6 +800,7 @@ function StimsWorkspaceAppShell() {
     decodePresetCodeFromHash(),
   );
   const openedEditorForCodeRef = useRef(false);
+  const applyingCodeRef = useRef(false);
 
   useEffect(() => {
     if (!pendingCode || openedEditorForCodeRef.current) return;
@@ -935,19 +809,22 @@ function StimsWorkspaceAppShell() {
   }, [pendingCode, ui]);
 
   useEffect(() => {
-    // Boot-time preset loads (fallback, featured, ?preset=) land as async
-    // editor-session commits, so a single apply can be overwritten by a
-    // load that was already in flight. Re-assert the deep-linked source
-    // every time the session settles on something else, and stop once the
-    // snapshot reflects it — later loads are then real user actions and
-    // must win.
-    //
+    // Wait for an actual runtime, not just a loaded catalog. The awaited
+    // edit also waits for the runtime's startup selection, so the draft is
+    // compiled with the requested preset's identity. Only one compile may
+    // be in flight; snapshot updates must not keep superseding that edit.
     // Waits for the catalog: only then is it known whether the link's preset
     // exists here. When it does not — a preset the sender made or imported —
     // the code is imported as a preset of its own. Applied to whatever loaded
     // instead (the featured preset, after the missing id healed to it), it
     // would have been saved as that preset's draft.
-    if (!pendingCode || !engine.engineReady || !engine.catalogReady) return;
+    if (
+      !pendingCode ||
+      !engineSnapshot?.runtimeReady ||
+      !engine.catalogReady ||
+      applyingCodeRef.current
+    )
+      return;
     if (engine.missingRequestedPreset) {
       const name = ui.routeState.presetId ?? 'shared-preset';
       setPendingCode(null);
@@ -956,17 +833,26 @@ function StimsWorkspaceAppShell() {
       ]);
       return;
     }
-    if (engineSnapshot?.currentSource === pendingCode) {
-      setPendingCode(null);
-      return;
-    }
-    engine.updateEditorSource(pendingCode);
+    applyingCodeRef.current = true;
+    void engine.applyEditorSourceAwaited(pendingCode).then(
+      (state) => {
+        applyingCodeRef.current = false;
+        if (state?.source === pendingCode) setPendingCode(null);
+      },
+      (error: unknown) => {
+        applyingCodeRef.current = false;
+        uiRef.current.setStatusMessage(
+          error instanceof Error
+            ? error.message
+            : 'Shared preset could not be applied.',
+        );
+      },
+    );
   }, [
     pendingCode,
-    engine.engineReady,
+    engineSnapshot?.runtimeReady,
     engine.catalogReady,
     engine.missingRequestedPreset,
-    engineSnapshot?.currentSource,
     engine,
     ui.routeState.presetId,
   ]);
@@ -1356,13 +1242,21 @@ function StimsWorkspaceAppShell() {
   // history-entry ownership belongs to the route-sync effect (workspace-hooks),
   // and a keystroke must not add an entry.
   const sessionSource = engineSnapshot?.currentSource ?? '';
+  // The draft's remix parents, from the session's compile of its preset.
+  // Embedded in the hash so a link copied from the address bar carries the
+  // lineage an export would — the same channel, the same fields.
+  const sessionLineage =
+    engineSnapshot?.sessionState?.activeCompiled?.source.derivedFrom;
   const remixUrlFailure = useRef<string | null>(null);
   useEffect(() => {
-    if (!engine.engineReady) return;
+    // Until the incoming draft lands, a clean fallback buffer must not erase
+    // the very hash we are still restoring.
+    if (!engine.engineReady || pendingCode) return;
     try {
       const nextHref = buildRemixShareUrl(
         window.location.href,
         editorDirty ? sessionSource : null,
+        sessionLineage,
       );
       if (nextHref !== window.location.href) {
         window.history.replaceState(window.history.state, '', nextHref);
@@ -1382,7 +1276,13 @@ function StimsWorkspaceAppShell() {
         remixUrlFailure.current = message;
       }
     }
-  }, [engine.engineReady, editorDirty, sessionSource]);
+  }, [
+    engine.engineReady,
+    editorDirty,
+    sessionSource,
+    sessionLineage,
+    pendingCode,
+  ]);
 
   useEffect(() => {
     reportLoadStatus('shell-rendered');
@@ -1478,7 +1378,7 @@ function StimsWorkspaceAppShell() {
         <Suspense
           fallback={<PanelLoadingFallback panel={ui.routeState.panel} />}
         >
-          {ui.routeState.panel === 'editor' ? <EditorPanel /> : null}
+          {ui.routeState.panel === 'editor' ? <EditorSurface /> : null}
           {ui.routeState.panel === 'capture' ? <CapturePanel /> : null}
           {ui.routeState.panel === 'browse' ? (
             <BrowseSheetPanel

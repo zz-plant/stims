@@ -68,7 +68,7 @@ lifecycle) is tested in `packages/audio-reactive/tests/`. Here:
 
 ## Editor / authoring / presets
 
-`editor-panel.test.ts` · `editor-panel-controls.test.ts` · `milkdrop-editor-session.test.ts` ·
+`editor-panel.test.ts` · `editor-panel-controls.test.ts` · `editor-panel-textures.test.ts` · `milkdrop-editor-session.test.ts` ·
 `preset-controls.test.ts` · (formatter tests: `packages/milkdrop-toolchain/tests/`) ·
 `live-modulation.test.ts` · `preset-modulation.test.ts` · `preset-sharing.test.ts` ·
 `preset-file-actions.test.ts` · `preset-id-resolution.test.ts` · `preset-handles.test.ts` ·
@@ -76,7 +76,8 @@ lifecycle) is tested in `packages/audio-reactive/tests/`. Here:
 `preset-visual-description.test.ts` · `assisted-edit-gate.test.ts` ·
 `milkdrop-preset-navigation-controller.test.ts` · `milkdrop-preset-preview-service.test.ts` ·
 `milkdrop-preset-performance-overrides.test.ts` ·
-`bundled-first-run-preset.test.ts` · `milkdrop-overlay-panels.test.ts` ·
+`bundled-first-run-preset.test.ts` · `bundled-preset-frame-cost.test.ts` · `preset-cost-signal.test.ts` ·
+`preset-lab-cost-ingest.test.ts` · `preset-cost-gate-reach.test.tsx` · `milkdrop-overlay-panels.test.ts` ·
 `milkdrop-overlay-stacking.test.ts` · `milkdrop-live-tile-pool.test.ts` ·
 `preset-lab-metrics.test.ts`
 

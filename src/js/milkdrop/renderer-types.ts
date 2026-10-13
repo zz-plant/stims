@@ -14,6 +14,7 @@ import type {
 } from 'milkdrop-toolchain/src/compiler-types.ts';
 import type { Camera, Scene, Texture } from 'three';
 import type { MilkdropRuntimeSignals } from './runtime-types.ts';
+import type { MilkdropShaderCompileDiagnostic } from './shader-compile-diagnostics.ts';
 
 export type MilkdropPostprocessingProfile = {
   enabled: boolean;
@@ -479,6 +480,42 @@ export type MilkdropFeedbackSetRenderTarget = {
   bivarianceHack(target: unknown | null): void;
 }['bivarianceHack'];
 
+/**
+ * The preset-derived half of the composite state: which warp/comp shader
+ * programs the feedback pass executes, in which mode, plus the per-pixel
+ * statements. Everything here is decided by the compiled preset and its
+ * descriptor plan — no per-frame input — which is what lets a warm-up run
+ * before the incoming preset has ever been stepped. See
+ * renderer-helpers/feedback-composite.ts `resolveFeedbackShaderPlan`.
+ */
+export type MilkdropFeedbackShaderPlan = {
+  shaderExecution: 'controls' | 'direct';
+  shaderPrograms: {
+    warp: MilkdropShaderProgramPayload | null;
+    comp: MilkdropShaderProgramPayload | null;
+  };
+  perPixelPrograms: NonNullable<
+    MilkdropFeedbackCompositeState['perPixelPrograms']
+  > | null;
+};
+
+/**
+ * What a feedback manager needs to pre-compile an incoming preset's
+ * pipelines: the shader-plan identity inputs for the warp/comp composite
+ * nodes, and the per-preset field programs behind the visible-geometry
+ * materials (procedural mesh, procedural motion vectors, procedural custom
+ * waves). Main-wave and particle materials embed no preset code and are
+ * preset-invariant, so they are already warm.
+ */
+export type MilkdropPresetPipelineWarmupRequest = {
+  shaderPlan: MilkdropFeedbackShaderPlan;
+  fieldPrograms: {
+    mesh: MilkdropGpuFieldProgramDescriptor | null;
+    motionVectors: MilkdropGpuFieldProgramDescriptor | null;
+    customWaves: MilkdropGpuFieldProgramDescriptor[];
+  };
+};
+
 export interface MilkdropFeedbackManager {
   applyCompositeState(state: MilkdropFeedbackCompositeState): void;
   applyPostprocessingProfile?(
@@ -502,6 +539,19 @@ export interface MilkdropFeedbackManager {
   setTransitionBlend?(alpha: number): void;
   /** True while an async warp/comp shader swap is still warming. */
   isDirectShaderSwapPending?(): boolean;
+  /**
+   * WebGPU only. Compiles an incoming preset's feedback and field-material
+   * pipelines against the live renderer before the preset is applied, so its
+   * first rendered frame submits pipeline cache hits instead of compiling
+   * synchronously mid-blend. Best-effort: resolves `false` (never rejects)
+   * when this manager cannot warm — no renderer yet, no compileAsync, a
+   * superseded or disposed manager. The caller bounds the wait with a
+   * deadline and proceeds either way; this only moves work, it never gates
+   * the switch.
+   */
+  warmupPresetPipelines?(
+    request: MilkdropPresetPipelineWarmupRequest,
+  ): Promise<boolean>;
   render(
     renderer: {
       render(scene: Scene, camera: Camera): void;
@@ -573,6 +623,13 @@ export interface MilkdropRendererAdapter {
   readonly backend: 'webgl' | 'webgpu';
   attach(): void;
   setPreset(preset: MilkdropCompiledPreset): void;
+  /**
+   * Structured shader compile failures this backend recorded, oldest first:
+   * one entry per program that failed to build, with the MilkDrop program
+   * label ('warp', 'comp', …), the failing stage, and the driver message.
+   * The editor reads this instead of inferring "something fell back".
+   */
+  getShaderCompileDiagnostics?(): MilkdropShaderCompileDiagnostic[];
   setAdaptiveQuality?(
     multipliers: Partial<{
       feedbackResolutionMultiplier: number;
@@ -580,6 +637,15 @@ export interface MilkdropRendererAdapter {
   ): void;
   saveFeedbackFrame?(): void;
   setTransitionBlend?(alpha: number): void;
+  /**
+   * WebGPU only. Pre-compiles the incoming preset's GPU material pipelines
+   * (feedback warp/comp composite nodes plus per-preset field programs)
+   * against the live renderer, before a blend transition starts fading.
+   * Resolves when warming is done or impossible — it never rejects and never
+   * changes what a frame draws; the caller owns the deadline. A no-op on the
+   * WebGL backend, where no equivalent spike was measured.
+   */
+  warmupPreset?(preset: MilkdropCompiledPreset): Promise<void>;
   /** Splits the feedback chain into two decks for a live crossfade; call
    * before setPreset. False leaves the blend on the snapshot. */
   beginLiveBlend?(): boolean;
