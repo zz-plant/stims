@@ -40,7 +40,14 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOTS = ['docs', '.agent', '.claude', '.github', '.opencode'];
-const EXTRA_FILES = ['AGENTS.md', 'README.md', 'CONTRIBUTING.md'];
+// tests/INDEX.md is the map TESTING.md and the docs index send readers to,
+// so a path it names has to exist like any other doc's.
+const EXTRA_FILES = [
+  'AGENTS.md',
+  'README.md',
+  'CONTRIBUTING.md',
+  'tests/INDEX.md',
+];
 /**
  * Docs generated from source that is itself checked. See the docblock above for
  * why the copy is exempt while the original is not.
