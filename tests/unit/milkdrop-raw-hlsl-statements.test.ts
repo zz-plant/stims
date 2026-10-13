@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   extractNativeShaderBody,
+  finishRawGlslForWebGl,
   normalizeHlslToGlsl,
 } from 'milkdrop-toolchain/src/compiler/shader-analysis.ts';
 
@@ -59,5 +60,94 @@ describe('raw HLSL statement rewrites', () => {
       'float2 ofs[4]; shader_body { ofs[0] = uv; ret = ofs[0].xxy; }',
     );
     expect(body).toContain('vec2 ofs[4];');
+  });
+});
+
+/**
+ * The WebGL-only finishing pass (finishRawGlslForWebGl): HLSL intrinsics
+ * GLSL ES lacks, and HLSL's implicit broadcast/truncation on assignment.
+ */
+describe('raw HLSL body finishing for WebGL', () => {
+  const finish = (shader: string) =>
+    finishRawGlslForWebGl(extractNativeShaderBody(shader) ?? '');
+
+  test('saturate, frac, lerp, atan2 and dot become GLSL', () => {
+    const glsl = finish(
+      'shader_body { float m = saturate (8.0 - rad*(1+q1)); float2 f = frac(uv*2); ret = lerp(ret, 1, m); float a = atan2(uv.y, uv.x); float d = dot(ret, uv); }',
+    );
+    expect(glsl).toContain('clamp(8.0 - rad*(1.0+q1), 0.0, 1.0)');
+    expect(glsl).toContain('fract(uv*2.0)');
+    expect(glsl).toContain('milkdropLerp(ret, 1.0, m)');
+    expect(glsl).toContain('atan(uv.y, uv.x)');
+    expect(glsl).toContain('milkdropDot(ret, uv)');
+    expect(glsl).not.toMatch(/\b(?:saturate|frac|lerp|atan2|dot)\s*\(/u);
+  });
+
+  test('the shared normaliser leaves the intrinsics for the WebGPU parser', () => {
+    // Its executor implements lerp/saturate/frac itself and has no
+    // milkdrop* overload sets.
+    expect(normalizeHlslToGlsl('ret = lerp(ret, 1, saturate(q1));')).toContain(
+      'lerp(ret, 1.0, saturate(q1))',
+    );
+  });
+
+  test('assignments convert to the declared type, as HLSL does', () => {
+    const glsl = finish(
+      [
+        'float3 color, mus;',
+        'float2 rs;',
+        'float k;',
+        'shader_body {',
+        'mus = .2/(sqrt(uv.x)+.2);',
+        'mus *= .9+.1*tex2D(sampler_noise_lq, uv);',
+        'rs = tex2D(sampler_noise_lq, uv);',
+        'k = ret;',
+        'ret.xy = q1;',
+        '}',
+      ].join('\n'),
+    );
+    expect(glsl).toContain('vec3 color, mus;');
+    expect(glsl).toContain('mus = vec3(.2/(sqrt(uv.x)+.2))');
+    expect(glsl).toContain('mus *= vec3(.9+.1*texture2D(noiseTex, uv))');
+    expect(glsl).toContain('rs = vec2(texture2D(noiseTex, uv))');
+    expect(glsl).toContain('k = milkdropScalar(ret)');
+    expect(glsl).toContain('ret.xy = vec2(q1)');
+  });
+
+  test('a whole matrix on the right-hand side is left alone', () => {
+    const glsl = finish(
+      'float2x2 m = float2x2(q1, q2, q3, q4); shader_body { uv *= m; uv += m[0]; }',
+    );
+    expect(glsl).toContain('uv *= m;');
+    expect(glsl).toContain('uv += vec2(m[0])');
+  });
+
+  test('static globals above shader_body become plain locals', () => {
+    const body = extractNativeShaderBody(
+      'static const float3 cam = float3(q28, q27, -.07); static float2x2 ofs = float2x2(texsize.z, 0, 0, texsize.w)*4; shader_body { ret = cam + ofs[0].xxy; }',
+    );
+    expect(body).toMatch(/^\s*vec3 cam = /mu);
+    expect(body).toMatch(/^\s*mat2 ofs = /mu);
+    expect(body).not.toMatch(/\b(?:static|const)\b/u);
+  });
+
+  test('names the body declares again are dropped from the hoisted list', () => {
+    // HLSL lets the body's local shadow the global; in one GLSL scope the
+    // second declaration is a redefinition.
+    const body = extractNativeShaderBody(
+      'float2 zz, uv1, uv2; float2 uv3; shader_body { float2 uv1 = uv - 0.5; vec2 uv3 = uv1; zz = uv1 + uv2; }',
+    );
+    expect(body).toContain('vec2 zz, uv2;');
+    expect(body).not.toMatch(/^\s*vec2 uv3;/mu);
+    expect(body?.match(/vec2 uv1\b/gu)).toHaveLength(1);
+  });
+
+  test('every name of a body declaration list counts as redeclared', () => {
+    const body = extractNativeShaderBody(
+      'float2 x, y; shader_body { float2 z = float2(1, 2), y; y = x + z; }',
+    );
+    expect(body).toMatch(/^\s*vec2 x;/mu);
+    // Only the first initialiser is wrapped; `, y` stays a declarator.
+    expect(body).toContain('vec2 z = vec2(vec2(1.0, 2.0)), y;');
   });
 });

@@ -1,6 +1,7 @@
 {
   "name": "audio-reactive",
   "version": "0.1.0",
+  "private": true,
   "description": "Audio analysis for visualizers: an AudioWorklet FFT with harmonic/percussive separation, per-band beat tracking, spectral features, reactivity metrics and packet interpolation. No dependencies.",
   "type": "module",
   "license": "Unlicense",

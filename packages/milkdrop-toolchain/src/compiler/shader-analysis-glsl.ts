@@ -143,6 +143,7 @@ const COMPARISON_HELPERS: Readonly<Record<string, string>> = {
 
 export function createCompositeGlslEmitter(
   shadowedIdentifiers: ReadonlySet<string> = new Set(),
+  scalarLocals: ReadonlySet<string> = new Set(),
 ): GlslEmitter {
   return {
     emitIdentifier(name: string): string {
@@ -210,6 +211,12 @@ export function createCompositeGlslEmitter(
         tint_r: 'tint.r',
         tint_g: 'tint.g',
         tint_b: 'tint.b',
+        // MilkDrop's hue_* builtins are float3s. Same values as the raw-body
+        // chain in shader-analysis.ts; left unmapped, the hoister declared
+        // them `uniform float` and every `hue_shader.zxy` failed to compile.
+        hue_shader: 'vec3(colorScale * tint)',
+        hue_secondary: 'vec3(tint)',
+        hue_tertiary: 'vec3(colorScale)',
         // Deliberately absent: \`uv\`. Both stage templates declare their own
         // \`vec2 uv\` — in the warp stage it is the warped coordinate, the one
         // the preset's motion lives in — and rewriting reads to \`vUv\` made
@@ -592,6 +599,13 @@ export function createCompositeGlslEmitter(
         lowerProp.length <= 4 &&
         (/^[xyzw]+$/u.test(lowerProp) || /^[rgba]+$/u.test(lowerProp))
       ) {
+        // HLSL swizzles a scalar (`use_it.xxx` on a `float use_it`); GLSL ES
+        // does not. Every component of a scalar is the scalar itself.
+        if (scalarLocals.has(object)) {
+          return lowerProp.length === 1
+            ? object
+            : `vec${lowerProp.length}(${object})`;
+        }
         return `${object}.${lowerProp}`;
       }
       return `${object}_${lowerProp}`;
@@ -860,7 +874,13 @@ export function generateGlslFromShaderStatements(
       .map((statement) => statement.target.split('.')[0] ?? '')
       .filter((name) => name !== '' && !TEMPLATE_OWNED_TARGETS.has(name)),
   );
-  const emitter = createCompositeGlslEmitter(presetDeclaredNames);
+  const scalarLocals = new Set(
+    statements
+      .filter((statement) => statement.declaration === 'float')
+      .map((statement) => statement.target)
+      .filter((target) => !target.includes('.')),
+  );
+  const emitter = createCompositeGlslEmitter(presetDeclaredNames, scalarLocals);
   const lines: string[] = [];
   const declaredLocals = new Set<string>();
   const targetWidths = collectTargetWidths(statements);

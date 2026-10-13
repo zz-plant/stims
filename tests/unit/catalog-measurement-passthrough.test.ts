@@ -2,6 +2,10 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { mapRuntimeCatalogEntry } from '../../src/js/frontend/workspace-helpers.ts';
+import {
+  toBundledCatalogEntryFromManifest,
+  toUnavailableBundledCatalogEntry,
+} from '../../src/js/milkdrop/catalog-store-projection.ts';
 import type { MilkdropCatalogEntry } from '../../src/js/milkdrop/catalog-types.ts';
 
 /**
@@ -41,6 +45,7 @@ const FULL_FIXTURE: MilkdropCatalogEntry = {
   derivedFrom: [{ id: 'original', title: 'Original' }],
   origin: 'bundled',
   tags: ['test', 'fixture'],
+  searchTerms: ['tunnel', 'neon'],
   curatedRank: 42,
   similarity: { clusterId: 'cluster-1', duplicateOf: 'other-preset' },
   isFavorite: true,
@@ -139,6 +144,25 @@ describe('mapRuntimeCatalogEntry field-survival contract', () => {
     const mapped = mapRuntimeCatalogEntry(FULL_FIXTURE);
     expect(mapped.similarity?.clusterId).toBe('cluster-1');
     expect(mapped.similarity?.duplicateOf).toBe('other-preset');
+  });
+
+  test('search terms survive every projection, so Browse can match them', () => {
+    expect(mapRuntimeCatalogEntry(FULL_FIXTURE).searchTerms).toEqual([
+      'tunnel',
+      'neon',
+    ]);
+    const manifestEntry = {
+      id: 'manifest-preset',
+      title: 'Manifest Preset',
+      file: '/milkdrop-presets/manifest-preset.milk',
+      searchTerms: ['galaxy'],
+    };
+    expect(
+      toBundledCatalogEntryFromManifest(manifestEntry, null, -1).searchTerms,
+    ).toEqual(['galaxy']);
+    expect(
+      toUnavailableBundledCatalogEntry(manifestEntry, null, -1).searchTerms,
+    ).toEqual(['galaxy']);
   });
 
   test('fidelity tier survives', () => {

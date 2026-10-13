@@ -498,6 +498,9 @@ const MILKDROP_GLSL_RESERVED_WORDS = new Set(
 const MILKDROP_SWIZZLE_IDENTIFIER = /^[xyzw]{1,4}$/u;
 const MILKDROP_TYPE_DECLARATION =
   /\b(?:void|bool|int|uint|float|double|vec[234]|bvec[234]|ivec[234]|uvec[234]|mat[234])\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=|;|\))/gu;
+/** `vec3 color, mus;` — every name of a bare declaration list. */
+const MILKDROP_TYPE_DECLARATION_LIST =
+  /\b(?:bool|int|uint|float|double|vec[234]|bvec[234]|ivec[234]|uvec[234]|mat[234])\s+([a-zA-Z_]\w*(?:\s*,\s*[a-zA-Z_]\w*)+)\s*;/gu;
 
 function stripShaderComments(text: string): string {
   return text.replace(/\/\/[^\n]*/gu, '').replace(/\/\*[\s\S]*?\*\//gu, '');
@@ -565,9 +568,19 @@ function extractReferencedPerFrameVariables(
     for (const match of clean.matchAll(MILKDROP_TYPE_DECLARATION)) {
       locals.add(match[1]);
     }
+    for (const match of clean.matchAll(MILKDROP_TYPE_DECLARATION_LIST)) {
+      for (const name of match[1].split(',')) {
+        locals.add(name.trim());
+      }
+    }
     for (const match of clean.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/gu)) {
       const id = match[1];
-      const nextChar = clean[match.index + id.length];
+      // Past whitespace: `mbox (uv2)` calls the preset's own function, and
+      // hoisting `mbox` as a variable shadowed it ("can't use function
+      // syntax on variable").
+      const nextChar = clean
+        .slice(match.index + id.length)
+        .match(/^\s*(.?)/u)?.[1];
       if (
         MILKDROP_SWIZZLE_IDENTIFIER.test(id) ||
         id.startsWith('sampler_') ||
@@ -1298,6 +1311,8 @@ class SharedMilkdropFeedbackManager
         rotation: { value: 0 },
         offsetX: { value: 0 },
         offsetY: { value: 0 },
+        colorScale: { value: new Color(1, 1, 1) },
+        tint: { value: new Color(1, 1, 1) },
         textureWrap: { value: 0 },
         warpTextureSource: { value: 0 },
         warpTextureSampleDimension: { value: 0 },
@@ -2232,6 +2247,12 @@ class SharedMilkdropFeedbackManager
     wu.rotation.value = state.rotation;
     wu.offsetX.value = state.offsetX;
     wu.offsetY.value = state.offsetY;
+    (wu.colorScale.value as Color).setRGB(
+      state.colorScale.r,
+      state.colorScale.g,
+      state.colorScale.b,
+    );
+    (wu.tint.value as Color).setRGB(state.tint.r, state.tint.g, state.tint.b);
     wu.textureWrap.value = state.textureWrap;
     wu.warpTextureSource.value = state.warpTextureSource;
     wu.warpTextureSampleDimension.value = state.warpTextureSampleDimension;
