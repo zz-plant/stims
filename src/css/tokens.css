@@ -361,21 +361,7 @@
   --tv-content-padding: clamp(1.5rem, 2vw + 1rem, 3rem);
   --tv-safe-padding: 0px;
 
-  /* ── MilkDrop Overlay Theme ─────────────────────────────────--- */
-  --milkdrop-overlay-bg-primary: rgba(11, 18, 30, 0.96);
-  --milkdrop-overlay-bg-secondary: rgba(8, 12, 22, 0.94);
-  --milkdrop-overlay-bg-tertiary: rgba(8, 12, 22, 0.96);
-  --milkdrop-overlay-overlay: rgba(12, 18, 32, 0.9);
-  --milkdrop-overlay-overlay-2: rgba(12, 18, 22, 0.92);
-  --milkdrop-overlay-border: rgba(164, 194, 255, 0.18);
-  --milkdrop-overlay-blur: 18px;
-  --milkdrop-overlay-blur-lg: 22px;
-  --milkdrop-overlay-shadow: rgba(0, 0, 0, 0.42);
-  --milkdrop-overlay-shadow-lg: rgba(0, 0, 0, 0.48);
-  --milkdrop-overlay-button: rgba(108, 176, 255, 0.22);
-  --milkdrop-overlay-button-border: rgba(108, 176, 255, 0.4);
-  --milkdrop-active-indicator: rgba(108, 176, 255, 0.22);
-  --milkdrop-active-indicator-border: rgba(108, 176, 255, 0.4);
+  /* ── Agent pulse and toy shell ──────────────────────────────── */
   --agent-vibe-intensity: 1;
   --toy-shell-metal: linear-gradient(
     135deg,

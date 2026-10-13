@@ -941,48 +941,6 @@ body[data-page="workspace"][data-live="true"] {
     margin-top: 0;
   }
 
-  /* Legacy compact overlay transport/autoplay controls */
-  .stims-shell__stage-frame[data-mode="live"] .milkdrop-overlay--compact {
-    top: calc(max(72px, 10vh) + 96px);
-    right: 14px;
-    bottom: auto;
-    left: auto;
-    width: min(300px, calc(100% - 28px));
-    max-height: calc(100dvh - max(72px, 10vh) - 180px);
-    overflow: auto;
-    border-radius: var(--radius-xl);
-    background: rgba(6, 10, 17, 0.97);
-    border: 1px solid rgba(119, 201, 255, 0.16);
-    box-shadow:
-      0 24px 60px rgba(0, 0, 0, 0.42),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  }
-
-  /*
-   * The compact overlay's transport buttons, autoplay checkbox, and blend
-   * slider only ever received their fill/border styling on the standalone
-   * /milkdrop page (now a redirect to the workspace). Inside the shell they
-   * fell back to native UA controls (grey `outset` buttons, default checkbox
-   * and slider). Give them shell-consistent styling so the legacy controls
-   * match the rest of the live chrome.
-   */
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: rgba(119, 201, 255, 0.9);
-    cursor: pointer;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    input[type="range"] {
-    accent-color: rgba(119, 201, 255, 0.9);
-    cursor: pointer;
-  }
-
   .stims-shell__stage-frame[data-mode="live"] .stims-shell__launch {
     opacity: 0;
     transform: translateY(-8px);
@@ -3156,11 +3114,6 @@ body[data-page="workspace"][data-live="true"] {
   @media (max-width: 420px) {
     :scope[data-mode="live"] {
       --mobile-bar-height: calc(64px + env(safe-area-inset-bottom, 0px));
-    }
-  }
-  @media (max-width: 640px) {
-    .stims-shell__stage-frame[data-mode="live"] .milkdrop-overlay--compact {
-      display: none;
     }
   }
   @media (width < 768px) {
