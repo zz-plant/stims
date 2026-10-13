@@ -3,10 +3,11 @@
  *
  * Skills are how repeatable work classes are handed to agents, but an agent
  * only ever finds a skill through an index: the capability table in
- * `docs/agents/custom-capabilities.md` and the routing table in
- * `.claude/CLAUDE.md`. Both are maintained by hand, so a skill added without
- * an index row is invisible — the work class it encodes gets re-derived from
- * scratch every time. Skills exist to remove exactly that cost.
+ * `docs/agents/custom-capabilities.md`, which is the repo's one routing table
+ * (`AGENTS.md` links to it rather than keeping its own), or the MCP surface.
+ * The table is maintained by hand, so a skill added without a row is
+ * invisible — the work class it encodes gets re-derived from scratch every
+ * time. Skills exist to remove exactly that cost.
  *
  * `check-doc-references.ts` verifies that links in the docs point at files
  * that exist. This is the other direction: that files which exist are
@@ -23,9 +24,6 @@
  * `guard-agent-work` states requirement 4 as a manual checklist item, which is
  * exactly as reliable as it sounds: the skill added alongside this guard was
  * itself missed. A checklist that can be enforced should be.
- *
- * The `.claude/CLAUDE.md` routing table is deliberately a shortlist — it says
- * so — and is not required to carry every skill.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -117,9 +115,8 @@ if (offenders.length > 0) {
   console.error(`✖ Found ${offenders.length} skill index problem(s):\n`);
   for (const offender of offenders) console.error(`  ${offender}`);
   console.error(
-    `\nAdding a skill means: a row in ${CAPABILITY_INDEX}, registration in ` +
-      `${MCP_SURFACE}, and — when it covers a common task class — a row in ` +
-      `.claude/CLAUDE.md's routing table.`,
+    `\nAdding a skill means: a row in ${CAPABILITY_INDEX} (the routing ` +
+      `table AGENTS.md points to) and registration in ${MCP_SURFACE}.`,
   );
   process.exit(1);
 }
