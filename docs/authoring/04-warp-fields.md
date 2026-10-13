@@ -44,11 +44,11 @@ per_pixel_3=dy=dy+dr*sin(-ang)*0.6;
 - `time*0.5` inside the same `sin(...)` — slides the ring pattern over time. Because the time term is added, the rings drift *inward*; write `-time*0.5` and they travel outward, like ripples leaving a source.
 - `dr` is a *magnitude* — how far this pixel should be pushed this frame. `cos(ang)` and `sin(-ang)` turn that magnitude into a direction: push each point *along its own radial line*, not sideways. That's why the result is rings centered on the screen rather than a wave sliding across it.
 
-`dx`/`dy` here work exactly like Track 2's screen-wide push — they're just being set to a *different value per pixel* instead of one constant.
+`dx`/`dy` here work exactly like Track 2's screen-wide push, set to a *different value per pixel* instead of one constant.
 
 ## Lesson 4 · Bridging per_frame and per_pixel with q-vars
 
-`per_frame` runs once and can read audio; `per_pixel` runs per point and can read `rad`/`ang` — but it can't read audio directly, and it has no memory between frames. The bridge is a q-register, written once in `per_frame` and read by every point in `per_pixel`:
+`per_pixel` can read the audio registers directly: Happy Drops in [Track 2](02-motion.md#lesson-7--dissection-geiss--happy-drops-ryan-geiss) scales its rings by `bass_att` inside `per_pixel_1`. Smoothing is different. An RC filter carries its average from one frame to the next, and `per_frame` runs once a frame, so that is where the average belongs. A q-register hands the result over: written once in `per_frame`, read by every point in `per_pixel`:
 
 ```text
 per_frame_1=ra=6/fps;
@@ -81,6 +81,6 @@ per_pixel_5=dy=dy+0.02*nx/nrad;
 
 ## What you can now build
 
-Anything that varies across the screen — tunnels, ripples, off-center vortices, audio-breathing rings — is per-pixel code doing exactly what you've just written: read `rad`/`ang` (or build your own coordinate system from `x`/`y`), turn that into a push, and optionally scale it by a q-var carried over from `per_frame`.
+Anything that varies across the screen — tunnels, ripples, off-center vortices, audio-breathing rings — is per-pixel code doing what this track's examples do: read `rad`/`ang` (or build your own coordinate system from `x`/`y`), turn that into a push, and optionally scale it by a q-var carried over from `per_frame`.
 
 **Next: [Track 5 — Waves and shapes](05-waves-and-shapes.md)**, where custom waves and shapes — the layer drawn *on top* of the warped feedback loop — get their own equations.

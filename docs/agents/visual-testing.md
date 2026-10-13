@@ -1,7 +1,5 @@
 # Visual Testing for Agents
 
-Visual verification is a critical part of agent work on Stims.
-
 ## Development server and agent-mode URL
 
 Always start here:
@@ -15,30 +13,19 @@ This launches the Vite dev server at `http://localhost:5173/`. The key URLs for 
 | URL | Purpose | When to use |
 |-----|---------|------------|
 | `http://localhost:5173/` | Canonical workspace route | Testing launch controls, preset browsing, and live session behavior |
-| `http://localhost:5173/?agent=true` | Agent testing mode on the canonical route | Detailed QA, debugging, and state persistence checks |
+| `http://localhost:5173/?agent=true` | Agent testing mode on the canonical route | Every QA session (see below) |
 | `http://localhost:5173/milkdrop/?agent=true` | Compatibility-alias verification | Confirming old links redirect into the same root workspace state |
 
 ### Agent testing mode (`?agent=true`)
 
-The `?agent=true` query parameter activates a special testing mode designed for detailed agent verification:
-
-**What changes**:
-- State persists across page reloads (use ↻ to refresh without losing preset/settings)
-- Cleaner debug UI overlay (if enabled)
-- Console logging is more detailed
-- Predictable behavior for visual regression testing
-
-**When to use**:
-- Testing a specific preset across multiple interactions
-- Verifying UI state changes persist correctly
-- Debugging animation or rendering issues
-- Visual regression testing (comparing before/after)
-
-**Example workflow**:
-1. Load a preset in agent mode
-2. Change settings (scroll, zoom, etc.)
-3. Refresh the page (↻) and confirm settings persist
-4. Use DevTools to inspect state
+Load every QA URL with `?agent=true`. Its main effect is that the stage keeps
+rendering while the tab reports itself hidden, which Browser-pane tabs always
+do and background or automated tabs often do; without it the frame loop stops, the canvas goes black with no
+error, and the result reads as a shader failure
+(`src/js/core/hidden-tab-policy.ts`). [Browser automation](./browser-automation.md#determinism-and-environment)
+documents it alongside the other URL flags (`?renderer=`, `?mockAudio=`,
+`?lockQualityStep=`) and the `__stims_agent` API for reading state instead of
+inferring it from pixels.
 
 ## Browser developer tools
 
@@ -102,7 +89,7 @@ bun run dev
 6. If behavior differs by preset, test multiple presets to confirm the pattern
 
 **For deeper debugging**:
-- Use `?agent=true` mode to persist state
+- Read `__stims_agent.getState()` (`lastError`, `shaderExecution`, `renderingSuspended`) before guessing from pixels
 - Check Console tab for errors related to the preset
 - Use Performance tab to record and identify frame drops
 
@@ -212,7 +199,7 @@ blank capture that looks like a rendering bug.
 For visual changes that need to be tracked over time, refer to:
 
 ```
-docs/MANUAL_SMOKE_BASELINE.md
+docs/QA_PLAN.md
 scripts/capture-visual-reference-suite.ts
 scripts/measured-visual-results.ts
 ```
@@ -260,7 +247,7 @@ DevTools in most browsers can simulate mobile devices without a phone. In Chrome
 
 ## Next steps
 
-- Use [`../../.agent/workflows/test-visualizer.md`](../../.agent/workflows/test-visualizer.md) for the repo-local testing workflow
-- Use [`../../.agent/workflows/ship-visualizer-change.md`](../../.agent/workflows/ship-visualizer-change.md) for the full implementation→validation→PR-ready workflow
-- Use [`./custom-capabilities.md`](./custom-capabilities.md) when you need to choose the right repo-local skill or workflow first
-- See [Tooling and Quality](./tooling-and-quality.md) for all available verification commands
+- [`verify-visualizer-work`](../../.agent/skills/verify-visualizer-work/SKILL.md) maps each change to the tests and e2e files that cover it
+- [`ship-visualizer-change`](../../.agent/skills/ship-visualizer-change/SKILL.md) carries a change through to PR-ready
+- [`custom-capabilities.md`](./custom-capabilities.md) indexes every repo-local skill
+- [Tooling and Quality](./tooling-and-quality.md) lists the verification commands

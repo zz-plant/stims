@@ -50,6 +50,6 @@ http://localhost:5173/?agent=true
 
 ## Notes
 
-- Prefer demo audio for repeatable checks unless live input is the point of the task.
+- Prefer demo audio (`?mockAudio=demo`, or the Demo source in the UI) for repeatable checks unless live input is the point of the task.
 - Use screenshots only when they add evidence for a visual or UX change.
-- If the goal is broader regression coverage, switch to `test-visualizer` or `ship-visualizer-change`.
+- If the goal is broader regression coverage, switch to `verify-visualizer-work` or `ship-visualizer-change`.

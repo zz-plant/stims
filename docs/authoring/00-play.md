@@ -13,7 +13,9 @@ flowchart LR
 
 ## 1 · Find one you love
 
-Open [toil.fyi](https://toil.fyi/) and use Browse. Search matches catalog titles, authors, and tags; collections narrow the results. Hosted similarity search is an optional service, so a natural-language visual query may not be available in every deployment. Preset credits preserve the community's authors and accumulated remix names.
+Open [toil.fyi](https://toil.fyi/) and use Browse. Search matches titles, authors, tags, and, for some presets, words for how they look, such as "tunnel" or "galaxy"; collections narrow the results. With a preset on stage, **Nearby** in the dock plays one that looks like it, and **Find a preset → By look** lists more, ranked in your browser from each preset's preview image.
+
+Credits keep each preset's authors, including the names a remix chain accumulated.
 
 ## 2 · Open it in the editor
 
@@ -27,19 +29,21 @@ The **Insert** pane offers equation snippets. Add one at a time and watch the re
 
 ## 4 · Remix with credit
 
-Open the editor's **⋯** menu and choose **Remix** to create a draft from the current preset. Keep the original credit and any remix lineage. Stims carries attribution metadata into supported remix and sharing flows; that metadata records the supplied lineage rather than verifying authorship independently.
+Open the editor's **⋯** menu and choose **Remix** to create a draft from the current preset. Remix copies the original credit and any remix lineage into the draft; keep them. It records the names it was given and cannot verify who wrote what.
 
 Keep a `.milk` export as a portable backup. Local drafts and version history stay in your browser and are not cross-device storage.
 
 ## 5 · Optional AI help
 
-**Explain** and **Refine** can help when a supported provider is configured. Explain describes the source; Refine proposes a source change. Inspect the change and check the stage before keeping it. Hosted service availability, local inference setup, and a supplied provider key affect which actions work. You can complete this course without AI.
+**Explain** and **Refine** send the source to an AI service the site runs. Explain describes what the preset does; when the service does not answer, it shows a summary worked out in your browser from the equations instead. Refine proposes a change as a diff for you to check on the stage before applying it, and shows an error when the service does not answer. Nothing else in this course uses them.
 
 ## 6 · Share it
 
-Use Share or **Copy link to this preset** to create a remix URL. Depending on the browser, sharing opens a native sheet or copies the link. Open the resulting URL in a fresh tab to confirm it carries your edit.
+Use Share or **Copy link to this edit** (it reads *this preset* until you change something) to create a remix URL. Depending on the browser, sharing opens a native sheet or copies the link. Open the resulting URL in a fresh tab to confirm it carries your edit.
 
-The `#code=` payload supports legacy base64, UTF-8 source encoding, and compressed source. Share links have a size limit; export a `.milk` file for source that cannot fit. Format compatibility also varies across players, so test the exported file in the intended runtime before describing it as compatible.
+The link carries the preset source after `#code=`, so nothing is stored on a server, and links have a size limit: export a `.milk` file for source that does not fit. projectM, Butterchurn, and Winamp can render an exported file differently from Stims, so check it in the player you plan to use.
+
+The [remix thread](https://github.com/zz-plant/stims/discussions/1341) on GitHub Discussions collects one-equation edits of a featured preset; other finds go in [Discussions](https://github.com/zz-plant/stims/discussions).
 
 When ready to contribute a preset, see [contributing presets](../../CONTRIBUTING.md#contributing-presets).
 

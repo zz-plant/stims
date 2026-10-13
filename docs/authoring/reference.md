@@ -16,8 +16,9 @@ The equation language is NS-EEL, inherited from Winamp:
 - Every value is a number (double). There are no strings or booleans.
 - Comparisons and logic return 1 or 0, and any value within
   `0.00001` of zero is false — `if(x, a, b)`, `above`,
-  `below`, `equal`, `band`, `bor`, and `bnot` are the branching toolkit
-  (`if` evaluates both branches; there is no short-circuit).
+  `below`, `equal`, `band`, `bor`, and `bnot` are the branching toolkit.
+  `if` runs only the branch it picks, and `&&`/`||` skip their right side
+  once the left side decides the result.
 - Names are case-insensitive. `//` starts a comment.
 - Operators: `+ - * / % ^` (power), comparisons `< <= > >= == !=`,
   and logic `&& || !`.
@@ -177,11 +178,12 @@ Written by `per_frame`/`per_pixel` code to steer the feedback loop —
 
 | Block | Runs | Notes |
 |---|---|---|
-| `per_frame_init_N` / `per_frame_N` | once per frame | set knobs, read audio |
+| `per_frame_init_N` | once, when the preset loads | audio reads as silence; values it gives built-ins become the per-frame starting values |
+| `per_frame_N` | once per frame | set knobs, read audio |
 | `per_pixel_N` | per mesh point | also reads `x`, `y`, `rad`, `ang` |
 | `wavecode_N_*` + `wave_N_per_point_N` | per custom-wave sample | reads `sample`, writes `x y r g b a` |
 | `shapecode_N_*` (`init`/`per_frame`) | per shape instance | writes `x y rad ang sides r g b a …` |
-| `[warp_shader]` / `[comp_shader]` | per pixel on the GPU | GLSL 1.20 — see the [coding guide](../MILKDROP_CODING_GUIDE.md#the-glsl-shader-era-2008present) |
+| `[warp_shader]` / `[comp_shader]` | per pixel on the GPU | MilkDrop 2 wrote these in HLSL; Stims translates a supported subset (GLSL ES 3.00 on WebGL) — see [shader dialect and backend support](../MILKDROP_CODING_GUIDE.md#shader-dialect-and-backend-support) |
 
 Shader uniforms, samplers, and engine limits are documented in the
 [coding guide](../MILKDROP_CODING_GUIDE.md#engine-limitations) and the

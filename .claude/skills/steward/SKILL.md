@@ -10,14 +10,25 @@ generic PR rules: it covers conventions and traps specific to Stims.
 
 ## Before you push
 
-- `bun run check:quick` runs in the pre-commit hook (about 20–55 s). Inside a
+- `bun run check:quick` runs in the pre-commit hook (about 30 s). Inside a
   Claude Code session its output is quiet: one line per passing step and a
   `✅ Quality gate passed` summary. `--verbose` restores the full text.
-- Commit subjects are Conventional Commits, at most 72 characters (the hook
-  warns above that).
+- Commit subjects are Conventional Commits, lowercase after the colon, at most
+  72 characters ([Commit conventions](../../../docs/COMMIT_CONVENTIONS.md)).
 - Write the PR body with `bun run pr:body` (scaffold from the diff) and check
   it with `bun run pr:body -- --check <file>` before opening. CI rejects an empty
-  body or one that never says how the change was verified.
+  body or one that never says how the change was verified. Write the body file
+  outside the repo (a scratch or temp directory): #1406 committed a
+  `pr-body.md` at the root.
+- CI's Quality gate job runs `bun audit --audit-level=high`; the local
+  `bun run check` does not. A new high advisory in the lockfile turns every
+  open PR red at once (#1359), so run `bun audit --audit-level=high` before
+  pushing a dependency change, and when an unrelated PR fails only that step,
+  look for an advisory published since main last went green.
+- `screenshots/` is not gitignored as a whole: capture tools' output
+  directories are, and certified parity captures are allowlisted. Stage by
+  explicit path and leave new screenshots out unless a tracked report cites
+  them.
 - New tests must be able to fail: revert the change, watch the test go red.
   Use `bun run test -- --no-bail` to see every failure in one run. Do not
   add source-text greps (`check:test-source-greps` blocks them).
@@ -27,8 +38,10 @@ generic PR rules: it covers conventions and traps specific to Stims.
 ## Reading CI
 
 - Jobs: Changed paths, Commit messages, Quality gate, Gate test suite,
-  Parity corpus, four browser e2e jobs (engine-mount runs as two: its preset
-  switch test has its own runner), then the **CI Status** aggregate.
+  Parity corpus, one browser e2e job per file in the `integration` matrix
+  (engine-mount runs as two: its preset switch test has its own runner), then
+  the **CI Status** aggregate. The browser, gate and parity jobs only run when
+  the PR changes code.
 - **CI Status goes red on a superseded run.** The aggregate counts a
   *cancelled* job as failed, and a new push cancels the previous run. If the
   red check is on an older commit than the PR head, read its log: when the
@@ -75,5 +88,5 @@ new PR for them; never reuse the merged one.
 
 `bun run generate:seo` rewrites tracked icons and sitemaps. Verify with
 `bun run generate:seo -- --check` (or `check:seo`) and do not commit
-incidental output. `output/`, `screenshots/` and `.playwright-cli/` are
-scratch: keep them out of commits.
+incidental output. `output/`, `scratch/` and `.playwright-cli/` are scratch
+and gitignored; for `screenshots/` see [Before you push](#before-you-push).

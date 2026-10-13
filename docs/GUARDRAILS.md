@@ -300,12 +300,20 @@ Guard against docs that point at files and commands which no longer exist.
 This guard is the general case: a doc that names `tests/foo.test.ts` after
 the file moved to `tests/unit/`, or tells an agent to run
 `bun run test:legacy-frontend` after that script was deleted, sends the
-reader somewhere that does not exist. Agents follow the routing tables in
-`.claude/CLAUDE.md` and `.github/AGENTS.md` literally, so a dangling
-reference costs a failed command and a wrong mental model of the tree.
+reader somewhere that does not exist. Agents follow `AGENTS.md` and the
+skills literally, so a dangling reference costs a failed command and a
+wrong mental model of the tree.
+
+Every file an agent tool reads as instructions is scanned, not only
+`docs/`: `.claude/` (CLAUDE.md and the auto-loaded skills), the Markdown
+under `.github/` (Copilot instructions and prompt files, the PR template,
+`.github/AGENTS.md`), and `.opencode/` commands and modes. The opencode
+commands once ran `bun run qa` and `bun run deploy`, neither of which
+existed, because nothing checked that directory.
 
 Two reference kinds are checked:
-  - repo paths (`src/…`, `tests/…`, `scripts/…`, …) in backticks or links
+  - repo paths (`src/…`, `tests/…`, `scripts/…`, `.claude/…`, …) in
+    backticks or links
   - `bun run <script>` invocations, checked against package.json
 
 Exemptions, all deliberate:
@@ -708,10 +716,11 @@ Keep the agent skill set discoverable and well-formed.
 
 Skills are how repeatable work classes are handed to agents, but an agent
 only ever finds a skill through an index: the capability table in
-`docs/agents/custom-capabilities.md` and the routing table in
-`.claude/CLAUDE.md`. Both are maintained by hand, so a skill added without
-an index row is invisible — the work class it encodes gets re-derived from
-scratch every time. Skills exist to remove exactly that cost.
+`docs/agents/custom-capabilities.md`, which is the repo's one routing table
+(`AGENTS.md` links to it rather than keeping its own), or the MCP surface.
+The table is maintained by hand, so a skill added without a row is
+invisible — the work class it encodes gets re-derived from scratch every
+time. Skills exist to remove exactly that cost.
 
 `check-doc-references.ts` verifies that links in the docs point at files
 that exist. This is the other direction: that files which exist are
@@ -729,9 +738,6 @@ Checks per `.agent/skills/<dir>/SKILL.md`:
 exactly as reliable as it sounds: the skill added alongside this guard was
 itself missed. A checklist that can be enforced should be.
 
-The `.claude/CLAUDE.md` routing table is deliberately a shortlist — it says
-so — and is not required to carry every skill.
-
 Run it directly: `bun run check:skill-index`
 
 ## check:stale-paths
@@ -740,9 +746,9 @@ Guard against references to the pre-`src/` tree.
 
 The move from `assets/**` to `src/**` left 353 dangling references across
 docs, agent skills, CODEOWNERS, and the labeler config. Docs that lie are
-worse than missing docs — agents follow the routing tables in
-`.claude/CLAUDE.md` straight into them — and CODEOWNERS globs that match
-nothing silently disable review requirements.
+worse than missing docs — agents follow the paths in `AGENTS.md` and the
+skills straight into them — and CODEOWNERS globs that match nothing
+silently disable review requirements.
 
 Historical records are exempt: `docs/archive/`, plus dated audits, critiques
 and assessments. Those describe what a file tree looked like when someone

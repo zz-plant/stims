@@ -108,6 +108,11 @@ package, and its mirror stays read-only. See
 The versions in each `package.json` are the source of truth. The workflow
 refuses a tag whose version does not match.
 
+To release a published package, bump `version` in its `package.json`, add a
+`CHANGELOG.md` entry, merge, and push the tag `<name>@<version>` on that
+commit. npm shows the README of the latest version, so a README fix reaches
+npm only with a release.
+
 ## Sites
 
 Every package has a static site under `site/` with a working demo on the

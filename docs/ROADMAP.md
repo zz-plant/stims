@@ -144,7 +144,7 @@ Exit criteria:
 - Seed `Math.random` in the capture path, so presets like mosaics and cubetrace render the same way on every run.
 - Fix renderer behavior by subsystem when measured evidence regresses: feedback orientation, shader sampling, color presentation, shapes, waves, and motion vectors.
 - Promote results only after the requested backend and reference provenance are verified. The tooling enforces this; the data predates it.
-- Show evidence where people choose presets. Browse shows none by design, `PresetRowRenderer`'s certified badges are dead code, and the inspector shows no measured result.
+- Show evidence where people choose presets. Browse shows none by design, and the inspector shows no measured result.
 - Portrait viewports render black on WebGPU (found 2026-10-06; WebGL is unaffected).
 
 Exit criteria:

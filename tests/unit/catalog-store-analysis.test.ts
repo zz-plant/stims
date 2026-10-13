@@ -5,10 +5,6 @@ import {
   getValidatedCatalogOverrides,
 } from '../../src/js/milkdrop/catalog-store-analysis.ts';
 import { toCatalogEntry } from '../../src/js/milkdrop/catalog-store-projection.ts';
-import {
-  fidelityTierLabel,
-  supportLabel,
-} from '../../src/js/milkdrop/overlay/preset-row.ts';
 
 test('measured visual results override inferred fidelity and evidence tier', () => {
   const compiled = compileMilkdropPresetSource(
@@ -120,11 +116,4 @@ test('deriveFidelityTier returns semantic-only when the compiler can parse but n
   expect(
     deriveFidelityTier('some-compilable-preset', { isCompiled: true }),
   ).toBe('semantic-only');
-});
-
-test('an unmeasured preset shows as "Unmeasured" not "Supported"', () => {
-  expect(fidelityTierLabel('unmeasured')).toBe('Unmeasured');
-  expect(fidelityTierLabel('unmeasured')).not.toBe('Supported');
-  expect(supportLabel('supported')).toBe('Supported');
-  expect(fidelityTierLabel('unmeasured')).not.toBe(supportLabel('supported'));
 });

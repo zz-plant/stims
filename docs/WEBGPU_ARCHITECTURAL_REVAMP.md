@@ -54,9 +54,9 @@ Files: `src/js/core/renderer-setup.ts`
 > resize / quality / preset / frame / dispose / sync message protocol. Recover them with:
 >
 > ```
-> git show 29afa912:src/js/core/renderer-worker.ts
-> git show 29afa912:src/js/core/renderer-worker-protocol.ts
-> git show 29afa912:src/js/core/worker-renderer-track.ts
+> git show dd3aae08^:src/js/core/renderer-worker.ts
+> git show dd3aae08^:src/js/core/renderer-worker-protocol.ts
+> git show dd3aae08^:src/js/core/worker-renderer-track.ts
 > ```
 >
 > They were never wired to a host or verified against a live canvas, so treat them as an

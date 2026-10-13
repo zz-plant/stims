@@ -271,10 +271,12 @@ and letting three generate both backends is the named candidate. This is
 the biggest maintenance sink in the renderer and no dependency swap touches it.
 
 ### 12. Worker-thread renderer over OffscreenCanvas
-`src/js/core/renderer-worker-protocol.ts` is a complete 11-message protocol
-(with a `SharedArrayBuffer` audio ring) that nothing in `src/` imports;
+A worker renderer prototype (`renderer-worker.ts`, a 10-message
+`renderer-worker-protocol.ts` with a `SharedArrayBuffer` audio ring, and
+`worker-renderer-track.ts`) was never wired to a host and is deleted; recover
+it with `git show dd3aae08^:src/js/core/<file>`.
 `src/js/core/renderer-capabilities.ts` detects `transferControlToOffscreen`
-but never uses it. The prototype was removed at commit `29afa912`. With React
+but never uses it. With React
 on the main thread and the frame loop in a worker, UI work (the browse grid,
 CodeMirror) stops competing with the render budget. Prerequisite: the
 `?agent=true` hidden-tab rendering path must keep working from a worker.

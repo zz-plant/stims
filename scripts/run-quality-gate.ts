@@ -309,9 +309,10 @@ export function buildGatePlan(
             ]
           : [
               {
-                // all profile: full suite including corpus/certification tests
+                // Named, not implied: a bare `bun run test` is the fast
+                // profile, so this step would otherwise drop corpus and e2e.
                 label: 'Full test suite (all profiles)',
-                cmd: ['bun', 'run', 'test'],
+                cmd: ['bun', 'run', 'test', '--profile', 'all'],
               },
             ],
   };

@@ -62,7 +62,7 @@ flowchart LR
 | draw | once per frame | wave/shape settings + equations | Add the new ink: waveform, custom waves, shapes (Track 5) |
 | comp shader | every pixel | `[comp_shader]` block | Final color grade of everything (Track 6) |
 
-Everything in Tracks 1–2 happens at the first station. `zoom` in the file is just the starting value of a knob; `per_frame` code can overwrite it every frame — that's Lesson 4.
+Everything in Tracks 1–2 happens at the first station. `zoom` in the file is the starting value of a knob; `per_frame` code can overwrite it every frame — that's Lesson 4.
 
 ## Lesson 3 · `decay` — the fade knob
 

@@ -10,6 +10,7 @@ import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { PerformSurface } from './PerformSurface.tsx';
 import { PresetTitleCard } from './PresetTitleCard.tsx';
 import { StageControls } from './StageControls.tsx';
+import { StageUtilitiesOverlay } from './StageUtilitiesOverlay.tsx';
 import { StageWarpGizmo } from './StageWarpGizmo.tsx';
 import { StimsStageFrame } from './StimsStageFrame.tsx';
 import { StrudelLabPanel } from './StrudelLabPanel.tsx';
@@ -127,6 +128,12 @@ export function WorkspaceStagePanel({
           </div>
         ) : null}
         <FlashProtectionNotice />
+        {/* The D/Y stage utilities. Live mode only: there is nothing to cut
+            on the launch page, and unmounting with the session releases any
+            latched blackout. */}
+        {liveMode && !missingRequestedPreset ? (
+          <StageUtilitiesOverlay stageRef={ui.stageRef} />
+        ) : null}
         <WorkspaceToast toast={ui.toast} />
         {strudelLabEnabled ? <StrudelLabPanel /> : null}
       </StimsStageFrame>
