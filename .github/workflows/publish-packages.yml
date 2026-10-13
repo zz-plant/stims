@@ -24,7 +24,6 @@ on:
           - eel-conformance
           - flash-guard
           - milkdrop-toolchain
-          - audio-reactive
       dry_run:
         description: 'Build and pack without publishing'
         required: false

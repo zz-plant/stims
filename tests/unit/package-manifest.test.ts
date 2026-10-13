@@ -19,8 +19,10 @@ const agree = {
   promoted: [],
   onDisk: ['audio-reactive', 'flash-guard'],
   mirrorMatrix: ['audio-reactive', 'flash-guard'],
-  publishChoices: ['audio-reactive', 'flash-guard'],
+  publishChoices: ['flash-guard'],
   readmeTable: ['audio-reactive', 'flash-guard'],
+  published: ['flash-guard'],
+  privateOnDisk: ['audio-reactive'],
 };
 
 describe('verifyPackageSurfaces', () => {
@@ -44,7 +46,7 @@ describe('verifyPackageSurfaces', () => {
   test('a publish choice for an unmanifested package is named', () => {
     const errors = verifyPackageSurfaces({
       ...agree,
-      publishChoices: ['audio-reactive', 'flash-guard', 'ghost-package'],
+      publishChoices: ['flash-guard', 'ghost-package'],
     });
     expect(errors).toEqual([
       'publish-packages.yml choices lists unmanifested packages: ghost-package',
@@ -90,6 +92,28 @@ describe('verifyPackageSurfaces', () => {
     expect(errors).toEqual([
       'packages/README.md table is missing: flash-guard',
     ]);
+  });
+
+  test('an unpublished package offered by the publish workflow is named', () => {
+    const errors = verifyPackageSurfaces({
+      ...agree,
+      publishChoices: ['audio-reactive', 'flash-guard'],
+    });
+    expect(errors.some((error) => error.includes('audio-reactive'))).toBe(true);
+  });
+
+  test('a private flag that disagrees with the manifest is named both ways', () => {
+    const unguarded = verifyPackageSurfaces({ ...agree, privateOnDisk: [] });
+    expect(
+      unguarded.some((error) => /audio-reactive is unpublished/.test(error)),
+    ).toBe(true);
+    const blocked = verifyPackageSurfaces({
+      ...agree,
+      privateOnDisk: ['audio-reactive', 'flash-guard'],
+    });
+    expect(
+      blocked.some((error) => /flash-guard is published/.test(error)),
+    ).toBe(true);
   });
 
   test('the current manifest is all-standalone, matching its directory', () => {
