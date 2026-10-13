@@ -1,5 +1,6 @@
-import { afterEach, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import {
+  isFlashGovernorDimming,
   resetStageLuminance,
   setStageLuminanceChannel,
   stageLuminanceScale,
@@ -70,4 +71,42 @@ test('channels are per-stage, so a second canvas does not inherit a clamp', () =
   setStageLuminanceChannel(first, 'governor', 0.2);
   expect(second.style.filter).toBe('');
   expect(stageLuminanceScale(second)).toBe(1);
+});
+
+describe('the presentation channel (live stage blackout)', () => {
+  test('zero cuts the stage to black regardless of the other channels', () => {
+    const element = trackedStage();
+    setStageLuminanceChannel(element, 'presentation', 0);
+    expect(element.style.filter).toBe('brightness(0.000)');
+    expect(stageLuminanceScale(element)).toBe(0);
+  });
+
+  test('releasing restores the ceiling, not full brightness', () => {
+    const element = trackedStage();
+    setStageLuminanceChannel(element, 'ceiling', 0.5);
+    setStageLuminanceChannel(element, 'presentation', 0);
+    setStageLuminanceChannel(element, 'presentation', 1);
+    expect(element.style.filter).toBe('brightness(0.500)');
+  });
+
+  test('it composes with the governor instead of fighting it', () => {
+    // The governor writes its channel on a rAF loop; a blackout that owned
+    // style.filter outright would be erased within a frame. Sharing the
+    // owner means a governor tick while the blackout is engaged re-writes
+    // the same composed zero.
+    const element = trackedStage();
+    setStageLuminanceChannel(element, 'presentation', 0);
+    for (let i = 0; i < 5; i += 1) {
+      setStageLuminanceChannel(element, 'governor', 1);
+    }
+    expect(element.style.filter).toBe('brightness(0.000)');
+  });
+
+  test('a blackout is not a governor dimming event', () => {
+    // The "Dimming flashes" notice describes the WCAG governor; a performer
+    // deliberately cutting the stage must not trip that copy.
+    const element = trackedStage();
+    setStageLuminanceChannel(element, 'presentation', 0);
+    expect(isFlashGovernorDimming()).toBe(false);
+  });
 });
