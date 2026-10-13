@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://toil.fyi/</loc>
-    <lastmod>2026-10-08</lastmod>
+    <lastmod>2026-10-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -24,7 +24,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/presets/</loc>
-    <lastmod>2026-10-09</lastmod>
+    <lastmod>2026-10-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -35,7 +35,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-10-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -68,7 +68,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/play/</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-10-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -79,7 +79,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/how-milkdrop-thinks/</loc>
-    <lastmod>2026-09-09</lastmod>
+    <lastmod>2026-10-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -134,7 +134,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/shaders/</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>
@@ -156,7 +156,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/learn/shipping/</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-10-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <image:image>

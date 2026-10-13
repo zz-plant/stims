@@ -93,6 +93,7 @@ function toBundledCatalogEntries(document: BundledCatalogDocument) {
         author: entry.author,
         file: entry.file,
         tags: entry.tags,
+        searchTerms: entry.searchTerms,
         curatedRank: entry.curatedRank ?? entry.order,
         similarity: entry.similarity,
         certification: entry.certification ?? defaultCertification,

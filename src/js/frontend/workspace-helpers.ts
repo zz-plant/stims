@@ -233,6 +233,7 @@ export type BrowseSortMode =
   | 'author'
   | 'recent'
   | 'favorites-first'
+  | 'like-saved'
   | 'random';
 
 const BROWSE_SORT_MODES: ReadonlySet<string> = new Set<BrowseSortMode>([
@@ -242,6 +243,7 @@ const BROWSE_SORT_MODES: ReadonlySet<string> = new Set<BrowseSortMode>([
   'author',
   'recent',
   'favorites-first',
+  'like-saved',
   'random',
 ]);
 
@@ -282,6 +284,12 @@ export function sortBrowseEntries(
   seed: number,
   /** The search in force, which 'relevance' ranks by. */
   query = '',
+  /**
+   * Resemblance to the visitor's saved presets, which 'like-saved' ranks by
+   * (`PresetVisualVectors.affinity`). Empty until the vectors load, and for
+   * a visitor with nothing saved; presets with no vector sort last.
+   */
+  affinity: ReadonlyMap<string, number> = new Map(),
 ): PresetCatalogEntry[] {
   const sorted = [...entries];
   switch (sort) {
@@ -328,6 +336,17 @@ export function sortBrowseEntries(
       return sorted.sort(
         (a, b) => Number(Boolean(b.isFavorite)) - Number(Boolean(a.isFavorite)),
       );
+    // Saved presets score 1 against themselves, so they lead, followed by
+    // whatever looks most like any one of them. Before the vectors arrive
+    // (or with nothing saved) every score is missing and the incoming order
+    // stands, since the sort is stable.
+    case 'like-saved': {
+      const scoreOf = (entry: PresetCatalogEntry) =>
+        affinity.get(entry.id) ?? Number.NEGATIVE_INFINITY;
+      return sorted.sort((a, b) =>
+        scoreOf(a) === scoreOf(b) ? 0 : scoreOf(a) > scoreOf(b) ? -1 : 1,
+      );
+    }
     case 'random': {
       const hashes = new Map<string, number>();
       for (let i = 0; i < sorted.length; i += 1) {
