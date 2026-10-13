@@ -1,14 +1,14 @@
 # MilkDrop presets in your browser
 
-Stims plays MilkDrop presets in a browser tab. There is nothing to install: open [toil.fyi](https://toil.fyi) and a preset is already animating, silently, until you start some audio.
+Stims plays MilkDrop presets in a browser tab, with nothing to install. On most computers [toil.fyi](https://toil.fyi) opens with a preset already animating, silently, until you start some audio. On a low-powered device, or when your system asks for reduced motion, the stage waits until you start audio.
 
 MilkDrop is the music visualizer Ryan Geiss wrote for Winamp. A MilkDrop *preset* is a small text file of equations that decides how the picture moves, and it reacts to whatever is playing. People have been trading and remixing those files for more than two decades, and Stims runs them on the web.
 
 ## What you can do with it
 
-- **Watch.** Pick a preset from the catalog, or follow a link like [toil.fyi/?preset=krash-rovastar-cerebral-demons-stars](https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars) and it plays with demo audio straight away.
-- **Play your own music.** Start audio from a browser tab, a YouTube link, or your microphone, and the presets react to it.
-- **Browse.** The catalog has well over 1,700 presets, searchable by description, with collections, previews, and favorites. The [discover hubs](/discover/audio-reactive) group them by look and by author.
+- **Watch.** Pick a preset from the catalog, or follow a link like [toil.fyi/?preset=shifter-curlique](https://toil.fyi/?preset=shifter-curlique), which starts that preset with the demo track. Most browsers hold the sound until your first click, tap, or key press, and Stims says so on screen.
+- **Play your own music.** Start audio from a browser tab, a YouTube link, your microphone, or audio files on your device, and the presets react to it. Pick several files and they play in order as a playlist.
+- **Browse.** The catalog has well over 1,700 presets, searchable by title, author, tag, and how they look, with collections, previews, and favorites. The [discover hubs](/discover/audio-reactive) group them by look and by author.
 - **Edit and remix.** Open the editor to see the real `.milk` source and which part of the sound drives each control, then drag live sliders or change the equations. A remix keeps the credit of whoever you built on.
 - **Bring your own presets.** Import `.milk` files (or a `.zip` pack), export them in the format MilkDrop 2 itself saves — comments, shader code, and fields Stims does not use kept intact — or share a link that carries your edited preset inside the address.
 
@@ -36,7 +36,7 @@ Yes. The visualizer is free to use.
 
 ### Will it make sound as soon as I open it?
 
-No. Stims is silent until you start some audio, and one action stops everything. Motion also follows your operating system's reduce-motion setting.
+Not from the home page: it stays silent until you start some audio. A link to a specific preset starts the demo track by itself, and most browsers hold that sound until your first click, tap, or key press. One action stops everything, and motion follows your operating system's reduce-motion setting.
 
 ### Can I use my existing .milk preset files?
 
