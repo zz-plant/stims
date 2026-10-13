@@ -11,7 +11,7 @@ You're adding a new feature to Stims. Follow this flow to stay focused.
 
 - [ ] User story or issue is clear (what does the feature do?)
 - [ ] Acceptance criteria are defined (how do we know it works?)
-- [ ] Which area is this? Check **Task Router** in `.github/copilot-instructions.md`
+- [ ] Which area is this? Pick the matching skill in [`docs/agents/custom-capabilities.md`](../../docs/agents/custom-capabilities.md)
 
 ## 2. Plan Implementation
 
@@ -48,19 +48,16 @@ bun run check
 # If it passes, you're ready
 ```
 
-## 5. Record the result
+## 5. Commit, PR, and handoff
 
-Include changed files, checks run, remaining gaps, and any PR link in the task handoff.
-
-## 6. Commit & PR
-
-- Commit message: Conventional Commits, lowercase after the colon (e.g., `feat(browse): filter presets by author`); see [Commit conventions](../../docs/COMMIT_CONVENTIONS.md)
-- PR: Include what changed, which tests passed, and link to the issue
+Commit and open the PR per [Commit conventions](../../docs/COMMIT_CONVENTIONS.md)
+and the [steward skill](../../.claude/skills/steward/SKILL.md); link the issue.
+The handoff lists changed files, checks run, remaining gaps, and the PR link.
 
 ---
 
 **Need guidance?** See:
-- Task Router: `.github/copilot-instructions.md` → Task Routing section
+- Skill index: `docs/agents/custom-capabilities.md`
 - Runtime changes: `.agent/skills/modify-visualizer-runtime/SKILL.md`
 - Preset changes: `.agent/skills/modify-preset-workflow/SKILL.md`
 - UI changes: `docs/agents/visual-testing.md`

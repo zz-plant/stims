@@ -1,7 +1,5 @@
 # Documentation maintenance guide
 
-Use this guide as the single source of truth for keeping documentation aligned when workflows, scripts, structure, or catalog inventory changes.
-
 ## Canonical docs index
 
 - `docs/README.md` is the canonical documentation index.
@@ -11,21 +9,17 @@ Use this guide as the single source of truth for keeping documentation aligned w
 
 When restructuring docs, keep these entry points in sync:
 
-- `README.md`
-- `CONTRIBUTING.md`
-- `AGENTS.md`
-- `docs/README.md`
-- `docs/agents/README.md`
-- `docs/agents/agent-handoffs.md` when agent bootstrap, delegation, or return-contract guidance changes
-- `docs/agents/custom-capabilities.md` when repo-local agent skills change
-- `docs/agents/visual-testing.md` when agent browser-verification routes or expectations change
-- `docs/MCP_SERVER.md` when repo-local capability discovery or MCP-visible workflow metadata changes
+- `README.md` and `CONTRIBUTING.md`, for people
+- `AGENTS.md`, for agents. `.claude/CLAUDE.md` imports it, and `.github/AGENTS.md` and `.github/copilot-instructions.md` only point to it: add guidance to `AGENTS.md`, and to those files only what is specific to their tool
+- `docs/README.md` and `docs/agents/README.md`, the indexes
+
+`bun run check:doc-references` checks the paths and `bun run` commands named in all of them, in `docs/`, `.agent/`, `.claude/`, `.opencode/`, and the Markdown under `.github/`.
 
 ## What to update by change type
 
 | Change type | Required docs updates |
 | --- | --- |
-| New script or renamed script | `docs/DEVELOPMENT.md` plus `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `docs/agents/README.md`, `docs/agents/tooling-and-quality.md`, and `docs/MCP_SERVER.md` when they reference the changed script. |
+| New script or renamed script | `docs/DEVELOPMENT.md`, plus any entry point or agent page that names the script; `check:doc-references` flags a `bun run` reference to a script that no longer exists. |
 | MCP tool added, removed, or renamed | `docs/MCP_SERVER.md`, the instructions in `scripts/mcp-shared.ts`, and `CHANGELOG.md`. A removal breaks every client that calls the tool, so say what replaces it. |
 | Workflow behavior changes | Update the source workflow doc (for example `docs/DEVELOPMENT.md`, `docs/DEPLOYMENT.md`, `docs/QA_PLAN.md`). |
 | Repo-local agent skill changes | `docs/agents/custom-capabilities.md` and `scripts/mcp-shared.ts` (`bun run check:skill-index` enforces both), plus `docs/MCP_SERVER.md` when the MCP-visible contract changes. |

@@ -5,7 +5,7 @@ progressive-disclosure order: open the next one only when the task needs it.
 
 ## Read order
 
-1. Root [`AGENTS.md`](../../AGENTS.md) for the bootstrap, daily commands and non-negotiable defaults. Claude Code also reads [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md), its project file.
+1. Root [`AGENTS.md`](../../AGENTS.md) for the bootstrap, daily commands and non-negotiable defaults. Claude Code loads it through [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md), which adds only Claude Code notes.
 2. [`agent-handoffs.md`](./agent-handoffs.md) for the bootstrap sequence, working beside other sessions, and delegation.
 3. [`tooling-and-quality.md`](./tooling-and-quality.md) before code edits.
 4. [`custom-capabilities.md`](./custom-capabilities.md) when the task may match a repo-local skill.

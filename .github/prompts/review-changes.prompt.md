@@ -19,7 +19,7 @@ If anything fails, fix it before proceeding.
 ## 2. Code Review Checklist
 
 ### Structure & Clarity
-- [ ] Code follows conventions in `.github/copilot-instructions.md`
+- [ ] Code follows the conventions in `AGENTS.md`
 - [ ] Variable/function names are descriptive
 - [ ] Complex logic has comments explaining the "why"
 - [ ] No dead code or unused imports
@@ -53,43 +53,12 @@ If anything fails, fix it before proceeding.
 - [ ] Cross-link checklist done (see `docs/DOCS_MAINTENANCE.md`)
 - [ ] No outdated info or broken links
 
-## 4. Commit Message Review
+## 4. Commit Message and PR Description
 
-- [ ] **Conventional Commits, lowercase after the colon, no trailing period** (e.g., `feat(browse): filter presets by author`; see [Commit conventions](../../docs/COMMIT_CONVENTIONS.md))
-- [ ] Describes the change clearly
-- [ ] Includes issue ref if applicable (e.g., "Fixes #123")
-- [ ] Technical context in description (not just subject line)
+- [ ] Subjects follow [Commit conventions](../../docs/COMMIT_CONVENTIONS.md) (the `commit-msg` hook checks the prefix)
+- [ ] The PR body says what changed, why, each check run with its result, and the docs touched; `bun run pr:body -- --check <file>` passes. The [steward skill](../../.claude/skills/steward/SKILL.md) covers the rest
 
-## 5. PR Description Review (if applicable)
-
-Include:
-- [ ] What changed (high-level)
-- [ ] Why it changed (context)
-- [ ] Tests run / verified
-- [ ] Docs touched (if any)
-- [ ] Breaking changes? (if any)
-
-**Example:**
-
-```
-## Description
-Added preset search filtering to the library view.
-
-## Testing
-- Unit tests: `tests/unit/frontend-url-state.test.ts`
-- Browser test: `bun run test tests/e2e/open-one-up.test.ts` ✓
-- Visual verification: Tested at `?agent=true` URL with 10+ presets
-
-## Docs
-- Updated: `docs/agents/visual-testing.md` (added search example)
-
-## Checklist
-- [x] `bun run check` passes
-- [x] No `@ts-nocheck` directives
-- [x] Tests added
-```
-
-## 6. Final Validation
+## 5. Final Validation
 
 ```bash
 # Run the required gate after the final change; avoid repeating unchanged passing checks
@@ -103,9 +72,9 @@ git diff --stat
 git diff
 ```
 
-## 7. Record the result
+## 6. Record the result
 
-Include changed files, checks run, remaining gaps, and any PR link in the task handoff. Do not require a machine-specific session file.
+Include changed files, checks run, remaining gaps, and any PR link in the task handoff.
 
 ---
 
@@ -133,7 +102,6 @@ Stop and fix if you see:
 **Files that trigger cross-link checks:**
 - Any doc file in `docs/` (check `docs/DOCS_MAINTENANCE.md`)
 - `README.md`, `AGENTS.md`, `CONTRIBUTING.md`
-- `.github/copilot-instructions.md`
 - `.agent/skills/`
 
 **See:**

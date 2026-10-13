@@ -3,7 +3,8 @@ These headings are a starting point, not a form. Write the description the
 change deserves — a different shape is fine, and a better one is welcome. The
 only thing CI insists on is that the description is not empty and that it says
 how you know the change works: a command you ran, a test that covers it, or a
-before/after measurement.
+before/after measurement. `bun run pr:body` scaffolds this from the diff, and
+.claude/skills/steward/SKILL.md and docs/COMMIT_CONVENTIONS.md cover the rest.
 -->
 
 ## Summary

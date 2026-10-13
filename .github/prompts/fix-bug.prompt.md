@@ -29,7 +29,7 @@ The test failing confirms you've reproduced the issue.
 
 ## 3. Fix the Bug
 
-- [ ] Edit the relevant source file (check Task Router if unsure)
+- [ ] Edit the relevant source file ([`docs/agents/src-map.md`](../../docs/agents/src-map.md) if unsure where it lives)
 - [ ] Keep changes minimal and focused
 - [ ] Verify the test now passes:
 
@@ -58,18 +58,16 @@ bun run dev
 bun run check
 ```
 
-## 6. Record the result
+## 6. Commit, PR, and handoff
 
-Include changed files, checks run, remaining gaps, and any PR link in the task handoff. Do not require a machine-specific session file.
-
-## 7. Commit & PR
-
-- Commit message: Conventional Commits, lowercase after the colon (e.g., `fix(presets): close the loading race on rapid switches`); see [Commit conventions](../../docs/COMMIT_CONVENTIONS.md)
-- Include: root cause in description, step to reproduce, verification in the PR
+Commit and open the PR per [Commit conventions](../../docs/COMMIT_CONVENTIONS.md)
+and the [steward skill](../../.claude/skills/steward/SKILL.md). The PR body names
+the root cause, the reproduction, and the checks that now pass. The handoff lists
+changed files, checks run, remaining gaps, and the PR link.
 
 ---
 
 **Getting stuck?** See:
-- Runtime issues: `.agent/skills/verify-visualizer-work/SKILL.md` → Testing section
+- Which tests cover what: `.agent/skills/verify-visualizer-work/SKILL.md`
 - Visual issues: `docs/agents/visual-testing.md` → Troubleshooting
 - Architecture: `docs/ARCHITECTURE.md`

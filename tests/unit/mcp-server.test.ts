@@ -281,7 +281,12 @@ describe('agent capability markdown availability', () => {
     }
   });
 
-  test('serves the handoff guide as a doc', () => {
+  test('serves the agent guide and the handoff guide as docs', async () => {
+    const bootstrap = await callTool('read_doc_section', {
+      file: 'AGENTS.md',
+      heading: '5-second bootstrap',
+    });
+    expect(bootstrap).toContain('bun run setup:codex');
     expect(markdownSources['docs/agents/agent-handoffs.md']).toContain(
       'Handoff packet',
     );

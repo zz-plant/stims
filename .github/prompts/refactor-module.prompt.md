@@ -56,15 +56,13 @@ bun run check
 
 ## 6. Document the Refactor
 
-In the commit/PR, explain:
+In the PR body ([steward skill](../../.claude/skills/steward/SKILL.md)), explain:
 - What changed and why
 - No functional behavior changed (if true)
 - Tests still passing
 - Performance impact (if any)
 
-## 7. Record the result
-
-Include changed files, checks run, remaining gaps, and any PR link in the task handoff. Do not require a machine-specific session file.
+The handoff lists changed files, checks run, remaining gaps, and the PR link.
 
 ---
 
@@ -74,6 +72,6 @@ Include changed files, checks run, remaining gaps, and any PR link in the task h
 - Large refactors without incremental validation
 
 **See also:**
-- Code conventions: `.github/copilot-instructions.md`
+- Code conventions: `AGENTS.md`
 - Architecture: `docs/ARCHITECTURE.md`
 - Testing: `.agent/skills/verify-visualizer-work/SKILL.md`

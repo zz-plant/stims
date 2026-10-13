@@ -24,6 +24,7 @@ import agentReviewWorkspaceUiStateSkill from '../.agent/skills/review-workspace-
 import agentShipVisualizerChangeSkill from '../.agent/skills/ship-visualizer-change/SKILL.md';
 import agentVerifyVisualizerWorkSkill from '../.agent/skills/verify-visualizer-work/SKILL.md';
 import docsClaudeReadme from '../.claude/CLAUDE.md';
+import agentsGuide from '../AGENTS.md';
 import docsArchitecture from '../docs/ARCHITECTURE.md';
 import docsAgentsAgentHandoffs from '../docs/agents/agent-handoffs.md';
 import docsAgentsReadme from '../docs/agents/README.md';
@@ -74,6 +75,7 @@ const defaultInstructions = [
 
 const markdownSources = {
   'README.md': readme,
+  'AGENTS.md': agentsGuide,
   'docs/README.md': docsReadme,
   'docs/MCP_SERVER.md': docsMcpServer,
   'docs/ARCHITECTURE.md': docsArchitecture,

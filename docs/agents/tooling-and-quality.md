@@ -65,8 +65,6 @@ bun run format     # format
 
 `bun run verify --changed` (also `agent:verify`) reads the diff and runs only the guards, tests and regenerations those files can break.
 
-CI also runs `bun audit --audit-level=high` in the Quality gate job; the local gate does not. Run it before pushing a dependency or lockfile change.
-
 ## Task-specific checks
 
 ```bash
