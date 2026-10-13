@@ -480,7 +480,7 @@ case "$WATCH_MODE" in
     ;;
   all)
     WATCH_NAME="test watcher"
-    WATCH_COMMAND=(bun run scripts/run-tests.ts --watch)
+    WATCH_COMMAND=(bun run scripts/run-tests.ts --profile all --watch)
     WATCH_PIDFILE="$SESSION_DIR/test-watch.pid"
     WATCH_LOGFILE="$SESSION_DIR/test-watch.log"
     ;;

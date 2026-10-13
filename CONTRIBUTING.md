@@ -1,44 +1,35 @@
 # Contributing to Stims
 
-## Quick start
+## Set up
 
-1. Install **Bun 1.3.14**, pinned in `package.json`.
-2. Bootstrap the local workspace:
+You need:
 
-   ```bash
-   bun run doctor
-   bun run setup -- --print-plan
-   bun run setup
-   ```
+- [Bun](https://bun.sh) 1.3.14, the version `package.json` pins. Node 22 is declared for the Node-based tools.
+- [mise](https://mise.jdx.dev), only for `bun run setup`, which starts with `mise trust` so mise applies `mise.toml` (Bun 1.3.14, Node 22). Without mise, run `bun run setup:codex`: the same bootstrap minus that step.
+- Playwright's Chromium, for browser-backed tests and the capture tools (`lab:visual`, `parity:capture`, `ui:diff`). Unit and compatibility tests run without it.
 
-   `bun run doctor` prints the local readiness summary without changing the workspace. If you only need dependencies and are not ready to run the quick validation pass, use:
+```bash
+git clone --filter=blob:none https://github.com/zz-plant/stims.git
+cd stims
+bun run setup                      # bun install, then bun run check:quick
+bunx playwright install chromium   # browser tests and capture tools
+bun run doctor                     # what works on this machine; changes nothing
+bun run dev                        # http://localhost:5173/
+```
 
-   ```bash
-   bun install
-   ```
+`--filter=blob:none` skips the old binaries in the git history. `bun run setup -- --print-plan` prints what setup would do without doing it. `bun install` on its own installs dependencies and skips the check; CI runs `bun install --frozen-lockfile`, which fails rather than rewrite `bun.lock`.
 
-   Use `bun install --frozen-lockfile` in CI or other reproducible-install contexts where lockfile changes must be disallowed.
+`bun run doctor` checks Bun, TypeScript, Biome, Playwright, Wrangler and the installed dependencies, then launches headless Chromium and reports whether it renders on a GPU, in software, or not at all. Correctness tools work in software rendering; frame times measured there do not describe real hardware.
 
-3. Start the dev server:
+In a cloud container that ships Chromium under `PLAYWRIGHT_BROWSERS_PATH` and blocks downloads, `bun run setup:browsers` links that build where the pinned Playwright looks for it. `bun run setup` already does this.
 
-   ```bash
-   bun run dev:agent
-   ```
-
-   For a warmer agent-oriented session on machines that expose the local helper commands, use:
-
-   ```bash
-   bun run session:codex -- --profile review
-   ```
-
-4. Open `http://localhost:5173/`.
-
-   Use `http://localhost:5173/milkdrop/` only when you need to verify the compatibility alias redirect behavior.
+Open `http://localhost:5173/?agent=true` for browser checks: agent mode keeps rendering in a tab the browser reports as hidden.
 
 ## Where to look first
 
 - New here? Start with the onboarding map: [`docs/ONBOARDING.md`](./docs/ONBOARDING.md)
 - Current command/reference docs: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)
+- Test profiles, quality gates and the manual checklist: [`docs/TESTING.md`](./docs/TESTING.md), [`docs/QA_PLAN.md`](./docs/QA_PLAN.md)
 - MilkDrop runtime guidance: [`docs/MILKDROP_PRESET_RUNTIME.md`](./docs/MILKDROP_PRESET_RUNTIME.md)
 - Successor workstream map: [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md)
 - Play, edit, and share: [`docs/USER_GUIDE.md`](./docs/USER_GUIDE.md)
@@ -74,17 +65,13 @@ Use these commands before opening a PR:
   bun run test tests/path/to/spec.test.ts
   ```
 
-Use the root `bun run test` wrapper to select profiles and isolate browser tests. It defaults to unit + compatibility. Package suites use their own configuration; run `bun --cwd packages/<name> test` or `bun run check:packages`. See [Testing](./docs/TESTING.md).
+`bun run test` with no profile runs unit + compatibility tests; [Testing](./docs/TESTING.md) lists the other profiles. Package suites use their own configuration: run `bun --cwd packages/<name> test` or `bun run check:packages`.
 
 ## Common dev commands
 
-- `bun run doctor` — print a local readiness summary for Bun, dependencies, and LM Studio helper availability.
-- `bun run setup -- --print-plan` — preview the local bootstrap plan without changing the workspace.
-- `bun run setup` — install dependencies and run `bun run check:quick`.
+- `bun run help` — every script with a one-line purpose; `bun run help --for "<symptom>"` suggests the instrument for a problem.
 - `bun run dev` — start local Vite server.
 - `bun run dev:agent` — start Vite, typecheck watch, and fast-test watch.
-- `bun run session:codex -- --profile review` — keep the dev server, local model roles, and a verification watcher warm for agent sessions.
-- `bun run model:codex -- --mode triage --no-exec` — route a task onto the fast or quality local model helper stack.
 - `bun run dev:host` — start Vite on LAN.
 - `bun run build` — production build.
 - `bun run preview` — preview built output.
@@ -94,14 +81,13 @@ Use the root `bun run test` wrapper to select profiles and isolate browser tests
 - `bun run format` / `bun run format:check` — Biome formatting.
 - `bun run typecheck` — TypeScript no-emit checks.
 
+The agent session helpers (`session:codex`, `model:codex`) depend on local model tooling most machines do not have; [agent tooling](./docs/agents/tooling-and-quality.md) covers them.
+
 ## Branches, commits, and pull requests
 
 - Branch from `main` and keep PRs focused.
-- Use Conventional Commits with sentence case and no trailing period, such as `docs: Update contributor setup`.
-- PR descriptions should include:
-  - short summary,
-  - explicit test command list,
-  - explicit list of docs touched (or `None`).
+- Use Conventional Commits: `type(scope): summary`, lowercase after the colon, no trailing period, such as `docs: update contributor setup`. [Commit conventions](./docs/COMMIT_CONVENTIONS.md) says what the commit hook checks.
+- Scaffold the PR description with `bun run pr:body` and check it with `bun run pr:body -- --check <file>`. It needs a short summary, the test commands you ran, and the docs touched (or `None`).
 
 ## Documentation expectations
 

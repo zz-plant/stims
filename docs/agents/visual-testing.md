@@ -199,7 +199,7 @@ blank capture that looks like a rendering bug.
 For visual changes that need to be tracked over time, refer to:
 
 ```
-docs/MANUAL_SMOKE_BASELINE.md
+docs/QA_PLAN.md
 scripts/capture-visual-reference-suite.ts
 scripts/measured-visual-results.ts
 ```

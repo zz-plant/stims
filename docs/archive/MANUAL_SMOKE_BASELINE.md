@@ -1,5 +1,7 @@
 # Manual smoke baseline
 
+> Superseded on 2026-10-13 by the manual checklist in [`QA_PLAN.md`](../QA_PLAN.md) and the commands in [`TESTING.md`](../TESTING.md). This was the Milestone A sign-off for the refactor plan below; kept as a record.
+
 ## What counts as the baseline
 
 For startup, routing, and lifecycle changes, collect:
@@ -124,6 +126,6 @@ Milestone A baseline
 
 ## Related docs
 
-- [`QA_PLAN.md`](./QA_PLAN.md) for the broader QA map.
-- [`DEVELOPMENT.md`](./DEVELOPMENT.md) for parity-capture and day-to-day commands.
-- [`archive/FULL_REFACTOR_PLAN.md`](./archive/FULL_REFACTOR_PLAN.md) for milestone intent and acceptance criteria.
+- [`QA_PLAN.md`](../QA_PLAN.md) for the broader QA map.
+- [`DEVELOPMENT.md`](../DEVELOPMENT.md) for parity-capture and day-to-day commands.
+- [`FULL_REFACTOR_PLAN.md`](./FULL_REFACTOR_PLAN.md) for milestone intent and acceptance criteria.
