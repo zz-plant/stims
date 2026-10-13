@@ -367,7 +367,6 @@ Goal:
 - Make the product surface tell the truth about what is measured and what is inferred.
 
 Primary files to change:
-- [`src/js/milkdrop/overlay/preset-row.ts`](../src/js/milkdrop/overlay/preset-row.ts)
 - [`src/js/frontend/BrowseSheetPanel.tsx`](../src/js/frontend/BrowseSheetPanel.tsx)
 - [`src/js/milkdrop/catalog-store-analysis.ts`](../src/js/milkdrop/catalog-store-analysis.ts)
 - [`packages/milkdrop-toolchain/src/common-types.ts`](../packages/milkdrop-toolchain/src/common-types.ts)
@@ -383,12 +382,12 @@ Implementation tasks:
 Completed slices:
 - `MilkdropVisualCertification` now carries the measured `mismatchRatio` and `failThreshold` so downstream UI can surface drift figures without re-loading the suite manifest.
 - Catalog projection (`catalog-store-analysis.ts`) plumbs measured ratio/threshold from the suite manifest into each catalog entry's visual certification.
-- Preset rows render a "projectM verified" badge when measured parity passes and a "Drifts from projectM (~X%)" badge when measured parity fails, with the certification reason exposed via tooltip.
+- ~~Preset rows render a "projectM verified" badge when measured parity passes and a "Drifts from projectM (~X%)" badge when measured parity fails, with the certification reason exposed via tooltip.~~ The row renderer was never mounted in the React workspace and has been deleted.
 - ~~Inspector panel adds a "Measured drift" metric that shows the measured pixel-mismatch percentage for measured presets and reads "not measured" for inferred-only presets.~~
 
 Current remaining focus:
 - Expose a per-preset link to checked-in diff/reference artifacts (currently only the certification reason text is surfaced).
-- Reflect the same measured-vs-inferred distinction in catalog rollups and exported diagnostics, not just the row.
+- Reflect the same measured-vs-inferred distinction in catalog rollups and exported diagnostics.
 
 Acceptance criteria:
 - The UI never implies visual parity when only semantic compatibility is known.

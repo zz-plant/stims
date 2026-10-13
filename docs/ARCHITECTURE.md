@@ -39,12 +39,12 @@ flowchart TB
     Catalog["catalog-store*.ts<br/>presets, collections, persistence"]
     Compile["preset-parser → compiler/* → vm/*<br/>EEL2 IR · JIT · GLSL + WGSL codegen"]
     RAdapter["renderer-adapter*.ts<br/>WebGL2 / WebGPU backends + feedback managers"]
-    Overlay["overlay/*<br/>editor language + preset rows"]
+    Overlay["overlay/*<br/>preset editor + language support"]
   end
 
   subgraph core["Shared systems — src/js/core/"]
     Audio["audio-handler.ts · services/audio-service.ts<br/>AudioWorklet analysis"]
-    Render["renderer-capabilities · renderer-plan · renderer-setup<br/>webgl-renderer / webgpu-renderer / renderer-worker"]
+    Render["renderer-capabilities · renderer-plan · renderer-setup<br/>webgl-renderer / webgpu-renderer"]
     State["state/* · services/*<br/>quality, prefs, telemetry, optional APIs"]
   end
 
@@ -178,7 +178,7 @@ Primary implementation:
 ## MilkDrop engine ownership
 
 - [`src/js/milkdrop/runtime.ts`](../src/js/milkdrop/runtime.ts) is the long-lived imperative session runtime; it composes the collaborators in [`runtime/`](../src/js/milkdrop/runtime) (lifecycle, frame loop, catalog coordinator, backend failover, persistence, presentation).
-- [`src/js/milkdrop/overlay/`](../src/js/milkdrop/overlay) provides editor language support and preset-row rendering. The browse, editor, settings, and capture surfaces themselves are React panels in `src/js/frontend/`.
+- [`src/js/milkdrop/overlay/`](../src/js/milkdrop/overlay) provides the imperative preset editor (`EditorPanel`, its panes, and CodeMirror language support), which `EditorSurface.tsx` mounts. The browse, settings, and capture surfaces are React panels in `src/js/frontend/`.
 - [`packages/milkdrop-toolchain/src/compiler.ts`](../packages/milkdrop-toolchain/src/compiler.ts), [`compiler/`](../packages/milkdrop-toolchain/src/compiler), [`vm.ts`](../src/js/milkdrop/vm.ts), and [`vm/`](../src/js/milkdrop/vm) are the preset compilation and execution path (EEL2 → IR → JIT/GLSL/WGSL). There are two shader codegen targets, not three: [`shader-analysis-glsl.ts`](../packages/milkdrop-toolchain/src/compiler/shader-analysis-glsl.ts) and [`wgsl-generator.ts`](../packages/milkdrop-toolchain/src/compiler/wgsl-generator.ts). TSL is used by the WebGPU feedback managers directly, not emitted by the compiler. [`preset-dataflow.ts`](../packages/milkdrop-toolchain/src/preset-dataflow.ts) analyses the compiled IR statically, following the VM's persistence and reset rules, to say which audio signals can reach each control and drawn program; `lab:dataflow`, the catalog's audio-reactivity score, `lab:edit-eval` and the editor's Tune chips read it.
 - [`src/js/milkdrop/renderer-adapter.ts`](../src/js/milkdrop/renderer-adapter.ts) and its WebGL/WebGPU siblings own draw submission and the feedback-buffer chain.
 

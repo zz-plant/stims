@@ -81,6 +81,10 @@ import {
   formatKnobValue,
   type PresetKnob,
 } from '../preset-knobs.ts';
+import {
+  compatibilityCategoryLabel,
+  getPrimaryDegradationReason,
+} from './degradation-reason.ts';
 import { CompatPane } from './editor-pane-compat.ts';
 import { InsertPane } from './editor-pane-insert.ts';
 import { InspectPane } from './editor-pane-inspect.ts';
@@ -88,10 +92,6 @@ import { OutlinePane } from './editor-pane-outline.ts';
 import { ReferencePane } from './editor-pane-reference.ts';
 import { ShaderPane } from './editor-pane-shader.ts';
 import { TexturesPane } from './editor-pane-textures.ts';
-import {
-  compatibilityCategoryLabel,
-  getPrimaryDegradationReason,
-} from './preset-row';
 import {
   computeSourceDiff,
   type SourceDiffLine,

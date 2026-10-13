@@ -3,9 +3,7 @@ import { createElement } from 'react';
 import { AudioSourcePanel } from '../../src/js/frontend/AudioSourcePanel.tsx';
 import { BrowseSheetPanel } from '../../src/js/frontend/BrowseSheetPanel.tsx';
 import { StageControls } from '../../src/js/frontend/StageControls.tsx';
-import { PresetRowRenderer } from '../../src/js/milkdrop/overlay/preset-row.ts';
 import { makePresetEntry, renderWorkspace } from '../frontend-harness.tsx';
-import { makeCatalogEntry } from '../milkdrop-fixtures.ts';
 
 /**
  * These assert the accessibility contract against rendered DOM rather than
@@ -112,32 +110,5 @@ describe('Accessibility regression guards', () => {
     expect(live?.getAttribute('aria-live')).toBe('polite');
 
     rendered.dispose();
-  });
-
-  test('milkdrop preset rows expose current and load labels', () => {
-    const renderer = new PresetRowRenderer({
-      onSelectPreset: () => {},
-      onToggleFavorite: () => {},
-      onSetRating: () => {},
-    });
-
-    const active = renderer.render({
-      preset: makeCatalogEntry(),
-      activePresetId: 'preset-alpha',
-      activeBackend: 'webgl',
-      preview: null,
-    });
-    const inactive = renderer.render({
-      preset: makeCatalogEntry({ id: 'preset-beta', title: 'Beta' }),
-      activePresetId: 'preset-alpha',
-      activeBackend: 'webgl',
-      preview: null,
-    });
-
-    expect(active.getAttribute('aria-current')).toBe('true');
-    expect(inactive.getAttribute('aria-current')).toBeNull();
-
-    const label = inactive.getAttribute('aria-label') ?? inactive.textContent;
-    expect(label).toContain('Beta');
   });
 });
