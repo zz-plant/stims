@@ -1,6 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { escapeIsClaimed } from '../../core/modal-utils.ts';
 import {
+  handleBlackoutKeyDown,
+  handleBlackoutKeyUp,
+  handleFlashKeyDown,
+  handleFlashKeyUp,
+  releaseStageUtilities,
+} from '../../core/services/stage-utilities.ts';
+import {
   NO_RESERVED_KEYS,
   setReservedShellKeys,
 } from '../../core/unified-input.ts';
@@ -168,6 +175,21 @@ export function useKeyboardShortcuts({
         event.preventDefault();
         toggleFavoritePresetRef.current?.();
       } else if (
+        eventMatchesShortcut(event, 'blackout', shortcutOverrides) &&
+        liveMode
+      ) {
+        // Live stage utilities (docs/ROADMAP.md): presentation-only cuts.
+        // Keyup and window blur are handled in the effect below, so the
+        // hold ends even if focus moved on.
+        event.preventDefault();
+        handleBlackoutKeyDown(event.repeat);
+      } else if (
+        eventMatchesShortcut(event, 'flash', shortcutOverrides) &&
+        liveMode
+      ) {
+        event.preventDefault();
+        handleFlashKeyDown(event.repeat);
+      } else if (
         /^[1-9]$/.test(key) &&
         liveMode &&
         // Quick-select is matched as a raw digit rather than through the
@@ -226,4 +248,35 @@ export function useKeyboardShortcuts({
       );
     };
   }, [liveMode, engineReady, panel, setShowShortcuts]);
+
+  useEffect(() => {
+    // The utilities are holds, so they need the other half of the key pair.
+    // The release is matched without the typing-target guard the keydown
+    // path applies: focus often moves while a key is held (a click into an
+    // input mid-hold), and a swallowed keyup would leave the stage dark
+    // until the next press. The service ignores releases for utilities
+    // that are not engaged.
+    const handleKeyUp = (event: KeyboardEvent) => {
+      const shortcutOverrides = readShortcutOverrides();
+      if (eventMatchesShortcut(event, 'blackout', shortcutOverrides)) {
+        handleBlackoutKeyUp();
+      } else if (eventMatchesShortcut(event, 'flash', shortcutOverrides)) {
+        handleFlashKeyUp();
+      }
+    };
+    // A held key whose keyup never arrives — a focus change to another
+    // window, a lost tab — would otherwise hold the stage black or white
+    // forever. Treat leaving the window as letting go of every key.
+    const handleWindowBlur = () => releaseStageUtilities();
+
+    document.addEventListener('keyup', handleKeyUp as unknown as EventListener);
+    window.addEventListener('blur', handleWindowBlur);
+    return () => {
+      document.removeEventListener(
+        'keyup',
+        handleKeyUp as unknown as EventListener,
+      );
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, []);
 }

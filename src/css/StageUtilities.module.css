@@ -1,0 +1,46 @@
+/* The stage utilities' presentation layer: the white flash overlay and the
+   blackout notice. Both live beside the canvas as children of the stage
+   frame, so neither is dimmed by the luminance filter that the blackout
+   itself applies to the canvas. */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  /* Above the stage root and the (inert) launch hero, below the frame
+     chrome: the performer keeps their dock and the notices while the room
+     sees white. */
+  z-index: var(--z-stage-hero);
+  margin: 0;
+  /* Pure white on purpose — the flash is "100% luminance", and the theme's
+     warm off-whites would read as a broken panel, not a flash. */
+  /* guard-allow-hex: the white flash is deliberately theme-independent */
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.notice {
+  position: absolute;
+  top: calc(var(--stims-chrome-top, 16px) + env(safe-area-inset-top, 0px));
+  left: 16px;
+  z-index: var(--z-frame-chrome);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--stims-on-stage-line-strong);
+  border-radius: var(--radius-round);
+  background: var(--stims-on-stage-panel-strong);
+  color: var(--stims-on-stage-ink-strong);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.notice kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--stims-on-stage-line-strong);
+  border-radius: var(--radius-round);
+  font-family: inherit;
+  font-size: var(--text-xs);
+}

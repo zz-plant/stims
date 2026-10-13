@@ -1,6 +1,6 @@
 {
   "name": "eel-conformance",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Executable specification of EEL2, the expression language of MilkDrop presets: 82 portable JSON cases, a JSON Schema, and a runner contract any implementation can satisfy.",
   "license": "Unlicense",
   "type": "module",
