@@ -221,10 +221,11 @@ Shipped:
   - A learned mapping spans the variable's natural range instead of 0–1.
   - Touching a Perform control or the cue fader picks it as the learn target.
 - Stage utilities (#1455, closing [#1440](https://github.com/zz-plant/stims/issues/1440)): hold D for a blackout (two quick taps latch it) and Y for a white flash, without touching the preset or audio. Space freezes the picture.
+- Pads run commands: Settings → Performance hardware maps a pad, key or gamepad button to any command-palette action (next preset, pause, take the queued preset, and anything the palette adds later). The hit that maps it does not fire it, and each mapping is listed under its device with a remove button.
 
 Open:
 
-- **Pads and notes.** They cannot be learned, and cannot trigger actions such as next preset or blackout.
+- **Pads on fields and held keys.** A pad can be learned only to a command. Gate and toggle bindings on a preset field still come only from a factory profile, and blackout and white flash are held keys rather than commands, so a pad cannot hold them yet.
 - **MIDI clock.** In/out is implemented but only tests use it.
 - **Latency.** The sub-10 ms target has never been measured on a device.
 - **Projector / external display window** ([#1439](https://github.com/zz-plant/stims/issues/1439)). The second window today is a watch-party link. It boots a full session with its own audio, synced through a relay that carries only the preset id and title, so MIDI moves, edits, and crossfades never reach the audience screen. What it needs: a same-origin window that mirrors the stage canvas (the picture-in-picture path already does), with no chrome and the cursor hidden.

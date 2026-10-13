@@ -762,7 +762,16 @@ function StimsWorkspaceAppShell() {
 
   // Physical and virtual (MCP) MIDI both drive the engine through the one
   // binding installed by this hook, for the shell's whole lifetime.
-  usePerformanceHardware({ engine, uiRef, engineSnapshotRef });
+  usePerformanceHardware({
+    engine,
+    uiRef,
+    engineSnapshotRef,
+    runPaletteAction: (actionId) => {
+      const action = paletteActionsRef.current.find((a) => a.id === actionId);
+      action?.run();
+      return action !== undefined;
+    },
+  });
 
   useEffect(() => {
     // `fps` is deliberately omitted: useAgentFrameRate owns that field and
@@ -1407,6 +1416,7 @@ function StimsWorkspaceAppShell() {
               }
               onOpenShortcuts={() => setShowShortcuts(true)}
               onOpenCredits={() => setShowCredits(true)}
+              padActions={paletteActions}
             />
           ) : null}
           {ui.routeState.panel === 'refine' ? <RefinePanel /> : null}
