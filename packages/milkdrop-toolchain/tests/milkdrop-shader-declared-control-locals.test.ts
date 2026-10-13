@@ -45,6 +45,40 @@ describe('declared locals named like per-frame controls', () => {
     expect(glsl).not.toContain('offsetX');
   });
 
+  // .milk shaders reach the analyzer with shader_body already stripped, and
+  // authors often declare above it and assign below: `float3 dx, dy;` …
+  // `dx = GetBlur1(…) - GetBlur1(…)`. The bare declaration is not a
+  // statement, so it has to mark the names as locals (and keep their width)
+  // on its own.
+  test('split declarations above the body keep their names and widths', () => {
+    clearShaderAnalysisCaches();
+    const analysis = extractShaderControls(
+      [
+        'float2 d, fraction;',
+        'float3 dx, dy;',
+        'd = texsize.zw*4;',
+        'dx = GetBlur1(uv + float2(1,0)*d) - GetBlur1(uv - float2(1,0)*d);',
+        'dy = GetBlur1(uv + float2(0,1)*d) - GetBlur1(uv - float2(0,1)*d);',
+        'fraction = float2(dx.x, dy.x)/(d.x + d.y);',
+        'ret = fraction.xyx;',
+      ].join('\n'),
+    );
+    const targets = analysis.directProgramStatements.map((s) => s.target);
+    expect(targets).toContain('dx');
+    expect(targets).toContain('dy');
+    const glsl =
+      generateGlslFromShaderStatements(
+        analysis.directProgramStatements,
+        'comp',
+      ) ?? '';
+    // Seeded with the declared type, which the scratch hoister declares
+    // from; every later write is then converted to that width.
+    expect(glsl).toContain('dx = vec3(0.0, 0.0, 0.0);');
+    expect(glsl).toContain('fraction = vec2(0.0, 0.0);');
+    expect(glsl).toContain('fraction = vec2(milkdropDiv(');
+    expect(glsl).not.toContain('offsetX');
+  });
+
   test('an undeclared control name still drives the control', () => {
     clearShaderAnalysisCaches();
     const analysis = extractShaderControls(

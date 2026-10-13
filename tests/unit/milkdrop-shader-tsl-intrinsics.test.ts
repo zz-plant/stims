@@ -121,6 +121,16 @@ describe('milkdrop WebGPU TSL extended intrinsics', () => {
     }
   });
 
+  test('resolves the hue_* builtins as float3, matching the GLSL emitter', () => {
+    for (const source of [
+      'x = hue_shader',
+      'x = hue_secondary',
+      'x = hue_tertiary',
+    ]) {
+      expect(compileExpression(source)?.kind, source).toBe('vec3');
+    }
+  });
+
   test('builds nodes for vector math intrinsics', () => {
     const normalizeValue = compileExpression(
       'x = normalize(vec3(0.0, 1.0, 0.0))',

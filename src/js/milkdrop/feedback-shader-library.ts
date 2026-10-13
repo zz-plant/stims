@@ -303,6 +303,9 @@ const MILKDROP_HLSL_PROMOTION_HELPERS = `
         float milkdropScalar(vec2 v) { return v.x; }
         float milkdropScalar(vec3 v) { return v.x; }
         float milkdropScalar(vec4 v) { return v.x; }
+        // \`float mask = (noise.r <= sw2);\` — HLSL converts the bool.
+        float milkdropScalar(bool v) { return v ? 1.0 : 0.0; }
+        float milkdropScalar(int v) { return float(v); }
 
         float milkdropDot(float a, float b) { return a * b; }
         float milkdropDot(vec2 a, vec2 b) { return dot(a, b); }
@@ -314,6 +317,13 @@ const MILKDROP_HLSL_PROMOTION_HELPERS = `
         float milkdropDot(vec4 a, vec4 b) { return dot(a, b); }
         float milkdropDot(vec4 a, float b) { return dot(a, vec4(b)); }
         float milkdropDot(float a, vec4 b) { return dot(vec4(a), b); }
+        // Mixed widths: HLSL truncates the wider operand to the narrower.
+        float milkdropDot(vec3 a, vec2 b) { return dot(a.xy, b); }
+        float milkdropDot(vec2 a, vec3 b) { return dot(a, b.xy); }
+        float milkdropDot(vec4 a, vec2 b) { return dot(a.xy, b); }
+        float milkdropDot(vec2 a, vec4 b) { return dot(a, b.xy); }
+        float milkdropDot(vec4 a, vec3 b) { return dot(a.xyz, b); }
+        float milkdropDot(vec3 a, vec4 b) { return dot(a, b.xyz); }
         // HLSL relational operators work component-wise and yield a mask of
         // the operands' width (\`left > 0.5\` on a float3 is a float3); GLSL
         // only defines them on scalars. The emitter sends every comparison
@@ -415,6 +425,8 @@ export const MILKDROP_AUX_SAMPLING_HELPERS = `
         float lum(vec3 v) { return dot(v, vec3(0.32, 0.49, 0.29)); }
         float lum(vec4 v) { return lum(v.xyz); }
         float lum(float v) { return v * 1.10; }
+        // A float2 argument truncates the float3 weights to their first two.
+        float lum(vec2 v) { return dot(v, vec2(0.32, 0.49)); }
 
         vec2 sampleUv(vec2 uv, float wrapMode) {
           return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
@@ -1034,6 +1046,11 @@ export const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform float rotation;
         uniform float offsetX;
         uniform float offsetY;
+        // Read by warp bodies through the r/g/b and hue_shader aliases. The
+        // composite template declares them too, so the per-frame scan treats
+        // them as builtins and never declares them for the warp stage.
+        uniform vec3 colorScale;
+        uniform vec3 tint;
         uniform float textureWrap;
         uniform float warpTextureSource;
         uniform float warpTextureSampleDimension;

@@ -249,6 +249,136 @@ function rewriteRawMul(text: string): string {
   return out;
 }
 
+/**
+ * HLSL intrinsics GLSL ES lacks or types differently. `frac`, `atan2` and
+ * `lerp` are renames (milkdropLerp is the preamble's overload set, which also
+ * covers HLSL's scalar→vector promotion); `dot` goes through milkdropDot,
+ * which truncates mismatched widths as HLSL does; `saturate(x)` becomes
+ * `clamp(x, 0.0, 1.0)`. Left as written, each failed the whole program with
+ * "no matching overloaded function" (65 corpus stages for saturate/frac/lerp
+ * alone). Case-sensitive, as HLSL is.
+ */
+function rewriteRawIntrinsics(text: string): string {
+  let out = text
+    .replace(/\bfrac\s*\(/gu, 'fract(')
+    .replace(/\batan2\s*\(/gu, 'atan(')
+    .replace(/(?<![\w.])dot\s*\(/gu, 'milkdropDot(')
+    .replace(/\blerp\s*\(/gu, 'milkdropLerp(');
+  const pattern = /\bsaturate\s*\(/gu;
+  let match = pattern.exec(out);
+  while (match) {
+    const argStart = match.index + match[0].length;
+    let depth = 1;
+    let index = argStart;
+    for (; index < out.length && depth > 0; index += 1) {
+      if (out[index] === '(') depth += 1;
+      else if (out[index] === ')') depth -= 1;
+    }
+    if (depth !== 0) break;
+    const arg = out.slice(argStart, index - 1);
+    out = `${out.slice(0, match.index)}clamp(${arg}, 0.0, 1.0)${out.slice(index)}`;
+    pattern.lastIndex = match.index;
+    match = pattern.exec(out);
+  }
+  return out;
+}
+
+/**
+ * The declared type of every `float`/`vecN`/`matN` name in `text`, from typed
+ * declarations (`vec3 color, mus;`, `float z = …`, function parameters).
+ * A name declared with two different types in different scopes is left out:
+ * which one an assignment means is not this scan's to decide. Seeded with the
+ * stage templates' own `ret` (vec3) and `uv` (vec2).
+ */
+function collectDeclaredValueTypes(text: string): Map<string, string> {
+  const types = new Map<string, string>([
+    ['ret', 'vec3'],
+    ['uv', 'vec2'],
+  ]);
+  const conflicts = new Set<string>();
+  const pattern = /\b(float|vec[234]|mat[234])\s+(?=[A-Za-z_])/gu;
+  let match = pattern.exec(text);
+  while (match) {
+    const type = match[1] ?? '';
+    // The declarator list runs to the `;`, `)` or `{` that closes it at
+    // depth 0; split it on depth-0 commas.
+    let depth = 0;
+    let index = match.index + match[0].length;
+    let start = index;
+    const declarators: string[] = [];
+    for (; index < text.length; index += 1) {
+      const char = text[index];
+      if (char === '(' || char === '[') depth += 1;
+      else if ((char === ')' || char === ']') && depth > 0) depth -= 1;
+      else if (depth === 0 && (char === ';' || char === ')' || char === '{'))
+        break;
+      else if (depth === 0 && char === ',') {
+        declarators.push(text.slice(start, index));
+        start = index + 1;
+      }
+    }
+    declarators.push(text.slice(start, index));
+    for (const declarator of declarators) {
+      // Arrays (`vec2 ofs[2]`) and a following type keyword (the next
+      // parameter of a function) are not plain value declarations.
+      const name = declarator.match(/^\s*([A-Za-z_]\w*)\s*(?:=|$)/u)?.[1];
+      if (!name || /^(?:float|vec[234]|int|bool|mat[234])$/u.test(name)) {
+        continue;
+      }
+      const previous = types.get(name);
+      if (previous !== undefined && previous !== type) conflicts.add(name);
+      types.set(name, type);
+    }
+    match = pattern.exec(text);
+  }
+  for (const name of conflicts) types.delete(name);
+  return types;
+}
+
+const SWIZZLE_PATTERN = /^\.([xyzw]{1,4}|[rgba]{1,4})$/u;
+
+/**
+ * HLSL broadcasts a scalar assigned to a vector and truncates a wider vector
+ * to the target's width (`float3 mus; mus = .2/(…)`, `noise = lum(…)`, `rs =
+ * clamp(tan(z) * uvn, …)` with `vec3 z`); GLSL rejects both, and one such
+ * line fails the whole program. Wrapping the right-hand side in the target's
+ * type restores HLSL's meaning: `vecN(x)` splats a scalar, copies a match and
+ * truncates a wider vector, and milkdropScalar takes a vector's first
+ * component. A too-narrow vector is an error in HLSL as well and stays one.
+ * A right-hand side that involves a matrix is left alone: `v *= M` is valid
+ * GLSL as written, and `vecN(M)` is not.
+ */
+function wrapTypedAssignment(
+  statement: string,
+  declaredTypes: ReadonlyMap<string, string>,
+): string | null {
+  const match = statement.match(
+    /^(\s*)([A-Za-z_]\w*)((?:\.[A-Za-z]+)?)(\s*)(=|\+=|-=|\*=|\/=)(?!=)(\s*)([\s\S]+?)(\s*)$/u,
+  );
+  if (!match) return null;
+  const [, lead, name, member, gap, operator, gap2, rhs, trail] = match;
+  const declared = declaredTypes.get(name ?? '');
+  if (!declared || declared.startsWith('mat')) return null;
+  if (/\bmat[234]\s*\(|\bmilkdropMul\s*\(/u.test(rhs ?? '')) return null;
+  // An indexed matrix (`ofs[0]`) is a column vector; only a whole one counts.
+  for (const identifier of (rhs ?? '').matchAll(
+    /\b([A-Za-z_]\w*)\b(?!\s*\[)/gu,
+  )) {
+    if (declaredTypes.get(identifier[1] ?? '')?.startsWith('mat')) return null;
+  }
+  let width: number;
+  if (member) {
+    const swizzle = SWIZZLE_PATTERN.exec(member);
+    if (!swizzle) return null;
+    width = swizzle[1]?.length ?? 0;
+  } else {
+    width = declared === 'float' ? 1 : Number(declared.slice(3));
+  }
+  const wrapped =
+    width === 1 ? `milkdropScalar(${rhs})` : `vec${width}(${rhs})`;
+  return `${lead}${name}${member}${gap}${operator}${gap2}${wrapped}${trail}`;
+}
+
 function rewriteRawHlslStatements(text: string): string {
   text = rewriteRawMul(text);
   // Names the body declares as int keep their integer literals: `n = 0`
@@ -320,6 +450,37 @@ function rewriteRawHlslStatements(text: string): string {
     .join('');
 }
 
+/**
+ * The last HLSL→GLSL step for an extracted native body, for the GLSL the
+ * WebGL backend executes only: rewriteRawIntrinsics, then wrapTypedAssignment
+ * on every statement (declarations hoisted from above shader_body included,
+ * so their types are known). The statement parser feeding WebGPU reads
+ * extractNativeShaderBody's output as it was — its executor implements
+ * lerp/saturate/frac itself and has no milkdrop* overload sets, and its loop
+ * unrolling matches the unwrapped forms.
+ */
+export function finishRawGlslForWebGl(body: string): string {
+  const glsl = rewriteRawIntrinsics(body);
+  const declaredTypes = collectDeclaredValueTypes(glsl);
+  return glsl
+    .split(/(;)/u)
+    .map((segment) => {
+      if (segment === ';') return segment;
+      const braceIndex = Math.max(
+        segment.lastIndexOf('{'),
+        segment.lastIndexOf('}'),
+      );
+      const assignment = wrapTypedAssignment(
+        segment.slice(braceIndex + 1),
+        declaredTypes,
+      );
+      return assignment === null
+        ? segment
+        : `${segment.slice(0, braceIndex + 1)}${assignment}`;
+    })
+    .join('');
+}
+
 // Slices the body of a `shader_body { … }` block by scanning to the closing
 // brace that matches the block's opening brace, counting nested braces so
 // if/for blocks stay intact. Content after the closing brace (trailing
@@ -356,6 +517,52 @@ function extractShaderBodyBlock(
   return null;
 }
 
+const LOCAL_DECLARATION_TYPES =
+  '(?:const\\s+)?(?:float[234]?|int|uint|bool|vec[234]|mat[234]|float[234]x[234])';
+
+/** Names declared at the top level of a body (not inside a nested block). */
+function topLevelDeclaredNames(body: string): Set<string> {
+  let topLevel = '';
+  let depth = 0;
+  for (const char of body) {
+    if (char === '{') depth += 1;
+    else if (char === '}') depth = Math.max(0, depth - 1);
+    else if (depth === 0) topLevel += char;
+  }
+  const names = new Set<string>();
+  const pattern = new RegExp(
+    `(?:^|[;\\n])\\s*${LOCAL_DECLARATION_TYPES}\\s+([A-Za-z_]\\w*)`,
+    'gu',
+  );
+  for (const match of topLevel.matchAll(pattern)) {
+    if (match[1]) names.add(match[1]);
+  }
+  return names;
+}
+
+/**
+ * A declaration hoisted from above shader_body, minus the names the body
+ * declares again itself. HLSL lets the body's local shadow the global; once
+ * both land in one GLSL scope the second is a redefinition error.
+ */
+function withoutRedeclaredNames(
+  line: string,
+  bodyDeclared: ReadonlySet<string>,
+): string | null {
+  const list = line.match(
+    /^((?:const\s+)?\w+\s+)([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)+)$/u,
+  );
+  if (list) {
+    const kept = (list[2] ?? '')
+      .split(',')
+      .map((name) => name.trim())
+      .filter((name) => !bodyDeclared.has(name));
+    return kept.length > 0 ? `${list[1]}${kept.join(', ')}` : null;
+  }
+  const single = line.match(/^(?:const\s+)?\w+\s+([A-Za-z_]\w*)/u)?.[1];
+  return single && bodyDeclared.has(single) ? null : line;
+}
+
 export function extractNativeShaderBody(shaderText: string) {
   const markerMatch = shaderText.match(/\bshader_body\s*\{/iu);
   if (!markerMatch || markerMatch.index === undefined) {
@@ -364,22 +571,30 @@ export function extractNativeShaderBody(shaderText: string) {
   const marker = markerMatch.index;
   const openBrace = marker + markerMatch[0].length - 1;
   const prefix = shaderText.slice(0, marker);
+  const rawBody =
+    extractShaderBodyBlock(shaderText, openBrace) ??
+    shaderText.slice(openBrace + 1);
+  const bodyDeclared = topLevelDeclaredNames(rawBody);
   const declarations = prefix
     .split(/[\r\n;]+/u)
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith('uniform '))
+    // HLSL `static` (and `static const`) globals become plain locals of the
+    // body: the qualifier has no GLSL meaning there, and `const` would reject
+    // the uniform reads their initialisers make (`float2x2 ofs =
+    // float2x2(texsize.z, …)`, `float3 CamPos = float3(q28, …)`).
+    .map((line) => line.replace(/^static\s+(?:const\s+)?/u, ''))
     .filter((line) =>
-      /^(?:const\s+)?(?:float|int|uint|bool|vec[234]|mat[234]|float[234])\s+[a-z_][a-z0-9_]*(?:\s*\[\s*\d+\s*\])?(?:\s*=.+)?$/iu.test(
+      /^(?:const\s+)?(?:float|int|uint|bool|vec[234]|mat[234]|float[234](?:x[234])?)\s+(?:[a-z_][a-z0-9_]*(?:\s*\[\s*\d+\s*\])?(?:\s*=.+)?|[a-z_]\w*(?:\s*,\s*[a-z_]\w*)+)$/iu.test(
         line,
       ),
     )
     // Through the same normaliser as the body: these are HLSL too, and a
     // raw \`float2 rs;\` hoisted above the body was a GLSL syntax error that
     // failed the whole program (15 cream-of-the-crop presets).
+    .map((line) => withoutRedeclaredNames(line, bodyDeclared))
+    .filter((line): line is string => line !== null)
     .map((line) => `  ${normalizeHlslToGlsl(line)};`);
-  const rawBody =
-    extractShaderBodyBlock(shaderText, openBrace) ??
-    shaderText.slice(openBrace + 1);
   const body = normalizeHlslToGlsl(rawBody);
 
   // Collapse whitespace/empty statements introduced when multiple raw
@@ -1838,6 +2053,10 @@ const BARE_TYPED_DECLARATION_PATTERN =
 
 type MatrixLocalKind = 'mat2' | 'mat3' | 'mat4';
 
+function isVectorOrMatrixKind(kind: string): boolean {
+  return /^(?:vec|mat|float)[234]$/u.test(kind);
+}
+
 /** Names declared `mat2`/`mat3`/`mat4` anywhere in this body, by size. */
 function collectMatrixLocals(lines: string[]): Map<string, MatrixLocalKind> {
   const locals = new Map<string, MatrixLocalKind>();
@@ -1955,6 +2174,18 @@ export function extractShaderControls(
   };
 
   const matrixLocals = collectMatrixLocals(normalized);
+  // The split form of the same declaration — `float3 dx, dy;` above
+  // shader_body, `dx = …` below — never reaches the parsed-declaration check
+  // further down, because the bare line is not a statement. Collected up
+  // front so every later write to the name is already known to be a local.
+  for (const line of normalized) {
+    const bare = line.match(BARE_TYPED_DECLARATION_PATTERN);
+    if (bare && (nativeShaderBody || isVectorOrMatrixKind(bare[1] ?? ''))) {
+      for (const name of (bare[2] ?? '').split(',')) {
+        declaredLocalNames.add(name.trim().toLowerCase());
+      }
+    }
+  }
 
   let supportedLineCount = 0;
   normalized.forEach((line) => {
@@ -2108,9 +2339,16 @@ export function extractShaderControls(
       // swizzle writes must not be misidentified as unbound per-frame scalar
       // registers. Seeding `tmpvar_1 = kind(0.0)` or `ret_1 = vec3(0.0)` gives
       // them their declared types and initial values.
-      const typedDeclaration = nativeShaderBody
-        ? line.match(BARE_TYPED_DECLARATION_PATTERN)
-        : null;
+      // Translated (non-native) bodies seed vectors and matrices too: the
+      // declared width is otherwise lost, and the hoister and emitter guess
+      // it from the first write — `float2 fraction;` then
+      // `fraction = float2(…)/(…)` was hoisted as a float (23 corpus stages).
+      const bareDeclaration = line.match(BARE_TYPED_DECLARATION_PATTERN);
+      const typedDeclaration =
+        bareDeclaration &&
+        (nativeShaderBody || isVectorOrMatrixKind(bareDeclaration[1] ?? ''))
+          ? bareDeclaration
+          : null;
       if (typedDeclaration) {
         const rawKind = typedDeclaration[1] ?? 'float';
         const kind =
