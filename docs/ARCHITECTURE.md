@@ -116,6 +116,7 @@ Read-only QA / override params:
 - `stats` — `1` | `0` (legacy alias for the debug HUD; `1` persists it, `0` clears it)
 - `tv` / `tvMode` — smart-TV override
 - `maxPixelRatio`, `particleBudget`, `shaderQuality`, `lockQualityStep`, `powerSaver`
+- `reduceFlashing` — `1` turns Reduce flashing on for the visit without saving it; no value turns it off
 - `mockAudio`, `mockFrequency`
 - `milkdrop-webgpu-{main-wave,custom-waves,mesh,motion-vectors,feedback,fallback,compute-vm,render-bundles}`
 - `component`, `props`, `grid` — UI harness page (`ui-harness.html`)
