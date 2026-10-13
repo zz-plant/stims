@@ -107,7 +107,7 @@ see Track 3 of the curriculum for how to use them well.
 | `time` | seconds |
 | `frame` | frame count |
 | `fps` | frames per second |
-| `progress` | in MilkDrop, 0..1 through the preset's run; Stims currently sets it to the frame count, the same as frame |
+| `progress` | how far the preset is through its display slot: 0 when it starts, 1 when the next preset is due (the autoplay dwell, 30 s by default); stays at 1 while a preset is held |
 | `input_x` | pointer x while pressed, -1..1 (0 when nothing is touching the stage) |
 | `input_y` | pointer y while pressed, -1..1 |
 | `input_dx` | pointer movement along x since the last frame |

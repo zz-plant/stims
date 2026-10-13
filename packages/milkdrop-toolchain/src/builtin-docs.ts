@@ -308,9 +308,28 @@ const SIGNAL_VARIABLE_DOCS: readonly MilkdropBuiltinDoc[] = [
     name: 'progress',
     kind: 'variable',
     group: 'signal',
-    doc: "in MilkDrop, 0..1 through the preset's run; Stims currently sets it to the frame count, the same as frame",
+    doc: 'how far the preset is through its display slot: 0 when it starts, 1 when the next preset is due (the autoplay dwell, 30 s by default); stays at 1 while a preset is held',
   },
 ];
+
+/**
+ * The signals MilkDrop 2 itself feeds a preset; the rest of the signal group
+ * is Stims-only. MilkDrop also reloads each of these into every custom wave
+ * and shape before its per-frame code (LoadCustomWavePerFrameEvallibVars and
+ * its shape twin), so an element's own assignment to one lasts one frame.
+ */
+export const MILKDROP2_SIGNAL_NAMES = [
+  'time',
+  'fps',
+  'frame',
+  'progress',
+  'bass',
+  'mid',
+  'treb',
+  'bass_att',
+  'mid_att',
+  'treb_att',
+] as const;
 
 /**
  * What the person watching is doing, published every frame by

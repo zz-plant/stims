@@ -328,6 +328,12 @@ export type MilkdropFrameState = {
   motionVectors: MilkdropMotionVectorVisual[];
   post: MilkdropPostVisual;
   signals: MilkdropRuntimeSignals;
+  /**
+   * MilkDrop's `progress`, 0..1 through this preset's display slot. Kept off
+   * `signals` because two crossfading presets share that object while each
+   * keeps its own preset clock (see MilkdropPresetVM.advancePresetClock).
+   */
+  progress?: number;
   variables: Record<string, number>;
   compatibility: MilkdropCompatibilityReport;
   gpuGeometry: MilkdropGpuGeometryHints;
@@ -466,6 +472,8 @@ export type MilkdropFeedbackCompositeState = {
   signalEnergy: number;
   signalTime: number;
   signalFrame?: number;
+  /** MilkDrop's `progress` for the preset this pass draws (0..1). */
+  signalProgress?: number;
   signalFps?: number;
   aspect: number;
   decay: number;
