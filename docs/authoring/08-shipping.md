@@ -1,7 +1,5 @@
 # Track 8 — Shipping
 
-You can now write a preset from nothing. This track covers what happens after: knowing where it will and won't run correctly, keeping it fast, and publishing it.
-
 ## Compatibility matrix
 
 A preset can compile, run, and still differ visibly across players. The table below describes implemented Stims paths and their limits. It is not a native Winamp, projectM, or Butterchurn test matrix. Verify your source in each intended player before claiming cross-engine compatibility.
@@ -30,13 +28,13 @@ For a fidelity claim, capture a native reference with controlled inputs, compare
 2. **Neighbor sampling in a shader costs more than a single sample.** Track 6's edge-detection example reads six texture samples per pixel (four neighbors, the pixel itself, and one blurred copy); that's a real, measurable cost multiplier over a one-sample shader, paid by every pixel on screen every frame. Reach for it when the effect needs it — not by default.
 3. **Fewer `per_pixel` lines beat more.** Every line runs once per mesh point; a preset with a dozen `per_pixel` equations is doing that work at every vertex, every frame. The [coding guide's checklist](../MILKDROP_CODING_GUIDE.md#professional-vs-amateur-checklist) treats "at least 3 meaningful per_pixel lines" as a floor for depth, not a target to maximize.
 4. **`warp=1` with high `decay`** is the single most common performance-adjacent mistake — not because it's slow, but because it saturates into a smear that makes every other effect illegible. [Track 2](02-motion.md#lesson-5--warp--the-wobble) covers why.
-5. **Measure instead of guessing.** [Track 3, Lesson 5](03-listening.md#lesson-5--measuring-it) covers `bun run lab:reactivity`. Its sibling `bun run lab:visual` (catalog presets only, currently) adds pixel-level checks (luminance, contrast, colorfulness, and whether the render is blank or static) — the same instrument the Stims project uses on its own bundled catalog.
+5. **Measure instead of guessing.** [Track 3, Lesson 5](03-listening.md#lesson-5--measuring-it) covers `bun run lab:reactivity`, which runs from a local clone of the repository. Its sibling `bun run lab:visual` (catalog presets only, currently) adds pixel-level checks (luminance, contrast, colorfulness, and whether the render is blank or static) — the same instrument the Stims project uses on its own bundled catalog.
 
 ## Publishing
 
 1. Export your preset (or use Share to create its `#code=` URL — see [Track 0](00-play.md#6--share-it)).
-2. Run it through `bun run lab:reactivity -- --file your.milk` and aim for a `reactive` verdict on the variables meant to respond to audio.
-3. Open a PR adding the `.milk` file to `public/milkdrop-presets/`, or share the link directly — both paths are covered in the [contributing guide](../../CONTRIBUTING.md#contributing-presets).
+2. From a local clone ([setup](../../CONTRIBUTING.md#quick-start)), run it through `bun run lab:reactivity -- --file your.milk` and aim for a `reactive` verdict on the variables meant to respond to audio.
+3. Open a PR adding the `.milk` file to `public/milkdrop-presets/`, or share the link directly — both paths are covered in the [contributing guide](../../CONTRIBUTING.md#contributing-presets). A link can go in the [remix thread](https://github.com/zz-plant/stims/discussions/1341) on GitHub Discussions.
 4. If you remixed someone else's work anywhere along the way, keep the credit chain — **Remix** in the editor's **⋯** menu does this automatically, and the multi-author filename convention (`"Author A + Author B — Title"`) is how the whole community has tracked lineage for over twenty years. It's not paperwork; it's the reason this hobby has a history at all.
 
 ## What you can now do

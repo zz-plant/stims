@@ -1,6 +1,6 @@
 # Track 3 — Listening
 
-Every knob so far has moved on its own clock (`sin(time*k)`). Now the music takes the wheel. This track covers the audio registers, the smoothing idiom every serious preset uses, how to detect a beat without a beat detector, and how to measure whether any of it worked.
+Every knob so far has moved on its own clock (`sin(time*k)`). Audio can drive the same knobs through read-only registers such as `bass`, `mid`, and `treb`, which the runtime refreshes every frame.
 
 ## Lesson 1 · Raw audio is jittery
 
@@ -85,7 +85,9 @@ The second line reads the beat off the bar itself: `equal(bass_thresh,2)` is 1 o
 
 ## Lesson 5 · Measuring it
 
-Everything above is a claim about what the preset does. Stims ships the same instrument its own agents use to check that claim — point it at a file and it reports, per variable, whether audio explains the motion:
+Everything above is a claim about what the preset does. `lab:reactivity` checks the claim: point it at a file and it reports, per variable, whether audio explains the motion.
+
+Unlike the rest of the course, this step needs a local clone of the Stims repository and Bun; the [quick start in CONTRIBUTING.md](../../CONTRIBUTING.md#quick-start) sets both up. Then, from the clone:
 
 ```bash
 bun run lab:reactivity -- --file docs/authoring/examples/35-reactive-vortex.milk
@@ -102,7 +104,7 @@ The report gives each variable a verdict:
 | `weak` | some correlation, but faint |
 | `static` | never changes — not necessarily wrong (most variables in a preset should be) |
 
-For `zoom`, `rot`, and `wave_r` in the vortex, you should see `reactive`. The waveform's own deviation (`mainWave.deviation`) reads `reactive` too — the tool is measuring the same thing your eyes were doing in Lesson 1, just with a number attached. This is the loop real authors use: write, measure, adjust the coupling strength until the verdict — not just the vibe — says reactive. It's also exactly what [`bun run lab:visual`](../MILKDROP_CODING_GUIDE.md) checks on the pixel side, and what the [contributing guide](../../CONTRIBUTING.md#contributing-presets) asks for before a preset is submitted.
+For `zoom`, `rot`, and `wave_r` in the vortex, you should see `reactive`. The waveform's own deviation (`mainWave.deviation`) reads `reactive` too: the tool measures what your eyes judged in Lesson 1, with a number attached. Write, measure, and adjust the coupling strength until the verdict says reactive. The [contributing guide](../../CONTRIBUTING.md#contributing-presets) asks for this check before a preset is submitted; `bun run lab:visual` adds pixel-level checks, but only for presets already in the catalog.
 
 ## Lesson 6 · Signals only Stims has
 
