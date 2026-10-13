@@ -1,5 +1,17 @@
 import type { MilkdropFrameState, MilkdropPostVisual } from '../types.ts';
 
+/**
+ * How long autoplay keeps a preset up before arming the advance: the blend
+ * plus six seconds of the settled preset, and never under 30 s.
+ *
+ * This is also the span MilkDrop's `progress` variable ramps over (the VM's
+ * preset clock), so a preset that fades or sequences on `progress` reaches 1
+ * as its slot ends — whether or not autoplay is on to end it.
+ */
+export function autoAdvanceDwellSeconds(blendDurationSeconds: number) {
+  return Math.max(30, blendDurationSeconds + 6);
+}
+
 export function shouldAutoAdvancePreset({
   autoplay,
   catalogSize,
@@ -16,7 +28,7 @@ export function shouldAutoAdvancePreset({
   return (
     autoplay &&
     catalogSize > 1 &&
-    now - lastPresetSwitchAt > Math.max(30000, blendDuration * 1000 + 6000)
+    now - lastPresetSwitchAt > autoAdvanceDwellSeconds(blendDuration) * 1000
   );
 }
 

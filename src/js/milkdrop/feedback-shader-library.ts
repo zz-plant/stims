@@ -796,6 +796,7 @@ export const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform float signalEnergy;
         uniform float signalTime;
         uniform float signalFrame;
+        uniform float signalProgress;
         uniform float signalFps;
         uniform float decay;
 ${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
@@ -1078,6 +1079,7 @@ export const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform float signalEnergy;
         uniform float signalTime;
         uniform float signalFrame;
+        uniform float signalProgress;
         uniform float signalFps;
         uniform float videoEchoOrientation;
 ${MILKDROP_SHADER_BUILTIN_DECLARATIONS}

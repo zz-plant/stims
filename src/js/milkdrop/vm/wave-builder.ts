@@ -17,10 +17,12 @@ import type {
 import { buildMainWaveFrame } from './frame-generation';
 import {
   clamp,
+  customElementShadowedSignals,
   MAIN_WAVE_FRAME_HISTORY_SIZE,
   type MutableState,
   milkdropToSceneX,
   milkdropToSceneY,
+  reloadCustomElementSignals,
   sampleCustomWaveChannels,
   type WaveBuilderState,
 } from './shared';
@@ -175,11 +177,14 @@ export function buildCustomWaves({
       }
     }
 
-    runProgram(
-      wave.programs.perFrame,
-      createEnv(signals, frameLocals, { reuseExtraAsEnv: true }),
-      frameLocals,
+    const frameEnv = createEnv(signals, frameLocals, {
+      reuseExtraAsEnv: true,
+    });
+    reloadCustomElementSignals(
+      frameEnv,
+      customElementShadowedSignals(wave.programs),
     );
+    runProgram(wave.programs.perFrame, frameEnv, frameLocals);
     waveState.customWaveLocals[index] = frameLocals;
 
     // Solo/mute from the editor: skipped exactly as `enabled=0` would be, after
