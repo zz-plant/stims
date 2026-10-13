@@ -35,6 +35,7 @@ import {
   toggleAutoplay,
   toggleCameraAction,
   togglePanel,
+  toggleProjectorAction,
   toggleReduceFlashingAction,
 } from './workspace-actions.ts';
 import type { WorkspaceContextValue } from './workspace-context.tsx';
@@ -256,10 +257,21 @@ export function buildPaletteActions(
       run: () => toggleCameraAction(uiRef.current.setStatusMessage),
     },
     {
+      id: 'toggle-projector',
+      group: 'Share',
+      label: 'Projector window (mirrors the stage)',
+      keywords: ['projector', 'monitor', 'second screen', 'display', 'output'],
+      run: () =>
+        toggleProjectorAction({
+          stage: () => uiRef.current.stageRef.current,
+          announce: uiRef.current.setStatusMessage,
+        }),
+    },
+    {
       id: 'external-display',
       group: 'Share',
-      label: 'Show on second screen or cast',
-      keywords: ['projector', 'monitor', 'chromecast', 'present', 'tv'],
+      label: 'Cast to a TV or Chromecast',
+      keywords: ['chromecast', 'present', 'tv', 'cast'],
       run: () => presentToExternalDisplayAction(uiRef.current.setStatusMessage),
     },
     {

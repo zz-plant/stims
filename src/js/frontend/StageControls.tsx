@@ -21,6 +21,10 @@ import {
   subscribePresetLock,
   togglePresetLock,
 } from '../core/preset-lock.ts';
+import {
+  getProjectorState,
+  subscribeProjector,
+} from '../core/services/projector-window-service.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import type { UiIconName } from '../ui/icon-library.ts';
@@ -54,6 +58,7 @@ import {
   startOrCopyWatchPartyAction,
   toggleCameraAction,
   togglePanel,
+  toggleProjectorAction,
   toggleReduceFlashingAction,
 } from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
@@ -218,6 +223,13 @@ export function StageControls({
     subscribeToAccessibilityPreference,
     () => getActiveAccessibilityPreference().reduceFlashing,
     () => false,
+  );
+  // The projector can be closed from its own window, so the row follows the
+  // service rather than its own clicks.
+  const projector = useSyncExternalStore(
+    subscribeProjector,
+    getProjectorState,
+    getProjectorState,
   );
   const hostingRoom =
     syncSession.role === 'host' && syncSession.status !== 'idle'
@@ -617,7 +629,20 @@ export function StageControls({
       : []),
     {
       icon: 'expand' as const,
-      label: 'Show on second screen or cast',
+      label: projector.open ? 'Close projector window' : 'Projector window',
+      actionId: 'toggle-projector',
+      action: () =>
+        run(() =>
+          toggleProjectorAction({
+            stage: () => ui.stageRef.current,
+            announce: ui.setStatusMessage,
+          }),
+        ),
+      active: projector.open,
+    },
+    {
+      icon: 'expand' as const,
+      label: 'Cast to a TV or Chromecast',
       actionId: 'external-display',
       action: () =>
         run(() => presentToExternalDisplayAction(ui.setStatusMessage)),

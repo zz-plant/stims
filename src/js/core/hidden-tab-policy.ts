@@ -1,13 +1,16 @@
 /**
  * The one rule for whether a hidden tab stops rendering.
  *
- * Hidden tabs skip frames to spare the GPU, with three exceptions: agent mode,
+ * Hidden tabs skip frames to spare the GPU, with four exceptions: agent mode,
  * where automation (headless capture, browser-pane QA) drives frames
  * deliberately and a silent skip reads as a frozen or black canvas; an open
  * picture-in-picture window, which is a live `canvas.captureStream()` of the
- * stage and is exactly what a user pops out before switching tabs; and live
+ * stage and is exactly what a user pops out before switching tabs; an open
+ * projector window, the same capture on the audience's screen; and live
  * performance mode, where this tab is driving a projector and flipping to
- * another tab to line up the next preset must not black out the room.
+ * another tab to line up the next preset must not black out the room. The
+ * browser may still stop scheduling frames for a hidden tab; these only stop
+ * the app from skipping the ones it gets.
  *
  * `pictureInPictureElement` is `null` when no window is open and `undefined` in
  * browsers without the API, so "no PiP" is a falsy check: comparing to `null`
@@ -19,6 +22,7 @@
  * shader failure.
  */
 import { isLivePerformanceModeActive } from './live-performance-mode.ts';
+import { isProjectorWindowOpen } from './services/projector-window-service.ts';
 
 export function isHiddenTabSuspendingFrames(): boolean {
   return (
@@ -26,6 +30,7 @@ export function isHiddenTabSuspendingFrames(): boolean {
     document.hidden &&
     document.documentElement.dataset.agentMode !== 'true' &&
     !isLivePerformanceModeActive() &&
+    !isProjectorWindowOpen() &&
     !document.pictureInPictureElement
   );
 }
