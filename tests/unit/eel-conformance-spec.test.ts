@@ -1,7 +1,7 @@
 /**
  * EEL platform-profile conformance.
  *
- * The cases themselves live in `spec/eel-conformance/cases/*.json` — portable
+ * The cases themselves live in `packages/eel-conformance/cases/*.json` — portable
  * data, deliberately not TypeScript, so a projectM or Butterchurn port can run
  * the same corpus without importing anything from this repo. This suite is one
  * consumer of it: it runs every case against all three execution tiers so

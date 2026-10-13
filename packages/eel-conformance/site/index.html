@@ -40,7 +40,7 @@
 
   <div class="hero">
     <h1>The expression language of MilkDrop presets, as cases you can run.</h1>
-    <p class="lead">There has never been a written specification for the dialect of ns-eel that <code>per_frame</code>, <code>per_pixel</code>, <code>per_point</code> and <code>init</code> blocks use, only implementations that disagree. This corpus is one: every rule is a program, an input state and a required output state, in plain JSON, so conformance is something you run rather than something you argue about.</p>
+    <p class="lead">Cockos documents EEL2 in prose. This corpus pins the behaviour of its MilkDrop dialect, the one <code>per_frame</code>, <code>per_pixel</code>, <code>per_point</code> and <code>init</code> blocks use, as cases instead: each rule is a program, an input state and a required output state, in plain JSON, so conformance is something you run rather than something you argue about.</p>
     <div class="row">
       <span class="install"><span>npm install eel-conformance</span><button type="button" class="btn" data-copy="npm install eel-conformance">copy</button></span>
       <a class="btn" href="./cases/">Browse the JSON</a>
@@ -128,7 +128,7 @@ process.exit(conforms(report) ? 0 : 1);</code></pre>
   </section>
 
   <footer>
-    <p>Extracted from <a href="https://github.com/zz-plant/stims">zz-plant/stims</a>, the source of the visualizer at <a href="https://toil.fyi">toil.fyi</a>, where the corpus pins the semantics shared by its interpreter, JIT and WGSL generator. The sibling package <a href="https://www.npmjs.com/package/milkdrop-toolchain">milkdrop-toolchain</a> runs it in its test suite. Public domain (Unlicense).</p>
+    <p>Extracted from <a href="https://github.com/zz-plant/stims">zz-plant/stims</a>, the source of the visualizer at <a href="https://toil.fyi">toil.fyi</a>, where the corpus was written to pin the EEL semantics that project implements. Stims runs it against the three CPU execution paths of <a href="https://www.npmjs.com/package/milkdrop-toolchain">milkdrop-toolchain</a>, single-statement evaluation, the CSP-fallback interpreter and the JIT, in <code>tests/unit/eel-conformance-spec.test.ts</code>; it does not run the corpus against the toolchain's WGSL generator. Public domain (Unlicense).</p>
   </footer>
 </div>
 <script type="module" src="./app.js"></script>
