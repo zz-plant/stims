@@ -460,6 +460,14 @@ export interface NearbyPresetRequest {
     signal?: AbortSignal,
     topK?: number,
   ) => Promise<Array<{ presetId: string; score: number }>>;
+  /**
+   * Test seam for the on-device lookup: the current preset's neighbours from
+   * the shipped preview vectors, or null when it has none.
+   */
+  searchByPresetLook?: (
+    presetId: string,
+    topK: number,
+  ) => Promise<Array<{ presetId: string; score: number }> | null>;
 }
 
 /**
@@ -498,12 +506,14 @@ export function nearbyPresetRequest({
  * Play the nearest look-alike to what is on screen.
  *
  * This is the small step next to shuffle's big one: same wandering loop, but
- * the next preset is chosen for resemblance instead of at random. It rides
- * the visual-embedding index that already backs the finder's "by look" tab,
- * so there is one definition of "similar" in the app rather than two.
+ * the next preset is chosen for resemblance instead of at random. It shares
+ * the finder's "By look" lookup, so there is one definition of "similar" in
+ * the app rather than two.
  *
- * The index lives behind `/api/visual-search`, which the Vite dev server does
- * not serve — `resolveOptionalApiUrl` returns null there and `searchByFrame`
+ * A catalog preset is answered on the device from its preview vector
+ * (`preset-visual-vectors.ts`). Anything without one falls back to the frame
+ * description behind `/api/visual-search`, which the Vite dev server does not
+ * serve — `resolveOptionalApiUrl` returns null there and `searchByFrame`
  * throws. That is a real limit of local development, not a failure state, and
  * it is worth saying so plainly rather than reporting a broken feature.
  */
@@ -515,8 +525,9 @@ export async function playNearbyPreset({
   play,
   announce,
   searchByFrame: injectedSearch,
+  searchByPresetLook: injectedPresetLook,
 }: NearbyPresetRequest): Promise<void> {
-  if (!canvas) {
+  if (!canvas && !currentPresetId) {
     announce('Nothing on the stage to match yet.');
     return;
   }
@@ -540,14 +551,28 @@ export async function playNearbyPreset({
     // chunk that fails to load rejects here, and every caller invokes this as
     // a bare `void` — an escape becomes an unhandled rejection with the status
     // line stuck on "Looking for something nearby…".
-    const searchByFrame =
-      injectedSearch ??
-      (await import('../core/services/visual-embedding.ts')).searchByFrame;
-    matches = await searchByFrame(
-      canvas,
-      attempt.signal,
-      NEARBY_SEARCH_RESULTS,
-    );
+    const searchByPresetLook =
+      injectedPresetLook ??
+      (await import('../core/services/preset-visual-vectors.ts'))
+        .searchByPresetLook;
+    const byPreset = currentPresetId
+      ? await searchByPresetLook(currentPresetId, NEARBY_SEARCH_RESULTS)
+      : null;
+    if (byPreset) {
+      matches = byPreset;
+    } else if (canvas) {
+      const searchByFrame =
+        injectedSearch ??
+        (await import('../core/services/visual-embedding.ts')).searchByFrame;
+      matches = await searchByFrame(
+        canvas,
+        attempt.signal,
+        NEARBY_SEARCH_RESULTS,
+      );
+    } else {
+      announce('Nothing on the stage to match yet.');
+      return;
+    }
   } catch (error) {
     if (superseded()) return;
     // Matched on the error's declared `name`, not on its message: the class

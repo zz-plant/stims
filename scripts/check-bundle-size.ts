@@ -43,7 +43,7 @@ const MAX_TOTAL_CSS = 500_000;
 
 /**
  * Gzipped ceilings for the catalog manifests, with headroom over today's
- * output (catalog 100 KB, search index 61 KB, starter 2 KB). The starter
+ * output (catalog 113 KB, search index 61 KB, starter 2 KB). The starter
  * catalog is the tight one on purpose: it is the only manifest on the boot
  * path, so growth there is paid by every visitor before first render, while
  * the other two are fetched at idle.
@@ -52,6 +52,10 @@ const MANIFEST_GZIP_BUDGETS: ReadonlyArray<{ file: string; max: number }> = [
   { file: 'milkdrop-presets/starter-catalog.json', max: 8_000 },
   { file: 'milkdrop-presets/catalog.json', max: 160_000 },
   { file: 'milkdrop-presets/search-index.json', max: 100_000 },
+  // Fetched only when Nearby, "By look" or "Like your saved" first needs it
+  // (306 KB gzip at 1,636 presets × 256 int8 values).
+  { file: 'milkdrop-presets/visual-vectors.bin', max: 360_000 },
+  { file: 'milkdrop-presets/visual-vectors.json', max: 30_000 },
 ];
 
 /**

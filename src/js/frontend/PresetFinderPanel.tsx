@@ -13,6 +13,7 @@ import {
   buildWindowAudioProfile,
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
+import { searchByPresetLook } from '../core/services/preset-visual-vectors.ts';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { AIBadge } from './AIBadge.tsx';
 import type { PresetCatalogEntry } from './contracts.ts';
@@ -51,6 +52,15 @@ export type FinderMode = 'sound' | 'look';
  * is indistinguishable from that noise floor.
  */
 const MIN_SCORE = 0.62;
+
+/**
+ * How many look-alikes to list when the preset on stage has a preview vector.
+ *
+ * No score floor applies to these: the query is a real preview rather than a
+ * free-text description, so there is no nonsense query whose noise a floor
+ * has to hide, and the nearest presets are always the honest answer.
+ */
+const LOOK_RESULT_DEPTH = 12;
 
 const FINDER_MODE_STORAGE_KEY = 'stims:finder-mode';
 
@@ -153,7 +163,7 @@ const MODES: Array<{
   {
     id: 'look',
     label: 'By look',
-    hint: 'Ranks the catalog against the frame currently on screen.',
+    hint: 'Ranks the catalog by resemblance to the preset on stage.',
     icon: 'eye',
   },
 ];
@@ -166,6 +176,11 @@ export function PresetFinderPanel({
   onClose: () => void;
 }) {
   const { engine, ui } = useWorkspace();
+  // The same "preset on stage" the dock's Nearby uses: set from the route
+  // before the engine starts, so "By look" answers on a stage that has not
+  // drawn a frame yet.
+  const activePresetId =
+    engine.selectedPreset?.id ?? engine.featuredPreset?.id ?? null;
   const [mode, setMode] = useState<FinderMode>(() => {
     // The remembered mode wins over the route's default, but availability
     // stays authoritative: searching by sound needs live audio, so a
@@ -236,6 +251,7 @@ export function PresetFinderPanel({
       // Both services return the same {presetId, score} ranking, so the only
       // real difference between the two modes is what gets embedded.
       let matches: Array<{ presetId: string; score: number }>;
+      let floor = MIN_SCORE;
       if (mode === 'sound') {
         // Listen for a span, then profile the window: the mean balance says
         // how the music is voiced, measured onsets and crest say how it
@@ -257,17 +273,28 @@ export function PresetFinderPanel({
           : [];
         if (!isCurrent()) return;
       } else {
-        const canvas = ui.stageRef.current?.querySelector(
-          'canvas',
-        ) as HTMLCanvasElement | null;
-        if (!canvas) throw new Error('No canvas found');
-        matches = await searchByFrame(canvas, controller.signal);
+        // The preset's own preview vector when it has one; the live frame's
+        // description otherwise (generated or imported presets).
+        const byPreset = activePresetId
+          ? await searchByPresetLook(activePresetId, LOOK_RESULT_DEPTH)
+          : null;
         if (!isCurrent()) return;
+        if (byPreset) {
+          matches = byPreset;
+          floor = Number.NEGATIVE_INFINITY;
+        } else {
+          const canvas = ui.stageRef.current?.querySelector(
+            'canvas',
+          ) as HTMLCanvasElement | null;
+          if (!canvas) throw new Error('No canvas found');
+          matches = await searchByFrame(canvas, controller.signal);
+          if (!isCurrent()) return;
+        }
       }
 
       // A nearest-neighbour index always returns its topK, so without a floor
       // "No matches found" is unreachable and every query looks successful.
-      const relevant = matches.filter((match) => match.score >= MIN_SCORE);
+      const relevant = matches.filter((match) => match.score >= floor);
 
       setResults(
         relevant.map((match) => {
@@ -286,7 +313,7 @@ export function PresetFinderPanel({
     } finally {
       if (isLatest()) setLoading(false);
     }
-  }, [catalogEntryById, mode, ui]);
+  }, [activePresetId, catalogEntryById, mode, ui]);
 
   // The panel owns its in-flight searches. Leaving cancels the controller —
   // ending the collection window and any request — and marks this instance

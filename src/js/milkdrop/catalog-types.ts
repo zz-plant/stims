@@ -69,6 +69,9 @@ export type MilkdropCatalogEntry = MilkdropPresetMeasurements & {
   derivedFrom?: MilkdropPresetLineageRef[];
   origin: MilkdropPresetOrigin;
   tags: string[];
+  /** Extra words Browse search matches, e.g. visual terms written by
+   * scripts/build-visual-embeddings.ts. */
+  searchTerms?: string[];
   curatedRank?: number;
   similarity?: { clusterId: string; duplicateOf?: string };
   isFavorite: boolean;

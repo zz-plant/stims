@@ -46,6 +46,7 @@
     "catalog:merge-flash": "bun run scripts/merge-flash-audit.ts",
     "catalog:score": "bun run scripts/score-catalog-quality.ts",
     "catalog:techniques": "bun run scripts/report-technique-glossary.ts",
+    "catalog:visual-embeddings": "bun run scripts/build-visual-embeddings.ts",
     "cf:whoami": "bunx wrangler whoami",
     "check": "bun run scripts/run-quality-gate.ts",
     "check:accessibility": "bun run scripts/accessibility-audit.ts",
