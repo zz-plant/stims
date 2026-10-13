@@ -1,7 +1,8 @@
 /**
  * MilkDrop 2 export — writes a compiled preset as the `.milk` file MilkDrop 2
- * itself saves, so an export opens the same in MilkDrop 2, projectM and
- * Butterchurn as it does here.
+ * itself saves, so an export opens the same in MilkDrop 2 and projectM as it
+ * does here. Butterchurn reads it only after conversion to its JSON preset
+ * format.
  *
  * The editor's formatted source is Stims' dialect: readable names
  * (`gammaadj`, `wave_mode`), `[warp_shader]` sections, no `[preset00]`
