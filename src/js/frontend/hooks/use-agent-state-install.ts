@@ -21,6 +21,15 @@ import type { EngineContextValue } from '../engine-context.tsx';
 import { pinTarget, unpinTarget } from '../perform-pins.ts';
 import type { WorkspaceContextValue } from '../workspace-context.tsx';
 
+/**
+ * Read at call time through the ref. Naming the field in the install effect
+ * would make it a dependency, and reinstalling the global on every tempo
+ * change tears down the listeners an automation client is holding.
+ */
+function readTempoBpm(ref: RefObject<EngineSnapshot | null>): number | null {
+  return ref.current?.tempoBpm ?? null;
+}
+
 export function useAgentStateInstall({
   paletteActionsRef,
   engineSnapshotRef,
@@ -95,6 +104,7 @@ export function useAgentStateInstall({
       unpinParameter: (field) => unpinTarget(field),
       getStageCanvas: () =>
         uiRef.current.stageRef.current?.querySelector('canvas') ?? null,
+      getTempoBpm: () => readTempoBpm(engineSnapshotRef),
     });
   }, [
     buildAgentCoreSnapshot,
@@ -102,7 +112,7 @@ export function useAgentStateInstall({
     paletteActionsRef.current,
     engineBridgeRef.current.updateFieldLive,
     uiRef.current.stageRef.current?.querySelector,
-    engineSnapshotRef.current?.catalogEntries,
+    engineSnapshotRef,
     engineBridgeRef.current.handlePresetSelection,
   ]);
 

@@ -1,5 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import styles from '../../css/CueMonitor.module.css';
+import {
+  getManualTempoSource,
+  subscribeManualTempo,
+} from '../core/manual-tempo.ts';
 import { webMidiService } from '../core/services/webmidi-controller.ts';
 import { hadSessionBeforeBoot } from '../core/state/last-session-store.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
@@ -104,6 +114,13 @@ export function CueMonitor() {
     return () => window.clearInterval(timer);
   }, [engine]);
   const { engineSnapshot } = useEngineSnapshot();
+  // A tapped tempo and a guessed one read the same as a number; the owner is
+  // what tells a performer whether the bar lines are theirs.
+  const tempoSource = useSyncExternalStore(
+    subscribeManualTempo,
+    getManualTempoSource,
+    getManualTempoSource,
+  );
   const queue = ui.presetQueue;
   const next = queue.entries[0] ?? null;
   const activePresetId = engineSnapshot?.activePresetId ?? null;
@@ -203,6 +220,12 @@ export function CueMonitor() {
   // Already adjudicated upstream: null means "no trustworthy tempo", so
   // there is no confidence threshold to re-apply here.
   const tempo = engineSnapshot?.tempoBpm ?? null;
+  const tempoOwner =
+    tempoSource === 'tap'
+      ? ' · tapped'
+      : tempoSource === 'midi-clock'
+        ? ' · MIDI clock'
+        : '';
 
   return (
     <aside className={styles.cue} aria-label="Cue monitor">
@@ -213,7 +236,12 @@ export function CueMonitor() {
         {/* The tempo readout lives here rather than on the transport: this is
             the surface you are looking at while deciding when to take. */}
         {tempo !== null ? (
-          <span className={styles.tempo}>{tempo} BPM</span>
+          <span
+            className={styles.tempo}
+            data-tempo-source={tempoSource ?? 'audio'}
+          >
+            {tempo} BPM{tempoOwner}
+          </span>
         ) : null}
       </div>
       {next ? <CueScreen key={next.id} entry={next} /> : null}
