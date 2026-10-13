@@ -1,8 +1,10 @@
 # Standalone package launch drafts
 
-Each library has a different audience and a working browser demo. Treat these as separate launches, each linking directly to its demonstration and source. These are prepared drafts; no launch posts or npm releases were sent by this workflow.
+Each library has a different audience and a working browser demo. Treat these as separate launches, each linking directly to its demonstration and source. These are prepared drafts; none has been posted.
 
-On October 10, 2026, all four demo URLs returned HTTP 200 and all four npm registry names returned HTTP 404. An HTTP response verifies reachability, not the demo's interactions. Use the demos and checkout examples now; add installation commands to posts only after the first release and a clean-consumer check pass. The publishing setup is in [Packages](../packages/README.md#publishing).
+On October 13, 2026, all four demo URLs returned HTTP 200. `eel-conformance`, `flash-guard` and `milkdrop-toolchain` were published to npm at 0.1.0 that day, by hand and without provenance; `audio-reactive` is private and its registry name returns HTTP 404. An HTTP response verifies reachability, not the demo's interactions.
+
+The 0.1.0 READMEs on npm still say the packages are unpublished and point readers at a clone; the corrected READMEs reach npm when 0.1.1 is published. Add an installation command to a post only after that package's clean-consumer check passes. The publishing setup is in [Packages](../packages/README.md#publishing).
 
 ## milkdrop-toolchain: preset editors and renderer authors
 

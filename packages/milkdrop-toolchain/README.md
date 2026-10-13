@@ -1,6 +1,8 @@
 # milkdrop-toolchain
 
-`milkdrop-toolchain` is the part of a MilkDrop engine that does not touch a GPU: it reads `.milk` preset text, compiles the equations into an intermediate representation, evaluates or JIT-compiles the EEL2 expression language, analyzes the HLSL warp and composite shaders, translates them to GLSL, lowers EEL programs to WGSL compute shaders, and writes presets back out as text (both the editor dialect and the exact MilkDrop 2 file format). It is written in TypeScript, has no runtime dependencies, and keeps presets as `.milk` files rather than inventing a new format, so anything it produces can still be opened by MilkDrop, projectM or Butterchurn. It was born inside [Stims](https://toil.fyi), the browser visualizer at zz-plant/stims, where the same code compiles every preset the renderer plays; this package is that compiler and its analysis tools, extracted so other editors, linters, converters and renderers can share one reading of what a preset means.
+`milkdrop-toolchain` is the part of a MilkDrop engine that does not touch a GPU: it reads `.milk` preset text, compiles the equations into an intermediate representation, evaluates or JIT-compiles the EEL2 expression language, analyzes the HLSL warp and composite shaders, translates them to GLSL, lowers EEL programs to WGSL compute shaders, and writes presets back out as text (both the editor dialect and the exact MilkDrop 2 file format). It is written in TypeScript, has no runtime dependencies, and keeps presets as `.milk` files rather than inventing a new format: `exportMilkdrop2Preset` writes the file format MilkDrop 2 saves, which MilkDrop and projectM open directly and Butterchurn reads only after conversion to its JSON preset format. It was born inside [Stims](https://toil.fyi), the browser visualizer at zz-plant/stims, where the same code compiles every preset the renderer plays; this package is that compiler and its analysis tools, extracted so other editors, linters, converters and renderers can share one reading of what a preset means.
+
+Demo: the [compile playground](https://zz-plant.github.io/stims/milkdrop-toolchain/) runs the library in the browser and recompiles a preset as you edit it.
 
 ## Pipeline
 
@@ -19,19 +21,15 @@ flowchart LR
   hlsl --> ir
 ```
 
-Preset text goes through a lossless line-level syntax tree, then a field parser, then the IR builder, which also parses every equation into expression ASTs and classifies the shader text. From the IR, three execution tiers agree on the same semantics: the tree-walking interpreter, the JavaScript JIT (with an interpreter fallback when `new Function` is blocked by CSP), and the WGSL generator. The formatter and the MilkDrop 2 exporter turn the IR back into text.
+Preset text goes through a lossless line-level syntax tree, then a field parser, then the IR builder, which also parses every equation into expression ASTs and classifies the shader text. From the IR, a program block runs on the tree-walking interpreter or the JavaScript JIT (with an interpreter fallback when `new Function` is blocked by CSP), or is lowered to WGSL by the generator; all three read one function table. The formatter and the MilkDrop 2 exporter turn the IR back into text.
 
-## Use from this repository
-
-This package is not published on npm as of 2026-10-10 (the registry lookup returned 404). Build and test the workspace source from a clone of [Stims](https://github.com/zz-plant/stims):
+## Install
 
 ```sh
-bun install --frozen-lockfile
-bun --cwd packages/milkdrop-toolchain run build
-bun --cwd packages/milkdrop-toolchain test
+npm install milkdrop-toolchain
+# or
+bun add milkdrop-toolchain
 ```
-
-The examples below use the package name, which resolves through the Bun workspace after installation. For a separate consumer, pack the built package and install the resulting tarball. See [package release instructions](https://github.com/zz-plant/stims/blob/main/packages/README.md#publishing) for first-publication checks. Once a release exists, the intended registry command is `bun add milkdrop-toolchain`.
 
 The package ships compiled ESM in `dist/` with type declarations, and the TypeScript sources in `src/` for runtimes that execute `.ts` directly (`import ... from 'milkdrop-toolchain/src/expression.ts'`).
 
@@ -250,7 +248,7 @@ The `MilkdropCompiledPreset`, `MilkdropPresetIR`, `MilkdropProgramBlock`, `Milkd
 
 ## Semantics
 
-The EEL2 semantics implemented by the interpreter, the JIT and the WGSL generator are specified by the sibling package [`eel-conformance`](../eel-conformance), a set of portable JSON cases with a JSON Schema and a runner contract. Five behaviours that differ from JavaScript and trip up most reimplementations:
+The EEL2 semantics implemented by the interpreter, the JIT and the WGSL generator follow the corpus in the sibling package [`eel-conformance`](https://github.com/zz-plant/stims/tree/main/packages/eel-conformance), a set of portable JSON cases with a JSON Schema and a runner contract. This package does not depend on the corpus or run it. Stims runs it against three CPU paths, single-statement evaluation, the CSP-fallback interpreter and the JIT, in `tests/unit/eel-conformance-spec.test.ts`; no WGSL tier runs it. Five behaviours that differ from JavaScript and trip up most reimplementations:
 
 1. Division by exact zero yields `0`, not `Infinity` or `NaN` (`3 / 0` is `0`).
 2. `%` truncates both operands to integers first, and a zero divisor yields `0`.
@@ -262,6 +260,14 @@ The EEL2 semantics implemented by the interpreter, the JIT and the WGSL generato
 
 The code is developed in [zz-plant/stims](https://github.com/zz-plant/stims) under [`packages/milkdrop-toolchain`](https://github.com/zz-plant/stims/tree/main/packages/milkdrop-toolchain), next to the app that uses it, and released from there. [zz-plant/milkdrop-toolchain](https://github.com/zz-plant/milkdrop-toolchain) is a read-only mirror of that directory, updated on every change. Open issues and pull requests on zz-plant/stims.
 
+Build and test from a clone of zz-plant/stims:
+
+```sh
+bun install --frozen-lockfile
+bun --cwd packages/milkdrop-toolchain run build
+bun --cwd packages/milkdrop-toolchain test
+```
+
 ## Provenance
 
 Extracted from [zz-plant/stims](https://github.com/zz-plant/stims), `src/js/milkdrop/`. The copied modules are the preset parser and syntax tree (`preset-parser.ts`, `preset-syntax.ts`), the EEL2 front end (`expression.ts`, `expression-jit.ts`, `builtin-docs.ts`, `field-normalization.ts`, `field-table.ts`), the compiler (`compiler.ts`, `compiler-types.ts`, `common-types.ts` and the 24 files under `compiler/`, including `ir.ts`, `eel-function-table.ts`, `shader-analysis*.ts`, `shader-branch-desugar.ts`, `wgsl-generator.ts`, `compatibility.ts`), the shader front end (`shader-ast.ts`, `shader-source.ts`, `shader-samplers.ts`, `shader-expression-shared.ts`, `texture-files.ts`, `shader-translation.ts`, `shader-execution-mode.ts`), the formatter and exporters (`formatter.ts`, `milkdrop2-export.ts`, `preset-lineage-fields.ts`), the analyzers (`preset-dataflow.ts`, `preset-math-analyzer.ts`), and `wgsl-signal-layout.ts` and `parity-allowlist.ts` with its JSON. Two files differ from their Stims originals: `types.ts` re-exports only the compiler-facing type modules instead of the renderer and catalog types, and `runtime-signals.ts` holds the `MilkdropRuntimeSignals` type copied out of Stims' `runtime-types.ts`. Relative imports were given explicit `.ts` extensions so `tsc` can emit working ESM.
@@ -270,4 +276,4 @@ Extracted from [zz-plant/stims](https://github.com/zz-plant/stims), `src/js/milk
 
 ## License
 
-[Unlicense](./LICENSE). This is free and unencumbered software released into the public domain.
+[Unlicense](https://github.com/zz-plant/stims/blob/main/packages/milkdrop-toolchain/LICENSE). This is free and unencumbered software released into the public domain.
