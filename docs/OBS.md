@@ -16,6 +16,8 @@ Start with the demo to establish that the picture works, then choose your own au
 5. Fit the source to your scene. The embed URL uses a compact stage view and retains a small Stims link. The controls dock and startup hints can still appear; let them fade before recording. Keep the default custom CSS initially.
 6. Check that the picture moves. Record ten seconds locally and play it back before using the scene in a stream.
 
+For a stream, add `&reduceFlashing=1`. It turns Reduce flashing on for this source without changing the setting saved in the browser.
+
 The URL selects WebGL, a bundled preset, and demo audio. Browser autoplay policy can still suspend audio; open the source's **Interact** window to inspect it. If it remains blank or silent, use the regular-browser path below to select audio and start playback explicitly.
 
 The [OBS Browser Source reference](https://obsproject.com/kb/browser-source) defines the viewport, frame-rate, refresh, and shutdown settings. Browser Source uses Chromium Embedded Framework; a successful Chrome session does not prove the same behavior in OBS.

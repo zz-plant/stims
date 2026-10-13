@@ -8,6 +8,7 @@ Stims is built so you decide how much is happening on screen, how it changes, an
 - **Intensity and motion.** Quality and motion settings scale how much is on screen. If your operating system is set to reduce motion, Stims follows that automatically.
 - **How presets change.** Cut switches instantly. Blend crossfades over a duration you set, from half a second to eight — you decide how abrupt or gradual a transition is.
 - **Stop.** One action stops everything immediately.
+- **Shared screens.** A link ending in `reduceFlashing=1` turns Reduce flashing on for that visit only, so a party display or stream source dims flashes for people who never opened Settings. No link can turn it off.
 - **Where you left off.** Your last session and settings are saved on your device, so returning to a setup you liked doesn't mean rebuilding it.
 - **The rules, not just the preset.** The live editor lets you change how the visuals respond to the music while it's running, in real time — not just pick from a list of looks.
 
