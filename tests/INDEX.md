@@ -18,7 +18,7 @@ the repository, such as the bundled preset corpus.
 
 Most of it is `packages/milkdrop-toolchain/tests/`. Here: the corpus cases in
 `milkdrop-compiler.test.ts` · `milkdrop-program-jit.test.ts` (JIT against the
-interpreter over bundled presets) · `milkdrop-wgsl-vectorization.test.ts` ·
+interpreter over bundled presets) ·
 `milkdrop-shader-tsl-intrinsics.test.ts` · `milkdrop-shader-sampler-aliases.test.ts` ·
 `custom-shader-import.test.ts` ·
 `butterchurn-eel-transpiler.test.ts` (scripts/)

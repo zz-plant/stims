@@ -1452,120 +1452,6 @@ body.tv-mode .control-panel input {
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.1);
 }
 
-.milkdrop-overlay__preset-launch {
-  display: grid;
-  gap: 4px;
-  text-align: left;
-  min-width: 0;
-  padding: 2px 0;
-  border: 0;
-  background: transparent;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    background 0.15s ease;
-}
-
-.milkdrop-overlay__preset-launch:hover {
-  color: #f8fafc;
-}
-
-.milkdrop-overlay__preset-launch:focus-visible {
-  outline: 2px solid var(--stims-cool);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.milkdrop-overlay__preset-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.milkdrop-overlay__preset-title {
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.milkdrop-overlay__preset-badges {
-  display: inline-flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.milkdrop-overlay__preset-meta {
-  color: rgba(191, 219, 254, 0.74);
-  font-size: 0.75rem;
-  line-height: 1.25;
-  min-height: 0;
-}
-
-.milkdrop-overlay__preset-actions {
-  display: inline-grid;
-  grid-auto-flow: column;
-  grid-auto-columns: max-content;
-  gap: 4px;
-  align-items: start;
-  justify-items: end;
-}
-
-.milkdrop-overlay__preset-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: var(--radius-pill);
-  background: rgba(148, 163, 184, 0.14);
-  color: rgba(226, 232, 240, 0.86);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  font-stretch: var(--font-stretch-legend);
-}
-
-/* Each tag state pairs its hue (drawn from the status tokens rather
-   than one-off hexes) with a distinct glyph, so active vs verified vs
-   drift stays readable without color vision. */
-.milkdrop-overlay__preset-tag--active {
-  background: color-mix(in srgb, var(--stims-cool, #77c9ff) 20%, transparent);
-  color: color-mix(in srgb, var(--stims-cool, #77c9ff) 45%, #f8fafc);
-}
-
-.milkdrop-overlay__preset-tag--active::before {
-  content: "▶ " / "";
-}
-
-.milkdrop-overlay__preset-tag--verified {
-  background: color-mix(in srgb, var(--stims-good, #7de0a2) 20%, transparent);
-  color: color-mix(in srgb, var(--stims-good, #7de0a2) 45%, #f8fafc);
-}
-
-.milkdrop-overlay__preset-tag--verified::before {
-  content: "✓ " / "";
-}
-
-.milkdrop-overlay__preset-tag--drift {
-  background: color-mix(in srgb, var(--stims-warn, #ffd166) 20%, transparent);
-  color: color-mix(in srgb, var(--stims-warn, #ffd166) 45%, #f8fafc);
-}
-
-.milkdrop-overlay__preset-tag--drift::before {
-  content: "△ " / "";
-}
-
-.milkdrop-overlay__preset-warning {
-  grid-column: 1 / -1;
-  font-size: 0.75rem;
-  line-height: 1.25;
-  color: rgba(253, 230, 138, 0.9);
-  padding: 0;
-}
-
-.milkdrop-overlay__favorite,
 .milkdrop-overlay__rating-select {
   min-height: 28px;
   padding: 4px 8px;
@@ -1575,43 +1461,14 @@ body.tv-mode .control-panel input {
   color: rgba(226, 232, 240, 0.82);
 }
 
-.milkdrop-overlay__favorite {
-  min-width: 28px;
-  line-height: 0;
-}
-
-.milkdrop-overlay__favorite svg {
-  width: 15px;
-  height: 15px;
-}
-
-.milkdrop-overlay__favorite--active {
-  color: var(--stims-accent, #ffb39e);
-}
-
-.milkdrop-overlay__favorite--active svg {
-  fill: currentColor;
-}
-
 @media (max-width: 640px) {
   .milkdrop-overlay__close,
   .milkdrop-overlay__toolbar button,
-  .milkdrop-overlay__favorite,
   .milkdrop-overlay__tabs button,
   .milkdrop-overlay__rating-select {
     min-height: 34px;
     padding: 6px 10px;
     border-radius: var(--radius-lg);
-  }
-
-  .milkdrop-overlay__preset {
-    grid-template-columns: 1fr;
-    gap: 6px;
-    padding-top: 8px;
-  }
-
-  .milkdrop-overlay__preset-actions {
-    justify-content: flex-start;
   }
 }
 
@@ -1715,99 +1572,9 @@ body {
   font-size: 0.8125rem;
 }
 
-.milkdrop-overlay__preset {
-  gap: 10px;
-  padding: 12px 12px 10px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  border-top: 0;
-  border-radius: var(--radius-lg);
-  background: rgba(15, 23, 42, 0.36);
-}
-
-.milkdrop-overlay__browse-section .milkdrop-overlay__preset:first-of-type {
-  padding-top: 12px;
-  border-top: 0;
-}
-
-.milkdrop-overlay__preset-title {
-  font-size: 0.9375rem;
-  line-height: 1.3;
-}
-
-.milkdrop-overlay__preset-meta {
-  font-size: 0.8125rem;
-}
-
-.milkdrop-overlay__preset-badges {
-  gap: 6px;
-}
-
-.milkdrop-overlay__support,
-.milkdrop-overlay__preset-tag {
+.milkdrop-overlay__support {
   padding: 4px 8px;
   font-size: 0.6875rem;
-}
-
-.milkdrop-overlay__preset-warning {
-  font-size: 0.75rem;
-  color: rgba(226, 232, 240, 0.74);
-}
-
-.milkdrop-overlay__preset {
-  gap: 12px;
-  padding: 13px 14px 12px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  border-radius: var(--radius-xl);
-  background: linear-gradient(
-    180deg,
-    rgba(15, 23, 42, 0.46),
-    rgba(15, 23, 42, 0.3)
-  );
-  box-shadow: 0 10px 22px rgba(2, 6, 23, 0.18);
-}
-
-.milkdrop-overlay__preset[data-active="true"] {
-  border-color: rgba(56, 189, 248, 0.28);
-  background:
-    radial-gradient(
-      circle at top right,
-      rgba(56, 189, 248, 0.14),
-      transparent 38%
-    ),
-    linear-gradient(180deg, rgba(14, 30, 52, 0.7), rgba(15, 23, 42, 0.38));
-}
-
-.milkdrop-overlay__preset-title {
-  font-size: 1rem;
-}
-
-.milkdrop-overlay__preset-meta {
-  color: rgba(191, 219, 254, 0.6);
-}
-
-.milkdrop-overlay__preset-actions {
-  align-items: center;
-}
-
-/* Neutral quieting applies only to un-stated tags — active, verified,
-   and drift keep their token-driven state colors. */
-.milkdrop-overlay__preset-tag:not(
-  .milkdrop-overlay__preset-tag--active,
-  .milkdrop-overlay__preset-tag--verified,
-  .milkdrop-overlay__preset-tag--drift
-) {
-  background: rgba(148, 163, 184, 0.1);
-  color: rgba(226, 232, 240, 0.72);
-}
-
-.milkdrop-overlay__preset[data-active="false"]
-  .milkdrop-overlay__preset-warning {
-  display: none;
-}
-
-.milkdrop-overlay__preset-warning {
-  padding-top: 2px;
-  color: rgba(226, 232, 240, 0.66);
 }
 
 /* Mobile polish pass: reclaim vertical space and reduce control density. */
@@ -1815,7 +1582,6 @@ body {
   .milkdrop-overlay__close,
   .milkdrop-overlay__hud-toggle,
   .milkdrop-overlay__toolbar button,
-  .milkdrop-overlay__favorite,
   .milkdrop-overlay__tabs button,
   .milkdrop-overlay__rating-select {
     min-height: 44px;
@@ -1828,34 +1594,12 @@ body {
     padding: 7px 10px;
   }
 
-  .milkdrop-overlay__preset {
-    gap: 8px;
-    padding: 10px 11px;
-  }
-
-  .milkdrop-overlay__preset-title {
-    font-size: 0.9375rem;
-  }
-
-  .milkdrop-overlay__preset-meta {
-    font-size: 0.75rem;
-  }
-
-  .milkdrop-overlay__preset-badges {
-    gap: 4px;
-  }
-
-  .milkdrop-overlay__support,
-  .milkdrop-overlay__preset-tag {
+  .milkdrop-overlay__support {
     padding: 3px 7px;
     font-size: 0.6875rem;
   }
 
   .milkdrop-overlay__browse-support {
-    display: none;
-  }
-
-  .milkdrop-overlay__preset-actions {
     display: none;
   }
 }
@@ -1959,100 +1703,6 @@ body {
   );
 }
 
-.milkdrop-overlay__preset {
-  gap: 0.85rem;
-  padding: 14px;
-  border-radius: var(--radius-xl);
-  border-color: var(--stims-border-08);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 54%),
-    rgba(10, 17, 29, 0.76);
-  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.18);
-}
-
-.milkdrop-overlay__preset[data-active="true"] {
-  border-color: rgba(124, 232, 255, 0.2);
-  background:
-    radial-gradient(
-      circle at top right,
-      rgba(124, 232, 255, 0.14),
-      transparent 32%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 54%),
-    rgba(10, 18, 30, 0.94);
-  box-shadow: 0 24px 42px rgba(0, 0, 0, 0.24);
-}
-
-.milkdrop-overlay__preset-title {
-  font-size: 1rem;
-}
-
-.milkdrop-overlay__preset-meta {
-  font-size: 0.8125rem;
-}
-
-.milkdrop-overlay__preset-launch {
-  gap: 0.8rem;
-}
-
-.milkdrop-overlay__preset-preview {
-  position: relative;
-  overflow: hidden;
-  min-height: 132px;
-  border: 1px solid rgba(153, 217, 255, 0.12);
-  border-radius: var(--radius-xl);
-  background:
-    radial-gradient(circle at top, rgba(124, 232, 255, 0.22), transparent 42%),
-    linear-gradient(160deg, rgba(14, 28, 47, 0.92), rgba(5, 9, 17, 0.98));
-}
-
-.milkdrop-overlay__preset-preview-image,
-.milkdrop-overlay__preset-preview-fallback {
-  display: block;
-  width: 100%;
-  height: 132px;
-}
-
-.milkdrop-overlay__preset-preview-image {
-  object-fit: cover;
-}
-
-.milkdrop-overlay__preset-preview-fallback {
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-stretch: var(--font-stretch-legend);
-  color: rgba(232, 243, 255, 0.82);
-}
-
-.milkdrop-overlay__preset-preview-status {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  padding: 0.38rem 0.56rem;
-  border-radius: var(--radius-pill);
-  background: rgba(5, 13, 22, 0.96);
-  color: rgba(236, 244, 255, 0.92);
-  font-size: 0.6875rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  font-stretch: var(--font-stretch-legend);
-}
-
-.milkdrop-overlay__preset[data-preview-status="capturing"]
-  .milkdrop-overlay__preset-preview-status {
-  background: rgba(6, 84, 124, 0.78);
-}
-
-.milkdrop-overlay__preset[data-preview-status="failed"]
-  .milkdrop-overlay__preset-preview-status {
-  background: rgba(136, 34, 40, 0.82);
-}
-
 .milkdrop-overlay__preview-capture-host {
   position: fixed;
   top: -9999px;
@@ -2068,10 +1718,6 @@ body {
   display: block;
   width: 360px;
   height: 203px;
-}
-
-.milkdrop-overlay__preset-tag {
-  border-radius: var(--radius-pill);
 }
 
 @media (max-width: 640px) {
