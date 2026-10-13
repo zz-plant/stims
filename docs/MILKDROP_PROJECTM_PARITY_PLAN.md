@@ -11,14 +11,7 @@ Before visual parity claims, the first requirement is simpler: Stims must be abl
 
 For upstream fixture oracle captures on macOS, use `bun run parity:capture:projectm-native -- --preset <id> --output <review-dir>`. This route validates that the safe preset ID and fixture root remain inside the repository, compiles the checked-in native harness against Homebrew `libprojectM` and SDL2, calls native `projectM::renderFrame` for the configured frame count in a hidden OpenGL context without adding another throttle, and writes a hash-bound provenance sidecar. Promotion recomputes the current upstream fixture and harness hashes; projectM/SDL/macOS/OpenGL details remain capture-host-only external provenance. The command publishes no partial image/sidecar pair when render or teardown fails. Review and repeat the output before running `parity:promote-reference`; browser/Stims screenshots and legacy `checked-in output/playwright projectM capture` files are not native projectM evidence.
 
-The first bundled shipped presets to carry through that flow are:
-
-- `eos-glowsticks-v2-03-music`
-- `rovastar-parallel-universe`
-- `eos-phat-cubetrace-v2`
-- `krash-rovastar-cerebral-demons-stars`
-
-These four IDs are the smallest evidence loop that can move the shipped catalog from inferred runtime labels to checked-in `projectM` references and measured results without expanding the corpus prematurely.
+The proof loop is the certified reference set: the 13 presets in `visual-reference-manifest.json` whose native projectM image is checked in under `tests/fixtures/milkdrop/projectm-reference/`. It replaced an earlier four-preset "bundled shipped" lane (glowsticks, parallel-universe, cubetrace, krash), two of whose references show no signal and should be retired (see the 2026-08-26 snapshot below).
 
 ## Current state (2026-08-27)
 
@@ -50,8 +43,11 @@ ones can be trusted; the 2026-08-26 scoreboard below them is superseded.
   **ungraded** (`reference-no-signal`), 300-beatdetect 5.79%, 250-wavecode
   7.30%, cubetrace 29.25%, 260 33.72% (still bit-exact repeatable),
   261 76.24%, rovastar-parallel-universe 67.99%, mosaics 100.00%.
-- **Top open defect: feedback accumulates without bound on `fDecay=1.0`
-  presets.** All thirteen certified presets are now graded (the three that
+- **Top open defect as of 2026-08-27, unmeasured since #1223: feedback
+  accumulates without bound on `fDecay=1.0` presets.** The #1223 clamp
+  (`c3cd2d87`, 2026-09-23) now bounds the internal frame to [0,1] on both
+  backends, as MilkDrop's 8-bit buffer does; the suite has not been re-run
+  since, so whether these four presets moved is unknown. All thirteen certified presets are now graded (the three that
   reported `backend-mismatch` were stale WebGL captures, re-captured on
   WebGPU), and the four worst all render far brighter than projectM:
   magnetosphere 24.7 -> 76.9 mean luminance, dark-heart 22.1 -> 74.5 (red
@@ -216,7 +212,7 @@ bun run parity:promote-reference -- \
 That flow copies the selected projectM artifact into `tests/fixtures/milkdrop/projectm-reference/` and updates `src/data/milkdrop-parity/visual-reference-manifest.json`, which becomes the source of truth for certified visual references.
 The bounded preset universe for that work is tracked separately in `src/data/milkdrop-parity/certification-corpus.json`, so reference images and measured results stay scoped to an explicit WebGPU certification corpus instead of open-ended imports.
 
-For the bundled shipped presets, repeat the same capture/import/promote sequence one preset at a time and do not move to `measured-results.json` until the corresponding `projectM` reference is checked in for that same preset id.
+Repeat the capture/import/promote sequence one preset at a time, and do not move a preset to `measured-results.json` until its `projectM` reference is checked in under the same id.
 
 Run the certified suite against that checked-in manifest:
 
@@ -228,7 +224,7 @@ That suite resolves the latest Stims capture per certified preset, compares it t
 
 ### Two things that make a parity number a lie
 
-**Captures must run one at a time.** `parity:capture` is serial by default and warns if `--concurrency` is raised. Parallel captures are not merely slower: Chromium instances contend for the GPU and lose their device, and the pre-capture transition settle loop burns a variable number of frames so the pump lands somewhere else in the preset's evolution. Measured over three passes of the nine certified presets, `100-square` scored 1.30/1.31/1.81% serially and 1.30/17.24/34.97% at concurrency 4, and every serial capture settled in 0 extra frames against up to 180 at concurrency 4.
+**Captures must run one at a time.** `parity:capture` is serial by default and warns if `--concurrency` is raised. Parallel captures are not merely slower: Chromium instances contend for the GPU and lose their device, and the pre-capture transition settle loop burns a variable number of frames so the pump lands somewhere else in the preset's evolution. Measured over three passes of the nine presets certified at the time (four more were added on 2026-08-26), `100-square` scored 1.30/1.31/1.81% serially and 1.30/17.24/34.97% at concurrency 4, and every serial capture settled in 0 extra frames against up to 180 at concurrency 4.
 
 **A single capture is not evidence.** Even serially, the same build scores differently run to run, because the capture runs with live audio while the projectM reference was captured under silence, and because the frame count before the deterministic pump varies. Calibrate the spread before quoting a delta:
 
@@ -248,7 +244,7 @@ bun run parity:check-references
 
 That scores each certified reference against a solid-black frame using the preset's own diff threshold and reports the headroom over its fail threshold. `parity:promote-reference` runs the same check and refuses to certify a reference a blank frame would pass, unless `--allow-weak-reference` is given.
 
-For the four bundled shipped presets, a successful suite result should be promoted only after the checked-in reference is present and the report points at the same preset id.
+Promote a suite result only after the checked-in reference is present and the report points at the same preset id.
 
 Promote an individual suite result into the checked-in measured-results manifest:
 
@@ -306,11 +302,13 @@ That rewrite keeps `public/milkdrop-presets/catalog.json` aligned with measured 
 - Validate custom-wave and custom-shape output with visual baselines, not just object counts.
 - Verify legacy aliases and instance-local behavior with render fixtures.
 
-## Phase 4: re-qualify WebGPU
+## Phase 4: re-qualify WebGPU, then cover WebGL
 
-1. Prove descriptor-plan output matches the compatibility WebGL path for certified presets.
-2. Keep unsupported presets on WebGL fallback until equivalence is measured.
-3. Only mark WebGPU presets as exact when their output matches both the reference oracle and the WebGL path.
+WebGPU is the only judged backend; WebGL has no parity coverage, so it cannot serve as WebGPU's comparator.
+
+1. Re-measure every certified preset on WebGPU against its projectM reference, and demote what fails.
+2. Mark a preset exact only when it passes its projectM reference within tolerance and outside its noise band.
+3. Give WebGL its own captures against the same references before making any WebGL fidelity claim. `lab:backend-diff` finds where the backends disagree; it is not a fidelity verdict.
 
 ## Suggested implementation order
 
@@ -321,4 +319,4 @@ That rewrite keeps `public/milkdrop-presets/catalog.json` aligned with measured 
 5. Shader-text parity.
 6. Texture/sampler parity.
 7. Wave/shape rasterization parity.
-8. WebGPU re-certification.
+8. WebGPU re-measurement, then WebGL coverage.

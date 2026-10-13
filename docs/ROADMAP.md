@@ -19,7 +19,7 @@ Audited against the code on 2026-10-06. PR numbers mark what changed in that pas
 
 - Searchable catalog with previews, collections, favorites, history, deep links, and a preset queue you can fill from Browse (#1373).
 - Direct `.milk` import/export and a live CodeMirror editor: undo that never crosses presets, A/B against the original, named versions, and a revert to the original (#1369).
-- WebGL2 compatibility baseline plus a guarded WebGPU execution path. Measured visual evidence is captured on the WebGPU path (the reference-capture backend); WebGL2, the baseline most users run, has no measured evidence and is tracked as a gap, not claimed.
+- WebGPU where the browser ships it as stable, WebGL2 elsewhere ([Rendering backends](./ARCHITECTURE.md#rendering-backends) has the selection rule and how visitors split). Measured visual evidence exists only for WebGPU, the judged backend; WebGL2 has none and is tracked as a gap, not claimed.
 - Browser audio from the microphone, a file, tab or system audio (desktop browsers), a YouTube embed captured as tab audio, and the built-in demo, analysed off the main thread.
 - Live performance: WebMIDI learn with mappings saved per device, factory controller profiles, and a cue monitor whose hand fader runs both presets through the fade.
 - Comfort controls: a Reduce flashing governor, a brightness ceiling, and a motion dampener.
@@ -55,12 +55,12 @@ Open:
 
 - The tab/system card only checks that `getDisplayMedia` exists, so a browser that cannot share audio fails after the share dialog instead of before it.
 - A direct audio-URL source, reusing the file-audio graph. SoundCloud has no code at all.
-- The local player plays one file on a loop. Missing: folder and multi-file playlists, advancing at the end of a track, ID3 title and artwork, a seek bar with beat markers, and shuffle/repeat.
+- The local player takes several files as a queue (#1443): it advances at the end of a track, loops the queue, and has next, previous and pause. Missing: picking a folder, ID3 title and artwork, a seek bar with beat markers, shuffle, and a control for the repeat modes `file-audio.ts` already has (queue, one track, off).
 - The microphone has a device picker and a check that the browser's voice processing is off. Missing: user gain, a level meter in dB, and a noise gate. Room compensation comes after those.
 
 Exit criteria:
 
-- a user can start visualizing their system audio or a local playlist within 2 clicks from first visit without external software. *System audio: met inside the app; the browser's share picker adds its own clicks. Local playlist: not met, because there is no playlist.*
+- a user can start visualizing their system audio or a local playlist within 2 clicks from first visit without external software. *System audio: met inside the app; the browser's share picker adds its own clicks. Local playlist: met for files picked together (#1443); a folder cannot be picked.*
 
 ### Remix studio & shader live-coding
 
@@ -124,9 +124,9 @@ Shipped:
 Open:
 
 - **Preview gaps.** Re-render the 193 presets listed in `preview-failures.json`.
-- **Ranking inputs.** Reactivity is measured for 47 of 1,787 presets, motion for 50, and engagement for none. A performance-cost signal now ships (`src/data/preset-frame-cost.json`, read by autoplay and shuffle on low-tier devices via core/preset-cost-signal.ts), but its data population is ongoing and Browse ranking does not consume it yet. 99 of the top 100 by `curatedRank` are uncertified.
+- **Ranking inputs.** Reactivity is measured for 47 of 1,787 presets, motion for 50, and engagement for none. A performance-cost signal ships (`src/data/preset-frame-cost.json`, read by autoplay and shuffle on low-tier devices via `src/js/core/preset-cost-signal.ts`, #1419). It holds 43 presets, all measured on one high-end WebGPU machine on 2026-10-12; the heaviest is 5.24 ms against the 12 ms low-tier budget, so the gate skips nothing yet. Browse ranking does not read it, by design. 99 of the top 100 by `curatedRank` are uncertified.
 - **Mood.** Mood comes from title keywords (`describePresetMood`). The autotagger's `category:*` tags can only be reached by typing them.
-- **Visual similarity.** The finder's "look" mode embeds a text description of each frame, not the frame. Those descriptions collapse 1,786 presets into 81 distinct strings.
+- **Visual similarity.** Shipped for most of the catalog (#1447): Nearby, the finder's "By look" and Browse's "Like your saved" sort compare EmbeddingGemma 2 embeddings of each rendered preview, on the device. 1,636 of 1,787 presets have a vector. The rest fall back to `/api/visual-search`, which embeds a text description of the frame; those descriptions collapsed 1,786 presets into 81 distinct strings.
 - **Community signals.** `setRating` has no UI, and there are no notes or glitch reports.
 - **Shareable views.** A shared Browse URL keeps the collection but not the search, author, or sort.
 - **Fidelity in Browse.** A fidelity sort or badge needs measurements; one preset in 1,787 has one.
@@ -134,7 +134,7 @@ Open:
 Exit criteria:
 
 - a first-time user can find a strong preset without understanding MilkDrop naming conventions. *Partly met: starter picks, collections, and search synonyms exist; there is no mood browsing and no user testing.* And
-- low-confidence or expensive presets do not dominate default recommendations. *Not met: the cost signal and its low-tier autoplay gate shipped, but the sidecar holds no measurements yet and there is almost no confidence signal.*
+- low-confidence or expensive presets do not dominate default recommendations. *Not met: the cost signal and its low-tier autoplay gate shipped, but its 43 measurements come from one high-end machine and exclude nothing, and there is almost no confidence signal.*
 
 ### Proof floor — maintained, not expanded
 
@@ -145,11 +145,11 @@ Exit criteria:
 - Fix renderer behavior by subsystem when measured evidence regresses: feedback orientation, shader sampling, color presentation, shapes, waves, and motion vectors.
 - Promote results only after the requested backend and reference provenance are verified. The tooling enforces this; the data predates it.
 - Show evidence where people choose presets. Browse shows none by design, and the inspector shows no measured result.
-- Portrait viewports render black on WebGPU (found 2026-10-06; WebGL is unaffected).
+- Make WebGL's warp centre honour the aspect. #1376 traced the black portrait stage of 2026-10-06 to the then first-run preset's 16:9 `cx`/`cy` maths: WebGPU matches MilkDrop there, and WebGL differs because it drops the aspect from `cx`/`cy` (see [Product moments](./PRODUCT_MOMENTS.md#open-questions)).
 
 Exit criteria:
 
-- every featured preset has current measured evidence. *Not met: the first-run preset is uncertified, its reference shows no signal, and its WebGPU and WebGL renders differ in mean luminance (88 vs 26).*
+- every featured preset has current measured evidence. *Not met: the first-run preset, `shifter-curlique` (`src/js/milkdrop/runtime/first-run-preset.ts`), has no projectM reference. Its checked-in evidence shows it lit and moving on both backends at both sizes (mean luminance 138 on WebGPU, 115 on WebGL at 1280×720; `src/data/first-run-preset-evidence.json`), which is not parity. Its predecessor, krash, had a reference that shows no signal.*
 - public compatibility wording is generated or guarded against tracked sources of truth. *Partly met: the claims guard scans the README and `docs/` but not in-app copy or `public/llms.txt`, and the catalog fidelity check trusts the stale results file.* And
 - unsupported or fallback behavior is visible rather than silent. *Partly met: the 168 presets that render approximated on WebGPU get a stage chip, but nothing in Browse says so.*
 
@@ -157,7 +157,7 @@ Exit criteria:
 
 The bundled corpus was imported from the community without any photosensitive-seizure review. Stims' commitment to neurodivergent stimmers requires active protection, not just passive reporting.
 
-**What is measured.** The WCAG 2.3.1 audit (`packages/flash-guard/src/analysis.ts` + `scripts/analyze-preset-flash.ts`) has measured 40 of 1,787 presets, most recently on 2026-08-22. One of them, `beta106at-shape-mash0001-…`, measured high at about 5 flashes a second. The rest stay under threshold because MilkDrop's motion is directionally incoherent: about 14% of the field brightens while 13% darkens in the same frame, which is not the field-wide flash WCAG describes. All of those runs used the synthetic preview waveform. On 2026-10-06 the live governor, sampling at 60 Hz with real audio, caught the first-run preset (`krash-rovastar-cerebral-demons-stars`) flashing above 3 a second in bursts. Real audio and the sampling rate both matter. See [`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete).
+**What is measured.** On 2026-08-22 the WCAG 2.3.1 audit (`packages/flash-guard/src/analysis.ts` + `scripts/analyze-preset-flash.ts`) measured 40 of 1,787 presets on the synthetic preview waveform and found one high, `beta106at-shape-mash0001-…`, at about 5 flashes a second. It explained the other zeros as directionally incoherent motion: in a decomposition of five presets, 14.1% of a window brightened while 13.6% darkened in the same frame, each under the 25% area rule ([`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete)). That explanation no longer covers the corpus. On 2026-10-06 the live governor, sampling at 60 Hz with real audio, caught `krash-rovastar-cerebral-demons-stars`, the first-run preset until #1376 replaced it that day, flashing above 3 a second in bursts. Since #1383 the audit and the governor count psychaos and krash well above that on the same frames (item 1 in [Up next](#up-next-in-order)). Whether churn, a quarter of the field brightening while another quarter darkens, should count as flashing is open ([Product moments](./PRODUCT_MOMENTS.md#open-questions)).
 
 Shipped:
 
@@ -178,7 +178,7 @@ Open:
 Exit criteria:
 
 - the audit tool's resource-exhaustion pattern is fixed and a full-corpus run completes without a large unmeasured tail. *Not met: the last local run lost 21 of 60 presets, mostly to 90-second timeouts clustered at the end. Page recycling exists but reuses one browser and context.*
-- a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape. *Not met; it would fail today on the one high-risk preset.*
+- a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape. *Not met; the three presets measured above threshold (`beta106at-shape-mash0001-…`, psychaos and krash) would fail it.*
 - a real-time luminance clamp passes a synthetic 15Hz square-wave flash torture test with zero frames exceeding WCAG 2.3.1 thresholds. *Partly met: unit tests cover 10 Hz and 30 Hz on a 6×6 grid, and 5 Hz on the app's 16×16 grid at its sample density; none covers 15 Hz or the real filter in a browser.* And
 - the motion dampener scales camera transforms down to full stillness without halting audio-reactive shape generation. *Mostly met: transforms come to rest at 0, but no test checks that waves and shapes still react.*
 
@@ -197,6 +197,7 @@ Shipped:
   - Knob and fader moves apply live and commit once, 250 ms after the last move. Before, every CC recompiled the preset on the main thread.
   - A learned mapping spans the variable's natural range instead of 0–1.
   - Touching a Perform control or the cue fader picks it as the learn target.
+- Stage utilities (#1455, closing [#1440](https://github.com/zz-plant/stims/issues/1440)): hold D for a blackout (two quick taps latch it) and Y for a white flash, without touching the preset or audio. Space freezes the picture.
 
 Open:
 
@@ -206,7 +207,7 @@ Open:
 - **Projector / external display window.** The second window today is a watch-party link. It boots a full session with its own audio, synced through a relay that carries only the preset id and title, so MIDI moves, edits, and crossfades never reach the audience screen. What it needs: a same-origin window that mirrors the stage canvas (the picture-in-picture path already does), with no chrome and the cursor hidden.
 - **Tap tempo and phase nudge.** Missing; tempo comes only from the audio. `=` and `-` are the stage zoom and warp keys.
 - **Transition shaders.** One noise dissolve. Missing: wipe, glitch, and others, on both backends.
-- **Stage utilities.** Space freezes the picture. Blackout and white flash are missing, and the brightness ceiling stops at 30%. B, W, and F are taken (Browse, next waveform, full screen); D, K, and Y are free.
+- **Brightness floor.** The brightness ceiling stops at 30%, so the stage cannot be dimmed further than that without a blackout.
 
 Exit criteria:
 
@@ -217,7 +218,7 @@ Exit criteria:
 
 - Extend the parity diff harness (`scripts/run-parity-diff-suite.ts`) to capture and grade WebGL2 frame captures alongside WebGPU, which is currently the only judged backend.
 - Grade both backends against the same contract the suite already uses: mismatch below the preset's configured `failThreshold` (`0.02` in `visual-reference-manifest.json`), outside its measured noise band, and against a reference a blank frame would not also pass.
-- Eliminate the unmeasured status of the WebGL2 baseline so that fidelity claims reflect the renderer the majority of web users run.
+- Eliminate the unmeasured status of WebGL2, which carries a large share of visits ([Rendering backends](./ARCHITECTURE.md#rendering-backends)), so fidelity claims cover the renderer those visitors see.
 
 Exit criteria:
 - Every certified preset in `src/data/milkdrop-parity/visual-reference-manifest.json` possesses matching measured diff reports for both `webgpu` and `webgl` backends; and

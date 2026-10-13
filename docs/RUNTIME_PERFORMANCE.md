@@ -164,6 +164,15 @@ per-frame crossfade cost at this tier. The mid-range reality still requires
 the fixed-tier runner on a host whose headless browser is not
 software-rendering.
 
+**Follow-up: the spike's fix shipped, unverified by this method.** #1422
+(`7c646016`, 2026-10-12) compiles the incoming preset's WebGPU pipelines
+before the fade begins and holds the fade for up to 1,500 ms
+(`runtime/preset-switch-warmup.ts`). The deadline was tuned from warm-up
+durations measured on this hardware (236 ms to 1,611 ms per preset), and
+a deadline miss measured a 50–68 ms hitch rather than a cold build. Switch
+cadence has not been re-sampled with the headed-tab method above, so the
+258–433 ms rows stand as the before measurement only.
+
 ## 2026-10-11 Inlined RNG and repeated-read caching in the JIT
 
 Two changes to the CPU JIT, aimed at the per-point/per-vertex hot path that

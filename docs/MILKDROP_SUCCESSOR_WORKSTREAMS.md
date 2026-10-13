@@ -28,14 +28,7 @@ Exit signal:
 - measured visual results exist for the certified corpus
 - shipped fidelity labels are derived from evidence, not optimism
 
-Bundled shipped preset lane:
-
-- `eos-glowsticks-v2-03-music`
-- `rovastar-parallel-universe`
-- `eos-phat-cubetrace-v2`
-- `krash-rovastar-cerebral-demons-stars`
-
-These four presets are the current bundled proof loop. They should be pushed through capture, `projectM` reference import, checked-in reference promotion, suite diffing, and measured-result promotion in that order.
+Proof loop: the 13 certified references in `src/data/milkdrop-parity/visual-reference-manifest.json`, judged on WebGPU. The earlier four-preset bundled lane is retired; two of its references (krash, glowsticks) show no signal. See the [parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md).
 
 ### 2. Runtime performance
 

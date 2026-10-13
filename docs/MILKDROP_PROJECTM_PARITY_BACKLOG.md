@@ -43,8 +43,8 @@ Corpus integrity (resolved):
 Completed foundation:
 - Milestones 0 through 3 are implemented in the repo: deterministic parity artifacts, checked-in certification manifests, native projectM reference promotion, measured-result promotion, backend-aware diffing, and honest fidelity labeling are all wired.
 
-Bundled shipped preset lane:
-- The four IDs in the initial `bundled-shipped` evidence lane are the first sample to push through reference import and measured-result promotion:
+Bundled shipped preset lane (superseded):
+- The certified reference set replaced this lane as the proof loop: 13 presets in `visual-reference-manifest.json` carry a native projectM image. Two of the four lane presets, krash and glowsticks, have references that show no signal and should be retired (see the parity plan), and the `bundled-shipped` corpus group now lists 43 presets. The original lane, for the record:
   - `eos-glowsticks-v2-03-music`
   - `rovastar-parallel-universe`
   - `eos-phat-cubetrace-v2`
@@ -307,8 +307,8 @@ Completed slices:
 - The shape radius floor was lowered to 0.002 so instanced dot fields keep MilkDrop's typical 0.005-0.02 radii.
 
 Current remaining focus:
-- Audit the non-MilkDrop flourishes still applied in `shapeVisualFromLocals`: the `time * 0.08` rotation term, the `beatPulse` radius multiplier, and whether shape radius needs the same 0..1 to -1..1 rescaling that shape `x`/`y` receive. These predate measured certification and are currently pinned by tests.
-- Compare WebGPU and compatibility WebGL output for custom-wave, custom-shape, and border-heavy presets before changing more backend flags.
+- Decide whether shape radius needs the same 0..1 to -1..1 rescaling that shape `x`/`y` receive. (The `time * 0.08` rotation term and the `beatPulse` radius multiplier were removed on 2026-08-04 in `6b43d58e`; rotation is now the shape's own `ang`.)
+- Use `bun run lab:backend-diff` to find where WebGL and WebGPU disagree on custom-wave, custom-shape, and border-heavy presets; judge each fix against the projectM reference on WebGPU, not against WebGL.
 - Tighten shape-outline, border-ring, and waveform thickness behavior based on measured reference output rather than object-count parity.
 - Treat remaining visible draw-order or smoothing drift as certification blockers even when the VM output is already semantically correct.
 
@@ -324,11 +324,11 @@ Status:
 Current evidence:
 - The comparator requires native WebGPU captures and records backend mismatches instead of accepting fallback WebGL captures.
 - Current report (`src/data/milkdrop-parity/webgpu-certification-report.json`, 2026-07-29): 3 presets certified on both backends, 0 WebGL-only, 6 uncertified, and 62 unmeasured out of a 71-preset corpus. The volume fixtures are captured natively but fail visual tolerance.
-- Native WebGPU direct feedback remains disabled for live sessions and is enabled only in the explicit `renderer=webgpu&corpus=certification` lane, pending measured ShaderMaterial/TSL composite equivalence for broader use.
+- Native WebGPU direct feedback has been on by default on the full WebGPU path since 2026-08-06 (`789c1e9a`), not only in the certification lane.
 - Built-in `noise_lq` and `noisevol_lq` now use deterministic RGBA noise sources for browser parity; strict pixel comparison remains intentionally non-certifying because native projectM seeds these textures independently per process.
 
 Goal:
-- Prevent WebGPU from claiming parity before it has earned it.
+- Prevent WebGPU from claiming parity before it has earned it. WebGPU is the only judged backend: every certified reference requires it, and WebGL has no parity coverage, so WebGL output is not a comparator for it.
 
 Primary files to change:
 - [`src/js/milkdrop/renderer-adapter-webgpu.ts`](../src/js/milkdrop/renderer-adapter-webgpu.ts)
@@ -337,9 +337,7 @@ Primary files to change:
 - [`tests/compat/milkdrop-webgpu-rollout.test.ts`](../tests/compat/milkdrop-webgpu-rollout.test.ts)
 
 Implementation tasks:
-1. Compare WebGPU output against both:
-   - projectM reference output
-   - Stims compatibility WebGL output
+1. Compare WebGPU output against the projectM reference, within the preset's tolerance and outside its noise band.
 2. Disable exactness claims for WebGPU where descriptor-plan output diverges.
    (2026-08-18: the semantic layer of this divergence is now converged and
    fuzz-guarded — `tests/unit/gpu-field-tier-differential.test.ts` holds the
@@ -350,13 +348,14 @@ Implementation tasks:
 3. Keep fallback routing conservative until equivalence is proven.
 
 Current remaining focus:
-- Build a repeatable “projectM reference plus WebGL comparator” review loop for the certified corpus.
+- Re-run capture, suite and noise on the certified set; nothing has been measured since 2026-09-01.
 - Require native WebGPU capture success for certified presets; fallback to WebGL remains a certification failure.
 - Gate any future WebGPU backend-capability claims on measured output, not on native execution alone.
 
 Acceptance criteria:
 - WebGPU-specific certification exists for the certified corpus.
-- A preset is not `exact` on WebGPU unless it passes both comparison layers.
+- A preset is not `exact` on WebGPU unless it passes its projectM reference.
+- WebGL gets its own parity coverage before any WebGL fidelity claim; `lab:backend-diff` locates backend divergence but is not a fidelity verdict.
 
 ## Milestone 9: UI and reporting honesty
 

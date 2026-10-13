@@ -1,10 +1,12 @@
 /**
- * The single seam between the React workspace and the imperative engine.
+ * The seam through which the React workspace owns a running engine session.
  *
  * `createMilkdropEngineAdapter` builds the object `frontend/` calls to mount,
- * drive and tear down a visualizer session. React never reaches into
- * `milkdrop/` directly; every crossing goes through here, and
- * `bun run check:architecture` enforces that.
+ * drive and tear down a visualizer session. Only `frontend/engine/` may import
+ * the runtime, renderers, feedback managers, VM or compiler entry. The rest of
+ * `frontend/` may import only the modules listed in `MILKDROP_SHELL_SURFACE`
+ * (`.dependency-cruiser.mjs`): catalog and preset helpers, the overlay editor,
+ * the live tile pool. `bun run check:architecture` enforces both rules.
  *
  * The boundary is worth defending. On one side is declarative UI that
  * re-renders freely; on the other is a stateful engine holding GPU resources

@@ -6,13 +6,15 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 
 ## Problem Summary
 
-1. **WebGPU feedback pipeline still has split ownership** — WebGPU sessions no longer allocate the shared WebGL feedback manager while native feedback remains disabled for browser parity, and the WebGL feedback target factory is still only a first extracted slice rather than a backend-neutral target API
-2. **1400-line TSL duplication** — `feedback-manager-webgpu-tsl.ts` manually mirrors the GLSL composite shader as TSL node graphs
-3. **Worker renderer is WebGPU-only with no fallback** — `renderer-worker.ts` throws if WebGPU is unavailable
-4. **WGSL codegen is scalar-only** — `wgsl-generator.ts` never vectorizes
-5. **No RenderBundle or OffscreenCanvas transfer** — capability detection exists but implementation is absent
-6. **Default-off posture limits real-world WebGPU testing** — compatibility gap guards keep most users on WebGL
-7. **Compiler IR is still too broad** — `compiler/ir.ts` still assembles field normalization, shader execution support, compatibility reports, and descriptor plans in one module
+Status checked against the code on 2026-10-13. Only problems 2 and 4 remain open.
+
+1. **WebGPU feedback pipeline had split ownership.** Resolved: native TSL feedback has run by default on the full WebGPU path since 2026-08-06 (`789c1e9a`), and `feedback-render-targets.ts` allocates targets for both backends.
+2. **TSL duplication.** Open: `feedback-manager-webgpu-tsl.ts` still mirrors the GLSL composite shader as TSL node graphs by hand.
+3. **Worker renderer was WebGPU-only with no fallback.** Moot: the worker renderer prototype and its protocol were deleted unwired (#1454).
+4. **WGSL codegen is scalar-only.** Open, and narrow: `wgsl-generator.ts` serves only the compute VM, which is off by default. The unused `wgsl-vectorization.ts` helpers were deleted (#1454).
+5. **No RenderBundle or OffscreenCanvas transfer.** Render bundles exist behind `?milkdrop-webgpu-render-bundles=1` (`renderer-bundles.ts`); a hardware A/B on 2026-10-11 found no cadence effect, so they stay off. OffscreenCanvas transfer is not implemented.
+6. **Default-off posture limited real-world WebGPU testing.** Resolved: WebGPU is selected by default on browsers that ship it as stable ([Rendering backends](./ARCHITECTURE.md#rendering-backends)).
+7. **Compiler IR was too broad.** Resolved: `compiler/compatibility-report.ts` and `compiler/shader-execution-classification.ts` carry compatibility aggregation and execution classification out of `compiler/ir.ts`.
 
 ## Workstreams
 
@@ -123,7 +125,7 @@ Each workstream ships behind a feature flag (optimization flag or URL param), al
 
 ## Current Status
 
-- `renderer-execution-plan.ts` centralizes WebGPU descriptor fallback and feedback-manager mode decisions for backend fallback, renderer core descriptor planning, and WebGPU adapter creation. It now also returns disabled features, status labels, and structured fallback reasons. Current WebGPU feedback mode is `none`; native WebGPU feedback remains a planned parity-gated follow-up behind `nativeWebGpuFeedbackEnabled`.
+- `renderer-execution-plan.ts` centralizes WebGPU descriptor fallback and feedback-manager mode decisions for backend fallback, renderer core descriptor planning, and WebGPU adapter creation. It now also returns disabled features, status labels, and structured fallback reasons. The WebGPU feedback mode is `webgpu-native` on the full path and `none` on the safe path; native feedback has been on by default since 2026-08-06 (`789c1e9a`).
 - `feedback-render-targets.ts` owns the unified `createFeedbackRenderTarget` factory supporting both WebGL and WebGPU render-target allocations.
 - `compiler/shader-execution-classification.ts` and `compiler/compatibility-report.ts` give compiler and runtime code dedicated vocabularies for backend-executable shader programs and structured parity aggregation, separating compatibility aggregation cleanly out of `ir.ts`.
 - Remaining feedback work is to continue reducing the GLSL/TSL composite duplication.
