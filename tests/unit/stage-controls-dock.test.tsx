@@ -154,6 +154,7 @@ describe('stage dock auto-hide', () => {
       expect(foldedEdit()?.dataset.visible).toBe('true');
       expect(foldedEdit()?.hasAttribute('inert')).toBe(false);
       expect(foldedEdit()?.getAttribute('aria-label')).toBe('Edit this visual');
+      expect(foldedEdit()?.getAttribute('title')).toBe('Edit this visual (E)');
 
       rendered.click(foldedEdit());
       expect(panels).toEqual(['editor']);
@@ -192,6 +193,20 @@ describe('stage dock transport', () => {
     } finally {
       rendered.dispose();
     }
+  });
+
+  test('the Edit buttons teach the E key the way dock neighbours do', () => {
+    // The bar's icon buttons teach their keys in the title ("Previous (P)"),
+    // resolved from the registry so a rebind lands there too; the editor
+    // entry point follows the same pattern (issue #1338). The key stays out
+    // of the accessible name: aria-keyshortcuts announces it.
+    const rendered = mount();
+
+    const edit = rendered.byLabel('Edit this visual');
+    expect(edit?.getAttribute('title')).toBe('Edit this visual (E)');
+    expect(edit?.getAttribute('aria-keyshortcuts')).toBe('E');
+
+    rendered.dispose();
   });
 
   test('the transport slot pauses and resumes instead of stopping', () => {
