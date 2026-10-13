@@ -1,6 +1,8 @@
 # Feature specifications
 
-See the [user guide](./USER_GUIDE.md) for usage and [implementation status](./IMPLEMENTATION_STATUS.md) for beta, optional, and unfinished work. These specifications describe expected behavior; browser checks establish which paths have been verified.
+> Superseded on 2026-10-13. Current capabilities and limits are in [`IMPLEMENTATION_STATUS.md`](../IMPLEMENTATION_STATUS.md), route contracts in [`PAGE_SPECIFICATIONS.md`](../PAGE_SPECIFICATIONS.md), and frontend ownership in [`DEVELOPMENT.md`](../DEVELOPMENT.md#frontend-boundaries). This copy had drifted: it called WebGL the default renderer, named an "Unknown experience" state the app renders as "Link no longer works", and listed an incomplete persistence table.
+
+See the [user guide](../USER_GUIDE.md) for usage and [implementation status](../IMPLEMENTATION_STATUS.md) for beta, optional, and unfinished work. These specifications describe expected behavior; browser checks establish which paths have been verified.
 
 ## Capability map
 
