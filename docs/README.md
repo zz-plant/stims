@@ -19,32 +19,24 @@ Start with [the app](https://toil.fyi), the [user guide](./USER_GUIDE.md), or [c
 
 | Task | Read |
 | --- | --- |
-| Install and run locally | [Contributing](../CONTRIBUTING.md), [development](./DEVELOPMENT.md) |
+| Install and run locally | [Setup](../CONTRIBUTING.md#set-up), [development](./DEVELOPMENT.md) |
 | Find the right module or instrument | [Onboarding](./ONBOARDING.md) |
-| Choose tests and understand CI | [Testing](./TESTING.md), [verification matrix](./VERIFICATION_MATRIX.md) |
-| Check a user flow | [QA plan](./QA_PLAN.md), [manual smoke baseline](./MANUAL_SMOKE_BASELINE.md) |
+| Choose tests and understand CI | [Testing](./TESTING.md), [test directory map](../tests/INDEX.md) |
+| Check a user flow by hand | [QA plan](./QA_PLAN.md) |
 | Review enforced rules | [Guardrails](./GUARDRAILS.md), generated from guard scripts |
-| Prepare a commit or release | [Commit conventions](./COMMIT_CONVENTIONS.md), [dated release notes](./RELEASE_NOTES.md) |
+| Prepare a commit or release | [Commit conventions](./COMMIT_CONVENTIONS.md), [release checklist](./DEPLOYMENT.md#release-checklist), [changelog](../CHANGELOG.md), [dated release notes](./RELEASE_NOTES.md) |
 | Deploy or preview | [Deployment](./DEPLOYMENT.md) |
 | Maintain documentation | [Maintenance rules](./DOCS_MAINTENANCE.md), [public docs site map](./PUBLIC_DOCS_SITE_MAP.md) |
 | Work through an agent | [Agent instructions](../AGENTS.md), [agent docs](./agents/README.md), [MCP server](./MCP_SERVER.md) |
 | Work on extracted libraries | [Packages](../packages/README.md), [package promotion](./PACKAGE_PROMOTION.md) |
 
-```bash
-bun install --frozen-lockfile
-bun run dev:agent       # Dev server, typecheck watch, fast test watch
-bun run check:quick     # Lint, types, and guards; no tests
-bun run check           # Guards, package checks, unit + compat + corpus tests
-bun run scripts:list    # Commands and purposes from their source docblocks
-```
-
-Use the Bun version pinned in `package.json`. Open `http://localhost:5173/?agent=true` for browser verification. `/milkdrop/` redirects to the root workspace for compatibility.
+`bun run help` lists every script with the purpose its source docblock gives.
 
 ## Understand the implementation
 
 | Area | Read |
 | --- | --- |
-| Current capabilities and limits | [Implementation status](./IMPLEMENTATION_STATUS.md), [feature specifications](./FEATURE_SPECIFICATIONS.md), [page specifications](./PAGE_SPECIFICATIONS.md) |
+| Current capabilities and limits | [Implementation status](./IMPLEMENTATION_STATUS.md), [page specifications](./PAGE_SPECIFICATIONS.md) |
 | Shell, URL state, and engine ownership | [Architecture](./ARCHITECTURE.md), [source map](./agents/src-map.md) |
 | Preset execution and audio signals | [Preset runtime](./MILKDROP_PRESET_RUNTIME.md), [EEL guest memory](./architecture/eel-guest-memory.md) |
 | WebGPU and WebGL rendering | [WebGPU design and rollout plan](./WEBGPU_ARCHITECTURAL_REVAMP.md) |

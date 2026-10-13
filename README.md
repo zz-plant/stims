@@ -95,7 +95,7 @@ bun install
 bun run dev
 ```
 
-Then open `http://localhost:5173`. The git history is large: `git clone --filter=blob:none https://github.com/zz-plant/stims.git` skips its old binaries and clones much faster.
+Then open `http://localhost:5173`. The git history is large: `git clone --filter=blob:none https://github.com/zz-plant/stims.git` skips its old binaries and clones much faster. To change code, follow [the contributor setup](./CONTRIBUTING.md#set-up), which adds the quality gate and the browser the browser-backed tests need.
 
 ### Use the compiler without the app
 
