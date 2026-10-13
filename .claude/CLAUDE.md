@@ -1,179 +1,21 @@
-# Cline Agent Quick Start — Stims
+# Stims for Claude Code
 
-Single-page entry for Cline working on the Stims visualizer. Read this first, then dive deep via progressive disclosure when needed.
+@../AGENTS.md
 
-## 5-second bootstrap
+## Claude Code specifics
 
-```bash
-bun run setup:codex --status   # is the repo ready?
-bun run setup:codex             # install + quick-check if not
-```
-
-## Finding a command
-
-This repo has **well over a hundred scripts** (the exact count drifts; `bun run help` is the source of truth). The tables below are a shortlist, not an inventory — never conclude a capability is missing because it isn't listed here.
-
-```bash
-bun run help                 # every script, grouped by namespace, with a one-line purpose
-bun run help --json          # same index as {name, command, purpose} records
-bun run help --for "<symptom>"   # symptom → instrument ("my preset looks wrong" → parity:capture)
-```
-
-`--for` exists because knowing a script exists is not the same as knowing it is
-the right one. Reach for it before hand-rolling a measurement.
-
-Each purpose line is generated from the docblock atop the script's file, so the index cannot drift from the code. `bun run check` fails if a script has no docblock summary (`bun run check:script-docs`).
-
-Namespaces worth knowing before you hand-roll something: `lab:` (preset measurement), `parity:` (MilkDrop reference capture → diff → promote), `sweep:` (batch corpus runs), `perf:` / `bench:` / `profile:` (performance), `catalog:` (preset curation), `check:` (guards), `generate:` (idempotent artifacts, most take `--check`), `site:` / `preview:` (deploy).
-
-## Ergonomics notes (from the last ~500 commits)
-
-- **Hot spots**: `fix(milkdrop)` (shader/GLSL/HLSL translation, now in `packages/milkdrop-toolchain`) and `fix(webgpu)` dominate. Reproduce with `lab:replay` / `lab:nan-sweep`, fix the *class* across the corpus (not one preset), add a fixture, and check both backends with `lab:backend-diff`.
-- **Search noise**: `.ignore` hides `public/milkdrop-presets/`, `output/`, `screenshots/`, and the parity fixtures from ripgrep. Use `rg --no-ignore <pat> <path>` to search them on purpose.
-- **Learn pages**: `docs/authoring/*.md` and `docs/learn/*.md` are published as static pages under `public/learn/` (toil.fyi/learn/). After editing either, run `bun run generate:learn`; `check:seo` fails on stale pages, a missing sitemap entry, or a broken `/learn/…#anchor` link.
-- **Generators**: most `generate:*` scripts take `--check`, including `generate:seo` (delegates to `check:seo`, writes nothing). Running `generate:seo` without it rewrites tracked icons/sitemaps — `git checkout -- public` if that was unintended.
-- **Tests**: write behavioural tests that can fail (render via the workspace harness; mutate the behaviour once and watch the test go red) — see `.agent/skills/review-test-harness/SKILL.md`. Do not add source-text greps (`check:test-source-greps` blocks them).
-- **Flakes**: never assert on timing. Use `__stims_agent.waitFor`; recent history removed several timing flakes from the gate suite. A test that times out only under load is usually CPU-bound on bun's 5 s default: `bun run test:budget` lists every gate test that relies on it and uses more than half (#1360, #1361 were two).
-- **Duplicate PRs**: check for an open PR on the branch before pushing (#1209/#1210 and #1234/#1236 were re-pushes).
-- **PR workflow**: read `.claude/skills/steward/SKILL.md` (what CI's shapes mean, which bot comments are noise, how to verify on the branch preview). Scaffold and check the body with `bun run pr:body`; after a squash-merge use `bun run branch:restart`.
-- **Quiet gate**: inside a Claude Code session `check:quick` prints one line per passing step and a summary; `--verbose` (or `STIMS_QUIET=0`) restores full output, and a failing step always prints in full.
-- **Software rendering**: on a GPU-less host (`bun run doctor` says so) correctness tools work but frame-time tools (`lab:profile`, `profile:frame`, `perf:*`, `bench:*`) time the CPU rasterizer and warn; do not draw performance conclusions from them.
-
-## Daily commands
-
-| Intent | Command | Time |
-|--------|---------|------|
-| Start dev server | `bun run dev` | — |
-| Find the right script | `bun run help` | < 2s |
-| Diagnose a broken environment | `bun run doctor` | < 30s |
-| Fix "Executable doesn't exist" from a browser tool | `bun run setup:browsers` | < 5s |
-| Fast syntax/lint/type check | `bun run check:quick` | < 30s |
-| Full quality gate | `bun run check` | 2–5 min |
-| Run specific test | `bun run test tests/path/to/spec.test.ts` | varies |
-| Run only tests affected by uncommitted changes | `bun run test:changed` | seconds |
-| See every failing test in one run, not just the first | `bun run test -- --no-bail <files>` | varies |
-| Scaffold / check a PR description | `bun run pr:body` / `bun run pr:body -- --check body.md` | < 2s |
-| Restart a branch after its PR was squash-merged | `bun run branch:restart` | < 5s |
-| Start a change in its own worktree (other sessions share this checkout) | `bun run worktree:new -- <branch>` | ~30s |
-| Integration tests | `bun run test:integration` | 1–2 min |
-| Compatibility tests | `bun run test:compat` | 1–2 min |
-| Warm long-lived session | `bun run session:codex -- --profile review` | — |
-| Check everything at once | `bun run agent:status` | < 5s |
-| Quick verify loop | `bun run agent:verify` | < 1 min |
-| Which audio reaches which control or drawn program, read from the equations (no run) | `bun run lab:dataflow -- --preset <id>` (`--all` for the corpus) | instant / ~20s |
-| Measure preset audio reactivity (no browser) | `bun run lab:reactivity -- --preset <id>` | ~15s |
-| Measure preset visuals + pixel reactivity | `bun run lab:visual -- --preset <id>` | 1–3 min |
-| Sweep whole corpus for NaN/compile/step failures (no browser) | `bun run lab:nan-sweep` | ~5–10 min |
-| Check the editor's Format button changes no preset in the corpus (no browser) | `bun run lab:format-roundtrip` | ~40s |
-| Record/replay a deterministic VM trace, bisect semantic drift | `bun run lab:replay -- --preset <id> --record t.json` | seconds |
-| Diff a trace's compute-VM (GPU) replay against CPU, first divergent frame | `bun run lab:replay -- --replay t.json --tier gpu` | ~1 min |
-| Capture a live-session trace for headless replay (agent mode) | `__milkdropRuntimeDebug.startTraceCapture()` / `stopTraceCapture()` in `?agent=true` | — |
-| Audit preset flash-risk against WCAG 2.3.1 (the real instrument) | `bun run lab:flash-audit -- --count=50 --beat-pulse` | ~12min |
-| Eyeball one preset's relative flash activity (placeholder heuristic, not a WCAG check) | `bun run lab:flash-risk -- --preset <id>` | ~10s |
-
-## Driving the running visualizer
-
-Don't scrape the DOM or hand-roll sleep-and-poll loops — there is a first-class agent API, installed in **all** modes by `src/js/frontend/agent-state.ts`:
-
-| Intent | Entry point |
-|--------|-------------|
-| Read engine/preset/audio/fps state as one JSON snapshot | `__stims_agent.getState()` |
-| Wait for a condition instead of sleeping | `await __stims_agent.waitFor((s) => s.engineState === 'live')` |
-| Run a command-palette action by stable id | `await __stims_agent.run('audio-demo')` — `listActions()` lists every action and the targeted verbs (`select-preset`, `set-field`, …) with their params |
-| Read/await a preset's equation variables (q1…, zoom…) | `await __stims_agent.getVariables()` / `waitForVariables((v) => v.q1 > 0.5)` |
-| Verify an effect after a transient toast vanished | `getState().statusLog` / `getEvents(sinceSeq)` |
-| Assert the canvas is actually animating | `__stims_agent.captureStats()` twice, check `motionEstimate` |
-| Drive a session from the shell, no MCP client | `bun run ctl -- --run next-preset --wait-for 's.presetId !== null'` — ordered `--run` / `--wait-for` steps, summary has `agent` state and per-step `events`, exits non-zero on a failed step |
-| Check the iframe `postMessage` protocol the way an embedding site sees it | `bun run ctl -- --embed --post '{"type":"toil:load_preset","presetId":"geiss-casino"}'` — each `--post` records its `toil:status` reply; `tests/e2e/embed-bridge.test.ts` is the regression test |
-| Expose these surfaces to an MCP client | `bun run mcp` |
-
-Full reference: [`docs/agents/browser-automation.md`](../docs/agents/browser-automation.md). Useful URL flags: `?agent=true` (keeps rendering while the tab reports hidden — a Browser-pane tab always does, and without it the canvas goes black and reads as a shader failure), `?renderer=webgl`, `?mockAudio=1`, `?lockQualityStep=`.
-
-## Heavier instruments
-
-Reach for these before inventing a measurement; each one already exists.
-
-| Intent | Command |
-|--------|---------|
-| Capture → diff → promote a MilkDrop parity reference | `bun run parity:capture`, `parity:diff`, `parity:promote-result` |
-| Diff every certified reference against latest captures | `bun run parity:suite` |
-| Check WebGL and native WebGPU render the same frame (no external reference) | `bun run lab:backend-diff -- --sample 24` |
-| Measure a preset's run-to-run parity noise before believing a delta | `bun run parity:noise -- --preset <id> --repeats 5 --write` |
-| Find certified references a blank frame would pass | `bun run parity:check-references` |
-| Frame-time budget across the certification corpus | `bun run perf:certification-corpus` (`perf:low-resource` for throttled) |
-| Per-frame benchmark vs Butterchurn | `bun run bench:butterchurn` |
-| Which variable diverged from Butterchurn, on which frame | `bun run trace:butterchurn` |
-| Profile a single frame's cost | `bun run profile:frame` |
-| Find presets that render blank/frozen/slow | `bun run sweep:milkdrop-loops` |
-| Tally WebGL/WebGPU support across bundled presets | `bun run sweep:butterchurn` |
-| Screenshot-diff the workspace UI | `bun run ui:diff` |
-| Give a human (or a GPU-less agent) a real live URL | `bun run preview:deploy` |
-
-## Where things live
-
-| Area | Path | Use when changing… |
-|------|------|-------------------|
-| Workspace UI | `src/js/frontend/` | React UI, URL state, engine adapter |
-| Shared runtime | `src/js/core/` | Renderer, shell, audio, capabilities, MIDI/VJ hardware (`services/webmidi-controller.ts`) |
-| Preset system | `src/js/milkdrop/` | Presets, editor, catalog, VM, renderers |
-| Standalone packages | `packages/` | Compiler, EEL JIT, formatter, exporter (`milkdrop-toolchain`); audio DSP (`audio-reactive`); flash governor and analysis (`flash-guard`); EEL conformance corpus. The app imports them; test with `bun run check:packages`. See `packages/README.md` |
-| Stylesheets | `src/css/` | `tokens.css` (design tokens), `chrome.css` (panel/dock control system), `app-shell.css` (workspace shell, wrapped in `@scope (.stims-shell)`), `index.css` + `base.css` (older page-level styles), `*.module.css` (component-scoped) |
-| Entry points | `index.html`, `milkdrop/index.html` | Shell loading, redirects |
-| Tests | `tests/` | All automated coverage |
-| Agent skills | `.agent/skills/` | Reusable playbooks |
-| Agent docs | `docs/agents/` | Deep guidance |
-
-## "What do I do now?" decision tree
-
-1. **Repo state unknown?** → `bun run setup:codex`
-2. **Need a skill for this task?** → See [Task routing](#task-routing)
-3. **Just editing code?** → `bun run check:quick` after edits
-4. **Ready to commit?** → `bun run check`
-5. **Need browser QA?** → `bun run dev` → `http://localhost:5173/?agent=true`
-6. **Need a long-lived session?** → `bun run session:codex -- --profile review`
-
-## Task routing
-
-Use `.agent/skills/*/SKILL.md` for repeatable work classes:
-
-| If the task is mainly about… | Skill |
-| --- | --- |
-| runtime, renderer, shell, controls, audio, URL state | `.agent/skills/modify-visualizer-runtime/SKILL.md` |
-| presets, catalog, editor, import/export, compatibility | `.agent/skills/modify-preset-workflow/SKILL.md` |
-| preset visual fidelity / audio reactivity tuning (measured baseline→edit→compare) | `.agent/skills/improve-preset-fidelity/SKILL.md` |
-| matching native projectM — diagnosing and closing a rendering gap | `.agent/skills/close-parity-gap/SKILL.md` |
-| browser QA or visual confirmation | `.agent/skills/play-visualizer/SKILL.md` |
-| performing / jamming — live-coded audio + timed visual gestures | `.agent/skills/perform-livecoding/SKILL.md` |
-| quick iterative verification | `.agent/skills/verify-visualizer-work/SKILL.md` |
-| end-to-end product change → PR | `.agent/skills/ship-visualizer-change/SKILL.md` |
-| UI iteration, shell chrome, CSS | `.agent/skills/iterate-visualizer-ui/SKILL.md` |
-| knowing which guardrails apply before editing | `.agent/skills/guard-agent-work/SKILL.md` |
-
-Use `.agent/workflows/*.md` when you need a step-by-step runbook with explicit phase order.
-
-## Agent mode URL
-
-Always use `http://localhost:5173/?agent=true` for browser-based QA. It persists state across reloads and enables cleaner debug output.
-
-## Quality gate reminder
-
-- Every enforced rule, with its rationale, is listed in [`docs/GUARDRAILS.md`](../docs/GUARDRAILS.md) (generated from the guard scripts by `bun run generate:guardrails`)
-- `bun run check:quick` = `@ts-nocheck` guard + Biome + catalog fidelity/integrity + README claims + SEO + architecture + typecheck, no tests
-- `bun run check` = everything above, preceded by `assets:check`, plus the gate test suite (`unit` + `compat` + `corpus`; skips the slow, serial, browser-backed e2e tests)
-- `bun run check:all` = the same gate with every profile, including e2e
-- Two `corpus` tests drive a real browser and skip when Playwright's Chromium is not installed — `bun run setup:browsers` to run them
-- Run `check:quick` often; run `check` before any commit/PR
-
-## Progressive disclosure
-
-| Depth | Doc | When |
-|-------|-----|------|
-| This page | `.claude/CLAUDE.md` | Every session start |
-| Agent essentials | `AGENTS.md` | Non-negotiable defaults |
-| Bootstrap + handoffs | `docs/agents/agent-handoffs.md` | Delegating work |
-| Capability index | `docs/agents/custom-capabilities.md` | Choosing skills/workflows |
-| System map | `docs/ARCHITECTURE.md` | Boot path, engine seam, per-frame data flow |
-| Product moments | `docs/PRODUCT_MOMENTS.md` | Choosing or scoping work: which visitor moment it serves, what counts as correct there, standing product policies |
-| Tooling reference | `docs/agents/tooling-and-quality.md` | Command details |
-| Visual testing | `docs/agents/visual-testing.md` | Browser QA procedures |
-| Deep reference | `docs/agents/reference-docs.md` | Unfamiliar code areas |
+- **Skills**: Claude Code auto-loads `.claude/skills/steward` (PR and CI
+  conventions). The `.agent/skills/` playbooks are not loaded or exposed as
+  slash commands; open the one [`docs/agents/custom-capabilities.md`](../docs/agents/custom-capabilities.md) names.
+- **Quiet gate**: inside a session (`CLAUDECODE=1`) `check:quick` and `check`
+  print one line per passing step and a summary; `--verbose` (or
+  `STIMS_QUIET=0`) restores full output, and a failing step always prints in full.
+- **Browser pane**: its tabs always report `document.hidden`, so load every
+  page with `?agent=true` or the canvas stays black. `.claude/launch.json`
+  defines the `preview_start` servers: `stims-dev` (`bun run dev`, port 5173,
+  moves to a free port when taken), fixed-port `stims-dev-5991` and
+  `stims-dev-scratch` (5992), and `stims-prod-preview` (5993) for a built `dist/`.
+- **Web sessions**: on Claude Code on the web (`CLAUDE_CODE_REMOTE=true`) the
+  `SessionStart` hook in `.claude/hooks/session-start.sh` installs dependencies
+  from the frozen lockfile and skips the checks; local sessions run
+  `bun run setup:codex` themselves.

@@ -58,3 +58,11 @@ Each is a workspace package with its own tests, run by `bun run check:packages` 
 | --- | --- | --- |
 | `docs/authoring/reference.md` | `bun run docs:authoring-reference` (from `packages/milkdrop-toolchain/src/builtin-docs.ts`) | `check:authoring-docs` |
 | `public/milkdrop-presets/catalog.json` | catalog import/sync tooling | `check:catalog-integrity`, `check:catalog-fidelity` |
+
+## Where to start a triage
+
+| Symptom | Start in |
+| --- | --- |
+| Workspace does not load | `src/js/app.ts`, `src/js/frontend/App.tsx`, `src/js/frontend/url-state.ts` |
+| No audio response | the audio rows above, then the shell wiring in `src/js/core/` |
+| A preset fails to compile or play | `src/js/milkdrop/`, `packages/milkdrop-toolchain/`, and the fixtures in `public/milkdrop-presets/` and `tests/fixtures/milkdrop/` |

@@ -1,7 +1,5 @@
 # Documentation maintenance guide
 
-Use this guide as the single source of truth for keeping documentation aligned when workflows, scripts, structure, or catalog inventory changes.
-
 ## Canonical docs index
 
 - `docs/README.md` is the canonical documentation index.
@@ -11,25 +9,20 @@ Use this guide as the single source of truth for keeping documentation aligned w
 
 When restructuring docs, keep these entry points in sync:
 
-- `README.md`
-- `CONTRIBUTING.md`
-- `AGENTS.md`
-- `docs/README.md`
-- `docs/agents/README.md`
-- `docs/agents/agent-handoffs.md` when agent bootstrap, delegation, or return-contract guidance changes
-- `docs/agents/custom-capabilities.md` when repo-local agent skills/workflows change
-- `docs/agents/visual-testing.md` when agent browser-verification routes or expectations change
-- `docs/agents/visualizer-workflows.md` when repo-local workflow routing or command guidance changes
-- `docs/MCP_SERVER.md` when repo-local capability discovery or MCP-visible workflow metadata changes
+- `README.md` and `CONTRIBUTING.md`, for people
+- `AGENTS.md`, for agents. `.claude/CLAUDE.md` imports it, and `.github/AGENTS.md` and `.github/copilot-instructions.md` only point to it: add guidance to `AGENTS.md`, and to those files only what is specific to their tool
+- `docs/README.md` and `docs/agents/README.md`, the indexes
+
+`bun run check:doc-references` checks the paths and `bun run` commands named in all of them, in `docs/`, `.agent/`, `.claude/`, `.opencode/`, and the Markdown under `.github/`.
 
 ## What to update by change type
 
 | Change type | Required docs updates |
 | --- | --- |
-| New script or renamed script | `docs/DEVELOPMENT.md` plus `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `docs/agents/README.md`, `docs/agents/tooling-and-quality.md`, `docs/agents/visualizer-workflows.md`, and `docs/MCP_SERVER.md` when they reference the changed script. |
+| New script or renamed script | `docs/DEVELOPMENT.md`, plus any entry point or agent page that names the script; `check:doc-references` flags a `bun run` reference to a script that no longer exists. |
 | MCP tool added, removed, or renamed | `docs/MCP_SERVER.md`, the instructions in `scripts/mcp-shared.ts`, and `CHANGELOG.md`. A removal breaks every client that calls the tool, so say what replaces it. |
 | Workflow behavior changes | Update the source workflow doc (for example `docs/DEVELOPMENT.md`, `docs/DEPLOYMENT.md`, `docs/QA_PLAN.md`). |
-| Repo-local agent skill/workflow changes | `AGENTS.md`, `docs/agents/README.md`, `docs/agents/custom-capabilities.md`, `docs/agents/visual-testing.md`, `docs/agents/visualizer-workflows.md`, and `docs/MCP_SERVER.md` when they mention the changed route, command, or capability. |
+| Repo-local agent skill changes | `docs/agents/custom-capabilities.md` and `scripts/mcp-shared.ts` (`bun run check:skill-index` enforces both), plus `docs/MCP_SERVER.md` when the MCP-visible contract changes. |
 | New or changed guard script | Update the guard's docblock — it is the source of truth. Regenerate with `bun run generate:guardrails`; `check:guardrails-doc` fails if `docs/GUARDRAILS.md` is stale. |
 | New `src/` module over 400 lines | Add a file-level docblock saying what it owns and what it leaves to others (`bun run check:module-docs`). |
 | Docs restructuring | Update links and references across all entry points listed above. |
@@ -47,10 +40,6 @@ When restructuring docs, keep these entry points in sync:
 
 Don't open a page by narrating itself. If the title, outline, or a table's header row already conveys the scope, don't start with "This document/guide/page covers..." — start with the content, and keep only sentences that add information the structure doesn't.
 
-## PR metadata expectations
+## Commit and PR metadata
 
-PR descriptions should include:
-
-- A short summary,
-- Explicit list of tests run,
-- Explicit list of docs touched/added (or `None`).
+Commit subjects follow [Commit conventions](./COMMIT_CONVENTIONS.md). A PR description says what changed and why, lists each check run with its result, and names the docs touched (or `None`); `bun run pr:body` scaffolds one from the diff and `bun run pr:body -- --check <file>` applies CI's rules. The [steward skill](../.claude/skills/steward/SKILL.md) covers the rest of a PR's life.

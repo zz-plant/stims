@@ -1,190 +1,99 @@
 ---
 name: verify-visualizer-work
-description: "Run a quick verification loop during implementation, before the full quality gate. Use after code changes to catch runtime, UI, or preset regressions early, or for iterative feedback during development."
+description: "Choose and run the checks a change needs, from the edit-time loop to the full gate: targeted tests, the browser e2e file that covers the change, visual evidence with or without a GPU, and reproducing a CI failure. Use after code changes, before committing, or when validation is the task itself."
 ---
 
-# Verify Visualizer Work
+# Verify visualizer work
 
-Use this skill during implementation to validate your changes before committing.
+## The loop
 
-## When to use
+| When | Command | Time |
+| --- | --- | --- |
+| After every significant edit | `bun run check:quick` | about 30 s |
+| Behaviour changed | `bun run test tests/path/to/spec.test.ts` | seconds |
+| Before committing | `bun run check` | 2–5 min |
+| Before merging compiler, renderer-adapter or parity work | `bun run check:all` | 5 min+ |
 
-- After making code changes to check that nothing broke
-- Before running the full `bun run check` gate
-- When you need quick feedback on runtime, UI, or preset behavior
-- During iterative development to catch regressions early
-- To verify visual changes or behavioral changes directly in the browser
+`check:quick` lints and typechecks the changed files and runs the guards; it
+runs no tests. `check` adds the full Biome pass, the package suites, and the
+gate test suite (unit + compat + corpus). `check:all` adds the browser e2e
+suites. [Testing](../../../docs/TESTING.md) lists every profile and what CI runs.
 
-## Quick verification loop
+`bun run verify --changed` reads the diff and runs only the guards, tests and
+regenerations those files can break.
 
-Use this checklist during implementation to prevent surprises at the final quality gate:
+When a gate fails, fix the root cause and rerun it. Do not stack fix-attempt
+commits.
 
-### 1. Syntax and type safety (< 30 seconds)
+## Pick tests by what changed
 
-```bash
-bun run check:quick
-```
+| Change | Tests |
+| --- | --- |
+| Preset parsing, editor, catalog | targeted unit test, then `bun run test:compat` |
+| Compiler, EEL semantics, parity | `bun run test:compat` and `bun run test:corpus`; `check:packages` covers `packages/milkdrop-toolchain` |
+| Boot, renderer, backend fallback, audio start | `tests/e2e/agent-boot-smoke.test.ts` (boots and animates on each backend) and `tests/e2e/e2e-engine-mount.test.ts` (WebGL mount and preset switch); `tests/e2e/webgpu-engine-mount.test.ts` runs only on a machine with a real GPU |
+| Preset switches and blends | `tests/e2e/feedback-continuity.test.ts`, `tests/e2e/preset-crossfade.test.ts` |
+| Shell chrome, landing, routes | `tests/e2e/chrome-visual-contract.test.ts`, `tests/e2e/landing-route.test.ts`, `tests/e2e/open-one-up.test.ts`, `tests/e2e/studio-loop.test.ts` |
+| iframe `postMessage` protocol | `tests/e2e/embed-bridge.test.ts` |
 
-Validates:
-- No TypeScript errors
-- No Biome lint/format issues
-- No `@ts-nocheck` violations
-- `public/milkdrop-presets/catalog.json` is in sync
+Run one browser file with `bun run test tests/e2e/<file>.test.ts`, or every
+one with `bun run test:e2e` (serial, several minutes). `bun run test:integration`
+runs a single file, `tests/e2e/agent-integration.test.ts` (the agent API and the
+`play:toy` smoke), so it is not general browser coverage.
 
-**When to use**: After every significant edit to catch immediate errors.
+Browser tests skip when Playwright's Chromium is missing; `bun run setup:browsers`
+fixes that. A skipped browser test is not a passing one.
 
-### 2. Targeted tests (1-2 minutes)
+## Reproducing a failure
 
-Run tests for the specific area you changed:
+- Start from the exact command that failed (CI log, issue, report) and record
+  its first error before changing anything.
+- `bun run test -- --no-bail <files>` reports every failing file in one run
+  instead of stopping at the first.
+- A test that times out only under load is usually CPU-bound against bun's
+  5 s default: `bun run test:budget` lists the gate tests at risk. Rerun the
+  file alone before treating it as a regression.
+- Use `bun run test`, not raw `bun test`: the wrapper applies the preload,
+  categories and serial passes.
 
-```bash
-# For runtime/loader/shell/renderer changes
-bun run test:integration
+## Visual verification
 
-# For preset/editor/catalog changes
-bun run test:compat
-
-# For specific test file
-bun run test tests/path/to/spec.test.ts
-
-# For all unit tests only
-bun run test:unit
-```
-
-**When to use**: After changes that affect behavior, not just cosmetics.
-
-### 3. Visual verification (< 1 minute)
-
-**Pick your tier by what you can sense and what environment you're in** —
-this list assumes a GUI browser; if you don't have one, or don't have a
-confirmed GPU (common in cloud/sandboxed agent sessions), skip straight to
-the alternatives below instead of skipping verification entirely:
+Pick the tier your environment supports instead of skipping the step:
 
 | Environment | Use | What you get |
 | --- | --- | --- |
-| GUI browser, human or vision-capable agent | `bun run dev` + manual checklist below | Full visual/UX confirmation |
-| No browser at all | `bun run lab:reactivity -- --preset <id>` | Numeric audio-reactivity verdicts, no browser, ~15s |
-| Headless browser, no confirmed GPU | `bun run ctl -- --screenshot out.png` or `bun run mcp` (`session_describe_frame`) | Screenshot + numeric brightness/color metrics; both default to software rendering so they don't silently return a black canvas |
-| Headless browser + vision | `bun run lab:visual -- --preset <id>` | Pixel-level metrics + contact-sheet PNGs |
-| UI/shell/chrome changes, any environment | `bun run ui:diff` | Captures + pixel-diffs component screenshots against a local baseline — no GPU/WebGL involved, works headless everywhere. First run creates the baseline; `-- --update-baseline` accepts an intentional change. |
+| GUI browser | `bun run dev`, then `http://localhost:5173/?agent=true` | Full visual and UX confirmation |
+| No browser | `bun run lab:reactivity -- --preset <id>` | Numeric audio-reactivity verdicts in about 15 s |
+| Headless, no confirmed GPU | `bun run ctl -- --screenshot out.png` or `bun run mcp` (`session_describe_frame`) | A screenshot plus brightness and colour metrics; both default to software rendering, so they do not return a silent black canvas |
+| Headless with vision | `bun run lab:visual -- --preset <id>` | Pixel metrics and contact-sheet PNGs |
+| Shell or chrome changes, any environment | `bun run ui:diff` | Component screenshots diffed against a local baseline; no GPU involved. The first run creates the baseline and `-- --update-baseline` accepts an intended change |
 
-See [`../../docs/agents/visual-testing.md`](../../../docs/agents/visual-testing.md#cloudsandboxed-agents-without-a-gpu)
-for the full breakdown of which tools need a GPU vs. software-render fine.
+[Visual testing](../../../docs/agents/visual-testing.md#cloudsandboxed-agents-without-a-gpu)
+says which tools need a GPU. [Browser automation](../../../docs/agents/browser-automation.md)
+documents the URL flags and the `__stims_agent` API for asserting state instead
+of eyeballing it.
 
-**Manual path** (GUI browser available):
+Manual checklist:
 
-```bash
-bun run dev
-```
+- [ ] No console errors or `getState().lastError`
+- [ ] The preset reacts to audio (`?mockAudio=demo` when no microphone is available)
+- [ ] Changed controls work
+- [ ] Layout holds at 375, 768, 1024 and 1920 px wide (or `bun run ui:diff` headless)
 
-Then visit:
-- `http://localhost:5173/` — Canonical workspace route
-- `http://localhost:5173/?agent=true` — Agent testing mode on the canonical route (persistent state, cleaner UI for QA)
-- `http://localhost:5173/milkdrop/?agent=true` — Compatibility-alias verification
-
-**Visual checklist**:
-- [ ] No console errors (open DevTools F12)
-- [ ] Audio visualization is responsive
-- [ ] UI controls work as expected
-- [ ] Presets load and play correctly (if preset-related changes)
-- [ ] Mobile/responsive layout is intact (resize browser, or `bun run ui:diff` if headless)
-
-### 4. Full quality gate (2-5 minutes)
-
-When you're confident in your changes:
+## Specialised checks
 
 ```bash
-bun run check
+bun run check:architecture    # import cycles and the frontend → engine seam
+bun run check:seo             # SEO surface and generated learn pages
+bun run check:readme-claims   # README figures against the shipped catalog
+bun run check:production-edge # the deployed site's edge (network; not in the gate)
 ```
 
-This runs the production-ready validation:
-- `check:quick` checks
-- Full TypeScript typecheck
-- All tests (unit + integration + compat)
-- Architecture boundary verification
-- SEO surface validation
-- Catalog integrity and generated-document consistency
+## Common issues
 
-**When to use**: Before pushing to a PR or final commit.
-
-## Verification by task type
-
-### Adding a new feature
-1. `bun run check:quick` — type/lint safety
-2. `bun run test tests/path/to/new.test.ts` — your tests pass
-3. `bun run dev` + manual browser test — feature works visually
-4. `bun run check` — full suite passes
-
-### Fixing a bug
-1. `bun run check:quick` — syntax is clean
-2. `bun run test tests/path/to/regression.test.ts` — specific test passes
-3. `bun run dev` + browser test — bug is fixed
-4. `bun run check` — nothing broke
-
-### Updating presets or catalog
-1. `bun run check:quick` — lint/types
-2. `bun run test:compat` — compat tests pass
-3. `bun run dev` + test preset in browser — loads and plays
-4. `bun run check` — full gate passes
-
-### UI/styling changes
-1. `bun run check:quick` — syntax only
-2. `bun run dev` — launch browser at `?agent=true` URL (or `bun run ui:diff` if headless/no GPU — see the tier table above)
-3. Test across:
-   - [ ] Desktop (1920px+)
-   - [ ] Tablet (768px-1024px)
-   - [ ] Mobile (375px-480px)
-   - [ ] Dark and light modes
-4. `bun run check` — full gate
-
-### Runtime/renderer changes
-1. `bun run check:quick` — syntax
-2. `bun run test:integration` — integration suite
-3. `bun run dev` + play with different presets in browser
-4. `bun run check` — full gate
-
-## Testing in isolation
-
-### Play a specific preset during dev
-
-```bash
-bun run play:toy milkdrop
-```
-
-This launches a dev server specifically focused on the MilkDrop visualizer without other distractions.
-
-### Run tests in watch mode
-
-```bash
-bun run test:watch
-```
-
-Re-runs tests automatically when files change—great for iterating on fixes.
-
-### Architecture or SEO issues?
-
-```bash
-# Check for architectural boundary violations
-bun run check:architecture
-
-# Check SEO surface integrity
-bun run check:seo
-
-# Check README claims against the shipped catalog
-bun run check:readme-claims
-```
-
-## Common issues and quick fixes
-
-| Issue | Diagnosis | Fix |
-|-------|-----------|-----|
-| Changes don't appear in browser | Build is stale or dev server crashed | Stop dev server, run `bun run dev` again |
-| Tests pass locally but fail in `bun run check` | Missing dependency or environment difference | Run full `bun run check` to rule out isolated test environment issues |
-| Type errors only appear in `bun run check` | Project references or monorepo caching | Run `bun run typecheck` to debug |
-| Catalog is out of sync | Changes to presets without updating manifest | Run `bun run check:quick` which auto-validates |
-
-## Next steps
-
-- Use [`../workflows/test-visualizer.md`](../../workflows/test-visualizer.md) for a more detailed testing runbook
-- Use [`../workflows/ship-visualizer-change.md`](../../workflows/ship-visualizer-change.md) for the full implementation→validation→PR-ready flow
-- See [`../../docs/DEVELOPMENT.md`](../../../docs/DEVELOPMENT.md) for all available scripts
+| Symptom | Fix |
+| --- | --- |
+| Changes do not appear in the browser | Restart `bun run dev`; another session may own `:5173` |
+| Black canvas, no error | The tab is hidden and the URL lacks `?agent=true`; check `getState().renderingSuspended` |
+| Type errors only in `bun run check` | Run `bun run typecheck` to see them in isolation |
+| `check:quick` fails on a file you did not touch | Another session's work; see [agent handoffs](../../../docs/agents/agent-handoffs.md#working-in-a-tree-with-other-writers) |
