@@ -923,16 +923,6 @@ body[data-page="workspace"][data-live="true"] {
     pointer-events: auto;
   }
 
-  .stims-shell__stage-frame[data-mode="home"] .milkdrop-overlay__toolbar {
-    display: none;
-  }
-
-  /* the runtime's preset-title readout leaks over the launch screen,
-     clipped against the bottom edge — home mode has its own preset UI */
-  .stims-shell__stage-frame[data-mode="home"] .milkdrop-overlay__title {
-    display: none;
-  }
-
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-hero > * {
     pointer-events: auto;
   }
@@ -968,58 +958,6 @@ body[data-page="workspace"][data-live="true"] {
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 12px;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar-group {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar-group--transport
-    > button {
-    flex: 1 1 0;
-    min-height: 36px;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__blend,
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar-group
-    > label {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__blend
-    input[type="range"],
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar-group
-    input[type="range"] {
-    flex: 1 1 0;
-    min-width: 80px;
-  }
-
   /*
    * The compact overlay's transport buttons, autoplay checkbox, and blend
    * slider only ever received their fill/border styling on the standalone
@@ -1028,48 +966,6 @@ body[data-page="workspace"][data-live="true"] {
    * and slider). Give them shell-consistent styling so the legacy controls
    * match the rest of the live chrome.
    */
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar
-    button {
-    min-height: 36px;
-    padding: 8px 12px;
-    border-radius: var(--radius-lg);
-    border: 1px solid
-      var(--milkdrop-overlay-button-border, rgba(119, 201, 255, 0.4));
-    background: var(--milkdrop-overlay-button, rgba(108, 176, 255, 0.22));
-    color: rgba(231, 242, 255, 0.92);
-    font: inherit;
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-      background 0.18s ease,
-      border-color 0.18s ease;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar
-    button:hover {
-    background: rgba(119, 201, 255, 0.32);
-    border-color: rgba(119, 201, 255, 0.6);
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar
-    button:focus-visible {
-    outline: 2px solid rgba(119, 201, 255, 0.7);
-    outline-offset: 2px;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar-group
-    > label {
-    color: rgba(231, 242, 255, 0.86);
-    font-size: 0.875rem;
-  }
 
   .stims-shell__stage-frame[data-mode="live"]
     .milkdrop-overlay--compact
@@ -1085,23 +981,6 @@ body[data-page="workspace"][data-live="true"] {
     input[type="range"] {
     accent-color: rgba(119, 201, 255, 0.9);
     cursor: pointer;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__title {
-    padding: 12px 12px 0;
-    font-size: 0.9375rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__status {
-    padding: 0 12px 12px;
-    font-size: 0.8125rem;
   }
 
   .stims-shell__stage-frame[data-mode="live"] .stims-shell__launch {
