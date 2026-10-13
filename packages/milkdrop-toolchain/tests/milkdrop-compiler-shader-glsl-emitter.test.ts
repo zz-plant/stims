@@ -1028,3 +1028,25 @@ describe('milkdrop compiler shader GLSL emitter — mixed-width arithmetic', () 
     expect(emitShaderExpression('ret = ret * q1')).toContain('(ret * q1)');
   });
 });
+
+describe('milkdrop compiler shader GLSL emitter — HLSL scalar and hue builtins', () => {
+  test('hue_shader is a float3, as on the raw-body path', () => {
+    expect(emitShaderExpression('ret = hue_shader.zxy * 2.0')).toContain(
+      'vec3(colorScale * tint).zxy',
+    );
+  });
+
+  test('a swizzle of a declared float local splats the scalar', () => {
+    const glsl =
+      generateGlslFromShaderStatements(
+        [
+          glslStatement('float use_it = uv.x'),
+          glslStatement('ret = mix(ret, ret * 2.0, use_it.xxx)'),
+          glslStatement('ret.x = use_it.x'),
+        ],
+        'comp',
+      ) ?? '';
+    expect(glsl).toContain('vec3(use_it)');
+    expect(glsl).not.toContain('use_it.x');
+  });
+});

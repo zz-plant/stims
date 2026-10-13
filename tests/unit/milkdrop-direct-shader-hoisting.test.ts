@@ -54,3 +54,33 @@ describe('direct-shader scratch hoisting', () => {
     ).toBe('vec3');
   });
 });
+
+describe('direct-shader hoisting: declarations and calls', () => {
+  test('a spaced call to a preset function is not hoisted as a variable', () => {
+    const { composite } = assembleMilkdropDirectFragmentShaders(
+      null,
+      'box = mbox (uv);\nret = box.xyz;',
+    );
+    expect(composite).not.toMatch(/^\s*(?:uniform\s+)?\w+\s+mbox;/mu);
+  });
+
+  test('every name of a declaration list is a local, not a hoisted global', () => {
+    const { composite } = assembleMilkdropDirectFragmentShaders(
+      null,
+      'vec3 color, mus;\nmus = vec3(0.5);\ncolor = mus;\nret = color;',
+    );
+    expect(composite).not.toMatch(/^\s*(?:uniform\s+)?\w+\s+mus;/mu);
+    expect(composite).not.toMatch(/^\s*(?:uniform\s+)?\w+\s+color;/mu);
+  });
+
+  test('the warp stage declares the colour uniforms its aliases read', () => {
+    // r/g/b and hue_shader lower to colorScale and tint; the composite
+    // template declared them, so the hoister skipped them for warp too.
+    const { warp } = assembleMilkdropDirectFragmentShaders(
+      'ret += vec3(0.1) * colorScale.r * tint;',
+      null,
+    );
+    expect(warp).toMatch(/uniform vec3 colorScale;/u);
+    expect(warp).toMatch(/uniform vec3 tint;/u);
+  });
+});

@@ -47,8 +47,17 @@ import type {
   HardUnsupportedFieldSpec,
 } from './parity.ts';
 import { flattenProgramStatements } from './program-assembly.ts';
-import { extractNativeShaderBody } from './shader-analysis.ts';
+import {
+  extractNativeShaderBody,
+  finishRawGlslForWebGl,
+} from './shader-analysis.ts';
 import { isMilkdropShaderProgramBackendExecutable } from './shader-execution-classification.ts';
+
+/** The native body WebGL executes; see finishRawGlslForWebGl. */
+function rawNativeGlsl(shaderText: string | null | undefined): string | null {
+  const body = extractNativeShaderBody(shaderText ?? '');
+  return body === null ? null : finishRawGlslForWebGl(body);
+}
 
 export type PendingHardUnsupportedField = HardUnsupportedFieldSpec & {
   line: number;
@@ -147,7 +156,7 @@ function buildShaderProgramForStage(
     rawGlsl:
       analysis.hasNativeBody || !hasTranslatedDirectStatements
         ? analysis.hasNativeBody
-          ? (extractNativeShaderBody(shaderText ?? '') ??
+          ? (rawNativeGlsl(shaderText) ??
             analysis.directProgramLines
               .map((line) => (line.endsWith(';') ? line : `${line};`))
               .join('\n'))

@@ -1566,6 +1566,32 @@ function getShaderEnvValue(
           env.uniforms.colorScale.z,
         ),
       ),
+    // MilkDrop's hue_* float3 builtins, valued as in the GLSL emitter.
+    hue_shader: () =>
+      makeShaderValue(
+        'vec3',
+        vec3(
+          env.uniforms.colorScale.x,
+          env.uniforms.colorScale.y,
+          env.uniforms.colorScale.z,
+        ).mul(
+          vec3(env.uniforms.tint.x, env.uniforms.tint.y, env.uniforms.tint.z),
+        ),
+      ),
+    hue_secondary: () =>
+      makeShaderValue(
+        'vec3',
+        vec3(env.uniforms.tint.x, env.uniforms.tint.y, env.uniforms.tint.z),
+      ),
+    hue_tertiary: () =>
+      makeShaderValue(
+        'vec3',
+        vec3(
+          env.uniforms.colorScale.x,
+          env.uniforms.colorScale.y,
+          env.uniforms.colorScale.z,
+        ),
+      ),
     tint_r: () => shaderFloat(env.uniforms.tint.x),
     tint_g: () => shaderFloat(env.uniforms.tint.y),
     tint_b: () => shaderFloat(env.uniforms.tint.z),
