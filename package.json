@@ -128,6 +128,7 @@
     "lab:cost-ingest": "bun run scripts/preset-lab-cost-ingest.ts",
     "lab:edit-eval": "bun run scripts/preset-lab-edit-eval.ts",
     "lab:flash-audit": "bun run scripts/analyze-preset-flash.ts",
+    "lab:llm-answer": "bun run scripts/preset-lab-llm-answer.ts",
     "lab:generation-bench": "bun run scripts/preset-lab-generation-bench.ts",
     "lab:flash-risk": "bun run scripts/preset-lab-flash-risk.ts",
     "lab:sensitivity": "bun run scripts/preset-lab-sensitivity.ts",
