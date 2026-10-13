@@ -1,6 +1,6 @@
 # Learn to write MilkDrop presets
 
-A curriculum for going from "never seen a preset" to publishing your own — using Stims itself as the lab. Every example is a complete preset behind a **▶ Run** link: it opens [toil.fyi](https://toil.fyi) with the code loaded in the live editor. Nothing to install.
+A curriculum for going from "never seen a preset" to publishing your own — using Stims itself as the lab. Every example is a complete preset behind a **▶ Run** link: it opens [toil.fyi](https://toil.fyi) with the code loaded in the live editor, so the lessons need nothing installed. The exception is the measuring step in Track 3, Lesson 5, which runs from a clone of the repository.
 
 If you want the reference instead of the course, see [the language reference](reference.md) and the pattern language in [MILKDROP_CODING_GUIDE.md](../MILKDROP_CODING_GUIDE.md).
 
@@ -14,7 +14,7 @@ If you want the reference instead of the course, see [the language reference](re
 | [3 · Listening](03-listening.md) | Audio bands, smoothing, beat detection, measured reactivity |
 | [4 · Warp fields](04-warp-fields.md) | Per-pixel equations: `rad`, `ang`, tunnels, and ripples |
 | [5 · Waves and shapes](05-waves-and-shapes.md) | Custom waves, custom shapes, the q-var bridge |
-| [6 · Shaders](06-shaders.md) | Warp and composite GLSL — the pair 64% of the catalog uses |
+| [6 · Shaders](06-shaders.md) | Warp and composite shaders, the pair most catalog presets carry |
 | [7 · Taste](07-taste.md) | Five masterwork dissections: reaction-diffusion, tempo tracking, hand-rolled HSL, and more |
 | [8 · Shipping](08-shipping.md) | Implemented paths, compatibility limits, performance, publishing |
 | [9 · Technique glossary](09-technique-glossary.md) | The named-technique vocabulary — Jelly, Relief, Painterly, Krash's beat code — counted across the shipped catalog |

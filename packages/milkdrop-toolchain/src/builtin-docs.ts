@@ -308,7 +308,7 @@ const SIGNAL_VARIABLE_DOCS: readonly MilkdropBuiltinDoc[] = [
     name: 'progress',
     kind: 'variable',
     group: 'signal',
-    doc: 'frame count (projectM-compatible alias)',
+    doc: "in MilkDrop, 0..1 through the preset's run; Stims currently sets it to the frame count, the same as frame",
   },
 ];
 

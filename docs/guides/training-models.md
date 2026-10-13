@@ -4,8 +4,9 @@ Stims is not a model, but its preset runtime is a deterministic program that
 maps audio to motion and colour. That makes it a data generator and an
 evaluator for models about audio-reactive visuals.
 
-Every tool below is headless, needs no GPU, and writes plain files (NumPy
-`.npy`, JSONL, JSON), so the training stack can be anything. `bun run help`
+Every tool below except `lab:flash-audit`, which renders in a browser, is
+headless, needs no GPU, and writes plain files (NumPy `.npy`, JSONL, JSON), so
+the training stack can be anything. `bun run help`
 has the one-line purpose of each; the docblock atop each script is its full
 reference.
 
@@ -24,7 +25,8 @@ reference.
   are threshold programs.
 - On presets from unseen families, nothing learned from other presets
   transfers. The preset's own equations help more than a network: feeding
-  each control only the signals it reads gains +0.12.
+  each control only the signals it reads gains a median +0.12 per preset
+  (the median preset's score rises from −0.12 to −0.03).
 - **Stateful controls** (beat counters, toggles) defeat every regression, so
   they are scored on when they change. A classifier that predicts *when* a
   jump happens times them (event F1 0.44, against 0 for every value model).
@@ -212,9 +214,11 @@ dataset gives it to you frame-aligned:
 
 [`experiments/neural-vj/`](../../experiments/neural-vj/README.md) trains and
 scores models on CPU against the baselines above: 158 presets (115
-audio-reactive) on 24 varied synthetic training songs, scored on 4 held-out
+audio-reactive; the 160-preset export less two whose VM output is
+non-finite) on 24 varied synthetic training songs, scored on 4 held-out
 songs and on 4 songs in styles the song generator never makes. The raw
-results are in `experiments/neural-vj/results/`. Audio R² throughout.
+results are in `experiments/neural-vj/results/`. Scores are audio R², the
+median over presets.
 
 **Known presets, songs they have never heard:**
 
@@ -234,7 +238,8 @@ programs (`if(bass > x, …)`), which trees represent and linear readouts
 cannot. Among networks, a selective recurrence (minGRU) does best and
 transfers best. Refitting a network's readout in closed form (per-preset
 ridge) beat the readout trained with it every time. Pretraining the trunk on
-240 audio-only songs added about 0.04. Feedback and border columns stay near 0
+240 audio-only songs raised the raw minGRU from 0.37 to 0.40 (one seed) and
+did not help once the ridge readout was refitted (0.48 to 0.46). Feedback and border columns stay near 0
 for every model. Border columns are audio-driven all the same: the memory
 probe below moves 33 border cells, 60% of them for more than four seconds, so
 what defeats the models there is long-lived state, not missing inputs.
@@ -265,9 +270,11 @@ history. Same split, songs and metric as above:
 | average of that and the learned features | **+0.12** | −0.20 |
 | restricted, with all 20 of the preset's songs (ceiling) | 0.10 | — |
 
-Restriction alone gains +0.12 over the hand baseline at four songs, 95% CI
-[+0.05, +0.26], and matches the learned features with no network. The
-basis without the restriction gains nothing. Averaged with the learned
+Restriction alone gains a median +0.12 per preset over the hand baseline at
+four songs, 95% CI [+0.04, +0.26], better on 81% of presets, and matches the
+learned features with no network. The basis without the restriction leaves
+the median score where it was (−0.13 against −0.12) but still gains a median
++0.07 per preset, 95% CI [+0.02, +0.11], better on 88% of presets. Averaged with the learned
 features it edges the previous best (+0.12 against +0.11). With one song
 every method stays below the clock. A prior averaged over training columns
 with the same dependency signature is worse than the global one with no
@@ -335,7 +342,8 @@ What follows:
   score them on when the cells change. `lab:vj-baseline` now reports event
   F1 for every audio-driven cell: a jump over a quarter of the cell's
   range is an event, a predicted one within 3 frames counts. On the
-  160-preset, 32-song set, 501 cells jump. The linear model times them well
+  160-preset, 32-song export (`lab:vj-baseline` reads all 160), 501 cells
+  jump. The linear model times them well
   (F1 over 0.5) on 108 (the clock oracle on 31): cells that jump with
   the audio directly. On the other ~340, counters and gated toggles, neither
   times a single jump. A LightGBM event classifier clears that bar (event
@@ -349,8 +357,8 @@ What follows:
 ## Beyond imitation: timing, matching, recovering equations
 
 Three experiments in [`experiments/neural-vj/`](../../experiments/neural-vj/README.md),
-on the same 160-preset, 32-song export (24 training songs, 4 validation,
-4 test unless noted). Raw results are in `experiments/neural-vj/results/`.
+on the same 32-song export (24 training songs, 4 validation, 4 test unless
+noted), with the same two non-finite presets dropped. Raw results are in `experiments/neural-vj/results/`.
 
 **Timing the jumps** (`run_events.py`). The cells are 458 audio-driven
 columns that jump: a jump is over a quarter of the column's training range,
