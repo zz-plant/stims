@@ -379,6 +379,24 @@ function wrapTypedAssignment(
   return `${lead}${name}${member}${gap}${operator}${gap2}${wrapped}${trail}`;
 }
 
+/**
+ * Splits `a = <init>, b, c = …` at the first depth-0 comma: only the first
+ * initialiser belongs to the wrapped declarator, the rest are further
+ * declarators of the same list.
+ */
+function splitFirstInitializer(text: string): [string, string] {
+  let depth = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === '(' || char === '[') depth += 1;
+    else if (char === ')' || char === ']') depth -= 1;
+    else if (char === ',' && depth === 0) {
+      return [text.slice(0, index).trimEnd(), text.slice(index)];
+    }
+  }
+  return [text, ''];
+}
+
 function rewriteRawHlslStatements(text: string): string {
   text = rewriteRawMul(text);
   // Names the body declares as int keep their integer literals: `n = 0`
@@ -435,7 +453,8 @@ function rewriteRawHlslStatements(text: string): string {
         /^(\s*(?:const\s+)?float\s+[A-Za-z_]\w*\s*=\s*)([\s\S]+?)(\s*)$/u,
       );
       if (scalarDecl) {
-        return `${head}${scalarDecl[1]}milkdropScalar(${scalarDecl[2]})${scalarDecl[3]}`;
+        const [init, rest] = splitFirstInitializer(scalarDecl[2] ?? '');
+        return `${head}${scalarDecl[1]}milkdropScalar(${init})${rest}${scalarDecl[3]}`;
       }
       // `float3 noise = tex2D(…) + 1` narrows a float4 in HLSL. GLSL allows
       // constructing a vector from a wider one (and splatting a scalar), so
@@ -443,9 +462,9 @@ function rewriteRawHlslStatements(text: string): string {
       const vectorDecl = statement.match(
         /^(\s*(?:const\s+)?(vec[234])\s+[A-Za-z_]\w*\s*=\s*)([\s\S]+?)(\s*)$/u,
       );
-      return vectorDecl
-        ? `${head}${vectorDecl[1]}${vectorDecl[2]}(${vectorDecl[3]})${vectorDecl[4]}`
-        : out;
+      if (!vectorDecl) return out;
+      const [init, rest] = splitFirstInitializer(vectorDecl[3] ?? '');
+      return `${head}${vectorDecl[1]}${vectorDecl[2]}(${init})${rest}${vectorDecl[4]}`;
     })
     .join('');
 }
@@ -530,12 +549,30 @@ function topLevelDeclaredNames(body: string): Set<string> {
     else if (depth === 0) topLevel += char;
   }
   const names = new Set<string>();
+  // The whole declarator list to its `;`: `float2 z, y;` redeclares y too.
   const pattern = new RegExp(
-    `(?:^|[;\\n])\\s*${LOCAL_DECLARATION_TYPES}\\s+([A-Za-z_]\\w*)`,
+    `(?:^|[;\\n])\\s*${LOCAL_DECLARATION_TYPES}\\s+([^;]*)`,
     'gu',
   );
   for (const match of topLevel.matchAll(pattern)) {
-    if (match[1]) names.add(match[1]);
+    let depth = 0;
+    let start = 0;
+    const list = match[1] ?? '';
+    const declarators: string[] = [];
+    for (let index = 0; index < list.length; index += 1) {
+      const char = list[index];
+      if (char === '(' || char === '[') depth += 1;
+      else if (char === ')' || char === ']') depth -= 1;
+      else if (char === ',' && depth === 0) {
+        declarators.push(list.slice(start, index));
+        start = index + 1;
+      }
+    }
+    declarators.push(list.slice(start));
+    for (const declarator of declarators) {
+      const name = declarator.match(/^\s*([A-Za-z_]\w*)/u)?.[1];
+      if (name) names.add(name);
+    }
   }
   return names;
 }

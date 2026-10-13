@@ -141,4 +141,13 @@ describe('raw HLSL body finishing for WebGL', () => {
     expect(body).not.toMatch(/^\s*vec2 uv3;/mu);
     expect(body?.match(/vec2 uv1\b/gu)).toHaveLength(1);
   });
+
+  test('every name of a body declaration list counts as redeclared', () => {
+    const body = extractNativeShaderBody(
+      'float2 x, y; shader_body { float2 z = float2(1, 2), y; y = x + z; }',
+    );
+    expect(body).toMatch(/^\s*vec2 x;/mu);
+    // Only the first initialiser is wrapped; `, y` stays a declarator.
+    expect(body).toContain('vec2 z = vec2(vec2(1.0, 2.0)), y;');
+  });
 });
