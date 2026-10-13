@@ -43,7 +43,7 @@ the test. `bun run spec:eel` runs the same corpus with a per-section report.
 `primitive-rasterization-fidelity.test.ts` · `milkdrop-feedback-manager-webgpu.test.ts` ·
 `milkdrop-feedback-perf.test.ts` · `milkdrop-feedback-composite-profile.test.ts` ·
 `milkdrop-feedback-render-targets.test.ts` · `milkdrop-feedback-volume-sampling.test.ts` ·
-`milkdrop-webgpu-feature-routing.test.ts` · `webgpu-timestamp-profiler.test.ts` ·
+`milkdrop-webgpu-feature-routing.test.ts` ·
 `shader-dependent-presets.test.ts` · `renderer-capabilities.test.ts` ·
 `renderer-query-override.test.ts` · `renderer-retry-policy.test.ts` ·
 `renderer-settings.test.ts` · `renderer-setup.test.ts`
@@ -97,7 +97,7 @@ skip-flow, stage-tools, toast-regression, ui-simplification) · `frontend-url-st
 `adaptive-quality-controller.test.ts` · `continuous-drs.test.ts` ·
 `frame-pacing.test.ts` · `power-state.test.ts` · `simulation-accumulator.test.ts` ·
 `device-profile.test.ts` · `device-refresh-rate.test.ts` · `performance-hardware-controls.test.ts` ·
-`performance-settings-store.test.ts` · `domain-store.test.ts` · `crash-telemetry.test.ts` ·
+`performance-settings-store.test.ts` · `crash-telemetry.test.ts` ·
 `services-pool.test.ts` · `webmidi-controller.test.ts` ·
 `microphone-permission-service.test.ts` · `optional-api.test.ts` · `visual-embedding.test.ts` ·
 `render-service-prewarm.test.ts`

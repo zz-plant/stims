@@ -454,10 +454,9 @@ and need nothing extra.
   vectorization, render bundles, and gradual enablement stay tracked in
   [`WEBGPU_ARCHITECTURAL_REVAMP.md`](../WEBGPU_ARCHITECTURAL_REVAMP.md).
   Change 6 is a precondition for its workstream 2, not a replacement.
-- **No state library.** `createDomainStore` in
-  [`src/js/core/state/domain-store.ts`](../../src/js/core/state/domain-store.ts)
-  with `useSyncExternalStore` is adequate. The problem in change 4 is the
-  shape of the contexts, not the mechanism.
+- **No state library.** Module singletons that expose their own subscribe
+  function, read in React through `useSyncExternalStore`, are adequate. The
+  problem in change 4 is the shape of the contexts, not the mechanism.
 - **Not reorganizing `scripts/`.** 128 flat files are indexed by namespace
   through `bun run help` already; the pain is how they couple to engine
   internals. Change 2 measures that coupling and change 5 narrows it.

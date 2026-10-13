@@ -36,7 +36,7 @@ and behind a seam.
 | three | 0.185.1 | r186; Chrome 146 WebGPU Compatibility Mode | Tier 2 — gating only |
 | Cloudflare | wrangler 4.123, Workers static assets, Pages-Functions bundle | `@cloudflare/vite-plugin` 1.51 | Tier 2 |
 | Biome | 2.5.8 | Oxlint type-aware as an add-on | Keep |
-| meyda, comlink, CodeMirror 6, `@tanstack/react-virtual`, `browser-fs-access`, zod 4, Playwright | current | no compelling successor | Keep (reasons below) |
+| meyda, comlink, CodeMirror 6, `@tanstack/react-virtual`, zod 4, Playwright | current | no compelling successor | Keep (reasons below) |
 
 Measurement method: `bun run typecheck` timed cold (tsbuildinfo removed) and
 warm; `bun run build` chunk names and byte sizes compared against a saved
@@ -158,8 +158,9 @@ and understands Vite, Playwright, and Bun entries.
 `?worker`/`?worklet` modules, every script, function, and test), wired into
 the full `bun run check` gate. First run findings and their disposition:
 - Deleted the 199-line `gpu-timestamp-instrumentation` helper under
-  `src/js/milkdrop/renderer-helpers/` — no importer anywhere; the shipped
-  profiler is `src/js/core/webgpu-timestamp-profiler.ts`.
+  `src/js/milkdrop/renderer-helpers/` — no importer anywhere; GPU timing
+  reaches the adaptive quality controller through
+  `src/js/core/services/gpu-render-timing.ts`.
 - Removed `axe-core` from devDependencies (only `@axe-core/playwright` is
   imported, and it depends on `axe-core` itself).
 - Declared `postcss`, which `scripts/prune-dead-css.mjs` imports but nothing
@@ -249,12 +250,12 @@ shipped WebGPU Compatibility Mode (WebGPU over OpenGL ES 3.1, including
 Android WebView), while Safari 26 and Firefox 141+ ship WebGPU by default.
 `src/js/core/renderer-capabilities.ts` should request the compat adapter
 (`featureLevel: 'compatibility'`) before falling back to WebGL2 — with the
-guard that the timestamp profiler and the compute VM stay disabled on it.
+guard that GPU timestamp timing and the compute VM stay disabled on it.
 
 **Landed (2026-10-05).** The capability probe now tries core first, then
 `featureLevel: 'compatibility'`, then the bare request, and records the
-accepted level as `webgpu.featureLevel` on the capability summary. The
-timestamp profiler is kept off compat adapters at the summary level
+accepted level as `webgpu.featureLevel` on the capability summary. GPU
+timestamp timing is kept off compat adapters at the summary level
 (`features.timestampQuery` is reported false there), and the compute VM is
 kept off at the feature-routing level (`resolveMilkdropWebGpuFeatureRouting`
 reads the cached probe). Three's r186 renderer receives the compat device
@@ -310,9 +311,6 @@ would be additive.
   2–5 MB for no gain.
 - **comlink** — three API calls behind an interface with a main-thread
   fallback; the "alternatives" (minlink, kkrpc) are the same 1 kB idea.
-- **`browser-fs-access`** — Firefox and Safari still ship no
-  `showOpenFilePicker`; the fallback is the whole point, and the module is
-  already a textbook adapter (`src/js/milkdrop/file-access.ts`).
 - **`@tanstack/react-virtual`** — five options across two components;
   virtua/react-virtuoso only win on reverse scrolling, which the grid does
   not do.

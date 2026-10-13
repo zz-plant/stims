@@ -455,7 +455,7 @@ function summarizeWebGPUCapabilities(
 
   if (featureLevel === 'compatibility') {
     // Policy, not detection: the compatibility adapter (GLES 3.1 backend) may
-    // advertise timestamp-query, but the timestamp profiler stays disabled on
+    // advertise timestamp-query, but GPU timestamp timing stays disabled on
     // it — a GLES-backed timing source is not dependable enough to drive the
     // adaptive quality controller (TECH_STACK_MODERNIZATION_2026-09.md §10).
     features.timestampQuery = false;
