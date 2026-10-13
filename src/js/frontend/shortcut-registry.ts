@@ -29,6 +29,8 @@ export type ShortcutActionId =
   | 'record'
   | 'generate'
   | 'theme'
+  | 'blackout'
+  | 'flash'
   | 'transition-mode'
   | 'wave-mode-next'
   | 'wave-mode-previous'
@@ -260,6 +262,28 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     defaultKeys: ['V'],
     paletteActionId: 'cycle-theme',
     dispatchViaPalette: true,
+  },
+  // ── Live stage utilities ────────────────────────────────────────────
+  // Presentation-only cuts a performer reaches for mid-show. Both act on
+  // the presentation layer (a luminance channel and an overlay), so no
+  // preset state, equation or audio source is touched. The hook handles
+  // keydown and keyup for these: they are holds, and the flash must end
+  // when the key does.
+  {
+    // D, not B/W/F: those are taken (browse, next waveform, full screen).
+    // A hold cuts the picture; two fast taps latch it for the whole
+    // break; one more press brings it back.
+    id: 'blackout',
+    group: 'Live stage utilities',
+    label: 'Blackout the picture (hold, or double-tap to latch)',
+    defaultKeys: ['D'],
+  },
+  {
+    // Y, for the moment the lights hit. Never latches: a white screen is
+    // for the drop, and the strobe is made by tapping.
+    id: 'flash',
+    label: 'White flash (hold; tap repeatedly to strobe)',
+    defaultKeys: ['Y'],
   },
   // ── Tune the playing preset ─────────────────────────────────────────
   // The MilkDrop runtime's old nudge keys, kept on the letters people knew
