@@ -44,7 +44,7 @@ Use this skill when reviewing or authoring changes to renderer setup, capability
   - Preferred backend is overridden by query param
 
   ```bash
-  bun run test:integration
+  bun run test tests/e2e/agent-boot-smoke.test.ts tests/e2e/e2e-engine-mount.test.ts
   ```
 
 ### 4. Timeout and cleanup
@@ -67,4 +67,4 @@ Use this skill when reviewing or authoring changes to renderer setup, capability
 ## Related skills
 
 - [`modify-visualizer-runtime`](../modify-visualizer-runtime/SKILL.md) — for broader runtime changes
-- [`test-visualizer`](../test-visualizer/SKILL.md) — for running integration coverage
+- [`verify-visualizer-work`](../verify-visualizer-work/SKILL.md) — which browser e2e file covers which surface

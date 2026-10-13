@@ -191,12 +191,22 @@ copy and may change; ids must not.
 
 ## Determinism and environment
 
-- `?agent=true` — suppresses autoplay, persists state across reloads,
-  keeps rendering while `document.hidden` (browser-pane tabs report
-  hidden; without this the canvas goes black and reads as a failure —
-  `getState().renderingSuspended` tells you when that is what happened).
+- `?agent=true` — keeps rendering while `document.hidden` (Browser-pane tabs
+  always report hidden; without this the canvas goes black and reads as a
+  shader failure — `getState().renderingSuspended` tells you when that is what
+  happened, by the rule in `src/js/core/hidden-tab-policy.ts`). It also lifts
+  the power-saving frame cap, preserves the drawing buffer so canvas readbacks
+  see the frame, installs `window.__milkdropRuntimeDebug` (trace capture,
+  debug snapshots), and stays in the URL across in-app navigation.
 - `?renderer=webgl` — force the WebGL backend when WebGPU is suspect.
-- `?mockAudio=1` (+ `?mockFrequency=`) — synthetic audio input.
+- `?mockAudio=demo` — replace microphone capture with the procedural demo
+  track (arpeggio, kick, sub drone), so presets react without a microphone.
+  Any other value is a single oscillator: `sine`, `square`, `sawtooth` or
+  `triangle` at `?mockFrequency=` Hz (default 220), and an unrecognised value
+  such as `1` falls back to a 220 Hz sawtooth. A constant tone has a frozen
+  spectrum, so band levels and beat detection flatline and presets stop
+  reacting; use an oscillator only when you want that steady input
+  (`src/js/core/audio-handler.ts`).
 - `?lockQualityStep=` — pin adaptive quality for reproducible frames.
 - `window.__STIMS_AGENT_RENDER_FRAMES__` (agent mode) — synchronously
   render N frames with synthetic time/audio, for capture harnesses.

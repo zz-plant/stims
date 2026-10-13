@@ -254,23 +254,37 @@ describe('README-derived MCP guidance', () => {
 });
 
 describe('agent capability markdown availability', () => {
-  test('exposes skill and workflow markdown files for MCP reads', () => {
-    expect(
-      markdownSources['docs/agents/agent-handoffs.md'].length,
-    ).toBeGreaterThan(0);
-    expect(
-      markdownSources['.agent/skills/play-visualizer/SKILL.md'].length,
-    ).toBeGreaterThan(0);
-    expect(
-      markdownSources['.agent/workflows/play-visualizer.md'].length,
-    ).toBeGreaterThan(0);
-    expect(
-      markdownSources['.agent/skills/modify-visualizer-runtime/SKILL.md']
-        .length,
-    ).toBeGreaterThan(0);
-    expect(
-      markdownSources['.agent/workflows/modify-visualizer-runtime.md'].length,
-    ).toBeGreaterThan(0);
+  test('serves every listed skill through read_agent_capability', async () => {
+    const listed = JSON.parse(await callTool('list_agent_capabilities')) as {
+      name: string;
+    }[];
+
+    expect(listed.length).toBeGreaterThan(0);
+    for (const { name } of listed) {
+      const text = await callTool('read_agent_capability', {
+        kind: 'skill',
+        name,
+      });
+      expect(text).toStartWith(`# skill: ${name}`);
+      expect(text).toContain(`Path: .agent/skills/${name}/SKILL.md`);
+      expect(text).not.toContain('No skill named');
+    }
+  });
+
+  test('points a client asking for a retired workflow at the skills', async () => {
+    for (const tool of ['list_agent_capabilities', 'read_agent_capability']) {
+      const text = await callTool(tool, {
+        kind: 'workflow',
+        name: 'play-visualizer',
+      });
+      expect(text).toContain('Use kind "skill"');
+    }
+  });
+
+  test('serves the handoff guide as a doc', () => {
+    expect(markdownSources['docs/agents/agent-handoffs.md']).toContain(
+      'Handoff packet',
+    );
   });
 
   test('searches agent docs content through shared markdown index', async () => {

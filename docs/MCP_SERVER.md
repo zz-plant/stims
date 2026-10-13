@@ -14,8 +14,10 @@ For end-user flows, see the [user guide](./USER_GUIDE.md). The [docs index](./RE
 | `read_doc_section` | `file` (enum), optional `heading` | Markdown file or section content |
 | `search_docs` | `query`, optional `file`, optional `limit` | Matching sections with excerpts |
 | `dev_commands` | optional `scope` (setup/dev/build/test/lint) | Relevant commands from README.md |
-| `list_agent_capabilities` | optional `kind` (skill/workflow) | Available agent workflows and skills |
-| `read_agent_capability` | `kind`, `name` | Full skill/workflow instructions |
+| `list_agent_capabilities` | optional `kind` (`skill`) | Available agent skills |
+| `read_agent_capability` | `kind` (`skill`), `name` | Full skill instructions |
+
+The repo's former workflow files were folded into the skills in October 2026. Both tools still accept `kind: "workflow"` and answer it with a pointer to the skill that replaced each workflow.
 
 ### Preset Catalog (Worker + Stdio)
 

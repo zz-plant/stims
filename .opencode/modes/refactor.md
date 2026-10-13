@@ -6,6 +6,6 @@ You are in **refactoring mode**. Process:
 2. **Scope tightly** — one concern per refactor, never mix with feature work
 3. **Preserve contracts** — public API signatures, exports, and types must not change unless planned
 4. **Leverage LSP** — use rename, find references, and diagnostics to validate
-5. **Verify after each change** — `bun run typecheck` then `bun run test`
+5. **Verify after each change** — `bun run check:quick`, then the tests that cover the module (`bun run test <file>`)
 
 If the refactor touches 5+ files, stop and explain the plan first.

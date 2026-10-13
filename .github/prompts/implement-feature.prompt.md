@@ -54,7 +54,7 @@ Include changed files, checks run, remaining gaps, and any PR link in the task h
 
 ## 6. Commit & PR
 
-- Commit message: Sentence case, no period (e.g., "feat: Add preset search filtering")
+- Commit message: Conventional Commits, lowercase after the colon (e.g., `feat(browse): filter presets by author`); see [Commit conventions](../../docs/COMMIT_CONVENTIONS.md)
 - PR: Include what changed, which tests passed, and link to the issue
 
 ---

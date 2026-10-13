@@ -55,7 +55,7 @@ If anything fails, fix it before proceeding.
 
 ## 4. Commit Message Review
 
-- [ ] **Sentence case, no trailing period** (e.g., "feat: Add preset search feature")
+- [ ] **Conventional Commits, lowercase after the colon, no trailing period** (e.g., `feat(browse): filter presets by author`; see [Commit conventions](../../docs/COMMIT_CONVENTIONS.md))
 - [ ] Describes the change clearly
 - [ ] Includes issue ref if applicable (e.g., "Fixes #123")
 - [ ] Technical context in description (not just subject line)
@@ -77,7 +77,7 @@ Added preset search filtering to the library view.
 
 ## Testing
 - Unit tests: `tests/unit/frontend-url-state.test.ts`
-- Integration test: `bun run test:integration` ✓
+- Browser test: `bun run test tests/e2e/open-one-up.test.ts` ✓
 - Visual verification: Tested at `?agent=true` URL with 10+ presets
 
 ## Docs
@@ -134,7 +134,7 @@ Stop and fix if you see:
 - Any doc file in `docs/` (check `docs/DOCS_MAINTENANCE.md`)
 - `README.md`, `AGENTS.md`, `CONTRIBUTING.md`
 - `.github/copilot-instructions.md`
-- `.agent/skills/` or `.agent/workflows/`
+- `.agent/skills/`
 
 **See:**
 - Full gate: `bun run check`

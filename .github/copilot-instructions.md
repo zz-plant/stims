@@ -41,7 +41,7 @@ bun run check
 
 ## Code Conventions
 
-- **Commit messages**: Conventional Commits, sentence case, no trailing period (e.g., "feat: Add audio frequency detection")
+- **Commit messages**: Conventional Commits, lowercase after the colon, no trailing period (e.g., `feat(audio): detect the dominant frequency`); see [Commit conventions](../docs/COMMIT_CONVENTIONS.md)
 - **PR title**: Same style, include test/docs summary in description
 - **Imports**: Relative paths within the app; package-name imports for workspace libraries
 - **No `@ts-nocheck`**: All code must pass strict typecheck
@@ -122,7 +122,7 @@ Each prompt provides a checklist to keep you focused and avoid common mistakes.
 2. Run `bun run check:quick` and targeted test
 3. Launch `bun run dev` and test in browser at `?agent=true` URL
 4. When confident, run `bun run check` before committing
-5. Use sentence-case commit message
+5. Write a Conventional Commits subject, lowercase after the colon
 
 ## Non-Negotiable Checks (Before Pushing)
 

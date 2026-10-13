@@ -15,7 +15,6 @@ Read the docs that match the changed surface:
 - `docs/ARCHITECTURE.md`
 - `docs/MILKDROP_PRESET_RUNTIME.md`
 - `docs/PAGE_SPECIFICATIONS.md`
-- `docs/agents/visualizer-workflows.md`
 
 ## Implement
 
@@ -24,7 +23,8 @@ Read the docs that match the changed surface:
 
 ## Validate
 
-Use targeted checks first, then the repo gate:
+Use targeted checks first, then the repo gate; [`verify-visualizer-work`](../verify-visualizer-work/SKILL.md)
+says which tests cover which surface:
 
 ```bash
 bun run check
@@ -41,5 +41,5 @@ Then inspect `http://localhost:5173/?agent=true`.
 ## Finalize
 
 - keep agent docs and MCP capability metadata aligned
-- use a sentence-case commit title with no trailing period
-- prepare PR metadata with a short summary, explicit tests run, and explicit docs touched
+- write commits and the PR body per [Commit conventions](../../../docs/COMMIT_CONVENTIONS.md)
+  and the [steward skill](../../../.claude/skills/steward/SKILL.md)

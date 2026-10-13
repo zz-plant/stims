@@ -31,11 +31,15 @@ Use the smallest useful check while iterating:
 bun run test tests/path/to/spec.test.ts
 ```
 
-Use browser-backed checks when runtime behavior depends on a real page or audio flow:
+When the behaviour depends on a real page, a backend or the audio flow, run the
+browser e2e file that covers it, for example:
 
 ```bash
-bun run test:integration
+bun run test tests/e2e/agent-boot-smoke.test.ts tests/e2e/e2e-engine-mount.test.ts
 ```
+
+[`verify-visualizer-work`](../verify-visualizer-work/SKILL.md#pick-tests-by-what-changed)
+maps each surface to its e2e file.
 
 Before sign-off:
 

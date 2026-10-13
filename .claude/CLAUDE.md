@@ -1,6 +1,6 @@
-# Cline Agent Quick Start — Stims
+# Claude Code Quick Start — Stims
 
-Single-page entry for Cline working on the Stims visualizer. Read this first, then dive deep via progressive disclosure when needed.
+Single-page entry for Claude Code working on the Stims visualizer. Read this first, then dive deep via progressive disclosure when needed.
 
 ## 5-second bootstrap
 
@@ -47,7 +47,7 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 | Find the right script | `bun run help` | < 2s |
 | Diagnose a broken environment | `bun run doctor` | < 30s |
 | Fix "Executable doesn't exist" from a browser tool | `bun run setup:browsers` | < 5s |
-| Fast syntax/lint/type check | `bun run check:quick` | < 30s |
+| Fast syntax/lint/type check | `bun run check:quick` | about 30 s |
 | Full quality gate | `bun run check` | 2–5 min |
 | Run specific test | `bun run test tests/path/to/spec.test.ts` | varies |
 | Run only tests affected by uncommitted changes | `bun run test:changed` | seconds |
@@ -55,10 +55,10 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 | Scaffold / check a PR description | `bun run pr:body` / `bun run pr:body -- --check body.md` | < 2s |
 | Restart a branch after its PR was squash-merged | `bun run branch:restart` | < 5s |
 | Start a change in its own worktree (other sessions share this checkout) | `bun run worktree:new -- <branch>` | ~30s |
-| Integration tests | `bun run test:integration` | 1–2 min |
+| Browser e2e file covering a surface (map in `verify-visualizer-work`) | `bun run test tests/e2e/<file>.test.ts`; `bun run test:e2e` for all | varies |
 | Compatibility tests | `bun run test:compat` | 1–2 min |
-| Warm long-lived session | `bun run session:codex -- --profile review` | — |
-| Check everything at once | `bun run agent:status` | < 5s |
+| Warm loop: dev server + typecheck watch + fast tests watch | `bun run dev:agent` | — |
+| Setup and session status in one shot | `bun run agent:status` | < 5s |
 | Quick verify loop | `bun run agent:verify` | < 1 min |
 | Which audio reaches which control or drawn program, read from the equations (no run) | `bun run lab:dataflow -- --preset <id>` (`--all` for the corpus) | instant / ~20s |
 | Measure preset audio reactivity (no browser) | `bun run lab:reactivity -- --preset <id>` | ~15s |
@@ -87,7 +87,7 @@ Don't scrape the DOM or hand-roll sleep-and-poll loops — there is a first-clas
 | Check the iframe `postMessage` protocol the way an embedding site sees it | `bun run ctl -- --embed --post '{"type":"toil:load_preset","presetId":"geiss-casino"}'` — each `--post` records its `toil:status` reply; `tests/e2e/embed-bridge.test.ts` is the regression test |
 | Expose these surfaces to an MCP client | `bun run mcp` |
 
-Full reference: [`docs/agents/browser-automation.md`](../docs/agents/browser-automation.md). Useful URL flags: `?agent=true` (keeps rendering while the tab reports hidden — a Browser-pane tab always does, and without it the canvas goes black and reads as a shader failure), `?renderer=webgl`, `?mockAudio=1`, `?lockQualityStep=`.
+Full reference: [`docs/agents/browser-automation.md`](../docs/agents/browser-automation.md). Useful URL flags: `?agent=true` (keeps rendering while the tab reports hidden — a Browser-pane tab always does, and without it the canvas goes black and reads as a shader failure), `?renderer=webgl`, `?mockAudio=demo` (any other value is a constant tone whose frozen spectrum stops presets reacting), `?lockQualityStep=`.
 
 ## Heavier instruments
 
@@ -130,7 +130,7 @@ Reach for these before inventing a measurement; each one already exists.
 3. **Just editing code?** → `bun run check:quick` after edits
 4. **Ready to commit?** → `bun run check`
 5. **Need browser QA?** → `bun run dev` → `http://localhost:5173/?agent=true`
-6. **Need a long-lived session?** → `bun run session:codex -- --profile review`
+6. **Need a warm loop?** → `bun run dev:agent`
 
 ## Task routing
 
@@ -149,11 +149,9 @@ Use `.agent/skills/*/SKILL.md` for repeatable work classes:
 | UI iteration, shell chrome, CSS | `.agent/skills/iterate-visualizer-ui/SKILL.md` |
 | knowing which guardrails apply before editing | `.agent/skills/guard-agent-work/SKILL.md` |
 
-Use `.agent/workflows/*.md` when you need a step-by-step runbook with explicit phase order.
-
 ## Agent mode URL
 
-Always use `http://localhost:5173/?agent=true` for browser-based QA. It persists state across reloads and enables cleaner debug output.
+Always use `http://localhost:5173/?agent=true` for browser-based QA: without it a hidden tab stops rendering and the black canvas reads as a shader failure. [Browser automation](../docs/agents/browser-automation.md#determinism-and-environment) lists every URL flag.
 
 ## Quality gate reminder
 
@@ -171,9 +169,9 @@ Always use `http://localhost:5173/?agent=true` for browser-based QA. It persists
 | This page | `.claude/CLAUDE.md` | Every session start |
 | Agent essentials | `AGENTS.md` | Non-negotiable defaults |
 | Bootstrap + handoffs | `docs/agents/agent-handoffs.md` | Delegating work |
-| Capability index | `docs/agents/custom-capabilities.md` | Choosing skills/workflows |
+| Capability index | `docs/agents/custom-capabilities.md` | Choosing a skill |
 | System map | `docs/ARCHITECTURE.md` | Boot path, engine seam, per-frame data flow |
 | Product moments | `docs/PRODUCT_MOMENTS.md` | Choosing or scoping work: which visitor moment it serves, what counts as correct there, standing product policies |
 | Tooling reference | `docs/agents/tooling-and-quality.md` | Command details |
 | Visual testing | `docs/agents/visual-testing.md` | Browser QA procedures |
-| Deep reference | `docs/agents/reference-docs.md` | Unfamiliar code areas |
+| Source map | `docs/agents/src-map.md` | Unfamiliar code areas |

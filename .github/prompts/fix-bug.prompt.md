@@ -44,8 +44,8 @@ bun run test tests/path/to/spec.test.ts
 bun run check:quick
 
 # Test the area you modified
-bun run test:integration  # if runtime/behavior
-bun run test:compat       # if preset-related
+bun run test:compat                          # if preset-related
+bun run test tests/e2e/<file>.test.ts        # the browser suite covering the surface
 
 # Visual verification (if UI-related)
 bun run dev
@@ -64,7 +64,7 @@ Include changed files, checks run, remaining gaps, and any PR link in the task h
 
 ## 7. Commit & PR
 
-- Commit message: Sentence case (e.g., "Fix preset loading race condition")
+- Commit message: Conventional Commits, lowercase after the colon (e.g., `fix(presets): close the loading race on rapid switches`); see [Commit conventions](../../docs/COMMIT_CONVENTIONS.md)
 - Include: root cause in description, step to reproduce, verification in the PR
 
 ---

@@ -27,12 +27,28 @@ Use this skill when reviewing or authoring changes to `.github/workflows/ci.yml`
 ### 3. Package scripts stay intact
 
 - [ ] `bun run check:quick` still passes
-- [ ] No removal of scripts that are referenced by CI, docs, or agent workflows
+- [ ] No removal of scripts that are referenced by CI, docs, or agent skills
 
 ### 4. Deploy path verified
 
 - [ ] If touching deploy scripts, trace the full path from build → upload → publish
 - [ ] Cloudflare Worker name (`stims`) and Workers Builds branch config unchanged unless intentional
+
+## Shipping the site
+
+Cloudflare Workers Builds deploys the `stims` Worker on push: production from
+`main`, a preview version from every other branch. GitHub Actions only gates
+merges. A release is therefore:
+
+1. `bun run check`
+2. `bun run site:check` — builds `dist/` and the Worker bundle, then dry-runs
+   `wrangler deploy` against `wrangler.site.jsonc`
+3. Push and merge; Workers Builds does the rest
+
+`bun run site:deploy` is the manual fallback and needs `wrangler login` or
+`CLOUDFLARE_API_TOKEN`. `bun run preview:deploy` uploads a preview version
+without touching production. [Deployment](../../../docs/DEPLOYMENT.md) covers
+the Workers Builds setup and the MCP Worker.
 
 ## What to reject in review
 

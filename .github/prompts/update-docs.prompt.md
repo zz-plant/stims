@@ -70,7 +70,7 @@ Include changed files, checks run, remaining gaps, and any PR link in the task h
 
 ## 8. Commit & PR
 
-- Commit message: Conventional Commits, sentence case, no trailing period (e.g., "docs: Update visual testing workflows")
+- Commit message: Conventional Commits, lowercase after the colon (e.g., `docs(agents): point browser QA at the URL-flag list`); see [Commit conventions](../../docs/COMMIT_CONVENTIONS.md)
 - PR description: List which docs changed, why, and any cross-links updated
 
 ---

@@ -10,245 +10,90 @@ bun run setup:codex --print-plan
 bun run setup:codex
 ```
 
-`setup:codex` is the repo bootstrap for agent sessions. By default it installs dependencies and runs `bun run check:quick`. Repeated runs skip `bun install` automatically when `node_modules` and the local manifest fingerprint already look current.
+`setup:codex` installs dependencies and runs `bun run check:quick`. Repeated runs skip `bun install` when `node_modules` and the manifest fingerprint already look current. `bun run agent:status` prints the setup state and any managed session in one shot, and `bun run doctor` diagnoses a machine that cannot build, test or deploy.
 
-When you want to keep the dev server, local model roles, and a background watcher warm between edits, use:
-
-```bash
-bun run session:codex -- --profile review
-```
-
-Higher-throughput session profiles:
-
-- `compat` for compatibility-focused watcher loops
-- `integration` for browser-backed integration watcher loops
-- `parity` for capture and perf runs with a warm dev server and local model roles
-
-Useful controls:
+## Warm loop
 
 ```bash
-bun run session:codex -- --status
-bun run session:codex -- --stop
-# If you started a non-default port, repeat it here:
-bun run session:codex -- --port 4173 --stop
+bun run dev:agent
 ```
 
-## Package manager and script execution
+One process runs the dev server, a quiet typecheck watcher, and the fast test profile (unit + compat) in watch mode; any of the three exiting stops the rest. Other dev modes:
 
-- Use **Bun** for installs and scripts.
-- When dependency manifests change and lockfile updates are expected, run:
+| Command | What it runs | When to use |
+| --- | --- | --- |
+| `bun run dev` | Vite only | Visual QA at `http://localhost:5173/?agent=true` |
+| `bun run dev:host` | Vite on the LAN | Testing from another device |
+| `bun run dev:webgpu` | WebGPU-focused dev harness | WebGPU backend work |
+| `bun run dev:ui` | Vite with `vite.config.ui.js` | Standalone component-harness work |
 
-  ```bash
-  bun install
-  ```
+`.vscode/tasks.json` exposes the same loops as `agent:*` VS Code tasks.
 
-- For reproducible installs that must not modify the lockfile (for example CI), run:
+### Optional: LM Studio sessions (`session:codex`, `model:codex`)
 
-  ```bash
-  bun install --frozen-lockfile
-  ```
+Both scripts drive personal `lmstudio-*` helper commands that the repo does not ship (`scripts/codex-session.sh`, `scripts/codex-model-route.sh`). No other script or gate depends on them.
 
-- Run project scripts with:
+- `bun run session:codex -- --profile <name>` starts a managed dev server, optionally a watcher, and warms local model roles. Profiles: `fast`, `review` (typecheck watcher), `compat`, `integration`, `parity`, `visual`, `full` (unit watcher). Without the helpers it prints a warning, skips the model warm-up, and still starts the server and watcher. Control it with `--status`, `--stop`, and `--port <n> --stop` for a non-default port.
+- `bun run model:codex -- --mode auto --task "<task>"` routes a task description to a local model role. Without the helpers it exits with an error; `--no-exec` prints the routing plan only, and `--status` lists which helpers resolve.
 
-  ```bash
-  bun run <script>
-  ```
+Use `dev:agent` unless you have those helpers and want local models warm.
 
-- For a warm long-lived session on higher-memory local machines, prefer:
+## Package manager
 
-  ```bash
-  bun run session:codex -- --profile review
-  ```
-
-- For install/check bootstrap specifically, prefer:
-
-  ```bash
-  bun run setup:codex
-  ```
-
-- For task-to-model routing on machines with LM Studio helpers, prefer:
-
-  ```bash
-  bun run model:codex -- --mode auto --task "triage a preset crash" --no-exec
-  ```
+- Use **Bun** for installs and scripts: `bun install` when the lockfile is expected to change, `bun install --frozen-lockfile` for reproducible installs (CI), `bun run <script>` for everything else.
+- Prefer `bun run test …` over raw `bun test`: the wrapper applies the preload, the test categories and the serial browser passes.
 
 ## Linting and formatting
 
-- Biome is the formatter/linter of record.
-- Use the package scripts rather than ad-hoc commands where possible.
-- The shared Biome scripts cover the main code paths plus repo-root config and
-  HTML surfaces that used to sit outside the quality gate.
-
-## Required gates for JS/TS changes
-
-Run before commit:
+Biome is the formatter and linter of record.
 
 ```bash
-bun run check
+bun run lint       # check
+bun run lint:fix   # apply fixes
+bun run format     # format
 ```
 
-The quality gate has three tiers — pick the one that matches the risk of the change:
+## Quality gates
 
-| Command | Tier | What runs |
-| --- | --- | --- |
-| `bun run check:quick` | Edit-time (seconds, diff-scoped lint + typecheck) | Fast syntax/lint/type/guard feedback while iterating. |
-| `bun run check` | Pre-commit (default full gate) | Lint + typecheck + every guard + the gate test suite (unit + compat + corpus, which carries the dual-backend parity and golden-snapshot tests). |
-| `bun run check:all` | Pre-merge for engine work | Everything above plus e2e and every test profile (~5min+). Run before merging changes to the MilkDrop compiler, renderer adapters, or the parity pipeline. |
+| Command | Tier | What runs | Time |
+| --- | --- | --- | --- |
+| `bun run check:quick` | Edit time; also the pre-commit hook | Changed-file lint, typecheck, and the guards; no tests | about 30 s |
+| `bun run check` | Before every commit | Full Biome check, typecheck, every guard, package suites, then the gate tests (unit + compat + corpus) | 2–5 min |
+| `bun run check:all` | Before merging compiler, renderer-adapter or parity work | Everything above plus the browser e2e suites | 5 min+ |
 
-`check:quick` also includes the no-`@ts-nocheck` guard.
-It also verifies that `public/milkdrop-presets/catalog.json` stays synced with `src/data/milkdrop-parity/measured-results.json`.
-Its independent checks run in parallel by default; add `-- --serial` when debugging a specific failing step.
+`check:quick` runs its independent steps in parallel; add `-- --serial` when debugging one. Inside a Claude Code session the gate prints one line per passing step (`--verbose` or `STIMS_QUIET=0` restores full output), and a failing step always prints in full. Every guard and its tier is listed in [`docs/GUARDRAILS.md`](../GUARDRAILS.md); test profiles and CI coverage are in [Testing](../TESTING.md).
 
-The full gate runs architecture dependency checks via `dependency-cruiser`, and every `check:*` guard is documented with its tier in [`docs/GUARDRAILS.md`](../GUARDRAILS.md).
+`bun run verify --changed` (also `agent:verify`) reads the diff and runs only the guards, tests and regenerations those files can break.
+
+CI also runs `bun audit --audit-level=high` in the Quality gate job; the local gate does not. Run it before pushing a dependency or lockfile change.
 
 ## Task-specific checks
 
-- Catalog, generated-doc, and public README claim consistency:
+```bash
+bun run test tests/path/to/spec.test.ts   # one file
+bun run test:unit                          # unit only
+bun run test:compat                        # preset and compatibility semantics
+bun run test:e2e                           # every browser e2e suite (serial, slow)
+bun run test:budget                        # gate tests leaning on bun's 5 s default timeout
+bun run check:architecture                 # import cycles and the frontend → engine seam
+bun run check:readme-claims                # README figures against the shipped catalog
+bun run check:seo                          # SEO surface and generated learn pages
+```
 
-  ```bash
-  bun run check:readme-claims
-  ```
-
-- Architecture dependency boundaries:
-
-  ```bash
-  bun run check:architecture
-  ```
-
-- SEO surface integrity:
-
-  ```bash
-  bun run check:seo
-  ```
-
-- Targeted test execution:
-
-  ```bash
-  bun run test tests/path/to/spec.test.ts
-  ```
-
-- Architecture/import-boundary validation:
-
-  ```bash
-  bun run check:architecture
-  ```
-
-- Unit-only test sweep:
-
-  ```bash
-  bun run test:unit
-  ```
-
-- Browser-backed integration sweep:
-
-  ```bash
-  bun run test:integration
-  ```
-
-- Gate tests that lean on bun's 5 s default timeout (rerun with a 2.5 s
-  default; only tests without their own timeout can trip it):
-
-  ```bash
-  bun run test:budget
-  ```
+`bun run test:integration` runs one file, `tests/e2e/agent-integration.test.ts` (the agent API and the `play:toy` smoke). For the e2e file that covers a given surface, see [`verify-visualizer-work`](../../.agent/skills/verify-visualizer-work/SKILL.md#pick-tests-by-what-changed).
 
 ## Docs-only updates
 
-For Markdown-only edits, you can skip typecheck/tests unless the change modifies commands, paths, or workflow-critical instructions that should be validated.
+Run `bun run check:doc-references` and `bun run check:readme-claims`. Typecheck and tests can be skipped unless the edit changes commands, paths, or workflow-critical instructions; verify any command you document by running it.
 
-## Quick CLI reference for agents
-
-The commands used most often — a shortlist, not the full set, since the repo has well over a hundred scripts:
+## Finding a command
 
 ```bash
-# Every script, grouped by namespace, each with a one-line purpose
-bun run help
-
-# Same index as {name, command, purpose} records, for tooling
-bun run help --json
+bun run help          # every script, grouped by namespace, with a one-line purpose
+bun run help --json   # the same index as {name, command, purpose} records
+bun run help --for "<symptom>"   # symptom → the script that measures it
 ```
 
-Purpose lines come from the docblock atop each script file, so the index cannot drift from the code (`bun run check:script-docs` enforces that every script has one). Namespaces that this page does not otherwise cover: `parity:`, `sweep:`, `perf:`, `bench:`, `profile:`, `catalog:`, `previews:`.
+Purpose lines come from the docblock atop each script, so the index cannot drift from the code (`bun run check:script-docs` enforces it). Namespaces this page does not cover: `parity:`, `sweep:`, `perf:`, `bench:`, `profile:`, `catalog:`, `previews:`, `lab:`.
 
 To drive a running visualizer, use the agent API rather than DOM scraping — see [`browser-automation.md`](./browser-automation.md), plus `bun run ctl` (one-shot CLI) and `bun run mcp` (MCP server).
-
-Common commands to keep nearby while implementing:
-
-### Development
-
-```bash
-# One warm feedback loop: dev server + typecheck watch + fast tests watch
-bun run dev:agent
-
-# Warm long-lived agent session
-bun run session:codex -- --profile review
-
-# Route a task to the local LM Studio helper stack
-bun run model:codex -- --mode auto --task "review a loader bug" --no-exec
-
-# Start the dev server only (visual testing: http://localhost:5173/?agent=true)
-bun run dev
-
-# Specifically test the MilkDrop visualizer
-bun run play:toy milkdrop
-
-# Diagnose a machine that can't build/test/deploy
-bun run doctor
-```
-
-### During implementation (iterate-test-verify loop)
-
-```bash
-# Fast syntax/type/lint check (use frequently)
-bun run check:quick
-
-# Scoped verification: run exactly the guards/tests/regens a change can break
-bun run verify --changed
-
-# Run a specific test file while developing
-bun run test tests/path/to/spec.test.ts
-
-# Run all unit tests
-bun run test:unit
-
-# Run integration tests (for runtime/behavior changes)
-bun run test:integration
-
-# Run compatibility tests (for preset/editor changes)
-bun run test:compat
-```
-
-### Before committing
-
-```bash
-# Full quality gate (syntax, types, tests, architecture, SEO, README claims)
-bun run check
-```
-
-### Task-specific checks
-
-```bash
-# Architecture boundary violations
-bun run check:architecture
-
-# Catalog, generated docs, and public README claim drift
-bun run check:readme-claims
-
-# SEO surface issues
-bun run check:seo
-```
-
-### Formatting and linting
-
-```bash
-# Check for lint/format issues
-bun run lint
-
-# Auto-fix lint/format issues
-bun run lint:fix
-
-# Format code
-bun run format
-```
-
-For more details, see [`.agent/skills/verify-visualizer-work/SKILL.md`](../../.agent/skills/verify-visualizer-work/SKILL.md).
