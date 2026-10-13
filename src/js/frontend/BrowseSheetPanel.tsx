@@ -19,6 +19,10 @@ import {
   setAccessibilityPreference,
   subscribeToAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
+import {
+  loadPresetVisualVectors,
+  MAX_AFFINITY_ANCHORS,
+} from '../core/services/preset-visual-vectors.ts';
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
@@ -52,6 +56,7 @@ import {
   matchesPreset,
   parseBrowseSortMode,
   passesFlashPreference,
+  pickFavoritePresets,
   prettifyCollectionTag,
   sortBrowseEntries,
   sortCollectionsBySelectivity,
@@ -271,10 +276,46 @@ export function BrowseSheetPanel({
     reduceFlashing,
   ]);
 
+  // Saved presets, most recently opened first: the anchors 'like-saved'
+  // ranks against. Joined into a key so the affinity pass reruns only when
+  // the saved set changes, not on every catalog activity update.
+  const savedKey = useMemo(
+    () =>
+      sortMode === 'like-saved'
+        ? pickFavoritePresets(catalog, MAX_AFFINITY_ANCHORS)
+            .map((entry) => entry.id)
+            .join('\n')
+        : '',
+    [catalog, sortMode],
+  );
+  const [affinity, setAffinity] = useState<ReadonlyMap<string, number>>(
+    () => new Map(),
+  );
+  useEffect(() => {
+    if (!savedKey) {
+      setAffinity(new Map());
+      return;
+    }
+    let cancelled = false;
+    void loadPresetVisualVectors().then((vectors) => {
+      if (cancelled) return;
+      setAffinity(vectors?.affinity(savedKey.split('\n')) ?? new Map());
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [savedKey]);
+
   const sorted = useMemo(
     () =>
-      sortBrowseEntries(browseEntries, sortMode, randomSeed, deferredSearch),
-    [browseEntries, sortMode, randomSeed, deferredSearch],
+      sortBrowseEntries(
+        browseEntries,
+        sortMode,
+        randomSeed,
+        deferredSearch,
+        affinity,
+      ),
+    [browseEntries, sortMode, randomSeed, deferredSearch, affinity],
   );
 
   // At most the queue's cap (50) ids, so a scan per mounted row is free.
@@ -800,6 +841,7 @@ export function BrowseSheetPanel({
             <option value="author">Author</option>
             <option value="recent">Recently opened</option>
             <option value="favorites-first">Saved first</option>
+            <option value="like-saved">Like your saved</option>
             <option value="random">Random</option>
           </select>
 

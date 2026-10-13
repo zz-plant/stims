@@ -20,6 +20,8 @@ Before posting: run the README compile example, check the diagnostic output in t
 
 ## audio-reactive: creative coding and Web Audio developers
 
+Held, not launched: the package is private and unpublished (2026-10-13). Keep this draft for if that changes.
+
 Title: **AudioWorklet FFT, beat envelopes, and harmonic/percussive signals for visualizers**
 
 > audio-reactive turns audio into signals a renderer can use: band energies, beat envelopes, spectral features, and harmonic/percussive estimates. Analysis runs in an AudioWorklet, with pure functions for offline use and interpolation between packets on the rendering side.

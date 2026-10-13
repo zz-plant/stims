@@ -41,7 +41,7 @@ bun --cwd packages/audio-reactive run build
 bun --cwd packages/audio-reactive test
 ```
 
-The examples below use the package name, which resolves through the Bun workspace after installation. For a separate consumer, pack the built package and install the resulting tarball. See [package release instructions](https://github.com/zz-plant/stims/blob/main/packages/README.md#publishing) for first-publication checks. Once a release exists, the intended registry command is `bun add audio-reactive`.
+The examples below use the package name, which resolves through the Bun workspace after installation. For a separate consumer, pack the built package and install the resulting tarball. It is not published to npm: the package is marked private, because other libraries already cover most of it and its tuning follows Stims.
 
 Two entry points:
 

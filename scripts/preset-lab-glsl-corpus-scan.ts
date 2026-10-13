@@ -75,8 +75,12 @@ function getValidatorVersion(): string | null {
 }
 
 /** Validates one fragment shader body; returns an error summary or null. */
+/** Prepended to every stage before validation; glslang's line numbers count it. */
+export const VALIDATOR_PREAMBLE =
+  '#extension GL_OES_standard_derivatives : enable\nprecision mediump float;\n';
+
 export function validateFragmentShader(glsl: string): string | null {
-  const source = `#extension GL_OES_standard_derivatives : enable\nprecision mediump float;\n${glsl}`;
+  const source = `${VALIDATOR_PREAMBLE}${glsl}`;
   const result = spawnSync(VALIDATOR_BIN, ['--stdin', '-S', 'frag'], {
     input: source,
     encoding: 'utf8',

@@ -1,0 +1,13 @@
+{
+  "name": "stims-visual-embeddings",
+  "private": true,
+  "type": "module",
+  "description": "Embeds every catalog preview with EmbeddingGemma 2. Kept out of the root workspace so its ~430 MB of ONNX runtimes never reach a normal install.",
+  "scripts": {
+    "embed": "bun run embed.ts"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "4.3.1",
+    "sharp": "0.35.5"
+  }
+}

@@ -32,6 +32,11 @@ reference.
   style, but not across styles.
 - **Equations can be recovered from behaviour**: 41% of memoryless audio
   controls come back exactly, most in 4 terms or fewer.
+- **A local 30B code model fixes broken shader translations when it can
+  see the compiler.** One reply fixes 17 of 162 failing stages; three
+  replies with the compiler's next error fix 39. On directed preset edits
+  it satisfies about half the instructions but moves away from what the
+  human remix did.
 
 ## The tools
 
@@ -49,6 +54,7 @@ reference.
 | How long each preset control remembers the audio | `bun run lab:memory-probe -- --audio song.wav` | `probe.jsonl`: memory class and linearity per (preset, column) |
 | The bar an audio → controls model must clear | `bun run lab:vj-baseline -- --dataset <dir> [--features leaky] [--memory <probe dir>]` | audio R² beyond the clock, per preset and per memory class; event F1 of jumps (model and clock oracle) |
 | Score a shader-fixing model | `bun run lab:shader-fix-bench -- --export tasks.jsonl`, then `--score answers.jsonl --out shader-report.json` | summary on stdout; report JSON with `--out` |
+| Answer either benchmark with a local Ollama model | `bun run lab:llm-answer -- --bench edit\|shader --tasks tasks.jsonl --model <name> --out answers.jsonl [--format edit] [--rounds 3]` | answers JSONL ready for `--score`; `<out>.meta.jsonl` with timing, tokens and raw replies |
 | Flash risk of rendered output (needs a browser) | `bun run lab:flash-audit` | per-preset WCAG 2.3.1 counts |
 
 ## Splits: always by family
@@ -413,6 +419,75 @@ accurate with a tenth of the terms. The misses need forms the library lacks:
 ratios like `bass/bass_att`, `mod` and discrete steps. Adding those, or
 replacing the library with a genetic search over the VM's operators, is the
 next step.
+
+## Local language models on the editing and shader benchmarks
+
+`lab:llm-answer` runs a model served by Ollama on `lab:edit-eval` and
+`lab:shader-fix-bench` tasks. The numbers below are `qwen3-coder:30b`
+(Q4_K_M) on one Apple M1 Max, temperature 0, two requests at a time.
+
+**Fixing shaders.** 162 failing stages, 64 distinct bodies (remixes share
+broken stages). A fix must compile, keep every texture the body samples,
+and change at most 30% of its lines or two lines.
+
+| Setup | Compiles | Fixed | Distinct bodies fixed | Median s/task |
+| --- | --- | --- | --- | --- |
+| baseline: unchanged | 0 | 0 | 0 | — |
+| baseline: empty body | 162 | 0 | 0 | — |
+| whole body, one reply | 13 | 11 | 5 | 25 |
+| SEARCH/REPLACE edits, one reply, error line withheld | 9 | 6 | 5 | 11 |
+| SEARCH/REPLACE edits, one reply | 19 | 17 | 9 | 11 |
+| **the same, up to three replies with the next compiler error** | **45** | **39** | **15** | 37 |
+
+- **Point at the line.** glslang numbers the assembled shader, so a
+  task's error used to cite line 675 of a 16-line body. Tasks now carry
+  `errorLine`; withholding it cuts one-reply fixes from 17 to 6.
+- **Ask for edits, not the whole body.** Asked for a complete body, the
+  model often returns only the lines it changed, which scores as a
+  rewrite. SEARCH/REPLACE blocks applied by the harness avoid that.
+- **Show it the compiler.** Broken translations often hold several errors
+  and a reply fixes only the one it was shown. Of the 45 that compile
+  after three replies, 19 compiled after the first, 12 after the second,
+  14 after the third.
+- **Read the fixes.** Most compiling answers are faithful HLSL-to-GLSL
+  rules: `saturate(x)` → `clamp(x, 0.0, 1.0)`, `frac` → `fract`, `lerp` →
+  `mix`, a scalar swizzle `x.xxx` → `vec3(x)`, an implicit `float4` →
+  `float3` truncation made explicit. A few compile by guessing: an
+  undeclared `colorScale.r` replaced with `1.0`. One is wrong: a scalar
+  assigned to a `vec3` became an assignment to `.x` only, where HLSL
+  broadcasts it. Six compiling answers fail the locality rule by applying
+  the same correct substitution on three or more lines of a short body.
+
+The fixes point at the translator, not at a runtime model: `saturate`,
+`frac` or `lerp` survive untranslated in 25 of the 64 distinct broken
+bodies, and `colorScale` is used by 7 warp bodies that never declare it.
+Fixing those classes in the toolchain repairs every preset that has them;
+the model's answers are a list of which rules are missing. Compiling is
+still not drawing what the author meant; `parity:capture` / `parity:diff`
+against native projectM references is the check for that.
+
+**Editing presets.** The 35 held-out remix tasks:
+
+| Answer | Instructions satisfied | Changed | Distance from human remix | Audio-edit recall | Median s/task |
+| --- | --- | --- | --- | --- | --- |
+| baseline: parent unchanged | 0% | 0/35 | 0.131 | 0% | — |
+| baseline: one-click restyle (bass pulse) | 7% | 35/35 | 0.204 | 0% | — |
+| baseline: the human remix | 100% | 21/35 | 0 | 100% | — |
+| whole preset | 47% | 16/35 | 0.159 | 20% | 170 |
+| SEARCH/REPLACE edits | 51% | 21/35 | 0.173 | 20% | 94 |
+
+Every answer compiles and runs. The model follows about half the directed
+changes. In the answers read, settings move the named way, while
+"rewrite the per-frame equations" comes back as changed constants. Its
+answers end further from the human remix than the unedited parent is, and
+it reproduces 2 in 10 of the audio dependencies the remix changed. The
+edit format matches the whole-preset answer at half the time; 17 of its
+103 blocks matched nothing in the preset, usually settings grouped as if
+they were adjacent.
+
+Caveats: one model, one prompt, temperature 0; 35 edit tasks; the shader
+tasks are the corpus's current failures, so the set shrinks as the
+translator improves.
 
 ## What the state vectors cannot see
 

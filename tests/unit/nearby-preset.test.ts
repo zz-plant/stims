@@ -48,6 +48,7 @@ test('a nearby jump skips the current preset and the recent trail', async () => 
     currentPresetId: 'current',
     recentPresetIds: ['just-played'],
     isKnownPreset: () => true,
+    searchByPresetLook: async () => null,
     play: (id) => played.push(id),
     announce: (message) => announcements.push(message),
     // Injected rather than reaching the network: the point under test is the
@@ -90,6 +91,7 @@ test('an exhausted neighbourhood says so and points at the control that still mo
     currentPresetId: 'current',
     recentPresetIds: ['a'],
     isKnownPreset: () => true,
+    searchByPresetLook: async () => null,
     play: (id) => played.push(id),
     announce: (message) => announcements.push(message),
     searchByFrame: async () => [
@@ -245,4 +247,63 @@ test('the requested depth is passed to the index, not silently defaulted', async
   });
 
   expect(requestedTopK).toBe(NEARBY_SEARCH_RESULTS);
+});
+
+test('a catalog preset is matched by its preview vector, not the frame', async () => {
+  resetNearbyPresetState();
+  const played: string[] = [];
+  let frameSearched = false;
+
+  await playNearbyPreset({
+    canvas: {} as HTMLCanvasElement,
+    currentPresetId: 'current',
+    recentPresetIds: [],
+    isKnownPreset: () => true,
+    play: (id) => played.push(id),
+    announce: () => {},
+    searchByPresetLook: async (presetId) =>
+      presetId === 'current' ? [{ presetId: 'looks-alike', score: 0.9 }] : null,
+    searchByFrame: async () => {
+      frameSearched = true;
+      return [{ presetId: 'frame-match', score: 0.9 }];
+    },
+  });
+
+  expect(played).toEqual(['looks-alike']);
+  expect(frameSearched).toBe(false);
+});
+
+test('a preset with no vector falls back to describing the frame', async () => {
+  resetNearbyPresetState();
+  const played: string[] = [];
+
+  await playNearbyPreset({
+    canvas: {} as HTMLCanvasElement,
+    currentPresetId: 'generated-just-now',
+    recentPresetIds: [],
+    isKnownPreset: () => true,
+    play: (id) => played.push(id),
+    announce: () => {},
+    searchByPresetLook: async () => null,
+    searchByFrame: async () => [{ presetId: 'frame-match', score: 0.9 }],
+  });
+
+  expect(played).toEqual(['frame-match']);
+});
+
+test('a catalog preset still finds neighbours before the canvas exists', async () => {
+  resetNearbyPresetState();
+  const played: string[] = [];
+
+  await playNearbyPreset({
+    canvas: null,
+    currentPresetId: 'current',
+    recentPresetIds: [],
+    isKnownPreset: () => true,
+    play: (id) => played.push(id),
+    announce: () => {},
+    searchByPresetLook: async () => [{ presetId: 'looks-alike', score: 0.9 }],
+  });
+
+  expect(played).toEqual(['looks-alike']);
 });

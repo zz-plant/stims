@@ -197,6 +197,7 @@ export function toUnavailableBundledCatalogEntry(
     authorUrl: entry.authorUrl,
     origin: 'bundled',
     tags: entry.tags ?? [],
+    searchTerms: entry.searchTerms,
     curatedRank: entry.curatedRank,
     similarity: entry.similarity,
     // Carried through because the browse row reads them. This projection
@@ -369,6 +370,7 @@ export function toBundledCatalogEntryFromManifest(
     authorUrl: entry.authorUrl,
     origin: 'bundled',
     tags: entry.tags ?? [],
+    searchTerms: entry.searchTerms,
     curatedRank: entry.curatedRank,
     similarity: entry.similarity,
     quality: entry.quality,
