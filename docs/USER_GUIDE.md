@@ -72,6 +72,8 @@ Press `?` for the full list, where most keys can also be rebound. Cmd+K (Ctrl+K 
 | C | Record video |
 | U | Add this preset to the queue |
 | Shift+D | Live performance mode |
+| D | Black out the picture while held; two quick taps keep it black until the next press |
+| Y | Flash the screen white while held; tapping repeatedly strobes |
 | V | Cycle the theme (dark, light, system) |
 | H | Switch transitions between blend and cut |
 | W, I, O, J | Nudge the running preset: next waveform, zoom in, more warp, bigger waveform; with Shift, the opposite |
