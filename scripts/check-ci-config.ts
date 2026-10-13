@@ -19,7 +19,7 @@
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { packageNames } from './package-manifest.ts';
+import { packageNames, publishedNames } from './package-manifest.ts';
 
 const ROOT = process.cwd();
 const errors: string[] = [];
@@ -306,6 +306,10 @@ export function verifyPackageSurfaces(surfaces: {
   mirrorMatrix: string[];
   publishChoices: string[];
   readmeTable: string[];
+  /** Standalone packages the manifest marks as published. */
+  published: string[];
+  /** On-disk packages whose package.json sets `"private": true`. */
+  privateOnDisk: string[];
 }): string[] {
   const errors: string[] = [];
   const standalone = [...surfaces.standalone].sort();
@@ -341,9 +345,27 @@ export function verifyPackageSurfaces(surfaces: {
   for (const error of listDrift(
     'publish-packages.yml choices',
     surfaces.publishChoices,
-    standalone,
+    [...surfaces.published].sort(),
   )) {
     errors.push(error);
+  }
+  // `"private": true` is what stops a stray tag or a hand-run `npm publish`;
+  // the manifest's flag and the package.json have to say the same thing.
+  for (const name of standalone) {
+    const isPrivate = surfaces.privateOnDisk.includes(name);
+    const isPublished = surfaces.published.includes(name);
+    if (isPublished && isPrivate) {
+      errors.push(
+        `${name} is published in package-manifest.ts but its package.json ` +
+          `sets "private": true`,
+      );
+    }
+    if (!isPublished && !isPrivate && surfaces.onDisk.includes(name)) {
+      errors.push(
+        `${name} is unpublished in package-manifest.ts but its package.json ` +
+          `does not set "private": true, so npm publish would accept it`,
+      );
+    }
   }
   for (const error of listDrift(
     'packages/README.md table',
@@ -396,6 +418,18 @@ if (packageNames('standalone').length > 0) {
       mirrorMatrix: yamlBlockList(mirrorWorkflow, 'package'),
       publishChoices: yamlBlockList(publishWorkflow, 'options'),
       readmeTable: readmeTableNames(packagesReadme),
+      published: publishedNames(),
+      privateOnDisk: onDisk.filter((name) => {
+        const manifest: unknown = JSON.parse(
+          readText(join(packagesDir, name, 'package.json')),
+        );
+        return (
+          typeof manifest === 'object' &&
+          manifest !== null &&
+          'private' in manifest &&
+          manifest.private === true
+        );
+      }),
     })) {
       errors.push(error);
     }

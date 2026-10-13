@@ -21,13 +21,20 @@ export type PackageRole = 'standalone' | 'promoted';
 export type PackageManifestEntry = {
   name: string;
   role: PackageRole;
+  /**
+   * Whether the package goes to npm. An unpublished package is still built,
+   * tested and mirrored, but its package.json sets `"private": true` and the
+   * publish workflow does not offer it; check:ci-config holds both to this.
+   */
+  published: boolean;
 };
 
 export const PACKAGE_MANIFEST: readonly PackageManifestEntry[] = [
-  { name: 'audio-reactive', role: 'standalone' },
-  { name: 'eel-conformance', role: 'standalone' },
-  { name: 'flash-guard', role: 'standalone' },
-  { name: 'milkdrop-toolchain', role: 'standalone' },
+  // Held 2026-10-13: Meyda and others cover most of it, and its tuning follows Stims.
+  { name: 'audio-reactive', role: 'standalone', published: false },
+  { name: 'eel-conformance', role: 'standalone', published: true },
+  { name: 'flash-guard', role: 'standalone', published: true },
+  { name: 'milkdrop-toolchain', role: 'standalone', published: true },
 ];
 
 /** Where the read-only mirrors live (see .github/workflows/mirror-packages.yml). */
@@ -39,3 +46,9 @@ export const packageNames = (role: PackageRole): string[] =>
   PACKAGE_MANIFEST.filter((entry) => entry.role === role).map(
     (entry) => entry.name,
   );
+
+/** Standalone packages that go to npm: the publish workflow's choices. */
+export const publishedNames = (): string[] =>
+  PACKAGE_MANIFEST.filter(
+    (entry) => entry.role === 'standalone' && entry.published,
+  ).map((entry) => entry.name);

@@ -98,8 +98,13 @@ npm login
 cd packages/flash-guard && bun run build && npm publish --access public
 ```
 
-As of 2026-10-10, registry lookups for all four names returned 404. That is a dated publication check, not a reservation or a guarantee that a name will remain available. Verify the registry and clean-consumer build before publishing. See [package launch drafts](../docs/PACKAGE_LAUNCHES.md) and [release issue #1410](https://github.com/zz-plant/stims/issues/1410).
-
+`eel-conformance`, `flash-guard` and `milkdrop-toolchain` were first published
+at 0.1.0 on 2026-10-13. `audio-reactive` is not published: its `package.json`
+sets `"private": true` and the workflow does not offer it, because Meyda and
+others cover most of it and its tuning follows Stims. It stays a workspace
+package, and its mirror stays read-only. See
+[package launch drafts](../docs/PACKAGE_LAUNCHES.md) and
+[release issue #1410](https://github.com/zz-plant/stims/issues/1410).
 The versions in each `package.json` are the source of truth. The workflow
 refuses a tag whose version does not match.
 
