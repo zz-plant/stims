@@ -10,22 +10,22 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 
 <sub>Stims lives at toil.fyi. Any WebGL2 browser; no account, no install.</sub>
 
-<a href="./docs/assets/clips/stims-workflow.mp4"><img src="./docs/assets/clips/stims-workflow.gif" alt="Play Shifter's Curlique, add a rotation equation in the live editor, and copy a link carrying the edited source" width="640"></a>
+<a href="./docs/assets/clips/stims-workflow.mp4"><img src="./docs/assets/clips/stims-workflow.webp" alt="Play Shifter's Curlique, add a rotation equation in the live editor, and copy a link carrying the edited source" width="640"></a>
 
 <sub>Play → edit → share. This preview is accelerated; <a href="./docs/assets/clips/stims-workflow.mp4">watch the 25-second workflow</a> at recorded speed. The capture is silent.</sub>
 
 <table>
   <tr>
-    <td width="50%"><a href="https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.gif" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></a></td>
-    <td width="50%"><a href="https://toil.fyi/?preset=zylot-crosshair-dimension-light-of-ages"><img src="./docs/assets/clips/zylot-crosshair-dimension-light-of-ages.gif" alt="Zylot — Crosshair Dimension (Light of Ages)" width="100%"></a></td>
+    <td width="50%"><a href="https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.webp" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></a></td>
+    <td width="50%"><a href="https://toil.fyi/?preset=rovastar-harlequins-liquid-dragon"><img src="./docs/assets/clips/rovastar-harlequins-liquid-dragon.webp" alt="Rovastar — Harlequin's Liquid Dragon" width="100%"></a></td>
   </tr>
   <tr>
     <td align="center"><sub><b>Krash &amp; Rovastar</b> — Cerebral Demons</sub></td>
-    <td align="center"><sub><b>Zylot</b> — Crosshair Dimension</sub></td>
+    <td align="center"><sub><b>Rovastar</b> — Harlequin's Liquid Dragon</sub></td>
   </tr>
   <tr>
-    <td width="50%"><a href="https://toil.fyi/?preset=eos-starburst-05-phasing"><img src="./docs/assets/clips/eos-starburst-05-phasing.gif" alt="Eo.S. — Starburst 05 Phasing" width="100%"></a></td>
-    <td width="50%"><a href="https://toil.fyi/?preset=eos-glowsticks-v2-03-music"><img src="./docs/assets/clips/eos-glowsticks-v2-03-music.gif" alt="Eo.S. — Glowsticks v2 03 Music" width="100%"></a></td>
+    <td width="50%"><a href="https://toil.fyi/?preset=eos-starburst-05-phasing"><img src="./docs/assets/clips/eos-starburst-05-phasing.webp" alt="Eo.S. — Starburst 05 Phasing" width="100%"></a></td>
+    <td width="50%"><a href="https://toil.fyi/?preset=eos-glowsticks-v2-03-music"><img src="./docs/assets/clips/eos-glowsticks-v2-03-music.webp" alt="Eo.S. — Glowsticks v2 03 Music" width="100%"></a></td>
   </tr>
   <tr>
     <td align="center"><sub><b>Eo.S.</b> — Starburst 05 Phasing</sub></td>

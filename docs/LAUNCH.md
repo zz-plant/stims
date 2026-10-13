@@ -5,7 +5,7 @@ Prepared copy, not a record of publication. The workflow clip is a local capture
 ## Assets and destinations
 
 - [Full workflow video](./assets/clips/stims-workflow.mp4): Play demo → Edit this visual → Add a slow spin → copy the remix link. Silent, at recorded speed.
-- [README preview](./assets/clips/stims-workflow.gif): the same capture at three times speed.
+- [README preview](./assets/clips/stims-workflow.webp): the same capture at three times speed.
 - [Try Stims](https://toil.fyi/): no account or install.
 - [Source](https://github.com/zz-plant/stims).
 - [Remix thread](https://github.com/zz-plant/stims/discussions/1341).

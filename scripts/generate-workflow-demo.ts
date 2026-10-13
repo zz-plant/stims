@@ -3,12 +3,15 @@
  * Requires ffmpeg and Playwright Chromium. Run against a local dev server:
  * bun scripts/generate-workflow-demo.ts [--origin=http://127.0.0.1:5173]
  * Raw capture and browser evidence stay in output/playwright/workflow-demo;
- * the silent MP4 and accelerated GIF are generated into docs/assets/clips.
+ * the silent MP4 and accelerated animated WebP are generated into
+ * docs/assets/clips. --preview-only re-encodes the WebP from the committed
+ * MP4 without recording.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { decodePresetCodeFromHash } from '../src/js/frontend/url-state.ts';
+import { writeAnimatedWebp } from './animated-webp.ts';
 import { hardwareAngleArgs } from './browser-launch.ts';
 import { ensureDevServer } from './dev-server.ts';
 
@@ -16,6 +19,41 @@ const OUTPUT = 'output/playwright/workflow-demo';
 const ASSETS = 'docs/assets/clips';
 const VIEWPORT = { width: 1280, height: 720 };
 const MIN_CLIP_SECONDS = 25;
+const MP4 = join(ASSETS, 'stims-workflow.mp4');
+const PREVIEW = join(ASSETS, 'stims-workflow.webp');
+/** The README preview plays the recording this many times faster. */
+const PREVIEW_SPEEDUP = 3;
+const PREVIEW_FPS = 25;
+
+async function encodePreview() {
+  const framesDir = join(OUTPUT, 'preview-frames');
+  rmSync(framesDir, { recursive: true, force: true });
+  mkdirSync(framesDir, { recursive: true });
+  const extract = Bun.spawnSync(
+    [
+      'ffmpeg',
+      '-y',
+      '-i',
+      MP4,
+      '-vf',
+      `setpts=PTS/${PREVIEW_SPEEDUP},fps=${PREVIEW_FPS},scale=640:-1:flags=lanczos`,
+      join(framesDir, '%04d.png'),
+    ],
+    { stdout: 'ignore', stderr: 'pipe' },
+  );
+  if (extract.exitCode !== 0) throw new Error(extract.stderr.toString());
+  const frames = readdirSync(framesDir)
+    .sort()
+    .map((name) => join(framesDir, name));
+  await writeAnimatedWebp(frames, PREVIEW, { fps: PREVIEW_FPS });
+  rmSync(framesDir, { recursive: true, force: true });
+}
+
+if (process.argv.includes('--preview-only')) {
+  await encodePreview();
+  console.log(`Re-encoded ${PREVIEW} from ${MP4}`);
+  process.exit(0);
+}
 
 const originArg = process.argv.find((arg) => arg.startsWith('--origin='));
 const origin = new URL(originArg?.slice(9) ?? 'http://127.0.0.1:5173');
@@ -135,9 +173,7 @@ try {
   await context.close();
   if (!video) throw new Error('Playwright did not record a video.');
   const raw = await video.path();
-  const mp4 = join(ASSETS, 'stims-workflow.mp4');
-  const gif = join(ASSETS, 'stims-workflow.gif');
-  for (const command of [
+  const encode = Bun.spawnSync(
     [
       'ffmpeg',
       '-y',
@@ -156,27 +192,13 @@ try {
       'yuv420p',
       '-movflags',
       '+faststart',
-      mp4,
+      MP4,
     ],
-    [
-      'ffmpeg',
-      '-y',
-      '-i',
-      mp4,
-      '-vf',
-      'setpts=PTS/3,fps=6,scale=640:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=64:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3',
-      '-loop',
-      '0',
-      gif,
-    ],
-  ]) {
-    const process = Bun.spawnSync(command, {
-      stdout: 'ignore',
-      stderr: 'pipe',
-    });
-    if (process.exitCode !== 0) throw new Error(process.stderr.toString());
-  }
-  console.log(`Recorded ${duration.toFixed(1)}s: ${mp4} and ${gif}`);
+    { stdout: 'ignore', stderr: 'pipe' },
+  );
+  if (encode.exitCode !== 0) throw new Error(encode.stderr.toString());
+  await encodePreview();
+  console.log(`Recorded ${duration.toFixed(1)}s: ${MP4} and ${PREVIEW}`);
 } catch (error) {
   await page.screenshot({ path: join(OUTPUT, 'failure.png') }).catch(() => {});
   console.error(
