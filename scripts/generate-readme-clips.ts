@@ -7,7 +7,7 @@
  * window.__STIMS_AGENT_RENDER_FRAMES__ so captures are deterministic and
  * immune to RAF pauses. Frames are read straight off the GL drawing buffer
  * (toDataURL on the stage canvas encodes alpha=0 as transparent black), then
- * encoded to GIF by ffmpeg with a per-clip palette.
+ * joined into a looping animated WebP by animated-webp.ts.
  *
  * --audio=demo swaps that for the bundled demo track: the live render loop
  * owns the pipeline (the step hook is disabled while audio is active) and
@@ -17,25 +17,27 @@
  *
  * Usage:
  *   bun run scripts/generate-readme-clips.ts --ids=geiss-casino,orb-radiation
- *   bun run scripts/generate-readme-clips.ts --ids=... --width=420 --fps=20
+ *   bun run scripts/generate-readme-clips.ts --ids=... --width=640 --fps=30
  *   bun run scripts/generate-readme-clips.ts --ids=... --seconds=4 --warmup=240
  *   bun run scripts/generate-readme-clips.ts --ids=... --audio=demo --settle=1500
  *   bun run scripts/generate-readme-clips.ts --ids=... --no-headless   # debug
  *
- * Requires: Playwright Chromium and ffmpeg on PATH.
- * Outputs: docs/assets/clips/{presetId}.gif
+ * Requires: Playwright Chromium.
+ * Outputs: docs/assets/clips/{presetId}.webp
  */
 
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
+import { writeAnimatedWebp } from './animated-webp.ts';
 import { ensureDevServer } from './dev-server.ts';
 
 const OUTPUT_DIR = 'docs/assets/clips';
 const TMP_ROOT = '.cache/readme-clips';
 const DEFAULT_PORT = 5183;
-const DEFAULT_WIDTH = 420;
-const DEFAULT_FPS = 20;
+const DEFAULT_WIDTH = 480;
+/** 30 divides the 60 Hz sim rate, so each frame advances exactly 2 sim steps. */
+const DEFAULT_FPS = 30;
 const DEFAULT_SECONDS = 4;
 /** Cap on sim frames burned before the first capture (synthetic mode). */
 const DEFAULT_WARMUP = 180;
@@ -165,13 +167,34 @@ async function main() {
       undefined,
       { timeout: BOOT_TIMEOUT_MS },
     );
+    // The route's preset replaces the first-run default about a second after
+    // boot, then crossfades in over the blend duration. Warm-up has to start
+    // after the swap and outlast the blend, or the first frames show the
+    // outgoing preset.
+    const blendSeconds = await page
+      .waitForFunction(
+        (id) => {
+          const state = window.__stims_agent?.getState();
+          if (state?.presetId !== id) return null;
+          return {
+            blendSeconds:
+              state.transition.mode === 'blend'
+                ? (state.transition.blendDuration ?? 0)
+                : 0,
+          };
+        },
+        presetId,
+        { timeout: BOOT_TIMEOUT_MS },
+      )
+      // Resolves only once the callback returns the object, never null.
+      .then(async (handle) => (await handle.jsonValue())?.blendSeconds ?? 0);
 
     const tmpDir = join(TMP_ROOT, presetId);
     rmSync(tmpDir, { recursive: true, force: true });
     mkdirSync(tmpDir, { recursive: true });
 
-    // One evaluate per frame keeps peak memory bounded: a 4s clip at 20fps
-    // is 80 full-resolution PNG data URLs, which is far too much to hold in
+    // One evaluate per frame keeps peak memory bounded: a 4s clip at 30fps
+    // is 120 full-resolution PNG data URLs, which is far too much to hold in
     // one round trip.
     const setup = await page.evaluate(
       ({ warmup, minWarmup, beatPulse, liveAudio }) => {
@@ -281,7 +304,8 @@ async function main() {
       },
       {
         warmup: args.warmup,
-        minWarmup: Math.min(args.warmup, MIN_WARMUP),
+        minWarmup:
+          Math.min(args.warmup, MIN_WARMUP) + Math.ceil(blendSeconds * SIM_FPS),
         beatPulse: args.beatPulse,
         liveAudio: args.audio === 'demo',
       },
@@ -301,6 +325,8 @@ async function main() {
     if (liveAudio) await page.waitForTimeout(args.settleMs);
 
     const frameInterval = 1000 / args.fps;
+    const framePaths: string[] = [];
+    const captureStartedAt = Date.now();
     for (let i = 0; i < frameCount; i++) {
       const startedAt = Date.now();
       const dataUrl = (await page.evaluate(
@@ -314,32 +340,32 @@ async function main() {
         const remaining = frameInterval - (Date.now() - startedAt);
         if (remaining > 0) await page.waitForTimeout(remaining);
       }
+      const framePath = join(tmpDir, `${String(i).padStart(4, '0')}.png`);
       writeFileSync(
-        join(tmpDir, `${String(i).padStart(4, '0')}.png`),
+        framePath,
         Buffer.from(dataUrl.split(',')[1] ?? '', 'base64'),
       );
+      framePaths.push(framePath);
+    }
+    // A live sample that takes longer than the frame interval stretches the
+    // capture, and the clip then plays back faster than the preset ran.
+    if (liveAudio) {
+      const sampledFps = (frameCount * 1000) / (Date.now() - captureStartedAt);
+      if (sampledFps < args.fps * 0.9) {
+        console.warn(
+          `  ! sampled at ${sampledFps.toFixed(1)} fps, not ${args.fps}; the clip will play ${(args.fps / sampledFps).toFixed(1)}x fast`,
+        );
+      }
     }
 
-    const outPath = join(OUTPUT_DIR, `${presetId}.gif`);
-    const filters =
-      `fps=${args.fps},scale=${args.width}:-1:flags=lanczos,` +
-      `split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];` +
-      `[b][p]paletteuse=dither=bayer:bayer_scale=3`;
-    const proc = Bun.spawnSync([
-      'ffmpeg',
-      '-y',
-      '-framerate',
-      String(args.fps),
-      '-i',
-      join(tmpDir, '%04d.png'),
-      '-vf',
-      filters,
-      '-loop',
-      '0',
-      outPath,
-    ]);
-    if (proc.exitCode !== 0) {
-      console.error(`  ✗ ffmpeg failed:\n${proc.stderr.toString()}`);
+    const outPath = join(OUTPUT_DIR, `${presetId}.webp`);
+    try {
+      await writeAnimatedWebp(framePaths, outPath, {
+        fps: args.fps,
+        width: args.width,
+      });
+    } catch (error) {
+      console.error(`  ✗ WebP encode failed: ${error}`);
       continue;
     }
     rmSync(tmpDir, { recursive: true, force: true });
