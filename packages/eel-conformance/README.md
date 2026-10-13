@@ -1,12 +1,14 @@
 # eel-conformance
 
-An executable specification of EEL2, the expression language MilkDrop presets are written in: the dialect of ns-eel that `per_frame`, `per_pixel`, `per_point` and `init` blocks use. There has never been a written specification for this language, only implementations that disagree with each other. This corpus is an attempt at one. Every rule is a case with a program, an input state and a required output state, so conformance is something you run rather than something you argue about.
+An executable specification of EEL2, the expression language MilkDrop presets are written in: the dialect of ns-eel that `per_frame`, `per_pixel`, `per_point` and `init` blocks use. Cockos documents EEL2 in prose. This corpus pins the MilkDrop dialect's behaviour as cases instead: each rule is a program, an input state and a required output state, so conformance is something you run rather than something you argue about.
 
 The cases are plain JSON with a JSON Schema. Running them requires nothing from this package: a C++, Rust or JavaScript engine can read `cases/*.json` directly. The TypeScript loader and harness are a convenience for engines that live in that ecosystem.
 
+Demo: the [corpus browser](https://zz-plant.github.io/stims/eel-conformance/) reads every case from the shipped `cases/*.json` and searches them by id, name, program text or note.
+
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./docs/coverage-dark.svg">
-  <img alt="82 cases in 9 sections: operators-arithmetic 17 (2 provisional), operators-logical 7, truthiness 7, functions-math 12, functions-utility 14, variables 6, buffers 10, control-flow 6 (1 provisional), random 3" src="./docs/coverage-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/zz-plant/stims/main/packages/eel-conformance/docs/coverage-dark.svg">
+  <img alt="82 cases in 9 sections: operators-arithmetic 17 (2 provisional), operators-logical 7, truthiness 7, functions-math 12, functions-utility 14, variables 6, buffers 10, control-flow 6 (1 provisional), random 3" src="https://raw.githubusercontent.com/zz-plant/stims/main/packages/eel-conformance/docs/coverage-light.svg">
 </picture>
 
 ## What is in the box
@@ -65,17 +67,13 @@ Each case is `pinned` (the default) or `provisional`.
 - **pinned**: derived from documented MilkDrop 2.x / ns-eel behaviour. A conforming implementation must produce this value.
 - **provisional**: this corpus's *observed* behaviour, not yet confirmed against ns-eel. A provisional case is a question, not a requirement. Enforcing it still has value, since silent drift is worse than a wrong-but-known value, but do not port one into another implementation without checking upstream first.
 
-## Use from this repository
-
-This package is not published on npm as of 2026-10-10 (the registry lookup returned 404). Build and test the workspace source from a clone of [Stims](https://github.com/zz-plant/stims):
+## Install
 
 ```sh
-bun install --frozen-lockfile
-bun --cwd packages/eel-conformance run build
-bun --cwd packages/eel-conformance test
+npm install eel-conformance
+# or
+bun add eel-conformance
 ```
-
-The examples below use the package name, which resolves through the Bun workspace after installation. For a separate consumer, pack the built package and install the resulting tarball. See [package release instructions](https://github.com/zz-plant/stims/blob/main/packages/README.md#publishing) for first-publication checks. Once a release exists, the intended registry command is `bun add eel-conformance`.
 
 ## Running it against your engine
 
@@ -95,7 +93,7 @@ process.exit(conforms(report) ? 0 : 1);
 
 `runConformance` records a thrown error as an error on that case and keeps going, because the useful output is the whole table, not the first crash. `conforms` is true when every pinned case passed; provisional failures are reported separately and never count against conformance. Variable names in `env` are lower-cased, matching the language's case-insensitivity.
 
-The sibling package [`milkdrop-toolchain`](../milkdrop-toolchain) runs this corpus against its interpreter, JIT and WGSL generator in its own test suite. The cases were first written there.
+Stims runs this corpus against the three CPU execution paths of [`milkdrop-toolchain`](https://github.com/zz-plant/stims/tree/main/packages/milkdrop-toolchain), single-statement evaluation, the CSP-fallback interpreter and the JIT, in [`tests/unit/eel-conformance-spec.test.ts`](https://github.com/zz-plant/stims/blob/main/tests/unit/eel-conformance-spec.test.ts), with [`spec/eel-conformance/reference-runner.ts`](https://github.com/zz-plant/stims/blob/main/spec/eel-conformance/reference-runner.ts) as the runner. It does not run the corpus against the toolchain's WGSL generator.
 
 ## What the corpus covers
 
@@ -133,10 +131,18 @@ Changing an existing pinned value is a platform-semantics decision. Check a pres
 
 The code is developed in [zz-plant/stims](https://github.com/zz-plant/stims) under [`packages/eel-conformance`](https://github.com/zz-plant/stims/tree/main/packages/eel-conformance), next to the app that uses it, and released from there. [zz-plant/eel-conformance](https://github.com/zz-plant/eel-conformance) is a read-only mirror of that directory, updated on every change. Open issues and pull requests on zz-plant/stims.
 
+Build and test from a clone of zz-plant/stims:
+
+```sh
+bun install --frozen-lockfile
+bun --cwd packages/eel-conformance run build
+bun --cwd packages/eel-conformance test
+```
+
 ## Provenance
 
-Extracted from `spec/eel-conformance/` in [zz-plant/stims](https://github.com/zz-plant/stims), where the corpus was written to pin the semantics shared by that project's EEL interpreter, JIT and WGSL generator. The cases and the schema are unchanged. The loader is the Stims loader with a `cases/` path that works from both `src/` and `dist/`; the harness and the CLI are new.
+Extracted from `spec/eel-conformance/` in [zz-plant/stims](https://github.com/zz-plant/stims), where the corpus was written to pin the EEL semantics that project implements. The cases and the schema are unchanged. The loader is the Stims loader with a `cases/` path that works from both `src/` and `dist/`; the harness and the CLI are new.
 
 ## License
 
-[Unlicense](./LICENSE). Public domain.
+[Unlicense](https://github.com/zz-plant/stims/blob/main/packages/eel-conformance/LICENSE). Public domain.

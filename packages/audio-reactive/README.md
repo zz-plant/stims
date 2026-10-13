@@ -2,6 +2,8 @@
 
 Audio analysis for visualizers, extracted from [Stims](https://toil.fyi) (the MilkDrop-compatible visualizer at toil.fyi) into a standalone package. It covers the full path from an `AudioNode` to numbers a renderer can use: an `AudioWorkletProcessor` that computes an FFT, harmonic/percussive separation, spectral features and per-band beat envelopes off the main thread; pure functions for band levels, transients and spectral features that run anywhere (browser, worker, Bun, Node); a beat tracker; and a Hermite interpolator that turns discrete worklet packets into a continuous curve for high-refresh displays. The spectrum bytes match `AnalyserNode.getByteFrequencyData`, so the worklet can replace an `AnalyserNode` without retuning anything downstream. It has no runtime dependencies and ships TypeScript sources and declarations.
 
+Demo: the [audio-reactive site](https://zz-plant.github.io/stims/audio-reactive/) runs the worklet on a built-in test signal or the microphone, in the browser.
+
 ## Signal path
 
 ```mermaid
@@ -33,7 +35,7 @@ flowchart LR
 
 ## Use from this repository
 
-This package is not published on npm as of 2026-10-10 (the registry lookup returned 404). Build and test the workspace source from a clone of [Stims](https://github.com/zz-plant/stims):
+`audio-reactive` is not on npm: its `package.json` sets `"private": true`, because other libraries already cover most of it and its tuning follows Stims. Build and test it from a clone of [zz-plant/stims](https://github.com/zz-plant/stims):
 
 ```sh
 bun install --frozen-lockfile
@@ -41,7 +43,7 @@ bun --cwd packages/audio-reactive run build
 bun --cwd packages/audio-reactive test
 ```
 
-The examples below use the package name, which resolves through the Bun workspace after installation. For a separate consumer, pack the built package and install the resulting tarball. It is not published to npm: the package is marked private, because other libraries already cover most of it and its tuning follows Stims.
+The examples below import it by package name, which resolves through the Bun workspace after installation. Outside the workspace, run the build above, then install the tarball that `npm pack` writes in `packages/audio-reactive`.
 
 Two entry points:
 
@@ -294,4 +296,4 @@ Tests: 52 test cases carried over from `tests/unit` (seven files copied with imp
 
 ## License
 
-[Unlicense](./LICENSE). Public domain.
+[Unlicense](https://github.com/zz-plant/stims/blob/main/packages/audio-reactive/LICENSE). Public domain.
