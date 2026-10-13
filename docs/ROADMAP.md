@@ -28,6 +28,17 @@ Audited against the code on 2026-10-06. PR numbers mark what changed in that pas
 
 See [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) for file-level status and [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md) for evidence boundaries.
 
+## Workstreams
+
+Four lanes cut across the sections below. Keep one owner per lane where possible. Parity and runtime work can move in parallel, but a change to a public claim waits for the proof lane to catch up.
+
+| Lane | Owns | Done when |
+| --- | --- | --- |
+| Parity and fidelity | `packages/milkdrop-toolchain/src/compiler/`, `src/js/milkdrop/vm/`, `src/js/milkdrop/renderer-helpers/`, `src/data/milkdrop-parity/`; ordered work in the [parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md#open-work) | the certification corpus compiles and steps in Stims, the certified set has current measured results, and catalog labels derive from them |
+| Runtime performance | `src/js/milkdrop/runtime.ts`, `vm.ts`, `vm/frame-generation.ts`, `vm/wave-builder.ts`, `renderer-adapter*.ts`; queue in [Runtime performance](./RUNTIME_PERFORMANCE.md#open) | fewer per-frame allocations, with no regression in playback or controls |
+| Browser product | `src/js/frontend/`, `src/js/milkdrop/overlay/`, `public/milkdrop-presets/catalog.json` | launch, browse and recovery hold up on mobile and from the keyboard |
+| Proof and release | `scripts/run-quality-gate.ts`, `scripts/run-parity-diff-suite.ts`, `scripts/promote-parity-suite-result.ts` and their tests, [Development](./DEVELOPMENT.md), [Lineage and credits](./LINEAGE_AND_CREDITS.md) | gates cover each public claim, and public wording matches the strongest evidence present |
+
 ## Now: studio loop first, proof loop as a maintained floor
 
 The proof loop below is a floor, not a frontier: it stays green and does not grow. New evidence infrastructure ships only when a studio workflow needs it. The immediate work is the studio loop — **browse → listen → edit → compare → save → share → record**.
@@ -38,9 +49,17 @@ Each of these needs a real GPU, a second display, or a product decision.
 
 1. **Reduce flashing on by default.** The governor sees real frames (#1370), and its read costs the main thread 0.1 ms (#1375). It disagreed with the WCAG audit on the first-run preset (`shifter-curlique`, #1376), and the governor was wrong three ways (#1383). It judged one sample per tile, so moving texture read as flashing. It counted its own dimming step as the content darkening. And it skipped frames, so some comparisons spanned 33 ms and doubled the motion they judged. It now counts what the audit counts on the same frames: 0, 13 and 52 flashes/s on `shifter-curlique`, psychaos and krash. Live with Reduce flashing on, `shifter-curlique` had a mean brightness of 0.30 to 0.71; it now stays at full brightness in silence, on WebGL and at 390×844. With demo audio on WebGPU, one run in five still dimmed it briefly, to 0.62 at the lowest (see [Product moments](./PRODUCT_MOMENTS.md#open-questions)). What is left is the product call to turn it on for everyone.
 2. **Re-measure parity and demote what fails.** The certified labels rest on a July results file that the September suite contradicts (see [Proof floor](#proof-floor--maintained-not-expanded)).
-3. **Recording that holds up.** Render 9:16 and 1:1 natively, keep frames coming when the tab is hidden, lift the power-saving frame cap while recording, and add a browser test that measures the file.
-4. **A projector window that mirrors the stage.** Today's second window is a separate session (see [Live performance](#live-performance-vjing--hardware-control)).
+3. **Recording that holds up** ([#1441](https://github.com/zz-plant/stims/issues/1441)). Render 9:16 and 1:1 natively, keep frames coming when the tab is hidden, lift the power-saving frame cap while recording, and add a browser test that measures the file.
+4. **A projector window that mirrors the stage** ([#1439](https://github.com/zz-plant/stims/issues/1439)). Today's second window is a separate session (see [Live performance](#live-performance-vjing--hardware-control)).
 5. **A flash audit of the whole corpus with real music.**
+
+### Verify what ships
+
+Each of these is built and needs evidence from a real browser, device or registry before it is claimed.
+
+- **Shared remixes across browsers** ([#1408](https://github.com/zz-plant/stims/issues/1408)). #1415 made the shared-draft test deterministic and #1416 fixed the startup-cover scrollbar handoff; the cross-browser reproduction and the in-app black stage are still open.
+- **The OBS recipe** ([#1409](https://github.com/zz-plant/stims/issues/1409)), validated with native recordings and real audio routing.
+- **The published packages** ([#1410](https://github.com/zz-plant/stims/issues/1410)). `eel-conformance`, `flash-guard` and `milkdrop-toolchain` reached npm at 0.1.0 on 2026-10-13, and `audio-reactive` stays off it (#1446). The issue stays open until each is checked from a clean consumer.
 
 ### Zero-friction audio routing (Closing the capture gap)
 
@@ -81,7 +100,7 @@ Shipped:
 Open:
 
 - **Shader tab (WGSL/GLSL).** Partial. The editor's Shader tab lists a preset's warp/comp blocks with jumps, shows the engine's structured compile diagnostics (program, stage, driver message) mapped to the authored block, and a read-only view of the GLSL the WebGL path compiles. Missing: the WGSL a WebGPU pipeline actually runs — the WebGPU path lowers shaders through three's TSL node graphs at render time, so per-block WGSL text needs a live GPUDevice plumbing path that does not exist yet.
-- **Custom textures.** Partly shipped: the editor's Textures pane inspects what exists — every `sampler_*` a preset's warp/comp blocks reference, resolved to the bundled texture file the engine binds (with a preview, alias/substitute/rand notes, per-backend volume honesty, and built-in samplers folded into a collapsed group; `texture-bindings.ts`). Still missing: remapping a slot to another bundled texture, user-uploaded textures, and any override persisted in the preset — textures remain a fixed bundled table (`texture-files.ts`).
+- **Custom textures** ([#1442](https://github.com/zz-plant/stims/issues/1442)). Partly shipped: the editor's Textures pane inspects what exists — every `sampler_*` a preset's warp/comp blocks reference, resolved to the bundled texture file the engine binds (with a preview, alias/substitute/rand notes, per-backend volume honesty, and built-in samplers folded into a collapsed group; `texture-bindings.ts`). Still missing: remapping a slot to another bundled texture, user-uploaded textures, and any override persisted in the preset — textures remain a fixed bundled table (`texture-files.ts`).
 - **Short links.** Links are long (p95 5,215 characters even compressed); a short-link service would still wait on moderation.
 - **The loop as a whole.** `tests/e2e/studio-loop.test.ts` walks browse → edit → compare → save → share; CI's e2e matrix does not run it yet.
 
@@ -92,7 +111,7 @@ Exit criteria:
 
 ### Creator-grade export & vertical formats
 
-Recording is a `MediaRecorder` beta. Only the 4K preset renders natively; the three 1080×1920 presets center-crop and upscale the live canvas, and there is no 1:1 preset.
+Recording is a `MediaRecorder` beta. Only the 4K preset renders natively; the three 1080×1920 presets center-crop and upscale the live canvas, and there is no 1:1 preset. The first four items below are [#1441](https://github.com/zz-plant/stims/issues/1441).
 
 - Keep frames coming when the tab is hidden during a recording. Switching tabs freezes the video while the audio runs on: `hidden-tab-policy.ts` does not exempt recording, and browsers pause `requestAnimationFrame` in hidden tabs anyway, so a recording needs a frame source that does not depend on it.
 - Lift the power-saving frame cap while recording; `captureStream(60)` asks for frames the cap withholds.
@@ -127,7 +146,8 @@ Open:
 - **Ranking inputs.** Reactivity is measured for 47 of 1,787 presets, motion for 50, and engagement for none. A performance-cost signal ships (`src/data/preset-frame-cost.json`, read by autoplay and shuffle on low-tier devices via `src/js/core/preset-cost-signal.ts`, #1419). It holds 43 presets, all measured on one high-end WebGPU machine on 2026-10-12; the heaviest is 5.24 ms against the 12 ms low-tier budget, so the gate skips nothing yet. Browse ranking does not read it, by design. 99 of the top 100 by `curatedRank` are uncertified.
 - **Mood.** Mood comes from title keywords (`describePresetMood`). The autotagger's `category:*` tags can only be reached by typing them.
 - **Visual similarity.** Shipped for most of the catalog (#1447): Nearby, the finder's "By look" and Browse's "Like your saved" sort compare EmbeddingGemma 2 embeddings of each rendered preview, on the device. 1,636 of 1,787 presets have a vector. The rest fall back to `/api/visual-search`, which embeds a text description of the frame; those descriptions collapsed 1,786 presets into 81 distinct strings.
-- **Community signals.** `setRating` has no UI, and there are no notes or glitch reports.
+- **Community signals.** `setRating` has no UI, and there are no notes or glitch reports. A credited showcase of submitted remixes is [#1411](https://github.com/zz-plant/stims/issues/1411).
+- **Named sets.** The queue cannot be saved under a name or shared as a set ([#1412](https://github.com/zz-plant/stims/issues/1412)).
 - **Shareable views.** A shared Browse URL keeps the collection but not the search, author, or sort.
 - **Fidelity in Browse.** A fidelity sort or badge needs measurements; one preset in 1,787 has one.
 
@@ -140,10 +160,13 @@ Exit criteria:
 
 **The floor is not green.** The last suite run (2026-09-01) graded the 13 certified references: 1 pass, 10 fail, 2 whose reference shows no signal. The feedback clamp (#1223, 2026-09-23) landed after that run and has not been measured. `measured-results.json` (2026-07-29) still marks 250-wavecode, 300-beatdetect, and glowsticks as passing; the suite grades the first two as failing (7.38% and 5.88% against a 2% limit) and the third as no-signal. CI grades the tooling against synthetic fixtures only. Re-measuring needs a WebGPU device, which headless Chromium does not expose.
 
+The [parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md#open-work) holds the full ordered list and its evidence.
+
 - Re-run capture, suite, and noise; demote the results the suite contradicts.
 - Seed `Math.random` in the capture path, so presets like mosaics and cubetrace render the same way on every run.
 - Fix renderer behavior by subsystem when measured evidence regresses: feedback orientation, shader sampling, color presentation, shapes, waves, and motion vectors.
 - Promote results only after the requested backend and reference provenance are verified. The tooling enforces this; the data predates it.
+- Retire the krash and glowsticks references, which a blank frame would pass.
 - Show evidence where people choose presets. Browse shows none by design, and the inspector shows no measured result.
 - Make WebGL's warp centre honour the aspect. #1376 traced the black portrait stage of 2026-10-06 to the then first-run preset's 16:9 `cx`/`cy` maths: WebGPU matches MilkDrop there, and WebGL differs because it drops the aspect from `cx`/`cy` (see [Product moments](./PRODUCT_MOMENTS.md#open-questions)).
 
@@ -204,7 +227,7 @@ Open:
 - **Pads and notes.** They cannot be learned, and cannot trigger actions such as next preset or blackout.
 - **MIDI clock.** In/out is implemented but only tests use it.
 - **Latency.** The sub-10 ms target has never been measured on a device.
-- **Projector / external display window.** The second window today is a watch-party link. It boots a full session with its own audio, synced through a relay that carries only the preset id and title, so MIDI moves, edits, and crossfades never reach the audience screen. What it needs: a same-origin window that mirrors the stage canvas (the picture-in-picture path already does), with no chrome and the cursor hidden.
+- **Projector / external display window** ([#1439](https://github.com/zz-plant/stims/issues/1439)). The second window today is a watch-party link. It boots a full session with its own audio, synced through a relay that carries only the preset id and title, so MIDI moves, edits, and crossfades never reach the audience screen. What it needs: a same-origin window that mirrors the stage canvas (the picture-in-picture path already does), with no chrome and the cursor hidden.
 - **Tap tempo and phase nudge.** Missing; tempo comes only from the audio. `=` and `-` are the stage zoom and warp keys.
 - **Transition shaders.** One noise dissolve. Missing: wipe, glitch, and others, on both backends.
 - **Brightness floor.** The brightness ceiling stops at 30%, so the stage cannot be dimmed further than that without a blackout.
@@ -238,8 +261,7 @@ Exit criteria:
 
 ### Vectorized GPU compute offloading for waveforms & geometry
 
-- Offload per-point custom wavecode generation ($4 \text{ waves} \times 512 \text{ points} = 2,048 \text{ evaluations/frame}$) from CPU JavaScript JIT to WebGPU compute storage buffers.
-- Implement AST SIMD/vec4 vectorization in the WGSL generator for per-vertex grid transformations.
+- Offload per-point custom wavecode generation ($4 \text{ waves} \times 512 \text{ points} = 2,048 \text{ evaluations/frame}$) from the CPU JIT to the GPU. Per-pixel mesh programs already run inside the mesh shader on the full WebGPU path ([Architecture](./ARCHITECTURE.md#frame-data-flow)); per-point wave programs are the CPU lane left.
 - Eliminate remaining main-thread CPU spikes, building on the frame-work reduction recorded in [RUNTIME_PERFORMANCE.md](./RUNTIME_PERFORMANCE.md) ($3.43 \text{ ms} \rightarrow 2.87 \text{ ms}$ at 1×, about 16%; $17.56 \text{ ms} \rightarrow 15.31 \text{ ms}$ at 4× CPU throttle, about 13%).
 
 Exit criteria:
@@ -260,6 +282,33 @@ Exit criteria:
 
 Exit criteria:
 - Deterministic frame export completes 60 seconds of 4K 60fps video matching audio waveforms sample-for-sample.
+
+### Learn by editing
+
+The authoring curriculum shipped as ten tracks in [docs/authoring/](./authoring/README.md), published at [/learn/](https://toil.fyi/learn/). The plan behind it is [archived](./archive/PRESET_AUTHORING_DOCS_PLAN.md); its follow-on work is open:
+
+- **Live reactivity while typing.** The editor's Tune chips name the sounds that drive each control from static dataflow. The per-variable live verdicts from `src/js/milkdrop/reactivity-probe.ts`, which the Generate panel already uses, are not wired into the editor.
+- **A way from the editor into the lessons.** The docs site with run links exists; the editor has no Learn link to the lesson for what is on screen, and no lesson embeds a live stage.
+- **Technique tags.** No catalog preset carries a `technique:*` or `difficulty:*` tag, so lessons cannot link to examples in the wild.
+- **Explain this line.** The editor's Explain covers the whole preset; a per-line explanation that links to the relevant lesson does not exist.
+- **Lesson deep links.** `#code=` restores a preset but not a lesson position or highlighted lines (`#lesson=`).
+- **Archive rescue.** The sweep of community knowledge described in the archived plan has not started.
+- **A lesson example driven by the percussive/harmonic signals** ([#1340](https://github.com/zz-plant/stims/issues/1340)).
+
+## Engineering health
+
+Checked against the code on 2026-10-13. These carry no visitor-facing change; each lowers the cost or risk of the work above. They come from the September architecture proposal, the September toolchain audit and the WebGPU revamp plan, all [archived](./archive/).
+
+- **One shader source for the composite pass.** `src/js/milkdrop/feedback-manager-webgpu-tsl.ts` (4,786 lines) mirrors the GLSL composite in `feedback-manager-shared.ts` (2,633) by hand, and nothing fails when they drift. Two attempts at a shared IR were removed because nothing consumed them. Start with a uniform table both managers read their defaults from, plus a differential test that every composite uniform is bound on both backends or declared backend-only (`feedback-composite-contract.ts`, `milkdrop-feedback-uniform-contract.test.ts`, both NEW); decide on generating shaders from it after that.
+- **Break up `App.tsx`.** It has 1,496 lines and 33 `useEffect` calls. Extract lifecycle hooks one concern per PR, split `EngineContextValue` into actions and data by change cadence, and add a guard that fails when the effect count rises (`check-app-shell-effects.ts`, NEW).
+- **Give `src/js/milkdrop/` a shape.** 89 modules sit at its top level. One folder per concern, each with an index as its public surface, would let `.dependency-cruiser.mjs` replace the `MILKDROP_SHELL_SURFACE` list with "import through the folder index". Move one folder per PR with `git mv` and an import rewrite only.
+- **React Compiler** through the Oxc port in `@vitejs/plugin-react`, starting in annotation mode on the browse grid and settings sheet. It changes every component's behaviour, so it needs `bun run ui:diff` and a pass over the panels that subscribe through `useSyncExternalStore`.
+- **Bun 1.4.** The repo pins 1.3.14; `.bun-version`, `mise.toml`, `packageManager` and `engines.bun` move together. `Bun.Image` could replace `sharp`, starting with `scripts/generate-thumbnails.ts`, which has a golden-output test.
+- **The Cloudflare Vite plugin for the site Worker.** It would build client and Worker in one graph and retire the hand-stitched `dist/_worker.js` in `scripts/build-site.mjs` and `scripts/sync-resvg-wasm.mjs`.
+- **The AudioWorklet bundle on Rolldown instead of esbuild.** Ported and reverted on 2026-09-02: the browser corpus gate passed 2 runs of 11 with it against 4 of 5 with esbuild. Retry with the two browser-backed corpus tests serialised, and measure ten runs.
+- **Rendering from a worker over OffscreenCanvas.** Not implemented; agent-mode hidden-tab rendering must keep working from the worker first. An unwired prototype was deleted in #1104 and its message protocol in #1454; recover them with `git show dd3aae08^:src/js/core/<file>`.
+- **An Oxlint type-aware `no-floating-promises` pass** in the full `check`, alongside Biome.
+- **One browser e2e test per file hangs for its whole timeout** ([#1123](https://github.com/zz-plant/stims/issues/1123)).
 
 ## Later: platform expansion & ecosystem
 

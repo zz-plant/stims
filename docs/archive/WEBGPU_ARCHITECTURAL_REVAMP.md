@@ -1,8 +1,10 @@
 # WebGL/WebGPU Architectural Revamp Plan
 
-> Design and rollout plan. Proposed steps and earlier implementation notes are not a current certification report. See [implementation status](./IMPLEMENTATION_STATUS.md) for capability limits and the parity manifests for evidence.
+> Archived on 2026-10-13. Problems 1, 3, 6 and 7 are resolved or moot; the open ones are in the roadmap's [Engineering health](../ROADMAP.md#engineering-health), and the backend facts in [Rendering backends](../ARCHITECTURE.md#rendering-backends).
 
-This plan addresses structural issues in the dual-backend rendering pipeline identified during the [Stims renderer evaluation](./ARCHITECTURE.md).
+> Design and rollout plan. Proposed steps and earlier implementation notes are not a current certification report. See [implementation status](../IMPLEMENTATION_STATUS.md) for capability limits and the parity manifests for evidence.
+
+This plan addresses structural issues in the dual-backend rendering pipeline identified during the [Stims renderer evaluation](../ARCHITECTURE.md).
 
 ## Problem Summary
 
@@ -10,10 +12,10 @@ Status checked against the code on 2026-10-13. Only problems 2 and 4 remain open
 
 1. **WebGPU feedback pipeline had split ownership.** Resolved: native TSL feedback has run by default on the full WebGPU path since 2026-08-06 (`789c1e9a`), and `feedback-render-targets.ts` allocates targets for both backends.
 2. **TSL duplication.** Open: `feedback-manager-webgpu-tsl.ts` still mirrors the GLSL composite shader as TSL node graphs by hand.
-3. **Worker renderer was WebGPU-only with no fallback.** Moot: the worker renderer prototype and its protocol were deleted unwired (#1454).
+3. **Worker renderer was WebGPU-only with no fallback.** Moot: the unwired worker renderer prototype was deleted in #1104 and its protocol in #1454.
 4. **WGSL codegen is scalar-only.** Open, and narrow: `wgsl-generator.ts` serves only the compute VM, which is off by default. The unused `wgsl-vectorization.ts` helpers were deleted (#1454).
 5. **No RenderBundle or OffscreenCanvas transfer.** Render bundles exist behind `?milkdrop-webgpu-render-bundles=1` (`renderer-bundles.ts`); a hardware A/B on 2026-10-11 found no cadence effect, so they stay off. OffscreenCanvas transfer is not implemented.
-6. **Default-off posture limited real-world WebGPU testing.** Resolved: WebGPU is selected by default on browsers that ship it as stable ([Rendering backends](./ARCHITECTURE.md#rendering-backends)).
+6. **Default-off posture limited real-world WebGPU testing.** Resolved: WebGPU is selected by default on browsers that ship it as stable ([Rendering backends](../ARCHITECTURE.md#rendering-backends)).
 7. **Compiler IR was too broad.** Resolved: `compiler/compatibility-report.ts` and `compiler/shader-execution-classification.ts` carry compatibility aggregation and execution classification out of `compiler/ir.ts`.
 
 ## Workstreams
