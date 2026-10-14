@@ -138,9 +138,11 @@ describe('milkdrop compiler', () => {
     expect(compiled.ir.shaderText.compProgram?.execution.kind).toBe(
       'direct-feedback-program',
     );
+    // The program draws the volume sample itself, so it carries the whole
+    // body; the texture-layer controls above stay only as the stand-in.
     expect(
       compiled.ir.shaderText.compProgram?.execution.requiresControlFallback,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({

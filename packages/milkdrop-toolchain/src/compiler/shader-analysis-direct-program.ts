@@ -39,9 +39,6 @@ export function buildShaderProgramPayload({
   supportedBackends: MilkdropRenderBackend[];
   rawGlsl?: string;
 }): MilkdropShaderProgramPayload {
-  const hasTranslatedControlFallback = statements.some((statement) =>
-    shouldUseTranslatedControlsForDirectAuxSample(statement),
-  );
   const entryTarget = stage === 'warp' ? 'uv' : 'ret';
   const programStatements = statements.map((statement) => ({
     ...statement,
@@ -61,8 +58,13 @@ export function buildShaderProgramPayload({
       stage,
       entryTarget,
       supportedBackends,
-      requiresControlFallback:
-        requiresControlFallback || hasTranslatedControlFallback,
+      // A `ret` built from an aux-texture sample used to keep the control
+      // fallback as well, from before direct programs could sample those
+      // textures. The program draws the sample itself now, and the fallback's
+      // texture overlay then replaced its output: cotc-goody-aurora-totalis
+      // rendered bare noise, and 33 warp bodies reading sampler_fc_main (the
+      // main texture, clamped) kept stand-in controls they had already run.
+      requiresControlFallback,
       statementTargets: programStatements.map((statement) => statement.target),
     },
   };

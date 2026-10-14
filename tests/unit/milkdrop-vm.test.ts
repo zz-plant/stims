@@ -1671,7 +1671,7 @@ comp_shader=vec3 wash = vec3(1 + bass_att * 0.2, 0.8 + mid * 0.1, 0.6 + beat_pul
     expect(standIn.colorScale.b).toBeCloseTo(0.66, 6);
   });
 
-  test('keeps translated shader controls available alongside direct comp programs', () => {
+  test('a comp program that samples a volume texture draws it itself', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Direct Shader Program VM
@@ -1693,19 +1693,21 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
           kind: 'direct-feedback-program',
           stage: 'comp',
           supportedBackends: ['webgl', 'webgpu'],
-          requiresControlFallback: true,
+          requiresControlFallback: false,
         }),
       }),
     );
+    // No texture overlay on top of the program's own mix: laid over it, the
+    // overlay replaced cotc-goody-aurora-totalis's comp output with bare noise.
+    expect(frameState.post.shaderControls.textureLayer.source).toBe('none');
+    // The stand-in a backend that could not run it would use instead.
     // noisevol* is projectM's generated 32^3 white-noise volume
     // (PerlinNoise.cpp), not the simplex marble PNG it used to alias onto.
-    expect(frameState.post.shaderControls.textureLayer.source).toBe('noisevol');
-    expect(frameState.post.shaderControls.textureLayer.mode).toBe('mix');
-    expect(frameState.post.shaderControls.textureLayer.inverted).toBe(true);
-    expect(frameState.post.shaderControls.textureLayer.amount).toBeCloseTo(
-      0.35,
-      6,
-    );
+    const standIn = preset.ir.shaderText.stageControls?.comp.controls;
+    expect(standIn?.textureLayer.source).toBe('noisevol');
+    expect(standIn?.textureLayer.mode).toBe('mix');
+    expect(standIn?.textureLayer.inverted).toBe(true);
+    expect(standIn?.textureLayer.amount).toBeCloseTo(0.35, 6);
   });
 
   test('renders ninth shape slot beyond the previous ceiling', () => {
