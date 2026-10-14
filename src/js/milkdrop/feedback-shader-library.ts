@@ -682,8 +682,12 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
               clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
             );
           }
-          // Apply decay to the previous frame color so history dissipates over time.
-          previousColor *= decay;
+          // fDecay belongs to MilkDrop's default warp: a preset with its own
+          // warp shader owns its fade (\`ret *= 0.97\`, \`ret -= 0.004\`), and
+          // MilkDrop 2, Butterchurn and native projectM 3.1.12 all leave its
+          // output undecayed (projectM: an identity+0.01 warp at fDecay=0.5
+          // reads 3/255 per frame, the same as fDecay=1).
+          previousColor *= hasDirectWarp > 0.5 ? 1.0 : decay;
           // The internal frame is the warped, decayed previous frame with this
           // frame's geometry drawn over it. Control-driven presets used to
           // blend the two by videoEchoAlpha instead, so a preset without video
@@ -695,10 +699,13 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
           // The scene colour arrives premultiplied — three.js blends src.rgb
           // times src.a into a target that starts at zero — so this is a
           // straight over, not a mix (a mix darkens covered pixels twice).
+          // It is the same over after a warp shader: MilkDrop draws geometry
+          // onto the warp pass's output with the geometry's own blend mode.
+          // Direct-warp presets used to add the scene instead, so a faint
+          // shape or motion-vector dot brightened its pixels every frame
+          // without limit; applying fDecay to them as well had hidden that.
           float coverage = clamp(current.a, 0.0, 1.0);
-          vec3 color = hasDirectWarp > 0.5
-            ? previousColor + current.rgb
-            : previousColor * (1.0 - coverage) + current.rgb;
+          vec3 color = previousColor * (1.0 - coverage) + current.rgb;
           // MilkDrop's internal buffer is 8-bit, so every frame it carries is
           // implicitly clamped to [0,1]. Ours is half-float for decay
           // precision, which removed that clamp: a sharpening warp such as
