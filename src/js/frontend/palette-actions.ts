@@ -24,6 +24,11 @@ import { nextFileTrack, previousFileTrack } from './file-audio.ts';
 import { openPerformPicker } from './perform-pins.ts';
 import { cyclePresetWaveMode, nudgePresetField } from './preset-nudges.ts';
 import {
+  followMusicTempoAction,
+  nudgeTempoAction,
+  tapTempoAction,
+} from './tempo-actions.ts';
+import {
   endWatchParty,
   nearbyPresetRequest,
   openRecordPanel,
@@ -301,6 +306,36 @@ export function buildPaletteActions(
       label: 'Pin a parameter to the stage',
       keywords: ['perform', 'fader', 'control', 'surface'],
       run: () => openPerformPicker(),
+    },
+    {
+      // A tap is timed, so it has to come from a key or a pad; the palette
+      // row is how automation and the shortcut layer reach it.
+      id: 'tap-tempo',
+      group: 'Perform',
+      label: 'Tap tempo (tap on the downbeat)',
+      keywords: ['bpm', 'beat', 'sync', 'downbeat'],
+      run: () => void tapTempoAction(uiRef.current.setStatusMessage),
+    },
+    {
+      id: 'tempo-follow-music',
+      group: 'Perform',
+      label: 'Tempo follows the music (clear tapped tempo)',
+      keywords: ['bpm', 'tap', 'reset', 'clear', 'auto'],
+      run: () => followMusicTempoAction(uiRef.current.setStatusMessage),
+    },
+    {
+      id: 'tempo-nudge-earlier',
+      group: 'Perform',
+      label: 'Nudge the beat grid earlier',
+      keywords: ['bpm', 'phase', 'tap', 'sync'],
+      run: () => nudgeTempoAction(-1, uiRef.current.setStatusMessage),
+    },
+    {
+      id: 'tempo-nudge-later',
+      group: 'Perform',
+      label: 'Nudge the beat grid later',
+      keywords: ['bpm', 'phase', 'tap', 'sync'],
+      run: () => nudgeTempoAction(1, uiRef.current.setStatusMessage),
     },
     {
       id: 'queue-add',

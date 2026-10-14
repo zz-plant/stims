@@ -32,6 +32,7 @@ import {
   subscribeLivePerformanceMode,
 } from '../core/live-performance-mode.ts';
 import { createLogger } from '../core/logger.ts';
+import { getManualTempo } from '../core/manual-tempo.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
 import { shouldSkipPresetForDeviceTier } from '../core/preset-cost-signal.ts';
 import { isPresetLocked, setPresetLocked } from '../core/preset-lock.ts';
@@ -65,7 +66,10 @@ import {
   createMilkdropBackendFailover,
   describeWebglFallback,
 } from './runtime/backend-fallback';
-import { createMilkdropBeatClock } from './runtime/beat-clock.ts';
+import {
+  createMilkdropBeatClock,
+  type MilkdropBeatClockSnapshot,
+} from './runtime/beat-clock.ts';
 import { createMilkdropCapturedVideoOverlay } from './runtime/captured-video-overlay.ts';
 import { createMilkdropCapturedVideoReactivityTracker } from './runtime/captured-video-reactivity.ts';
 import { createMilkdropCatalogCoordinator } from './runtime/catalog-coordinator';
@@ -425,12 +429,18 @@ export function createMilkdropExperience({
   // Tempo/bar tracking lives at runtime scope, not inside the frame loop:
   // the snapshot below is built before the frame loop exists, and tempo is
   // read by the UI as well as by the quantized advance.
-  const beatClock = createMilkdropBeatClock();
+  const beatClock = createMilkdropBeatClock({ getManualTempo });
+  /** The tempo the UI is shown: whole BPM, and only once it is trustworthy. */
+  const publishedTempo = (beat: MilkdropBeatClockSnapshot): number | null =>
+    beat.bpm !== null && beat.confidence >= AUTO_ADVANCE_TEMPO_CONFIDENCE
+      ? Math.round(beat.bpm)
+      : null;
+  let lastPublishedTempoBpm: number | null = null;
 
   const buildSnapshot = (): MilkdropExperienceSnapshot => {
-    // One read per snapshot: `snapshot()` allocates, and buildSnapshot runs
-    // every frame while audio plays.
+    // One read per snapshot: `snapshot()` allocates.
     const beat = beatClock.snapshot(performance.now());
+    lastPublishedTempoBpm = publishedTempo(beat);
     return {
       activePresetId,
       backend: activeBackend,
@@ -444,10 +454,7 @@ export function createMilkdropExperience({
       audioBass: signalTracker.getLatestAudioBands().bass,
       audioMid: signalTracker.getLatestAudioBands().mid,
       audioTreble: signalTracker.getLatestAudioBands().treble,
-      tempoBpm:
-        beat.bpm !== null && beat.confidence >= AUTO_ADVANCE_TEMPO_CONFIDENCE
-          ? Math.round(beat.bpm)
-          : null,
+      tempoBpm: lastPublishedTempoBpm,
       shaderExecution: resolveShaderExecutionMode(
         activeCompiled,
         activeBackend,
@@ -968,6 +975,12 @@ export function createMilkdropExperience({
   });
   const frameLoop = createMilkdropExperienceFrameLoop({
     beatClock,
+    // Snapshots are published on events, not per frame, so a tempo that
+    // settles, drifts a BPM, or is tapped would otherwise sit unseen until
+    // the next preset change.
+    noteTempo: (beat) => {
+      if (publishedTempo(beat) !== lastPublishedTempoBpm) emitChange();
+    },
     getRuntime: () => runtime,
     getAdapter: () => adapter,
     getActiveBackend: () => activeBackend,

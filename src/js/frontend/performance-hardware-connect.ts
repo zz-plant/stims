@@ -20,8 +20,14 @@
  */
 
 import {
+  followMidiClock,
+  getManualTempo,
+  subscribeManualTempo,
+} from '../core/manual-tempo.ts';
+import {
   DEFAULT_MIDI_CC_BINDINGS,
   type MidiBindingMap,
+  type MidiClockSnapshot,
   type MidiDeviceInfo,
   type MidiNoteBindingMap,
 } from '../core/services/webmidi-controller.ts';
@@ -157,5 +163,47 @@ export function watchPerformanceHardware({
   return () => {
     unsubscribe();
     target?.removeEventListener('gamepadconnected', handleGamepad);
+  };
+}
+
+/**
+ * Lets an external MIDI clock (a DJ mixer, a DAW) set the tempo.
+ *
+ * The service has decoded clock in since it was written, and nothing read it:
+ * a performer with a mixer already sending clock still got a tempo guessed
+ * from onsets. While the clock runs its tempo and bar position replace the
+ * guess (see core/manual-tempo.ts); when it stops, or goes silent without a
+ * Stop, the tempo goes back to the music.
+ *
+ * Announces from the tempo store rather than from the clock events, because a
+ * clock that dies sends no event at all. The store notices on the next frame.
+ */
+export function followMidiClockTempo({
+  midi,
+  announce,
+}: {
+  midi: {
+    onClock: (listener: (clock: MidiClockSnapshot) => void) => () => void;
+  };
+  announce: (message: string) => void;
+}): () => void {
+  let following = getManualTempo()?.source === 'midi-clock';
+  const unsubscribeTempo = subscribeManualTempo(() => {
+    const tempo = getManualTempo();
+    const now = tempo?.source === 'midi-clock';
+    if (now === following) return;
+    following = now;
+    announce(
+      tempo && now
+        ? `Following MIDI clock at ${Math.round(tempo.bpm)} BPM.`
+        : 'MIDI clock stopped. Tempo follows the music again.',
+    );
+  });
+  const unsubscribeClock = midi.onClock((clock) => {
+    followMidiClock(clock);
+  });
+  return () => {
+    unsubscribeClock();
+    unsubscribeTempo();
   };
 }

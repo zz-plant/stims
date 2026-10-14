@@ -26,6 +26,8 @@ export type ShortcutActionId =
   | 'preset-lock'
   | 'autoplay'
   | 'live-performance'
+  | 'tap-tempo'
+  | 'tempo-follow-music'
   | 'record'
   | 'generate'
   | 'theme'
@@ -213,9 +215,10 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   //      (E/X/Q/Z/R/space/1-3/brackets) keys.
   // The MilkDrop runtime used to be a third, with its own document-level
   // handler for H, L, R, W and an I/J/O/Q nudge map; those bindings now live
-  // here (the nudge group below) or were retired (R duplicated N). Letters
-  // still free after everything below: D, K and Y; the canvas holds Q, R, X
-  // and Z as performance keys whenever the stage has focus.
+  // here (the nudge group below) or were retired (R duplicated N). With D
+  // and Y (stage utilities) and K (tap tempo) taken, no bare letter is free
+  // after everything below, so a new binding needs a Shift chord; the canvas
+  // holds Q, R, X and Z as performance keys whenever the stage has focus.
   {
     id: 'queue-add',
     label: 'Add this preset to the queue',
@@ -237,6 +240,21 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     label: 'Toggle autoplay',
     defaultKeys: ['T'],
     paletteActionId: 'toggle-autoplay',
+    dispatchViaPalette: true,
+  },
+  {
+    // K, for "kick": tap it on the beat, starting on the downbeat.
+    id: 'tap-tempo',
+    label: 'Tap tempo (first tap is the downbeat; one tap later re-syncs)',
+    defaultKeys: ['K'],
+    paletteActionId: 'tap-tempo',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'tempo-follow-music',
+    label: 'Clear tapped tempo (follow the music)',
+    defaultKeys: ['Shift+K'],
+    paletteActionId: 'tempo-follow-music',
     dispatchViaPalette: true,
   },
   {
