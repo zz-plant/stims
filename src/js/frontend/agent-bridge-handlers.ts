@@ -53,10 +53,11 @@ type EditorSession = Awaited<
 >;
 
 /** The start paths report failures (permission denied, a preset that would
- * not load) as a status message rather than a throw. */
+ * not load) as a shell status message rather than a throw. Runtime statuses
+ * are skipped: the fallback's "Loaded …" lands after the failure. */
 function latestStatusSince(startedAt: number): string | undefined {
   return getStatusLog()
-    .filter((entry) => entry.at >= startedAt)
+    .filter((entry) => entry.at >= startedAt && entry.source === 'shell')
     .at(-1)?.message;
 }
 

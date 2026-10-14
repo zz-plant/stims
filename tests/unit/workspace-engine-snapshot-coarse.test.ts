@@ -56,6 +56,7 @@ const CHANGED_VALUES: { [K in keyof EngineSnapshot]: EngineSnapshot[K] } = {
   audioEndedAt: 1234567890,
   tempoBpm: 128,
   shaderExecution: 'translated',
+  appliedShaderExecution: 'controls',
   autoplay: true,
   transitionMode: 'cut',
   blendDuration: 5,

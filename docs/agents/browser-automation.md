@@ -15,7 +15,7 @@ const result = await __stims_agent.run('audio-demo');   // {ok, settled}
 await __stims_agent.waitFor((s) => s.engineState === 'live');
 
 // Verify effects from the log, not from vanished toasts:
-__stims_agent.getState().statusLog.at(-1);              // {at, message}
+__stims_agent.getState().statusLog.at(-1);              // {at, message, source}
 ```
 
 ## Readiness
@@ -44,10 +44,11 @@ __stims_agent.getState().statusLog.at(-1);              // {at, message}
 | `audioSource`, `audioEnergy` | current source and live RMS energy |
 | `playbackPaused` | the stage is holding its frame at the user's request (Space, the dock's pause button, `toggle-playback`); everything stays mounted, unlike `stop-audio`, which unmounts the engine and returns to the start page |
 | `autoplay`, `transition` | playback settings (`transition.mode`, `transition.blendDuration`) |
-| `shaderExecution` | is the preset rendering as authored on the active backend? `'direct'` yes; `'none'` the preset has no shader text; `'translated'` / `'unsupported'` the backend cannot run the shader text and the renderer is substituting a **uniform-only approximation** — a plausible frame that is not the preset; `null` nothing compiled yet (never read null as "fine") |
+| `shaderExecution` | the compiler's verdict: can the active backend run the preset's shader text? `'direct'` yes; `'none'` the preset has no shader text; `'translated'` / `'unsupported'` no, so the renderer substitutes a **uniform-only approximation** — a plausible frame that is not the preset; `null` nothing compiled yet (never read null as "fine"). It does not see routing that overrides it: `?milkdrop-webgpu-feedback=0` and the safe WebGPU path leave it at `'direct'` |
+| `appliedShaderExecution` | what the renderer ran on the last presented frame: `'direct'` the authored shader text; `'controls'` the uniform-only approximation (for a `'none'` preset, that is the preset as authored); `'off'` no feedback pass at all (the safe WebGPU path); `null` no frame presented since the preset loaded, or its programs are still compiling. Wait for it to be non-null; in a hidden pane, pump frames with `__STIMS_AGENT_RENDER_FRAMES__` |
 | `fps`, `quality` | measured frame rate and adaptive-quality diagnostics (from the agent telemetry feed) |
 | `lastError` | most recent window error / unhandled rejection message, or null |
-| `statusLog` | last 20 status toasts, `{at, message}` — toasts are transient in the UI but durable here |
+| `statusLog` | last 20 status messages, `{at, message, source}`. `source` is `'shell'` for the workspace's status line or `'runtime'` for the engine's (`Loaded …`, blend refusals, `WebGPU rollout flags active: …`). Runtime statuses are logged as they are set, including the ones the toast hides and the ones the next status overwrites in the engine snapshot |
 | `documentHidden`, `agentMode` | `document.hidden` right now, and whether the page was loaded with `?agent=true` |
 | `renderingSuspended` | the frame loop is **skipping frames because this tab is hidden**. A hidden tab without `?agent=true` renders nothing: the canvas goes black with no error and looks like a shader failure, so check this first. Computed by the same rule the frame loop acts on (`src/js/core/hidden-tab-policy.ts`), so the two cannot disagree |
 | `tempo` | `{bpm, source}`: the tempo auto-advance lands its switches on. `source` is `'audio'` (estimated from onsets; `bpm` stays null until the estimate is confident), `'tap'` (`run('tap-tempo')` on each beat, first tap on the downbeat) or `'midi-clock'` (an external clock is running) |
@@ -138,6 +139,7 @@ bun run ctl -- --step-timeout 90000 \
 `getEvents(sinceSeq = 0)` → `[{seq, at, type, data}]`, last 100 retained.
 Types: `status`, `error`, `engine-state`, `preset`, `panel`,
 `audio-source`, `transition`, `autoplay`, `backend`, `shader-execution`.
+`status` events carry `{message, source}`, the same pair `statusLog` keeps.
 Poll with the last
 seen `seq` to drain incrementally; use it to assert causality ("my action
 produced exactly these events") instead of diffing snapshots by hand.
@@ -145,24 +147,36 @@ produced exactly these events") instead of diffing snapshots by hand.
 before diagnosing a black canvas. `shader-execution` events carry
 `{from, to, backend, presetId, approximated}` and fire on both axes that can
 change the answer — a preset switch *and* a backend fallback with the preset
-held still.
+held still. They follow `shaderExecution` only: `appliedShaderExecution` drops
+to null on every load and settles a frame later, so it has no event; read it
+with `waitFor`.
 
-**Asserting fidelity.** To require that what is on screen is what the preset
-author wrote, rather than an approximation of it:
+**Asserting fidelity.** To require that the preset's shader text is what is on
+screen, rather than an approximation of it or nothing at all, check what the
+renderer applied, not the compiler's verdict:
 
 ```js
-const s = __stims_agent.getState();
-if (s.shaderExecution !== 'direct' && s.shaderExecution !== 'none') {
-  throw new Error(`approximated on ${s.backend}: ${s.shaderExecution}`);
+const s = await __stims_agent.waitFor(
+  (s) => s.presetId === id && s.appliedShaderExecution !== null,
+);
+if (s.shaderExecution !== 'none' && s.appliedShaderExecution !== 'direct') {
+  throw new Error(
+    `shader text not running on ${s.backend}: ` +
+      `verdict ${s.shaderExecution}, applied ${s.appliedShaderExecution}`,
+  );
 }
 ```
 
+`shaderExecution === 'direct'` alone is not enough: with
+`?milkdrop-webgpu-feedback=0` it stays `'direct'` while the composite runs the
+controls approximation, and on the safe WebGPU path no feedback pass runs.
+
 A screenshot cannot tell you this — the approximation renders a plausible
-frame, so it went unnoticed for months. The same fact
-appears in the UI as an "Approximated" marker beside the preset title in the
-dock, in the `?debug=hud` overlay's "Shader lowering" section (the "On
-&lt;backend&gt;" row), and in production aggregates via
-`bun run telemetry:report`.
+frame, so it went unnoticed for months. The compiler's verdict also appears in
+the UI as an "Approximated" marker beside the preset title in the dock, in the
+`?debug=hud` overlay's "Shader lowering" section (the "On &lt;backend&gt;"
+row), and in production aggregates via `bun run telemetry:report`. None of
+those reflect `appliedShaderExecution`.
 
 ## Pixels
 

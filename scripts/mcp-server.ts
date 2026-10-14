@@ -1149,6 +1149,7 @@ server.registerTool(
         presetTitle: pageState.presetTitle,
         presetAuthor: pageState.presetAuthor,
         shaderExecution: pageState.shaderExecution,
+        appliedShaderExecution: pageState.appliedShaderExecution,
       };
 
       // Numeric image metrics (brightness, colorfulness, blown highlights,

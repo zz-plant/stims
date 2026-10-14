@@ -216,6 +216,7 @@ describe('agent bridge replies report what actually happened', () => {
     autoplay: null,
     transition: { mode: null, blendDuration: null },
     shaderExecution: null,
+    appliedShaderExecution: null,
   };
 
   beforeEach(() => {
@@ -626,15 +627,15 @@ describe('agent bridge replies report what actually happened', () => {
     installAppBridge(
       {
         // What the shell does when a preset will not load: say so, then
-        // show the first-run preset instead.
+        // show the first-run preset instead, which the runtime announces.
         handlePresetSelection: () => {
           recordStatusMessage(
             '"geiss-casino" could not be loaded. Showing another preset instead.',
           );
-          setTimeout(
-            () => emitAgentCommit({ ...stageCore, presetId: 'first-run' }),
-            0,
-          );
+          setTimeout(() => {
+            recordStatusMessage('Loaded First Run.', 'runtime');
+            emitAgentCommit({ ...stageCore, presetId: 'first-run' });
+          }, 0);
         },
       },
       { catalog: CATALOG },

@@ -30,6 +30,7 @@ import {
   extractFrameStats,
   type FrameStats,
 } from '../core/services/visual-embedding.ts';
+import type { MilkdropAppliedShaderExecution } from '../milkdrop/runtime-types.ts';
 import { subscribeVariables } from '../milkdrop/variable-probe.ts';
 import type { AgentTelemetry } from './agent-bridge.ts';
 import type { CommandAction } from './command-palette-registry.ts';
@@ -54,7 +55,12 @@ const DEFAULT_WAIT_TIMEOUT_MS = 5000;
 export interface AgentStatusEntry {
   at: number;
   message: string;
+  /** 'shell' for the workspace's own status setter, 'runtime' for the
+   * engine's (preset loads, blend refusals, rollout flags). */
+  source: AgentStatusSource;
 }
+
+export type AgentStatusSource = 'shell' | 'runtime';
 
 export type AgentEventType =
   | 'status'
@@ -110,10 +116,24 @@ export interface AgentCoreSnapshot {
    *   'unsupported' — the shader text is outside the supported subset; also
    *                   approximated.
    *   null          — no preset compiled yet. Never read null as "fine".
-   * Assert `shaderExecution === 'direct'` (or `'none'`) to require that what
-   * is on screen is what the preset author wrote.
+   * This is the compiler's verdict for the backend. It does not see routing
+   * that overrides it, such as `?milkdrop-webgpu-feedback=0` or the safe
+   * WebGPU path; `appliedShaderExecution` does.
    */
   shaderExecution: MilkdropShaderExecutionMode | null;
+  /**
+   * What the renderer ran on the last presented frame:
+   *   'direct'   — the authored warp/comp shader text.
+   *   'controls' — the uniform-only controls approximation. For a preset
+   *                with no shader text (`shaderExecution === 'none'`) that is
+   *                the preset as authored.
+   *   'off'      — no feedback pass ran at all (the safe WebGPU path).
+   *   null       — no frame presented since the last preset load, or the
+   *                preset's programs are still compiling. Wait for non-null.
+   * Assert `appliedShaderExecution === 'direct'` to require that the preset's
+   * shader text is what is on screen.
+   */
+  appliedShaderExecution: MilkdropAppliedShaderExecution | null;
 }
 
 export interface AgentStateSnapshot extends AgentCoreSnapshot {
@@ -275,6 +295,10 @@ export const CORE_SNAPSHOT_INTENTIONALLY_SKIPPED: ReadonlySet<
   // readiness fact, not a transition worth an event. Automation waits on
   // getState().catalogSize instead.
   'catalogSize',
+  // Drops to null on every preset load and settles on the first presented
+  // frame, so an event would fire per load, and whether the null in between
+  // is ever committed depends on frame timing. Read it with waitFor.
+  'appliedShaderExecution',
 ] as const);
 
 function pushEvent(type: AgentEventType, data: Record<string, unknown>): void {
@@ -285,14 +309,18 @@ function pushEvent(type: AgentEventType, data: Record<string, unknown>): void {
   }
 }
 
-/** Called by the workspace status setter; null (clearing) is not logged. */
-export function recordStatusMessage(message: string | null): void {
+/** Called by the workspace status setter and, with 'runtime', for every
+ * status the engine sets; null (clearing) is not logged. */
+export function recordStatusMessage(
+  message: string | null,
+  source: AgentStatusSource = 'shell',
+): void {
   if (!message) return;
-  statusLog.push({ at: Date.now(), message });
+  statusLog.push({ at: Date.now(), message, source });
   if (statusLog.length > STATUS_LOG_LIMIT) {
     statusLog.splice(0, statusLog.length - STATUS_LOG_LIMIT);
   }
-  pushEvent('status', { message });
+  pushEvent('status', { message, source });
 }
 
 export function getStatusLog(): AgentStatusEntry[] {

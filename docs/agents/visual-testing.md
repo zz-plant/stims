@@ -89,7 +89,7 @@ bun run dev
 6. If behavior differs by preset, test multiple presets to confirm the pattern
 
 **For deeper debugging**:
-- Read `__stims_agent.getState()` (`lastError`, `shaderExecution`, `renderingSuspended`) before guessing from pixels
+- Read `__stims_agent.getState()` (`lastError`, `shaderExecution`, `appliedShaderExecution`, `renderingSuspended`) before guessing from pixels
 - Check Console tab for errors related to the preset
 - Use Performance tab to record and identify frame drops
 
