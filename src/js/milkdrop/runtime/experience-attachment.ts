@@ -6,7 +6,7 @@ import { createMilkdropRendererAdapter } from '../renderer-adapter-factory.ts';
 import type { MilkdropRendererAdapter } from '../renderer-types';
 import type { MilkdropCompiledPreset, MilkdropFrameState } from '../types';
 import {
-  getDisabledMilkdropWebGpuOptimizationFlags,
+  getOverriddenMilkdropWebGpuOptimizationFlags,
   type MilkdropWebGpuOptimizationFlags,
   resolveMilkdropWebGpuOptimizationFlagsForBackend,
 } from '../webgpu-optimization-flags.ts';
@@ -185,16 +185,18 @@ export function createMilkdropExperienceAttachmentController({
             getPerformanceOverrideParams().nativeResolution ?? false,
         });
         setAdaptiveQualityController(adaptiveQualityController);
-        const disabledWebGpuOptimizationFlags =
-          getDisabledMilkdropWebGpuOptimizationFlags(
-            effectiveOptimizationFlags,
-          );
-        if (
-          nextBackend === 'webgpu' &&
-          disabledWebGpuOptimizationFlags.length
-        ) {
+        const overriddenWebGpuOptimizationFlags =
+          nextBackend === 'webgpu'
+            ? getOverriddenMilkdropWebGpuOptimizationFlags(
+                effectiveOptimizationFlags,
+                nextBackend,
+              )
+            : [];
+        if (overriddenWebGpuOptimizationFlags.length) {
           setOverlayStatus(
-            `WebGPU rollout flags active: ${disabledWebGpuOptimizationFlags.join(', ')}.`,
+            `WebGPU rollout flags active: ${overriddenWebGpuOptimizationFlags
+              .map(({ flag, enabled }) => `${flag} ${enabled ? 'on' : 'off'}`)
+              .join(', ')}.`,
           );
         }
         setAdaptiveQualityUnsubscribe(
@@ -237,10 +239,4 @@ export function createMilkdropExperienceAttachmentController({
       });
     },
   };
-}
-
-export function resolveDisabledWebGpuOptimizationFlags(
-  flags: MilkdropWebGpuOptimizationFlags,
-) {
-  return getDisabledMilkdropWebGpuOptimizationFlags(flags);
 }

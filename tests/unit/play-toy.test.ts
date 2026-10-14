@@ -120,6 +120,22 @@ test('buildPlayToyUrl can force the certification corpus and webgpu runtime', ()
   );
 });
 
+test('buildPlayToyUrl carries extra params but keeps the backend it was asked for', () => {
+  const url = new URL(
+    buildPlayToyUrl({
+      port: 4176,
+      slug: 'milkdrop',
+      presetId: '100-square',
+      rendererProfile: 'webgpu',
+      extraParams: { 'milkdrop-webgpu-feedback': '0', renderer: 'webgl' },
+    }),
+  );
+
+  expect(url.searchParams.get('milkdrop-webgpu-feedback')).toBe('0');
+  expect(url.searchParams.getAll('renderer')).toEqual(['webgpu']);
+  expect(url.searchParams.get('preset')).toBe('100-square');
+});
+
 test('didPlayToyRendererFallback only reports a departure from the requested backend', () => {
   expect(
     didPlayToyRendererFallback({
