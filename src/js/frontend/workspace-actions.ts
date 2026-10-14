@@ -17,6 +17,12 @@ import {
   setAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
+import {
+  closeProjectorWindow,
+  getProjectorState,
+  openProjectorWindow,
+  placeOnScreen,
+} from '../core/services/projector-window-service.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { MilkdropPresetLineageRef } from '../milkdrop/types.ts';
 import { shareOrCopyLink } from '../utils/media/share-link.ts';
@@ -348,9 +354,10 @@ export function toggleCameraAction(announce: (message: string) => void): void {
 }
 
 /**
- * Put the show on a projector, second monitor, or Chromecast. The external
- * display loads this tab's watch-party link, so it renders the show itself
- * and follows every preset change — no video is streamed to it.
+ * Cast the show to a TV or Chromecast. A cast device loads this tab's
+ * watch-party link and renders its own copy: it follows every preset change
+ * but hears no audio, so it is the fallback for a screen this machine cannot
+ * drive. An attached projector gets the mirror instead (toggleProjectorAction).
  */
 export function presentToExternalDisplayAction(
   announce: (message: string) => void,
@@ -362,39 +369,88 @@ export function presentToExternalDisplayAction(
     ]);
     if (display.getExternalDisplayState().mode !== null) {
       display.stopExternalDisplay();
-      announce('External display disconnected.');
+      announce('Cast stopped.');
       return;
     }
-    if (!display.isCastSupported() && !display.isSecondScreenSupported()) {
-      announce('This browser cannot drive a second screen or cast.');
+    if (!display.isCastSupported()) {
+      announce(
+        'This browser cannot cast. For a screen plugged into this machine, open the projector window.',
+      );
       return;
     }
     const hosted = await ensureHostRoom();
     if (!hosted) {
-      announce('Could not prepare the link for the external display.');
+      announce('Could not prepare the link for the cast device.');
       return;
     }
     try {
-      await display.presentToExternalDisplay(hosted.url);
-      const state = display.getExternalDisplayState();
-      if (state.mode === null) return; // Picker dismissed.
-      // Not a mirror, and saying "showing on X" invited people to expect
-      // one: the receiver loads the sync link and renders its OWN copy, so
-      // it follows preset changes but reacts to whatever audio IT can hear.
-      // On this machine that is the same input; on a cast device there is
-      // no input at all, and the visuals will not be beat-matched to the
-      // room. Better to know that before the set than during it.
+      await display.startCast(hosted.url);
+      if (display.getExternalDisplayState().mode === null) return; // Picker dismissed.
       announce(
-        state.mode === 'window'
-          ? `Showing on ${state.target ?? 'the second screen'} — it renders its own copy and uses its own audio input.`
-          : 'Casting — the receiver follows every preset you play, but reacts to its own audio, not this machine’s input.',
+        'Casting. The receiver follows every preset you play, but reacts to its own audio, not this machine’s input.',
       );
     } catch {
       announce(
-        display.getExternalDisplayState().error ??
-          'Could not reach an external display.',
+        display.getExternalDisplayState().error ?? 'Could not start casting.',
       );
     }
+  })();
+}
+
+/**
+ * Open or close the projector: a window with no chrome that mirrors the
+ * stage (projector-window-service.ts). With a second screen attached it is
+ * moved onto that screen once the browser grants screen access.
+ *
+ * Synchronous up to the window.open: the popup needs the click that ran
+ * this, and an await before it could spend that gesture.
+ */
+export function toggleProjectorAction({
+  stage,
+  announce,
+}: {
+  stage: () => HTMLElement | null;
+  announce: (message: string) => void;
+}): void {
+  if (getProjectorState().open) {
+    closeProjectorWindow();
+    announce('Projector closed.');
+    return;
+  }
+  const result = openProjectorWindow({ getStage: stage });
+  if (!result.ok) {
+    announce(
+      result.reason === 'no-canvas'
+        ? 'Start the visuals first. The projector mirrors the stage.'
+        : result.reason === 'popup-blocked'
+          ? 'The projector window was blocked. Allow pop-ups for this site and try again.'
+          : 'This browser cannot mirror the stage into another window.',
+    );
+    return;
+  }
+  const fullScreenHint = 'Double-click it or press F there for full screen.';
+  if (result.adopted) {
+    announce('Projector reconnected to the stage.');
+    return;
+  }
+  void (async () => {
+    const display = await import(
+      '../core/services/external-display-service.ts'
+    );
+    if (!display.hasMultipleScreens()) {
+      announce(
+        `Projector window open. Drag it to the projector. ${fullScreenHint}`,
+      );
+      return;
+    }
+    const found = await display.findSecondScreen();
+    if (found.ok && placeOnScreen(found.screen, found.screen.label)) {
+      announce(`Projector open on ${found.screen.label}. ${fullScreenHint}`);
+      return;
+    }
+    announce(
+      `Projector window open. ${found.ok ? 'It could not be moved there.' : found.error} Drag it to the projector. ${fullScreenHint}`,
+    );
   })();
 }
 
