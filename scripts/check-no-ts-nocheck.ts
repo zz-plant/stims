@@ -2,8 +2,9 @@
  * Fails the build if a whole-file TypeScript suppression directive is present
  * under src/, scripts/, or tests/.
  *
- * Scans every .ts/.tsx/.js/.jsx file and prints each offending file, line
- * number, and line before exiting 1.
+ * Scans every TypeScript and JavaScript source, module-flavoured extensions
+ * included (.mts/.cts/.mjs/.cjs: scripts/ holds several .mjs build scripts),
+ * and prints each offending file, line number, and line before exiting 1.
  *
  * Only a line where the directive *opens* the comment counts. Matching the
  * bare substring meant prose describing the rule tripped it: a docblock
@@ -15,7 +16,7 @@
 import { Glob } from 'bun';
 
 const directories = ['src', 'scripts', 'tests'];
-const patterns = ['**/*.ts', '**/*.js', '**/*.tsx', '**/*.jsx'];
+const patterns = ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'];
 
 const matches: string[] = [];
 
