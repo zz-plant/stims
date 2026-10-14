@@ -1,5 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import styles from '../../css/CapturePanel.module.css';
+import {
+  getActiveAccessibilityPreference,
+  subscribeToAccessibilityPreference,
+} from '../core/accessibility-preferences.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import {
   CanvasVideoExporter,
@@ -50,6 +60,11 @@ export function CapturePanel() {
   const [status, setStatus] = useState(
     'Choose a format, then start recording.',
   );
+  const reduceFlashing = useSyncExternalStore(
+    subscribeToAccessibilityPreference,
+    () => getActiveAccessibilityPreference().reduceFlashing,
+    () => false,
+  );
 
   useEffect(() => {
     const canvas = ui.stageRef.current?.querySelector('canvas');
@@ -70,6 +85,7 @@ export function CapturePanel() {
       canvas,
       undefined,
       engine.getVideoExportRuntime(),
+      () => ui.stageRef.current,
     );
     exporterRef.current = exporter;
     setSupport(exporter.getSupport());
@@ -224,6 +240,13 @@ export function CapturePanel() {
           {engine.audioActive
             ? 'Audio source is active — this recording will include sound.'
             : 'No audio source is active — this recording will be silent.'}
+        </p>
+      ) : null}
+
+      {reduceFlashing ? (
+        <p className={styles.status}>
+          Reduce flashing is on — strobing passages are dimmed in the recording
+          as they are on screen.
         </p>
       ) : null}
 

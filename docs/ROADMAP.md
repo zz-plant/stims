@@ -110,7 +110,7 @@ Exit criteria:
 
 ### Creator-grade export & vertical formats
 
-Recording is a `MediaRecorder` beta. Only the 4K preset renders natively; the three 1080×1920 presets center-crop and upscale the live canvas, and there is no 1:1 preset. The first four items below are [#1441](https://github.com/zz-plant/stims/issues/1441).
+Recording is a `MediaRecorder` beta. 4K, the three 1080×1920 presets and the 1080×1080 square render natively, by resizing the renderer; Full HD crops and scales the live canvas. Frames are copied in the render loop's frame-drawn notification with the flash governor's dimming, the blackout and the white flash painted in; the brightness ceiling is left out (`stage-presentation.ts`). The first four items below are [#1441](https://github.com/zz-plant/stims/issues/1441).
 
 - Keep frames coming when the tab is hidden during a recording. Switching tabs freezes the video while the audio runs on: `hidden-tab-policy.ts` does not exempt recording, and browsers pause `requestAnimationFrame` in hidden tabs anyway, so a recording needs a frame source that does not depend on it.
 - Lift the power-saving frame cap while recording; `captureStream(60)` asks for frames the cap withholds.

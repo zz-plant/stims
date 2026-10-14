@@ -32,13 +32,12 @@
  *
  * ## What is not in the canvas
  *
- * Three things the room must see are not canvas pixels. The flash governor,
- * the brightness ceiling and the D blackout are one CSS brightness filter on
- * the stage element (stage-luminance.ts), and the Y white flash is an
- * overlay beside the canvas. A capture carries none of them, so the
- * projector copies the stage's filter onto its video and follows the
- * stage-utility mode for the flash. Without that, Reduce flashing would
- * protect the operator's laptop and not the audience.
+ * Three things the room must see are not canvas pixels: the flash
+ * governor's dimming, the brightness ceiling and the D blackout, and the Y
+ * white flash. A capture carries none of them, so the projector mirrors them
+ * onto its video the way stage-presentation.ts does for every same-origin
+ * copy. Without that, Reduce flashing would protect the operator's laptop
+ * and not the audience.
  *
  * Limits a performer should know: the mirror has the stage's shape and size,
  * so a 16:9 projector letterboxes a portrait stage; and a hidden or minimised
@@ -46,10 +45,7 @@
  * its last one.
  */
 
-import {
-  stageUtilityMode,
-  subscribeToStageUtilityMode,
-} from './stage-utilities.ts';
+import { mirrorStagePresentation } from './stage-presentation.ts';
 
 export const PROJECTOR_WINDOW_NAME = 'stims-projector';
 
@@ -85,8 +81,7 @@ type Projector = {
   canvas: HTMLCanvasElement | null;
   stream: MediaStream | null;
   observer: MutationObserver | null;
-  filterObserver: MutationObserver | null;
-  stopFlashFollow: () => void;
+  stopPresentation: () => void;
   listeners: AbortController;
   closedPoll: ReturnType<typeof setInterval> | null;
   idleTimer: ReturnType<typeof setTimeout> | null;
@@ -140,11 +135,7 @@ const MARKUP = `
       display: block; width: 100vw; height: 100vh;
       object-fit: contain; background: #000;
     }
-    #flash {
-      position: fixed; inset: 0; background: #fff;
-      pointer-events: none; display: none;
-    }
-    body.flash #flash { display: block; }
+    #flash { position: fixed; inset: 0; background: #fff; pointer-events: none; }
     #hint {
       position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
       margin: 0; padding: 8px 14px; border-radius: 6px;
@@ -158,7 +149,7 @@ const MARKUP = `
 </head>
 <body>
   <video id="${STAGE_ID}" autoplay muted playsinline aria-label="Visualizer stage"></video>
-  <div id="flash"></div>
+  <div id="flash" hidden></div>
   <p id="hint">Double-click or press F for full screen. Esc leaves it.</p>
 </body>`;
 
@@ -219,8 +210,7 @@ function build(win: Window, stage: HTMLElement, adopted: boolean): Projector {
     canvas: null,
     stream: null,
     observer: null,
-    filterObserver: null,
-    stopFlashFollow: () => {},
+    stopPresentation: () => {},
     listeners: controls,
     closedPoll: null,
     idleTimer: null,
@@ -267,34 +257,11 @@ function build(win: Window, stage: HTMLElement, adopted: boolean): Projector {
     target.observer.observe(stage, { childList: true, subtree: true });
   }
   attachCanvas(target);
-  followPresentation(target);
+  target.stopPresentation = mirrorStagePresentation(stage, {
+    filtered: video,
+    flash: doc.getElementById('flash') as HTMLElement,
+  });
   return target;
-}
-
-/**
- * Carries what the stage shows on top of its canvas: the luminance filter
- * (governor, ceiling, blackout) and the white flash.
- */
-function followPresentation(target: Projector): void {
-  const copyFilter = () => {
-    target.video.style.filter = target.stage.style.filter;
-  };
-  copyFilter();
-  if (typeof MutationObserver === 'function') {
-    // The stage element only, not its subtree: the filter lives on it, and
-    // the dock below it restyles on every hover.
-    target.filterObserver = new MutationObserver(copyFilter);
-    target.filterObserver.observe(target.stage, {
-      attributes: true,
-      attributeFilter: ['style'],
-    });
-  }
-  const body = target.win.document.body;
-  const showFlash = () => {
-    body.classList.toggle('flash', stageUtilityMode() === 'flash');
-  };
-  showFlash();
-  target.stopFlashFollow = subscribeToStageUtilityMode(showFlash);
 }
 
 function teardown(target: Projector, { close = false } = {}): void {
@@ -302,8 +269,7 @@ function teardown(target: Projector, { close = false } = {}): void {
   projector = null;
   target.listeners.abort();
   target.observer?.disconnect();
-  target.filterObserver?.disconnect();
-  target.stopFlashFollow();
+  target.stopPresentation();
   if (target.closedPoll !== null) clearInterval(target.closedPoll);
   if (target.idleTimer !== null) clearTimeout(target.idleTimer);
   stopStream(target);

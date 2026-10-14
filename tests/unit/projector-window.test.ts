@@ -323,7 +323,7 @@ describe('what the stage shows over its canvas', () => {
     const stage = makeStage();
     const popup = fakeProjectorWindow();
     openProjectorWindow({ getStage: () => stage, openWindow: () => popup.win });
-    const flashing = () => popup.doc.body.classList.contains('flash');
+    const flashing = () => popup.doc.getElementById('flash')?.hidden === false;
 
     handleFlashKeyDown(false);
     expect(flashing()).toBe(true);

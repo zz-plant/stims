@@ -57,12 +57,22 @@ function channelsFor(stage: HTMLElement): Channels {
  * an accessor that registered one would populate this map for every element
  * it is merely asked about. The flash governor calls this per frame to learn
  * what the viewer is actually looking at, so it must stay a pure read.
+ *
+ * `only` composes a subset instead: a recording carries the governor and the
+ * blackout but not the ceiling (see stage-presentation.ts).
  */
-export function stageLuminanceScale(stage: HTMLElement): number {
+export function stageLuminanceScale(
+  stage: HTMLElement,
+  only?: readonly StageLuminanceChannel[],
+): number {
   const channels = channelsByStage.get(stage);
-  return channels
-    ? channels.governor * channels.ceiling * channels.presentation
-    : 1;
+  if (!channels) return 1;
+  if (!only) {
+    return channels.governor * channels.ceiling * channels.presentation;
+  }
+  let scale = 1;
+  for (const channel of only) scale *= channels[channel];
+  return scale;
 }
 
 export function setStageLuminanceChannel(

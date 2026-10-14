@@ -14,6 +14,7 @@ import {
   type CanvasVideoExportRuntime,
   EXPORT_PRESETS,
 } from '../../src/js/utils/media/canvas-video-exporter.ts';
+import { greyCanvas, greyCanvasFactory } from '../grey-canvas.ts';
 
 describe('Recording Background & Vertical/Square Export', () => {
   beforeEach(() => {
@@ -93,15 +94,7 @@ describe('Recording Background & Vertical/Square Export', () => {
         getAudioStream: () => null,
       };
 
-      const sourceCanvas = {
-        width: 800,
-        height: 600,
-        captureStream: () => ({
-          getTracks: () => [],
-          getVideoTracks: () => [],
-          getAudioTracks: () => [],
-        }),
-      } as unknown as HTMLCanvasElement;
+      const sourceCanvas = greyCanvas(200, { width: 800, height: 600 });
 
       class FakeMediaRecorder {
         mimeType = 'video/webm';
@@ -116,9 +109,9 @@ describe('Recording Background & Vertical/Square Export', () => {
       const env: CanvasVideoExporterEnvironment = {
         mediaRecorderAvailable: true,
         isMimeTypeSupported: () => true,
-        createCanvas: () => {
-          throw new Error('Native capture must not create mirror canvas');
-        },
+        // Native formats still record through the presented copy, at the
+        // renderer's new size, so the stage's dimming reaches the file.
+        createCanvas: greyCanvasFactory().create,
         createMediaRecorder: () =>
           new FakeMediaRecorder() as unknown as MediaRecorder,
         createMediaStream: (tracks) =>
@@ -127,10 +120,6 @@ describe('Recording Background & Vertical/Square Export', () => {
             getVideoTracks: () => [],
             getAudioTracks: () => [],
           }) as unknown as MediaStream,
-        requestAnimationFrame: () => {
-          throw new Error('Native capture must not schedule mirror rAF');
-        },
-        cancelAnimationFrame: () => {},
       };
 
       const exporter = new CanvasVideoExporter(sourceCanvas, env, runtime);
@@ -162,15 +151,7 @@ describe('Recording Background & Vertical/Square Export', () => {
         getAudioStream: () => null,
       };
 
-      const sourceCanvas = {
-        width: 800,
-        height: 600,
-        captureStream: () => ({
-          getTracks: () => [],
-          getVideoTracks: () => [],
-          getAudioTracks: () => [],
-        }),
-      } as unknown as HTMLCanvasElement;
+      const sourceCanvas = greyCanvas(200, { width: 800, height: 600 });
 
       class FakeMediaRecorder {
         mimeType = 'video/webm';
@@ -185,9 +166,9 @@ describe('Recording Background & Vertical/Square Export', () => {
       const env: CanvasVideoExporterEnvironment = {
         mediaRecorderAvailable: true,
         isMimeTypeSupported: () => true,
-        createCanvas: () => {
-          throw new Error('Native capture must not create mirror canvas');
-        },
+        // Native formats still record through the presented copy, at the
+        // renderer's new size, so the stage's dimming reaches the file.
+        createCanvas: greyCanvasFactory().create,
         createMediaRecorder: () =>
           new FakeMediaRecorder() as unknown as MediaRecorder,
         createMediaStream: (tracks) =>
@@ -196,10 +177,6 @@ describe('Recording Background & Vertical/Square Export', () => {
             getVideoTracks: () => [],
             getAudioTracks: () => [],
           }) as unknown as MediaStream,
-        requestAnimationFrame: () => {
-          throw new Error('Native capture must not schedule mirror rAF');
-        },
-        cancelAnimationFrame: () => {},
       };
 
       const exporter = new CanvasVideoExporter(sourceCanvas, env, runtime);
