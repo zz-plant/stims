@@ -303,7 +303,10 @@ export function AudioSourcePanel({
         >
           {youtubeLoading ? (
             <>
-              <UiIcon name="spinner" className="stims-shell__button-icon" />
+              <UiIcon
+                name="spinner"
+                className="stims-shell__button-icon stims-icon-slot stims-icon-slot--sm"
+              />
               Loading…
             </>
           ) : youtubeReady ? (

@@ -263,17 +263,6 @@ const activateElement = (element: HTMLElement | null) => {
   }
 };
 
-const triggerBackAction = (doc: Document) => {
-  const backButton = doc.querySelector<HTMLElement>(
-    '[data-back-to-library], [data-back], .toy-nav__back',
-  );
-  if (backButton) {
-    backButton.click();
-    return true;
-  }
-  return false;
-};
-
 const dispatchEscape = (doc: Document) => {
   const event = new KeyboardEvent('keydown', {
     key: 'Escape',
@@ -467,8 +456,8 @@ export const initGamepadNavigation = (
     }
   };
 
-  const triggerBackOrEscape = (originKey: string = 'Escape') => {
-    if (!triggerBackAction(doc) && shouldDispatchEscapeFallback(originKey)) {
+  const dispatchBackAsEscape = (originKey: string = 'Escape') => {
+    if (shouldDispatchEscapeFallback(originKey)) {
       dispatchEscape(doc);
     }
   };
@@ -555,7 +544,7 @@ export const initGamepadNavigation = (
 
     if (bPressed) {
       setActive();
-      triggerBackOrEscape('GamepadB');
+      dispatchBackAsEscape('GamepadB');
     }
 
     if (leftBumper) {
@@ -653,7 +642,7 @@ export const initGamepadNavigation = (
 
     if (isBackKey(event)) {
       setActive();
-      triggerBackOrEscape(event.key);
+      dispatchBackAsEscape(event.key);
       event.preventDefault();
     }
   };

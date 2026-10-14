@@ -361,8 +361,7 @@
   --tv-content-padding: clamp(1.5rem, 2vw + 1rem, 3rem);
   --tv-safe-padding: 0px;
 
-  /* ── Agent pulse and toy shell ──────────────────────────────── */
-  --agent-vibe-intensity: 1;
+  /* ── Toy shell ──────────────────────────────────────────────── */
   --toy-shell-metal: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.08),
@@ -479,11 +478,6 @@ html.light {
   backdrop-filter: none !important;
   /* biome-ignore lint/complexity/noImportantStyles: must override all child for GPU perf */
   -webkit-backdrop-filter: none !important;
-}
-
-[data-device-tier="low"] .stims-shell__sheet,
-[data-device-tier="mid"] .stims-shell__sheet {
-  background: var(--bg-color);
 }
 
 /* ── Reduced Motion ───────────────────────────────────────────────── */

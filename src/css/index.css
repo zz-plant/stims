@@ -123,38 +123,6 @@ header {
   position: relative;
 }
 
-header.hero {
-  min-height: 55vh;
-  padding: clamp(2.4rem, 2vw + 1.4rem, 3.2rem);
-  overflow: hidden;
-  border-radius: var(--radius-xl);
-  background:
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--panel-highlight) 80%, transparent),
-      transparent 45%
-    ),
-    var(--aurora-soft), var(--card-bg);
-  box-shadow: var(--shadow-surface);
-  border: 1px solid var(--surface-border);
-}
-
-.eyebrow {
-  text-transform: uppercase;
-  font-stretch: var(--font-stretch-legend);
-  letter-spacing: 0.05em;
-  font-size: 0.875rem;
-  font-weight: 600;
-  opacity: 0.85;
-  margin: 0 0 0.5rem;
-}
-
-.intro h1 {
-  margin: 0;
-  font-size: clamp(1.45rem, 1.1rem + 1.3vw, 2rem);
-  line-height: 1.2;
-}
-
 .cta-button {
   padding: 0.7rem 1.25rem;
   border-radius: var(--radius-lg);
@@ -221,7 +189,6 @@ header.hero {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  header.hero,
   .cta-button {
     backdrop-filter: none;
     transition: none;
@@ -249,26 +216,9 @@ h1 {
   color: var(--text-color);
 }
 
-.library {
-  margin-top: clamp(1.5rem, 2.8vw, 2.6rem);
-  padding-top: clamp(1.1rem, 1.8vw, 1.55rem);
-  border-top: 1px solid
-    color-mix(in srgb, var(--accent-color) 24%, var(--surface-border));
-}
-
-/* Gradient shimmer overlay */
-
-html.light section.intro {
-  border-color: rgba(43, 56, 77, 0.16);
-}
-
 html.light .cta-button.ghost {
   border-color: rgba(43, 56, 77, 0.2);
   background: color-mix(in srgb, var(--card-bg) 94%, transparent);
-}
-
-html.light .library {
-  border-top-color: rgba(63, 74, 90, 0.2);
 }
 
 html.light .cta-button.primary {
@@ -294,16 +244,6 @@ footer {
   body {
     font-size: 1rem;
   }
-
-  header.hero {
-    min-height: auto;
-  }
-}
-
-@media (max-width: 920px) and (max-height: 520px) and (orientation: landscape) {
-  header.hero {
-    min-height: auto;
-  }
 }
 
 @media (max-width: 768px) {
@@ -325,11 +265,6 @@ footer {
     font-size: clamp(1.6rem, 7vw, 1.8rem);
   }
 
-  .library {
-    margin-top: 1.35rem;
-    padding-top: 0.8rem;
-  }
-
   #site-footer {
     padding-inline: 0.95rem;
   }
@@ -349,37 +284,7 @@ body.tv-mode .cta-button {
   font-size: 1rem;
 }
 
-body.tv-mode .content {
-  max-width: min(1380px, calc(100vw - 2 * var(--tv-safe-padding, 0px)));
-}
-
-.library {
-  position: relative;
-  /* Local: lifts the section over the page backdrop. */
-  z-index: 1;
-}
-
 /* UI polish v2: stronger hierarchy, better readability, and less cramped cards */
-
-.intro h1 {
-  letter-spacing: -0.01em;
-  line-height: 1.15;
-}
-
-.library {
-  margin-top: clamp(2.1rem, 4vw, 3.2rem);
-  padding-top: clamp(1.2rem, 2.1vw, 1.8rem);
-}
-
-/* Page-level panel tokens now in tokens.css */
-
-.eyebrow {
-  letter-spacing: 0.12em;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: color-mix(in srgb, var(--text-muted) 86%, var(--accent-color));
-  margin-bottom: 0.35rem;
-}
 
 .cta-button {
   border-radius: var(--radius-lg);
@@ -411,11 +316,6 @@ body.tv-mode .content {
   box-shadow: 0 16px 28px rgba(37, 99, 235, 0.26);
 }
 
-.library {
-  margin-top: clamp(2.4rem, 4vw, 3.4rem);
-  padding-top: clamp(1.3rem, 2vw, 1.9rem);
-}
-
 footer {
   margin-top: calc(var(--section-gap) * 1.05);
   padding: 1.4rem 1.2rem 1.8rem;
@@ -445,7 +345,6 @@ html {
     );
 }
 
-header.hero,
 .control-panel,
 .active-toy-status__content {
   background:
@@ -461,8 +360,7 @@ header.hero,
 }
 
 .cta-button,
-.control-panel__label,
-.eyebrow {
+.control-panel__label {
   font-family: var(--font-family-mono);
 }
 
@@ -470,37 +368,6 @@ header.hero,
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
-}
-
-.eyebrow {
-  letter-spacing: 0.15em;
-  font-size: 0.75rem;
-}
-
-header.hero::before {
-  background:
-    radial-gradient(
-      circle at 16% 18%,
-      color-mix(in srgb, var(--accent-purple) 24%, transparent),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at 82% 0%,
-      color-mix(in srgb, var(--accent-magenta) 24%, transparent),
-      transparent 32%
-    ),
-    linear-gradient(135deg, var(--stims-white-04), transparent 42%);
-  opacity: 0.5;
-}
-
-header.hero::after {
-  background: linear-gradient(
-    120deg,
-    transparent 0%,
-    var(--stims-white-06) 48%,
-    transparent 100%
-  );
-  opacity: 0.12;
 }
 
 .cta-button {
@@ -582,7 +449,6 @@ header.hero::after {
   }
 }
 
-header.hero,
 .control-panel,
 .active-toy-status__content {
   background:
@@ -642,18 +508,6 @@ header.hero,
     0 16px 28px rgba(4, 9, 18, 0.26);
 }
 
-.active-toy-container {
-  background:
-    radial-gradient(circle at 18% 10%, var(--stims-audio-glow), transparent 24%),
-    radial-gradient(circle at 82% 16%, var(--highlight-glow), transparent 22%),
-    linear-gradient(
-      180deg,
-      var(--bg-color),
-      color-mix(in srgb, var(--bg-color) 92%, #000) 54%,
-      color-mix(in srgb, var(--bg-color) 85%, #000)
-    );
-}
-
 .control-panel,
 .active-toy-status__content {
   border-radius: var(--radius-sm);
@@ -684,11 +538,3 @@ header.hero,
   padding: 0.72rem 0.95rem;
   letter-spacing: 0.11em;
 }
-
-/* Aggressive screen redesign: reduce repeated chrome and strengthen stage hierarchy. */
-
-:root[data-focused-session="live"] body[data-page="experience"] .content {
-  padding-top: max(0.85rem, env(safe-area-inset-top));
-}
-
-/* Homepage redesign pass */

@@ -121,7 +121,6 @@ html.light .stims-shell .cta-button.primary:disabled {
   opacity: 1;
 }
 
-html.light .stims-shell__sheet,
 html.light [data-shell-dialog="true"] {
   border-color: #9eabb2;
   background: #fffaf0;
