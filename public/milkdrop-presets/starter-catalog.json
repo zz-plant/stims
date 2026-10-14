@@ -31,23 +31,23 @@
         ]
       },
       "quality": {
-        "score": 0.5077,
+        "score": 0.0077,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
           "staticAudio": 1,
           "measuredReactivity": 0.9999999999999974,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": 0.5,
           "duplicatePenalty": 0,
           "preview": 0.377
         }
       },
       "sensoryProfile": {
-        "flashRiskLevel": "none",
-        "maxTransitionsPerSecondEstimate": 0,
-        "meanLuminance": 0.04622463014926661,
-        "measuredAt": "2026-08-22T04:00:19.216Z"
+        "flashRiskLevel": "high",
+        "maxTransitionsPerSecondEstimate": 10,
+        "meanLuminance": 0.5558856756027887,
+        "measuredAt": "2026-10-14T03:22:49.716Z"
       }
     },
     {
@@ -95,6 +95,12 @@
           "duplicatePenalty": 0,
           "preview": 0.311
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.004008969047218921,
+        "measuredAt": "2026-10-14T02:35:36.478Z"
       }
     },
     {
@@ -145,6 +151,12 @@
           "duplicatePenalty": 0,
           "preview": 0.56
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "medium",
+        "maxTransitionsPerSecondEstimate": 2,
+        "meanLuminance": 0.1951461291187061,
+        "measuredAt": "2026-10-14T02:35:36.478Z"
       }
     },
     {
@@ -195,6 +207,12 @@
           "duplicatePenalty": 0,
           "preview": 1
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.11991689696139254,
+        "measuredAt": "2026-10-14T02:35:36.478Z"
       }
     },
     {
@@ -234,17 +252,23 @@
         ]
       },
       "quality": {
-        "score": 0.5674,
+        "score": 0.0674,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
           "staticAudio": 1,
           "measuredReactivity": 0.9913234854204399,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": 0.5,
           "duplicatePenalty": 0,
           "preview": 1
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "high",
+        "maxTransitionsPerSecondEstimate": 38,
+        "meanLuminance": 0.16552074056197877,
+        "measuredAt": "2026-10-14T02:35:36.478Z"
       }
     },
     {
@@ -287,7 +311,7 @@
           "staticAudio": 1,
           "measuredReactivity": 0.8733758265416562,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": null,
           "duplicatePenalty": 0,
           "preview": 0.611
         }
@@ -337,6 +361,12 @@
           "duplicatePenalty": 0,
           "preview": 1
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.1031968843235235,
+        "measuredAt": "2026-10-14T01:19:00.682Z"
       }
     },
     {
@@ -379,7 +409,7 @@
           "staticAudio": 1,
           "measuredReactivity": 0.9999999999999972,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": null,
           "duplicatePenalty": 0,
           "preview": 0.45
         }
@@ -429,6 +459,12 @@
           "duplicatePenalty": 0,
           "preview": 1
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "medium",
+        "maxTransitionsPerSecondEstimate": 3,
+        "meanLuminance": 0.708655156391078,
+        "measuredAt": "2026-10-14T02:35:36.478Z"
       }
     },
     {
@@ -475,6 +511,12 @@
           "duplicatePenalty": 0,
           "preview": 1
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.10650361362600655,
+        "measuredAt": "2026-10-14T02:35:36.478Z"
       }
     },
     {
@@ -511,17 +553,23 @@
         ]
       },
       "quality": {
-        "score": 0.5338,
+        "score": 0.0338,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
           "staticAudio": 1,
           "measuredReactivity": 0.8793382950863673,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": 0.5,
           "duplicatePenalty": 0,
           "preview": 1
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "high",
+        "maxTransitionsPerSecondEstimate": 5,
+        "meanLuminance": 0.1416879304676621,
+        "measuredAt": "2026-10-14T02:35:36.478Z"
       }
     },
     {
@@ -565,7 +613,7 @@
           "staticAudio": 1,
           "measuredReactivity": 0.9912873749225325,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": null,
           "duplicatePenalty": 0,
           "preview": 0.021
         }
@@ -604,17 +652,23 @@
         ]
       },
       "quality": {
-        "score": 0.5049,
+        "score": 0.0049,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
           "staticAudio": 1,
           "measuredReactivity": 0.9851799184295131,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": 0.5,
           "duplicatePenalty": 0,
           "preview": 0.393
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "high",
+        "maxTransitionsPerSecondEstimate": 8,
+        "meanLuminance": 0.08976271254289594,
+        "measuredAt": "2026-10-14T01:28:44.962Z"
       }
     },
     {
@@ -660,6 +714,12 @@
           "duplicatePenalty": 0,
           "preview": 0.299
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.03943474746770234,
+        "measuredAt": "2026-10-14T03:22:49.716Z"
       }
     },
     {
@@ -699,7 +759,7 @@
           "staticAudio": 0,
           "measuredReactivity": 0.9167559612895001,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": null,
           "duplicatePenalty": 0,
           "preview": 0.017
         }
@@ -742,7 +802,7 @@
           "staticAudio": 0,
           "measuredReactivity": 0.9167559612895001,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": null,
           "duplicatePenalty": 0,
           "preview": 0.018
         }
@@ -785,7 +845,7 @@
           "staticAudio": 0,
           "measuredReactivity": 0.9167559612895001,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": null,
           "duplicatePenalty": 0,
           "preview": 0.091
         }
@@ -833,6 +893,12 @@
           "duplicatePenalty": 0,
           "preview": 1
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.05222838431687885,
+        "measuredAt": "2026-10-14T03:22:49.716Z"
       }
     },
     {
@@ -878,6 +944,12 @@
           "duplicatePenalty": 0,
           "preview": 0.126
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.0025275705626703975,
+        "measuredAt": "2026-10-14T06:37:19.441Z"
       }
     },
     {
@@ -922,6 +994,12 @@
           "duplicatePenalty": 0,
           "preview": 1
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.035455940431594335,
+        "measuredAt": "2026-10-14T03:22:49.716Z"
       }
     },
     {
@@ -963,7 +1041,7 @@
           "staticAudio": 1,
           "measuredReactivity": 0.9912873749225325,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": null,
           "duplicatePenalty": 0,
           "preview": 0.342
         }
@@ -1000,17 +1078,23 @@
         ]
       },
       "quality": {
-        "score": 0.5674,
+        "score": 0.0674,
         "components": {
           "fidelity": 0.2,
           "evidence": 0.5,
           "staticAudio": 1,
           "measuredReactivity": 0.9913234854204362,
           "motion": null,
-          "flashPenalty": 0,
+          "flashPenalty": 0.5,
           "duplicatePenalty": 0,
           "preview": 1
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "high",
+        "maxTransitionsPerSecondEstimate": 11,
+        "meanLuminance": 0.45442851899494535,
+        "measuredAt": "2026-10-14T03:22:49.716Z"
       }
     },
     {
@@ -1055,6 +1139,12 @@
           "duplicatePenalty": 0,
           "preview": 0.445
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.015521644314687753,
+        "measuredAt": "2026-10-14T03:22:49.716Z"
       }
     },
     {
@@ -1099,6 +1189,12 @@
           "duplicatePenalty": 0,
           "preview": 0.907
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.10842440861150651,
+        "measuredAt": "2026-10-14T03:22:49.716Z"
       }
     },
     {
@@ -1143,6 +1239,12 @@
           "duplicatePenalty": 0,
           "preview": 0.532
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.03847972115739466,
+        "measuredAt": "2026-10-14T03:22:49.716Z"
       }
     }
   ]
