@@ -175,14 +175,14 @@ describe('identity values reduce to the legacy transform', () => {
     }
   });
 
-  test('zoom = 0 keeps the 0.0001 divisor floor, not a 0.02 clamp', () => {
-    // 100-square is zoom=0, rot=0, warp=1, fDecay=1 and passes at 1.70%. A
-    // previous attempt at this change was refuted for lower-clamping the
-    // divisor to 0.02, which shrinks the degenerate blow-up 200x.
+  test('a zoom near zero keeps the 0.0001 divisor floor, not a 0.02 clamp', () => {
+    // MilkDrop samples a near-zero zoom far outside the frame; a 0.02 clamp
+    // shrinks that blow-up 200x. A zoom of exactly 0 never reaches the floor:
+    // the blend drops the previous frame instead (feedback-warp-geometry e2e).
     const legacy = computeLegacyWarpSampleUv({
       centeredX: 0.25,
       centeredY: 0.25,
-      zoom: 0,
+      zoom: 1e-9,
       rot: 0,
       dx: 0,
       dy: 0,
