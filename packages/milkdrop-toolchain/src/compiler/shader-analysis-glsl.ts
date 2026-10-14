@@ -1002,6 +1002,172 @@ function constructorWidth(
   return match ? (Number(match[1]) as 2 | 3 | 4) : null;
 }
 
+type ComponentWidth = 1 | 2 | 3 | 4;
+
+/** Uniforms whose width both stages agree on, beyond the template's own `uv`/`ret`. */
+const BUILTIN_SHADER_WIDTHS = new Map<string, ComponentWidth>([
+  ['uv_orig', 2],
+  ['texsize', 4],
+  ['aspect', 4],
+  ['rand_frame', 4],
+  ['rand_preset', 4],
+  ...[
+    'time',
+    'fps',
+    'frame',
+    'progress',
+    'bass',
+    'mid',
+    'treb',
+    'vol',
+    'bass_att',
+    'mid_att',
+    'treb_att',
+    'vol_att',
+  ].map((name): [string, ComponentWidth] => [name, 1]),
+]);
+
+/** Calls whose result is as wide as their widest argument. */
+const COMPONENTWISE_CALLS = new Set([
+  'abs',
+  'acos',
+  'asin',
+  'atan',
+  'ceil',
+  'clamp',
+  'cos',
+  'exp',
+  'exp2',
+  'floor',
+  'fmod',
+  'frac',
+  'fract',
+  'lerp',
+  'log',
+  'log2',
+  'max',
+  'min',
+  'mix',
+  'mod',
+  'normalize',
+  'pow',
+  'round',
+  'rsqrt',
+  'saturate',
+  'sign',
+  'sin',
+  'smoothstep',
+  'sqrt',
+  'step',
+  'tan',
+  'trunc',
+]);
+
+const SCALAR_CALLS = new Set(['distance', 'dot', 'length', 'lum']);
+const SAMPLE_CALLS = new Set([
+  'tex2d',
+  'tex2dbias',
+  'tex2dlod',
+  'tex3d',
+  'texture',
+  'texture2d',
+  'texture2dlod',
+  'texture3d',
+]);
+const COLOUR_HELPER_CALLS = new Set([
+  'getblur1',
+  'getblur2',
+  'getblur3',
+  'getpixel',
+]);
+
+/** Widths that combine componentwise: a scalar promotes, equal widths match. */
+function combineWidths(
+  widths: Array<ComponentWidth | null>,
+): ComponentWidth | null {
+  let result: ComponentWidth = 1;
+  for (const width of widths) {
+    if (width === null) return null;
+    if (width === 1) continue;
+    if (result !== 1 && result !== width) return null;
+    result = width;
+  }
+  return result;
+}
+
+/**
+ * The number of components an expression is known to produce, or null when
+ * that depends on something this pass does not track (an undeclared name, a
+ * call it does not know). Null is never treated as a width: the caller only
+ * acts on a width it can prove.
+ */
+function expressionWidth(
+  expression: MilkdropShaderExpressionNode,
+  locals: Map<string, ComponentWidth>,
+): ComponentWidth | null {
+  switch (expression.type) {
+    case 'literal':
+      return 1;
+    case 'identifier':
+      return (
+        locals.get(expression.name) ??
+        BUILTIN_SHADER_WIDTHS.get(expression.name) ??
+        (/^q\d+$/u.test(expression.name) ? 1 : null)
+      );
+    case 'unary':
+      return expression.operator === '!'
+        ? null
+        : expressionWidth(expression.operand, locals);
+    case 'binary':
+      return ['+', '-', '*', '/', '%'].includes(expression.operator)
+        ? combineWidths([
+            expressionWidth(expression.left, locals),
+            expressionWidth(expression.right, locals),
+          ])
+        : null;
+    case 'member':
+      return /^(?:[xyzw]{1,4}|[rgba]{1,4})$/u.test(expression.property)
+        ? (expression.property.length as ComponentWidth)
+        : null;
+    case 'call': {
+      const name = expression.name.toLowerCase();
+      const constructed = constructorWidth(expression);
+      if (constructed) return constructed;
+      if (SCALAR_CALLS.has(name)) return 1;
+      if (SAMPLE_CALLS.has(name)) return 4;
+      if (COLOUR_HELPER_CALLS.has(name)) return 3;
+      if (COMPONENTWISE_CALLS.has(name)) {
+        return combineWidths(
+          expression.args.map((arg) => expressionWidth(arg, locals)),
+        );
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * Writes of a two-component value to `ret`, the stage's colour output.
+ *
+ * Both stages hand back a colour, so `ret` is three components wide; `uv` is
+ * the coordinate a warp shader reads the previous frame at, not its result.
+ * A scalar broadcasts and a vec4 truncates, but nothing widens a vec2: HLSL
+ * rejects the assignment, and the emitter's `vec3(<vec2>)` fails to compile
+ * on WebGL while WebGPU paints the coordinate as a red-green gradient.
+ */
+export function findTwoComponentRetWrites(
+  statements: MilkdropShaderStatement[],
+): MilkdropShaderStatement[] {
+  const locals = collectTargetWidths(statements);
+  return statements.filter(
+    (statement) =>
+      statement.target === 'ret' &&
+      expressionWidth(statement.expression, locals) === 2,
+  );
+}
+
 /**
  * Injects generated warp/comp GLSL into the composite shader source.
  * Uses placeholder markers to identify insertion points.
