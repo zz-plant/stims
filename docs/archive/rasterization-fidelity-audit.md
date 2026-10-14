@@ -1,5 +1,7 @@
 # Rasterization Fidelity Audit — Wave, Shape, Border Renderers
 
+> Archived on 2026-10-13: findings and line references are as of the 2026-05-16 analysis.
+
 Analysis date: 2026-05-16. Sprint 5 diagnostic prep. Covers WebGL vs WebGPU output divergence across the core visual elements.
 
 ---

@@ -29,13 +29,14 @@ Companion docs: [`api.md`](./api.md) (endpoint reference), [`MCP_SERVER.md`](./M
 
 Per [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md), the Generate panel is model-backed but "hosted deployment availability, local browser configuration, output quality, and the full generated-preset user flow still require end-to-end verification," and "blending and the other optional services are not part of that bundled flow." The local application does not require any of these services for playback, browsing, editing, or import/export — that constraint holds for everything proposed below.
 
-### Gaps this document targets
+### Open gaps
 
-1. The endpoint surfaces are wired but unverified. Generate and image-guided generation live in the Generate panel, refine, blend, and batch variations have editor-panel actions, and visual search backs the optional embedding/audio-matcher services — but none of these flows has end-to-end proof or quality gating.
-2. Nothing gates generated presets on quality. The hosted [`validate-preset`](../functions/api/validate-preset.ts) route now runs the real compiler (Done, see above), but `lab:reactivity` and `lab:visual` still run nowhere in the generation path, and no chain runs generate → diagnose → measure → regenerate before a generated preset reaches the user.
-3. There is no eval corpus or benchmark for generation quality, in contrast to the mature parity/certification corpus for rendering.
-4. Shader generation is unverified. [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) already documents the GLSL `[warp_shader]`/`[comp_shader]` blocks but tells models to avoid them unless asked, ships no worked examples, and nothing verifies that emitted GLSL actually compiles — the static compiler only classifies shader text; the GPU compiles it at render time.
-5. Provenance and attribution for generated or remixed presets is unspecified, though [`src/js/milkdrop/preset-credit.ts`](../src/js/milkdrop/preset-credit.ts) and the roadmap's "record remix provenance" bullet point at where it belongs.
+Closed since this list was first written: the generation quality gate and the generation bench (#1404, recorded below), local-model scoring on the edit and shader-fix benchmarks (`lab:llm-answer`, #1445), and remix lineage in exports and share links (#1371, #1403).
+
+1. No generation flow has browser-backed end-to-end proof on a configured deployment, for the hosted route, the loopback provider, or OpenRouter.
+2. Nothing closes the loop: no command runs generate → diagnose → measure → regenerate, and the bench's render-based metric (`--visual`) is a stub.
+3. Generated shader blocks are not checked before they are shown. [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) tells models to avoid `[warp_shader]`/`[comp_shader]` unless asked and gives no worked example; the static compiler only classifies shader text, and the GPU compiles it at render time. The shader-fix bench compiles model answers offline, which measures repair of existing translations, not generation.
+4. Generated presets record no provenance: the prompt, source presets and model are not written to the exported file. Remix lineage is.
 
 ## Now: verify and gate what already generates
 
