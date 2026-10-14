@@ -221,15 +221,17 @@ Shipped:
   - A learned mapping spans the variable's natural range instead of 0–1.
   - Touching a Perform control or the cue fader picks it as the learn target.
 - Stage utilities (#1455, closing [#1440](https://github.com/zz-plant/stims/issues/1440)): hold D for a blackout (two quick taps latch it) and Y for a white flash, without touching the preset or audio. Space freezes the picture.
-- Pads run commands: Settings → Performance hardware maps a pad, key or gamepad button to any command-palette action (next preset, pause, take the queued preset, and anything the palette adds later). The hit that maps it does not fire it, and each mapping is listed under its device with a remove button.
+- Tap tempo: K taps (the first tap is the downbeat, one tap after a pause re-syncs it), Shift+K hands the tempo back to the music, and the palette nudges the beat grid by 20 ms. A tapped tempo puts auto-advance on the performer's bar lines.
+- MIDI clock in: a running clock from a mixer or DAW sets the tempo and bar position until it stops or goes silent. The cue monitor's BPM readout names who owns the tempo.
+- Pads run commands: Settings → Performance hardware maps a pad, key or gamepad button to any command-palette action (next preset, pause, tap tempo, take the queued preset, and anything the palette adds later). The hit that maps it does not fire it, and each mapping is listed under its device with a remove button.
 
 Open:
 
 - **Pads on fields and held keys.** A pad can be learned only to a command. Gate and toggle bindings on a preset field still come only from a factory profile, and blackout and white flash are held keys rather than commands, so a pad cannot hold them yet.
-- **MIDI clock.** In/out is implemented but only tests use it.
+- **MIDI clock out.** Implemented, but nothing starts it, so lighting desks cannot follow the visuals' tempo.
 - **Latency.** The sub-10 ms target has never been measured on a device.
 - **Projector / external display window** ([#1439](https://github.com/zz-plant/stims/issues/1439)). The second window today is a watch-party link. It boots a full session with its own audio, synced through a relay that carries only the preset id and title, so MIDI moves, edits, and crossfades never reach the audience screen. What it needs: a same-origin window that mirrors the stage canvas (the picture-in-picture path already does), with no chrome and the cursor hidden.
-- **Tap tempo and phase nudge.** Missing; tempo comes only from the audio. `=` and `-` are the stage zoom and warp keys.
+- **Tempo beyond auto-advance.** A tapped or clocked tempo moves only auto-advance's bar lines. LFOs keep their own rate and no preset reads a tempo.
 - **Transition shaders.** One noise dissolve. Missing: wipe, glitch, and others, on both backends.
 - **Brightness floor.** The brightness ceiling stops at 30%, so the stage cannot be dimmed further than that without a blackout.
 

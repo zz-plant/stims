@@ -18,7 +18,14 @@
  * are counted as beats but excluded from the estimate, and `confidence`
  * reports what share of recent intervals actually agree with the median.
  * Callers are expected to check it before trusting `bpm` or `barPosition`.
+ *
+ * A tempo set by hand (tapped, or followed from a MIDI clock; see
+ * core/manual-tempo.ts) replaces the estimate while it is set: the snapshot
+ * reports it at full confidence, and beats fall on its grid rather than on
+ * detected onsets. Onsets keep feeding the estimate underneath, so clearing
+ * the manual tempo hands back a warm one instead of starting from silence.
  */
+import type { ManualTempo } from '../../core/manual-tempo.ts';
 
 /** Slowest and fastest inter-beat intervals treated as tempo evidence:
  * 240 BPM down to 30 BPM. Anything outside is a double-trigger or a gap. */
@@ -45,7 +52,8 @@ export type MilkdropBeatClockSnapshot = {
   bpm: number | null;
   /** 0–1 share of recent intervals agreeing with the median. */
   confidence: number;
-  /** Monotonic count of beats observed since the last reset. */
+  /** Monotonic count of beats observed since the last reset; with a manual
+   * tempo, the beat's number on that tempo's grid. */
   beatIndex: number;
   /** Beat position within the bar, 0 on the downbeat. */
   barPosition: number;
@@ -65,12 +73,21 @@ function median(values: number[]): number {
 
 export function createMilkdropBeatClock({
   beatsPerBar = 4,
+  getManualTempo = () => null,
 }: {
   beatsPerBar?: number;
+  /** Read every frame with the frame time; null leaves the tempo to the
+   * detected beats. */
+  getManualTempo?: (now: number) => ManualTempo | null;
 } = {}) {
   const intervals: number[] = [];
   let beatIndex = 0;
   let lastBeatAt: number | null = null;
+  /** The manual grid beat the last frame was in, or null off the grid. */
+  let lastGridBeat: number | null = null;
+
+  const gridBeatAt = (manual: ManualTempo, now: number): number =>
+    Math.floor((now - manual.anchorAt) / (60_000 / manual.bpm));
 
   /**
    * The bar phase is anchored to a beat rather than to `beatIndex % 4`,
@@ -94,6 +111,7 @@ export function createMilkdropBeatClock({
   };
 
   const reset = () => {
+    lastGridBeat = null;
     intervals.length = 0;
     beatIndex = 0;
     lastBeatAt = null;
@@ -128,10 +146,37 @@ export function createMilkdropBeatClock({
     },
 
     /**
+     * Whether this frame lands a beat. Without a manual tempo that is the
+     * detected onset the caller passes in; with one, it is the first frame
+     * at or past each beat of the manual grid, and onsets are ignored.
+     *
+     * A grid that jumps backwards (a re-sync tap, a phase nudge) fires
+     * nothing until it passes the next beat, so moving the bar line never
+     * reads as an extra beat.
+     */
+    frameBeat(now: number, detectedBeat: boolean): boolean {
+      const manual = getManualTempo(now);
+      if (!manual) {
+        lastGridBeat = null;
+        return detectedBeat;
+      }
+      const beat = gridBeatAt(manual, now);
+      const crossed = lastGridBeat !== null && beat > lastGridBeat;
+      lastGridBeat = beat;
+      return crossed;
+    },
+
+    /**
      * True when the most recent beat opened a bar. Meaningless without
      * tempo confidence — callers should gate on `snapshot().confidence`.
+     * Pass the frame time so a manual grid can answer for that frame.
      */
-    isDownbeat(): boolean {
+    isDownbeat(now?: number): boolean {
+      const manual = now === undefined ? null : getManualTempo(now);
+      if (manual && now !== undefined) {
+        const beat = gridBeatAt(manual, now);
+        return ((beat % beatsPerBar) + beatsPerBar) % beatsPerBar === 0;
+      }
       return (beatIndex - barAnchorIndex) % beatsPerBar === 0;
     },
 
@@ -143,6 +188,17 @@ export function createMilkdropBeatClock({
     },
 
     snapshot(now?: number): MilkdropBeatClockSnapshot {
+      const manual = now === undefined ? null : getManualTempo(now);
+      if (manual && now !== undefined) {
+        const beat = gridBeatAt(manual, now);
+        return {
+          bpm: manual.bpm,
+          confidence: 1,
+          beatIndex: beat,
+          barPosition: ((beat % beatsPerBar) + beatsPerBar) % beatsPerBar,
+          lastBeatAt: manual.anchorAt + beat * (60_000 / manual.bpm),
+        };
+      }
       const stale =
         lastBeatAt !== null &&
         now !== undefined &&

@@ -23,7 +23,10 @@ import type { EngineSnapshot } from '../engine/engine-snapshot.ts';
 import type { EngineContextValue } from '../engine-context.tsx';
 import { installLivePerformance } from '../live-performance.ts';
 import { describeMissingPadAction } from '../midi-pad-actions.ts';
-import { watchPerformanceHardware } from '../performance-hardware-connect.ts';
+import {
+  followMidiClockTempo,
+  watchPerformanceHardware,
+} from '../performance-hardware-connect.ts';
 import {
   bindMidiToMilkdropControls,
   createHardwareCrossfader,
@@ -137,6 +140,12 @@ export function usePerformanceHardware({
         announce: (message) => uiRef.current.setStatusMessage(message),
       });
 
+      // A mixer or DAW sending MIDI clock owns the tempo while it runs.
+      const stopClockFollow = followMidiClockTempo({
+        midi: webMidiService,
+        announce: (message) => uiRef.current.setStatusMessage(message),
+      });
+
       return () => {
         uninstallLive();
         unbindMidi();
@@ -144,6 +153,7 @@ export function usePerformanceHardware({
         webMidiService.setLearnRangeResolver(null);
         stopGamepad?.();
         stopHardwareWatch();
+        stopClockFollow();
       };
     });
   }, [
