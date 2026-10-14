@@ -108,7 +108,10 @@ import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences'
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState, evaluateBlendGate } from './runtime/session';
 import type { MilkdropPresetSelectionReason } from './runtime/startup.ts';
-import { shouldDeferStartupPresetFallback } from './runtime/startup.ts';
+import {
+  awaitStartupForEdit,
+  shouldDeferStartupPresetFallback,
+} from './runtime/startup.ts';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
 import { createMilkdropTraceRecorder } from './runtime/trace-recorder';
 import { createMilkdropTransitionController } from './runtime/transition-controller';
@@ -568,7 +571,7 @@ export function createMilkdropExperience({
     backend?: 'webgl' | 'webgpu';
   }) => {
     noteSubstitution('backend-fallback', `${presetId}: ${reason}`);
-    backendFailover.trigger({
+    return backendFailover.trigger({
       presetId,
       reason,
       activeBackend: backend ?? activeBackend,
@@ -1064,14 +1067,14 @@ export function createMilkdropExperience({
     if (!nextCompiled) {
       return;
     }
-    if (shouldFallbackToWebgl(nextCompiled)) {
-      log.log(
-        `${nextCompiled.source.id}: subscriber: WebGL fallback triggered`,
-      );
+    if (
+      shouldFallbackToWebgl(nextCompiled) &&
       triggerWebglFallback({
         presetId: nextCompiled.source.id,
         reason: describeWebglFallback(nextCompiled),
-      });
+      })
+    ) {
+      log.log(`${nextCompiled.source.id}: subscriber: reloading into WebGL`);
       return;
     }
     const didPresetIdChange =
@@ -1154,6 +1157,9 @@ export function createMilkdropExperience({
   // used to supersede it, and the shell then read the switch as the engine
   // moving on its own and dropped the request.
   const revisionBeforeStartup = navigation.getLoadRequestRevision();
+  // Kept after the pick lands, unlike pendingStartupPresetId: an edit that
+  // waited for startup checks the stage against it (awaitStartupForEdit).
+  let startupTargetPresetId: string | null = null;
   void (async () => {
     try {
       await catalogCoordinator.scheduleCatalogSync({
@@ -1172,6 +1178,7 @@ export function createMilkdropExperience({
           activeBackend,
         });
       pendingStartupPresetId = startupPresetId;
+      startupTargetPresetId = startupPresetId;
       if (!lifetime.isActive()) {
         return;
       }
@@ -1207,7 +1214,12 @@ export function createMilkdropExperience({
     navigation,
     presetFileActions,
     session,
-    startupSettled,
+    awaitStartupForEdit: () =>
+      awaitStartupForEdit({
+        navigation,
+        startupSettled,
+        getStartupPresetId: () => startupTargetPresetId,
+      }),
     applyFieldValues,
     activeCompiled,
     activePresetId,
@@ -1401,7 +1413,10 @@ function buildExperienceController(
       // A shared draft arrives while the startup preset may still be
       // loading. Compiling against the fallback here gives it the wrong
       // identity, and the pending load can then replace the edited visual.
-      await deps.startupSettled;
+      // A different preset selected during that wait supersedes the draft.
+      if (!(await deps.awaitStartupForEdit())) {
+        throw new Error(EDIT_SUPERSEDED);
+      }
       const { state, applied } =
         await deps.session.applySourceWithOutcome(source);
       deps.emitChange();

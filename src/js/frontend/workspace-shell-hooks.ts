@@ -420,12 +420,17 @@ export function useWorkspaceShellOrchestration({
 
     // Starting any other source replaces file playback, and the file element
     // loops, so without this it would keep playing underneath the new source.
-    // `'file'` is excluded because that path runs `startAudioSource` directly
-    // after adopting its own handle; disposing here would tear it straight
-    // back down.
-    if (source !== 'file') {
-      disposeActiveFileAudio();
-    }
+    // Each branch calls it only once its replacement is in hand: a denied
+    // microphone or a cancelled capture picker leaves the route on 'file', and
+    // disposing up front stopped the music while the dock still showed the
+    // track. `'file'` is excluded because that path runs `startAudioSource`
+    // directly after adopting its own handle; disposing here would tear it
+    // straight back down.
+    const replaceFileAudio = () => {
+      if (source !== 'file') {
+        disposeActiveFileAudio();
+      }
+    };
 
     // Pre-warm the shared Three.js AudioContext while we're still inside
     // the user gesture (click/tap). On iOS Safari, AudioContext.resume()
@@ -474,6 +479,7 @@ export function useWorkspaceShellOrchestration({
               ...nextRouteState,
               audioSource: 'demo' as const,
             };
+            replaceFileAudio();
             commitRoute(demoRouteState);
             await startAudioSource({
               source: 'demo',
@@ -503,6 +509,7 @@ export function useWorkspaceShellOrchestration({
               ...nextRouteState,
               audioSource: 'demo' as const,
             };
+            replaceFileAudio();
             commitRoute(demoRouteState);
             await startAudioSource({
               source: 'demo',
@@ -535,6 +542,7 @@ export function useWorkspaceShellOrchestration({
           throw new Error(msg);
         }
 
+        replaceFileAudio();
         try {
           await startAudioSource({
             source,
@@ -559,6 +567,7 @@ export function useWorkspaceShellOrchestration({
       }
 
       if (source === 'demo') {
+        replaceFileAudio();
         commitRoute(nextRouteState);
         await startAudioSource({ source, launchState: nextRouteState });
         return { ok: true, source };
@@ -583,6 +592,7 @@ export function useWorkspaceShellOrchestration({
           );
         },
       });
+      replaceFileAudio();
       commitRoute(nextRouteState);
       await startAudioSource({
         source,
