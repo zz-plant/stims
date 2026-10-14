@@ -179,11 +179,13 @@ The cooldown timer prevents rapid re-triggering from sustained bass. `trigger` f
 ### Dual shader pipeline
 
 ```
-Texture → [warp_shader] → [comp_shader] → Frame buffer
-              ↓                    ↓
-         Distorts pixels       Colors / blends pixels
-         (dx, dy, zoom)        (tone maps, mixes layers)
+previous frame → [warp_shader] → waves and shapes → [comp_shader] → screen
+                       │                 │
+                       │                 └→ becomes the next frame's sampler_main
+                       └→ reads sampler_main at a displaced uv, writes a color to ret
 ```
+
+Both shaders write a `vec3` color to `ret`. Only the warp shader's output feeds back into the next frame; the comp shader's goes to the screen. A warp shader also owns its fade: MilkDrop applies `fDecay` only when a preset has no warp shader, so warp shaders end with a line such as `ret *= 0.98;`.
 
 Key uniforms available in both shaders:
 
@@ -213,8 +215,8 @@ float t = texture2D(sampler_main, uv + vec2( 0.0, -0.3) / texsize).y;
 // 2-variable reaction-diffusion update
 float x2 = x + (-(y) + (0.035 * (1.0 - x)));
 float y2 = y + ( x - (0.095 * y));
-// Feeds back as dx, dy displacement
-ret = vec2(x2, y2);
+// The two concentrations go back out as red and green; the next frame reads them again
+ret = vec3(x2, y2, 0.0);
 ```
 
 Encode audio variable thresholds with `if()` conditionals:
@@ -280,7 +282,8 @@ for (int i = 0; i < 6; i++) {
     z.y = 2.0 * z.x * z.y + fract(q1 * 0.1);
     z.x = x2 + fract(q2 * 0.1);
 }
-ret = z * 0.5 + 0.5;          // remap to [0,1]
+// Read the previous frame at the folded coordinate, remapped to [0,1], and fade it
+ret = texture2D(sampler_main, z * 0.5 + 0.5).rgb * 0.98;
 ```
 
 Audio drives the Julia constant (`fract(q1*0.1)`), creating reactive fractal distortion without heavy computation — the iteration count is fixed at 6.

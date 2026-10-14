@@ -1,9 +1,10 @@
 [preset00]
-// The smallest possible warp_shader: sample the previous frame at the
-// unmodified coordinate. Behaves exactly like no shader at all — the
-// point is to see the required shape of a warp shader before changing it.
+// The smallest possible warp_shader: read the previous frame at uv, fade
+// it, and write the color to ret. The shaderless bench does the same
+// read with fDecay=0.98 as its fade. MilkDrop skips fDecay once a preset
+// has a warp shader, so fDecay is 1 here and ret *= 0.98 is the fade.
 fRating=5
-fDecay=0.98
+fDecay=1
 fWaveAlpha=1.2
 fWaveScale=1
 nWaveMode=0
@@ -28,4 +29,5 @@ ob_a=0
 ib_a=0
 mv_a=0
 [warp_shader]
-ret = uv;
+ret = texture2D(sampler_main, uv).rgb;
+ret *= 0.98;

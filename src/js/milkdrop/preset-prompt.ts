@@ -32,9 +32,9 @@ q1-q8: Persistent global state (set in per_frame, read anywhere)
 t1-t32: Temporary per-slot state
 
 ### GLSL Shader Blocks (use for complex image processing)
-- [warp_shader]: GLSL fragment shader. Distorts texture coordinates. Built-in uniforms: sampler_main (frame buffer), sampler_blur1-3, sampler_noise_lq (2D), sampler_noisevol_hq (3D volume), q1-q8 as float uniforms, bass_att/mid_att/treb_att.
-- [comp_shader]: GLSL fragment shader. Composites color. Same uniforms + sampler_fc_main.
-- Use ret = vec2(dx, dy) in warp_shader. Use ret = vec3(r, g, b) in comp_shader.
+- [warp_shader]: GLSL fragment shader that writes the color each pixel carries into the next frame. uv is where the pixel reads the previous frame; displace uv to warp the image. Built-in uniforms: sampler_main (previous frame), sampler_blur1-3, sampler_noise_lq (2D), sampler_noisevol_hq (3D volume), q1-q8 as float uniforms, bass_att/mid_att/treb_att.
+- [comp_shader]: GLSL fragment shader. Colors the finished frame for display; its output does not feed back. Same uniforms + sampler_fc_main.
+- ret is a vec3 color in both shaders, never a coordinate. A warp shader reads the previous frame and writes its own fade, because fDecay does not apply once a warp shader exists: ret = texture2D(sampler_main, uv + offset).rgb * 0.98; A comp shader writes the display color: ret = vec3(r, g, b);
 - GLSL 1.20: no gl_FragCoord. Use vec2/vec3. No texture() with LOD.
 - Do NOT use GLSL blocks unless the user specifically asks for image processing effects.
 `;
