@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- The governor counts red flashes. `sample()` takes `red`, the same samples'
+  red-flash values and saturated-red flags (`FlashRedField`), pairs and
+  windows red transitions on their own channel with the offline analysis's
+  definitions, and engages the clamp on either channel. Decisions carry
+  `redFlashesInWindow` and `redFlashed`. Before this, a saturated-red strobe
+  under the luminance threshold, such as `(80,0,0)` to `(100,0,0)`, was never
+  mitigated.
+- The sampler reads the red-flash field from the same pixels and hands it to
+  `onGrid` as a second argument; `createFlashController` passes it on.
+  `createMainThreadFlashReader` exposes it as `red`.
+
 ## 0.1.1
 
 Documentation only; no code changes.

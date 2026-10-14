@@ -88,7 +88,8 @@
  * frames. This track used to hand the governor tile means while the live
  * sampler read one point per tile, so it could not show that the live
  * governor counted 12 flashes on a preset this audit reads at 0. It now
- * reads the live sampler's field, pixel for pixel.
+ * reads the live sampler's field, pixel for pixel, red-flash field included,
+ * and scores both channels of the governed timeline.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -136,6 +137,8 @@ type CapturedFrames = {
   redFalling: number[][];
   govRising: number[][];
   govFalling: number[][];
+  govRedRising: number[][];
+  govRedFalling: number[][];
   governorRawPeak: number;
   tilePixels: number;
   frameMeanLuminance: number[];
@@ -148,6 +151,8 @@ export interface PresetFlashReport extends FlashAnalysis {
   repeatRedPeaks?: number[];
   /** Peak flashes/s the runtime governor would have presented (--governor). */
   governedPeakFlashesPerSecond?: number;
+  /** Peak red flashes/s the runtime governor would have presented. */
+  governedPeakRedFlashesPerSecond?: number;
   /**
    * Peak flashes/s the governor itself counts on the same unmitigated frames
    * (--governor). It applies the same WCAG rule, so it should match
@@ -155,6 +160,7 @@ export interface PresetFlashReport extends FlashAnalysis {
    */
   governorRawPeakFlashesPerSecond?: number;
   governedExceedsThreshold?: boolean;
+  governedExceedsRedThreshold?: boolean;
   presetId: string;
   title: string;
   author: string;
@@ -449,7 +455,11 @@ async function main() {
                   samples: Float32Array,
                   c: number,
                   r: number,
-                  options: { density: number; viewScale: number },
+                  options: {
+                    density: number;
+                    viewScale: number;
+                    red?: { values: Float32Array; saturated: Uint8Array };
+                  },
                 ) => { luminanceScale: number; flashesInWindow: number };
               };
               let governor: Governor | null = null;
@@ -495,11 +505,22 @@ async function main() {
                 }
               }
               const govField = new Float32Array(govEdge * govEdge);
+              const govRed = {
+                values: new Float32Array(govEdge * govEdge),
+                saturated: new Uint8Array(govEdge * govEdge),
+              };
               let govScale = 1;
               let prevGovLum: Float64Array | null = null;
               const curGovLum = new Float64Array(sampleCount);
+              // The governed red-flash values. A CSS brightness filter scales
+              // the sRGB channels, so it scales max(0, R-G-B) by the same
+              // factor and leaves R/(R+G+B), the saturation test, unchanged.
+              let prevGovRed: Float64Array | null = null;
+              const curGovRed = new Float64Array(sampleCount);
               const govRising: number[][] = [];
               const govFalling: number[][] = [];
+              const govRedRising: number[][] = [];
+              const govRedFalling: number[][] = [];
 
               let prevLum: Float64Array | null = null;
               const curLum = new Float64Array(sampleCount);
@@ -537,12 +558,17 @@ async function main() {
                 frameMeanLuminance.push(lumSum / sampleCount);
 
                 if (governor) {
-                  for (let g = 0; g < govField.length; g += 1) {
-                    const o = govOffsets[g];
-                    govField[g] =
-                      0.2126 * LUT[px[o]] +
-                      0.7152 * LUT[px[o + 1]] +
-                      0.0722 * LUT[px[o + 2]];
+                  for (let gi = 0; gi < govField.length; gi += 1) {
+                    const o = govOffsets[gi];
+                    const r = px[o];
+                    const g = px[o + 1];
+                    const b = px[o + 2];
+                    govField[gi] =
+                      0.2126 * LUT[r] + 0.7152 * LUT[g] + 0.0722 * LUT[b];
+                    govRed.values[gi] = Math.max(0, (r - g - b) / 255) * 320;
+                    const rgbSum = r + g + b;
+                    govRed.saturated[gi] =
+                      rgbSum > 0 && r / rgbSum >= 0.8 ? 1 : 0;
                   }
                   // Judged through the mitigation already in force: the
                   // governor must observe what the viewer sees, not the raw
@@ -552,7 +578,11 @@ async function main() {
                     govField,
                     governorGrid,
                     governorGrid,
-                    { density: governorDensity, viewScale: govScale },
+                    {
+                      density: governorDensity,
+                      viewScale: govScale,
+                      red: govRed,
+                    },
                   ).luminanceScale;
                   if (rawGovernor) {
                     governorRawPeak = Math.max(
@@ -568,6 +598,7 @@ async function main() {
                   }
                   for (let i = 0; i < sampleCount; i += 1) {
                     curGovLum[i] = curLum[i] * govScale;
+                    curGovRed[i] = curRed[i] * govScale;
                   }
                 }
 
@@ -605,9 +636,11 @@ async function main() {
                       else redDown[sampleTile[i]] += 1;
                     }
                   }
-                  if (governor && prevGovLum) {
+                  if (governor && prevGovLum && prevGovRed) {
                     const gUp = new Array(tileCount).fill(0);
                     const gDown = new Array(tileCount).fill(0);
+                    const gRedUp = new Array(tileCount).fill(0);
+                    const gRedDown = new Array(tileCount).fill(0);
                     for (let i = 0; i < sampleCount; i += 1) {
                       const before = prevGovLum[i];
                       const after = curGovLum[i];
@@ -618,9 +651,20 @@ async function main() {
                         if (after > before) gUp[sampleTile[i]] += 1;
                         else gDown[sampleTile[i]] += 1;
                       }
+                      const redBefore = prevGovRed[i];
+                      const redAfter = curGovRed[i];
+                      if (
+                        (prevRedSat[i] === 1 || curRedSat[i] === 1) &&
+                        Math.abs(redAfter - redBefore) > 20
+                      ) {
+                        if (redAfter > redBefore) gRedUp[sampleTile[i]] += 1;
+                        else gRedDown[sampleTile[i]] += 1;
+                      }
                     }
                     govRising.push(gUp);
                     govFalling.push(gDown);
+                    govRedRising.push(gRedUp);
+                    govRedFalling.push(gRedDown);
                   }
                   rising.push(up);
                   falling.push(down);
@@ -633,6 +677,10 @@ async function main() {
                     ? prevGovLum
                     : new Float64Array(sampleCount);
                   prevGovLum.set(curGovLum);
+                  prevGovRed = prevGovRed
+                    ? prevGovRed
+                    : new Float64Array(sampleCount);
+                  prevGovRed.set(curGovRed);
                 }
                 prevLum = prevLum ? prevLum : new Float64Array(sampleCount);
                 prevLum.set(curLum);
@@ -651,6 +699,8 @@ async function main() {
                 redFalling,
                 govRising,
                 govFalling,
+                govRedRising,
+                govRedFalling,
                 governorRawPeak,
                 tilePixels,
                 frameMeanLuminance,
@@ -699,6 +749,8 @@ async function main() {
             redFalling: number[][];
             govRising: number[][];
             govFalling: number[][];
+            govRedRising: number[][];
+            govRedFalling: number[][];
             governorRawPeak: number;
             tilePixels: number;
             frameMeanLuminance: number[];
@@ -742,15 +794,15 @@ async function main() {
           (a) => a.analysis.peakRedFlashesPerSecond,
         );
         // Same render pass, scored again as the governor would have shown
-        // it. Only the general-flash channel: the governor scales luminance,
-        // which is not a claim about the red-flash criterion.
+        // it, on both channels: the governor counts red flashes too, and its
+        // brightness scale is what brings either kind under the limit.
         const governed =
           args.governor && cap.govRising.length > 0
             ? analyzeFlashEvents({
                 rising: cap.govRising,
                 falling: cap.govFalling,
-                redRising: cap.redRising,
-                redFalling: cap.redFalling,
+                redRising: cap.govRedRising,
+                redFalling: cap.govRedFalling,
                 tilePixels: cap.tilePixels,
                 cols: TILE_COLS,
                 rows: TILE_ROWS,
@@ -770,6 +822,9 @@ async function main() {
             ? {
                 governedPeakFlashesPerSecond: governed.peakFlashesPerSecond,
                 governedExceedsThreshold: governed.exceedsThreshold,
+                governedPeakRedFlashesPerSecond:
+                  governed.peakRedFlashesPerSecond,
+                governedExceedsRedThreshold: governed.exceedsRedThreshold,
                 governorRawPeakFlashesPerSecond: cap.governorRawPeak,
               }
             : {}),
@@ -782,7 +837,8 @@ async function main() {
               : '') +
             (governed
               ? `governor counts ${cap.governorRawPeak}/s, ` +
-                `governed=${governed.peakFlashesPerSecond}/s `
+                `governed=${governed.peakFlashesPerSecond}/s ` +
+                `(red ${governed.peakRedFlashesPerSecond}/s) `
               : '') +
             `red=${analysis.peakRedFlashesPerSecond}/s ` +
             `motion=${analysis.motionEnergy.toFixed(4)} ` +

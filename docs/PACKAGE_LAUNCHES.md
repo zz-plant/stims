@@ -48,7 +48,7 @@ Title: **Analyze flash transitions in frame sequences and govern a live canvas**
 > Source and measured examples: https://github.com/zz-plant/flash-guard
 > Feedback: reproducible false positives, missed transitions, and integration problems are useful reports.
 
-Before posting: show a measured input and the output without autoplaying a strobe in a social preview. Retain the distinction between offline flash/red-flash analysis and the live luminance governor.
+Before posting: show a measured input and the output without autoplaying a strobe in a social preview. Retain the distinction between offline analysis of recorded frames and the live governor, which counts general and red flashes while a canvas is shown and dims it in response.
 
 ## eel-conformance: EEL implementers
 

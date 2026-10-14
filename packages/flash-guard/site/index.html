@@ -160,12 +160,12 @@
       <tbody>
         <tr><td><code>analyzeRgbaFrames(frames, options)</code></td><td>RGBA frames in, <code>FlashAnalysis</code> out. <code>createFlashFrameCounter</code> is the streaming form.</td></tr>
         <tr><td><code>analyzeFlashTimeline({ frames, deltaMs, cols, rows })</code></td><td>Per-frame luminance grids in, analysis out.</td></tr>
-        <tr><td><code>analyzeFlashEvents(input)</code></td><td>Per-tile qualifying-pixel counts in, analysis out; the only path that evaluates red flash.</td></tr>
+        <tr><td><code>analyzeFlashEvents(input)</code></td><td>Per-tile qualifying-pixel counts in, analysis out; the offline path that evaluates red flash.</td></tr>
         <tr><td><code>classifyFlashRisk(analysis)</code></td><td><code>none</code>, <code>low</code>, <code>medium</code> or <code>high</code>; high means over the WCAG limit on either channel.</td></tr>
-        <tr><td><code>createFlashGovernor(options)</code></td><td>The live state machine: one luminance grid per frame in, <code>{ hold, luminanceScale, flashesInWindow }</code> out.</td></tr>
+        <tr><td><code>createFlashGovernor(options)</code></td><td>The live state machine: one luminance grid per frame in, and optionally its red-flash field, <code>{ hold, luminanceScale, flashesInWindow, redFlashesInWindow }</code> out.</td></tr>
         <tr><td><code>createFlashController({ canvas, applyLuminanceScale })</code></td><td>Sampler plus governor plus the apply-on-change loop; call <code>tick(now)</code> from your draw.</td></tr>
         <tr><td><code>createBrightnessFilterApplier(element)</code></td><td>An applier that writes a CSS <code>brightness()</code> filter.</td></tr>
-        <tr><td><code>createFlashSampler({ grid, createWorker })</code></td><td>Canvas to luminance grid, off the main thread when possible.</td></tr>
+        <tr><td><code>createFlashSampler({ grid, createWorker })</code></td><td>Canvas to luminance and red-flash fields, off the main thread when possible.</td></tr>
         <tr><td><code>relativeLuminance</code>, <code>peakWindowFraction</code>, the threshold constants</td><td>The primitives every path is built from, defined once.</td></tr>
       </tbody>
     </table>

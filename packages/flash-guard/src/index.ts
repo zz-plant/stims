@@ -34,6 +34,7 @@ export {
   type FlashGovernor,
   type FlashGovernorDecision,
   type FlashGovernorOptions,
+  type FlashRedField,
   type FlashSampleOptions,
   MIN_USEFUL_GRID,
   primingHoldForMeasurement,

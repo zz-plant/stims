@@ -5,9 +5,9 @@
  * downscaled to the luminance field. Drawing it into a CPU-backed canvas waits
  * for the GPU to finish the frame it came from (1.9-2.7ms measured, see
  * `sampler.ts`); doing that here is what keeps the wait out of the
- * render loop. Luminance is computed by the caller from a lookup table: 16k
- * pixels cost about 0.1ms, and keeping the worker free of imports keeps it
- * one file in every build.
+ * render loop. Luminance and the red-flash values are computed by the caller,
+ * luminance from a lookup table: 16k pixels cost about 0.1ms, and keeping the
+ * worker free of imports keeps it one file in every build.
  */
 
 /** `id` is echoed back so the sampler can match answers to captures. */
