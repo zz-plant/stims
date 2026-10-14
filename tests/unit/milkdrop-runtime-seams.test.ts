@@ -590,7 +590,8 @@ warp=0.08
         reason: 'Unsupported feature',
         activeBackend: 'webgpu',
       }),
-    ).toBe(false);
+    ).toBe(true);
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -601,10 +602,15 @@ describe('milkdrop experience attachment seams', () => {
 
   // Attaches a fake runtime whose renderer comes up as native WebGPU, through
   // the real adapter factory, and returns every status line the attachment
-  // set. `search` is the page URL the session was opened with.
+  // set plus the adapter it attached. `search` is the page URL the session was
+  // opened with; `fallback` stands in for the WebGL failover.
   async function attachNativeWebGpu(
     search: string,
     forceMode: 'full' | 'safe',
+    fallback: {
+      shouldFallbackToWebgl?: () => boolean;
+      triggerWebglFallback?: () => boolean;
+    } = {},
   ) {
     const restoreLocation = replaceProperty(
       globalThis,
@@ -645,8 +651,8 @@ describe('milkdrop experience attachment seams', () => {
         setAdaptiveQualityUnsubscribe: () => {},
         setAdaptiveQualityState: () => {},
         updateAgentDebugSnapshot: () => {},
-        shouldFallbackToWebgl: () => false,
-        triggerWebglFallback: () => {},
+        shouldFallbackToWebgl: fallback.shouldFallbackToWebgl ?? (() => false),
+        triggerWebglFallback: fallback.triggerWebglFallback ?? (() => false),
         scheduleCatalogSync: () => {},
         emitChange: () => finishAttach(),
         setOverlayStatus: (message) => {
@@ -674,8 +680,9 @@ describe('milkdrop experience attachment seams', () => {
         },
       } as unknown as ToyRuntimeInstance);
       await attached;
-      (adapter as MilkdropRendererAdapter | null)?.dispose();
-      return statuses;
+      const attachedAdapter = adapter as MilkdropRendererAdapter | null;
+      attachedAdapter?.dispose();
+      return { statuses, attachedAdapter };
     } finally {
       setWebGpuForceMode('auto');
       restoreLocation();
@@ -685,7 +692,7 @@ describe('milkdrop experience attachment seams', () => {
   test(
     'reports no rollout flags when a full-path WebGPU session runs the defaults',
     async () => {
-      const statuses = await attachNativeWebGpu('?renderer=webgpu', 'full');
+      const { statuses } = await attachNativeWebGpu('?renderer=webgpu', 'full');
 
       // Four flags are off by default; off is not an override.
       expect(statuses.filter((s) => s.includes('rollout flags'))).toEqual([]);
@@ -696,7 +703,7 @@ describe('milkdrop experience attachment seams', () => {
   test(
     'reports no rollout flags for features the safe path turns off',
     async () => {
-      const statuses = await attachNativeWebGpu('', 'safe');
+      const { statuses } = await attachNativeWebGpu('', 'safe');
 
       expect(statuses.filter((s) => s.includes('rollout flags'))).toEqual([]);
     },
@@ -706,7 +713,7 @@ describe('milkdrop experience attachment seams', () => {
   test(
     'names each flag a URL override moved away from its default',
     async () => {
-      const statuses = await attachNativeWebGpu(
+      const { statuses } = await attachNativeWebGpu(
         '?renderer=webgpu&milkdrop-webgpu-feedback=0&milkdrop-webgpu-render-bundles=1',
         'full',
       );
@@ -714,6 +721,31 @@ describe('milkdrop experience attachment seams', () => {
       expect(statuses).toContain(
         'WebGPU rollout flags active: directFeedbackShaders off, renderBundles on.',
       );
+    },
+    NATIVE_ATTACH_TIMEOUT_MS,
+  );
+
+  test(
+    'still attaches a WebGPU adapter when the WebGL fallback could not reload',
+    async () => {
+      // Session storage blocked: the failover refuses to reload (it would
+      // loop) and says so. Attachment used to return regardless, before
+      // creating any adapter, and the stage stayed black.
+      let fallbackRequests = 0;
+      const { attachedAdapter } = await attachNativeWebGpu(
+        '?renderer=webgpu',
+        'full',
+        {
+          shouldFallbackToWebgl: () => true,
+          triggerWebglFallback: () => {
+            fallbackRequests += 1;
+            return false;
+          },
+        },
+      );
+
+      expect(fallbackRequests).toBeGreaterThan(0);
+      expect(attachedAdapter?.backend).toBe('webgpu');
     },
     NATIVE_ATTACH_TIMEOUT_MS,
   );

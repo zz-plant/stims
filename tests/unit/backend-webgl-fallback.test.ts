@@ -44,16 +44,42 @@ describe('createMilkdropBackendFailover', () => {
   test('does NOT reload when the fallback could not be persisted', () => {
     const { failover, reloads, recorded } = createFailover(false);
 
-    failover.trigger({
-      presetId: 'preset-a',
-      reason: 'unsupported descriptor',
-      activeBackend: 'webgpu',
-    });
+    // False tells the caller no reload is coming, so it must carry on setting
+    // the preset up on WebGPU. Reporting true here made navigation drop the
+    // preset and attachment skip its renderer adapter, leaving a black stage.
+    expect(
+      failover.trigger({
+        presetId: 'preset-a',
+        reason: 'unsupported descriptor',
+        activeBackend: 'webgpu',
+      }),
+    ).toBe(false);
 
     expect(reloads).toEqual([]);
     // Still recorded, so telemetry and the settings UI can still explain why
     // this preset looks wrong.
     expect(recorded).toHaveLength(1);
+  });
+
+  test('an unpersisted fallback does not stop later presets', () => {
+    const { failover, recorded } = createFailover(false);
+
+    failover.trigger({
+      presetId: 'preset-a',
+      reason: 'first',
+      activeBackend: 'webgpu',
+    });
+    expect(
+      failover.trigger({
+        presetId: 'preset-b',
+        reason: 'second',
+        activeBackend: 'webgpu',
+      }),
+    ).toBe(false);
+    expect(recorded.map((entry) => entry.presetId)).toEqual([
+      'preset-a',
+      'preset-b',
+    ]);
   });
 
   test('ignores presets already running on WebGL', () => {
@@ -69,7 +95,7 @@ describe('createMilkdropBackendFailover', () => {
     expect(reloads).toEqual([]);
   });
 
-  test('triggers at most once per runtime', () => {
+  test('reloads at most once per runtime', () => {
     const { failover, reloads } = createFailover(true);
 
     failover.trigger({
@@ -77,13 +103,14 @@ describe('createMilkdropBackendFailover', () => {
       reason: 'first',
       activeBackend: 'webgpu',
     });
+    // The page is already on its way out, so the second caller stops too.
     expect(
       failover.trigger({
         presetId: 'preset-b',
         reason: 'second',
         activeBackend: 'webgpu',
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(reloads).toEqual(['preset-a']);
   });
 });

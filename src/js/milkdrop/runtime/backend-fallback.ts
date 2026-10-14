@@ -67,14 +67,21 @@ export function createMilkdropBackendFailover({
    */
   persistFallback?: (presetId: string) => boolean;
 }) {
-  // Guards against re-entry within one runtime. It deliberately does NOT guard
-  // the reload loop: the reload tears this closure down and the next page load
-  // builds a fresh one with the latch clear. Only `markPresetNeedsWebgl`
-  // succeeding breaks that cycle.
-  let fallbackTriggered = false;
+  // Set once a reload is under way, so later triggers in the same runtime stop
+  // instead of scheduling another. It deliberately does NOT guard the reload
+  // loop: the reload tears this closure down and the next page load builds a
+  // fresh one with the latch clear. Only `markPresetNeedsWebgl` succeeding
+  // breaks that cycle.
+  let reloadScheduled = false;
 
   return {
     shouldFallback: shouldPresetFallbackToWebgl,
+    /**
+     * Returns true when the page is reloading into WebGL, so the caller must
+     * stop setting this preset up. False means no reload is coming and the
+     * caller carries on with the backend it already has: returning anyway left
+     * navigation without its preset and attachment without a renderer adapter.
+     */
     trigger({
       presetId,
       reason,
@@ -84,10 +91,12 @@ export function createMilkdropBackendFailover({
       reason: string;
       activeBackend: 'webgl' | 'webgpu';
     }) {
-      if (fallbackTriggered || activeBackend !== 'webgpu') {
+      if (activeBackend !== 'webgpu') {
         return false;
       }
-      fallbackTriggered = true;
+      if (reloadScheduled) {
+        return true;
+      }
       preferences.recordFallback({ presetId, reason });
       // Scope the fallback to this preset for this session. Flipping the global
       // compatibility-mode preference here would persist a device-wide WebGL
@@ -102,8 +111,9 @@ export function createMilkdropBackendFailover({
         console.warn(
           `Could not persist the WebGL fallback for ${presetId} (session storage unavailable); staying on WebGPU rather than reloading indefinitely.`,
         );
-        return true;
+        return false;
       }
+      reloadScheduled = true;
       reload(presetId);
       return true;
     },

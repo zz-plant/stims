@@ -74,11 +74,13 @@ export function createMilkdropExperienceAttachmentController({
     backend: 'webgl' | 'webgpu',
     flags: MilkdropWebGpuOptimizationFlags,
   ) => boolean;
+  /** True when the page is reloading into WebGL; false leaves attachment to
+   * build its adapter on the backend it already has. */
   triggerWebglFallback: (args: {
     presetId: string;
     reason: string;
     backend?: 'webgl' | 'webgpu';
-  }) => void;
+  }) => boolean;
   scheduleCatalogSync: () => void;
   emitChange: () => void;
   setOverlayStatus: (message: string) => void;
@@ -114,13 +116,13 @@ export function createMilkdropExperienceAttachmentController({
             compiled,
             nextBackend,
             effectiveOptimizationFlags,
-          )
-        ) {
+          ) &&
           triggerWebglFallback({
             presetId: compiled.source.id,
             reason: describeWebglFallback(compiled),
             backend: nextBackend,
-          });
+          })
+        ) {
           return;
         }
         const nextAdapter =
@@ -213,19 +215,19 @@ export function createMilkdropExperienceAttachmentController({
             updateAgentDebugSnapshot(true);
           }),
         );
+        const attached = activeCompiled();
         if (
           shouldFallbackToWebgl(
-            activeCompiled(),
+            attached,
             nextBackend,
             effectiveOptimizationFlags,
-          )
-        ) {
-          const compiled = activeCompiled();
+          ) &&
           triggerWebglFallback({
-            presetId: compiled.source.id,
-            reason: describeWebglFallback(compiled),
+            presetId: attached.source.id,
+            reason: describeWebglFallback(attached),
             backend: nextBackend,
-          });
+          })
+        ) {
           return;
         }
         if (

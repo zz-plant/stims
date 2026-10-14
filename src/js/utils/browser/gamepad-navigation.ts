@@ -33,8 +33,11 @@ type StoredFocusState = {
   index: number;
 };
 
+// `details > summary` is the only toggle of a disclosure ("Audio help",
+// Synthesize's "Advanced"); without it those sections cannot be opened from a
+// controller or a TV remote.
 const DEFAULT_FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), details > summary:first-of-type, [tabindex]:not([tabindex="-1"])';
 
 const DEFAULT_OPTIONS: Required<GamepadNavigationOptions> = {
   focusableSelector: DEFAULT_FOCUSABLE_SELECTOR,
