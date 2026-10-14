@@ -22,8 +22,7 @@ export { SkeletonPresetCard } from './SkeletonPresetCard.tsx';
 export { UiIcon } from './UiIcon.tsx';
 export { WorkspaceToast } from './WorkspaceToast.tsx';
 
-export const BROWSE_PANEL_FOCUS_SELECTOR =
-  '#preset-search, .milkdrop-overlay__search';
+export const BROWSE_PANEL_FOCUS_SELECTOR = '#preset-search';
 
 // `?strudel=1` keeps working as a one-shot prototype flag even though the lab
 // is now also controllable from Settings; the two are OR-ed on purpose so a

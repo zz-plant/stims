@@ -1,4 +1,5 @@
 import { isLivePerformanceModeActive } from './live-performance-mode.ts';
+import { isRecordingActive } from './services/recording-state.ts';
 import {
   getPowerSaverMode,
   subscribeToPowerSaverMode,
@@ -215,7 +216,11 @@ function isAgentModeDocument(): boolean {
  * said which one this is.
  */
 export function getPowerSavingFrameCapHz(): number | null {
-  if (isAgentModeDocument() || isLivePerformanceModeActive()) {
+  if (
+    isAgentModeDocument() ||
+    isLivePerformanceModeActive() ||
+    isRecordingActive()
+  ) {
     return null;
   }
   switch (getPowerSavingLevel()) {

@@ -23,6 +23,7 @@
  */
 import { isLivePerformanceModeActive } from './live-performance-mode.ts';
 import { isProjectorWindowOpen } from './services/projector-window-service.ts';
+import { isRecordingActive } from './services/recording-state.ts';
 
 export function isHiddenTabSuspendingFrames(): boolean {
   return (
@@ -31,6 +32,7 @@ export function isHiddenTabSuspendingFrames(): boolean {
     document.documentElement.dataset.agentMode !== 'true' &&
     !isLivePerformanceModeActive() &&
     !isProjectorWindowOpen() &&
-    !document.pictureInPictureElement
+    !document.pictureInPictureElement &&
+    !isRecordingActive()
   );
 }

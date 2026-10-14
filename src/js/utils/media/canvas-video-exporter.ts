@@ -1,9 +1,11 @@
 /** Records a live visualizer canvas, including native renderer capture at 4K. */
+import { setRecordingActive } from '../../core/services/recording-state.ts';
 
 export type ExportPresetTarget =
   | 'spotify-canvas'
   | 'tiktok-shorts'
   | 'youtube-shorts'
+  | 'square-post'
   | 'hd-landscape'
   | '4k-landscape'
   | 'custom';
@@ -13,6 +15,7 @@ export interface CanvasVideoExporterOptions {
   mimeType?: string;
   videoBitsPerSecond?: number;
   fps?: number;
+  native?: boolean;
 }
 
 export interface PresetDimensions {
@@ -74,6 +77,12 @@ export const EXPORT_PRESETS: Record<ExportPresetTarget, PresetDimensions> = {
     label: 'YouTube Shorts (9:16, 60 fps)',
     aspectRatio: '9:16',
   },
+  'square-post': {
+    width: 1080,
+    height: 1080,
+    label: 'Square post (1:1, 1080×1080)',
+    aspectRatio: '1:1',
+  },
   'hd-landscape': {
     width: 1920,
     height: 1080,
@@ -130,6 +139,8 @@ export class CanvasVideoExporter {
   private recordingFrame: number | null = null;
   private restoreNativeCapture: (() => void) | null = null;
   private isRecording = false;
+  private backgroundTimeout: ReturnType<typeof setTimeout> | null = null;
+  private visibilityHandler: (() => void) | null = null;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -195,7 +206,12 @@ export class CanvasVideoExporter {
     const fps = options.fps ?? 60;
     const presetId = options.preset ?? 'hd-landscape';
     const preset = EXPORT_PRESETS[presetId];
-    const nativeCapture = presetId === '4k-landscape';
+    const isNativeCandidate =
+      presetId === '4k-landscape' ||
+      preset.aspectRatio === '9:16' ||
+      preset.aspectRatio === '1:1';
+    const nativeCapture =
+      options.native !== false && Boolean(this.runtime) && isNativeCandidate;
     let outputCanvas: HTMLCanvasElement;
     let context: CanvasRenderingContext2D | null = null;
 
@@ -204,7 +220,7 @@ export class CanvasVideoExporter {
         return {
           ok: false,
           reason:
-            'Native 4K export is unavailable because the visualizer renderer is not ready.',
+            'Native video export is unavailable because the visualizer renderer is not ready.',
         };
       }
       const result = this.runtime.beginNativeCapture({
@@ -216,6 +232,12 @@ export class CanvasVideoExporter {
       }
       this.restoreNativeCapture = result.restore;
       outputCanvas = this.canvas;
+    } else if (presetId === '4k-landscape') {
+      return {
+        ok: false,
+        reason:
+          'Native 4K export is unavailable because the visualizer renderer is not ready.',
+      };
     } else {
       outputCanvas = this.environment.createCanvas();
       outputCanvas.width = preset.width;
@@ -265,6 +287,7 @@ export class CanvasVideoExporter {
       };
       recorder.start(100);
       this.isRecording = true;
+      setRecordingActive(true);
 
       const drawFrame = () => {
         if (!this.isRecording) return;
@@ -289,14 +312,56 @@ export class CanvasVideoExporter {
           preset.width,
           preset.height,
         );
-        this.recordingFrame = this.environment.requestAnimationFrame(drawFrame);
+        if (typeof document !== 'undefined' && document.hidden) {
+          this.backgroundTimeout = setTimeout(drawFrame, 1000 / fps);
+        } else {
+          this.recordingFrame =
+            this.environment.requestAnimationFrame(drawFrame);
+        }
       };
+
       if (!nativeCapture) {
+        this.visibilityHandler = () => {
+          if (!this.isRecording) return;
+          if (document.hidden) {
+            if (this.recordingFrame !== null) {
+              this.environment.cancelAnimationFrame(this.recordingFrame);
+              this.recordingFrame = null;
+            }
+            if (this.backgroundTimeout === null) {
+              this.backgroundTimeout = setTimeout(drawFrame, 1000 / fps);
+            }
+          } else {
+            if (this.backgroundTimeout !== null) {
+              clearTimeout(this.backgroundTimeout);
+              this.backgroundTimeout = null;
+            }
+            if (this.recordingFrame === null) {
+              this.recordingFrame =
+                this.environment.requestAnimationFrame(drawFrame);
+            }
+          }
+        };
+        if (typeof document !== 'undefined') {
+          document.addEventListener('visibilitychange', this.visibilityHandler);
+        }
         drawFrame();
       }
       return { ok: true, mimeType: support.mimeType };
     } catch (error) {
       this.isRecording = false;
+      setRecordingActive(false);
+      if (this.backgroundTimeout !== null) {
+        clearTimeout(this.backgroundTimeout);
+        this.backgroundTimeout = null;
+      }
+      if (this.visibilityHandler && typeof document !== 'undefined') {
+        document.removeEventListener(
+          'visibilitychange',
+          this.visibilityHandler,
+        );
+        this.visibilityHandler = null;
+      }
       unownedAudioTracks.forEach((track) => track.stop());
       stopStream(this.recordingStream);
       this.recordingStream = null;
@@ -315,9 +380,18 @@ export class CanvasVideoExporter {
   async stopRecording(): Promise<Blob | null> {
     if (!this.isRecording || !this.mediaRecorder) return null;
     this.isRecording = false;
+    setRecordingActive(false);
     if (this.recordingFrame !== null) {
       this.environment.cancelAnimationFrame(this.recordingFrame);
       this.recordingFrame = null;
+    }
+    if (this.backgroundTimeout !== null) {
+      clearTimeout(this.backgroundTimeout);
+      this.backgroundTimeout = null;
+    }
+    if (this.visibilityHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
     }
 
     const recorder = this.mediaRecorder;

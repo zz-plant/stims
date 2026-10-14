@@ -152,12 +152,14 @@ export function computeWarpSampleRad(
   return Math.sqrt(ndcX * ndcX + ndcY * ndcY);
 }
 
-/** Divisor floor. Deliberately 0.0001, NOT 0.02: 100-square is zoom=0 and its
- * degenerate divide is load-bearing for a reference that already passes. */
+/** Divisor floor for a zoom NEAR zero, which MilkDrop samples far outside
+ * the frame; 0.0001, not 0.02, which would shrink that 200x. A zoom of
+ * exactly 0 never reaches it: MilkDrop's coordinates are then infinite or NaN,
+ * and the blend node drops the previous frame instead (projectM renders it
+ * black). */
 const ZOOM_DIVISOR_FLOOR = 0.0001;
 /** Keeps zoom^(zoomexp^(2r-1)) from overflowing f32 on presets that ship
- * extreme pairs. Only ever applied on the zoomexp != 1 branch, so it cannot
- * reach the 100-square path. */
+ * extreme pairs. Only ever applied on the zoomexp != 1 branch. */
 const ZOOM_POW_CLAMP_MIN = 0.0001;
 const ZOOM_POW_CLAMP_MAX = 10000;
 /** zoomexp within this of 1 takes the exact `zoom` branch instead of pow(). A

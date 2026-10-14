@@ -1,0 +1,40 @@
+[preset00]
+// Demonstrates HPSS (harmonic/percussive source separation) signals:
+// percussive punches zoom on transients and drums, harmonic steers the
+// ambient wave color, and percussive_ratio shifts rotation during breaks.
+fRating=5
+fDecay=0.96
+fWaveAlpha=1.5
+fWaveScale=1
+nWaveMode=0
+bWaveThick=1
+bMaximizeWaveColor=1
+bTexWrap=1
+zoom=1
+rot=0
+cx=0.5
+cy=0.5
+dx=0
+dy=0
+sx=1
+sy=1
+warp=0
+wave_r=0.2
+wave_g=0.8
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+ob_a=0
+ib_a=0
+mv_a=0
+per_frame_1=ra = 6/fps;
+per_frame_2=harm_avg = harm_avg*(1-ra) + ra*harmonic;
+// Pulse zoom only on genuine percussive hits, not sustained drone/bass
+per_frame_3=zoom = 1.008 + percussive*0.04;
+// Harmonic energy steers the wave color gently
+per_frame_4=wave_r = 0.2 + 0.6*harm_avg;
+per_frame_5=wave_g = 0.8 - 0.4*harm_avg;
+per_frame_6=wave_b = 0.5 + 0.5*sin(harm_avg*2);
+// percussive_ratio measures transient-ness (0..1, 0.5 in silence).
+// When drums dominate (> 0.65), add a sharp rotational nudge.
+per_frame_7=rot = 0.01 + above(percussive_ratio, 0.65)*0.03*percussive;

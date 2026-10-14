@@ -2047,6 +2047,7 @@ export class EditorPanel {
   dispose() {
     this.stopLiveFeed();
     this.inspectPane.dispose();
+    this.texturesPane.dispose();
     this.closeVariableJump();
     this.disposeDiagnosticsListener?.();
     this.disposeDiagnosticsListener = null;

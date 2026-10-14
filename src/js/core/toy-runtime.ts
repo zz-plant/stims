@@ -15,6 +15,10 @@ import {
 } from './performance-panel';
 import { getPowerSavingFrameCapHz } from './power-state';
 import {
+  isRecordingActive,
+  subscribeRecordingActive,
+} from './services/recording-state.ts';
+import {
   fillReferenceAudioWaveform,
   REFERENCE_AUDIO_STEADY_BAND,
 } from './testing/reference-audio.ts';
@@ -520,12 +524,18 @@ export function createToyRuntime({
   let heldStepsPending = 0;
   const MAX_HELD_STEPS = 4;
 
+  let previewTimerId: ReturnType<typeof setTimeout> | null = null;
+
   const stopPreviewLoop = () => {
     if (!previewActive) return;
     previewActive = false;
     if (previewAnimationId !== null) {
       cancelAnimationFrame(previewAnimationId);
       previewAnimationId = null;
+    }
+    if (previewTimerId !== null) {
+      clearTimeout(previewTimerId);
+      previewTimerId = null;
     }
   };
 
@@ -534,7 +544,9 @@ export function createToyRuntime({
       !previewOptions.enabled ||
       previewActive ||
       deterministicHold ||
-      (typeof document !== 'undefined' && document.hidden)
+      (typeof document !== 'undefined' &&
+        document.hidden &&
+        !isRecordingActive())
     ) {
       return;
     }
@@ -550,6 +562,23 @@ export function createToyRuntime({
     // The pre-audio preview runs before the user has done anything, so it is the
     // loop most likely to be left burning battery on a page nobody is watching.
     const previewFrameGate = createFrameGate(getPowerSavingFrameCapHz);
+
+    const scheduleNext = () => {
+      if (!previewActive) return;
+      if (
+        typeof document !== 'undefined' &&
+        document.hidden &&
+        isRecordingActive()
+      ) {
+        previewTimerId = setTimeout(() => {
+          previewTimerId = null;
+          tick(timeSource.now());
+        }, 16);
+      } else {
+        previewAnimationId = requestAnimationFrame(tick);
+      }
+    };
+
     const tick = (now: number) => {
       if (!previewActive) return;
       const currentTime = virtualTimeSource ? virtualTimeSource() : now;
@@ -557,11 +586,11 @@ export function createToyRuntime({
         // Keep the anchor moving so the first frame after release measures
         // a normal delta instead of the whole pause.
         previewLastFrame = currentTime;
-        previewAnimationId = requestAnimationFrame(tick);
+        scheduleNext();
         return;
       }
       if (!previewFrameGate.shouldRenderFrame(currentTime)) {
-        previewAnimationId = requestAnimationFrame(tick);
+        scheduleNext();
         return;
       }
       if (frameHeld) heldStepsPending -= 1;
@@ -607,15 +636,15 @@ export function createToyRuntime({
           return;
         }
       }
-      previewAnimationId = requestAnimationFrame(tick);
+      scheduleNext();
     };
 
-    previewAnimationId = requestAnimationFrame(tick);
+    scheduleNext();
   };
 
   if (typeof document !== 'undefined') {
     const handlePreviewVisibilityChange = () => {
-      if (document.hidden) {
+      if (document.hidden && !isRecordingActive()) {
         stopPreviewLoop();
         return;
       }
@@ -623,11 +652,17 @@ export function createToyRuntime({
         startPreviewLoop();
       }
     };
+    const unsubscribeRecording = subscribeRecordingActive((active) => {
+      if (active && document.hidden && !analyser && !previewActive) {
+        startPreviewLoop();
+      }
+    });
     document.addEventListener(
       'visibilitychange',
       handlePreviewVisibilityChange,
     );
     previewVisibilityCleanup = () => {
+      unsubscribeRecording();
       document.removeEventListener(
         'visibilitychange',
         handlePreviewVisibilityChange,

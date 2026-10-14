@@ -311,10 +311,28 @@ export function applyMilkdropWebGpuOptimizationFlags(
   };
 }
 
-export function getDisabledMilkdropWebGpuOptimizationFlags(
-  flags: MilkdropWebGpuOptimizationFlags,
-) {
-  return Object.entries(flags)
-    .filter(([, enabled]) => !enabled)
-    .map(([flagName]) => flagName) as MilkdropWebGpuOptimizationFlagName[];
+export type MilkdropWebGpuOptimizationFlagOverride = {
+  flag: MilkdropWebGpuOptimizationFlagName;
+  enabled: boolean;
+};
+
+/**
+ * The flags a session runs with that differ from what the shipped defaults
+ * resolve to on the same backend and path — the overrides actually in effect.
+ * The baseline goes through the same routing, so the four flags that are off
+ * by default and the features the safe path turns off are not reported, and
+ * an override the path ignores (compute VM on the compatibility adapter) is
+ * not reported as active either.
+ */
+export function getOverriddenMilkdropWebGpuOptimizationFlags(
+  effectiveFlags: MilkdropWebGpuOptimizationFlags,
+  backend: 'webgl' | 'webgpu',
+): MilkdropWebGpuOptimizationFlagOverride[] {
+  const baseline = resolveMilkdropWebGpuOptimizationFlagsForBackend(
+    DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+    backend,
+  );
+  return (Object.keys(baseline) as MilkdropWebGpuOptimizationFlagName[])
+    .filter((flag) => effectiveFlags[flag] !== baseline[flag])
+    .map((flag) => ({ flag, enabled: effectiveFlags[flag] }));
 }
