@@ -1145,6 +1145,64 @@ warp=0.2
     );
   });
 
+  test('applies mv_l on webgpu exactly when the cpu path does', () => {
+    const base = `
+title=Motion Vector Length Parity
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+mv_a=0.6
+mesh_density=12
+zoom=1.08
+rot=0.1
+warp=0.2
+    `.trim();
+    const cases = [
+      // No mv_l anywhere: the default 0.9 must not rescale either backend.
+      { id: 'mv-length-modern', source: base, legacy: false },
+      // Scripted only: the compiler flags this as legacy, so both backends
+      // have to apply it.
+      {
+        id: 'mv-length-scripted',
+        source: `${base}\nper_frame_init_1=mv_l=0.2;`,
+        legacy: true,
+      },
+    ];
+
+    for (const { id, source, legacy } of cases) {
+      const preset = compileMilkdropPresetSource(source, { id });
+      const cpuVm = createMilkdropVM(preset);
+      cpuVm.setRenderBackend('webgl');
+      const gpuVm = createMilkdropVM(preset);
+      gpuVm.setRenderBackend('webgpu');
+      const signals = makeSignals({ frame: 3, time: 0.3 });
+      const cpu = cpuVm.step(signals);
+      const gpu = gpuVm.step(signals);
+
+      // A CPU vector spans 1.45x its mesh-space delta; aspect 1 keeps the
+      // scene scale at 1.
+      const cpuLengths = cpu.motionVectors.map(
+        ({ positions }) =>
+          Math.hypot(positions[3] - positions[0], positions[4] - positions[1]) /
+          1.45,
+      );
+      expect(cpuLengths.length).toBeGreaterThan(0);
+      const field = gpu.gpuGeometry.motionVectorField;
+      expect(field).not.toBeNull();
+      expect(field?.legacyControls).toBe(legacy);
+
+      if (legacy) {
+        expect(field?.explicitLength).toBeCloseTo(0.2, 6);
+        for (const length of cpuLengths) {
+          expect(length).toBeCloseTo(0.2, 5);
+        }
+      } else {
+        expect(field?.explicitLength).toBe(0);
+        expect(Math.max(...cpuLengths)).toBeLessThan(0.9);
+      }
+    }
+  });
+
   test('keeps waveform-driven main-wave geometry on webgpu line-wave presets', () => {
     const preset = compileMilkdropPresetSource(
       `
