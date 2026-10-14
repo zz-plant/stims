@@ -17,7 +17,7 @@ You decide how much is happening on screen, how it changes, and when it stops.
 
 ## Flash labels, and what has not been measured
 
-Presets measured above the WCAG flash limit carry a ⚡ **Flashing** label in Browse. Most presets in the catalog have not been measured yet. A preset without the label is unmeasured rather than cleared, and Reduce flashing leaves unmeasured presets in the list. The [sensory accessibility notes](../SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete) record what has been measured and how.
+Presets measured above the WCAG flash limit carry a ⚡ **Flashing** label in Browse. Most presets in the catalog have not been measured yet, and nothing in Browse marks them: a preset without the label may simply be unmeasured, and Reduce flashing leaves unmeasured presets in the list. The [sensory accessibility notes](../SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete) record what has been measured and how.
 
 ## Why the controls are built this way
 
