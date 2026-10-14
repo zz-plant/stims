@@ -736,6 +736,15 @@ export function createMilkdropIr({
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
+  const noShaderAnalysis = shaderHelpers.extractShaderControls(null, shaderEnv);
+  const warpOnlyShaderControls = shaderHelpers.mergeShaderControlAnalysis(
+    shaderWarpAnalysis,
+    noShaderAnalysis,
+  );
+  const compOnlyShaderControls = shaderHelpers.mergeShaderControlAnalysis(
+    noShaderAnalysis,
+    shaderCompAnalysis,
+  );
   const warpHasTranslatedDirectStatements =
     shaderWarpAnalysis.directProgramStatements.length > 0;
   const compHasTranslatedDirectStatements =
@@ -1191,6 +1200,16 @@ export function createMilkdropIr({
       unsupportedLines: approximatedShaderLines,
       controls: mergedShaderControls.controls,
       controlExpressions: mergedShaderControls.expressions,
+      stageControls: {
+        warp: {
+          controls: warpOnlyShaderControls.controls,
+          expressions: warpOnlyShaderControls.expressions,
+        },
+        comp: {
+          controls: compOnlyShaderControls.controls,
+          expressions: compOnlyShaderControls.expressions,
+        },
+      },
       customSamplers,
     },
     borders: {
