@@ -265,42 +265,65 @@ describe('flash governor', () => {
      * is a full 0.5, but neither direction ever reaches 25% of a field, so
      * WCAG counts no flash at all. Fine moving detail in a MilkDrop preset
      * (Shifter - Curlique) is this, measured.
+     *
+     * A field is 16,384 samples, so this and `auditFields` use plain loops:
+     * `.map` / `Float32Array.from` callbacks cost several times as much.
      */
     function twinkleFields(frames: number): Float32Array[] {
       const random = mulberry32(7);
-      const bright = new Uint8Array(EDGE * EDGE).map(() =>
-        random() < 0.5 ? 1 : 0,
-      );
+      const bright = new Uint8Array(EDGE * EDGE);
+      for (let i = 0; i < bright.length; i += 1) {
+        bright[i] = random() < 0.5 ? 1 : 0;
+      }
       const out: Float32Array[] = [];
       for (let f = 0; f < frames; f += 1) {
+        const field = new Float32Array(bright.length);
         for (let i = 0; i < bright.length; i += 1) {
           if (random() < 0.36) bright[i] = 1 - (bright[i] as number);
+          field[i] = bright[i] ? 0.6 : 0.1;
         }
-        out.push(Float32Array.from(bright, (on) => (on ? 0.6 : 0.1)));
+        out.push(field);
       }
       return out;
     }
 
+    /**
+     * Two seconds of texture, built once and read by both tests: two full
+     * WCAG windows. Every break tried that makes the governor hold on it
+     * (ignoring the density option, counting a tile as `density` samples
+     * rather than `density` squared, an area threshold of 0.2 or 0.21) does
+     * so within 18 frames. The tests are CPU-bound, so frames past that only
+     * add time on a loaded gate, where 300 of them outran bun's 5 s timeout.
+     */
+    let twinkle: Float32Array[] | null = null;
+    const sharedTwinkle = () => {
+      twinkle ??= twinkleFields(120);
+      return twinkle;
+    };
+
     /** The offline analysis's per-pixel counts for the same fields. */
     function auditFields(fields: Float32Array[]) {
-      const rising: number[][] = [];
-      const falling: number[][] = [];
+      const tileOf = new Uint16Array(EDGE * EDGE);
+      for (let i = 0; i < tileOf.length; i += 1) {
+        const x = i % EDGE;
+        const y = Math.floor(i / EDGE);
+        tileOf[i] =
+          Math.floor(y / DENSITY) * RECOMMENDED_GRID + Math.floor(x / DENSITY);
+      }
+      const rising: Uint16Array[] = [];
+      const falling: Uint16Array[] = [];
       for (let f = 1; f < fields.length; f += 1) {
-        const up = new Array(RECOMMENDED_GRID ** 2).fill(0);
-        const down = new Array(RECOMMENDED_GRID ** 2).fill(0);
+        const up = new Uint16Array(RECOMMENDED_GRID ** 2);
+        const down = new Uint16Array(RECOMMENDED_GRID ** 2);
         const before = fields[f - 1] as Float32Array;
         const after = fields[f] as Float32Array;
         for (let i = 0; i < after.length; i += 1) {
           const b = before[i] as number;
           const a = after[i] as number;
           if (!isFlashTransition(b, a)) continue;
-          const x = i % EDGE;
-          const y = Math.floor(i / EDGE);
-          const tile =
-            Math.floor(y / DENSITY) * RECOMMENDED_GRID +
-            Math.floor(x / DENSITY);
-          if (a > b) up[tile] += 1;
-          else down[tile] += 1;
+          const tile = tileOf[i] as number;
+          if (a > b) up[tile] = (up[tile] as number) + 1;
+          else down[tile] = (down[tile] as number) + 1;
         }
         rising.push(up);
         falling.push(down);
@@ -330,7 +353,7 @@ describe('flash governor', () => {
     }
 
     test('texture the offline analysis passes never engages the governor', () => {
-      const fields = twinkleFields(300);
+      const fields = sharedTwinkle();
       expect(auditFields(fields).totalFlashes).toBe(0);
 
       const governor = createFlashGovernor();
@@ -353,7 +376,7 @@ describe('flash governor', () => {
       // field always has 7 of its 25 samples swinging the same way.
       const governor = createFlashGovernor();
       let maxHold = 0;
-      for (const [index, field] of twinkleFields(300).entries()) {
+      for (const [index, field] of sharedTwinkle().entries()) {
         const { hold } = governor.sample(
           index * FRAME_MS,
           tileCentres(field),
