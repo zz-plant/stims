@@ -16,7 +16,7 @@ These are settled. Apply them without asking; change them here, with a reason, w
 2. **A phone held upright is a measured context.** Anything a visitor sees first (the first-run preset, the attract preview, the landing) is measured at 390x844 as well as 1280x720.
 3. **Both backends count.** Over the 30 days to 2026-10-07, renderer-tagged events split 640 WebGPU to 632 WebGL ([current split](./ARCHITECTURE.md#rendering-backends)). Evidence for anything visitors see by default covers both backends.
 4. **Audio reactivity is gated on dataflow, not pixels.** A preset answers the music when audio drives a variable the whole frame moves with (`lab:reactivity`, `lab:dataflow`). The pixel luminance delta between two separate runs mostly measures where a colour-cycling preset is in its cycle: identical runs of `shifter-curlique` read −21 and −0.7.
-5. **Default surfaces do not flash.** The WCAG audit (`scripts/analyze-preset-flash.ts`) must read 0 flashes/s, and the live flash governor must leave the surface undimmed. The audit's per-pixel rule is the reference: the governor applies the same rule and must count what the audit counts on the same frames (`--governor` prints both).
+5. **Default surfaces do not flash.** The WCAG audit (`scripts/analyze-preset-flash.ts`) must read 0 flashes/s at 60 fps and at 30 (`--fps=30`, the power-saving cap), and the live flash governor must leave the surface undimmed. The audit's per-pixel rule is the reference: the governor applies the same rule and must count what the audit counts on the same frames (`--governor` prints both).
 6. **Telemetry counts visitors only.** Automated browsers do not post (#1377).
 
 ## The moments
@@ -111,6 +111,7 @@ Measured on 2026-10-07 against the dev server on WebGL, walking the same path. T
 | 2026-10-07 | The editor's per-control sounds are gated on static dataflow end to end, in CI on WebGL. | `tests/e2e/open-one-up.test.ts` |
 | 2026-10-07 | The governor and the audit disagreed on `shifter-curlique`, and the governor was wrong: it judged one sample per tile, counted its own dimming, and skipped frames. The audit's per-pixel rule is the reference; the governor now applies it to 64 pixels per tile on every frame. | #1383 |
 | 2026-10-09 | The funnel's first-edit step splits without rewriting history: `growth-first-edit-applied` keeps its frozen guide-button meaning, and `growth-first-code-edit-applied` / `growth-first-tune-edit-applied` count the first typed code edit and first committed Tune control, once per page load each. A visitor's own actions count; AI proposals and agent applies do not. | `src/js/frontend/first-edit.ts` |
+| 2026-10-13 | A catalog flash verdict is the worse of the audit at 60 and 30 fps. A preset over the WCAG limit sinks to the bottom of curated rank, so it leaves the front of Browse and a new visitor's Next walk; it stays in the hall of fame with the ⚡ Flashing label. README clip counts describe the clip, not the preset. | `scripts/merge-flash-audit.ts`, `scripts/score-catalog-quality.ts` |
 
 ## Working with this file
 

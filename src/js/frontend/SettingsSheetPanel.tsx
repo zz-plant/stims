@@ -281,7 +281,7 @@ function AccessibilitySection({
       />
       <SwitchRow
         label="Reduce flashing"
-        hint="Hides presets measured above the WCAG flash threshold. Presets that haven't been measured yet still appear, and say so."
+        hint="Hides presets measured above the WCAG flash threshold. Presets that haven't been measured stay in the list, without a label."
         describedById="comfort-note"
         checked={prefs.reduceFlashing}
         onChange={(reduceFlashing) => {

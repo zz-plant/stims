@@ -52,6 +52,8 @@
  *   bun run scripts/analyze-preset-flash.ts --all
  *   bun run scripts/analyze-preset-flash.ts --ids=a,b,c
  *   bun run scripts/analyze-preset-flash.ts --beat-pulse    # with kick transients
+ *   bun run scripts/analyze-preset-flash.ts --fps=30        # power-saving rate
+ *   bun run scripts/analyze-preset-flash.ts --warmup=10     # slow feedback build
  *   bun run scripts/analyze-preset-flash.ts --out=report.json
  *   bun run scripts/analyze-preset-flash.ts --governor       # with/without
  *   bun run scripts/analyze-preset-flash.ts --all --shard=1/4 # one of 4 runs
@@ -103,13 +105,25 @@ import { ensureDevServer } from './dev-server.ts';
 const DEFAULT_COUNT = 50;
 const DEFAULT_PORT = 5199;
 const DEFAULT_OUT = 'flash-audit.json';
-// 5 seconds of simulated 60fps timeline. Long enough for a 1s sliding
-// window to have somewhere to slide; short enough to audit at scale.
-const CAPTURE_FRAMES = 300;
-const DELTA_MS = 1000 / 60;
+// 5 seconds of simulated timeline. Long enough for a 1s sliding window to
+// have somewhere to slide; short enough to audit at scale.
+const CAPTURE_SECONDS = 5;
 // Feedback presets accumulate structure over time; measuring from frame 0
 // would score the warm-up ramp rather than the preset's steady behavior.
-const WARMUP_FRAMES = 90;
+// `--warmup=<seconds>` gives slow ones longer. Some stay black under the
+// synthetic signal however long they run (eos-heater-core-c, even after
+// 15 s), and catalog:merge-flash refuses such a blank capture.
+const DEFAULT_WARMUP_SECONDS = 1.5;
+// The live loop steps the VM once per drawn frame, with that frame's delta,
+// so a display rate is a frame delta here. 60 is what most visitors get;
+// power saving caps the stage at 30 (core/power-state.ts). Per-frame motion
+// (zoom, rot, the warp mesh) is the same at either rate, but anything driven
+// by `time` moves twice as far per frame at 30, so a preset can be calm at
+// 60 and flash at 30 (orb-radiation: 2/s and 8/s); catalog:merge-flash
+// keeps the worse of the two. A README clip is neither rate: it captures
+// every second 60 Hz step, which doubles the per-frame motion as well. That
+// is how geiss-casino reads 17/s as a clip and 0/s at both rates here.
+const DEFAULT_FPS = 60;
 const TILE_COLS = 32;
 const TILE_ROWS = 18;
 // Pixel stride when averaging within a tile. 3 keeps ~1/9 of pixels —
@@ -240,6 +254,17 @@ export function parseArgs(argv: string[]) {
     shardIndex = k - 1;
     shardCount = n;
   }
+  const fps = Number(
+    argv.find((a) => a.startsWith('--fps='))?.split('=')[1] ?? DEFAULT_FPS,
+  );
+  if (!(fps > 0)) throw new Error('--fps expects a positive rate');
+  const warmupSeconds = Number(
+    argv.find((a) => a.startsWith('--warmup='))?.split('=')[1] ??
+      DEFAULT_WARMUP_SECONDS,
+  );
+  if (!(warmupSeconds >= 0)) {
+    throw new Error('--warmup expects seconds, 0 or more');
+  }
   const swapTimeoutArg = argv
     .find((a) => a.startsWith('--swap-timeout='))
     ?.split('=')[1];
@@ -268,6 +293,10 @@ export function parseArgs(argv: string[]) {
     viewport,
     stride,
     repeat,
+    fps,
+    deltaMs: 1000 / fps,
+    captureFrames: Math.round(CAPTURE_SECONDS * fps),
+    warmupFrames: Math.round(warmupSeconds * fps),
   };
 }
 
@@ -314,7 +343,7 @@ async function main() {
       ? `[shard ${args.shardIndex + 1}/${args.shardCount}] `
       : '') +
       `Auditing ${targets.length} of ${allPresets.length} presets ` +
-      `(${CAPTURE_FRAMES} frames @ ${DELTA_MS.toFixed(2)}ms, ` +
+      `(${args.captureFrames} frames @ ${args.deltaMs.toFixed(2)}ms, ` +
       `beatPulse=${args.beatPulse})`,
   );
 
@@ -323,6 +352,9 @@ async function main() {
   const ctx = await browser.newContext({ viewport: args.viewport });
 
   const reports: PresetFlashReport[] = [];
+  // catalog:merge-flash stamps each profile's measuredAt with this, so the
+  // catalog records when the frames were read rather than when they merged.
+  const generatedAt = new Date().toISOString();
 
   /**
    * Persist after every preset, not just at the end.
@@ -338,7 +370,7 @@ async function main() {
     try {
       writeFileSync(
         args.out,
-        `${JSON.stringify({ summary: { partial: true, analysed: reports.length }, reports }, null, 2)}\n`,
+        `${JSON.stringify({ generatedAt, fps: args.fps, summary: { partial: true, analysed: reports.length }, reports }, null, 2)}\n`,
       );
     } catch {
       // A failed intermediate write must not abort the run; the final write
@@ -798,9 +830,9 @@ async function main() {
               };
             },
             {
-              frames: CAPTURE_FRAMES,
-              deltaMs: DELTA_MS,
-              warmup: WARMUP_FRAMES,
+              frames: args.captureFrames,
+              deltaMs: args.deltaMs,
+              warmup: args.warmupFrames,
               cols: TILE_COLS,
               rows: TILE_ROWS,
               beatPulse: args.beatPulse,
@@ -862,7 +894,7 @@ async function main() {
             // silently misses flashes confined to one region.
             cols: TILE_COLS,
             rows: TILE_ROWS,
-            deltaMs: DELTA_MS,
+            deltaMs: args.deltaMs,
             frameMeanLuminance: cap.frameMeanLuminance,
             frameMeanDelta: cap.frameMeanDelta,
           });
@@ -895,7 +927,7 @@ async function main() {
                 tilePixels: cap.tilePixels,
                 cols: TILE_COLS,
                 rows: TILE_ROWS,
-                deltaMs: DELTA_MS,
+                deltaMs: args.deltaMs,
                 frameMeanLuminance: cap.frameMeanLuminance,
                 frameMeanDelta: cap.frameMeanDelta,
               })
@@ -979,7 +1011,7 @@ async function main() {
   const summary = {
     generatedFrom: `${ok.length} analysed / ${reports.length} attempted`,
     beatPulse: args.beatPulse,
-    framesPerPreset: CAPTURE_FRAMES,
+    framesPerPreset: args.captureFrames,
     overThresholdCount: over.length,
     overThresholdShare: ok.length ? over.length / ok.length : 0,
     overRedThresholdCount: overRed.length,
@@ -991,7 +1023,10 @@ async function main() {
     },
   };
 
-  writeFileSync(args.out, `${JSON.stringify({ summary, reports }, null, 2)}\n`);
+  writeFileSync(
+    args.out,
+    `${JSON.stringify({ generatedAt, fps: args.fps, summary, reports }, null, 2)}\n`,
+  );
 
   console.log('\n─── summary ───');
   console.log(JSON.stringify(summary, null, 2));

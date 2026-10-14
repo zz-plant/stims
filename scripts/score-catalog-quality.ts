@@ -8,7 +8,10 @@
  *    the audio drives what it draws, 0.5 when only its waveform shows the
  *    audio, 0 when nothing drawn depends on it (lab:dataflow's tiers)
  *  - measured reactivity from scratch/preset-lab/<id>/reactivity.json
- *  - flash audit metrics from scratch/flash-audit-*.json (motion, flash risk)
+ *  - flash risk from the catalog's own `sensoryProfile`, which
+ *    `catalog:merge-flash` writes from a `lab:flash-audit` report. Run those
+ *    two first: this script reads the merged verdict, never a report
+ *  - motion from the 60 fps audit reports in scratch/flash-audit-*.json
  *  - near-duplicate penalty from dedup-catalog.ts similarity annotations
  *  - preview readability from scratch/preview-scores.json, written by
  *    `audit-production-previews.ts --write-scores`: the served thumbnail's
@@ -21,6 +24,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import type { PresetSensoryProfile } from '../src/js/core/sensory-profile.ts';
 import { type AudioTier, labelPresetAudio } from './preset-lab-dataflow.ts';
 
 const REPO_ROOT = path.join(import.meta.dir, '..');
@@ -39,7 +43,8 @@ type QualityComponents = {
   staticAudio: number;
   measuredReactivity: number | null;
   motion: number | null;
-  flashPenalty: number;
+  /** null until the preset has a flash measurement; 0 means measured. */
+  flashPenalty: number | null;
   duplicatePenalty: number;
   /** 1 - skip rate from live telemetry; absent until enough samples exist. */
   engagement?: number;
@@ -60,6 +65,7 @@ type CatalogPresetEntry = {
   };
   similarity?: { clusterId: string; duplicateOf?: string };
   preview?: boolean;
+  sensoryProfile?: PresetSensoryProfile;
   quality?: { score: number; components: QualityComponents };
   curatedRank?: number;
 };
@@ -120,11 +126,39 @@ function loadReactivityScore(presetId: string): number | null {
   }
 }
 
-function loadFlashReports(): Map<
-  string,
-  { exceedsThreshold: boolean; motionEnergy: number }
-> {
-  const out = new Map();
+/**
+ * Score deducted from a preset the flash audit measured over the WCAG 2.3.1
+ * limit. Large enough to take it out of the curated top of Browse, which is
+ * where a first-time visitor's Next button walks.
+ */
+const FLASH_PENALTY_OVER_LIMIT = 0.5;
+
+/**
+ * The flash component, from the preset's merged audit verdict.
+ *
+ * It used to come from the `exceedsThreshold` of whatever
+ * scratch/flash-audit-*.json files happened to be on disk: reports from
+ * before the audit thresholded per pixel or started from a clean state,
+ * that ignored the red-flash channel, and that counted a failed capture as
+ * a pass. Unmeasured presets defaulted to 0, so the catalog said 0 for
+ * presets the audit reads at up to 43 flashes a second. `sensoryProfile` is
+ * what Browse labels and Reduce flashing hides by, so ranking reads it too.
+ * Unmeasured is null, not 0: a pass is a measurement.
+ */
+export function flashPenaltyFor(
+  profile: PresetSensoryProfile | undefined,
+): number | null {
+  if (!profile) return null;
+  return profile.flashRiskLevel === 'high' ? FLASH_PENALTY_OVER_LIMIT : 0;
+}
+
+/**
+ * Motion energy per preset from completed flash-audit runs at 60 fps. A
+ * 30 fps run moves time-driven content twice as far per frame, so its
+ * figure is not comparable and is left out.
+ */
+function loadFlashAuditMotion(): Map<string, number> {
+  const out = new Map<string, number>();
   if (!fs.existsSync(SCRATCH_DIR)) return out;
   const auditFiles = fs
     .readdirSync(SCRATCH_DIR)
@@ -134,11 +168,11 @@ function loadFlashReports(): Map<
       const data = JSON.parse(
         fs.readFileSync(path.join(SCRATCH_DIR, file), 'utf8'),
       );
+      if ((data.fps ?? 60) !== 60) continue;
       for (const report of data.reports ?? []) {
-        out.set(report.presetId, {
-          exceedsThreshold: Boolean(report.exceedsThreshold),
-          motionEnergy: report.motionEnergy ?? 0,
-        });
+        // A failed capture reports zeros; that is no measurement at all.
+        if (report.error || typeof report.motionEnergy !== 'number') continue;
+        out.set(report.presetId, report.motionEnergy);
       }
     } catch {
       // skip malformed audit files
@@ -199,7 +233,7 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
   const catalog: CatalogDocument = JSON.parse(
     fs.readFileSync(CATALOG_PATH, 'utf8'),
   );
-  const flashReports = loadFlashReports();
+  const flashMotion = loadFlashAuditMotion();
   const engagement = loadEngagement();
   const previewScores = loadPreviewScores();
   let measuredCount = 0;
@@ -231,15 +265,12 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
       loadReactivityScore(entry.id) ?? previous?.measuredReactivity ?? null;
     if (measuredReactivity !== null) measuredCount++;
 
-    const flash = flashReports.get(entry.id);
-    const motion = flash
-      ? Math.min(1, flash.motionEnergy * 1000)
-      : (previous?.motion ?? null);
-    const flashPenalty = flash
-      ? flash.exceedsThreshold
-        ? 0.5
-        : 0
-      : (previous?.flashPenalty ?? 0);
+    const motionEnergy = flashMotion.get(entry.id);
+    const motion =
+      motionEnergy !== undefined
+        ? Math.min(1, motionEnergy * 1000)
+        : (previous?.motion ?? null);
+    const flashPenalty = flashPenaltyFor(entry.sensoryProfile);
     const duplicatePenalty = entry.similarity?.duplicateOf ? 0.3 : 0;
 
     const engagementScore =
@@ -280,7 +311,7 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
       // itself), never enough to lift a weak preset over a measured one.
       // Unmeasured counts as middling rather than as a failed thumbnail.
       (components.preview ?? 0.5) * 0.1 -
-      flashPenalty -
+      (flashPenalty ?? 0) -
       duplicatePenalty;
 
     return { entry, components, score: Number(score.toFixed(4)) };
@@ -292,8 +323,11 @@ export function scoreCatalogQuality(opts: { dry: boolean }) {
     entry.curatedRank = index + 1;
   });
 
+  const flashMeasured = scored.filter(
+    ({ components }) => components.flashPenalty !== null,
+  ).length;
   console.log(
-    `[score] scored ${scored.length} presets (${measuredCount} with measured reactivity, ${flashReports.size} with flash metrics)`,
+    `[score] scored ${scored.length} presets (${measuredCount} with measured reactivity, ${flashMeasured} with a flash verdict)`,
   );
   console.log('[score] top 5:');
   for (const { entry, score } of scored.slice(0, 5)) {
