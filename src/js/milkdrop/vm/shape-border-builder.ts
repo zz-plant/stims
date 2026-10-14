@@ -32,8 +32,12 @@ export function shapeVisualFromLocals(
     y: milkdropToSceneY(locals.y ?? 0.5, aspect),
     // The lower bound only guards against degenerate geometry. It has to stay
     // well below MilkDrop's typical instanced-dot radii (0.005-0.02), which an
-    // aggressive floor would inflate into overlapping blobs.
-    radius: clamp(locals.rad ?? 0.15, 0.002, 0.9),
+    // aggressive floor would inflate into overlapping blobs. There is no upper
+    // bound, as in MilkDrop: presets draw screen-covering shapes on purpose
+    // (zylot's crosshair presets fade a rad=3.97 black square over the frame
+    // and copy it back through rad 1.5-3.3 textured squares), and a cap of
+    // 0.9 pulled the overlay's opaque rim on screen and shrank every copy.
+    radius: Math.max(locals.rad ?? 0.15, 0.002),
     sides: Math.max(3, Math.round(locals.sides ?? 6)),
     rotation: locals.ang ?? 0,
     textured: (locals.textured ?? 0) >= 0.5,

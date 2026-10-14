@@ -683,6 +683,25 @@ shape_0_per_frame2=y = 0.5;
     expect(frameState.shapes[0]?.radius).toBeLessThan(0.02);
   });
 
+  test('draws screen-covering shapes at their authored radius — dark hall-of-fame regression', () => {
+    // A 0.9 cap shrank zylot's rad=3.97 black overlay until its opaque rim
+    // sat on screen, and shrank the rad=1.53 textured copy with it.
+    const preset = compileMilkdropPresetSource(
+      readFileSync(
+        'tests/fixtures/milkdrop/classic-no-post-fields.milk',
+        'utf8',
+      ),
+      { id: 'classic-no-post-fields' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+
+    expect(frameState.shapes.map((shape) => shape.radius)).toEqual([
+      expect.closeTo(3.971051, 5),
+      expect.closeTo(1.527755, 5),
+    ]);
+  });
+
   test('keeps a single draw for shapes that do not request instances', () => {
     const preset = compileMilkdropPresetSource(
       `
@@ -1318,7 +1337,7 @@ fWarpAnimSpeed=2.2
     expect(slowState.mesh.positions).not.toEqual(fastState.mesh.positions);
   });
 
-  test('modulated wave alpha and shader flag affect frame post state', () => {
+  test('modulated wave alpha affects frame post state; fShader=0 keeps the feedback loop', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Wave Mod
@@ -1335,7 +1354,9 @@ fShader=0
       makeSignals({ frame: 5, time: 2.1, beatPulse: 0.35 }),
     );
 
-    expect(frameState.post.shaderEnabled).toBe(false);
+    // fShader is MilkDrop's hue-shader amount, not a switch for the warp and
+    // decay stage, which MilkDrop runs for every preset.
+    expect(frameState.post.shaderEnabled).toBe(true);
     expect(frameState.mainWave.alpha).toBeGreaterThan(0.04);
     expect(frameState.mainWave.alpha).toBeLessThanOrEqual(0.8);
   });

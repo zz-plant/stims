@@ -563,12 +563,8 @@ shapecode_0_a=0.9
     const incoming = shapePreset('live-incoming', 0.9, 0.75);
     const outgoingVm = createMilkdropVM(outgoing);
     const incomingVm = createMilkdropVM(incoming);
-    // The frame loop's render-state policy turns the feedback path on; a
-    // bare VM frame leaves it to the shader-quality setting.
-    const step = (vm: ReturnType<typeof createMilkdropVM>) => {
-      const frame = vm.step(makeSignals());
-      return { ...frame, post: { ...frame.post, shaderEnabled: true } };
-    };
+    const step = (vm: ReturnType<typeof createMilkdropVM>) =>
+      vm.step(makeSignals());
 
     // Which layer's geometry a deck could see when it rendered. Layers are
     // the adapter root's children; blend layers (the outgoing preset) sit at
@@ -4266,13 +4262,16 @@ mv_a=0.7
     expect(joinArray?.[3]).toBe(1);
   });
 
-  test('skips feedback composite rendering when no composite features are active', async () => {
+  test('runs the feedback loop for a classic preset with no post fields — dark hall-of-fame regression', async () => {
+    // Presets that set no post field (no fGammaAdj, echo or shader) were
+    // drawn straight to the screen: no warp, no decay, and their textured
+    // shapes sampled whatever the previous preset left behind.
     const preset = compileMilkdropPresetSource(
-      `
-title=Composite Off
-fShader=0
-      `.trim(),
-      { id: 'composite-off' },
+      readFileSync(
+        'tests/fixtures/milkdrop/classic-no-post-fields.milk',
+        'utf8',
+      ),
+      { id: 'classic-no-post-fields' },
     );
 
     const frameState = createMilkdropVM(preset).step(makeSignals());
@@ -4304,8 +4303,8 @@ fShader=0
       blendState: null,
     });
 
-    expect(result).toBe(false);
-    expect(fakeRenderer.setRenderTargetCalls).toBe(0);
+    expect(result).toBe(true);
+    expect(fakeRenderer.setRenderTargetCalls).toBeGreaterThan(0);
   });
 
   test('full webgpu path keeps feedback frames on compatibility fallback while native feedback is disabled', async () => {

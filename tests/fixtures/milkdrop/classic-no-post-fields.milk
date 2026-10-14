@@ -1,0 +1,29 @@
+[preset00]
+// A classic preset that relies on MilkDrop's feedback loop but sets none of
+// the post fields (no fGammaAdj, echo, brighten or shaders). 89 bundled
+// presets look like this, zylot-crosshair-dimension-light-of-ages among them.
+// They used to bypass the feedback loop, and shape radii were capped at 0.9.
+// Hand-written; the shape mirrors that preset's black overlay and textured copy.
+fDecay=0.900000
+nWaveMode=7
+fWaveAlpha=0.001000
+fOuterBorderSize=0.005000
+fMotionVectorsA=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_rad=3.971051
+shapecode_0_r=0.000000
+shapecode_0_a=0.300000
+shapecode_0_g2=0.000000
+shapecode_0_a2=1.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_additive=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=1.527755
+shapecode_1_tex_zoom=0.408389
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_g2=0.000000
+shapecode_1_border_a=0.000000
+per_frame_1=decay = 0.9;
+per_pixel_1=zoom = pow(rad, 2);
