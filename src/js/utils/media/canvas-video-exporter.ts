@@ -1,5 +1,23 @@
-/** Records a live visualizer canvas, including native renderer capture at 4K. */
+/**
+ * Records a live visualizer canvas, natively resized for 4K, 9:16 and 1:1.
+ *
+ * Frames are recorded from a presented copy of the stage
+ * (`createPresentedStageCanvas`, stage-presentation.ts), never from the stage
+ * canvas itself: the flash governor's dimming and the D blackout and Y flash
+ * are not canvas pixels, and a recording carries them. It leaves out the
+ * visitor's brightness ceiling (`readRecordedStagePresentation` says why).
+ * The copy paints in the render loop's frame-drawn notification, which the
+ * loop keeps sending from a background timer while a recording runs in a
+ * hidden tab (animation-loop.ts), so the copy needs no clock of its own.
+ * A native format copies at the size the renderer was given; any other crops
+ * the stage to fill its frame.
+ */
 import { setRecordingActive } from '../../core/services/recording-state.ts';
+import {
+  createPresentedStageCanvas,
+  type PresentedStageCanvas,
+  readRecordedStagePresentation,
+} from '../../core/services/stage-presentation.ts';
 
 export type ExportPresetTarget =
   | 'spotify-canvas'
@@ -34,8 +52,6 @@ export interface CanvasVideoExporterEnvironment {
     options: MediaRecorderOptions,
   ): MediaRecorder;
   createMediaStream(tracks: MediaStreamTrack[]): MediaStream;
-  requestAnimationFrame(callback: FrameRequestCallback): number;
-  cancelAnimationFrame(handle: number): void;
 }
 
 export type NativeCanvasCaptureStartResult =
@@ -120,8 +136,6 @@ function createBrowserEnvironment(): CanvasVideoExporterEnvironment {
     createMediaRecorder: (stream, options) =>
       new MediaRecorder(stream, options),
     createMediaStream: (tracks) => new MediaStream(tracks),
-    requestAnimationFrame: (callback) => requestAnimationFrame(callback),
-    cancelAnimationFrame: (handle) => cancelAnimationFrame(handle),
   };
 }
 
@@ -133,23 +147,25 @@ export class CanvasVideoExporter {
   private readonly canvas: HTMLCanvasElement;
   private readonly environment: CanvasVideoExporterEnvironment;
   private readonly runtime: CanvasVideoExportRuntime | null;
+  private readonly getStage: () => HTMLElement | null;
   private mediaRecorder: MediaRecorder | null = null;
   private recordingStream: MediaStream | null = null;
   private recordedChunks: Blob[] = [];
-  private recordingFrame: number | null = null;
+  private frames: PresentedStageCanvas | null = null;
   private restoreNativeCapture: (() => void) | null = null;
   private isRecording = false;
-  private backgroundTimeout: ReturnType<typeof setTimeout> | null = null;
-  private visibilityHandler: (() => void) | null = null;
 
   constructor(
     canvas: HTMLCanvasElement,
     environment: CanvasVideoExporterEnvironment = createBrowserEnvironment(),
     runtime: CanvasVideoExportRuntime | null = null,
+    /** The element the stage's luminance filter is written on. */
+    getStage: () => HTMLElement | null = () => null,
   ) {
     this.canvas = canvas;
     this.environment = environment;
     this.runtime = runtime;
+    this.getStage = getStage;
   }
 
   static getSupportedMimeTypes(): string[] {
@@ -212,8 +228,6 @@ export class CanvasVideoExporter {
       preset.aspectRatio === '1:1';
     const nativeCapture =
       options.native !== false && Boolean(this.runtime) && isNativeCandidate;
-    let outputCanvas: HTMLCanvasElement;
-    let context: CanvasRenderingContext2D | null = null;
 
     if (nativeCapture) {
       if (!this.runtime) {
@@ -231,34 +245,37 @@ export class CanvasVideoExporter {
         return result;
       }
       this.restoreNativeCapture = result.restore;
-      outputCanvas = this.canvas;
     } else if (presetId === '4k-landscape') {
       return {
         ok: false,
         reason:
           'Native 4K export is unavailable because the visualizer renderer is not ready.',
       };
-    } else {
-      outputCanvas = this.environment.createCanvas();
-      outputCanvas.width = preset.width;
-      outputCanvas.height = preset.height;
-      context = outputCanvas.getContext('2d', { alpha: false });
     }
 
-    if (
-      (!nativeCapture && !context) ||
-      typeof outputCanvas.captureStream !== 'function'
-    ) {
+    // A native format copies at whatever size the renderer was just given;
+    // any other crops the stage to fill its own frame.
+    const frames = createPresentedStageCanvas({
+      getCanvas: () => this.canvas,
+      presentation: () => readRecordedStagePresentation(this.getStage()),
+      size: nativeCapture
+        ? undefined
+        : { width: preset.width, height: preset.height },
+      createCanvas: () => this.environment.createCanvas(),
+    });
+    if (!frames || typeof frames.canvas.captureStream !== 'function') {
+      frames?.dispose();
       this.restoreNativeRenderer();
       return {
         ok: false,
         reason: 'Canvas recording is not supported by this browser.',
       };
     }
+    this.frames = frames;
 
     let unownedAudioTracks: MediaStreamTrack[] = [];
     try {
-      const videoStream = outputCanvas.captureStream(fps);
+      const videoStream = frames.canvas.captureStream(fps);
       const audioTracks =
         this.runtime
           ?.getAudioStream()
@@ -288,84 +305,15 @@ export class CanvasVideoExporter {
       recorder.start(100);
       this.isRecording = true;
       setRecordingActive(true);
-
-      const drawFrame = () => {
-        if (!this.isRecording) return;
-        const sourceWidth = Math.max(1, this.canvas.width);
-        const sourceHeight = Math.max(1, this.canvas.height);
-        const scale = Math.max(
-          preset.width / sourceWidth,
-          preset.height / sourceHeight,
-        );
-        const cropWidth = preset.width / scale;
-        const cropHeight = preset.height / scale;
-        const cropX = (sourceWidth - cropWidth) / 2;
-        const cropY = (sourceHeight - cropHeight) / 2;
-        context?.drawImage(
-          this.canvas,
-          cropX,
-          cropY,
-          cropWidth,
-          cropHeight,
-          0,
-          0,
-          preset.width,
-          preset.height,
-        );
-        if (typeof document !== 'undefined' && document.hidden) {
-          this.backgroundTimeout = setTimeout(drawFrame, 1000 / fps);
-        } else {
-          this.recordingFrame =
-            this.environment.requestAnimationFrame(drawFrame);
-        }
-      };
-
-      if (!nativeCapture) {
-        this.visibilityHandler = () => {
-          if (!this.isRecording) return;
-          if (document.hidden) {
-            if (this.recordingFrame !== null) {
-              this.environment.cancelAnimationFrame(this.recordingFrame);
-              this.recordingFrame = null;
-            }
-            if (this.backgroundTimeout === null) {
-              this.backgroundTimeout = setTimeout(drawFrame, 1000 / fps);
-            }
-          } else {
-            if (this.backgroundTimeout !== null) {
-              clearTimeout(this.backgroundTimeout);
-              this.backgroundTimeout = null;
-            }
-            if (this.recordingFrame === null) {
-              this.recordingFrame =
-                this.environment.requestAnimationFrame(drawFrame);
-            }
-          }
-        };
-        if (typeof document !== 'undefined') {
-          document.addEventListener('visibilitychange', this.visibilityHandler);
-        }
-        drawFrame();
-      }
       return { ok: true, mimeType: support.mimeType };
     } catch (error) {
       this.isRecording = false;
       setRecordingActive(false);
-      if (this.backgroundTimeout !== null) {
-        clearTimeout(this.backgroundTimeout);
-        this.backgroundTimeout = null;
-      }
-      if (this.visibilityHandler && typeof document !== 'undefined') {
-        document.removeEventListener(
-          'visibilitychange',
-          this.visibilityHandler,
-        );
-        this.visibilityHandler = null;
-      }
       unownedAudioTracks.forEach((track) => track.stop());
       stopStream(this.recordingStream);
       this.recordingStream = null;
       this.mediaRecorder = null;
+      this.releaseFrames();
       this.restoreNativeRenderer();
       return {
         ok: false,
@@ -381,18 +329,6 @@ export class CanvasVideoExporter {
     if (!this.isRecording || !this.mediaRecorder) return null;
     this.isRecording = false;
     setRecordingActive(false);
-    if (this.recordingFrame !== null) {
-      this.environment.cancelAnimationFrame(this.recordingFrame);
-      this.recordingFrame = null;
-    }
-    if (this.backgroundTimeout !== null) {
-      clearTimeout(this.backgroundTimeout);
-      this.backgroundTimeout = null;
-    }
-    if (this.visibilityHandler && typeof document !== 'undefined') {
-      document.removeEventListener('visibilitychange', this.visibilityHandler);
-      this.visibilityHandler = null;
-    }
 
     const recorder = this.mediaRecorder;
     return new Promise((resolve) => {
@@ -405,6 +341,7 @@ export class CanvasVideoExporter {
         stopStream(this.recordingStream);
         this.recordingStream = null;
         this.mediaRecorder = null;
+        this.releaseFrames();
         this.restoreNativeRenderer();
         resolve(blob);
       };
@@ -414,10 +351,16 @@ export class CanvasVideoExporter {
         stopStream(this.recordingStream);
         this.recordingStream = null;
         this.mediaRecorder = null;
+        this.releaseFrames();
         this.restoreNativeRenderer();
         resolve(null);
       }
     });
+  }
+
+  private releaseFrames() {
+    this.frames?.dispose();
+    this.frames = null;
   }
 
   private restoreNativeRenderer() {

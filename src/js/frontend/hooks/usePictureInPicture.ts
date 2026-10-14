@@ -57,10 +57,12 @@ export function usePictureInPicture(
 
   useEffect(() => {
     if (!supported) return;
+    const getStage = () => stageRef.current;
     const getCanvas = () => stageRef.current?.querySelector('canvas') ?? null;
     const controller = useDocumentPopout
       ? createDocumentPictureInPictureController({
           getCanvas,
+          getStage,
           actions: {
             previousPreset: () => transportRef.current?.previousPreset(),
             nextPreset: () => transportRef.current?.nextPreset(),
@@ -68,7 +70,7 @@ export function usePictureInPicture(
             isPaused: () => transportRef.current?.paused ?? false,
           },
         })
-      : createPictureInPictureController({ getCanvas });
+      : createPictureInPictureController({ getCanvas, getStage });
     controllerRef.current = controller;
     const unsubscribe = controller.subscribe((state) =>
       setActive(state.active),
@@ -91,9 +93,10 @@ export function usePictureInPicture(
     }
   }, [active, paused]);
 
-  // The renderer can swap the canvas element out from under an open PiP
-  // window (backend switch, renderer recreation) — resync() is a no-op
-  // unless PiP is actually active and the canvas reference changed.
+  // The renderer can swap the canvas element out from under an open
+  // document popout (backend switch, renderer recreation), whose video plays
+  // a capture of one particular canvas. The video popout needs nothing: its
+  // presented copy reads whichever canvas the stage holds on every frame.
   useEffect(() => {
     const stage = stageRef.current;
     const controller = controllerRef.current;
@@ -101,6 +104,7 @@ export function usePictureInPicture(
       !active ||
       !stage ||
       !controller ||
+      !('resync' in controller) ||
       typeof MutationObserver !== 'function'
     ) {
       return;

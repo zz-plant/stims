@@ -3,6 +3,15 @@ import {
   createDocumentPictureInPictureController,
   isDocumentPictureInPictureSupported,
 } from '../../src/js/core/services/document-picture-in-picture-service.ts';
+import {
+  resetStageLuminance,
+  setStageLuminanceChannel,
+} from '../../src/js/core/services/stage-luminance.ts';
+import {
+  handleFlashKeyDown,
+  handleFlashKeyUp,
+  resetStageUtilitiesForTests,
+} from '../../src/js/core/services/stage-utilities.ts';
 
 /**
  * The point of the document-based popout is the control row. Video
@@ -141,6 +150,7 @@ describe('document picture-in-picture', () => {
     });
     const controller = createDocumentPictureInPictureController({
       getCanvas: () => fakeCanvas(),
+      getStage: () => null,
       actions: buildActions().actions,
     });
     expect(await controller.enter()).toEqual({
@@ -153,6 +163,7 @@ describe('document picture-in-picture', () => {
     const pip = install();
     const controller = createDocumentPictureInPictureController({
       getCanvas: () => fakeCanvas(),
+      getStage: () => null,
       actions: buildActions().actions,
     });
 
@@ -171,6 +182,7 @@ describe('document picture-in-picture', () => {
     const { calls, actions } = buildActions();
     const controller = createDocumentPictureInPictureController({
       getCanvas: () => fakeCanvas(),
+      getStage: () => null,
       actions,
     });
     await controller.enter();
@@ -188,6 +200,7 @@ describe('document picture-in-picture', () => {
     const { actions, setPaused } = buildActions();
     const controller = createDocumentPictureInPictureController({
       getCanvas: () => fakeCanvas(),
+      getStage: () => null,
       actions,
     });
     await controller.enter();
@@ -208,6 +221,7 @@ describe('document picture-in-picture', () => {
     const pip = install();
     const controller = createDocumentPictureInPictureController({
       getCanvas: () => fakeCanvas(),
+      getStage: () => null,
       actions: buildActions().actions,
     });
     const seen: boolean[] = [];
@@ -222,10 +236,51 @@ describe('document picture-in-picture', () => {
     expect(seen).toEqual([true, false]);
   });
 
+  test('carries the stage dimming and the white flash, which the capture cannot', async () => {
+    const pip = install();
+    // The test DOM keeps MutationObserver on `window` only.
+    stubGlobal(
+      'MutationObserver',
+      (window as unknown as Record<string, unknown>).MutationObserver,
+    );
+    const stage = document.createElement('div');
+    restore.push(() => {
+      resetStageLuminance(stage);
+      resetStageUtilitiesForTests();
+    });
+    const controller = createDocumentPictureInPictureController({
+      getCanvas: () => fakeCanvas(),
+      getStage: () => stage,
+      actions: buildActions().actions,
+    });
+    await controller.enter();
+    const video = pip.pipDocument.getElementById('stage') as HTMLVideoElement;
+    const flash = pip.pipDocument.getElementById('flash') as HTMLElement;
+    const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Reduce flashing dims the stage; the popout floats over everything else
+    // and must dim with it.
+    setStageLuminanceChannel(stage, 'governor', 0.4);
+    await tick();
+    expect(video.style.filter).toBe('brightness(0.400)');
+
+    handleFlashKeyDown(false);
+    expect(flash.hidden).toBe(false);
+    handleFlashKeyUp();
+    expect(flash.hidden).toBe(true);
+
+    // Closed: a later cut must not reach a window that is gone.
+    pip.listeners.get('pagehide')?.();
+    setStageLuminanceChannel(stage, 'presentation', 0);
+    await tick();
+    expect(video.style.filter).toBe('brightness(0.400)');
+  });
+
   test('reports a canvas that is not there yet', async () => {
     install();
     const controller = createDocumentPictureInPictureController({
       getCanvas: () => null,
+      getStage: () => null,
       actions: buildActions().actions,
     });
     expect(await controller.enter()).toEqual({
