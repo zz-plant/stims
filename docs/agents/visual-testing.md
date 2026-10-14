@@ -209,7 +209,7 @@ These tools help you:
 2. Compare future visual changes against the baseline
 3. Detect unintended visual regressions
 
-For coordinated successor work, keep browser QA aligned with [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](../MILKDROP_SUCCESSOR_WORKSTREAMS.md) so proof, parity, and product claims stay synchronized.
+For coordinated successor work, keep browser QA aligned with [the roadmap's workstreams](../ROADMAP.md#workstreams) so proof, parity, and product claims stay synchronized.
 
 For the bundled shipped presets, test them in the same order used by the parity corpus so evidence stays easy to compare:
 
@@ -222,7 +222,6 @@ For each one, confirm the capture, reference import, and measured-result promoti
 
 See the Parity docs for details:
 - [`../../docs/MILKDROP_PROJECTM_PARITY_PLAN.md`](../../docs/MILKDROP_PROJECTM_PARITY_PLAN.md)
-- [`../../docs/MILKDROP_PROJECTM_PARITY_BACKLOG.md`](../../docs/MILKDROP_PROJECTM_PARITY_BACKLOG.md)
 
 ## Quick mobile testing (no device needed)
 

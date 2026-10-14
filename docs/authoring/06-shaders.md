@@ -4,7 +4,7 @@ Everything through Track 5 is EEL: small equations evaluated by the VM, with eli
 
 **Of the 1,787 catalog presets, 1,060 (59%) carry both a warp and a composite shader, and 1,201 (67%) carry at least one** (non-empty `[warp_shader]`/`[comp_shader]` or `warp_N`/`comp_N` source, counted October 2026).
 
-The written material has not kept up: the [authoring docs assessment](../PRESET_AUTHORING_DOCS_PLAN.md) found about two worked shader examples in Geiss's authoring guide, the one complete reference, and the best-known beginners' tutorial predates shaders. Each of the five lessons below is a worked example you can run.
+The written material has not kept up: the [authoring docs assessment](../archive/PRESET_AUTHORING_DOCS_PLAN.md) found about two worked shader examples in Geiss's authoring guide, the one complete reference, and the best-known beginners' tutorial predates shaders. Each of the five lessons below is a worked example you can run.
 
 ## Lesson 0 · A language note, stated plainly
 

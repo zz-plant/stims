@@ -137,7 +137,7 @@ ${table(
 
 Shader uniforms, samplers, and engine limits are documented in the
 [coding guide](../MILKDROP_CODING_GUIDE.md#engine-limitations) and the
-[shader support inventory](../architecture/shader-support-inventory.md).
+[shader support inventory](../archive/shader-support-inventory.md).
 `;
 
 if (checkMode) {

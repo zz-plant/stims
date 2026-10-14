@@ -69,7 +69,7 @@ measured stress case, not a universal FPS claim.
 Startup work is staged around the first paint: renderer-selection probes stay
 on the critical path, while telemetry, automation, and gamepad services load
 after the shell. The measured cold-load and deploy-build method lives in
-[the front-end performance audit](./FRONTEND_PERFORMANCE_BOTTLENECKS.md#latest-startup-and-deploy-build-evidence).
+[the front-end performance audit](./archive/FRONTEND_PERFORMANCE_BOTTLENECKS.md#latest-startup-and-deploy-build-evidence).
 
 ## 2. WebGL2 baseline and guarded WebGPU path — implemented, partially certified
 
