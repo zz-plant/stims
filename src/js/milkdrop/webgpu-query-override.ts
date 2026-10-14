@@ -190,8 +190,12 @@ export function shouldEnableNativeMilkdropWebGpuFeedback(
   return !shouldUseSafeMilkdropWebGpuPath(location) && requested !== 'webgl';
 }
 
+// Defaults to the page location like its siblings above. Every live caller
+// passes nothing, and an empty search here used to drop the URL forms of the
+// compute-VM and render-bundle opt-ins (`?milkdrop-webgpu-compute-vm=1`) and
+// ignore `?renderer=webgpu` when choosing the safe path.
 export function resolveMilkdropWebGpuFeatureRouting(
-  location?: Pick<Location, 'search'> | null,
+  location: Pick<Location, 'search'> | null | undefined = globalThis.location,
 ): MilkdropWebGpuFeatureRouting {
   const description = getWebGpuPathDescription(location);
   const safeMode = description.mode === 'safe';

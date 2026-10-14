@@ -169,6 +169,13 @@ export type PlayToyOptions = {
    * normal runs; set it when two captures have to be comparable.
    */
   randomSeed?: number;
+  /**
+   * Extra query params for the page URL — a rollout flag such as
+   * `milkdrop-webgpu-feedback: '0'`. Every param the builder sets itself
+   * (`agent`, `renderer`, `preset`, …) is applied after these, so a capture
+   * cannot be moved off the backend it was asked for.
+   */
+  extraParams?: Record<string, string>;
 };
 
 type NormalizedPlayToyOptions = PlayToyOptions & {
@@ -483,6 +490,7 @@ export function buildPlayToyUrl({
   catalogMode = 'bundled',
   lockedQualityStep,
   nativeResolution = false,
+  extraParams = {},
 }: {
   port: number;
   slug: string;
@@ -492,10 +500,10 @@ export function buildPlayToyUrl({
   catalogMode?: PlayToyCatalogMode;
   lockedQualityStep?: number | null;
   nativeResolution?: boolean;
+  extraParams?: Record<string, string>;
 }) {
-  const params = new URLSearchParams({
-    agent: 'true',
-  });
+  const params = new URLSearchParams(extraParams);
+  params.set('agent', 'true');
   const routePath = slug === 'milkdrop' ? '/' : '/milkdrop/';
   if (slug !== 'milkdrop') {
     params.set('experience', slug);
@@ -1680,6 +1688,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       catalogMode: normalizedOptions.catalogMode,
       lockedQualityStep: normalizedOptions.lockedQualityStep,
       nativeResolution: normalizedOptions.nativeResolution,
+      extraParams: options.extraParams,
     });
     console.log(`Navigating to ${url}...`);
 
