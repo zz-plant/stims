@@ -48,6 +48,7 @@ export interface AudioLoopToy {
     setAnimationLoop: ((callback: (() => void) | null) => void) | null;
     xr?: { isPresenting?: boolean } | null;
   } | null;
+  stopAudio?: () => void;
 }
 
 /**
@@ -209,7 +210,10 @@ export async function startAudioLoop(
     document.addEventListener('visibilitychange', handleVisibilityChange);
   }
 
+  let cleanedUp = false;
   const cleanupBackground = () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
     unsubscribeRecording();
     if (typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -218,15 +222,13 @@ export async function startAudioLoop(
     backgroundTimer = null;
   };
 
-  const originalSetAnimationLoop = toy.renderer.setAnimationLoop.bind(
-    toy.renderer,
-  );
-  toy.renderer.setAnimationLoop = (callback) => {
-    if (callback === null) {
+  const originalStopAudio = toy.stopAudio?.bind(toy);
+  if (originalStopAudio) {
+    toy.stopAudio = () => {
       cleanupBackground();
-    }
-    originalSetAnimationLoop(callback);
-  };
+      originalStopAudio();
+    };
+  }
 
   const originalCleanup = audioOptions.onCleanup;
   audioOptions.onCleanup = (cleanedCtx) => {
