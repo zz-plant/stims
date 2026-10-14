@@ -61,6 +61,7 @@ const SKIP_DIRS = new Set([
   '.git',
   'dist',
   'screenshots',
+  'worktrees',
 ]);
 
 /** Point-in-time findings rather than live instruction. */

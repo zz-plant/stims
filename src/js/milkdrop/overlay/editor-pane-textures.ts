@@ -10,6 +10,15 @@
  * asset pipeline, and the browser cache the renderer already primed serves
  * the swatches.
  */
+import {
+  BUNDLED_TEXTURE_OPTIONS,
+  getTextureSlotOverride,
+  loadCustomImageFromFile,
+  resetTextureSlotOverride,
+  setBundledSlotOverride,
+  setCustomImageSlotOverride,
+  subscribeTextureOverrides,
+} from '../custom-texture-manager.ts';
 import { resolveTextureUrl } from '../feedback-texture-utils.ts';
 import {
   collectMilkdropTextureBindings,
@@ -38,6 +47,8 @@ export class TexturesPane {
   private internalLabel: HTMLElement;
   private internalList: HTMLElement;
   private tab: HTMLButtonElement | null = null;
+  private lastBindings: MilkdropTextureBindings | null = null;
+  private unsubscribeOverrides: (() => void) | null = null;
 
   constructor(
     _host: EditorPaneHost,
@@ -59,6 +70,10 @@ export class TexturesPane {
     this.internalList.setAttribute('role', 'list');
     this.internal.append(this.internalLabel, this.internalList);
     this.element.append(this.headline, this.hint, this.list, this.internal);
+
+    this.unsubscribeOverrides = subscribeTextureOverrides(() => {
+      this.paint(this.lastBindings);
+    });
   }
 
   /** The dock tab, which counts the external bindings. */
@@ -76,6 +91,7 @@ export class TexturesPane {
   }
 
   private paint(bindings: MilkdropTextureBindings | null) {
+    this.lastBindings = bindings;
     const external = bindings?.external ?? [];
     const internal = bindings?.internal ?? [];
     this.headline.textContent =
@@ -113,39 +129,166 @@ export class TexturesPane {
     this.hint.textContent = `Each sampler resolves through the bundled texture table — the exact file the engine binds. ${backendSentence}`;
   }
 
-  /** One external binding: preview, name, resolved file, sample mode. */
+  /** One external binding: preview, name, resolved file, sample mode, custom override controls. */
   private buildExternalRow(binding: MilkdropTextureBinding): HTMLElement {
     const row = document.createElement('div');
     row.className = 'stims-editor__texture-row';
     row.setAttribute('role', 'listitem');
-    const file = binding.textureFile;
+
+    const override = getTextureSlotOverride(binding.name);
+    const file = override ? override.fileName : binding.textureFile;
+
     const swatch = document.createElement('img');
     swatch.className = 'stims-editor__texture-swatch';
-    if (file) {
+    if (override) {
+      swatch.src = override.previewUrl;
+      swatch.alt = override.fileName;
+    } else if (file) {
       swatch.src = resolveTextureUrl(file);
       swatch.alt = file;
     } else {
       swatch.hidden = true;
     }
+
     const main = document.createElement('div');
     main.className = 'stims-editor__texture-main';
+
     const nameLine = document.createElement('p');
     nameLine.className = 'stims-editor__texture-name';
     const name = document.createElement('code');
     name.textContent = binding.name;
     nameLine.append(name);
+
     if (file) {
       const arrow = document.createElement('span');
       arrow.className = 'stims-editor__texture-file';
       arrow.textContent = file;
       nameLine.appendChild(arrow);
     }
+
+    if (override) {
+      const badge = document.createElement('span');
+      badge.className = 'stims-editor__texture-override-badge';
+      badge.textContent = `${override.dimensions.width}×${override.dimensions.height} · ${override.format}`;
+      nameLine.appendChild(badge);
+    }
+
     const notes = document.createElement('p');
     notes.className = 'stims-editor__texture-notes';
     notes.textContent = this.describeExternal(binding);
     main.append(nameLine, notes);
+
+    const actions = document.createElement('div');
+    actions.className = 'stims-editor__texture-actions';
+
+    const select = document.createElement('select');
+    select.className = 'stims-editor__texture-select';
+    select.setAttribute('aria-label', `Remap ${binding.name}`);
+
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = `Default (${binding.textureFile || 'none'})`;
+    select.appendChild(defaultOpt);
+
+    for (const bundled of BUNDLED_TEXTURE_OPTIONS) {
+      const opt = document.createElement('option');
+      opt.value = bundled.file;
+      opt.textContent = `${bundled.label}`;
+      if (
+        override?.source === 'bundled' &&
+        override.fileName === bundled.file
+      ) {
+        opt.selected = true;
+      }
+      select.appendChild(opt);
+    }
+
+    select.addEventListener('change', () => {
+      if (select.value) {
+        setBundledSlotOverride(binding.name, select.value);
+      } else {
+        resetTextureSlotOverride(binding.name);
+      }
+    });
+    actions.appendChild(select);
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/png,image/jpeg';
+    fileInput.style.display = 'none';
+    fileInput.addEventListener('change', async () => {
+      const chosen = fileInput.files?.[0];
+      if (chosen) {
+        await this.handleFileUpload(binding.name, chosen);
+      }
+    });
+    actions.appendChild(fileInput);
+
+    const uploadBtn = document.createElement('button');
+    uploadBtn.type = 'button';
+    uploadBtn.className = 'stims-editor__texture-btn';
+    uploadBtn.textContent = 'Upload image…';
+    uploadBtn.title = 'Upload a custom PNG/JPEG image for this slot';
+    uploadBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+    actions.appendChild(uploadBtn);
+
+    if (override) {
+      const resetBtn = document.createElement('button');
+      resetBtn.type = 'button';
+      resetBtn.className = 'stims-editor__texture-btn';
+      resetBtn.textContent = 'Reset';
+      resetBtn.title = 'Reset to default texture';
+      resetBtn.addEventListener('click', () => {
+        resetTextureSlotOverride(binding.name);
+      });
+      actions.appendChild(resetBtn);
+    }
+
+    main.append(actions);
     row.append(swatch, main);
+
+    row.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      row.dataset.dragOver = 'true';
+    });
+    row.addEventListener('dragleave', () => {
+      delete row.dataset.dragOver;
+    });
+    row.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      delete row.dataset.dragOver;
+      const dropped = event.dataTransfer?.files?.[0];
+      if (dropped) {
+        await this.handleFileUpload(binding.name, dropped);
+      }
+    });
+
     return row;
+  }
+
+  private async handleFileUpload(
+    samplerName: string,
+    file: File,
+  ): Promise<void> {
+    try {
+      const result = await loadCustomImageFromFile(file);
+      setCustomImageSlotOverride(
+        samplerName,
+        result.image,
+        file.name,
+        result.format,
+        result.previewUrl,
+      );
+    } catch (error) {
+      console.error('[stims] Failed to load custom texture image', error);
+    }
+  }
+
+  dispose() {
+    this.unsubscribeOverrides?.();
+    this.unsubscribeOverrides = null;
   }
 
   private describeExternal(binding: MilkdropTextureBinding): string {
