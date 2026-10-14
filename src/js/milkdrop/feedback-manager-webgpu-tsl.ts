@@ -3395,16 +3395,22 @@ function createFeedbackBlendOutputNode(
         transformedUv.add(0.5),
         samplePreviousFrame,
       );
+      // The warp program's `ret` is already this frame's carried colour: a
+      // preset warp shader owns its fade, so fDecay applies only when the
+      // program did not lower and the previous frame is carried as-is. The
+      // scene goes over it by coverage, as on the control-driven path below
+      // (see the WebGL blend in feedback-shader-library.ts for both).
       const previousColor = (
         warpColor ??
-        uniforms.previousTex.sample(sampleUvNode(baseUv, uniforms.textureWrap))
-          .rgb
-      )
-        .mul(uniforms.decay)
-        .mul(previousFrameKept);
+        uniforms.previousTex
+          .sample(sampleUvNode(baseUv, uniforms.textureWrap))
+          .rgb.mul(uniforms.decay)
+      ).mul(previousFrameKept);
+      const coverage = clamp(current.a, 0, 1);
+      const color = previousColor.mul(float(1).sub(coverage)).add(current.rgb);
       // Clamped like MilkDrop's 8-bit internal buffer; see the WebGL blend in
-      // feedback-manager-shared.ts for why half-float needs it.
-      return vec4(clamp(previousColor.add(current.rgb), vec3(0), vec3(1)), 1);
+      // feedback-shader-library.ts for why half-float needs it.
+      return vec4(clamp(color, vec3(0), vec3(1)), 1);
     }
 
     const currentUv = applyFeedbackWarpNode(
