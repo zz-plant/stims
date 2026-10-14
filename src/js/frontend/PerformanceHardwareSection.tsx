@@ -1,17 +1,71 @@
+/**
+ * Settings → Performance hardware: connecting a controller and mapping it.
+ *
+ * Four ways to map, one per thing a performer reaches for: touch an on-screen
+ * control and move a knob (global learn), name a variable and move a knob,
+ * pick a command and hit a pad, or take a known controller's factory
+ * profile, which arrives on its own. Every mapping lands in the MIDI
+ * service's per-device record and is listed here under its device with a
+ * remove button, so nothing a learn did is invisible.
+ *
+ * The live wiring from a controller to the stage is not here. It lives at
+ * the shell for the app's lifetime (hooks/use-performance-hardware.ts), so a
+ * controller keeps working after this panel closes.
+ */
 import { useEffect, useRef, useState } from 'react';
 import type {
   GlobalLearnState,
   MidiBindingMap,
   MidiDeviceInfo,
+  MidiNoteBindingMap,
 } from '../core/services/webmidi-controller.ts';
 import {
   VIRTUAL_GAMEPAD_DEVICE_ID,
   webMidiService,
 } from '../core/services/webmidi-controller.ts';
+import type { CommandAction } from './command-palette-registry.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
+import { padActionIdOf, padActionTarget } from './midi-pad-actions.ts';
 import { describeParameterState } from './parameter-state.ts';
 
-export function PerformanceHardwareSection() {
+/** The slice of a palette action a pad picker shows. */
+export type PadActionChoice = Pick<CommandAction, 'id' | 'label' | 'group'>;
+
+/** The first command offered, because it is the one a pad is most often for. */
+const DEFAULT_PAD_ACTION = 'next-preset';
+
+/**
+ * What a note binding does, in words: the command's palette label, or the
+ * field it drives. A command this build no longer has is shown by its id
+ * rather than hidden, so the performer can see the pad and remove it.
+ */
+function describeNoteTarget(
+  target: string,
+  actions: readonly PadActionChoice[],
+): string {
+  const actionId = padActionIdOf(target);
+  if (actionId === null) return target;
+  return actions.find((action) => action.id === actionId)?.label ?? actionId;
+}
+
+/** Palette groups in the order the palette lists them. */
+function groupChoices(actions: readonly PadActionChoice[]) {
+  const groups = new Map<string, PadActionChoice[]>();
+  for (const action of actions) {
+    const group = action.group ?? 'Other';
+    const members = groups.get(group) ?? [];
+    members.push(action);
+    groups.set(group, members);
+  }
+  return [...groups];
+}
+
+export function PerformanceHardwareSection({
+  padActions = [],
+}: {
+  /** Commands a pad can be mapped to: the command palette's own list. */
+  padActions?: readonly PadActionChoice[];
+} = {}) {
   const { engineSnapshot } = useEngineSnapshot();
   const activeSource = engineSnapshot?.currentSource ?? '';
   const [midiConnected, setMidiConnected] = useState(false);
@@ -22,6 +76,18 @@ export function PerformanceHardwareSection() {
   const [bindings, setBindings] = useState<Record<string, MidiBindingMap>>(() =>
     webMidiService.getAllBindings(),
   );
+  const [noteBindings, setNoteBindings] = useState<
+    Record<string, MidiNoteBindingMap>
+  >(() => webMidiService.getAllNoteBindings());
+  const [padAction, setPadAction] = useState(() =>
+    padActions.some((action) => action.id === DEFAULT_PAD_ACTION)
+      ? DEFAULT_PAD_ACTION
+      : (padActions[0]?.id ?? ''),
+  );
+  const [padLearning, setPadLearning] = useState(
+    () => webMidiService.getNoteLearnTarget() !== null,
+  );
+  const pendingPadLabelRef = useRef('');
   const [learnTarget, setLearnTarget] = useState('');
   const [learning, setLearning] = useState(false);
   const [globalLearn, setGlobalLearn] = useState<GlobalLearnState>(() =>
@@ -38,6 +104,7 @@ export function PerformanceHardwareSection() {
     return webMidiService.onDevicesChanged((next) => {
       setDevices(next);
       setBindings(webMidiService.getAllBindings());
+      setNoteBindings(webMidiService.getAllNoteBindings());
       setLearning((wasLearning) => {
         if (wasLearning && webMidiService.getLearnTarget() === null) {
           setMidiMessage(`Mapped a knob to "${pendingLearnLabelRef.current}".`);
@@ -45,8 +112,21 @@ export function PerformanceHardwareSection() {
         }
         return wasLearning;
       });
+      setPadLearning((wasLearning) => {
+        if (wasLearning && webMidiService.getNoteLearnTarget() === null) {
+          setMidiMessage(
+            `Mapped a pad to "${pendingPadLabelRef.current}". Hit it to run it.`,
+          );
+          return false;
+        }
+        return wasLearning;
+      });
     });
   }, []);
+
+  // Closing Settings mid-learn would otherwise leave the next pad hit, made
+  // in the middle of a set, silently rebinding a pad.
+  useEffect(() => () => webMidiService.cancelNoteLearn(), []);
 
   const connectMidi = async () => {
     const connected = await webMidiService.initialize();
@@ -73,6 +153,25 @@ export function PerformanceHardwareSection() {
   const cancelLearn = () => {
     webMidiService.cancelLearn();
     setLearning(false);
+    setMidiMessage(null);
+  };
+
+  const startPadLearn = () => {
+    if (!padAction) return;
+    pendingPadLabelRef.current = describeNoteTarget(
+      padActionTarget(padAction),
+      padActions,
+    );
+    webMidiService.beginNoteLearn(padActionTarget(padAction));
+    setPadLearning(true);
+    setMidiMessage(
+      `Hit a pad, key or gamepad button to map it to "${pendingPadLabelRef.current}"…`,
+    );
+  };
+
+  const cancelPadLearn = () => {
+    webMidiService.cancelNoteLearn();
+    setPadLearning(false);
     setMidiMessage(null);
   };
 
@@ -137,11 +236,16 @@ export function PerformanceHardwareSection() {
             key={device.id}
             device={device}
             bindings={bindings[device.id] ?? {}}
+            noteBindings={noteBindings[device.id] ?? {}}
+            padActions={padActions}
             activeSource={activeSource}
             onToggleEnabled={(enabled) =>
               webMidiService.setDeviceEnabled(device.id, enabled)
             }
             onRemoveBinding={(cc) => webMidiService.unbindCc(device.id, cc)}
+            onRemoveNoteBinding={(note) =>
+              webMidiService.unbindNote(device.id, note)
+            }
           />
         ))}
       </div>
@@ -179,6 +283,56 @@ export function PerformanceHardwareSection() {
           </span>
         </div>
       </div>
+
+      {padActions.length > 0 ? (
+        <div className="ctl-row ctl-row--stack">
+          <span className="ctl-row__text">
+            <span className="ctl-row__label">Map a pad to a command</span>
+            <span className="ctl-row__hint">
+              Pick a command, press Learn, then hit a pad, key or gamepad
+              button. That first hit only maps it; every hit after runs the
+              command.
+            </span>
+          </span>
+          <div className="ctl-midi-learn-row">
+            <select
+              className="ctl-select"
+              value={padAction}
+              onChange={(event) => setPadAction(event.target.value)}
+              disabled={padLearning}
+              aria-label="Command to map to a pad"
+            >
+              {groupChoices(padActions).map(([group, members]) => (
+                <optgroup key={group} label={group}>
+                  {members.map((action) => (
+                    <option key={action.id} value={action.id}>
+                      {action.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {padLearning ? (
+              <button
+                type="button"
+                className="ctl-btn"
+                onClick={cancelPadLearn}
+              >
+                Cancel
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="ctl-btn"
+                disabled={!padAction}
+                onClick={startPadLearn}
+              >
+                Learn
+              </button>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       <div className="ctl-row ctl-row--stack">
         <span className="ctl-row__text">
@@ -227,16 +381,26 @@ export function PerformanceHardwareSection() {
 function MidiDeviceRow({
   device,
   bindings,
+  noteBindings,
+  padActions,
   activeSource,
   onToggleEnabled,
   onRemoveBinding,
+  onRemoveNoteBinding,
 }: {
   device: MidiDeviceInfo;
   bindings: MidiBindingMap;
+  noteBindings: MidiNoteBindingMap;
+  padActions: readonly PadActionChoice[];
   activeSource: string;
   onToggleEnabled: (enabled: boolean) => void;
   onRemoveBinding: (cc: number) => void;
+  onRemoveNoteBinding: (note: number) => void;
 }) {
+  const noteEntries = Object.entries(noteBindings).map(([note, binding]) => ({
+    note: Number(note),
+    label: describeNoteTarget(binding.target, padActions),
+  }));
   const entries = Object.entries(bindings).map(([cc, binding]) => ({
     cc: Number(cc),
     binding,
@@ -287,7 +451,7 @@ function MidiDeviceRow({
         />
       </div>
       <div className="ctl-midi-bindings">
-        {entries.length === 0 ? (
+        {entries.length === 0 && noteEntries.length === 0 ? (
           <span className="ctl-row__hint">No mappings yet.</span>
         ) : (
           entries.map(({ cc, binding, shadowed }) => (
@@ -321,6 +485,21 @@ function MidiDeviceRow({
             </div>
           ))
         )}
+        {noteEntries.map(({ note, label }) => (
+          <div className="ctl-midi-binding-row" key={`note-${note}`}>
+            <span className="ctl-readout">Pad {note}</span>
+            <span className="ctl-row__hint">{label}</span>
+            <button
+              type="button"
+              className="ctl-btn ctl-btn--quiet ctl-btn--icon"
+              onClick={() => onRemoveNoteBinding(note)}
+              aria-label={`Remove mapping for pad ${note} (${label})`}
+              title="Remove mapping"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

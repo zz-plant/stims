@@ -308,6 +308,8 @@ export class WebMidiControllerService {
   private readonly deviceRecords = new Map<string, DeviceRecord>();
   private readonly hardwareDevices = new Map<string, MidiDeviceInfo>();
   private learnTarget: string | null = null;
+  /** Target the next pad/key press binds to, while a note learn is armed. */
+  private noteLearnTarget: string | null = null;
   private learnRangeResolver:
     | ((target: string) => { min: number; max: number } | null)
     | null = null;
@@ -319,6 +321,8 @@ export class WebMidiControllerService {
   private readonly outputs = new Map<string, MIDIOutput>();
   /** Latched state per `toggle` note binding, keyed `deviceId:note`. */
   private readonly noteToggleState = new Map<string, boolean>();
+  /** Notes held down since they completed a learn, keyed `deviceId:note`. */
+  private readonly learnedNoteDown = new Set<string>();
   private clock: MidiClockSnapshot = {
     bpm: null,
     running: false,
@@ -540,6 +544,30 @@ export class WebMidiControllerService {
 
   public getLearnTarget(): string | null {
     return this.learnTarget;
+  }
+
+  /**
+   * Arm a note learn: the next pad, key or gamepad button pressed on any
+   * enabled device binds to `target` as a `trigger`. Knobs keep working
+   * meanwhile; only a note completes it.
+   *
+   * Separate from CC learn rather than a branch of it, because the two want
+   * different things from the same gesture. A knob turned during learn
+   * should also move the parameter, so the performer hears what they bound;
+   * a pad struck during learn must not also fire its action, or learning
+   * "next preset" changes the preset.
+   */
+  public beginNoteLearn(target: string): void {
+    if (!target) return;
+    this.noteLearnTarget = target;
+  }
+
+  public cancelNoteLearn(): void {
+    this.noteLearnTarget = null;
+  }
+
+  public getNoteLearnTarget(): string | null {
+    return this.noteLearnTarget;
   }
 
   /**
@@ -879,6 +907,14 @@ export class WebMidiControllerService {
     return { ...(this.deviceRecords.get(deviceId)?.noteBindings ?? {}) };
   }
 
+  public getAllNoteBindings(): Record<string, MidiNoteBindingMap> {
+    const out: Record<string, MidiNoteBindingMap> = {};
+    for (const [id, rec] of this.deviceRecords) {
+      out[id] = { ...rec.noteBindings };
+    }
+    return out;
+  }
+
   public onNote(listener: MidiNoteListener): () => void {
     this.noteListeners.add(listener);
     return () => this.noteListeners.delete(listener);
@@ -906,6 +942,25 @@ export class WebMidiControllerService {
       noteBindings: {},
     });
     if (!rec.enabled) return;
+
+    if (on && this.noteLearnTarget !== null) {
+      // Cleared before bindNote, which notifies synchronously: a listener
+      // asking "did learn just finish" must see it finished.
+      const target = this.noteLearnTarget;
+      this.noteLearnTarget = null;
+      this.bindNote(deviceId, note, target, { mode: 'trigger' });
+      // The press that taught the binding is not a performance gesture, so
+      // it reaches no listener. Its LED still answers, so the pad shows
+      // that it was heard.
+      this.sendNote(deviceId, note, Math.max(velocity, 1));
+      this.learnedNoteDown.add(`${deviceId}:${note}`);
+      return;
+    }
+    if (!on && this.learnedNoteDown.delete(`${deviceId}:${note}`)) {
+      // The release of that same press: also not a gesture.
+      this.sendNote(deviceId, note, 0);
+      return;
+    }
 
     const binding = rec.noteBindings[note];
     const event: MidiNoteEvent = { note, on, velocity, deviceId };
