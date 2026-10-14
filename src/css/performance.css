@@ -106,7 +106,6 @@ body[data-page="performance"] {
 .stims-performance__lede,
 .stims-performance__card p,
 .stims-performance__section-copy p,
-.stims-performance__row span,
 .stims-performance__steps li,
 .stims-performance__card li {
   color: var(--text-muted);

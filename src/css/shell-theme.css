@@ -24,78 +24,43 @@ html.light .stims-shell__stage-frame[data-mode="home"] {
   box-shadow: none;
 }
 
-html.light
-  .stims-shell__stage-frame[data-mode="home"]
-  .stims-shell__launch-panel {
-  background: transparent;
-  color: var(--stims-ink);
-}
-
-html.light .stims-shell__launch-copy h1,
-html.light .stims-shell__launch-recommendation strong,
 html.light .stims-shell__source-card strong,
 html.light .stims-shell__section-label,
-html.light .stims-shell__field-label,
-html.light .stims-shell__browse-toolbar strong,
-html.light .stims-shell__section-heading,
-html.light .stims-shell__sheet-heading h2 {
+html.light .stims-shell__field-label {
   color: var(--stims-ink-strong);
 }
 
 html.light .stims-shell__eyebrow,
-html.light .stims-shell__launch-copy p,
 html.light .stims-shell__meta-copy,
 html.light .stims-shell__source-card span,
-html.light .stims-shell__youtube-feedback,
-html.light .stims-shell__preset-meta,
-html.light .stims-shell__preset-tech {
+html.light .stims-shell__youtube-feedback {
   color: var(--stims-muted);
 }
 
 html.light .stims-shell__eyebrow,
-html.light .stims-shell__section-label,
-html.light .stims-shell__source-card-kicker,
-html.light .stims-shell__preset-vibe {
+html.light .stims-shell__section-label {
   color: var(--stims-cool);
 }
 
-html.light .stims-shell__launch-recommendation,
-html.light .stims-shell__launch-source-dock,
 html.light .stims-shell__source-card,
 html.light .stims-shell__youtube-primary,
-html.light .stims-shell__sheet-surface,
 html.light .stims-shell__sheet-callout,
 html.light .stims-shell__settings-advanced,
-html.light .stims-shell__starter-card,
-html.light .stims-shell__preset-card {
+html.light .stims-shell__starter-card {
   border-color: var(--stims-line);
   background: #fffaf0;
   color: var(--stims-ink);
   box-shadow: 0 8px 18px rgba(35, 48, 56, 0.08);
 }
 
-html.light .stims-shell__launch-source-dock .stims-shell__youtube-primary,
-html.light .stims-shell__launch-source-dock .stims-shell__source-grid {
-  background: transparent;
-  box-shadow: none;
-}
-
-html.light .stims-shell__launch-source-dock .stims-shell__source-card {
-  background: transparent;
-  box-shadow: none;
-}
-
 html.light .stims-shell__source-card:hover:not(:disabled),
-html.light .stims-shell__preset-card:hover,
-html.light .stims-shell__starter-card:hover,
-html.light .stims-shell__launch-recommendation:hover {
+html.light .stims-shell__starter-card:hover {
   border-color: var(--stims-line-strong);
   background: #f1f7f5;
   box-shadow: 0 10px 22px rgba(35, 48, 56, 0.12);
 }
 
 html.light .stims-shell__input,
-html.light .stims-shell__select,
 html.light .stims-shell__refine-textarea {
   border-color: var(--stims-line-strong);
   background: #fffdf8;
@@ -110,56 +75,24 @@ html.light .stims-shell__refine-textarea::placeholder {
 }
 
 html.light .stims-shell__input:focus,
-html.light .stims-shell__select:focus,
 html.light .stims-shell__refine-textarea:focus {
   border-color: var(--stims-cool);
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(13, 99, 129, 0.2);
 }
 
-html.light .stims-shell__text-button,
-html.light .stims-shell__icon-button,
-html.light .stims-shell__collection-pill,
-html.light .stims-shell__sheet-tab {
+html.light .stims-shell__text-button {
   border-color: var(--stims-line-strong);
   background: var(--stims-control-fill);
   color: var(--stims-ink-strong);
   box-shadow: 0 4px 10px rgba(35, 48, 56, 0.08);
 }
 
-html.light .stims-shell__text-button:hover,
-html.light .stims-shell__icon-button:hover,
-html.light .stims-shell__collection-pill:hover,
-html.light .stims-shell__sheet-tab:hover {
+html.light .stims-shell__text-button:hover {
   border-color: var(--stims-cool);
   background: var(--stims-control-fill-hover);
   color: #102b39;
   box-shadow: 0 6px 14px rgba(35, 48, 56, 0.12);
-}
-
-html.light .stims-shell__collection-pill[data-active="true"],
-html.light .stims-shell__sheet-tab[data-active="true"],
-html.light .stims-shell__stage-tool[data-active="true"] {
-  border-color: #7e3218;
-  background: #a44723;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(126, 50, 24, 0.2);
-}
-
-html.light .stims-shell__preset-card[data-active="true"] {
-  border-color: #a44723;
-  background: #fff0e8;
-}
-
-html.light .stims-shell__preset-fav {
-  border-color: #71828c;
-  background: rgba(255, 250, 240, 0.94);
-  color: #42525c;
-}
-
-html.light .stims-shell__preset-fav:hover {
-  color: #a21caf;
-  background: #ffffff;
 }
 
 html.light .stims-shell .cta-button {
@@ -226,18 +159,10 @@ html.light .stims-shell__toast[data-tone="error"] {
   color: #8d1b14;
 }
 
-html.light .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool,
 html.light
   .stims-shell__stage-frame[data-mode="live"]
   .stims-shell__frame-header {
   color: #f7f4eb;
-}
-
-html.light
-  .stims-shell__stage-frame[data-mode="live"]
-  .stims-shell__stage-tool {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(5, 8, 14, 0.72);
 }
 
 @media (prefers-contrast: more) {
@@ -346,8 +271,6 @@ html.light [data-contrast="high"] .stims-shell,
  */
 html.light .stims-shell__launch .stims-shell__source-card,
 html.light .stims-shell__launch .stims-shell__youtube-primary,
-html.light .stims-shell__launch .stims-shell__launch-recommendation,
-html.light .stims-shell__launch .stims-shell__launch-source-dock,
 html.light .stims-shell__launch .stims-shell__starter-card {
   border-color: var(--stims-line);
   background: var(--card-bg);
@@ -356,15 +279,13 @@ html.light .stims-shell__launch .stims-shell__starter-card {
 }
 
 html.light .stims-shell__launch .stims-shell__source-card:hover:not(:disabled),
-html.light .stims-shell__launch .stims-shell__starter-card:hover,
-html.light .stims-shell__launch .stims-shell__launch-recommendation:hover {
+html.light .stims-shell__launch .stims-shell__starter-card:hover {
   border-color: var(--stims-line-strong);
   background: var(--stims-control-fill-hover);
   box-shadow: none;
 }
 
-html.light .stims-shell__launch .stims-shell__input,
-html.light .stims-shell__launch .stims-shell__select {
+html.light .stims-shell__launch .stims-shell__input {
   border-color: var(--stims-line-strong);
   background: var(--stims-panel);
   color: var(--stims-ink-strong);
@@ -376,8 +297,7 @@ html.light .stims-shell__launch .stims-shell__input::placeholder {
   opacity: 1;
 }
 
-html.light .stims-shell__launch .stims-shell__input:focus,
-html.light .stims-shell__launch .stims-shell__select:focus {
+html.light .stims-shell__launch .stims-shell__input:focus {
   border-color: var(--stims-cool);
   background: var(--stims-panel-strong);
   box-shadow: 0 0 0 3px var(--stims-accent-soft);

@@ -103,15 +103,10 @@ describe('minimal workspace surfaces', () => {
     expect(cssSource('chrome.css')).toMatch(
       /\.ctl-preset \{[\s\S]*?border-radius: var\(--ctl-radius\);/u,
     );
-    // No assertion on `.stims-shell__launch-source-dock` itself: that class is
-    // not applied by any component, so its rules were removed as dead CSS.
-    // Asserting on them guarded stylesheet text rather than rendered chrome.
-    expect(css).toMatch(
-      /\.stims-shell__launch-source-dock\s+\.stims-shell__source-card\s+\+\s+\.stims-shell__source-card\s*\{[\s\S]*?border-left:/u,
-    );
-    expect(css).toMatch(
-      /\.stims-shell__launch-recommendation\s+\.stims-shell__preset-art\s*\{[\s\S]*?width:\s*104px;[\s\S]*?min-height:\s*64px;[\s\S]*?aspect-ratio:\s*16\s*\/\s*9;/u,
-    );
+    // No assertions on `.stims-shell__launch-source-dock` or
+    // `.stims-shell__launch-recommendation`: no component applies either
+    // class, so their rules were removed as dead CSS. Asserting on them
+    // guarded stylesheet text rather than rendered chrome.
   });
 
   test('gives the preset browser room to behave like a visual catalog', () => {
