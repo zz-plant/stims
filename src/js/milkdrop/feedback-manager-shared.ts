@@ -58,6 +58,10 @@ import type {
   MilkdropBackendBehavior,
 } from './backend-behavior';
 import {
+  resolveEffectiveTexture,
+  subscribeTextureOverrides,
+} from './custom-texture-manager.ts';
+import {
   MILKDROP_BLEND_DISSOLVE,
   MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
 } from './feedback-composite-profile.ts';
@@ -1122,6 +1126,7 @@ class SharedMilkdropFeedbackManager
   readonly warpUvScene: Scene;
   private warpFieldDensity = 0;
   private warpFieldReady = false;
+  private unsubscribeTextureOverrides: (() => void) | null = null;
 
   constructor(
     width: number,
@@ -1133,6 +1138,9 @@ class SharedMilkdropFeedbackManager
     this.profile = behavior.feedbackProfile;
     this.auxTextures = getSharedAuxTextures();
     this.halfFloatFeedback = behavior.useHalfFloatFeedback;
+    this.unsubscribeTextureOverrides = subscribeTextureOverrides(() => {
+      this.refreshCustomSamplerUniforms();
+    });
     this.sceneTarget = createWebGLFeedbackRenderTarget(width, height, {
       resolutionScale: this.sceneResolutionScale,
       useHalfFloatFeedback: behavior.useHalfFloatFeedback,
@@ -1778,7 +1786,12 @@ class SharedMilkdropFeedbackManager
     for (const sampler of this.customSamplers) {
       if (sampler.textureFile) {
         material.uniforms[sampler.name] = {
-          value: getSharedMilkdropTexture(sampler.textureFile, true, sampler),
+          value: resolveEffectiveTexture(
+            sampler.name,
+            sampler.textureFile,
+            true,
+            sampler,
+          ),
         };
       }
     }
@@ -2073,7 +2086,12 @@ class SharedMilkdropFeedbackManager
     for (const sampler of this.customSamplers) {
       if (sampler.textureFile && !this.warpMaterial.uniforms[sampler.name]) {
         this.warpMaterial.uniforms[sampler.name] = {
-          value: getSharedMilkdropTexture(sampler.textureFile, true, sampler),
+          value: resolveEffectiveTexture(
+            sampler.name,
+            sampler.textureFile,
+            true,
+            sampler,
+          ),
         };
       }
     }
@@ -2586,11 +2604,34 @@ class SharedMilkdropFeedbackManager
     this.directShaderSwapRevision += 1;
     this.directShaderSwapPending = false;
     this.disposeRetiredWarmupMaterials();
+    if (this.unsubscribeTextureOverrides) {
+      this.unsubscribeTextureOverrides();
+      this.unsubscribeTextureOverrides = null;
+    }
     this.compositeScene.clear();
     this.presentScene.clear();
     this.blurScene.clear();
     this.warpScene.clear();
     this.feedbackBlendScene.clear();
+  }
+
+  private refreshCustomSamplerUniforms() {
+    for (const sampler of this.customSamplers) {
+      const texture = resolveEffectiveTexture(
+        sampler.name,
+        sampler.textureFile,
+        true,
+        sampler,
+      );
+      if (texture) {
+        if (this.warpMaterial?.uniforms[sampler.name]) {
+          this.warpMaterial.uniforms[sampler.name].value = texture;
+        }
+        if (this.compositeMaterial?.uniforms[sampler.name]) {
+          this.compositeMaterial.uniforms[sampler.name].value = texture;
+        }
+      }
+    }
   }
 }
 
