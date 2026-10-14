@@ -3,6 +3,13 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { act } from 'react';
 import { flushTasks, importFresh } from '../test-helpers.ts';
+// Each test boots the shell by re-evaluating app.ts (importFresh busts only
+// the entry), so the ~300 modules behind it load once per process, inside
+// whichever test runs first: about a third of its CPU, and it timed out under
+// load. Loading app.ts's static imports here, with the file, leaves every test
+// the boot itself.
+import 'react-dom/client';
+import '../../src/js/frontend/workspace-router.tsx';
 
 let mockLoadToy: any;
 let mockLoadFromQuery: any;
