@@ -45,7 +45,10 @@ import {
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
-import { PerformanceHardwareSection } from './PerformanceHardwareSection.tsx';
+import {
+  type PadActionChoice,
+  PerformanceHardwareSection,
+} from './PerformanceHardwareSection.tsx';
 import { SyncSessionSection } from './SyncSessionSection.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
@@ -605,6 +608,7 @@ export function SettingsSheetPanel({
   offline = false,
   installAvailable = false,
   onInstallApp,
+  padActions,
 }: {
   onCompatibilityModeChange: (enabled: boolean) => void;
   onMotionPreferenceChange: (enabled: boolean) => void;
@@ -617,6 +621,8 @@ export function SettingsSheetPanel({
   offline?: boolean;
   installAvailable?: boolean;
   onInstallApp?: () => void;
+  /** Commands the hardware tab can map to a pad: the palette's own list. */
+  padActions?: readonly PadActionChoice[];
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -817,7 +823,7 @@ export function SettingsSheetPanel({
 
       {activeTab === 'hardware' ? (
         <div role="tabpanel" id="panel-hardware" aria-labelledby="tab-hardware">
-          <PerformanceHardwareSection />
+          <PerformanceHardwareSection padActions={padActions} />
         </div>
       ) : null}
 
