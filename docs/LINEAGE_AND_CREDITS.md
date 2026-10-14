@@ -8,7 +8,7 @@ Use language like:
 
 - "Play and live-edit MilkDrop presets in your browser." This is the public pitch: the README tagline, the page title, and link previews all use it. It names what Stims does with the presets rather than claiming to be MilkDrop, and it is more accurate than "MilkDrop-inspired", because the presets are the original `.milk` files.
 - "Independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop."
-- "Able to load and render presets from the MilkDrop/projectM ecosystem. Visual fidelity is measured one preset at a time against native projectM; only a few presets have been measured, and most of those still differ visibly." Quote counts only from the current scoreboard in [the parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md#current-state-2026-08-27), never from memory.
+- "Able to load and render presets from the MilkDrop/projectM ecosystem. Visual fidelity is measured one preset at a time against native projectM; only a few presets have been measured, and most of those still differ visibly." Quote counts only from the current scoreboard in [the parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md#current-scoreboard), never from memory.
 
 Avoid language like:
 
@@ -25,7 +25,7 @@ Avoid language like:
 Product copy (the home page, page titles, link previews) says what Stims does and needs no novelty claim. Any surface that says what is new, such as the README, `llms.txt`, the technical docs or a launch post, uses these three, in this order:
 
 1. **Per-pixel equations run on the GPU, held to the CPU's answer.** Preset equations compile to one IR that runs on an interpreter or a JavaScript JIT. On WebGPU, per-pixel and custom-wave point equations that read only their own inputs are also lowered into the shader and evaluated for every vertex in parallel ([`gpu-field-planner.ts`](../packages/milkdrop-toolchain/src/compiler/gpu-field-planner.ts)); on 2026-10-01 that covered 1,094 of the 1,102 catalog presets with per-pixel code. That is the new part: Butterchurn and projectM run per-pixel equations on the CPU, one grid point at a time. Seeded differential fuzz tests ([`eel-tier-differential`](../tests/unit/eel-tier-differential.test.ts), [`gpu-field-tier-differential`](../tests/unit/gpu-field-tier-differential.test.ts)) hold the tiers to the same results. Their first runs found 18 shipped preset blocks the JIT could not compile and divergent results in 32% of GPU-lowered programs.
-2. **Fidelity is measured, not asserted.** Stims is compared with frames from native projectM, both stepped on a fixed clock, and a difference counts only when it exceeds that preset's own run-to-run noise (`bun run parity:noise`). Results are published per preset, failures included ([scoreboard](./MILKDROP_PROJECTM_PARITY_PLAN.md#current-state-2026-08-27)), and `parity:promote-reference` refuses to certify a reference that a blank frame would pass.
+2. **Fidelity is measured, not asserted.** Stims is compared with frames from native projectM, both stepped on a fixed clock, and a difference counts only when it exceeds that preset's own run-to-run noise (`bun run parity:noise`). Results are published per preset, failures included ([scoreboard](./MILKDROP_PROJECTM_PARITY_PLAN.md#current-scoreboard)), and `parity:promote-reference` refuses to certify a reference that a blank frame would pass.
 3. **The preset corpus is read as a set of programs.** `bun run lab:dataflow` works out, from the equations alone, which audio signals reach each control and each drawn program, and the editor shows the same reading beside each slider an equation drives (`eq · bass`). It sorts all 2,679 presets in the lab corpus in seconds, and in 73 of them the audio reaches nothing on screen. Used as training data, the corpus shows that presets behave as threshold programs: gradient-boosted trees beat every network tried, and 41% of memoryless audio-driven controls can be recovered as exact equations from their behaviour ([findings](./guides/training-models.md)).
 
 Present these as what is not new:
@@ -121,7 +121,7 @@ the handle registry. The same list names the handles worth researching next.
 - If you reuse projectM code, assets, or corpora, keep license obligations and acknowledgments explicit.
 - If a public page or README calls Stims a "successor," pair that claim with explicit lineage language and avoid implying official affiliation.
 - Prefer precise compatibility claims over broad parity claims.
-- If you organize successor workstreams, keep the current evidence and ownership map in [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md) so claims stay synchronized with proof.
+- If you organize successor workstreams, keep the current evidence and ownership map in the [roadmap's workstreams](./ROADMAP.md#workstreams) so claims stay synchronized with proof.
 - If you add a preset author to any public surface, follow [Verifying a credit](#verifying-a-credit) first.
 - Do not quote a raw preset-pack size as a count of distinct works. The circulating 52k, 73k, and 97k figures are **file** counts; a checksum pass over the 52k corpus yields roughly 44k unique presets, with many near-duplicates beyond that. If you ever dedupe a pack, normalize `fRating=` across the files first — otherwise rating differences defeat checksum matching.
 

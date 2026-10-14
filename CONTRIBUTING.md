@@ -31,7 +31,7 @@ Open `http://localhost:5173/?agent=true` for browser checks: agent mode keeps re
 - Current command/reference docs: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)
 - Test profiles, quality gates and the manual checklist: [`docs/TESTING.md`](./docs/TESTING.md), [`docs/QA_PLAN.md`](./docs/QA_PLAN.md)
 - MilkDrop runtime guidance: [`docs/MILKDROP_PRESET_RUNTIME.md`](./docs/MILKDROP_PRESET_RUNTIME.md)
-- Successor workstream map: [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md)
+- Priorities and workstreams: [`docs/ROADMAP.md`](./docs/ROADMAP.md)
 - Play, edit, and share: [`docs/USER_GUIDE.md`](./docs/USER_GUIDE.md)
 - Canonical docs index: [`docs/README.md`](./docs/README.md)
 - Agent bootstrap and delegation guide: [`docs/agents/agent-handoffs.md`](./docs/agents/agent-handoffs.md)
