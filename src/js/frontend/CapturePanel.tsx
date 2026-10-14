@@ -13,6 +13,7 @@ import { useWorkspace } from './workspace-context.tsx';
 const CAPTURE_FORMATS = [
   'hd-landscape',
   '4k-landscape',
+  'square-post',
   'spotify-canvas',
   'tiktok-shorts',
   'youtube-shorts',
@@ -171,8 +172,8 @@ export function CapturePanel() {
           Record this visualizer
         </h3>
         <p className={styles.intro}>
-          Capture the live canvas and active audio without pausing playback. 4K
-          renders natively; portrait output is center-cropped to fill the frame.
+          Capture the live canvas and active audio without pausing playback. 4K,
+          9:16 vertical, and 1:1 square render natively.
         </p>
       </div>
 
