@@ -90,12 +90,26 @@ export function CapturePanel() {
     exporterRef.current = exporter;
     setSupport(exporter.getSupport());
     return () => {
-      if (exporter.getRecordingStatus()) {
-        void exporter.stopRecording().catch(() => {});
-      }
+      // React runs this before the next pass of the effect, so the guard
+      // above only works if a recording survives it. Stopping here ended
+      // the recording whenever the engine value changed identity (on WebGPU,
+      // about one recording in three, under half a second in), and Stop then
+      // found a fresh exporter with nothing to save. The unmount effect
+      // below ends a recording the panel is leaving.
+      if (exporter.getRecordingStatus()) return;
       exporterRef.current = null;
     };
   }, [engine, ui.stageRef]);
+
+  useEffect(
+    () => () => {
+      const exporter = exporterRef.current;
+      if (exporter?.getRecordingStatus()) {
+        void exporter.stopRecording().catch(() => {});
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!recording) return;
