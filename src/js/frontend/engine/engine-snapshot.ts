@@ -1,6 +1,7 @@
 import type { MilkdropShaderExecutionMode } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import type { ToyRuntimeInstance } from '../../core/toy-runtime.ts';
 import type {
+  MilkdropAppliedShaderExecution,
   MilkdropExperienceController,
   MilkdropExperienceSnapshot,
 } from '../../milkdrop/runtime-types.ts';
@@ -52,8 +53,19 @@ export type EngineSnapshot = {
    * renderer is substituting a uniform-only approximation, 'none' means the
    * preset has no shader text. Null before a preset is compiled — "not known
    * yet", never "fine". See milkdrop/shader-execution-mode.ts.
+   *
+   * That is the compiler's verdict for the backend, not what the renderer
+   * ran: routing (a rollout flag, the safe WebGPU path) can still drop a
+   * 'direct' preset to the approximation or skip the feedback pass.
    */
   shaderExecution: MilkdropShaderExecutionMode | null;
+  /**
+   * What the renderer ran on the last presented frame: 'direct' (the
+   * authored shader text), 'controls' (the uniform-only approximation) or
+   * 'off' (no feedback pass). Null after every preset load until a frame has
+   * been presented, and while the preset's programs are still compiling.
+   */
+  appliedShaderExecution: MilkdropAppliedShaderExecution | null;
   autoplay: boolean;
   transitionMode: 'blend' | 'cut';
   blendDuration: number;
@@ -79,6 +91,7 @@ export function createEmptyEngineSnapshot(): EngineSnapshot {
     audioEndedAt: null,
     tempoBpm: null,
     shaderExecution: null,
+    appliedShaderExecution: null,
     autoplay: false,
     transitionMode: 'blend',
     blendDuration: 0.3,
@@ -106,6 +119,7 @@ function shallowEqual(a: EngineSnapshot, b: EngineSnapshot): boolean {
     a.audioEndedAt === b.audioEndedAt &&
     a.tempoBpm === b.tempoBpm &&
     a.shaderExecution === b.shaderExecution &&
+    a.appliedShaderExecution === b.appliedShaderExecution &&
     a.autoplay === b.autoplay &&
     a.transitionMode === b.transitionMode &&
     a.blendDuration === b.blendDuration
@@ -149,6 +163,7 @@ export function buildEngineSnapshot({
     audioEndedAt: audioEndedAt ?? null,
     tempoBpm: snapshot?.tempoBpm ?? null,
     shaderExecution: snapshot?.shaderExecution ?? null,
+    appliedShaderExecution: snapshot?.appliedShaderExecution ?? null,
     autoplay: snapshot?.autoplay ?? false,
     transitionMode: snapshot?.transitionMode ?? 'blend',
     blendDuration: snapshot?.blendDuration ?? 0.3,

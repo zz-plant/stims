@@ -82,6 +82,7 @@ export function useAgentStateInstall({
         blendDuration: snap?.blendDuration ?? null,
       },
       shaderExecution: snap?.shaderExecution ?? null,
+      appliedShaderExecution: snap?.appliedShaderExecution ?? null,
     };
   }, [
     engineSnapshotRef.current,

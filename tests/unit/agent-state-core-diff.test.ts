@@ -33,6 +33,7 @@ const BASE: AgentCoreSnapshot = {
   autoplay: false,
   transition: { mode: 'blend', blendDuration: 2 },
   shaderExecution: 'direct',
+  appliedShaderExecution: 'direct',
 };
 
 const CHANGED_VALUES: { [K in keyof AgentCoreSnapshot]: AgentCoreSnapshot[K] } =
@@ -52,6 +53,7 @@ const CHANGED_VALUES: { [K in keyof AgentCoreSnapshot]: AgentCoreSnapshot[K] } =
     autoplay: true,
     transition: { mode: 'cut', blendDuration: 0 },
     shaderExecution: 'translated',
+    appliedShaderExecution: 'controls',
   };
 
 describe('agent-state core snapshot diff coupling', () => {

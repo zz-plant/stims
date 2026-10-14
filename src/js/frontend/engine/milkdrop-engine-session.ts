@@ -26,6 +26,7 @@ import { createRendererQualityManager } from '../../core/toy-quality.ts';
 import type { ToyRuntimeInstance } from '../../core/toy-runtime.ts';
 import { requestMilkdropCollectionSelection } from '../../milkdrop/collection-intent.ts';
 import type { createMilkdropExperience } from '../../milkdrop/runtime.ts';
+import { recordStatusMessage } from '../agent-state.ts';
 import type {
   AudioSource,
   EngineAudioRequest,
@@ -240,6 +241,9 @@ export function createMilkdropEngineAdapter() {
         },
         initialPresetId: intent.presetId ?? undefined,
         previewMode: Boolean(intent.previewMode),
+        // Every runtime status, repeats included: the snapshot keeps only
+        // the latest, and the toast skips some ("WebGPU rollout flags…").
+        onStatus: (message) => recordStatusMessage(message, 'runtime'),
       });
 
       unsubscribeExperience = experience.subscribe(() => {

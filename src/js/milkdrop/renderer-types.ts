@@ -13,7 +13,10 @@ import type {
   MilkdropVideoEchoOrientation,
 } from 'milkdrop-toolchain/src/compiler-types.ts';
 import type { Camera, Scene, Texture } from 'three';
-import type { MilkdropRuntimeSignals } from './runtime-types.ts';
+import type {
+  MilkdropAppliedShaderExecution,
+  MilkdropRuntimeSignals,
+} from './runtime-types.ts';
 import type { MilkdropShaderCompileDiagnostic } from './shader-compile-diagnostics.ts';
 
 export type MilkdropPostprocessingProfile = {
@@ -638,6 +641,14 @@ export interface MilkdropRendererAdapter {
    * The editor reads this instead of inferring "something fell back".
    */
   getShaderCompileDiagnostics?(): MilkdropShaderCompileDiagnostic[];
+  /**
+   * What the last presented frame did with the active preset's shader text,
+   * or null until a frame has been presented since setPreset() and while the
+   * preset's own programs are still compiling. Read from the composite state
+   * handed to the feedback manager, so it follows routing (flags, the safe
+   * WebGPU path) that the compiler's per-backend verdict cannot see.
+   */
+  getAppliedShaderExecution?(): MilkdropAppliedShaderExecution | null;
   setAdaptiveQuality?(
     multipliers: Partial<{
       feedbackResolutionMultiplier: number;

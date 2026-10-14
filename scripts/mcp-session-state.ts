@@ -35,6 +35,7 @@ export interface SessionPageState {
   backend: string | null;
   fps: number | null;
   shaderExecution: AgentStateSnapshot['shaderExecution'];
+  appliedShaderExecution: AgentStateSnapshot['appliedShaderExecution'];
   audioActive: string;
   audioSource: string | null;
   audioEnergy: number | null;
@@ -65,6 +66,7 @@ export function readSessionPageState(): SessionPageState {
     backend: state?.backend ?? dataset.activeBackend ?? null,
     fps: state?.fps ?? null,
     shaderExecution: state?.shaderExecution ?? null,
+    appliedShaderExecution: state?.appliedShaderExecution ?? null,
     audioActive: dataset.audioActive ?? 'false',
     audioSource: state?.audioSource ?? null,
     audioEnergy: energy === null ? null : Math.round(energy * 100) / 100,

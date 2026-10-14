@@ -104,6 +104,7 @@ export function createMilkdropExperienceFrameLoop({
   traceRecorder,
   beatClock,
   noteTempo,
+  noteFramePresented,
   liveBlend,
 }: {
   getRuntime: () => ToyRuntimeInstance | null;
@@ -222,6 +223,9 @@ export function createMilkdropExperienceFrameLoop({
   /** Hears the beat clock's state every frame, so the runtime can publish a
    * tempo change without rebuilding its snapshot each frame. */
   noteTempo?: (beat: MilkdropBeatClockSnapshot) => void;
+  /** Called after each frame the adapter rendered, for state the adapter
+   * only knows once a frame has gone through it. */
+  noteFramePresented?: () => void;
 }) {
   let blendWorkloadFrameState: MilkdropFrameState | null = null;
   /** True while an autoplay advance is between trigger and transition. */
@@ -513,6 +517,7 @@ export function createMilkdropExperienceFrameLoop({
           blendState: activeBlendState,
           resetHistory: frame.resetHistory,
         });
+        noteFramePresented?.();
         if (!adapterPresentedFrame) {
           if (
             activeBackend === 'webgpu' &&

@@ -116,6 +116,7 @@ import { installRequestedPresetListener } from './runtime/ui-bridge';
 import { createMilkdropSignalTracker } from './runtime-signals';
 import type {
   ExperienceControllerDeps,
+  MilkdropAppliedShaderExecution,
   MilkdropExperienceController,
   MilkdropExperienceSnapshot,
 } from './runtime-types.ts';
@@ -152,6 +153,7 @@ export function createMilkdropExperience({
   qualityControl,
   initialPresetId,
   previewMode = false,
+  onStatus,
 }: {
   quality: QualityPresetManager;
   qualityControl: {
@@ -160,6 +162,10 @@ export function createMilkdropExperience({
   };
   initialPresetId?: string;
   previewMode?: boolean;
+  /** Hears every runtime status as it is set. The snapshot's `status` holds
+   * only the latest, so a status overwritten before anyone read it, or set
+   * twice in a row, is otherwise lost. */
+  onStatus?: (message: string) => void;
 }) {
   // Before ANY preset compiles — the deep-link prefetch below and the default
   // preset both compile, and a preset compiled under the wrong setting would
@@ -436,11 +442,15 @@ export function createMilkdropExperience({
       ? Math.round(beat.bpm)
       : null;
   let lastPublishedTempoBpm: number | null = null;
+  let lastPublishedAppliedShaderExecution: MilkdropAppliedShaderExecution | null =
+    null;
 
   const buildSnapshot = (): MilkdropExperienceSnapshot => {
     // One read per snapshot: `snapshot()` allocates.
     const beat = beatClock.snapshot(performance.now());
     lastPublishedTempoBpm = publishedTempo(beat);
+    lastPublishedAppliedShaderExecution =
+      adapter?.getAppliedShaderExecution?.() ?? null;
     return {
       activePresetId,
       backend: activeBackend,
@@ -459,6 +469,7 @@ export function createMilkdropExperience({
         activeCompiled,
         activeBackend,
       ),
+      appliedShaderExecution: lastPublishedAppliedShaderExecution,
       autoplay,
       transitionMode,
       blendDuration,
@@ -487,6 +498,7 @@ export function createMilkdropExperience({
 
   const setOverlayStatus = (message: string) => {
     lastStatusMessage = message;
+    onStatus?.(message);
     presentationController.setOverlayStatus();
     emitChange();
   };
@@ -980,6 +992,16 @@ export function createMilkdropExperience({
     // the next preset change.
     noteTempo: (beat) => {
       if (publishedTempo(beat) !== lastPublishedTempoBpm) emitChange();
+    },
+    // Same reason: the applied mode is only known once a frame has gone
+    // through the feedback pass, after the load's own emit.
+    noteFramePresented: () => {
+      if (
+        (adapter?.getAppliedShaderExecution?.() ?? null) !==
+        lastPublishedAppliedShaderExecution
+      ) {
+        emitChange();
+      }
     },
     getRuntime: () => runtime,
     getAdapter: () => adapter,
