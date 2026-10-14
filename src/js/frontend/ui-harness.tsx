@@ -38,10 +38,6 @@ function getQueryParams() {
   };
 }
 
-function useHarnessState() {
-  return getQueryParams();
-}
-
 function MockWorkspaceStagePanel(overrides: Record<string, unknown>) {
   return (
     <WorkspaceStagePanel
@@ -130,7 +126,7 @@ function SingleViewport({
 }
 
 function HarnessDashboard() {
-  const { component, props, gridWidths } = useHarnessState();
+  const { component, props, gridWidths } = getQueryParams();
 
   const widths = gridWidths ?? [undefined];
 

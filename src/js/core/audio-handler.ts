@@ -37,7 +37,7 @@ import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
 import { createLogger } from './logger.ts';
-import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
+import { queryMicrophonePermissionState } from './services/microphone-permission-service.ts';
 import { getMockAudioParams } from './url-params.ts';
 
 export type WorkletBeatDetection = {
@@ -951,18 +951,14 @@ export class FrequencyAnalyser {
   }
 }
 
-async function queryMicrophonePermissionState(): Promise<
+export async function getMicrophonePermissionState(): Promise<
   PermissionState | undefined
 > {
-  const state = await querySharedMicrophonePermissionState();
+  const state = await queryMicrophonePermissionState();
   if (state === 'unsupported' || state === 'unknown') {
     return undefined;
   }
   return state;
-}
-
-export async function getMicrophonePermissionState() {
-  return queryMicrophonePermissionState();
 }
 
 import { acquireMicrophoneStream } from './audio-constants.ts';
@@ -1615,7 +1611,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
       ownsStream = true;
       permissionState = 'granted';
     } else {
-      permissionState = await queryMicrophonePermissionState();
+      permissionState = await getMicrophonePermissionState();
 
       if (permissionState === 'denied') {
         if (options.fallbackToSynthetic) {

@@ -200,10 +200,6 @@ function updateEma(previous: number | null, next: number) {
   return previous + (next - previous) * EMA_ALPHA;
 }
 
-export function getAdaptiveQualityDisplayRefreshRate(): number {
-  return getDisplayRefreshRate();
-}
-
 function estimateFrameBudgetMs(): number {
   // Mobile displays (especially high-refresh 120Hz/144Hz panels) target 60Hz
   // (16.67ms) to preserve battery life and prevent rapid thermal throttling.
@@ -214,7 +210,7 @@ function estimateFrameBudgetMs(): number {
   // Budget against at most a 120Hz cadence: a 144-240Hz panel that presents at
   // panel rate would otherwise get a 4-7ms budget, read every frame as
   // over-budget, and pin the controller into permanent degradation.
-  const hz = Math.min(getAdaptiveQualityDisplayRefreshRate(), 120);
+  const hz = Math.min(getDisplayRefreshRate(), 120);
   return 1000 / hz;
 }
 

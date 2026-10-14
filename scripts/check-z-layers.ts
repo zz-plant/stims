@@ -29,10 +29,8 @@ import { extname, join } from 'node:path';
  * arguments, which is how the test suite runs this against fixtures rather
  * than re-implementing the matching and drifting from it.
  */
-const ROOTS =
-  process.argv.slice(2).filter((a) => !a.startsWith('-')).length > 0
-    ? process.argv.slice(2).filter((a) => !a.startsWith('-'))
-    : ['src'];
+const ARG_ROOTS = process.argv.slice(2).filter((a) => !a.startsWith('-'));
+const ROOTS = ARG_ROOTS.length > 0 ? ARG_ROOTS : ['src'];
 
 const SCANNED = new Set(['.css', '.ts', '.tsx']);
 

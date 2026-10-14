@@ -24,10 +24,8 @@ import { extname, join } from 'node:path';
  * roots as arguments, which is how the test suite runs this against fixtures
  * rather than re-implementing the matching and drifting from it.
  */
-const CSS_ROOTS =
-  process.argv.slice(2).filter((a) => !a.startsWith('-')).length > 0
-    ? process.argv.slice(2).filter((a) => !a.startsWith('-'))
-    : ['src/css'];
+const ARG_ROOTS = process.argv.slice(2).filter((a) => !a.startsWith('-'));
+const CSS_ROOTS = ARG_ROOTS.length > 0 ? ARG_ROOTS : ['src/css'];
 
 /** Steps from the --radius-* ladder in tokens.css, in px. */
 const RADIUS_STEPS = new Set([0, 2, 4, 6, 10, 14, 20, 28, 999]);
