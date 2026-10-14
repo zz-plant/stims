@@ -466,6 +466,19 @@ export type MilkdropPresetIR = {
     unsupportedLines: string[];
     controls: MilkdropShaderControls;
     controlExpressions: MilkdropShaderControlExpressions;
+    /**
+     * The same controls derived from one stage's text alone. When the other
+     * stage runs as written its share is already on screen, and only this
+     * stage's stand-in should apply. Optional: compiles cached before it
+     * existed fall back to the merged pair above.
+     */
+    stageControls?: Record<
+      'warp' | 'comp',
+      {
+        controls: MilkdropShaderControls;
+        expressions: MilkdropShaderControlExpressions;
+      }
+    >;
     customSamplers: MilkdropCustomSamplerDeclaration[];
   };
   post: MilkdropPostEffects;

@@ -2196,6 +2196,13 @@ export function extractShaderControls(
   // declared locals keep the normal path, which also tracks their values
   // for control expressions that read them.
   const declaredLocalNames = new Set<string>();
+  // Scalars a .milk body declares under a control's name (`float r = 2;`).
+  // The control dialect still reads them, so the uniform-only stand-in keeps
+  // working where the shader cannot run, but their statements also go to the
+  // direct program: kept out of it, every later `* r` read the colorScale.r
+  // control instead of the local, and was right only while that control
+  // happened to hold 2 (9 cotc presets).
+  const dialectScalarLocals = new Set<string>();
 
   // When processing a native shader_body, parse failures don't make the
   // raw GLSL invalid — WebGL can still execute it. Unparseable lines only
@@ -2257,12 +2264,14 @@ export function extractShaderControls(
       // text before this point, so for .milk shaders the type is what
       // decides: `float3 dx` is caught, `float zoom = …` is not.)
       const declaration = parsedStatement.declaration;
-      if (
-        declaration !== null &&
-        (nativeShaderBody || /^(?:vec|mat)[234]$/u.test(declaration))
-      ) {
-        declaredLocalNames.add(localBaseName);
+      if (declaration !== null) {
+        if (nativeShaderBody || /^(?:vec|mat)[234]$/u.test(declaration)) {
+          declaredLocalNames.add(localBaseName);
+        } else {
+          dialectScalarLocals.add(localBaseName);
+        }
       }
+      const isDialectScalarLocal = dialectScalarLocals.has(localBaseName);
       if (
         declaredLocalNames.has(localBaseName) &&
         !shouldRetainDirectProgramContextStatement(localBaseName)
@@ -2315,6 +2324,7 @@ export function extractShaderControls(
         if (
           retainsDirectProgramContext ||
           prefersDirectProgram ||
+          isDialectScalarLocal ||
           shouldEmitDirectProgramStatement(parsedStatement.target)
         ) {
           pushDirectProgramStatement();
@@ -2332,7 +2342,11 @@ export function extractShaderControls(
           shaderEnv,
         })
       ) {
-        if (prefersDirectProgram || requiresDirectProgram) {
+        if (
+          prefersDirectProgram ||
+          requiresDirectProgram ||
+          isDialectScalarLocal
+        ) {
           pushDirectProgramStatement();
         }
         supportedLineCount += 1;
@@ -2355,7 +2369,7 @@ export function extractShaderControls(
         supportedLineCount += 1;
         return;
       }
-      if (retainsDirectProgramContext) {
+      if (retainsDirectProgramContext || isDialectScalarLocal) {
         pushDirectProgramStatement();
         supportedLineCount += 1;
         return;
