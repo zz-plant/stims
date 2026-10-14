@@ -154,6 +154,7 @@ async function main() {
     console.log('demo audio active');
   }
 
+  let failures = 0;
   for (const presetId of args.ids) {
     console.log(`▶ ${presetId}`);
     await page.goto(
@@ -312,6 +313,8 @@ async function main() {
     );
     if ('error' in setup && setup.error) {
       console.error(`  ✗ ${setup.error}`);
+      failures += 1;
+      rmSync(tmpDir, { recursive: true, force: true });
       continue;
     }
     if ('warmed' in setup) {
@@ -365,7 +368,11 @@ async function main() {
         width: args.width,
       });
     } catch (error) {
-      console.error(`  ✗ WebP encode failed: ${error}`);
+      console.error(
+        `  ✗ ${error instanceof Error ? error.message : String(error)}`,
+      );
+      failures += 1;
+      rmSync(tmpDir, { recursive: true, force: true });
       continue;
     }
     rmSync(tmpDir, { recursive: true, force: true });
@@ -375,7 +382,7 @@ async function main() {
 
   await ctx.close();
   await browser.close();
-  process.exit(0);
+  process.exit(failures > 0 ? 1 : 0);
 }
 
 await main();
