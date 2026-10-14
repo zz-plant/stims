@@ -185,28 +185,6 @@ body[data-page="workspace"][data-live="true"] {
     }
   }
 
-  @keyframes ambientGlow {
-    0% {
-      transform: translate(0, 0) rotate(0deg) scale(1);
-    }
-    50% {
-      transform: translate(8%, -6%) rotate(10deg) scale(1.18);
-    }
-    100% {
-      transform: translate(0, 0) rotate(0deg) scale(1);
-    }
-  }
-
-  @keyframes bounceScrollHint {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(4px);
-    }
-  }
-
   .stims-shell__skeleton {
     position: relative;
     overflow: hidden;
@@ -896,19 +874,6 @@ body[data-page="workspace"][data-live="true"] {
        third on empty page ground. */
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
       inset: 64px 44px 40px;
-    }
-  }
-
-  /* Audio-reactive glow on the control dock */
-
-  @keyframes dock-glow-pulse {
-    0%,
-    100% {
-      opacity: calc(var(--stims-audio-glow, 0) * 0.32);
-    }
-
-    50% {
-      opacity: calc(var(--stims-audio-glow, 0) * 0.52);
     }
   }
 

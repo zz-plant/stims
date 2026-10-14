@@ -1006,17 +1006,6 @@ body {
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  @keyframes grid-glide {
-    from {
-      transform: translateY(0);
-    }
-    to {
-      transform: translateY(-18px);
-    }
-  }
-}
-
 #error-message {
   position: fixed;
   top: 20px;

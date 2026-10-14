@@ -6,6 +6,8 @@
  * must carry every class named outside a functional pseudo-class, so one
  * class that is never applied means it matches nothing. A rule whose
  * selectors are all dead goes; a mixed list loses only its dead selectors.
+ * An `@keyframes` block goes when no stylesheet or source names it once the
+ * dead rules are gone.
  *
  * What counts as applied:
  *  - Every identifier-shaped token in `src/js` and each Vite HTML entry.
@@ -15,11 +17,12 @@
  *
  * Classes inside `:not()`, `:is()`, `:where()` and `:has()` are not counted:
  * `:not(.dead)` matches everything, so it never makes a selector dead.
- * Module stylesheets are out of scope: the build renames their classes.
+ * Module stylesheets are out of scope: the build renames their classes. They
+ * still count as users of a keyframe name.
  *
  * Reports by default. Pass --apply to rewrite the files, then run Biome and
- * read the diff: a comment that introduced a removed rule stays behind, and
- * --list names each one so you can delete it by hand.
+ * read the diff: a comment that introduced a removed rule or keyframe stays
+ * behind, and --list names each one so you can delete it by hand.
  *
  *   node scripts/prune-dead-css.mjs
  *   node scripts/prune-dead-css.mjs --list
@@ -128,6 +131,40 @@ function requiredClasses(selector) {
 
 const compact = (selector) => selector.replace(/\s+/g, ' ').trim();
 
+/** Every `.css` file under src/css, module stylesheets included. */
+function collectStylesheets() {
+  const files = [];
+  const stack = [path.join(REPO_ROOT, 'src/css')];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+      } else if (entry.name.endsWith('.css')) {
+        files.push(full);
+      }
+    }
+  }
+  return files;
+}
+
+/** Identifiers used in declaration values: where animation names appear. */
+function valueTokens(root, into) {
+  root.walkDecls((decl) => {
+    for (const match of decl.value.matchAll(/[A-Za-z0-9_-]+/g)) {
+      into.add(match[0]);
+    }
+  });
+}
+
+function noteCommentAbove(node, comments) {
+  const previous = node.prev();
+  if (previous?.type === 'comment') {
+    comments.push({ line: previous.source?.start?.line });
+  }
+}
+
 function main() {
   const { tokens, prefixes } = collectSourceTokens();
   const isDead = (className) =>
@@ -139,6 +176,7 @@ function main() {
   let totalRules = 0;
   let totalRemoved = 0;
   let totalTrimmed = 0;
+  let totalKeyframes = 0;
   const perSheet = [];
 
   for (const relative of SHEETS) {
@@ -177,15 +215,43 @@ function main() {
         return;
       }
       removed.push({ line, selector: compact(rule.selector) });
-      const previous = rule.prev();
-      if (previous?.type === 'comment') {
-        comments.push({ line: previous.source?.start?.line });
-      }
+      noteCommentAbove(rule, comments);
       rule.remove();
     });
 
+    perSheet.push({ relative, file, css, root, removed, trimmed, comments });
+  }
+
+  // Keyframe names still in use, read after the dead rules are gone: a rule
+  // removed above may have been the only one animating with a name.
+  const animationNames = new Set(tokens);
+  const pruned = new Set(perSheet.map((sheet) => sheet.file));
+  for (const sheet of perSheet) {
+    valueTokens(sheet.root, animationNames);
+  }
+  for (const file of collectStylesheets()) {
+    if (!pruned.has(file)) {
+      valueTokens(postcss.parse(fs.readFileSync(file, 'utf8')), animationNames);
+    }
+  }
+
+  for (const sheet of perSheet) {
+    const { root, css } = sheet;
+    sheet.keyframes = [];
+    root.walkAtRules(/keyframes$/i, (atRule) => {
+      if (animationNames.has(atRule.params.trim())) {
+        return;
+      }
+      sheet.keyframes.push({
+        line: atRule.source?.start?.line,
+        name: atRule.params.trim(),
+      });
+      noteCommentAbove(atRule, sheet.comments);
+      atRule.remove();
+    });
+
     // Clean up at-rules (media/supports/layer) left with no children.
-    let prunedAtRules = 0;
+    sheet.prunedAtRules = 0;
     let changed = true;
     while (changed) {
       changed = false;
@@ -197,48 +263,45 @@ function main() {
           return;
         }
         atRule.remove();
-        prunedAtRules += 1;
+        sheet.prunedAtRules += 1;
         changed = true;
       });
     }
 
-    totalRemoved += removed.length;
-    totalTrimmed += trimmed.length;
-    const before = css.split('\n').length;
+    totalRemoved += sheet.removed.length;
+    totalTrimmed += sheet.trimmed.length;
+    totalKeyframes += sheet.keyframes.length;
     const output = root.toResult().css;
-    const after = output.split('\n').length;
-    perSheet.push({
-      relative,
-      prunedAtRules,
-      before,
-      after,
-      removed,
-      trimmed,
-      comments,
-    });
+    sheet.before = css.split('\n').length;
+    sheet.after = output.split('\n').length;
 
     if (APPLY && output !== css) {
-      fs.writeFileSync(file, output);
+      fs.writeFileSync(sheet.file, output);
     }
   }
 
   for (const sheet of perSheet) {
-    if (sheet.removed.length === 0 && sheet.trimmed.length === 0) {
+    if (
+      sheet.removed.length + sheet.trimmed.length + sheet.keyframes.length ===
+      0
+    ) {
       console.log(`  ${sheet.relative}: clean`);
       continue;
     }
     console.log(
       `  ${sheet.relative}: ${sheet.removed.length} dead rule(s), ` +
         `${sheet.trimmed.length} trimmed selector list(s), ` +
+        `${sheet.keyframes.length} unused keyframe(s), ` +
         `${sheet.prunedAtRules} empty at-rule(s), ` +
         `${sheet.before} -> ${sheet.after} lines`,
     );
   }
   console.log(
     `\n${totalRemoved} of ${totalRules} rules match nothing; ` +
-      `${totalTrimmed} more keep some selectors.`,
+      `${totalTrimmed} more keep some selectors; ` +
+      `${totalKeyframes} keyframe(s) are never used.`,
   );
-  if (!APPLY && totalRemoved + totalTrimmed > 0) {
+  if (!APPLY && totalRemoved + totalTrimmed + totalKeyframes > 0) {
     console.log('Re-run with --apply to rewrite the stylesheets.');
   }
 
@@ -252,9 +315,12 @@ function main() {
           `${sheet.relative}:${item.line}\tselectors\t${item.dead.join(', ')}`,
         );
       }
+      for (const item of sheet.keyframes) {
+        console.log(`${sheet.relative}:${item.line}\tkeyframes\t${item.name}`);
+      }
       for (const item of sheet.comments) {
         console.log(
-          `${sheet.relative}:${item.line}\tcomment above a dead rule`,
+          `${sheet.relative}:${item.line}\tcomment above a removed node`,
         );
       }
     }
