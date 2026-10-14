@@ -26,9 +26,13 @@ export type ShortcutActionId =
   | 'preset-lock'
   | 'autoplay'
   | 'live-performance'
+  | 'tap-tempo'
+  | 'tempo-follow-music'
   | 'record'
   | 'generate'
   | 'theme'
+  | 'blackout'
+  | 'flash'
   | 'transition-mode'
   | 'wave-mode-next'
   | 'wave-mode-previous'
@@ -211,9 +215,10 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   //      (E/X/Q/Z/R/space/1-3/brackets) keys.
   // The MilkDrop runtime used to be a third, with its own document-level
   // handler for H, L, R, W and an I/J/O/Q nudge map; those bindings now live
-  // here (the nudge group below) or were retired (R duplicated N). Letters
-  // still free after everything below: D, K and Y; the canvas holds Q, R, X
-  // and Z as performance keys whenever the stage has focus.
+  // here (the nudge group below) or were retired (R duplicated N). With D
+  // and Y (stage utilities) and K (tap tempo) taken, no bare letter is free
+  // after everything below, so a new binding needs a Shift chord; the canvas
+  // holds Q, R, X and Z as performance keys whenever the stage has focus.
   {
     id: 'queue-add',
     label: 'Add this preset to the queue',
@@ -235,6 +240,21 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     label: 'Toggle autoplay',
     defaultKeys: ['T'],
     paletteActionId: 'toggle-autoplay',
+    dispatchViaPalette: true,
+  },
+  {
+    // K, for "kick": tap it on the beat, starting on the downbeat.
+    id: 'tap-tempo',
+    label: 'Tap tempo (first tap is the downbeat; one tap later re-syncs)',
+    defaultKeys: ['K'],
+    paletteActionId: 'tap-tempo',
+    dispatchViaPalette: true,
+  },
+  {
+    id: 'tempo-follow-music',
+    label: 'Clear tapped tempo (follow the music)',
+    defaultKeys: ['Shift+K'],
+    paletteActionId: 'tempo-follow-music',
     dispatchViaPalette: true,
   },
   {
@@ -260,6 +280,28 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     defaultKeys: ['V'],
     paletteActionId: 'cycle-theme',
     dispatchViaPalette: true,
+  },
+  // ── Live stage utilities ────────────────────────────────────────────
+  // Presentation-only cuts a performer reaches for mid-show. Both act on
+  // the presentation layer (a luminance channel and an overlay), so no
+  // preset state, equation or audio source is touched. The hook handles
+  // keydown and keyup for these: they are holds, and the flash must end
+  // when the key does.
+  {
+    // D, not B/W/F: those are taken (browse, next waveform, full screen).
+    // A hold cuts the picture; two fast taps latch it for the whole
+    // break; one more press brings it back.
+    id: 'blackout',
+    group: 'Live stage utilities',
+    label: 'Blackout the picture (hold, or double-tap to latch)',
+    defaultKeys: ['D'],
+  },
+  {
+    // Y, for the moment the lights hit. Never latches: a white screen is
+    // for the drop, and the strobe is made by tapping.
+    id: 'flash',
+    label: 'White flash (hold; tap repeatedly to strobe)',
+    defaultKeys: ['Y'],
   },
   // ── Tune the playing preset ─────────────────────────────────────────
   // The MilkDrop runtime's old nudge keys, kept on the letters people knew

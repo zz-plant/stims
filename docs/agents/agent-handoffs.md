@@ -1,7 +1,5 @@
 # Agent bootstrap and handoffs
 
-Use this page when you need the fastest safe repo entry or when work may be split across multiple agents.
-
 ## 60-second bootstrap
 
 1. Check local readiness, then print the repo bootstrap plan:
@@ -22,46 +20,14 @@ Use this page when you need the fastest safe repo entry or when work may be spli
 
    This installs dependencies and runs `bun run check:quick`. Repeated runs skip `bun install` automatically when `node_modules` and the local manifest fingerprint already look current.
 
-   When you want a warmer long-lived session on a machine that exposes the local helper commands, use:
+3. Start your own worktree before editing (see [below](#working-in-a-tree-with-other-writers)), then keep a warm loop running there with `bun run dev:agent`: the dev server, a typecheck watcher and the fast test suite in watch mode.
 
-   ```bash
-   bun run session:codex -- --profile review
-   ```
-
-3. Read in this order:
+4. Read in this order:
    - [`../../AGENTS.md`](../../AGENTS.md)
-   - [`./README.md`](./README.md)
-   - [`./custom-capabilities.md`](./custom-capabilities.md) when the task matches a repo-local skill/workflow
+   - [`./custom-capabilities.md`](./custom-capabilities.md) when the task matches a repo-local skill
    - [`./tooling-and-quality.md`](./tooling-and-quality.md) before code edits
 
-4. Choose the smallest validation loop that matches the task, then widen only when behavior changes justify it.
-
-## Session profiles
-
-Use the profile that matches the work:
-
-- `fast`: warm the fast local model role and keep the dev server hot
-- `review`: warm fast and quality local model roles, keep the dev server hot, and run a background typecheck watcher
-- `compat`: keep the dev server hot and run a compatibility watcher
-- `integration`: keep the dev server hot and run an integration watcher
-- `parity`: keep the dev server hot for parity and perf capture runs
-- `visual`: keep the dev server hot for browser QA without extra watchers
-- `full`: keep the dev server hot and run a unit-test watcher
-
-Useful controls:
-
-```bash
-bun run session:codex -- --status
-bun run session:codex -- --stop
-# If you started a non-default port, repeat it here:
-bun run session:codex -- --port 4173 --stop
-```
-
-For local model routing before you split work, use:
-
-```bash
-bun run model:codex -- --mode auto --task "triage a runtime regression" --no-exec
-```
+5. Choose the smallest validation loop that matches the task, then widen only when behavior changes justify it.
 
 ## Safe ownership slices
 
@@ -69,10 +35,10 @@ Use one owner per slice when work is parallelized:
 
 | Slice | Primary files | Typical validation |
 | --- | --- | --- |
-| Runtime and shell | `src/js/core/`, `src/js/frontend/`, `src/css/`, app entry points | targeted test file, `bun run test:integration`, then `bun run check` |
+| Runtime and shell | `src/js/core/`, `src/js/frontend/`, `src/css/`, app entry points | targeted test file, the covering `tests/e2e/` file, then `bun run check` |
 | Presets and compatibility | `src/js/milkdrop/`, preset fixtures, catalog assets | targeted test file, `bun run test:compat`, then `bun run check` |
 | Browser verification | tests, Playwright helpers, visual QA docs | `bun run dev`, `http://localhost:5173/?agent=true`, targeted browser checks |
-| Docs and metadata | `docs/`, `AGENTS.md`, `.agent/`, MCP-facing markdown wiring | docs link review, targeted tests if MCP/doc wiring changed |
+| Docs and metadata | `docs/`, `AGENTS.md`, `.agent/`, MCP-facing markdown wiring | `bun run check:doc-references`, `bun run check:skill-index`, and `bun run test tests/unit/mcp-server.test.ts` if MCP wiring changed |
 
 Keep ownership crisp:
 
@@ -90,11 +56,13 @@ results — a screenshot taken while another session's edit hot-reloaded, a
 capture of a preset another session had edited in place. Treat the shared tree
 as read-mostly:
 
-- **Verify in your own worktree, on your own port.** `git worktree add --detach
-  <tmpdir> HEAD`, symlink the repo's `node_modules` into it, copy in only the
-  files you changed, and run `bunx vite --port <yours> --strictPort` there.
-  Anything you intend to trust — screenshots, parity captures, frame diffs —
-  comes from that server, not from `:5173`. Remove the worktree when done.
+- **Work in your own worktree, on your own port.** `bun run worktree:new -- <branch>`
+  creates a worktree off the latest `origin/main`, installs its dependencies,
+  and prints its path; work only there. Run the dev server with
+  `bun run dev -- --port <yours> --strictPort`. Anything you intend to trust —
+  screenshots, parity captures, frame diffs — comes from that server, not from
+  `:5173`. Remove the worktree with `git worktree remove <path>` once the branch
+  is merged.
 - **Never `git stash` and never `git checkout` a file you did not write.** A
   `stash pop` in a shared tree can pop someone else's entry and conflict in a
   file you have never opened. Stage and commit by explicit path, never `-A`.
@@ -108,7 +76,7 @@ as read-mostly:
 
 ## Fast routing
 
-[`custom-capabilities.md`](./custom-capabilities.md#skills) is the canonical skill/workflow routing table — use it to pick the right playbook before splitting or starting work.
+[`custom-capabilities.md`](./custom-capabilities.md#skills) is the skill index — use it to pick the right playbook before splitting or starting work.
 
 ## Handoff packet
 

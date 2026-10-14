@@ -1,10 +1,11 @@
 // Cloudflare Pages Function: Dynamic 1200x630 Social Card Generator for Presets
 // Serves GET /api/og-preset?id=<preset-id>
 //
-// Default output is PNG rasterized with resvg-wasm — X, Facebook, Slack,
+// Default output is a JPEG rasterized with resvg-wasm — X, Facebook, Slack,
 // Discord, and iMessage all refuse SVG in link previews. `?format=svg`
 // returns the source SVG for debugging the template.
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
+import { encodeJpegWithin } from '../shared/jpeg-encoder.ts';
 import { loadPresetMeta } from '../shared/preset-meta.ts';
 import { presentTitle } from '../shared/preset-title.ts';
 import resvgWasm from './resvg.wasm';
@@ -272,10 +273,24 @@ async function ensureWasm(wasm: RenderAssets['wasm']): Promise<void> {
   return wasmReady;
 }
 
-export async function renderPresetOgPng(
+// WhatsApp (among others) silently drops a preview image much past 300KB —
+// the limit scripts/generate-seo.ts renderOgPng holds the static cards to.
+// resvg's own truecolor PNG of a full-bleed frame is 0.5–1.8MB.
+export const OG_CARD_MAX_BYTES = 300 * 1024;
+
+// Why JPEG and not the static cards' 256-colour palette PNG: measured on a
+// quarter of the corpus, 9% of palette cards only fit by dropping to 64 or 32
+// colours, which visibly darkens busy multi-hue frames (benski atom smasher
+// scores 34.9dB PSNR against the truecolor render at a 600px feed width; the
+// JPEG scores 44.1dB). At quality 85 that sample is 96KB median and 296KB at
+// worst; 6 of its 622 presets needed a lower rung.
+const OG_CARD_QUALITIES = [85, 80, 75, 70, 60, 50] as const;
+
+/** resvg's rendering of the card: opaque RGBA, before JPEG encoding. */
+export async function rasterizePresetOg(
   svg: string,
   assets: RenderAssets,
-): Promise<Uint8Array> {
+): Promise<{ pixels: Uint8Array; width: number; height: number }> {
   await ensureWasm(assets.wasm);
   const resvg = new Resvg(svg, {
     fitTo: { mode: 'width', value: 1200 },
@@ -288,10 +303,27 @@ export async function renderPresetOgPng(
     },
   });
   try {
-    return resvg.render().asPng();
+    const image = resvg.render();
+    try {
+      // `pixels` is a copy in JS memory, so it outlives the free below.
+      return { pixels: image.pixels, width: image.width, height: image.height };
+    } finally {
+      image.free();
+    }
   } finally {
     resvg.free();
   }
+}
+
+export async function renderPresetOgJpeg(
+  svg: string,
+  assets: RenderAssets,
+): Promise<Uint8Array> {
+  const { pixels, width, height } = await rasterizePresetOg(svg, assets);
+  return encodeJpegWithin(pixels, width, height, {
+    maxBytes: OG_CARD_MAX_BYTES,
+    qualities: OG_CARD_QUALITIES,
+  });
 }
 
 const FONT_PATHS = [
@@ -375,8 +407,10 @@ async function resolveRenderAssets(
   };
 }
 
-const PNG_CACHE_CONTROL =
+const CARD_CACHE_CONTROL =
   'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400';
+
+const CARD_CACHE_REVISION = 'jpeg';
 
 function edgeCache(): Cache | null {
   const store = (globalThis as { caches?: { default?: Cache } & CacheStorage })
@@ -548,7 +582,7 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
     return new Response(svg, {
       headers: {
         'Content-Type': 'image/svg+xml',
-        'Cache-Control': PNG_CACHE_CONTROL,
+        'Cache-Control': CARD_CACHE_CONTROL,
       },
     });
   }
@@ -558,7 +592,9 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
   // rendered output and must seed the cache key. Keying only on the preset id
   // would let whichever tweak rendered first win the shared entry and serve the
   // wrong card to every other variant for up to s-maxage (7 days).
-  const query = new URLSearchParams({ id: presetId });
+  // `rev` names the encoding: cards cached as 780KB PNGs before the switch to
+  // JPEG would otherwise keep serving, under the same key, for up to 7 days.
+  const query = new URLSearchParams({ id: presetId, rev: CARD_CACHE_REVISION });
   if (tweak) query.set('tweak', tweak);
   const cacheKey = new Request(
     new URL(`/api/og-preset?${query}`, url.origin).toString(),
@@ -571,11 +607,11 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
 
   try {
     const assets = await resolveRenderAssets(context, url.origin);
-    const png = await renderPresetOgPng(svg, assets);
-    const response = new Response(new Uint8Array(png).buffer, {
+    const jpeg = await renderPresetOgJpeg(svg, assets);
+    const response = new Response(new Uint8Array(jpeg).buffer, {
       headers: {
-        'Content-Type': 'image/png',
-        'Cache-Control': PNG_CACHE_CONTROL,
+        'Content-Type': 'image/jpeg',
+        'Cache-Control': CARD_CACHE_CONTROL,
       },
     });
     if (cache) {

@@ -1,0 +1,415 @@
+# MilkDrop projectM parity backlog
+
+> Superseded on 2026-10-13: merged into the [parity plan](../MILKDROP_PROJECTM_PARITY_PLAN.md), which now holds the method, measurement rules, current scoreboard and open work. Kept for its per-milestone file targets and acceptance criteria.
+
+This backlog turns the parity roadmap into concrete milestones for the repository.
+
+Use [`MILKDROP_PROJECTM_PARITY_PLAN.md`](../MILKDROP_PROJECTM_PARITY_PLAN.md) for the high-level direction. Use this file for implementation order, ownership boundaries, concrete file targets, and acceptance criteria.
+Use [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md) when you need to see how parity work is coordinated with runtime, product, and proof tracks.
+
+Current target, reference, and result inventories live under `src/data/milkdrop-parity/`. The dated snapshot below is historical; later comparisons in the [parity plan](../MILKDROP_PROJECTM_PARITY_PLAN.md) can supersede its labels. Current commands are in the parity plan's [Method](../MILKDROP_PROJECTM_PARITY_PLAN.md#method).
+
+## Operating rule
+
+Semantic compatibility remains necessary, but it is no longer sufficient for claiming preset fidelity.
+
+Every milestone in this backlog should move at least one preset class from:
+
+- "compiles and renders plausibly"
+
+to:
+
+- "matches projectM within an explicit visual tolerance"
+
+## Historical status snapshot
+
+> **2026-08-26 update.** The snapshot below predates the corpus re-certification
+> and understates what exists. Since it was written: all nine references were
+> re-captured against audio the presets can react to (per-preset
+> `referenceAudio`, tone signal shared byte-for-byte with the runtime via a
+> generated header); captures run at native resolution, at projectM's own
+> frame 300, on one reused browser (~33s for the nine); the deterministic pump
+> resets clock, GPU history **and the VM**, a reset that eliminated krash's
+> bimodal renders and eos-glowsticks' intermittent blank frames (bands now
+> 0.000-2.4pp); and the harness provenance hash invalidates every reference
+> when the C++ harness *or* the audio signal changes. Current medians and the
+> measurement rules live in `MILKDROP_PROJECTM_PARITY_PLAN.md` — read its
+> "Measurement rules" section before trusting or producing any parity number.
+
+
+Corpus integrity (resolved):
+- The bundled butterchurn import used to drop every equation block. 1739 of the 1791 catalogued presets shipped with base values and shader text only, so no per-frame, per-pixel, per-point, or per-shape code ran for them. Wave and shape base values were also written into `[wave00_N]` / `[shape00_N]` sections that the compiler does not read.
+- `scripts/butterchurn-eel-transpiler.ts` now converts the upstream JavaScript equation strings back to EEL, and `scripts/import-butterchurn-presets.ts --rewrite` emits canonical single-section `.milk` files. 157,950 statements were recovered and the whole bundled corpus compiles without error diagnostics.
+- The runtime now executes EEL `loop(count, body)` and `while(cond, body)` control flow, not just flat assignment statements. The statement parser (`packages/milkdrop-toolchain/src/expression.ts`) recognises `loop()`/`while()` lines that previously had no top-level `=` and were silently dropped, and the JIT (`packages/milkdrop-toolchain/src/expression-jit.ts`) emits a bounded loop sharing a per-block guard counter capped at 2,097,152 iterations so a non-terminating loop cannot hang the tab. The transpiler also lowers JS `do { ... } while(cond)` and strips the butterchurn `a.rkeys` render-hint, so every previously-untranslated block now transpiles and runs.
+
+Completed foundation:
+- Milestones 0 through 3 are implemented in the repo: deterministic parity artifacts, checked-in certification manifests, native projectM reference promotion, measured-result promotion, backend-aware diffing, and honest fidelity labeling are all wired.
+
+Bundled shipped preset lane (superseded):
+- The certified reference set replaced this lane as the proof loop: 13 presets in `visual-reference-manifest.json` carry a native projectM image. Two of the four lane presets, krash and glowsticks, have references that show no signal and should be retired (see the parity plan), and the `bundled-shipped` corpus group now lists 43 presets. The original lane, for the record:
+  - `eos-glowsticks-v2-03-music`
+  - `rovastar-parallel-universe`
+  - `eos-phat-cubetrace-v2`
+  - `krash-rovastar-cerebral-demons-stars`
+  - The intended reference-import and native-promotion sequence for each preset is:
+  - capture a Stims artifact,
+  - import the matching `projectM` reference,
+  - promote the reference into `tests/fixtures/milkdrop/projectm-reference/`,
+  - run `bun run parity:suite`,
+  - promote the suite result into `src/data/milkdrop-parity/measured-results.json`,
+  - sync `public/milkdrop-presets/catalog.json`.
+  - The report described by this snapshot certifies `eos-glowsticks-v2-03-music` on both backends and classifies the other three as uncertified because their latest captures fail visual tolerance (`rovastar-parallel-universe` at ~98% pixel mismatch on both backends). They must not be described as WebGPU-certified.
+
+Completed parity slices:
+- Milestone 4 has partial completion: feedback blur/boost alignment, explicit separation of video-echo state from generic comp-shader mixing, and removal of stale blanket WebGPU fallback cases are in place.
+- Milestone 6 has partial completion: unsupported `tex3D(sampler_main, ...)` and non-volume aux `tex3D(...)` paths are now downgraded instead of silently treated as full support, overlay replace mode is distinct from overlay mix mode, textured-shape sampling now wraps instead of clamping, warp textures now sample in warp-stage UV space instead of raw screen UV space, and textured custom shapes can now stay on the native WebGPU batched path when a shape texture is available instead of forcing an unconditional fallback.
+- Milestone 7 has partial completion: the native WebGPU shape batcher now preserves two-color custom-shape gradients instead of flattening them to one averaged fill color, procedural custom-wave thickness survives the GPU path, WebGPU shape-outline thickness is normalized in world space instead of growing with shape radius, CPU/WebGL line-wave fallbacks now preserve explicit preset `thick` values in their line materials, and styled border accents now keep their attenuated alpha on first render instead of being promoted to full outline alpha.
+
+Primary remaining roadmap:
+1. Expand direct shader-text execution so richer `warp` and `comp` programs stop relying on scalar approximations or soft semantic-only success.
+2. Close the remaining texture and sampler behavior gaps, especially overlay, warp, and shape texture semantics that still differ from `projectM`.
+3. Match wave, shape, border, and mesh rasterization more closely in draw ordering, thickness, smoothing, and blend semantics.
+4. Re-certify WebGPU against both checked-in `projectM` references and the Stims compatibility WebGL path before allowing stronger fidelity claims.
+5. Cover any remaining divergence strata with one representative each. The corpus is a bounded proof-of-method sample (see the certification-scope rule in the parity plan), not a path to full-catalog certification.
+
+## Milestone 0: tooling baseline
+
+Status:
+- Completed
+
+Goal:
+- Make parity artifacts deterministic, importable, and diffable.
+
+Current repo pieces:
+- [`scripts/play-toy.ts`](../../scripts/play-toy.ts)
+- [`scripts/import-projectm-reference.ts`](../../scripts/import-projectm-reference.ts)
+- [`scripts/diff-parity-artifacts.ts`](../../scripts/diff-parity-artifacts.ts)
+- [`scripts/parity-artifacts.ts`](../../scripts/parity-artifacts.ts)
+
+Deliverables:
+- Stable Stims capture for a requested preset id
+- Imported projectM reference images in the same artifact directory
+- Diff report and diff image generation
+- Manifest entries linking Stims captures, projectM references, and diff outputs
+
+Exit criteria:
+- A contributor can capture, import, and diff a preset with documented commands only.
+- The output directory always contains a machine-readable manifest.
+
+Evidence:
+- Full corpus manifest and checked-in reference validation pass in `bun run check:all`.
+- Native projectM 3.1.12 references are provenance-checked in `tests/fixtures/milkdrop/projectm-reference/`.
+
+## Milestone 1: certified visual corpus
+
+Status:
+- Completed for the current bounded corpus; visual coverage remains intentionally incomplete.
+
+Goal:
+- Replace ad hoc visual inspection with a small, versioned, certified preset/reference corpus.
+
+Files to add or change:
+- `src/data/milkdrop-parity/visual-reference-manifest.json`
+- `tests/fixtures/milkdrop/projectm-reference/`
+- `scripts/visual-reference-manifest.ts`
+- `scripts/promote-projectm-reference.ts`
+- [`tests/corpus/milkdrop-parity.test.ts`](../../tests/corpus/milkdrop-parity.test.ts)
+- [`tests/corpus/milkdrop-projectm-compat.test.ts`](../../tests/corpus/milkdrop-projectm-compat.test.ts)
+
+Implementation tasks:
+1. Define a manifest schema for reference renders.
+2. Add a first certified preset set, grouped by subsystem:
+   - feedback/video echo
+   - shader text
+   - per-pixel warp
+   - custom waves
+   - custom shapes
+   - textured shapes and sampler-heavy presets
+3. Store per-reference metadata:
+   - preset id
+   - reference image path
+   - source commit or build identifier
+   - frame time or capture timing
+   - resolution
+   - tolerance profile
+4. Add tests that validate manifest integrity and file presence.
+
+Acceptance criteria:
+- The repo contains a checked-in certified visual corpus.
+- Each certified preset has an explicit tolerance profile.
+- CI can validate that the corpus metadata and referenced files are in sync.
+
+## Milestone 2: visual diff gate
+
+Status:
+- Completed
+
+Goal:
+- Make visual parity an automated test target instead of a manual audit.
+
+Files to add or change:
+- `scripts/run-parity-diff-suite.ts`
+- [`scripts/run-tests.ts`](../../scripts/run-tests.ts)
+- `tests/corpus/milkdrop-visual-parity.test.ts` (NEW)
+- [`package.json`](../../package.json)
+
+Implementation tasks:
+1. Add a script that resolves certified pairs and produces aggregate results.
+2. Define result classes:
+   - pass
+   - tolerated drift
+   - fail
+3. Add a dedicated compat sub-profile for visual parity.
+4. Emit a summary sorted by worst mismatch ratio first.
+5. Support a strict mode for CI and a report mode for local investigation.
+
+Acceptance criteria:
+- `bun run test:compat` or an adjacent parity command can run certified visual checks end-to-end.
+- The output ranks worst presets first with explicit metrics.
+- CI can fail on visual regressions for certified presets.
+
+## Milestone 3: honest fidelity classification
+
+Status:
+- Completed
+
+Goal:
+- Stop inferring fidelity from compiler optimism and make measured visual results authoritative.
+
+Primary files to change:
+- [`packages/milkdrop-toolchain/src/compiler/core.ts`](../../packages/milkdrop-toolchain/src/compiler/core.ts)
+- [`packages/milkdrop-toolchain/src/compiler/ir.ts`](../../packages/milkdrop-toolchain/src/compiler/ir.ts)
+- [`packages/milkdrop-toolchain/src/compiler/compatibility.ts`](../../packages/milkdrop-toolchain/src/compiler/compatibility.ts)
+- [`src/js/milkdrop/catalog-store-analysis.ts`](../../src/js/milkdrop/catalog-store-analysis.ts)
+- [`public/milkdrop-presets/catalog.json`](../../public/milkdrop-presets/catalog.json)
+
+Implementation tasks:
+1. Separate semantic compatibility from visual fidelity.
+2. Change fidelity derivation:
+   - `exact` requires measured visual pass
+   - `near-exact` requires measured drift within a looser threshold
+   - `fallback` covers known approximation paths or visual failures
+3. Populate hard-unsupported and partial-gap tables based on measured evidence.
+4. Restrict allowlist use to explicitly accepted visual gaps.
+
+Acceptance criteria:
+- No shipped preset is marked `exact` without measured visual evidence.
+- Compiler-derived support no longer implies visual fidelity by itself.
+- Catalog fidelity labels align with measured parity state.
+
+## Milestone 4: feedback and video echo parity
+
+Goal:
+- Eliminate the largest visible drift source first.
+
+Primary files to change:
+- [`src/js/milkdrop/renderer-helpers/feedback-composite.ts`](../../src/js/milkdrop/renderer-helpers/feedback-composite.ts)
+- [`src/js/milkdrop/feedback-manager-shared.ts`](../../src/js/milkdrop/feedback-manager-shared.ts)
+- [`src/js/milkdrop/feedback-manager-webgpu.ts`](../../src/js/milkdrop/feedback-manager-webgpu.ts)
+- [`packages/milkdrop-toolchain/src/compiler/gpu-descriptor-plan.ts`](../../packages/milkdrop-toolchain/src/compiler/gpu-descriptor-plan.ts)
+- [`tests/unit/milkdrop-renderer-adapter.test.ts`](../../tests/unit/milkdrop-renderer-adapter.test.ts)
+
+Implementation tasks:
+1. Remove heuristic state fusion where projectM has distinct passes.
+2. Match pass ordering for:
+   - feedback
+   - video echo
+   - warp shader
+   - comp shader
+   - brighten/darken/solarize/invert
+   - gamma
+3. Certify a feedback-heavy preset set after each change.
+4. Gate WebGPU fallback more conservatively until output matches the WebGL compatibility path.
+
+Acceptance criteria:
+- Certified feedback/video-echo presets move from fail to pass or tolerated drift.
+- Heuristic-only visual adjustments are either removed or justified by parity data.
+
+## Milestone 5: shader-text parity
+
+Status:
+- In progress
+
+Goal:
+- Shrink the gap between translated controls and actual projectM shader behavior.
+
+Primary files to change:
+- [`packages/milkdrop-toolchain/src/compiler/shader-analysis.ts`](../../packages/milkdrop-toolchain/src/compiler/shader-analysis.ts)
+- [`packages/milkdrop-toolchain/src/compiler/ir.ts`](../../packages/milkdrop-toolchain/src/compiler/ir.ts)
+- [`packages/milkdrop-toolchain/src/compiler/parity.ts`](../../packages/milkdrop-toolchain/src/compiler/parity.ts)
+- [`packages/milkdrop-toolchain/tests/milkdrop-compiler-shader-analysis.test.ts`](../../packages/milkdrop-toolchain/tests/milkdrop-compiler-shader-analysis.test.ts)
+- [`tests/corpus/milkdrop-projectm-compat.test.ts`](../../tests/corpus/milkdrop-projectm-compat.test.ts)
+
+Implementation tasks:
+1. Expand direct warp/comp shader subset support.
+2. Reduce lowering into scalar control approximations.
+3. Mark unsupported constructs as explicit parity failures rather than soft optimism.
+4. Add shader-heavy certified presets to the visual corpus.
+
+Current remaining focus:
+- Prioritize richer direct `shader_body` / `ret` execution paths before adding more control-translation heuristics.
+- Audit presets that still compile as semantically supported while carrying non-trivial approximated shader lines.
+- Promote at least one shader-heavy certified preset from semantic-only success to measured visual pass after each execution-path expansion.
+
+Acceptance criteria:
+- Shader-heavy certified presets no longer pass only on semantic grounds.
+- Unsupported shader constructs are visible in diagnostics and reflected in fidelity labels.
+
+## Milestone 6: texture and sampler parity
+
+Status:
+- In progress
+
+Goal:
+- Remove known sampler approximations that visibly change output.
+
+Primary files to change:
+- [`packages/milkdrop-toolchain/src/compiler/shader-analysis.ts`](../../packages/milkdrop-toolchain/src/compiler/shader-analysis.ts)
+- [`src/js/milkdrop/feedback-manager-shared.ts`](../../src/js/milkdrop/feedback-manager-shared.ts)
+- [`src/js/milkdrop/feedback-manager-webgpu.ts`](../../src/js/milkdrop/feedback-manager-webgpu.ts)
+- [`tests/unit/milkdrop-shader-sampler-aliases.test.ts`](../../tests/unit/milkdrop-shader-sampler-aliases.test.ts)
+
+Implementation tasks:
+1. Expand aux-texture coverage.
+2. Close or explicitly downgrade non-equivalent `tex3D` and volume-sampler behavior.
+3. Validate overlay texture, warp texture, and shape texture behavior visually.
+
+Current remaining focus:
+- Keep explicit downgrade behavior for any sampler path that cannot yet be shown visually equivalent to `projectM`.
+- Revisit overlay, warp, and shape texture handling on both feedback managers, not just compiler-side sampler classification.
+- Add measured reference coverage for sampler-heavy certified presets before relaxing any fallback logic.
+
+Acceptance criteria:
+- Sampler-heavy certified presets have measured parity coverage.
+- Remaining sampler approximations are reflected as explicit fallback status.
+
+## Milestone 7: wave, shape, and mesh rasterization parity
+
+Status:
+- In progress
+
+Goal:
+- Match what projectM actually draws, not just how many primitives Stims emits.
+
+Primary files to change:
+- [`src/js/milkdrop/renderer-helpers/wave-renderer.ts`](../../src/js/milkdrop/renderer-helpers/wave-renderer.ts)
+- [`src/js/milkdrop/renderer-helpers/procedural-wave-renderer.ts`](../../src/js/milkdrop/renderer-helpers/procedural-wave-renderer.ts)
+- [`src/js/milkdrop/renderer-helpers/shape-renderer.ts`](../../src/js/milkdrop/renderer-helpers/shape-renderer.ts)
+- [`src/js/milkdrop/renderer-helpers/border-renderer.ts`](../../src/js/milkdrop/renderer-helpers/border-renderer.ts)
+- [`src/js/milkdrop/renderer-helpers/mesh-renderer.ts`](../../src/js/milkdrop/renderer-helpers/mesh-renderer.ts)
+- [`tests/unit/milkdrop-renderer-adapter.test.ts`](../../tests/unit/milkdrop-renderer-adapter.test.ts)
+
+Implementation tasks:
+1. Validate draw ordering, blend semantics, smoothing, borders, and thickness.
+2. Expand visual certification for custom waves and custom shapes.
+3. Revisit legacy aliases only when visual evidence shows mismatch.
+
+Completed slices:
+- Custom shape instancing (`shapecode_N_num_inst`) now matches MilkDrop: the per-frame shape program runs once per instance with `instance` and `num_inst` in scope, capped at MilkDrop's own 1024 ceiling. 304 bundled presets declare multi-instance shapes and 232 vary geometry by `instance`.
+- The shape radius floor was lowered to 0.002 so instanced dot fields keep MilkDrop's typical 0.005-0.02 radii.
+
+Current remaining focus:
+- Decide whether shape radius needs the same 0..1 to -1..1 rescaling that shape `x`/`y` receive. (The `time * 0.08` rotation term and the `beatPulse` radius multiplier were removed on 2026-08-04 in `6b43d58e`; rotation is now the shape's own `ang`.)
+- Use `bun run lab:backend-diff` to find where WebGL and WebGPU disagree on custom-wave, custom-shape, and border-heavy presets; judge each fix against the projectM reference on WebGPU, not against WebGL.
+- Tighten shape-outline, border-ring, and waveform thickness behavior based on measured reference output rather than object-count parity.
+- Treat remaining visible draw-order or smoothing drift as certification blockers even when the VM output is already semantically correct.
+
+Acceptance criteria:
+- Certified wave/shape presets are judged by rendered output rather than object counts alone.
+- Remaining differences are explicit and measurable.
+
+## Milestone 8: WebGPU re-certification
+
+Status:
+- In progress
+
+Current evidence:
+- The comparator requires native WebGPU captures and records backend mismatches instead of accepting fallback WebGL captures.
+- Current report (`src/data/milkdrop-parity/webgpu-certification-report.json`, 2026-07-29): 3 presets certified on both backends, 0 WebGL-only, 6 uncertified, and 62 unmeasured out of a 71-preset corpus. The volume fixtures are captured natively but fail visual tolerance.
+- Native WebGPU direct feedback has been on by default on the full WebGPU path since 2026-08-06 (`789c1e9a`), not only in the certification lane.
+- Built-in `noise_lq` and `noisevol_lq` now use deterministic RGBA noise sources for browser parity; strict pixel comparison remains intentionally non-certifying because native projectM seeds these textures independently per process.
+
+Goal:
+- Prevent WebGPU from claiming parity before it has earned it. WebGPU is the only judged backend: every certified reference requires it, and WebGL has no parity coverage, so WebGL output is not a comparator for it.
+
+Primary files to change:
+- [`src/js/milkdrop/renderer-adapter-webgpu.ts`](../../src/js/milkdrop/renderer-adapter-webgpu.ts)
+- [`src/js/milkdrop/renderer-adapter-webgl.ts`](../../src/js/milkdrop/renderer-adapter-webgl.ts)
+- [`src/js/milkdrop/webgpu-optimization-flags.ts`](../../src/js/milkdrop/webgpu-optimization-flags.ts)
+- [`tests/compat/milkdrop-webgpu-rollout.test.ts`](../../tests/compat/milkdrop-webgpu-rollout.test.ts)
+
+Implementation tasks:
+1. Compare WebGPU output against the projectM reference, within the preset's tolerance and outside its noise band.
+2. Disable exactness claims for WebGPU where descriptor-plan output diverges.
+   (2026-08-18: the semantic layer of this divergence is now converged and
+   fuzz-guarded — `tests/unit/gpu-field-tier-differential.test.ts` holds the
+   lowered-descriptor semantics equal to the CPU JIT after fixing six
+   divergence classes that covered 32% of lowered programs. Remaining
+   divergence sources are f32 precision and non-lowered constructs, not
+   operator/function semantics.)
+3. Keep fallback routing conservative until equivalence is proven.
+
+Current remaining focus:
+- Re-run capture, suite and noise on the certified set; nothing has been measured since 2026-09-01.
+- Require native WebGPU capture success for certified presets; fallback to WebGL remains a certification failure.
+- Gate any future WebGPU backend-capability claims on measured output, not on native execution alone.
+
+Acceptance criteria:
+- WebGPU-specific certification exists for the certified corpus.
+- A preset is not `exact` on WebGPU unless it passes its projectM reference.
+- WebGL gets its own parity coverage before any WebGL fidelity claim; `lab:backend-diff` locates backend divergence but is not a fidelity verdict.
+
+## Milestone 9: UI and reporting honesty
+
+Status:
+- In progress
+
+Goal:
+- Make the product surface tell the truth about what is measured and what is inferred.
+
+Primary files to change:
+- [`src/js/frontend/BrowseSheetPanel.tsx`](../../src/js/frontend/BrowseSheetPanel.tsx)
+- [`src/js/milkdrop/catalog-store-analysis.ts`](../../src/js/milkdrop/catalog-store-analysis.ts)
+- [`packages/milkdrop-toolchain/src/common-types.ts`](../../packages/milkdrop-toolchain/src/common-types.ts)
+- [`docs/MILKDROP_PRESET_RUNTIME.md`](../MILKDROP_PRESET_RUNTIME.md)
+
+Implementation tasks:
+1. Distinguish semantic support from measured visual parity in diagnostics.
+2. Expose whether a fidelity label is:
+   - measured against projectM
+   - inferred from semantic analysis only
+3. Add a preset-level pointer to diff artifacts or parity status when available.
+
+Completed slices:
+- `MilkdropVisualCertification` now carries the measured `mismatchRatio` and `failThreshold` so downstream UI can surface drift figures without re-loading the suite manifest.
+- Catalog projection (`catalog-store-analysis.ts`) plumbs measured ratio/threshold from the suite manifest into each catalog entry's visual certification.
+- ~~Preset rows render a "projectM verified" badge when measured parity passes and a "Drifts from projectM (~X%)" badge when measured parity fails, with the certification reason exposed via tooltip.~~ The row renderer was never mounted in the React workspace and has been deleted.
+- ~~Inspector panel adds a "Measured drift" metric that shows the measured pixel-mismatch percentage for measured presets and reads "not measured" for inferred-only presets.~~
+
+Current remaining focus:
+- Expose a per-preset link to checked-in diff/reference artifacts (currently only the certification reason text is surfaced).
+- Reflect the same measured-vs-inferred distinction in catalog rollups and exported diagnostics.
+
+Acceptance criteria:
+- The UI never implies visual parity when only semantic compatibility is known.
+
+## Suggested execution order
+
+1. Milestone 1
+2. Milestone 2
+3. Milestone 3
+4. Milestone 4
+5. Milestone 5
+6. Milestone 6
+7. Milestone 7
+8. Milestone 8
+9. Milestone 9
+
+## Definition of done
+
+The shift away from merely semantic compatibility is complete when:
+
+- fidelity labels are driven by measured visual evidence,
+- certified presets are checked in CI against projectM references,
+- compiler/runtime compatibility reports remain available as supporting diagnostics,
+- and no preset is marketed as `exact` without a passing visual certification path.

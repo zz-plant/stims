@@ -14,8 +14,10 @@ For end-user flows, see the [user guide](./USER_GUIDE.md). The [docs index](./RE
 | `read_doc_section` | `file` (enum), optional `heading` | Markdown file or section content |
 | `search_docs` | `query`, optional `file`, optional `limit` | Matching sections with excerpts |
 | `dev_commands` | optional `scope` (setup/dev/build/test/lint) | Relevant commands from README.md |
-| `list_agent_capabilities` | optional `kind` (skill/workflow) | Available agent workflows and skills |
-| `read_agent_capability` | `kind`, `name` | Full skill/workflow instructions |
+| `list_agent_capabilities` | optional `kind` (`skill`) | Available agent skills |
+| `read_agent_capability` | `kind` (`skill`), `name` | Full skill instructions |
+
+The repo's former workflow files were folded into the skills in October 2026. Both tools still accept `kind: "workflow"` and answer it with a pointer to the skill that replaced each workflow.
 
 ### Preset Catalog (Worker + Stdio)
 
@@ -41,11 +43,11 @@ These tools manage a persistent headless browser session so you can interact wit
 
 | Tool | Input | Output |
 |------|-------|--------|
-| `start_agent_session` | optional `presetId`, `headless` | Session ID — the visualizer opens in a persistent browser |
-| `session_get_state` | `sessionId` | Current state: preset title, author, audio energy (0-1), backend, canvas size |
+| `start_agent_session` | optional `presetId`, `headless` | Session ID, once the agent API reports the preset on stage (the visualizer opens in a persistent browser; a load that never gets there fails instead of returning a session) |
+| `session_get_state` | `sessionId` | Current state from the page's `__stims_agent.getState()`: preset id, title and author, engine state, audio energy (0-1), FPS, backend, shader execution, last page error, canvas size |
 | `session_capture_frame` | `sessionId`, optional `waitMs` | Path to captured screenshot |
-| `session_describe_frame` | `sessionId`, optional `waitMs` | Preset info + screenshot path (no pixel analysis — use a vision model) |
-| `session_switch_preset` | `sessionId`, `presetId`, optional `waitMs` | Confirmation when new preset is rendered |
+| `session_describe_frame` | `sessionId`, optional `waitMs` | Preset id, title and author, shader execution, image metrics (brightness, colourfulness, near-black) and the screenshot path |
+| `session_switch_preset` | `sessionId`, `presetId`, optional `waitMs` (budget, default 15000) | Confirmation once the new preset is on stage. Switches with `select-preset`, not a reload, so a running pattern, modulators and MIDI bindings carry over; an unknown id fails with close matches |
 | `session_tweak` | `sessionId`, `tweak` (natural language), optional `amount` | Resolves the tweak against real field values, applies it in one commit, reports `from → to` per field plus diagnostics |
 | `session_apply_source` | `sessionId`, `source` (.milk code) | Applies source, **waits for the compile**, returns diagnostics with line numbers and whether the stage fell back |
 | `session_editor_state` | `sessionId` | Read-only: preset, error/warning counts, per-line diagnostics, dirty flag, fallback flag |

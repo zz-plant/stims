@@ -33,10 +33,12 @@ type FakeElement = {
   innerContent: string | null;
   appended: string[];
   prepended: string[];
+  removed: boolean;
   setAttribute: (name: string, value: string) => void;
   setInnerContent: (value: string) => void;
   append: (value: string, options?: { html?: boolean }) => void;
   prepend: (value: string, options?: { html?: boolean }) => void;
+  remove: () => void;
 };
 
 function createFakeElement(): FakeElement {
@@ -45,6 +47,7 @@ function createFakeElement(): FakeElement {
     innerContent: null,
     appended: [],
     prepended: [],
+    removed: false,
     setAttribute(name, value) {
       el.attributes.set(name, value);
     },
@@ -56,6 +59,9 @@ function createFakeElement(): FakeElement {
     },
     prepend(value) {
       el.prepended.push(value);
+    },
+    remove() {
+      el.removed = true;
     },
   };
   return el;
@@ -365,6 +371,13 @@ describe('/?preset=<id> middleware', () => {
     expect(twitterImage.attributes.get('content')).toBe(
       'https://toil.fyi/api/og-preset?id=test-preset',
     );
+
+    // The shell declares its static PNG card's type. The preset card is a
+    // JPEG, or that PNG when rendering fails, so a parser trusting either
+    // declared type would reject one of the two.
+    const ogImageType = applyHandlers('meta[property="og:image:type"]');
+    expect(ogImageType.removed).toBe(true);
+    expect(ogImageType.attributes.has('content')).toBe(false);
 
     const head = applyHandlers('head');
     expect(head.appended[0]).not.toContain('og:image:url');

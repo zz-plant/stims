@@ -76,6 +76,7 @@ import {
   CUSTOM_TEXTURE_FILES,
   MILKDROP_TEXTURE_FILES,
 } from 'milkdrop-toolchain/src/texture-files.ts';
+import { resolveEffectiveTexture } from './custom-texture-manager.ts';
 import {
   AUX_TEXTURE_SPECS,
   type AuxTextureName,
@@ -205,11 +206,17 @@ export function bindCustomMilkdropSamplerTexture(
   textureFile: string | null,
   sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
 ): MilkdropCustomSamplerTextureBinding | null {
-  if (!textureFile) return null;
-  return {
+  const effective = resolveEffectiveTexture(
     name,
     textureFile,
-    texture: getSharedMilkdropTexture(textureFile, true, sampleMode),
+    true,
+    sampleMode,
+  );
+  if (!effective) return null;
+  return {
+    name,
+    textureFile: textureFile ?? 'custom',
+    texture: effective,
   };
 }
 
@@ -519,6 +526,7 @@ export function createCompositeUniforms(
     signalEnergy: uniform(0),
     signalTime: uniform(0),
     signalFrame: uniform(0),
+    signalProgress: uniform(0),
     signalFps: uniform(60),
     // MilkDrop per-frame registers (`tele`, `hordist`, …) that a directly
     // executed shader body reads without ever assigning. WebGL declares each

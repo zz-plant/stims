@@ -1,4 +1,13 @@
 import { beforeEach, describe, expect, it, test } from 'bun:test';
+import { notifyFrameDrawn } from '../../../src/js/core/frame-drawn.ts';
+import {
+  resetStageLuminance,
+  setStageLuminanceChannel,
+} from '../../../src/js/core/services/stage-luminance.ts';
+import {
+  handleFlashKeyDown,
+  resetStageUtilitiesForTests,
+} from '../../../src/js/core/services/stage-utilities.ts';
 import { openRecordPanel } from '../../../src/js/frontend/workspace-actions.ts';
 import {
   CanvasVideoExporter,
@@ -6,6 +15,33 @@ import {
   type CanvasVideoExportRuntime,
   EXPORT_PRESETS,
 } from '../../../src/js/utils/media/canvas-video-exporter.ts';
+import {
+  type GreyCanvas,
+  greyCanvas,
+  greyCanvasFactory,
+} from '../../grey-canvas.ts';
+
+class FakeMediaRecorder {
+  mimeType = 'video/webm;codecs=vp9';
+  ondataavailable: ((event: BlobEvent) => void) | null = null;
+  onstop: (() => void) | null = null;
+
+  start() {}
+  stop() {
+    this.ondataavailable?.({
+      data: new Blob(['recorded'], { type: this.mimeType }),
+    } as BlobEvent);
+    this.onstop?.();
+  }
+}
+
+/** The canvas whose capture the recorder was handed. */
+function recordedCanvas(stream: MediaStream): GreyCanvas {
+  const [track] = stream.getVideoTracks() as unknown as Array<{
+    canvas: GreyCanvas;
+  }>;
+  return track.canvas;
+}
 
 describe('Canvas Video Exporter Utility', () => {
   it('defines valid export presets with correct dimensions', () => {
@@ -17,6 +53,7 @@ describe('Canvas Video Exporter Utility', () => {
       'spotify-canvas': { width: 1080, height: 1920, aspectRatio: '9:16' },
       'tiktok-shorts': { width: 1080, height: 1920, aspectRatio: '9:16' },
       'youtube-shorts': { width: 1080, height: 1920, aspectRatio: '9:16' },
+      'square-post': { width: 1080, height: 1080, aspectRatio: '1:1' },
       'hd-landscape': { width: 1920, height: 1080, aspectRatio: '16:9' },
       '4k-landscape': { width: 3840, height: 2160, aspectRatio: '16:9' },
       // `custom` was missing from the old per-key assertions entirely — the
@@ -34,61 +71,22 @@ describe('Canvas Video Exporter Utility', () => {
     );
   });
 
-  it('records through a preset-sized mirror without resizing or pausing the live canvas', async () => {
-    const drawCalls: unknown[][] = [];
-    const stoppedTracks: string[] = [];
-    const stream = {
-      getTracks: () => [{ stop: () => stoppedTracks.push('video') }],
-    } as unknown as MediaStream;
-    const mirror = {
-      width: 0,
-      height: 0,
-      captureStream: () => stream,
-      getContext: () => ({
-        drawImage: (...args: unknown[]) => drawCalls.push(args),
-      }),
-    } as unknown as HTMLCanvasElement;
-    let frameCallback: FrameRequestCallback | null = null;
-
-    class FakeMediaRecorder {
-      mimeType = 'video/webm;codecs=vp9';
-      ondataavailable: ((event: BlobEvent) => void) | null = null;
-      onstop: (() => void) | null = null;
-      state = 'inactive';
-
-      start() {
-        this.state = 'recording';
-      }
-
-      stop() {
-        this.ondataavailable?.({
-          data: new Blob(['recorded'], { type: this.mimeType }),
-        } as BlobEvent);
-        this.state = 'inactive';
-        this.onstop?.();
-      }
-    }
-
+  it('records a preset-sized copy without resizing or pausing the live canvas', async () => {
+    const factory = greyCanvasFactory();
+    const seen: { recorded: GreyCanvas | null } = { recorded: null };
     const environment: CanvasVideoExporterEnvironment = {
       mediaRecorderAvailable: true,
       isMimeTypeSupported: (mimeType) => mimeType.includes('vp9'),
-      createCanvas: () => mirror,
-      createMediaRecorder: () =>
-        new FakeMediaRecorder() as unknown as MediaRecorder,
-      createMediaStream: () => stream,
-      requestAnimationFrame: (callback) => {
-        frameCallback = callback;
-        return 17;
+      createCanvas: factory.create,
+      createMediaRecorder: (stream) => {
+        seen.recorded = recordedCanvas(stream);
+        return new FakeMediaRecorder() as unknown as MediaRecorder;
       },
-      cancelAnimationFrame: () => {
-        frameCallback = null;
+      createMediaStream: () => {
+        throw new Error('there is no audio to compose');
       },
     };
-    const source = {
-      width: 800,
-      height: 600,
-      captureStream() {},
-    } as unknown as HTMLCanvasElement;
+    const source = greyCanvas(200, { width: 800, height: 600 });
     const exporter = new CanvasVideoExporter(source, environment);
 
     expect(
@@ -99,18 +97,76 @@ describe('Canvas Video Exporter Utility', () => {
     });
     expect(source.width).toBe(800);
     expect(source.height).toBe(600);
-    expect(mirror.width).toBe(1080);
-    expect(mirror.height).toBe(1920);
-    expect(drawCalls).toHaveLength(1);
+    const recorded = seen.recorded as GreyCanvas;
+    expect([recorded.width, recorded.height]).toEqual([1080, 1920]);
+    expect(recorded.captures).toEqual([30]);
 
-    (frameCallback as FrameRequestCallback | null)?.(16);
-    expect(drawCalls).toHaveLength(2);
+    // Painted with the stage's own frames, the one moment it can be read.
+    notifyFrameDrawn(0);
+    expect(recorded.level).toBe(200);
+    source.level = 90;
+    notifyFrameDrawn(16);
+    expect(recorded.level).toBe(90);
     expect(exporter.getRecordingStatus()).toBe(true);
 
     const recording = await exporter.stopRecording();
     expect(recording?.type).toBe('video/webm;codecs=vp9');
-    expect(stoppedTracks).toEqual(['video']);
+    expect(recorded.captureStopped).toBe(true);
     expect(exporter.getRecordingStatus()).toBe(false);
+    source.level = 10;
+    notifyFrameDrawn(32);
+    expect(recorded.level).not.toBe(10);
+  });
+
+  it('carries the governor dimming and the stage cuts, but not the brightness ceiling', async () => {
+    const stage = document.createElement('div');
+    const seen: { recorded: GreyCanvas | null } = { recorded: null };
+    const environment: CanvasVideoExporterEnvironment = {
+      mediaRecorderAvailable: true,
+      isMimeTypeSupported: () => true,
+      createCanvas: greyCanvasFactory().create,
+      createMediaRecorder: (stream) => {
+        seen.recorded = recordedCanvas(stream);
+        return new FakeMediaRecorder() as unknown as MediaRecorder;
+      },
+      createMediaStream: () => {
+        throw new Error('there is no audio to compose');
+      },
+    };
+    const exporter = new CanvasVideoExporter(
+      greyCanvas(200),
+      environment,
+      null,
+      () => stage,
+    );
+    try {
+      exporter.startRecording({ preset: 'hd-landscape' });
+      const recorded = seen.recorded as GreyCanvas;
+
+      // The visitor's comfort setting, not something to bake into a file.
+      setStageLuminanceChannel(stage, 'ceiling', 0.5);
+      notifyFrameDrawn(0);
+      expect(recorded.level).toBe(200);
+
+      // Reduce flashing's dimming: a strobe shared onward reaches viewers
+      // who never set the preference.
+      setStageLuminanceChannel(stage, 'governor', 0.5);
+      notifyFrameDrawn(16);
+      expect(recorded.level).toBeCloseTo(100);
+
+      setStageLuminanceChannel(stage, 'presentation', 0);
+      notifyFrameDrawn(32);
+      expect(recorded.level).toBe(0);
+
+      setStageLuminanceChannel(stage, 'presentation', 1);
+      handleFlashKeyDown(false);
+      notifyFrameDrawn(48);
+      expect(recorded.level).toBe(255);
+    } finally {
+      await exporter.stopRecording();
+      resetStageLuminance(stage);
+      resetStageUtilitiesForTests();
+    }
   });
 
   it('reports unsupported recording without constructing a recorder', () => {
@@ -129,8 +185,6 @@ describe('Canvas Video Exporter Utility', () => {
       createMediaStream: () => {
         throw new Error('should not create a stream');
       },
-      requestAnimationFrame: () => 0,
-      cancelAnimationFrame: () => {},
     };
     const exporter = new CanvasVideoExporter(source, environment);
 
@@ -145,7 +199,7 @@ describe('Canvas Video Exporter Utility', () => {
     });
   });
 
-  it('records 4K from a native renderer resize and composes a cloned audio track', async () => {
+  it('records 4K from a native renderer resize, copied at that size, and composes a cloned audio track', async () => {
     const stoppedTracks: string[] = [];
     const originalAudioTrack = {
       kind: 'audio',
@@ -155,46 +209,22 @@ describe('Canvas Video Exporter Utility', () => {
       }),
       stop: () => stoppedTracks.push('audio-original'),
     } as unknown as MediaStreamTrack;
-    const videoTrack = {
-      kind: 'video',
-      stop: () => stoppedTracks.push('video'),
-    } as unknown as MediaStreamTrack;
-    const videoStream = {
-      getTracks: () => [videoTrack],
-      getVideoTracks: () => [videoTrack],
-    } as unknown as MediaStream;
     const audioStream = {
       getAudioTracks: () => [originalAudioTrack],
     } as unknown as MediaStream;
-    let sourceWidth = 800;
-    let sourceHeight = 600;
-    const source = {
-      get width() {
-        return sourceWidth;
-      },
-      set width(value: number) {
-        sourceWidth = value;
-      },
-      get height() {
-        return sourceHeight;
-      },
-      set height(value: number) {
-        sourceHeight = value;
-      },
-      captureStream: () => videoStream,
-    } as unknown as HTMLCanvasElement;
+    const source = greyCanvas(200, { width: 800, height: 600 });
     const lifecycle: string[] = [];
     const runtime: CanvasVideoExportRuntime = {
       beginNativeCapture: ({ width, height }) => {
         lifecycle.push(`begin:${width}x${height}`);
-        sourceWidth = width;
-        sourceHeight = height;
+        source.width = width;
+        source.height = height;
         return {
           ok: true,
           restore: () => {
             lifecycle.push('restore');
-            sourceWidth = 800;
-            sourceHeight = 600;
+            source.width = 800;
+            source.height = 600;
           },
         };
       },
@@ -202,30 +232,16 @@ describe('Canvas Video Exporter Utility', () => {
     };
     let recorderVideoTrackCount = 0;
     let recorderAudioTrackCount = 0;
-
-    class FakeMediaRecorder {
-      mimeType = 'video/webm;codecs=vp9';
-      ondataavailable: ((event: BlobEvent) => void) | null = null;
-      onstop: (() => void) | null = null;
-
-      start() {}
-      stop() {
-        this.ondataavailable?.({
-          data: new Blob(['native-4k'], { type: this.mimeType }),
-        } as BlobEvent);
-        this.onstop?.();
-      }
-    }
+    const seen: { recorded: GreyCanvas | null } = { recorded: null };
 
     const environment: CanvasVideoExporterEnvironment = {
       mediaRecorderAvailable: true,
       isMimeTypeSupported: (mimeType) => mimeType.includes('vp9'),
-      createCanvas: () => {
-        throw new Error('4K must not use a mirror canvas');
-      },
+      createCanvas: greyCanvasFactory().create,
       createMediaRecorder: (stream) => {
         recorderVideoTrackCount = stream.getVideoTracks().length;
         recorderAudioTrackCount = stream.getAudioTracks().length;
+        seen.recorded = recordedCanvas(stream);
         return new FakeMediaRecorder() as unknown as MediaRecorder;
       },
       createMediaStream: (tracks) =>
@@ -236,10 +252,6 @@ describe('Canvas Video Exporter Utility', () => {
           getVideoTracks: () =>
             tracks.filter((track) => track.kind === 'video'),
         }) as unknown as MediaStream,
-      requestAnimationFrame: () => {
-        throw new Error('native 4K must not schedule mirror copies');
-      },
-      cancelAnimationFrame: () => {},
     };
     const exporter = new CanvasVideoExporter(source, environment, runtime);
 
@@ -251,13 +263,21 @@ describe('Canvas Video Exporter Utility', () => {
     expect(recorderVideoTrackCount).toBe(1);
     expect(recorderAudioTrackCount).toBe(1);
     expect(lifecycle).toEqual(['begin:3840x2160']);
+    // The renderer draws at 4K and the copy follows it: dimming reaches the
+    // file without an upscale from the on-screen size.
+    source.level = 200;
+    notifyFrameDrawn(0);
+    const recorded = seen.recorded as GreyCanvas;
+    expect([recorded.width, recorded.height]).toEqual([3840, 2160]);
+    expect(recorded.level).toBe(200);
 
     const recording = await exporter.stopRecording();
     expect(recording?.size).toBeGreaterThan(0);
     expect(source.width).toBe(800);
     expect(source.height).toBe(600);
     expect(lifecycle).toEqual(['begin:3840x2160', 'restore']);
-    expect(stoppedTracks).toEqual(['video', 'audio-clone']);
+    expect(recorded.captureStopped).toBe(true);
+    expect(stoppedTracks).toEqual(['audio-clone']);
   });
 
   it('rejects 4K honestly when the active runtime cannot render it natively', () => {
@@ -278,8 +298,6 @@ describe('Canvas Video Exporter Utility', () => {
       createMediaStream: () => {
         throw new Error('should not create a stream');
       },
-      requestAnimationFrame: () => 0,
-      cancelAnimationFrame: () => {},
     };
     const runtime: CanvasVideoExportRuntime = {
       beginNativeCapture: () => ({

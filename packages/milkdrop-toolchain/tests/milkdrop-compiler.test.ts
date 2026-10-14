@@ -2512,4 +2512,23 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.08;
       ]),
     );
   });
+
+  test('HPSS signals compile without unknown function or variable diagnostics', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title="HPSS Signals"
+per_frame_1=zoom = 1.01 + percussive*0.04;
+per_frame_2=rot = 0.02 + percussive_ratio*0.05;
+per_frame_3=wave_r = 0.3 + harmonic*0.4;
+per_frame_4=wave_g = percussive_low*0.5;
+per_frame_5=wave_b = percussive_mid*0.5 + percussive_high*0.2;
+`,
+      { id: 'hpss-signals' },
+    );
+
+    const unknownWarnings = compiled.diagnostics.filter(
+      (entry) => entry.code === 'preset_expression_unknown_function',
+    );
+    expect(unknownWarnings).toEqual([]);
+  });
 });

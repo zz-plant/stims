@@ -33,12 +33,16 @@ Use targeted specs while iterating:
 bun run test tests/path/to/spec.test.ts
 ```
 
-Use compatibility or integration coverage when preset parsing, runtime support, or browser behavior changed:
+Use compatibility coverage when preset parsing or runtime support changed, and
+the corpus when compiler output or parity could move:
 
 ```bash
-bun run test:integration
 bun run test:compat
+bun run test:corpus
 ```
+
+For browser-visible behaviour, run the e2e file that covers it; see
+[`verify-visualizer-work`](../verify-visualizer-work/SKILL.md#pick-tests-by-what-changed).
 
 Before sign-off:
 

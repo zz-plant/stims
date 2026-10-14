@@ -6,7 +6,6 @@ import {
   McpServer,
 } from '@modelcontextprotocol/server';
 import { z } from 'zod';
-import agentAgentErgonomicsSkill from '../.agent/skills/agent-ergonomics/SKILL.md';
 import agentAuditRecurringFixesSkill from '../.agent/skills/audit-recurring-fixes/SKILL.md';
 import agentCloseParityGapSkill from '../.agent/skills/close-parity-gap/SKILL.md';
 import agentGuardAgentWorkSkill from '../.agent/skills/guard-agent-work/SKILL.md';
@@ -16,8 +15,6 @@ import agentModifyPresetWorkflowSkill from '../.agent/skills/modify-preset-workf
 import agentModifyVisualizerRuntimeSkill from '../.agent/skills/modify-visualizer-runtime/SKILL.md';
 import agentPerformLivecodingSkill from '../.agent/skills/perform-livecoding/SKILL.md';
 import agentPlayVisualizerSkill from '../.agent/skills/play-visualizer/SKILL.md';
-import agentQaSkill from '../.agent/skills/qa/SKILL.md';
-import agentQuickStartSkill from '../.agent/skills/quick-start/SKILL.md';
 import agentReviewDeployToolingSkill from '../.agent/skills/review-deploy-tooling/SKILL.md';
 import agentReviewModuleLoadingSkill from '../.agent/skills/review-module-loading/SKILL.md';
 import agentReviewRendererFallbackSkill from '../.agent/skills/review-renderer-fallback/SKILL.md';
@@ -25,16 +22,9 @@ import agentReviewTestHarnessSkill from '../.agent/skills/review-test-harness/SK
 import agentReviewWebgpuParitySkill from '../.agent/skills/review-webgpu-parity/SKILL.md';
 import agentReviewWorkspaceUiStateSkill from '../.agent/skills/review-workspace-ui-state/SKILL.md';
 import agentShipVisualizerChangeSkill from '../.agent/skills/ship-visualizer-change/SKILL.md';
-import agentTestVisualizerSkill from '../.agent/skills/test-visualizer/SKILL.md';
 import agentVerifyVisualizerWorkSkill from '../.agent/skills/verify-visualizer-work/SKILL.md';
-import agentDeployWorkflow from '../.agent/workflows/deploy.md';
-import agentModifyPresetWorkflowWorkflow from '../.agent/workflows/modify-preset-workflow.md';
-import agentModifyVisualizerRuntimeWorkflow from '../.agent/workflows/modify-visualizer-runtime.md';
-import agentPlayVisualizerWorkflow from '../.agent/workflows/play-visualizer.md';
-import agentQaWorkflow from '../.agent/workflows/qa.md';
-import agentShipVisualizerChangeWorkflow from '../.agent/workflows/ship-visualizer-change.md';
-import agentTestVisualizerWorkflow from '../.agent/workflows/test-visualizer.md';
 import docsClaudeReadme from '../.claude/CLAUDE.md';
+import agentsGuide from '../AGENTS.md';
 import docsArchitecture from '../docs/ARCHITECTURE.md';
 import docsAgentsAgentHandoffs from '../docs/agents/agent-handoffs.md';
 import docsAgentsReadme from '../docs/agents/README.md';
@@ -52,7 +42,7 @@ const defaultInstructions = [
   'Stims plays and live-edits MilkDrop presets in the browser. The MCP server provides tools organized into these categories:',
   '',
   '## Documentation & Commands',
-  'list_docs, read_doc_section, search_docs, dev_commands, list_agent_capabilities, read_agent_capability — Explore docs, find commands, load agent workflows.',
+  'list_docs, read_doc_section, search_docs, dev_commands, list_agent_capabilities, read_agent_capability — Explore docs, find commands, load agent skills.',
   '',
   '## Preset Catalog (Worker-compatible)',
   'list_presets, search_presets, get_preset_info, describe_preset, open_preset_url — Browse, search, and learn about presets without a running visualizer.',
@@ -85,6 +75,7 @@ const defaultInstructions = [
 
 const markdownSources = {
   'README.md': readme,
+  'AGENTS.md': agentsGuide,
   'docs/README.md': docsReadme,
   'docs/MCP_SERVER.md': docsMcpServer,
   'docs/ARCHITECTURE.md': docsArchitecture,
@@ -105,17 +96,6 @@ const markdownSources = {
   '.agent/skills/play-visualizer/SKILL.md': agentPlayVisualizerSkill,
   '.agent/skills/ship-visualizer-change/SKILL.md':
     agentShipVisualizerChangeSkill,
-  '.agent/skills/test-visualizer/SKILL.md': agentTestVisualizerSkill,
-  '.agent/skills/quick-start/SKILL.md': agentQuickStartSkill,
-  '.agent/skills/agent-ergonomics/SKILL.md': agentAgentErgonomicsSkill,
-  '.agent/workflows/modify-preset-workflow.md':
-    agentModifyPresetWorkflowWorkflow,
-  '.agent/workflows/modify-visualizer-runtime.md':
-    agentModifyVisualizerRuntimeWorkflow,
-  '.agent/workflows/play-visualizer.md': agentPlayVisualizerWorkflow,
-  '.agent/workflows/ship-visualizer-change.md':
-    agentShipVisualizerChangeWorkflow,
-  '.agent/workflows/test-visualizer.md': agentTestVisualizerWorkflow,
   '.agent/skills/review-webgpu-parity/SKILL.md': agentReviewWebgpuParitySkill,
   '.agent/skills/review-renderer-fallback/SKILL.md':
     agentReviewRendererFallbackSkill,
@@ -130,11 +110,8 @@ const markdownSources = {
   '.agent/skills/improve-preset-fidelity/SKILL.md':
     agentImprovePresetFidelitySkill,
   '.agent/skills/close-parity-gap/SKILL.md': agentCloseParityGapSkill,
-  '.agent/skills/qa/SKILL.md': agentQaSkill,
   '.agent/skills/verify-visualizer-work/SKILL.md':
     agentVerifyVisualizerWorkSkill,
-  '.agent/workflows/deploy.md': agentDeployWorkflow,
-  '.agent/workflows/qa.md': agentQaWorkflow,
 } as const;
 
 type MarkdownSourceKey = keyof typeof markdownSources;
@@ -158,11 +135,21 @@ type CreateServerOptions = {
 
 type AgentCapability = {
   name: string;
-  kind: 'skill' | 'workflow';
+  kind: 'skill';
   path: MarkdownSourceKey;
   description: string;
   command: string;
 };
+
+/**
+ * `.agent/workflows/` was folded into the skills in October 2026: each
+ * workflow restated the skill of the same name, and `deploy` and `qa` moved
+ * into `review-deploy-tooling` and `verify-visualizer-work`. The tools still
+ * accept `kind: 'workflow'` so older clients get this pointer instead of a
+ * schema error.
+ */
+const WORKFLOWS_RETIRED =
+  'Workflows were folded into skills (deploy → review-deploy-tooling, qa → verify-visualizer-work, the rest into the skill of the same name). Use kind "skill".';
 
 const agentCapabilities: AgentCapability[] = [
   {
@@ -204,68 +191,6 @@ const agentCapabilities: AgentCapability[] = [
     description:
       'Run end-to-end visualizer change workflow including checks and docs sync.',
     command: '/ship-visualizer-change',
-  },
-  {
-    name: 'test-visualizer',
-    kind: 'skill',
-    path: '.agent/skills/test-visualizer/SKILL.md',
-    description:
-      'Execute visualizer-focused test passes and report failures quickly.',
-    command: '/test-visualizer',
-  },
-  {
-    name: 'quick-start',
-    kind: 'skill',
-    path: '.agent/skills/quick-start/SKILL.md',
-    description: 'Fastest safe path into the repo when dropped in cold.',
-    command: '/quick-start',
-  },
-  {
-    name: 'agent-ergonomics',
-    kind: 'skill',
-    path: '.agent/skills/agent-ergonomics/SKILL.md',
-    description:
-      'Understanding how skills, workflows, sessions, and gates fit together; improving agent infrastructure.',
-    command: '/agent-ergonomics',
-  },
-  {
-    name: 'modify-preset-workflow',
-    kind: 'workflow',
-    path: '.agent/workflows/modify-preset-workflow.md',
-    description:
-      'Workflow checklist for bundled preset, editor, import/export, and compatibility changes.',
-    command: '/modify-preset-workflow',
-  },
-  {
-    name: 'modify-visualizer-runtime',
-    kind: 'workflow',
-    path: '.agent/workflows/modify-visualizer-runtime.md',
-    description:
-      'Workflow checklist for implementing and validating shared visualizer runtime changes.',
-    command: '/modify-visualizer-runtime',
-  },
-  {
-    name: 'play-visualizer',
-    kind: 'workflow',
-    path: '.agent/workflows/play-visualizer.md',
-    description:
-      'Workflow checklist for launching and manually validating the flagship visualizer.',
-    command: '/play-visualizer',
-  },
-  {
-    name: 'ship-visualizer-change',
-    kind: 'workflow',
-    path: '.agent/workflows/ship-visualizer-change.md',
-    description:
-      'Workflow checklist for implementation, quality gate, and docs sync.',
-    command: '/ship-visualizer-change',
-  },
-  {
-    name: 'test-visualizer',
-    kind: 'workflow',
-    path: '.agent/workflows/test-visualizer.md',
-    description: 'Workflow checklist for visualizer-specific automated checks.',
-    command: '/test-visualizer',
   },
   {
     name: 'review-webgpu-parity',
@@ -356,35 +281,12 @@ const agentCapabilities: AgentCapability[] = [
     command: '/close-parity-gap',
   },
   {
-    name: 'qa',
-    kind: 'skill',
-    path: '.agent/skills/qa/SKILL.md',
-    description:
-      'Run the Stims quality gate, including the fast-to-full iteration loop and visual verification.',
-    command: '/qa',
-  },
-  {
     name: 'verify-visualizer-work',
     kind: 'skill',
     path: '.agent/skills/verify-visualizer-work/SKILL.md',
     description:
-      'Quick verification loop during implementation, before the full quality gate.',
+      'Choose and run the checks a change needs: the edit-time loop, the e2e file that covers a surface, visual evidence with or without a GPU, and the full gate.',
     command: '/verify-visualizer-work',
-  },
-  {
-    name: 'deploy',
-    kind: 'workflow',
-    path: '.agent/workflows/deploy.md',
-    description: 'Workflow checklist for deploying to Cloudflare Pages.',
-    command: '/deploy',
-  },
-  {
-    name: 'qa',
-    kind: 'workflow',
-    path: '.agent/workflows/qa.md',
-    description:
-      'Workflow checklist for running the full QA suite and summarizing results.',
-    command: '/qa',
   },
 ];
 
@@ -507,15 +409,21 @@ function registerTools(server: McpServer) {
     'list_agent_capabilities',
     {
       description:
-        'List reusable agent skills/workflows that can be invoked to support human users, including path and command references.',
+        'List reusable agent skills that can be invoked to support human users, including path and command references.',
       inputSchema: z.object({
         kind: z
           .enum(['skill', 'workflow'])
           .optional()
-          .describe('Optionally filter to only skills or only workflows.'),
+          .describe(
+            'Optional filter. Only skills exist; `workflow` is accepted for older clients and returns a pointer to the skills.',
+          ),
       }),
     },
     async ({ kind }) => {
+      if (kind === 'workflow') {
+        return asTextResponse(WORKFLOWS_RETIRED);
+      }
+
       const capabilities = agentCapabilities.filter((capability) =>
         kind ? capability.kind === kind : true,
       );
@@ -534,21 +442,27 @@ function registerTools(server: McpServer) {
     'read_agent_capability',
     {
       description:
-        'Read a specific agent skill/workflow markdown file so MCP clients can execute the same playbook steps.',
+        'Read a specific agent skill markdown file so MCP clients can execute the same playbook steps.',
       inputSchema: z.object({
         kind: z
           .enum(['skill', 'workflow'])
-          .describe('Capability type to read.'),
+          .describe(
+            'Capability type to read. Only skills exist; `workflow` returns a pointer to the skills.',
+          ),
         name: z
           .string()
           .trim()
           .min(1)
           .describe(
-            'Capability name such as modify-visualizer-runtime, play-visualizer, or test-visualizer.',
+            'Capability name such as modify-visualizer-runtime, play-visualizer, or verify-visualizer-work.',
           ),
       }),
     },
     async ({ kind, name }) => {
+      if (kind === 'workflow') {
+        return asTextResponse(WORKFLOWS_RETIRED);
+      }
+
       const capability = agentCapabilities.find(
         (entry) => entry.kind === kind && entry.name === name,
       );

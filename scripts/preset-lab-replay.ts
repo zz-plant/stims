@@ -200,6 +200,17 @@ function diffFields(
         );
       }
     }
+  } else {
+    // Between checkpoints the compact side has only the summary. Comparing it
+    // is what keeps a variable that moves for a few frames, or moves without
+    // touching the geometry, from passing unseen.
+    const a = left.variableSummary ?? summarizeVariables(left.variables);
+    const b = right.variableSummary ?? summarizeVariables(right.variables);
+    if (a && b && !summariesAgree(a, b)) {
+      details.push(
+        `  variables (sum of all; re-record without --compact to name them): ${leftLabel}=${a.sum} ${rightLabel}=${b.sum}`,
+      );
+    }
   }
   for (const field of ['mainWave', 'customWaves', 'shapes'] as const) {
     const a = left.geometry?.[field];
@@ -297,6 +308,42 @@ const GOLDEN_VARIABLE_TOLERANCE = 1e-9;
  * quantisation step; the relative term above still governs anything larger.
  */
 const GOLDEN_GEOMETRY_FLOOR = 2e-6;
+
+type VariableSummary = NonNullable<FrameCapture['variableSummary']>;
+
+/** Sum and absolute sum of a variable snapshot, or undefined without one.
+ * Keys are summed in sorted order (captureFrame stores them that way), so
+ * the recorder and the replay add in the same order. */
+export function summarizeVariables(
+  variables: FrameCapture['variables'],
+): VariableSummary | undefined {
+  if (!variables) return undefined;
+  let sum = 0;
+  let magnitude = 0;
+  for (const key of Object.keys(variables).sort()) {
+    const value = variables[key] ?? 0;
+    sum += value;
+    magnitude += Math.abs(value);
+  }
+  return { sum, magnitude };
+}
+
+/**
+ * The per-variable tolerance, applied to the sum. If every variable is within
+ * GOLDEN_VARIABLE_TOLERANCE of its counterpart, the sums differ by at most
+ * that fraction of the two absolute sums combined, so this passes wherever a
+ * full checkpoint comparison would. What it gives up is resolution: a change
+ * smaller than ~1e-9 of the preset's total variable magnitude, or two changes
+ * that cancel, goes unseen between checkpoints.
+ */
+function summariesAgree(a: VariableSummary, b: VariableSummary): boolean {
+  if (a.sum === b.sum) return true;
+  if (!Number.isFinite(a.sum) || !Number.isFinite(b.sum)) return false;
+  return (
+    Math.abs(a.sum - b.sum) <=
+    GOLDEN_VARIABLE_TOLERANCE * (a.magnitude + b.magnitude)
+  );
+}
 
 function nearlyEqual(tolerance: number, floor: number) {
   return (a: number | undefined, b: number | undefined): boolean => {
@@ -426,6 +473,8 @@ async function runGpuTrace(
           // Dev-server-relative specifiers, kept dynamic so the CLI's own
           // typecheck doesn't try to resolve them as Node modules.
           const modulePath = (name: string) => `/src/js/milkdrop/${name}.ts`;
+          // The compiler moved into the toolchain package (#1387).
+          const compilerPath = '/packages/milkdrop-toolchain/src/compiler.ts';
           const [
             compilerModule,
             vmModule,
@@ -433,7 +482,7 @@ async function runGpuTrace(
             captureModule,
             flagsModule,
           ] = await Promise.all([
-            import(modulePath('compiler')),
+            import(compilerPath),
             import(modulePath('vm')),
             import(modulePath('runtime-signals')),
             import(modulePath('trace-capture')),
@@ -512,7 +561,7 @@ const GOLDEN_CHECKPOINT_EVERY = 30;
 
 /**
  * Strips the full variable snapshot from non-checkpoint frames but KEEPS the
- * geometry triple on every frame.
+ * geometry triple and a variable summary on every frame.
  *
  * Geometry is three numbers, already rounded to 1e-6 by `positionsChecksum`,
  * so retaining it costs almost nothing and buys the golden gate a per-frame
@@ -527,7 +576,11 @@ function compactFrames(frames: FrameCapture[]): FrameCapture[] {
   return frames.map((frame, index) =>
     index % GOLDEN_CHECKPOINT_EVERY === 0
       ? frame
-      : { digest: frame.digest, geometry: frame.geometry },
+      : {
+          digest: frame.digest,
+          variableSummary: summarizeVariables(frame.variables),
+          geometry: frame.geometry,
+        },
   );
 }
 

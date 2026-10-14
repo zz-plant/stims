@@ -137,6 +137,27 @@ describe('analyzeRgbaFrames', () => {
     expect(score(W / 4, H / 4).peakFlashesPerSecond).toBe(12);
   });
 
+  test('records the swing of the strongest flash, as the timeline path does', () => {
+    // Half the screen strobes between grey 40 and grey 200. The swing is
+    // what a quarter of a visual field made, not a frame mean.
+    const GREY_40: Rgb = [40, 40, 40];
+    const GREY_200: Rgb = [200, 200, 200];
+    const result = analyzeRgbaFrames(
+      strobe(
+        60,
+        5,
+        () => frame(GREY_40),
+        () => frame(GREY_40, { x: 0, y: 0, w: W / 2, h: H, paint: GREY_200 }),
+      ),
+      { width: W, height: H, deltaMs: FRAME_MS, stride: 1 },
+    );
+    expect(result.exceedsThreshold).toBe(true);
+    expect(result.maxFlashLuminanceDelta).toBeCloseTo(
+      relativeLuminance(...GREY_200) - relativeLuminance(...GREY_40),
+      3,
+    );
+  });
+
   test('a red flash is counted on the red channel even at equal luminance', () => {
     // Pure red has relative luminance 0.2126. Grey 127 has 0.2122: the swing
     // is far under the 0.1 general threshold, so only the red criterion can

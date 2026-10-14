@@ -53,4 +53,4 @@ Use this skill when reviewing or authoring changes to any file under `tests/`, `
 ## Related skills
 
 - [`verify-visualizer-work`](../verify-visualizer-work/SKILL.md) — for iterative validation during implementation
-- [`test-visualizer`](../test-visualizer/SKILL.md) — for running the full test suite
+- [`verify-visualizer-work`](../verify-visualizer-work/SKILL.md) — for choosing and running the test suite

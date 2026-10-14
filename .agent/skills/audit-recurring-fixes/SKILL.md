@@ -100,10 +100,10 @@ Update `docs/evidence/RECURRING_FIX_PATTERNS_AUDIT_YYYY-MM.md` with:
   review priority: the 2026-08-27 run found module-loading had fallen from
   ~11% to 3% and the fallback chain from ~8% to two commits in 400, while
   deploy/tooling had climbed from ~16% to 25%.
-- When creating a new review skill, register it in:
-  - `scripts/mcp-shared.ts` (import, `markdownSources`, `agentCapabilities`)
-  - `docs/agents/custom-capabilities.md` (skills table)
-  - `docs/agents/visualizer-workflows.md` (review skills section)
+- When creating a new review skill, register it in `scripts/mcp-shared.ts`
+  (import, `markdownSources`, `agentCapabilities`) and the skills table in
+  `docs/agents/custom-capabilities.md`; `bun run check:skill-index` fails until
+  both are done.
 - Keep the audit doc and review skills aligned: if a skill checklist changes, mention the date in the audit doc.
 
 ## Related skills

@@ -4,28 +4,6 @@
    Tokens defined in tokens.css — this file adds keyframes + utilities.
    ═══════════════════════════════════════════════════════════════ */
 
-@keyframes sheet-enter-up {
-  from {
-    opacity: 0;
-    transform: translateY(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes sheet-exit-down {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(100%);
-  }
-}
-
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -41,28 +19,6 @@
   }
   to {
     opacity: 0;
-  }
-}
-
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes scale-out {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.92);
   }
 }
 
@@ -85,50 +41,6 @@
   to {
     opacity: 0;
     transform: translateX(24px);
-  }
-}
-
-@keyframes pulseGlow {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 0.85;
-  }
-}
-
-@keyframes stims-stage-float {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(0, -18px, 0) scale(1.04);
-  }
-}
-
-@keyframes stims-stage-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.4;
-  }
-  50% {
-    transform: scale(1.15);
-    opacity: 0.75;
-  }
-}
-
-@keyframes stims-stage-drift {
-  0% {
-    transform: translateX(-50%) rotate(16deg);
-  }
-  50% {
-    transform: translateX(-49%) rotate(22deg);
-  }
-  100% {
-    transform: translateX(-50%) rotate(16deg);
   }
 }
 

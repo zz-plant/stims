@@ -72,14 +72,17 @@ export function createMilkdropWebGPURendererAdapter(
   const useSafeWebGpuPath = shouldUseSafeMilkdropWebGpuPath();
   const enableNativeWebGpuFeedback =
     usesNativeWebGpuRenderer && shouldEnableNativeMilkdropWebGpuFeedback();
+  // The compatibility pass ANDs each flag with the path decision
+  // (`shouldEnableNativeMilkdropWebGpuFeedback` for feedback) rather than
+  // replacing it, so `?milkdrop-webgpu-feedback=0` still turns direct
+  // warp/comp shader execution off on the full path. That override is how
+  // feedback bugs get bisected; the native feedback manager keeps running
+  // the loop on the controls approximation.
   const webgpuOptimizationFlags = usesNativeWebGpuRenderer
-    ? {
-        ...applyNativeWebGpuMaterialCompatibilityFlags({
-          ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-          ...config.webgpuOptimizationFlags,
-        }),
-        directFeedbackShaders: enableNativeWebGpuFeedback,
-      }
+    ? applyNativeWebGpuMaterialCompatibilityFlags({
+        ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+        ...config.webgpuOptimizationFlags,
+      })
     : useSafeWebGpuPath
       ? buildSafeWebGpuOptimizationFlags(config.webgpuOptimizationFlags)
       : config.webgpuOptimizationFlags;

@@ -25,6 +25,7 @@ const BASE: AgentCoreSnapshot = {
   panel: null,
   presetId: 'preset-a',
   presetTitle: 'Preset A',
+  presetAuthor: 'Author A',
   catalogSize: 0,
   audioSource: null,
   playbackPaused: false,
@@ -32,6 +33,7 @@ const BASE: AgentCoreSnapshot = {
   autoplay: false,
   transition: { mode: 'blend', blendDuration: 2 },
   shaderExecution: 'direct',
+  appliedShaderExecution: 'direct',
 };
 
 const CHANGED_VALUES: { [K in keyof AgentCoreSnapshot]: AgentCoreSnapshot[K] } =
@@ -43,6 +45,7 @@ const CHANGED_VALUES: { [K in keyof AgentCoreSnapshot]: AgentCoreSnapshot[K] } =
     panel: 'browse',
     presetId: 'preset-b',
     presetTitle: 'Preset B',
+    presetAuthor: 'Author B',
     catalogSize: 1200,
     audioSource: 'demo',
     playbackPaused: true,
@@ -50,6 +53,7 @@ const CHANGED_VALUES: { [K in keyof AgentCoreSnapshot]: AgentCoreSnapshot[K] } =
     autoplay: true,
     transition: { mode: 'cut', blendDuration: 0 },
     shaderExecution: 'translated',
+    appliedShaderExecution: 'controls',
   };
 
 describe('agent-state core snapshot diff coupling', () => {

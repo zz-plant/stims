@@ -32,7 +32,7 @@ git status --short && git diff --name-only HEAD
 | `src/js/core/renderer-*`, `core/audio-handler.ts`, `milkdrop/runtime/backend-fallback.ts` | fallback guard |
 | `src/js/frontend/*`, `src/css/*` | UI guard |
 | `tests/*`, fixture-generating `scripts/*` | test guard |
-| `.agent/skills/*`, `.agent/workflows/*` | MCP guard |
+| `.agent/skills/*` | MCP guard |
 | `docs/*`, `AGENTS.md` | docs guard |
 
 Note: this repo often has 2–3 agent sessions running at once, so `git status` may show files you did not touch. Diff before assuming a change is yours.
@@ -53,12 +53,11 @@ Use the debug snapshot system (`stimState.getDebugSnapshot`) or the agent API in
 
 ### 4. Keep skill discovery aligned
 
-When adding, removing, renaming, or changing the discovery contract of a skill or workflow, align:
+When adding, removing, renaming, or changing the discovery contract of a skill, align:
 - `scripts/mcp-shared.ts` (import + `markdownSources` + `agentCapabilities`)
 - `docs/agents/custom-capabilities.md`
-- `docs/agents/visualizer-workflows.md`
 
-`bun run check:skill-index` enforces the first two for skills, so run it rather
+`bun run check:skill-index` enforces both, so run it rather
 than trusting the checklist — the guard was added after a skill shipped
 unregistered, and it immediately found a second one (`perform-livecoding`) that
 had never been served over MCP at all.
@@ -121,7 +120,7 @@ Before saving any file in this surface:
 
 **Verify:** `bun run test:fast`
 
-### MCP guard (`.agent/skills/*`, `.agent/workflows/*`)
+### MCP guard (`.agent/skills/*`)
 
 Before saving any file in this surface:
 
@@ -129,10 +128,8 @@ Before saving any file in this surface:
 - [ ] Did you add it to `markdownSources`?
 - [ ] Did you add it to `agentCapabilities`?
 - [ ] Did you update `docs/agents/custom-capabilities.md`?
-- [ ] Did you update `docs/agents/visualizer-workflows.md`?
-- [ ] Did you run `bun run check:quick` to verify the build still compiles?
 
-**Verify:** `bun run mcp:check && bun run check:quick`
+**Verify:** `bun run check:skill-index && bun run test tests/unit/mcp-server.test.ts`
 
 ### Docs guard (`docs/*`, `AGENTS.md`)
 
@@ -143,7 +140,7 @@ Before saving any file in this surface:
 - [ ] Did you align with `docs/README.md` if routing/discoverability changed?
 - [ ] Are code snippets copy-pasteable and use `bun run ...` not raw `bun test`?
 
-**Verify:** `bun run check:stale-paths && bun run check:seo`
+**Verify:** `bun run check:doc-references && bun run check:stale-paths && bun run check:seo`
 
 ## The "what could go wrong?" prompt
 
@@ -163,18 +160,6 @@ If you genuinely need to bypass a guard (e.g., emergency hotfix):
 1. Write the override reason in the commit message
 2. File a follow-up issue to remove the override
 3. Update the guard if the override reveals a false positive
-
-## Integration with session start
-
-Add to your `.zshrc` or agent bootstrap:
-
-```bash
-alias codex='bun run agent:status && bun run session:codex'
-```
-
-Or add to `AGENTS.md` quick-start:
-
-> Before editing, run `git diff --name-only HEAD` and apply the guard that matches the touched surface.
 
 ## Related skills
 

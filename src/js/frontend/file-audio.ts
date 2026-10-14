@@ -225,12 +225,17 @@ export async function createFileAudioStream(
     if (index < 0 || index >= playlist.length) return;
     try {
       await loadTrack(index);
-      if (context.state === 'suspended') {
-        await context.resume().catch(() => undefined);
+      // Next/Previous while the stage is held loads the track and leaves it
+      // cued: playing it made the new track audible over a frozen picture
+      // that still said paused. Resuming the stage plays it.
+      if (!isActiveFileAudioHeld(element)) {
+        if (context.state === 'suspended') {
+          await context.resume().catch(() => undefined);
+        }
+        await element.play().catch((err) => {
+          console.debug('Playlist track autostart deferred', err);
+        });
       }
-      await element.play().catch((err) => {
-        console.debug('Playlist track autostart deferred', err);
-      });
     } catch (err) {
       console.warn('Failed to switch track in playlist', err);
       if (playlist.length > 1 && index + 1 < playlist.length) {
@@ -312,6 +317,17 @@ export async function createFileAudioStream(
  */
 let activeFileAudio: FileAudioHandle | null = null;
 
+/**
+ * Whether the stage hold paused the playing file, as opposed to the element
+ * merely being paused (between tracks, or refused autoplay). Track changes
+ * read it to stay paused; a newly adopted file starts out playing, unheld.
+ */
+let activeFileAudioHeld = false;
+
+function isActiveFileAudioHeld(element: HTMLAudioElement): boolean {
+  return activeFileAudioHeld && activeFileAudio?.element === element;
+}
+
 type PlaylistListener = (snapshot: FilePlaylistSnapshot | null) => void;
 const playlistListeners = new Set<PlaylistListener>();
 
@@ -334,6 +350,7 @@ function notifyPlaylistSubscribers(): void {
 export function setActiveFileAudio(handle: FileAudioHandle | null): void {
   if (activeFileAudio && activeFileAudio !== handle) {
     activeFileAudio.dispose();
+    activeFileAudioHeld = false;
   }
   activeFileAudio = handle;
   notifyPlaylistSubscribers();
@@ -429,6 +446,7 @@ export function setFileLoopMode(mode: 'playlist' | 'track' | 'none'): void {
 export function setActiveFileAudioPaused(paused: boolean): void {
   const element = activeFileAudio?.element;
   if (!element) return;
+  activeFileAudioHeld = paused;
   if (paused) {
     element.pause();
     return;

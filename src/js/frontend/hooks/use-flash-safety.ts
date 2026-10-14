@@ -26,7 +26,10 @@ import { setStageLuminanceChannel } from '../../core/services/stage-luminance.ts
  * `activeProfile` is the catalog's offline measurement for the preset now on
  * screen. It is what lets the governor start clamped on content already
  * known to flash, instead of rediscovering it a flash at a time — the
- * reactive path's one structural weakness.
+ * reactive path's one structural weakness. The hold it implies is kept and
+ * applied to every controller this hook creates, because the profile
+ * usually arrives before the renderer has made its canvas, and a controller
+ * built for a new canvas would otherwise start unprimed on the same preset.
  */
 export function useFlashSafety(
   stageRef: { current: HTMLDivElement | null },
@@ -35,6 +38,7 @@ export function useFlashSafety(
   const controllerRef = useRef<ReturnType<
     typeof createFlashSafetyController
   > | null>(null);
+  const primingHoldRef = useRef(0);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -52,6 +56,7 @@ export function useFlashSafety(
 
       controller?.stop();
       controller = null;
+      controllerRef.current = null;
       attachedCanvas = null;
 
       if (!(canvas instanceof HTMLCanvasElement)) return;
@@ -64,6 +69,7 @@ export function useFlashSafety(
         compositedScale: createStageCompositedScale(stage),
       });
       controllerRef.current = controller;
+      if (primingHoldRef.current > 0) controller.prime(primingHoldRef.current);
       controller.start();
     };
 
@@ -84,10 +90,12 @@ export function useFlashSafety(
 
   // Separate effect: the preset changes far more often than the canvas does,
   // and rebuilding the controller on every switch would throw away the
-  // window the governor is mid-way through measuring.
+  // window the governor is mid-way through measuring. The hold is stored
+  // first, so a controller that attaches later still gets it, and a preset
+  // with no hold clears it rather than leaving the last one's behind.
   useEffect(() => {
-    if (!activeProfile) return;
-    const hold = primingHoldForMeasurement(activeProfile);
+    const hold = activeProfile ? primingHoldForMeasurement(activeProfile) : 0;
+    primingHoldRef.current = hold;
     if (hold > 0) {
       controllerRef.current?.prime(hold);
     }

@@ -208,6 +208,7 @@ describe('agent bridge replies report what actually happened', () => {
     panel: null,
     presetId: null,
     presetTitle: null,
+    presetAuthor: null,
     catalogSize: 0,
     audioSource: null,
     playbackPaused: false,
@@ -215,6 +216,7 @@ describe('agent bridge replies report what actually happened', () => {
     autoplay: null,
     transition: { mode: null, blendDuration: null },
     shaderExecution: null,
+    appliedShaderExecution: null,
   };
 
   beforeEach(() => {
@@ -479,6 +481,94 @@ describe('agent bridge replies report what actually happened', () => {
     expect(applied).toEqual([]);
   });
 
+  describe('apply_tweak when the stage moves while the refine runs', () => {
+    // Holds the refine endpoint's answer until the test has moved the stage.
+    const holdRefine = () => {
+      const { promise: released, resolve: release } =
+        Promise.withResolvers<void>();
+      const { promise: requested, resolve: markRequested } =
+        Promise.withResolvers<void>();
+      globalThis.fetch = (async () => {
+        markRequested();
+        await released;
+        return new Response(
+          JSON.stringify({ milkSource: '[preset00]\nzoom=1.2\n' }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }) as unknown as typeof fetch;
+      return { requested, release };
+    };
+
+    const install = () => {
+      const applied: string[] = [];
+      const snapshotRef = installAppBridge(
+        {
+          applyEditorSourceAwaited: async (source) => {
+            applied.push(source);
+            return compiledSession(source);
+          },
+        },
+        { currentSource: PLAYING_SOURCE },
+      );
+      if (snapshotRef.current) {
+        snapshotRef.current = {
+          ...snapshotRef.current,
+          activePresetId: 'geiss-casino',
+        };
+      }
+      return { applied, snapshotRef };
+    };
+
+    test('refuses the refinement when another preset loaded meanwhile', async () => {
+      const refine = holdRefine();
+      const { applied, snapshotRef } = install();
+
+      post({ type: 'toil:apply_tweak', tweak: 'more zoom' });
+      await refine.requested;
+      snapshotRef.current = {
+        ...(snapshotRef.current as EngineSnapshot),
+        activePresetId: 'shifter-snakeskin',
+        currentSource: '[preset00]\nwarp=0.9\n',
+      };
+      refine.release();
+      const reply = await replyTo('apply_tweak');
+
+      expect(reply.success).toBe(false);
+      expect(String(reply.reason)).toContain('preset changed');
+      expect(applied).toEqual([]);
+    });
+
+    test('refuses the refinement when the source was edited meanwhile', async () => {
+      const refine = holdRefine();
+      const { applied, snapshotRef } = install();
+
+      post({ type: 'toil:apply_tweak', tweak: 'more zoom' });
+      await refine.requested;
+      snapshotRef.current = {
+        ...(snapshotRef.current as EngineSnapshot),
+        currentSource: `${PLAYING_SOURCE}warp=0.4\n`,
+      };
+      refine.release();
+      const reply = await replyTo('apply_tweak');
+
+      expect(reply.success).toBe(false);
+      expect(applied).toEqual([]);
+    });
+
+    test('applies the refinement when the stage held still', async () => {
+      const refine = holdRefine();
+      const { applied } = install();
+
+      post({ type: 'toil:apply_tweak', tweak: 'more zoom' });
+      await refine.requested;
+      refine.release();
+      const reply = await replyTo('apply_tweak');
+
+      expect(reply.success).toBe(true);
+      expect(applied).toEqual(['[preset00]\nzoom=1.2\n']);
+    });
+  });
+
   test('apply_tweak reports a tweak that failed to compile', async () => {
     respondWith(
       new Response(JSON.stringify({ milkSource: '[preset00]\nzoom=(\n' }), {
@@ -625,15 +715,15 @@ describe('agent bridge replies report what actually happened', () => {
     installAppBridge(
       {
         // What the shell does when a preset will not load: say so, then
-        // show the first-run preset instead.
+        // show the first-run preset instead, which the runtime announces.
         handlePresetSelection: () => {
           recordStatusMessage(
             '"geiss-casino" could not be loaded. Showing another preset instead.',
           );
-          setTimeout(
-            () => emitAgentCommit({ ...stageCore, presetId: 'first-run' }),
-            0,
-          );
+          setTimeout(() => {
+            recordStatusMessage('Loaded First Run.', 'runtime');
+            emitAgentCommit({ ...stageCore, presetId: 'first-run' });
+          }, 0);
         },
       },
       { catalog: CATALOG },

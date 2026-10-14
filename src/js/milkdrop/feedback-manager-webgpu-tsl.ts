@@ -1509,7 +1509,7 @@ function getShaderEnvValue(
     percussiveratio: () => shaderFloat(env.uniforms.signalPercussiveRatio),
     beat: () => shaderFloat(env.uniforms.signalBeat),
     beat_pulse: () => shaderFloat(env.uniforms.signalBeatPulse),
-    progress: () => shaderFloat(env.uniforms.signalFrame),
+    progress: () => shaderFloat(env.uniforms.signalProgress),
     frame: () => shaderFloat(env.uniforms.signalFrame),
     fps: () => shaderFloat(env.uniforms.signalFps),
     vol: () => shaderFloat(env.uniforms.signalEnergy),
@@ -1657,6 +1657,7 @@ function getShaderEnvValue(
     // their signal* uniforms; the map must accept those rewritten forms.
     signaltime: () => shaderFloat(env.uniforms.signalTime),
     signalframe: () => shaderFloat(env.uniforms.signalFrame),
+    signalprogress: () => shaderFloat(env.uniforms.signalProgress),
     signalfps: () => shaderFloat(env.uniforms.signalFps),
     signalbass: () => shaderFloat(env.uniforms.signalBass),
     signalbassatt: () => shaderFloat(env.uniforms.signalBassAtt),
@@ -3279,6 +3280,13 @@ function createFeedbackBlendOutputNode(
         min(divisor, float(-0.0001)),
         max(divisor, float(0.0001)),
       );
+    // MilkDrop samples the previous frame at uv / zoom^(zoomexp^(2rad-1)),
+    // and zoomexp only raises zoom to a positive power, so a zoom of exactly
+    // 0 makes every coordinate infinite or NaN and nothing of the previous
+    // frame survives — projectM renders it black. The floor above would
+    // instead read the frame magnified 10000x, a scrambled tiling once
+    // wrapped, and 100-square's red border flooded the screen.
+    const previousFrameKept = select(activeZoom.equal(0), float(0), float(1));
 
     let transformedUv: any;
     if (!usesWarpTransformVariables) {
@@ -3320,9 +3328,9 @@ function createFeedbackBlendOutputNode(
       // exp2(y*log2(x)) and pow(z, 1.0) is therefore not z bit-for-bit; without
       // the select, every preset in the gate would shift by ~1e-7 for nothing.
       // The clamps bound the pow away from f32 overflow on presets that ship
-      // extreme zoom/zoomexp pairs; they sit on the zoomexp != 1 branch only,
-      // so the 0.0001 divisor floor below stays the sole guard on the
-      // degenerate zoom -> 0 case a passing reference depends on.
+      // extreme zoom/zoomexp pairs; they sit on the zoomexp != 1 branch only.
+      // A zoom of exactly 0 is dropped by previousFrameKept above, whichever
+      // branch it takes.
       const zoomPowExponent = clamp(
         pow(clamp(activeZoomExp, 0.0001, 10000), perPixelRad.mul(2).sub(1)),
         0.0001,
@@ -3365,10 +3373,17 @@ function createFeedbackBlendOutputNode(
         .add(vec2(activeOffsetX, activeOffsetY));
     }
 
+    // MilkDrop warps only the previous frame; this frame's waves, shapes and
+    // borders land on top where they were drawn. Sampling the scene at the
+    // warped coordinate zoomed, rotated and rippled every fresh shape by the
+    // preset's own transform before it reached the screen.
+    const current = uniforms.currentTex.sample(
+      sampleUvNode(baseUv, uniforms.textureWrap),
+    );
+
     // Direct warp: mirror the WebGL warp pass. MilkDrop runs the warp shader
     // as its own pass over the previous frame (sampler_main = feedback) and
-    // the shader's `ret` is the warped color; the blend pass then lays the
-    // fresh scene on top at the plain screen uv without re-warping it.
+    // the shader's `ret` is the warped color.
     if (hasDirectWarpProgram) {
       const samplePreviousFrame = (sampleCoord: any) =>
         uniforms.previousTex.sample(
@@ -3380,18 +3395,22 @@ function createFeedbackBlendOutputNode(
         transformedUv.add(0.5),
         samplePreviousFrame,
       );
-      const sceneUv = uv();
-      const current = uniforms.currentTex.sample(
-        sampleUvNode(sceneUv, uniforms.textureWrap),
-      );
+      // The warp program's `ret` is already this frame's carried colour: a
+      // preset warp shader owns its fade, so fDecay applies only when the
+      // program did not lower and the previous frame is carried as-is. The
+      // scene goes over it by coverage, as on the control-driven path below
+      // (see the WebGL blend in feedback-shader-library.ts for both).
       const previousColor = (
         warpColor ??
-        uniforms.previousTex.sample(sampleUvNode(sceneUv, uniforms.textureWrap))
-          .rgb
-      ).mul(uniforms.decay);
+        uniforms.previousTex
+          .sample(sampleUvNode(baseUv, uniforms.textureWrap))
+          .rgb.mul(uniforms.decay)
+      ).mul(previousFrameKept);
+      const coverage = clamp(current.a, 0, 1);
+      const color = previousColor.mul(float(1).sub(coverage)).add(current.rgb);
       // Clamped like MilkDrop's 8-bit internal buffer; see the WebGL blend in
-      // feedback-manager-shared.ts for why half-float needs it.
-      return vec4(clamp(previousColor.add(current.rgb), vec3(0), vec3(1)), 1);
+      // feedback-shader-library.ts for why half-float needs it.
+      return vec4(clamp(color, vec3(0), vec3(1)), 1);
     }
 
     const currentUv = applyFeedbackWarpNode(
@@ -3424,20 +3443,16 @@ function createFeedbackBlendOutputNode(
       )
       .rg.sub(0.5)
       .toVar();
-    currentUv.addAssign(
-      warpVector.mul(uniforms.warpTextureAmount).mul(0.12).mul(warpTextureMask),
-    );
     previousUv.addAssign(
       warpVector.mul(uniforms.warpTextureAmount).mul(0.08).mul(warpTextureMask),
     );
 
-    const current = uniforms.currentTex.sample(
-      sampleUvNode(currentUv, uniforms.textureWrap),
-    );
     const previous = uniforms.previousTex.sample(
       sampleUvNode(previousUv, uniforms.textureWrap),
     );
-    const previousColor = previous.rgb.mul(uniforms.decay);
+    const previousColor = previous.rgb
+      .mul(uniforms.decay)
+      .mul(previousFrameKept);
 
     // Internal frame: the warped, decayed previous frame with this frame's
     // geometry drawn over it. Control-driven presets used to blend the two by

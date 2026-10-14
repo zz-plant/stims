@@ -1,0 +1,34 @@
+# Verification matrix
+
+> Superseded on 2026-10-13 by [`TESTING.md`](../TESTING.md), which owns test commands and which evidence each change needs. Its "Three.js decorative scenes" row described no code: the frontend draws no Three.js scenes, and WebGPU, not WebGL, is the default where the browser runs it stably.
+
+Keep this matrix aligned with `ARCHITECTURE.md` and `DEVELOPMENT.md` when
+those workflows change.
+
+## Rendering support
+
+| Path | Use for | Notes |
+| --- | --- | --- |
+| `Three.js` / imperative MilkDrop runtime | The actual visualizer engine, preset compilation/execution, renderer backends, audio response, and overlay/editor composition. | This is the product-critical path under `src/js/milkdrop/*` and `src/js/core/*`. |
+| Three.js decorative scenes | Small imperative Three.js scene pieces used by the workspace shell for decorative or staging visuals. | Keep this layer small and isolated; it should not become a second visualizer runtime. |
+| WebGL | Baseline rendering path. | Use this as the default compatibility target for visual verification. |
+| WebGPU | Optional enhancement path. | Treat it as an additive path that must not break WebGL behavior. |
+
+## Verification by layer
+
+| Layer | Primary command | When to use |
+| --- | --- | --- |
+| Unit / logic | `bun run test:unit` or an explicit file through `bun run test` | Pure function coverage, state transitions, and non-browser behavior. |
+| DOM-sim / environment | `bun run test:unit` | Shell and environment behavior that can run in `happy-dom` or similar simulated DOM tests. |
+| Browser integration | `bun run test:integration` | Real page, router, audio, and renderer behavior that needs a browser. |
+| Compatibility semantics | `bun run test:compat` | Compatibility contracts. |
+| Corpus / parity contracts | `bun run test:corpus` | Corpus execution and parity tooling; browser-marked files run serially. |
+| Visual/parity proof | `bun run dev` plus the parity capture commands in `DEVELOPMENT.md` | Manual browser confirmation and reference capture for visual regressions. |
+
+Simulation checks do not establish actual layout, device permissions, audio routing, or GPU output. Record browser evidence separately. A skipped browser test leaves that path unverified.
+
+## Default rule
+
+If a change touches the runtime, renderer, audio, shell, or route behavior,
+validate it in a browser. If it only changes pure logic, keep the first pass
+to the narrowest test file or `bun run test`.

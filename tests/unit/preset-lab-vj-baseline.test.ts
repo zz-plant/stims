@@ -13,6 +13,7 @@ import {
   clockDesign,
   eventF1,
   eventMatch,
+  integrateChange,
   memoryGroup,
   memoryLookup,
   perFrameChange,
@@ -20,6 +21,7 @@ import {
   rSquared,
   scenarioFold,
   summariseMemory,
+  targetEventMatch,
 } from '../../scripts/preset-lab-vj-baseline.ts';
 
 describe('ridgeSolver', () => {
@@ -233,6 +235,11 @@ test('perFrameChange differences a series and starts at 0', () => {
   ]);
 });
 
+test('integrateChange undoes perFrameChange from the first value', () => {
+  const series = Float64Array.from([1, 3, 6, 6]);
+  expect([...integrateChange(perFrameChange(series), 1)]).toEqual([1, 3, 6, 6]);
+});
+
 describe('memory classes from lab:memory-probe', () => {
   const lookup = memoryLookup([
     {
@@ -320,6 +327,21 @@ describe('event timing', () => {
   test('a column that never jumps has no event score', () => {
     const ramp = Float64Array.from({ length: 60 }, (_, f) => f);
     expect(eventF1([eventMatch(ramp, ramp)])).toBeNull();
+  });
+
+  test('under --target change, one toggle is one event', () => {
+    // The change series of a toggle is an impulse: up on the flip, back to 0
+    // the frame after. Read as values, each flip was two events.
+    const change = perFrameChange(toggle);
+    expect(targetEventMatch('change', toggle, change)).toEqual({
+      actual: 3,
+      predicted: 3,
+      hitActual: 3,
+      hitPredicted: 3,
+    });
+    expect(targetEventMatch('value', toggle, toggle)).toEqual(
+      eventMatch(toggle, toggle),
+    );
   });
 
   test('counts pool across folds before F1', () => {

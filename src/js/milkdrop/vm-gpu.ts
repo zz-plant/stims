@@ -69,6 +69,7 @@ export async function warmupGpuPipelines(
 function getOrCompileProgram(
   block: MilkdropProgramBlock,
   device?: GPUDevice,
+  ownedSignalAliases?: readonly string[],
 ): WgslProgramCompilation {
   const cached = PROGRAM_CACHE.get(block);
   if (cached) {
@@ -76,7 +77,11 @@ function getOrCompileProgram(
   }
   const enableF16 = device?.features?.has('shader-f16') ?? false;
   const enableSubgroups = device?.features?.has('subgroups') ?? false;
-  const compiled = compileProgramToWgsl(block, { enableF16, enableSubgroups });
+  const compiled = compileProgramToWgsl(block, {
+    enableF16,
+    enableSubgroups,
+    ownedSignalAliases,
+  });
   PROGRAM_CACHE.set(block, compiled);
   return compiled;
 }
@@ -151,10 +156,13 @@ const SIGNAL_SCRATCH_ENV: Record<string, number> = {};
 function populateSignalData(
   target: Float32Array,
   signals: MilkdropGpuVmSignals,
+  progress = 0,
 ): void {
   syncSignalEnvironment(
     signals as unknown as MilkdropRuntimeSignals,
     SIGNAL_SCRATCH_ENV,
+    undefined,
+    progress,
   );
   for (let i = 0; i < MILKDROP_WGSL_SIGNAL_FIELDS.length; i++) {
     const field = MILKDROP_WGSL_SIGNAL_FIELDS[i];
@@ -245,10 +253,15 @@ export function createGpuVmRunner() {
     initialRandomState: number,
     initialRegisters: Record<string, number> = {},
     guestMemory: { megabuf?: Float32Array; gmegabuf?: Float32Array } = {},
+    ownedSignalAliases: readonly string[] = [],
   ) {
     device = gpuDevice;
     clearGpuVmCaches();
-    const compilation = getOrCompileProgram(block, gpuDevice);
+    const compilation = getOrCompileProgram(
+      block,
+      gpuDevice,
+      ownedSignalAliases,
+    );
     if (!compilation.gpuExecutable) {
       dispose();
       return false;
@@ -349,6 +362,7 @@ export function createGpuVmRunner() {
   function dispatchInEncoder(
     commandEncoder: GPUCommandEncoder,
     signals: MilkdropGpuVmSignals,
+    progress = 0,
   ): GPUBuffer {
     if (
       !device ||
@@ -360,7 +374,7 @@ export function createGpuVmRunner() {
       throw new Error('GPU VM not initialized');
     }
 
-    populateSignalData(signalData, signals);
+    populateSignalData(signalData, signals, progress);
     device.queue.writeBuffer(currentSignalBuffer, 0, signalData);
 
     const pass = commandEncoder.beginComputePass({
@@ -374,7 +388,12 @@ export function createGpuVmRunner() {
     return stateBuffer;
   }
 
-  async function dispatch(signals: MilkdropGpuVmSignals): Promise<GpuVmResult> {
+  /** `progress` is the preset clock the calling VM owns (see
+   * syncSignalEnvironment); it is not part of the host's signals. */
+  async function dispatch(
+    signals: MilkdropGpuVmSignals,
+    progress = 0,
+  ): Promise<GpuVmResult> {
     if (
       !device ||
       !pipeline ||
@@ -386,7 +405,7 @@ export function createGpuVmRunner() {
       throw new Error('GPU VM not initialized');
     }
 
-    populateSignalData(signalData, signals);
+    populateSignalData(signalData, signals, progress);
     device.queue.writeBuffer(currentSignalBuffer, 0, signalData);
 
     const commandEncoder = device.createCommandEncoder({

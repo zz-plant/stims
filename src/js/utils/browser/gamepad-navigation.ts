@@ -33,8 +33,11 @@ type StoredFocusState = {
   index: number;
 };
 
+// `details > summary` is the only toggle of a disclosure ("Audio help",
+// Synthesize's "Advanced"); without it those sections cannot be opened from a
+// controller or a TV remote.
 const DEFAULT_FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), details > summary:first-of-type, [tabindex]:not([tabindex="-1"])';
 
 const DEFAULT_OPTIONS: Required<GamepadNavigationOptions> = {
   focusableSelector: DEFAULT_FOCUSABLE_SELECTOR,
@@ -263,17 +266,6 @@ const activateElement = (element: HTMLElement | null) => {
   }
 };
 
-const triggerBackAction = (doc: Document) => {
-  const backButton = doc.querySelector<HTMLElement>(
-    '[data-back-to-library], [data-back], .toy-nav__back',
-  );
-  if (backButton) {
-    backButton.click();
-    return true;
-  }
-  return false;
-};
-
 const dispatchEscape = (doc: Document) => {
   const event = new KeyboardEvent('keydown', {
     key: 'Escape',
@@ -467,8 +459,8 @@ export const initGamepadNavigation = (
     }
   };
 
-  const triggerBackOrEscape = (originKey: string = 'Escape') => {
-    if (!triggerBackAction(doc) && shouldDispatchEscapeFallback(originKey)) {
+  const dispatchBackAsEscape = (originKey: string = 'Escape') => {
+    if (shouldDispatchEscapeFallback(originKey)) {
       dispatchEscape(doc);
     }
   };
@@ -555,7 +547,7 @@ export const initGamepadNavigation = (
 
     if (bPressed) {
       setActive();
-      triggerBackOrEscape('GamepadB');
+      dispatchBackAsEscape('GamepadB');
     }
 
     if (leftBumper) {
@@ -653,7 +645,7 @@ export const initGamepadNavigation = (
 
     if (isBackKey(event)) {
       setActive();
-      triggerBackOrEscape(event.key);
+      dispatchBackAsEscape(event.key);
       event.preventDefault();
     }
   };

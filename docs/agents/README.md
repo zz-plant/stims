@@ -1,76 +1,28 @@
 # Agent Guidance Index
 
-Use this folder as a focused, progressive-disclosure overlay for agent tasks.
+Pages here add detail behind the root [`AGENTS.md`](../../AGENTS.md), in
+progressive-disclosure order: open the next one only when the task needs it.
 
 ## Read order
 
-1. Root [`AGENTS.md`](../../AGENTS.md) for non-negotiable defaults.
-2. [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md) for the single-page Cline quick start.
-3. [`../ROADMAP.md`](../ROADMAP.md) for product and engineering priorities and next targets.
-4. [`../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md`](../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md) for historical evidence at that revision. For current inventories, inspect the target, reference, and measured-result manifests under `src/data/milkdrop-parity/`; reconcile them with the latest dated comparison before claiming a pass.
-5. [`agent-handoffs.md`](./agent-handoffs.md) for the fastest safe bootstrap plus delegation and return-contract guidance.
-6. [`custom-capabilities.md`](./custom-capabilities.md) when the task may map to repo-local `.agent` skills/workflows.
-7. [`tooling-and-quality.md`](./tooling-and-quality.md) before code edits.
-8. [`metadata-and-docs.md`](./metadata-and-docs.md) before commit/PR finalization.
-9. [`reference-docs.md`](./reference-docs.md) when triaging unfamiliar areas.
+1. Root [`AGENTS.md`](../../AGENTS.md) for the bootstrap, daily commands and non-negotiable defaults. Claude Code loads it through [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md), which adds only Claude Code notes.
+2. [`agent-handoffs.md`](./agent-handoffs.md) for the bootstrap sequence, working beside other sessions, and delegation.
+3. [`tooling-and-quality.md`](./tooling-and-quality.md) before code edits.
+4. [`custom-capabilities.md`](./custom-capabilities.md) when the task may match a repo-local skill.
+5. [`browser-automation.md`](./browser-automation.md) and [`visual-testing.md`](./visual-testing.md) before browser QA.
+6. [`src-map.md`](./src-map.md) when triaging an unfamiliar area.
 
-## 60-second bootstrap
+For product priorities read [`../ROADMAP.md`](../ROADMAP.md); for which visitor moment a change serves, [`../PRODUCT_MOMENTS.md`](../PRODUCT_MOMENTS.md). Current certification inventories live in the manifests under `src/data/milkdrop-parity/`; the [May evidence ledger](../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md) is a historical snapshot.
 
-When the repo state is unknown, run `bun run setup:codex --status` for a quick readiness read, then follow the full bootstrap sequence and session-profile options in [`agent-handoffs.md`](./agent-handoffs.md#60-second-bootstrap) — that page is the canonical source for this, kept here as a pointer only so the two copies can't drift.
+## Pages
 
-## Task routing
-
-[`custom-capabilities.md`](./custom-capabilities.md#skills) holds the canonical skill/workflow routing table — open it first when the task matches a repeatable repo-local pattern. If you need the five most common entry points before opening that file:
-
-| If the task is mainly about... | Start here |
+| Page | Covers |
 | --- | --- |
-| shared runtime, loader, renderer, shell, controls, audio, or routing | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](../../.agent/skills/modify-visualizer-runtime/SKILL.md) |
-| bundled presets, catalog/editor behavior, import/export, or compatibility | [`.agent/skills/modify-preset-workflow/SKILL.md`](../../.agent/skills/modify-preset-workflow/SKILL.md) |
-| browser QA or visual confirmation | [`.agent/skills/play-visualizer/SKILL.md`](../../.agent/skills/play-visualizer/SKILL.md) and [`visual-testing.md`](./visual-testing.md) |
-| performing / jamming on the instrument | [`.agent/skills/perform-livecoding/SKILL.md`](../../.agent/skills/perform-livecoding/SKILL.md) and [`MCP_SERVER.md`](../MCP_SERVER.md) |
-| quick implementation-time verification | [`.agent/skills/verify-visualizer-work/SKILL.md`](../../.agent/skills/verify-visualizer-work/SKILL.md) |
-| end-to-end product-facing change that should go to PR-ready | [`.agent/skills/ship-visualizer-change/SKILL.md`](../../.agent/skills/ship-visualizer-change/SKILL.md) |
+| [`agent-handoffs.md`](./agent-handoffs.md) | Bootstrap, worktrees and shared-checkout rules, task slicing, the handoff packet and return contract |
+| [`tooling-and-quality.md`](./tooling-and-quality.md) | Dev loops, quality gates and their timings, task-specific checks, the optional LM Studio session scripts |
+| [`custom-capabilities.md`](./custom-capabilities.md) | The skill index and how to change a skill |
+| [`browser-automation.md`](./browser-automation.md) | `__stims_agent`, `bun run ctl`, and every URL flag (`?agent=true`, `?mockAudio=demo`, …) |
+| [`visual-testing.md`](./visual-testing.md) | Browser QA by change type, measured preset labs, GPU-less environments |
+| [`src-map.md`](./src-map.md) | Where code lives, which tests cover it, which guards scan it |
 
-### Code changes
-
-- [`agent-handoffs.md`](./agent-handoffs.md) (bootstrap, task slicing, subagent return contract)
-- [`custom-capabilities.md`](./custom-capabilities.md)
-- [`tooling-and-quality.md`](./tooling-and-quality.md)
-- [`visual-testing.md`](./visual-testing.md) (browser-based testing, DevTools, agent-mode URL)
-- [`visualizer-workflows.md`](./visualizer-workflows.md) (includes `/ship-visualizer-change` for end-to-end product updates)
-- [`reference-docs.md`](./reference-docs.md)
-- [`../MILKDROP_SUCCESSOR_WORKSTREAMS.md`](../MILKDROP_SUCCESSOR_WORKSTREAMS.md) (parallel successor execution map)
-
-For current user behavior, read the [user guide](../USER_GUIDE.md) and [capability map](../IMPLEMENTATION_STATUS.md). For test profiles, read [Testing](../TESTING.md).
-
-### Documentation or metadata changes
-
-- [`agent-handoffs.md`](./agent-handoffs.md) when task ownership or delegation guidance changed
-- [`metadata-and-docs.md`](./metadata-and-docs.md)
-- [`custom-capabilities.md`](./custom-capabilities.md) when `.agent/` assets or agent-facing docs change
-- [`../README.md`](../README.md) (canonical docs index)
-- [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md) (docs synchronization contract for add/move/rename/delete changes)
-
-### README alignment changes
-
-When a task updates any README, verify cross-link alignment across:
-
-- `README.md`
-- `CONTRIBUTING.md`
-- `AGENTS.md`
-- `docs/README.md`
-- `docs/agents/README.md`
-
-Use [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md) as the checklist before finalizing commit/PR metadata.
-
-## Fast repo map
-
-- `index.html` and `milkdrop/index.html` — canonical app shell and redirect alias.
-- `src/js/frontend/` — root workspace UI, URL state, and the engine adapter seam.
-- `src/js/core/` — shared runtime, renderer, shell, audio, and capability systems.
-- `src/js/milkdrop/` — preset runtime, editor, compiler, catalog, and VM behavior.
-- `src/css/` — `tokens.css`, `chrome.css` (panel/dock control system), `app-shell.css` (workspace shell, `@scope (.stims-shell)`), `index.css`/`base.css`, and `*.module.css` component styles.
-- `.github/workflows/ci.yml` — CI quality gate (tests only; deploys run on Cloudflare Workers Builds from `wrangler.site.jsonc`).
-- `tests/` — automated test suite.
-- `docs/` — contributor and architecture docs.
-- `.agent/skills/` — reusable agent task skills.
+Documentation changes follow [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md); [`../README.md`](../README.md) is the canonical docs index.

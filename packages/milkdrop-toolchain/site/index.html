@@ -81,7 +81,7 @@
 
   <div class="hero">
     <h1>The part of a MilkDrop engine that never touches a GPU.</h1>
-    <p class="lead">A TypeScript toolchain for <code>.milk</code> presets: a lossless parser, an EEL2 interpreter and JIT, an intermediate representation, HLSL analysis of the warp and composite shaders with GLSL emission, EEL-to-WGSL compute lowering, a formatter, exact MilkDrop 2 export, and dataflow analysis that reads which audio reaches which control. It keeps presets as <code>.milk</code> files, so anything it writes still opens in MilkDrop, projectM or Butterchurn. Born in <a href="https://toil.fyi">Stims</a>, where the same code compiles every preset the visualizer plays.</p>
+    <p class="lead">A TypeScript toolchain for <code>.milk</code> presets: a lossless parser, an EEL2 interpreter and JIT, an intermediate representation, HLSL analysis of the warp and composite shaders with GLSL emission, EEL-to-WGSL compute lowering, a formatter, exact MilkDrop 2 export, and dataflow analysis that reads which audio reaches which control. It keeps presets as <code>.milk</code> files: <code>exportMilkdrop2Preset</code> writes the file format MilkDrop 2 saves, which MilkDrop and projectM open directly and Butterchurn reads only after conversion to its JSON preset format. Born in <a href="https://toil.fyi">Stims</a>, where the same code compiles every preset the visualizer plays.</p>
     <div class="row">
       <span class="install"><span>npm install milkdrop-toolchain</span><button type="button" class="btn" data-copy="npm install milkdrop-toolchain">copy</button></span>
       <a class="btn primary" href="#playground">Try it in the browser</a>
@@ -91,7 +91,7 @@
 
   <section id="pipeline">
     <h2>Pipeline</h2>
-    <p class="sub">Preset text goes through a lossless line tree, a field parser and the IR builder, which also parses every equation and classifies the shader text. From the IR, three execution tiers agree on one semantics, and the formatter and exporter turn it back into text.</p>
+    <p class="sub">Preset text goes through a lossless line tree, a field parser and the IR builder, which also parses every equation and classifies the shader text. From the IR, a program block runs on the tree-walking interpreter or the JavaScript JIT, or is lowered to WGSL by the generator; all three read one function table. The formatter and exporter turn the IR back into text.</p>
     <figure>
       <svg class="pipeline" viewBox="0 0 900 260" width="900" height="260" role="img" aria-labelledby="pipeline-title">
         <title id="pipeline-title">The compile pipeline: .milk text to syntax tree to fields to IR, then to the interpreter, JIT, WGSL, text and dataflow outputs; shader text to HLSL parse to GLSL and into the IR.</title>
@@ -343,7 +343,7 @@ comp_4=`}
 
   <section id="semantics">
     <h2>Semantics</h2>
-    <p class="sub">The EEL2 semantics the interpreter, the JIT and the WGSL generator implement are specified by the sibling package <a href="../eel-conformance/">eel-conformance</a> (<a href="https://www.npmjs.com/package/eel-conformance">npm</a>): portable JSON cases, a JSON Schema and a runner contract, which this package runs in its test suite. Five behaviours that differ from JavaScript and trip up most reimplementations:</p>
+    <p class="sub">The EEL2 semantics implemented by the interpreter, the JIT and the WGSL generator follow the corpus in the sibling package <a href="../eel-conformance/">eel-conformance</a> (<a href="https://www.npmjs.com/package/eel-conformance">npm</a>): portable JSON cases, a JSON Schema and a runner contract. This package does not depend on the corpus or run it. Stims runs it against three CPU paths, single-statement evaluation, the CSP-fallback interpreter and the JIT, in <code>tests/unit/eel-conformance-spec.test.ts</code>; no WGSL tier runs it. Five behaviours that differ from JavaScript and trip up most reimplementations:</p>
     <ol class="gotchas">
       <li><strong>Division by exact zero yields <code>0</code></strong>, not <code>Infinity</code> or <code>NaN</code> (<code>3 / 0</code> is <code>0</code>).</li>
       <li><strong><code>%</code> truncates both operands to integers first</strong>, and a zero divisor yields <code>0</code>.</li>

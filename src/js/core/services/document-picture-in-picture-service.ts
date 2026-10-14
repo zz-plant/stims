@@ -14,6 +14,14 @@
  * stage away from the tab it came from. `captureStream()` leaves the canvas
  * exactly where it is and feeds a `<video>` in the other window.
  *
+ * ## What the stage shows over its canvas
+ *
+ * The capture carries canvas pixels only, so the flash governor's dimming,
+ * the brightness ceiling, the D blackout and the Y white flash are mirrored
+ * onto the popout's video by `mirrorStagePresentation`
+ * (stage-presentation.ts), as the projector does. Otherwise Reduce flashing
+ * would protect the tab and not the window floating over everything else.
+ *
  * ## Styling
  *
  * A PiP document inherits no stylesheets from its opener. Rather than a
@@ -22,6 +30,8 @@
  * new document — so the popout follows the app's theme, including a change
  * made while it is open.
  */
+
+import { mirrorStagePresentation } from './stage-presentation.ts';
 
 export type DocumentPictureInPictureState = {
   active: boolean;
@@ -110,7 +120,10 @@ function buildMarkup(theme: string): string {
       color: var(--text-color, #f7f4eb);
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     }
-    #stage { flex: 1; min-height: 0; display: block; width: 100%; object-fit: contain; background: #000; }
+    #picture { position: relative; flex: 1; min-height: 0; }
+    #stage { display: block; width: 100%; height: 100%; object-fit: contain; background: #000; }
+    /* Over the picture only, as on the stage: the controls stay usable. */
+    #flash { position: absolute; inset: 0; background: #fff; pointer-events: none; }
     #controls {
       display: flex;
       gap: 8px;
@@ -136,7 +149,10 @@ function buildMarkup(theme: string): string {
       outline-offset: 2px;
     }
   </style>
-  <video id="stage" autoplay muted playsinline aria-label="Visualizer stage"></video>
+  <div id="picture">
+    <video id="stage" autoplay muted playsinline aria-label="Visualizer stage"></video>
+    <div id="flash" hidden></div>
+  </div>
   <div id="controls">
     ${CONTROL_BUTTONS.map(
       (button) =>
@@ -161,15 +177,19 @@ export type DocumentPictureInPictureController = {
 
 export function createDocumentPictureInPictureController({
   getCanvas,
+  getStage,
   actions,
   doc = document,
 }: {
   getCanvas: () => HTMLCanvasElement | null;
+  /** The element the stage's luminance filter is written on. */
+  getStage: () => HTMLElement | null;
   actions: DocumentPictureInPictureActions;
   doc?: Document;
 }): DocumentPictureInPictureController {
   let pipWindow: Window | null = null;
   let stream: MediaStream | null = null;
+  let stopPresentation = () => {};
   const listeners = new Set<(state: DocumentPictureInPictureState) => void>();
 
   const emit = () => {
@@ -227,6 +247,8 @@ export function createDocumentPictureInPictureController({
 
   const teardown = () => {
     stopStream();
+    stopPresentation();
+    stopPresentation = () => {};
     pipWindow = null;
     emit();
   };
@@ -268,6 +290,15 @@ export function createDocumentPictureInPictureController({
       }
 
       attachCanvas(win);
+      const stage = getStage();
+      const video = videoIn(win);
+      const flash = win.document.getElementById('flash');
+      if (stage && video && flash) {
+        stopPresentation = mirrorStagePresentation(stage, {
+          filtered: video,
+          flash,
+        });
+      }
       syncPlaybackState();
       // `pagehide` rather than `unload`: closing a PiP window does not always
       // fire `unload`, and a missed teardown leaves the capture running.
@@ -298,6 +329,8 @@ export function createDocumentPictureInPictureController({
     dispose: () => {
       pipWindow?.close();
       stopStream();
+      stopPresentation();
+      stopPresentation = () => {};
       pipWindow = null;
       listeners.clear();
     },

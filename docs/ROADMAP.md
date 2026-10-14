@@ -19,7 +19,7 @@ Audited against the code on 2026-10-06. PR numbers mark what changed in that pas
 
 - Searchable catalog with previews, collections, favorites, history, deep links, and a preset queue you can fill from Browse (#1373).
 - Direct `.milk` import/export and a live CodeMirror editor: undo that never crosses presets, A/B against the original, named versions, and a revert to the original (#1369).
-- WebGL2 compatibility baseline plus a guarded WebGPU execution path. Measured visual evidence is captured on the WebGPU path (the reference-capture backend); WebGL2, the baseline most users run, has no measured evidence and is tracked as a gap, not claimed.
+- WebGPU where the browser ships it as stable, WebGL2 elsewhere ([Rendering backends](./ARCHITECTURE.md#rendering-backends) has the selection rule and how visitors split). Measured visual evidence exists only for WebGPU, the judged backend; WebGL2 has none and is tracked as a gap, not claimed.
 - Browser audio from the microphone, a file, tab or system audio (desktop browsers), a YouTube embed captured as tab audio, and the built-in demo, analysed off the main thread.
 - Live performance: WebMIDI learn with mappings saved per device, factory controller profiles, and a cue monitor whose hand fader runs both presets through the fade.
 - Comfort controls: a Reduce flashing governor, a brightness ceiling, and a motion dampener.
@@ -27,6 +27,17 @@ Audited against the code on 2026-10-06. PR numbers mark what changed in that pas
 - Native projectM reference capture, provenance, image-diff, and result-promotion tooling.
 
 See [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) for file-level status and [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md) for evidence boundaries.
+
+## Workstreams
+
+Four lanes cut across the sections below. Keep one owner per lane where possible. Parity and runtime work can move in parallel, but a change to a public claim waits for the proof lane to catch up.
+
+| Lane | Owns | Done when |
+| --- | --- | --- |
+| Parity and fidelity | `packages/milkdrop-toolchain/src/compiler/`, `src/js/milkdrop/vm/`, `src/js/milkdrop/renderer-helpers/`, `src/data/milkdrop-parity/`; ordered work in the [parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md#open-work) | the certification corpus compiles and steps in Stims, the certified set has current measured results, and catalog labels derive from them |
+| Runtime performance | `src/js/milkdrop/runtime.ts`, `vm.ts`, `vm/frame-generation.ts`, `vm/wave-builder.ts`, `renderer-adapter*.ts`; queue in [Runtime performance](./RUNTIME_PERFORMANCE.md#open) | fewer per-frame allocations, with no regression in playback or controls |
+| Browser product | `src/js/frontend/`, `src/js/milkdrop/overlay/`, `public/milkdrop-presets/catalog.json` | launch, browse and recovery hold up on mobile and from the keyboard |
+| Proof and release | `scripts/run-quality-gate.ts`, `scripts/run-parity-diff-suite.ts`, `scripts/promote-parity-suite-result.ts` and their tests, [Development](./DEVELOPMENT.md), [Lineage and credits](./LINEAGE_AND_CREDITS.md) | gates cover each public claim, and public wording matches the strongest evidence present |
 
 ## Now: studio loop first, proof loop as a maintained floor
 
@@ -38,9 +49,16 @@ Each of these needs a real GPU, a second display, or a product decision.
 
 1. **Reduce flashing on by default.** The governor sees real frames (#1370), and its read costs the main thread 0.1 ms (#1375). It disagreed with the WCAG audit on the first-run preset (`shifter-curlique`, #1376), and the governor was wrong three ways (#1383). It judged one sample per tile, so moving texture read as flashing. It counted its own dimming step as the content darkening. And it skipped frames, so some comparisons spanned 33 ms and doubled the motion they judged. It now counts what the audit counts on the same frames: 0, 13 and 52 flashes/s on `shifter-curlique`, psychaos and krash. Live with Reduce flashing on, `shifter-curlique` had a mean brightness of 0.30 to 0.71; it now stays at full brightness in silence, on WebGL and at 390×844. With demo audio on WebGPU, one run in five still dimmed it briefly, to 0.62 at the lowest (see [Product moments](./PRODUCT_MOMENTS.md#open-questions)). What is left is the product call to turn it on for everyone.
 2. **Re-measure parity and demote what fails.** The certified labels rest on a July results file that the September suite contradicts (see [Proof floor](#proof-floor--maintained-not-expanded)).
-3. **Recording that holds up.** Render 9:16 and 1:1 natively, keep frames coming when the tab is hidden, lift the power-saving frame cap while recording, and add a browser test that measures the file.
-4. **A projector window that mirrors the stage.** Today's second window is a separate session (see [Live performance](#live-performance-vjing--hardware-control)).
-5. **A flash audit of the whole corpus with real music.**
+3. **Recording that holds up** ([#1441](https://github.com/zz-plant/stims/issues/1441)). Render 9:16 and 1:1 natively, keep frames coming when the tab is hidden, lift the power-saving frame cap while recording, and add a browser test that measures the file.
+4. **A flash audit of the whole corpus with real music.**
+
+### Verify what ships
+
+Each of these is built and needs evidence from a real browser, device or registry before it is claimed.
+
+- **Shared remixes across browsers** ([#1408](https://github.com/zz-plant/stims/issues/1408)). #1415 made the shared-draft test deterministic and #1416 fixed the startup-cover scrollbar handoff; the cross-browser reproduction and the in-app black stage are still open.
+- **The OBS recipe** ([#1409](https://github.com/zz-plant/stims/issues/1409)), validated with native recordings and real audio routing.
+- **The published packages** ([#1410](https://github.com/zz-plant/stims/issues/1410)). `eel-conformance`, `flash-guard` and `milkdrop-toolchain` reached npm at 0.1.0 on 2026-10-13, and `audio-reactive` stays off it (#1446). The issue stays open until each is checked from a clean consumer.
 
 ### Zero-friction audio routing (Closing the capture gap)
 
@@ -55,12 +73,12 @@ Open:
 
 - The tab/system card only checks that `getDisplayMedia` exists, so a browser that cannot share audio fails after the share dialog instead of before it.
 - A direct audio-URL source, reusing the file-audio graph. SoundCloud has no code at all.
-- The local player plays one file on a loop. Missing: folder and multi-file playlists, advancing at the end of a track, ID3 title and artwork, a seek bar with beat markers, and shuffle/repeat.
+- The local player takes several files as a queue (#1443): it advances at the end of a track, loops the queue, and has next, previous and pause. Missing: picking a folder, ID3 title and artwork, a seek bar with beat markers, shuffle, and a control for the repeat modes `file-audio.ts` already has (queue, one track, off).
 - The microphone has a device picker and a check that the browser's voice processing is off. Missing: user gain, a level meter in dB, and a noise gate. Room compensation comes after those.
 
 Exit criteria:
 
-- a user can start visualizing their system audio or a local playlist within 2 clicks from first visit without external software. *System audio: met inside the app; the browser's share picker adds its own clicks. Local playlist: not met, because there is no playlist.*
+- a user can start visualizing their system audio or a local playlist within 2 clicks from first visit without external software. *System audio: met inside the app; the browser's share picker adds its own clicks. Local playlist: met for files picked together (#1443); a folder cannot be picked.*
 
 ### Remix studio & shader live-coding
 
@@ -81,7 +99,7 @@ Shipped:
 Open:
 
 - **Shader tab (WGSL/GLSL).** Partial. The editor's Shader tab lists a preset's warp/comp blocks with jumps, shows the engine's structured compile diagnostics (program, stage, driver message) mapped to the authored block, and a read-only view of the GLSL the WebGL path compiles. Missing: the WGSL a WebGPU pipeline actually runs — the WebGPU path lowers shaders through three's TSL node graphs at render time, so per-block WGSL text needs a live GPUDevice plumbing path that does not exist yet.
-- **Custom textures.** Partly shipped: the editor's Textures pane inspects what exists — every `sampler_*` a preset's warp/comp blocks reference, resolved to the bundled texture file the engine binds (with a preview, alias/substitute/rand notes, per-backend volume honesty, and built-in samplers folded into a collapsed group; `texture-bindings.ts`). Still missing: remapping a slot to another bundled texture, user-uploaded textures, and any override persisted in the preset — textures remain a fixed bundled table (`texture-files.ts`).
+- **Custom textures** ([#1442](https://github.com/zz-plant/stims/issues/1442)). Partly shipped: the editor's Textures pane inspects what exists — every `sampler_*` a preset's warp/comp blocks reference, resolved to the bundled texture file the engine binds (with a preview, alias/substitute/rand notes, per-backend volume honesty, and built-in samplers folded into a collapsed group; `texture-bindings.ts`). Still missing: remapping a slot to another bundled texture, user-uploaded textures, and any override persisted in the preset — textures remain a fixed bundled table (`texture-files.ts`).
 - **Short links.** Links are long (p95 5,215 characters even compressed); a short-link service would still wait on moderation.
 - **The loop as a whole.** `tests/e2e/studio-loop.test.ts` walks browse → edit → compare → save → share; CI's e2e matrix does not run it yet.
 
@@ -92,7 +110,7 @@ Exit criteria:
 
 ### Creator-grade export & vertical formats
 
-Recording is a `MediaRecorder` beta. Only the 4K preset renders natively; the three 1080×1920 presets center-crop and upscale the live canvas, and there is no 1:1 preset.
+Recording is a `MediaRecorder` beta. 4K, the three 1080×1920 presets and the 1080×1080 square render natively, by resizing the renderer; Full HD crops and scales the live canvas. Frames are copied in the render loop's frame-drawn notification with the flash governor's dimming, the blackout and the white flash painted in; the brightness ceiling is left out (`stage-presentation.ts`). The first four items below are [#1441](https://github.com/zz-plant/stims/issues/1441).
 
 - Keep frames coming when the tab is hidden during a recording. Switching tabs freezes the video while the audio runs on: `hidden-tab-policy.ts` does not exempt recording, and browsers pause `requestAnimationFrame` in hidden tabs anyway, so a recording needs a frame source that does not depend on it.
 - Lift the power-saving frame cap while recording; `captureStream(60)` asks for frames the cap withholds.
@@ -101,7 +119,7 @@ Recording is a `MediaRecorder` beta. Only the 4K preset renders natively; the th
 - Transparent background alpha channel export (`WebM with alpha` / `ProRes 4444`) for video editors overlaying visualizers on DJ footage. MilkDrop's composite is opaque by design, so this is also a design decision.
 - On-screen track title & artwork overlay: customizable lower-third typography badge rendered directly into video frames. Needs a metadata source; nothing parses ID3 today.
 - Seamless 15s and 30s loop export for Spotify Canvas and VJ banks.
-- Deterministic frame pacing and loop-duration controls. `OfflineFrameRenderer` exists but nothing in the engine implements it.
+- Deterministic frame pacing and loop-duration controls. Nothing renders frames off the live clock yet; recording captures the live canvas.
 - Verify codec, aspect ratio, duration, and frame count in browser-backed tests. Today's recording tests are all mocked.
 - Label `MediaRecorder` as the compatibility fallback once a deterministic path exists.
 
@@ -124,32 +142,36 @@ Shipped:
 Open:
 
 - **Preview gaps.** Re-render the 193 presets listed in `preview-failures.json`.
-- **Ranking inputs.** Reactivity is measured for 47 of 1,787 presets, motion for 50, and engagement for none. A performance-cost signal now ships (`src/data/preset-frame-cost.json`, read by autoplay and shuffle on low-tier devices via core/preset-cost-signal.ts), but its data population is ongoing and Browse ranking does not consume it yet. 99 of the top 100 by `curatedRank` are uncertified.
+- **Ranking inputs.** Reactivity is measured for 47 of 1,787 presets, motion for 50, and engagement for none. A performance-cost signal ships (`src/data/preset-frame-cost.json`, read by autoplay and shuffle on low-tier devices via `src/js/core/preset-cost-signal.ts`, #1419). It holds 43 presets, all measured on one high-end WebGPU machine on 2026-10-12; the heaviest is 5.24 ms against the 12 ms low-tier budget, so the gate skips nothing yet. Browse ranking does not read it, by design. 99 of the top 100 by `curatedRank` are uncertified.
 - **Mood.** Mood comes from title keywords (`describePresetMood`). The autotagger's `category:*` tags can only be reached by typing them.
-- **Visual similarity.** The finder's "look" mode embeds a text description of each frame, not the frame. Those descriptions collapse 1,786 presets into 81 distinct strings.
-- **Community signals.** `setRating` has no UI, and there are no notes or glitch reports.
+- **Visual similarity.** Shipped for most of the catalog (#1447): Nearby, the finder's "By look" and Browse's "Like your saved" sort compare EmbeddingGemma 2 embeddings of each rendered preview, on the device. 1,636 of 1,787 presets have a vector. The rest fall back to `/api/visual-search`, which embeds a text description of the frame; those descriptions collapsed 1,786 presets into 81 distinct strings.
+- **Community signals.** `setRating` has no UI, and there are no notes or glitch reports. A credited showcase of submitted remixes is [#1411](https://github.com/zz-plant/stims/issues/1411).
+- **Named sets.** The queue cannot be saved under a name or shared as a set ([#1412](https://github.com/zz-plant/stims/issues/1412)).
 - **Shareable views.** A shared Browse URL keeps the collection but not the search, author, or sort.
 - **Fidelity in Browse.** A fidelity sort or badge needs measurements; one preset in 1,787 has one.
 
 Exit criteria:
 
 - a first-time user can find a strong preset without understanding MilkDrop naming conventions. *Partly met: starter picks, collections, and search synonyms exist; there is no mood browsing and no user testing.* And
-- low-confidence or expensive presets do not dominate default recommendations. *Not met: the cost signal and its low-tier autoplay gate shipped, but the sidecar holds no measurements yet and there is almost no confidence signal.*
+- low-confidence or expensive presets do not dominate default recommendations. *Not met: the cost signal and its low-tier autoplay gate shipped, but its 43 measurements come from one high-end machine and exclude nothing, and there is almost no confidence signal.*
 
 ### Proof floor — maintained, not expanded
 
 **The floor is not green.** The last suite run (2026-09-01) graded the 13 certified references: 1 pass, 10 fail, 2 whose reference shows no signal. The feedback clamp (#1223, 2026-09-23) landed after that run and has not been measured. `measured-results.json` (2026-07-29) still marks 250-wavecode, 300-beatdetect, and glowsticks as passing; the suite grades the first two as failing (7.38% and 5.88% against a 2% limit) and the third as no-signal. CI grades the tooling against synthetic fixtures only. Re-measuring needs a WebGPU device, which headless Chromium does not expose.
 
+The [parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md#open-work) holds the full ordered list and its evidence.
+
 - Re-run capture, suite, and noise; demote the results the suite contradicts.
 - Seed `Math.random` in the capture path, so presets like mosaics and cubetrace render the same way on every run.
 - Fix renderer behavior by subsystem when measured evidence regresses: feedback orientation, shader sampling, color presentation, shapes, waves, and motion vectors.
 - Promote results only after the requested backend and reference provenance are verified. The tooling enforces this; the data predates it.
-- Show evidence where people choose presets. Browse shows none by design, `PresetRowRenderer`'s certified badges are dead code, and the inspector shows no measured result.
-- Portrait viewports render black on WebGPU (found 2026-10-06; WebGL is unaffected).
+- Retire the krash and glowsticks references, which a blank frame would pass.
+- Show evidence where people choose presets. Browse shows none by design, and the inspector shows no measured result.
+- Make WebGL's warp centre honour the aspect. #1376 traced the black portrait stage of 2026-10-06 to the then first-run preset's 16:9 `cx`/`cy` maths: WebGPU matches MilkDrop there, and WebGL differs because it drops the aspect from `cx`/`cy` (see [Product moments](./PRODUCT_MOMENTS.md#open-questions)).
 
 Exit criteria:
 
-- every featured preset has current measured evidence. *Not met: the first-run preset is uncertified, its reference shows no signal, and its WebGPU and WebGL renders differ in mean luminance (88 vs 26).*
+- every featured preset has current measured evidence. *Not met: the first-run preset, `shifter-curlique` (`src/js/milkdrop/runtime/first-run-preset.ts`), has no projectM reference. Its checked-in evidence shows it lit and moving on both backends at both sizes (mean luminance 138 on WebGPU, 115 on WebGL at 1280×720; `src/data/first-run-preset-evidence.json`), which is not parity. Its predecessor, krash, had a reference that shows no signal.*
 - public compatibility wording is generated or guarded against tracked sources of truth. *Partly met: the claims guard scans the README and `docs/` but not in-app copy or `public/llms.txt`, and the catalog fidelity check trusts the stale results file.* And
 - unsupported or fallback behavior is visible rather than silent. *Partly met: the 168 presets that render approximated on WebGPU get a stage chip, but nothing in Browse says so.*
 
@@ -157,7 +179,7 @@ Exit criteria:
 
 The bundled corpus was imported from the community without any photosensitive-seizure review. Stims' commitment to neurodivergent stimmers requires active protection, not just passive reporting.
 
-**What is measured.** The WCAG 2.3.1 audit (`packages/flash-guard/src/analysis.ts` + `scripts/analyze-preset-flash.ts`) has measured 40 of 1,787 presets, most recently on 2026-08-22. One of them, `beta106at-shape-mash0001-…`, measured high at about 5 flashes a second. The rest stay under threshold because MilkDrop's motion is directionally incoherent: about 14% of the field brightens while 13% darkens in the same frame, which is not the field-wide flash WCAG describes. All of those runs used the synthetic preview waveform. On 2026-10-06 the live governor, sampling at 60 Hz with real audio, caught the first-run preset (`krash-rovastar-cerebral-demons-stars`) flashing above 3 a second in bursts. Real audio and the sampling rate both matter. See [`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete).
+**What is measured.** On 2026-08-22 the WCAG 2.3.1 audit (`packages/flash-guard/src/analysis.ts` + `scripts/analyze-preset-flash.ts`) measured 40 of 1,787 presets on the synthetic preview waveform and found one high, `beta106at-shape-mash0001-…`, at about 5 flashes a second. It explained the other zeros as directionally incoherent motion: in a decomposition of five presets, 14.1% of a window brightened while 13.6% darkened in the same frame, each under the 25% area rule ([`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete)). That explanation no longer covers the corpus. On 2026-10-06 the live governor, sampling at 60 Hz with real audio, caught `krash-rovastar-cerebral-demons-stars`, the first-run preset until #1376 replaced it that day, flashing above 3 a second in bursts. Since #1383 the audit and the governor count psychaos and krash well above that on the same frames (item 1 in [Up next](#up-next-in-order)). On 2026-10-13 the hall of fame and the top of curated rank were measured at 60 and 30 fps: 20 of the 65 that could be measured read `high`, four of them in the hall of fame, and curated rank now sinks every `high` preset to the bottom ([`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete)). Whether churn, a quarter of the field brightening while another quarter darkens, should count as flashing is open ([Product moments](./PRODUCT_MOMENTS.md#open-questions)).
 
 Shipped:
 
@@ -171,14 +193,14 @@ Open:
 
 - **Default-on.** Reduce flashing follows the OS reduced-motion setting, so it is off for most visitors. The cost that kept it opt-in is gone (#1375); see item 1 in [Up next](#up-next-in-order).
 - **The shield itself.** It is a CSS brightness filter that reacts after it detects a flash, so the first one or two get through. A clamp in the shader would act before the frame is shown.
-- **Calm filter.** A "Calm stimming" filter has no data to stand on: motion is measured for 50 presets and flashing for 40.
+- **Calm filter.** A "Calm stimming" filter has no data to stand on: motion is measured for 50 presets and flashing for 102.
 - **Room controls.** Gamma and contrast are missing; CSS has no gamma filter, so this needs an SVG filter or a shader uniform.
 - **Dampener gaps.** The dampener does not reach presets whose warp shader owns the transform, or the per-pixel part of WebGPU-lowered programs.
 
 Exit criteria:
 
 - the audit tool's resource-exhaustion pattern is fixed and a full-corpus run completes without a large unmeasured tail. *Not met: the last local run lost 21 of 60 presets, mostly to 90-second timeouts clustered at the end. Page recycling exists but reuses one browser and context.*
-- a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape. *Not met; it would fail today on the one high-risk preset.*
+- a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape. *Not met; the three presets measured above threshold (`beta106at-shape-mash0001-…`, psychaos and krash) would fail it.*
 - a real-time luminance clamp passes a synthetic 15Hz square-wave flash torture test with zero frames exceeding WCAG 2.3.1 thresholds. *Partly met: unit tests cover 10 Hz and 30 Hz on a 6×6 grid, and 5 Hz on the app's 16×16 grid at its sample density; none covers 15 Hz or the real filter in a browser.* And
 - the motion dampener scales camera transforms down to full stillness without halting audio-reactive shape generation. *Mostly met: transforms come to rest at 0, but no test checks that waves and shapes still react.*
 
@@ -197,27 +219,32 @@ Shipped:
   - Knob and fader moves apply live and commit once, 250 ms after the last move. Before, every CC recompiled the preset on the main thread.
   - A learned mapping spans the variable's natural range instead of 0–1.
   - Touching a Perform control or the cue fader picks it as the learn target.
+- Stage utilities (#1455, closing [#1440](https://github.com/zz-plant/stims/issues/1440)): hold D for a blackout (two quick taps latch it) and Y for a white flash, without touching the preset or audio. Space freezes the picture.
+- Tap tempo: K taps (the first tap is the downbeat, one tap after a pause re-syncs it), Shift+K hands the tempo back to the music, and the palette nudges the beat grid by 20 ms. A tapped tempo puts auto-advance on the performer's bar lines.
+- MIDI clock in: a running clock from a mixer or DAW sets the tempo and bar position until it stops or goes silent. The cue monitor's BPM readout names who owns the tempo.
+- Pads run commands: Settings → Performance hardware maps a pad, key or gamepad button to any command-palette action (next preset, pause, tap tempo, take the queued preset, and anything the palette adds later). The hit that maps it does not fire it, and each mapping is listed under its device with a remove button.
+- A projector window ([#1439](https://github.com/zz-plant/stims/issues/1439); dock → Projector window, or the palette) mirrors the stage canvas into a window with no chrome, through the same `captureStream()` path picture-in-picture uses. MIDI moves, edits, crossfades and a held frame all reach it, because it shows this tab's pixels; the flash governor, brightness ceiling, blackout and white flash, which sit outside the canvas, are mirrored onto it. With a second screen attached it moves there once the browser grants screen access; double-click or F in it goes full screen, and the cursor hides when still. After a reload, opening it again takes back the window already on the projector. Casting to a TV keeps the watch-party receiver, which a separate device needs.
 
 Open:
 
-- **Pads and notes.** They cannot be learned, and cannot trigger actions such as next preset or blackout.
-- **MIDI clock.** In/out is implemented but only tests use it.
+- **Pads on fields and held keys.** A pad can be learned only to a command. Gate and toggle bindings on a preset field still come only from a factory profile, and blackout and white flash are held keys rather than commands, so a pad cannot hold them yet.
+- **MIDI clock out.** Implemented, but nothing starts it, so lighting desks cannot follow the visuals' tempo.
 - **Latency.** The sub-10 ms target has never been measured on a device.
-- **Projector / external display window.** The second window today is a watch-party link. It boots a full session with its own audio, synced through a relay that carries only the preset id and title, so MIDI moves, edits, and crossfades never reach the audience screen. What it needs: a same-origin window that mirrors the stage canvas (the picture-in-picture path already does), with no chrome and the cursor hidden.
-- **Tap tempo and phase nudge.** Missing; tempo comes only from the audio. `=` and `-` are the stage zoom and warp keys.
+- **Projector shape and frame pacing.** The projector has the stage's shape and size, so a portrait stage letterboxes on a 16:9 projector; it should render at the projector's own aspect. Display-rate pacing is unmeasured, and a minimised operator window gets no frames from the browser, so the projector holds its last one.
+- **Tempo beyond auto-advance.** A tapped or clocked tempo moves only auto-advance's bar lines. LFOs keep their own rate and no preset reads a tempo.
 - **Transition shaders.** One noise dissolve. Missing: wipe, glitch, and others, on both backends.
-- **Stage utilities.** Space freezes the picture. Blackout and white flash are missing, and the brightness ceiling stops at 30%. B, W, and F are taken (Browse, next waveform, full screen); D, K, and Y are free.
+- **Brightness floor.** The brightness ceiling stops at 30%, so the stage cannot be dimmed further than that without a blackout.
 
 Exit criteria:
 
 - WebMIDI bindings persist across browser restarts and respond with sub-10ms latency. *Persistence is met and tested; latency is unmeasured.* And
-- the pop-out projector window maintains display-rate frame synchronization with zero UI chrome or cursor leaks. *Not met: there is no mirror window.*
+- the pop-out projector window maintains display-rate frame synchronization with zero UI chrome or cursor leaks. *Partly met: the window has no chrome and hides a still cursor (`tests/e2e/projector-window.test.ts` checks it plays non-black stage frames); frame pacing is unmeasured.*
 
 ### Dual-backend differential evidence (Closing the WebGL2 gap)
 
 - Extend the parity diff harness (`scripts/run-parity-diff-suite.ts`) to capture and grade WebGL2 frame captures alongside WebGPU, which is currently the only judged backend.
 - Grade both backends against the same contract the suite already uses: mismatch below the preset's configured `failThreshold` (`0.02` in `visual-reference-manifest.json`), outside its measured noise band, and against a reference a blank frame would not also pass.
-- Eliminate the unmeasured status of the WebGL2 baseline so that fidelity claims reflect the renderer the majority of web users run.
+- Eliminate the unmeasured status of WebGL2, which carries a large share of visits ([Rendering backends](./ARCHITECTURE.md#rendering-backends)), so fidelity claims cover the renderer those visitors see.
 
 Exit criteria:
 - Every certified preset in `src/data/milkdrop-parity/visual-reference-manifest.json` possesses matching measured diff reports for both `webgpu` and `webgl` backends; and
@@ -237,8 +264,7 @@ Exit criteria:
 
 ### Vectorized GPU compute offloading for waveforms & geometry
 
-- Offload per-point custom wavecode generation ($4 \text{ waves} \times 512 \text{ points} = 2,048 \text{ evaluations/frame}$) from CPU JavaScript JIT to WebGPU compute storage buffers.
-- Implement AST SIMD/vec4 vectorization in the WGSL generator for per-vertex grid transformations.
+- Offload per-point custom wavecode generation ($4 \text{ waves} \times 512 \text{ points} = 2,048 \text{ evaluations/frame}$) from the CPU JIT to the GPU. Per-pixel mesh programs already run inside the mesh shader on the full WebGPU path ([Architecture](./ARCHITECTURE.md#frame-data-flow)); per-point wave programs are the CPU lane left.
 - Eliminate remaining main-thread CPU spikes, building on the frame-work reduction recorded in [RUNTIME_PERFORMANCE.md](./RUNTIME_PERFORMANCE.md) ($3.43 \text{ ms} \rightarrow 2.87 \text{ ms}$ at 1×, about 16%; $17.56 \text{ ms} \rightarrow 15.31 \text{ ms}$ at 4× CPU throttle, about 13%).
 
 Exit criteria:
@@ -259,6 +285,33 @@ Exit criteria:
 
 Exit criteria:
 - Deterministic frame export completes 60 seconds of 4K 60fps video matching audio waveforms sample-for-sample.
+
+### Learn by editing
+
+The authoring curriculum shipped as ten tracks in [docs/authoring/](./authoring/README.md), published at [/learn/](https://toil.fyi/learn/). The plan behind it is [archived](./archive/PRESET_AUTHORING_DOCS_PLAN.md); its follow-on work is open:
+
+- **Live reactivity while typing.** The editor's Tune chips name the sounds that drive each control from static dataflow. The per-variable live verdicts from `src/js/milkdrop/reactivity-probe.ts`, which the Generate panel already uses, are not wired into the editor.
+- **A way from the editor into the lessons.** The docs site with run links exists; the editor has no Learn link to the lesson for what is on screen, and no lesson embeds a live stage.
+- **Technique tags.** No catalog preset carries a `technique:*` or `difficulty:*` tag, so lessons cannot link to examples in the wild.
+- **Explain this line.** The editor's Explain covers the whole preset; a per-line explanation that links to the relevant lesson does not exist.
+- **Lesson deep links.** `#code=` restores a preset but not a lesson position or highlighted lines (`#lesson=`).
+- **Archive rescue.** The sweep of community knowledge described in the archived plan has not started.
+- **A lesson example driven by the percussive/harmonic signals** ([#1340](https://github.com/zz-plant/stims/issues/1340)).
+
+## Engineering health
+
+Checked against the code on 2026-10-13. These carry no visitor-facing change; each lowers the cost or risk of the work above. They come from the September architecture proposal, the September toolchain audit and the WebGPU revamp plan, all [archived](./archive/).
+
+- **One shader source for the composite pass.** `src/js/milkdrop/feedback-manager-webgpu-tsl.ts` (4,786 lines) mirrors the GLSL composite in `feedback-manager-shared.ts` (2,633) by hand, and nothing fails when they drift. Two attempts at a shared IR were removed because nothing consumed them. Start with a uniform table both managers read their defaults from, plus a differential test that every composite uniform is bound on both backends or declared backend-only (`feedback-composite-contract.ts`, `milkdrop-feedback-uniform-contract.test.ts`, both NEW); decide on generating shaders from it after that.
+- **Break up `App.tsx`.** It has 1,496 lines and 33 `useEffect` calls. Extract lifecycle hooks one concern per PR, split `EngineContextValue` into actions and data by change cadence, and add a guard that fails when the effect count rises (`check-app-shell-effects.ts`, NEW).
+- **Give `src/js/milkdrop/` a shape.** 89 modules sit at its top level. One folder per concern, each with an index as its public surface, would let `.dependency-cruiser.mjs` replace the `MILKDROP_SHELL_SURFACE` list with "import through the folder index". Move one folder per PR with `git mv` and an import rewrite only.
+- **React Compiler** through the Oxc port in `@vitejs/plugin-react`, starting in annotation mode on the browse grid and settings sheet. It changes every component's behaviour, so it needs `bun run ui:diff` and a pass over the panels that subscribe through `useSyncExternalStore`.
+- **Bun 1.4.** The repo pins 1.3.14; `.bun-version`, `mise.toml`, `packageManager` and `engines.bun` move together. `Bun.Image` could replace `sharp`, starting with `scripts/generate-thumbnails.ts`, which has a golden-output test.
+- **The Cloudflare Vite plugin for the site Worker.** It would build client and Worker in one graph and retire the hand-stitched `dist/_worker.js` in `scripts/build-site.mjs` and `scripts/sync-resvg-wasm.mjs`.
+- **The AudioWorklet bundle on Rolldown instead of esbuild.** Ported and reverted on 2026-09-02: the browser corpus gate passed 2 runs of 11 with it against 4 of 5 with esbuild. Retry with the two browser-backed corpus tests serialised, and measure ten runs.
+- **Rendering from a worker over OffscreenCanvas.** Not implemented; agent-mode hidden-tab rendering must keep working from the worker first. An unwired prototype was deleted in #1104 and its message protocol in #1454; recover them with `git show dd3aae08^:src/js/core/<file>`.
+- **An Oxlint type-aware `no-floating-promises` pass** in the full `check`, alongside Biome.
+- **One browser e2e test per file hangs for its whole timeout** ([#1123](https://github.com/zz-plant/stims/issues/1123)).
 
 ## Later: platform expansion & ecosystem
 

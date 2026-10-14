@@ -174,7 +174,7 @@ export const MILKDROP_SIGNAL_NAME_ALIASES: Record<string, string> = {
   percussivehigh: 'signalPercussiveHigh',
   beat: 'signalBeat',
   beat_pulse: 'signalBeatPulse',
-  progress: 'signalFrame',
+  progress: 'signalProgress',
   frame: 'signalFrame',
   fps: 'signalFps',
   vol: 'signalEnergy',

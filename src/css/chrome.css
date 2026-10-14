@@ -1625,15 +1625,6 @@ html.light .stims-shell {
     font-size: 0.75rem;
   }
 
-  .ctl-section .stims-shell__source-card-kicker {
-    color: var(--ctl-ink-3);
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    font-stretch: var(--font-stretch-legend);
-  }
-
   /* Disclosure */
   .ctl-section .stims-shell__settings-advanced {
     border: 1px solid var(--ctl-line);

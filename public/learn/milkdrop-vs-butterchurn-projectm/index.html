@@ -165,7 +165,7 @@
 <p>Butterchurn ran MilkDrop presets in a browser first, and MilkDrop 2 already let you edit a preset while it played; the Stims editor brings that back. Three things underneath are new:</p>
 <ul>
 <li><strong>The warp runs on the GPU.</strong> On WebGPU, a preset&#39;s per-pixel equations run for every point of the warp mesh at once, in all but 8 of the 1,102 catalog presets that have them. Butterchurn and projectM work through the points one at a time on the CPU.</li>
-<li><strong>Fidelity is measured.</strong> Frames are compared with native projectM, and each preset&#39;s result is published, failures included.</li>
+<li><strong>Fidelity is measured, one preset at a time.</strong> Frames are compared with native projectM, and every measured preset&#39;s result is published, failures included. Only a few presets have been measured so far.</li>
 <li><strong>The equations are read, not only run.</strong> Without playing a preset, Stims can say which parts of the music reach which parts of the picture.</li>
 </ul>
 <h2 id="which-should-you-use">Which should you use?</h2>

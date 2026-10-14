@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { MilkdropCatalogCoordinator } from '../../src/js/milkdrop/runtime/catalog-coordinator.ts';
 import { FIRST_RUN_PRESET_ID } from '../../src/js/milkdrop/runtime/first-run-preset.ts';
 import { createMilkdropPresetNavigationController } from '../../src/js/milkdrop/runtime/preset-navigation-controller.ts';
+import { awaitStartupForEdit } from '../../src/js/milkdrop/runtime/startup.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
@@ -177,7 +178,7 @@ describe('milkdrop preset navigation controller', () => {
       applyPresetPerformanceOverride: () => undefined,
       setOverlayStatus: () => undefined,
       shouldFallbackToWebgl: () => false,
-      triggerWebglFallback: () => undefined,
+      triggerWebglFallback: () => false,
       rememberLastPreset: () => undefined,
       beginPresetTransition: () => ({
         mode: 'blend' as const,
@@ -215,7 +216,7 @@ describe('milkdrop preset navigation controller', () => {
         applyPresetPerformanceOverride: () => undefined,
         setOverlayStatus: () => undefined,
         shouldFallbackToWebgl: () => false,
-        triggerWebglFallback: () => undefined,
+        triggerWebglFallback: () => false,
         rememberLastPreset: () => undefined,
         beginPresetTransition: () => ({
           mode: 'blend' as const,
@@ -311,7 +312,7 @@ describe('milkdrop preset navigation controller', () => {
       applyPresetPerformanceOverride: () => undefined,
       setOverlayStatus: () => undefined,
       shouldFallbackToWebgl: () => false,
-      triggerWebglFallback: () => undefined,
+      triggerWebglFallback: () => false,
       rememberLastPreset: () => undefined,
       beginPresetTransition: () => ({
         mode: 'blend' as const,
@@ -370,7 +371,7 @@ describe('milkdrop preset navigation controller', () => {
         applyPresetPerformanceOverride: () => undefined,
         setOverlayStatus: () => undefined,
         shouldFallbackToWebgl: () => false,
-        triggerWebglFallback: () => undefined,
+        triggerWebglFallback: () => false,
         rememberLastPreset: () => undefined,
         beginPresetTransition: () => {
           transitions.push(1);
@@ -475,7 +476,7 @@ describe('milkdrop preset navigation controller', () => {
         applyPresetPerformanceOverride: () => undefined,
         setOverlayStatus: () => undefined,
         shouldFallbackToWebgl: () => false,
-        triggerWebglFallback: () => undefined,
+        triggerWebglFallback: () => false,
         rememberLastPreset: () => undefined,
         beginPresetTransition: () => ({
           mode: 'cut' as const,
@@ -508,87 +509,193 @@ describe('milkdrop preset navigation controller', () => {
 
       expect(applied).toEqual(['startup-preset']);
     });
+
+    // A shared draft is handed to the runtime while startup is still pending
+    // and waits for it (awaitStartupForEdit). It is written for the preset
+    // startup lands on, so a different pick during the wait must reject it
+    // rather than save it as a draft of that pick.
+    describe('an edit waiting on startup', () => {
+      const runStartup = async (
+        controller: ReturnType<typeof buildRaceHarness>['controller'],
+        during: () => Promise<void> = async () => {},
+      ) => {
+        const revisionBeforeStartup = controller.getLoadRequestRevision();
+        const { promise: startupSettled, resolve: settle } =
+          Promise.withResolvers<void>();
+        const edit = awaitStartupForEdit({
+          navigation: controller,
+          startupSettled,
+          getStartupPresetId: () => 'startup-preset',
+        });
+        await during();
+        await controller.selectPreset('startup-preset', {
+          unlessRequestedSince: revisionBeforeStartup,
+        });
+        settle();
+        return edit;
+      };
+
+      test('keeps its target when only the startup pick landed', async () => {
+        const { controller } = buildRaceHarness();
+        expect(await runStartup(controller)).toBe(true);
+      });
+
+      test('is superseded by a different preset chosen during startup', async () => {
+        const { controller, applied } = buildRaceHarness();
+
+        const stillTargeted = await runStartup(controller, () =>
+          controller.selectPreset('requested-preset'),
+        );
+
+        expect(applied).toEqual(['requested-preset']);
+        expect(stillTargeted).toBe(false);
+      });
+
+      test('keeps its target when the route asked for the startup preset first', async () => {
+        // A deep link reaches the stage twice: the shell routes it, and
+        // startup resolves to it. Whichever lands, it is the draft's preset.
+        const { controller, applied } = buildRaceHarness();
+
+        const stillTargeted = await runStartup(controller, () =>
+          controller.selectPreset('startup-preset'),
+        );
+
+        expect(applied).toEqual(['startup-preset']);
+        expect(stillTargeted).toBe(true);
+      });
+
+      test('is superseded by a pick that lands after the startup pick', async () => {
+        const { controller } = buildRaceHarness();
+        const { promise: startupSettled, resolve: settle } =
+          Promise.withResolvers<void>();
+        const edit = awaitStartupForEdit({
+          navigation: controller,
+          startupSettled,
+          getStartupPresetId: () => 'startup-preset',
+        });
+
+        await controller.selectPreset('startup-preset');
+        await controller.selectPreset('requested-preset');
+        settle();
+
+        expect(await edit).toBe(false);
+      });
+    });
   });
 
-  test('includes detailed descriptor unsupported reasons when triggering WebGL fallback', async () => {
-    const entries = [
-      createCatalogEntry('fallback-preset', {
-        webgl: 'supported',
-        webgpu: 'partial',
-      }),
-    ];
-    const compiled = createCompiledPreset('fallback-preset');
-    compiled.ir.compatibility.gpuDescriptorPlans.webgpu.unsupported = [
-      {
-        kind: 'unsupported-feature',
-        feature: 'custom-waves',
-        reason: 'Procedural custom waves not supported on WebGPU',
-        recommendedFallback: 'webgl',
-      },
-    ];
+  describe('WebGL fallback', () => {
+    // Navigation to a preset WebGPU cannot render hands off to the failover,
+    // which reloads into WebGL. When it cannot (session storage blocked, so
+    // the reload would loop), it reports that no reload is coming.
+    const buildFallbackHarness = (reloading: boolean) => {
+      const entries = [
+        createCatalogEntry('fallback-preset', {
+          webgl: 'supported',
+          webgpu: 'partial',
+        }),
+      ];
+      const compiled = createCompiledPreset('fallback-preset');
+      compiled.ir.compatibility.gpuDescriptorPlans.webgpu.unsupported = [
+        {
+          kind: 'unsupported-feature',
+          feature: 'custom-waves',
+          reason: 'Procedural custom waves not supported on WebGPU',
+          recommendedFallback: 'webgl',
+        },
+      ];
 
-    let fallbackReason = '';
-    const controller = createMilkdropPresetNavigationController({
-      catalogStore: {
-        async getPresetSource(id: string) {
-          return {
-            id,
-            title: id,
-            raw: 'title=fallback-preset\n',
-            origin: 'bundled',
-          };
+      const fallbackReasons: string[] = [];
+      const applied: string[] = [];
+      const controller = createMilkdropPresetNavigationController({
+        catalogStore: {
+          async getPresetSource(id: string) {
+            return {
+              id,
+              title: id,
+              raw: 'title=fallback-preset\n',
+              origin: 'bundled',
+            };
+          },
+          async getDraft() {
+            return null;
+          },
+        } as unknown as MilkdropCatalogStore,
+        catalogCoordinator: {
+          async syncCatalog() {},
+          async scheduleCatalogSync() {},
+          async rememberSelection() {},
+          async consumePreviousSelection() {
+            return null;
+          },
+          getCatalogEntries: () => entries,
+          getActiveCatalogEntry: () => null,
+          dispose() {},
+        } as unknown as MilkdropCatalogCoordinator,
+        session: {
+          async loadPreset() {
+            return {
+              activeCompiled: compiled,
+              diagnostics: [
+                {
+                  severity: 'warning',
+                  category: 'backend-compat',
+                  code: 'unsupported_feature',
+                  message: 'Procedural custom waves not supported on WebGPU',
+                },
+              ],
+            };
+          },
+        } as unknown as MilkdropEditorSession,
+        getActivePresetId: () => 'active-preset',
+        getActiveBackend: () => 'webgpu' as MilkdropRenderBackend,
+        applyCompiledPreset: (next) => {
+          applied.push(next.source.id);
         },
-        async getDraft() {
-          return null;
+        applyPresetPerformanceOverride: () => undefined,
+        setOverlayStatus: () => undefined,
+        shouldFallbackToWebgl: () => true,
+        triggerWebglFallback: ({ reason }) => {
+          fallbackReasons.push(reason);
+          return reloading;
         },
-      } as unknown as MilkdropCatalogStore,
-      catalogCoordinator: {
-        async syncCatalog() {},
-        async scheduleCatalogSync() {},
-        async rememberSelection() {},
-        async consumePreviousSelection() {
-          return null;
-        },
-        getCatalogEntries: () => entries,
-        getActiveCatalogEntry: () => null,
-        dispose() {},
-      } as unknown as MilkdropCatalogCoordinator,
-      session: {
-        async loadPreset() {
-          return {
-            activeCompiled: compiled,
-            diagnostics: [
-              {
-                severity: 'warning',
-                category: 'backend-compat',
-                code: 'unsupported_feature',
-                message: 'Procedural custom waves not supported on WebGPU',
-              },
-            ],
-          };
-        },
-      } as unknown as MilkdropEditorSession,
-      getActivePresetId: () => 'fallback-preset',
-      getActiveBackend: () => 'webgpu' as MilkdropRenderBackend,
-      applyCompiledPreset: () => undefined,
-      applyPresetPerformanceOverride: () => undefined,
-      setOverlayStatus: () => undefined,
-      shouldFallbackToWebgl: () => true,
-      triggerWebglFallback: ({ reason }) => {
-        fallbackReason = reason;
-      },
-      rememberLastPreset: () => undefined,
-      beginPresetTransition: () => ({
-        mode: 'blend' as const,
-        durationSeconds: 1,
-      }),
+        rememberLastPreset: () => undefined,
+        beginPresetTransition: () => ({
+          mode: 'blend' as const,
+          durationSeconds: 1,
+        }),
+      });
+      return { controller, fallbackReasons, applied };
+    };
+
+    test('includes detailed descriptor unsupported reasons when triggering WebGL fallback', async () => {
+      const { controller, fallbackReasons } = buildFallbackHarness(true);
+
+      await controller.selectPreset('fallback-preset');
+
+      expect(fallbackReasons.join('\n')).toContain(
+        'Procedural custom waves not supported on WebGPU',
+      );
     });
 
-    await controller.selectPreset('fallback-preset');
+    test('stops the switch when the page is reloading into WebGL', async () => {
+      const { controller, applied } = buildFallbackHarness(true);
 
-    expect(fallbackReason).toContain(
-      'Procedural custom waves not supported on WebGPU',
-    );
+      await controller.selectPreset('fallback-preset');
+
+      expect(applied).toEqual([]);
+    });
+
+    test('applies the preset on WebGPU when no reload was scheduled', async () => {
+      const { controller, fallbackReasons, applied } =
+        buildFallbackHarness(false);
+
+      await controller.selectPreset('fallback-preset');
+
+      // Returning here left the previous preset on stage while the dock and
+      // route already named this one.
+      expect(fallbackReasons).toHaveLength(1);
+      expect(applied).toEqual(['fallback-preset']);
+    });
   });
 
   test('prepareNextRandomPreset plans a pick that the advance then consumes', async () => {
@@ -641,7 +748,7 @@ describe('milkdrop preset navigation controller', () => {
       applyPresetPerformanceOverride: () => undefined,
       setOverlayStatus: () => undefined,
       shouldFallbackToWebgl: () => false,
-      triggerWebglFallback: () => undefined,
+      triggerWebglFallback: () => false,
       rememberLastPreset: () => undefined,
       beginPresetTransition: () => ({
         mode: 'blend' as const,
@@ -706,7 +813,7 @@ describe('milkdrop preset navigation controller', () => {
       applyPresetPerformanceOverride: () => undefined,
       setOverlayStatus: () => undefined,
       shouldFallbackToWebgl: () => false,
-      triggerWebglFallback: () => undefined,
+      triggerWebglFallback: () => false,
       rememberLastPreset: () => undefined,
       beginPresetTransition: () => ({
         mode: 'blend' as const,
@@ -761,7 +868,7 @@ describe('preset pipeline warm-up (waitForPresetWarmup)', () => {
       applyPresetPerformanceOverride: () => undefined,
       setOverlayStatus: () => undefined,
       shouldFallbackToWebgl: () => false,
-      triggerWebglFallback: () => undefined,
+      triggerWebglFallback: () => false,
       rememberLastPreset: () => undefined,
       beginPresetTransition: () => {
         order.push('begin');

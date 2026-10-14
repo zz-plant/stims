@@ -389,6 +389,19 @@ export function lowerGpuFieldProgram(
     }
   }
 
+  // `progress` is the preset's own clock (the host keeps one per preset) and
+  // has no slot in the packed signal uniforms. Unless a frame-constant register
+  // above claimed it, a read would become a zero temporary: the GPU drawing
+  // the preset as if it had just started while the CPU tiers read the real
+  // value. Such a program stays on the CPU path instead.
+  for (const statement of program.statements) {
+    for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+      if (read === 'progress' && !registerInputIdentifiers.has(read)) {
+        return null;
+      }
+    }
+  }
+
   // NS-EEL variables spring into existence with value 0 even when a program
   // only reads them. Treat the remaining syntactically valid names as locals
   // after known signals, caller bindings, and frame registers have claimed

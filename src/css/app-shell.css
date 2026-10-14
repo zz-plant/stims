@@ -42,12 +42,6 @@ body[data-page="workspace"] {
   overflow-y: visible;
 }
 
-html:has(body[data-page="workspace"][data-live="true"]),
-body[data-page="workspace"][data-live="true"] {
-  overflow: hidden;
-  height: 100%;
-}
-
 #app {
   min-height: 100vh;
   min-height: 100dvh;
@@ -113,7 +107,6 @@ body[data-page="workspace"][data-live="true"] {
   :scope[data-preview="true"] .stims-shell__frame-chrome,
   :scope[data-preview="true"] .stims-shell__frame-header,
   :scope[data-preview="true"] .stims-shell__stage-hero,
-  :scope[data-preview="true"] .stims-shell__stage-dock-wrap,
   :scope[data-preview="true"] .stims-shell__toast {
     display: none;
   }
@@ -159,8 +152,7 @@ body[data-page="workspace"][data-live="true"] {
       0 0 1px rgba(119, 201, 255, 0.4),
       inset 0 1px 0 var(--stims-white-08);
   }
-  .stims-shell__text-button:active,
-  .stims-shell__stage-tool:active {
+  .stims-shell__text-button:active {
     transform: translateY(0) scale(0.96);
     transition-duration: 60ms;
   }
@@ -170,7 +162,6 @@ body[data-page="workspace"][data-live="true"] {
     transform: none;
   }
   .stims-shell__text-button:focus-visible,
-  .stims-shell__stage-tool:focus-visible,
   .stims-shell__starter-card:focus-visible,
   .cta-button:focus-visible {
     outline: 2px solid var(--stims-cool);
@@ -185,28 +176,6 @@ body[data-page="workspace"][data-live="true"] {
     }
     100% {
       background-position: 200% 0;
-    }
-  }
-
-  @keyframes ambientGlow {
-    0% {
-      transform: translate(0, 0) rotate(0deg) scale(1);
-    }
-    50% {
-      transform: translate(8%, -6%) rotate(10deg) scale(1.18);
-    }
-    100% {
-      transform: translate(0, 0) rotate(0deg) scale(1);
-    }
-  }
-
-  @keyframes bounceScrollHint {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(4px);
     }
   }
 
@@ -328,13 +297,11 @@ body[data-page="workspace"][data-live="true"] {
       min-height: max(var(--touch-target-min, 44px), 44px);
     }
   }
-  .stims-shell__button-icon.stims-icon-slot--sm svg,
-  .cta-button [data-icon="spinner"] svg {
+  .cta-button svg[data-icon="spinner"] {
     animation: spin 1s linear infinite;
   }
   @media (prefers-reduced-motion: reduce) {
-    .stims-shell__button-icon.stims-icon-slot--sm svg,
-    .cta-button [data-icon="spinner"] svg {
+    .cta-button svg[data-icon="spinner"] {
       animation: none;
     }
   }
@@ -400,9 +367,7 @@ body[data-page="workspace"][data-live="true"] {
     overflow: hidden;
   }
 
-  .stims-shell__launch,
-  .stims-shell__launch-panel,
-  .stims-shell__launch-hero {
+  .stims-shell__launch {
     display: grid;
     gap: 20px;
   }
@@ -521,13 +486,6 @@ body[data-page="workspace"][data-live="true"] {
     text-shadow: 0 0 10px rgba(119, 201, 255, 0.25);
   }
 
-  .stims-shell__launch-recommendation .stims-shell__preset-art {
-    width: 64px;
-    min-width: 64px;
-    min-height: 64px;
-    border-radius: var(--radius-lg);
-  }
-
   .stims-shell__stage-section {
     min-width: 0;
     display: flex;
@@ -590,8 +548,7 @@ body[data-page="workspace"][data-live="true"] {
     accent-color: var(--stims-cool);
   }
 
-  .stims-shell__input[aria-invalid="true"],
-  .stims-shell__input[data-invalid="true"] {
+  .stims-shell__input[aria-invalid="true"] {
     border-color: rgba(255, 123, 114, 0.5);
     box-shadow:
       inset 0 1px 0 var(--stims-white-05),
@@ -609,10 +566,6 @@ body[data-page="workspace"][data-live="true"] {
     min-height: 180px;
   }
 
-  .stims-shell__preset-list .stims-shell__preset-meta-row {
-    font-size: 0.8125rem;
-  }
-
   .stims-shell__preset-art[data-preview-status="ready"]
     .stims-shell__preset-preview-image {
     opacity: 1;
@@ -620,33 +573,6 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__section-label {
     margin: 0;
-  }
-
-  .stims-shell__starter-section {
-    display: grid;
-    gap: 12px;
-  }
-
-  .stims-shell__starter-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .stims-shell__sheet-panel--browse
-    > .stims-shell__starter-section
-    .stims-shell__starter-grid {
-    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
-  }
-
-  .stims-shell__sheet-panel--browse
-    > .stims-shell__starter-section
-    .stims-shell__starter-card {
-    padding: 12px;
-  }
-
-  .stims-shell__starter-card-wrap {
-    position: relative;
   }
 
   .stims-shell__starter-card {
@@ -688,37 +614,6 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__starter-card:active {
     transform: translateY(0) scale(0.96);
     transition-duration: 70ms;
-  }
-
-  .stims-shell__starter-card__queue {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 1;
-    padding: 3px 9px;
-    border: 1px solid rgba(119, 201, 255, 0.22);
-    border-radius: var(--radius-round);
-    background: rgba(6, 9, 15, 0.82);
-    color: color-mix(in srgb, var(--stims-cool) 70%, var(--stims-ink));
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    font-stretch: var(--font-stretch-legend);
-    cursor: pointer;
-    transition:
-      border-color 140ms ease,
-      background-color 140ms ease;
-  }
-
-  .stims-shell__starter-card__queue:hover {
-    border-color: rgba(119, 201, 255, 0.5);
-    background: rgba(10, 16, 26, 0.92);
-  }
-
-  .stims-shell__starter-card__queue:focus-visible {
-    outline: 2px solid var(--stims-accent);
-    outline-offset: 2px;
   }
 
   .stims-shell__starter-card strong {
@@ -913,195 +808,8 @@ body[data-page="workspace"][data-live="true"] {
     box-shadow: none;
   }
 
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-hero {
-    position: relative;
-    inset: auto;
-    z-index: var(--z-stage-hero);
-    display: grid;
-    align-items: stretch;
-    justify-content: stretch;
-    pointer-events: auto;
-  }
-
-  .stims-shell__stage-frame[data-mode="home"] .milkdrop-overlay__toolbar {
-    display: none;
-  }
-
-  /* the runtime's preset-title readout leaks over the launch screen,
-     clipped against the bottom edge — home mode has its own preset UI */
-  .stims-shell__stage-frame[data-mode="home"] .milkdrop-overlay__title {
-    display: none;
-  }
-
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-hero > * {
-    pointer-events: auto;
-  }
-
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-copy h1,
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-copy p {
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
-  }
-
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-header,
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-stack {
-    max-width: none;
-  }
-
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch {
     margin-top: 0;
-  }
-
-  /* Legacy compact overlay transport/autoplay controls */
-  .stims-shell__stage-frame[data-mode="live"] .milkdrop-overlay--compact {
-    top: calc(max(72px, 10vh) + 96px);
-    right: 14px;
-    bottom: auto;
-    left: auto;
-    width: min(300px, calc(100% - 28px));
-    max-height: calc(100dvh - max(72px, 10vh) - 180px);
-    overflow: auto;
-    border-radius: var(--radius-xl);
-    background: rgba(6, 10, 17, 0.97);
-    border: 1px solid rgba(119, 201, 255, 0.16);
-    box-shadow:
-      0 24px 60px rgba(0, 0, 0, 0.42),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 12px;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar-group {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar-group--transport
-    > button {
-    flex: 1 1 0;
-    min-height: 36px;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__blend,
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar-group
-    > label {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__blend
-    input[type="range"],
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar-group
-    input[type="range"] {
-    flex: 1 1 0;
-    min-width: 80px;
-  }
-
-  /*
-   * The compact overlay's transport buttons, autoplay checkbox, and blend
-   * slider only ever received their fill/border styling on the standalone
-   * /milkdrop page (now a redirect to the workspace). Inside the shell they
-   * fell back to native UA controls (grey `outset` buttons, default checkbox
-   * and slider). Give them shell-consistent styling so the legacy controls
-   * match the rest of the live chrome.
-   */
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar
-    button {
-    min-height: 36px;
-    padding: 8px 12px;
-    border-radius: var(--radius-lg);
-    border: 1px solid
-      var(--milkdrop-overlay-button-border, rgba(119, 201, 255, 0.4));
-    background: var(--milkdrop-overlay-button, rgba(108, 176, 255, 0.22));
-    color: rgba(231, 242, 255, 0.92);
-    font: inherit;
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-      background 0.18s ease,
-      border-color 0.18s ease;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar
-    button:hover {
-    background: rgba(119, 201, 255, 0.32);
-    border-color: rgba(119, 201, 255, 0.6);
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar
-    button:focus-visible {
-    outline: 2px solid rgba(119, 201, 255, 0.7);
-    outline-offset: 2px;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__toolbar-group
-    > label {
-    color: rgba(231, 242, 255, 0.86);
-    font-size: 0.875rem;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: rgba(119, 201, 255, 0.9);
-    cursor: pointer;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    input[type="range"] {
-    accent-color: rgba(119, 201, 255, 0.9);
-    cursor: pointer;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__title {
-    padding: 12px 12px 0;
-    font-size: 0.9375rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .milkdrop-overlay--compact
-    .milkdrop-overlay__status {
-    padding: 0 12px 12px;
-    font-size: 0.8125rem;
   }
 
   .stims-shell__stage-frame[data-mode="live"] .stims-shell__launch {
@@ -1160,71 +868,9 @@ body[data-page="workspace"][data-live="true"] {
     }
   }
 
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__scroll-hint {
-    display: none;
-  }
-
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__scroll-hint::after {
-    content: "\2193";
-  }
-
-  /* Audio-reactive glow on the control dock */
-
-  @keyframes dock-glow-pulse {
-    0%,
-    100% {
-      opacity: calc(var(--stims-audio-glow, 0) * 0.32);
-    }
-
-    50% {
-      opacity: calc(var(--stims-audio-glow, 0) * 0.52);
-    }
-  }
-
   .stims-shell__stage-frame[data-mode="live"] .stims-shell__rail-actions {
     flex-direction: column;
     align-items: flex-end;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-dock {
-    background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
-    border-color: var(--ctl-line, rgba(255, 255, 255, 0.09));
-    box-shadow: none;
-    color: #e5f1ff;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-dock::after {
-    display: none;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool {
-    width: 44px;
-    min-width: 44px;
-    padding: 0;
-    border-color: transparent;
-    background: transparent;
-    box-shadow: none;
-    color: rgba(229, 241, 255, 0.76);
-  }
-
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool:hover {
-    border-color: rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: none;
-    color: #f8fbff;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"]
-    .stims-shell__stage-tool[data-active="true"] {
-    background: rgba(119, 201, 255, 0.16);
-    color: #f8fbff;
-    border-color: rgba(119, 201, 255, 0.28);
-    box-shadow: none;
-  }
-
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool-label,
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-copy {
-    display: none;
   }
 
   .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
@@ -1234,8 +880,7 @@ body[data-page="workspace"][data-live="true"] {
     left: 24px;
   }
 
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__frame-header,
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-dock {
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__frame-header {
     opacity: 0;
     pointer-events: none;
     visibility: hidden;
@@ -2079,45 +1724,6 @@ body[data-page="workspace"][data-live="true"] {
     margin-bottom: 8px;
   }
 
-  .stims-shell__launch-source-dock .stims-shell__source-panel {
-    gap: 10px;
-  }
-
-  .stims-shell__launch-source-dock .stims-shell__source-grid {
-    gap: 0;
-    overflow: hidden;
-    border: 1px solid var(--stims-line-soft);
-    border-radius: var(--radius-lg);
-    background: rgba(255, 255, 255, 0.025);
-  }
-
-  .stims-shell__launch-source-dock .stims-shell__source-card {
-    min-height: 58px;
-    padding: 10px 12px;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    transform: none;
-  }
-
-  .stims-shell__launch-source-dock
-    .stims-shell__source-card
-    + .stims-shell__source-card {
-    border-left: 1px solid var(--stims-line-soft);
-  }
-
-  .stims-shell__launch-source-dock
-    .stims-shell__source-card
-    span:not(.stims-shell__source-card-kicker) {
-    display: none;
-  }
-
-  .stims-shell__launch-source-dock
-    .stims-shell__source-card:hover:not(:disabled) {
-    transform: none;
-    background: rgba(255, 255, 255, 0.045);
-  }
-
   .stims-shell__youtube-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -2686,7 +2292,6 @@ body[data-page="workspace"][data-live="true"] {
       min-height: 100px;
     }
 
-    .stims-shell__preset-list .stims-shell__preset-meta-row,
     .stims-shell__preset-list .stims-shell__meta-copy {
       display: none;
     }
@@ -2697,13 +2302,6 @@ body[data-page="workspace"][data-live="true"] {
     .stims-shell__preset-list {
       grid-template-columns: 1fr;
     }
-  }
-
-  .stims-shell__launch-recommendation .stims-shell__preset-art {
-    width: 104px;
-    min-width: 104px;
-    min-height: 64px;
-    aspect-ratio: 16 / 9;
   }
 
   .stims-shell__sheet-callout {
@@ -2914,9 +2512,7 @@ body[data-page="workspace"][data-live="true"] {
 
   /* Collapse launch hero to single column at tablet widths */
   @media (max-width: 1280px) {
-    .stims-shell__launch,
-    .stims-shell__launch-hero,
-    .stims-shell__launch-recommendation {
+    .stims-shell__launch {
       grid-template-columns: 1fr;
     }
 
@@ -2954,18 +2550,6 @@ body[data-page="workspace"][data-live="true"] {
   @media (max-height: 720px) {
     :scope {
       padding-block: 14px;
-    }
-
-    /* Tighten the sticky toolbar so preset cards are reachable below it */
-
-    /* Hide browse toolbar description ("Tap any card to play it…") — redundant at small heights */
-    .stims-shell__browse-toolbar-copy .stims-shell__meta-copy {
-      display: none;
-    }
-
-    /* Hide "Search" field label — the input placeholder is sufficient */
-    .stims-shell__sheet-surface--sticky .stims-shell__field-label {
-      display: none;
     }
 
     .stims-shell__stage-frame,
@@ -3040,18 +2624,12 @@ body[data-page="workspace"][data-live="true"] {
 
     .stims-shell__eyebrow,
     .stims-shell__meta-copy,
-    .stims-shell__field-label,
-    .stims-shell__preset-meta,
-    .stims-shell__preset-tech {
+    .stims-shell__field-label {
       font-size: 0.8125rem;
     }
     .stims-shell__sheet-panel,
     .stims-shell__sheet-callout {
       gap: 10px;
-    }
-
-    .stims-shell__starter-grid {
-      grid-template-columns: 1fr;
     }
 
     .stims-shell__source-grid,
@@ -3094,18 +2672,6 @@ body[data-page="workspace"][data-live="true"] {
       padding-top: calc(var(--stims-header-top) + 12px);
       padding-bottom: 24px;
     }
-
-    .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-hero {
-      position: relative;
-      inset: auto;
-      display: grid;
-      align-items: start;
-      justify-content: stretch;
-    }
-
-    .stims-shell__stage-frame[data-mode="home"] .stims-shell__scroll-hint {
-      display: none;
-    }
     @supports (min-height: max(88svh, 640px)) {
       .stims-shell__stage-frame[data-mode="home"] {
         min-height: auto;
@@ -3136,12 +2702,6 @@ body[data-page="workspace"][data-live="true"] {
       align-content: start;
       padding-bottom: 8px;
       scrollbar-width: thin;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"]
-      .stims-shell__audio-bridge-copy
-      .stims-shell__meta-copy {
-      display: none;
     }
 
     .stims-shell__rail-actions {
@@ -3179,49 +2739,10 @@ body[data-page="workspace"][data-live="true"] {
       max-width: none;
     }
 
-    .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-panel {
-      width: 100%;
-      max-width: none;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-dock {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 6px;
-      width: 100%;
-      max-width: none;
-      border-radius: var(--radius-xl);
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool {
-      min-height: 42px;
-      padding: 0;
-      flex: initial;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool-label {
-      display: none;
-    }
-
     .stims-shell__preset-list {
       min-height: 0;
       max-height: max(34vh, 240px);
       max-height: max(34dvh, 240px);
-    }
-
-    .stims-shell__sheet-panel--browse .stims-shell__sheet-surface--sticky {
-      position: static;
-    }
-    .stims-shell__sheet-panel--browse[data-filter-active="true"]
-      .stims-shell__browse-toolbar,
-    .stims-shell__sheet-panel--browse[data-filter-active="true"]
-      .stims-shell__browse-toolbar-extras {
-      display: none;
-    }
-
-    .stims-shell__sheet-panel--browse[data-filter-active="true"]
-      .stims-shell__sheet-surface--sticky {
-      gap: 8px;
     }
 
     .stims-shell__sheet-panel--browse[data-filter-active="true"]
@@ -3236,8 +2757,6 @@ body[data-page="workspace"][data-live="true"] {
       border-radius: var(--radius-lg);
     }
 
-    .stims-shell__sheet-panel--browse[data-filter-active="true"]
-      .stims-shell__preset-tech-badges,
     .stims-shell__sheet-panel--browse[data-filter-active="true"]
       .stims-shell__meta-copy {
       display: none;
@@ -3277,11 +2796,6 @@ body[data-page="workspace"][data-live="true"] {
   @media (max-width: 420px) {
     :scope[data-mode="live"] {
       --mobile-bar-height: calc(64px + env(safe-area-inset-bottom, 0px));
-    }
-  }
-  @media (max-width: 640px) {
-    .stims-shell__stage-frame[data-mode="live"] .milkdrop-overlay--compact {
-      display: none;
     }
   }
   @media (width < 768px) {
@@ -3329,91 +2843,12 @@ body[data-page="workspace"][data-live="true"] {
       gap: 6px;
     }
 
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-copy,
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__audio-bridge {
-      gap: 8px;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-copy {
-      padding: 10px 12px;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-summary {
-      display: none;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__audio-bridge {
-      padding: 10px 12px;
-    }
-
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
       padding-bottom: 92px;
     }
 
-    .stims-shell__launch-source-dock .stims-shell__source-panel {
-      gap: 8px;
-    }
-
-    .stims-shell__launch-source-dock .stims-shell__youtube-primary {
-      gap: 8px;
-      padding: 10px;
-    }
-
-    .stims-shell__launch-source-dock .stims-shell__youtube-row {
-      grid-template-columns: minmax(0, 1fr) 84px;
-    }
-
-    .stims-shell__launch-source-dock .stims-shell__youtube-row > :first-child {
-      grid-column: auto;
-    }
-
-    .stims-shell__launch-source-dock
-      .stims-shell__youtube-feedback[data-state="idle"],
-    .stims-shell__launch-source-dock
-      .stims-shell__settings-summary
-      .stims-shell__meta-copy {
-      display: none;
-    }
-
-    .stims-shell__launch-source-dock .stims-shell__source-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .stims-shell__launch-source-dock .stims-shell__source-card {
-      min-height: 58px;
-      padding: 9px 10px;
-    }
-
-    .stims-shell__launch-source-dock
-      .stims-shell__source-card
-      span:not(.stims-shell__source-card-kicker) {
-      display: none;
-    }
-
-    .stims-shell__launch-source-dock .stims-shell__source-card-kicker {
-      font-size: 0.6875rem;
-    }
-
-    .stims-shell__audio-bridge-copy .stims-shell__meta-copy {
-      font-size: 0.8125rem;
-      line-height: 1.38;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"]
-      .stims-shell__audio-bridge-actions
-      .cta-button {
-      min-height: 40px;
-      padding: 0.68rem 0.9rem;
-    }
-
     .stims-shell__preset-art {
       min-height: 126px;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-dock {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      width: 100%;
     }
   }
 }
@@ -3998,42 +3433,6 @@ body[data-page="workspace"][data-live="true"] {
     max-height: none;
   }
 
-  .tech-badge.webgpu {
-    background: rgba(95, 192, 181, 0.15);
-    color: #9fd4cb;
-    border-color: rgba(95, 192, 181, 0.3);
-  }
-
-  html.light :scope .tech-badge.webgpu {
-    background: rgba(47, 139, 131, 0.15);
-    color: #2f6f6a;
-    border-color: rgba(47, 139, 131, 0.3);
-  }
-
-  .tech-badge.webgl {
-    background: rgba(119, 201, 255, 0.15);
-    color: #77c9ff;
-    border-color: rgba(119, 201, 255, 0.3);
-  }
-
-  html.light :scope .tech-badge.webgl {
-    background: rgba(0, 100, 180, 0.1);
-    color: #0050a0;
-    border-color: rgba(0, 100, 180, 0.2);
-  }
-
-  .tech-badge.audio {
-    background: rgba(244, 122, 84, 0.15);
-    color: #ffd166;
-    border-color: rgba(244, 122, 84, 0.3);
-  }
-
-  html.light :scope .tech-badge.audio {
-    background: rgba(244, 122, 84, 0.1);
-    color: #a04000;
-    border-color: rgba(244, 122, 84, 0.2);
-  }
-
   .stims-shell__clear-filters {
     background: none;
     border: none;
@@ -4055,7 +3454,6 @@ body[data-page="workspace"][data-live="true"] {
       color: black;
     }
 
-    .stims-shell__sheet,
     .stims-shell__frame-chrome,
     .stims-shell__frame-header,
     .stims-shell__toast {
@@ -4075,23 +3473,6 @@ body[data-page="workspace"][data-live="true"] {
       color: #0000ee;
     }
   }
-}
-
-/* Overflow menu for the live control dock */
-
-.stims-shell__stage-frame[data-mode="live"]
-  .stims-shell__dock-overflow
-  .stims-shell__stage-tool {
-  width: 100%;
-  min-width: 0;
-  min-height: 40px;
-  padding: 6px 12px;
-}
-
-.stims-shell__stage-frame[data-mode="live"]
-  .stims-shell__dock-overflow
-  .stims-shell__stage-tool-label {
-  display: inline;
 }
 
 .stims-shell__mobile-notice,
@@ -4139,22 +3520,6 @@ body[data-page="workspace"][data-live="true"] {
     .stims-shell__rotate-hint {
       animation-duration: 0.01ms;
     }
-  }
-
-  .stims-shell[data-thumb-mode="true"] .stims-shell__thumb-actions {
-    position: sticky;
-    bottom: 0;
-    z-index: var(--z-dock);
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
-    background: linear-gradient(
-      0deg,
-      var(--stims-panel-fill-strong),
-      rgba(5, 7, 13, 0.78)
-    );
-    border-top: 1px solid var(--stims-line-soft);
   }
 }
 @media (orientation: landscape) and (width < 900px) and (pointer: coarse) {
@@ -4379,18 +3744,6 @@ main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
 .stims-shell__skeleton--sub-70 {
   height: 14px;
   width: 70%;
-}
-
-.ctl-preset__author-link {
-  color: var(--stims-accent, #38bdf8);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.15s ease;
-}
-
-.ctl-preset__author-link:hover {
-  text-decoration: underline;
-  opacity: 0.9;
 }
 
 /* Side panel content: Refine, AudioMatch, VisualSearch, Editor host */

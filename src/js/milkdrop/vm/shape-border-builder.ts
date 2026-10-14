@@ -9,10 +9,12 @@ import type {
 import {
   clamp,
   color,
+  customElementShadowedSignals,
   MAX_CUSTOM_SHAPE_SLOTS,
   type MutableState,
   milkdropToSceneX,
   milkdropToSceneY,
+  reloadCustomElementSignals,
   SHAPECODE_PROPERTY_KEYS,
   type ShapeBuilderState,
 } from './shared';
@@ -238,8 +240,10 @@ export function buildShapes({
       v8: locals.v8 ?? 0,
     };
 
+    const shadowedSignals = customElementShadowedSignals(shape.programs);
     for (let instance = 0; instance < instanceCount; instance += 1) {
       Object.assign(locals, baseTLocals);
+      reloadCustomElementSignals(env, shadowedSignals);
       locals.instance = instance;
       locals.num_inst = instanceCount;
       runProgram(shape.programs.perFrame, env, locals);

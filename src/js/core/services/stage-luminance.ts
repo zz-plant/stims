@@ -1,22 +1,24 @@
 /**
  * The single owner of the stage's CSS brightness filter.
  *
- * Two things want to dim the stage, for unrelated reasons: the WCAG flash
- * governor clamps it reactively when content strobes, and the visitor sets a
- * comfort ceiling they expect to hold. Both used to be expressible only as
- * `stage.style.filter = 'brightness(...)'`, which is one slot — and the
- * governor writes it on a rAF loop, so a user ceiling written the same way
- * would be overwritten within a frame and appear to do nothing.
+ * Three things want to dim the stage, for unrelated reasons: the WCAG flash
+ * governor clamps it reactively when content strobes, the visitor sets a
+ * comfort ceiling they expect to hold, and the live stage utilities can cut
+ * the picture to black entirely (the D blackout). All three used to be
+ * expressible only as `stage.style.filter = 'brightness(...)'`, which is one
+ * slot — and the governor writes it on a rAF loop, so anything else written
+ * the same way would be overwritten within a frame and appear to do nothing.
  *
  * So the property has an owner. Callers set their own channel; this composes
- * them and writes once. Multiplying is the right composition for the two
+ * them and writes once. Multiplying is the right composition for the
  * meanings involved: the governor's clamp is "at most this much of what you
- * asked for", and the ceiling is what was asked for.
+ * asked for", the ceiling is what was asked for, and the blackout is zero —
+ * no other channel can talk the stage back up while it is engaged.
  */
 
-export type StageLuminanceChannel = 'governor' | 'ceiling';
+export type StageLuminanceChannel = 'governor' | 'ceiling' | 'presentation';
 
-type Channels = { governor: number; ceiling: number };
+type Channels = { governor: number; ceiling: number; presentation: number };
 
 const channelsByStage = new WeakMap<HTMLElement, Channels>();
 
@@ -42,7 +44,7 @@ export function subscribeToFlashGovernorDimming(listener: () => void) {
 function channelsFor(stage: HTMLElement): Channels {
   let channels = channelsByStage.get(stage);
   if (!channels) {
-    channels = { governor: 1, ceiling: 1 };
+    channels = { governor: 1, ceiling: 1, presentation: 1 };
     channelsByStage.set(stage, channels);
   }
   return channels;
@@ -55,10 +57,22 @@ function channelsFor(stage: HTMLElement): Channels {
  * an accessor that registered one would populate this map for every element
  * it is merely asked about. The flash governor calls this per frame to learn
  * what the viewer is actually looking at, so it must stay a pure read.
+ *
+ * `only` composes a subset instead: a recording carries the governor and the
+ * blackout but not the ceiling (see stage-presentation.ts).
  */
-export function stageLuminanceScale(stage: HTMLElement): number {
+export function stageLuminanceScale(
+  stage: HTMLElement,
+  only?: readonly StageLuminanceChannel[],
+): number {
   const channels = channelsByStage.get(stage);
-  return channels ? channels.governor * channels.ceiling : 1;
+  if (!channels) return 1;
+  if (!only) {
+    return channels.governor * channels.ceiling * channels.presentation;
+  }
+  let scale = 1;
+  for (const channel of only) scale *= channels[channel];
+  return scale;
 }
 
 export function setStageLuminanceChannel(
@@ -78,7 +92,7 @@ export function setStageLuminanceChannel(
     }
   }
 
-  const composed = channels.governor * channels.ceiling;
+  const composed = channels.governor * channels.ceiling * channels.presentation;
   // Clearing rather than writing brightness(1) keeps the stage off the
   // filter path entirely in the overwhelmingly common case where neither
   // channel is engaged — a filter, even an identity one, forces a

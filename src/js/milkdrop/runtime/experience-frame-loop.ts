@@ -29,7 +29,10 @@ import type {
   MilkdropRuntimeSignals,
 } from '../types';
 import { hasVariableListeners, publishVariables } from '../variable-probe.ts';
-import type { MilkdropBeatClock } from './beat-clock.ts';
+import type {
+  MilkdropBeatClock,
+  MilkdropBeatClockSnapshot,
+} from './beat-clock.ts';
 import { applyMilkdropCapturedVideoFrameState } from './captured-video-frame.ts';
 import {
   type CapturedVideoSignals,
@@ -100,6 +103,8 @@ export function createMilkdropExperienceFrameLoop({
   getMotionScale,
   traceRecorder,
   beatClock,
+  noteTempo,
+  noteFramePresented,
   liveBlend,
 }: {
   getRuntime: () => ToyRuntimeInstance | null;
@@ -215,6 +220,12 @@ export function createMilkdropExperienceFrameLoop({
   /** Tempo/bar tracking. Owned by the runtime so its snapshot can publish
    * tempo without reaching into the frame loop. */
   beatClock: MilkdropBeatClock;
+  /** Hears the beat clock's state every frame, so the runtime can publish a
+   * tempo change without rebuilding its snapshot each frame. */
+  noteTempo?: (beat: MilkdropBeatClockSnapshot) => void;
+  /** Called after each frame the adapter rendered, for state the adapter
+   * only knows once a frame has gone through it. */
+  noteFramePresented?: () => void;
 }) {
   let blendWorkloadFrameState: MilkdropFrameState | null = null;
   /** True while an autoplay advance is between trigger and transition. */
@@ -338,12 +349,16 @@ export function createMilkdropExperienceFrameLoop({
         );
 
         const beatIsHigh = (signals.beat ?? 0) >= 1;
-        const beatEdge = beatIsHigh && !beatWasHigh;
+        const detectedBeat = beatIsHigh && !beatWasHigh;
         beatWasHigh = beatIsHigh;
-        if (beatEdge) {
+        if (detectedBeat) {
           beatClock.noteBeat(frameStartAt);
         }
+        // A tapped or clocked tempo puts the beats on its own grid; the
+        // detected onset only counts when nobody has set one.
+        const beatEdge = beatClock.frameBeat(frameStartAt, detectedBeat);
         const beatSnapshot = beatClock.snapshot(frameStartAt);
+        noteTempo?.(beatSnapshot);
 
         const autoAdvanceArgs = {
           autoplay: getAutoplay(),
@@ -358,7 +373,7 @@ export function createMilkdropExperienceFrameLoop({
           due: shouldAutoAdvancePreset(autoAdvanceArgs),
           now: frameStartAt,
           beat: beatEdge,
-          downbeat: beatClock.isDownbeat(),
+          downbeat: beatClock.isDownbeat(frameStartAt),
           tempoConfident:
             beatSnapshot.confidence >= AUTO_ADVANCE_TEMPO_CONFIDENCE,
         });
@@ -502,6 +517,7 @@ export function createMilkdropExperienceFrameLoop({
           blendState: activeBlendState,
           resetHistory: frame.resetHistory,
         });
+        noteFramePresented?.();
         if (!adapterPresentedFrame) {
           if (
             activeBackend === 'webgpu' &&

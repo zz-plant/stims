@@ -24,8 +24,11 @@ import {
   type MilkdropProgramOptions,
 } from 'milkdrop-toolchain/src/expression-jit.ts';
 import { normalizeProgramAssignmentTarget } from 'milkdrop-toolchain/src/field-normalization.ts';
+import { presetOwnedSignalAliases } from 'milkdrop-toolchain/src/program-references.ts';
 import { inspectableVariableNames } from './inspectable-variables.ts';
 import { isElementHidden } from './render-isolation.ts';
+import { DEFAULT_BLEND_DURATION_SECONDS } from './runtime/first-run-preset.ts';
+import { autoAdvanceDwellSeconds } from './runtime/lifecycle.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -59,6 +62,7 @@ import {
   hashSeed,
   MAX_CUSTOM_WAVE_SLOTS,
   type MutableState,
+  milkdropPresetProgress,
   type ShapeBuilderState,
   seedCustomShapeFields,
   seedCustomWaveFields,
@@ -122,10 +126,26 @@ class MilkdropPresetVM implements MilkdropVM {
   private declaredBorderKeys: ReadonlySet<'outer' | 'inner'> = new Set();
   private state: MutableState = {};
   private registers: MutableState = {};
-  private readonly signalEnv: MutableState = createDefaultSignalEnv();
+  /** Rebuilt by reset(): which legacy signal aliases it carries depends on
+   * the preset (createDefaultSignalEnv). */
+  private signalEnv: MutableState = createDefaultSignalEnv();
   private lastPreparedSignalSource: MilkdropRuntimeSignals | null = null;
   private lastPreparedSignalFrame = Number.NaN;
   private lastPreparedSignalTime = Number.NaN;
+  /**
+   * The preset's own clock for MilkDrop's `progress`: the sim-clock `time`
+   * of its first frame (NaN until a reset preset takes one) and the slot
+   * length latched then. Both swap with the rest of the state in
+   * handOffRunningPreset, so an outgoing crossfade deck keeps its preset's
+   * position instead of restarting.
+   */
+  private presetStartTime = Number.NaN;
+  private presetSlotSeconds = 0;
+  private presetProgress = 0;
+  /** Host setting (like detailScale): the slot the next preset ramps over. */
+  private presetDurationSeconds = autoAdvanceDwellSeconds(
+    DEFAULT_BLEND_DURATION_SECONDS,
+  );
   /**
    * RNG state for the whole VM, shared by every execution tier. One mutable
    * cell rather than a closure so inline-compiled programs can advance the
@@ -338,6 +358,7 @@ class MilkdropPresetVM implements MilkdropVM {
     const handedOff = new MilkdropPresetVM(next, this.webgpuOptimizationFlags);
     handedOff.detailScale = this.detailScale;
     handedOff.renderBackend = this.renderBackend;
+    handedOff.presetDurationSeconds = this.presetDurationSeconds;
     const self = this as unknown as Record<string, unknown>;
     const other = handedOff as unknown as Record<string, unknown>;
     for (const key of Object.keys(self)) {
@@ -399,6 +420,34 @@ class MilkdropPresetVM implements MilkdropVM {
     this.renderBackend = backend;
   }
 
+  /**
+   * The display slot `progress` ramps over, in seconds — the host's autoplay
+   * dwell (autoAdvanceDwellSeconds). Like MilkDrop and projectM, a running
+   * preset keeps the slot it started with; the next one gets the new length.
+   */
+  setPresetDuration(seconds: number) {
+    if (seconds > 0) {
+      this.presetDurationSeconds = seconds;
+    }
+  }
+
+  /**
+   * Starts the clock on the first frame after a reset, so `progress` counts
+   * from when the preset is first drawn rather than when it compiled, and
+   * restarts it if the host's clock jumped back (a harness replaying from
+   * time 0 into a VM it did not reset).
+   */
+  private advancePresetClock(time: number) {
+    if (!(time >= this.presetStartTime)) {
+      this.presetStartTime = time;
+      this.presetSlotSeconds = this.presetDurationSeconds;
+    }
+    this.presetProgress = milkdropPresetProgress(
+      time - this.presetStartTime,
+      this.presetSlotSeconds,
+    );
+  }
+
   setWebGpuOptimizationFlags(flags: MilkdropWebGpuOptimizationFlags) {
     this.webgpuOptimizationFlags = { ...flags };
   }
@@ -422,6 +471,7 @@ class MilkdropPresetVM implements MilkdropVM {
       // copies GPU writes back after each dispatch, so the CPU tiers keep
       // seeing one coherent megabuf/gmegabuf.
       { megabuf: this.megabuf, gmegabuf: this.gmegabuf },
+      presetOwnedSignalAliases(this.preset.ir),
     );
   }
 
@@ -504,10 +554,15 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.buffers.momentumSamples = new Float32Array(0);
     this.waveState.lastWaveSamples = this.waveState.buffers.smoothedSamples;
     this.waveState.lastWaveMomentum = this.waveState.buffers.momentumSamples;
+    this.signalEnv = createDefaultSignalEnv(
+      presetOwnedSignalAliases(this.preset.ir),
+    );
     Object.setPrototypeOf(this.signalEnv, this.registers);
     this.lastPreparedSignalSource = null;
     this.lastPreparedSignalFrame = Number.NaN;
     this.lastPreparedSignalTime = Number.NaN;
+    this.presetStartTime = Number.NaN;
+    this.presetProgress = 0;
 
     const zeroSignals = defaultSignalEnv();
     this.runProgram(this.preset.ir.programs.init, this.createEnv(zeroSignals));
@@ -679,7 +734,12 @@ class MilkdropPresetVM implements MilkdropVM {
     this.lastPreparedSignalTime = signals.time;
 
     const meshDensity = getMeshDensity(this.state, this.detailScale);
-    syncSignalEnvironment(signals, this.signalEnv, meshDensity);
+    syncSignalEnvironment(
+      signals,
+      this.signalEnv,
+      meshDensity,
+      this.presetProgress,
+    );
   }
 
   private createEnv(
@@ -810,6 +870,7 @@ class MilkdropPresetVM implements MilkdropVM {
   async stepAsync(
     signals: MilkdropRuntimeSignals,
   ): Promise<MilkdropFrameState> {
+    this.advancePresetClock(signals.time);
     this.restorePerFrameBaseValues();
 
     if (
@@ -820,7 +881,10 @@ class MilkdropPresetVM implements MilkdropVM {
       // GPU-resident state accumulated last frame's per-frame writes; upload
       // the restored CPU mirror so the reset applies there too.
       this.gpuRunner.syncState(this.state, this.registers, this.randomCell.s);
-      const result = await this.gpuRunner.dispatch(signals);
+      const result = await this.gpuRunner.dispatch(
+        signals,
+        this.presetProgress,
+      );
       Object.assign(this.state, result.state);
       Object.assign(this.registers, result.registers);
       this.randomCell.s = result.randomState;
@@ -835,6 +899,7 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState {
+    this.advancePresetClock(signals.time);
     this.restorePerFrameBaseValues();
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));
 
@@ -958,6 +1023,7 @@ class MilkdropPresetVM implements MilkdropVM {
       motionVectors: hideMotionVectors ? [] : motionVectors,
       post,
       signals,
+      progress: this.presetProgress,
       variables: this.variablesProxy,
       warpField: presetNeedsWarpMesh(this.preset)
         ? buildWarpField(meshField, this.geometryState)

@@ -51,7 +51,31 @@ import {
   extractNativeShaderBody,
   finishRawGlslForWebGl,
 } from './shader-analysis.ts';
+import { findTwoComponentRetWrites } from './shader-analysis-glsl.ts';
 import { isMilkdropShaderProgramBackendExecutable } from './shader-execution-classification.ts';
+
+/**
+ * The 1-based source line a shader statement came from, when one line holds
+ * exactly that statement — `ret = uv;` under `[warp_shader]`, or
+ * `warp_4=\`ret = uv;` in MilkDrop 2's numbered form. Statements split across
+ * lines or packed several to a line get no line rather than a wrong one.
+ */
+function findShaderStatementLine(
+  presetSource: string,
+  statementSource: string,
+): number | undefined {
+  const normalize = (text: string) =>
+    text
+      .replace(/^(?:warp|comp)_\d+\s*=\s*`?/iu, '')
+      .replace(/;\s*$/u, '')
+      .replace(/\s+/gu, ' ')
+      .trim();
+  const wanted = normalize(statementSource);
+  const index = presetSource
+    .split(/\r\n|\r|\n/u)
+    .findIndex((line) => normalize(line) === wanted);
+  return index === -1 ? undefined : index + 1;
+}
 
 /** The native body WebGL executes; see finishRawGlslForWebGl. */
 function rawNativeGlsl(shaderText: string | null | undefined): string | null {
@@ -730,6 +754,23 @@ export function createMilkdropIr({
     compShaderText,
     compHasTranslatedDirectStatements,
   );
+  for (const program of [warpShaderProgram, compShaderProgram]) {
+    if (!program) continue;
+    for (const statement of findTwoComponentRetWrites(program.statements)) {
+      const stageName = program.stage === 'warp' ? 'Warp' : 'Composite';
+      const fix =
+        program.stage === 'warp' && statement.operator === '='
+          ? ` To move the picture, read the previous frame at that coordinate: ret = texture2D(sampler_main, ${statement.rawValue}).rgb;`
+          : '';
+      fieldHelpers.addDiagnostic(
+        diagnostics,
+        'error',
+        'preset_shader_ret_vec2',
+        `${stageName} shader assigns a 2-component value to ret ("${statement.source}"). ret is the pixel's color and takes 3 components.${fix}`,
+        { line: findShaderStatementLine(ast.source, statement.source) },
+      );
+    }
+  }
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();

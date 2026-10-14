@@ -5,12 +5,20 @@
  * This guard is the general case: a doc that names `tests/foo.test.ts` after
  * the file moved to `tests/unit/`, or tells an agent to run
  * `bun run test:legacy-frontend` after that script was deleted, sends the
- * reader somewhere that does not exist. Agents follow the routing tables in
- * `.claude/CLAUDE.md` and `.github/AGENTS.md` literally, so a dangling
- * reference costs a failed command and a wrong mental model of the tree.
+ * reader somewhere that does not exist. Agents follow `AGENTS.md` and the
+ * skills literally, so a dangling reference costs a failed command and a
+ * wrong mental model of the tree.
+ *
+ * Every file an agent tool reads as instructions is scanned, not only
+ * `docs/`: `.claude/` (CLAUDE.md and the auto-loaded skills), the Markdown
+ * under `.github/` (Copilot instructions and prompt files, the PR template,
+ * `.github/AGENTS.md`), and `.opencode/` commands and modes. The opencode
+ * commands once ran `bun run qa` and `bun run deploy`, neither of which
+ * existed, because nothing checked that directory.
  *
  * Two reference kinds are checked:
- *   - repo paths (`src/…`, `tests/…`, `scripts/…`, …) in backticks or links
+ *   - repo paths (`src/…`, `tests/…`, `scripts/…`, `.claude/…`, …) in
+ *     backticks or links
  *   - `bun run <script>` invocations, checked against package.json
  *
  * Exemptions, all deliberate:
@@ -31,12 +39,14 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const ROOTS = ['docs', '.agent'];
+const ROOTS = ['docs', '.agent', '.claude', '.github', '.opencode'];
+// tests/INDEX.md is the map TESTING.md and the docs index send readers to,
+// so a path it names has to exist like any other doc's.
 const EXTRA_FILES = [
   'AGENTS.md',
   'README.md',
   'CONTRIBUTING.md',
-  '.github/AGENTS.md',
+  'tests/INDEX.md',
 ];
 /**
  * Docs generated from source that is itself checked. See the docblock above for
@@ -48,9 +58,11 @@ const SKIP_DIRS = new Set([
   'archive',
   'evidence',
   'node_modules',
+  'worktrees',
   '.git',
   'dist',
   'screenshots',
+  'worktrees',
 ]);
 
 /** Point-in-time findings rather than live instruction. */
@@ -70,7 +82,7 @@ const PLACEHOLDER = /path\/to|your-file|YYYY-MM|<[a-z-]+>/;
 const HISTORICAL_PATH = /\b[0-9a-f]{7,40}:$/;
 
 const PATH_PREFIX =
-  '(?:src|tests|scripts|docs|\\.agent|\\.github|functions|public)';
+  '(?:src|tests|scripts|docs|\\.agent|\\.claude|\\.github|\\.opencode|functions|public)';
 /**
  * Matches a path after a link target, a backtick, or plain whitespace. The
  * whitespace case matters: `bun run test tests/foo.test.ts` puts the path

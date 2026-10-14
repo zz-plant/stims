@@ -1,6 +1,6 @@
 # Track 3 — Listening
 
-Every knob so far has moved on its own clock (`sin(time*k)`). Now the music takes the wheel. This track covers the audio registers, the smoothing idiom every serious preset uses, how to detect a beat without a beat detector, and how to measure whether any of it worked.
+Every knob so far has moved on its own clock (`sin(time*k)`). Audio can drive the same knobs through read-only registers such as `bass`, `mid`, and `treb`, which the runtime refreshes every frame.
 
 ## Lesson 1 · Raw audio is jittery
 
@@ -85,7 +85,9 @@ The second line reads the beat off the bar itself: `equal(bass_thresh,2)` is 1 o
 
 ## Lesson 5 · Measuring it
 
-Everything above is a claim about what the preset does. Stims ships the same instrument its own agents use to check that claim — point it at a file and it reports, per variable, whether audio explains the motion:
+Everything above is a claim about what the preset does. `lab:reactivity` checks the claim: point it at a file and it reports, per variable, whether audio explains the motion.
+
+Unlike the rest of the course, this step needs a local clone of the Stims repository and Bun; the [quick start in CONTRIBUTING.md](../../CONTRIBUTING.md#set-up) sets both up. Then, from the clone:
 
 ```bash
 bun run lab:reactivity -- --file docs/authoring/examples/35-reactive-vortex.milk
@@ -102,11 +104,44 @@ The report gives each variable a verdict:
 | `weak` | some correlation, but faint |
 | `static` | never changes — not necessarily wrong (most variables in a preset should be) |
 
-For `zoom`, `rot`, and `wave_r` in the vortex, you should see `reactive`. The waveform's own deviation (`mainWave.deviation`) reads `reactive` too — the tool is measuring the same thing your eyes were doing in Lesson 1, just with a number attached. This is the loop real authors use: write, measure, adjust the coupling strength until the verdict — not just the vibe — says reactive. It's also exactly what [`bun run lab:visual`](../MILKDROP_CODING_GUIDE.md) checks on the pixel side, and what the [contributing guide](../../CONTRIBUTING.md#contributing-presets) asks for before a preset is submitted.
+For `zoom`, `rot`, and `wave_r` in the vortex, you should see `reactive`. The waveform's own deviation (`mainWave.deviation`) reads `reactive` too: the tool measures what your eyes judged in Lesson 1, with a number attached. Write, measure, and adjust the coupling strength until the verdict says reactive. The [contributing guide](../../CONTRIBUTING.md#contributing-presets) asks for this check before a preset is submitted; `bun run lab:visual` adds pixel-level checks, but only for presets already in the catalog.
 
-## Lesson 6 · Signals only Stims has
+## Lesson 6 · Harmonic vs. percussive separation
+
+Standard MilkDrop gives you three frequency bands: `bass`, `mid`, and `treb`. But frequency doesn't tell you *what kind* of sound is playing. A sustained low synth drone and a punchy kick drum both register as `bass`; a sustained chord and a snare crack both light up `mid`. If visuals only react to raw frequency bands, sustained low notes keep the stage constantly shaking and wash out the impact when a drum actually lands.
+
+Stims computes real-time Harmonic/Percussive Source Separation (HPSS) in its audio pipeline, splitting the incoming sound into sustained tones and transient hits. These are exposed to preset equations as first-class registers:
+
+| Signal | What it carries |
+|---|---|
+| `percussive` | Transient and broadband spectral energy (drums, plucks, clicks), scaled like `bass` |
+| `harmonic` | Sustained tonal energy (pads, vocals, organ notes), scaled like `bass` |
+| `percussive_low` | Low-end transients (kick drum thumps, 20–250 Hz) |
+| `percussive_mid` | Mid-range transients (snare cracks, claps, 250–4000 Hz) |
+| `percussive_high` | High-frequency transients (hi-hats, cymbals, above 4 kHz) |
+| `percussive_ratio` | The share of total energy that is percussive (0..1, neutral 0.5 in silence) |
+
+Notice the difference between `percussive` and `bass`: `bass` stays high as long as low frequencies rumble, but `percussive` peaks sharply at the onset of a strike and drops back down even while the low note continues ringing.
+
+```text
+per_frame_1=ra = 6/fps;
+per_frame_2=harm_avg = harm_avg*(1-ra) + ra*harmonic;
+// Pulse zoom only on genuine percussive hits
+per_frame_3=zoom = 1.008 + percussive*0.04;
+// Harmonic energy steers the wave color gently
+per_frame_4=wave_r = 0.2 + 0.6*harm_avg;
+per_frame_5=wave_g = 0.8 - 0.4*harm_avg;
+per_frame_6=wave_b = 0.5 + 0.5*sin(harm_avg*2);
+// percussive_ratio detects drum-heavy passages vs ambient breaks
+per_frame_7=rot = 0.01 + above(percussive_ratio, 0.65)*0.03*percussive;
+```
+
+[**▶ Run the HPSS separation**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBEZW1vbnN0cmF0ZXMgSFBTUyAoaGFybW9uaWMvcGVyY3Vzc2l2ZSBzb3VyY2Ugc2VwYXJhdGlvbikgc2lnbmFsczoKLy8gcGVyY3Vzc2l2ZSBwdW5jaGVzIHpvb20gb24gdHJhbnNpZW50cyBhbmQgZHJ1bXMsIGhhcm1vbmljIHN0ZWVycyB0aGUKLy8gYW1iaWVudCB3YXZlIGNvbG9yLCBhbmQgcGVyY3Vzc2l2ZV9yYXRpbyBzaGlmdHMgcm90YXRpb24gZHVyaW5nIGJyZWFrcy4KZlJhdGluZz01CmZEZWNheT0wLjk2CmZXYXZlQWxwaGE9MS41CmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjgKd2F2ZV9iPTEKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wCnBlcl9mcmFtZV8xPXJhID0gNi9mcHM7CnBlcl9mcmFtZV8yPWhhcm1fYXZnID0gaGFybV9hdmcqKDEtcmEpICsgcmEqaGFybW9uaWM7Ci8vIFB1bHNlIHpvb20gb25seSBvbiBnZW51aW5lIHBlcmN1c3NpdmUgaGl0cywgbm90IHN1c3RhaW5lZCBkcm9uZS9iYXNzCnBlcl9mcmFtZV8zPXpvb20gPSAxLjAwOCArIHBlcmN1c3NpdmUqMC4wNDsKLy8gSGFybW9uaWMgZW5lcmd5IHN0ZWVycyB0aGUgd2F2ZSBjb2xvciBnZW50bHkKcGVyX2ZyYW1lXzQ9d2F2ZV9yID0gMC4yICsgMC42Kmhhcm1fYXZnOwpwZXJfZnJhbWVfNT13YXZlX2cgPSAwLjggLSAwLjQqaGFybV9hdmc7CnBlcl9mcmFtZV82PXdhdmVfYiA9IDAuNSArIDAuNSpzaW4oaGFybV9hdmcqMik7Ci8vIHBlcmN1c3NpdmVfcmF0aW8gbWVhc3VyZXMgdHJhbnNpZW50LW5lc3MgKDAuLjEsIDAuNSBpbiBzaWxlbmNlKS4KLy8gV2hlbiBkcnVtcyBkb21pbmF0ZSAoPiAwLjY1KSwgYWRkIGEgc2hhcnAgcm90YXRpb25hbCBudWRnZS4KcGVyX2ZyYW1lXzc9cm90ID0gMC4wMSArIGFib3ZlKHBlcmN1c3NpdmVfcmF0aW8sIDAuNjUpKjAuMDMqcGVyY3Vzc2l2ZTsK "examples/37-percussive-split.milk") — zoom punches tightly with kick and snare transients, while the waveform's color shifts with sustained melodic harmonics, and drum breaks trigger an accelerated twist.
+
+## Lesson 7 · Signals only Stims has
 
 Everything above is standard MilkDrop, portable to Winamp, projectM, and Butterchurn. Stims also feeds presets what the person watching is doing — where the pointer is, how hard it is being dragged, pinch and twist, and a set of key pulses — plus device motion. Every name is in the [reference](reference.md#signals-read-only-inputs), completed and hover-documented in the editor:
+
 
 | Family | Names | What it carries |
 |---|---|---|

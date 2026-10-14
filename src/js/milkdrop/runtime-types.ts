@@ -99,6 +99,22 @@ export interface MilkdropEditorCompiler {
 }
 
 /**
+ * What the renderer did with the active preset's shader text on the last
+ * frame it presented, as opposed to the compiler's verdict on whether the
+ * backend could run it (`MilkdropShaderExecutionMode`). The two disagree
+ * whenever routing overrides the verdict: `?milkdrop-webgpu-feedback=0`
+ * keeps the feedback pass but drops it to the controls approximation, and
+ * the safe WebGPU path has no feedback pass at all.
+ *   'direct'   — the feedback pass ran the authored warp/comp programs.
+ *   'controls' — the feedback pass ran on the uniform-only controls
+ *                approximation (for a preset with no shader text, that is
+ *                the preset as authored).
+ *   'off'      — no feedback pass ran: the shader text was neither run nor
+ *                approximated.
+ */
+export type MilkdropAppliedShaderExecution = 'direct' | 'controls' | 'off';
+
+/**
  * The snapshot the experience controller publishes for the shell to read.
  * This is the engine ↔ shell seam contract: it is declared here so the shell
  * can name it directly instead of chaining `ReturnType` through the adapter,
@@ -127,6 +143,9 @@ export interface MilkdropExperienceSnapshot {
   tempoBpm: number | null;
   /** How the active preset's shader reaches the screen on the active backend. */
   shaderExecution: MilkdropShaderExecutionMode | null;
+  /** What the renderer actually ran on the last presented frame; see
+   * MilkdropAppliedShaderExecution. */
+  appliedShaderExecution: MilkdropAppliedShaderExecution | null;
   autoplay: boolean;
   transitionMode: 'blend' | 'cut';
   blendDuration: number;

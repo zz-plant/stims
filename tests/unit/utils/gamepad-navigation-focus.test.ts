@@ -109,4 +109,34 @@ describe('keyboard-as-remote gating', () => {
     expect(event.defaultPrevented).toBeTrue();
     cleanup();
   });
+
+  test('a disclosure summary is reachable and opens like a button', () => {
+    // "Audio help" and Synthesize's "Advanced" are <details> whose only
+    // toggle is the <summary>; a D-pad that skipped it could never open them.
+    const button = document.createElement('button');
+    button.textContent = 'Use demo audio';
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = 'Audio help';
+    details.append(summary, document.createElement('p'));
+    document.body.append(button, details);
+    button.focus();
+
+    const cleanup = initGamepadNavigation({
+      restoreFocus: false,
+      keyboardNavigation: true,
+    });
+    button.dispatchEvent(arrowRight());
+    expect(document.activeElement).toBe(summary);
+
+    summary.dispatchEvent(
+      new window.KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    expect(details.open).toBeTrue();
+    cleanup();
+  });
 });

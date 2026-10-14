@@ -1,0 +1,133 @@
+# WebGL/WebGPU Architectural Revamp Plan
+
+> Archived on 2026-10-13. Problems 1, 3, 6 and 7 are resolved or moot; the open ones are in the roadmap's [Engineering health](../ROADMAP.md#engineering-health), and the backend facts in [Rendering backends](../ARCHITECTURE.md#rendering-backends).
+
+> Design and rollout plan. Proposed steps and earlier implementation notes are not a current certification report. See [implementation status](../IMPLEMENTATION_STATUS.md) for capability limits and the parity manifests for evidence.
+
+This plan addresses structural issues in the dual-backend rendering pipeline identified during the [Stims renderer evaluation](../ARCHITECTURE.md).
+
+## Problem Summary
+
+Status checked against the code on 2026-10-13. Only problems 2 and 4 remain open.
+
+1. **WebGPU feedback pipeline had split ownership.** Resolved: native TSL feedback has run by default on the full WebGPU path since 2026-08-06 (`789c1e9a`), and `feedback-render-targets.ts` allocates targets for both backends.
+2. **TSL duplication.** Open: `feedback-manager-webgpu-tsl.ts` still mirrors the GLSL composite shader as TSL node graphs by hand.
+3. **Worker renderer was WebGPU-only with no fallback.** Moot: the unwired worker renderer prototype was deleted in #1104 and its protocol in #1454.
+4. **WGSL codegen is scalar-only.** Open, and narrow: `wgsl-generator.ts` serves only the compute VM, which is off by default. The unused `wgsl-vectorization.ts` helpers were deleted (#1454).
+5. **No RenderBundle or OffscreenCanvas transfer.** Render bundles exist behind `?milkdrop-webgpu-render-bundles=1` (`renderer-bundles.ts`); a hardware A/B on 2026-10-11 found no cadence effect, so they stay off. OffscreenCanvas transfer is not implemented.
+6. **Default-off posture limited real-world WebGPU testing.** Resolved: WebGPU is selected by default on browsers that ship it as stable ([Rendering backends](../ARCHITECTURE.md#rendering-backends)).
+7. **Compiler IR was too broad.** Resolved: `compiler/compatibility-report.ts` and `compiler/shader-execution-classification.ts` carry compatibility aggregation and execution classification out of `compiler/ir.ts`.
+
+## Workstreams
+
+### 1) Unify Feedback Pipeline to Be Backend-Native
+
+Feedback render targets should be backend-aware so WebGPU sessions stop round-tripping through WebGL internals.
+
+- Keep renderer feedback/fallback decisions in `renderer-execution-plan.ts`
+- Extract WebGL feedback target construction behind `feedback-render-targets.ts`
+- Implement a WebGPU render target variant using `three/webgpu`
+- Route `setRenderTarget` calls through the renderer, not hardcoded WebGL assumptions
+
+Files: `src/js/milkdrop/renderer-execution-plan.ts`, `src/js/milkdrop/feedback-render-targets.ts`, `src/js/milkdrop/feedback-manager-shared.ts`, `src/js/milkdrop/feedback-manager-webgpu-tsl.ts`, `src/js/milkdrop/renderer-adapter-core.ts`
+
+### 2) Consolidate Composite Shader Source of Truth
+
+Composite shading should have one source of truth instead of the GLSL/TSL dual-maintenance problem.
+
+- Define the composite pipeline as a declarative IR
+- Generate both GLSL and TSL from the single IR
+- Explore using TSL for both backends (TSL can emit GLSL)
+
+Files: a new composite-pipeline IR module (not yet written — an earlier stub was removed unused, since it duplicated uniform defaults the feedback managers already own and had no code generator consuming it), `src/js/milkdrop/feedback-manager-shared.ts`, `src/js/milkdrop/feedback-manager-webgpu-tsl.ts`
+
+### 3) Add WebGL Fallback to Worker Renderer
+
+Offscreen rendering should also work on WebGL-only devices.
+
+- Add `WorkerWebGLOffscreenRenderer` using `OffscreenCanvas.getContext('webgl2')`
+- Route via the existing message protocol
+- Keep the worker WebGL path simple (no feedback/batching)
+
+Files: `src/js/core/renderer-setup.ts`
+
+> **Start from the prior prototype, not from scratch.** The renderer-worker,
+> renderer-worker-protocol, and worker-renderer-track modules were removed from the tree
+> because nothing in `src/` imported them — but they already implement most of this step:
+> an `OffscreenCanvas.getContext('webgl2')` init path, a WebGPU init path, and the full
+> resize / quality / preset / frame / dispose / sync message protocol. Recover them with:
+>
+> ```
+> git show dd3aae08^:src/js/core/renderer-worker.ts
+> git show dd3aae08^:src/js/core/renderer-worker-protocol.ts
+> git show dd3aae08^:src/js/core/worker-renderer-track.ts
+> ```
+>
+> They were never wired to a host or verified against a live canvas, so treat them as an
+> unproven reference implementation rather than working code.
+
+### 4) Vectorize WGSL Code Generation
+
+Generate `vec2f`/`vec3f` WGSL types where expression trees operate on related scalars.
+
+- Track value "width" through the expression tree
+- Emit vectorized WGSL when all operands share a width
+- Fuse adjacent scalar assignments into vector assignments
+
+Files: `packages/milkdrop-toolchain/src/compiler/wgsl-generator.ts`, `src/js/milkdrop/vm-gpu.ts`
+
+### 5) Implement RenderBundle for Static Draw Calls
+
+Pre-record static draw commands to reduce per-frame CPU overhead.
+
+- Identify static draw calls (background quad, border outlines)
+- Pre-record as WebGPU RenderBundles
+- Execute bundles in the render pass
+
+Files: new `src/js/milkdrop/renderer-bundles.ts`, `src/js/milkdrop/renderer-adapter-core.ts`
+
+### 6) Gradual WebGPU Enablement
+
+Phase WebGPU enablement by platform instead of a universal off.
+
+- Platform-specific gating (Chrome 120+ desktop first)
+- Track engagement/error/fallback rates via telemetry
+
+Files: `src/js/core/renderer-query-override.ts`
+
+### 7) Split Compiler Execution Contracts
+
+Shader execution support should be explicit, without raw field checks spread across compiler and renderer modules.
+
+- Keep direct shader execution classification in `compiler/shader-execution-classification.ts`
+- Move compatibility aggregation out of `compiler/ir.ts` into a narrow compiler compatibility module
+- Move descriptor-plan assembly inputs into a typed compiler output object so renderer planning does not re-derive compiler intent
+
+Files: `packages/milkdrop-toolchain/src/compiler/ir.ts`, `packages/milkdrop-toolchain/src/compiler/shader-execution-classification.ts`, plus a new `packages/milkdrop-toolchain/src/compiler/compatibility-report.ts` (New follow-up)
+
+## Sequencing
+
+| Milestone | Workstream(s) | Dependency |
+|---|---|---|
+| **A: Safe Wins** | 1 (Execution-plan centralization), 4 (Vectorize WGSL), 5 (RenderBundles), 7 (Compiler execution contracts) | None — additive |
+| **B: Worker Completeness** | 3 (Worker WebGL fallback) | None — additive |
+| **C: Pipeline Unification** | 1 (Backend-native feedback), 2 (Single IR) | Matures together |
+| **D: Rollout** | 6 (Gradual enablement) | After C passes visual parity |
+
+## Validation
+
+- `bun run check` green throughout
+- `bun run check:readme-claims` for public-claim drift
+- Visual parity: certification corpus diffs against baseline
+- Performance: benchmark before/after for each milestone
+
+## Rollback
+
+Each workstream ships behind a feature flag (optimization flag or URL param), allowing per-workstream rollback without reverting the entire revamp.
+
+## Current Status
+
+- `renderer-execution-plan.ts` centralizes WebGPU descriptor fallback and feedback-manager mode decisions for backend fallback, renderer core descriptor planning, and WebGPU adapter creation. It now also returns disabled features, status labels, and structured fallback reasons. The WebGPU feedback mode is `webgpu-native` on the full path and `none` on the safe path; native feedback has been on by default since 2026-08-06 (`789c1e9a`).
+- `feedback-render-targets.ts` owns the unified `createFeedbackRenderTarget` factory supporting both WebGL and WebGPU render-target allocations.
+- `compiler/shader-execution-classification.ts` and `compiler/compatibility-report.ts` give compiler and runtime code dedicated vocabularies for backend-executable shader programs and structured parity aggregation, separating compatibility aggregation cleanly out of `ir.ts`.
+- Remaining feedback work is to continue reducing the GLSL/TSL composite duplication.

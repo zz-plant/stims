@@ -1,11 +1,15 @@
 import { describe, expect, mock, test } from 'bun:test';
 import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { OrthographicCamera, Scene, type Vector2 } from 'three';
+import type { ToyRuntimeInstance } from '../../src/js/core/toy-runtime';
+import type { MilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-types';
 import {
   createMilkdropBackendFailover,
   shouldPresetFallbackToWebgl,
 } from '../../src/js/milkdrop/runtime/backend-fallback.ts';
 import { applyMilkdropCapturedVideoFrameState } from '../../src/js/milkdrop/runtime/captured-video-frame.ts';
 import { createMilkdropCapturedVideoReactivityTracker } from '../../src/js/milkdrop/runtime/captured-video-reactivity.ts';
+import { createMilkdropExperienceAttachmentController } from '../../src/js/milkdrop/runtime/experience-attachment.ts';
 import {
   buildRenderFrameState,
   createRenderFrameStateBuilder,
@@ -19,7 +23,12 @@ import {
   shouldDeferStartupPresetFallback,
 } from '../../src/js/milkdrop/runtime/startup.ts';
 import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
-import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
+import {
+  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+  resolveMilkdropWebGpuOptimizationFlags,
+} from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
+import { setWebGpuForceMode } from '../../src/js/milkdrop/webgpu-query-override.ts';
+import { replaceProperty } from '../test-helpers.ts';
 
 function resolveCapturedVideoReactivity({
   weightedEnergy,
@@ -581,6 +590,163 @@ warp=0.08
         reason: 'Unsupported feature',
         activeBackend: 'webgpu',
       }),
-    ).toBe(false);
+    ).toBe(true);
+    expect(reload).toHaveBeenCalledTimes(1);
   });
+});
+
+describe('milkdrop experience attachment seams', () => {
+  // Whichever of these runs first pays the cold three/webgpu import behind
+  // the native adapter, which outlasts bun's 5 s default on a loaded host.
+  const NATIVE_ATTACH_TIMEOUT_MS = 30_000;
+
+  // Attaches a fake runtime whose renderer comes up as native WebGPU, through
+  // the real adapter factory, and returns every status line the attachment
+  // set plus the adapter it attached. `search` is the page URL the session was
+  // opened with; `fallback` stands in for the WebGL failover.
+  async function attachNativeWebGpu(
+    search: string,
+    forceMode: 'full' | 'safe',
+    fallback: {
+      shouldFallbackToWebgl?: () => boolean;
+      triggerWebglFallback?: () => boolean;
+    } = {},
+  ) {
+    const restoreLocation = replaceProperty(
+      globalThis,
+      'location',
+      new URL(`http://localhost/${search}`),
+    );
+    setWebGpuForceMode(forceMode);
+    try {
+      const compiled = compileMilkdropPresetSource('title=Attachment Status', {
+        id: 'attachment-status',
+      });
+      const statuses: string[] = [];
+      let runtime: ToyRuntimeInstance | null = null;
+      let adapter: MilkdropRendererAdapter | null = null;
+      const { promise: attached, resolve: finishAttach } =
+        Promise.withResolvers<void>();
+      const controller = createMilkdropExperienceAttachmentController({
+        lifetime: createMilkdropRuntimeLifetime(),
+        getRuntime: () => runtime,
+        setRuntime: (next) => {
+          runtime = next;
+        },
+        getAdapter: () => adapter,
+        setAdapter: (next) => {
+          adapter = next;
+        },
+        activeCompiled: () => compiled,
+        setActiveBackend: () => {},
+        setDocumentActiveBackend: () => {},
+        vm: {
+          setRenderBackend: () => {},
+          setWebGpuOptimizationFlags: () => {},
+          setGpuDevice: () => {},
+        },
+        disposePostprocessingPipeline: () => {},
+        capturedVideoOverlay: { attach: () => {} },
+        setAdaptiveQualityController: () => {},
+        setAdaptiveQualityUnsubscribe: () => {},
+        setAdaptiveQualityState: () => {},
+        updateAgentDebugSnapshot: () => {},
+        shouldFallbackToWebgl: fallback.shouldFallbackToWebgl ?? (() => false),
+        triggerWebglFallback: fallback.triggerWebglFallback ?? (() => false),
+        scheduleCatalogSync: () => {},
+        emitChange: () => finishAttach(),
+        setOverlayStatus: (message) => {
+          statuses.push(message);
+        },
+        webgpuOptimizationFlags: resolveMilkdropWebGpuOptimizationFlags(),
+      });
+
+      controller.attachRuntime({
+        toy: {
+          scene: new Scene(),
+          camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+          rendererReady: Promise.resolve({
+            backend: 'webgpu',
+            renderer: {
+              isWebGPURenderer: true,
+              depth: true,
+              getSize: (target: Vector2) => target.set(320, 180),
+              setRenderTarget() {},
+              render() {},
+            },
+            info: { device: null },
+          }),
+          updateRendererSettings: () => {},
+        },
+      } as unknown as ToyRuntimeInstance);
+      await attached;
+      const attachedAdapter = adapter as MilkdropRendererAdapter | null;
+      attachedAdapter?.dispose();
+      return { statuses, attachedAdapter };
+    } finally {
+      setWebGpuForceMode('auto');
+      restoreLocation();
+    }
+  }
+
+  test(
+    'reports no rollout flags when a full-path WebGPU session runs the defaults',
+    async () => {
+      const { statuses } = await attachNativeWebGpu('?renderer=webgpu', 'full');
+
+      // Four flags are off by default; off is not an override.
+      expect(statuses.filter((s) => s.includes('rollout flags'))).toEqual([]);
+    },
+    NATIVE_ATTACH_TIMEOUT_MS,
+  );
+
+  test(
+    'reports no rollout flags for features the safe path turns off',
+    async () => {
+      const { statuses } = await attachNativeWebGpu('', 'safe');
+
+      expect(statuses.filter((s) => s.includes('rollout flags'))).toEqual([]);
+    },
+    NATIVE_ATTACH_TIMEOUT_MS,
+  );
+
+  test(
+    'names each flag a URL override moved away from its default',
+    async () => {
+      const { statuses } = await attachNativeWebGpu(
+        '?renderer=webgpu&milkdrop-webgpu-feedback=0&milkdrop-webgpu-render-bundles=1',
+        'full',
+      );
+
+      expect(statuses).toContain(
+        'WebGPU rollout flags active: directFeedbackShaders off, renderBundles on.',
+      );
+    },
+    NATIVE_ATTACH_TIMEOUT_MS,
+  );
+
+  test(
+    'still attaches a WebGPU adapter when the WebGL fallback could not reload',
+    async () => {
+      // Session storage blocked: the failover refuses to reload (it would
+      // loop) and says so. Attachment used to return regardless, before
+      // creating any adapter, and the stage stayed black.
+      let fallbackRequests = 0;
+      const { attachedAdapter } = await attachNativeWebGpu(
+        '?renderer=webgpu',
+        'full',
+        {
+          shouldFallbackToWebgl: () => true,
+          triggerWebglFallback: () => {
+            fallbackRequests += 1;
+            return false;
+          },
+        },
+      );
+
+      expect(fallbackRequests).toBeGreaterThan(0);
+      expect(attachedAdapter?.backend).toBe('webgpu');
+    },
+    NATIVE_ATTACH_TIMEOUT_MS,
+  );
 });

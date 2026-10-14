@@ -1,10 +1,12 @@
 # Track 5 — Waves and shapes
 
-Everything so far distorts the feedback loop — the paint already on screen. Waves and shapes are the *new* ink laid on top each frame, before the loop's distortion is applied to it next time around. They're not a minor feature: **88% of the bundled catalog uses custom waves, and 99% uses custom shapes** — this is the layer most presets draw with.
+Everything so far distorts the feedback loop — the paint already on screen. Waves and shapes are the *new* ink laid on top each frame, before the loop's distortion is applied to it next time around.
+
+Most presets draw with this layer: **of the 1,787 catalog presets, 1,040 (58%) enable a custom wave or shape**, 547 a wave and 824 a shape. Those counts take only slots whose `_enabled` value is nonzero, as of October 2026. Preset files list every slot, disabled ones included, so counting `wavecode_`/`shapecode_` lines finds them in nearly every file.
 
 ## Lesson 1 · A second waveform
 
-Every preset has one built-in waveform (`wave_r`/`wave_g`/`wave_b`, the one you've been coloring since Track 1). Custom waves are additional ones, up to eight, each fully independent:
+Every preset has one built-in waveform (`wave_r`/`wave_g`/`wave_b`, the one you've been coloring since Track 1). Custom waves are additional ones, up to four in MilkDrop 2, each fully independent:
 
 ```text
 wavecode_0_enabled=1
@@ -19,7 +21,7 @@ wavecode_0_a=1
 
 [**▶ Run a static custom wave**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBBIHNlY29uZCB3YXZlZm9ybSwgZHJhd24gaW5kZXBlbmRlbnRseSBvZiB0aGUgbWFpbiBvbmUsIHdpdGggbm8KLy8gZXF1YXRpb25zIGF0IGFsbCB5ZXQg4oCUIGp1c3Qgc3RhdGljIHBhcmFtcy4gQmFzZWxpbmUgZm9yIFRyYWNrIDUuCmZSYXRpbmc9NQpmRGVjYXk9MC45NwpmV2F2ZUFscGhhPTAuNgpmV2F2ZVNjYWxlPTEKbldhdmVNb2RlPTAKYldhdmVUaGljaz0xCmJNYXhpbWl6ZVdhdmVDb2xvcj0xCmJUZXhXcmFwPTEKem9vbT0xCnJvdD0wCmN4PTAuNQpjeT0wLjUKZHg9MApkeT0wCnN4PTEKc3k9MQp3YXJwPTAKd2F2ZV9yPTAuMQp3YXZlX2c9MC4yCndhdmVfYj0wLjMKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wCndhdmVjb2RlXzBfZW5hYmxlZD0xCndhdmVjb2RlXzBfc2FtcGxlcz0yMDAKd2F2ZWNvZGVfMF9zZXA9MAp3YXZlY29kZV8wX3NjYWxpbmc9MQp3YXZlY29kZV8wX3Ntb290aGluZz0wLjUKd2F2ZWNvZGVfMF9yPTEKd2F2ZWNvZGVfMF9nPTAuNwp3YXZlY29kZV8wX2I9MC4yCndhdmVjb2RlXzBfYT0xCg%3D%3D "examples/50-static-wave.milk")
 
-`wavecode_0_*` are static parameters — enable it, give it 200 sample points and an amber color. On its own it draws the audio waveform again, just as a second colored line. The interesting part is next.
+`wavecode_0_*` are static parameters — enable it, give it 200 sample points and an amber color. On its own it draws the audio waveform again, as a second colored line. The interesting part is next.
 
 ## Lesson 2 · Shaping every sample point
 
@@ -58,11 +60,11 @@ shapecode_0_b=0.1
 
 [**▶ Run a static pentagon**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBBIGN1c3RvbSBzaGFwZSAoYSBwZW50YWdvbiksIHNpdHRpbmcgc3RpbGwsIGNvbG9yZWQsIG5vIGVxdWF0aW9ucyB5ZXQuCmZSYXRpbmc9NQpmRGVjYXk9MC45NwpmV2F2ZUFscGhhPTAKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wCndhdmVfZz0wCndhdmVfYj0wCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MApzaGFwZWNvZGVfMF9lbmFibGVkPTEKc2hhcGVjb2RlXzBfc2lkZXM9NQpzaGFwZWNvZGVfMF9hZGRpdGl2ZT0wCnNoYXBlY29kZV8wX3RoaWNrb3V0bGluZT0xCnNoYXBlY29kZV8wX3RleHR1cmVkPTAKc2hhcGVjb2RlXzBfeD0wLjUKc2hhcGVjb2RlXzBfeT0wLjUKc2hhcGVjb2RlXzBfcmFkPTAuMTUKc2hhcGVjb2RlXzBfYW5nPTAKc2hhcGVjb2RlXzBfcj0wLjkKc2hhcGVjb2RlXzBfZz0wLjYKc2hhcGVjb2RlXzBfYj0wLjEKc2hhcGVjb2RlXzBfYT0xCg%3D%3D "examples/52-static-shape.milk")
 
-Static params only — the pentagon just sits there. `shapecode_0_*` mirrors `wavecode_0_*`: `_enabled`, geometry (`sides`, `x`, `y`, `rad`, `ang`), and color (`r`/`g`/`b`/`a`).
+Static params only — the pentagon sits there. `shapecode_0_*` mirrors `wavecode_0_*`: `_enabled`, geometry (`sides`, `x`, `y`, `rad`, `ang`), and color (`r`/`g`/`b`/`a`).
 
 ## Lesson 4 · Giving a shape a per_frame
 
-`shape_N_per_frame` runs once per frame for that shape instance — the same rhythm as the root `per_frame`, just scoped to one shape:
+`shape_N_per_frame` runs once per frame for that shape instance — the same rhythm as the root `per_frame`, scoped to one shape:
 
 ```text
 shape_0_per_frame1=x=0.5+0.25*sin(time*0.7);
@@ -72,7 +74,7 @@ shape_0_per_frame3=ang=time*0.7;
 
 [**▶ Run the orbiting pentagon**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgc2FtZSBwZW50YWdvbiwgbm93IG9yYml0aW5nIHRoZSBjZW50ZXIgb24gYSBwZXJfZnJhbWUgZXF1YXRpb24uCi8vIHNoYXBlXzBfcGVyX2ZyYW1lIHJ1bnMgb25jZSBwZXIgZnJhbWUgZm9yIHRoaXMgc2hhcGUgaW5zdGFuY2Ug4oCUIHRoZQovLyBzYW1lIHJoeXRobSBhcyB0aGUgcm9vdCBwZXJfZnJhbWUsIGp1c3Qgc2NvcGVkIHRvIG9uZSBzaGFwZS4KZlJhdGluZz01CmZEZWNheT0wLjk3CmZXYXZlQWxwaGE9MApmV2F2ZVNjYWxlPTEKbldhdmVNb2RlPTAKYldhdmVUaGljaz0xCmJNYXhpbWl6ZVdhdmVDb2xvcj0xCmJUZXhXcmFwPTEKem9vbT0xCnJvdD0wCmN4PTAuNQpjeT0wLjUKZHg9MApkeT0wCnN4PTEKc3k9MQp3YXJwPTAKd2F2ZV9yPTAKd2F2ZV9nPTAKd2F2ZV9iPTAKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wCnNoYXBlY29kZV8wX2VuYWJsZWQ9MQpzaGFwZWNvZGVfMF9zaWRlcz01CnNoYXBlY29kZV8wX2FkZGl0aXZlPTAKc2hhcGVjb2RlXzBfdGhpY2tvdXRsaW5lPTEKc2hhcGVjb2RlXzBfdGV4dHVyZWQ9MApzaGFwZWNvZGVfMF94PTAuNQpzaGFwZWNvZGVfMF95PTAuNQpzaGFwZWNvZGVfMF9yYWQ9MC4xNQpzaGFwZWNvZGVfMF9hbmc9MApzaGFwZWNvZGVfMF9yPTAuOQpzaGFwZWNvZGVfMF9nPTAuNgpzaGFwZWNvZGVfMF9iPTAuMQpzaGFwZWNvZGVfMF9hPTEKc2hhcGVfMF9wZXJfZnJhbWUxPXg9MC41KzAuMjUqc2luKHRpbWUqMC43KTsKc2hhcGVfMF9wZXJfZnJhbWUyPXk9MC41KzAuMjUqY29zKHRpbWUqMC43KTsKc2hhcGVfMF9wZXJfZnJhbWUzPWFuZz10aW1lKjAuNzsK "examples/53-orbiting-shape.milk")
 
-Nothing new mechanically — this is Track 1's `sin(time)` heartbeat, just steering a shape's position instead of a screen-wide knob. `shape_N_init` (unused here) runs once, the first frame only, for one-time setup.
+Nothing new mechanically — this is Track 1's `sin(time)` heartbeat, steering a shape's position instead of a screen-wide knob. `shape_N_init` (unused here) runs once, the first frame only, for one-time setup.
 
 ## Lesson 5 · Morphing instead of moving
 
@@ -90,7 +92,7 @@ shape_0_per_frame7=b=sin(s*3.3)*0.5+0.5;
 
 [**▶ Run the shape state machine**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBQYXR0ZXJuIDEyIGZyb20gdGhlIGNvZGluZyBndWlkZTogYSBzaGFwZSBjeWNsaW5nIHRocm91Z2ggaWRlbnRpdGllcy4KLy8gRXZlcnkgNnRoIGZyYW1lIGl0IGFkdmFuY2VzIHRvIGEgbmV3IHNpZGVzL2NvbG9yL3JhZCBjb21iaW5hdGlvbiDigJQgdGhlCi8vIHNoYXBlIGRvZXNuJ3QgbW92ZSwgaXQgKm1vcnBocyouCmZSYXRpbmc9NQpmRGVjYXk9MC45NwpmV2F2ZUFscGhhPTAKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wCndhdmVfZz0wCndhdmVfYj0wCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MApzaGFwZWNvZGVfMF9lbmFibGVkPTEKc2hhcGVjb2RlXzBfc2lkZXM9NApzaGFwZWNvZGVfMF9hZGRpdGl2ZT0wCnNoYXBlY29kZV8wX3RoaWNrb3V0bGluZT0xCnNoYXBlY29kZV8wX3RleHR1cmVkPTAKc2hhcGVjb2RlXzBfeD0wLjUKc2hhcGVjb2RlXzBfeT0wLjUKc2hhcGVjb2RlXzBfcmFkPTAuMQpzaGFwZWNvZGVfMF9hbmc9MApzaGFwZWNvZGVfMF9yPTEKc2hhcGVjb2RlXzBfZz0xCnNoYXBlY29kZV8wX2I9MQpzaGFwZWNvZGVfMF9hPTEKc2hhcGVfMF9wZXJfZnJhbWUxPXM9ZnJhbWUlNis0OwpzaGFwZV8wX3Blcl9mcmFtZTI9c2lkZXM9czsKc2hhcGVfMF9wZXJfZnJhbWUzPXJhZD0wLjA4K3MqMC4wMTsKc2hhcGVfMF9wZXJfZnJhbWU0PWFuZz1zKjAuMzsKc2hhcGVfMF9wZXJfZnJhbWU1PXI9c2luKHMqMS4xKSowLjUrMC41OwpzaGFwZV8wX3Blcl9mcmFtZTY9Zz1zaW4ocyoyLjIpKjAuNSswLjU7CnNoYXBlXzBfcGVyX2ZyYW1lNz1iPXNpbihzKjMuMykqMC41KzAuNTsK "examples/54-shape-state-machine.milk")
 
-`frame%6+4` cycles `s` through `4, 5, 6, 7, 8, 9, 4, 5, …` — one step every frame. Every other line reads that same `s`: sides count, radius, rotation, and all three color channels are just different functions of it. The shape isn't animating a fixed pentagon — it's cycling through six entirely different polygon identities, each with its own look, six times a second at 36fps-equivalent stepping. This is the technique behind shapes that seem to "breathe" between forms rather than move.
+`frame%6+4` cycles `s` through `4, 5, 6, 7, 8, 9, 4, 5, …` — one step every frame. Every other line reads that same `s`: sides count, radius, rotation, and all three color channels are different functions of it. The shape isn't animating a fixed pentagon — it's cycling through six entirely different polygon identities, each with its own look, six times a second at 36fps-equivalent stepping. This is the technique behind shapes that seem to "breathe" between forms rather than move.
 
 ## Lesson 6 · Wired to the music
 
@@ -109,10 +111,10 @@ shape_0_per_frame2=ang=time*0.5;
 
 [**▶ Run the reactive wave and shape**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBFdmVyeXRoaW5nIGluIFRyYWNrIDUgY29tYmluZWQgYW5kIG1hZGUgYXVkaW8tcmVhY3RpdmU6IHE4IGNhcnJpZXMKLy8gc21vb3RoZWQgdm9sdW1lIGZyb20gcGVyX2ZyYW1lIGludG8gYm90aCB0aGUgc2hhcGUgKHJhZGl1cykgYW5kIHRoZQovLyB3YXZlIChhbXBsaXR1ZGUgdmlhIHZhbHVlJ3MgbmF0dXJhbCBzY2FsaW5nKSwgdGhlIHNhbWUgcS12YXIgYnJpZGdlCi8vIFRyYWNrIDQgdXNlZCBmb3IgcGVyX3BpeGVsLgpmUmF0aW5nPTUKZkRlY2F5PTAuOTcKZldhdmVBbHBoYT0wLjUKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wLjEKd2F2ZV9nPTAuMgp3YXZlX2I9MC4zCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MAp3YXZlY29kZV8wX2VuYWJsZWQ9MQp3YXZlY29kZV8wX3NhbXBsZXM9MjAwCndhdmVjb2RlXzBfc2VwPTAKd2F2ZWNvZGVfMF9zY2FsaW5nPTEKd2F2ZWNvZGVfMF9zbW9vdGhpbmc9MC41CndhdmVjb2RlXzBfcj0xCndhdmVjb2RlXzBfZz0wLjcKd2F2ZWNvZGVfMF9iPTAuMgp3YXZlY29kZV8wX2E9MQpzaGFwZWNvZGVfMF9lbmFibGVkPTEKc2hhcGVjb2RlXzBfc2lkZXM9NQpzaGFwZWNvZGVfMF9hZGRpdGl2ZT0wCnNoYXBlY29kZV8wX3RoaWNrb3V0bGluZT0xCnNoYXBlY29kZV8wX3RleHR1cmVkPTAKc2hhcGVjb2RlXzBfeD0wLjUKc2hhcGVjb2RlXzBfeT0wLjUKc2hhcGVjb2RlXzBfcmFkPTAuMTUKc2hhcGVjb2RlXzBfYW5nPTAKc2hhcGVjb2RlXzBfcj0wLjkKc2hhcGVjb2RlXzBfZz0wLjYKc2hhcGVjb2RlXzBfYj0wLjEKc2hhcGVjb2RlXzBfYT0xCnBlcl9mcmFtZV8xPXJhPTYvZnBzOwpwZXJfZnJhbWVfMj1iYXNzX2F2Zz1iYXNzX2F2ZyooMS1yYSkrcmEqYmFzczsKcGVyX2ZyYW1lXzM9cTg9YmFzc19hdmc7CndhdmVfMF9wZXJfcG9pbnQxPXQ9c2FtcGxlKjYuMjgzMTg1K3RpbWUqMC4zOwp3YXZlXzBfcGVyX3BvaW50Mj14PTAuNSsoMC4yKzAuMTUqcTgpKnNpbih0KjMpOwp3YXZlXzBfcGVyX3BvaW50Mz15PTAuNSsoMC4yKzAuMTUqcTgpKmNvcyh0KjIpOwpzaGFwZV8wX3Blcl9mcmFtZTE9cmFkPTAuMStxOCowLjE1OwpzaGFwZV8wX3Blcl9mcmFtZTI9YW5nPXRpbWUqMC41Owo%3D "examples/55-reactive-shape-and-wave.milk")
 
-`q8` is computed exactly once, in the root `per_frame`, and both the wave's per-point code and the shape's per-frame code read the same value that frame. This is the general answer to "how do waves/shapes hear the music": they don't read audio directly — `per_frame` does the listening (Track 3), and everything downstream just reads the result.
+`q8` is computed exactly once, in the root `per_frame`, and both the wave's per-point code and the shape's per-frame code read the same value that frame. Wave and shape code can read `bass`, `mid`, and `treb` directly — the custom wave in $$$ Royal's [*Mashup (326)*](https://toil.fyi/?preset=royal-mashup-326) does, in its per-point code. A value smoothed once in the root `per_frame` and handed over in a q-var is the same for every wave, shape, and mesh point that reads it, so the usual pattern is that `per_frame` does the listening (Track 3) and the waves and shapes read the result.
 
 ## What you can now build
 
-Waves and shapes are how a preset draws something recognizable rather than just distorting a blur — lines that trace curves, polygons that orbit or morph, both wired into the same audio pipeline as everything else. Between Tracks 1–5, you can now read the `per_frame`/`per_pixel`/wave/shape portion of almost any preset in the catalog.
+Waves and shapes are how a preset draws something recognizable rather than only distorting a blur — lines that trace curves, polygons that orbit or morph, both wired into the same audio pipeline as everything else. Between Tracks 1–5, you can now read the `per_frame`/`per_pixel`/wave/shape portion of almost any preset in the catalog.
 
-**Next: [Track 6 — Shaders](06-shaders.md)**, the one piece left: the GLSL `warp_shader`/`comp_shader` pair that 64% of modern presets use for the effects equations alone can't reach.
+**Next: [Track 6 — Shaders](06-shaders.md)**, the one piece left: the `warp_shader`/`comp_shader` pair, which reaches effects equations alone can't.

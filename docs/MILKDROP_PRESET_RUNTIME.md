@@ -60,22 +60,25 @@ The `-alt` suffix is therefore load-bearing, not cosmetic: `geiss-desert-rose-2`
 
 ## WebGPU descriptor rollout flags
 
-The MilkDrop runtime can now gate each WebGPU descriptor optimization independently. All flags default to enabled, but you can disable any step with either a query param or a `localStorage` override using the same value conventions as other repo experiments (`1`/`enabled` to enable, `0`/`disabled` to disable).
+Each WebGPU descriptor optimization can be switched per session with a query param or a `localStorage` key. Query params take `1`/`0` (also `true`/`false`, `on`/`off`); storage keys also take `enabled`/`disabled`. Defaults come from `DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS` in `src/js/milkdrop/webgpu-optimization-flags.ts`, and `resolveMilkdropWebGpuFeatureRouting` in `src/js/milkdrop/webgpu-query-override.ts` then turns features off for the safe WebGPU path (low-power phones) and the compatibility adapter.
 
-| Flag | Query param | `localStorage` key | Purpose |
+| Flag | Query param (`localStorage`: `stims:experiments:` + same name) | Default | Purpose |
 | --- | --- | --- | --- |
-| Main wave | `milkdrop-webgpu-main-wave` | `stims:experiments:milkdrop-webgpu-main-wave` | Gates descriptor-backed main-wave rendering. |
-| Custom waves | `milkdrop-webgpu-custom-waves` | `stims:experiments:milkdrop-webgpu-custom-waves` | Gates authored custom-wave descriptor uploads. |
-| Mesh field | `milkdrop-webgpu-mesh` | `stims:experiments:milkdrop-webgpu-mesh` | Gates procedural mesh descriptors and field programs. |
-| Motion vectors | `milkdrop-webgpu-motion-vectors` | `stims:experiments:milkdrop-webgpu-motion-vectors` | Gates procedural motion-vector descriptors. |
-| Feedback shaders | `milkdrop-webgpu-feedback` | `stims:experiments:milkdrop-webgpu-feedback` | Gates direct WebGPU feedback shader execution. |
-| WebGL fallback guard | `milkdrop-webgpu-fallback` | `stims:experiments:milkdrop-webgpu-fallback` | Controls whether unsupported descriptor cases auto-switch to WebGL. |
+| Main wave | `milkdrop-webgpu-main-wave` | On (full path) | Descriptor-backed main-wave rendering. |
+| Custom waves | `milkdrop-webgpu-custom-waves` | On (full path) | Authored custom-wave descriptor uploads. |
+| Mesh field | `milkdrop-webgpu-mesh` | On (full path) | Procedural mesh descriptors and per-pixel field programs. |
+| Motion vectors | `milkdrop-webgpu-motion-vectors` | On (full path) | Procedural motion-vector descriptors. |
+| Feedback shaders | `milkdrop-webgpu-feedback` | On (full path) | Native TSL feedback: warp and comp shaders run directly. Off, the feedback loop still runs, but on the uniform-only controls approximation instead of the authored shader bodies, which is how a feedback bug is bisected. The safe path and `?renderer=webgl` also turn it off (`shouldEnableNativeMilkdropWebGpuFeedback`). |
+| WebGL fallback | `milkdrop-webgpu-fallback` | Off | When on, any preset whose plan routes to WebGL is reloaded there. When off, only presets with genuinely unsupported features fall back; feedback-compatibility presets run natively. Certification sessions (`?renderer=webgpu&corpus=certification`) force it off unless set explicitly. |
+| Compute VM | `milkdrop-webgpu-compute-vm` | Off | Runs per-frame equations as WebGPU compute. Upload, dispatch and readback cost 0.9–8 ms a frame against 0.05–0.75 µs for the CPU JIT (`bun run lab:vm-tier-bench`, 2026-08-22). Never on the compatibility adapter. |
+| Render bundles | `milkdrop-webgpu-render-bundles` | Off | Records static draws as WebGPU render bundles. An A/B on hardware on 2026-10-11 found no cadence effect ([Runtime performance](./RUNTIME_PERFORMANCE.md)). |
+| Branch desugar | `milkdrop-webgpu-branch-desugar` | Off | Flattens `if`/`else` and bounded loops in shader bodies so 154 more bodies execute directly. Six presets still render white or black under it; they are named in `packages/milkdrop-toolchain/src/compiler/shader-branch-desugar.ts`. |
 
-When any flag is disabled and the runtime still starts on WebGPU, the overlay status includes a short `WebGPU rollout flags active: ...` message so test runs and manual QA can confirm which descriptor paths remain guarded.
+When a WebGPU session runs with a flag that differs from what the defaults resolve to on the same path, the runtime sets the engine snapshot's `status` to `WebGPU rollout flags active: ...`, naming each one and its value (`directFeedbackShaders off, renderBundles on`). Defaults never trigger it: not the four flags that are off by default, and not the features the safe path turns off. An override the path ignores, such as the compute VM on the compatibility adapter, is not listed either. The workspace toast suppresses the message, so it never shows on stage, and the next runtime status (`Loaded …`) replaces it in the snapshot. `__stims_agent.getState().statusLog` still records it, with `source: 'runtime'`: the runtime hands every status it sets to the shell's agent log as it sets it.
 
 `src/js/milkdrop/renderer-execution-plan.ts` is the runtime decision point for applying these flags to a compiled descriptor plan. The same plan result drives backend fallback checks, the effective descriptor plan stored by the renderer core, and the WebGPU adapter feedback-manager mode. The plan also exposes `disabledFeatures`, `statusLabels`, and structured fallback reasons such as `descriptor-feedback` so overlays, tests, and telemetry can report the same decision.
 
-Current WebGPU feedback mode is `none` on both safe and full paths until native feedback parity is stable. Native feedback has an explicit planner opt-in (`nativeWebGpuFeedbackEnabled`) for future rollout tests, but no production caller enables it yet.
+The feedback mode is `webgpu-native` on the full WebGPU path, `none` on the safe path, and `webgl-shared` on WebGL. Native feedback has been on by default since 2026-08-06 (`789c1e9a`). `?milkdrop-webgpu-feedback=0` leaves the mode at `webgpu-native` and changes what the composite runs: its shader execution drops from `direct` to `controls`. `getState().shaderExecution` is the compiler's per-backend verdict and does not change with the flag. `getState().appliedShaderExecution` is what the adapter handed the feedback manager on the last presented frame, so it reads `controls` under the flag and `off` on the safe path, where no feedback manager exists. It is null from each preset load until a frame has been presented, and while a WebGL warp/comp swap is still compiling.
 
 ## JIT performance contract
 

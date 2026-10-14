@@ -32,6 +32,11 @@
  *   bun run lab:backend-diff -- --sample 24            # corpus sweep
  *   bun run lab:backend-diff -- --sample 24 --diff-image
  *   bun run lab:backend-diff -- --preset <id> --frames 240 --keep-captures
+ *   bun run lab:backend-diff -- --preset <id> --query milkdrop-webgpu-feedback=0
+ *
+ * `--query key=value` (repeatable) adds a URL param to every capture on both
+ * backends, so a rollout flag can be bisected against WebGL: run once without
+ * it and once with it, and compare the cross-backend numbers.
  *
  * Expected divergences (WebGL lacks per-pixel warp lowering, for one) live in
  * `src/data/milkdrop-parity/backend-divergence-allowlist.json` with a reason
@@ -374,6 +379,7 @@ type CaptureOptions = {
   randomSeed: number;
   outputDir: string;
   session: PlayToyBrowserSession;
+  extraParams: Record<string, string>;
 };
 
 async function capture({
@@ -388,6 +394,7 @@ async function capture({
   randomSeed,
   outputDir,
   session,
+  extraParams,
 }: CaptureOptions): Promise<CaptureRecord> {
   const result = await playToy({
     slug: 'milkdrop',
@@ -414,6 +421,7 @@ async function capture({
     randomSeed: randomSeed,
     recordParityArtifact: false,
     browserSession: session,
+    extraParams,
   });
   if (!result.success || !result.screenshot) {
     const message = result.error ?? 'no screenshot';
@@ -505,6 +513,7 @@ async function analysePreset({
           randomSeed: options.randomSeed,
           outputDir: options.captureDir,
           session: sessions[backend],
+          extraParams: options.extraParams,
         })),
       );
     }
@@ -670,8 +679,17 @@ function parseArgs(argv: string[] = process.argv.slice(2)) {
     return raw !== undefined && Number.isFinite(parsed) ? parsed : fallback;
   };
   const presets: string[] = [];
+  const extraParams: Record<string, string> = {};
   argv.forEach((token, index) => {
-    if (token === '--preset' && argv[index + 1]) presets.push(argv[index + 1]);
+    const next = argv[index + 1];
+    if (token === '--preset' && next) presets.push(next);
+    if (token === '--query' && next) {
+      const separator = next.indexOf('=');
+      if (separator <= 0) {
+        throw new Error(`--query expects key=value, got "${next}"`);
+      }
+      extraParams[next.slice(0, separator)] = next.slice(separator + 1);
+    }
   });
   const outputDir = value('output') ?? './screenshots/backend-diff';
   return {
@@ -688,6 +706,7 @@ function parseArgs(argv: string[] = process.argv.slice(2)) {
     failThreshold: numeric('fail-on-suspects', Number.POSITIVE_INFINITY),
     outputDir,
     captureDir: path.join(outputDir, 'captures'),
+    extraParams,
     diffImage: flag('diff-image'),
     keepCaptures: flag('keep-captures'),
     json: flag('json'),

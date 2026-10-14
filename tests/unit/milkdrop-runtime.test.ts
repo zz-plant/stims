@@ -1,10 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { DEFAULT_QUALITY_PRESETS } from '../../src/js/core/settings-panel.ts';
+import { createRendererQualityManager } from '../../src/js/core/toy-quality.ts';
 import {
   applyMilkdropInteractionResponse,
   getMilkdropDetailScale,
 } from '../../src/js/milkdrop/runtime/interaction-response.ts';
 import { __milkdropRuntimeTestUtils } from '../../src/js/milkdrop/runtime/test-utils.ts';
+import { createMilkdropExperience } from '../../src/js/milkdrop/runtime.ts';
 import { createMilkdropSignalTracker } from '../../src/js/milkdrop/runtime-signals.ts';
 import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
@@ -520,5 +523,36 @@ describe('milkdrop runtime GPU descriptor interaction response', () => {
     expect(adjusted.interaction?.waves.scale).toBeGreaterThan(1);
     expect(adjusted.interaction?.mesh.alphaMultiplier).toBeGreaterThan(1);
     expect(adjusted.interaction?.motionVectors.rotation).toBeGreaterThan(0);
+  });
+});
+
+describe('milkdrop runtime status channel', () => {
+  test('hands onStatus every status, including a repeat and one the next overwrites', () => {
+    const storageKey = 'milkdrop-runtime-status-test-quality';
+    const heard: string[] = [];
+    const experience = createMilkdropExperience({
+      quality: createRendererQualityManager({
+        presets: DEFAULT_QUALITY_PRESETS,
+        storageKey,
+        getRuntime: () => null,
+      }),
+      qualityControl: { presets: DEFAULT_QUALITY_PRESETS, storageKey },
+      onStatus: (message) => heard.push(message),
+    });
+    try {
+      experience.setStatus('Imported 2 presets.');
+      experience.setStatus('Imported 2 presets.');
+      experience.setStatus('Loaded Royal Mashup.');
+
+      // The snapshot holds only the latest status; the channel holds all.
+      expect(experience.getStateSnapshot().status).toBe('Loaded Royal Mashup.');
+      expect(heard).toEqual([
+        'Imported 2 presets.',
+        'Imported 2 presets.',
+        'Loaded Royal Mashup.',
+      ]);
+    } finally {
+      experience.dispose();
+    }
   });
 });

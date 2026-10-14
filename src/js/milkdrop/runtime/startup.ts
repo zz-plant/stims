@@ -1,3 +1,34 @@
+/**
+ * Waits out startup for an edit that arrived while it was pending, and says
+ * whether the edit still has the preset it was meant for.
+ *
+ * Startup's own pick lands during that wait, and so can the shell routing the
+ * same deep-linked preset; both are where the edit was headed. A request for
+ * any other preset (the visitor, the route, an agent) is newer than the edit
+ * and keeps the stage. Applying the edit after it saved the edit as a draft of
+ * a preset it was never written for.
+ */
+export async function awaitStartupForEdit({
+  navigation,
+  startupSettled,
+  getStartupPresetId,
+}: {
+  navigation: {
+    getLoadRequestRevision: () => number;
+    getLatestRequestedPresetId: () => string | null;
+  };
+  startupSettled: Promise<void>;
+  /** The preset startup resolved to, once it has; null before or without one. */
+  getStartupPresetId: () => string | null;
+}): Promise<boolean> {
+  const requestedAt = navigation.getLoadRequestRevision();
+  await startupSettled;
+  return (
+    navigation.getLoadRequestRevision() === requestedAt ||
+    navigation.getLatestRequestedPresetId() === getStartupPresetId()
+  );
+}
+
 export function shouldDeferStartupPresetFallback({
   pendingPresetId,
   activePresetId,

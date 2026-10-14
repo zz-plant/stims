@@ -1,28 +1,22 @@
 /**
- * Putting the visuals on a screen that isn't this one — a projector, a second
- * monitor, or a Chromecast — while the controls stay on the operator's laptop.
+ * Putting the visuals on a screen that isn't this one.
  *
- * Two different browser capabilities cover the two physical situations, and
- * neither is a superset of the other:
+ * Two browser capabilities, one per physical situation:
  *
  *  - **Presentation API** (`PresentationRequest`) is Chrome's cast path. The
  *    receiver is a separate device that loads a URL over the network, so the
- *    URL has to be one that can render the show on its own.
- *  - **Window Management API** (`getScreenDetails`) covers a monitor physically
- *    attached to this machine: it reports where each screen is in the virtual
- *    desktop, which is the only way to open a window ON a specific one.
- *
- * Both are handed the same receiver URL. That URL is a sync-session ("watch
- * party") link, which already exists and already makes a second browser follow
- * this one's preset changes live — so the external display is just another
- * viewer, and no new sync transport had to be invented for it.
- *
- * Picture-in-picture is deliberately NOT part of this. PiP mirrors the canvas
- * as a video stream into a floating window on the SAME screen; these put an
- * independently-rendering copy on a DIFFERENT one.
+ *    URL has to render the show on its own: a sync-session ("watch party")
+ *    link, which follows this tab's preset changes. It is a second copy with
+ *    no audio input of its own, which a cast cannot avoid.
+ *  - **Window Management API** (`getScreenDetails`) covers a monitor or
+ *    projector attached to this machine. It reports where each screen sits in
+ *    the virtual desktop, which is the only way to put a window on one. The
+ *    window placed there is the projector mirror
+ *    (projector-window-service.ts), not a second session, because an
+ *    attached screen can show this tab's own pixels.
  */
 
-export type ExternalDisplayMode = 'cast' | 'window';
+export type ExternalDisplayMode = 'cast';
 
 export type ExternalDisplayState = {
   mode: ExternalDisplayMode | null;
@@ -65,17 +59,6 @@ type ScreenDetails = {
 let state: ExternalDisplayState = { mode: null, target: null, error: null };
 const listeners = new Set<Listener>();
 let connection: PresentationConnectionLike | null = null;
-let externalWindow: Window | null = null;
-/**
- * The id of the 1Hz "did they close the popup?" poll.
- *
- * Module scope, because the poll cannot cancel itself on the stop path: it
- * exits only when it observes `externalWindow.closed`, and
- * `stopExternalDisplay` clears that reference first, so the condition could
- * never become true again and every send-then-stop cycle left another timer
- * running for the life of the page.
- */
-let externalWindowPoll: number | null = null;
 
 function setState(next: Partial<ExternalDisplayState>): void {
   state = { ...state, ...next };
@@ -162,17 +145,27 @@ function handleCastEnded(): void {
   }
 }
 
+export type SecondScreen = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  label: string;
+};
+
 /**
- * Opens the receiver fullscreen on a screen that isn't the one holding the
- * controls. Requires the window-management permission, which Chrome prompts
- * for on the first getScreenDetails call.
+ * The work area of a screen other than the one holding the controls, for
+ * placing the projector. Asks for the window-management permission on first
+ * use. Never throws: each refusal comes back as a sentence to show.
  */
-export async function openOnSecondScreen(receiverUrl: string): Promise<void> {
+export async function findSecondScreen(): Promise<
+  { ok: true; screen: SecondScreen } | { ok: false; error: string }
+> {
   if (!isSecondScreenSupported()) {
-    setState({
-      error: 'This browser cannot place a window on a second screen.',
-    });
-    throw new Error('Window Management API unavailable');
+    return {
+      ok: false,
+      error: 'This browser cannot place a window on another screen.',
+    };
   }
   const getScreenDetails = (
     window as unknown as { getScreenDetails: () => Promise<ScreenDetails> }
@@ -182,77 +175,26 @@ export async function openOnSecondScreen(receiverUrl: string): Promise<void> {
   try {
     details = await getScreenDetails.call(window);
   } catch {
-    setState({
+    return {
+      ok: false,
       error:
         'Screen access was blocked. Allow it in the browser’s site settings.',
-    });
-    throw new Error('window-management permission denied');
+    };
   }
 
   const target =
     details.screens.find((screen) => screen !== details.currentScreen) ?? null;
-  if (!target) {
-    setState({ error: 'No second screen was found.' });
-    throw new Error('no external screen');
-  }
-
-  // Position by the target screen's own coordinates in the virtual desktop —
-  // that placement is the entire reason this API is needed over window.open.
-  const features = [
-    `left=${target.availLeft}`,
-    `top=${target.availTop}`,
-    `width=${target.availWidth}`,
-    `height=${target.availHeight}`,
-    'menubar=no',
-    'toolbar=no',
-    'location=no',
-    'status=no',
-  ].join(',');
-
-  const opened = window.open(receiverUrl, 'stims-external-display', features);
-  if (!opened) {
-    setState({ error: 'The popup was blocked. Allow popups for this site.' });
-    throw new Error('popup blocked');
-  }
-  externalWindow = opened;
-  // A closed window leaves no event on the opener, so poll — cheaply, and
-  // only while one is open.
-  stopExternalWindowPoll();
-  externalWindowPoll = window.setInterval(() => {
-    if (externalWindow?.closed) {
-      stopExternalWindowPoll();
-      externalWindow = null;
-      if (state.mode === 'window') setState({ mode: null, target: null });
-    }
-  }, 1000);
-
-  setState({
-    mode: 'window',
-    target: target.label || 'Second screen',
-    error: null,
-  });
-}
-
-/**
- * Prefers a physically attached second screen and falls back to casting,
- * because a wired projector is both lower latency and higher fidelity than a
- * Chromecast re-rendering the show over the network.
- */
-export async function presentToExternalDisplay(
-  receiverUrl: string,
-): Promise<void> {
-  if (isSecondScreenSupported() && hasMultipleScreens()) {
-    await openOnSecondScreen(receiverUrl);
-    return;
-  }
-  await startCast(receiverUrl);
-}
-
-function stopExternalWindowPoll(): void {
-  if (externalWindowPoll !== null) {
-    window.clearInterval(externalWindowPoll);
-    externalWindowPoll = null;
-  }
+  if (!target) return { ok: false, error: 'No second screen was found.' };
+  return {
+    ok: true,
+    screen: {
+      left: target.availLeft,
+      top: target.availTop,
+      width: target.availWidth,
+      height: target.availHeight,
+      label: target.label || 'the second screen',
+    },
+  };
 }
 
 export function stopExternalDisplay(): void {
@@ -264,19 +206,12 @@ export function stopExternalDisplay(): void {
     }
     connection = null;
   }
-  stopExternalWindowPoll();
-  if (externalWindow && !externalWindow.closed) {
-    externalWindow.close();
-  }
-  externalWindow = null;
   setState({ mode: null, target: null, error: null });
 }
 
 export const __externalDisplayTestUtils = {
   reset(): void {
     connection = null;
-    stopExternalWindowPoll();
-    externalWindow = null;
     state = { mode: null, target: null, error: null };
     listeners.clear();
   },

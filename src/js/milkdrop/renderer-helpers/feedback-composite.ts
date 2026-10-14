@@ -272,6 +272,7 @@ export function buildFeedbackCompositeState({
     signalEnergy: frameState.signals.weightedEnergy,
     signalTime: frameState.signals.time,
     signalFrame: frameState.signals.frame,
+    signalProgress: frameState.progress ?? 0,
     signalFps: frameState.signals.fps,
     aspect: frameState.signals.aspect ?? 1,
     decay: frameState.post.decay,

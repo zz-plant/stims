@@ -169,6 +169,13 @@ export type PlayToyOptions = {
    * normal runs; set it when two captures have to be comparable.
    */
   randomSeed?: number;
+  /**
+   * Extra query params for the page URL — a rollout flag such as
+   * `milkdrop-webgpu-feedback: '0'`. Every param the builder sets itself
+   * (`agent`, `renderer`, `preset`, …) is applied after these, so a capture
+   * cannot be moved off the backend it was asked for.
+   */
+  extraParams?: Record<string, string>;
 };
 
 type NormalizedPlayToyOptions = PlayToyOptions & {
@@ -201,11 +208,6 @@ const DEFAULT_OPTIONS = {
 };
 const SHELL_DEMO_SELECTOR = '[data-demo-audio-btn]';
 const CONTROL_DEMO_SELECTOR = '#use-demo-audio';
-const AUDIO_DEMO_LABEL = 'Start with demo audio';
-const PREFLIGHT_CONTINUE_LABEL = 'Choose audio';
-const PREFLIGHT_DEMO_LABEL = 'Start with demo';
-const PREFLIGHT_LIGHTER_LABEL = 'Enable lighter visual mode';
-const WEBGL_FALLBACK_LABEL = 'Continue with WebGL';
 const COMPATIBILITY_RENDERER_ARGS = [
   '--use-angle=swiftshader',
   '--use-gl=angle',
@@ -447,13 +449,10 @@ export function isPlayToyPresetReady({
 export function didPlayToyRendererFallback({
   requestedProfile,
   actualBackend,
-  explicitFallback,
 }: {
   requestedProfile: PlayToyRendererProfile;
   actualBackend: 'webgl' | 'webgpu' | null;
-  explicitFallback: boolean;
 }) {
-  if (explicitFallback) return true;
   if (actualBackend === null) return false;
   const requestedBackend = requestedProfile === 'webgpu' ? 'webgpu' : 'webgl';
   return actualBackend !== requestedBackend;
@@ -483,6 +482,7 @@ export function buildPlayToyUrl({
   catalogMode = 'bundled',
   lockedQualityStep,
   nativeResolution = false,
+  extraParams = {},
 }: {
   port: number;
   slug: string;
@@ -492,10 +492,10 @@ export function buildPlayToyUrl({
   catalogMode?: PlayToyCatalogMode;
   lockedQualityStep?: number | null;
   nativeResolution?: boolean;
+  extraParams?: Record<string, string>;
 }) {
-  const params = new URLSearchParams({
-    agent: 'true',
-  });
+  const params = new URLSearchParams(extraParams);
+  params.set('agent', 'true');
   const routePath = slug === 'milkdrop' ? '/' : '/milkdrop/';
   if (slug !== 'milkdrop') {
     params.set('experience', slug);
@@ -642,31 +642,6 @@ async function clickVisibleButton(page: Page, selector: string) {
   }
 }
 
-async function clickVisibleButtonByText(page: Page, label: string) {
-  try {
-    return await page.evaluate((buttonLabel) => {
-      const buttons = [...document.querySelectorAll('button')];
-      const target = buttons.find((element) => {
-        if (!(element instanceof HTMLElement)) return false;
-        const style = window.getComputedStyle(element);
-        const rect = element.getBoundingClientRect();
-        const isVisible =
-          style.display !== 'none' &&
-          style.visibility !== 'hidden' &&
-          rect.width > 0 &&
-          rect.height > 0;
-        return isVisible && element.textContent?.trim() === buttonLabel;
-      });
-
-      if (!(target instanceof HTMLElement)) return false;
-      target.click();
-      return true;
-    }, label);
-  } catch (_error) {
-    return false;
-  }
-}
-
 async function clickTrustedVisibleButton(page: Page, selector: string) {
   try {
     const matches = page.locator(selector);
@@ -801,8 +776,7 @@ export async function requestDemoAudio(page: Page) {
 
   const clickedVisibleDemoButton =
     (await clickVisibleButton(page, SHELL_DEMO_SELECTOR)) ||
-    (await clickVisibleButton(page, CONTROL_DEMO_SELECTOR)) ||
-    (await clickVisibleButtonByText(page, AUDIO_DEMO_LABEL));
+    (await clickVisibleButton(page, CONTROL_DEMO_SELECTOR));
   if (clickedVisibleDemoButton) {
     return true;
   }
@@ -1281,12 +1255,6 @@ export function shouldUseCanvasBitmapCapture({
   );
 }
 
-/** Where the visualizer canvas lives, in the order worth trying. */
-const ACTIVE_CANVAS_SELECTORS = [
-  '#active-toy-container canvas',
-  'canvas',
-] as const;
-
 /** Marks the canvas so the isolation CSS and the element screenshot agree. */
 const CAPTURE_TARGET_ATTRIBUTE = 'data-stims-capture-target';
 
@@ -1450,16 +1418,9 @@ export async function captureActiveToyCanvas(
   screenshotPath: string,
 ): Promise<boolean> {
   const canvasInfo = await page
-    .evaluate((selectors) => {
-      let canvas: HTMLCanvasElement | null = null;
-      for (const selector of selectors) {
-        const found = document.querySelector<HTMLCanvasElement>(selector);
-        if (found instanceof HTMLCanvasElement) {
-          canvas = found;
-          break;
-        }
-      }
-      if (!canvas) {
+    .evaluate(() => {
+      const canvas = document.querySelector('canvas');
+      if (!(canvas instanceof HTMLCanvasElement)) {
         return null;
       }
 
@@ -1483,7 +1444,7 @@ export async function captureActiveToyCanvas(
             ? ('webgpu' as const)
             : ('webgl' as const),
       };
-    }, ACTIVE_CANVAS_SELECTORS)
+    })
     .catch(() => null);
 
   if (!canvasInfo) {
@@ -1597,7 +1558,6 @@ export async function captureActiveToyCanvas(
 
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
   const normalizedOptions = normalizePlayToyOptions(options);
-  const allowWebglFallback = normalizedOptions.rendererProfile !== 'webgpu';
 
   // Ensure output directory exists
   ensureOutputDir(normalizedOptions.outputDir);
@@ -1606,7 +1566,6 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
   let context: BrowserContext | undefined;
   let page: Page | undefined;
   const consoleErrors: string[] = [];
-  let fallbackOccurred = false;
   const ownsBrowser = !normalizedOptions.browserSession;
 
   try {
@@ -1680,6 +1639,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       catalogMode: normalizedOptions.catalogMode,
       lockedQualityStep: normalizedOptions.lockedQualityStep,
       nativeResolution: normalizedOptions.nativeResolution,
+      extraParams: options.extraParams,
     });
     console.log(`Navigating to ${url}...`);
 
@@ -1696,35 +1656,20 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       }
     }
 
-    if (await clickVisibleButtonByText(page, PREFLIGHT_LIGHTER_LABEL)) {
-      console.log('Using lighter visual mode from capability preflight...');
-    }
-    if (await clickVisibleButtonByText(page, PREFLIGHT_DEMO_LABEL)) {
-      console.log('Starting demo directly from capability preflight...');
-    } else if (
-      await clickVisibleButton(page, '[data-preflight-primary-action="true"]')
-    ) {
-      console.log('Advancing through capability preflight...');
-    } else if (await clickVisibleButtonByText(page, PREFLIGHT_CONTINUE_LABEL)) {
-      console.log('Advancing through capability preflight...');
-    }
-
     // Wait for either an already-loaded toy or the shell audio controls
     await page.waitForFunction(
       () =>
         document.body.dataset.toyLoaded === 'true' ||
         document.querySelector('.active-toy-status') ||
         (() => {
-          const canvas =
-            document.querySelector('#active-toy-container canvas') ??
-            document.querySelector('canvas');
+          const canvas = document.querySelector('canvas');
           if (!(canvas instanceof HTMLCanvasElement)) return false;
           const rect = canvas.getBoundingClientRect();
           return rect.width > 0 && rect.height > 0;
         })() ||
         [
           ...document.querySelectorAll(
-            '[data-demo-audio-btn], #use-demo-audio, [data-mic-audio-btn], #start-audio-btn',
+            '[data-demo-audio-btn], #use-demo-audio, [data-mic-audio-btn]',
           ),
         ].some((element) => {
           if (!(element instanceof HTMLElement)) return false;
@@ -1773,9 +1718,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
         document.body.dataset.toyLoaded === 'true' ||
         document.querySelector('.active-toy-status') ||
         (() => {
-          const canvas =
-            document.querySelector('#active-toy-container canvas') ??
-            document.querySelector('canvas');
+          const canvas = document.querySelector('canvas');
           if (!(canvas instanceof HTMLCanvasElement)) return false;
           const rect = canvas.getBoundingClientRect();
           return rect.width > 0 && rect.height > 0;
@@ -1804,41 +1747,10 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       };
     }
 
-    const toyLoadedAfterPreflight = await page.evaluate(
+    const toyLoadedAfterAudioRequest = await page.evaluate(
       () => document.body.dataset.toyLoaded === 'true',
     );
-    if (!toyLoadedAfterPreflight) {
-      const webglFallbackVisible = await page
-        .evaluate((label) => {
-          return [...document.querySelectorAll('button')].some((element) => {
-            if (!(element instanceof HTMLElement)) return false;
-            const style = window.getComputedStyle(element);
-            const rect = element.getBoundingClientRect();
-            const isVisible =
-              style.display !== 'none' &&
-              style.visibility !== 'hidden' &&
-              rect.width > 0 &&
-              rect.height > 0;
-            return isVisible && element.textContent?.trim() === label;
-          });
-        }, WEBGL_FALLBACK_LABEL)
-        .catch(() => false);
-
-      if (!allowWebglFallback && webglFallbackVisible) {
-        fallbackOccurred = true;
-        throw new Error(
-          'MilkDrop requested WebGL fallback while the capture runner required a WebGPU-certified session.',
-        );
-      }
-
-      if (
-        allowWebglFallback &&
-        (await clickVisibleButtonByText(page, WEBGL_FALLBACK_LABEL))
-      ) {
-        console.log('Continuing with WebGL fallback...');
-        fallbackOccurred = true;
-      }
-
+    if (!toyLoadedAfterAudioRequest) {
       const demoAudioStillInactive = shouldRequestDemoAudio({
         demoRequestedByRoute,
         audioActive: await isAudioActive(page),
@@ -1861,9 +1773,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
         document.body.dataset.toyLoaded === 'true' ||
         document.querySelector('.active-toy-status') ||
         (() => {
-          const canvas =
-            document.querySelector('#active-toy-container canvas') ??
-            document.querySelector('canvas');
+          const canvas = document.querySelector('canvas');
           if (!(canvas instanceof HTMLCanvasElement)) return false;
           const rect = canvas.getBoundingClientRect();
           return rect.width > 0 && rect.height > 0;
@@ -2116,10 +2026,9 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
               warmupMs: normalizedOptions.perfCapture.warmupMs,
               actualBackend,
               fallbackOccurred:
-                fallbackOccurred ||
-                (!samplerInstalled &&
-                  actualBackend !== null &&
-                  actualBackend !== 'webgpu'),
+                !samplerInstalled &&
+                actualBackend !== null &&
+                actualBackend !== 'webgpu',
               runtimePerformance: perfCapture?.livePerformance ?? null,
               runtimeAdaptiveQuality: perfCapture?.liveAdaptiveQuality ?? null,
             })
@@ -2133,7 +2042,6 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       fallbackOccurred: didPlayToyRendererFallback({
         requestedProfile: normalizedOptions.rendererProfile,
         actualBackend,
-        explicitFallback: fallbackOccurred,
       }),
       performance: performance ?? undefined,
     };
@@ -2265,7 +2173,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
               durationMs: normalizedOptions.duration,
               warmupMs: normalizedOptions.perfCapture.warmupMs,
               actualBackend: await getActiveRenderBackend(page),
-              fallbackOccurred,
+              fallbackOccurred: false,
               runtimePerformance: perfCapture?.livePerformance ?? null,
               runtimeAdaptiveQuality: perfCapture?.liveAdaptiveQuality ?? null,
             }) ?? undefined;
@@ -2285,7 +2193,6 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       success: false,
       error: error instanceof Error ? error.message : String(error),
       consoleErrors: consoleErrors.length > 0 ? consoleErrors : undefined,
-      fallbackOccurred,
       performance,
     };
   }

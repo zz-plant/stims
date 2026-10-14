@@ -1,9 +1,9 @@
 [preset00]
-// A ripple: displace the sample coordinate by a sine of distance from
-// center. This is per-pixel radial displacement written in GLSL instead
-// of EEL — same idea as Track 4's rings, running on the GPU per pixel.
+// A ripple: read the previous frame at a coordinate pushed along a sine of
+// distance from center. Same idea as Track 4's rings, written in GLSL and
+// run per pixel on the GPU. The shader owns the fade, so fDecay is 1.
 fRating=5
-fDecay=0.98
+fDecay=1
 fWaveAlpha=1.2
 fWaveScale=1
 nWaveMode=0
@@ -32,4 +32,5 @@ vec2 center = uv - vec2(0.5, 0.5);
 float dist = length(center);
 float ripple = 0.01 * sin(dist * 40.0 - time * 2.0);
 vec2 dir = center / (dist + 0.0001);
-ret = uv + dir * ripple;
+ret = texture2D(sampler_main, uv + dir * ripple).rgb;
+ret *= 0.98;

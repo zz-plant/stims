@@ -1,5 +1,13 @@
 import { describe, expect, test } from 'bun:test';
-import { Group } from 'three';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import {
+  Group,
+  OrthographicCamera,
+  Scene,
+  type Vector2,
+  WebGLRenderer,
+} from 'three';
+import { createMilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-adapter-factory.ts';
 import { trimGroupChildren } from '../../src/js/milkdrop/renderer-adapter-shared.ts';
 import {
   createParticleFieldObject,
@@ -11,6 +19,7 @@ import {
   shouldEnableParticleField,
 } from '../../src/js/milkdrop/vm/geometry-builder.ts';
 import type { MeshField } from '../../src/js/milkdrop/vm/shared.ts';
+import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 
 function makeSignals(
   overrides: Partial<MilkdropRuntimeSignals> = {},
@@ -328,5 +337,51 @@ describe('milkdrop particle field', () => {
     expect(group.children).toHaveLength(0);
     expect(geometryDisposed).toBe(1);
     expect(materialDisposed).toBe(1);
+  });
+
+  test('stays out of a preset warp shader feedback loop', async () => {
+    // A warp shader owns its fade (fDecay is not applied after it), so an
+    // extra layer drawn into its feedback is never erased. A comp-only
+    // preset still runs the default warp, which decays it.
+    const shaderBlock = (stage: 'warp' | 'comp') =>
+      [
+        `${stage}_1=\`shader_body`,
+        `${stage}_2=\`{`,
+        `${stage}_3=\`ret = tex2D(sampler_main, uv).xyz;`,
+        `${stage}_4=\`}`,
+      ].join('\n');
+    const particleObjects = async (source: string) => {
+      const frameState = createMilkdropVM(
+        compileMilkdropPresetSource(source, { id: 'particle-field' }),
+      ).step(makeSignals());
+      expect(frameState.gpuGeometry.particleField?.enabled).toBe(true);
+      const fakeRenderer = Object.create(
+        WebGLRenderer.prototype,
+      ) as WebGLRenderer;
+      fakeRenderer.getSize = (target: Vector2) => target.set(640, 360);
+      fakeRenderer.setRenderTarget = () => fakeRenderer;
+      fakeRenderer.render = () => fakeRenderer;
+      const adapter = await createMilkdropRendererAdapter({
+        scene: new Scene(),
+        camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+        renderer: fakeRenderer,
+        backend: 'webgl',
+      });
+      adapter.attach();
+      adapter.render({ frameState, blendState: null });
+      return (adapter as unknown as { particleFieldGroup: Group })
+        .particleFieldGroup.children.length;
+    };
+
+    expect(
+      await particleObjects(
+        `title=Comp Only\nwave_a=0.5\n${shaderBlock('comp')}`,
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      await particleObjects(
+        `title=Warp And Comp\nwave_a=0.5\n${shaderBlock('warp')}\n${shaderBlock('comp')}`,
+      ),
+    ).toBe(0);
   });
 });
