@@ -12,6 +12,15 @@
 - The sampler reads the red-flash field from the same pixels and hands it to
   `onGrid` as a second argument; `createFlashController` passes it on.
   `createMainThreadFlashReader` exposes it as `red`.
+- `FlashAnalysis.maxFlashLuminanceDelta`: the luminance swing of the
+  strongest general flash, the largest change that samples covering 25% of a
+  visual field made together over the transitions that paired into flashes.
+  `analyzeRgbaFrames` and `analyzeFlashTimeline` report it;
+  `analyzeFlashEvents` reports it when `FlashCountInput` carries the new
+  `risingSwing` and `fallingSwing`. `flashSwing` computes one transition's.
+- `primingHoldForMeasurement` documents `maxLuminanceDelta` as that figure.
+  It was documented as `luminanceVolatility`, a standard deviation of
+  frame-mean changes that is not the size of any flash.
 
 ## 0.1.1
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   analyzeFlashEvents,
   analyzeFlashTimeline,
+  flashSwing,
   isFlashTransition,
   isRedFlashTransition,
   isSaturatedRed,
@@ -357,6 +358,101 @@ describe('analyzeFlashEvents (per-pixel magnitude, area aggregated after)', () =
     expect(r.totalFlashes).toBe(0);
     expect(r.meanLuminance).toBeCloseTo(0.3, 6);
     expect(r.motionEnergy).toBeCloseTo(0.2, 6);
+  });
+});
+
+describe('maxFlashLuminanceDelta: the swing of the strongest flash', () => {
+  // A 9x9 grid: the visual-field window is 3x3 tiles, and 3 of its 9 tiles
+  // are enough to cover a quarter of it.
+  const COLS = 9;
+  const ROWS = 9;
+  /** A strobe in which tile t swings between `low[t]` and `high[t]`. */
+  function tileStrobe(low: number[], high: number[], frames = 60) {
+    return Array.from({ length: frames }, (_, f) =>
+      Math.floor(f / 3) % 2 === 1 ? high : low,
+    );
+  }
+  const analyse = (frames: number[][]) =>
+    analyzeFlashTimeline({ frames, deltaMs: DELTA_MS, cols: COLS, rows: ROWS });
+  /** Tiles of the top-left visual field, the first `n` of its nine. */
+  const field = (n: number) => [0, 1, 2, 9, 10, 11, 18, 19, 20].slice(0, n);
+
+  it('is the full contrast of a full-field strobe', () => {
+    const result = analyse(tileStrobe(flat(0.1, 81), flat(0.8, 81)));
+    expect(result.exceedsThreshold).toBe(true);
+    expect(result.maxFlashLuminanceDelta).toBeCloseTo(0.7, 3);
+  });
+
+  it('is what a quarter of a visual field swung together, not one bright tile', () => {
+    // Three tiles of one field swing 0.4; a lone tile elsewhere swings 0.9.
+    // The lone tile is a ninth of any field it sits in, so it is not what
+    // made these frames flash, and a clamp sized for it would be 2.25x too
+    // hard.
+    const low = flat(0.05, 81);
+    const high = flat(0.05, 81);
+    for (const t of field(3)) high[t] = 0.45;
+    high[80] = 0.95;
+    const result = analyse(tileStrobe(low, high));
+    expect(result.exceedsThreshold).toBe(true);
+    expect(result.maxFlashLuminanceDelta).toBeCloseTo(0.4, 3);
+  });
+
+  it('is the largest swing that still covers a quarter, when swings differ', () => {
+    // Two tiles swing 0.8 and three more 0.3, all in one field: only the 0.3
+    // swing is shared by a quarter of the field.
+    const low = flat(0.05, 81);
+    const high = flat(0.05, 81);
+    const [a, b, ...rest] = field(5);
+    high[a as number] = 0.85;
+    high[b as number] = 0.85;
+    for (const t of rest) high[t] = 0.35;
+    expect(analyse(tileStrobe(low, high)).maxFlashLuminanceDelta).toBeCloseTo(
+      0.3,
+      3,
+    );
+  });
+
+  it('is not the volatility, which shrinks with the share that flashed', () => {
+    const low = flat(0.05, 81);
+    const high = flat(0.05, 81);
+    for (const t of field(9)) high[t] = 0.85;
+    const result = analyse(tileStrobe(low, high));
+    expect(result.maxFlashLuminanceDelta).toBeCloseTo(0.8, 3);
+    expect(result.luminanceVolatility).toBeLessThan(0.1);
+  });
+
+  it('is 0 for content that never flashes, however large its steps', () => {
+    const step = Array.from({ length: 60 }, (_, f) => flat(f < 30 ? 0 : 1, 81));
+    const result = analyse(step);
+    expect(result.totalFlashes).toBe(0);
+    expect(result.maxFlashLuminanceDelta).toBe(0);
+  });
+
+  it('is 0 from per-pixel counts that carry no swings', () => {
+    const counts = (on: boolean) => new Array(81).fill(on ? 1 : 0);
+    const rising = Array.from({ length: 59 }, (_, f) => counts(f % 2 === 0));
+    const falling = Array.from({ length: 59 }, (_, f) => counts(f % 2 === 1));
+    const result = analyzeFlashEvents({
+      rising,
+      falling,
+      tilePixels: 1,
+      cols: COLS,
+      rows: ROWS,
+      deltaMs: DELTA_MS,
+    });
+    expect(result.exceedsThreshold).toBe(true);
+    expect(result.maxFlashLuminanceDelta).toBe(0);
+  });
+
+  it('flashSwing answers 0 when the qualifying samples cover too little', () => {
+    const swings = new Array(81).fill(0);
+    for (const t of field(2)) swings[t] = 0.9;
+    const tileOf = Array.from({ length: 81 }, (_, t) => t);
+    expect(flashSwing(swings, tileOf, true, 1, COLS, ROWS)).toBe(0);
+    swings[field(3)[2] as number] = 0.9;
+    expect(flashSwing(swings, tileOf, true, 1, COLS, ROWS)).toBeCloseTo(0.9, 3);
+    // Darkening samples are a different direction.
+    expect(flashSwing(swings, tileOf, false, 1, COLS, ROWS)).toBe(0);
   });
 });
 

@@ -33,6 +33,17 @@ describe('toMeasurement', () => {
     });
   });
 
+  test('passes the flash swing through when the report has one', () => {
+    expect(
+      toMeasurement({ ...complete, maxFlashLuminanceDelta: 0.5 })
+        ?.maxFlashLuminanceDelta,
+    ).toBe(0.5);
+    // Older reports lack it; they still merge, without a swing.
+    expect(toMeasurement(complete)).not.toHaveProperty(
+      'maxFlashLuminanceDelta',
+    );
+  });
+
   test('rejects a report with no red-flash channel', () => {
     const { peakRedFlashesPerSecond: _omitted, ...noRed } = complete;
     expect(toMeasurement(noRed)).toBeNull();

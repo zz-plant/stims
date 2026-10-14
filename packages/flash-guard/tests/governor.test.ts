@@ -587,6 +587,48 @@ describe('flash governor', () => {
     expect(gentler).toBeGreaterThan(0);
   });
 
+  test('priming from the measured flash swing lets none of the strobe through while it holds', () => {
+    // The audit's figure is the swing the solved step clamps against, so a
+    // governor primed from it starts where solving would have taken it, and
+    // no flash of the measured strobe gets through. The volatility, which
+    // the profile used to carry, is a standard deviation of frame means:
+    // priming from it under-clamps, and the opening flashes land.
+    //
+    // 1.5 s: the prime keeps the window clear, so once the release delay
+    // has passed it eases off like any other hold, and the reactive path
+    // takes over from there.
+    const raw = strobeTimeline(90, 3);
+    const measured = analyzeFlashTimeline({
+      frames: raw,
+      deltaMs: FRAME_MS,
+      cols: COLS,
+      rows: ROWS,
+    });
+    expect(measured.exceedsThreshold).toBe(true);
+    const flashesPrimedFrom = (maxLuminanceDelta: number) => {
+      const governor = createFlashGovernor();
+      governor.prime(
+        primingHoldForMeasurement({
+          flashRiskLevel: 'high',
+          maxLuminanceDelta,
+        }),
+      );
+      let scale = governor.getState().luminanceScale;
+      let flashes = 0;
+      for (const [index, frame] of raw.entries()) {
+        const decision = governor.sample(index * FRAME_MS, frame, COLS, ROWS, {
+          viewScale: scale,
+        });
+        scale = decision.luminanceScale;
+        if (decision.flashed) flashes += 1;
+      }
+      return flashes;
+    };
+    expect(measured.maxFlashLuminanceDelta).toBeCloseTo(0.93, 3);
+    expect(flashesPrimedFrom(measured.maxFlashLuminanceDelta)).toBe(0);
+    expect(flashesPrimedFrom(measured.luminanceVolatility)).toBeGreaterThan(0);
+  });
+
   test('a high-risk preset with no usable swing figure still primes gently', () => {
     const hold = primingHoldForMeasurement({ flashRiskLevel: 'high' });
     expect(hold).toBeGreaterThan(0);

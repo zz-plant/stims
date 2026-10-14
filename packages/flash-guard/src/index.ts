@@ -13,6 +13,7 @@ export {
   type FlashAnalysis,
   type FlashAnalysisInput,
   type FlashCountInput,
+  flashSwing,
 } from './analysis.ts';
 export {
   createBrightnessFilterApplier,
