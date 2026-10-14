@@ -36,17 +36,13 @@ const REPO_ROOT = path.resolve(import.meta.dirname, '..');
 const APPLY = process.argv.includes('--apply');
 const LIST = process.argv.includes('--list');
 
-// Stylesheets to consider. Module stylesheets are excluded: their class names
-// are rewritten at build time and referenced via the `styles` object, so a
-// source scan cannot see them.
-const SHEETS = [
-  'src/css/base.css',
-  'src/css/index.css',
-  'src/css/app-shell.css',
-  'src/css/chrome.css',
-  'src/css/shell-launch.css',
-  'src/css/shell-theme.css',
-];
+// Every global stylesheet under src/css. Module stylesheets are excluded:
+// their class names are rewritten at build time and referenced via the
+// `styles` object, so a source scan cannot see them.
+const SHEETS = collectStylesheets()
+  .filter((file) => !file.endsWith('.module.css'))
+  .map((file) => path.relative(REPO_ROOT, file))
+  .sort();
 
 // Class families applied by third-party code at runtime.
 const EXTERNAL_PREFIXES = ['cm-', 'ͼ'];
@@ -181,9 +177,6 @@ function main() {
 
   for (const relative of SHEETS) {
     const file = path.join(REPO_ROOT, relative);
-    if (!fs.existsSync(file)) {
-      continue;
-    }
     const css = fs.readFileSync(file, 'utf8');
     const root = postcss.parse(css, { from: file });
 

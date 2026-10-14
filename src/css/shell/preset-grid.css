@@ -216,10 +216,6 @@
   white-space: nowrap;
 }
 
-.stims-preset-grid__spacer {
-  grid-column: 1 / -1;
-}
-
 /* The digit that plays this card from the keyboard (1–9, while Browse is
    open). Same chip language as the variant count and the same corner: the
    top-left belongs to the save star, which sits above everything else on the
