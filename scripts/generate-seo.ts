@@ -344,7 +344,7 @@ export const buildOgSvg = ({
  * no preview frame. Blurred past recognition on purpose — it must read as
  * "Stims", never as a picture of the preset named on top of it.
  */
-export const buildOgBackdropSvg = ({
+const buildOgBackdropSvg = ({
   frameHref = relativeOgFrameHref,
 }: {
   frameHref?: OgFrameHref;
@@ -411,7 +411,7 @@ async function loadInlineFrameHref(rootDir: string): Promise<OgFrameHref> {
  * Mono — the renderer and fonts the dynamic preset card uses at the edge, so
  * the static and dynamic cards set type identically.
  */
-export async function renderOgPng(
+async function renderOgPng(
   svg: string,
   rootDir = repoRoot,
   { width = ogWidth }: { width?: number } = {},

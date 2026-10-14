@@ -11,7 +11,6 @@ import {
   learnPagePath,
 } from '../../scripts/generate-learn-pages.ts';
 import {
-  buildOgBackdropSvg,
   buildOgSvg,
   buildSitemapChunk,
   buildSitemapEntries,
@@ -20,7 +19,6 @@ import {
   layoutOgTiles,
   OG_FRAME_DIR,
   OG_FRAMES,
-  renderOgPng,
 } from '../../scripts/generate-seo.ts';
 
 describe('generate-seo sitemap routes', () => {
@@ -159,10 +157,10 @@ describe('generate-seo social cards', () => {
   });
 
   // WhatsApp and some other scrapers drop preview images much past 300KB.
-  test('rendered cards stay small enough for every unfurler', async () => {
-    const svg = buildOgBackdropSvg({ frameHref: () => '' });
-    const png = await renderOgPng(svg);
-    expect(png.length).toBeLessThan(300 * 1024);
+  // The committed cards are what they fetch, so the budget is read off them:
+  // rendering a card here is seconds of resvg per run, and the blank backdrop
+  // this once rendered came out at 12KB even with quantization removed.
+  test('rendered cards stay small enough for every unfurler', () => {
     for (const file of ['milkdrop', 'default', 'performance']) {
       expect(statSync(`public/og/${file}.png`).size).toBeLessThan(300 * 1024);
     }
