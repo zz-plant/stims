@@ -1,7 +1,7 @@
 {
   "version": 1,
   "presetId": "martin-the-bridge-of-khazad-dum",
-  "capturedAt": "2026-10-14T04:26:52.193Z",
+  "capturedAt": "2026-10-14T04:28:00.831Z",
   "fps": 60,
   "scenario": "full-mix",
   "frameCount": 120,
@@ -2098,6 +2098,10 @@
     },
     {
       "digest": "724543c5",
+      "variableSummary": {
+        "sum": 25357.167621866964,
+        "magnitude": 25359.957375415423
+      },
       "geometry": {
         "mainWave": 280.767481,
         "customWaves": 0,
@@ -2106,6 +2110,10 @@
     },
     {
       "digest": "ac9569c6",
+      "variableSummary": {
+        "sum": 25357.02392982679,
+        "magnitude": 25359.96195666014
+      },
       "geometry": {
         "mainWave": 280.37454,
         "customWaves": 0,
@@ -2114,6 +2122,10 @@
     },
     {
       "digest": "36e2bb11",
+      "variableSummary": {
+        "sum": 25356.8759463032,
+        "magnitude": 25359.962556857554
+      },
       "geometry": {
         "mainWave": 280.544218,
         "customWaves": 0,
@@ -2122,6 +2134,10 @@
     },
     {
       "digest": "3901342c",
+      "variableSummary": {
+        "sum": 25356.72388401901,
+        "magnitude": 25359.95925330138
+      },
       "geometry": {
         "mainWave": 280.272044,
         "customWaves": 0,
@@ -2130,6 +2146,10 @@
     },
     {
       "digest": "c5c96e6e",
+      "variableSummary": {
+        "sum": 25356.567700486583,
+        "magnitude": 25359.951906101847
+      },
       "geometry": {
         "mainWave": 280.115942,
         "customWaves": 0,
@@ -2138,6 +2158,10 @@
     },
     {
       "digest": "4b16d132",
+      "variableSummary": {
+        "sum": 25356.407768461668,
+        "magnitude": 25359.940809052085
+      },
       "geometry": {
         "mainWave": 280.039596,
         "customWaves": 0,
@@ -2146,6 +2170,10 @@
     },
     {
       "digest": "7f194530",
+      "variableSummary": {
+        "sum": 25356.243829759434,
+        "magnitude": 25359.925635520573
+      },
       "geometry": {
         "mainWave": 280.07628,
         "customWaves": 0,
@@ -2154,6 +2182,10 @@
     },
     {
       "digest": "8859d990",
+      "variableSummary": {
+        "sum": 25356.076075694582,
+        "magnitude": 25359.906515078736
+      },
       "geometry": {
         "mainWave": 280.04051,
         "customWaves": 0,
@@ -2162,6 +2194,10 @@
     },
     {
       "digest": "e867eee0",
+      "variableSummary": {
+        "sum": 25355.904529327014,
+        "magnitude": 25359.883413694417
+      },
       "geometry": {
         "mainWave": 279.775453,
         "customWaves": 0,
@@ -2170,6 +2206,10 @@
     },
     {
       "digest": "25763901",
+      "variableSummary": {
+        "sum": 25355.729335476426,
+        "magnitude": 25359.85642255188
+      },
       "geometry": {
         "mainWave": 279.949071,
         "customWaves": 0,
@@ -2178,6 +2218,10 @@
     },
     {
       "digest": "4502d334",
+      "variableSummary": {
+        "sum": 25355.622570535932,
+        "magnitude": 25359.89756712831
+      },
       "geometry": {
         "mainWave": 279.992691,
         "customWaves": 0,
@@ -2186,6 +2230,10 @@
     },
     {
       "digest": "08007618",
+      "variableSummary": {
+        "sum": 25355.516061982536,
+        "magnitude": 25359.938626229054
+      },
       "geometry": {
         "mainWave": 279.954397,
         "customWaves": 0,
@@ -2194,6 +2242,10 @@
     },
     {
       "digest": "dbb8af11",
+      "variableSummary": {
+        "sum": 25355.4102762464,
+        "magnitude": 25359.980019538412
+      },
       "geometry": {
         "mainWave": 279.957308,
         "customWaves": 0,
@@ -2202,6 +2254,10 @@
     },
     {
       "digest": "ce533578",
+      "variableSummary": {
+        "sum": 25355.304539279095,
+        "magnitude": 25360.021027968483
+      },
       "geometry": {
         "mainWave": 279.94385,
         "customWaves": 0,
@@ -2210,6 +2266,10 @@
     },
     {
       "digest": "72ed2f7b",
+      "variableSummary": {
+        "sum": 25359.62504455452,
+        "magnitude": 25364.487801503314
+      },
       "geometry": {
         "mainWave": 279.911187,
         "customWaves": 0,
@@ -2218,6 +2278,10 @@
     },
     {
       "digest": "3439cc2e",
+      "variableSummary": {
+        "sum": 25359.477629147103,
+        "magnitude": 25364.486135162264
+      },
       "geometry": {
         "mainWave": 279.903799,
         "customWaves": 0,
@@ -2226,6 +2290,10 @@
     },
     {
       "digest": "8b3718fd",
+      "variableSummary": {
+        "sum": 25360.566074201604,
+        "magnitude": 25365.720107148845
+      },
       "geometry": {
         "mainWave": 279.810285,
         "customWaves": 0,
@@ -2234,6 +2302,10 @@
     },
     {
       "digest": "bcffa582",
+      "variableSummary": {
+        "sum": 25360.737963117168,
+        "magnitude": 25366.037405586652
+      },
       "geometry": {
         "mainWave": 279.832908,
         "customWaves": 0,
@@ -2242,6 +2314,10 @@
     },
     {
       "digest": "ffda89b3",
+      "variableSummary": {
+        "sum": 25360.394226307904,
+        "magnitude": 25365.838542580223
+      },
       "geometry": {
         "mainWave": 279.741418,
         "customWaves": 0,
@@ -2250,6 +2326,10 @@
     },
     {
       "digest": "857ce995",
+      "variableSummary": {
+        "sum": 25360.230539871183,
+        "magnitude": 25365.81915824955
+      },
       "geometry": {
         "mainWave": 279.751816,
         "customWaves": 0,
@@ -2258,6 +2338,10 @@
     },
     {
       "digest": "b906f72e",
+      "variableSummary": {
+        "sum": 25359.426495418615,
+        "magnitude": 25365.158808677006
+      },
       "geometry": {
         "mainWave": 279.77089,
         "customWaves": 0,
@@ -2266,6 +2350,10 @@
     },
     {
       "digest": "434e8f7d",
+      "variableSummary": {
+        "sum": 25359.536533253206,
+        "magnitude": 25365.41189905883
+      },
       "geometry": {
         "mainWave": 279.78793,
         "customWaves": 0,
@@ -2274,6 +2362,10 @@
     },
     {
       "digest": "2e3188e8",
+      "variableSummary": {
+        "sum": 25359.620589497816,
+        "magnitude": 25365.638330814192
+      },
       "geometry": {
         "mainWave": 279.765848,
         "customWaves": 0,
@@ -2282,6 +2374,10 @@
     },
     {
       "digest": "c0210588",
+      "variableSummary": {
+        "sum": 25358.180625564608,
+        "magnitude": 25364.340031039595
+      },
       "geometry": {
         "mainWave": 279.779966,
         "customWaves": 0,
@@ -2290,6 +2386,10 @@
     },
     {
       "digest": "6e272a7f",
+      "variableSummary": {
+        "sum": 25355.083962315926,
+        "magnitude": 25361.384286658802
+      },
       "geometry": {
         "mainWave": 279.812174,
         "customWaves": 0,
@@ -2298,6 +2398,10 @@
     },
     {
       "digest": "42119653",
+      "variableSummary": {
+        "sum": 25355.03137388004,
+        "magnitude": 25361.47183823029
+      },
       "geometry": {
         "mainWave": 279.807618,
         "customWaves": 0,
@@ -2306,6 +2410,10 @@
     },
     {
       "digest": "1745b8f1",
+      "variableSummary": {
+        "sum": 25354.827530897644,
+        "magnitude": 25361.407323188214
+      },
       "geometry": {
         "mainWave": 279.839043,
         "customWaves": 0,
@@ -2314,6 +2422,10 @@
     },
     {
       "digest": "1b64cb75",
+      "variableSummary": {
+        "sum": 25354.999697613766,
+        "magnitude": 25361.717972930524
+      },
       "geometry": {
         "mainWave": 279.892498,
         "customWaves": 0,
@@ -2322,6 +2434,10 @@
     },
     {
       "digest": "f3afc20e",
+      "variableSummary": {
+        "sum": 25354.323757046743,
+        "magnitude": 25361.17963798592
+      },
       "geometry": {
         "mainWave": 279.744303,
         "customWaves": 0,
@@ -4419,6 +4535,10 @@
     },
     {
       "digest": "a29c094d",
+      "variableSummary": {
+        "sum": 25355.297096501312,
+        "magnitude": 25362.4254282995
+      },
       "geometry": {
         "mainWave": 279.14352,
         "customWaves": 0,
@@ -4427,6 +4547,10 @@
     },
     {
       "digest": "ea93322b",
+      "variableSummary": {
+        "sum": 25354.945413231788,
+        "magnitude": 25362.208527073413
+      },
       "geometry": {
         "mainWave": 279.098351,
         "customWaves": 0,
@@ -4435,6 +4559,10 @@
     },
     {
       "digest": "1eb309b8",
+      "variableSummary": {
+        "sum": 25354.365511741835,
+        "magnitude": 25361.762403840246
+      },
       "geometry": {
         "mainWave": 279.131405,
         "customWaves": 0,
@@ -4443,6 +4571,10 @@
     },
     {
       "digest": "9fb4d7d4",
+      "variableSummary": {
+        "sum": 25353.990315521063,
+        "magnitude": 25361.51995139612
+      },
       "geometry": {
         "mainWave": 279.114971,
         "customWaves": 0,
@@ -4451,6 +4583,10 @@
     },
     {
       "digest": "76a84338",
+      "variableSummary": {
+        "sum": 25353.846679446968,
+        "magnitude": 25361.507994291573
+      },
       "geometry": {
         "mainWave": 279.399229,
         "customWaves": 0,
@@ -4459,6 +4595,10 @@
     },
     {
       "digest": "07e5b050",
+      "variableSummary": {
+        "sum": 25353.691155946493,
+        "magnitude": 25361.48305499703
+      },
       "geometry": {
         "mainWave": 279.328873,
         "customWaves": 0,
@@ -4467,6 +4607,10 @@
     },
     {
       "digest": "4fe813a2",
+      "variableSummary": {
+        "sum": 25353.70262951826,
+        "magnitude": 25361.623988428888
+      },
       "geometry": {
         "mainWave": 279.63066,
         "customWaves": 0,
@@ -4475,6 +4619,10 @@
     },
     {
       "digest": "a4c16093",
+      "variableSummary": {
+        "sum": 25353.45653714938,
+        "magnitude": 25361.50620237107
+      },
       "geometry": {
         "mainWave": 279.633304,
         "customWaves": 0,
@@ -4483,6 +4631,10 @@
     },
     {
       "digest": "93fb6427",
+      "variableSummary": {
+        "sum": 25352.90978131779,
+        "magnitude": 25361.086570481817
+      },
       "geometry": {
         "mainWave": 279.840782,
         "customWaves": 0,
@@ -4491,6 +4643,10 @@
     },
     {
       "digest": "21d6ab2a",
+      "variableSummary": {
+        "sum": 25352.854104212856,
+        "magnitude": 25361.156806519328
+      },
       "geometry": {
         "mainWave": 279.786233,
         "customWaves": 0,
@@ -4499,6 +4655,10 @@
     },
     {
       "digest": "5778eb14",
+      "variableSummary": {
+        "sum": 25352.48255122229,
+        "magnitude": 25360.90992783371
+      },
       "geometry": {
         "mainWave": 279.75235,
         "customWaves": 0,
@@ -4507,6 +4667,10 @@
     },
     {
       "digest": "2569cf07",
+      "variableSummary": {
+        "sum": 25352.00972196602,
+        "magnitude": 25360.560506406135
+      },
       "geometry": {
         "mainWave": 279.816233,
         "customWaves": 0,
@@ -4515,6 +4679,10 @@
     },
     {
       "digest": "b60d5dc3",
+      "variableSummary": {
+        "sum": 25351.790258060322,
+        "magnitude": 25360.46315661821
+      },
       "geometry": {
         "mainWave": 279.89045,
         "customWaves": 0,
@@ -4523,6 +4691,10 @@
     },
     {
       "digest": "1724c340",
+      "variableSummary": {
+        "sum": 25351.47047313934,
+        "magnitude": 25360.264165279066
+      },
       "geometry": {
         "mainWave": 279.843881,
         "customWaves": 0,
@@ -4531,6 +4703,10 @@
     },
     {
       "digest": "46859493",
+      "variableSummary": {
+        "sum": 25367.431186709022,
+        "magnitude": 25376.336209389097
+      },
       "geometry": {
         "mainWave": 279.801703,
         "customWaves": 0,
@@ -4539,6 +4715,10 @@
     },
     {
       "digest": "f0fc5410",
+      "variableSummary": {
+        "sum": 25364.72415302844,
+        "magnitude": 25373.739086484416
+      },
       "geometry": {
         "mainWave": 279.832051,
         "customWaves": 0,
@@ -4547,6 +4727,10 @@
     },
     {
       "digest": "3df0dd41",
+      "variableSummary": {
+        "sum": 25365.1964392097,
+        "magnitude": 25374.319839127354
+      },
       "geometry": {
         "mainWave": 279.815858,
         "customWaves": 0,
@@ -4555,6 +4739,10 @@
     },
     {
       "digest": "72f52542",
+      "variableSummary": {
+        "sum": 25363.327600306893,
+        "magnitude": 25372.55799824223
+      },
       "geometry": {
         "mainWave": 279.785357,
         "customWaves": 0,
@@ -4563,6 +4751,10 @@
     },
     {
       "digest": "4b542fb6",
+      "variableSummary": {
+        "sum": 25363.453918434363,
+        "magnitude": 25372.78982223936
+      },
       "geometry": {
         "mainWave": 279.842992,
         "customWaves": 0,
@@ -4571,6 +4763,10 @@
     },
     {
       "digest": "4c60766c",
+      "variableSummary": {
+        "sum": 25362.05219042635,
+        "magnitude": 25371.49208468049
+      },
       "geometry": {
         "mainWave": 279.786866,
         "customWaves": 0,
@@ -4579,6 +4775,10 @@
     },
     {
       "digest": "e9aed540",
+      "variableSummary": {
+        "sum": 25361.2891658423,
+        "magnitude": 25370.83151228976
+      },
       "geometry": {
         "mainWave": 279.793439,
         "customWaves": 0,
@@ -4587,6 +4787,10 @@
     },
     {
       "digest": "6e61166a",
+      "variableSummary": {
+        "sum": 25360.38377993485,
+        "magnitude": 25370.02701792745
+      },
       "geometry": {
         "mainWave": 279.859796,
         "customWaves": 0,
@@ -4595,6 +4799,10 @@
     },
     {
       "digest": "c937dbf6",
+      "variableSummary": {
+        "sum": 25360.778167116987,
+        "magnitude": 25370.52071406266
+      },
       "geometry": {
         "mainWave": 279.848079,
         "customWaves": 0,
@@ -4603,6 +4811,10 @@
     },
     {
       "digest": "014a0e5a",
+      "variableSummary": {
+        "sum": 25358.811251538154,
+        "magnitude": 25368.651503355035
+      },
       "geometry": {
         "mainWave": 279.913374,
         "customWaves": 0,
@@ -4611,6 +4823,10 @@
     },
     {
       "digest": "b8c09981",
+      "variableSummary": {
+        "sum": 25356.141610236606,
+        "magnitude": 25366.077941812575
+      },
       "geometry": {
         "mainWave": 279.92289,
         "customWaves": 0,
@@ -4619,6 +4835,10 @@
     },
     {
       "digest": "8d03b73f",
+      "variableSummary": {
+        "sum": 25356.2457805461,
+        "magnitude": 25366.2765462038
+      },
       "geometry": {
         "mainWave": 279.911943,
         "customWaves": 0,
@@ -4627,6 +4847,10 @@
     },
     {
       "digest": "463cef12",
+      "variableSummary": {
+        "sum": 25355.5565476063,
+        "magnitude": 25365.680081573308
+      },
       "geometry": {
         "mainWave": 280.029368,
         "customWaves": 0,
@@ -4635,6 +4859,10 @@
     },
     {
       "digest": "be549946",
+      "variableSummary": {
+        "sum": 25354.51756649698,
+        "magnitude": 25364.732183381457
+      },
       "geometry": {
         "mainWave": 280.029631,
         "customWaves": 0,
@@ -4643,6 +4871,10 @@
     },
     {
       "digest": "d135149b",
+      "variableSummary": {
+        "sum": 25354.702275356278,
+        "magnitude": 25365.006270627608
+      },
       "geometry": {
         "mainWave": 279.981616,
         "customWaves": 0,
@@ -6740,6 +6972,10 @@
     },
     {
       "digest": "e5632cb0",
+      "variableSummary": {
+        "sum": 25354.649375700214,
+        "magnitude": 25365.126940031765
+      },
       "geometry": {
         "mainWave": 280.789246,
         "customWaves": 0,
@@ -6748,6 +6984,10 @@
     },
     {
       "digest": "81214655",
+      "variableSummary": {
+        "sum": 25354.089763089218,
+        "magnitude": 25364.651482264842
+      },
       "geometry": {
         "mainWave": 280.564218,
         "customWaves": 0,
@@ -6756,6 +6996,10 @@
     },
     {
       "digest": "01839263",
+      "variableSummary": {
+        "sum": 25353.650853647185,
+        "magnitude": 25364.294951487176
+      },
       "geometry": {
         "mainWave": 280.64298,
         "customWaves": 0,
@@ -6764,6 +7008,10 @@
     },
     {
       "digest": "b1e93a10",
+      "variableSummary": {
+        "sum": 25353.31191678175,
+        "magnitude": 25364.03660044456
+      },
       "geometry": {
         "mainWave": 280.392392,
         "customWaves": 0,
@@ -6772,6 +7020,10 @@
     },
     {
       "digest": "48ffa8bc",
+      "variableSummary": {
+        "sum": 25352.36580780076,
+        "magnitude": 25363.169268292313
+      },
       "geometry": {
         "mainWave": 280.198982,
         "customWaves": 0,
@@ -6780,6 +7032,10 @@
     },
     {
       "digest": "beb33ad0",
+      "variableSummary": {
+        "sum": 25352.42452092077,
+        "magnitude": 25363.304933608113
+      },
       "geometry": {
         "mainWave": 280.038273,
         "customWaves": 0,
@@ -6788,6 +7044,10 @@
     },
     {
       "digest": "6c0e2dd8",
+      "variableSummary": {
+        "sum": 25351.780244486356,
+        "magnitude": 25362.735769615625
+      },
       "geometry": {
         "mainWave": 280.12032,
         "customWaves": 0,
@@ -6796,6 +7056,10 @@
     },
     {
       "digest": "e3515572",
+      "variableSummary": {
+        "sum": 25351.54586994619,
+        "magnitude": 25362.57465316468
+      },
       "geometry": {
         "mainWave": 280.051194,
         "customWaves": 0,
@@ -6804,6 +7068,10 @@
     },
     {
       "digest": "e50c50e0",
+      "variableSummary": {
+        "sum": 25351.353935866096,
+        "magnitude": 25362.454108748276
+      },
       "geometry": {
         "mainWave": 280.014544,
         "customWaves": 0,
@@ -6812,6 +7080,10 @@
     },
     {
       "digest": "f76fcf59",
+      "variableSummary": {
+        "sum": 25350.737382584586,
+        "magnitude": 25361.907063161976
+      },
       "geometry": {
         "mainWave": 280.026233,
         "customWaves": 0,
@@ -6820,6 +7092,10 @@
     },
     {
       "digest": "4592c880",
+      "variableSummary": {
+        "sum": 25350.49352127313,
+        "magnitude": 25361.73081456794
+      },
       "geometry": {
         "mainWave": 280.019856,
         "customWaves": 0,
@@ -6828,6 +7104,10 @@
     },
     {
       "digest": "066da541",
+      "variableSummary": {
+        "sum": 25350.475663795278,
+        "magnitude": 25361.77866235763
+      },
       "geometry": {
         "mainWave": 280.034179,
         "customWaves": 0,
@@ -6836,6 +7116,10 @@
     },
     {
       "digest": "49c46e62",
+      "variableSummary": {
+        "sum": 25350.23521309025,
+        "magnitude": 25361.601997538804
+      },
       "geometry": {
         "mainWave": 280.00706,
         "customWaves": 0,
@@ -6844,6 +7128,10 @@
     },
     {
       "digest": "ebbb5064",
+      "variableSummary": {
+        "sum": 25349.858073329684,
+        "magnitude": 25361.286712895613
+      },
       "geometry": {
         "mainWave": 280.027896,
         "customWaves": 0,
@@ -6852,6 +7140,10 @@
     },
     {
       "digest": "c56754c8",
+      "variableSummary": {
+        "sum": 25364.477727737176,
+        "magnitude": 25375.966533517698
+      },
       "geometry": {
         "mainWave": 280.073519,
         "customWaves": 0,
@@ -6860,6 +7152,10 @@
     },
     {
       "digest": "0e755a9f",
+      "variableSummary": {
+        "sum": 25362.57594304117,
+        "magnitude": 25374.12296319648
+      },
       "geometry": {
         "mainWave": 279.991331,
         "customWaves": 0,
@@ -6868,6 +7164,10 @@
     },
     {
       "digest": "4d125bdc",
+      "variableSummary": {
+        "sum": 25362.811688366903,
+        "magnitude": 25374.41496129116
+      },
       "geometry": {
         "mainWave": 279.969701,
         "customWaves": 0,
@@ -6876,6 +7176,10 @@
     },
     {
       "digest": "09a8446c",
+      "variableSummary": {
+        "sum": 25362.860095271113,
+        "magnitude": 25374.517650148373
+      },
       "geometry": {
         "mainWave": 279.887236,
         "customWaves": 0,
@@ -6884,6 +7188,10 @@
     },
     {
       "digest": "3501d40f",
+      "variableSummary": {
+        "sum": 25360.16263194235,
+        "magnitude": 25371.872489305217
+      },
       "geometry": {
         "mainWave": 279.931265,
         "customWaves": 0,
@@ -6892,6 +7200,10 @@
     },
     {
       "digest": "9143fd10",
+      "variableSummary": {
+        "sum": 25360.752163358553,
+        "magnitude": 25372.512335649157
+      },
       "geometry": {
         "mainWave": 279.952464,
         "customWaves": 0,
@@ -6900,6 +7212,10 @@
     },
     {
       "digest": "2ae77a4b",
+      "variableSummary": {
+        "sum": 25359.31047722352,
+        "magnitude": 25371.11896935684
+      },
       "geometry": {
         "mainWave": 279.876976,
         "customWaves": 0,
@@ -6908,6 +7224,10 @@
     },
     {
       "digest": "35906077",
+      "variableSummary": {
+        "sum": 25359.21278415551,
+        "magnitude": 25371.06759408479
+      },
       "geometry": {
         "mainWave": 279.810734,
         "customWaves": 0,
@@ -6916,6 +7236,10 @@
     },
     {
       "digest": "55bd2d22",
+      "variableSummary": {
+        "sum": 25356.929617971877,
+        "magnitude": 25368.828737256077
+      },
       "geometry": {
         "mainWave": 279.776085,
         "customWaves": 0,
@@ -6924,6 +7248,10 @@
     },
     {
       "digest": "fb610772",
+      "variableSummary": {
+        "sum": 25356.275596572446,
+        "magnitude": 25368.21701094547
+      },
       "geometry": {
         "mainWave": 279.843136,
         "customWaves": 0,
@@ -6932,6 +7260,10 @@
     },
     {
       "digest": "58ce8125",
+      "variableSummary": {
+        "sum": 25353.937717816087,
+        "magnitude": 25365.91940775772
+      },
       "geometry": {
         "mainWave": 279.79484,
         "customWaves": 0,
@@ -6940,6 +7272,10 @@
     },
     {
       "digest": "c72a4a04",
+      "variableSummary": {
+        "sum": 25354.487351625412,
+        "magnitude": 25366.507292933766
+      },
       "geometry": {
         "mainWave": 279.753336,
         "customWaves": 0,
@@ -6948,6 +7284,10 @@
     },
     {
       "digest": "52cb2ad9",
+      "variableSummary": {
+        "sum": 25353.447718200612,
+        "magnitude": 25365.50388256594
+      },
       "geometry": {
         "mainWave": 279.854455,
         "customWaves": 0,
@@ -6956,6 +7296,10 @@
     },
     {
       "digest": "3284627a",
+      "variableSummary": {
+        "sum": 25353.341510805138,
+        "magnitude": 25365.431866384864
+      },
       "geometry": {
         "mainWave": 279.797651,
         "customWaves": 0,
@@ -6964,6 +7308,10 @@
     },
     {
       "digest": "a5a1ae92",
+      "variableSummary": {
+        "sum": 25353.086910583035,
+        "magnitude": 25365.209422577827
+      },
       "geometry": {
         "mainWave": 279.836066,
         "customWaves": 0,
@@ -9061,6 +9409,10 @@
     },
     {
       "digest": "f23dbd89",
+      "variableSummary": {
+        "sum": 25353.315442734274,
+        "magnitude": 25365.49615421977
+      },
       "geometry": {
         "mainWave": 279.14933,
         "customWaves": 0,
@@ -9069,6 +9421,10 @@
     },
     {
       "digest": "d5525860",
+      "variableSummary": {
+        "sum": 25352.44572002481,
+        "magnitude": 25364.652471560094
+      },
       "geometry": {
         "mainWave": 279.404254,
         "customWaves": 0,
@@ -9077,6 +9433,10 @@
     },
     {
       "digest": "068f2656",
+      "variableSummary": {
+        "sum": 25352.56499491256,
+        "magnitude": 25364.795745647574
+      },
       "geometry": {
         "mainWave": 279.383136,
         "customWaves": 0,
@@ -9085,6 +9445,10 @@
     },
     {
       "digest": "f656c8df",
+      "variableSummary": {
+        "sum": 25352.043707441964,
+        "magnitude": 25364.29641646057
+      },
       "geometry": {
         "mainWave": 279.317749,
         "customWaves": 0,
@@ -9093,6 +9457,10 @@
     },
     {
       "digest": "46c25349",
+      "variableSummary": {
+        "sum": 25351.55782301681,
+        "magnitude": 25363.830449915855
+      },
       "geometry": {
         "mainWave": 279.39415,
         "customWaves": 0,
@@ -9101,6 +9469,10 @@
     },
     {
       "digest": "2dc20bcc",
+      "variableSummary": {
+        "sum": 25351.315804494618,
+        "magnitude": 25363.606309962954
+      },
       "geometry": {
         "mainWave": 279.330428,
         "customWaves": 0,
@@ -9109,6 +9481,10 @@
     },
     {
       "digest": "be03466c",
+      "variableSummary": {
+        "sum": 25351.199620780226,
+        "magnitude": 25363.505967177527
+      },
       "geometry": {
         "mainWave": 279.544105,
         "customWaves": 0,
@@ -9117,6 +9493,10 @@
     },
     {
       "digest": "0c4785f5",
+      "variableSummary": {
+        "sum": 25350.999846140126,
+        "magnitude": 25363.31999807529
+      },
       "geometry": {
         "mainWave": 279.498556,
         "customWaves": 0,
@@ -9125,6 +9505,10 @@
     },
     {
       "digest": "d354fed4",
+      "variableSummary": {
+        "sum": 25350.62486336444,
+        "magnitude": 25362.95678827354
+      },
       "geometry": {
         "mainWave": 279.552137,
         "customWaves": 0,
@@ -9133,6 +9517,10 @@
     },
     {
       "digest": "ebabd18d",
+      "variableSummary": {
+        "sum": 25350.00913018574,
+        "magnitude": 25362.35079890921
+      },
       "geometry": {
         "mainWave": 279.686762,
         "customWaves": 0,
@@ -9141,6 +9529,10 @@
     },
     {
       "digest": "4987076b",
+      "variableSummary": {
+        "sum": 25350.105797797274,
+        "magnitude": 25362.455185156243
+      },
       "geometry": {
         "mainWave": 279.655563,
         "customWaves": 0,
@@ -9149,6 +9541,10 @@
     },
     {
       "digest": "3d403413",
+      "variableSummary": {
+        "sum": 25349.740868097328,
+        "magnitude": 25362.095953469023
+      },
       "geometry": {
         "mainWave": 279.734082,
         "customWaves": 0,
@@ -9157,6 +9553,10 @@
     },
     {
       "digest": "ff5489b1",
+      "variableSummary": {
+        "sum": 25349.5710831187,
+        "magnitude": 25361.929851010555
+      },
       "geometry": {
         "mainWave": 279.693212,
         "customWaves": 0,
@@ -9165,6 +9565,10 @@
     },
     {
       "digest": "b0b66459",
+      "variableSummary": {
+        "sum": 25349.445071520833,
+        "magnitude": 25361.805512143375
+      },
       "geometry": {
         "mainWave": 279.704467,
         "customWaves": 0,
@@ -9173,6 +9577,10 @@
     },
     {
       "digest": "77193d65",
+      "variableSummary": {
+        "sum": 25364.243348267497,
+        "magnitude": 25376.60375289787
+      },
       "geometry": {
         "mainWave": 279.744487,
         "customWaves": 0,
@@ -9181,6 +9589,10 @@
     },
     {
       "digest": "044127c9",
+      "variableSummary": {
+        "sum": 25362.505820326078,
+        "magnitude": 25374.864192180314
+      },
       "geometry": {
         "mainWave": 279.795574,
         "customWaves": 0,
@@ -9189,6 +9601,10 @@
     },
     {
       "digest": "89981089",
+      "variableSummary": {
+        "sum": 25362.789384425214,
+        "magnitude": 25375.14373410207
+      },
       "geometry": {
         "mainWave": 279.794178,
         "customWaves": 0,
@@ -9197,6 +9613,10 @@
     },
     {
       "digest": "9266741f",
+      "variableSummary": {
+        "sum": 25361.368798618583,
+        "magnitude": 25373.717144665723
+      },
       "geometry": {
         "mainWave": 279.74825,
         "customWaves": 0,
@@ -9205,6 +9625,10 @@
     },
     {
       "digest": "27428fad",
+      "variableSummary": {
+        "sum": 25363.33608647751,
+        "magnitude": 25375.67645595558
+      },
       "geometry": {
         "mainWave": 279.748243,
         "customWaves": 0,
@@ -9213,6 +9637,10 @@
     },
     {
       "digest": "09a036f4",
+      "variableSummary": {
+        "sum": 25361.11649250643,
+        "magnitude": 25373.446921550938
+      },
       "geometry": {
         "mainWave": 279.822886,
         "customWaves": 0,
@@ -9221,6 +9649,10 @@
     },
     {
       "digest": "522944c5",
+      "variableSummary": {
+        "sum": 25359.601328461686,
+        "magnitude": 25371.91986284229
+      },
       "geometry": {
         "mainWave": 279.819546,
         "customWaves": 0,
@@ -9229,6 +9661,10 @@
     },
     {
       "digest": "954f1356",
+      "variableSummary": {
+        "sum": 25358.928561763852,
+        "magnitude": 25371.233257441243
+      },
       "geometry": {
         "mainWave": 279.802562,
         "customWaves": 0,
@@ -9237,6 +9673,10 @@
     },
     {
       "digest": "7f30a1a4",
+      "variableSummary": {
+        "sum": 25357.677412103145,
+        "magnitude": 25369.96633578304
+      },
       "geometry": {
         "mainWave": 279.778003,
         "customWaves": 0,
@@ -9245,6 +9685,10 @@
     },
     {
       "digest": "32caf71b",
+      "variableSummary": {
+        "sum": 25356.9036497989,
+        "magnitude": 25369.17487948324
+      },
       "geometry": {
         "mainWave": 279.874703,
         "customWaves": 0,
@@ -9253,6 +9697,10 @@
     },
     {
       "digest": "9ba1f7b4",
+      "variableSummary": {
+        "sum": 25355.176684275666,
+        "magnitude": 25367.4283098107
+      },
       "geometry": {
         "mainWave": 279.828948,
         "customWaves": 0,
@@ -9261,6 +9709,10 @@
     },
     {
       "digest": "4e6f5aef",
+      "variableSummary": {
+        "sum": 25353.92863468005,
+        "magnitude": 25366.15875830125
+      },
       "geometry": {
         "mainWave": 279.900332,
         "customWaves": 0,
@@ -9269,6 +9721,10 @@
     },
     {
       "digest": "1d2b5295",
+      "variableSummary": {
+        "sum": 25354.517540906698,
+        "magnitude": 25366.724277780337
+      },
       "geometry": {
         "mainWave": 279.895487,
         "customWaves": 0,
@@ -9277,6 +9733,10 @@
     },
     {
       "digest": "b4918b21",
+      "variableSummary": {
+        "sum": 25353.951723631002,
+        "magnitude": 25366.133202392233
+      },
       "geometry": {
         "mainWave": 279.935366,
         "customWaves": 0,
@@ -9285,6 +9745,10 @@
     },
     {
       "digest": "b8117508",
+      "variableSummary": {
+        "sum": 25353.117008357036,
+        "magnitude": 25365.271371644198
+      },
       "geometry": {
         "mainWave": 280.026811,
         "customWaves": 0,

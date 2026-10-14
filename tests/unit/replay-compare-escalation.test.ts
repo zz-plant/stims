@@ -10,12 +10,16 @@
  *
  * That made the escalation unusable on precisely the frames it exists for, so
  * the gate stayed pinned to whichever machine recorded the traces even after
- * tolerances were added. These cases are cheap and VM-free, so the property
- * is pinned independently of the witness presets.
+ * tolerances were added. Skipping variables there outright went too far the
+ * other way: a zoom that moved for a few frames between checkpoints passed.
+ * Compact frames now carry a variable summary (sum and absolute sum) that
+ * the escalation compares under the same tolerance. These cases are cheap and
+ * VM-free, so the property is pinned independently of the witness presets.
  */
 import { describe, expect, test } from 'bun:test';
 import {
   compareReplay,
+  summarizeVariables,
   type TraceFile,
 } from '../../scripts/preset-lab-replay.ts';
 
@@ -33,14 +37,49 @@ function traceOf(frames: unknown[]): TraceFile {
 }
 
 describe('compareReplay digest-mismatch escalation', () => {
-  test('ignores variables the compact frame never recorded', () => {
-    const trace = traceOf([{ digest: 'aaaaaaaa', geometry }]);
+  test('compares the summary, not the variables the compact frame dropped', () => {
+    const variables = { zoom: 1.05, rot: 0.02 };
+    const trace = traceOf([
+      {
+        digest: 'aaaaaaaa',
+        variableSummary: summarizeVariables(variables),
+        geometry,
+      },
+    ]);
     const replayed = [
       {
         digest: 'bbbbbbbb', // differing libm: the digest cannot match
-        variables: { zoom: 1.05, rot: 0.02 },
+        variables: { zoom: 1.0500000000000003, rot: 0.02 }, // 1 ULP
         geometry,
       },
+    ] as never;
+
+    expect(compareReplay(trace, replayed)).toBeNull();
+  });
+
+  test('catches a variable that moved between checkpoints with geometry unchanged', () => {
+    // The transient case the summary exists for: zoom is off for one
+    // non-checkpoint frame and the wave/shape checksums do not see it.
+    const trace = traceOf([
+      {
+        digest: 'aaaaaaaa',
+        variableSummary: summarizeVariables({ zoom: 1.05, rot: 0.02 }),
+        geometry,
+      },
+    ]);
+    const replayed = [
+      { digest: 'bbbbbbbb', variables: { zoom: 1.06, rot: 0.02 }, geometry },
+    ] as never;
+
+    const divergence = compareReplay(trace, replayed);
+    expect(divergence?.frame).toBe(0);
+    expect(divergence?.details.join('\n')).toContain('variables (sum of all');
+  });
+
+  test('a compact frame recorded before summaries existed falls back to geometry', () => {
+    const trace = traceOf([{ digest: 'aaaaaaaa', geometry }]);
+    const replayed = [
+      { digest: 'bbbbbbbb', variables: { zoom: 1.06 }, geometry },
     ] as never;
 
     expect(compareReplay(trace, replayed)).toBeNull();
