@@ -1,77 +1,44 @@
-# QA plan and automation map
+# QA plan
 
-QA should protect the canonical root workspace on `/`, the `/milkdrop/` compatibility alias, the engine adapter seam, and the MilkDrop runtime contracts that sit beneath the React shell.
+Run this checklist after changing the workspace, startup, routes, audio, settings, or the renderer. Commands, profiles and gates are in [Testing](./TESTING.md); run those first.
 
-For the full testing reference — speed tiers, quality gate commands, per-change checklists, and CI behavior — see [`TESTING.md`](./TESTING.md).
-
-For artifact capture and lifecycle sign-off, use [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md) as the manual baseline and artifact-capture checklist.
-
-## High-value flows
-
-- **Flagship launch and discovery**
-  - What to verify: `/` renders the workspace shell, launch controls remain stable, preset browsing works, and canonical route state stays on `/` after boot.
-  - Automation: `tests/unit/app-shell.test.ts`, `tests/unit/frontend-url-state.test.ts`, and `tests/e2e/agent-integration.test.ts`.
-  - Supporting checks: `bun run dev:check` confirms the Vite dev server wiring without opening a browser.
-- **Shared quality preset persistence**
-  - What to verify: the reusable settings state remembers the user-selected quality preset across workspace reloads and live-session reuse and notifies subscribers exactly when the user changes presets.
-  - Automation: `tests/unit/settings-panel.test.ts` covers subscription notifications plus panel reuse without losing the selected preset.
-- **Microphone readiness and fallbacks**
-  - What to verify: microphone setup reports permission outcomes, offers a demo fallback when blocked, and communicates the actual playing source. Exercise granted, denied, and unavailable cases.
-
-## Quick manual checklist (UI smoke pass)
-
-When you touch the root workspace or session UI, run this short manual pass:
-
-1. **Root boot**: Open `/` and confirm the workspace shell, launch controls, and preset browser render cleanly.
-2. **Canonical state**: Start demo audio from `/` and confirm the route stays on `/`, not `/milkdrop/`.
-3. **Preset deep link**: Open `/?preset=rovastar-parallel-universe&audio=demo` and confirm the requested preset becomes the live session.
-4. **Alias compatibility**: Open `/milkdrop/?preset=eos-glowsticks-v2-03-music&audio=demo` and confirm it lands in the same root workspace state.
-5. **Play → Edit → Share**: Open Edit this visual, apply a visible source change, share it, and reload the resulting link in a fresh tab. Confirm source and visible effect, then check undo or version restoration.
-6. **Keyboard and mobile**: Exercise focus, panel dismissal, and the same flow at a narrow viewport; check stage and controls for overflow.
-7. **Settings persistence**: Change a quality preset or compatibility toggle and verify it persists after reload.
-
-If the change is part of architecture or runtime refactor work, also run the artifact-capture and sign-off flow in [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md).
-
-## How to run the QA automation
-
-Use Bun to match the repository tooling:
-
-- For the standard pre-commit check (guards + typecheck + package checks + unit/compat/corpus tests):
-  ```bash
-  bun run check
-  ```
-
-- For lint, types, and guards without tests:
-  ```bash
-  bun run check:quick
-  ```
-
-- Run the happy-dom suites for the app shell, route contract, settings panel, and microphone flows:
-  ```bash
-  bun run test tests/unit/app-shell.test.ts tests/unit/frontend-url-state.test.ts tests/unit/settings-panel.test.ts
-  ```
-
-- Run the focused workspace/session regression suites:
-  ```bash
-  bun run test tests/unit/frontend-url-state.test.ts tests/e2e/agent-integration.test.ts tests/unit/app-shell-route-sync.test.ts
-  ```
-
-- Run the integration harness (real Chromium — runs in CI for code changes):
-  ```bash
-  bun run test:integration
-  ```
-
-- For a quick server wiring check before pushing UI changes:
-  ```bash
-  bun run dev:check
-  ```
-
-## Agent-friendly QA shortcut
-
-When you want a fast, reproducible QA pass without browsing the docs, run the full
-quality gate and then the focused QA suite:
+## Before the manual pass
 
 ```bash
 bun run check
-bun run test tests/unit/frontend-url-state.test.ts tests/e2e/agent-integration.test.ts
+bun run test:integration   # real Chromium: boot, routes, audio, renderer
 ```
+
+`tests/e2e/agent-integration.test.ts` is the integration test. For a narrower loop on the shell and its URL contract, run `tests/unit/app-shell.test.ts`, `tests/unit/app-shell-route-sync.test.ts`, `tests/unit/frontend-url-state.test.ts` and `tests/unit/settings-panel.test.ts` through `bun run test`.
+
+## Manual checklist
+
+Run it on `bun run dev` at `http://localhost:5173/?agent=true`, with demo audio unless the change is about another input.
+
+1. **Boot**: open `/`. The workspace, launch controls and preset browser render.
+2. **Demo audio**: start demo audio. The visuals respond without a reload and the address stays on `/`.
+3. **Preset link**: open `/?preset=rovastar-parallel-universe&audio=demo`. That preset, not a default, is the one playing.
+4. **Old alias**: open `/milkdrop/?preset=eos-glowsticks-v2-03-music&audio=demo`. It redirects to `/` with the same preset and audio.
+5. **Play → Edit → Share**: open the editor, apply a visible change, share, and open the link in a fresh tab. The source and the visible effect both arrive. Undo the edit, then restore an earlier version from the editor's History tab.
+6. **Settings**: while a preset plays, switch the quality preset to Battery saver, then to Hi-fi visuals. The picture changes and audio keeps playing without a reload. Reload and confirm the choice persisted.
+7. **Keyboard and narrow screens**: Tab through the controls, close panels with Esc, and open the shortcut list with `?`. Repeat steps 1–5 at phone width and check the stage and controls for overflow.
+8. **Renderer**: if the change touches renderer selection or fallback, repeat steps 1–3 with `?renderer=webgl` and in a browser that runs WebGPU.
+9. **Stop**: choose "Stop audio and go back to start" from the dock's audio menu. The start page returns and nothing keeps playing.
+
+## Before a release
+
+Repeat steps 1–5 on the production build (`bun run build`, then `bun run preview` at `http://localhost:4173/`) and on the branch's Workers Builds preview URL, which also checks CDN caching and hashed asset paths. Use one real input there, a microphone or tab capture, to exercise permissions.
+
+## Record the run
+
+Put this in the PR description:
+
+```md
+Manual QA
+- Date / commit:
+- Browser, OS, backend (WebGPU or WebGL):
+- Steps run, with pass/fail notes:
+- Steps skipped, and why:
+```
+
+A skipped step is unverified, not passed.

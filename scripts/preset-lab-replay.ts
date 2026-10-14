@@ -426,6 +426,8 @@ async function runGpuTrace(
           // Dev-server-relative specifiers, kept dynamic so the CLI's own
           // typecheck doesn't try to resolve them as Node modules.
           const modulePath = (name: string) => `/src/js/milkdrop/${name}.ts`;
+          // The compiler moved into the toolchain package (#1387).
+          const compilerPath = '/packages/milkdrop-toolchain/src/compiler.ts';
           const [
             compilerModule,
             vmModule,
@@ -433,7 +435,7 @@ async function runGpuTrace(
             captureModule,
             flagsModule,
           ] = await Promise.all([
-            import(modulePath('compiler')),
+            import(compilerPath),
             import(modulePath('vm')),
             import(modulePath('runtime-signals')),
             import(modulePath('trace-capture')),

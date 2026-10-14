@@ -3,9 +3,9 @@
  *
  * The move from `assets/**` to `src/**` left 353 dangling references across
  * docs, agent skills, CODEOWNERS, and the labeler config. Docs that lie are
- * worse than missing docs — agents follow the routing tables in
- * `.claude/CLAUDE.md` straight into them — and CODEOWNERS globs that match
- * nothing silently disable review requirements.
+ * worse than missing docs — agents follow the paths in `AGENTS.md` and the
+ * skills straight into them — and CODEOWNERS globs that match nothing
+ * silently disable review requirements.
  *
  * Historical records are exempt: `docs/archive/`, plus dated audits, critiques
  * and assessments. Those describe what a file tree looked like when someone

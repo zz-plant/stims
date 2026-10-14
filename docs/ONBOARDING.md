@@ -1,6 +1,6 @@
 # Contributor onboarding
 
-Start with [setup](../CONTRIBUTING.md) and a running session at `http://localhost:5173/?agent=true`. Play a preset, edit a parameter, and reopen a shared link before changing the workflow. Use [development](./DEVELOPMENT.md) for commands and [testing](./TESTING.md) to choose verification.
+Start with [setup](../CONTRIBUTING.md#set-up) and a running session at `http://localhost:5173/?agent=true`. Play a preset, edit a parameter, and reopen a shared link before changing the workflow. Use [development](./DEVELOPMENT.md) for commands and [testing](./TESTING.md) to choose verification.
 
 ## Find the owner
 

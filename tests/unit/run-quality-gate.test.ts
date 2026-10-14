@@ -76,5 +76,13 @@ test('all gate plan runs the complete test suite after the concurrent lane', () 
 
   expect(plan.postflight).toHaveLength(1);
   expect(plan.postflight[0].label).toBe('Full test suite (all profiles)');
-  expect(plan.postflight[0].cmd).toContain('test');
+  // The runner's default is the fast profile, so the step has to name `all`
+  // or check:all silently stops running corpus and e2e.
+  expect(plan.postflight[0].cmd).toEqual([
+    'bun',
+    'run',
+    'test',
+    '--profile',
+    'all',
+  ]);
 });

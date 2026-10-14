@@ -85,7 +85,10 @@ import {
   buildMilkdropInputSignalOverrides as buildMilkdropInputSignalOverridesImpl,
   getMilkdropDetailScale as getMilkdropDetailScaleImpl,
 } from './runtime/interaction-response';
-import { AUTO_ADVANCE_TEMPO_CONFIDENCE } from './runtime/lifecycle.ts';
+import {
+  AUTO_ADVANCE_TEMPO_CONFIDENCE,
+  autoAdvanceDwellSeconds,
+} from './runtime/lifecycle.ts';
 import { createMilkdropRuntimeLifetime } from './runtime/lifetime';
 import { createMilkdropRuntimePerformanceTracker } from './runtime/performance-tracker';
 import { createMilkdropPresentationController } from './runtime/presentation-controller';
@@ -211,6 +214,7 @@ export function createMilkdropExperience({
   let blendDuration = preferences.getBlendDuration(
     DEFAULT_BLEND_DURATION_SECONDS,
   );
+  vm.setPresetDuration(autoAdvanceDwellSeconds(blendDuration));
   let preferredTransitionMode = preferences.getTransitionMode();
   let transitionMode = preferredTransitionMode;
   let preferredQualityPresetId = quality.activeQuality.id;
@@ -281,6 +285,7 @@ export function createMilkdropExperience({
 
   const setBlendDurationValue = (value: number) => {
     blendDuration = value;
+    vm.setPresetDuration(autoAdvanceDwellSeconds(value));
     preferences.setBlendDuration(value);
     emitChange();
   };

@@ -89,7 +89,7 @@ bun install
 bun run dev
 ```
 
-Then open `http://localhost:5173`. The git history is large: `git clone --filter=blob:none https://github.com/zz-plant/stims.git` skips its old binaries and clones much faster.
+Then open `http://localhost:5173`. The git history is large: `git clone --filter=blob:none https://github.com/zz-plant/stims.git` skips its old binaries and clones much faster. To change code, follow [the contributor setup](./CONTRIBUTING.md#set-up), which adds the quality gate and the browser the browser-backed tests need.
 
 ### Use the compiler without the app
 
@@ -116,7 +116,7 @@ To learn the equation language, start with [the authoring curriculum](./docs/aut
 
 ### Standalone packages
 
-Four parts of Stims are standalone packages under [`packages/`](./packages/README.md): the app imports them, they have no dependency on the app, and each has a read-only mirror repository, a demo site and an npm-ready build. They are unpublished as of the registry check on 2026-10-10; use the workspace source and the [release instructions](./packages/README.md#publishing).
+Four parts of Stims are standalone packages under [`packages/`](./packages/README.md): the app imports them, they have no dependency on the app, and each has a read-only mirror repository, a demo site and an npm-ready build. `eel-conformance`, `flash-guard` and `milkdrop-toolchain` are on npm at 0.1.0, with 0.1.1 merged and not yet published; `audio-reactive` is not published and stays a workspace package. [Publishing](./packages/README.md#publishing) has the release state and steps.
 
 | Package | What it is |
 | --- | --- |

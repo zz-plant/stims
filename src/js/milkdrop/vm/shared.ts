@@ -3,6 +3,7 @@
  * and visual element descriptor builders shared across the MilkDrop VM and WebGPU pipelines.
  */
 
+import { MILKDROP2_SIGNAL_NAMES } from 'milkdrop-toolchain/src/builtin-docs.ts';
 import { deriveMilkdropViewportSignalValues } from 'milkdrop-toolchain/src/wgsl-signal-layout.ts';
 import type {
   MilkdropColor,
@@ -368,10 +369,83 @@ function getSpecBinBounds(binCount: number): SpecBinBound[] {
   return bounds;
 }
 
+/**
+ * MilkDrop's `progress`: how far the current preset is through its display
+ * slot — 0 when it starts, 1 when the next preset is due. projectM computes
+ * the same ratio over its configured preset duration and clamps it at 1
+ * (TimeKeeper::PresetProgressA), which keeps a locked preset's fades and
+ * ramps at their end state instead of overshooting forever.
+ */
+export function milkdropPresetProgress(
+  elapsedSeconds: number,
+  durationSeconds: number,
+): number {
+  if (!(durationSeconds > 0) || !(elapsedSeconds > 0)) {
+    return 0;
+  }
+  return Math.min(1, elapsedSeconds / durationSeconds);
+}
+
+type CustomElementPrograms = {
+  init: { statements: readonly { target: string }[] };
+  perFrame: { statements: readonly { target: string }[] };
+};
+
+const shadowedSignalsCache = new WeakMap<
+  CustomElementPrograms,
+  readonly string[]
+>();
+
+/**
+ * The MilkDrop 2 signals a wave or shape's init/per-frame code assigns.
+ * MilkDrop reloads all of them into every custom wave and shape before its
+ * per-frame code (MILKDROP2_SIGNAL_NAMES); here wave and shape locals persist
+ * across frames and shadow the VM's signal env, so one the element assigned
+ * — `progress = 0` in a wave's init — would otherwise stay frozen at that
+ * value for the rest of the preset. Empty for nearly every element, so the
+ * per-frame reload costs nothing for them.
+ */
+export function customElementShadowedSignals(
+  programs: CustomElementPrograms,
+): readonly string[] {
+  let names = shadowedSignalsCache.get(programs);
+  if (!names) {
+    const assigned = new Set(
+      [...programs.init.statements, ...programs.perFrame.statements].map(
+        (statement) => statement.target.toLowerCase(),
+      ),
+    );
+    names = MILKDROP2_SIGNAL_NAMES.filter((name) => assigned.has(name));
+    shadowedSignalsCache.set(programs, names);
+  }
+  return names;
+}
+
+/** Overwrites `names` in a persistent element env with this frame's values
+ * from its prototype — the VM's signal env (createEnv's reuseExtraAsEnv). */
+export function reloadCustomElementSignals(
+  env: MutableState,
+  names: readonly string[],
+) {
+  if (names.length === 0) {
+    return;
+  }
+  const signalEnv = Object.getPrototypeOf(env) as MutableState;
+  for (const name of names) {
+    env[name] = signalEnv[name];
+  }
+}
+
+/**
+ * `progress` is the preset's own clock, not a host signal: two presets
+ * crossfading share one `signals` object but are at different points in
+ * their slots, so the VM that owns the preset passes it in.
+ */
 export function syncSignalEnvironment(
   signals: MilkdropRuntimeSignals,
   targetEnv: MutableState,
   meshDensity = 48,
+  progress = 0,
 ): void {
   targetEnv.time = signals.time;
   targetEnv.frame = signals.frame;
@@ -421,7 +495,7 @@ export function syncSignalEnvironment(
   targetEnv.percussive_mid = signals.percussiveMid ?? 1;
   targetEnv.percussive_high = signals.percussiveHigh ?? 1;
   targetEnv.percussive_ratio = signals.percussiveRatio ?? 0.5;
-  targetEnv.progress = signals.frame;
+  targetEnv.progress = progress;
   targetEnv.signalTime = signals.time;
   targetEnv.signalFrame = signals.frame;
   targetEnv.signalFps = signals.fps;

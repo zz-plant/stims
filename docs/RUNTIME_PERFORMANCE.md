@@ -94,6 +94,75 @@ within noise (2.78 ms before, 2.81 ms after), so that change is claimed as
 reduced allocation/GC pressure, not measured speedup. The dynamic-buffer check
 did remove repeatable WebGPU validation errors at the Ultra tier.
 
+## Open
+
+The optimization queue, verified against the code on 2026-10-13. The audit it came from is [archived](./archive/FRONTEND_PERFORMANCE_BOTTLENECKS.md) with its list of fixed bottlenecks.
+
+### 1. Re-measure preset switches after #1422
+
+The 258–433 ms single frames at blend start (2026-10-11 spot-check below) had a fix ship the next day; switch cadence has not been re-sampled since. Re-run the headed-tab cadence sampling on `next-preset` crossfades, on WebGPU, with and without a deadline miss.
+
+### 2. Blend-state cloning at transition start — bounded, unproven
+
+`cloneBlendState()` deep-copies wave positions, custom waves and motion
+vectors once per accepted transition, never per frame, so cold-call and tail
+latency matter more than a warmed average. The copy is required: the frame
+state's buffers are reused every frame, and aliasing them would corrupt the
+fading-out preset. Measured in isolation on synthetic frames under Bun
+(JavaScriptCore, not V8, so the shape is indicative), 3 fresh-process runs per
+row, 3,000 individually timed calls, 2026-09-29:
+
+| Frame density | Cold first call | p50 | p95 | Worst (max) |
+| --- | --- | --- | --- | --- |
+| 4 custom waves × 512 pts | ~0.2 ms | 0.01 ms | 0.06 ms | 1.6–2.8 ms |
+| 8 waves × 1024 pts, 200 motion vectors | ~0.6 ms | 0.06 ms | 0.27 ms | 3.0–5.4 ms |
+| 16 waves × 2048 pts, 1000 motion vectors | ~2.5 ms | 0.33 ms | 1.0 ms | 5.4–7.8 ms |
+
+On the densest case the cold call is about 15% of a 16.7 ms frame and the
+worst tail 5–8 ms, so one transition frame on a very dense preset could miss
+budget; `evaluateBlendGate` already refuses to crossfade those above its
+workload ceiling. No real browser transition has measured it. Pre-allocated
+blend buffers are the idea on file, after item 1 shows what remains.
+
+## Deliberate boundaries
+
+Each of these was measured or reasoned through and left as is. Re-open one only with the evidence it names.
+
+- **WebGPU render bundles stay off.** The 2026-10-11 hardware A/B below
+  found no cadence effect. Re-evaluate only with a component-level profile
+  showing CPU submission time that cadence sampling cannot see.
+- **The eight per-pixel lowering misses stay on the CPU** (see "GPU equation
+  coverage fails closed" above). For the six `randint` callers: the VM's RNG
+  is a linear congruential generator advanced once per call in program order (the shared
+  `randomCell` in `vm.ts`, inlined into compiled bodies), so its sequence
+  depends on evaluation order, which per-pixel GPU execution does not have.
+  Lowering it would change what these presets draw, not just where. It is
+  not a small cost either: `shifter-glassworms-flare` calls `randint` 59
+  times and profiles at about 59% EEL VM
+  (`bun run profile:frame -- --preset shifter-glassworms-flare`).
+  For the `gmegabuf` reader: moving it needs a coherent storage binding and
+  ordering contract, and zero or a stale CPU snapshot would only hide the
+  dependency. For the nested `exec2` assignment: the field descriptor is a
+  pure expression tree, so lowering it would lose evaluation order and side
+  effects.
+- **WebGPU sessions still ship WebGL's three.js code; the fix is upstream.**
+  `three.core.js` holds the classes both renderers share; only
+  `three.module.js` adds `WebGLRenderer`, and splitting them in
+  `manualChunks` isolates 82 KB gzipped. It does not help: 43 of our modules
+  import from `'three'`, which is `three.module.js`, so rolldown merges it
+  back into the core chunk (the split chunk hash came back byte-identical).
+  Making `webgl-renderer.ts` a dynamic import changed the eager payload by
+  nothing (503 KB / 43 files either way) and was reverted. Avoiding it needs
+  per-backend builds or a public core-only entry from three. Measured
+  2026-08-27.
+- **The many small chunks are the price of four HTML entries.** 61 of 102
+  chunks were under 5 KB (105 KB total). Grouping app code by directory in
+  `manualChunks` cut the count to 60 and took the eager payload from 503 KB
+  to 2,237 KB, because the groups dragged lazily imported renderer code into
+  the entry graph; a utils-only grouping traded 3 fewer requests for 39 KB of
+  extra critical-path bytes. Measured 2026-08-27; do not re-attempt without a
+  per-entry reachability model.
+
 ## 2026-08-24 JIT store result
 
 Commit [`ac2b354d`](https://github.com/zz-plant/stims/commit/ac2b354d)
@@ -126,6 +195,22 @@ Measurement setup:
 The result supports a narrow claim: the duplicate-store removal reduces frame
 work for this equation-heavy stress case across the measured tiers. It does not
 establish the same percentage for every preset, device, renderer, or display.
+
+## 2026-08-24 startup and deploy-build result
+
+Measured on the same checkout and machine:
+
+- Cold Chromium production load, three fresh contexts, service workers
+  blocked, 4× CPU throttle, 150 ms latency, and 200,000 bytes/s downstream:
+  median `shell-rendered` improved from 2,288.4 ms to 2,120.7 ms, while
+  requests completed before the shell fell from 57 to 51.
+- Local `bun run site:build`, timed end to end: 3.97 s before concurrent build
+  orchestration and 2.74 s after it. The output still contains
+  `dist/_worker.js/index.js`, `.assetsignore`, and the complete public preset
+  libraries.
+
+These are focused before/after measurements, not production-SLA claims.
+Re-run them when the entry graph, Worker compiler, or build host changes.
 
 ## 2026-10-11 hardware spot-check (headed tab, not the fixed-tier runner)
 
@@ -163,6 +248,15 @@ the transition-start spike is real, reproducible, and outranks the
 per-frame crossfade cost at this tier. The mid-range reality still requires
 the fixed-tier runner on a host whose headless browser is not
 software-rendering.
+
+**Follow-up: the spike's fix shipped, unverified by this method.** #1422
+(`7c646016`, 2026-10-12) compiles the incoming preset's WebGPU pipelines
+before the fade begins and holds the fade for up to 1,500 ms
+(`runtime/preset-switch-warmup.ts`). The deadline was tuned from warm-up
+durations measured on this hardware (236 ms to 1,611 ms per preset), and
+a deadline miss measured a 50–68 ms hitch rather than a cold build. Switch
+cadence has not been re-sampled with the headed-tab method above, so the
+258–433 ms rows stand as the before measurement only.
 
 ## 2026-10-11 Inlined RNG and repeated-read caching in the JIT
 
@@ -299,8 +393,15 @@ artifacts, not source files to commit.
 - `tests/corpus/run-certification-corpus-perf-suite.test.ts` pins production
   defaults, repeated-trial aggregation, spread reporting, and rejection of
   fatal browser/runtime errors.
+- `bun run check:bundle-size` asserts bundle budgets against `dist/` after a
+  build; run it whenever imports or vendor chunking change.
+- `tests/unit/app-shell-performance-regression.test.ts` pins the service
+  worker's non-blocking cache-write contract and the lazy runtime imports.
+- `tests/unit/site-build.test.ts` pins the deploy packager and its concurrent
+  app/Worker build.
+- `tests/unit/loading-screen.test.ts` pins the static loader outside the React
+  root and its transition-driven handoff into the app shell.
 
 Run `bun run verify --changed` during iteration and `bun run check` before
-committing runtime changes. See
-[`FRONTEND_PERFORMANCE_BOTTLENECKS.md`](./FRONTEND_PERFORMANCE_BOTTLENECKS.md)
-for the current optimization queue.
+committing runtime changes. Source inspection or a successful browser load
+does not support an FPS claim; use the fixed-tier contract above.
