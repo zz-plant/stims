@@ -119,7 +119,7 @@ Recording is a `MediaRecorder` beta. Only the 4K preset renders natively; the th
 - Transparent background alpha channel export (`WebM with alpha` / `ProRes 4444`) for video editors overlaying visualizers on DJ footage. MilkDrop's composite is opaque by design, so this is also a design decision.
 - On-screen track title & artwork overlay: customizable lower-third typography badge rendered directly into video frames. Needs a metadata source; nothing parses ID3 today.
 - Seamless 15s and 30s loop export for Spotify Canvas and VJ banks.
-- Deterministic frame pacing and loop-duration controls. `OfflineFrameRenderer` exists but nothing in the engine implements it.
+- Deterministic frame pacing and loop-duration controls. Nothing renders frames off the live clock yet; recording captures the live canvas.
 - Verify codec, aspect ratio, duration, and frame count in browser-backed tests. Today's recording tests are all mocked.
 - Label `MediaRecorder` as the compatibility fallback once a deterministic path exists.
 
