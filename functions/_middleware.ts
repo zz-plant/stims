@@ -426,6 +426,9 @@ export async function onRequest(context: EventContext): Promise<Response> {
     .on('meta[property="og:image"]', setContent(imageUrl))
     .on('meta[property="og:image:url"]', setContent(imageUrl))
     .on('meta[property="og:image:secure_url"]', setContent(imageUrl))
+    // The shell's value describes the static PNG card; /api/og-preset
+    // answers with a JPEG.
+    .on('meta[property="og:image:type"]', setContent('image/jpeg'))
     .on('meta[property="og:image:alt"]', setContent(imageAlt))
     .on('meta[name="twitter:card"]', setContent('summary_large_image'))
     .on('meta[name="twitter:title"]', setContent(fullTitle))

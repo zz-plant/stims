@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import sharp from 'sharp';
 import { onRequest as middlewareRequest } from '../../functions/_middleware.ts';
 import {
   buildPresetOgSvg,
@@ -8,8 +9,10 @@ import {
   fitTitle,
   loadFonts,
   normalizePresetId,
+  OG_CARD_MAX_BYTES,
   onRequest as ogPresetRequest,
   type RenderAssets,
+  rasterizePresetOg,
 } from '../../functions/api/og-preset.ts';
 import { __resetPresetMetaForTest } from '../../functions/shared/preset-meta.ts';
 import { presentTitle } from '../../functions/shared/preset-title.ts';
@@ -251,24 +254,113 @@ describe('preset social sharing', () => {
       ),
     };
 
-    test('og-preset function returns a 1200x630 PNG by default', async () => {
+    test('og-preset function returns a 1200x630 JPEG by default', async () => {
       const request = new Request(
         'https://toil.fyi/api/og-preset?id=rovastar-parallel-universe',
       );
       const response = await ogPresetRequest({ request, renderAssets });
 
       expect(response.status).toBe(200);
-      expect(response.headers.get('content-type')).toBe('image/png');
+      expect(response.headers.get('content-type')).toBe('image/jpeg');
 
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      // PNG signature
-      expect(Array.from(bytes.slice(0, 8))).toEqual([
-        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-      ]);
-      // IHDR width/height (big-endian u32 at offsets 16 and 20)
-      const view = new DataView(bytes.buffer, bytes.byteOffset);
-      expect(view.getUint32(16)).toBe(1200);
-      expect(view.getUint32(20)).toBe(630);
+      const decoded = await sharp(
+        new Uint8Array(await response.arrayBuffer()),
+      ).metadata();
+      expect(decoded.format).toBe('jpeg');
+      expect(decoded.width).toBe(1200);
+      expect(decoded.height).toBe(630);
+    });
+
+    // WhatsApp (among others) silently drops a preview image much past
+    // 300KB. benski-atom-smasher is the busiest frame the repo tracks: as a
+    // truecolor PNG its card is ~2MB.
+    test('a card over a busy full-bleed frame fits the unfurl budget and stays faithful at feed size', async () => {
+      const frame = await sharp(
+        join(repoRoot, 'public', 'og', 'frames', 'benski-atom-smasher.jpg'),
+      )
+        .png()
+        .toBuffer();
+      const env = {
+        STATIC_R2: {
+          get: async () => ({
+            arrayBuffer: async () =>
+              frame.buffer.slice(
+                frame.byteOffset,
+                frame.byteOffset + frame.byteLength,
+              ) as ArrayBuffer,
+          }),
+        },
+      };
+      const url = 'https://toil.fyi/api/og-preset?id=benski-atom-smasher';
+      const response = await ogPresetRequest({
+        request: new Request(url),
+        env,
+        renderAssets,
+      });
+      const card = new Uint8Array(await response.arrayBuffer());
+
+      // The same SVG at full fidelity, straight from resvg.
+      const svg = await (
+        await ogPresetRequest({
+          request: new Request(`${url}&format=svg`),
+          env,
+        })
+      ).text();
+      expect(svg).toContain('<image href="data:image/png;base64,');
+      const reference = await rasterizePresetOg(svg, renderAssets);
+      const raw = {
+        width: reference.width,
+        height: reference.height,
+        channels: 4 as const,
+      };
+      // Without an encoder that budgets bytes, this card would not fit.
+      const truecolor = await sharp(reference.pixels, { raw }).png().toBuffer();
+      expect(truecolor.length).toBeGreaterThan(OG_CARD_MAX_BYTES);
+
+      expect(response.headers.get('content-type')).toBe('image/jpeg');
+      expect(card.length).toBeLessThanOrEqual(OG_CARD_MAX_BYTES);
+
+      // Compare at 600px wide, about what a feed shows. The static cards'
+      // 256-colour palette scores ~46dB here; 42dB is the floor below which
+      // a busy frame starts to visibly darken.
+      const atFeedSize = (image: ReturnType<typeof sharp>) =>
+        image.removeAlpha().resize({ width: 600 }).raw().toBuffer();
+      const expected = await atFeedSize(sharp(reference.pixels, { raw }));
+      const actual = await atFeedSize(sharp(card));
+      let squaredError = 0;
+      for (let i = 0; i < expected.length; i++) {
+        squaredError += (expected[i] - actual[i]) ** 2;
+      }
+      const psnr = 10 * Math.log10(255 ** 2 / (squaredError / expected.length));
+      expect(psnr).toBeGreaterThan(42);
+    }, 30_000);
+
+    // Cards rendered before the switch to JPEG were cached for 7 days as
+    // ~780KB PNGs; reading them back would undo the budget until they expire.
+    test('does not serve a card cached under the pre-JPEG key', async () => {
+      const legacyKey =
+        'https://toil.fyi/api/og-preset?id=rovastar-parallel-universe';
+      const originalCaches = (globalThis as { caches?: unknown }).caches;
+      (globalThis as { caches?: unknown }).caches = {
+        default: {
+          match: async (request: Request) =>
+            request.url === legacyKey
+              ? new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), {
+                  headers: { 'Content-Type': 'image/png' },
+                })
+              : undefined,
+          put: async () => {},
+        },
+      };
+      try {
+        const response = await ogPresetRequest({
+          request: new Request(legacyKey),
+          renderAssets,
+        });
+        expect(response.headers.get('content-type')).toBe('image/jpeg');
+      } finally {
+        (globalThis as { caches?: unknown }).caches = originalCaches;
+      }
     });
 
     // Regression: previews are excluded from the deploy bundle and served

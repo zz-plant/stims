@@ -366,6 +366,11 @@ describe('/?preset=<id> middleware', () => {
       'https://toil.fyi/api/og-preset?id=test-preset',
     );
 
+    // The shell declares the static PNG card's type; the preset card is a
+    // JPEG, and a parser that trusts the declared type would misread it.
+    const ogImageType = applyHandlers('meta[property="og:image:type"]');
+    expect(ogImageType.attributes.get('content')).toBe('image/jpeg');
+
     const head = applyHandlers('head');
     expect(head.appended[0]).not.toContain('og:image:url');
     expect(head.appended[0]).not.toContain('og:image:secure_url');
