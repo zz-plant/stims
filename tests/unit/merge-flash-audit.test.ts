@@ -151,6 +151,20 @@ describe('combineMeasurements', () => {
     expect(combined.meanLuminance).toBeCloseTo(0.3);
   });
 
+  test('keeps the largest flash swing any rate recorded', () => {
+    expect(
+      combineMeasurements([
+        { ...at60, maxFlashLuminanceDelta: 0.4 },
+        at30,
+        { ...at30, maxFlashLuminanceDelta: 0.7 },
+      ]).maxFlashLuminanceDelta,
+    ).toBe(0.7);
+    // No rate recorded one: the profile claims no swing.
+    expect(combineMeasurements([at60, at30])).not.toHaveProperty(
+      'maxFlashLuminanceDelta',
+    );
+  });
+
   test('one measurement passes through unchanged', () => {
     expect(combineMeasurements([at30])).toEqual(at30);
   });

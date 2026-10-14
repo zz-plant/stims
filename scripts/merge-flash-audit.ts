@@ -147,8 +147,9 @@ export function toMeasurement(report: FlashReport): FlashMeasurement | null {
  * One preset's measurements at several display rates, as the worse of them.
  *
  * Each flash channel takes its own maximum, so red flashes at one rate and
- * general flashes at another both count. Mean luminance describes the
- * picture rather than a risk, so it is averaged.
+ * general flashes at another both count, and the flash swing is the
+ * largest any rate recorded. Mean luminance describes the picture rather
+ * than a risk, so it is averaged.
  */
 export function combineMeasurements(
   measurements: FlashMeasurement[],
@@ -158,6 +159,11 @@ export function combineMeasurements(
   }
   const max = (pick: (m: FlashMeasurement) => number) =>
     Math.max(...measurements.map(pick));
+  const swings = measurements.flatMap((m) =>
+    typeof m.maxFlashLuminanceDelta === 'number'
+      ? [m.maxFlashLuminanceDelta]
+      : [],
+  );
   return {
     peakFlashesPerSecond: max((m) => m.peakFlashesPerSecond),
     peakRedFlashesPerSecond: max((m) => m.peakRedFlashesPerSecond),
@@ -165,6 +171,9 @@ export function combineMeasurements(
     meanLuminance:
       measurements.reduce((sum, m) => sum + m.meanLuminance, 0) /
       measurements.length,
+    ...(swings.length > 0
+      ? { maxFlashLuminanceDelta: Math.max(...swings) }
+      : {}),
   };
 }
 
