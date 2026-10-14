@@ -19,7 +19,7 @@ If you want the reference instead of the course, see [the language reference](re
 | [8 · Shipping](08-shipping.md) | Implemented paths, compatibility limits, performance, publishing |
 | [9 · Technique glossary](09-technique-glossary.md) | The named-technique vocabulary — Jelly, Relief, Painterly, Krash's beat code — counted across the shipped catalog |
 
-All ten tracks are live. The plan that scoped them, and the follow-on work it lists, is in [PRESET_AUTHORING_DOCS_PLAN.md](../PRESET_AUTHORING_DOCS_PLAN.md).
+All ten tracks are live. Follow-on work is in the roadmap's [Learn by editing](../ROADMAP.md#learn-by-editing) section; the plan that scoped the tracks is [archived](../archive/PRESET_AUTHORING_DOCS_PLAN.md).
 
 ## How the examples work
 

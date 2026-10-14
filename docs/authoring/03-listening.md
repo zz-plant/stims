@@ -87,7 +87,7 @@ The second line reads the beat off the bar itself: `equal(bass_thresh,2)` is 1 o
 
 Everything above is a claim about what the preset does. `lab:reactivity` checks the claim: point it at a file and it reports, per variable, whether audio explains the motion.
 
-Unlike the rest of the course, this step needs a local clone of the Stims repository and Bun; the [quick start in CONTRIBUTING.md](../../CONTRIBUTING.md#quick-start) sets both up. Then, from the clone:
+Unlike the rest of the course, this step needs a local clone of the Stims repository and Bun; the [quick start in CONTRIBUTING.md](../../CONTRIBUTING.md#set-up) sets both up. Then, from the clone:
 
 ```bash
 bun run lab:reactivity -- --file docs/authoring/examples/35-reactive-vortex.milk
