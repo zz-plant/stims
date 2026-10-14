@@ -158,11 +158,9 @@ export function initAgentAPI(): StimAPI {
     },
 
     enableMicrophone: async () => {
-      // data-mic-audio-btn was referenced here long before anything set it,
-      // so this had been silently falling through to #start-audio-btn — a
-      // duplicated id that resolved to whichever copy came first in the DOM.
-      // The attribute now exists on the mic card itself.
-      const micBtn = findClickTarget('[data-mic-audio-btn], #start-audio-btn');
+      // The mic card's ids are useId-scoped (AudioSourcePanel mounts on home
+      // and in Settings), so the data attribute is the only stable hook.
+      const micBtn = findClickTarget('[data-mic-audio-btn]');
 
       if (!micBtn) {
         throw new Error('Microphone button not found');
@@ -174,16 +172,11 @@ export function initAgentAPI(): StimAPI {
     },
 
     returnToLibrary: () => {
-      const backBtn = document.querySelector(
-        '[data-back-to-library]',
-      ) as HTMLButtonElement;
-
-      if (backBtn) {
-        backBtn.click();
-      } else {
-        // Fallback: dispatch Escape key
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-      }
+      // Escape closes the innermost open panel. The escape registry listens
+      // on document, which an event dispatched on window never reaches.
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
     },
 
     onToyLoad: (callback) => {

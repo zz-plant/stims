@@ -141,21 +141,18 @@ test('didPlayToyRendererFallback only reports a departure from the requested bac
     didPlayToyRendererFallback({
       requestedProfile: 'compatibility',
       actualBackend: 'webgl',
-      explicitFallback: false,
     }),
   ).toBe(false);
   expect(
     didPlayToyRendererFallback({
       requestedProfile: 'webgpu',
       actualBackend: 'webgl',
-      explicitFallback: false,
     }),
   ).toBe(true);
   expect(
     didPlayToyRendererFallback({
       requestedProfile: 'webgpu',
       actualBackend: 'webgpu',
-      explicitFallback: false,
     }),
   ).toBe(false);
 });

@@ -83,10 +83,7 @@ export default class WebToy {
       throw new Error('WebGL not supported');
     }
 
-    this.container =
-      container ||
-      document.getElementById('active-toy-container') ||
-      document.body;
+    this.container = container || document.body;
     this.canvas = canvas || document.createElement('canvas');
 
     this.scene = initScene(sceneOptions);

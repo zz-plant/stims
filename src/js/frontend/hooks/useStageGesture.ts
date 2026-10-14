@@ -103,8 +103,7 @@ function isInteractiveTarget(target: EventTarget | null) {
   return (
     target instanceof HTMLElement &&
     Boolean(
-      target.closest('.stims-shell__sheet') ||
-        target.closest('[role="dialog"]') ||
+      target.closest('[role="dialog"]') ||
         target.closest('.cm-editor') ||
         target.closest('button') ||
         target.closest('a') ||
