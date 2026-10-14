@@ -4,8 +4,7 @@
  *
  * On a headed hardware WebGPU tab, every blend's first frames measured
  * 258–433ms single frames while the incoming preset's GPU pipelines compiled
- * (see docs/FRONTEND_PERFORMANCE_BOTTLENECKS.md, "Deliberate boundaries"
- * pending verification). The adapter's `warmupPreset` seam moves that
+ * (see the 2026-10-11 hardware spot-check in docs/RUNTIME_PERFORMANCE.md). The adapter's `warmupPreset` seam moves that
  * compilation before the fade; this module owns everything around it:
  *
  * - when a switch may warm at all (WebGPU, non-agent, non-preview, blend

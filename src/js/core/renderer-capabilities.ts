@@ -11,10 +11,11 @@
  * usable answer — WebGL2 is the floor — because a device that reports oddly is
  * far more common than a device that genuinely cannot draw.
  *
- * The contract this participates in, including how `renderScale` propagates and
- * how backends fall back, is specified in
- * `docs/architecture/fallback-state-machine.md`. Read it before changing
- * detection: the state machine has more edges than it looks.
+ * The design study for this contract, including how `renderScale` propagates
+ * and how backends fall back, is archived at
+ * `docs/archive/fallback-state-machine.md`; this code and its tests define
+ * current behaviour. Read both before changing detection: the state machine
+ * has more edges than it looks.
  */
 /* global GPUAdapter, GPUDevice, GPU */
 
@@ -457,7 +458,7 @@ function summarizeWebGPUCapabilities(
     // Policy, not detection: the compatibility adapter (GLES 3.1 backend) may
     // advertise timestamp-query, but the timestamp profiler stays disabled on
     // it — a GLES-backed timing source is not dependable enough to drive the
-    // adaptive quality controller (TECH_STACK_MODERNIZATION_2026-09.md §10).
+    // adaptive quality controller (docs/archive/TECH_STACK_MODERNIZATION_2026-09.md §10).
     features.timestampQuery = false;
   }
 

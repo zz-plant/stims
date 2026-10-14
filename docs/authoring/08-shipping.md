@@ -33,7 +33,7 @@ For a fidelity claim, capture a native reference with controlled inputs, compare
 ## Publishing
 
 1. Export your preset (or use Share to create its `#code=` URL — see [Track 0](00-play.md#6--share-it)).
-2. From a local clone ([setup](../../CONTRIBUTING.md#quick-start)), run it through `bun run lab:reactivity -- --file your.milk` and aim for a `reactive` verdict on the variables meant to respond to audio.
+2. From a local clone ([setup](../../CONTRIBUTING.md#set-up)), run it through `bun run lab:reactivity -- --file your.milk` and aim for a `reactive` verdict on the variables meant to respond to audio.
 3. Open a PR adding the `.milk` file to `public/milkdrop-presets/`, or share the link directly — both paths are covered in the [contributing guide](../../CONTRIBUTING.md#contributing-presets). A link can go in the [remix thread](https://github.com/zz-plant/stims/discussions/1341) on GitHub Discussions.
 4. If you remixed someone else's work anywhere along the way, keep the credit chain — **Remix** in the editor's **⋯** menu does this automatically, and the multi-author filename convention (`"Author A + Author B — Title"`) is how the whole community has tracked lineage for over twenty years. It's not paperwork; it's the reason this hobby has a history at all.
 

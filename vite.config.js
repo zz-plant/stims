@@ -137,7 +137,7 @@ export default defineConfig({
         // Vite 8 deprecates the function form of manualChunks in favour of
         // Rolldown's codeSplitting groups, but the two are not equivalent for
         // this graph and the difference is measurable (see
-        // docs/TECH_STACK_MODERNIZATION_2026-09.md): groups with recursive
+        // docs/archive/TECH_STACK_MODERNIZATION_2026-09.md): groups with recursive
         // dependency capture move ~250 kB of three's core into
         // vendor-three-webgpu, and turning capture off forces
         // preserveEntrySignatures off, which lets the entry absorb shared
