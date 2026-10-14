@@ -50,6 +50,7 @@ __stims_agent.getState().statusLog.at(-1);              // {at, message}
 | `statusLog` | last 20 status toasts, `{at, message}` — toasts are transient in the UI but durable here |
 | `documentHidden`, `agentMode` | `document.hidden` right now, and whether the page was loaded with `?agent=true` |
 | `renderingSuspended` | the frame loop is **skipping frames because this tab is hidden**. A hidden tab without `?agent=true` renders nothing: the canvas goes black with no error and looks like a shader failure, so check this first. Computed by the same rule the frame loop acts on (`src/js/core/hidden-tab-policy.ts`), so the two cannot disagree |
+| `tempo` | `{bpm, source}`: the tempo auto-advance lands its switches on. `source` is `'audio'` (estimated from onsets; `bpm` stays null until the estimate is confident), `'tap'` (`run('tap-tempo')` on each beat, first tap on the downbeat) or `'midi-clock'` (an external clock is running) |
 
 **Staleness caveat:** a `getState()` read in the same tick as an action can
 predate the React commit. Use `await run(...)` / `waitFor(...)` instead of

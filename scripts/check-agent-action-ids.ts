@@ -115,6 +115,13 @@ const PALETTE_ONLY_EXEMPT = new Set([
   // dock buttons on the main stage bar.
   'next-audio-track',
   'prev-audio-track',
+  // Tempo is timed by hand: K and Shift+K, or a MIDI pad learned to these
+  // ids. A dock menu row closes after each click, so it cannot be tapped in
+  // time, and the cue monitor's BPM readout says who owns the tempo.
+  'tap-tempo',
+  'tempo-follow-music',
+  'tempo-nudge-earlier',
+  'tempo-nudge-later',
 ]);
 
 /**

@@ -220,15 +220,17 @@ Shipped:
   - A learned mapping spans the variable's natural range instead of 0–1.
   - Touching a Perform control or the cue fader picks it as the learn target.
 - Stage utilities (#1455, closing [#1440](https://github.com/zz-plant/stims/issues/1440)): hold D for a blackout (two quick taps latch it) and Y for a white flash, without touching the preset or audio. Space freezes the picture.
+- Tap tempo: K taps (the first tap is the downbeat, one tap after a pause re-syncs it), Shift+K hands the tempo back to the music, and the palette nudges the beat grid by 20 ms. A tapped tempo puts auto-advance on the performer's bar lines.
+- MIDI clock in: a running clock from a mixer or DAW sets the tempo and bar position until it stops or goes silent. The cue monitor's BPM readout names who owns the tempo.
 - A projector window ([#1439](https://github.com/zz-plant/stims/issues/1439); dock → Projector window, or the palette) mirrors the stage canvas into a window with no chrome, through the same `captureStream()` path picture-in-picture uses. MIDI moves, edits, crossfades and a held frame all reach it, because it shows this tab's pixels; the flash governor, brightness ceiling, blackout and white flash, which sit outside the canvas, are mirrored onto it. With a second screen attached it moves there once the browser grants screen access; double-click or F in it goes full screen, and the cursor hides when still. After a reload, opening it again takes back the window already on the projector. Casting to a TV keeps the watch-party receiver, which a separate device needs.
 
 Open:
 
 - **Pads and notes.** They cannot be learned, and cannot trigger actions such as next preset or blackout.
-- **MIDI clock.** In/out is implemented but only tests use it.
+- **MIDI clock out.** Implemented, but nothing starts it, so lighting desks cannot follow the visuals' tempo.
 - **Latency.** The sub-10 ms target has never been measured on a device.
 - **Projector shape and frame pacing.** The projector has the stage's shape and size, so a portrait stage letterboxes on a 16:9 projector; it should render at the projector's own aspect. Display-rate pacing is unmeasured, and a minimised operator window gets no frames from the browser, so the projector holds its last one.
-- **Tap tempo and phase nudge.** Missing; tempo comes only from the audio. `=` and `-` are the stage zoom and warp keys.
+- **Tempo beyond auto-advance.** A tapped or clocked tempo moves only auto-advance's bar lines. LFOs keep their own rate and no preset reads a tempo.
 - **Transition shaders.** One noise dissolve. Missing: wipe, glitch, and others, on both backends.
 - **Brightness floor.** The brightness ceiling stops at 30%, so the stage cannot be dimmed further than that without a blackout.
 

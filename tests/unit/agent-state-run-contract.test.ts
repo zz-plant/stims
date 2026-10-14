@@ -375,6 +375,7 @@ describe('describeAgentState', () => {
       documentHidden: true,
       agentMode: false,
       renderingSuspended: true,
+      tempo: { bpm: null, source: 'audio' },
     });
     expect(line).not.toContain('\n');
     expect(line).toContain('lastError="boom"');
