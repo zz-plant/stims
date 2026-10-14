@@ -13,6 +13,12 @@
  * flashes by sampling below them: the 3x workflow preview read 7 a second at
  * 25 fps, and Krash's Cerebral Demons 10. The whole frame counts as the
  * screen, which is stricter than how a README displays it.
+ *
+ * The count describes the clip, not the preset as the app plays it. A 30 fps
+ * clip keeps every second 60 Hz step, which doubles the motion between
+ * frames: geiss-casino fails here at 17 a second and reads 0 in
+ * `lab:flash-audit` at both 60 and 30 fps. The catalog's flash verdict comes
+ * from that audit.
  */
 import { createFlashFrameCounter } from 'flash-guard';
 import sharp from 'sharp';
