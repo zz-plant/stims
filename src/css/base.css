@@ -1057,8 +1057,7 @@ body {
   }
 
   :root[data-preflight-open="true"]
-    .control-panel--floating:not(.preflight-panel),
-  :root[data-preflight-open="true"] .milkdrop-overlay__toggle {
+    .control-panel--floating:not(.preflight-panel) {
     display: none;
   }
 
@@ -1452,26 +1451,6 @@ body.tv-mode .control-panel input {
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.1);
 }
 
-.milkdrop-overlay__rating-select {
-  min-height: 28px;
-  padding: 4px 8px;
-  border-radius: var(--radius-pill);
-  font-size: 0.75rem;
-  background: rgba(15, 23, 42, 0.42);
-  color: rgba(226, 232, 240, 0.82);
-}
-
-@media (max-width: 640px) {
-  .milkdrop-overlay__close,
-  .milkdrop-overlay__toolbar button,
-  .milkdrop-overlay__tabs button,
-  .milkdrop-overlay__rating-select {
-    min-height: 34px;
-    padding: 6px 10px;
-    border-radius: var(--radius-lg);
-  }
-}
-
 body {
   background:
     radial-gradient(
@@ -1572,35 +1551,11 @@ body {
   font-size: 0.8125rem;
 }
 
-.milkdrop-overlay__support {
-  padding: 4px 8px;
-  font-size: 0.6875rem;
-}
-
 /* Mobile polish pass: reclaim vertical space and reduce control density. */
 @media (max-width: 640px) {
-  .milkdrop-overlay__close,
-  .milkdrop-overlay__hud-toggle,
-  .milkdrop-overlay__toolbar button,
-  .milkdrop-overlay__tabs button,
-  .milkdrop-overlay__rating-select {
-    min-height: 44px;
-    padding: 8px 11px;
-    font-size: 0.8125rem;
-  }
-
   .milkdrop-overlay__search {
     min-height: 36px;
     padding: 7px 10px;
-  }
-
-  .milkdrop-overlay__support {
-    padding: 3px 7px;
-    font-size: 0.6875rem;
-  }
-
-  .milkdrop-overlay__browse-support {
-    display: none;
   }
 }
 
@@ -1733,11 +1688,6 @@ body {
     min-height: 34px;
     padding: 0.5rem 0.8rem;
     font-size: 0.6875rem;
-  }
-
-  .milkdrop-overlay__toolbar-group,
-  .milkdrop-overlay__toolbar-group:first-child {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
