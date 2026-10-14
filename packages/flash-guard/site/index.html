@@ -140,6 +140,7 @@
       <div class="card"><h3>It solves rather than ramps</h3><p>On a flash it measures the swing it just observed and computes the scale that puts that swing under the threshold, then jumps there in one step. Blind ramping let a black-to-white strobe land nine flashes before the clamp caught up.</p></div>
       <div class="card"><h3>It starts gentle</h3><p>The first hold is 0.2, so a mild flicker is not punished like a full strobe; the solved step finds the right level.</p></div>
       <div class="card"><h3>It releases slowly, after a delay</h3><p>Release begins once the window has been clear for 1.5 s and eases off at 0.004 per frame. Releasing as soon as the window emptied let the strobe restart and settle into a limit cycle at 8 flashes a second.</p></div>
+      <div class="card"><h3>It does not release into a running strobe</h3><p>While the content, undimmed, still exceeds the limit, release stops where its recent transitions sit at 80% of the threshold. Easing off until flashes landed again let a red strobe just over the limit reach 6 flashes in a second.</p></div>
       <div class="card"><h3>It compares frames 16.7 ms apart</h3><p>On a 120 Hz display, frame-to-frame twinkle in calm content read as 82 flashes a second; compared one 60 Hz frame apart it read 2.4, and real strobes read the same either way.</p></div>
       <div class="card"><h3>It reads what the viewer sees</h3><p>The sample is scaled by the mitigation already in force. Otherwise the governor never observes its own effect and escalates to the ceiling.</p></div>
     </div>
