@@ -151,6 +151,13 @@ const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   // 100-square 1.43% -> 85.74% against a 0.5pp band, and 250-wavecode
   // 8.41% -> 55.33%. Both omit fGammaAdj, so if projectM rendered them at
   // gamma 1 they would have improved.
+  //
+  // That measurement is confounded. Until 2026-10-13 a preset at this default
+  // with no other post field skipped the feedback loop entirely (the runtime's
+  // old `shaderEnabled` gate), so a default of 1 also moved both presets onto
+  // the feedback path. With every preset on that path, gamma 2 measured 89%
+  // and 80% on 2026-10-13, worse than the gamma-1 numbers above. Re-measure
+  // before relying on either default.
   gammaadj: 2,
   video_echo_enabled: 0,
   video_echo_alpha: 0,

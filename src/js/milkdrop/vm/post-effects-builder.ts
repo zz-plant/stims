@@ -23,9 +23,6 @@ import {
   normalizeVideoEchoOrientation,
 } from './shared';
 
-const POST_PASS_EPSILON = 0.0001;
-const DEFAULT_PROJECTM_GAMMA_ADJ = 2;
-
 type ShaderControls = MilkdropPostVisual['shaderControls'];
 
 /**
@@ -58,49 +55,6 @@ function buildNeutralShaderControls(): ShaderControls {
     env: {},
   });
   return cloneShaderControls(neutralShaderControls);
-}
-
-function hasNonNeutralShaderControls(
-  controls: MilkdropPostVisual['shaderControls'],
-) {
-  return (
-    Math.abs(controls.warpScale) > POST_PASS_EPSILON ||
-    Math.abs(controls.offsetX) > POST_PASS_EPSILON ||
-    Math.abs(controls.offsetY) > POST_PASS_EPSILON ||
-    Math.abs(controls.rotation) > POST_PASS_EPSILON ||
-    Math.abs(controls.zoom - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.saturation - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.contrast - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.colorScale.r - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.colorScale.g - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.colorScale.b - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.hueShift) > POST_PASS_EPSILON ||
-    Math.abs(controls.mixAlpha) > POST_PASS_EPSILON ||
-    Math.abs(controls.brightenBoost) > POST_PASS_EPSILON ||
-    Math.abs(controls.invertBoost) > POST_PASS_EPSILON ||
-    Math.abs(controls.solarizeBoost) > POST_PASS_EPSILON ||
-    Math.abs(controls.tint.r - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.tint.g - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.tint.b - 1) > POST_PASS_EPSILON ||
-    controls.textureLayer.source !== 'none' ||
-    controls.textureLayer.mode !== 'none' ||
-    controls.textureLayer.sampleDimension !== '2d' ||
-    controls.textureLayer.inverted ||
-    Math.abs(controls.textureLayer.amount) > POST_PASS_EPSILON ||
-    Math.abs(controls.textureLayer.scaleX - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.textureLayer.scaleY - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.textureLayer.offsetX) > POST_PASS_EPSILON ||
-    Math.abs(controls.textureLayer.offsetY) > POST_PASS_EPSILON ||
-    Math.abs(controls.textureLayer.volumeSliceZ ?? 0) > POST_PASS_EPSILON ||
-    controls.warpTexture.source !== 'none' ||
-    controls.warpTexture.sampleDimension !== '2d' ||
-    Math.abs(controls.warpTexture.amount) > POST_PASS_EPSILON ||
-    Math.abs(controls.warpTexture.scaleX - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.warpTexture.scaleY - 1) > POST_PASS_EPSILON ||
-    Math.abs(controls.warpTexture.offsetX) > POST_PASS_EPSILON ||
-    Math.abs(controls.warpTexture.offsetY) > POST_PASS_EPSILON ||
-    Math.abs(controls.warpTexture.volumeSliceZ ?? 0) > POST_PASS_EPSILON
-  );
 }
 
 const ALLOWED_GLOBAL_IDENTIFIERS = new Set(['pi', 'e']);
@@ -389,23 +343,18 @@ export function buildPost({
     (state.video_echo_enabled ?? 0) > 0.5 || (state.video_echo_alpha ?? 0) > 0;
   const redBlueStereo =
     (state.red_blue_stereo ?? state.redbluestereo ?? 0) > 0.5;
-  const shaderEnabled =
-    (state.shader ?? 1) > 0.5 ||
-    videoEchoEnabled ||
-    brighten ||
-    darken ||
-    darkenCenter ||
-    solarize ||
-    invert ||
-    redBlueStereo ||
-    Math.abs(gammaAdj - DEFAULT_PROJECTM_GAMMA_ADJ) > POST_PASS_EPSILON ||
-    preset.ir.shaderText.warp !== null ||
-    preset.ir.shaderText.comp !== null ||
-    preset.ir.post.shaderPrograms.warp !== null ||
-    preset.ir.post.shaderPrograms.comp !== null ||
-    hasNonNeutralShaderControls(shaderControls);
   const post: MilkdropPostVisual = {
-    shaderEnabled,
+    // The adapter runs the feedback loop (warp, decay, composite) only while
+    // this is set, and MilkDrop runs that loop for every preset: the decayed,
+    // warped previous frame is what new geometry lands on. This used to be
+    // set only when the preset carried some post work (a shader, echo,
+    // brighten, a gamma other than the default 2), so the 89 bundled presets
+    // that omit all of those (geiss-hurricane and geiss-cruzin among them)
+    // were drawn straight to the screen. They lost their per-pixel warp,
+    // decay and gamma, and their textured shapes sampled whatever frame the
+    // previous preset had left in the read target. The low shader-quality
+    // step still sheds the loop on purpose (runtime/lifecycle.ts).
+    shaderEnabled: true,
     textureWrap: (state.texture_wrap ?? 0) > 0.5,
     feedbackTexture: (state.feedback_texture ?? 0) > 0.5,
     outerBorderStyle: (state.ob_border ?? 0) > 0.5,
