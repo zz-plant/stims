@@ -35,30 +35,35 @@ jobs:
     permissions:
       contents: write
     steps:
-      # The local setup action is read from the checkout, so check out first.
-      # Full history, so a manual run can check the commit is on main.
+      # The workflow's own commit (main, or the pushed tag), with full history
+      # so a manual run's `commit` can be checked against main.
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.commit || github.sha }}
           fetch-depth: 0
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-stims
-        with:
-          checkout: 'false'
-
+      # Inline shell only, before anything from the repository runs: a manual
+      # run's `commit` is checked out, and its setup action loaded, only after
+      # it is known to be on main. Checking it out first ran an off-main
+      # commit's composite action under this job's write token.
       - name: Resolve tag and commit
         id: release
+        env:
+          COMMIT: ${{ inputs.commit }}
         run: |
-          sha="$(git rev-parse HEAD)"
           if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            sha="$(git rev-parse HEAD)"
             tag="$GITHUB_REF_NAME"
           else
+            if ! sha="$(git rev-parse --verify --quiet --end-of-options "${COMMIT:-HEAD}^{commit}")"; then
+              echo "::error::$COMMIT is not a commit in this repository."
+              exit 1
+            fi
             if ! git merge-base --is-ancestor "$sha" origin/main; then
               echo "::error::$sha is not on main; releases are cut from main."
               exit 1
             fi
+            git checkout --quiet --detach "$sha"
             tag="v$(jq -r .version package.json)"
           fi
           existing="$(git rev-parse -q --verify "refs/tags/$tag^{commit}" || true)"
@@ -68,6 +73,11 @@ jobs:
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
+        with:
+          checkout: 'false'
 
       - name: Write release notes
         env:

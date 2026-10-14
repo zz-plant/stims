@@ -4,7 +4,10 @@
  */
 
 import { MILKDROP2_SIGNAL_NAMES } from 'milkdrop-toolchain/src/builtin-docs.ts';
-import { deriveMilkdropViewportSignalValues } from 'milkdrop-toolchain/src/wgsl-signal-layout.ts';
+import {
+  deriveMilkdropViewportSignalValues,
+  MILKDROP_LEGACY_SIGNAL_ALIASES,
+} from 'milkdrop-toolchain/src/wgsl-signal-layout.ts';
 import type {
   MilkdropColor,
   MilkdropGpuFieldSignalInputs,
@@ -287,21 +290,26 @@ export const SPEC_KEYS = Array.from(
   (_, i) => `spec_${i}`,
 ) as readonly string[];
 
-export function createDefaultSignalEnv(): MutableState {
-  return {
+/**
+ * `ownedAliases` are the legacy signal aliases the preset assigns itself
+ * (presetOwnedSignalAliases). They are left off the env entirely: an own
+ * property here would shadow the preset's variable of the same name, since
+ * reads walk env → signal env → registers → state.
+ */
+export function createDefaultSignalEnv(
+  ownedAliases: readonly string[] = [],
+): MutableState {
+  const env: MutableState = {
     time: 0,
     frame: 0,
     fps: 60,
     bass: 0,
     mid: 0,
-    med: 0,
     mids: 0,
     treb: 0,
-    att: 0,
     treble: 0,
     bass_att: 0,
     mid_att: 0,
-    med_att: 0,
     mids_att: 0,
     treb_att: 0,
     treble_att: 0,
@@ -347,6 +355,12 @@ export function createDefaultSignalEnv(): MutableState {
     e: Math.E,
     ...Object.fromEntries(SPEC_KEYS.map((key) => [key, 0])),
   };
+  for (const [alias] of MILKDROP_LEGACY_SIGNAL_ALIASES) {
+    if (!ownedAliases.includes(alias)) {
+      env[alias] = 0;
+    }
+  }
+  return env;
 }
 
 type SpecBinBound = { low: number; end: number };
@@ -456,17 +470,20 @@ export function syncSignalEnvironment(
   targetEnv.meshy = meshDensity;
   targetEnv.bass = signals.bass;
   targetEnv.mid = signals.mid;
-  targetEnv.med = signals.mid;
   targetEnv.mids = signals.mids;
   targetEnv.treb = signals.treb;
-  targetEnv.att = signals.treb;
   targetEnv.treble = signals.treble;
   targetEnv.bass_att = signals.bass_att;
   targetEnv.mid_att = signals.mid_att;
-  targetEnv.med_att = signals.mid_att;
   targetEnv.mids_att = signals.mids_att;
   targetEnv.treb_att = signals.treb_att;
   targetEnv.treble_att = signals.treble_att;
+  // Only aliases the env was built with: one the preset owns stays absent.
+  for (const [alias, signal] of MILKDROP_LEGACY_SIGNAL_ALIASES) {
+    if (Object.hasOwn(targetEnv, alias)) {
+      targetEnv[alias] = targetEnv[signal];
+    }
+  }
   targetEnv.bassAtt = signals.bassAtt;
   targetEnv.midAtt = signals.midAtt;
   targetEnv.midsAtt = signals.midsAtt;

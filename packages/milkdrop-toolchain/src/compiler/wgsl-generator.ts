@@ -585,6 +585,7 @@ function buildWgslProgram(
     usesGmegabuf?: boolean;
     enableF16?: boolean;
     enableSubgroups?: boolean;
+    ownedSignalAliases?: readonly string[];
   } = { fieldKeys: [], registerKeys: [], usesRandom: false },
 ): string {
   const { fieldKeys, usesRandom, usesMegabuf, usesGmegabuf } = options;
@@ -615,7 +616,9 @@ function buildWgslProgram(
   // state. Self-referencing statements (`vol_ = vol_ * k + ...`) must not
   // see their own target added yet while compiling their own RHS, so the
   // target is added only after that statement's expression is built.
-  const overwrittenConstants = new Set<string>();
+  // Legacy aliases the preset owns start out here: they are its variables
+  // from the first read (presetOwnedSignalAliases).
+  const overwrittenConstants = new Set<string>(options.ownedSignalAliases);
 
   const statementLines = statements.map((statement) => {
     const target = statement.target.toLowerCase();
@@ -685,7 +688,12 @@ function buildWgslProgram(
 
 export function compileProgramToWgsl(
   block: MilkdropProgramBlock,
-  options?: { enableF16?: boolean; enableSubgroups?: boolean },
+  options?: {
+    enableF16?: boolean;
+    enableSubgroups?: boolean;
+    /** presetOwnedSignalAliases of the preset the block belongs to. */
+    ownedSignalAliases?: readonly string[];
+  },
 ): WgslProgramCompilation {
   const {
     fieldKeys,
@@ -714,6 +722,7 @@ export function compileProgramToWgsl(
     usesGmegabuf,
     enableF16: options?.enableF16,
     enableSubgroups: options?.enableSubgroups,
+    ownedSignalAliases: options?.ownedSignalAliases,
   });
 
   // buildWgslProgram's VmState struct always includes 'pi' and 'e' in
@@ -740,6 +749,7 @@ export function compileProgramToWgsl(
       usesRandom,
       usesMegabuf,
       usesGmegabuf,
+      ownedSignalAliases: options?.ownedSignalAliases ?? [],
       statements: block.statements.map((s) => ({
         target: s.target.toLowerCase(),
         source: s.source,

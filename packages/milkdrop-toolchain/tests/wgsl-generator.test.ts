@@ -606,6 +606,21 @@ describe('wgsl program compilation', () => {
       'state.vol = milkdropFinite(milkdropDiv(signals.bass, 1.5));',
     );
   });
+
+  test('a legacy alias the preset owns is its variable even before this block assigns it', () => {
+    // shifter-swarm sets `med = 0` in per_frame_init and only reads it per
+    // frame: MilkDrop has no `med` signal, so the read must not become mid.
+    const program = block([statement('v', ident('med'))]);
+    expect(compileProgramToWgsl(program).wgslCode).toContain(
+      'state.v = milkdropFinite(signals.mid);',
+    );
+    const owned = compileProgramToWgsl(program, {
+      ownedSignalAliases: ['med'],
+    });
+    expect(owned.wgslCode).toContain('state.v = milkdropFinite(state.med);');
+    expect(owned.fieldKeys).toContain('med');
+    expect(owned.signature).not.toBe(compileProgramToWgsl(program).signature);
+  });
 });
 
 // ─── Edge Cases ────────────────────────────────────────────────────

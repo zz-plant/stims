@@ -15,6 +15,7 @@
  * them; intuition about which loop dominates is usually wrong.
  */
 
+import { writesLegacyMotionVectorControls } from 'milkdrop-toolchain/src/compiler/program-assembly.ts';
 import { normalizeProgramAssignmentTarget } from 'milkdrop-toolchain/src/field-normalization.ts';
 import { analyzeProgramReferences } from 'milkdrop-toolchain/src/program-references.ts';
 import { getDevicePerformanceProfile } from '../../core/device-profile.ts';
@@ -960,11 +961,13 @@ export function getMotionVectorDescriptorContext({
 }): MotionVectorDescriptorContext | null {
   // "Legacy" means the preset steers motion vectors through the mv_* fields
   // instead of the modern `motion_vectors` toggle. That has to be decided from
-  // what the preset DECLARED, not from runtime values: mv_l defaults to 0.9
-  // and mv_r/g/b to 1 (MilkDrop's real defaults), so a value-based test reads
-  // every preset as legacy.
+  // what the preset DECLARED or ASSIGNS, not from runtime values: mv_l
+  // defaults to 0.9 and mv_r/g/b to 1 (MilkDrop's real defaults), so a
+  // value-based test reads every preset as legacy.
   // ast.fields keys are raw preset text (`fMotionVectorsL`), so normalize
   // before comparing — MilkDrop-authored files never spell them `mv_l`.
+  // Scripted writes (`per_frame_init_1=mv_l=0.2`) use the compiler's own
+  // test, so a preset the compiler flags as legacy is legacy here too.
   // Pure function of the preset, but this context is requested up to twice
   // per frame — cache so the full AST/program sweep runs once per preset.
   let legacyControls = legacyMotionVectorControlsCache.get(preset);
@@ -973,17 +976,7 @@ export function getMotionVectorDescriptorContext({
       preset.ast.fields.some((field) => {
         const key = normalizeProgramAssignmentTarget(field.key);
         return key === 'mv_dx' || key === 'mv_dy' || key === 'mv_l';
-      }) ||
-      preset.ir.programs.init.statements.some(
-        (statement) =>
-          statement.target === 'motion_vectors_x' ||
-          statement.target === 'motion_vectors_y',
-      ) ||
-      preset.ir.programs.perFrame.statements.some(
-        (statement) =>
-          statement.target === 'motion_vectors_x' ||
-          statement.target === 'motion_vectors_y',
-      );
+      }) || writesLegacyMotionVectorControls(preset.ir.programs);
     legacyMotionVectorControlsCache.set(preset, legacyControls);
   }
 
@@ -1390,8 +1383,14 @@ function getProceduralMotionVectorFieldVisual({
     sourceOffsetY: motionVectorContext.legacyControls
       ? clamp(state.mv_dy ?? 0, -1, 1)
       : 0,
-    explicitLength:
-      legacyLength <= 1 ? legacyLength : legacyLength * legacyCellScale,
+    // The shader rescales every vector to a non-zero explicitLength, so leave
+    // it 0 unless legacy controls are on: buildMotionVectors applies mv_l
+    // under the same condition, and the backends must agree.
+    explicitLength: motionVectorContext.legacyControls
+      ? legacyLength <= 1
+        ? legacyLength
+        : legacyLength * legacyCellScale
+      : 0,
     legacyControls: motionVectorContext.legacyControls,
     program: proceduralMotionVectorPlan.fieldProgram,
     signals: meshField.signals,
