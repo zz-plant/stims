@@ -14,6 +14,8 @@ import {
   createFlashController,
   type FlashSampler,
   RECOMMENDED_GRID,
+  redFlashValue,
+  relativeLuminance,
 } from '../src/index.ts';
 
 const GRID = RECOMMENDED_GRID;
@@ -165,6 +167,39 @@ describe('flash safety controller', () => {
       uncorrected.controller.getState().hold,
     );
     composed.stop();
+  });
+
+  test("a saturated-red strobe engages it through the sampler's red field", () => {
+    // (80,0,0) to (100,0,0) every three frames: a 25-unit red-flash swing
+    // and a 0.01 luminance one, so only the red channel can see it.
+    const luminance = new Float32Array(GRID * GRID);
+    const values = new Float32Array(GRID * GRID);
+    const saturated = new Uint8Array(GRID * GRID).fill(1);
+    let frame = 0;
+    const controller = createFlashController({
+      canvas: {} as HTMLCanvasElement,
+      sampler: {
+        cols: GRID,
+        rows: GRID,
+        density: 1,
+        offThread: false,
+        capture: (_canvas, onGrid) => {
+          const r = Math.floor(frame / 3) % 2 === 1 ? 100 : 80;
+          luminance.fill(relativeLuminance(r, 0, 0));
+          values.fill(redFlashValue(r, 0, 0));
+          frame += 1;
+          onGrid(luminance, { values, saturated });
+          return true;
+        },
+        dispose: () => {},
+      },
+      isEnabled: () => true,
+      applyLuminanceScale: () => {},
+      subscribeToFrames: () => () => {},
+    });
+    for (let i = 0; i < 120; i += 1) controller.tick(i * FRAME_MS);
+    expect(controller.getState().engaged).toBe(true);
+    expect(controller.getState().luminanceScale).toBeLessThan(0.8);
   });
 
   test('does nothing at all when the preference is off', () => {

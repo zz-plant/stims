@@ -2,7 +2,9 @@
  * Per-frame luminance sampling for the flash governor.
  *
  * The governor needs one thing, every frame, as cheaply as possible: a small
- * field of WCAG relative luminance read from the presented canvas.
+ * field of WCAG relative luminance read from the presented canvas. The same
+ * pixels also give the red-flash field (`FlashRedField`), so the governor
+ * can apply the red-flash criterion the offline analysis applies.
  *
  * Each of the RECOMMENDED_GRID x RECOMMENDED_GRID tiles is read as
  * RECOMMENDED_SAMPLE_DENSITY squared single pixels, not as one value: the
@@ -61,24 +63,45 @@
  * 0.24ms on busy texture, 0.49ms on a strobe that solves a clamp every
  * flash). Load average was near 40 for all of those, so they are ceilings.
  *
+ * Reading the red-flash field from the same pixels, and judging it, costs
+ * little next to that. On synthetic 128x128 fields in headless Chromium (M1
+ * Max, 2026-10-13), converting a field went from 0.055ms to 0.060ms, and
+ * `governor.sample` added 0.06ms on a still frame and on random noise alike.
+ *
  * The worker is `readback.worker.ts`, published as `flash-guard/worker`. The
  * default loads it with `new URL('./readback.worker.js', import.meta.url)`,
  * which every modern bundler understands; pass `createWorker` to load it
  * some other way.
  */
-import { RECOMMENDED_GRID, RECOMMENDED_SAMPLE_DENSITY } from './governor.ts';
-import { LINEAR_CHANNEL_LUT } from './thresholds.ts';
+import {
+  type FlashRedField,
+  RECOMMENDED_GRID,
+  RECOMMENDED_SAMPLE_DENSITY,
+} from './governor.ts';
+import {
+  isSaturatedRed,
+  LINEAR_CHANNEL_LUT,
+  redFlashValue,
+} from './thresholds.ts';
 
-/** Receives a captured frame's luminance field, or null if it could not be read. */
-export type FlashGridCallback = (field: Float32Array | null) => void;
+/**
+ * Receives a captured frame's luminance field, or null if it could not be
+ * read, and the same samples' red-flash field. Pass both to
+ * `governor.sample` (the red one as `options.red`).
+ */
+export type FlashGridCallback = (
+  field: Float32Array | null,
+  red?: FlashRedField,
+) => void;
 
 export type FlashSampler = {
   /**
    * Snapshots the canvas now, so call it inside the draw, and hands its
-   * luminance field to `onGrid`, either before returning or once a worker
-   * has read it, in the order captures were taken. Returns false, capturing
-   * nothing, while MAX_CAPTURES_IN_FLIGHT captures are still being read. The
-   * field is reused by the next capture: read it in the callback.
+   * luminance and red-flash fields to `onGrid`, either before returning or
+   * once a worker has read it, in the order captures were taken. Returns
+   * false, capturing nothing, while MAX_CAPTURES_IN_FLIGHT captures are
+   * still being read. The fields are reused by the next capture: read them
+   * in the callback.
    */
   capture: (canvas: HTMLCanvasElement, onGrid: FlashGridCallback) => boolean;
   /** Tiles across and down. */
@@ -101,13 +124,32 @@ export type FlashSampler = {
  */
 const READBACK_TIMEOUT_MS = 1000;
 
-function fillLuminance(target: Float32Array, pixels: Uint8ClampedArray) {
-  for (let i = 0; i < target.length; i += 1) {
+/** A luminance field and the red-flash field read from the same pixels. */
+type SampledFields = {
+  luminance: Float32Array;
+  red: { values: Float32Array; saturated: Uint8Array };
+};
+
+function createFields(count: number): SampledFields {
+  return {
+    luminance: new Float32Array(count),
+    red: { values: new Float32Array(count), saturated: new Uint8Array(count) },
+  };
+}
+
+function fillFields(target: SampledFields, pixels: Uint8ClampedArray) {
+  const { luminance, red } = target;
+  for (let i = 0; i < luminance.length; i += 1) {
     const idx = i * 4;
-    target[i] =
-      0.2126 * (LINEAR_CHANNEL_LUT[pixels[idx] as number] as number) +
-      0.7152 * (LINEAR_CHANNEL_LUT[pixels[idx + 1] as number] as number) +
-      0.0722 * (LINEAR_CHANNEL_LUT[pixels[idx + 2] as number] as number);
+    const r = pixels[idx] as number;
+    const g = pixels[idx + 1] as number;
+    const b = pixels[idx + 2] as number;
+    luminance[i] =
+      0.2126 * (LINEAR_CHANNEL_LUT[r] as number) +
+      0.7152 * (LINEAR_CHANNEL_LUT[g] as number) +
+      0.0722 * (LINEAR_CHANNEL_LUT[b] as number);
+    red.values[i] = redFlashValue(r, g, b);
+    red.saturated[i] = isSaturatedRed(r, g, b) ? 1 : 0;
   }
   return target;
 }
@@ -125,7 +167,7 @@ export function createMainThreadFlashReader(
   const samplesPerEdge = Math.max(1, Math.floor(density));
   const width = cols * samplesPerEdge;
   const height = rows * samplesPerEdge;
-  const luminance = new Float32Array(width * height);
+  const fields = createFields(width * height);
 
   let scratch: HTMLCanvasElement | null = null;
   let context: CanvasRenderingContext2D | null = null;
@@ -146,6 +188,10 @@ export function createMainThreadFlashReader(
     return context;
   }
 
+  /**
+   * The luminance field, or null if the canvas could not be read. The
+   * red-flash field of the same read is `red`.
+   */
   function read(canvas: HTMLCanvasElement): Float32Array | null {
     const sourceWidth = canvas.width;
     const sourceHeight = canvas.height;
@@ -174,7 +220,7 @@ export function createMainThreadFlashReader(
       // rather than as a calm frame.
       return null;
     }
-    return fillLuminance(luminance, pixels);
+    return fillFields(fields, pixels).luminance;
   }
 
   function dispose() {
@@ -188,6 +234,8 @@ export function createMainThreadFlashReader(
 
   return {
     read,
+    /** The red-flash field of the last successful `read`. */
+    red: fields.red,
     cols,
     rows,
     density: samplesPerEdge,
@@ -259,7 +307,7 @@ export function createFlashSampler(
     resolved.density ?? RECOMMENDED_SAMPLE_DENSITY,
   );
   const { cols, rows, width, height } = mainThread;
-  const luminance = new Float32Array(width * height);
+  const fields = createFields(width * height);
 
   let offThread = canReadOffThread();
   let worker: Worker | null = null;
@@ -272,7 +320,12 @@ export function createFlashSampler(
     while (inFlight.length > 0 && inFlight[0]?.pixels !== undefined) {
       const { onGrid, pixels } = inFlight.shift() as InFlightCapture;
       if (disposed) return;
-      onGrid(pixels ? fillLuminance(luminance, pixels) : null);
+      if (pixels) {
+        fillFields(fields, pixels);
+        onGrid(fields.luminance, fields.red);
+      } else {
+        onGrid(null);
+      }
     }
   }
 
@@ -327,7 +380,9 @@ export function createFlashSampler(
     const target = offThread ? ensureWorker() : null;
     if (!target) {
       offThread = false;
-      onGrid(mainThread.read(canvas));
+      const field = mainThread.read(canvas);
+      if (field) onGrid(field, mainThread.red);
+      else onGrid(null);
       return true;
     }
 

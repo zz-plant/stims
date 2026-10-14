@@ -16,12 +16,16 @@ import { describe, expect, test } from 'bun:test';
 import {
   analyzeFlashEvents,
   analyzeFlashTimeline,
+  analyzeRgbaFrames,
   createFlashGovernor,
   isFlashTransition,
+  isSaturatedRed,
   MIN_USEFUL_GRID,
   primingHoldForMeasurement,
   RECOMMENDED_GRID,
   RECOMMENDED_SAMPLE_DENSITY,
+  redFlashValue,
+  relativeLuminance,
 } from '../src/index.ts';
 
 const COLS = 6;
@@ -587,5 +591,206 @@ describe('flash governor', () => {
     const hold = primingHoldForMeasurement({ flashRiskLevel: 'high' });
     expect(hold).toBeGreaterThan(0);
     expect(hold).toBeLessThan(0.5);
+  });
+});
+
+describe('the red-flash channel', () => {
+  type Rgb = readonly [number, number, number];
+  /** One pixel per tile at the recommended grid: a 5x5-tile visual field. */
+  const GRID = RECOMMENDED_GRID;
+
+  /** A GRID x GRID RGBA frame; `paint(i)` colours pixel (= tile) i. */
+  function rgbaFrame(paint: (i: number) => Rgb): Uint8Array {
+    const px = new Uint8Array(GRID * GRID * 4);
+    for (let i = 0; i < GRID * GRID; i += 1) {
+      const [r, g, b] = paint(i);
+      px[i * 4] = r;
+      px[i * 4 + 1] = g;
+      px[i * 4 + 2] = b;
+      px[i * 4 + 3] = 255;
+    }
+    return px;
+  }
+
+  /** `a` and `b` alternating every `holdFrames` frames, over the whole field. */
+  function alternate(
+    count: number,
+    holdFrames: number,
+    a: Rgb,
+    b: Rgb,
+  ): Uint8Array[] {
+    return Array.from({ length: count }, (_, f) =>
+      rgbaFrame(() => (Math.floor(f / holdFrames) % 2 === 1 ? b : a)),
+    );
+  }
+
+  /** The sampler's two fields for a frame, from the thresholds.ts definitions. */
+  function fieldsOf(frame: Uint8Array) {
+    const n = frame.length / 4;
+    const luminance = new Float32Array(n);
+    const values = new Float32Array(n);
+    const saturated = new Uint8Array(n);
+    for (let i = 0; i < n; i += 1) {
+      const r = frame[i * 4] as number;
+      const g = frame[i * 4 + 1] as number;
+      const b = frame[i * 4 + 2] as number;
+      luminance[i] = relativeLuminance(r, g, b);
+      values[i] = redFlashValue(r, g, b);
+      saturated[i] = isSaturatedRed(r, g, b) ? 1 : 0;
+    }
+    return { luminance, red: { values, saturated } };
+  }
+
+  /** CSS `brightness(k)`: every sRGB channel scaled by k. */
+  function dim(frame: Uint8Array, k: number): Uint8Array {
+    return frame.map((v, i) => (i % 4 === 3 ? v : Math.round(v * k)));
+  }
+
+  /**
+   * Runs frames through the governor as the controller does: each frame is
+   * judged as drawn, through the scale in force when it was shown, and shown
+   * at that scale. Returns what the viewer saw.
+   */
+  function govern(
+    frames: Uint8Array[],
+    redOn: (frame: number) => boolean = () => true,
+  ) {
+    const governor = createFlashGovernor();
+    let scale = 1;
+    let minScale = 1;
+    let maxHold = 0;
+    let peakRed = 0;
+    let peakGeneral = 0;
+    const seen: Uint8Array[] = [];
+    for (const [index, frame] of frames.entries()) {
+      seen.push(dim(frame, scale));
+      const { luminance, red } = fieldsOf(frame);
+      const decision = governor.sample(
+        index * FRAME_MS,
+        luminance,
+        GRID,
+        GRID,
+        {
+          viewScale: scale,
+          red: redOn(index) ? red : undefined,
+        },
+      );
+      scale = decision.luminanceScale;
+      minScale = Math.min(minScale, scale);
+      maxHold = Math.max(maxHold, decision.hold);
+      peakRed = Math.max(peakRed, decision.redFlashesInWindow);
+      peakGeneral = Math.max(peakGeneral, decision.flashesInWindow);
+    }
+    return { seen, governor, minScale, maxHold, peakRed, peakGeneral };
+  }
+
+  /** The offline per-pixel audit, the instrument the governor answers to. */
+  const audit = (frames: Uint8Array[]) =>
+    analyzeRgbaFrames(frames, {
+      width: GRID,
+      height: GRID,
+      cols: GRID,
+      rows: GRID,
+      stride: 1,
+      deltaMs: FRAME_MS,
+    });
+
+  const DARK_RED: Rgb = [80, 0, 0];
+  const RED: Rgb = [100, 0, 0];
+
+  test('(80,0,0) to (100,0,0) fails the red criterion with no general flash', () => {
+    expect(
+      Math.abs(relativeLuminance(...RED) - relativeLuminance(...DARK_RED)),
+    ).toBeLessThan(0.02);
+    expect(redFlashValue(...RED) - redFlashValue(...DARK_RED)).toBeGreaterThan(
+      20,
+    );
+    const raw = audit(alternate(180, 3, DARK_RED, RED));
+    expect(raw.exceedsThreshold).toBe(false);
+    expect(raw.exceedsRedThreshold).toBe(true);
+  });
+
+  test('luminance alone never engages on it — the gap the red field closes', () => {
+    const { maxHold } = govern(alternate(180, 3, DARK_RED, RED), () => false);
+    expect(maxHold).toBe(0);
+  });
+
+  test('with the red field the governor brings it under the red threshold', () => {
+    // Judged on the 8-bit frames a CSS brightness filter would show. Three
+    // seconds, the horizon of the luminance tests above: the first
+    // engagement and the hold that follows it.
+    const { seen, maxHold, peakRed } = govern(alternate(180, 3, DARK_RED, RED));
+    expect(maxHold).toBeGreaterThan(0);
+    expect(peakRed).toBeGreaterThan(0);
+    const governed = audit(seen);
+    expect(governed.exceedsRedThreshold).toBe(false);
+    expect(governed.exceedsThreshold).toBe(false);
+  });
+
+  test('the red clamp is solved from the red swing, as the luminance one is', () => {
+    // A 25-unit red swing needs scaling by about 0.64 to fall under 20 at
+    // the 0.8 margin; a 100-unit one by about 0.16. Neither moves luminance
+    // by 0.1. The first engagement also carries the 0.2 engage hold, so the
+    // clamps land near 0.8 times those.
+    const mild = govern(alternate(120, 3, DARK_RED, RED)).minScale;
+    const strong = govern(alternate(120, 3, [40, 0, 0], [120, 0, 0])).minScale;
+    expect(mild).toBeGreaterThan(0.45);
+    expect(mild).toBeLessThan(0.8);
+    expect(strong).toBeGreaterThan(0.1);
+    expect(strong).toBeLessThan(0.16);
+  });
+
+  test('a colour swing that is not a saturated red is not a red flash', () => {
+    // R/(R+G+B) is 0.5 at both ends, so the red-flash value's 38-unit change
+    // does not count, on either instrument.
+    const frames = alternate(180, 3, [120, 60, 60], [150, 60, 60]);
+    expect(audit(frames).totalRedFlashes).toBe(0);
+    expect(govern(frames).maxHold).toBe(0);
+  });
+
+  test('a steady saturated red, and a fade to one, are never held back', () => {
+    const steady = Array.from({ length: 120 }, () =>
+      rgbaFrame(() => [200, 0, 0]),
+    );
+    expect(govern(steady).maxHold).toBe(0);
+    const fade = Array.from({ length: 120 }, (_, f) =>
+      rgbaFrame(() => [Math.round((f / 119) * 255), 0, 0]),
+    );
+    expect(govern(fade).maxHold).toBe(0);
+  });
+
+  test('one strobing red tile is a sparkle, not a quarter of a visual field', () => {
+    const frames = Array.from({ length: 120 }, (_, f) =>
+      rgbaFrame((i) =>
+        i === 0 && Math.floor(f / 3) % 2 === 1 ? [160, 0, 0] : [80, 0, 0],
+      ),
+    );
+    expect(govern(frames).maxHold).toBe(0);
+  });
+
+  test('general and red flashes are counted on their own channels', () => {
+    const red = govern(alternate(60, 3, DARK_RED, RED));
+    expect(red.peakRed).toBeGreaterThan(0);
+    expect(red.peakGeneral).toBe(0);
+    const grey = govern(alternate(60, 3, [5, 5, 5], [240, 240, 240]));
+    expect(grey.peakGeneral).toBeGreaterThan(0);
+    expect(grey.peakRed).toBe(0);
+  });
+
+  test('a sample without the red field restarts the red comparison', () => {
+    // Red arrives on every other frame only, so no two red samples are
+    // consecutive and none may be compared across the frame between them.
+    const frames = alternate(120, 3, DARK_RED, RED);
+    expect(govern(frames, (f) => f % 2 === 0).peakRed).toBe(0);
+    expect(govern(frames).peakRed).toBeGreaterThan(0);
+  });
+
+  test('reset clears the red window with the rest', () => {
+    // Half a second: both flashes that engaged the clamp are still in it.
+    const { governor } = govern(alternate(30, 3, DARK_RED, RED));
+    expect(governor.getState().redFlashesInWindow).toBeGreaterThan(0);
+    governor.reset();
+    expect(governor.getState().redFlashesInWindow).toBe(0);
+    expect(governor.getState().hold).toBe(0);
   });
 });

@@ -9,7 +9,8 @@
  * closes that gap by applying the SAME WCAG 2.3.1 rule to the frames
  * actually being shown, while they are being shown.
  *
- * Feed it a luminance field per frame; it returns how hard to hold the
+ * Feed it a luminance field per frame, and the same samples' red-flash
+ * values when the source has colour; it returns how hard to hold the
  * previous frame. Temporal integration is what a strobe cannot survive, so
  * holding is both the mitigation and (once the renderer applies it) the
  * reason the next sample stops qualifying as a flash.
@@ -27,6 +28,11 @@
  *   - a *flash* is a PAIR of opposing transitions, so a monotonic fade is
  *     not a flash
  *   - more than 3 flashes in any 1-second window fails
+ *   - red flashes are paired and counted the same way on their own channel,
+ *     from the red-flash value and saturated-red test in thresholds.ts that
+ *     the offline analysis uses, and engage the same clamp. Luminance alone
+ *     cannot see them: (80,0,0) to (100,0,0) changes the red-flash value by
+ *     25, over the limit of 20, and relative luminance by 0.01.
  *
  * This is a screen-content heuristic, not a medical device. It reduces
  * measured flash rate; it does not certify anything as safe.
@@ -36,7 +42,9 @@ import {
   FLASH_LUMINANCE_DELTA,
   FLASHES_PER_SECOND_LIMIT,
   isFlashTransition,
+  isRedFlashTransition,
   peakWindowFraction,
+  RED_FLASH_DELTA,
 } from './thresholds.ts';
 
 export type FlashGovernorOptions = {
@@ -111,8 +119,13 @@ export type FlashGovernorDecision = {
    * blended over three quarters of the last one.
    */
   hold: number;
-  /** Flashes counted in the trailing window, per WCAG pairing. */
+  /** General flashes counted in the trailing window, per WCAG pairing. */
   flashesInWindow: number;
+  /**
+   * Red flashes counted in the trailing window. Always 0 unless samples come
+   * with `FlashSampleOptions.red`.
+   */
+  redFlashesInWindow: number;
   /**
    * Equivalent mitigation expressed as a luminance multiplier, 0..1, for
    * appliers that cannot blend against the previous frame.
@@ -128,8 +141,13 @@ export type FlashGovernorDecision = {
   luminanceScale: number;
   /** True while the governor is actively holding frames back. */
   engaged: boolean;
-  /** Whether THIS sample completed an opposing pair (i.e. was a flash). */
+  /**
+   * Whether THIS sample completed an opposing pair of luminance transitions
+   * (i.e. was a general flash).
+   */
   flashed: boolean;
+  /** Whether THIS sample completed an opposing pair of red transitions. */
+  redFlashed: boolean;
 };
 
 /**
@@ -177,6 +195,18 @@ export const RECOMMENDED_GRID = 16;
  */
 export const RECOMMENDED_SAMPLE_DENSITY = 8;
 
+/**
+ * The red-flash channel of a sampled field: the same samples as the
+ * luminance field, in the same layout, reduced by the thresholds.ts
+ * definitions the offline analysis uses (`frames.ts`).
+ */
+export type FlashRedField = {
+  /** `redFlashValue(r, g, b)` per sample: max(0, R-G-B) * 320. */
+  values: Float32Array | readonly number[];
+  /** Nonzero where `isSaturatedRed(r, g, b)`: R/(R+G+B) >= 0.8. */
+  saturated: Uint8Array | readonly number[];
+};
+
 export type FlashSampleOptions = {
   /**
    * Samples along each tile edge. The field is `cols * density` wide and
@@ -199,8 +229,20 @@ export type FlashSampleOptions = {
    * none of it from content). Paired with the content's next brightening it
    * is a flash the content never made, which the governor answered by
    * clamping harder; controller.test.ts reproduces it.
+   *
+   * The red channel is judged at the same scale. The red-flash value is
+   * linear in the sRGB channels, which a CSS brightness filter scales
+   * directly, so a scale of k scales every red swing by k.
    */
   viewScale?: number;
+  /**
+   * The same samples' red-flash channel, so the WCAG red-flash criterion is
+   * counted alongside the general one. Without it only general flashes are
+   * counted, and a saturated-red strobe whose luminance barely moves passes
+   * unmitigated. A sample that arrives without it ends the red comparison:
+   * the next red sample starts afresh rather than diffing across the gap.
+   */
+  red?: FlashRedField;
 };
 
 const DEFAULTS = {
@@ -214,6 +256,66 @@ const DEFAULTS = {
   releasePerFrame: 0.004,
   releaseDelayMs: 1500,
 } as const;
+
+/**
+ * One WCAG channel's pairing state. General and red flashes are paired and
+ * windowed separately, as the offline analysis counts them, and either
+ * channel reaching `engageAt` engages the one clamp.
+ */
+type Channel = {
+  /** Direction of the last qualifying transition; null until one happens. */
+  lastDirection: boolean | null;
+  /** Timestamps of completed flashes, oldest first. */
+  flashTimes: number[];
+};
+
+/**
+ * Which way a frame transition qualified as a field-wide step, from its
+ * qualifying samples per tile by direction, or null if neither covers 25%
+ * of any visual field. When both do, the larger area wins.
+ */
+function fieldDirection(
+  up: Float32Array,
+  down: Float32Array,
+  tilePixels: number,
+  cols: number,
+  rows: number,
+): boolean | null {
+  const upFraction = peakWindowFraction(up, tilePixels, cols, rows);
+  const downFraction = peakWindowFraction(down, tilePixels, cols, rows);
+  if (upFraction >= FLASH_AREA_FRACTION && upFraction >= downFraction) {
+    return true;
+  }
+  if (downFraction >= FLASH_AREA_FRACTION) return false;
+  return null;
+}
+
+/**
+ * Records a field-wide step on a channel. An opposing pair completes a
+ * flash, so a monotonic fade never does; returns whether this one did.
+ */
+function pairTransition(
+  channel: Channel,
+  direction: boolean | null,
+  nowMs: number,
+): boolean {
+  if (direction === null) return false;
+  const flashed =
+    channel.lastDirection !== null && direction !== channel.lastDirection;
+  if (flashed) channel.flashTimes.push(nowMs);
+  channel.lastDirection = direction;
+  return flashed;
+}
+
+/** Drops every flash that has aged out of the trailing window. */
+function expireFlashes(channel: Channel, nowMs: number, windowMs: number) {
+  while (
+    channel.flashTimes.length > 0 &&
+    nowMs - (channel.flashTimes[0] as number) >= windowMs
+  ) {
+    channel.flashTimes.shift();
+  }
+}
 
 export function createFlashGovernor(options: FlashGovernorOptions = {}) {
   const limit = options.limit ?? DEFAULTS.limit;
@@ -232,10 +334,12 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
   let previousCols = 0;
   let previousRows = 0;
   let previousDensity = 0;
-  /** Direction of the last qualifying transition; null until one happens. */
-  let lastDirection: boolean | null = null;
-  /** Timestamps of completed flashes, oldest first. */
-  const flashTimes: number[] = [];
+  /** The last red field as sampled, and whether the last sample had one. */
+  let previousRed: Float32Array | null = null;
+  let previousRedSaturated: Uint8Array | null = null;
+  let hasPreviousRed = false;
+  const general: Channel = { lastDirection: null, flashTimes: [] };
+  const red: Channel = { lastDirection: null, flashTimes: [] };
   let hold = 0;
   /** When the window last became clear, for the release hold-off. */
   let clearSince: number | null = null;
@@ -244,8 +348,11 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
   /** Qualifying samples per tile, by direction. */
   let rising: Float32Array | null = null;
   let falling: Float32Array | null = null;
+  let redRising: Float32Array | null = null;
+  let redFalling: Float32Array | null = null;
   /** Each sample's signed swing at the view scale, for the solved step. */
   let swings: Float32Array | null = null;
+  let redSwings: Float32Array | null = null;
   /** Tile index of each sample. */
   let tileOf: Uint32Array | null = null;
   /** Scratch per-tile counts for the solved step. */
@@ -274,20 +381,40 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     previousCols = 0;
     previousRows = 0;
     previousDensity = 0;
-    lastDirection = null;
-    flashTimes.length = 0;
+    hasPreviousRed = false;
+    for (const channel of [general, red]) {
+      channel.lastDirection = null;
+      channel.flashTimes.length = 0;
+    }
     hold = 0;
     clearSince = null;
   }
 
-  function decision(flashed: boolean): FlashGovernorDecision {
+  function decision(
+    flashed: boolean,
+    redFlashed: boolean,
+  ): FlashGovernorDecision {
     return {
       hold,
       luminanceScale: 1 - hold,
-      flashesInWindow: flashTimes.length,
+      flashesInWindow: general.flashTimes.length,
+      redFlashesInWindow: red.flashTimes.length,
       engaged: hold > 0,
       flashed,
+      redFlashed,
     };
+  }
+
+  /** Keeps this sample's red field for the next comparison, if it has one. */
+  function rememberRed(field: FlashRedField | null, count: number) {
+    hasPreviousRed = field !== null;
+    if (!field) return;
+    const values = previousRed as Float32Array;
+    const saturated = previousRedSaturated as Uint8Array;
+    for (let i = 0; i < count; i += 1) {
+      values[i] = field.values[i] as number;
+      saturated[i] = field.saturated[i] ? 1 : 0;
+    }
   }
 
   /**
@@ -302,18 +429,23 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
    * from full brightness to 9% on the first flash it saw. On a uniform
    * strobe the two agree.
    *
-   * Assumes every scaled swing has its darker end below 0.8, which only
-   * dimming makes truer, so the answer errs toward clamping.
+   * `field` holds the qualifying swings of one channel and `threshold` is
+   * that channel's: `FLASH_LUMINANCE_DELTA` for luminance, `RED_FLASH_DELTA`
+   * for the red-flash value. Scaling cannot change whether a sample is a
+   * saturated red, so the red solve is exact; for luminance it assumes every
+   * scaled swing has its darker end below 0.8, which only dimming makes
+   * truer, so the answer errs toward clamping.
    */
   function solveScale(
+    field: Float32Array,
     direction: boolean,
+    threshold: number,
     cols: number,
     rows: number,
     density: number,
   ): number {
-    const field = swings as Float32Array;
     const counts = solveCounts as Float32Array;
-    const target = FLASH_LUMINANCE_DELTA * safetyMargin;
+    const target = threshold * safetyMargin;
     const tilePixels = density * density;
     const coverage = (scale: number) => {
       counts.fill(0);
@@ -359,8 +491,14 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     const width = cols * density;
     const count = tileCount * density * density;
     if (tileCount <= 0 || samples.length < count) {
-      return decision(false);
+      return decision(false, false);
     }
+    const redField =
+      options.red &&
+      options.red.values.length >= count &&
+      options.red.saturated.length >= count
+        ? options.red
+        : null;
 
     // A resolution change invalidates the comparison basis; treat it as a
     // fresh start rather than diffing fields of different shapes.
@@ -377,15 +515,21 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
       previousDensity = density;
       rising = new Float32Array(tileCount);
       falling = new Float32Array(tileCount);
+      redRising = new Float32Array(tileCount);
+      redFalling = new Float32Array(tileCount);
       solveCounts = new Float32Array(tileCount);
       swings = new Float32Array(count);
+      redSwings = new Float32Array(count);
+      previousRed = new Float32Array(count);
+      previousRedSaturated = new Uint8Array(count);
       tileOf = new Uint32Array(count);
       for (let i = 0; i < count; i += 1) {
         const x = i % width;
         const y = Math.floor(i / width);
         tileOf[i] = Math.floor(y / density) * cols + Math.floor(x / density);
       }
-      return decision(false);
+      rememberRed(redField, count);
+      return decision(false, false);
     }
 
     const up = rising as Float32Array;
@@ -408,35 +552,42 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     }
 
     const tilePixels = density * density;
-    const upFraction = peakWindowFraction(up, tilePixels, cols, rows);
-    const downFraction = peakWindowFraction(down, tilePixels, cols, rows);
+    const direction = fieldDirection(up, down, tilePixels, cols, rows);
+    const flashed = pairTransition(general, direction, nowMs);
 
-    let direction: boolean | null = null;
-    if (upFraction >= FLASH_AREA_FRACTION && upFraction >= downFraction) {
-      direction = true;
-    } else if (downFraction >= FLASH_AREA_FRACTION) {
-      direction = false;
-    }
-
-    let flashed = false;
-    if (direction !== null) {
-      if (lastDirection !== null && direction !== lastDirection) {
-        // An opposing pair completes a flash.
-        flashTimes.push(nowMs);
-        flashed = true;
+    // The red channel, the same way: per sample, at the same view scale.
+    let redDirection: boolean | null = null;
+    if (redField && hasPreviousRed) {
+      const redUp = redRising as Float32Array;
+      const redDown = redFalling as Float32Array;
+      const redSwingField = redSwings as Float32Array;
+      const beforeValues = previousRed as Float32Array;
+      const beforeSaturated = previousRedSaturated as Uint8Array;
+      redUp.fill(0);
+      redDown.fill(0);
+      for (let i = 0; i < count; i += 1) {
+        const before = (beforeValues[i] as number) * viewScale;
+        const after = (redField.values[i] as number) * viewScale;
+        const qualifies = isRedFlashTransition(
+          before,
+          after,
+          beforeSaturated[i] === 1,
+          Boolean(redField.saturated[i]),
+        );
+        redSwingField[i] = qualifies ? after - before : 0;
+        if (!qualifies) continue;
+        const tile = tiles[i] as number;
+        if (after > before) redUp[tile] = (redUp[tile] as number) + 1;
+        else redDown[tile] = (redDown[tile] as number) + 1;
       }
-      lastDirection = direction;
+      redDirection = fieldDirection(redUp, redDown, tilePixels, cols, rows);
     }
+    const redFlashed = pairTransition(red, redDirection, nowMs);
 
-    // Drop everything that has aged out of the trailing window.
-    while (
-      flashTimes.length > 0 &&
-      nowMs - (flashTimes[0] as number) >= windowMs
-    ) {
-      flashTimes.shift();
-    }
+    expireFlashes(general, nowMs, windowMs);
+    expireFlashes(red, nowMs, windowMs);
 
-    const inWindow = flashTimes.length;
+    const inWindow = Math.max(general.flashTimes.length, red.flashTimes.length);
     if (inWindow >= engageAt) {
       // Ramp from engageAt (just starting) to limit (full strength), so the
       // response is proportionate rather than a cliff.
@@ -444,13 +595,40 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
       const severity = Math.min(1, (inWindow - engageAt + 1) / span);
       hold = Math.max(hold, engageHold * severity);
       clearSince = null;
-      if (flashed && direction !== null) {
+      if (flashed || redFlashed) {
         // A flash landed despite the clamp, so the clamp is not strong
         // enough for this content. Solve for the scale that puts the
         // transition just observed under the threshold, and compose it with
         // whatever is already applied (the sample was measured THROUGH that).
+        // A sample that flashed on both channels takes the stricter scale.
         const currentScale = 1 - hold;
-        const needed = solveScale(direction, cols, rows, density);
+        let needed = 1;
+        if (flashed && direction !== null) {
+          needed = Math.min(
+            needed,
+            solveScale(
+              field,
+              direction,
+              FLASH_LUMINANCE_DELTA,
+              cols,
+              rows,
+              density,
+            ),
+          );
+        }
+        if (redFlashed && redDirection !== null) {
+          needed = Math.min(
+            needed,
+            solveScale(
+              redSwings as Float32Array,
+              redDirection,
+              RED_FLASH_DELTA,
+              cols,
+              rows,
+              density,
+            ),
+          );
+        }
         hold = Math.min(
           holdCeiling,
           Math.max(hold + escalatePerFlash, 1 - currentScale * needed),
@@ -468,14 +646,15 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     }
 
     for (let i = 0; i < count; i += 1) previous[i] = samples[i] as number;
-    return decision(flashed);
+    rememberRed(redField, count);
+    return decision(flashed, redFlashed);
   }
 
   return {
     sample,
     prime,
     reset,
-    getState: () => decision(false),
+    getState: () => decision(false, false),
   };
 }
 

@@ -181,11 +181,12 @@ export function createFlashController(
     const applied = compositedScale ? compositedScale() : lastApplied;
     const capturedIn = generation;
     let decision: FlashGovernorDecision | null = null;
-    const captured = sampler.capture(canvas, (samples) => {
+    const captured = sampler.capture(canvas, (samples, red) => {
       if (!samples || capturedIn !== generation) return;
       decision = governor.sample(nowMs, samples, sampler.cols, sampler.rows, {
         density: sampler.density,
         viewScale: applied,
+        red,
       });
       apply(decision.luminanceScale);
     });
