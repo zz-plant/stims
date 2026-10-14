@@ -328,7 +328,9 @@ describe('the shell reserves its keys from the focused canvas', () => {
 
   test('a modifier chord is left alone — it cannot collide', () => {
     setReservedShellKeys(reservedFromRegistry);
-    expect(isReservedByShell('k')).toBe(false);
+    // Enter is bound only as Cmd+Enter (compile). Bare K used to stand in
+    // for Cmd+K here, until K became tap tempo.
+    expect(isReservedByShell('enter')).toBe(false);
   });
 
   test('nothing is reserved until the shell declares it', () => {

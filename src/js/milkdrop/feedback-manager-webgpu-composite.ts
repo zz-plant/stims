@@ -519,6 +519,7 @@ export function createCompositeUniforms(
     signalEnergy: uniform(0),
     signalTime: uniform(0),
     signalFrame: uniform(0),
+    signalProgress: uniform(0),
     signalFps: uniform(60),
     // MilkDrop per-frame registers (`tele`, `hordist`, …) that a directly
     // executed shader body reads without ever assigning. WebGL declares each

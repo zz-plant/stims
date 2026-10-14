@@ -23,6 +23,10 @@
 import type { MilkdropShaderExecutionMode } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import { isHiddenTabSuspendingFrames } from '../core/hidden-tab-policy.ts';
 import {
+  getManualTempoSource,
+  type ManualTempoSource,
+} from '../core/manual-tempo.ts';
+import {
   extractFrameStats,
   type FrameStats,
 } from '../core/services/visual-embedding.ts';
@@ -125,6 +129,12 @@ export interface AgentStateSnapshot extends AgentCoreSnapshot {
    * (core/hidden-tab-policy.ts), so the two cannot disagree.
    */
   renderingSuspended: boolean;
+  /**
+   * The tempo auto-advance quantizes to, and who set it: 'audio' (estimated
+   * from onsets; `bpm` is null until the estimate is confident), 'tap', or
+   * 'midi-clock'.
+   */
+  tempo: { bpm: number | null; source: 'audio' | ManualTempoSource };
 }
 
 const statusLog: AgentStatusEntry[] = [];
@@ -576,6 +586,8 @@ export interface AgentStateProviders {
   pinParameter: (field: string) => boolean;
   unpinParameter: (field: string) => boolean;
   getStageCanvas: () => HTMLCanvasElement | null;
+  /** Rounded tempo the runtime publishes, or null with no confident one. */
+  getTempoBpm?: () => number | null;
 }
 
 /**
@@ -598,6 +610,10 @@ export function installAgentStateGlobal(
         typeof document !== 'undefined' &&
         document.documentElement.dataset.agentMode === 'true',
       renderingSuspended: isHiddenTabSuspendingFrames(),
+      tempo: {
+        bpm: providers.getTempoBpm?.() ?? null,
+        source: getManualTempoSource() ?? 'audio',
+      },
     };
   };
 

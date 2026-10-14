@@ -1,5 +1,7 @@
 # Shader Support Inventory — MilkDrop Compiler
 
+> Archived on 2026-10-13: support counts and line references are as of the 2026-07-18 analysis.
+
 Analysis date: 2026-07-18. Based on the current audit of `packages/milkdrop-toolchain/src/compiler/**`, `packages/milkdrop-toolchain/src/shader-ast.ts`, `packages/milkdrop-toolchain/src/shader-samplers.ts`, and the test suite (`tests/unit/milkdrop-compiler*.test.ts`).
 
 ## Scope
@@ -243,7 +245,7 @@ Every location where semantic analysis reports `supported: true` or `shaderTextE
 
 ### 3.4 Direct programs remain backend-gated
 
-**What happens**: Direct shader programs are only passed to a backend when their execution classification says that backend can run them. Unsupported or unmeasured patterns retain the raw source and an explicit controls-fallback requirement instead of being silently advertised as exact. Native WebGPU feedback remains disabled until composite parity is measured.
+**What happens**: Direct shader programs are only passed to a backend when their execution classification says that backend can run them. Unsupported or unmeasured patterns retain the raw source and an explicit controls-fallback requirement instead of being silently advertised as exact. Native WebGPU feedback remains disabled until composite parity is measured. *(Superseded: native TSL feedback has been on by default on the full WebGPU path since 2026-08-06, `789c1e9a`.)*
 
 ### 3.5 Poly-filled `||` and `&&` produce different precision than MilkDrop VM
 

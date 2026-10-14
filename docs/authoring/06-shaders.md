@@ -1,8 +1,10 @@
 # Track 6 — Shaders
 
-Everything through Track 5 is EEL: small equations evaluated by the VM, with eligible per-pixel and wave-point programs lowered to the GPU on WebGPU. Shaders are different in kind, not just in syntax — GLSL code that runs on the GPU, once per *screen pixel*, every frame. This is where reaction-diffusion, edge detection, and fractal iteration live: effects that need every pixel to see its neighbors. EEL's per-pixel context can't do that.
+Everything through Track 5 is EEL: small equations evaluated by the VM, with eligible per-pixel and wave-point programs lowered to the GPU on WebGPU. Shaders differ in kind as well as syntax: code that runs on the GPU, once per *screen pixel*, every frame. This is where reaction-diffusion, edge detection, and fractal iteration live: effects that need every pixel to see its neighbors. EEL's per-pixel context can't do that.
 
-**64% of the bundled catalog uses this pair of shaders.** This is the cliff every existing MilkDrop resource has left unbridged — the [authoring docs assessment](../PRESET_AUTHORING_DOCS_PLAN.md) found exactly two worked shader examples in the entire canonical reference. Here's the missing tutorial.
+**Of the 1,787 catalog presets, 1,060 (59%) carry both a warp and a composite shader, and 1,201 (67%) carry at least one** (non-empty `[warp_shader]`/`[comp_shader]` or `warp_N`/`comp_N` source, counted October 2026).
+
+The written material has not kept up: the [authoring docs assessment](../archive/PRESET_AUTHORING_DOCS_PLAN.md) found about two worked shader examples in Geiss's authoring guide, the one complete reference, and the best-known beginners' tutorial predates shaders. Each of the five lessons below is a worked example you can run.
 
 ## Lesson 0 · A language note, stated plainly
 
@@ -33,9 +35,9 @@ ret = uv + dir * ripple;
 
 This is Track 4's radial-rings trick, rewritten for the GPU:
 
-- `center`/`dist` — the same recentering move as Track 4's off-center-current lesson, just written with GLSL's `vec2`/`length()` instead of hand-rolled `sqrt(x*x+y*y)`.
+- `center`/`dist` — the same recentering move as Track 4's off-center-current lesson, written with GLSL's `vec2`/`length()` instead of hand-rolled `sqrt(x*x+y*y)`.
 - `ripple` — a sine of distance, the same idea as `sin(rad*12+time*0.5)` in EEL; the coefficient on `dist` sets how many rings fit, and the coefficient on `time` sets their speed. The minus sign sends these rings outward, the opposite of Track 4's `+time`.
-- `dir = center / (dist + 0.0001)` — a unit vector pointing away from center; the `+0.0001` is the same divide-by-zero guard Track 4's off-center lesson used, just in GLSL now.
+- `dir = center / (dist + 0.0001)` — a unit vector pointing away from center; the `+0.0001` is the same divide-by-zero guard Track 4's off-center lesson used, now in GLSL.
 - `ret = uv + dir * ripple` — push the sample coordinate along that direction by the ripple amount. This is what "warp" means concretely: you're not moving pixels; you're changing *which* previous-frame pixel gets sampled into this one.
 
 The EEL and GLSL versions of the same idea read almost identically once you know the vocabulary swap: `rad`/`ang` become `length()`/normalize-by-division, and `dx`/`dy` become an offset added to `uv`.
@@ -87,7 +89,7 @@ ret = uv + dir * ripple;
 
 [**▶ Run the audio-reactive ripple**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgcmlwcGxlLCBub3cgZHJpdmVuIGJ5IGF1ZGlvOiBwZXJfZnJhbWUgc21vb3RocyBiYXNzIGludG8gcTEsIGFuZAovLyB0aGUgd2FycCBzaGFkZXIgcmVhZHMgcTEgYXMgYSB1bmlmb3JtIGZsb2F0IOKAlCB0aGUgc2FtZSBxLXZhciBicmlkZ2UKLy8gZnJvbSBUcmFjayA0LCBjcm9zc2luZyBmcm9tIEVFTCBpbnRvIEdMU0wgdGhpcyB0aW1lLgpmUmF0aW5nPTUKZkRlY2F5PTAuOTgKZldhdmVBbHBoYT0xLjIKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wLjIKd2F2ZV9nPTAuODUKd2F2ZV9iPTEKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wCnBlcl9mcmFtZV8xPXJhPTYvZnBzOwpwZXJfZnJhbWVfMj1iYXNzX2F2Zz1iYXNzX2F2ZyooMS1yYSkrcmEqYmFzczsKcGVyX2ZyYW1lXzM9cTE9YmFzc19hdmc7Clt3YXJwX3NoYWRlcl0KdmVjMiBjZW50ZXIgPSB1diAtIHZlYzIoMC41LCAwLjUpOwpmbG9hdCBkaXN0ID0gbGVuZ3RoKGNlbnRlcik7CmZsb2F0IHJpcHBsZSA9ICgwLjAwNSArIDAuMDIgKiBxMSkgKiBzaW4oZGlzdCAqIDQwLjAgLSB0aW1lICogMi4wKTsKdmVjMiBkaXIgPSBjZW50ZXIgLyAoZGlzdCArIDAuMDAwMSk7CnJldCA9IHV2ICsgZGlyICogcmlwcGxlOwo%3D "examples/65-warp-shader-reactive.milk")
 
-Nothing new syntactically — `q1` is read on the GLSL side exactly like any other identifier, because as far as the shader is concerned it's just a uniform the compiler wires up automatically. This is the whole answer to "how do shaders hear the music": **they don't listen — `per_frame` does, and hands the result across the same q-register bridge every other layer uses.**
+Nothing new syntactically — `q1` is read on the GLSL side exactly like any other identifier, because to the shader it is a uniform the compiler wires up automatically. Shaders can read the raw bands too: `bass`, `mid`, `treb` and their `_att` forms are uniforms, and the shaders in [*Mashup (326)*](https://toil.fyi/?preset=royal-mashup-326) read `mid_att` and `treb_att`. **Anything smoothed or derived still comes from `per_frame`, across the same q-register bridge every other layer uses.**
 
 ## Engine limits worth knowing before you write your own
 

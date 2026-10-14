@@ -1509,7 +1509,7 @@ function getShaderEnvValue(
     percussiveratio: () => shaderFloat(env.uniforms.signalPercussiveRatio),
     beat: () => shaderFloat(env.uniforms.signalBeat),
     beat_pulse: () => shaderFloat(env.uniforms.signalBeatPulse),
-    progress: () => shaderFloat(env.uniforms.signalFrame),
+    progress: () => shaderFloat(env.uniforms.signalProgress),
     frame: () => shaderFloat(env.uniforms.signalFrame),
     fps: () => shaderFloat(env.uniforms.signalFps),
     vol: () => shaderFloat(env.uniforms.signalEnergy),
@@ -1657,6 +1657,7 @@ function getShaderEnvValue(
     // their signal* uniforms; the map must accept those rewritten forms.
     signaltime: () => shaderFloat(env.uniforms.signalTime),
     signalframe: () => shaderFloat(env.uniforms.signalFrame),
+    signalprogress: () => shaderFloat(env.uniforms.signalProgress),
     signalfps: () => shaderFloat(env.uniforms.signalFps),
     signalbass: () => shaderFloat(env.uniforms.signalBass),
     signalbassatt: () => shaderFloat(env.uniforms.signalBassAtt),

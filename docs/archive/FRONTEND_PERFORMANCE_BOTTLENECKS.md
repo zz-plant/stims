@@ -1,5 +1,7 @@
 # Front-end performance bottlenecks
 
+> Superseded on 2026-10-13: the open items and deliberate boundaries moved to [Runtime performance](../RUNTIME_PERFORMANCE.md#open). Kept for its list of fixed bottlenecks and their measurements.
+
 > Rewritten 2026-08. The previous version of this note was materially stale:
 > its top findings (full per-frame `variables` snapshot, duplicate drag-magnitude
 > math, imperative overlay browse-list re-rendering, `syncCatalog()` cascades)
@@ -108,13 +110,21 @@ container has no GPU, so that needs a hardware run before any optimisation.
 Until then this is a bounded, unproven concern, not a confirmed spike.
 
 Update 2026-10-11 (hardware spot-check, see
-[`RUNTIME_PERFORMANCE.md`](./RUNTIME_PERFORMANCE.md)): real transitions on a
-hardware WebGPU tab reproduce a much larger, different artifact — one to two
-single frames of 258–433 ms at blend start (section 2 below). Until that
-spike is fixed, `cloneBlendState`'s millisecond-scale tail is second-order;
-its pre-allocated-buffer idea remains open but deprioritised.
+[`RUNTIME_PERFORMANCE.md`](../RUNTIME_PERFORMANCE.md)): real transitions on a
+hardware WebGPU tab reproduced a much larger, different artifact — one to two
+single frames of 258–433 ms at blend start (section 2 below), since addressed
+by #1422. `cloneBlendState`'s millisecond-scale tail stays second-order until
+a re-measurement shows what remains; its pre-allocated-buffer idea is open but
+deprioritised.
 
-### 2. Transition-start spike — 250–430 ms single frames on every preset switch
+### 2. Transition-start spike — fixed in #1422, not yet re-measured
+
+**Status.** #1422 (`7c646016`, 2026-10-12) shipped the fix prescribed below:
+`runtime/preset-switch-warmup.ts` compiles the incoming preset's pipelines
+before the fade starts and holds the fade for up to 1,500 ms, after which
+the switch proceeds as before. Switch cadence on hardware has not been
+re-sampled since, so the numbers below are the before measurement.
+
 
 Measured 2026-10-11 on a headed, hardware-accelerated tab (native WebGPU,
 120 Hz): each `next-preset` crossfade showed one 316 ms frame (run 1) and two
@@ -195,7 +205,7 @@ cannot see.
 ## Regression guards
 
 The fixed-tier browser method and latest measured result live in
-[`RUNTIME_PERFORMANCE.md`](./RUNTIME_PERFORMANCE.md). Use its quality lock,
+[`RUNTIME_PERFORMANCE.md`](../RUNTIME_PERFORMANCE.md). Use its quality lock,
 warmup, duration, backend, and CPU-throttle contract before claiming an FPS
 uplift; source inspection or a successful browser load is insufficient.
 

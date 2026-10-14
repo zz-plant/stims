@@ -22,7 +22,7 @@ test('settings exposes the live MIDI product control', async () => {
       ),
     ]);
 
-  expect(settingsSource).toContain('<PerformanceHardwareSection />');
+  expect(settingsSource).toContain('<PerformanceHardwareSection');
   expect(hardwareSource).toContain('Connect MIDI controller');
   // The live engine binding is wired at the App shell level (not inside
   // this settings-only panel) so a controller keeps driving the visuals

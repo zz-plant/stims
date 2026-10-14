@@ -1,5 +1,7 @@
 # Architectural changes proposal — September 2026
 
+> Archived on 2026-10-13. Changes 1–3 have landed (typed seam interfaces with `tests/unit/engine-seam-types.test.ts`, the two boundary rules, and `tests/unit/catalog-projection-contract.test.ts`); changes 4–6 are in the roadmap's [Engineering health](../ROADMAP.md#engineering-health).
+
 > Historical September proposal. The typed runtime seam and frontend/adapter boundary guards have since landed. Use [Architecture](../ARCHITECTURE.md), [source map](../agents/src-map.md), and `.dependency-cruiser.mjs` for current contracts; original findings and measurements below are preserved.
 
 Status: proposal. No runtime code changes accompany this document. Every
@@ -371,7 +373,7 @@ and the one-folder-per-PR cadence.
   (946) alongside.
 - Parity (render and shader) is the #1 fix category, 22.4% in the May
   audit, where `feedback-manager-shared.ts` carried a 38.1% fix rate.
-- [`WEBGPU_ARCHITECTURAL_REVAMP.md`](../WEBGPU_ARCHITECTURAL_REVAMP.md)
+- [`WEBGPU_ARCHITECTURAL_REVAMP.md`](./WEBGPU_ARCHITECTURAL_REVAMP.md)
   workstream 2 proposes a single composite IR generating both GLSL and TSL.
   [`IMPLEMENTATION_STATUS.md`](../IMPLEMENTATION_STATUS.md) records it as
   not started, with two stub modules removed unused because "neither had a
@@ -452,7 +454,7 @@ and need nothing extra.
 
 - **Not re-proposing the WebGPU revamp.** Its worker renderer, WGSL
   vectorization, render bundles, and gradual enablement stay tracked in
-  [`WEBGPU_ARCHITECTURAL_REVAMP.md`](../WEBGPU_ARCHITECTURAL_REVAMP.md).
+  [`WEBGPU_ARCHITECTURAL_REVAMP.md`](./WEBGPU_ARCHITECTURAL_REVAMP.md).
   Change 6 is a precondition for its workstream 2, not a replacement.
 - **No state library.** Module singletons that expose their own subscribe
   function, read in React through `useSyncExternalStore`, are adequate. The
@@ -462,7 +464,7 @@ and need nothing extra.
   internals. Change 2 measures that coupling and change 5 narrows it.
 - **Docs drift noted, not fixed here.** [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md)
   says the repo has 127 scripts; `package.json` has 154.
-  [`archive/FULL_REFACTOR_PLAN.md`](../archive/FULL_REFACTOR_PLAN.md) still describes the
+  [`archive/FULL_REFACTOR_PLAN.md`](./FULL_REFACTOR_PLAN.md) still describes the
   retired toy stage. Both belong in a docs-only change.
 
 ## Open questions for maintainers

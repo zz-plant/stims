@@ -203,7 +203,7 @@ Every guard, its tier and its rationale are in [`docs/GUARDRAILS.md`](docs/GUARD
 | [`docs/TESTING.md`](docs/TESTING.md) | Test profiles and CI coverage |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Boot path, engine seam, per-frame data flow |
 | [`docs/PRODUCT_MOMENTS.md`](docs/PRODUCT_MOMENTS.md) | Which visitor moment a change serves, what counts as correct there, standing product policies |
-| [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md) | Work spanning parity, runtime performance, browser-native UX, or release claims |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Priorities and workstreams across parity, runtime performance, product UX and release claims |
 | [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) | Current user-facing behaviour |
 | [`docs/README.md`](docs/README.md) and [`docs/DOCS_MAINTENANCE.md`](docs/DOCS_MAINTENANCE.md) | The docs index and the rules for changing docs |
 

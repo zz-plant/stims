@@ -101,8 +101,9 @@ compiles. For the guided course, start at <a href="/learn/">the curriculum</a>.<
 <li>Every value is a number (double). There are no strings or booleans.</li>
 <li>Comparisons and logic return 1 or 0, and any value within
 <code>0.00001</code> of zero is false — <code>if(x, a, b)</code>, <code>above</code>,
-<code>below</code>, <code>equal</code>, <code>band</code>, <code>bor</code>, and <code>bnot</code> are the branching toolkit
-(<code>if</code> evaluates both branches; there is no short-circuit).</li>
+<code>below</code>, <code>equal</code>, <code>band</code>, <code>bor</code>, and <code>bnot</code> are the branching toolkit.
+<code>if</code> runs only the branch it picks, and <code>&amp;&amp;</code>/<code>||</code> skip their right side
+once the left side decides the result.</li>
 <li>Names are case-insensitive. <code>//</code> starts a comment.</li>
 <li>Operators: <code>+ - * / % ^</code> (power), comparisons <code>&lt; &lt;= &gt; &gt;= == !=</code>,
 and logic <code>&amp;&amp; || !</code>.</li>
@@ -396,7 +397,7 @@ see Track 3 of the curriculum for how to use them well.</p>
 </tr>
 <tr>
 <td><code>progress</code></td>
-<td>frame count (projectM-compatible alias)</td>
+<td>how far the preset is through its display slot: 0 when it starts, 1 when the next preset is due (the autoplay dwell, 30 s by default); stays at 1 while a preset is held</td>
 </tr>
 <tr>
 <td><code>input_x</code></td>
@@ -611,7 +612,12 @@ waves and shapes.</li>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>per_frame_init_N</code> / <code>per_frame_N</code></td>
+<td><code>per_frame_init_N</code></td>
+<td>once, when the preset loads</td>
+<td>audio reads as silence; values it gives built-ins become the per-frame starting values</td>
+</tr>
+<tr>
+<td><code>per_frame_N</code></td>
 <td>once per frame</td>
 <td>set knobs, read audio</td>
 </tr>
@@ -633,12 +639,12 @@ waves and shapes.</li>
 <tr>
 <td><code>[warp_shader]</code> / <code>[comp_shader]</code></td>
 <td>per pixel on the GPU</td>
-<td>GLSL 1.20 — see the <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#the-glsl-shader-era-2008present">coding guide</a></td>
+<td>MilkDrop 2 wrote these in HLSL; Stims translates a supported subset (GLSL ES 3.00 on WebGL) — see <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#shader-dialect-and-backend-support">shader dialect and backend support</a></td>
 </tr>
 </tbody></table></div>
 <p>Shader uniforms, samplers, and engine limits are documented in the
 <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md#engine-limitations">coding guide</a> and the
-<a href="https://github.com/zz-plant/stims/blob/main/docs/architecture/shader-support-inventory.md">shader support inventory</a>.</p>
+<a href="https://github.com/zz-plant/stims/blob/main/docs/archive/shader-support-inventory.md">shader support inventory</a>.</p>
 
 <aside class="try" aria-label="Try Stims"><p><strong>Try it now.</strong> Stims plays MilkDrop presets in your browser, with nothing to install.</p><p><a class="cta" href="/">Open Stims</a></p></aside>
 </article>

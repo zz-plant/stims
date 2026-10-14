@@ -16,18 +16,12 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 
 <table>
   <tr>
-    <td width="50%"><a href="https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.webp" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></a></td>
-    <td width="50%"><a href="https://toil.fyi/?preset=rovastar-harlequins-liquid-dragon"><img src="./docs/assets/clips/rovastar-harlequins-liquid-dragon.webp" alt="Rovastar — Harlequin's Liquid Dragon" width="100%"></a></td>
+    <td width="33%"><a href="https://toil.fyi/?preset=phat-zylot-eos-trippy-rotation"><img src="./docs/assets/clips/phat-zylot-eos-trippy-rotation.webp" alt="Phat, Zylot &amp; Eo.S. — Trippy Rotation" width="100%"></a></td>
+    <td width="33%"><a href="https://toil.fyi/?preset=eos-starburst-05-phasing"><img src="./docs/assets/clips/eos-starburst-05-phasing.webp" alt="Eo.S. — Starburst 05 Phasing" width="100%"></a></td>
+    <td width="33%"><a href="https://toil.fyi/?preset=eos-glowsticks-v2-03-music"><img src="./docs/assets/clips/eos-glowsticks-v2-03-music.webp" alt="Eo.S. — Glowsticks v2 03 Music" width="100%"></a></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>Krash &amp; Rovastar</b> — Cerebral Demons</sub></td>
-    <td align="center"><sub><b>Rovastar</b> — Harlequin's Liquid Dragon</sub></td>
-  </tr>
-  <tr>
-    <td width="50%"><a href="https://toil.fyi/?preset=eos-starburst-05-phasing"><img src="./docs/assets/clips/eos-starburst-05-phasing.webp" alt="Eo.S. — Starburst 05 Phasing" width="100%"></a></td>
-    <td width="50%"><a href="https://toil.fyi/?preset=eos-glowsticks-v2-03-music"><img src="./docs/assets/clips/eos-glowsticks-v2-03-music.webp" alt="Eo.S. — Glowsticks v2 03 Music" width="100%"></a></td>
-  </tr>
-  <tr>
+    <td align="center"><sub><b>Phat, Zylot &amp; Eo.S.</b> — Trippy Rotation</sub></td>
     <td align="center"><sub><b>Eo.S.</b> — Starburst 05 Phasing</sub></td>
     <td align="center"><sub><b>Eo.S.</b> — Glowsticks v2</sub></td>
   </tr>
@@ -69,7 +63,7 @@ The [full comparison](./docs/learn/milkdrop-vs-butterchurn-projectm.md) says whi
 Playing MilkDrop presets in a browser isn't new: Butterchurn did it first. Neither is the live editor, which brings back what MilkDrop 2 had built in. These three are:
 
 - **Per-pixel equations run on the GPU.** On WebGPU, per-pixel and custom-wave equations compile into the shader and run for every vertex at once; that covers 1,094 of the 1,102 catalog presets with per-pixel code. Butterchurn and projectM run them on the CPU, one grid point at a time. Seeded differential fuzz tests hold the GPU, the JIT and the interpreter to the same results. Their first runs found 18 shipped preset blocks the JIT couldn't compile and divergent results in 32% of GPU-lowered programs.
-- **Fidelity is measured against native projectM.** Both renderers are stepped on a fixed clock, and a difference counts only when it exceeds that preset's own run-to-run noise. Every result is published per preset, passing or not ([scoreboard](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md#current-state-2026-08-27)), and promotion refuses a reference that a blank frame would pass.
+- **Fidelity is measured against native projectM.** Both renderers are stepped on a fixed clock, and a difference counts only when it exceeds that preset's own run-to-run noise. Every result is published per preset, passing or not ([scoreboard](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md#current-scoreboard)), and promotion refuses a reference that a blank frame would pass.
 - **The corpus is analysed as programs.** `bun run lab:dataflow` reads which audio reaches each control and each drawn program from the equations alone, and the editor shows the same reading beside each slider. In 73 of 2,679 presets, the audio reaches nothing on screen. Used as training data, the corpus shows presets behave as threshold programs: gradient-boosted trees beat every network tried, and 41% of memoryless audio-driven controls come back as exact equations from their behaviour ([findings](./docs/guides/training-models.md)).
 
 ## How it works
@@ -95,7 +89,7 @@ bun install
 bun run dev
 ```
 
-Then open `http://localhost:5173`. The git history is large: `git clone --filter=blob:none https://github.com/zz-plant/stims.git` skips its old binaries and clones much faster.
+Then open `http://localhost:5173`. The git history is large: `git clone --filter=blob:none https://github.com/zz-plant/stims.git` skips its old binaries and clones much faster. To change code, follow [the contributor setup](./CONTRIBUTING.md#set-up), which adds the quality gate and the browser the browser-backed tests need.
 
 ### Use the compiler without the app
 
@@ -122,7 +116,7 @@ To learn the equation language, start with [the authoring curriculum](./docs/aut
 
 ### Standalone packages
 
-Four parts of Stims are standalone packages under [`packages/`](./packages/README.md): the app imports them, they have no dependency on the app, and each has a read-only mirror repository, a demo site and an npm-ready build. They are unpublished as of the registry check on 2026-10-10; use the workspace source and the [release instructions](./packages/README.md#publishing).
+Four parts of Stims are standalone packages under [`packages/`](./packages/README.md): the app imports them, they have no dependency on the app, and each has a read-only mirror repository, a demo site and an npm-ready build. `eel-conformance`, `flash-guard` and `milkdrop-toolchain` are on npm at 0.1.0, with 0.1.1 merged and not yet published; `audio-reactive` is not published and stays a workspace package. [Publishing](./packages/README.md#publishing) has the release state and steps.
 
 | Package | What it is |
 | --- | --- |

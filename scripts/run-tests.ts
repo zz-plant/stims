@@ -167,7 +167,7 @@ type ParsedArgs = {
   explicitFiles: string[];
 };
 
-function parseArgs(argv: string[]): ParsedArgs {
+export function parseArgs(argv: string[]): ParsedArgs {
   let profile: string | undefined;
   let watch = false;
   let changed = false;
@@ -204,11 +204,13 @@ function parseArgs(argv: string[]): ParsedArgs {
     explicitFiles.push(arg);
   }
 
-  // `--changed` is an inner-loop filter, so it defaults to the fast profile
-  // rather than `all`: affected e2e files need their own serial browser pass,
-  // which defeats the point of a sub-second feedback loop.
+  // Every doc, and the `bun run help` line above, says a bare `bun run test`
+  // is unit + compat. It used to fall through to `all`, so the command people
+  // ran for a quick check also ran corpus and the serial browser e2e passes:
+  // minutes instead of seconds, and failures when Chromium was missing.
+  // `all` is one `--profile` away, and `check:all` asks for it by name.
   return {
-    profile: profile ?? (changed ? 'fast' : 'all'),
+    profile: profile ?? 'fast',
     watch,
     changed,
     explicitFiles,
@@ -487,4 +489,4 @@ async function main() {
   process.exit(0);
 }
 
-await main();
+if (import.meta.main) await main();

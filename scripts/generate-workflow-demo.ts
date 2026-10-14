@@ -21,9 +21,13 @@ const VIEWPORT = { width: 1280, height: 720 };
 const MIN_CLIP_SECONDS = 25;
 const MP4 = join(ASSETS, 'stims-workflow.mp4');
 const PREVIEW = join(ASSETS, 'stims-workflow.webp');
-/** The README preview plays the recording this many times faster. */
-const PREVIEW_SPEEDUP = 3;
-const PREVIEW_FPS = 25;
+/**
+ * The README preview plays the recording this many times faster. Speeding up
+ * the visualizer speeds up its flashes too: 2x already breaks WCAG 2.3.1 on
+ * the demo preset, which animated-webp.ts refuses to encode.
+ */
+const PREVIEW_SPEEDUP = 1.5;
+const PREVIEW_FPS = 20;
 
 async function encodePreview() {
   const framesDir = join(OUTPUT, 'preview-frames');

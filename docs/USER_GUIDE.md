@@ -12,9 +12,11 @@ Audio options depend on your browser:
 | --- | --- |
 | Demo | A built-in sample; playback may require a click because of autoplay policy |
 | Microphone | Requires microphone permission and a secure context |
-| Audio file | Choose a local file the browser can decode |
+| Audio file | Choose or drop one or more local files the browser can decode |
 | Tab or screen capture | Choose a supported capture source and enable audio in the browser's picker |
 | YouTube | Use the YouTube controls and supported tab capture to feed audio to the visualizer |
+
+Several files play as a playlist: each track advances to the next, and the list starts again after the last. While a playlist plays, Previous track and Next track appear in the audio panel and the dock's audio menu, and your system's media keys skip tracks.
 
 A moving stage does not prove that external audio reached it. Check the audio status, then listen or change the input to confirm the intended source. If capture is unavailable or permission is denied, select demo audio or a local file.
 
@@ -22,10 +24,20 @@ A moving stage does not prove that external audio reached it. Check the audio st
 
 1. Choose **Edit this visual** to open the studio.
 2. On a first edit, use **Add a slow spin**, or change the source directly.
-3. Use Tune for parameter controls, Reference for language help, and Inspect or Compat for diagnostics. Shader tools apply to presets with shader source.
+3. Use the tabs under the code:
+   - **Tune**: sliders, switches and colours for each field. A field the equations recompute names the audio that reaches it.
+   - **Outline**: the preset's parts with their line ranges, and solo or mute for each wave, shape and layer.
+   - **Insert**: technique recipes, each added to the block it belongs in.
+   - **Reference**: every built-in function and variable, searchable, inserted at the cursor.
+   - **Assist**: AI refinement, when a provider is configured (see below).
+   - **Inspect**: live values of the preset's variables, with Freeze and Step for the stage.
+   - **Shader**: the warp and composite shaders, their compile errors, and the GLSL the GPU runs.
+   - **Compat**: what will not run as written here, and what will not carry over to MilkDrop 2.
+   - **Textures**: the image files the preset samples.
+   - **History**: named versions you save and automatic checkpoints, to compare or restore.
 4. Watch the running stage as you apply a change. A compile error is a diagnostic, not a saved working visual; correct it or restore a previous version.
 
-Versions and draft controls help you compare or restore edits. For a guided course with runnable examples, start at [Play](./authoring/00-play.md). For `.milk` syntax and signals, use the [generated reference](./authoring/reference.md).
+Compare with the original (Cmd/Ctrl+Shift+B) shows your edit against the preset you started from. For a guided course with runnable examples, start at [Play](./authoring/00-play.md). For `.milk` syntax and signals, use the [generated reference](./authoring/reference.md).
 
 ## Save and share
 
@@ -37,9 +49,36 @@ Remix URLs have a size limit. If the source exceeds that limit, export the `.mil
 
 ## Tune playback
 
-Use Settings to adjust quality, render scale, compatibility mode, motion, and flashing controls. Lower quality or render scale when frames slow down. The default rendering path is WebGL; WebGPU is an optional path with preset- and browser-dependent support.
+Use Settings to adjust quality, render scale, the renderer, motion, and flashing controls. Lower quality or render scale when frames slow down.
+
+Stims renders with WebGPU in browsers where it is stable (recent Chrome, Edge, Opera and Samsung Internet, and Safari 26 or later) and with WebGL elsewhere, including Firefox. A preset that needs something WebGPU cannot run yet switches to WebGL. Settings → Graphics shows which one is running and why WebGL was chosen; its Renderer menu (Auto, WebGPU, WebGL) takes effect after a reload. Adding `?renderer=webgl` to the address forces WebGL for one visit.
 
 Reduce flashing and motion controls can reduce exposure, but they do not certify a preset or display as safe for every viewer. See [sensory controls](./guides/accessibility.md) for their scope.
+
+## Keyboard shortcuts
+
+Press `?` for the full list, where most keys can also be rebound. Cmd+K (Ctrl+K on Windows and Linux) opens the command palette, which reaches every action, including those without a key.
+
+| Key | Action |
+| --- | --- |
+| Space | Pause or resume the picture; the preset and audio stay |
+| N or → / P, ← or Backspace | Next preset (random) / previous preset |
+| L | Stay on this preset (pause auto-advance) |
+| T | Turn autoplay on or off |
+| 1–9 | Play that numbered preset in Browse, once focus leaves the search box |
+| B, M, S | Browse, find a preset, Settings |
+| E | Edit the preset's code; Cmd/Ctrl+Enter compiles it |
+| F | Full screen |
+| C | Record video |
+| U | Add this preset to the queue |
+| Shift+D | Live performance mode |
+| D | Black out the picture while held; two quick taps keep it black until the next press |
+| Y | Flash the screen white while held; tapping repeatedly strobes |
+| V | Cycle the theme (dark, light, system) |
+| H | Switch transitions between blend and cut |
+| W, I, O, J | Nudge the running preset: next waveform, zoom in, more warp, bigger waveform; with Shift, the opposite |
+| `>` / `<` | Rotate clockwise / counterclockwise |
+| Esc | Close panels |
 
 ## Optional AI assistance
 
@@ -53,4 +92,4 @@ Browser recording is beta. Resolution options do not establish the encoded resol
 
 ## Report a problem
 
-Include the preset or exported source, browser version, operating system, audio source, rendering backend, and steps to reproduce. For a shared-link problem, include the link when its contents are suitable to share. Say whether the problem occurs on a fresh load or after switching presets. [Open an issue](https://github.com/zz-plant/stims/issues/new/choose) with that evidence.
+Include the preset or exported source, browser version, operating system, audio source, rendering backend (Settings → Graphics shows it), and steps to reproduce. If the problem looks renderer-specific, say whether it also happens with `?renderer=webgl` added to the address. For a shared-link problem, include the link when its contents are suitable to share. Say whether the problem occurs on a fresh load or after switching presets. [Open an issue](https://github.com/zz-plant/stims/issues/new/choose) with that evidence.

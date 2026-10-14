@@ -1,6 +1,8 @@
 # Tech Stack Modernization — September 2026
 
-> Historical audit from 2026-09-02. Version constraints and parser choices have since changed; use `package.json`, `.dependency-cruiser.mjs`, and [Development](./DEVELOPMENT.md#toolchain) for current setup. The original measurements below are preserved.
+> Archived on 2026-10-13. TypeScript 7, three r186 and WebGPU compatibility mode have landed since; the items still open are in the roadmap's [Engineering health](../ROADMAP.md#engineering-health).
+
+> Historical audit from 2026-09-02. Version constraints and parser choices have since changed; use `package.json`, `.dependency-cruiser.mjs`, and [Development](../DEVELOPMENT.md#toolchain) for current setup. The original measurements below are preserved.
 
 A ranked audit of what could level up the Stims toolchain and third-party
 stack, grounded in a full usage map of every dependency plus the state of

@@ -165,6 +165,7 @@ const SIGNAL_UNIFORM_DEFAULTS = {
   signalEnergy: { value: 0 },
   signalTime: { value: 0 },
   signalFrame: { value: 0 },
+  signalProgress: { value: 0 },
   signalFps: { value: 60 },
 } as const;
 
@@ -320,6 +321,7 @@ export function applyCompositeUniformState(
   uniforms.signalEnergy.value = state.signalEnergy;
   uniforms.signalTime.value = state.signalTime;
   uniforms.signalFrame.value = state.signalFrame ?? 0;
+  uniforms.signalProgress.value = state.signalProgress ?? 0;
   uniforms.signalFps.value = state.signalFps ?? 60;
 }
 
@@ -2278,6 +2280,7 @@ class SharedMilkdropFeedbackManager
     wu.signalEnergy.value = state.signalEnergy;
     wu.signalTime.value = state.signalTime;
     wu.signalFrame.value = state.signalFrame ?? 0;
+    wu.signalProgress.value = state.signalProgress ?? 0;
     wu.signalFps.value = state.signalFps ?? 60;
     this.syncMilkdropShaderBuiltinUniforms(wu, this.getWarpQTargets(wu), state);
     wu.videoEchoOrientation.value = state.videoEchoOrientation;

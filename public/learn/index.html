@@ -83,7 +83,7 @@
 <h1 id="learn-to-write-milkdrop-presets">Learn to write MilkDrop presets</h1>
 <p><a class="cta" href="/">Open Stims — no install needed</a></p>
 
-<p>A curriculum for going from &quot;never seen a preset&quot; to publishing your own — using Stims itself as the lab. Every example is a complete preset behind a <strong>▶ Run</strong> link: it opens <a href="https://toil.fyi">toil.fyi</a> with the code loaded in the live editor. Nothing to install.</p>
+<p>A curriculum for going from &quot;never seen a preset&quot; to publishing your own — using Stims itself as the lab. Every example is a complete preset behind a <strong>▶ Run</strong> link: it opens <a href="https://toil.fyi">toil.fyi</a> with the code loaded in the live editor, so the lessons need nothing installed. The exception is the measuring step in Track 3, Lesson 5, which runs from a clone of the repository.</p>
 <p>If you want the reference instead of the course, see <a href="/learn/reference/">the language reference</a> and the pattern language in <a href="https://github.com/zz-plant/stims/blob/main/docs/MILKDROP_CODING_GUIDE.md">MILKDROP_CODING_GUIDE.md</a>.</p>
 <h2 id="the-path">The path</h2>
 <div class="table-wrap" tabindex="0" role="region" aria-label="Scrollable table"><table>
@@ -119,7 +119,7 @@
 </tr>
 <tr>
 <td><a href="/learn/shaders/">6 · Shaders</a></td>
-<td>Warp and composite GLSL — the pair 64% of the catalog uses</td>
+<td>Warp and composite shaders, the pair most catalog presets carry</td>
 </tr>
 <tr>
 <td><a href="/learn/taste/">7 · Taste</a></td>
@@ -134,7 +134,7 @@
 <td>The named-technique vocabulary — Jelly, Relief, Painterly, Krash&#39;s beat code — counted across the shipped catalog</td>
 </tr>
 </tbody></table></div>
-<p>All ten tracks are live. The plan that scoped them, and the follow-on work it lists, is in <a href="https://github.com/zz-plant/stims/blob/main/docs/PRESET_AUTHORING_DOCS_PLAN.md">PRESET_AUTHORING_DOCS_PLAN.md</a>.</p>
+<p>All ten tracks are live. Follow-on work is in the roadmap&#39;s <a href="https://github.com/zz-plant/stims/blob/main/docs/ROADMAP.md#learn-by-editing">Learn by editing</a> section; the plan that scoped the tracks is <a href="https://github.com/zz-plant/stims/blob/main/docs/archive/PRESET_AUTHORING_DOCS_PLAN.md">archived</a>.</p>
 <h2 id="how-the-examples-work">How the examples work</h2>
 <p>Example sources live in <a href="https://github.com/zz-plant/stims/tree/main/docs/authoring/examples">examples/</a> as ordinary <code>.milk</code> files you can also import directly. Each <strong>▶ Run</strong> link encodes the full file into a <code>#code=</code> payload. Use Share or Copy link for your own experiments, and export a <code>.milk</code> file when source exceeds the URL size limit.</p>
 <p><code>bun run check:authoring-examples</code> compiles every example and verifies that every run link matches its source file (<code>--write</code> on the underlying script regenerates them). CI treats a broken example like a broken build.</p>

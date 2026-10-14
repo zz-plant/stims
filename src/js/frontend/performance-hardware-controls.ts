@@ -1,4 +1,5 @@
 import { MIDI_CONTROLLER_PROFILES } from './midi-controller-presets.ts';
+import { padActionIdOf } from './midi-pad-actions.ts';
 import { describePinnableField } from './perform-pins.ts';
 
 type MidiControlListener = (
@@ -12,6 +13,7 @@ type MidiControlListener = (
 type MidiNoteListener = (event: {
   target?: string;
   value?: number;
+  on?: boolean;
   deviceId: string;
 }) => void;
 
@@ -35,6 +37,8 @@ export type MidiControlSource = {
 export function bindMidiToMilkdropControls(
   midi: MidiControlSource,
   applyControl: (target: string, value: number) => void,
+  /** Runs a palette action for a pad bound to `action:<id>`. */
+  runAction?: (actionId: string) => void,
 ): () => void {
   const apply = (
     target: string | undefined,
@@ -53,9 +57,16 @@ export function bindMidiToMilkdropControls(
     (_cc, _raw, target, normalized, deviceId) =>
       apply(target, normalized, deviceId),
   );
-  const unbindNote = midi.onNote?.((event) =>
-    apply(event.target, event.value, event.deviceId),
-  );
+  const unbindNote = midi.onNote?.((event) => {
+    const actionId = padActionIdOf(event.target);
+    if (actionId === null) {
+      apply(event.target, event.value, event.deviceId);
+      return;
+    }
+    // A command fires once, on the press. The release carries no value, and
+    // there is no field to mirror onto other controls.
+    if (event.on !== false && event.value !== undefined) runAction?.(actionId);
+  });
 
   return () => {
     unbindControl();

@@ -1,5 +1,7 @@
 # Preset Authoring Docs — Master Plan
 
+> Archived on 2026-10-13: phases 1–4 shipped as the [authoring curriculum](../authoring/README.md). The open follow-on work (E3–E7, archive rescue) is in the roadmap's [Learn by editing](../ROADMAP.md#learn-by-editing). Its technical wording is as of 2026-08: where it calls preset shaders "GLSL 1.20", they are HLSL, which Stims translates to GLSL ES 3.00 on WebGL.
+
 Goal: build the definitive learning path for writing and editing MilkDrop presets — good enough, combined with Stims itself, to bring a new generation into the hobby.
 
 Status: proposal (2026-08-11). Nothing here is built yet except where marked SHIPPED.
@@ -165,7 +167,7 @@ Licensing note: rescue means *link + attribute + teach the technique in our own 
 
 ## Part 6.5 — Author outreach
 
-Track 7 and the [technique glossary](authoring/09-technique-glossary.md) both
+Track 7 and the [technique glossary](../authoring/09-technique-glossary.md) both
 hit the same wall: filenames establish *what* and *who applied it*, never *why*
 or *when*. Only the authors can close that, and the scene is twenty-five years
 old. This is the part with an expiry date.
@@ -186,7 +188,7 @@ answer.
   request can be refused.
 - Not commercial, and no one's personal information is being compiled.
 
-These are the same rules as [`LINEAGE_AND_CREDITS.md`](./LINEAGE_AND_CREDITS.md);
+These are the same rules as [`LINEAGE_AND_CREDITS.md`](../LINEAGE_AND_CREDITS.md);
 outreach copy should not soften them.
 
 ### Questions worth asking

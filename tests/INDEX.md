@@ -1,140 +1,40 @@
-# tests/ index
+# tests/
 
-Find the canonical test for a change surface. Tests are categorized by the
-folder they live in — `unit`, `compat`, `corpus`, `e2e`, `accessibility` —
-and the runner derives profiles from those folders (`fast` = unit + compat;
-`all` adds corpus + e2e). Run one file with `bun run test <path>`.
+`scripts/run-tests.ts` puts a test file in a category by the folder it sits in, and each profile is a set of categories. [Testing](../docs/TESTING.md) has the commands, gates and the evidence each kind of change needs.
 
-## Standalone packages
+| Folder | What it holds | Profiles that run it |
+| --- | --- | --- |
+| `unit/` | Logic, React components (`.test.tsx`), guard and lab scripts, the MCP server. Runs under happy-dom. | `fast`, `gate`, `all`, `unit` |
+| `compat/` | Renderer preference and WebGPU rollout contracts. | `fast`, `gate`, `all`, `compat` |
+| `corpus/` | Whole-corpus and reference checks: compile support across the bundled presets, parity diffs, the certification corpus, flash risk. Slow. | `gate`, `all`, `corpus` |
+| `e2e/` | Real Chromium through Playwright against a dev server, one process per file, each file on its own port (`check:e2e-ports`). | `all`, `e2e` |
 
-The compiler, expression/JIT, formatter and exporter (`milkdrop-toolchain`), the
-audio DSP (`audio-reactive`), the flash governor and analysis (`flash-guard`) and
-the EEL conformance corpus (`eel-conformance`) live in `packages/`, each with its
-own `tests/`. Run them with `bun run check:packages`, or one package with
-`bun --cwd packages/<name> test`. Tests here only cover what needs the rest of
-the repository, such as the bundled preset corpus.
+`fast` (unit + compat) is what a bare `bun run test` runs. `bun run check` runs `gate`, and `bun run check:all` runs `all`. The `integration` profile is the single file `e2e/agent-integration.test.ts`. A file that imports `browserTest` from `test-helpers.ts` drives a real browser, so the runner moves it to a serial pass in whatever folder it sits, and it skips when Chromium is not installed.
 
-## Compiler / expression / JIT
+A test file placed directly in `tests/` belongs to no category, and the runner refuses to start until it moves.
 
-Most of it is `packages/milkdrop-toolchain/tests/`. Here: the corpus cases in
-`milkdrop-compiler.test.ts` · `milkdrop-program-jit.test.ts` (JIT against the
-interpreter over bundled presets) ·
-`milkdrop-shader-tsl-intrinsics.test.ts` · `milkdrop-shader-sampler-aliases.test.ts` ·
-`custom-shader-import.test.ts` ·
-`butterchurn-eel-transpiler.test.ts` (scripts/)
+## Finding the test for a change
 
-`eel-conformance-spec.test.ts` runs the portable conformance corpus in `spec/eel-conformance/`
-against all three execution tiers. The cases are JSON, not TypeScript — edit them there, not in
-the test. `bun run spec:eel` runs the same corpus with a per-section report.
+Names follow the code under test: `milkdrop-*` for the engine and renderers, `preset-*` for preset loading, credit and sharing, `editor-*` for the editor panes, `app-shell-*` and `workspace-*` for the React shell, `check-*` for guard scripts.
 
-## VM / runtime
+```bash
+rg -l "renderer-query-override" tests/   # tests that import or name a module
+bun run test:changed                     # fast-profile tests affected by uncommitted changes
+```
 
-`milkdrop-vm.test.ts` (1698 lines) · `milkdrop-vm-frame-generation.test.ts` ·
-`vm-gpu.test.ts` · `vm-buffer-manager.test.ts` · `milkdrop-modulo-parity.test.ts` ·
-`milkdrop-runtime.test.ts` · `milkdrop-runtime-seams.test.ts` ·
-`milkdrop-runtime-signals.test.ts` · `milkdrop-runtime-performance.test.ts` ·
-`milkdrop-preset-load-trace.test.ts` · `milkdrop-salvage-compile.test.ts`
+Expression semantics have their own instruments: `unit/eel-tier-differential.test.ts` and `unit/gpu-field-tier-differential.test.ts` hold the interpreter, JIT and GPU tiers to the same results, and `unit/eel-conformance-spec.test.ts` runs the portable cases in `packages/eel-conformance/cases/` (JSON; edit them there, not in the test).
 
-## Renderer / feedback / WebGPU
+The standalone packages keep their own suites in `packages/*/tests/`; run them with `bun run check:packages` or `bun --cwd packages/<name> test`. Tests in this directory cover what needs the rest of the repository, such as the bundled preset corpus.
 
-`milkdrop-renderer-adapter.test.ts` (4495 lines) · `milkdrop-renderer-execution-plan.test.ts` ·
-`milkdrop-renderer-seams.test.ts` · `milkdrop-wave-renderer.test.ts` ·
-`milkdrop-border-renderer.test.ts` · `milkdrop-particle-field.test.ts` ·
-`primitive-rasterization-fidelity.test.ts` · `milkdrop-feedback-manager-webgpu.test.ts` ·
-`milkdrop-feedback-perf.test.ts` · `milkdrop-feedback-composite-profile.test.ts` ·
-`milkdrop-feedback-render-targets.test.ts` · `milkdrop-feedback-volume-sampling.test.ts` ·
-`milkdrop-webgpu-feature-routing.test.ts` ·
-`shader-dependent-presets.test.ts` · `renderer-capabilities.test.ts` ·
-`renderer-query-override.test.ts` · `renderer-retry-policy.test.ts` ·
-`renderer-settings.test.ts` · `renderer-setup.test.ts`
+## Support files
 
-## Audio
-
-The DSP itself (FFT worklet, HPSS, beat tracking, spectral features, interpolation,
-lifecycle) is tested in `packages/audio-reactive/tests/`. Here:
-`audio-handler.test.ts` · `audio-gpu-texture.test.ts` · `audio-frame-allocation.test.ts` ·
-`audio-worklet.test.ts` · `harmonic-percussive-signals.test.ts` ·
-`milkdrop-audio-signal-contract.test.ts` · `milkdrop-input-signals.test.ts` ·
-`audio-visual-transfer.test.ts` ·
-`display-audio-capture.test.ts` · `youtube-controller.test.ts` · `test-audio-rig.ts` (script)
-
-## Catalog / store / search
-
-`milkdrop-catalog-store.test.ts` · `milkdrop-catalog-store-bundled-loader.test.ts` ·
-`milkdrop-catalog-store-resilience.test.ts` · `catalog-store-analysis.test.ts` ·
-`catalog-compiler-smoke.test.ts` (compiles all bundled presets) · `browse-author-filter.test.ts` ·
-`sync-bundled-catalog-fidelity.test.ts` · `check-bundled-catalog-fidelity.test.ts` ·
-`milkdrop-vendored-library-manifest.test.ts` · `milkdrop-projectm-cream-library.test.ts`
-
-## Editor / authoring / presets
-
-`editor-panel.test.ts` · `editor-panel-controls.test.ts` · `editor-panel-textures.test.ts` · `milkdrop-editor-session.test.ts` ·
-`preset-controls.test.ts` · (formatter tests: `packages/milkdrop-toolchain/tests/`) ·
-`live-modulation.test.ts` · `preset-modulation.test.ts` · `preset-sharing.test.ts` ·
-`preset-file-actions.test.ts` · `preset-id-resolution.test.ts` · `preset-handles.test.ts` ·
-`preset-credit.test.ts` · `preset-lineage.test.ts` · `preset-artwork.test.ts` ·
-`preset-visual-description.test.ts` · `assisted-edit-gate.test.ts` ·
-`milkdrop-preset-navigation-controller.test.ts` · `milkdrop-preset-preview-service.test.ts` ·
-`milkdrop-preset-performance-overrides.test.ts` ·
-`bundled-first-run-preset.test.ts` · `bundled-preset-frame-cost.test.ts` · `preset-cost-signal.test.ts` ·
-`preset-lab-cost-ingest.test.ts` · `preset-cost-gate-reach.test.tsx` · `milkdrop-overlay-panels.test.ts` ·
-`milkdrop-overlay-stacking.test.ts` · `milkdrop-live-tile-pool.test.ts` ·
-`preset-lab-metrics.test.ts`
-
-## App shell / frontend
-
-`app-shell.test.ts` · `app-shell-*.test.ts` (first-run-recovery, minimal-surfaces,
-mobile-layout, passive-guidance, performance-hardware, performance-regression, route-sync,
-skip-flow, stage-tools, toast-regression, ui-simplification) · `frontend-url-state.test.ts` ·
-`frontend-video-export-runtime.test.ts` · `frontend-fullscreen.test.ts` ·
-`split-view-browse.test.ts` · `workspace-activity.test.ts` · `workspace-first-fold-actions.test.ts` ·
-`workspace-youtube-preview.test.ts` · `stage-gestures.test.tsx` ·
-`stage-warp-gizmo.test.tsx` · `preflight-mobile-visibility.test.ts` · `mobile-viewport-matrix.test.ts` ·
-`use-auto-hide-activity.test.tsx` · `use-focus-trap.test.tsx` · `use-lazy-factory.test.ts`
-
-## Services / state / quality
-
-`adaptive-quality-controller.test.ts` · `continuous-drs.test.ts` ·
-`frame-pacing.test.ts` · `power-state.test.ts` · `simulation-accumulator.test.ts` ·
-`device-profile.test.ts` · `device-refresh-rate.test.ts` · `performance-hardware-controls.test.ts` ·
-`performance-settings-store.test.ts` · `crash-telemetry.test.ts` ·
-`services-pool.test.ts` · `webmidi-controller.test.ts` ·
-`microphone-permission-service.test.ts` · `optional-api.test.ts` · `visual-embedding.test.ts` ·
-`render-service-prewarm.test.ts`
-
-## Toy / agent / automation
-
-`agent-api.test.ts` · `agent-bridge.test.ts` · `toy-*.test.ts` (inline-handlers, renderer-native-capture,
-runtime-starter, viewport-session, sample-toy) · `shared-initializer.test.ts` · `unified-input.test.ts` ·
-`webgl-check.test.ts` · `synthetic-stimulus.test.ts` · `mcp-server.test.ts` · `sync-room-protocol.test.ts`
-
-## Parity / evidence / corpus (slow — `all` profile)
-
-`tests/corpus/milkdrop-parity.test.ts` · `milkdrop-corpus-compat.test.ts` ·
-`milkdrop-projectm-compat.test.ts` · `butterchurn-corpus-support.test.ts` ·
-`run-parity-diff-suite.test.ts` · `native-projectm-reference.test.ts` ·
-`promote-projectm-reference.test.ts` · `visual-reference-manifest.test.ts` ·
-`measured-visual-results.test.ts` · `parity-artifacts.test.ts` · `parity-artifact-prune.test.ts` ·
-`diff-parity-artifacts.test.ts` · `check-catalog-integrity.test.ts`
-
-## Docs / metadata guards (validate the repo, not runtime)
-
-`check-architecture.test.ts` · `check-ci-config.test.ts` · `check-commit-msg.test.ts` ·
-`check-duplicate-css.test.ts` · `run-quality-gate.test.ts` · `check-catalog-integrity.test.ts` ·
-`codex-*.test.ts` (model-route, session-script, setup-script) ·
-`seo-canonical-intent.test.ts` · `check-no-ts-nocheck` (script) · `check-doc-references` (script) ·
-`check-readme-claims` (script) · `check-cache-bounds.test.ts` ·
-`release-notes.test.ts` (Release workflow notes; fails a version bump without notes)
-
-## Served-card pipeline (previews + OG cards)
-
-`frame-stats.test.ts` (what counts as an unusable capture) ·
-`audit-production-previews.test.ts` (served-vs-repo: upload vs recapture) ·
-`warm-og-cards.test.ts` (edge warm: retries, fallback detection, exit status) ·
-`preview-failure-report.test.ts` · `generate-seo.test.ts` (cards + sitemap)
-
-## Visual / regression / accessibility
-
-`tests/accessibility/accessibility-regression.test.tsx` · `preset-visual-regression-capture.ts` (script) ·
-`parity:capture` / `parity:suite` (scripts) · `tests/e2e/e2e-engine-mount.test.ts` ·
-`tests/e2e/agent-integration.test.ts` (the `integration` profile)
+| Path | Purpose |
+| --- | --- |
+| `setup.ts` | Preloaded by `bunfig.toml`: installs the stand-ins from `environment/` (DOM, animation frames, WebGPU) and stubs for worker and worklet imports. |
+| `test-helpers.ts` | `importFresh()`, `flushTasks()`, `replaceProperty()`, and `browserTest`, the gate for browser-backed files. |
+| `frontend-harness.tsx` | Renders workspace panels against fake engine and workspace contexts. |
+| `milkdrop-fixtures.ts`, `toy-test-helpers.ts`, `demo-toy.ts` | Shared catalog entries, fake audio nodes and a stand-in runtime module. |
+| `e2e/*.ts` without `.test` | Dev-server, browser-availability and agent-API helpers for the e2e files. |
+| `fixtures/` | `.milk` presets, native projectM reference renders (`fixtures/milkdrop/projectm-reference/`), flash-audit samples, Strudel patterns. |
+| `accessibility/` | Lighthouse reports written by `bun run check:accessibility`; no tests. |
+| `manual/` | Pages opened by hand on the dev server: `tile-lab.html` runs many engine instances at tile size, `probe-scratch-mesh.html` probes render-target shapes. |

@@ -1,5 +1,7 @@
 # Verification matrix
 
+> Superseded on 2026-10-13 by [`TESTING.md`](../TESTING.md), which owns test commands and which evidence each change needs. Its "Three.js decorative scenes" row described no code: the frontend draws no Three.js scenes, and WebGPU, not WebGL, is the default where the browser runs it stably.
+
 Keep this matrix aligned with `ARCHITECTURE.md` and `DEVELOPMENT.md` when
 those workflows change.
 

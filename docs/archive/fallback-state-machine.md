@@ -1,5 +1,7 @@
 # Renderer Setup Fallback State Machine Design
 
+> Archived on 2026-10-13: a design study from 2026-05-16, last touched on 2026-10-05 to add the compatibility-adapter retry. Its line references and transition counts describe the code of the study's date; the current code and tests define renderer setup, and [Rendering backends](../ARCHITECTURE.md#rendering-backends) summarizes it.
+
 Sprint 7 planning phase — design document. No code changes produced.
 
 ---
