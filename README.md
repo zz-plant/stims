@@ -16,18 +16,12 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 
 <table>
   <tr>
-    <td width="50%"><a href="https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.webp" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></a></td>
-    <td width="50%"><a href="https://toil.fyi/?preset=rovastar-harlequins-liquid-dragon"><img src="./docs/assets/clips/rovastar-harlequins-liquid-dragon.webp" alt="Rovastar — Harlequin's Liquid Dragon" width="100%"></a></td>
+    <td width="33%"><a href="https://toil.fyi/?preset=phat-zylot-eos-trippy-rotation"><img src="./docs/assets/clips/phat-zylot-eos-trippy-rotation.webp" alt="Phat, Zylot &amp; Eo.S. — Trippy Rotation" width="100%"></a></td>
+    <td width="33%"><a href="https://toil.fyi/?preset=eos-starburst-05-phasing"><img src="./docs/assets/clips/eos-starburst-05-phasing.webp" alt="Eo.S. — Starburst 05 Phasing" width="100%"></a></td>
+    <td width="33%"><a href="https://toil.fyi/?preset=eos-glowsticks-v2-03-music"><img src="./docs/assets/clips/eos-glowsticks-v2-03-music.webp" alt="Eo.S. — Glowsticks v2 03 Music" width="100%"></a></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>Krash &amp; Rovastar</b> — Cerebral Demons</sub></td>
-    <td align="center"><sub><b>Rovastar</b> — Harlequin's Liquid Dragon</sub></td>
-  </tr>
-  <tr>
-    <td width="50%"><a href="https://toil.fyi/?preset=eos-starburst-05-phasing"><img src="./docs/assets/clips/eos-starburst-05-phasing.webp" alt="Eo.S. — Starburst 05 Phasing" width="100%"></a></td>
-    <td width="50%"><a href="https://toil.fyi/?preset=eos-glowsticks-v2-03-music"><img src="./docs/assets/clips/eos-glowsticks-v2-03-music.webp" alt="Eo.S. — Glowsticks v2 03 Music" width="100%"></a></td>
-  </tr>
-  <tr>
+    <td align="center"><sub><b>Phat, Zylot &amp; Eo.S.</b> — Trippy Rotation</sub></td>
     <td align="center"><sub><b>Eo.S.</b> — Starburst 05 Phasing</sub></td>
     <td align="center"><sub><b>Eo.S.</b> — Glowsticks v2</sub></td>
   </tr>
