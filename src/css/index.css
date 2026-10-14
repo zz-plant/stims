@@ -118,12 +118,6 @@ footer {
   scroll-margin-top: 6rem;
 }
 
-.brand-copy .eyebrow {
-  margin: 0;
-  font-size: 0.8125rem;
-  opacity: 0.75;
-}
-
 header {
   margin-bottom: 3rem;
   position: relative;
@@ -145,16 +139,6 @@ header.hero {
   border: 1px solid var(--surface-border);
 }
 
-.intro .section-heading h1 {
-  font-size: clamp(2.8rem, 1.6rem + 3.4vw, 4rem);
-  line-height: 1.05;
-  letter-spacing: 0.02em;
-}
-
-.intro .section-heading .section-description {
-  font-size: 1rem;
-}
-
 .eyebrow {
   text-transform: uppercase;
   font-stretch: var(--font-stretch-legend);
@@ -165,27 +149,10 @@ header.hero {
   margin: 0 0 0.5rem;
 }
 
-.hero-cta-row .cta-button {
-  width: 100%;
-  justify-content: center;
-}
-
-.hero-cta-row .cta-button.primary {
-  grid-column: 1 / -1;
-}
-
 .intro h1 {
   margin: 0;
   font-size: clamp(1.45rem, 1.1rem + 1.3vw, 2rem);
   line-height: 1.2;
-}
-
-.intro .cta-helper {
-  margin: 0;
-}
-
-html.light .cta-helper {
-  color: color-mix(in srgb, var(--text-color) 85%, var(--accent-color));
 }
 
 .cta-button {
@@ -289,104 +256,24 @@ h1 {
     color-mix(in srgb, var(--accent-color) 24%, var(--surface-border));
 }
 
-html.light .search-meta {
-  background:
-    var(--surface-highlight), var(--surface-texture),
-    color-mix(in srgb, var(--card-bg) 90%, var(--accent-color));
-  border-color: color-mix(
-    in srgb,
-    var(--accent-color) 18%,
-    var(--surface-border)
-  );
-  color: var(--text-color);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--accent-color) 12%, transparent);
-}
-
-html.light .search-meta__results,
-html.light .search-meta__note {
-  color: var(--text-color);
-}
-
-html.light .search-meta__tokens li {
-  border-color: color-mix(
-    in srgb,
-    var(--accent-color) 24%,
-    var(--surface-border)
-  );
-  color: var(--text-color);
-  background: color-mix(in srgb, var(--card-bg) 92%, var(--accent-color));
-}
-
-html.light .active-filters__status {
-  color: color-mix(in srgb, var(--text-color) 95%, #0f172a);
-}
-
-html.light .library-refine > summary,
-html.light .more-filters > summary {
-  color: color-mix(in srgb, var(--text-color) 90%, #0f172a);
-}
-
-html.light .search-meta__note {
-  color: color-mix(in srgb, var(--text-color) 84%, #0f172a);
-}
-
-html:not(.light) .webtoy-card {
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow:
-    0 0 0 1px var(--stims-white-04),
-    var(--shadow-soft),
-    var(--surface-emboss);
-}
-
 /* Gradient shimmer overlay */
 
-html.light .top-nav,
-html.light section.intro,
-html.light .library-search,
-html.light .webtoy-card {
+html.light section.intro {
   border-color: rgba(43, 56, 77, 0.16);
 }
 
-html.light .cta-button.ghost,
-html.light .filter-chip,
-html.light .sort-control,
-html.light .filter-toggle {
+html.light .cta-button.ghost {
   border-color: rgba(43, 56, 77, 0.2);
   background: color-mix(in srgb, var(--card-bg) 94%, transparent);
-}
-
-html.light .filter-chip {
-  color: color-mix(in srgb, var(--text-color) 92%, #0f172a);
-}
-
-html.light .filter-chip.is-active {
-  background: color-mix(in srgb, var(--accent-color) 38%, #e7eef8);
-  border-color: rgba(29, 78, 216, 0.88);
-  color: #102544;
-  box-shadow:
-    0 0 0 2px rgba(37, 99, 235, 0.32),
-    0 6px 16px rgba(15, 23, 42, 0.12);
 }
 
 html.light .library {
   border-top-color: rgba(63, 74, 90, 0.2);
 }
 
-html.light .filter-chip.is-active::before {
-  color: #1d4ed8;
-}
-
 html.light .cta-button.primary {
   background: linear-gradient(130deg, #3f6ea8, #315f97);
   border-color: rgba(29, 78, 216, 0.54);
-}
-
-.webtoy-card-actions .cta-button {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0.5rem 0.78rem;
-  font-size: 0.8125rem;
 }
 
 footer {
@@ -396,42 +283,16 @@ footer {
   border-top: 1px solid var(--surface-border);
 }
 
-.footer-cta-row .cta-button {
-  box-shadow:
-    var(--shadow-soft),
-    0 0 0 1px var(--stims-white-08);
-}
-
-.footer-cta-row .cta-button.ghost {
-  background:
-    var(--surface-texture), color-mix(in srgb, var(--card-bg) 88%, transparent);
-  border-color: color-mix(
-    in srgb,
-    var(--accent-color) 25%,
-    var(--surface-border)
-  );
-}
-
 @media (max-width: 900px) {
   :root {
     --radius-lg: 18px;
     --radius-md: 12px;
-  }
-
-  .hero-utility-row .cta-button,
-  .experience-shortcuts .cta-button {
-    flex: 1 1 100%;
   }
 }
 
 @media (max-width: 680px) {
   body {
     font-size: 1rem;
-  }
-
-  .webtoy-card-actions .cta-button {
-    width: 100%;
-    justify-content: center;
   }
 
   header.hero {
@@ -453,10 +314,6 @@ footer {
   h1 {
     font-size: 1.875rem;
   }
-
-  .hero-cta-row .cta-button.primary {
-    letter-spacing: 0.04em;
-  }
 }
 
 @media (max-width: 520px) {
@@ -477,80 +334,19 @@ footer {
     padding-inline: 0.95rem;
   }
 
-  .footer-cta-row .cta-button {
-    width: 100%;
-  }
-
-  .hero-cta-row .cta-button {
-    min-height: 50px;
-  }
-
   .cta-button {
     width: 100%;
     justify-content: center;
     padding: 0.75rem 0.95rem;
     font-size: 0.9375rem;
   }
-  .hero-cta-row .cta-button.cta-button--muted,
-  .hero-cta-row .cta-button.cta-button--accent {
-    display: none;
-  }
-
-  .hero-cta-row .cta-button.primary,
-  .hero-cta-row .cta-button.ghost {
-    min-height: 52px;
-  }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .intro-actions .cta-button.primary {
-    animation: none;
-  }
-}
-
-/* Minimal home refresh */
-
-.intro-actions .cta-button {
-  min-width: 8.75rem;
-  border-radius: var(--radius-md);
-  border-color: color-mix(
-    in srgb,
-    var(--accent-color) 30%,
-    var(--surface-border)
-  );
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
-  transform: translateZ(0);
-}
-
-.intro-actions .cta-button.primary {
-  background-size: auto;
-  animation: homeHeroButtonPulse 5.4s ease-in-out infinite;
-}
-
-@media (max-width: 700px) {
-  .intro-actions .cta-button {
-    width: 100%;
-  }
-}
-
-body.tv-mode .top-nav {
-  top: max(1.2rem, env(safe-area-inset-top));
-  padding: 1rem 1.25rem;
-}
-
-body.tv-mode .nav-link,
-body.tv-mode .cta-button,
-body.tv-mode .filter-chip,
-body.tv-mode .webtoy-card__link,
-body.tv-mode .theme-toggle {
+body.tv-mode .cta-button {
   min-height: 56px;
   padding-block: 0.8rem;
   padding-inline: 1rem;
   font-size: 1rem;
-}
-
-body.tv-mode .webtoy-card {
-  width: clamp(300px, 34cqi, 420px);
 }
 
 body.tv-mode .content {
@@ -568,11 +364,6 @@ body.tv-mode .content {
 .intro h1 {
   letter-spacing: -0.01em;
   line-height: 1.15;
-}
-
-.intro .cta-helper {
-  max-width: 70ch;
-  line-height: 1.68;
 }
 
 .library {
@@ -854,19 +645,6 @@ footer {
   padding: 1.4rem 1.2rem 1.8rem;
 }
 
-.shell-header--launch .shell-panel[data-audio-controls] > .control-panel,
-.shell-header--launch .shell-panel[data-settings-panel] > .control-panel,
-.shell-header--launch .shell-panel > [data-audio-controls] > .control-panel,
-.shell-header--launch .shell-panel > [data-settings-panel] > .control-panel {
-  max-height: none;
-  overflow: visible;
-}
-
-.shell-header--launch .shell-panel[data-settings-panel] > .control-panel,
-.shell-header--launch .shell-panel > [data-settings-panel] > .control-panel {
-  min-height: 100%;
-}
-
 body,
 html {
   /* No font-family here: --display-font was never defined, which made this
@@ -892,11 +670,8 @@ html {
 }
 
 header.hero,
-.library-search,
 .control-panel,
-.active-toy-nav,
-.active-toy-status__content,
-.toy-shell-escape__link {
+.active-toy-status__content {
   background:
     linear-gradient(
       180deg,
@@ -1000,15 +775,8 @@ header.hero::after {
 }
 
 .control-panel,
-.active-toy-nav,
 .active-toy-status__content {
   border-radius: var(--radius-xl);
-}
-
-@container home-hero (max-width: 900px) {
-  .hero-cta-row .cta-button.primary {
-    grid-column: auto;
-  }
 }
 
 @media (hover: none), (pointer: coarse) {
@@ -1039,11 +807,8 @@ header.hero::after {
 }
 
 header.hero,
-.library-search,
 .control-panel,
-.active-toy-nav,
-.active-toy-status__content,
-.toy-shell-escape__link {
+.active-toy-status__content {
   background:
     linear-gradient(180deg, var(--stims-white-12), var(--stims-white-02) 18%),
     var(--surface-texture), var(--panel-gradient);
@@ -1114,9 +879,7 @@ header.hero,
 }
 
 .control-panel,
-.active-toy-status__content,
-.active-toy-nav,
-.toy-shell-escape__link {
+.active-toy-status__content {
   border-radius: var(--radius-sm);
   box-shadow:
     0 16px 30px rgba(2, 4, 10, 0.36),
@@ -1146,27 +909,6 @@ header.hero,
   letter-spacing: 0.11em;
 }
 
-.launch-panels .shell-panel[data-audio-controls] > .control-panel,
-.launch-panels .shell-panel[data-settings-panel] > .control-panel,
-.launch-panels .shell-panel > [data-audio-controls] > .control-panel,
-.launch-panels .shell-panel > [data-settings-panel] > .control-panel {
-  max-height: none;
-  overflow: visible;
-}
-
-.launch-panels .shell-panel[data-settings-panel] > .control-panel,
-.launch-panels .shell-panel > [data-settings-panel] > .control-panel {
-  min-height: 100%;
-}
-
-.home-stage__copy .tagline {
-  max-width: 33rem;
-  margin: 0;
-  font-size: clamp(1rem, 1vw + 0.88rem, 1.22rem);
-  line-height: 1.58;
-  color: color-mix(in srgb, var(--text-color) 92%, transparent);
-}
-
 @keyframes home-orb-float {
   0%,
   100% {
@@ -1188,45 +930,6 @@ header.hero,
   50% {
     transform: scaleY(1.12);
     opacity: 1;
-  }
-}
-
-/* UI hierarchy refresh: keep first-run messaging short and make setup feel secondary. */
-
-.home-stage__copy .tagline {
-  max-width: 30rem;
-  font-size: clamp(1rem, 0.8vw + 0.92rem, 1.15rem);
-  line-height: 1.5;
-}
-
-@media (max-width: 640px) {
-  .brand-copy .eyebrow {
-    font-size: 0.6875rem;
-  }
-
-  .home-stage__copy .tagline {
-    font-size: 0.9375rem;
-    line-height: 1.45;
-  }
-
-  .launch-intro__actions .cta-button {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .launch-panels .shell-panel[data-audio-controls] > .control-panel,
-  .launch-panels .shell-panel[data-settings-panel] > .control-panel,
-  .launch-panels .shell-panel > [data-audio-controls] > .control-panel,
-  .launch-panels .shell-panel > [data-settings-panel] > .control-panel {
-    border-radius: var(--radius-xl);
-  }
-}
-
-/* Mobile-first homepage revamp */
-
-@media (max-height: 520px) and (orientation: landscape) {
-  .launch-intro__actions .cta-button {
-    min-height: 48px;
   }
 }
 

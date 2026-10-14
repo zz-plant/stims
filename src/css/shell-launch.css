@@ -4,8 +4,6 @@
  * responsive home and browse geometry.
  */
 
-/* Shell focus pass: put the preset decision before source setup and keep the
-   catalog scannable at the widths where the shell is most often used. */
 @scope (.stims-shell) {
   .stims-shell__stage-frame[data-mode="home"] {
     background: #05070c;
@@ -22,136 +20,9 @@
     scrollbar-gutter: stable;
   }
 
-  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-panel {
-    width: min(1040px, 100%);
-    padding: 20px 0 16px;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .stims-shell__launch-recommendation .stims-shell__preset-art {
-    width: 104px;
-    min-width: 104px;
-    min-height: 66px;
-    aspect-ratio: 16 / 9;
-    border-radius: var(--radius-sm);
-  }
-
-  .stims-shell__launch-recommendation strong,
-  .stims-shell__launch-recommendation .stims-shell__meta-copy {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .stims-shell__launch-source-dock .stims-shell__source-panel {
-    gap: 12px;
-  }
-
-  .stims-shell__launch-source-dock .stims-shell__youtube-primary {
-    padding: 0 0 12px;
-    border: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 0;
-    background: transparent;
-  }
-
-  .stims-shell__launch-source-dock .stims-shell__source-grid {
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-  }
-
-  .stims-shell__launch-source-dock .stims-shell__source-card {
-    min-height: 52px;
-    padding: 10px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.02);
-    transition:
-      background-color 160ms ease,
-      border-color 160ms ease;
-  }
-
-  .stims-shell__launch-source-dock .stims-shell__source-card:hover {
-    border-color: rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  .stims-shell__launch-source-dock .stims-shell__source-card strong {
-    font-size: 0.875rem;
-    font-weight: 600;
-  }
-
-  .stims-shell__launch-source-dock .stims-shell__source-card-kicker {
-    font-size: 0.6875rem;
-    letter-spacing: 0.04em;
-    opacity: 0.7;
-  }
-
-  .stims-shell__sheet-panel--browse .stims-shell__sheet-surface {
-    border-radius: var(--radius-md);
-  }
-
   .stims-shell__sheet-panel--browse .stims-shell__preset-list {
     grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
     gap: 8px;
-  }
-
-  .stims-shell__sheet-panel--browse .stims-shell__preset-card {
-    grid-template-columns: 104px minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    border-radius: var(--radius-md);
-  }
-
-  .stims-shell__sheet-panel--browse
-    .stims-shell__preset-card
-    .stims-shell__preset-art {
-    width: 104px;
-    min-width: 104px;
-    min-height: 68px;
-    height: 68px;
-    border-radius: var(--radius-sm);
-  }
-
-  .stims-shell__sheet-panel--browse .stims-shell__preset-card-copy {
-    gap: 4px;
-    min-width: 0;
-  }
-
-  .stims-shell__sheet-panel--browse .stims-shell__preset-title,
-  .stims-shell__sheet-panel--browse .stims-shell__preset-vibe {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .stims-shell__sheet-panel--browse .stims-shell__collections {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    scrollbar-width: none;
-  }
-
-  .stims-shell__sheet-panel--browse
-    .stims-shell__collections::-webkit-scrollbar {
-    display: none;
-  }
-
-  .stims-shell__sheet-panel--browse .stims-shell__collection-pill {
-    flex: 0 0 auto;
-    min-height: 38px;
-    padding: 7px 11px;
-    border-radius: var(--radius-sm);
-    box-shadow: none;
-  }
-
-  .stims-shell__sheet-panel--browse .stims-shell__section-heading {
-    align-items: baseline;
   }
 
   @media (max-width: 767px) {
@@ -159,54 +30,9 @@
       padding: 76px 14px 34px;
     }
 
-    .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-panel {
-      padding: 8px 0 0;
-    }
-
-    .stims-shell__launch-recommendation .stims-shell__preset-art {
-      width: 96px;
-      min-width: 96px;
-      min-height: 62px;
-    }
-
-    .stims-shell__launch-source-dock .stims-shell__youtube-row {
-      grid-template-columns: minmax(0, 1fr) 76px;
-    }
-
-    .stims-shell__launch-source-dock .stims-shell__source-card {
-      min-height: 52px;
-    }
-
-    .stims-shell__sheet-panel--browse .stims-shell__sheet-surface {
-      padding: 10px;
-    }
-
     .stims-shell__sheet-panel--browse .stims-shell__preset-list {
       grid-template-columns: 1fr;
       gap: 6px;
-    }
-
-    .stims-shell__sheet-panel--browse .stims-shell__preset-card {
-      grid-template-columns: 84px minmax(0, 1fr);
-      gap: 10px;
-      padding: 7px;
-    }
-
-    .stims-shell__sheet-panel--browse
-      .stims-shell__preset-card
-      .stims-shell__preset-art {
-      width: 84px;
-      min-width: 84px;
-      min-height: 56px;
-      height: 56px;
-    }
-
-    .stims-shell__sheet-panel--browse .stims-shell__browse-search-row {
-      grid-template-columns: minmax(0, 1fr) 112px;
-    }
-
-    .stims-shell__sheet-panel--browse .stims-shell__sheet-surface--sticky {
-      gap: 8px;
     }
   }
 }
