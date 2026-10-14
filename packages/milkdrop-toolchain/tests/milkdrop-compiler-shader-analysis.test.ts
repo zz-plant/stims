@@ -312,7 +312,7 @@ warp_texture_scale = bass_att * 0.5
     );
     expect(
       compiled.ir.shaderText.compProgram?.execution.requiresControlFallback,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({

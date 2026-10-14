@@ -755,7 +755,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex2d(sampler_aura, uv * 1.5 
           kind: 'direct-feedback-program',
           stage: 'comp',
           supportedBackends: ['webgl', 'webgpu'],
-          requiresControlFallback: true,
+          requiresControlFallback: false,
         }),
       }),
     );
@@ -810,7 +810,7 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb + tex2d(sampler_aura, uv * 1.2 + v
           kind: 'direct-feedback-program',
           stage: 'comp',
           supportedBackends: ['webgl', 'webgpu'],
-          requiresControlFallback: true,
+          requiresControlFallback: false,
         }),
       }),
     );
@@ -836,7 +836,7 @@ comp_shader=ret = tex2d(sampler_fw_noise_lq, uv).rgb
     );
     expect(
       compiled.ir.shaderText.compProgram?.execution.requiresControlFallback,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
@@ -1645,7 +1645,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
           kind: 'direct-feedback-program',
           stage: 'comp',
           supportedBackends: ['webgl', 'webgpu'],
-          requiresControlFallback: true,
+          requiresControlFallback: false,
         }),
       }),
     );
@@ -1711,7 +1711,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
           kind: 'direct-feedback-program',
           stage: 'comp',
           supportedBackends: ['webgl', 'webgpu'],
-          requiresControlFallback: true,
+          requiresControlFallback: false,
         }),
       }),
     );
@@ -1749,7 +1749,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     );
     expect(
       compiled.ir.shaderText.compProgram?.execution.requiresControlFallback,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({

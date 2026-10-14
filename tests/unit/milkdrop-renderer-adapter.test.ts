@@ -4856,7 +4856,7 @@ comp_shader=saturation=1.4; contrast=1.2; r=1.1; g=0.85; b=0.65
     const preset = compileMilkdropPresetSource(
       `
 title=Shader Texture Uniforms
-comp_shader=ret = tex2d(sampler_pattern, uv * 1.4 + vec2(0.2, -0.15)).rgb
+comp_shader=texture_source = sampler_pattern; texture_mode = replace; texture_amount = 1; texture_scale = 1.4; texture_offset = vec2(0.2, -0.15)
 warp_shader=warp_texture_source = sampler_noise; warp_texture_amount = 0.08; warp_texture_scale = vec2(2.2, 1.7); warp_texture_offset = vec2(0.05, 0.1)
       `.trim(),
       { id: 'shader-texture-uniforms' },
