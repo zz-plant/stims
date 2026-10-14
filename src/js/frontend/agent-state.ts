@@ -83,7 +83,11 @@ export interface AgentCoreSnapshot {
   backend: string | null;
   panel: string | null;
   presetId: string | null;
+  /** Title and author from the catalog entry for `presetId`, so the three
+   * always name the same preset. Null when that entry is not in the catalog
+   * (yet), or for an author the entry does not record. */
   presetTitle: string | null;
+  presetAuthor: string | null;
   /** Catalog entries the shell can pick from. 0 until the deferred catalog
    * load lands, which is later than `engineState === 'ready'`; actions that
    * choose a preset (`next-preset`, collection shuffles) are no-ops before
@@ -173,16 +177,23 @@ export const CORE_SNAPSHOT_DIFF_DESCRIPTORS: readonly CoreDiffDescriptor[] = [
     }),
   },
   {
-    // presetTitle is bundled into the same event as presetId (it's the
-    // human-readable name of whatever preset just became active), but is
-    // also checked alone in case a title correction ever lands without an
-    // id change.
-    fields: ['presetId', 'presetTitle'],
+    // presetTitle and presetAuthor are bundled into the same event as
+    // presetId (they name whatever preset just became active), but are also
+    // checked alone in case a catalog correction ever lands without an id
+    // change.
+    fields: ['presetId', 'presetTitle', 'presetAuthor'],
     changed: (p, n) =>
-      p.presetId !== n.presetId || p.presetTitle !== n.presetTitle,
+      p.presetId !== n.presetId ||
+      p.presetTitle !== n.presetTitle ||
+      p.presetAuthor !== n.presetAuthor,
     event: (p, n) => ({
       type: 'preset',
-      data: { from: p.presetId, to: n.presetId, title: n.presetTitle },
+      data: {
+        from: p.presetId,
+        to: n.presetId,
+        title: n.presetTitle,
+        author: n.presetAuthor,
+      },
     }),
   },
   {

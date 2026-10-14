@@ -18,6 +18,7 @@ const CORE: AgentCoreSnapshot = {
   panel: null,
   presetId: 'preset-a',
   presetTitle: 'Preset A',
+  presetAuthor: 'Author A',
   catalogSize: 3,
   audioSource: null,
   playbackPaused: false,

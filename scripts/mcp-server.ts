@@ -25,6 +25,7 @@ import { z } from 'zod';
 import { resolveAgentChromiumArgs } from './browser-launch.ts';
 import { sendToil } from './embed-harness.ts';
 import { registerPerformanceTools } from './mcp-performance-tools.ts';
+import { readSessionPageState } from './mcp-session-state.ts';
 import {
   asImageResponse,
   asTextResponse,
@@ -463,7 +464,7 @@ server.registerTool(
   'session_get_state',
   {
     description:
-      'Get the current state of an active agent session — which preset is playing, the audio energy level, FPS, and backend (WebGL/WebGPU).',
+      "Get the current state of an active agent session from the page's agent API (window.__stims_agent) — which preset is playing (id, title, author), the audio energy level, FPS, backend (WebGL/WebGPU), whether the preset's shader runs as authored, and the last page error.",
     inputSchema: z.object({
       sessionId: z.string().describe('Session ID from start_agent_session.'),
     }),
@@ -477,41 +478,7 @@ server.registerTool(
     }
 
     try {
-      const state = await session.page.evaluate(() => {
-        const body = document.body;
-        const dataset = body.dataset;
-        const htmlDataset = document.documentElement.dataset;
-        const canvas = document.querySelector('canvas');
-        const overlay = document.querySelector('.milkdrop-overlay');
-        const osdTitle = overlay?.querySelector('.milkdrop-overlay__osd-title');
-        const osdMeta = overlay?.querySelector('.milkdrop-overlay__osd-meta');
-        const dock = document.querySelector('.stims-shell__stage-dock');
-        const dockStyle = dock ? getComputedStyle(dock) : null;
-        const audioGlow =
-          dockStyle?.getPropertyValue('--stims-audio-glow') ?? null;
-
-        // Read audio energy from the Now Playing bar's CSS custom property
-        const nowPlaying = document.querySelector(
-          '.stims-shell__now-playing-bar',
-        );
-        const npStyle = nowPlaying ? getComputedStyle(nowPlaying) : null;
-        const audioEnergy =
-          npStyle?.getPropertyValue('--stims-energy') ?? audioGlow;
-
-        return {
-          page: dataset.page,
-          audioActive: dataset.audioActive ?? 'false',
-          audioEnergy: audioEnergy ? parseFloat(audioEnergy).toFixed(2) : null,
-          backend: dataset.activeBackend ?? htmlDataset.activeBackend ?? null,
-          canvasExists: !!canvas,
-          canvasWidth: canvas?.width,
-          canvasHeight: canvas?.height,
-          overlayVisible: overlay?.classList.contains('is-open') ?? false,
-          presetTitle: osdTitle?.textContent?.trim() ?? null,
-          presetAuthor: osdMeta?.textContent?.trim() ?? null,
-          url: window.location.href,
-        };
-      });
+      const state = await session.page.evaluate(readSessionPageState);
 
       return asTextResponse(JSON.stringify(state, null, 2));
     } catch (e) {
@@ -657,16 +624,9 @@ server.registerTool(
         await session.page.screenshot({ path: filepath });
         frames.push(filepath);
 
-        const state = await session.page.evaluate(() => {
-          const osdTitle = document.querySelector(
-            '.milkdrop-overlay__osd-title',
-          );
-          return {
-            title: osdTitle?.textContent?.trim() ?? null,
-          };
-        });
+        const state = await session.page.evaluate(readSessionPageState);
         stateSnapshots.push(
-          `  t=${(i + 1) * (intervalMs ?? 1000)}ms: "${state.title}"`,
+          `  t=${(i + 1) * (intervalMs ?? 1000)}ms: "${state.presetTitle}" (${state.presetId})`,
         );
       }
 
@@ -1181,18 +1141,15 @@ server.registerTool(
       });
 
       // Basic metadata from the page
-      const meta = await session.page.evaluate(() => {
-        const canvas = document.querySelector('canvas');
-        const overlay = document.querySelector('.milkdrop-overlay');
-        const osdTitle = overlay?.querySelector('.milkdrop-overlay__osd-title');
-        const osdMeta = overlay?.querySelector('.milkdrop-overlay__osd-meta');
-        return {
-          width: canvas?.width ?? 0,
-          height: canvas?.height ?? 0,
-          presetTitle: osdTitle?.textContent?.trim() ?? null,
-          presetAuthor: osdMeta?.textContent?.trim() ?? null,
-        };
-      });
+      const pageState = await session.page.evaluate(readSessionPageState);
+      const meta = {
+        width: pageState.canvasWidth ?? 0,
+        height: pageState.canvasHeight ?? 0,
+        presetId: pageState.presetId,
+        presetTitle: pageState.presetTitle,
+        presetAuthor: pageState.presetAuthor,
+        shaderExecution: pageState.shaderExecution,
+      };
 
       // Numeric image metrics (brightness, colorfulness, blown highlights,
       // near-black detection) so an agent without vision can still tell a
