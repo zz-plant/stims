@@ -21,6 +21,17 @@
 - `primingHoldForMeasurement` documents `maxLuminanceDelta` as that figure.
   It was documented as `luminanceVolatility`, a standard deviation of
   frame-mean changes that is not the size of any flash.
+- The governor no longer releases into a strobe that is still running. It
+  pairs the content's transitions as drawn, undimmed, alongside the ones the
+  viewer sees; while those exceed the limit, release stops at the largest
+  scale that holds every field-wide transition of the last
+  `windowMs + releaseDelayMs` under `safetyMargin` of the threshold, and
+  tightens to it if the content grows stronger. Release runs to zero once
+  the content has stayed at or under the limit for `releaseDelayMs`. Before
+  this, release eased back to the threshold every few seconds: on a 15 s
+  `(80,0,0)` to `(100,0,0)` strobe the frames shown read 6 red flashes in
+  one second, and a luminance strobe just over the limit read 4. Content at
+  or under the limit undimmed is released as before.
 
 ## 0.1.1
 

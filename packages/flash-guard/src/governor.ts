@@ -100,10 +100,19 @@ export type FlashGovernorOptions = {
    * ceiling, i.e. the governor was manufacturing the very thing it exists to
    * prevent. Releasing over seconds rather than frames is what makes the
    * suppression actually hold.
+   *
+   * Slow is not enough on its own while the content keeps strobing: a
+   * release that stops only when flashes land again eases back to the
+   * threshold every few seconds and lets them land. So while the content,
+   * undimmed, still exceeds the limit, release stops at the largest scale
+   * that holds the content's recent transitions under `safetyMargin` of the
+   * threshold, instead of probing for the threshold.
    */
   releasePerFrame?: number;
   /**
-   * How long the flash window must stay CLEAR before releasing begins.
+   * How long the flash window must stay CLEAR before releasing begins, and
+   * how long the content must stay under the limit before release may pass
+   * its ceiling.
    *
    * Without it, release starts the instant the window empties — which is
    * guaranteed to happen while the clamp is working, so the clamp
@@ -270,6 +279,13 @@ type Channel = {
 };
 
 /**
+ * The largest scale at which one field-wide transition of the content, as
+ * drawn, stays under `safetyMargin` of the threshold, per channel: 1 on a
+ * channel the transition did not cross.
+ */
+type Ceiling = { time: number; general: number; red: number };
+
+/**
  * Which way a frame transition qualified as a field-wide step, from its
  * qualifying samples per tile by direction, or null if neither covers 25%
  * of any visual field. When both do, the larger area wins.
@@ -340,23 +356,42 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
   let hasPreviousRed = false;
   const general: Channel = { lastDirection: null, flashTimes: [] };
   const red: Channel = { lastDirection: null, flashTimes: [] };
+  /**
+   * The same pairing applied to the content as drawn, at full brightness:
+   * what the viewer would see if the governor let go. Release reads it to
+   * tell content that stopped strobing from content the clamp is hiding.
+   */
+  const drawnGeneral: Channel = { lastDirection: null, flashTimes: [] };
+  const drawnRed: Channel = { lastDirection: null, flashTimes: [] };
+  /** Ceilings of the content's recent field-wide transitions, oldest first. */
+  const ceilings: Ceiling[] = [];
+  /** When the content, undimmed, last had more than `limit` in the window. */
+  let failingAt: number | null = null;
   let hold = 0;
   /** When the window last became clear, for the release hold-off. */
   let clearSince: number | null = null;
 
   // Reused across frames so the hot path allocates nothing per sample.
-  /** Qualifying samples per tile, by direction. */
+  /** Qualifying samples per tile, by direction, as seen and as drawn. */
   let rising: Float32Array | null = null;
   let falling: Float32Array | null = null;
   let redRising: Float32Array | null = null;
   let redFalling: Float32Array | null = null;
+  let drawnRising: Float32Array | null = null;
+  let drawnFalling: Float32Array | null = null;
+  let drawnRedRising: Float32Array | null = null;
+  let drawnRedFalling: Float32Array | null = null;
   /** Each sample's signed swing at the view scale, for the solved step. */
   let swings: Float32Array | null = null;
   let redSwings: Float32Array | null = null;
+  /** Each sample's signed swing as drawn, for the content's ceiling. */
+  let drawnSwings: Float32Array | null = null;
+  let drawnRedSwings: Float32Array | null = null;
   /** Tile index of each sample. */
   let tileOf: Uint32Array | null = null;
-  /** Scratch per-tile counts for the solved step. */
+  /** Scratch per-tile counts for the solved step, by direction. */
   let solveCounts: Float32Array | null = null;
+  let solveFallingCounts: Float32Array | null = null;
 
   /**
    * Pre-applies a hold before any flash has been observed.
@@ -382,10 +417,12 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     previousRows = 0;
     previousDensity = 0;
     hasPreviousRed = false;
-    for (const channel of [general, red]) {
+    for (const channel of [general, red, drawnGeneral, drawnRed]) {
       channel.lastDirection = null;
       channel.flashTimes.length = 0;
     }
+    ceilings.length = 0;
+    failingAt = null;
     hold = 0;
     clearSince = null;
   }
@@ -418,10 +455,47 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
   }
 
   /**
+   * The peak share of any visual field covered by samples of `field` whose
+   * swing, scaled by `scale`, reaches `target`: in `direction`, or in
+   * whichever direction covers more when `direction` is null.
+   */
+  function coverage(
+    field: Float32Array,
+    direction: boolean | null,
+    target: number,
+    scale: number,
+    cols: number,
+    rows: number,
+    tilePixels: number,
+  ): number {
+    const counts = solveCounts as Float32Array;
+    const fallingCounts = solveFallingCounts as Float32Array;
+    const tiles = tileOf as Uint32Array;
+    counts.fill(0);
+    if (direction === null) fallingCounts.fill(0);
+    for (let i = 0; i < field.length; i += 1) {
+      const swing = field[i] as number;
+      if (swing === 0 || Math.abs(swing) * scale < target) continue;
+      const rising = swing > 0;
+      if (direction !== null && rising !== direction) continue;
+      const into = direction === null && !rising ? fallingCounts : counts;
+      const tile = tiles[i] as number;
+      into[tile] = (into[tile] as number) + 1;
+    }
+    const fraction = peakWindowFraction(counts, tilePixels, cols, rows);
+    if (direction !== null) return fraction;
+    return Math.max(
+      fraction,
+      peakWindowFraction(fallingCounts, tilePixels, cols, rows),
+    );
+  }
+
+  /**
    * The extra luminance scale, on top of what the viewer already sees, that
    * puts the transition just observed under the area rule: the largest
    * scale at which samples swinging `direction` by at least the margin-scaled
-   * threshold cover less than 25% of every visual field.
+   * threshold cover less than 25% of every visual field. A null `direction`
+   * holds both directions under it, as a ceiling needs.
    *
    * Solved from the whole field rather than from its single largest swing.
    * One bright point crossing one sample is not what made the frame a flash,
@@ -438,37 +512,113 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
    */
   function solveScale(
     field: Float32Array,
-    direction: boolean,
+    direction: boolean | null,
     threshold: number,
     cols: number,
     rows: number,
     density: number,
   ): number {
-    const counts = solveCounts as Float32Array;
     const target = threshold * safetyMargin;
     const tilePixels = density * density;
-    const coverage = (scale: number) => {
-      counts.fill(0);
-      for (let i = 0; i < field.length; i += 1) {
-        const swing = field[i] as number;
-        if (swing > 0 !== direction || swing === 0) continue;
-        if (Math.abs(swing) * scale >= target) {
-          const tile = (tileOf as Uint32Array)[i] as number;
-          counts[tile] = (counts[tile] as number) + 1;
-        }
-      }
-      return peakWindowFraction(counts, tilePixels, cols, rows);
-    };
+    const under = (scale: number) =>
+      coverage(field, direction, target, scale, cols, rows, tilePixels) <
+      FLASH_AREA_FRACTION;
     // Coverage only grows with scale, so bisect for the largest scale that
-    // stays under the area threshold. 12 steps resolve it to 1/4096.
+    // stays under the area threshold. 12 steps resolve it to 1/4096. A field
+    // already under it at full scale is under it at every scale.
+    if (under(1)) return 1;
     let low = 0;
     let high = 1;
     for (let step = 0; step < 12; step += 1) {
       const mid = (low + high) / 2;
-      if (coverage(mid) < FLASH_AREA_FRACTION) low = mid;
+      if (under(mid)) low = mid;
       else high = mid;
     }
     return low;
+  }
+
+  /**
+   * One transition's ceiling: the scale `solveScale` gives the content's
+   * swings as drawn, in both directions, given the lowest ceiling already
+   * recorded on the channel.
+   *
+   * A sustained strobe repeats one transition many times a second, and
+   * solving every repeat cost several times what judging the sample does.
+   * A transition under the area rule at `lowest` but not at 1/64 above it
+   * has its ceiling in between, so it is recorded at `lowest`: never above
+   * its own ceiling, so never more lenient. Anything else is solved.
+   */
+  function ceilingOf(
+    field: Float32Array,
+    threshold: number,
+    lowest: number,
+    cols: number,
+    rows: number,
+    density: number,
+  ): number {
+    if (lowest < 1) {
+      const target = threshold * safetyMargin;
+      const tilePixels = density * density;
+      const above = Math.min(1, lowest * (1 + 1 / 64));
+      if (
+        coverage(field, null, target, lowest, cols, rows, tilePixels) <
+          FLASH_AREA_FRACTION &&
+        coverage(field, null, target, above, cols, rows, tilePixels) >=
+          FLASH_AREA_FRACTION
+      ) {
+        return lowest;
+      }
+    }
+    return solveScale(field, null, threshold, cols, rows, density);
+  }
+
+  /** The lowest ceiling recorded on one channel, 1 when there is none. */
+  function lowestCeiling(channel: 'general' | 'red'): number {
+    let lowest = 1;
+    for (const entry of ceilings) lowest = Math.min(lowest, entry[channel]);
+    return lowest;
+  }
+
+  /** Whether the content, undimmed, exceeded the limit within the hold-off. */
+  function contentFailing(nowMs: number): boolean {
+    return failingAt !== null && nowMs - failingAt < releaseDelayMs;
+  }
+
+  /**
+   * The lowest hold release may reach.
+   *
+   * Release used to run until flashes landed again. Once the clamp had
+   * emptied the window it eased back toward full brightness, crossed the
+   * threshold on a strobe that had never stopped, and let flashes through
+   * until two of them re-engaged it, every few seconds for as long as the
+   * strobe lasted. On a 15 s saturated-red strobe just over the limit, the
+   * 8-bit frames the viewer saw read 6 red flashes in one second, and a
+   * luminance strobe just over the limit, judged with no rounding, read 4.
+   *
+   * The governor reads the content as drawn as well as through the clamp,
+   * so it can tell the two cases apart. While the content itself has more
+   * than `limit` flashes in the window, release stops at the largest scale
+   * that holds every field-wide transition it made in the last
+   * `windowMs + releaseDelayMs` under `safetyMargin` of the threshold: the
+   * level the solved step aims for. Once the content has stayed at or under
+   * the limit for `releaseDelayMs`, release runs to zero as before. Content
+   * at or under the limit undimmed is never held by this floor; at most it
+   * flashes as often as it would with no governor at all.
+   *
+   * A floor above the current hold tightens it. That happens when the
+   * content grows stronger without crossing the threshold as seen, which
+   * would otherwise leave it between the margin and the threshold.
+   *
+   * A ceiling is a scale on the content as drawn, and the hold is only the
+   * governor's share of the view scale: `outside` is the rest (a brightness
+   * setting composed into the same filter, say), so the hold only has to
+   * make up the difference.
+   */
+  function releaseFloor(nowMs: number, outside: number): number {
+    if (!contentFailing(nowMs)) return 0;
+    const ceiling = Math.min(lowestCeiling('general'), lowestCeiling('red'));
+    if (ceiling >= outside) return 0;
+    return Math.min(holdCeiling, 1 - ceiling / outside);
   }
 
   /**
@@ -517,9 +667,16 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
       falling = new Float32Array(tileCount);
       redRising = new Float32Array(tileCount);
       redFalling = new Float32Array(tileCount);
+      drawnRising = new Float32Array(tileCount);
+      drawnFalling = new Float32Array(tileCount);
+      drawnRedRising = new Float32Array(tileCount);
+      drawnRedFalling = new Float32Array(tileCount);
       solveCounts = new Float32Array(tileCount);
+      solveFallingCounts = new Float32Array(tileCount);
       swings = new Float32Array(count);
       redSwings = new Float32Array(count);
+      drawnSwings = new Float32Array(count);
+      drawnRedSwings = new Float32Array(count);
       previousRed = new Float32Array(count);
       previousRedSaturated = new Uint8Array(count);
       tileOf = new Uint32Array(count);
@@ -534,15 +691,34 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
 
     const up = rising as Float32Array;
     const down = falling as Float32Array;
+    const drawnUp = drawnRising as Float32Array;
+    const drawnDown = drawnFalling as Float32Array;
     const field = swings as Float32Array;
+    const drawnField = drawnSwings as Float32Array;
     const tiles = tileOf as Uint32Array;
     up.fill(0);
     down.fill(0);
+    drawnUp.fill(0);
+    drawnDown.fill(0);
     // Magnitude is decided per sample, before any spatial aggregation, as
-    // the offline audit does per pixel; see RECOMMENDED_SAMPLE_DENSITY.
+    // the offline audit does per pixel; see RECOMMENDED_SAMPLE_DENSITY. Each
+    // sample is judged as the viewer sees it, and as drawn. At a view scale
+    // of 1 the two are the same judgement, so the second is skipped.
+    const judgeDrawn = viewScale < 1;
     for (let i = 0; i < count; i += 1) {
-      const before = (previous[i] as number) * viewScale;
-      const after = (samples[i] as number) * viewScale;
+      const drawnBefore = previous[i] as number;
+      const drawnAfter = samples[i] as number;
+      if (judgeDrawn) {
+        drawnField[i] = drawnAfter - drawnBefore;
+        if (isFlashTransition(drawnBefore, drawnAfter)) {
+          const tile = tiles[i] as number;
+          if (drawnAfter > drawnBefore) {
+            drawnUp[tile] = (drawnUp[tile] as number) + 1;
+          } else drawnDown[tile] = (drawnDown[tile] as number) + 1;
+        }
+      }
+      const before = drawnBefore * viewScale;
+      const after = drawnAfter * viewScale;
       const qualifies = isFlashTransition(before, after);
       field[i] = qualifies ? after - before : 0;
       if (!qualifies) continue;
@@ -554,25 +730,53 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     const tilePixels = density * density;
     const direction = fieldDirection(up, down, tilePixels, cols, rows);
     const flashed = pairTransition(general, direction, nowMs);
+    const drawnDirection = judgeDrawn
+      ? fieldDirection(drawnUp, drawnDown, tilePixels, cols, rows)
+      : direction;
+    pairTransition(drawnGeneral, drawnDirection, nowMs);
 
     // The red channel, the same way: per sample, at the same view scale.
     let redDirection: boolean | null = null;
+    let drawnRedDirection: boolean | null = null;
     if (redField && hasPreviousRed) {
       const redUp = redRising as Float32Array;
       const redDown = redFalling as Float32Array;
+      const drawnRedUp = drawnRedRising as Float32Array;
+      const drawnRedDown = drawnRedFalling as Float32Array;
       const redSwingField = redSwings as Float32Array;
+      const drawnRedField = drawnRedSwings as Float32Array;
       const beforeValues = previousRed as Float32Array;
       const beforeSaturated = previousRedSaturated as Uint8Array;
       redUp.fill(0);
       redDown.fill(0);
+      drawnRedUp.fill(0);
+      drawnRedDown.fill(0);
       for (let i = 0; i < count; i += 1) {
-        const before = (beforeValues[i] as number) * viewScale;
-        const after = (redField.values[i] as number) * viewScale;
+        const drawnBefore = beforeValues[i] as number;
+        const drawnAfter = redField.values[i] as number;
+        const beforeRed = beforeSaturated[i] === 1;
+        const afterRed = Boolean(redField.saturated[i]);
+        if (judgeDrawn) {
+          // Only a pair that touches a saturated red can be a red flash, at
+          // any scale, so only those swings bound the ceiling.
+          drawnRedField[i] =
+            beforeRed || afterRed ? drawnAfter - drawnBefore : 0;
+          if (
+            isRedFlashTransition(drawnBefore, drawnAfter, beforeRed, afterRed)
+          ) {
+            const tile = tiles[i] as number;
+            if (drawnAfter > drawnBefore) {
+              drawnRedUp[tile] = (drawnRedUp[tile] as number) + 1;
+            } else drawnRedDown[tile] = (drawnRedDown[tile] as number) + 1;
+          }
+        }
+        const before = drawnBefore * viewScale;
+        const after = drawnAfter * viewScale;
         const qualifies = isRedFlashTransition(
           before,
           after,
-          beforeSaturated[i] === 1,
-          Boolean(redField.saturated[i]),
+          beforeRed,
+          afterRed,
         );
         redSwingField[i] = qualifies ? after - before : 0;
         if (!qualifies) continue;
@@ -581,11 +785,69 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
         else redDown[tile] = (redDown[tile] as number) + 1;
       }
       redDirection = fieldDirection(redUp, redDown, tilePixels, cols, rows);
+      drawnRedDirection = judgeDrawn
+        ? fieldDirection(drawnRedUp, drawnRedDown, tilePixels, cols, rows)
+        : redDirection;
     }
     const redFlashed = pairTransition(red, redDirection, nowMs);
+    pairTransition(drawnRed, drawnRedDirection, nowMs);
 
     expireFlashes(general, nowMs, windowMs);
     expireFlashes(red, nowMs, windowMs);
+    expireFlashes(drawnGeneral, nowMs, windowMs);
+    expireFlashes(drawnRed, nowMs, windowMs);
+
+    // What release may do depends on the content as drawn: see releaseFloor.
+    if (
+      Math.max(drawnGeneral.flashTimes.length, drawnRed.flashTimes.length) >
+      limit
+    ) {
+      failingAt = nowMs;
+    }
+    while (
+      ceilings.length > 0 &&
+      nowMs - (ceilings[0] as Ceiling).time >= windowMs + releaseDelayMs
+    ) {
+      ceilings.shift();
+    }
+    // A ceiling is only ever read to release a held picture of content that
+    // is failing, so only then is it worth computing. Release starts at
+    // least `releaseDelayMs` after the clamp first engages, by which time
+    // this has recorded the content's transitions. The drawn swings are only
+    // measured under a view scale below 1, which a held picture has once the
+    // hold reaches the screen.
+    if (
+      judgeDrawn &&
+      hold > 0 &&
+      contentFailing(nowMs) &&
+      (drawnDirection !== null || drawnRedDirection !== null)
+    ) {
+      ceilings.push({
+        time: nowMs,
+        general:
+          drawnDirection === null
+            ? 1
+            : ceilingOf(
+                drawnField,
+                FLASH_LUMINANCE_DELTA,
+                lowestCeiling('general'),
+                cols,
+                rows,
+                density,
+              ),
+        red:
+          drawnRedDirection === null
+            ? 1
+            : ceilingOf(
+                drawnRedSwings as Float32Array,
+                RED_FLASH_DELTA,
+                lowestCeiling('red'),
+                cols,
+                rows,
+                density,
+              ),
+      });
+    }
 
     const inWindow = Math.max(general.flashTimes.length, red.flashTimes.length);
     if (inWindow >= engageAt) {
@@ -641,7 +903,11 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
       if (clearSince === null) {
         clearSince = nowMs;
       } else if (nowMs - clearSince >= releaseDelayMs) {
-        hold = Math.max(0, hold - releasePerFrame);
+        // And only as far as the content allows. The sample was seen through
+        // this hold, so the view scale's remainder is what lies outside it.
+        const own = 1 - hold;
+        const outside = own > 0 ? Math.min(1, viewScale / own) : 1;
+        hold = Math.max(releaseFloor(nowMs, outside), hold - releasePerFrame);
       }
     }
 
