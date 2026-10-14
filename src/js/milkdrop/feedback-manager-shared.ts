@@ -1413,11 +1413,6 @@ class SharedMilkdropFeedbackManager
         noisevolTex: { value: sharedNativeNoiseVolumeTexture() },
         videoEchoAlpha: { value: 0 },
         textureWrap: { value: 0 },
-        warpScale: { value: 0 },
-        offsetX: { value: 0 },
-        offsetY: { value: 0 },
-        rotation: { value: 0 },
-        zoomMul: { value: 1 },
         feedbackSoftness: { value: this.profile.feedbackSoftness },
         decay: { value: 0.98 },
         hasDirectWarp: { value: 0 },
@@ -1435,12 +1430,6 @@ class SharedMilkdropFeedbackManager
             1 / Math.max(1, this.targets[0].height),
           ),
         },
-        warpTextureSource: { value: 0 },
-        warpTextureSampleDimension: { value: 0 },
-        warpTextureAmount: { value: 0 },
-        warpTextureScale: { value: new Vector2(1, 1) },
-        warpTextureOffset: { value: new Vector2(0, 0) },
-        warpTextureVolumeSliceZ: { value: 0 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -2172,41 +2161,19 @@ class SharedMilkdropFeedbackManager
       warpTextureName &&
       !['noise', 'perlin', 'simplex'].includes(warpTextureName)
     ) {
-      const warpTexture = getSharedMilkdropTexture(
+      uniforms[`${warpTextureName}Tex`].value = getSharedMilkdropTexture(
         AUX_TEXTURE_SPECS[warpTextureName].fileName,
         AUX_TEXTURE_SPECS[warpTextureName].colorTexture,
       );
-      uniforms[`${warpTextureName}Tex`].value = warpTexture;
-      this.feedbackBlendMaterial.uniforms[`${warpTextureName}Tex`].value =
-        warpTexture;
     }
-    // The feedback-blend pass owns the frame construction, so it receives
-    // the loop-facing subset of the state (transform, decay, echo, warp
-    // texture displacement); the composite keeps its copies for comp bodies
-    // that reference the same names.
+    // The feedback-blend pass lays this frame's geometry over the warped,
+    // decayed previous frame. The warp itself happened in the warp pass, so
+    // the blend takes no transform; the composite keeps its copies for comp
+    // bodies that reference the same names.
     const feedbackUniforms = this.feedbackBlendMaterial.uniforms;
     feedbackUniforms.videoEchoAlpha.value = state.videoEchoAlpha;
     feedbackUniforms.textureWrap.value = state.textureWrap;
     feedbackUniforms.decay.value = state.decay;
-    feedbackUniforms.warpScale.value = state.warpScale;
-    feedbackUniforms.offsetX.value = state.offsetX;
-    feedbackUniforms.offsetY.value = state.offsetY;
-    feedbackUniforms.rotation.value = state.rotation;
-    feedbackUniforms.zoomMul.value = state.zoomMul;
-    feedbackUniforms.warpTextureSource.value = state.warpTextureSource;
-    feedbackUniforms.warpTextureSampleDimension.value =
-      state.warpTextureSampleDimension;
-    feedbackUniforms.warpTextureAmount.value = state.warpTextureAmount;
-    feedbackUniforms.warpTextureScale.value.set(
-      state.warpTextureScale.x,
-      state.warpTextureScale.y,
-    );
-    feedbackUniforms.warpTextureOffset.value.set(
-      state.warpTextureOffset.x,
-      state.warpTextureOffset.y,
-    );
-    feedbackUniforms.warpTextureVolumeSliceZ.value =
-      state.warpTextureVolumeSliceZ;
     uniforms.currentTex.value = this.sceneTarget.texture;
     uniforms.previousTex.value = this.readTarget.texture;
     applyCompositeUniformState(uniforms, state, blurShaderRanges);
