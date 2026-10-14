@@ -9,6 +9,7 @@ import {
 } from 'milkdrop-toolchain/src/compiler.ts';
 import { walkMilkdropExpression } from 'milkdrop-toolchain/src/expression.ts';
 import { resolveMilkdropIdentifier } from 'milkdrop-toolchain/src/field-normalization.ts';
+import { resolveShaderExecutionMode } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropExpressionNode,
@@ -132,6 +133,7 @@ export function buildShaderControls({
   preset,
   signals,
   createEnv,
+  backend,
 }: {
   preset: MilkdropCompiledPreset;
   signals: MilkdropRuntimeSignals;
@@ -139,14 +141,44 @@ export function buildShaderControls({
     signals: MilkdropRuntimeSignals,
     extra?: Record<string, number>,
   ) => MutableState;
+  backend: 'webgl' | 'webgpu';
 }) {
-  const { warp, comp, controls, controlExpressions } = preset.ir.shaderText;
+  const shaderText = preset.ir.shaderText;
+  let { warp, comp, controls, controlExpressions } = shaderText;
   // Runs every frame. Presets without pixel-shader sections (every bundled
   // MilkDrop 1.x preset) would otherwise rebuild ~15 throwaway objects per
   // frame to arrive at a fixed answer, and pay for an env snapshot the null
   // path never reads.
   if (warp === null && comp === null) {
     return buildNeutralShaderControls();
+  }
+  // The controls are a uniform-only stand-in for shader text this backend
+  // cannot run. A stage whose program runs as written and carries every
+  // statement already draws what its controls describe, so they would land a
+  // second time: a warp body's `uv / 0.9` came back as a zoom that replaced
+  // the preset's own and fed the shader's input coordinate, rendering
+  // cotc-flexi-stahlregen-jewelry-tiles solid white. A program that still
+  // `requiresControlFallback` leaves part of its text to the controls, so
+  // that stage keeps them.
+  if (resolveShaderExecutionMode(preset, backend) === 'direct') {
+    const covers = (program: typeof shaderText.warpProgram) =>
+      program !== null && !program.execution.requiresControlFallback;
+    const warpCovered = covers(shaderText.warpProgram);
+    const compCovered = covers(shaderText.compProgram);
+    if ((warpCovered || warp === null) && (compCovered || comp === null)) {
+      return buildNeutralShaderControls();
+    }
+    const remaining = warpCovered
+      ? shaderText.stageControls?.comp
+      : compCovered
+        ? shaderText.stageControls?.warp
+        : undefined;
+    if (remaining) {
+      warp = warpCovered ? null : warp;
+      comp = compCovered ? null : comp;
+      controls = remaining.controls;
+      controlExpressions = remaining.expressions;
+    }
   }
 
   const env = createEnv(signals);
@@ -323,6 +355,7 @@ export function buildPost({
   state,
   signals,
   createEnv,
+  backend,
 }: {
   preset: MilkdropCompiledPreset;
   state: MutableState;
@@ -331,8 +364,14 @@ export function buildPost({
     signals: MilkdropRuntimeSignals,
     extra?: Record<string, number>,
   ) => MutableState;
+  backend: 'webgl' | 'webgpu';
 }): MilkdropPostVisual {
-  const shaderControls = buildShaderControls({ preset, signals, createEnv });
+  const shaderControls = buildShaderControls({
+    preset,
+    signals,
+    createEnv,
+    backend,
+  });
   const brighten = (state.brighten ?? 0) > 0.5;
   const darken = (state.darken ?? 0) > 0.5;
   const darkenCenter = (state.darken_center ?? 0) > 0.5;

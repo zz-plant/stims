@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import {
+  compileMilkdropPresetSource,
+  evaluateMilkdropShaderControlExpressions,
+  evaluateMilkdropShaderControlProgram,
+} from 'milkdrop-toolchain/src/compiler.ts';
 import { initCamera } from '../../src/js/core/camera-setup.ts';
 import { applyMilkdropInteractionResponse } from '../../src/js/milkdrop/runtime/interaction-response.ts';
 import type { MilkdropRuntimeSignals } from '../../src/js/milkdrop/types.ts';
@@ -1526,11 +1530,25 @@ warp_shader=uv=(uv-0.5)/(1.0+bass*0.1)+0.5
 
     const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 7 }));
 
+    // The warp program applies the transform itself, so the uniform-only
+    // stand-in stays neutral: a zoom here would land on top of it.
+    expect(frameState.post.shaderPrograms.warp).not.toBeNull();
+    expect(frameState.post.shaderControls.zoom).toBe(1);
+
+    // What a backend that could not run the text would use instead:
     // `(uv-0.5)/(1+bass*0.1)+0.5` zooms in by 1+bass*0.1; with bass=0.7 that
     // is 1.07. The centered transform keeps the offset at 0.
-    expect(frameState.post.shaderControls.zoom).toBeCloseTo(1.07, 6);
-    expect(frameState.post.shaderControls.offsetX).toBeCloseTo(0, 6);
-    expect(frameState.post.shaderControls.offsetY).toBeCloseTo(0, 6);
+    const warpOnly = preset.ir.shaderText.stageControls?.warp;
+    expect(warpOnly).toBeDefined();
+    const standIn = evaluateMilkdropShaderControlExpressions({
+      controls: warpOnly?.controls ?? preset.ir.shaderText.controls,
+      expressions:
+        warpOnly?.expressions ?? preset.ir.shaderText.controlExpressions,
+      env: { bass: 0.7 },
+    });
+    expect(standIn.zoom).toBeCloseTo(1.07, 6);
+    expect(standIn.offsetX).toBeCloseTo(0, 6);
+    expect(standIn.offsetY).toBeCloseTo(0, 6);
   });
 
   test('carries shader color controls into post visuals', () => {
@@ -1635,11 +1653,22 @@ comp_shader=vec3 wash = vec3(1 + bass_att * 0.2, 0.8 + mid * 0.1, 0.6 + beat_pul
       makeSignals({ frame: 12, time: 0.5, beatPulse: 0.3 }),
     );
 
-    expect(frameState.post.shaderControls.offsetX).toBeCloseTo(0.03, 6);
-    expect(frameState.post.shaderControls.offsetY).toBeCloseTo(-0.014, 6);
-    expect(frameState.post.shaderControls.colorScale.r).toBeCloseTo(1.12, 6);
-    expect(frameState.post.shaderControls.colorScale.g).toBeCloseTo(0.85, 6);
-    expect(frameState.post.shaderControls.colorScale.b).toBeCloseTo(0.66, 6);
+    // Both programs run their temps themselves; the stand-in stays neutral.
+    expect(frameState.post.shaderControls.offsetX).toBe(0);
+    expect(frameState.post.shaderControls.colorScale.r).toBe(1);
+
+    // The stand-in evaluates the same temps against the same signals
+    // (bass_att 0.6, treb_att 0.35, mid 0.5, beat_pulse 0.3).
+    const standIn = evaluateMilkdropShaderControlProgram({
+      warp: preset.ir.shaderText.warp,
+      comp: preset.ir.shaderText.comp,
+      env: { bass_att: 0.6, treb_att: 0.35, mid: 0.5, beat_pulse: 0.3 },
+    });
+    expect(standIn.offsetX).toBeCloseTo(0.03, 6);
+    expect(standIn.offsetY).toBeCloseTo(-0.014, 6);
+    expect(standIn.colorScale.r).toBeCloseTo(1.12, 6);
+    expect(standIn.colorScale.g).toBeCloseTo(0.85, 6);
+    expect(standIn.colorScale.b).toBeCloseTo(0.66, 6);
   });
 
   test('keeps translated shader controls available alongside direct comp programs', () => {

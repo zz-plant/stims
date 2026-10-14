@@ -998,6 +998,7 @@ class MilkdropPresetVM implements MilkdropVM {
       state: this.state,
       signals,
       createEnv: this.frameCallbacks.createFlatEnv,
+      backend: this.renderBackend,
     });
 
     this.frameVariablesSnapshot = null;

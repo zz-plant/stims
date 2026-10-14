@@ -85,11 +85,37 @@ function presetSource({
   ].join('\n');
 }
 
+/**
+ * A warp shader that declares a scalar under one of the control dialect's
+ * names. MilkDrop has no `r` builtin: the body's `r` is its own per-pixel
+ * variable, so the frame is a left-to-right ramp.
+ */
+const SCALAR_LOCAL_PRESET = [
+  '[preset00]',
+  'fDecay=1',
+  'fGammaAdj=1.0',
+  'fVideoEchoAlpha=0',
+  'fWaveAlpha=0',
+  'zoom=1',
+  'warp=0',
+  'warp_1=`shader_body',
+  'warp_2=`{',
+  'warp_3=`float r = uv.x;',
+  'warp_4=`ret = float3(r, r, r);',
+  'warp_5=`}',
+  'comp_1=`shader_body',
+  'comp_2=`{',
+  'comp_3=`ret = tex2D(sampler_main, uv).xyz;',
+  'comp_4=`}',
+  '',
+].join('\n');
+
 type ScenarioArgs = {
   harnessModule: string;
   backend: FeedbackHarnessBackend;
   withWarpShader: string;
   withoutWarpShader: string;
+  scalarLocal: string;
 };
 
 type HarnessModule = typeof import('./feedback-continuity-harness.ts');
@@ -119,6 +145,7 @@ async function runScenario<T>(
         backend,
         withWarpShader: presetSource({ decay, warpShader: true }),
         withoutWarpShader: presetSource({ decay, warpShader: false }),
+        scalarLocal: SCALAR_LOCAL_PRESET,
       }),
       60000,
       `running the ${backend} warp-shader scenario`,
@@ -232,6 +259,38 @@ for (const { backend, run } of BACKENDS) {
         expect(overDefaultWarp).toBeGreaterThan(60);
         expect(overDefaultWarp).toBeLessThan(220);
         expect(Math.abs(overWarpShader - overDefaultWarp)).toBeLessThan(6);
+      },
+      { timeout: 120000 },
+    );
+
+    run(
+      'a scalar the warp shader declares stays its own variable',
+      async () => {
+        const quadrants = await runScenario(
+          backend,
+          1,
+          async ({ harnessModule, backend, scalarLocal }) => {
+            const { createFeedbackHarness } = (await import(
+              harnessModule
+            )) as HarnessModule;
+            const harness = await createFeedbackHarness(backend);
+            try {
+              await harness.applyPreset(scalarLocal);
+              harness.setScene('empty');
+              let frame = await harness.renderFrame();
+              for (let i = 0; i < 4; i += 1)
+                frame = await harness.renderFrame();
+              return frame;
+            } finally {
+              harness.dispose();
+            }
+          },
+        );
+        // `float r = uv.x` read as the colorScale.r control painted one flat
+        // value across the frame: black while the control dialect evaluated
+        // it at uv (0,0), white once that stand-in went neutral.
+        const [topLeft, topRight] = quadrants;
+        expect(topRight - topLeft).toBeGreaterThan(80);
       },
       { timeout: 120000 },
     );
