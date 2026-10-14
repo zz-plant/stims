@@ -87,13 +87,14 @@ Output, as printed by `bun`:
   exceedsRedThreshold: false,
   motionEnergy: 0.12566782313003366,
   luminanceVolatility: 0.3308987543146804,
+  maxFlashLuminanceDelta: 0.9969238281249999,
   meanLuminance: 0.46828547724559366,
   frameCount: 120,
 }
 risk: high
 ```
 
-A 4 Hz square wave is 8 flashes a second: every change after the first completes an opposing pair. For a long capture, `createFlashFrameCounter` lets you `push` one frame at a time and keeps only per-tile counts, so memory does not grow with the frame size.
+A 4 Hz square wave is 8 flashes a second: every change after the first completes an opposing pair. `maxFlashLuminanceDelta` is the swing of the strongest flash, the change a quarter of a visual field made together (`flashSwing`); here it is the strobe's whole contrast, and it is what `primingHoldForMeasurement` sizes a starting clamp from. For a long capture, `createFlashFrameCounter` lets you `push` one frame at a time and keeps only per-tile counts, so memory does not grow with the frame size.
 
 ### Govern a canvas while it draws
 
@@ -189,7 +190,7 @@ The off-thread grid matched the synchronous read exactly over 12 frames on each 
 | `createFlashSampler({ grid?, density?, createWorker? })` | Canvas to luminance and red-flash fields, off the main thread when possible, with up to `MAX_CAPTURES_IN_FLIGHT` readbacks queued. `createMainThreadFlashReader(grid, density)` is the synchronous fallback. |
 | `RECOMMENDED_GRID`, `RECOMMENDED_SAMPLE_DENSITY`, `MIN_USEFUL_GRID`, `MIN_SAMPLE_INTERVAL_MS` | 16 tiles a side, 8 samples along each tile edge, the coarsest grid that discriminates, and the gate between compared frames. |
 | `relativeLuminance(r, g, b)`, `linearizeChannel(byte)`, `LINEAR_CHANNEL_LUT` | WCAG relative luminance from sRGB bytes, and the 256-entry table it reads. |
-| `isFlashTransition`, `isRedFlashTransition`, `isSaturatedRed`, `redFlashValue`, `peakWindowFraction` | The primitives every path above is built from. |
+| `isFlashTransition`, `isRedFlashTransition`, `isSaturatedRed`, `redFlashValue`, `peakWindowFraction`, `flashSwing` | The primitives every path above is built from. |
 | `FLASHES_PER_SECOND_LIMIT`, `FLASH_LUMINANCE_DELTA`, `FLASH_DARKER_CEILING`, `FLASH_AREA_FRACTION`, `VISUAL_FIELD_FRACTION`, `RED_SATURATION_MIN`, `RED_FLASH_DELTA`, `RED_FLASH_SCALE` | The thresholds, defined once. |
 
 ## Development

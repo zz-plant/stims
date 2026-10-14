@@ -672,8 +672,16 @@ export type FlashGovernor = ReturnType<typeof createFlashGovernor>;
  * is primed. 'medium' content sits under the limit by definition, so
  * pre-dimming it would be a visible cost with no safety claim behind it; the
  * reactive path is the right answer there, and the offline measurement is a
- * coarse instrument besides. `maxLuminanceDelta` is the analysis's
- * `luminanceVolatility`, or any other estimate of the largest swing.
+ * coarse instrument besides.
+ *
+ * `maxLuminanceDelta` is the analysis's `maxFlashLuminanceDelta`: the swing
+ * of the strongest flash, measured over a quarter of a visual field the way
+ * the solved step measures the swing it clamps. Priming from it starts the
+ * governor where solving that flash would have taken it. It is not
+ * `luminanceVolatility`, a standard deviation of frame-mean changes: that
+ * figure shrinks with the share of the screen that did not flash and with
+ * how often the content holds still, so a hold derived from it says nothing
+ * about how hard the content flashes.
  */
 export function primingHoldForMeasurement(measurement: {
   flashRiskLevel?: string;
@@ -682,8 +690,10 @@ export function primingHoldForMeasurement(measurement: {
   if (measurement.flashRiskLevel !== 'high') return 0;
   const delta = measurement.maxLuminanceDelta;
   if (!Number.isFinite(delta) || (delta as number) <= FLASH_LUMINANCE_DELTA) {
-    // Measured as high-risk but without a usable swing figure: clamp gently
-    // rather than guessing hard, and let the solved step take over.
+    // Measured as high-risk but without a usable swing figure (a profile
+    // from before the audit recorded one, or content that is high on the
+    // red channel alone): clamp gently rather than guessing hard, and let
+    // the solved step take over.
     return 0.35;
   }
   const needed = (FLASH_LUMINANCE_DELTA * 0.8) / (delta as number);

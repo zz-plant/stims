@@ -43,6 +43,8 @@ export type FlashReport = {
   peakRedFlashesPerSecond?: number;
   meanLuminance?: number;
   luminanceVolatility?: number;
+  /** Absent from reports written before the audit recorded it. */
+  maxFlashLuminanceDelta?: number;
 };
 
 type CatalogEntry = {
@@ -92,6 +94,11 @@ export function toMeasurement(report: FlashReport): FlashMeasurement | null {
     peakRedFlashesPerSecond: report.peakRedFlashesPerSecond,
     meanLuminance: report.meanLuminance,
     luminanceVolatility: report.luminanceVolatility,
+    // Optional, unlike the red channel: without it the profile carries no
+    // swing and the governor primes gently, which claims nothing.
+    ...(typeof report.maxFlashLuminanceDelta === 'number'
+      ? { maxFlashLuminanceDelta: report.maxFlashLuminanceDelta }
+      : {}),
   };
 }
 

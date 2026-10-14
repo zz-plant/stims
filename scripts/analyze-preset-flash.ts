@@ -60,7 +60,10 @@
  * the corpus with no overlap. The measurement is wall-clock independent --
  * frames are stepped through the agent hook, not sampled in real time -- so
  * running shards concurrently is safe: it changes throughput and nothing
- * else.
+ * else. Each shard writes its own file, `flash-audit.shard-k-of-n.json`,
+ * unless `--out` names one: the report is rewritten after every preset, so
+ * shards sharing a file would overwrite each other's results. Merge each
+ * shard's file with `merge-flash-audit.ts`; merging is additive.
  *
  * It changes throughput less than you would hope. Measured on an M-series
  * laptop: one shard alone managed 0.73 presets/min, and four concurrent
@@ -133,6 +136,9 @@ interface PresetEntry {
 type CapturedFrames = {
   rising: number[][];
   falling: number[][];
+  /** Per transition, `flashSwing` of the brightening and darkening samples. */
+  risingSwing: number[];
+  fallingSwing: number[];
   redRising: number[][];
   redFalling: number[][];
   govRising: number[][];
@@ -167,7 +173,46 @@ export interface PresetFlashReport extends FlashAnalysis {
   error?: string;
 }
 
-function parseArgs(argv: string[]) {
+/**
+ * The report file: `--out` when given, else one per shard, so concurrent
+ * shards never share a file. A single unsharded run keeps the old name.
+ */
+function defaultOutPath(shardIndex: number, shardCount: number) {
+  return shardCount > 1
+    ? `flash-audit.shard-${shardIndex + 1}-of-${shardCount}.json`
+    : DEFAULT_OUT;
+}
+
+/**
+ * With `--repeat`, the run each channel reports: the median by that
+ * channel's own peak. The catalog marks a preset high when either channel
+ * is over the limit, so red figures borrowed from the general channel's
+ * median run could come from the run with the lowest red peak and hide a
+ * red-flash warning. Returns the general median (its capture also feeds the
+ * `--governor` track) and its analysis with the red figures replaced by the
+ * red median's.
+ */
+export function medianRun<T extends { analysis: FlashAnalysis }>(
+  attempts: readonly T[],
+): { run: T; analysis: FlashAnalysis } {
+  const medianBy = (key: 'peakFlashesPerSecond' | 'peakRedFlashesPerSecond') =>
+    [...attempts].sort((a, b) => a.analysis[key] - b.analysis[key])[
+      Math.floor(attempts.length / 2)
+    ] as T;
+  const run = medianBy('peakFlashesPerSecond');
+  const red = medianBy('peakRedFlashesPerSecond').analysis;
+  return {
+    run,
+    analysis: {
+      ...run.analysis,
+      peakRedFlashesPerSecond: red.peakRedFlashesPerSecond,
+      totalRedFlashes: red.totalRedFlashes,
+      exceedsRedThreshold: red.exceedsRedThreshold,
+    },
+  };
+}
+
+export function parseArgs(argv: string[]) {
   const governor = argv.includes('--governor');
   const repeatArg = argv.find((a) => a.startsWith('--repeat='))?.split('=')[1];
   const repeat = repeatArg ? Math.max(1, Number(repeatArg)) : 1;
@@ -214,7 +259,7 @@ function parseArgs(argv: string[]) {
         .filter(Boolean) ?? null,
     beatPulse: argv.includes('--beat-pulse'),
     port: Number(get('port') ?? DEFAULT_PORT),
-    out: get('out') ?? DEFAULT_OUT,
+    out: get('out') ?? defaultOutPath(shardIndex, shardCount),
     headless: !argv.includes('--no-headless'),
     governor,
     shardIndex,
@@ -437,6 +482,22 @@ async function main() {
                 Math.floor(sampleCount / tileCount),
               );
 
+              // Vite serves the package source from the dev server, as for
+              // the governor below; through a variable, so tsc leaves it be.
+              const analysisModule = '/packages/flash-guard/src/analysis.ts';
+              const { flashSwing } = (await import(
+                /* @vite-ignore */ analysisModule
+              )) as {
+                flashSwing: (
+                  swings: Float64Array,
+                  tileOf: number[],
+                  rising: boolean,
+                  tilePixels: number,
+                  cols: number,
+                  rows: number,
+                ) => number;
+              };
+
               // Warm up so feedback presets are measured at steady state,
               // from a reset: startTime pins the clock and re-initialises the
               // VM and the feedback buffers. Without it the capture began
@@ -533,6 +594,11 @@ async function main() {
               const curRedSat = new Uint8Array(sampleCount);
               const rising: number[][] = [];
               const falling: number[][] = [];
+              // The swing each transition carried over the area rule, for
+              // the profile's maxLuminanceDelta (see flashSwing).
+              const swings = new Float64Array(sampleCount);
+              const risingSwing: number[] = [];
+              const fallingSwing: number[] = [];
               const redRising: number[][] = [];
               const redFalling: number[][] = [];
               const frameMeanLuminance: number[] = [];
@@ -619,10 +685,12 @@ async function main() {
                     const before = prevLum[i];
                     const after = curLum[i];
                     deltaSum += Math.abs(after - before);
+                    swings[i] = 0;
                     if (
                       Math.abs(after - before) >= 0.1 &&
                       Math.min(before, after) < 0.8
                     ) {
+                      swings[i] = after - before;
                       if (after > before) up[sampleTile[i]] += 1;
                       else down[sampleTile[i]] += 1;
                     }
@@ -668,6 +736,26 @@ async function main() {
                   }
                   rising.push(up);
                   falling.push(down);
+                  risingSwing.push(
+                    flashSwing(
+                      swings,
+                      sampleTile,
+                      true,
+                      tilePixels,
+                      cols,
+                      rows,
+                    ),
+                  );
+                  fallingSwing.push(
+                    flashSwing(
+                      swings,
+                      sampleTile,
+                      false,
+                      tilePixels,
+                      cols,
+                      rows,
+                    ),
+                  );
                   redRising.push(redUp);
                   redFalling.push(redDown);
                   frameMeanDelta.push(deltaSum / sampleCount);
@@ -695,6 +783,8 @@ async function main() {
               return {
                 rising,
                 falling,
+                risingSwing,
+                fallingSwing,
                 redRising,
                 redFalling,
                 govRising,
@@ -736,6 +826,7 @@ async function main() {
               exceedsRedThreshold: false,
               motionEnergy: 0,
               luminanceVolatility: 0,
+              maxFlashLuminanceDelta: 0,
               meanLuminance: 0,
               frameCount: 0,
             });
@@ -745,6 +836,8 @@ async function main() {
           const cap = captured as CapturedFrames & {
             rising: number[][];
             falling: number[][];
+            risingSwing: number[];
+            fallingSwing: number[];
             redRising: number[][];
             redFalling: number[][];
             govRising: number[][];
@@ -759,6 +852,8 @@ async function main() {
           const analysisOnce = analyzeFlashEvents({
             rising: cap.rising,
             falling: cap.falling,
+            risingSwing: cap.risingSwing,
+            fallingSwing: cap.fallingSwing,
             redRising: cap.redRising,
             redFalling: cap.redFalling,
             tilePixels: cap.tilePixels,
@@ -777,16 +872,10 @@ async function main() {
         if (attempts.length === 0) continue;
         // Identical captures of the same preset do NOT always agree — see the
         // module docblock. Reporting one number would hide that, so with
-        // --repeat the MEDIAN run is reported and the spread travels with it.
-        const ordered = [...attempts].sort(
-          (a, b) =>
-            a.analysis.peakFlashesPerSecond - b.analysis.peakFlashesPerSecond,
-        );
-        const chosen = ordered[
-          Math.floor(ordered.length / 2)
-        ] as (typeof attempts)[number];
+        // --repeat the MEDIAN run is reported, per channel, and the spread
+        // travels with it.
+        const { run: chosen, analysis } = medianRun(attempts);
         const cap = chosen.cap;
-        const analysis = chosen.analysis;
         const repeatPeaks = attempts.map(
           (a) => a.analysis.peakFlashesPerSecond,
         );
@@ -842,7 +931,8 @@ async function main() {
               : '') +
             `red=${analysis.peakRedFlashesPerSecond}/s ` +
             `motion=${analysis.motionEnergy.toFixed(4)} ` +
-            `vol=${analysis.luminanceVolatility.toFixed(4)}` +
+            `vol=${analysis.luminanceVolatility.toFixed(4)} ` +
+            `swing=${analysis.maxFlashLuminanceDelta.toFixed(3)}` +
             (analysis.exceedsThreshold || analysis.exceedsRedThreshold
               ? '  ** OVER THRESHOLD **'
               : ''),
@@ -868,6 +958,7 @@ async function main() {
           exceedsRedThreshold: false,
           motionEnergy: 0,
           luminanceVolatility: 0,
+          maxFlashLuminanceDelta: 0,
           meanLuminance: 0,
           frameCount: 0,
         });
@@ -914,7 +1005,10 @@ async function main() {
   console.log(`\nWrote ${args.out}`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Import-safe: the tests exercise the helpers above directly.
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

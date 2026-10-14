@@ -39,20 +39,28 @@ export type PresetSensoryProfile = {
   flashRiskLevel: FlashRiskLevel;
   maxTransitionsPerSecondEstimate: number;
   meanLuminance: number;
-  maxLuminanceDelta: number;
+  /**
+   * Luminance swing of the preset's strongest flash, the audit's
+   * `maxFlashLuminanceDelta`; what the governor is primed from
+   * (`primingHoldForMeasurement`). Absent on profiles measured before the
+   * audit recorded it.
+   */
+  maxLuminanceDelta?: number;
   /** ISO timestamp of the lab run that produced this entry. */
   measuredAt: string;
 };
 
 /**
  * The measurement a profile is built from: what the classifier reads, plus
- * the two figures the stored profile keeps. Structurally a subset of the
- * lab's FlashAnalysis.
+ * the figures the stored profile keeps. Structurally a subset of the lab's
+ * FlashAnalysis.
  */
 export type FlashMeasurement = RiskMeasurement & {
   meanLuminance: number;
   /** Std-dev of frame-to-frame luminance change. */
   luminanceVolatility: number;
+  /** Swing of the strongest flash; absent from reports that predate it. */
+  maxFlashLuminanceDelta?: number;
 };
 
 /** Build the stored profile from a measurement plus the run's timestamp. */
@@ -67,7 +75,13 @@ export function toSensoryProfile(
       measurement.peakRedFlashesPerSecond,
     ),
     meanLuminance: measurement.meanLuminance,
-    maxLuminanceDelta: measurement.luminanceVolatility,
+    // The swing of the strongest flash, never the volatility: a standard
+    // deviation of frame means is not the size of any swing, so a clamp
+    // sized from it was arbitrary. Left out when the report has no swing,
+    // and priming falls back to its gentle default.
+    ...(typeof measurement.maxFlashLuminanceDelta === 'number'
+      ? { maxLuminanceDelta: measurement.maxFlashLuminanceDelta }
+      : {}),
     measuredAt,
   };
 }

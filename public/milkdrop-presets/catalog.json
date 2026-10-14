@@ -1478,7 +1478,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.0018589999064437476,
-        "maxLuminanceDelta": 0.0009067132196134497,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -1970,7 +1969,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.04622463014926661,
-        "maxLuminanceDelta": 0.004822092742847322,
         "measuredAt": "2026-08-22T04:00:19.216Z"
       }
     },
@@ -2932,7 +2930,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.0008555935338064903,
-        "maxLuminanceDelta": 0.0007671608456901893,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -4380,7 +4377,6 @@
         "flashRiskLevel": "medium",
         "maxTransitionsPerSecondEstimate": 2,
         "meanLuminance": 0.02699241105304282,
-        "maxLuminanceDelta": 0.004201617054182731,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -5813,7 +5809,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.009069614929081718,
-        "maxLuminanceDelta": 0.0014317253428530003,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -11544,7 +11539,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.0014719744180420303,
-        "maxLuminanceDelta": 0.00023219034609734331,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       },
       "searchTerms": [
@@ -12984,7 +12978,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.00008210771724413184,
-        "maxLuminanceDelta": 0.00010875875766449575,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       },
       "searchTerms": [
@@ -14385,7 +14378,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.005247462925127708,
-        "maxLuminanceDelta": 0.0014704888301765046,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -15823,7 +15815,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.006969676409315226,
-        "maxLuminanceDelta": 0.00011129365950038791,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -17257,7 +17248,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.0006014701817081163,
-        "maxLuminanceDelta": 0.00008680595681636817,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -18695,7 +18685,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.0043310101079031054,
-        "maxLuminanceDelta": 0.00028106499837371175,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -20093,7 +20082,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.018290874255160638,
-        "maxLuminanceDelta": 0.00035492756247236073,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -21520,7 +21508,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.015407931343209426,
-        "maxLuminanceDelta": 0.0012855568177640474,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -22951,7 +22938,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.003336913080214045,
-        "maxLuminanceDelta": 0.0009239034036973681,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -24382,7 +24368,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.00013194724768559772,
-        "maxLuminanceDelta": 0.0001689349593866115,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -25801,7 +25786,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.009890336907692048,
-        "maxLuminanceDelta": 0.008894041330895797,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -27186,7 +27170,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.0025523079883122603,
-        "maxLuminanceDelta": 0.0008150944234834994,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -30033,7 +30016,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.0019557677157798635,
-        "maxLuminanceDelta": 0.0002429075136327734,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -31470,7 +31452,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.009624975202688209,
-        "maxLuminanceDelta": 0.00429452519138531,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       },
       "searchTerms": [
@@ -32908,7 +32889,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.002835937032327531,
-        "maxLuminanceDelta": 0.0005318875521623852,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -34302,7 +34282,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.00399235344297069,
-        "maxLuminanceDelta": 0.0016477629911299777,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -35760,7 +35739,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.01691722104614077,
-        "maxLuminanceDelta": 0.0049123300531163485,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -37198,7 +37176,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.005482147889658306,
-        "maxLuminanceDelta": 0.0006246151928683272,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -38651,7 +38628,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.0007994625270461717,
-        "maxLuminanceDelta": 0.00017177144936759742,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -41474,7 +41450,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.00013854570735991523,
-        "maxLuminanceDelta": 0.0001534594397529686,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -42917,7 +42892,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.04734893837387332,
-        "maxLuminanceDelta": 0.0016383481731985625,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -44368,7 +44342,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.004990512027225984,
-        "maxLuminanceDelta": 0.00014688456732952357,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -45808,7 +45781,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.008940749295834622,
-        "maxLuminanceDelta": 0.0002608278205221324,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -47200,7 +47172,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.00336080587837399,
-        "maxLuminanceDelta": 0.005388401699712138,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -48642,7 +48613,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.008912603919602673,
-        "maxLuminanceDelta": 0.003082498245542157,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       },
       "searchTerms": [
@@ -50071,7 +50041,6 @@
         "flashRiskLevel": "medium",
         "maxTransitionsPerSecondEstimate": 3,
         "meanLuminance": 0.01853156301902193,
-        "maxLuminanceDelta": 0.02057726562088752,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       },
       "searchTerms": [
@@ -51507,7 +51476,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.01926620423925692,
-        "maxLuminanceDelta": 0.0032030516899238756,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -52917,7 +52885,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.18647908207926475,
-        "maxLuminanceDelta": 0.012219472584457906,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -58702,7 +58669,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.002497862890999387,
-        "maxLuminanceDelta": 0.0007850637848312885,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -60110,7 +60076,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.00014396050131404642,
-        "maxLuminanceDelta": 0.00009937496464168684,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -61565,7 +61530,6 @@
         "flashRiskLevel": "high",
         "maxTransitionsPerSecondEstimate": 5,
         "meanLuminance": 0.019849349417262803,
-        "maxLuminanceDelta": 0.04545382149805806,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -63004,7 +62968,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.0006638169460348004,
-        "maxLuminanceDelta": 0.000605262129200815,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -64437,7 +64400,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.020351735471363184,
-        "maxLuminanceDelta": 0.004529959082879143,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -81625,7 +81587,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.002112033220369737,
-        "maxLuminanceDelta": 0.00038127318421648604,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
@@ -83096,7 +83057,6 @@
         "flashRiskLevel": "none",
         "maxTransitionsPerSecondEstimate": 0,
         "meanLuminance": 0.0007904729189004877,
-        "maxLuminanceDelta": 0.00042079945450500467,
         "measuredAt": "2026-08-20T02:30:10.318Z"
       }
     },
