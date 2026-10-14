@@ -1,5 +1,5 @@
 /**
- * Rank a preset's parameters by how much they actually move the picture.
+ * Rank a preset's parameters by how much they move its warp mesh.
  *
  * A MilkDrop preset carries dozens of numeric fields, and in any given preset
  * most of them do nothing: they are overwritten by the per-frame equations on
@@ -18,7 +18,10 @@
  * GPU, and runs in milliseconds, so this can sweep the corpus. A preset whose
  * warp is owned by a shader will correctly report near-zero sensitivity on the
  * mesh -- that is a real finding about where its behaviour lives, not a
- * failure to measure.
+ * failure to measure. The same goes for fields applied after the warp
+ * (decay, wave and border colour and alpha, video echo): they score zero
+ * here and can still change every frame, so a zero means "does not move the
+ * mesh", not "does nothing".
  *
  * Central differences, both directions averaged: one-sided differencing on a
  * field that is clamped at zero (decay, warp scale) reports the clamp instead
@@ -237,8 +240,9 @@ if (live.length === 0) {
 }
 const dead = rows.length - live.length;
 console.log(
-  `\n  ${dead} of ${rows.length} comparable fields are inert in this preset: ` +
-    'changing them moves nothing.',
+  `\n  ${dead} of ${rows.length} comparable fields do not move the warp mesh ` +
+    'in this preset.\n  That includes fields applied after the warp (decay, ' +
+    'wave and border colour, video echo),\n  so it is not a list of dead fields.',
 );
 if (structural.length > 0) {
   console.log(

@@ -258,10 +258,15 @@ export function hasLegacyMotionVectorControls(
     return true;
   }
 
-  if (!programs) {
-    return false;
-  }
+  return programs ? writesLegacyMotionVectorControls(programs) : false;
+}
 
+/** Whether the init or per-frame program assigns a legacy motion-vector
+ * control (`mv_x`/`mv_y`, `mv_dx`/`mv_dy`, `mv_l`). The runtime shares this so
+ * the CPU and WebGPU motion-vector paths agree on scripted presets. */
+export function writesLegacyMotionVectorControls(
+  programs: Pick<MilkdropPresetIR['programs'], 'init' | 'perFrame'>,
+) {
   return [programs.init, programs.perFrame].some((block) =>
     block.statements.some((statement) =>
       LEGACY_MOTION_VECTOR_CONTROL_TARGETS.has(statement.target),

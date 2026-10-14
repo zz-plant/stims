@@ -69,6 +69,7 @@ export async function warmupGpuPipelines(
 function getOrCompileProgram(
   block: MilkdropProgramBlock,
   device?: GPUDevice,
+  ownedSignalAliases?: readonly string[],
 ): WgslProgramCompilation {
   const cached = PROGRAM_CACHE.get(block);
   if (cached) {
@@ -76,7 +77,11 @@ function getOrCompileProgram(
   }
   const enableF16 = device?.features?.has('shader-f16') ?? false;
   const enableSubgroups = device?.features?.has('subgroups') ?? false;
-  const compiled = compileProgramToWgsl(block, { enableF16, enableSubgroups });
+  const compiled = compileProgramToWgsl(block, {
+    enableF16,
+    enableSubgroups,
+    ownedSignalAliases,
+  });
   PROGRAM_CACHE.set(block, compiled);
   return compiled;
 }
@@ -248,10 +253,15 @@ export function createGpuVmRunner() {
     initialRandomState: number,
     initialRegisters: Record<string, number> = {},
     guestMemory: { megabuf?: Float32Array; gmegabuf?: Float32Array } = {},
+    ownedSignalAliases: readonly string[] = [],
   ) {
     device = gpuDevice;
     clearGpuVmCaches();
-    const compilation = getOrCompileProgram(block, gpuDevice);
+    const compilation = getOrCompileProgram(
+      block,
+      gpuDevice,
+      ownedSignalAliases,
+    );
     if (!compilation.gpuExecutable) {
       dispose();
       return false;

@@ -49,7 +49,7 @@
  *   --target change    scores each column's per-frame change instead of its
  *                      value. A column that accumulates its audio has an
  *                      increment with short memory even when its value never
- *                      forgets.
+ *                      forgets. Event timing (below) still reads the values.
  *   --memory <dir>     a lab:memory-probe output. Audio R² is then also
  *                      reported per memory class, per (preset, column):
  *                      bounded (instant, short, seconds) against stateful
@@ -211,6 +211,20 @@ export function perFrameChange(series: Float64Array): Float64Array {
   return Float64Array.from(series, (value, f) =>
     f === 0 ? 0 : value - (series[f - 1] as number),
   );
+}
+
+/** Inverse of perFrameChange: the series that starts at `start` and moves
+ * by `change` on each later frame (frame 0's change is ignored, as
+ * perFrameChange writes 0 there). */
+export function integrateChange(
+  change: Float64Array,
+  start: number,
+): Float64Array {
+  const values = new Float64Array(change.length);
+  for (let f = 0; f < change.length; f += 1)
+    values[f] =
+      f === 0 ? start : (values[f - 1] as number) + (change[f] as number);
+  return values;
 }
 
 /**
@@ -417,6 +431,26 @@ export function eventMatch(
   };
 }
 
+/**
+ * eventMatch on the control's values, whatever the regression target. Under
+ * `--target change` the model predicts per-frame changes; matching those
+ * directly counts one toggle as two jumps (up, then back to 0) and takes the
+ * threshold from the change's range. So the prediction is integrated back to
+ * values from the actual run's first frame, and `actual` is the raw run.
+ */
+export function targetEventMatch(
+  target: 'value' | 'change',
+  actual: Float64Array,
+  predicted: Float64Array,
+): EventCounts {
+  return eventMatch(
+    actual,
+    target === 'change'
+      ? integrateChange(predicted, actual[0] ?? 0)
+      : predicted,
+  );
+}
+
 /** F1 of pooled event counts; null when the column never jumped. */
 export function eventF1(counts: readonly EventCounts[]): number | null {
   const sum = (key: keyof EventCounts) =>
@@ -621,16 +655,27 @@ function main() {
     const states = scenarios.map((s) =>
       loadFloats(scenarioFiles.get(s) as string),
     );
-    const series = new Map<string, Float64Array>();
-    const column = (scenario: number, c: number) => {
+    const rawSeries = new Map<string, Float64Array>();
+    const rawColumn = (scenario: number, c: number) => {
       const key = `${scenario}:${c}`;
-      let values = series.get(key);
+      let values = rawSeries.get(key);
       if (!values) {
         values = Float64Array.from(
           { length: frames },
           (_, f) => states[scenario]?.[f * columns + c] as number,
         );
-        if (target === 'change') values = perFrameChange(values);
+        rawSeries.set(key, values);
+      }
+      return values;
+    };
+    // The regression target: the raw column, or its per-frame change.
+    const series = new Map<string, Float64Array>();
+    const column = (scenario: number, c: number) => {
+      if (target === 'value') return rawColumn(scenario, c);
+      const key = `${scenario}:${c}`;
+      let values = series.get(key);
+      if (!values) {
+        values = perFrameChange(rawColumn(scenario, c));
         series.set(key, values);
       }
       return values;
@@ -706,6 +751,8 @@ function main() {
           actual: runs[fold.held] as Float64Array,
           predicted: heldPrediction('full', c, foldIndex),
           oracle,
+          // Event timing reads the control itself, not the target series.
+          values: rawColumn(fold.held, c),
         };
       });
       const score = audioR2(pairs);
@@ -717,10 +764,14 @@ function main() {
         column: name,
         audioR2: score,
         eventF1: eventF1(
-          pairs.map((pair) => eventMatch(pair.actual, pair.predicted)),
+          pairs.map((pair) =>
+            targetEventMatch(target, pair.values, pair.predicted),
+          ),
         ),
         oracleEventF1: eventF1(
-          pairs.map((pair) => eventMatch(pair.actual, pair.oracle)),
+          pairs.map((pair) =>
+            targetEventMatch(target, pair.values, pair.oracle),
+          ),
         ),
         ...(memoryOf ? { memory: memoryOf(id, name) } : {}),
       });
