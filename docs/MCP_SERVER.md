@@ -44,9 +44,9 @@ These tools manage a persistent headless browser session so you can interact wit
 | Tool | Input | Output |
 |------|-------|--------|
 | `start_agent_session` | optional `presetId`, `headless` | Session ID — the visualizer opens in a persistent browser |
-| `session_get_state` | `sessionId` | Current state: preset title, author, audio energy (0-1), backend, canvas size |
+| `session_get_state` | `sessionId` | Current state from the page's `__stims_agent.getState()`: preset id, title and author, engine state, audio energy (0-1), FPS, backend, shader execution, last page error, canvas size |
 | `session_capture_frame` | `sessionId`, optional `waitMs` | Path to captured screenshot |
-| `session_describe_frame` | `sessionId`, optional `waitMs` | Preset info + screenshot path (no pixel analysis — use a vision model) |
+| `session_describe_frame` | `sessionId`, optional `waitMs` | Preset id, title and author, shader execution, image metrics (brightness, colourfulness, near-black) and the screenshot path |
 | `session_switch_preset` | `sessionId`, `presetId`, optional `waitMs` | Confirmation when new preset is rendered |
 | `session_tweak` | `sessionId`, `tweak` (natural language), optional `amount` | Resolves the tweak against real field values, applies it in one commit, reports `from → to` per field plus diagnostics |
 | `session_apply_source` | `sessionId`, `source` (.milk code) | Applies source, **waits for the compile**, returns diagnostics with line numbers and whether the stage fell back |

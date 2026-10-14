@@ -208,6 +208,7 @@ describe('agent bridge replies report what actually happened', () => {
     panel: null,
     presetId: null,
     presetTitle: null,
+    presetAuthor: null,
     catalogSize: 0,
     audioSource: null,
     playbackPaused: false,

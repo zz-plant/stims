@@ -4,7 +4,9 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { type Browser, chromium } from 'playwright';
+import { readSessionPageState } from '../../scripts/mcp-session-state.ts';
 import { playToy } from '../../scripts/play-toy.ts';
+import { waitForAgentState } from './agent-api.ts';
 import {
   hasChromium,
   localOnlyBrowserTest,
@@ -220,6 +222,56 @@ integrationTest(
       );
     } finally {
       await rm(outputDir, { recursive: true, force: true });
+    }
+  },
+  { timeout: INTEGRATION_TIMEOUT_MS },
+);
+
+// The MCP session tools (session_get_state, session_watch,
+// session_describe_frame) report what is on stage through this reader. It used
+// to scrape `.milkdrop-overlay__osd-*`, which nothing has rendered since the
+// overlay was removed, so every call named no preset and nothing failed.
+integrationTest(
+  'MCP session tools name the preset on stage',
+  async () => {
+    await ensureDevServer();
+    const presetId = 'eos-glowsticks-v2-03-music';
+    const catalog = JSON.parse(
+      fs.readFileSync(
+        path.join(
+          import.meta.dir,
+          '../../public/milkdrop-presets/catalog.json',
+        ),
+        'utf8',
+      ),
+    ) as { presets: Array<{ id: string; title: string; author?: string }> };
+    const entry = catalog.presets.find((preset) => preset.id === presetId);
+    expect(entry?.author).toBeTruthy();
+    const mobile = await createMobilePage();
+
+    try {
+      await mobile.page.goto(
+        `http://127.0.0.1:${TEST_PORT}/?preset=${presetId}&audio=none&agent=true&renderer=webgl`,
+        { timeout: 30000 },
+      );
+      await waitForAgentState(
+        mobile.page,
+        (state) => state.presetId === presetId && state.presetTitle !== null,
+        60000,
+      );
+
+      const state = await withDeadline(
+        mobile.page.evaluate(readSessionPageState),
+        EVALUATE_TIMEOUT_MS,
+        'reading the MCP session state out of the page',
+      );
+      expect(state.agentInstalled).toBe(true);
+      expect(state.presetId).toBe(presetId);
+      expect(state.presetTitle).toBe(entry?.title ?? null);
+      expect(state.presetAuthor).toBe(entry?.author ?? null);
+      expect(state.backend).toBe('webgl');
+    } finally {
+      await mobile.close();
     }
   },
   { timeout: INTEGRATION_TIMEOUT_MS },

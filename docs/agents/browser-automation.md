@@ -39,7 +39,7 @@ __stims_agent.getState().statusLog.at(-1);              // {at, message}
 | `engineState` | `'booting' \| 'ready' \| 'live'` (mirrors the body attribute) |
 | `engineReady`, `liveMode`, `backend` | engine status; backend is `'webgl' \| 'webgpu'` once mounted |
 | `panel` | open side panel (`browse`, `settings`, `editor`, …) or null |
-| `presetId`, `presetTitle` | active preset |
+| `presetId`, `presetTitle`, `presetAuthor` | active preset; title and author come from the catalog entry for `presetId`, so all three name the same preset |
 | `catalogSize` | presets the shell can pick from; `0` until the deferred catalog load lands, which is later than `ready`, so `next-preset` is a no-op before then — `waitFor((s) => s.catalogSize > 0)` before choosing presets |
 | `audioSource`, `audioEnergy` | current source and live RMS energy |
 | `playbackPaused` | the stage is holding its frame at the user's request (Space, the dock's pause button, `toggle-playback`); everything stays mounted, unlike `stop-audio`, which unmounts the engine and returns to the start page |
@@ -74,10 +74,10 @@ read-immediately-after-write.
   hoped for: `settled` only says a state commit followed. So an `ok: true`
   result carries `events`: the typed events recorded while it settled, i.e.
   what the action changed. `run('next-preset')` returns
-  `[{type: 'preset', data: {from, to, title}}]` with the new id, with no second
-  `getState()` needed. An empty `events` means it changed nothing observable
-  (also true of `share-link`); it can occasionally include an unrelated change
-  that landed in the same window.
+  `[{type: 'preset', data: {from, to, title, author}}]` with the new id, with
+  no second `getState()` needed. An empty `events` means it changed nothing
+  observable (also true of `share-link`); it can occasionally include an
+  unrelated change that landed in the same window.
 - `listActions()` → `[{id, label, params?}]` — every palette action (panels,
   preset moves, transitions, audio sources, pause/resume, save, share, watch
   party, autoplay, fullscreen, the preset-tuning nudges `nudge-*` /
