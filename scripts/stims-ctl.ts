@@ -477,10 +477,6 @@ async function run(options: CliOptions) {
     // records that nothing was waited on.
     let loaded: boolean | null = null;
     if (!options.embed) {
-      const launchBtn = app.locator('button:has-text("See visuals now")');
-      if (await launchBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await launchBtn.click();
-      }
       loaded = await app
         .waitForFunction(
           () => window.stimState?.getState().toyLoaded === true,

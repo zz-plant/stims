@@ -25,7 +25,11 @@ import { z } from 'zod';
 import { resolveAgentChromiumArgs } from './browser-launch.ts';
 import { sendToil } from './embed-harness.ts';
 import { registerPerformanceTools } from './mcp-performance-tools.ts';
-import { readSessionPageState } from './mcp-session-state.ts';
+import {
+  openSessionPreset,
+  readSessionPageState,
+  switchSessionPreset,
+} from './mcp-session-state.ts';
 import {
   asImageResponse,
   asTextResponse,
@@ -54,6 +58,7 @@ type AgentSession = {
 const agentSessions = new Map<string, AgentSession>();
 const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 min idle timeout
 const CAPTURE_DIR = mkdtempSync(join(tmpdir(), 'stims-agent-'));
+const DEV_SERVER_ORIGIN = 'http://localhost:5173';
 
 /**
  * Get a session by ID, checking expiry.
@@ -412,9 +417,10 @@ server.registerTool(
     }),
   },
   async ({ presetId, headless }) => {
+    let browser: import('playwright').Browser | null = null;
     try {
       const id = randomUUID();
-      const browser = await chromium.launch({
+      browser = await chromium.launch({
         headless,
         args: resolveAgentChromiumArgs(),
       });
@@ -422,24 +428,14 @@ server.registerTool(
         viewport: { width: 1280, height: 720 },
       });
 
-      await page.goto(
-        `http://localhost:5173/?agent=true&preset=${encodeURIComponent(presetId ?? 'eos-glowsticks-v2-03-music')}`,
-        { waitUntil: 'networkidle', timeout: 15000 },
-      );
-      await page.waitForTimeout(1000);
-
-      // Click launch button if present
-      const launchBtn = page.locator('button:has-text("See visuals now")');
-      if (await launchBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await launchBtn.click();
-      }
-      await page.waitForTimeout(4000);
+      const initialPresetId = presetId ?? 'eos-glowsticks-v2-03-music';
+      await openSessionPreset(page, DEV_SERVER_ORIGIN, initialPresetId);
 
       const session: AgentSession = {
         id,
         browser,
         page,
-        presetId: presetId ?? 'eos-glowsticks-v2-03-music',
+        presetId: initialPresetId,
         createdAt: Date.now(),
         lastUsedAt: Date.now(),
         screenshotDir: CAPTURE_DIR,
@@ -449,12 +445,14 @@ server.registerTool(
       return asTextResponse(
         [
           `Session started: ${id}`,
-          `Preset: ${presetId ?? 'eos-glowsticks-v2-03-music'}`,
+          `Preset: ${initialPresetId}`,
           `Screenshots: ${CAPTURE_DIR}`,
           `Available tools: session_get_state, session_capture_frame, session_switch_preset, session_watch, session_close`,
         ].join('\n'),
       );
     } catch (e) {
+      // No session holds this browser yet, so nothing else will close it.
+      await browser?.close().catch(() => {});
       return asTextResponse(`Failed to start session: ${e}`);
     }
   },
@@ -535,7 +533,7 @@ server.registerTool(
   'session_switch_preset',
   {
     description:
-      'Load a different preset in an active agent session. Waits for the new preset to render before returning.',
+      'Load a different preset in an active agent session, without reloading the page, so a running pattern, modulators and MIDI bindings carry over. Returns once the new preset is on stage; with a blend transition the stage keeps crossfading from the old one for the blend duration, so pass session_capture_frame a waitMs to capture the settled preset.',
     inputSchema: z.object({
       sessionId: z.string().describe('Session ID from start_agent_session.'),
       presetId: z
@@ -545,10 +543,12 @@ server.registerTool(
         .number()
         .int()
         .min(500)
-        .max(15000)
+        .max(60000)
         .optional()
-        .default(4000)
-        .describe('Ms to wait for the new preset to render.'),
+        .default(15000)
+        .describe(
+          'Most ms to wait for the new preset to reach the stage. Returns as soon as it does.',
+        ),
     }),
   },
   async ({ sessionId, presetId, waitMs }) => {
@@ -558,14 +558,7 @@ server.registerTool(
     }
 
     try {
-      // Navigate to new preset
-      const url = new URL(session.page.url());
-      url.searchParams.set('preset', presetId);
-      await session.page.goto(url.toString(), {
-        waitUntil: 'networkidle',
-        timeout: 15000,
-      });
-      await session.page.waitForTimeout(waitMs ?? 4000);
+      await switchSessionPreset(session.page, presetId, waitMs ?? 15000);
 
       session.presetId = presetId;
 
@@ -1247,31 +1240,35 @@ server.registerTool(
       });
 
       const results: string[] = [];
-      for (const preset of best) {
-        await page.goto(
-          `http://localhost:5173/?agent=true&preset=${encodeURIComponent(preset.id)}`,
-          { waitUntil: 'networkidle', timeout: 15000 },
-        );
-        await page.waitForTimeout(1000);
-        const btn = page.locator('button:has-text("See visuals now")');
-        if (await btn.isVisible({ timeout: 2000 }).catch(() => false))
-          await btn.click();
-        await page.waitForTimeout(durationMs ?? 6000);
+      try {
+        for (const preset of best) {
+          const matchReason =
+            preset.score > 0
+              ? `matched ${preset.score} keyword(s)`
+              : 'selected as fallback';
+          try {
+            await openSessionPreset(page, DEV_SERVER_ORIGIN, preset.id);
+          } catch (error) {
+            // The candidates come from the production catalog, which can name
+            // a preset the local one does not have; report it and try the next.
+            results.push(
+              `- ${preset.title} by ${preset.author} (${matchReason}): did not reach the stage (${error})`,
+            );
+            continue;
+          }
+          await page.waitForTimeout(durationMs ?? 6000);
 
-        const filename = `vibe-${preset.id}-${Date.now()}.png`;
-        const filepath = `/tmp/${filename}`;
-        await page.screenshot({ path: filepath });
+          const filename = `vibe-${preset.id}-${Date.now()}.png`;
+          const filepath = `/tmp/${filename}`;
+          await page.screenshot({ path: filepath });
 
-        const matchReason =
-          preset.score > 0
-            ? `matched ${preset.score} keyword(s)`
-            : 'selected as fallback';
-        results.push(
-          `- ${preset.title} by ${preset.author} (${matchReason}): ${filepath}`,
-        );
+          results.push(
+            `- ${preset.title} by ${preset.author} (${matchReason}): ${filepath}`,
+          );
+        }
+      } finally {
+        await browser.close().catch(() => {});
       }
-
-      await browser.close();
 
       return asTextResponse(
         [

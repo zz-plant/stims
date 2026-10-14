@@ -43,11 +43,11 @@ These tools manage a persistent headless browser session so you can interact wit
 
 | Tool | Input | Output |
 |------|-------|--------|
-| `start_agent_session` | optional `presetId`, `headless` | Session ID — the visualizer opens in a persistent browser |
+| `start_agent_session` | optional `presetId`, `headless` | Session ID, once the agent API reports the preset on stage (the visualizer opens in a persistent browser; a load that never gets there fails instead of returning a session) |
 | `session_get_state` | `sessionId` | Current state from the page's `__stims_agent.getState()`: preset id, title and author, engine state, audio energy (0-1), FPS, backend, shader execution, last page error, canvas size |
 | `session_capture_frame` | `sessionId`, optional `waitMs` | Path to captured screenshot |
 | `session_describe_frame` | `sessionId`, optional `waitMs` | Preset id, title and author, shader execution, image metrics (brightness, colourfulness, near-black) and the screenshot path |
-| `session_switch_preset` | `sessionId`, `presetId`, optional `waitMs` | Confirmation when new preset is rendered |
+| `session_switch_preset` | `sessionId`, `presetId`, optional `waitMs` (budget, default 15000) | Confirmation once the new preset is on stage. Switches with `select-preset`, not a reload, so a running pattern, modulators and MIDI bindings carry over; an unknown id fails with close matches |
 | `session_tweak` | `sessionId`, `tweak` (natural language), optional `amount` | Resolves the tweak against real field values, applies it in one commit, reports `from → to` per field plus diagnostics |
 | `session_apply_source` | `sessionId`, `source` (.milk code) | Applies source, **waits for the compile**, returns diagnostics with line numbers and whether the stage fell back |
 | `session_editor_state` | `sessionId` | Read-only: preset, error/warning counts, per-line diagnostics, dirty flag, fallback flag |

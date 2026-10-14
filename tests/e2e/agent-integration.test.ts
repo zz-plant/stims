@@ -4,9 +4,11 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { type Browser, chromium } from 'playwright';
-import { readSessionPageState } from '../../scripts/mcp-session-state.ts';
+import {
+  openSessionPreset,
+  switchSessionPreset,
+} from '../../scripts/mcp-session-state.ts';
 import { playToy } from '../../scripts/play-toy.ts';
-import { waitForAgentState } from './agent-api.ts';
 import {
   hasChromium,
   localOnlyBrowserTest,
@@ -231,11 +233,14 @@ integrationTest(
 // session_describe_frame) report what is on stage through this reader. It used
 // to scrape `.milkdrop-overlay__osd-*`, which nothing has rendered since the
 // overlay was removed, so every call named no preset and nothing failed.
+//
+// start_agent_session and session_switch_preset open and switch through the
+// same module. They used to click a launch button that no longer renders and
+// then sleep 4s, returning "ready" whether or not the preset had mounted.
 integrationTest(
-  'MCP session tools name the preset on stage',
+  'MCP session tools open and switch the preset on stage',
   async () => {
     await ensureDevServer();
-    const presetId = 'eos-glowsticks-v2-03-music';
     const catalog = JSON.parse(
       fs.readFileSync(
         path.join(
@@ -245,36 +250,67 @@ integrationTest(
         'utf8',
       ),
     ) as { presets: Array<{ id: string; title: string; author?: string }> };
-    const entry = catalog.presets.find((preset) => preset.id === presetId);
-    expect(entry?.author).toBeTruthy();
+    const catalogEntry = (id: string) => {
+      const entry = catalog.presets.find((preset) => preset.id === id);
+      expect(entry?.author).toBeTruthy();
+      return entry;
+    };
+    const first = catalogEntry('eos-glowsticks-v2-03-music');
+    const second = catalogEntry('rovastar-parallel-universe');
     const mobile = await createMobilePage();
 
     try {
-      await mobile.page.goto(
-        `http://127.0.0.1:${TEST_PORT}/?preset=${presetId}&audio=none&agent=true&renderer=webgl`,
-        { timeout: 30000 },
-      );
-      await waitForAgentState(
+      const opened = await openSessionPreset(
         mobile.page,
-        (state) => state.presetId === presetId && state.presetTitle !== null,
+        `http://127.0.0.1:${TEST_PORT}`,
+        'eos-glowsticks-v2-03-music',
+        { params: { renderer: 'webgl' }, timeoutMs: 90000 },
+      );
+      expect(opened.agentInstalled).toBe(true);
+      expect(opened.presetId).toBe('eos-glowsticks-v2-03-music');
+      expect(opened.presetTitle).toBe(first?.title ?? null);
+      expect(opened.presetAuthor).toBe(first?.author ?? null);
+      expect(opened.backend).toBe('webgl');
+
+      // A reload would drop this, along with everything a session sets up in
+      // the page: a Strudel pattern, modulators, MIDI bindings.
+      await withDeadline(
+        mobile.page.evaluate(() => {
+          (window as { sessionMarker?: string }).sessionMarker = 'kept';
+        }),
+        EVALUATE_TIMEOUT_MS,
+        'marking the page before the switch',
+      );
+      const switched = await switchSessionPreset(
+        mobile.page,
+        'rovastar-parallel-universe',
         60000,
       );
-
-      const state = await withDeadline(
-        mobile.page.evaluate(readSessionPageState),
+      expect(switched.presetId).toBe('rovastar-parallel-universe');
+      expect(switched.presetTitle).toBe(second?.title ?? null);
+      expect(switched.presetAuthor).toBe(second?.author ?? null);
+      const marker = await withDeadline(
+        mobile.page.evaluate(
+          () => (window as { sessionMarker?: string }).sessionMarker,
+        ),
         EVALUATE_TIMEOUT_MS,
-        'reading the MCP session state out of the page',
+        'reading the marker back after the switch',
       );
-      expect(state.agentInstalled).toBe(true);
-      expect(state.presetId).toBe(presetId);
-      expect(state.presetTitle).toBe(entry?.title ?? null);
-      expect(state.presetAuthor).toBe(entry?.author ?? null);
-      expect(state.backend).toBe('webgl');
+      expect(marker).toBe('kept');
+
+      // An id the catalog lacks fails with the agent's answer instead of
+      // waiting out the budget on a preset that will never arrive.
+      await expect(
+        switchSessionPreset(mobile.page, 'no-such-preset-id', 60000),
+      ).rejects.toThrow('no preset matches "no-such-preset-id"');
     } finally {
       await mobile.close();
     }
   },
-  { timeout: INTEGRATION_TIMEOUT_MS },
+  // Two preset loads, not one. Opening alone took 23–54s with other suites
+  // loading the machine, since a deep link stages the first-run preset and
+  // swaps in the requested one only after the catalog lands.
+  { timeout: INTEGRATION_TIMEOUT_MS + 60000 },
 );
 
 // These two assert the product's headline objective as *behavior*: audio has
