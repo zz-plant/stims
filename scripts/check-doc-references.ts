@@ -58,6 +58,7 @@ const SKIP_DIRS = new Set([
   'archive',
   'evidence',
   'node_modules',
+  'worktrees',
   '.git',
   'dist',
   'screenshots',

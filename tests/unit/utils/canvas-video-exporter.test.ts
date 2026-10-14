@@ -17,6 +17,7 @@ describe('Canvas Video Exporter Utility', () => {
       'spotify-canvas': { width: 1080, height: 1920, aspectRatio: '9:16' },
       'tiktok-shorts': { width: 1080, height: 1920, aspectRatio: '9:16' },
       'youtube-shorts': { width: 1080, height: 1920, aspectRatio: '9:16' },
+      'square-post': { width: 1080, height: 1080, aspectRatio: '1:1' },
       'hd-landscape': { width: 1920, height: 1080, aspectRatio: '16:9' },
       '4k-landscape': { width: 3840, height: 2160, aspectRatio: '16:9' },
       // `custom` was missing from the old per-key assertions entirely — the
