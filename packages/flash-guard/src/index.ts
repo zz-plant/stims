@@ -13,6 +13,7 @@ export {
   type FlashAnalysis,
   type FlashAnalysisInput,
   type FlashCountInput,
+  flashSwing,
 } from './analysis.ts';
 export {
   createBrightnessFilterApplier,
@@ -34,6 +35,7 @@ export {
   type FlashGovernor,
   type FlashGovernorDecision,
   type FlashGovernorOptions,
+  type FlashRedField,
   type FlashSampleOptions,
   MIN_USEFUL_GRID,
   primingHoldForMeasurement,

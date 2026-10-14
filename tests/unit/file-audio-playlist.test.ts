@@ -8,6 +8,7 @@ import {
   previousFileTrack,
   selectFileTrack,
   setActiveFileAudio,
+  setActiveFileAudioPaused,
   setFileLoopMode,
   subscribeFilePlaylist,
 } from '../../src/js/frontend/file-audio.ts';
@@ -211,6 +212,56 @@ describe('file audio playlist', () => {
     // Should stay at last track
     await nextFileTrack();
     expect(getActiveFilePlaylist()?.currentIndex).toBe(1);
+  });
+
+  test('a track change while the stage is held stays paused until it resumes', async () => {
+    const handle = await createFileAudioStream([
+      mockFile('one.mp3'),
+      mockFile('two.mp3'),
+      mockFile('three.mp3'),
+    ]);
+    setActiveFileAudio(handle);
+    let plays = 0;
+    handle.element.play = () => {
+      plays += 1;
+      return Promise.resolve();
+    };
+
+    setActiveFileAudioPaused(true);
+    await nextFileTrack();
+    await previousFileTrack();
+    await selectFileTrack(2);
+
+    // The stage, the dock and the Media Session all still say paused, and
+    // the picture is frozen; the new track must not be audible under it.
+    expect(getActiveFilePlaylist()?.currentTrackName).toBe('three.mp3');
+    expect(plays).toBe(0);
+
+    setActiveFileAudioPaused(false);
+    expect(plays).toBe(1);
+
+    await nextFileTrack();
+    expect(plays).toBe(2);
+  });
+
+  test('a newly adopted file does not inherit the previous hold', async () => {
+    const first = await createFileAudioStream([mockFile('a.mp3')]);
+    setActiveFileAudio(first);
+    setActiveFileAudioPaused(true);
+
+    const second = await createFileAudioStream([
+      mockFile('b.mp3'),
+      mockFile('c.mp3'),
+    ]);
+    setActiveFileAudio(second);
+    let plays = 0;
+    second.element.play = () => {
+      plays += 1;
+      return Promise.resolve();
+    };
+
+    await nextFileTrack();
+    expect(plays).toBe(1);
   });
 
   test('subscribeFilePlaylist notifies on track changes and disposal', async () => {

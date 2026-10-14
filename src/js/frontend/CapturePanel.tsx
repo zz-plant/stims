@@ -1,5 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import styles from '../../css/CapturePanel.module.css';
+import {
+  getActiveAccessibilityPreference,
+  subscribeToAccessibilityPreference,
+} from '../core/accessibility-preferences.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import {
   CanvasVideoExporter,
@@ -13,6 +23,7 @@ import { useWorkspace } from './workspace-context.tsx';
 const CAPTURE_FORMATS = [
   'hd-landscape',
   '4k-landscape',
+  'square-post',
   'spotify-canvas',
   'tiktok-shorts',
   'youtube-shorts',
@@ -49,6 +60,11 @@ export function CapturePanel() {
   const [status, setStatus] = useState(
     'Choose a format, then start recording.',
   );
+  const reduceFlashing = useSyncExternalStore(
+    subscribeToAccessibilityPreference,
+    () => getActiveAccessibilityPreference().reduceFlashing,
+    () => false,
+  );
 
   useEffect(() => {
     const canvas = ui.stageRef.current?.querySelector('canvas');
@@ -69,16 +85,31 @@ export function CapturePanel() {
       canvas,
       undefined,
       engine.getVideoExportRuntime(),
+      () => ui.stageRef.current,
     );
     exporterRef.current = exporter;
     setSupport(exporter.getSupport());
     return () => {
-      if (exporter.getRecordingStatus()) {
-        void exporter.stopRecording().catch(() => {});
-      }
+      // React runs this before the next pass of the effect, so the guard
+      // above only works if a recording survives it. Stopping here ended
+      // the recording whenever the engine value changed identity (on WebGPU,
+      // about one recording in three, under half a second in), and Stop then
+      // found a fresh exporter with nothing to save. The unmount effect
+      // below ends a recording the panel is leaving.
+      if (exporter.getRecordingStatus()) return;
       exporterRef.current = null;
     };
   }, [engine, ui.stageRef]);
+
+  useEffect(
+    () => () => {
+      const exporter = exporterRef.current;
+      if (exporter?.getRecordingStatus()) {
+        void exporter.stopRecording().catch(() => {});
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!recording) return;
@@ -171,8 +202,8 @@ export function CapturePanel() {
           Record this visualizer
         </h3>
         <p className={styles.intro}>
-          Capture the live canvas and active audio without pausing playback. 4K
-          renders natively; portrait output is center-cropped to fill the frame.
+          Capture the live canvas and active audio without pausing playback. 4K,
+          9:16 vertical, and 1:1 square render natively.
         </p>
       </div>
 
@@ -223,6 +254,13 @@ export function CapturePanel() {
           {engine.audioActive
             ? 'Audio source is active — this recording will include sound.'
             : 'No audio source is active — this recording will be silent.'}
+        </p>
+      ) : null}
+
+      {reduceFlashing ? (
+        <p className={styles.status}>
+          Reduce flashing is on — strobing passages are dimmed in the recording
+          as they are on screen.
         </p>
       ) : null}
 

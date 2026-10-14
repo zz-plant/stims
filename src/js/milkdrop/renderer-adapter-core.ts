@@ -101,6 +101,7 @@ import {
   type MilkdropShaderCompileDiagnostic,
 } from './shader-compile-diagnostics.ts';
 import type {
+  MilkdropAppliedShaderExecution,
   MilkdropBorderVisual,
   MilkdropColor,
   MilkdropCompiledPreset,
@@ -419,6 +420,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     typeof createMilkdropRendererAdapterSceneOwner
   >;
   private webgpuDescriptorPlan: MilkdropWebGpuDescriptorPlan | null = null;
+  /** Recorded per presented frame; null until the first one after setPreset. */
+  private appliedShaderExecution: MilkdropAppliedShaderExecution | null = null;
   private readonly webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags;
   private static lineThicknessLogged = new Set<'webgl' | 'webgpu'>();
 
@@ -555,6 +558,14 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       nativeWebGpuFeedbackEnabled:
         this.webgpuOptimizationFlags.directFeedbackShaders,
     }).effectiveWebGpuDescriptorPlan;
+    // Whatever the last frame applied belongs to the outgoing preset.
+    this.appliedShaderExecution = null;
+  }
+
+  getAppliedShaderExecution(): MilkdropAppliedShaderExecution | null {
+    // A pending swap renders the pass-through pair, not the preset's own
+    // programs, so 'direct' would be claimed before it is true.
+    return this.isPresetPresentable() ? this.appliedShaderExecution : null;
   }
 
   /**
@@ -1773,6 +1784,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         !this.feedback ||
         !payload.frameState.post.shaderEnabled
       ) {
+        this.appliedShaderExecution = 'off';
         return false;
       }
       if (liveDeck && blend?.mode === 'gpu') {
@@ -1833,6 +1845,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
     const compositeState = this.buildFeedbackCompositeState(frameState);
     feedback.applyCompositeState(compositeState);
+    if (present) {
+      this.appliedShaderExecution = compositeState.shaderExecution;
+    }
     // Shader presets get NO heuristic postprocessing profile on any
     // backend. On WebGL the app-level composer is disposed for shader
     // presets and the WebGL feedback manager never implemented

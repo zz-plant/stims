@@ -84,13 +84,28 @@ describe('profile construction', () => {
     expect(profile.measuredAt).toBe('2026-08-19T00:00:00.000Z');
   });
 
-  test('carries the luminance figures through unchanged', () => {
+  test('carries the mean luminance and the flash swing through unchanged', () => {
     const profile = toSensoryProfile(
-      measurement({ meanLuminance: 0.42, luminanceVolatility: 0.19 }),
+      measurement({
+        meanLuminance: 0.42,
+        luminanceVolatility: 0.19,
+        maxFlashLuminanceDelta: 0.6,
+      }),
       '2026-08-19T00:00:00.000Z',
     );
     expect(profile.meanLuminance).toBe(0.42);
-    expect(profile.maxLuminanceDelta).toBe(0.19);
+    expect(profile.maxLuminanceDelta).toBe(0.6);
+  });
+
+  test('never passes the volatility off as the swing the governor is primed from', () => {
+    // A standard deviation of frame-mean changes is not the size of any
+    // flash. A report without the real figure leaves the swing out, and
+    // priming falls back to its gentle default.
+    const profile = toSensoryProfile(
+      measurement({ luminanceVolatility: 0.19 }),
+      '2026-08-19T00:00:00.000Z',
+    );
+    expect(profile.maxLuminanceDelta).toBeUndefined();
   });
 });
 

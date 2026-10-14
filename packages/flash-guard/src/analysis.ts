@@ -28,6 +28,7 @@
  */
 import {
   FLASH_AREA_FRACTION,
+  FLASH_LUMINANCE_DELTA,
   FLASHES_PER_SECOND_LIMIT,
   isFlashTransition,
   peakWindowFraction,
@@ -63,8 +64,22 @@ export interface FlashAnalysis {
   exceedsRedThreshold: boolean;
   /** Mean absolute frame-to-frame luminance change (0..1): motion energy. */
   motionEnergy: number;
-  /** Standard deviation of frame-to-frame luminance change: volatility. */
+  /**
+   * Standard deviation of the frame-mean luminance change: volatility. A
+   * whole-frame figure, so it is not the size of any flash: a strobe over a
+   * third of the screen moves the frame mean by a third of its swing.
+   */
   luminanceVolatility: number;
+  /**
+   * The luminance swing of the strongest general flash: over the transitions
+   * that paired into flashes, the largest change that samples covering 25%
+   * of a visual field all made in the same direction (`flashSwing`). It is
+   * the figure the governor's solved step clamps against, so a brightness
+   * scale of `FLASH_LUMINANCE_DELTA / maxFlashLuminanceDelta` puts every
+   * measured flash at the threshold. 0 when nothing flashed, or when the
+   * input carried no swings (`FlashCountInput.risingSwing`).
+   */
+  maxFlashLuminanceDelta: number;
   /** Mean relative luminance across the timeline. */
   meanLuminance: number;
   /** Frames analysed. */
@@ -88,6 +103,14 @@ export interface FlashCountInput {
   redRising?: ReadonlyArray<ArrayLike<number>>;
   /** Same shape as `redRising`, for falling red-flash steps. */
   redFalling?: ReadonlyArray<ArrayLike<number>>;
+  /**
+   * Optional, per transition: `flashSwing` of its brightening samples, 0 when
+   * they do not cover 25% of a visual field. Same length as `rising`. Omit
+   * it and `maxFlashLuminanceDelta` is 0.
+   */
+  risingSwing?: ArrayLike<number>;
+  /** Same as `risingSwing`, for darkening samples. */
+  fallingSwing?: ArrayLike<number>;
   /** Sampled pixels per tile: the denominator for the area test. */
   tilePixels: number;
   cols: number;
@@ -114,7 +137,8 @@ function stdDev(values: readonly number[]): number {
   return Math.sqrt(acc / values.length);
 }
 
-type Transition = { frame: number; rising: boolean };
+/** A field-wide step, with the swing it carried over the area rule. */
+type Transition = { frame: number; rising: boolean; swing: number };
 
 /**
  * Decide whether one frame transition qualifies as a field-wide step, and
@@ -126,33 +150,108 @@ function classifyTransition(
   upFraction: number,
   downFraction: number,
   into: Transition[],
+  upSwing = 0,
+  downSwing = 0,
 ) {
   if (upFraction >= FLASH_AREA_FRACTION && upFraction >= downFraction) {
-    into.push({ frame, rising: true });
+    into.push({ frame, rising: true, swing: upSwing });
   } else if (downFraction >= FLASH_AREA_FRACTION) {
-    into.push({ frame, rising: false });
+    into.push({ frame, rising: false, swing: downSwing });
   }
 }
 
 /**
  * A flash in WCAG terms is a *pair* of opposing changes, so directions are
  * paired rather than counted individually: a monotonic fade to white is not
- * a flash. Returns the frame index at which each flash completed.
+ * a flash. Returns the frame index at which each flash completed, and the
+ * largest swing among the transitions that formed one. A run of steps in one
+ * direction counts whole once an opposing step closes it, so the swing errs
+ * large, which is the safe side for a figure used to size a clamp.
  */
-function pairFlashes(transitions: readonly Transition[]): number[] {
+function pairFlashes(transitions: readonly Transition[]): {
+  frames: number[];
+  maxSwing: number;
+} {
   const flashFrames: number[] = [];
   let lastDirection: boolean | null = null;
+  let runSwing = 0;
+  let maxSwing = 0;
   for (const t of transitions) {
-    if (lastDirection === null) {
-      lastDirection = t.rising;
-      continue;
-    }
-    if (t.rising !== lastDirection) {
+    if (lastDirection !== null && t.rising !== lastDirection) {
       flashFrames.push(t.frame);
-      lastDirection = t.rising;
+      maxSwing = Math.max(maxSwing, runSwing, t.swing);
+      runSwing = t.swing;
+    } else {
+      runSwing = Math.max(runSwing, t.swing);
     }
+    lastDirection = t.rising;
   }
-  return flashFrames;
+  return { frames: flashFrames, maxSwing };
+}
+
+/**
+ * The swing a frame transition carries over the area rule: the largest
+ * luminance change d such that the samples that moved `rising` by at least
+ * d, as flash steps, still cover 25% of some visual field. 0 if even all of
+ * the qualifying samples do not.
+ *
+ * This is the figure a brightness clamp has to divide. Scaling the frame by
+ * k leaves a flash exactly when the samples still swinging by 0.1 cover a
+ * quarter of a field, which is when k * d >= 0.1; the governor's solved step
+ * bisects for the same boundary. The largest single swing would overstate it
+ * (one bright point is not what made the frame flash) and a frame mean would
+ * understate it by the share of the screen that did not flash.
+ *
+ * `swings[i]` is sample i's signed luminance change, 0 where it was not a
+ * flash step (`isFlashTransition`), and `tileOf[i]` its tile; the area is
+ * judged as `peakWindowFraction` judges it.
+ */
+export function flashSwing(
+  swings: ArrayLike<number>,
+  tileOf: ArrayLike<number>,
+  rising: boolean,
+  tilePixels: number,
+  cols: number,
+  rows: number,
+): number {
+  return swingCovering(swings, tileOf, rising, cols * rows, (counts) =>
+    peakWindowFraction(counts, tilePixels, cols, rows),
+  );
+}
+
+/** `flashSwing` against any area measure, for the unshaped timeline path. */
+function swingCovering(
+  swings: ArrayLike<number>,
+  tileOf: ArrayLike<number>,
+  rising: boolean,
+  tileCount: number,
+  area: (counts: Float64Array) => number,
+): number {
+  const counts = new Float64Array(tileCount);
+  const covers = (minSwing: number) => {
+    counts.fill(0);
+    for (let i = 0; i < swings.length; i += 1) {
+      const swing = swings[i] as number;
+      if (swing === 0 || swing > 0 !== rising) continue;
+      if (Math.abs(swing) >= minSwing) {
+        const tile = tileOf[i] as number;
+        counts[tile] = (counts[tile] as number) + 1;
+      }
+    }
+    return area(counts) >= FLASH_AREA_FRACTION;
+  };
+  if (!covers(FLASH_LUMINANCE_DELTA)) return 0;
+  if (covers(1)) return 1;
+  // Coverage only shrinks as the minimum grows, so bisect for the largest
+  // minimum that still covers. 12 steps resolve it to about 1/4096.
+  let low = FLASH_LUMINANCE_DELTA;
+  let high = 1;
+  for (let step = 0; step < 12; step += 1) {
+    const mid = (low + high) / 2;
+    if (covers(mid)) low = mid;
+    else high = mid;
+  }
+  return low;
 }
 
 /** Most flashes completing within any window of `framesPerWindow` frames. */
@@ -183,7 +282,9 @@ function countPairedFlashes(
   cols: number,
   rows: number,
   deltaMs: number,
-): { peak: number; total: number } {
+  risingSwing?: ArrayLike<number>,
+  fallingSwing?: ArrayLike<number>,
+): { peak: number; total: number; maxSwing: number } {
   const transitionCount = Math.min(rising.length, falling.length);
   const transitions: Transition[] = [];
   for (let f = 0; f < transitionCount; f += 1) {
@@ -199,12 +300,20 @@ function countPairedFlashes(
       cols,
       rows,
     );
-    classifyTransition(f + 1, up, down, transitions);
+    classifyTransition(
+      f + 1,
+      up,
+      down,
+      transitions,
+      risingSwing?.[f] ?? 0,
+      fallingSwing?.[f] ?? 0,
+    );
   }
-  const flashFrames = pairFlashes(transitions);
+  const flashes = pairFlashes(transitions);
   return {
-    peak: peakInWindow(flashFrames, 1000 / deltaMs),
-    total: flashFrames.length,
+    peak: peakInWindow(flashes.frames, 1000 / deltaMs),
+    total: flashes.frames.length,
+    maxSwing: flashes.maxSwing,
   };
 }
 
@@ -218,6 +327,7 @@ function emptyAnalysis(frameCount: number): FlashAnalysis {
     exceedsRedThreshold: false,
     motionEnergy: 0,
     luminanceVolatility: 0,
+    maxFlashLuminanceDelta: 0,
     meanLuminance: 0,
     frameCount,
   };
@@ -246,6 +356,8 @@ export function analyzeFlashEvents(input: FlashCountInput): FlashAnalysis {
     cols,
     rows,
     deltaMs,
+    input.risingSwing,
+    input.fallingSwing,
   );
   const red =
     input.redRising && input.redFalling
@@ -264,6 +376,7 @@ export function analyzeFlashEvents(input: FlashCountInput): FlashAnalysis {
     peakFlashesPerSecond: general.peak,
     totalFlashes: general.total,
     exceedsThreshold: general.peak > FLASHES_PER_SECOND_LIMIT,
+    maxFlashLuminanceDelta: general.maxSwing,
     peakRedFlashesPerSecond: red.peak,
     totalRedFlashes: red.total,
     exceedsRedThreshold: red.peak > FLASHES_PER_SECOND_LIMIT,
@@ -298,6 +411,15 @@ export function analyzeFlashTimeline(input: FlashAnalysisInput): FlashAnalysis {
 
   const up = new Float32Array(tileCount);
   const down = new Float32Array(tileCount);
+  const swings = new Float32Array(tileCount);
+  // Each tile is one sample here, so a sample's tile is its own index.
+  const tileOf = Uint32Array.from({ length: tileCount }, (_, t) => t);
+  const area = (counts: ArrayLike<number>) => {
+    if (shapeValid) return peakWindowFraction(counts, 1, cols, rows);
+    let total = 0;
+    for (let t = 0; t < tileCount; t += 1) total += counts[t] as number;
+    return total / tileCount;
+  };
   const transitions: Transition[] = [];
   const frameDeltas: number[] = [];
   const frameMeans: number[] = [mean(Array.from(first))];
@@ -306,8 +428,6 @@ export function analyzeFlashTimeline(input: FlashAnalysisInput): FlashAnalysis {
     const prev = frames[f - 1] as ArrayLike<number>;
     const curr = frames[f] as ArrayLike<number>;
     let absDeltaTotal = 0;
-    let upCount = 0;
-    let downCount = 0;
     let lumTotal = 0;
 
     for (let t = 0; t < tileCount; t += 1) {
@@ -318,30 +438,37 @@ export function analyzeFlashTimeline(input: FlashAnalysisInput): FlashAnalysis {
       const qualifies = isFlashTransition(before, after);
       up[t] = qualifies && after > before ? 1 : 0;
       down[t] = qualifies && after < before ? 1 : 0;
-      upCount += up[t] as number;
-      downCount += down[t] as number;
+      swings[t] = qualifies ? after - before : 0;
     }
 
     frameDeltas.push(absDeltaTotal / tileCount);
     frameMeans.push(lumTotal / tileCount);
 
-    const upFraction = shapeValid
-      ? peakWindowFraction(up, 1, cols, rows)
-      : upCount / tileCount;
-    const downFraction = shapeValid
-      ? peakWindowFraction(down, 1, cols, rows)
-      : downCount / tileCount;
-    classifyTransition(f, upFraction, downFraction, transitions);
+    const upFraction = area(up);
+    const downFraction = area(down);
+    const swingOf = (rising: boolean, fraction: number) =>
+      fraction >= FLASH_AREA_FRACTION
+        ? swingCovering(swings, tileOf, rising, tileCount, area)
+        : 0;
+    classifyTransition(
+      f,
+      upFraction,
+      downFraction,
+      transitions,
+      swingOf(true, upFraction),
+      swingOf(false, downFraction),
+    );
   }
 
-  const flashFrames = pairFlashes(transitions);
-  const peak = peakInWindow(flashFrames, 1000 / deltaMs);
+  const flashes = pairFlashes(transitions);
+  const peak = peakInWindow(flashes.frames, 1000 / deltaMs);
 
   return {
     ...emptyAnalysis(frames.length),
     peakFlashesPerSecond: peak,
-    totalFlashes: flashFrames.length,
+    totalFlashes: flashes.frames.length,
     exceedsThreshold: peak > FLASHES_PER_SECOND_LIMIT,
+    maxFlashLuminanceDelta: flashes.maxSwing,
     motionEnergy: mean(frameDeltas),
     luminanceVolatility: stdDev(frameDeltas),
     meanLuminance: mean(frameMeans),

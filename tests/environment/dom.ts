@@ -64,6 +64,9 @@ export function installDomEnvironment() {
   // sheet, the preview-batching preset grid — throws ReferenceError on mount.
   defineGlobal('ResizeObserver', windowInstance.ResizeObserver);
   defineGlobal('IntersectionObserver', windowInstance.IntersectionObserver);
+  defineGlobal('Image', windowInstance.Image);
+  defineGlobal('HTMLImageElement', windowInstance.HTMLImageElement);
+  defineGlobal('FileReader', windowInstance.FileReader);
 
   (
     windowInstance as unknown as { SyntaxError: typeof SyntaxError }

@@ -109,8 +109,8 @@ describe('external display service — casting', () => {
   });
 });
 
-describe('external display service — second screen', () => {
-  test('opens the receiver positioned on the screen that is not the current one', async () => {
+describe('external display service — finding a second screen', () => {
+  test('reports the work area of the screen that is not the current one', async () => {
     const current = {
       availLeft: 0,
       availTop: 0,
@@ -131,54 +131,19 @@ describe('external display service — second screen', () => {
       currentScreen: current,
     }));
 
-    let openArgs: undefined | [string, string, string];
-    const originalOpen = window.open;
-    window.open = ((url: string, name: string, features: string) => {
-      openArgs = [url, name, features];
-      return { closed: false, close: () => {} } as unknown as Window;
-    }) as typeof window.open;
-
-    try {
-      const mod = await load();
-      await mod.openOnSecondScreen('https://example.test/?sync=room1');
-      // The placement is the entire point: it must land on the external
-      // screen's own coordinates, not the primary's.
-      expect(openArgs?.[2]).toContain('left=1440');
-      expect(openArgs?.[2]).toContain('width=1920');
-      expect(mod.getExternalDisplayState()).toMatchObject({
-        mode: 'window',
-        target: 'Projector',
-      });
-    } finally {
-      window.open = originalOpen;
-    }
-  });
-
-  test('reports a blocked popup rather than claiming success', async () => {
-    const current = {
-      availLeft: 0,
-      availTop: 0,
-      availWidth: 1440,
-      availHeight: 900,
-      isPrimary: true,
-    };
-    const external = { ...current, availLeft: 1440, isPrimary: false };
-    setGlobal('getScreenDetails', async () => ({
-      screens: [current, external],
-      currentScreen: current,
-    }));
-
-    const originalOpen = window.open;
-    window.open = (() => null) as typeof window.open;
-    try {
-      const mod = await load();
-      await expect(
-        mod.openOnSecondScreen('https://example.test/'),
-      ).rejects.toThrow(/popup blocked/);
-      expect(mod.getExternalDisplayState().error).toMatch(/popup/i);
-    } finally {
-      window.open = originalOpen;
-    }
+    const mod = await load();
+    // The placement is the entire point: the external screen's own
+    // coordinates, not the primary's.
+    expect(await mod.findSecondScreen()).toEqual({
+      ok: true,
+      screen: {
+        left: 1440,
+        top: 0,
+        width: 1920,
+        height: 1080,
+        label: 'Projector',
+      },
+    });
   });
 
   test('says so when the machine has only one screen', async () => {
@@ -195,10 +160,9 @@ describe('external display service — second screen', () => {
     }));
 
     const mod = await load();
-    await expect(
-      mod.openOnSecondScreen('https://example.test/'),
-    ).rejects.toThrow(/no external screen/);
-    expect(mod.getExternalDisplayState().error).toMatch(/second screen/i);
+    const found = await mod.findSecondScreen();
+    expect(found.ok).toBe(false);
+    expect(found.ok ? '' : found.error).toMatch(/second screen/i);
   });
 
   test('a denied window-management permission reports actionable guidance', async () => {
@@ -206,9 +170,13 @@ describe('external display service — second screen', () => {
       throw new DOMException('denied', 'NotAllowedError');
     });
     const mod = await load();
-    await expect(
-      mod.openOnSecondScreen('https://example.test/'),
-    ).rejects.toThrow(/permission denied/);
-    expect(mod.getExternalDisplayState().error).toMatch(/site settings/i);
+    const found = await mod.findSecondScreen();
+    expect(found.ok ? '' : found.error).toMatch(/site settings/i);
+  });
+
+  test('a browser without the API says it cannot place a window', async () => {
+    const mod = await load();
+    const found = await mod.findSecondScreen();
+    expect(found.ok ? '' : found.error).toMatch(/cannot place a window/i);
   });
 });

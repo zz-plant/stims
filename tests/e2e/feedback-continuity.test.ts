@@ -19,6 +19,10 @@
  * "preset" draws a bright quad in the top-left quadrant and the incoming one
  * draws it in the bottom-right, so the live frame visibly diverges from the
  * outgoing picture from its first frame.
+ *
+ * The last block pins the warp the same way: it moves the previous frame,
+ * never the geometry drawn this frame, and a zoom of exactly 0 leaves no
+ * previous frame at all.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { chromium } from 'playwright';
@@ -457,6 +461,83 @@ for (const { backend, run } of BACKENDS) {
           },
         );
         expectSamePicture('frame after a mid-blend switch', first, midBlend, 2);
+      },
+      { timeout: 120000 },
+    );
+  });
+}
+
+// The same managers, now under a preset's per-frame motion. MilkDrop warps
+// only the previous frame; this frame's geometry lands on top where it was
+// drawn and moves with the history from the next frame on.
+for (const { backend, run } of BACKENDS) {
+  describe(`the feedback warp moves history, not new geometry (${backend})`, () => {
+    run(
+      'dx shifts the previous frame and leaves this frame where it was drawn',
+      async () => {
+        const { fresh, freshUnderDx, historyUnderDx } = await runScenario(
+          backend,
+          async ({ harnessModule, backend }) => {
+            const { createFeedbackHarness } = (await import(
+              harnessModule
+            )) as HarnessModule;
+            const harness = await createFeedbackHarness(backend);
+            try {
+              // Decay 0 keeps nothing of the previous frame, so the frame is
+              // this frame's quad alone.
+              harness.applyWarp({ decay: 0 });
+              const fresh = await harness.renderFrame();
+              harness.applyWarp({ dx: 0.25, decay: 0 });
+              const freshUnderDx = await harness.renderFrame();
+              // Decay 1 and nothing drawn: the frame is the moved history.
+              harness.applyWarp({ dx: 0.25, decay: 1 });
+              harness.setScene('empty');
+              const historyUnderDx = await harness.renderFrame();
+              return { fresh, freshUnderDx, historyUnderDx };
+            } finally {
+              harness.dispose();
+            }
+          },
+        );
+        expectSamePicture('this frame under dx = 0.25', freshUnderDx, fresh, 2);
+        // dx is a quarter of the frame, half the quad: the history keeps
+        // about half of the top-left quadrant lit.
+        expect(historyUnderDx[0]).toBeGreaterThan(fresh[0] * 0.3);
+        expect(historyUnderDx[0]).toBeLessThan(fresh[0] * 0.7);
+      },
+      { timeout: 120000 },
+    );
+
+    run(
+      'a zoom of exactly 0 keeps nothing of the previous frame',
+      async () => {
+        const { kept, dropped } = await runScenario(
+          backend,
+          async ({ harnessModule, backend, warmupFrames }) => {
+            const { createFeedbackHarness } = (await import(
+              harnessModule
+            )) as HarnessModule;
+            const harness = await createFeedbackHarness(backend);
+            try {
+              harness.applyWarp({ decay: 1 });
+              for (let i = 0; i < warmupFrames; i += 1)
+                await harness.renderFrame();
+              harness.setScene('empty');
+              const kept = await harness.renderFrame();
+              // MilkDrop samples at uv / zoom, which is infinite or NaN at
+              // zoom 0: projectM shows black, not the corner texel a
+              // floored divisor magnifies 10000x.
+              harness.applyWarp({ zoom: 0, decay: 1 });
+              const dropped = await harness.renderFrame();
+              return { kept, dropped };
+            } finally {
+              harness.dispose();
+            }
+          },
+        );
+        // Only discriminating if there was history to drop.
+        expect(kept[0]).toBeGreaterThan(200);
+        expect(Math.max(...dropped)).toBeLessThan(2);
       },
       { timeout: 120000 },
     );

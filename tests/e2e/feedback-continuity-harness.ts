@@ -32,8 +32,11 @@ import {
   getShaderTextureSourceId,
 } from '../../src/js/milkdrop/renderer-adapter-shared.ts';
 import { buildFeedbackCompositeState } from '../../src/js/milkdrop/renderer-helpers/feedback-composite.ts';
-import type { MilkdropFeedbackCompositeState } from '../../src/js/milkdrop/renderer-types.ts';
 import { createMilkdropSignalTracker } from '../../src/js/milkdrop/runtime-signals.ts';
+import type {
+  MilkdropFeedbackCompositeState,
+  MilkdropRenderPayload,
+} from '../../src/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 
 export type FeedbackHarnessBackend = 'webgl' | 'webgpu';
@@ -47,6 +50,15 @@ export type FeedbackHarnessScene = 'outgoing' | 'incoming' | 'empty';
 
 /** Mean luminance (0-255) per quadrant: [top-left, top-right, bottom-left, bottom-right]. */
 export type QuadrantLuminance = [number, number, number, number];
+
+/** A preset's per-frame motion and decay, under MilkDrop's own names. */
+export type FeedbackHarnessWarp = {
+  zoom?: number;
+  rot?: number;
+  dx?: number;
+  dy?: number;
+  decay?: number;
+};
 
 const WIDTH = 320;
 const HEIGHT = 180;
@@ -97,6 +109,100 @@ function quadrantLuminance(
     }
   }
   return sums.map((sum, q) => sum / counts[q]) as QuadrantLuminance;
+}
+
+/**
+ * The composite state a preset with no shaders and no post effects hands the
+ * manager, with `warp` as its per-frame variables. Gamma is 1 so the
+ * presented frame is the internal frame, unadjusted.
+ */
+function compositeStateFor(
+  backend: FeedbackHarnessBackend,
+  warp: FeedbackHarnessWarp,
+): MilkdropFeedbackCompositeState {
+  const frameState = {
+    post: {
+      shaderEnabled: true,
+      shaderControls: {
+        warpScale: 0,
+        offsetX: 0,
+        offsetY: 0,
+        rotation: 0,
+        zoom: 1,
+        saturation: 1,
+        contrast: 1,
+        colorScale: { r: 1, g: 1, b: 1 },
+        hueShift: 0,
+        mixAlpha: 0,
+        brightenBoost: 0,
+        invertBoost: 0,
+        solarizeBoost: 0,
+        tint: { r: 1, g: 1, b: 1 },
+        textureLayer: {
+          source: 'none',
+          mode: 'none',
+          sampleDimension: '2d',
+          inverted: false,
+          amount: 0,
+          scaleX: 1,
+          scaleY: 1,
+          offsetX: 0,
+          offsetY: 0,
+          volumeSliceZ: null,
+        },
+        warpTexture: {
+          source: 'none',
+          sampleDimension: '2d',
+          amount: 0,
+          scaleX: 1,
+          scaleY: 1,
+          offsetX: 0,
+          offsetY: 0,
+          volumeSliceZ: 0,
+        },
+      },
+      shaderPrograms: { warp: null, comp: null },
+      videoEchoEnabled: false,
+      videoEchoAlpha: 0,
+      videoEchoZoom: 1,
+      videoEchoOrientation: 0,
+      brighten: false,
+      darken: false,
+      darkenCenter: false,
+      solarize: false,
+      invert: false,
+      gammaAdj: 1,
+      textureWrap: false,
+      feedbackTexture: false,
+      decay: warp.decay ?? 1,
+    },
+    variables: {
+      zoom: warp.zoom ?? 1,
+      rot: warp.rot ?? 0,
+      dx: warp.dx ?? 0,
+      dy: warp.dy ?? 0,
+    },
+    signals: {
+      bass: 0,
+      mid: 0,
+      treble: 0,
+      beat: 0,
+      beatPulse: 0,
+      weightedEnergy: 0,
+      frame: 1,
+      fps: 60,
+      time: 1,
+    },
+  } as unknown as MilkdropRenderPayload['frameState'];
+  return buildFeedbackCompositeState({
+    frameState,
+    backend,
+    directFeedbackShaders: true,
+    webgpuFeedbackPlanShaderExecution: 'controls',
+    getShaderTextureSourceId: () => 0,
+    getShaderTextureBlendModeId: () => 0,
+    getShaderSampleDimensionId: () => 0,
+  });
 }
 
 export async function createFeedbackHarness(backend: FeedbackHarnessBackend) {
@@ -282,6 +388,9 @@ export async function createFeedbackHarness(backend: FeedbackHarnessBackend) {
       manager.render(renderer, scene, camera);
       return readFrame();
     },
+    /** Runs the next frames under a preset's per-frame warp and decay. */
+    applyWarp: (warp: FeedbackHarnessWarp) =>
+      manager.applyCompositeState(compositeStateFor(backend, warp)),
     /** What the scene draws from the next frame on; see FeedbackHarnessScene. */
     setScene: source.setScene,
     setQuadStyle: source.setQuadStyle,

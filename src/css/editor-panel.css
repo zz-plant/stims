@@ -1882,6 +1882,52 @@ button.stims-editor__compat-row:focus-visible {
   color: var(--ed-dim);
 }
 
+.stims-editor__texture-row[data-drag-over="true"] {
+  border-color: var(--stims-accent);
+  background: color-mix(in srgb, var(--stims-accent) 12%, transparent);
+}
+
+.stims-editor__texture-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.stims-editor__texture-select {
+  font-size: var(--text-2xs);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--stims-line-soft);
+  background: var(--stims-panel-strong);
+  color: var(--stims-ink);
+  cursor: pointer;
+  max-width: 160px;
+}
+
+.stims-editor__texture-btn {
+  font-size: var(--text-2xs);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--stims-line-soft);
+  background: var(--ed-tint-2);
+  color: var(--stims-ink);
+  cursor: pointer;
+}
+
+.stims-editor__texture-btn:hover {
+  background: var(--ed-tint-3, rgba(255, 255, 255, 0.15));
+}
+
+.stims-editor__texture-override-badge {
+  font-size: var(--text-2xs);
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--stims-accent) 20%, transparent);
+  color: var(--stims-accent);
+}
+
 .stims-editor__texture-internal {
   margin: 10px 0 0;
 }

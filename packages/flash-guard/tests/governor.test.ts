@@ -16,12 +16,18 @@ import { describe, expect, test } from 'bun:test';
 import {
   analyzeFlashEvents,
   analyzeFlashTimeline,
+  analyzeRgbaFrames,
   createFlashGovernor,
+  FLASH_LUMINANCE_DELTA,
   isFlashTransition,
+  isSaturatedRed,
   MIN_USEFUL_GRID,
   primingHoldForMeasurement,
   RECOMMENDED_GRID,
   RECOMMENDED_SAMPLE_DENSITY,
+  RED_FLASH_DELTA,
+  redFlashValue,
+  relativeLuminance,
 } from '../src/index.ts';
 
 const COLS = 6;
@@ -265,42 +271,65 @@ describe('flash governor', () => {
      * is a full 0.5, but neither direction ever reaches 25% of a field, so
      * WCAG counts no flash at all. Fine moving detail in a MilkDrop preset
      * (Shifter - Curlique) is this, measured.
+     *
+     * A field is 16,384 samples, so this and `auditFields` use plain loops:
+     * `.map` / `Float32Array.from` callbacks cost several times as much.
      */
     function twinkleFields(frames: number): Float32Array[] {
       const random = mulberry32(7);
-      const bright = new Uint8Array(EDGE * EDGE).map(() =>
-        random() < 0.5 ? 1 : 0,
-      );
+      const bright = new Uint8Array(EDGE * EDGE);
+      for (let i = 0; i < bright.length; i += 1) {
+        bright[i] = random() < 0.5 ? 1 : 0;
+      }
       const out: Float32Array[] = [];
       for (let f = 0; f < frames; f += 1) {
+        const field = new Float32Array(bright.length);
         for (let i = 0; i < bright.length; i += 1) {
           if (random() < 0.36) bright[i] = 1 - (bright[i] as number);
+          field[i] = bright[i] ? 0.6 : 0.1;
         }
-        out.push(Float32Array.from(bright, (on) => (on ? 0.6 : 0.1)));
+        out.push(field);
       }
       return out;
     }
 
+    /**
+     * Two seconds of texture, built once and read by both tests: two full
+     * WCAG windows. Every break tried that makes the governor hold on it
+     * (ignoring the density option, counting a tile as `density` samples
+     * rather than `density` squared, an area threshold of 0.2 or 0.21) does
+     * so within 18 frames. The tests are CPU-bound, so frames past that only
+     * add time on a loaded gate, where 300 of them outran bun's 5 s timeout.
+     */
+    let twinkle: Float32Array[] | null = null;
+    const sharedTwinkle = () => {
+      twinkle ??= twinkleFields(120);
+      return twinkle;
+    };
+
     /** The offline analysis's per-pixel counts for the same fields. */
     function auditFields(fields: Float32Array[]) {
-      const rising: number[][] = [];
-      const falling: number[][] = [];
+      const tileOf = new Uint16Array(EDGE * EDGE);
+      for (let i = 0; i < tileOf.length; i += 1) {
+        const x = i % EDGE;
+        const y = Math.floor(i / EDGE);
+        tileOf[i] =
+          Math.floor(y / DENSITY) * RECOMMENDED_GRID + Math.floor(x / DENSITY);
+      }
+      const rising: Uint16Array[] = [];
+      const falling: Uint16Array[] = [];
       for (let f = 1; f < fields.length; f += 1) {
-        const up = new Array(RECOMMENDED_GRID ** 2).fill(0);
-        const down = new Array(RECOMMENDED_GRID ** 2).fill(0);
+        const up = new Uint16Array(RECOMMENDED_GRID ** 2);
+        const down = new Uint16Array(RECOMMENDED_GRID ** 2);
         const before = fields[f - 1] as Float32Array;
         const after = fields[f] as Float32Array;
         for (let i = 0; i < after.length; i += 1) {
           const b = before[i] as number;
           const a = after[i] as number;
           if (!isFlashTransition(b, a)) continue;
-          const x = i % EDGE;
-          const y = Math.floor(i / EDGE);
-          const tile =
-            Math.floor(y / DENSITY) * RECOMMENDED_GRID +
-            Math.floor(x / DENSITY);
-          if (a > b) up[tile] += 1;
-          else down[tile] += 1;
+          const tile = tileOf[i] as number;
+          if (a > b) up[tile] = (up[tile] as number) + 1;
+          else down[tile] = (down[tile] as number) + 1;
         }
         rising.push(up);
         falling.push(down);
@@ -330,7 +359,7 @@ describe('flash governor', () => {
     }
 
     test('texture the offline analysis passes never engages the governor', () => {
-      const fields = twinkleFields(300);
+      const fields = sharedTwinkle();
       expect(auditFields(fields).totalFlashes).toBe(0);
 
       const governor = createFlashGovernor();
@@ -353,7 +382,7 @@ describe('flash governor', () => {
       // field always has 7 of its 25 samples swinging the same way.
       const governor = createFlashGovernor();
       let maxHold = 0;
-      for (const [index, field] of twinkleFields(300).entries()) {
+      for (const [index, field] of sharedTwinkle().entries()) {
         const { hold } = governor.sample(
           index * FRAME_MS,
           tileCentres(field),
@@ -560,9 +589,544 @@ describe('flash governor', () => {
     expect(gentler).toBeGreaterThan(0);
   });
 
+  test('priming from the measured flash swing lets none of the strobe through while it holds', () => {
+    // The audit's figure is the swing the solved step clamps against, so a
+    // governor primed from it starts where solving would have taken it, and
+    // no flash of the measured strobe gets through. The volatility, which
+    // the profile used to carry, is a standard deviation of frame means:
+    // priming from it under-clamps, and the opening flashes land.
+    //
+    // 1.5 s: the prime keeps the window clear, so once the release delay
+    // has passed it eases off like any other hold, and the reactive path
+    // takes over from there.
+    const raw = strobeTimeline(90, 3);
+    const measured = analyzeFlashTimeline({
+      frames: raw,
+      deltaMs: FRAME_MS,
+      cols: COLS,
+      rows: ROWS,
+    });
+    expect(measured.exceedsThreshold).toBe(true);
+    const flashesPrimedFrom = (maxLuminanceDelta: number) => {
+      const governor = createFlashGovernor();
+      governor.prime(
+        primingHoldForMeasurement({
+          flashRiskLevel: 'high',
+          maxLuminanceDelta,
+        }),
+      );
+      let scale = governor.getState().luminanceScale;
+      let flashes = 0;
+      for (const [index, frame] of raw.entries()) {
+        const decision = governor.sample(index * FRAME_MS, frame, COLS, ROWS, {
+          viewScale: scale,
+        });
+        scale = decision.luminanceScale;
+        if (decision.flashed) flashes += 1;
+      }
+      return flashes;
+    };
+    expect(measured.maxFlashLuminanceDelta).toBeCloseTo(0.93, 3);
+    expect(flashesPrimedFrom(measured.maxFlashLuminanceDelta)).toBe(0);
+    expect(flashesPrimedFrom(measured.luminanceVolatility)).toBeGreaterThan(0);
+  });
+
   test('a high-risk preset with no usable swing figure still primes gently', () => {
     const hold = primingHoldForMeasurement({ flashRiskLevel: 'high' });
     expect(hold).toBeGreaterThan(0);
     expect(hold).toBeLessThan(0.5);
+  });
+});
+
+type Rgb = readonly [number, number, number];
+/** One pixel per tile at the recommended grid: a 5x5-tile visual field. */
+const GRID = RECOMMENDED_GRID;
+
+/** A GRID x GRID RGBA frame; `paint(i)` colours pixel (= tile) i. */
+function rgbaFrame(paint: (i: number) => Rgb): Uint8Array {
+  const px = new Uint8Array(GRID * GRID * 4);
+  for (let i = 0; i < GRID * GRID; i += 1) {
+    const [r, g, b] = paint(i);
+    px[i * 4] = r;
+    px[i * 4 + 1] = g;
+    px[i * 4 + 2] = b;
+    px[i * 4 + 3] = 255;
+  }
+  return px;
+}
+
+/** `a` and `b` alternating every `holdFrames` frames, over the whole field. */
+function alternate(
+  count: number,
+  holdFrames: number,
+  a: Rgb,
+  b: Rgb,
+): Uint8Array[] {
+  return Array.from({ length: count }, (_, f) =>
+    rgbaFrame(() => (Math.floor(f / holdFrames) % 2 === 1 ? b : a)),
+  );
+}
+
+/** The sampler's two fields for a frame, from the thresholds.ts definitions. */
+function fieldsOf(frame: Uint8Array) {
+  const n = frame.length / 4;
+  const luminance = new Float32Array(n);
+  const values = new Float32Array(n);
+  const saturated = new Uint8Array(n);
+  for (let i = 0; i < n; i += 1) {
+    const r = frame[i * 4] as number;
+    const g = frame[i * 4 + 1] as number;
+    const b = frame[i * 4 + 2] as number;
+    luminance[i] = relativeLuminance(r, g, b);
+    values[i] = redFlashValue(r, g, b);
+    saturated[i] = isSaturatedRed(r, g, b) ? 1 : 0;
+  }
+  return { luminance, red: { values, saturated } };
+}
+
+/** CSS `brightness(k)`: every sRGB channel scaled by k. */
+function dim(frame: Uint8Array, k: number): Uint8Array {
+  return frame.map((v, i) => (i % 4 === 3 ? v : Math.round(v * k)));
+}
+
+/**
+ * Runs frames through the governor as the controller does: each frame is
+ * judged as drawn, through the scale in force when it was shown, and shown
+ * at that scale. Returns what the viewer saw, and the scale each frame was
+ * shown at.
+ *
+ * `outside` is a brightness setting composed into the same filter: the
+ * viewer sees the governor's scale times it, and the governor is told the
+ * product, as `createFlashController` does with `compositedScale`.
+ */
+function govern(
+  frames: Uint8Array[],
+  redOn: (frame: number) => boolean = () => true,
+  { prime = 0, outside = 1 }: { prime?: number; outside?: number } = {},
+) {
+  const governor = createFlashGovernor();
+  governor.prime(prime);
+  let scale = governor.getState().luminanceScale;
+  let minScale = 1;
+  let maxHold = 0;
+  let peakRed = 0;
+  let peakGeneral = 0;
+  const seen: Uint8Array[] = [];
+  const shown: number[] = [];
+  for (const [index, frame] of frames.entries()) {
+    shown.push(scale * outside);
+    seen.push(dim(frame, scale * outside));
+    const { luminance, red } = fieldsOf(frame);
+    const decision = governor.sample(index * FRAME_MS, luminance, GRID, GRID, {
+      viewScale: scale * outside,
+      red: redOn(index) ? red : undefined,
+    });
+    scale = decision.luminanceScale;
+    minScale = Math.min(minScale, scale);
+    maxHold = Math.max(maxHold, decision.hold);
+    peakRed = Math.max(peakRed, decision.redFlashesInWindow);
+    peakGeneral = Math.max(peakGeneral, decision.flashesInWindow);
+  }
+  return { seen, shown, governor, minScale, maxHold, peakRed, peakGeneral };
+}
+
+/** The offline per-pixel audit, the instrument the governor answers to. */
+const audit = (frames: Uint8Array[]) =>
+  analyzeRgbaFrames(frames, {
+    width: GRID,
+    height: GRID,
+    cols: GRID,
+    rows: GRID,
+    stride: 1,
+    deltaMs: FRAME_MS,
+  });
+
+const DARK_RED: Rgb = [80, 0, 0];
+const RED: Rgb = [100, 0, 0];
+
+describe('the red-flash channel', () => {
+  test('(80,0,0) to (100,0,0) fails the red criterion with no general flash', () => {
+    expect(
+      Math.abs(relativeLuminance(...RED) - relativeLuminance(...DARK_RED)),
+    ).toBeLessThan(0.02);
+    expect(redFlashValue(...RED) - redFlashValue(...DARK_RED)).toBeGreaterThan(
+      20,
+    );
+    const raw = audit(alternate(180, 3, DARK_RED, RED));
+    expect(raw.exceedsThreshold).toBe(false);
+    expect(raw.exceedsRedThreshold).toBe(true);
+  });
+
+  test('luminance alone never engages on it — the gap the red field closes', () => {
+    const { maxHold } = govern(alternate(180, 3, DARK_RED, RED), () => false);
+    expect(maxHold).toBe(0);
+  });
+
+  test('with the red field the governor brings it under the red threshold', () => {
+    // Judged on the 8-bit frames a CSS brightness filter would show. Three
+    // seconds, the horizon of the luminance tests above: the first
+    // engagement and the hold that follows it.
+    const { seen, maxHold, peakRed } = govern(alternate(180, 3, DARK_RED, RED));
+    expect(maxHold).toBeGreaterThan(0);
+    expect(peakRed).toBeGreaterThan(0);
+    const governed = audit(seen);
+    expect(governed.exceedsRedThreshold).toBe(false);
+    expect(governed.exceedsThreshold).toBe(false);
+  });
+
+  test('the red clamp is solved from the red swing, as the luminance one is', () => {
+    // A 25-unit red swing needs scaling by about 0.64 to fall under 20 at
+    // the 0.8 margin; a 100-unit one by about 0.16. Neither moves luminance
+    // by 0.1. The first engagement also carries the 0.2 engage hold, so the
+    // clamps land near 0.8 times those.
+    const mild = govern(alternate(120, 3, DARK_RED, RED)).minScale;
+    const strong = govern(alternate(120, 3, [40, 0, 0], [120, 0, 0])).minScale;
+    expect(mild).toBeGreaterThan(0.45);
+    expect(mild).toBeLessThan(0.8);
+    expect(strong).toBeGreaterThan(0.1);
+    expect(strong).toBeLessThan(0.16);
+  });
+
+  test('a colour swing that is not a saturated red is not a red flash', () => {
+    // R/(R+G+B) is 0.5 at both ends, so the red-flash value's 38-unit change
+    // does not count, on either instrument.
+    const frames = alternate(180, 3, [120, 60, 60], [150, 60, 60]);
+    expect(audit(frames).totalRedFlashes).toBe(0);
+    expect(govern(frames).maxHold).toBe(0);
+  });
+
+  test('a steady saturated red, and a fade to one, are never held back', () => {
+    const steady = Array.from({ length: 120 }, () =>
+      rgbaFrame(() => [200, 0, 0]),
+    );
+    expect(govern(steady).maxHold).toBe(0);
+    const fade = Array.from({ length: 120 }, (_, f) =>
+      rgbaFrame(() => [Math.round((f / 119) * 255), 0, 0]),
+    );
+    expect(govern(fade).maxHold).toBe(0);
+  });
+
+  test('one strobing red tile is a sparkle, not a quarter of a visual field', () => {
+    const frames = Array.from({ length: 120 }, (_, f) =>
+      rgbaFrame((i) =>
+        i === 0 && Math.floor(f / 3) % 2 === 1 ? [160, 0, 0] : [80, 0, 0],
+      ),
+    );
+    expect(govern(frames).maxHold).toBe(0);
+  });
+
+  test('general and red flashes are counted on their own channels', () => {
+    const red = govern(alternate(60, 3, DARK_RED, RED));
+    expect(red.peakRed).toBeGreaterThan(0);
+    expect(red.peakGeneral).toBe(0);
+    const grey = govern(alternate(60, 3, [5, 5, 5], [240, 240, 240]));
+    expect(grey.peakGeneral).toBeGreaterThan(0);
+    expect(grey.peakRed).toBe(0);
+  });
+
+  test('a sample without the red field restarts the red comparison', () => {
+    // Red arrives on every other frame only, so no two red samples are
+    // consecutive and none may be compared across the frame between them.
+    const frames = alternate(120, 3, DARK_RED, RED);
+    expect(govern(frames, (f) => f % 2 === 0).peakRed).toBe(0);
+    expect(govern(frames).peakRed).toBeGreaterThan(0);
+  });
+
+  test('reset clears the red window with the rest', () => {
+    // Half a second: both flashes that engaged the clamp are still in it.
+    const { governor } = govern(alternate(30, 3, DARK_RED, RED));
+    expect(governor.getState().redFlashesInWindow).toBeGreaterThan(0);
+    governor.reset();
+    expect(governor.getState().redFlashesInWindow).toBe(0);
+    expect(governor.getState().hold).toBe(0);
+  });
+});
+
+/**
+ * Release while the content keeps strobing.
+ *
+ * Release used to ease off until flashes landed again, so a strobe that never
+ * stopped was let back across the threshold every few seconds. Before the
+ * release floor, the 15-second runs below read up to 6 red flashes and 4
+ * luminance flashes in one second after the first engagement. The claim here
+ * is that after the first engagement the viewer sees no flash at all, that
+ * the picture is held still at the margin the solved step aims for rather
+ * than darker, and that content which stops, weakens, or never failed
+ * undimmed is let go.
+ */
+describe('release under a sustained strobe', () => {
+  const SECOND = 60;
+  /** The first engagement, the clear window and the hold-off behind it. */
+  const SETTLED = 3 * SECOND;
+  /** The governor's default `safetyMargin`. */
+  const MARGIN = 0.8;
+  /** Frames per half period: 20, 10 and 4 transitions a second. */
+  const HALF_PERIODS = [3, 6, 15];
+
+  const square =
+    (halfPeriod: number, low: number, high: number) => (frame: number) =>
+      Math.floor(frame / halfPeriod) % 2 === 1 ? high : low;
+
+  /**
+   * A uniform luminance sequence through an exact linear scrim: the viewer
+   * sees each value times the scale in force when it is shown, and the
+   * governor is told that scale. With no 8-bit rounding and no sRGB curve,
+   * nothing hides a flash the governor let through.
+   */
+  function scrim(
+    value: (frame: number) => number,
+    frames: number,
+    { prime = 0, outside = 1 }: { prime?: number; outside?: number } = {},
+  ) {
+    const governor = createFlashGovernor();
+    governor.prime(prime);
+    let scale = governor.getState().luminanceScale;
+    const drawn = new Float32Array(GRID * GRID);
+    const raw: number[][] = [];
+    const seen: number[][] = [];
+    const shown: number[] = [];
+    for (let f = 0; f < frames; f += 1) {
+      const v = value(f);
+      raw.push(new Array(GRID * GRID).fill(v));
+      seen.push(new Array(GRID * GRID).fill(v * scale * outside));
+      shown.push(scale * outside);
+      drawn.fill(v);
+      scale = governor.sample(f * FRAME_MS, drawn, GRID, GRID, {
+        viewScale: scale * outside,
+      }).luminanceScale;
+    }
+    return { raw, seen, shown, governor };
+  }
+
+  const scored = (frames: number[][], from = 0) =>
+    analyzeFlashTimeline({
+      frames: frames.slice(from),
+      deltaMs: FRAME_MS,
+      cols: GRID,
+      rows: GRID,
+    });
+
+  const spread = (values: number[]) =>
+    Math.max(...values) - Math.min(...values);
+
+  /** Seconds from `from` until the scale shown is back to 1, or null. */
+  function secondsToFull(shown: number[], from: number): number | null {
+    const at = shown.findIndex((scale, f) => f >= from && scale === 1);
+    return at < 0 ? null : (at - from) / SECOND;
+  }
+
+  for (const [label, low, high] of [
+    ['just over the threshold', 0.3, 0.42],
+    ['well over it', 0.02, 0.95],
+  ] as const) {
+    for (const halfPeriod of HALF_PERIODS) {
+      test(`a 15 s luminance strobe ${label}, ${SECOND / halfPeriod} transitions a second, never flashes after it is clamped`, () => {
+        const { raw, seen, shown } = scrim(
+          square(halfPeriod, low, high),
+          15 * SECOND,
+        );
+        expect(scored(raw).peakFlashesPerSecond).toBeGreaterThan(3);
+        expect(scored(seen).peakFlashesPerSecond).toBeLessThanOrEqual(3);
+        expect(scored(seen, SETTLED).totalFlashes).toBe(0);
+
+        // Held still, at the margin and no darker: the swing as seen sits
+        // within 2% under 80% of the threshold for the last ten seconds.
+        const steady = shown.slice(5 * SECOND);
+        expect(spread(steady)).toBeLessThan(0.001);
+        const target = FLASH_LUMINANCE_DELTA * MARGIN;
+        expect((high - low) * Math.max(...steady)).toBeLessThanOrEqual(target);
+        expect((high - low) * Math.min(...steady)).toBeGreaterThan(
+          target * 0.98,
+        );
+      });
+    }
+  }
+
+  const redStrobes: [string, Rgb, Rgb][] = [
+    ['just over the threshold', [80, 0, 0], [100, 0, 0]],
+    ['well over it', [40, 0, 0], [120, 0, 0]],
+  ];
+  for (const [label, dark, bright] of redStrobes) {
+    for (const halfPeriod of HALF_PERIODS) {
+      test(`a 15 s saturated-red strobe ${label}, ${SECOND / halfPeriod} transitions a second, never flashes after it is clamped`, () => {
+        // Judged on the 8-bit frames a CSS brightness filter would show.
+        const frames = alternate(15 * SECOND, halfPeriod, dark, bright);
+        expect(audit(frames).peakRedFlashesPerSecond).toBeGreaterThan(3);
+        const { seen, shown } = govern(frames);
+        const governed = audit(seen);
+        expect(governed.peakRedFlashesPerSecond).toBeLessThanOrEqual(3);
+        expect(governed.peakFlashesPerSecond).toBeLessThanOrEqual(3);
+        expect(audit(seen.slice(SETTLED)).totalRedFlashes).toBe(0);
+
+        const steady = shown.slice(5 * SECOND);
+        expect(spread(steady)).toBeLessThan(0.001);
+        const swing = redFlashValue(...bright) - redFlashValue(...dark);
+        const target = RED_FLASH_DELTA * MARGIN;
+        expect(swing * Math.max(...steady)).toBeLessThanOrEqual(target);
+        expect(swing * Math.min(...steady)).toBeGreaterThan(target * 0.98);
+      });
+    }
+  }
+
+  test('a strobe on both channels at once is held under both', () => {
+    const frames = alternate(15 * SECOND, 3, [0, 0, 0], [255, 0, 0]);
+    const raw = audit(frames);
+    expect(raw.peakFlashesPerSecond).toBeGreaterThan(3);
+    expect(raw.peakRedFlashesPerSecond).toBeGreaterThan(3);
+    const { seen } = govern(frames);
+    const governed = audit(seen);
+    expect(governed.peakFlashesPerSecond).toBeLessThanOrEqual(3);
+    expect(governed.peakRedFlashesPerSecond).toBeLessThanOrEqual(3);
+    const settled = audit(seen.slice(SETTLED));
+    expect(settled.totalFlashes).toBe(0);
+    expect(settled.totalRedFlashes).toBe(0);
+  });
+
+  test('a strobe that pauses for less than the hold-off is not released into', () => {
+    // Two seconds on, one off: the window empties in every pause.
+    const frames = Array.from({ length: 15 * SECOND }, (_, f) =>
+      rgbaFrame(() =>
+        f % (3 * SECOND) < 2 * SECOND && Math.floor(f / 3) % 2 === 1
+          ? [100, 0, 0]
+          : [80, 0, 0],
+      ),
+    );
+    expect(audit(frames).peakRedFlashesPerSecond).toBeGreaterThan(3);
+    const { seen } = govern(frames);
+    expect(audit(seen).peakRedFlashesPerSecond).toBeLessThanOrEqual(3);
+    expect(audit(seen.slice(SETTLED)).totalRedFlashes).toBe(0);
+  });
+
+  test('content that grows stronger without flashing as seen is held at its new ceiling', () => {
+    // 80 to 104 is a 30-unit swing. Held at the 25-unit strobe's ceiling it
+    // reads 19.2, under the 20 that counts as a red transition, so no flash
+    // re-engages the clamp: the floor itself has to move to 16 / 30.1.
+    const frames = Array.from({ length: 15 * SECOND }, (_, f) =>
+      rgbaFrame(() =>
+        Math.floor(f / 3) % 2 === 1
+          ? f < 6 * SECOND
+            ? [100, 0, 0]
+            : [104, 0, 0]
+          : [80, 0, 0],
+      ),
+    );
+    const { seen, shown } = govern(frames);
+    expect(audit(seen.slice(SETTLED)).totalRedFlashes).toBe(0);
+    const before = redFlashValue(100, 0, 0) - redFlashValue(80, 0, 0);
+    const after = redFlashValue(104, 0, 0) - redFlashValue(80, 0, 0);
+    const target = RED_FLASH_DELTA * MARGIN;
+    expect(before * (shown[6 * SECOND - 1] as number)).toBeCloseTo(target, 0);
+    const end = shown.slice(10 * SECOND);
+    expect(after * Math.max(...end)).toBeLessThanOrEqual(target);
+    expect(after * Math.min(...end)).toBeGreaterThan(target * 0.98);
+  });
+
+  test('the hold follows a strobe that weakens, and lets go when it stops', () => {
+    // 5 s of a 100-unit red swing, 7 s of a 25-unit one, then a still frame.
+    const frames = Array.from({ length: 20 * SECOND }, (_, f) => {
+      const on = Math.floor(f / 3) % 2 === 1;
+      if (f < 5 * SECOND)
+        return rgbaFrame(() => (on ? [120, 0, 0] : [40, 0, 0]));
+      if (f < 12 * SECOND)
+        return rgbaFrame(() => (on ? [100, 0, 0] : [80, 0, 0]));
+      return rgbaFrame(() => [80, 0, 0]);
+    });
+    const { seen, shown } = govern(frames);
+    expect(audit(seen).peakRedFlashesPerSecond).toBeLessThanOrEqual(3);
+    expect(audit(seen.slice(SETTLED)).totalRedFlashes).toBe(0);
+
+    // The strong strobe's ceiling is not kept once its transitions age out:
+    // by the end of the weaker one the hold sits at the weaker ceiling.
+    const strong = redFlashValue(120, 0, 0) - redFlashValue(40, 0, 0);
+    const weak = redFlashValue(100, 0, 0) - redFlashValue(80, 0, 0);
+    const target = RED_FLASH_DELTA * MARGIN;
+    expect(strong * (shown[5 * SECOND - 1] as number)).toBeLessThanOrEqual(
+      target,
+    );
+    expect(weak * (shown[12 * SECOND - 1] as number)).toBeGreaterThan(
+      target * 0.98,
+    );
+    expect(secondsToFull(shown, 12 * SECOND)).not.toBeNull();
+  });
+
+  test('after the strobe stops the picture is back to full brightness within the hold-off and a release', () => {
+    // The floor lifts once the content has stayed under the limit for the
+    // hold-off (1.5 s) after its window drains (up to 1 s); release then runs
+    // at 0.004 a frame. From a 91% hold that is about 6.2 s in all. Release
+    // used to finish 4.7 s after this strobe stopped, because it was already
+    // part-way through easing off into it.
+    const { shown } = scrim(
+      (f) => (f < 15 * SECOND ? square(3, 0.02, 0.95)(f) : 0.02),
+      25 * SECOND,
+    );
+    const recovery = secondsToFull(shown, 15 * SECOND);
+    expect(recovery).not.toBeNull();
+    expect(recovery as number).toBeLessThan(6.5);
+    // Held still for over two seconds after the last flash, the drained
+    // window and the hold-off: a strobe that resumes inside them meets the
+    // clamp, not a picture already part-way released.
+    expect(spread(shown.slice(14 * SECOND, 17.2 * SECOND))).toBeLessThan(0.001);
+  });
+
+  test('a strobe followed by flicker under the threshold is let go completely', () => {
+    // 0.30 to 0.38 is under the 0.1 swing that counts, undimmed: the floor
+    // only holds content that fails undimmed, so release runs to zero.
+    const { seen, shown } = scrim(
+      (f) =>
+        f < 5 * SECOND ? square(3, 0.02, 0.95)(f) : square(3, 0.3, 0.38)(f),
+      15 * SECOND,
+    );
+    expect(scored(seen).peakFlashesPerSecond).toBeLessThanOrEqual(3);
+    const recovery = secondsToFull(shown, 5 * SECOND);
+    expect(recovery).not.toBeNull();
+    expect(recovery as number).toBeLessThan(6.5);
+  });
+
+  test('content at the limit undimmed is not held at its ceiling', () => {
+    // A full-contrast swing twice a second passes WCAG undimmed. The governor
+    // still engages on it (engageAt is 2), but holding it at its ceiling
+    // would be dimming with no safety claim behind it, so release still
+    // passes the threshold scale; as seen it can flash no more often than
+    // it does undimmed.
+    const { raw, seen, shown } = scrim(square(30, 0.02, 0.95), 15 * SECOND);
+    expect(scored(raw).peakFlashesPerSecond).toBeLessThanOrEqual(3);
+    expect(Math.min(...shown)).toBeLessThan(1);
+    expect(Math.max(...shown.slice(SETTLED))).toBeGreaterThan(
+      FLASH_LUMINANCE_DELTA / (0.95 - 0.02),
+    );
+    expect(scored(seen).peakFlashesPerSecond).toBeLessThanOrEqual(3);
+  });
+
+  test('primed content is held at its ceiling rather than released into', () => {
+    // A 0.9 prime already puts this strobe under the threshold. The primed
+    // hold used to be released after the hold-off like any other, into the
+    // strobe; now it settles at the ceiling and the viewer sees no flash.
+    const { seen, shown } = scrim(square(3, 0.02, 0.95), 15 * SECOND, {
+      prime: 0.9,
+    });
+    expect(scored(seen).totalFlashes).toBe(0);
+    const steady = shown.slice(5 * SECOND);
+    expect(0.93 * Math.max(...steady)).toBeLessThanOrEqual(
+      FLASH_LUMINANCE_DELTA * MARGIN,
+    );
+  });
+
+  test('a brightness setting composed into the filter is not counted twice', () => {
+    // The viewer sees half of whatever the governor lets through, and the
+    // governor is told so: it only has to make up the rest of the way to
+    // the ceiling, so its own scale settles at twice the one shown.
+    const { seen, shown, governor } = scrim(
+      square(3, 0.02, 0.95),
+      15 * SECOND,
+      {
+        outside: 0.5,
+      },
+    );
+    expect(scored(seen, SETTLED).totalFlashes).toBe(0);
+    const viewed = shown[shown.length - 1] as number;
+    const target = FLASH_LUMINANCE_DELTA * MARGIN;
+    expect(0.93 * viewed).toBeLessThanOrEqual(target);
+    expect(0.93 * viewed).toBeGreaterThan(target * 0.98);
+    expect(governor.getState().luminanceScale).toBeCloseTo(viewed / 0.5, 3);
   });
 });

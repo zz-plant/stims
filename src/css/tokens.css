@@ -361,8 +361,7 @@
   --tv-content-padding: clamp(1.5rem, 2vw + 1rem, 3rem);
   --tv-safe-padding: 0px;
 
-  /* ── Agent pulse and toy shell ──────────────────────────────── */
-  --agent-vibe-intensity: 1;
+  /* ── Toy shell ──────────────────────────────────────────────── */
   --toy-shell-metal: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.08),
@@ -465,7 +464,6 @@ html.light {
   --stims-white-05: rgba(255, 255, 255, 0.03);
 }
 
-[data-device-tier="low"] .stims-shell__backdrop-filter,
 [data-device-tier="low"] .stims-shell__stage-frame::before,
 [data-device-tier="low"] .stims-shell__stage-frame::after,
 [data-device-tier="low"] .stims-shell::before,
@@ -480,22 +478,6 @@ html.light {
   backdrop-filter: none !important;
   /* biome-ignore lint/complexity/noImportantStyles: must override all child for GPU perf */
   -webkit-backdrop-filter: none !important;
-}
-
-[data-device-tier="low"] .shell-header,
-[data-device-tier="mid"] .shell-header,
-[data-device-tier="low"] .top-nav,
-[data-device-tier="mid"] .top-nav,
-[data-device-tier="low"] .library-search,
-[data-device-tier="mid"] .library-search {
-  background: var(--bg-color);
-}
-
-[data-device-tier="low"] .stims-shell__sheet,
-[data-device-tier="mid"] .stims-shell__sheet,
-[data-device-tier="low"] .stims-shell__modal-panel,
-[data-device-tier="mid"] .stims-shell__modal-panel {
-  background: var(--bg-color);
 }
 
 /* ── Reduced Motion ───────────────────────────────────────────────── */

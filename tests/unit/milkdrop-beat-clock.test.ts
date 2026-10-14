@@ -205,3 +205,102 @@ describe('auto-advance gate', () => {
     expect(gate.isArmed()).toBe(false);
   });
 });
+
+describe('beat clock with a manual tempo', () => {
+  type Manual = { bpm: number; anchorAt: number; source: 'tap' | 'midi-clock' };
+  const FRAME_MS = 16;
+
+  /** Frame times in [from, to) on which the clock lands a beat. */
+  function beatFrames(
+    clock: ReturnType<typeof createMilkdropBeatClock>,
+    from: number,
+    to: number,
+    detectedAt: (frame: number) => boolean = () => false,
+  ) {
+    const landed: number[] = [];
+    for (let at = from; at < to; at += FRAME_MS) {
+      if (clock.frameBeat(at, detectedAt(at))) landed.push(at);
+    }
+    return landed;
+  }
+
+  test('reports the manual tempo at full confidence', () => {
+    const manual: Manual = { bpm: 120, anchorAt: 1_000, source: 'tap' };
+    const clock = createMilkdropBeatClock({ getManualTempo: () => manual });
+    const snapshot = clock.snapshot(2_600);
+    expect(snapshot.bpm).toBe(120);
+    expect(snapshot.confidence).toBe(1);
+    expect(snapshot.beatIndex).toBe(3);
+    expect(snapshot.barPosition).toBe(3);
+    expect(snapshot.lastBeatAt).toBe(2_500);
+  });
+
+  test('lands a beat on the first frame past each grid beat and ignores onsets', () => {
+    const manual: Manual = { bpm: 120, anchorAt: 1_000, source: 'tap' };
+    const clock = createMilkdropBeatClock({ getManualTempo: () => manual });
+    // Onsets on every frame: a detector that fires constantly must not add
+    // a single beat to the tapped grid.
+    const landed = beatFrames(clock, 1_008, 3_100, () => true);
+    expect(landed).toEqual([1_504, 2_000, 2_512, 3_008]);
+  });
+
+  test('every fourth grid beat opens a bar', () => {
+    const manual: Manual = { bpm: 120, anchorAt: 1_000, source: 'tap' };
+    const clock = createMilkdropBeatClock({ getManualTempo: () => manual });
+    const downbeats = beatFrames(clock, 1_008, 5_100).filter((at) =>
+      clock.isDownbeat(at),
+    );
+    // Frames fall every 16 ms from 1 008, so each bar line (3 000, 5 000)
+    // lands on the first frame after it.
+    expect(downbeats).toEqual([3_008, 5_008]);
+  });
+
+  test('moving the grid backwards fires no extra beat', () => {
+    const manual: Manual = { bpm: 120, anchorAt: 1_000, source: 'tap' };
+    const clock = createMilkdropBeatClock({ getManualTempo: () => manual });
+    beatFrames(clock, 1_008, 2_200);
+    // A re-sync tap at 2 200: the beat the grid now says is 0 must not
+    // fire on this frame, and the next one lands half a second later.
+    manual.anchorAt = 2_200;
+    expect(beatFrames(clock, 2_200, 2_800)).toEqual([2_712]);
+  });
+
+  test('onsets keep the estimate warm underneath, so clearing hands one back', () => {
+    let manual: Manual | null = { bpm: 90, anchorAt: 0, source: 'tap' };
+    const clock = createMilkdropBeatClock({ getManualTempo: () => manual });
+    const last = playSteadyBeats(clock, { periodMs: 500, count: 8 });
+    expect(clock.snapshot(last).bpm).toBe(90);
+    manual = null;
+    expect(clock.snapshot(last).bpm).toBeCloseTo(120, 5);
+  });
+
+  test('auto-advance switches on the tapped downbeat, not the detected one', () => {
+    // The music's onsets sit a quarter-beat off the tapped grid. Left to the
+    // audio, the confident estimate would put the switch on an onset.
+    const manual: Manual = { bpm: 120, anchorAt: 1_000, source: 'tap' };
+    const clock = createMilkdropBeatClock({ getManualTempo: () => manual });
+    const gate = createAutoAdvanceGate();
+    const onset = (at: number) => (at - 1_125) % 500 < FRAME_MS && at >= 1_125;
+    let fired: number | null = null;
+    for (let at = 1_008; at < 4_000 && fired === null; at += FRAME_MS) {
+      const detected = onset(at);
+      if (detected) clock.noteBeat(at);
+      const beat = clock.frameBeat(at, detected);
+      const due = at >= 1_800;
+      if (
+        gate.update({
+          due,
+          now: at,
+          beat,
+          downbeat: clock.isDownbeat(at),
+          tempoConfident: clock.snapshot(at).confidence >= 0.6,
+        })
+      ) {
+        fired = at;
+      }
+    }
+    // Armed at 1 800; the next tapped bar line is 3 000, first framed at
+    // 3 008. The onset at 3 125 is the one the audio would have chosen.
+    expect(fired).toBe(3_008);
+  });
+});

@@ -426,6 +426,14 @@ export async function onRequest(context: EventContext): Promise<Response> {
     .on('meta[property="og:image"]', setContent(imageUrl))
     .on('meta[property="og:image:url"]', setContent(imageUrl))
     .on('meta[property="og:image:secure_url"]', setContent(imageUrl))
+    // The shell's value describes its static PNG card. /api/og-preset answers
+    // with a JPEG, or with that PNG when rendering fails, so no single type
+    // is true of the URL; without the tag, unfurlers read the bytes.
+    .on('meta[property="og:image:type"]', {
+      element(el: { remove: () => void }) {
+        el.remove();
+      },
+    })
     .on('meta[property="og:image:alt"]', setContent(imageAlt))
     .on('meta[name="twitter:card"]', setContent('summary_large_image'))
     .on('meta[name="twitter:title"]', setContent(fullTitle))

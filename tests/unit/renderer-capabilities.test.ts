@@ -721,7 +721,7 @@ describe('WebGPU feature level fallback', () => {
         if (options?.featureLevel === 'compatibility') {
           return {
             // The GLES 3.1 backend may advertise timing; the session-level
-            // guard must still keep the timestamp profiler off it.
+            // guard must still keep GPU timestamp timing off it.
             features: new Set(['timestamp-query']),
             limits: {},
             requestDevice,

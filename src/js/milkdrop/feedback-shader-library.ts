@@ -409,10 +409,10 @@ const MILKDROP_HLSL_PROMOTION_HELPERS = `
 ${buildMilkdropArithmeticHelpers()}
 `;
 
-// Aux-texture sampling and the control-driven feedback warp are needed by
-// both the feedback-blend pass (warp-texture displacement, legacy warp) and
-// the composite pass (overlay/comp-body sampling), so they live in one
-// shared chunk instead of drifting apart as duplicates.
+// Aux-texture sampling is needed by the warp pass (warp-texture
+// displacement), the composite pass (overlay/comp-body sampling) and the
+// feedback-blend pass (sampleUv), so it lives in one shared chunk instead of
+// drifting apart as duplicates.
 export const MILKDROP_AUX_SAMPLING_HELPERS = `
         // MilkDrop 2's shader preamble ships lum(), so preset bodies call it
         // without ever declaring it — the same gap that made GetPixel/GetBlur
@@ -520,11 +520,10 @@ export const MILKDROP_AUX_SAMPLING_HELPERS = `
 ${MILKDROP_HLSL_PROMOTION_HELPERS}
 `;
 
-// The control-driven feedback warp is shared by the warp pass and the
-// feedback-blend pass, and by the WebGPU feedback node, so every stage warps
-// with identical math. The warp pass must not define its own variant here —
-// divergent formulas made the feedback chain and the fresh-scene sample
-// disagree and drove WebGL away from WebGPU.
+// The control-driven feedback warp is shared by the WebGL warp pass and the
+// WebGPU feedback node, so both backends warp the previous frame with
+// identical math. The warp pass must not define its own variant here —
+// divergent formulas drove WebGL away from WebGPU.
 
 export const MILKDROP_FEEDBACK_WARP_HELPER = `
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
@@ -611,56 +610,20 @@ export const MILKDROP_FEEDBACK_BLEND_FRAGMENT_SHADER = `
         uniform sampler2D noisevolTex;
         uniform float videoEchoAlpha;
         uniform float textureWrap;
-        uniform float warpScale;
-        uniform float offsetX;
-        uniform float offsetY;
-        uniform float rotation;
-        uniform float zoomMul;
         uniform float feedbackSoftness;
         uniform float decay;
         uniform float hasDirectWarp;
         uniform vec2 texelSize;
-        uniform float warpTextureSource;
-        uniform float warpTextureSampleDimension;
-        uniform float warpTextureAmount;
-        uniform vec2 warpTextureScale;
-        uniform vec2 warpTextureOffset;
-        uniform float warpTextureVolumeSliceZ;
         varying vec2 vUv;
 ${MILKDROP_AUX_SAMPLING_HELPERS}
-${MILKDROP_FEEDBACK_WARP_HELPER}
         void main() {
-          vec2 centeredUv = vUv - 0.5;
-          // Sampling coordinates must invert the intended image transform
-          // (rotate backward to find where displayed content came from), so
-          // this uses -rotation to make the image visually rotate by +rot,
-          // matching the CPU/GPU mesh and motion-vector transform direction.
-          float rotSin = -sin(rotation);
-          float rotCos = cos(rotation);
-          vec2 rotatedUv = vec2(
-            centeredUv.x * rotCos - centeredUv.y * rotSin,
-            centeredUv.x * rotSin + centeredUv.y * rotCos
-          );
-          vec2 transformedUv = rotatedUv / signedZoomDivisor(zoomMul) + vec2(offsetX, offsetY);
-
-          vec2 currentUv = hasDirectWarp > 0.5
-            ? transformedUv + 0.5
-            : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
-          if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
-            vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
-            vec2 warpVector =
-              sampleAuxTexture(
-                warpTextureSource,
-                warpTextureSampleDimension,
-                warpUv,
-                warpTextureVolumeSliceZ
-              ).rg - 0.5;
-            currentUv += warpVector * warpTextureAmount * 0.12;
-          }
-          // Direct-warp presets draw fresh geometry over the already-warped
-          // previous frame, so the scene must not be re-warped here.
-          vec2 sceneUv = hasDirectWarp > 0.5 ? vUv : currentUv;
-          vec4 current = texture2D(currentTex, sampleUv(sceneUv, textureWrap));
+          // MilkDrop warps only the previous frame: the warp pass already
+          // moved it into warpTex, and this frame's waves, shapes and borders
+          // land on top where they were drawn. Sampling the scene at the
+          // warped coordinate too zoomed, rotated and rippled every fresh
+          // shape by the preset's own transform before it reached the screen
+          // — at zoom 0 it divided the whole scene by the divisor floor.
+          vec4 current = texture2D(currentTex, sampleUv(vUv, textureWrap));
           vec4 previous = texture2D(warpTex, sampleUv(vUv, textureWrap));
           vec3 previousColor = previous.rgb;
           if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
@@ -1117,9 +1080,23 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
         // --- DIRECT_WARP_GLOBALS_END ---
 
         void main() {
+          // MilkDrop samples the previous frame at uv / zoom (zoomexp only
+          // raises zoom to a positive power), so a zoom of exactly 0 makes
+          // every coordinate infinite or NaN and nothing of the previous
+          // frame survives — projectM renders it black. Flooring the divisor
+          // instead read the frame magnified 10000x, a scrambled tiling once
+          // wrapped, and 100-square's red border flooded the screen.
+          // Near-zero zooms keep the floor: MilkDrop samples those far
+          // outside the frame, finite.
+          if (hasWarpUvField < 0.5 && zoomMul == 0.0) {
+            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+            return;
+          }
           vec2 centeredUv = vUv - 0.5;
-          // See the composite pass's identical comment: sampling coords
-          // invert the rotation direction relative to point transforms.
+          // Sampling coordinates must invert the intended image transform
+          // (rotate backward to find where displayed content came from), so
+          // this uses -rotation to make the image visually rotate by +rot,
+          // matching the CPU/GPU mesh and motion-vector transform direction.
           float rotSin = -sin(rotation);
           float rotCos = cos(rotation);
           vec2 rotatedUv = vec2(centeredUv.x * rotCos - centeredUv.y * rotSin, centeredUv.x * rotSin + centeredUv.y * rotCos);

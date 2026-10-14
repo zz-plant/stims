@@ -34,7 +34,8 @@
  *
  * Not wired into CI: needs a real GPU (Stims side) and is an investigation
  * tool, not a pass/fail gate — presets diverge from Butterchurn for known,
- * accepted reasons (see docs/MILKDROP_PROJECTM_PARITY_BACKLOG.md), so a
+ * accepted reasons (see the measurement rules in
+ * docs/MILKDROP_PROJECTM_PARITY_PLAN.md), so a
  * fixed threshold would just be noise. Read the report; decide per-finding.
  */
 

@@ -129,6 +129,10 @@ export type FrameCapture = {
   /** Full variable snapshot, kept so divergences can be named precisely.
    * Compact (golden) traces keep it only on checkpoint frames. */
   variables?: Record<string, number>;
+  /** Sum and absolute sum of `variables`, in sorted-key order. Compact
+   * traces store it on the frames that drop `variables`, so a variable that
+   * moves between checkpoints is still caught, though not named. */
+  variableSummary?: { sum: number; magnitude: number };
   geometry?: { mainWave: number; customWaves: number; shapes: number };
 };
 

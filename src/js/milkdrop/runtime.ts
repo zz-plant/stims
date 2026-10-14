@@ -32,6 +32,7 @@ import {
   subscribeLivePerformanceMode,
 } from '../core/live-performance-mode.ts';
 import { createLogger } from '../core/logger.ts';
+import { getManualTempo } from '../core/manual-tempo.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
 import { shouldSkipPresetForDeviceTier } from '../core/preset-cost-signal.ts';
 import { isPresetLocked, setPresetLocked } from '../core/preset-lock.ts';
@@ -65,7 +66,10 @@ import {
   createMilkdropBackendFailover,
   describeWebglFallback,
 } from './runtime/backend-fallback';
-import { createMilkdropBeatClock } from './runtime/beat-clock.ts';
+import {
+  createMilkdropBeatClock,
+  type MilkdropBeatClockSnapshot,
+} from './runtime/beat-clock.ts';
 import { createMilkdropCapturedVideoOverlay } from './runtime/captured-video-overlay.ts';
 import { createMilkdropCapturedVideoReactivityTracker } from './runtime/captured-video-reactivity.ts';
 import { createMilkdropCatalogCoordinator } from './runtime/catalog-coordinator';
@@ -104,7 +108,10 @@ import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences'
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState, evaluateBlendGate } from './runtime/session';
 import type { MilkdropPresetSelectionReason } from './runtime/startup.ts';
-import { shouldDeferStartupPresetFallback } from './runtime/startup.ts';
+import {
+  awaitStartupForEdit,
+  shouldDeferStartupPresetFallback,
+} from './runtime/startup.ts';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
 import { createMilkdropTraceRecorder } from './runtime/trace-recorder';
 import { createMilkdropTransitionController } from './runtime/transition-controller';
@@ -112,6 +119,7 @@ import { installRequestedPresetListener } from './runtime/ui-bridge';
 import { createMilkdropSignalTracker } from './runtime-signals';
 import type {
   ExperienceControllerDeps,
+  MilkdropAppliedShaderExecution,
   MilkdropExperienceController,
   MilkdropExperienceSnapshot,
 } from './runtime-types.ts';
@@ -148,6 +156,7 @@ export function createMilkdropExperience({
   qualityControl,
   initialPresetId,
   previewMode = false,
+  onStatus,
 }: {
   quality: QualityPresetManager;
   qualityControl: {
@@ -156,6 +165,10 @@ export function createMilkdropExperience({
   };
   initialPresetId?: string;
   previewMode?: boolean;
+  /** Hears every runtime status as it is set. The snapshot's `status` holds
+   * only the latest, so a status overwritten before anyone read it, or set
+   * twice in a row, is otherwise lost. */
+  onStatus?: (message: string) => void;
 }) {
   // Before ANY preset compiles — the deep-link prefetch below and the default
   // preset both compile, and a preset compiled under the wrong setting would
@@ -425,12 +438,22 @@ export function createMilkdropExperience({
   // Tempo/bar tracking lives at runtime scope, not inside the frame loop:
   // the snapshot below is built before the frame loop exists, and tempo is
   // read by the UI as well as by the quantized advance.
-  const beatClock = createMilkdropBeatClock();
+  const beatClock = createMilkdropBeatClock({ getManualTempo });
+  /** The tempo the UI is shown: whole BPM, and only once it is trustworthy. */
+  const publishedTempo = (beat: MilkdropBeatClockSnapshot): number | null =>
+    beat.bpm !== null && beat.confidence >= AUTO_ADVANCE_TEMPO_CONFIDENCE
+      ? Math.round(beat.bpm)
+      : null;
+  let lastPublishedTempoBpm: number | null = null;
+  let lastPublishedAppliedShaderExecution: MilkdropAppliedShaderExecution | null =
+    null;
 
   const buildSnapshot = (): MilkdropExperienceSnapshot => {
-    // One read per snapshot: `snapshot()` allocates, and buildSnapshot runs
-    // every frame while audio plays.
+    // One read per snapshot: `snapshot()` allocates.
     const beat = beatClock.snapshot(performance.now());
+    lastPublishedTempoBpm = publishedTempo(beat);
+    lastPublishedAppliedShaderExecution =
+      adapter?.getAppliedShaderExecution?.() ?? null;
     return {
       activePresetId,
       backend: activeBackend,
@@ -444,14 +467,12 @@ export function createMilkdropExperience({
       audioBass: signalTracker.getLatestAudioBands().bass,
       audioMid: signalTracker.getLatestAudioBands().mid,
       audioTreble: signalTracker.getLatestAudioBands().treble,
-      tempoBpm:
-        beat.bpm !== null && beat.confidence >= AUTO_ADVANCE_TEMPO_CONFIDENCE
-          ? Math.round(beat.bpm)
-          : null,
+      tempoBpm: lastPublishedTempoBpm,
       shaderExecution: resolveShaderExecutionMode(
         activeCompiled,
         activeBackend,
       ),
+      appliedShaderExecution: lastPublishedAppliedShaderExecution,
       autoplay,
       transitionMode,
       blendDuration,
@@ -480,6 +501,7 @@ export function createMilkdropExperience({
 
   const setOverlayStatus = (message: string) => {
     lastStatusMessage = message;
+    onStatus?.(message);
     presentationController.setOverlayStatus();
     emitChange();
   };
@@ -549,7 +571,7 @@ export function createMilkdropExperience({
     backend?: 'webgl' | 'webgpu';
   }) => {
     noteSubstitution('backend-fallback', `${presetId}: ${reason}`);
-    backendFailover.trigger({
+    return backendFailover.trigger({
       presetId,
       reason,
       activeBackend: backend ?? activeBackend,
@@ -968,6 +990,22 @@ export function createMilkdropExperience({
   });
   const frameLoop = createMilkdropExperienceFrameLoop({
     beatClock,
+    // Snapshots are published on events, not per frame, so a tempo that
+    // settles, drifts a BPM, or is tapped would otherwise sit unseen until
+    // the next preset change.
+    noteTempo: (beat) => {
+      if (publishedTempo(beat) !== lastPublishedTempoBpm) emitChange();
+    },
+    // Same reason: the applied mode is only known once a frame has gone
+    // through the feedback pass, after the load's own emit.
+    noteFramePresented: () => {
+      if (
+        (adapter?.getAppliedShaderExecution?.() ?? null) !==
+        lastPublishedAppliedShaderExecution
+      ) {
+        emitChange();
+      }
+    },
     getRuntime: () => runtime,
     getAdapter: () => adapter,
     getActiveBackend: () => activeBackend,
@@ -1029,14 +1067,14 @@ export function createMilkdropExperience({
     if (!nextCompiled) {
       return;
     }
-    if (shouldFallbackToWebgl(nextCompiled)) {
-      log.log(
-        `${nextCompiled.source.id}: subscriber: WebGL fallback triggered`,
-      );
+    if (
+      shouldFallbackToWebgl(nextCompiled) &&
       triggerWebglFallback({
         presetId: nextCompiled.source.id,
         reason: describeWebglFallback(nextCompiled),
-      });
+      })
+    ) {
+      log.log(`${nextCompiled.source.id}: subscriber: reloading into WebGL`);
       return;
     }
     const didPresetIdChange =
@@ -1119,6 +1157,9 @@ export function createMilkdropExperience({
   // used to supersede it, and the shell then read the switch as the engine
   // moving on its own and dropped the request.
   const revisionBeforeStartup = navigation.getLoadRequestRevision();
+  // Kept after the pick lands, unlike pendingStartupPresetId: an edit that
+  // waited for startup checks the stage against it (awaitStartupForEdit).
+  let startupTargetPresetId: string | null = null;
   void (async () => {
     try {
       await catalogCoordinator.scheduleCatalogSync({
@@ -1137,6 +1178,7 @@ export function createMilkdropExperience({
           activeBackend,
         });
       pendingStartupPresetId = startupPresetId;
+      startupTargetPresetId = startupPresetId;
       if (!lifetime.isActive()) {
         return;
       }
@@ -1172,7 +1214,12 @@ export function createMilkdropExperience({
     navigation,
     presetFileActions,
     session,
-    startupSettled,
+    awaitStartupForEdit: () =>
+      awaitStartupForEdit({
+        navigation,
+        startupSettled,
+        getStartupPresetId: () => startupTargetPresetId,
+      }),
     applyFieldValues,
     activeCompiled,
     activePresetId,
@@ -1366,7 +1413,10 @@ function buildExperienceController(
       // A shared draft arrives while the startup preset may still be
       // loading. Compiling against the fallback here gives it the wrong
       // identity, and the pending load can then replace the edited visual.
-      await deps.startupSettled;
+      // A different preset selected during that wait supersedes the draft.
+      if (!(await deps.awaitStartupForEdit())) {
+        throw new Error(EDIT_SUPERSEDED);
+      }
       const { state, applied } =
         await deps.session.applySourceWithOutcome(source);
       deps.emitChange();

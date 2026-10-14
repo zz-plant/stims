@@ -27,11 +27,14 @@ import {
   analyzeFlashEvents,
   type FlashAnalysis,
   type FlashCountInput,
+  flashSwing,
 } from './analysis.ts';
 import {
+  FLASH_AREA_FRACTION,
   FLASH_DARKER_CEILING,
   FLASH_LUMINANCE_DELTA,
   LINEAR_CHANNEL_LUT,
+  peakWindowFraction,
   RED_FLASH_DELTA,
   RED_FLASH_SCALE,
   RED_SATURATION_MIN,
@@ -142,11 +145,15 @@ export function createFlashFrameCounter(
   const prevRed = new Float64Array(sampleCount);
   const curRedSat = new Uint8Array(sampleCount);
   const prevRedSat = new Uint8Array(sampleCount);
+  /** Each sample's qualifying luminance swing in the last transition. */
+  const swings = new Float64Array(sampleCount);
 
   let rising: number[][] = [];
   let falling: number[][] = [];
   let redRising: number[][] = [];
   let redFalling: number[][] = [];
+  let risingSwing: number[] = [];
+  let fallingSwing: number[] = [];
   let frameMeanLuminance: number[] = [];
   let frameMeanDelta: number[] = [];
   let frameCount = 0;
@@ -156,6 +163,8 @@ export function createFlashFrameCounter(
     falling = [];
     redRising = [];
     redFalling = [];
+    risingSwing = [];
+    fallingSwing = [];
     frameMeanLuminance = [];
     frameMeanDelta = [];
     frameCount = 0;
@@ -196,10 +205,12 @@ export function createFlashFrameCounter(
         const after = curLum[i] as number;
         const tile = sampleTile[i] as number;
         deltaSum += Math.abs(after - before);
+        swings[i] = 0;
         if (
           Math.abs(after - before) >= FLASH_LUMINANCE_DELTA &&
           Math.min(before, after) < FLASH_DARKER_CEILING
         ) {
+          swings[i] = after - before;
           if (after > before) up[tile] = (up[tile] as number) + 1;
           else down[tile] = (down[tile] as number) + 1;
         }
@@ -217,6 +228,15 @@ export function createFlashFrameCounter(
       falling.push(down);
       redRising.push(redUp);
       redFalling.push(redDown);
+      // Only a direction that covers a quarter of a field can be part of a
+      // flash, so the bisection runs on those transitions alone.
+      const swingOf = (counts: number[], isRising: boolean) =>
+        peakWindowFraction(counts, tilePixels, cols, rows) >=
+        FLASH_AREA_FRACTION
+          ? flashSwing(swings, sampleTile, isRising, tilePixels, cols, rows)
+          : 0;
+      risingSwing.push(swingOf(up, true));
+      fallingSwing.push(swingOf(down, false));
       frameMeanDelta.push(deltaSum / sampleCount);
     }
 
@@ -232,6 +252,8 @@ export function createFlashFrameCounter(
       falling,
       redRising,
       redFalling,
+      risingSwing,
+      fallingSwing,
       tilePixels,
       cols,
       rows,

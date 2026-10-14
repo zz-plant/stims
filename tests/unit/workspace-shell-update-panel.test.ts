@@ -3,7 +3,13 @@ import { createElement } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import type { SessionRouteState } from '../../src/js/frontend/contracts.ts';
+import {
+  disposeActiveFileAudio,
+  getActiveFileAudioName,
+  setActiveFileAudio,
+} from '../../src/js/frontend/file-audio.ts';
 import { useWorkspaceShellOrchestration } from '../../src/js/frontend/workspace-shell-hooks.ts';
+import { replaceProperty } from '../test-helpers.ts';
 
 /**
  * The shell's panel/preset/audio handlers each own one route field. They
@@ -162,6 +168,100 @@ describe('shell orchestration route commits', () => {
 
       expect(second.ok).toBe(false);
       expect((await first).ok).toBe(true);
+    });
+  });
+
+  /**
+   * Switching away from a playing file used to dispose it before the new
+   * source was acquired. A denied microphone or a cancelled capture picker
+   * then returned with the route still on 'file' and the dock still showing
+   * the track, while the music had stopped.
+   */
+  describe('switching away from a playing file', () => {
+    let disposed = 0;
+    let restoreMediaDevices: (() => void) | null = null;
+
+    const playFile = () => {
+      disposed = 0;
+      setActiveFileAudio({
+        stream: {} as MediaStream,
+        element: {} as HTMLAudioElement,
+        name: 'set.mp3',
+        dispose: () => {
+          disposed += 1;
+        },
+      });
+    };
+
+    const refuse = () =>
+      Promise.reject(
+        Object.assign(new Error('Permission denied'), {
+          name: 'NotAllowedError',
+        }),
+      );
+
+    afterEach(() => {
+      restoreMediaDevices?.();
+      restoreMediaDevices = null;
+      disposeActiveFileAudio();
+    });
+
+    test('a denied microphone leaves the file playing', async () => {
+      restoreMediaDevices = replaceProperty(navigator, 'mediaDevices', {
+        getUserMedia: refuse,
+      });
+      playFile();
+      const started: string[] = [];
+      const api = render(() => {}, {
+        startAudioSource: async (request) => {
+          started.push(request.source);
+        },
+      });
+
+      const outcome = await api.handleAudioStart('microphone');
+
+      expect(outcome.ok).toBe(false);
+      expect(started).toEqual([]);
+      expect(disposed).toBe(0);
+      expect(getActiveFileAudioName()).toBe('set.mp3');
+    });
+
+    test('a cancelled tab-capture picker leaves the file playing', async () => {
+      restoreMediaDevices = replaceProperty(navigator, 'mediaDevices', {
+        getDisplayMedia: refuse,
+      });
+      playFile();
+      const api = render(() => {});
+
+      const outcome = await api.handleAudioStart('tab');
+
+      expect(outcome.ok).toBe(false);
+      expect(disposed).toBe(0);
+      expect(getActiveFileAudioName()).toBe('set.mp3');
+    });
+
+    test('a granted microphone replaces the file before it starts', async () => {
+      const track = { stop: () => {} };
+      restoreMediaDevices = replaceProperty(navigator, 'mediaDevices', {
+        getUserMedia: async () => ({
+          getTracks: () => [track],
+          getAudioTracks: () => [track],
+        }),
+      });
+      playFile();
+      const disposedAtStart: number[] = [];
+      const api = render(() => {}, {
+        startAudioSource: async () => {
+          disposedAtStart.push(disposed);
+        },
+      });
+
+      const outcome = await api.handleAudioStart('microphone');
+
+      expect(outcome).toEqual({ ok: true, source: 'microphone' });
+      // Both would otherwise feed the analyser and both be audible.
+      expect(disposedAtStart).toEqual([1]);
+      expect(getActiveFileAudioName()).toBeNull();
     });
   });
 });

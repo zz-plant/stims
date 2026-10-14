@@ -1,6 +1,14 @@
-import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from 'bun:test';
 import { spawnSync } from 'node:child_process';
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -16,13 +24,38 @@ afterAll(() => {
   for (const root of roots) rmSync(root, { recursive: true, force: true });
 });
 
-function git(cwd: string, ...args: string[]) {
-  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
+const tempRoot = () => {
+  const root = mkdtempSync(join(tmpdir(), 'stims-branch-restart-'));
+  roots.push(root);
+  return root;
+};
+
+// The fixture's git commands ignore the developer's git config (signing,
+// hooks, identity); restartBranch runs with the real environment.
+const fixtureEnv = {
+  ...process.env,
+  GIT_CONFIG_GLOBAL: '/dev/null',
+  GIT_CONFIG_NOSYSTEM: '1',
+  GIT_AUTHOR_NAME: 'T',
+  GIT_AUTHOR_EMAIL: 't@example.com',
+  GIT_COMMITTER_NAME: 'T',
+  GIT_COMMITTER_EMAIL: 't@example.com',
+};
+
+function gitWithInput(cwd: string, input: string, ...args: string[]) {
+  const result = spawnSync('git', args, {
+    cwd,
+    encoding: 'utf8',
+    env: fixtureEnv,
+    input,
+  });
   if (result.status !== 0) {
     throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`);
   }
   return result.stdout.trim();
 }
+
+const git = (cwd: string, ...args: string[]) => gitWithInput(cwd, '', ...args);
 
 function commit(cwd: string, file: string, content: string, message: string) {
   mkdirSync(join(cwd, file, '..'), { recursive: true });
@@ -32,43 +65,75 @@ function commit(cwd: string, file: string, content: string, message: string) {
 }
 
 /**
- * A bare origin plus two clones. `dev` works on a feature branch; `other`
- * squash-merges it into main, which is what leaves the branch's own commits
- * unreachable from main.
+ * The history origin holds after a squash-merge, as a `git fast-import`
+ * stream: feat adds a and b; main gains one commit with feat's tree, which is
+ * what leaves feat's own commits unreachable from main, then unrelated work.
  */
-function scenario() {
-  const root = mkdtempSync(join(tmpdir(), 'stims-branch-restart-'));
-  roots.push(root);
-  const origin = join(root, 'origin.git');
-  git(root, 'init', '-q', '--bare', '-b', 'main', origin);
-  const clone = (name: string) => {
-    const dir = join(root, name);
-    git(root, 'clone', '-q', origin, dir);
-    git(dir, 'config', 'user.email', 't@example.com');
-    git(dir, 'config', 'user.name', 'T');
-    git(dir, 'config', 'commit.gpgsign', 'false');
-    return dir;
-  };
-  const dev = clone('dev');
-  commit(dev, 'README.md', 'base\n', 'init');
-  git(dev, 'push', '-q', '-u', 'origin', 'main');
-  git(dev, 'checkout', '-q', '-b', 'feat');
-  commit(dev, 'a.txt', 'a\n', 'feat: a');
-  commit(dev, 'b.txt', 'b\n', 'feat: b');
-  git(dev, 'push', '-q', '-u', 'origin', 'feat');
+const ORIGIN_HISTORY = [
+  ['main', 'init', { 'README.md': 'base' }],
+  ['feat', 'feat: a', { 'a.txt': 'a' }],
+  ['feat', 'feat: b', { 'b.txt': 'b' }],
+  ['main', 'feat: a and b (#1)', { 'a.txt': 'a', 'b.txt': 'b' }],
+  ['main', 'unrelated main work', { 'later.txt': 'later' }],
+] as const;
 
-  // Squash-merge feat into main from another clone: one new commit, same tree.
-  const other = clone('other');
-  git(other, 'merge', '-q', '--squash', 'origin/feat');
-  git(other, 'commit', '-q', '-m', 'feat: a and b (#1)');
-  commit(other, 'later.txt', 'later\n', 'unrelated main work');
-  git(other, 'push', '-q', 'origin', 'main');
-  return { dev, other, origin };
+function fastImportStream() {
+  const data = (text: string) => `data <<EOF\n${text}\nEOF`;
+  return ORIGIN_HISTORY.map(([branch, message, files], i) =>
+    [
+      `commit refs/heads/${branch}`,
+      `committer T <t@example.com> ${1_700_000_000 + i} +0000`,
+      data(message),
+      // feat branches from main's first commit, init.
+      ...(i === 1 ? ['from refs/heads/main'] : []),
+      ...Object.entries(files).flatMap(([file, text]) => [
+        `M 644 inline ${file}`,
+        data(text),
+      ]),
+      '',
+    ].join('\n'),
+  ).join('\n');
 }
 
-let s: ReturnType<typeof scenario>;
+/**
+ * Builds, in `root`, a bare origin holding ORIGIN_HISTORY and a clone `dev`
+ * on feat that has not fetched since the merge. Writing the history with one
+ * fast-import, rather than committing and pushing it from two clones, takes
+ * this from ~20 git processes to 6.
+ */
+function scenario(root: string) {
+  const origin = join(root, 'origin.git');
+  git(root, 'init', '-q', '--bare', '--template=', '-b', 'main', origin);
+  gitWithInput(origin, fastImportStream(), 'fast-import', '--quiet');
+
+  git(root, 'clone', '-q', '--template=', 'origin.git', 'dev');
+  const dev = join(root, 'dev');
+  // Relative, so each test's copy of the scenario fetches from its own origin.
+  git(dev, 'remote', 'set-url', 'origin', '../origin.git');
+  git(dev, 'checkout', '-q', 'feat');
+  // dev last fetched before the merge, so a restart that skips the fetch
+  // resets onto the stale main and fails the first test.
+  gitWithInput(
+    dev,
+    'update refs/remotes/origin/main main~2\nupdate refs/heads/main main~2\n',
+    'update-ref',
+    '--stdin',
+  );
+}
+
+// Every test changes its repositories, so each gets a copy of one scenario:
+// copying the files costs a fraction of the git processes that build it.
+let template: string;
+beforeAll(() => {
+  template = tempRoot();
+  scenario(template);
+});
+
+let s: { dev: string; origin: string };
 beforeEach(() => {
-  s = scenario();
+  const root = tempRoot();
+  cpSync(template, root, { recursive: true });
+  s = { dev: join(root, 'dev'), origin: join(root, 'origin.git') };
 });
 
 describe('branch:restart', () => {

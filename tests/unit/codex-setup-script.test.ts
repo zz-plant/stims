@@ -55,9 +55,20 @@ async function installFakeBun(
   const bunLogFile = path.join(rootDir, 'bun.log');
   const attemptFile = path.join(rootDir, 'install-attempts');
   const bunPath = path.join(fakeBinDir, 'bun');
+  const sleepLogFile = path.join(rootDir, 'sleep.log');
 
   await mkdir(fakeBinDir, { recursive: true });
   await writeFile(bunLogFile, '');
+  await writeFile(sleepLogFile, '');
+  // The install retry backs off with a real `sleep 2`: two seconds of a test's
+  // budget spent proving nothing. This one records the delay and returns.
+  await writeFile(
+    path.join(fakeBinDir, 'sleep'),
+    `#!/bin/sh
+printf '%s\\n' "$*" >>${JSON.stringify(sleepLogFile)}
+`,
+    { mode: 0o755 },
+  );
   await writeFile(
     bunPath,
     `#!/usr/bin/env bash
@@ -92,6 +103,7 @@ exit 99
 
   return {
     bunLogFile,
+    sleepLogFile,
     env: {
       ...process.env,
       PATH: `${fakeBinDir}:/usr/bin:/bin`,
@@ -262,7 +274,7 @@ installed_at=2026-04-15T12:00:00-0500
 
 test('codex setup retries a transient install failure', async () => {
   const rootDir = await createTempRepo();
-  const { bunLogFile, env } = await installFakeBun(rootDir, {
+  const { bunLogFile, sleepLogFile, env } = await installFakeBun(rootDir, {
     installFailures: 1,
   });
 
@@ -279,6 +291,8 @@ test('codex setup retries a transient install failure', async () => {
     await readFile(bunLogFile, 'utf8'),
   );
   expect(bunInvocations.filter((line) => line === 'install')).toHaveLength(2);
+  // One back-off, at the first step of the schedule.
+  expect(await readFile(sleepLogFile, 'utf8')).toBe('2\n');
 });
 
 test('codex setup fails fast on lockfile drift instead of retrying', async () => {

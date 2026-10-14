@@ -13,7 +13,7 @@
  * Deferred to idle: MIDI init and live performance setup are not needed for
  * first paint and can safely wait until the browser is idle.
  */
-import { type RefObject, useEffect } from 'react';
+import { type RefObject, useEffect, useRef } from 'react';
 import {
   VIRTUAL_CLAUDE_DEVICE_ID,
   webMidiService,
@@ -22,7 +22,11 @@ import { deferToIdle } from '../../utils/browser/idle-task.ts';
 import type { EngineSnapshot } from '../engine/engine-snapshot.ts';
 import type { EngineContextValue } from '../engine-context.tsx';
 import { installLivePerformance } from '../live-performance.ts';
-import { watchPerformanceHardware } from '../performance-hardware-connect.ts';
+import { describeMissingPadAction } from '../midi-pad-actions.ts';
+import {
+  followMidiClockTempo,
+  watchPerformanceHardware,
+} from '../performance-hardware-connect.ts';
 import {
   bindMidiToMilkdropControls,
   createHardwareCrossfader,
@@ -36,12 +40,18 @@ export function usePerformanceHardware({
   engine,
   uiRef,
   engineSnapshotRef,
+  runPaletteAction,
 }: {
   engine: EngineContextValue;
   /** Latest-value refs so the idle-scheduled wiring reads live values. */
   uiRef: RefObject<WorkspaceContextValue>;
   engineSnapshotRef: RefObject<EngineSnapshot | null>;
+  /** Runs a command-palette action by id; false when there is none. Read at
+   * press time, so it must not capture a stale action list. */
+  runPaletteAction: (actionId: string) => boolean;
 }): void {
+  const runPaletteActionRef = useRef(runPaletteAction);
+  runPaletteActionRef.current = runPaletteAction;
   useEffect(() => {
     return deferToIdle(() => {
       webMidiService.initialize();
@@ -105,6 +115,11 @@ export function usePerformanceHardware({
       const unbindMidi = bindMidiToMilkdropControls(
         webMidiService,
         controls.apply,
+        (actionId) => {
+          if (!runPaletteActionRef.current(actionId)) {
+            uiRef.current.setStatusMessage(describeMissingPadAction(actionId));
+          }
+        },
       );
 
       // A gamepad drives parameters through the same binding/learn machinery
@@ -125,6 +140,12 @@ export function usePerformanceHardware({
         announce: (message) => uiRef.current.setStatusMessage(message),
       });
 
+      // A mixer or DAW sending MIDI clock owns the tempo while it runs.
+      const stopClockFollow = followMidiClockTempo({
+        midi: webMidiService,
+        announce: (message) => uiRef.current.setStatusMessage(message),
+      });
+
       return () => {
         uninstallLive();
         unbindMidi();
@@ -132,6 +153,7 @@ export function usePerformanceHardware({
         webMidiService.setLearnRangeResolver(null);
         stopGamepad?.();
         stopHardwareWatch();
+        stopClockFollow();
       };
     });
   }, [

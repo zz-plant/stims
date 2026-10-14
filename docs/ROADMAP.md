@@ -50,8 +50,7 @@ Each of these needs a real GPU, a second display, or a product decision.
 1. **Reduce flashing on by default.** The governor sees real frames (#1370), and its read costs the main thread 0.1 ms (#1375). It disagreed with the WCAG audit on the first-run preset (`shifter-curlique`, #1376), and the governor was wrong three ways (#1383). It judged one sample per tile, so moving texture read as flashing. It counted its own dimming step as the content darkening. And it skipped frames, so some comparisons spanned 33 ms and doubled the motion they judged. It now counts what the audit counts on the same frames: 0, 13 and 52 flashes/s on `shifter-curlique`, psychaos and krash. Live with Reduce flashing on, `shifter-curlique` had a mean brightness of 0.30 to 0.71; it now stays at full brightness in silence, on WebGL and at 390×844. With demo audio on WebGPU, one run in five still dimmed it briefly, to 0.62 at the lowest (see [Product moments](./PRODUCT_MOMENTS.md#open-questions)). What is left is the product call to turn it on for everyone.
 2. **Re-measure parity and demote what fails.** The certified labels rest on a July results file that the September suite contradicts (see [Proof floor](#proof-floor--maintained-not-expanded)).
 3. **Recording that holds up** ([#1441](https://github.com/zz-plant/stims/issues/1441)). Render 9:16 and 1:1 natively, keep frames coming when the tab is hidden, lift the power-saving frame cap while recording, and add a browser test that measures the file.
-4. **A projector window that mirrors the stage** ([#1439](https://github.com/zz-plant/stims/issues/1439)). Today's second window is a separate session (see [Live performance](#live-performance-vjing--hardware-control)).
-5. **A flash audit of the whole corpus with real music.**
+4. **A flash audit of the whole corpus with real music.**
 
 ### Verify what ships
 
@@ -111,7 +110,7 @@ Exit criteria:
 
 ### Creator-grade export & vertical formats
 
-Recording is a `MediaRecorder` beta. Only the 4K preset renders natively; the three 1080×1920 presets center-crop and upscale the live canvas, and there is no 1:1 preset. The first four items below are [#1441](https://github.com/zz-plant/stims/issues/1441).
+Recording is a `MediaRecorder` beta. 4K, the three 1080×1920 presets and the 1080×1080 square render natively, by resizing the renderer; Full HD crops and scales the live canvas. Frames are copied in the render loop's frame-drawn notification with the flash governor's dimming, the blackout and the white flash painted in; the brightness ceiling is left out (`stage-presentation.ts`). The first four items below are [#1441](https://github.com/zz-plant/stims/issues/1441).
 
 - Keep frames coming when the tab is hidden during a recording. Switching tabs freezes the video while the audio runs on: `hidden-tab-policy.ts` does not exempt recording, and browsers pause `requestAnimationFrame` in hidden tabs anyway, so a recording needs a frame source that does not depend on it.
 - Lift the power-saving frame cap while recording; `captureStream(60)` asks for frames the cap withholds.
@@ -120,7 +119,7 @@ Recording is a `MediaRecorder` beta. Only the 4K preset renders natively; the th
 - Transparent background alpha channel export (`WebM with alpha` / `ProRes 4444`) for video editors overlaying visualizers on DJ footage. MilkDrop's composite is opaque by design, so this is also a design decision.
 - On-screen track title & artwork overlay: customizable lower-third typography badge rendered directly into video frames. Needs a metadata source; nothing parses ID3 today.
 - Seamless 15s and 30s loop export for Spotify Canvas and VJ banks.
-- Deterministic frame pacing and loop-duration controls. `OfflineFrameRenderer` exists but nothing in the engine implements it.
+- Deterministic frame pacing and loop-duration controls. Nothing renders frames off the live clock yet; recording captures the live canvas.
 - Verify codec, aspect ratio, duration, and frame count in browser-backed tests. Today's recording tests are all mocked.
 - Label `MediaRecorder` as the compatibility fallback once a deterministic path exists.
 
@@ -221,21 +220,25 @@ Shipped:
   - A learned mapping spans the variable's natural range instead of 0–1.
   - Touching a Perform control or the cue fader picks it as the learn target.
 - Stage utilities (#1455, closing [#1440](https://github.com/zz-plant/stims/issues/1440)): hold D for a blackout (two quick taps latch it) and Y for a white flash, without touching the preset or audio. Space freezes the picture.
+- Tap tempo: K taps (the first tap is the downbeat, one tap after a pause re-syncs it), Shift+K hands the tempo back to the music, and the palette nudges the beat grid by 20 ms. A tapped tempo puts auto-advance on the performer's bar lines.
+- MIDI clock in: a running clock from a mixer or DAW sets the tempo and bar position until it stops or goes silent. The cue monitor's BPM readout names who owns the tempo.
+- Pads run commands: Settings → Performance hardware maps a pad, key or gamepad button to any command-palette action (next preset, pause, tap tempo, take the queued preset, and anything the palette adds later). The hit that maps it does not fire it, and each mapping is listed under its device with a remove button.
+- A projector window ([#1439](https://github.com/zz-plant/stims/issues/1439); dock → Projector window, or the palette) mirrors the stage canvas into a window with no chrome, through the same `captureStream()` path picture-in-picture uses. MIDI moves, edits, crossfades and a held frame all reach it, because it shows this tab's pixels; the flash governor, brightness ceiling, blackout and white flash, which sit outside the canvas, are mirrored onto it. With a second screen attached it moves there once the browser grants screen access; double-click or F in it goes full screen, and the cursor hides when still. After a reload, opening it again takes back the window already on the projector. Casting to a TV keeps the watch-party receiver, which a separate device needs.
 
 Open:
 
-- **Pads and notes.** They cannot be learned, and cannot trigger actions such as next preset or blackout.
-- **MIDI clock.** In/out is implemented but only tests use it.
+- **Pads on fields and held keys.** A pad can be learned only to a command. Gate and toggle bindings on a preset field still come only from a factory profile, and blackout and white flash are held keys rather than commands, so a pad cannot hold them yet.
+- **MIDI clock out.** Implemented, but nothing starts it, so lighting desks cannot follow the visuals' tempo.
 - **Latency.** The sub-10 ms target has never been measured on a device.
-- **Projector / external display window** ([#1439](https://github.com/zz-plant/stims/issues/1439)). The second window today is a watch-party link. It boots a full session with its own audio, synced through a relay that carries only the preset id and title, so MIDI moves, edits, and crossfades never reach the audience screen. What it needs: a same-origin window that mirrors the stage canvas (the picture-in-picture path already does), with no chrome and the cursor hidden.
-- **Tap tempo and phase nudge.** Missing; tempo comes only from the audio. `=` and `-` are the stage zoom and warp keys.
+- **Projector shape and frame pacing.** The projector has the stage's shape and size, so a portrait stage letterboxes on a 16:9 projector; it should render at the projector's own aspect. Display-rate pacing is unmeasured, and a minimised operator window gets no frames from the browser, so the projector holds its last one.
+- **Tempo beyond auto-advance.** A tapped or clocked tempo moves only auto-advance's bar lines. LFOs keep their own rate and no preset reads a tempo.
 - **Transition shaders.** One noise dissolve. Missing: wipe, glitch, and others, on both backends.
 - **Brightness floor.** The brightness ceiling stops at 30%, so the stage cannot be dimmed further than that without a blackout.
 
 Exit criteria:
 
 - WebMIDI bindings persist across browser restarts and respond with sub-10ms latency. *Persistence is met and tested; latency is unmeasured.* And
-- the pop-out projector window maintains display-rate frame synchronization with zero UI chrome or cursor leaks. *Not met: there is no mirror window.*
+- the pop-out projector window maintains display-rate frame synchronization with zero UI chrome or cursor leaks. *Partly met: the window has no chrome and hides a still cursor (`tests/e2e/projector-window.test.ts` checks it plays non-black stage frames); frame pacing is unmeasured.*
 
 ### Dual-backend differential evidence (Closing the WebGL2 gap)
 

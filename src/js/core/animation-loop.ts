@@ -3,6 +3,11 @@ import { getFrequencyFrame } from './audio-handler';
 import { notifyFrameDrawn } from './frame-drawn.ts';
 import { createFrameGate } from './frame-pacing';
 import { getPowerSavingFrameCapHz } from './power-state';
+import { createBackgroundFrameTimer } from './services/background-frame-timer.ts';
+import {
+  isRecordingActive,
+  subscribeRecordingActive,
+} from './services/recording-state.ts';
 
 export {
   createSimulationAccumulator,
@@ -43,6 +48,7 @@ export interface AudioLoopToy {
     setAnimationLoop: ((callback: (() => void) | null) => void) | null;
     xr?: { isPresenting?: boolean } | null;
   } | null;
+  stopAudio?: () => void;
 }
 
 /**
@@ -136,7 +142,11 @@ export async function startAudioLoop(
   // backends — WebGL's native scheduling and the WebGPU recovery-aware loop both
   // funnel through this callback.
   const frameGate = createFrameGate(getPowerSavingFrameCapHz);
-  toy.renderer.setAnimationLoop(() => {
+  let lastFrameTime = now();
+  let backgroundTimer: ReturnType<typeof createBackgroundFrameTimer> | null =
+    null;
+
+  const step = () => {
     const nowMs = now();
     // An XR session owns its own presentation cadence; dropping frames there
     // reads as head-tracking judder, not as a power saving.
@@ -146,6 +156,7 @@ export async function startAudioLoop(
     ) {
       return;
     }
+    lastFrameTime = nowMs;
     ctx.time = nowMs / 1000;
     ctx.realTimeMs = nowMs;
     try {
@@ -163,9 +174,69 @@ export async function startAudioLoop(
           error,
         );
         toy.renderer?.setAnimationLoop?.(null);
+        cleanupBackground();
       }
     }
-  });
+  };
+
+  const syncBackgroundPumping = () => {
+    const isHidden = typeof document !== 'undefined' && document.hidden;
+    const recording = isRecordingActive();
+    if (isHidden && recording) {
+      if (!backgroundTimer) {
+        backgroundTimer = createBackgroundFrameTimer(() => {
+          if (
+            typeof document !== 'undefined' &&
+            document.hidden &&
+            isRecordingActive()
+          ) {
+            if (now() - lastFrameTime >= 14) {
+              step();
+            }
+          }
+        }, 16);
+      }
+      backgroundTimer.start();
+    } else {
+      backgroundTimer?.stop();
+    }
+  };
+
+  const unsubscribeRecording = subscribeRecordingActive(syncBackgroundPumping);
+  const handleVisibilityChange = () => {
+    syncBackgroundPumping();
+  };
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+  }
+
+  let cleanedUp = false;
+  const cleanupBackground = () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    unsubscribeRecording();
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }
+    backgroundTimer?.dispose();
+    backgroundTimer = null;
+  };
+
+  const originalStopAudio = toy.stopAudio?.bind(toy);
+  if (originalStopAudio) {
+    toy.stopAudio = () => {
+      cleanupBackground();
+      originalStopAudio();
+    };
+  }
+
+  const originalCleanup = audioOptions.onCleanup;
+  audioOptions.onCleanup = (cleanedCtx) => {
+    cleanupBackground();
+    originalCleanup?.(cleanedCtx);
+  };
+
+  toy.renderer.setAnimationLoop(step);
   return ctx;
 }
 

@@ -34,6 +34,7 @@ The standalone packages keep their own suites in `packages/*/tests/`; run them w
 | `test-helpers.ts` | `importFresh()`, `flushTasks()`, `replaceProperty()`, and `browserTest`, the gate for browser-backed files. |
 | `frontend-harness.tsx` | Renders workspace panels against fake engine and workspace contexts. |
 | `milkdrop-fixtures.ts`, `toy-test-helpers.ts`, `demo-toy.ts` | Shared catalog entries, fake audio nodes and a stand-in runtime module. |
+| `grey-canvas.ts` | One-pixel canvases that composite a grey level, for asserting what a copy of the stage shows (picture-in-picture, recording, `stage-presentation`). |
 | `e2e/*.ts` without `.test` | Dev-server, browser-availability and agent-API helpers for the e2e files. |
 | `fixtures/` | `.milk` presets, native projectM reference renders (`fixtures/milkdrop/projectm-reference/`), flash-audit samples, Strudel patterns. |
 | `accessibility/` | Lighthouse reports written by `bun run check:accessibility`; no tests. |

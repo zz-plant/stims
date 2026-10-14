@@ -60,7 +60,10 @@
  * the corpus with no overlap. The measurement is wall-clock independent --
  * frames are stepped through the agent hook, not sampled in real time -- so
  * running shards concurrently is safe: it changes throughput and nothing
- * else.
+ * else. Each shard writes its own file, `flash-audit.shard-k-of-n.json`,
+ * unless `--out` names one: the report is rewritten after every preset, so
+ * shards sharing a file would overwrite each other's results. Merge each
+ * shard's file with `merge-flash-audit.ts`; merging is additive.
  *
  * It changes throughput less than you would hope. Measured on an M-series
  * laptop: one shard alone managed 0.73 presets/min, and four concurrent
@@ -88,7 +91,8 @@
  * frames. This track used to hand the governor tile means while the live
  * sampler read one point per tile, so it could not show that the live
  * governor counted 12 flashes on a preset this audit reads at 0. It now
- * reads the live sampler's field, pixel for pixel.
+ * reads the live sampler's field, pixel for pixel, red-flash field included,
+ * and scores both channels of the governed timeline.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -132,10 +136,15 @@ interface PresetEntry {
 type CapturedFrames = {
   rising: number[][];
   falling: number[][];
+  /** Per transition, `flashSwing` of the brightening and darkening samples. */
+  risingSwing: number[];
+  fallingSwing: number[];
   redRising: number[][];
   redFalling: number[][];
   govRising: number[][];
   govFalling: number[][];
+  govRedRising: number[][];
+  govRedFalling: number[][];
   governorRawPeak: number;
   tilePixels: number;
   frameMeanLuminance: number[];
@@ -148,6 +157,8 @@ export interface PresetFlashReport extends FlashAnalysis {
   repeatRedPeaks?: number[];
   /** Peak flashes/s the runtime governor would have presented (--governor). */
   governedPeakFlashesPerSecond?: number;
+  /** Peak red flashes/s the runtime governor would have presented. */
+  governedPeakRedFlashesPerSecond?: number;
   /**
    * Peak flashes/s the governor itself counts on the same unmitigated frames
    * (--governor). It applies the same WCAG rule, so it should match
@@ -155,13 +166,53 @@ export interface PresetFlashReport extends FlashAnalysis {
    */
   governorRawPeakFlashesPerSecond?: number;
   governedExceedsThreshold?: boolean;
+  governedExceedsRedThreshold?: boolean;
   presetId: string;
   title: string;
   author: string;
   error?: string;
 }
 
-function parseArgs(argv: string[]) {
+/**
+ * The report file: `--out` when given, else one per shard, so concurrent
+ * shards never share a file. A single unsharded run keeps the old name.
+ */
+function defaultOutPath(shardIndex: number, shardCount: number) {
+  return shardCount > 1
+    ? `flash-audit.shard-${shardIndex + 1}-of-${shardCount}.json`
+    : DEFAULT_OUT;
+}
+
+/**
+ * With `--repeat`, the run each channel reports: the median by that
+ * channel's own peak. The catalog marks a preset high when either channel
+ * is over the limit, so red figures borrowed from the general channel's
+ * median run could come from the run with the lowest red peak and hide a
+ * red-flash warning. Returns the general median (its capture also feeds the
+ * `--governor` track) and its analysis with the red figures replaced by the
+ * red median's.
+ */
+export function medianRun<T extends { analysis: FlashAnalysis }>(
+  attempts: readonly T[],
+): { run: T; analysis: FlashAnalysis } {
+  const medianBy = (key: 'peakFlashesPerSecond' | 'peakRedFlashesPerSecond') =>
+    [...attempts].sort((a, b) => a.analysis[key] - b.analysis[key])[
+      Math.floor(attempts.length / 2)
+    ] as T;
+  const run = medianBy('peakFlashesPerSecond');
+  const red = medianBy('peakRedFlashesPerSecond').analysis;
+  return {
+    run,
+    analysis: {
+      ...run.analysis,
+      peakRedFlashesPerSecond: red.peakRedFlashesPerSecond,
+      totalRedFlashes: red.totalRedFlashes,
+      exceedsRedThreshold: red.exceedsRedThreshold,
+    },
+  };
+}
+
+export function parseArgs(argv: string[]) {
   const governor = argv.includes('--governor');
   const repeatArg = argv.find((a) => a.startsWith('--repeat='))?.split('=')[1];
   const repeat = repeatArg ? Math.max(1, Number(repeatArg)) : 1;
@@ -208,7 +259,7 @@ function parseArgs(argv: string[]) {
         .filter(Boolean) ?? null,
     beatPulse: argv.includes('--beat-pulse'),
     port: Number(get('port') ?? DEFAULT_PORT),
-    out: get('out') ?? DEFAULT_OUT,
+    out: get('out') ?? defaultOutPath(shardIndex, shardCount),
     headless: !argv.includes('--no-headless'),
     governor,
     shardIndex,
@@ -431,6 +482,22 @@ async function main() {
                 Math.floor(sampleCount / tileCount),
               );
 
+              // Vite serves the package source from the dev server, as for
+              // the governor below; through a variable, so tsc leaves it be.
+              const analysisModule = '/packages/flash-guard/src/analysis.ts';
+              const { flashSwing } = (await import(
+                /* @vite-ignore */ analysisModule
+              )) as {
+                flashSwing: (
+                  swings: Float64Array,
+                  tileOf: number[],
+                  rising: boolean,
+                  tilePixels: number,
+                  cols: number,
+                  rows: number,
+                ) => number;
+              };
+
               // Warm up so feedback presets are measured at steady state,
               // from a reset: startTime pins the clock and re-initialises the
               // VM and the feedback buffers. Without it the capture began
@@ -449,7 +516,11 @@ async function main() {
                   samples: Float32Array,
                   c: number,
                   r: number,
-                  options: { density: number; viewScale: number },
+                  options: {
+                    density: number;
+                    viewScale: number;
+                    red?: { values: Float32Array; saturated: Uint8Array };
+                  },
                 ) => { luminanceScale: number; flashesInWindow: number };
               };
               let governor: Governor | null = null;
@@ -495,11 +566,22 @@ async function main() {
                 }
               }
               const govField = new Float32Array(govEdge * govEdge);
+              const govRed = {
+                values: new Float32Array(govEdge * govEdge),
+                saturated: new Uint8Array(govEdge * govEdge),
+              };
               let govScale = 1;
               let prevGovLum: Float64Array | null = null;
               const curGovLum = new Float64Array(sampleCount);
+              // The governed red-flash values. A CSS brightness filter scales
+              // the sRGB channels, so it scales max(0, R-G-B) by the same
+              // factor and leaves R/(R+G+B), the saturation test, unchanged.
+              let prevGovRed: Float64Array | null = null;
+              const curGovRed = new Float64Array(sampleCount);
               const govRising: number[][] = [];
               const govFalling: number[][] = [];
+              const govRedRising: number[][] = [];
+              const govRedFalling: number[][] = [];
 
               let prevLum: Float64Array | null = null;
               const curLum = new Float64Array(sampleCount);
@@ -512,6 +594,11 @@ async function main() {
               const curRedSat = new Uint8Array(sampleCount);
               const rising: number[][] = [];
               const falling: number[][] = [];
+              // The swing each transition carried over the area rule, for
+              // the profile's maxLuminanceDelta (see flashSwing).
+              const swings = new Float64Array(sampleCount);
+              const risingSwing: number[] = [];
+              const fallingSwing: number[] = [];
               const redRising: number[][] = [];
               const redFalling: number[][] = [];
               const frameMeanLuminance: number[] = [];
@@ -537,12 +624,17 @@ async function main() {
                 frameMeanLuminance.push(lumSum / sampleCount);
 
                 if (governor) {
-                  for (let g = 0; g < govField.length; g += 1) {
-                    const o = govOffsets[g];
-                    govField[g] =
-                      0.2126 * LUT[px[o]] +
-                      0.7152 * LUT[px[o + 1]] +
-                      0.0722 * LUT[px[o + 2]];
+                  for (let gi = 0; gi < govField.length; gi += 1) {
+                    const o = govOffsets[gi];
+                    const r = px[o];
+                    const g = px[o + 1];
+                    const b = px[o + 2];
+                    govField[gi] =
+                      0.2126 * LUT[r] + 0.7152 * LUT[g] + 0.0722 * LUT[b];
+                    govRed.values[gi] = Math.max(0, (r - g - b) / 255) * 320;
+                    const rgbSum = r + g + b;
+                    govRed.saturated[gi] =
+                      rgbSum > 0 && r / rgbSum >= 0.8 ? 1 : 0;
                   }
                   // Judged through the mitigation already in force: the
                   // governor must observe what the viewer sees, not the raw
@@ -552,7 +644,11 @@ async function main() {
                     govField,
                     governorGrid,
                     governorGrid,
-                    { density: governorDensity, viewScale: govScale },
+                    {
+                      density: governorDensity,
+                      viewScale: govScale,
+                      red: govRed,
+                    },
                   ).luminanceScale;
                   if (rawGovernor) {
                     governorRawPeak = Math.max(
@@ -568,6 +664,7 @@ async function main() {
                   }
                   for (let i = 0; i < sampleCount; i += 1) {
                     curGovLum[i] = curLum[i] * govScale;
+                    curGovRed[i] = curRed[i] * govScale;
                   }
                 }
 
@@ -588,10 +685,12 @@ async function main() {
                     const before = prevLum[i];
                     const after = curLum[i];
                     deltaSum += Math.abs(after - before);
+                    swings[i] = 0;
                     if (
                       Math.abs(after - before) >= 0.1 &&
                       Math.min(before, after) < 0.8
                     ) {
+                      swings[i] = after - before;
                       if (after > before) up[sampleTile[i]] += 1;
                       else down[sampleTile[i]] += 1;
                     }
@@ -605,9 +704,11 @@ async function main() {
                       else redDown[sampleTile[i]] += 1;
                     }
                   }
-                  if (governor && prevGovLum) {
+                  if (governor && prevGovLum && prevGovRed) {
                     const gUp = new Array(tileCount).fill(0);
                     const gDown = new Array(tileCount).fill(0);
+                    const gRedUp = new Array(tileCount).fill(0);
+                    const gRedDown = new Array(tileCount).fill(0);
                     for (let i = 0; i < sampleCount; i += 1) {
                       const before = prevGovLum[i];
                       const after = curGovLum[i];
@@ -618,12 +719,43 @@ async function main() {
                         if (after > before) gUp[sampleTile[i]] += 1;
                         else gDown[sampleTile[i]] += 1;
                       }
+                      const redBefore = prevGovRed[i];
+                      const redAfter = curGovRed[i];
+                      if (
+                        (prevRedSat[i] === 1 || curRedSat[i] === 1) &&
+                        Math.abs(redAfter - redBefore) > 20
+                      ) {
+                        if (redAfter > redBefore) gRedUp[sampleTile[i]] += 1;
+                        else gRedDown[sampleTile[i]] += 1;
+                      }
                     }
                     govRising.push(gUp);
                     govFalling.push(gDown);
+                    govRedRising.push(gRedUp);
+                    govRedFalling.push(gRedDown);
                   }
                   rising.push(up);
                   falling.push(down);
+                  risingSwing.push(
+                    flashSwing(
+                      swings,
+                      sampleTile,
+                      true,
+                      tilePixels,
+                      cols,
+                      rows,
+                    ),
+                  );
+                  fallingSwing.push(
+                    flashSwing(
+                      swings,
+                      sampleTile,
+                      false,
+                      tilePixels,
+                      cols,
+                      rows,
+                    ),
+                  );
                   redRising.push(redUp);
                   redFalling.push(redDown);
                   frameMeanDelta.push(deltaSum / sampleCount);
@@ -633,6 +765,10 @@ async function main() {
                     ? prevGovLum
                     : new Float64Array(sampleCount);
                   prevGovLum.set(curGovLum);
+                  prevGovRed = prevGovRed
+                    ? prevGovRed
+                    : new Float64Array(sampleCount);
+                  prevGovRed.set(curGovRed);
                 }
                 prevLum = prevLum ? prevLum : new Float64Array(sampleCount);
                 prevLum.set(curLum);
@@ -647,10 +783,14 @@ async function main() {
               return {
                 rising,
                 falling,
+                risingSwing,
+                fallingSwing,
                 redRising,
                 redFalling,
                 govRising,
                 govFalling,
+                govRedRising,
+                govRedFalling,
                 governorRawPeak,
                 tilePixels,
                 frameMeanLuminance,
@@ -686,6 +826,7 @@ async function main() {
               exceedsRedThreshold: false,
               motionEnergy: 0,
               luminanceVolatility: 0,
+              maxFlashLuminanceDelta: 0,
               meanLuminance: 0,
               frameCount: 0,
             });
@@ -695,10 +836,14 @@ async function main() {
           const cap = captured as CapturedFrames & {
             rising: number[][];
             falling: number[][];
+            risingSwing: number[];
+            fallingSwing: number[];
             redRising: number[][];
             redFalling: number[][];
             govRising: number[][];
             govFalling: number[][];
+            govRedRising: number[][];
+            govRedFalling: number[][];
             governorRawPeak: number;
             tilePixels: number;
             frameMeanLuminance: number[];
@@ -707,6 +852,8 @@ async function main() {
           const analysisOnce = analyzeFlashEvents({
             rising: cap.rising,
             falling: cap.falling,
+            risingSwing: cap.risingSwing,
+            fallingSwing: cap.fallingSwing,
             redRising: cap.redRising,
             redFalling: cap.redFalling,
             tilePixels: cap.tilePixels,
@@ -725,16 +872,10 @@ async function main() {
         if (attempts.length === 0) continue;
         // Identical captures of the same preset do NOT always agree — see the
         // module docblock. Reporting one number would hide that, so with
-        // --repeat the MEDIAN run is reported and the spread travels with it.
-        const ordered = [...attempts].sort(
-          (a, b) =>
-            a.analysis.peakFlashesPerSecond - b.analysis.peakFlashesPerSecond,
-        );
-        const chosen = ordered[
-          Math.floor(ordered.length / 2)
-        ] as (typeof attempts)[number];
+        // --repeat the MEDIAN run is reported, per channel, and the spread
+        // travels with it.
+        const { run: chosen, analysis } = medianRun(attempts);
         const cap = chosen.cap;
-        const analysis = chosen.analysis;
         const repeatPeaks = attempts.map(
           (a) => a.analysis.peakFlashesPerSecond,
         );
@@ -742,15 +883,15 @@ async function main() {
           (a) => a.analysis.peakRedFlashesPerSecond,
         );
         // Same render pass, scored again as the governor would have shown
-        // it. Only the general-flash channel: the governor scales luminance,
-        // which is not a claim about the red-flash criterion.
+        // it, on both channels: the governor counts red flashes too, and its
+        // brightness scale is what brings either kind under the limit.
         const governed =
           args.governor && cap.govRising.length > 0
             ? analyzeFlashEvents({
                 rising: cap.govRising,
                 falling: cap.govFalling,
-                redRising: cap.redRising,
-                redFalling: cap.redFalling,
+                redRising: cap.govRedRising,
+                redFalling: cap.govRedFalling,
                 tilePixels: cap.tilePixels,
                 cols: TILE_COLS,
                 rows: TILE_ROWS,
@@ -770,6 +911,9 @@ async function main() {
             ? {
                 governedPeakFlashesPerSecond: governed.peakFlashesPerSecond,
                 governedExceedsThreshold: governed.exceedsThreshold,
+                governedPeakRedFlashesPerSecond:
+                  governed.peakRedFlashesPerSecond,
+                governedExceedsRedThreshold: governed.exceedsRedThreshold,
                 governorRawPeakFlashesPerSecond: cap.governorRawPeak,
               }
             : {}),
@@ -782,11 +926,13 @@ async function main() {
               : '') +
             (governed
               ? `governor counts ${cap.governorRawPeak}/s, ` +
-                `governed=${governed.peakFlashesPerSecond}/s `
+                `governed=${governed.peakFlashesPerSecond}/s ` +
+                `(red ${governed.peakRedFlashesPerSecond}/s) `
               : '') +
             `red=${analysis.peakRedFlashesPerSecond}/s ` +
             `motion=${analysis.motionEnergy.toFixed(4)} ` +
-            `vol=${analysis.luminanceVolatility.toFixed(4)}` +
+            `vol=${analysis.luminanceVolatility.toFixed(4)} ` +
+            `swing=${analysis.maxFlashLuminanceDelta.toFixed(3)}` +
             (analysis.exceedsThreshold || analysis.exceedsRedThreshold
               ? '  ** OVER THRESHOLD **'
               : ''),
@@ -812,6 +958,7 @@ async function main() {
           exceedsRedThreshold: false,
           motionEnergy: 0,
           luminanceVolatility: 0,
+          maxFlashLuminanceDelta: 0,
           meanLuminance: 0,
           frameCount: 0,
         });
@@ -858,7 +1005,10 @@ async function main() {
   console.log(`\nWrote ${args.out}`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Import-safe: the tests exercise the helpers above directly.
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

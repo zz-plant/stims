@@ -101,6 +101,20 @@ export function deriveMilkdropViewportSignalValues(
 export type MilkdropWgslSignalField =
   (typeof MILKDROP_WGSL_SIGNAL_FIELDS)[number];
 
+/**
+ * Stims-only shorthand for three MilkDrop 2 signals. MilkDrop itself has no
+ * `med`, `att` or `med_att`: there they are ordinary variables that start at
+ * 0. So an alias applies only to a preset that never assigns that name; one
+ * that does (`med = if((it+1)%2,med,1-med)` in shifter-spectro) owns it as
+ * a variable. presetOwnedSignalAliases finds those names, and both the CPU
+ * signal env (vm/shared.ts) and the WGSL generator leave them unaliased.
+ */
+export const MILKDROP_LEGACY_SIGNAL_ALIASES = [
+  ['med', 'mid'],
+  ['att', 'treb'],
+  ['med_att', 'mid_att'],
+] as const satisfies ReadonlyArray<readonly [string, MilkdropWgslSignalField]>;
+
 // Parser identifiers are case-insensitive, but the runtime exposes both the
 // legacy snake_case names and the newer camelCase aliases.
 export const MILKDROP_WGSL_SIGNAL_ALIAS_MAP = new Map<
@@ -115,14 +129,9 @@ export const MILKDROP_WGSL_SIGNAL_ALIAS_MAP = new Map<
   ['percussivemid', 'percussive_mid'],
   ['percussivehigh', 'percussive_high'],
   ['percussiveratio', 'percussive_ratio'],
-  // Legacy MilkDrop shorthand aliases (vm/shared.ts syncSignalEnvironment is
-  // the CPU-side source of truth: med->mid, att->treb, med_att->mid_att).
-  // Missing here silently resolved to an uninitialized state field on GPU
-  // instead of the signal — found via the GPU-tier replay harness on
-  // martin-the-bridge-of-khazad-dum's `vol = (bass + med + treb) / 1.5`.
-  ['med', 'mid'],
-  ['att', 'treb'],
-  ['med_att', 'mid_att'],
+  // A preset that owns one of these compiles it as a state field instead
+  // (compileProgramToWgsl's ownedSignalAliases).
+  ...MILKDROP_LEGACY_SIGNAL_ALIASES,
 ]);
 
 export type MilkdropGpuVmSignals = Pick<

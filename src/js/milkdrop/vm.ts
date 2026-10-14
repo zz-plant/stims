@@ -24,6 +24,7 @@ import {
   type MilkdropProgramOptions,
 } from 'milkdrop-toolchain/src/expression-jit.ts';
 import { normalizeProgramAssignmentTarget } from 'milkdrop-toolchain/src/field-normalization.ts';
+import { presetOwnedSignalAliases } from 'milkdrop-toolchain/src/program-references.ts';
 import { inspectableVariableNames } from './inspectable-variables.ts';
 import { isElementHidden } from './render-isolation.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from './runtime/first-run-preset.ts';
@@ -125,7 +126,9 @@ class MilkdropPresetVM implements MilkdropVM {
   private declaredBorderKeys: ReadonlySet<'outer' | 'inner'> = new Set();
   private state: MutableState = {};
   private registers: MutableState = {};
-  private readonly signalEnv: MutableState = createDefaultSignalEnv();
+  /** Rebuilt by reset(): which legacy signal aliases it carries depends on
+   * the preset (createDefaultSignalEnv). */
+  private signalEnv: MutableState = createDefaultSignalEnv();
   private lastPreparedSignalSource: MilkdropRuntimeSignals | null = null;
   private lastPreparedSignalFrame = Number.NaN;
   private lastPreparedSignalTime = Number.NaN;
@@ -468,6 +471,7 @@ class MilkdropPresetVM implements MilkdropVM {
       // copies GPU writes back after each dispatch, so the CPU tiers keep
       // seeing one coherent megabuf/gmegabuf.
       { megabuf: this.megabuf, gmegabuf: this.gmegabuf },
+      presetOwnedSignalAliases(this.preset.ir),
     );
   }
 
@@ -550,6 +554,9 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.buffers.momentumSamples = new Float32Array(0);
     this.waveState.lastWaveSamples = this.waveState.buffers.smoothedSamples;
     this.waveState.lastWaveMomentum = this.waveState.buffers.momentumSamples;
+    this.signalEnv = createDefaultSignalEnv(
+      presetOwnedSignalAliases(this.preset.ir),
+    );
     Object.setPrototypeOf(this.signalEnv, this.registers);
     this.lastPreparedSignalSource = null;
     this.lastPreparedSignalFrame = Number.NaN;

@@ -1,10 +1,23 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { resolveMilkdropWebGpuOptimizationFlags } from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { OrthographicCamera, Scene, type Vector2 } from 'three';
+import { createMilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-adapter-factory.ts';
+import type {
+  MilkdropFeedbackCompositeState,
+  MilkdropFeedbackManager,
+} from '../../src/js/milkdrop/types.ts';
+import { defaultSignalEnv } from '../../src/js/milkdrop/vm/frame-generation.ts';
+import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
+import {
+  resolveMilkdropWebGpuOptimizationFlags,
+  resolveMilkdropWebGpuOptimizationFlagsForBackend,
+} from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
 import {
   resolveMilkdropWebGpuFeatureRouting,
   setWebGpuForceMode,
   shouldEnableNativeMilkdropWebGpuFeedback,
 } from '../../src/js/milkdrop/webgpu-query-override.ts';
+import { replaceProperty } from '../test-helpers.ts';
 
 describe('MilkDrop WebGPU feature routing', () => {
   afterEach(() => {
@@ -46,6 +59,29 @@ describe('MilkDrop WebGPU feature routing', () => {
       enabled: true,
       reason: null,
     });
+  });
+
+  test('keeps URL opt-ins when the runtime routes flags for WebGPU', () => {
+    const restoreLocation = replaceProperty(
+      globalThis,
+      'location',
+      new URL(
+        'http://localhost/?renderer=webgpu&milkdrop-webgpu-compute-vm=1&milkdrop-webgpu-render-bundles=1',
+      ),
+    );
+    try {
+      // The live path: no location argument anywhere, as in
+      // experience-attachment.ts and renderer-adapter-webgpu.ts.
+      const flags = resolveMilkdropWebGpuOptimizationFlagsForBackend(
+        resolveMilkdropWebGpuOptimizationFlags(),
+        'webgpu',
+      );
+
+      expect(flags.gpuComputeVM).toBe(true);
+      expect(flags.renderBundles).toBe(true);
+    } finally {
+      restoreLocation();
+    }
   });
 
   test('enables native feedback on the full WebGPU path', () => {
@@ -95,4 +131,103 @@ describe('MilkDrop WebGPU feature routing', () => {
       }).descriptorFallbackToWebgl,
     ).toBe(true);
   });
+});
+
+describe('native WebGPU feedback flag override', () => {
+  // Run alone (-t), the first test pays the cold three/webgpu import behind
+  // the native adapter, which outlasts bun's 5 s default on a loaded host.
+  const NATIVE_ADAPTER_TIMEOUT_MS = 30_000;
+
+  // A comp shader the WebGPU executor runs as authored, with no video echo or
+  // feedback texture that would hold the plan on the controls approximation.
+  const directCompSource = `
+title=Native Feedback Override
+fShader=1
+comp_shader=ret = tex2D(sampler_main, uv).rgb * 1.2;
+  `.trim();
+
+  async function renderNativeFeedbackState(search: string) {
+    const restoreLocation = replaceProperty(
+      globalThis,
+      'location',
+      new URL(`http://localhost/${search}`),
+    );
+    setWebGpuForceMode('full');
+    try {
+      const preset = compileMilkdropPresetSource(directCompSource, {
+        id: 'native-feedback-override',
+      });
+      // The flags the runtime builds: URL/storage first, then routed for the
+      // backend the renderer came up on (experience-attachment.ts).
+      const flags = resolveMilkdropWebGpuOptimizationFlagsForBackend(
+        resolveMilkdropWebGpuOptimizationFlags(),
+        'webgpu',
+      );
+      const adapter = await createMilkdropRendererAdapter({
+        scene: new Scene(),
+        camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+        renderer: {
+          isWebGPURenderer: true,
+          depth: true,
+          getSize: (target: Vector2) => target.set(320, 180),
+          setRenderTarget() {},
+          render() {},
+        },
+        backend: 'webgpu',
+        preset,
+        webgpuOptimizationFlags: flags,
+      });
+      const feedback = (
+        adapter as unknown as { feedback: MilkdropFeedbackManager | null }
+      ).feedback;
+      if (!feedback) {
+        throw new Error('native WebGPU adapter built no feedback manager');
+      }
+      const applied: MilkdropFeedbackCompositeState[] = [];
+      const applyCompositeState = feedback.applyCompositeState.bind(feedback);
+      feedback.applyCompositeState = (state) => {
+        applied.push(state);
+        applyCompositeState(state);
+      };
+
+      adapter.attach();
+      adapter.render({
+        frameState: createMilkdropVM(preset).step(defaultSignalEnv()),
+        blendState: null,
+      });
+      adapter.dispose();
+      return applied.at(-1) ?? null;
+    } finally {
+      setWebGpuForceMode('auto');
+      restoreLocation();
+    }
+  }
+
+  test(
+    'runs the comp shader directly by default on the full path',
+    async () => {
+      const state = await renderNativeFeedbackState('?renderer=webgpu');
+
+      expect(state?.shaderExecution).toBe('direct');
+      expect(state?.shaderPrograms.comp).not.toBeNull();
+    },
+    NATIVE_ADAPTER_TIMEOUT_MS,
+  );
+
+  test(
+    '?milkdrop-webgpu-feedback=0 drops direct shader execution but keeps the feedback loop',
+    async () => {
+      const state = await renderNativeFeedbackState(
+        '?renderer=webgpu&milkdrop-webgpu-feedback=0',
+      );
+
+      // A composite state still reaches the native feedback manager, so the
+      // loop runs; only the authored comp body is replaced by the controls
+      // approximation.
+      expect(state).not.toBeNull();
+      expect(state?.shaderExecution).toBe('controls');
+      expect(state?.shaderPrograms.comp).toBeNull();
+    },
+    NATIVE_ADAPTER_TIMEOUT_MS,
+  );
 });

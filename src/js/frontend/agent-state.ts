@@ -23,9 +23,14 @@
 import type { MilkdropShaderExecutionMode } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import { isHiddenTabSuspendingFrames } from '../core/hidden-tab-policy.ts';
 import {
+  getManualTempoSource,
+  type ManualTempoSource,
+} from '../core/manual-tempo.ts';
+import {
   extractFrameStats,
   type FrameStats,
 } from '../core/services/visual-embedding.ts';
+import type { MilkdropAppliedShaderExecution } from '../milkdrop/runtime-types.ts';
 import { subscribeVariables } from '../milkdrop/variable-probe.ts';
 import type { AgentTelemetry } from './agent-bridge.ts';
 import type { CommandAction } from './command-palette-registry.ts';
@@ -50,7 +55,12 @@ const DEFAULT_WAIT_TIMEOUT_MS = 5000;
 export interface AgentStatusEntry {
   at: number;
   message: string;
+  /** 'shell' for the workspace's own status setter, 'runtime' for the
+   * engine's (preset loads, blend refusals, rollout flags). */
+  source: AgentStatusSource;
 }
+
+export type AgentStatusSource = 'shell' | 'runtime';
 
 export type AgentEventType =
   | 'status'
@@ -79,7 +89,11 @@ export interface AgentCoreSnapshot {
   backend: string | null;
   panel: string | null;
   presetId: string | null;
+  /** Title and author from the catalog entry for `presetId`, so the three
+   * always name the same preset. Null when that entry is not in the catalog
+   * (yet), or for an author the entry does not record. */
   presetTitle: string | null;
+  presetAuthor: string | null;
   /** Catalog entries the shell can pick from. 0 until the deferred catalog
    * load lands, which is later than `engineState === 'ready'`; actions that
    * choose a preset (`next-preset`, collection shuffles) are no-ops before
@@ -102,10 +116,24 @@ export interface AgentCoreSnapshot {
    *   'unsupported' — the shader text is outside the supported subset; also
    *                   approximated.
    *   null          — no preset compiled yet. Never read null as "fine".
-   * Assert `shaderExecution === 'direct'` (or `'none'`) to require that what
-   * is on screen is what the preset author wrote.
+   * This is the compiler's verdict for the backend. It does not see routing
+   * that overrides it, such as `?milkdrop-webgpu-feedback=0` or the safe
+   * WebGPU path; `appliedShaderExecution` does.
    */
   shaderExecution: MilkdropShaderExecutionMode | null;
+  /**
+   * What the renderer ran on the last presented frame:
+   *   'direct'   — the authored warp/comp shader text.
+   *   'controls' — the uniform-only controls approximation. For a preset
+   *                with no shader text (`shaderExecution === 'none'`) that is
+   *                the preset as authored.
+   *   'off'      — no feedback pass ran at all (the safe WebGPU path).
+   *   null       — no frame presented since the last preset load, or the
+   *                preset's programs are still compiling. Wait for non-null.
+   * Assert `appliedShaderExecution === 'direct'` to require that the preset's
+   * shader text is what is on screen.
+   */
+  appliedShaderExecution: MilkdropAppliedShaderExecution | null;
 }
 
 export interface AgentStateSnapshot extends AgentCoreSnapshot {
@@ -125,6 +153,12 @@ export interface AgentStateSnapshot extends AgentCoreSnapshot {
    * (core/hidden-tab-policy.ts), so the two cannot disagree.
    */
   renderingSuspended: boolean;
+  /**
+   * The tempo auto-advance quantizes to, and who set it: 'audio' (estimated
+   * from onsets; `bpm` is null until the estimate is confident), 'tap', or
+   * 'midi-clock'.
+   */
+  tempo: { bpm: number | null; source: 'audio' | ManualTempoSource };
 }
 
 const statusLog: AgentStatusEntry[] = [];
@@ -163,16 +197,23 @@ export const CORE_SNAPSHOT_DIFF_DESCRIPTORS: readonly CoreDiffDescriptor[] = [
     }),
   },
   {
-    // presetTitle is bundled into the same event as presetId (it's the
-    // human-readable name of whatever preset just became active), but is
-    // also checked alone in case a title correction ever lands without an
-    // id change.
-    fields: ['presetId', 'presetTitle'],
+    // presetTitle and presetAuthor are bundled into the same event as
+    // presetId (they name whatever preset just became active), but are also
+    // checked alone in case a catalog correction ever lands without an id
+    // change.
+    fields: ['presetId', 'presetTitle', 'presetAuthor'],
     changed: (p, n) =>
-      p.presetId !== n.presetId || p.presetTitle !== n.presetTitle,
+      p.presetId !== n.presetId ||
+      p.presetTitle !== n.presetTitle ||
+      p.presetAuthor !== n.presetAuthor,
     event: (p, n) => ({
       type: 'preset',
-      data: { from: p.presetId, to: n.presetId, title: n.presetTitle },
+      data: {
+        from: p.presetId,
+        to: n.presetId,
+        title: n.presetTitle,
+        author: n.presetAuthor,
+      },
     }),
   },
   {
@@ -254,6 +295,10 @@ export const CORE_SNAPSHOT_INTENTIONALLY_SKIPPED: ReadonlySet<
   // readiness fact, not a transition worth an event. Automation waits on
   // getState().catalogSize instead.
   'catalogSize',
+  // Drops to null on every preset load and settles on the first presented
+  // frame, so an event would fire per load, and whether the null in between
+  // is ever committed depends on frame timing. Read it with waitFor.
+  'appliedShaderExecution',
 ] as const);
 
 function pushEvent(type: AgentEventType, data: Record<string, unknown>): void {
@@ -264,14 +309,18 @@ function pushEvent(type: AgentEventType, data: Record<string, unknown>): void {
   }
 }
 
-/** Called by the workspace status setter; null (clearing) is not logged. */
-export function recordStatusMessage(message: string | null): void {
+/** Called by the workspace status setter and, with 'runtime', for every
+ * status the engine sets; null (clearing) is not logged. */
+export function recordStatusMessage(
+  message: string | null,
+  source: AgentStatusSource = 'shell',
+): void {
   if (!message) return;
-  statusLog.push({ at: Date.now(), message });
+  statusLog.push({ at: Date.now(), message, source });
   if (statusLog.length > STATUS_LOG_LIMIT) {
     statusLog.splice(0, statusLog.length - STATUS_LOG_LIMIT);
   }
-  pushEvent('status', { message });
+  pushEvent('status', { message, source });
 }
 
 export function getStatusLog(): AgentStatusEntry[] {
@@ -576,6 +625,8 @@ export interface AgentStateProviders {
   pinParameter: (field: string) => boolean;
   unpinParameter: (field: string) => boolean;
   getStageCanvas: () => HTMLCanvasElement | null;
+  /** Rounded tempo the runtime publishes, or null with no confident one. */
+  getTempoBpm?: () => number | null;
 }
 
 /**
@@ -598,6 +649,10 @@ export function installAgentStateGlobal(
         typeof document !== 'undefined' &&
         document.documentElement.dataset.agentMode === 'true',
       renderingSuspended: isHiddenTabSuspendingFrames(),
+      tempo: {
+        bpm: providers.getTempoBpm?.() ?? null,
+        source: getManualTempoSource() ?? 'audio',
+      },
     };
   };
 

@@ -6,6 +6,7 @@ import {
   describeAgentState,
   emitAgentCommit,
   installAgentStateGlobal,
+  recordStatusMessage,
   resetAgentStateForTests,
   suggestIds,
 } from '../../src/js/frontend/agent-state.ts';
@@ -18,6 +19,7 @@ const CORE: AgentCoreSnapshot = {
   panel: null,
   presetId: 'preset-a',
   presetTitle: 'Preset A',
+  presetAuthor: 'Author A',
   catalogSize: 3,
   audioSource: null,
   playbackPaused: false,
@@ -25,6 +27,7 @@ const CORE: AgentCoreSnapshot = {
   autoplay: null,
   transition: { mode: null, blendDuration: null },
   shaderExecution: 'direct',
+  appliedShaderExecution: 'direct',
 };
 
 const CATALOG = [
@@ -187,6 +190,40 @@ describe('run(): the events it caused', () => {
     const result = await agent.run('does-not-exist');
     expect(result.ok).toBe(false);
     expect(result.events).toBeUndefined();
+  });
+});
+
+describe('statusLog: both status channels', () => {
+  test('runtime statuses are logged and evented next to the shell ones, tagged by source', () => {
+    const { agent } = install();
+    recordStatusMessage(
+      'WebGPU rollout flags active: directFeedbackShaders off.',
+      'runtime',
+    );
+    recordStatusMessage('Paused.');
+    recordStatusMessage('Loaded Royal Mashup.', 'runtime');
+
+    expect(
+      agent.getState().statusLog.map(({ message, source }) => ({
+        message,
+        source,
+      })),
+    ).toEqual([
+      {
+        message: 'WebGPU rollout flags active: directFeedbackShaders off.',
+        source: 'runtime',
+      },
+      { message: 'Paused.', source: 'shell' },
+      { message: 'Loaded Royal Mashup.', source: 'runtime' },
+    ]);
+    expect(agent.getEvents().map((event) => event.data)).toEqual([
+      {
+        message: 'WebGPU rollout flags active: directFeedbackShaders off.',
+        source: 'runtime',
+      },
+      { message: 'Paused.', source: 'shell' },
+      { message: 'Loaded Royal Mashup.', source: 'runtime' },
+    ]);
   });
 });
 
@@ -375,6 +412,7 @@ describe('describeAgentState', () => {
       documentHidden: true,
       agentMode: false,
       renderingSuspended: true,
+      tempo: { bpm: null, source: 'audio' },
     });
     expect(line).not.toContain('\n');
     expect(line).toContain('lastError="boom"');

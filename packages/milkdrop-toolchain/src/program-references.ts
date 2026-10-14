@@ -21,6 +21,7 @@ import type {
   MilkdropProgramBlock,
 } from './common-types.ts';
 import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
+import { MILKDROP_LEGACY_SIGNAL_ALIASES } from './wgsl-signal-layout.ts';
 
 export type ProgramReferences = {
   /** Every identifier the program can read, as canonical names. */
@@ -94,4 +95,28 @@ export function analyzeProgramReferences(
     if (statement) collectStatement(statement, reads, writes);
   }
   return { reads, writes };
+}
+
+type ProgramSet = { programs: Record<string, MilkdropProgramBlock> };
+
+/** The legacy signal aliases (MILKDROP_LEGACY_SIGNAL_ALIASES) a preset
+ * assigns in any of its programs, root, custom wave or custom shape. Each
+ * one is the preset's own variable, so no alias may shadow it. */
+export function presetOwnedSignalAliases(
+  ir: ProgramSet & {
+    customWaves: readonly ProgramSet[];
+    customShapes: readonly ProgramSet[];
+  },
+): string[] {
+  const writes = new Set<string>();
+  for (const owner of [ir, ...ir.customWaves, ...ir.customShapes]) {
+    for (const block of Object.values(owner.programs)) {
+      for (const name of analyzeProgramReferences(block).writes) {
+        writes.add(name);
+      }
+    }
+  }
+  return MILKDROP_LEGACY_SIGNAL_ALIASES.map(([alias]) => alias).filter(
+    (alias) => writes.has(alias),
+  );
 }

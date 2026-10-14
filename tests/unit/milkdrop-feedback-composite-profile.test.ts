@@ -75,22 +75,31 @@ test('avoids reserved GLSL identifiers in the shared blur shader', () => {
   }
 });
 
-test('samples warp textures in warp-stage UV space inside the feedback blend shader', () => {
+/**
+ * Warp-texture displacement moves the previous frame, so it belongs to the
+ * warp pass and is sampled at the warped coordinate. The feedback blend lays
+ * this frame's geometry on top unwarped and samples no warp texture at all.
+ */
+test('samples warp textures in warp-stage UV space, in the warp pass only', () => {
   const manager = createSharedMilkdropFeedbackManager(
     320,
     180,
     WEBGL_MILKDROP_BACKEND_BEHAVIOR,
   ) as {
+    warpMaterial: { fragmentShader: string };
     feedbackBlendMaterial: { fragmentShader: string };
     dispose: () => void;
   };
 
   try {
-    expect(manager.feedbackBlendMaterial.fragmentShader).toContain(
+    expect(manager.warpMaterial.fragmentShader).toContain(
       'vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;',
     );
-    expect(manager.feedbackBlendMaterial.fragmentShader).not.toContain(
+    expect(manager.warpMaterial.fragmentShader).not.toContain(
       'vec2 warpUv = vUv * warpTextureScale + warpTextureOffset;',
+    );
+    expect(manager.feedbackBlendMaterial.fragmentShader).not.toContain(
+      'warpTextureScale',
     );
   } finally {
     manager.dispose();

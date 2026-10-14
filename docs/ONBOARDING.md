@@ -29,7 +29,7 @@ Read [runtime contracts](./MILKDROP_PRESET_RUNTIME.md) and the toolchain README 
 
 WebGL is the baseline; WebGPU has separate materials, batching, and fallback behavior. A change can preserve compilation while changing pixels. Check both paths when changing feedback, blend order, shader lowering, or geometry. Read [architecture](./ARCHITECTURE.md), then follow one source from parser to VM, frame loop, and renderer adapter.
 
-For capability and render-scale work, the [fallback study](./architecture/fallback-state-machine.md) supplies design context; the current code and tests define implemented behavior. Exercise startup failure and teardown as well as steady-state frames.
+For capability and render-scale work, the [fallback study](./archive/fallback-state-machine.md) supplies design context; the current code and tests define implemented behavior. Exercise startup failure and teardown as well as steady-state frames.
 
 ### Audio and measurement
 
@@ -63,4 +63,4 @@ Flash analysis is bounded by sampled output and the instrument's thresholds; it 
 5. Before compiler or renderer work, complete a controlled capture-and-diff cycle. Preserve provenance and distinguish target membership, reference availability, and measured results.
 6. Finish with the required gate, then report precisely which checks ran, skipped, or failed.
 
-The [QA plan](./QA_PLAN.md) covers user-flow sign-off. [Workstreams](./MILKDROP_SUCCESSOR_WORKSTREAMS.md) and [implementation status](./IMPLEMENTATION_STATUS.md) separate current capabilities from proposed work.
+The [QA plan](./QA_PLAN.md) covers user-flow sign-off. The [roadmap](./ROADMAP.md) and [implementation status](./IMPLEMENTATION_STATUS.md) separate current capabilities from proposed work.

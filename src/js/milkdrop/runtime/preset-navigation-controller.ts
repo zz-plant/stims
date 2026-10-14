@@ -77,7 +77,9 @@ export function createMilkdropPresetNavigationController({
   };
   setOverlayStatus: (message: string) => void;
   shouldFallbackToWebgl: (compiled: MilkdropCompiledPreset) => boolean;
-  triggerWebglFallback: (args: { presetId: string; reason: string }) => void;
+  /** True when the page is reloading into WebGL; false leaves the switch to
+   * carry on with the current backend. */
+  triggerWebglFallback: (args: { presetId: string; reason: string }) => boolean;
   rememberLastPreset: (id: string) => void;
   /** Records why the current preset was chosen, for runtime state/debugging.
    * Purely observational — optional so callers that do not surface it (tests,
@@ -123,6 +125,8 @@ export function createMilkdropPresetNavigationController({
   };
 
   let currentLoadRequestRevision = 0;
+  // The preset the newest request asked for, whether or not it has loaded.
+  let latestRequestedPresetId: string | null = null;
 
   // Best-effort warm-up for the next likely switch. Resolves the adjacent
   // selectable preset's source and pre-compiles it into the shared raw-string
@@ -193,6 +197,7 @@ export function createMilkdropPresetNavigationController({
       return;
     }
     const requestRevision = ++currentLoadRequestRevision;
+    latestRequestedPresetId = id;
     noteSelectionReason?.(options.reason ?? 'requested');
     const trace = createPresetLoadTrace(id);
     try {
@@ -285,9 +290,10 @@ export function createMilkdropPresetNavigationController({
       if (shouldFallbackToWebgl(nextCompiled)) {
         const reason = describeWebglFallback(nextCompiled);
         trace.adapter('WebGL fallback', reason);
-        triggerWebglFallback({ presetId: id, reason });
-        trace.done('fallback to WebGL');
-        return;
+        if (triggerWebglFallback({ presetId: id, reason })) {
+          trace.done('fallback to WebGL');
+          return;
+        }
       }
 
       trace.step('performanceOverride');
@@ -532,6 +538,7 @@ export function createMilkdropPresetNavigationController({
     getFirstSelectablePresetId,
     isBackendSelectable,
     getLoadRequestRevision: () => currentLoadRequestRevision,
+    getLatestRequestedPresetId: () => latestRequestedPresetId,
     selectPreset,
     selectAdjacentPreset,
     selectRandomPreset,

@@ -53,10 +53,11 @@ type EditorSession = Awaited<
 >;
 
 /** The start paths report failures (permission denied, a preset that would
- * not load) as a status message rather than a throw. */
+ * not load) as a shell status message rather than a throw. Runtime statuses
+ * are skipped: the fallback's "Loaded …" lands after the failure. */
 function latestStatusSince(startedAt: number): string | undefined {
   return getStatusLog()
-    .filter((entry) => entry.at >= startedAt)
+    .filter((entry) => entry.at >= startedAt && entry.source === 'shell')
     .at(-1)?.message;
 }
 
@@ -193,9 +194,11 @@ async function loadPresetForAgent(
 
 async function applyTweakForAgent(
   engine: EngineContextValue,
-  currentSource: string,
+  engineSnapshotRef: RefObject<EngineSnapshot | null>,
   tweak: string,
 ): Promise<AgentCommandResult> {
+  const target = engineSnapshotRef.current;
+  const currentSource = target?.currentSource ?? '';
   if (!currentSource) {
     return {
       success: false,
@@ -211,6 +214,21 @@ async function applyTweakForAgent(
     return {
       success: false,
       reason: `AI refine is unavailable (${refinement.aiError}), and without it a tweak must name one of: ${REFINE_FALLBACK_KEYWORDS.join(', ')}.`,
+    };
+  }
+  // The refinement rewrites the source that was playing when the command
+  // arrived, and the refine endpoint can take seconds. A preset loaded or
+  // edited meanwhile is newer: installing this over it discarded that change
+  // and reported success for a preset the tweak was never made from.
+  const now = engineSnapshotRef.current;
+  if (
+    now?.activePresetId !== target?.activePresetId ||
+    now?.currentSource !== currentSource
+  ) {
+    return {
+      success: false,
+      reason:
+        'The preset changed while the tweak was being generated, so nothing was applied.',
     };
   }
   const how =
@@ -252,11 +270,7 @@ export function buildAgentBridgeCallbacks({
         presetTimeoutMs,
       ),
     onApplyTweak: (tweak) =>
-      applyTweakForAgent(
-        engineRef.current,
-        engineSnapshotRef.current?.currentSource ?? '',
-        tweak,
-      ),
+      applyTweakForAgent(engineRef.current, engineSnapshotRef, tweak),
     onSetAudio: (source) =>
       startAudioForAgent(engineRef.current, source, audioCommitTimeoutMs),
     // Lets an MCP session_midi_set/session_midi_cc call "perform" on the

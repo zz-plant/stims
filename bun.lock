@@ -18,7 +18,6 @@
         "@strudel/web": "^1.3.0",
         "@tanstack/react-virtual": "^3.14.14",
         "audio-reactive": "workspace:*",
-        "browser-fs-access": "^0.38.0",
         "comlink": "^4.4.2",
         "fflate": "^0.8.3",
         "flash-guard": "workspace:*",
@@ -70,7 +69,7 @@
     },
     "packages/eel-conformance": {
       "name": "eel-conformance",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "eel-conformance": "./dist/cli.js",
       },
@@ -81,7 +80,7 @@
     },
     "packages/flash-guard": {
       "name": "flash-guard",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "devDependencies": {
         "@types/bun": "^1.4.2",
         "typescript": "^7.0.2",
@@ -89,7 +88,7 @@
     },
     "packages/milkdrop-toolchain": {
       "name": "milkdrop-toolchain",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "devDependencies": {
         "@types/bun": "^1.4.2",
         "typescript": "^7.0.2",
@@ -613,8 +612,6 @@
     "babel-runtime": ["babel-runtime@6.26.0", "", { "dependencies": { "core-js": "^2.4.0", "regenerator-runtime": "^0.11.0" } }, "sha512-ITKNuq2wKlW1fJg9sSW52eepoYgZBggvOAHC0u/CYu/qxQ9EVzThCgR69BnSXLHjy2f7SY5zaQ4yt7H9ZVxY2g=="],
 
     "blake3-wasm": ["blake3-wasm@2.1.5", "", {}, "sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g=="],
-
-    "browser-fs-access": ["browser-fs-access@0.38.0", "", {}, "sha512-JveqW2w6pEZqFEEfMgCszXzYpE89dG+nPsmOdcs741mFFAROeL+iqjGEpR07RI+s0YY0EFr+4KnOoACprJTpOw=="],
 
     "buffer-image-size": ["buffer-image-size@0.6.4", "", { "dependencies": { "@types/node": "*" } }, "sha512-nEh+kZOPY1w+gcCMobZ6ETUp9WfibndnosbpwB1iJk/8Gt5ZF2bhS6+B6bPYz424KtwsR6Rflc3tCz1/ghX2dQ=="],
 

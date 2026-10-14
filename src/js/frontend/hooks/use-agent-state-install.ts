@@ -20,6 +20,16 @@ import { getAudioEnergy } from '../engine-audio-energy-store.ts';
 import type { EngineContextValue } from '../engine-context.tsx';
 import { pinTarget, unpinTarget } from '../perform-pins.ts';
 import type { WorkspaceContextValue } from '../workspace-context.tsx';
+import { findActivePresetEntry } from '../workspace-helpers.ts';
+
+/**
+ * Read at call time through the ref. Naming the field in the install effect
+ * would make it a dependency, and reinstalling the global on every tempo
+ * change tears down the listeners an automation client is holding.
+ */
+function readTempoBpm(ref: RefObject<EngineSnapshot | null>): number | null {
+  return ref.current?.tempoBpm ?? null;
+}
 
 export function useAgentStateInstall({
   paletteActionsRef,
@@ -44,6 +54,15 @@ export function useAgentStateInstall({
     const snap = engineSnapshotRef.current;
     const live = liveModeRef.current;
     const ready = engineReadyRef.current;
+    // The entry for the preset on stage, not the route's selection: the
+    // route trails the engine on a ?preset= arrival and after a Remix, and
+    // reading the title from the selection named one preset next to
+    // another's id.
+    const activeEntry = findActivePresetEntry(snap?.activePresetId, {
+      selectedPreset: engineBridgeRef.current.selectedPreset,
+      catalog: engineBridgeRef.current.catalog,
+      favoritePresets: engineBridgeRef.current.favoritePresets,
+    });
     return {
       engineState: live ? 'live' : ready ? 'ready' : 'booting',
       engineReady: ready,
@@ -51,7 +70,8 @@ export function useAgentStateInstall({
       backend: snap?.backend ?? null,
       panel: uiRef.current.routeState.panel ?? null,
       presetId: snap?.activePresetId ?? null,
-      presetTitle: engineBridgeRef.current.selectedPreset?.title ?? null,
+      presetTitle: activeEntry?.title ?? null,
+      presetAuthor: activeEntry?.author ?? null,
       catalogSize: snap?.catalogEntries.length ?? 0,
       audioSource: snap?.audioSource ?? null,
       playbackPaused: snap?.playbackPaused ?? false,
@@ -62,11 +82,14 @@ export function useAgentStateInstall({
         blendDuration: snap?.blendDuration ?? null,
       },
       shaderExecution: snap?.shaderExecution ?? null,
+      appliedShaderExecution: snap?.appliedShaderExecution ?? null,
     };
   }, [
     engineSnapshotRef.current,
     uiRef.current.routeState.panel,
-    engineBridgeRef.current.selectedPreset?.title,
+    engineBridgeRef.current.selectedPreset,
+    engineBridgeRef.current.catalog,
+    engineBridgeRef.current.favoritePresets,
   ]);
 
   useEffect(() => {
@@ -95,6 +118,7 @@ export function useAgentStateInstall({
       unpinParameter: (field) => unpinTarget(field),
       getStageCanvas: () =>
         uiRef.current.stageRef.current?.querySelector('canvas') ?? null,
+      getTempoBpm: () => readTempoBpm(engineSnapshotRef),
     });
   }, [
     buildAgentCoreSnapshot,
@@ -102,7 +126,7 @@ export function useAgentStateInstall({
     paletteActionsRef.current,
     engineBridgeRef.current.updateFieldLive,
     uiRef.current.stageRef.current?.querySelector,
-    engineSnapshotRef.current?.catalogEntries,
+    engineSnapshotRef,
     engineBridgeRef.current.handlePresetSelection,
   ]);
 

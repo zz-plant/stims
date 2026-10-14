@@ -192,5 +192,29 @@ describe('VM golden traces', () => {
       },
       SLOW_REPLAY_TIMEOUT_MS,
     );
+
+    test(
+      'catches a one-frame 0.1% zoom change between checkpoints',
+      () => {
+        // Frame 15 keeps only a digest, the geometry and the variable
+        // summary in a compact trace; zoom drives none of the geometry.
+        const missed = cases
+          .filter((entry) => {
+            const replayed = runTrace(
+              entry.raw,
+              entry.trace.presetId,
+              entry.inputs,
+            );
+            const frame = replayed[15];
+            if (!frame?.variables) return true;
+            frame.variables.zoom = (frame.variables.zoom ?? 1) * 1.001;
+            frame.digest = 'perturbed';
+            return compareReplay(entry.trace, replayed)?.frame !== 15;
+          })
+          .map((entry) => entry.name);
+        expect(missed).toEqual([]);
+      },
+      SLOW_REPLAY_TIMEOUT_MS,
+    );
   });
 });
