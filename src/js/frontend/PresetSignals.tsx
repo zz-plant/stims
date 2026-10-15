@@ -74,7 +74,7 @@ export function PresetSignals({
         // screen readers as well as sighted users.
         <span
           className="stims-preset-signals__chip stims-preset-signals__chip--flash"
-          title={`${describeFlashRisk(profile?.flashRiskLevel ?? 'unknown')} — measured above the WCAG flash threshold`}
+          title={`${describeFlashRisk(profile?.flashRiskLevel ?? 'unknown')}: measured above the WCAG flash threshold`}
         >
           <span aria-hidden="true">⚡</span> Flashing
         </span>

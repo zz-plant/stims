@@ -74,7 +74,7 @@ export function ParametricIdenticon({
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        transition: 'transform var(--spring-enter), filter 0.3s ease',
+        transition: 'transform var(--motion-enter), filter 0.3s ease',
       }}
       aria-label={label}
       title={label}

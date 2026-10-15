@@ -33,7 +33,7 @@ function describeMissingAudio(
     return 'You shared a whole screen without audio. Re-share and check "Also share system audio", or pick a browser tab.';
   }
   if (surface === 'window') {
-    return 'You shared an application window. Window shares carry no audio — re-share and pick a browser tab or share system audio.';
+    return 'You shared an application window. Window shares carry no audio: re-share and pick a browser tab or share system audio.';
   }
   return fallbackMessage;
 }

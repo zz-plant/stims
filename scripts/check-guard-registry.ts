@@ -64,7 +64,7 @@ export function checkGuardRegistry(): boolean {
     // the page, which freezes the visualizer canvas for ~0.4s at exactly the
     // moment the user is watching it start. Over a live render, the canvas is
     // the product; anything that snapshots it pays with the main surface.
-    // Motion here goes through the --spring-*/--transition-* tokens, which
+    // Motion here goes through the --motion-*/--transition-* tokens, which
     // also collapse under prefers-reduced-motion.
     //
     // Overshoot curves (a cubic-bezier y outside 0..1, e.g. the stock
@@ -83,7 +83,7 @@ export function checkGuardRegistry(): boolean {
           )
         ) {
           logError(
-            `File "${relPath}" line ${i + 1} uses the View Transitions API: "${trimmed}". It snapshots the page and freezes the visualizer canvas (removed in #1162); animate the specific element with the --spring-* tokens instead.`,
+            `File "${relPath}" line ${i + 1} uses the View Transitions API: "${trimmed}". It snapshots the page and freezes the visualizer canvas (removed in #1162); animate the specific element with the --motion-* tokens instead.`,
           );
           failed = true;
         }
@@ -96,7 +96,7 @@ export function checkGuardRegistry(): boolean {
           const scope = motionLines.slice(Math.max(0, i - 6), i + 1).join('\n');
           if (scope.includes('guard-allow-overshoot')) continue;
           logError(
-            `File "${relPath}" line ${i + 1} hard-codes an overshoot curve ${curve[0]}: "${trimmed}". Use var(--spring-enter) / var(--spring-exit), or annotate with "guard-allow-overshoot: <reason>".`,
+            `File "${relPath}" line ${i + 1} hard-codes an overshoot curve ${curve[0]}: "${trimmed}". Use var(--motion-enter) / var(--motion-exit), or annotate with "guard-allow-overshoot: <reason>".`,
           );
           failed = true;
         }

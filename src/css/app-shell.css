@@ -332,7 +332,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__toast {
-    animation: toast-enter var(--spring-enter);
+    animation: toast-enter var(--motion-enter);
   }
 
   .stims-shell__toast[data-exit="true"] {
@@ -2161,7 +2161,7 @@ body[data-page="workspace"] {
     align-items: center;
     justify-content: center;
     transition:
-      transform var(--spring-enter),
+      transform var(--motion-enter),
       filter 0.35s ease;
   }
 
@@ -2900,7 +2900,7 @@ body[data-page="workspace"] {
   max-width: min(420px, calc(100vw - 32px));
   padding: 10px 14px 12px;
   border: 1px solid var(--stims-line-strong);
-  border-left: 3px solid var(--stims-cool);
+  border-left: 3px solid var(--stims-cool); /* impeccable-disable-line side-tab: the stripe marks the audio-match toast's found-match status */
   border-radius: var(--radius-lg);
   background: var(--stims-panel-strong);
   box-shadow: var(--stims-shadow);
@@ -3281,13 +3281,10 @@ body[data-page="workspace"] {
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.015em;
-  background: linear-gradient(
-    135deg,
-    #ffffff 40%,
-    rgba(119, 201, 255, 0.9) 100%
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  /* Solid ink, not a gradient fill: a color shift across a heading is
+     decoration that competes with the words. Hierarchy comes from the size
+     and weight, same as the h3 below. */
+  color: var(--stims-ink);
 }
 
 .stims-shell__shortcut-card h3 {

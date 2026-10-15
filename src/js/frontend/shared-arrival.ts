@@ -16,7 +16,7 @@ export type SharedArrival =
   | { kind: 'demo'; notice: string | null };
 
 export const SHARED_FILE_NOTICE =
-  'This link was shared with a local audio file, which a link cannot carry. Playing demo audio — pick your own file from the audio control.';
+  'This link was shared with a local audio file, which a link cannot carry. Playing demo audio: pick your own file from the audio control.';
 
 export function resolveSharedArrival(audio: string | null): SharedArrival {
   switch (audio) {
