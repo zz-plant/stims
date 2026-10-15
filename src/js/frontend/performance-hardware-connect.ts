@@ -88,13 +88,13 @@ export function describeMidiConnection(
 ): string {
   const label = profileName ?? device.name;
   if (profileDescription) {
-    return `${label} connected — ${profileDescription} Open Settings → Performance hardware to remap.`;
+    return `${label} connected: ${profileDescription} Open Settings → Performance hardware to remap.`;
   }
-  return `${label} connected — ${DEFAULT_BINDING_SUMMARY}. Open Settings → Performance hardware to remap or learn your own.`;
+  return `${label} connected: ${DEFAULT_BINDING_SUMMARY}. Open Settings → Performance hardware to remap or learn your own.`;
 }
 
 export const GAMEPAD_CONNECTED_MESSAGE =
-  'Controller connected — sticks nudge and rotate the visuals; triggers drive q1 and q2. Open Settings → Performance hardware to remap.';
+  'Controller connected: sticks nudge and rotate the visuals; triggers drive q1 and q2. Open Settings → Performance hardware to remap.';
 
 export interface WatchPerformanceHardwareOptions {
   midi: PerformanceHardwareMidi;
