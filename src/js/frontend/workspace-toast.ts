@@ -117,7 +117,7 @@ export function useWorkspaceToast({
       const status = (event as CustomEvent<{ status?: string }>).detail?.status;
       if (status === 'context-lost') {
         showToast(
-          'Visuals paused — the graphics connection was lost. Reconnecting…',
+          'Visuals paused: the graphics connection was lost. Reconnecting…',
           'warn',
         );
       } else if (status === 'context-restored') {

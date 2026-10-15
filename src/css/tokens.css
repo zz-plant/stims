@@ -288,9 +288,8 @@
   --transition-fast: 0.08s cubic-bezier(0.05, 0.9, 0.1, 1);
   --transition-base: 0.12s cubic-bezier(0.05, 0.9, 0.1, 1);
   --transition-slow: 0.18s cubic-bezier(0.05, 0.9, 0.1, 1);
-  --spring-enter: 0.2s cubic-bezier(0.05, 0.9, 0.1, 1);
-  --spring-exit: 0.15s cubic-bezier(0.25, 1, 0.5, 1);
-  --spring-bounce: 0.22s cubic-bezier(0.05, 0.95, 0.1, 1);
+  --motion-enter: 0.2s cubic-bezier(0.05, 0.9, 0.1, 1);
+  --motion-exit: 0.15s cubic-bezier(0.25, 1, 0.5, 1);
 
   /* ── Layout ────────────────────────────────────────────────── */
   --content-width: 1220px;
@@ -486,8 +485,7 @@ html.light {
     --transition-fast: 0.01ms;
     --transition-base: 0.01ms;
     --transition-slow: 0.01ms;
-    --spring-enter: 0.01ms linear;
-    --spring-exit: 0.01ms linear;
-    --spring-bounce: 0.01ms linear;
+    --motion-enter: 0.01ms linear;
+    --motion-exit: 0.01ms linear;
   }
 }

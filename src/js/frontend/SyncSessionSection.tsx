@@ -61,8 +61,8 @@ export function SyncSessionSection() {
       : session.status === 'connecting'
         ? 'Connecting…'
         : session.role === 'host'
-          ? `Hosting room ${session.room} — ${others} ${others === 1 ? 'viewer' : 'viewers'} watching.`
-          : `Watching room ${session.room} — presets follow the host.`;
+          ? `Hosting room ${session.room}: ${others} ${others === 1 ? 'viewer' : 'viewers'} watching.`
+          : `Watching room ${session.room}: presets follow the host.`;
 
   return (
     <section className="ctl-section">

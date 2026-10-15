@@ -626,7 +626,7 @@
   cursor: pointer;
   transition:
     opacity 0.25s ease,
-    transform var(--spring-enter),
+    transform var(--motion-enter),
     border-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
@@ -666,7 +666,7 @@
   cursor: pointer;
   transition:
     opacity 0.25s ease,
-    transform var(--spring-enter),
+    transform var(--motion-enter),
     border-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
@@ -693,7 +693,7 @@
   visibility: visible;
   transition:
     opacity 0.25s ease 0.15s,
-    transform var(--spring-enter) 0.15s,
+    transform var(--motion-enter) 0.15s,
     visibility 0s linear 0.15s;
 }
 

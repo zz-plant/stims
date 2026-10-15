@@ -230,6 +230,15 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:duplicate-css'],
       },
       {
+        // UI anti-pattern scan (impeccable): AI-slop tells and quality issues
+        // the token/scale checks above don't model — side-tab stripes on
+        // plain cards, gradient text, low contrast, overflow. Intentional
+        // uses carry an inline `impeccable-disable-line` comment with the
+        // design reason; a bare finding means the pattern arrived unexplained.
+        label: 'UI anti-pattern scan (impeccable)',
+        cmd: ['bun', 'run', 'check:design'],
+      },
+      {
         label: 'Agent skill index',
         cmd: ['bun', 'run', 'check:skill-index'],
       },

@@ -43,8 +43,8 @@ export function SilentAudioNotice({ active }: { active: boolean }) {
     <div className={styles.notice} role="status" aria-live="polite">
       <span>
         {isMobileDevice()
-          ? 'Tap anywhere to turn the sound on — your browser holds audio until you do.'
-          : 'Click anywhere to turn the sound on — your browser holds audio until you do.'}
+          ? 'Tap anywhere to turn the sound on: your browser holds audio until you do.'
+          : 'Click anywhere to turn the sound on: your browser holds audio until you do.'}
       </span>
     </div>
   );

@@ -42,7 +42,7 @@
   background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
   border-left: 1px solid var(--ctl-panel-line, rgba(255, 255, 255, 0.08));
   box-shadow: -16px 0 48px rgba(0, 0, 0, 0.3);
-  animation: slide-in-right var(--spring-enter) both;
+  animation: slide-in-right var(--motion-enter) both;
 }
 
 .panel[data-exiting="true"] {
@@ -79,7 +79,7 @@
     border-left: none;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    animation: slide-up var(--spring-enter) both;
+    animation: slide-up var(--motion-enter) both;
   }
 
   .panel[data-exiting="true"] {

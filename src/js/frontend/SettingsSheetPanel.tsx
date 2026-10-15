@@ -212,8 +212,8 @@ function AccessibilitySection({
           side by side with nothing distinguishing them. */}
       <p className="ctl-row__hint" id="comfort-note">
         Brightness is a hard ceiling: it applies over every preset, on either
-        renderer. Motion scales the camera — zoom, spin, drift — and leaves the
-        audio reaction alone. Reduce flashing is a mitigation, not a guarantee —
+        renderer. Motion scales the camera (zoom, spin, drift) and leaves the
+        audio reaction alone. Reduce flashing is a mitigation, not a guarantee:
         it filters the presets that have been measured and dims strobing as it
         is detected.
       </p>

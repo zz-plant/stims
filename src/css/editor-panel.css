@@ -1746,7 +1746,7 @@ html.light .stims-editor {
   text-align: left;
   padding: 7px 9px;
   border: 1px solid var(--stims-line-soft);
-  border-left-width: 3px;
+  border-left-width: 3px; /* impeccable-disable-line side-tab: the stripe carries the data-severity status color */
   border-radius: 6px;
   background: none;
   color: inherit;
@@ -2174,7 +2174,7 @@ button.stims-editor__compat-row:focus-visible {
   text-align: left;
   padding: 7px 9px;
   border: 1px solid var(--stims-line-soft);
-  border-left-width: 3px;
+  border-left-width: 3px; /* impeccable-disable-line side-tab: the stripe carries the compile-failure status color */
   border-left-color: var(--stims-danger, #e5484d);
   border-radius: 6px;
   background: none;

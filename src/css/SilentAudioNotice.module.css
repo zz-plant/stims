@@ -9,7 +9,7 @@
   border-radius: var(--radius-lg);
   background: var(--stims-panel-strong);
   border: 1px solid var(--stims-line-strong);
-  border-left: 3px solid var(--stims-cool);
+  border-left: 3px solid var(--stims-cool); /* impeccable-disable-line side-tab: the cool stripe marks the notice as an instruction to act on */
   box-shadow: var(--stims-shadow);
   color: var(--stims-ink);
   font-family: var(--font-family-base);
@@ -17,7 +17,7 @@
   line-height: 1.45;
   letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
-  animation: silent-audio-enter var(--spring-enter) both;
+  animation: silent-audio-enter var(--motion-enter) both;
   /* Not interactive on purpose: any click anywhere is what dismisses it, so
      swallowing clicks over its own rectangle would make the fix harder. */
   pointer-events: none;

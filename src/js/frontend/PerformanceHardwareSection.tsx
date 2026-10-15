@@ -180,9 +180,9 @@ export function PerformanceHardwareSection({
     switch (globalLearn.phase) {
       case 'armed':
         if (globalLearn.target)
-          return `Target: ${globalLearn.target} — now move a knob`;
+          return `Target: ${globalLearn.target}. Now move a knob`;
         if (globalLearn.pendingCc)
-          return `CC${globalLearn.pendingCc.cc} received — now touch a control`;
+          return `CC${globalLearn.pendingCc.cc} received. Now touch a control`;
         return "Touch a control in the editor's Tune tab or the stage, then move a knob…";
       case 'bound':
         return `Bound CC${globalLearn.cc} → ${globalLearn.target}`;
@@ -197,7 +197,7 @@ export function PerformanceHardwareSection({
         <h3 className="ctl-section__title">Performance hardware</h3>
       </div>
       <p className="ctl-section__note">
-        Connect a class-compliant MIDI controller and learn your own mappings —
+        Connect a class-compliant MIDI controller and learn your own mappings,
         or let Claude drive the show through an MCP session (shows up below as
         "Claude (MCP)").
       </p>
@@ -207,7 +207,7 @@ export function PerformanceHardwareSection({
       <p className="ctl-section__note">
         A game controller counts too, with nothing to connect: plug one in and
         it appears below as "Gamepad", sticks and triggers already mapped. Known
-        controllers — nanoKONTROL2, Launch Control XL, MiniLab 3 — arrive with
+        controllers (nanoKONTROL2, Launch Control XL, MiniLab 3) arrive with
         their factory mapping instead of the generic one.
       </p>
 
@@ -255,7 +255,7 @@ export function PerformanceHardwareSection({
           <span className="ctl-row__label">Learn from a control</span>
           <span className="ctl-row__hint">
             No typing: arm learn, touch the on-screen control you want (in the
-            editor's Tune tab or on the stage), then move a knob — in either
+            editor's Tune tab or on the stage), then move a knob, in either
             order.
           </span>
         </span>
@@ -338,7 +338,7 @@ export function PerformanceHardwareSection({
         <span className="ctl-row__text">
           <span className="ctl-row__label">Map a knob by name</span>
           <span className="ctl-row__hint">
-            For variables with no control of their own — q1–q8, t1–t8, or
+            For variables with no control of their own: q1–q8, t1–t8, or
             anything a preset defines. Name it, then move a knob to bind it.
           </span>
           <span className="ctl-row__hint">

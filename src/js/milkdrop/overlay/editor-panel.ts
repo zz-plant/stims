@@ -186,8 +186,8 @@ function liveHintForFields(doc: string, keys: string[]): string {
     const kind = getFieldOverwriteKind(doc, key);
     if (kind === 'none') continue;
     return kind === 'relative'
-      ? 'Overwritten every frame — this drag moves its base'
-      : "Overwritten every frame — this value won't stick";
+      ? 'Overwritten every frame: this drag moves its base'
+      : "Overwritten every frame: this value won't stick";
   }
   return '';
 }
