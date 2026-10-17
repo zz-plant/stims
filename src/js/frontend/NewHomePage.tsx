@@ -290,6 +290,24 @@ export function NewHomePage() {
           </p>
         )}
         <AudioSources resume={resume} />
+        {resume || deepLink ? null : (
+          <>
+            <LaunchStarterShowcase
+              catalog={engine.catalog}
+              onSelectPreset={(presetId) => {
+                noteGrowthEvent('demo-started', presetId);
+                ui.commitRoute((current) => ({ ...current, presetId }));
+                if (!engine.audioActive) {
+                  startWithFeedback('demo');
+                }
+              }}
+            />
+            <LaunchSoundflowPreview
+              showEditVisual={engine.attractPreviewLive}
+              onEditVisual={handleEditVisual}
+            />
+          </>
+        )}
         <ProjectMeta />
       </div>
       {resume || deepLink ? null : <AttractCaption />}
@@ -677,6 +695,157 @@ function AudioSources({ resume }: { resume: ResumeState }) {
         omitSources={resume ? ['demo', resume.session.source] : ['demo']}
       />
     </div>
+  );
+}
+
+const STARTER_SHOWCASE_PRESETS: readonly {
+  id: string;
+  vibe: string;
+}[] = [
+  { id: 'shifter-curlique', vibe: 'Cosmic swirl' },
+  { id: 'eos-glowsticks-v2-03-music', vibe: 'Neon trails' },
+  { id: 'geiss-casino', vibe: 'Psychedelic pulse' },
+  { id: 'aderrasi-potion-of-spirits', vibe: 'Fractal geometry' },
+];
+
+function LaunchStarterShowcase({
+  catalog,
+  onSelectPreset,
+}: {
+  catalog: readonly PresetCatalogEntry[];
+  onSelectPreset: (presetId: string) => void;
+}) {
+  return (
+    <section
+      className="stims-shell__launch-showcase"
+      aria-labelledby="starter-showcase-heading"
+    >
+      <div className="stims-shell__launch-showcase-header">
+        <h2
+          id="starter-showcase-heading"
+          className="stims-shell__section-label"
+        >
+          Explore iconic looks
+        </h2>
+      </div>
+      <div className="stims-shell__launch-showcase-grid">
+        {STARTER_SHOWCASE_PRESETS.map((item) => {
+          const entry = resolvePresetCatalogEntry(catalog, item.id);
+          const rawTitle = entry?.title ?? prettifyPresetSlug(item.id);
+          const display = splitPresetDisplay(rawTitle, entry?.author);
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className="stims-shell__launch-starter-card"
+              onClick={() => onSelectPreset(item.id)}
+            >
+              <div className="stims-shell__launch-starter-thumb">
+                {entry ? (
+                  <PresetArtwork entry={entry} compact />
+                ) : (
+                  <div
+                    className="stims-shell__preset-art"
+                    data-compact="true"
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
+              <div className="stims-shell__launch-starter-info">
+                <span className="stims-shell__launch-starter-title">
+                  {display.title}
+                </span>
+                <span className="stims-shell__launch-starter-vibe">
+                  {item.vibe}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function LaunchSoundflowPreview({
+  showEditVisual,
+  onEditVisual,
+}: {
+  showEditVisual: boolean;
+  onEditVisual: () => void;
+}) {
+  return (
+    <section
+      className="stims-shell__launch-soundflow"
+      aria-labelledby="soundflow-preview-heading"
+    >
+      <div className="stims-shell__launch-soundflow-header">
+        <h2
+          id="soundflow-preview-heading"
+          className="stims-shell__section-label"
+        >
+          Live soundflow & equations
+        </h2>
+        {showEditVisual ? (
+          <button
+            type="button"
+            className="stims-shell__launch-soundflow-edit"
+            data-action="open-editor"
+            onClick={onEditVisual}
+          >
+            <UiIcon
+              name="pencil"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            Open formula editor
+          </button>
+        ) : null}
+      </div>
+      <div className="stims-shell__launch-soundflow-cards">
+        <div className="stims-shell__launch-soundflow-card">
+          <div className="stims-shell__launch-soundflow-band" data-band="bass">
+            Bass
+          </div>
+          <div className="stims-shell__launch-soundflow-detail">
+            <code className="stims-shell__launch-soundflow-code">
+              zoom = 1.0 + 0.08 * bass_att
+            </code>
+            <span className="stims-shell__launch-soundflow-effect">
+              Frame pulse & scale
+            </span>
+          </div>
+        </div>
+        <div className="stims-shell__launch-soundflow-card">
+          <div className="stims-shell__launch-soundflow-band" data-band="mid">
+            Mid
+          </div>
+          <div className="stims-shell__launch-soundflow-detail">
+            <code className="stims-shell__launch-soundflow-code">
+              warp = 0.02 * mid_att
+            </code>
+            <span className="stims-shell__launch-soundflow-effect">
+              Fluid wave distortion
+            </span>
+          </div>
+        </div>
+        <div className="stims-shell__launch-soundflow-card">
+          <div
+            className="stims-shell__launch-soundflow-band"
+            data-band="treble"
+          >
+            Treble
+          </div>
+          <div className="stims-shell__launch-soundflow-detail">
+            <code className="stims-shell__launch-soundflow-code">
+              rot = 0.01 * sin(treb)
+            </code>
+            <span className="stims-shell__launch-soundflow-effect">
+              Rotation & particle spin
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
