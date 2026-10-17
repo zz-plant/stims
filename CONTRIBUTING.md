@@ -103,7 +103,7 @@ Presets are contributions too — you don't need to touch engine code.
 1. **Learn or refresh**: the guided course lives at [`docs/authoring/README.md`](./docs/authoring/README.md); the generated language reference at [`docs/authoring/reference.md`](./docs/authoring/reference.md).
 2. **Author in the live editor** (`bun run dev`, then the Editor panel — or on the deployed site). Export produces a `.milk` file; Remix preserves credit lineage automatically.
 3. **Measure before you submit**: `bun run lab:reactivity -- --file path/to/your.milk` reports whether each variable actually reacts to audio — aim for a `reactive` verdict. (`bun run lab:visual` adds pixel-level verdicts but currently only accepts catalog `--preset` ids, so it runs after your preset lands in `public/milkdrop-presets/`.)
-4. **Submit**: open a PR adding the `.milk` file under `public/milkdrop-presets/` (the catalog gates in `bun run check` will validate it), or share it as a `#code=` URL from the editor. Credit any preset you remixed — multi-author titles are the community's convention, and `deriveRemixCredit` keeps lineage intact.
+4. **Submit**: open a PR adding the `.milk` file under `public/milkdrop-presets/` (the catalog gates in `bun run check` will validate it), or share it as a `#code=` URL from the editor. Credit any preset you remixed — multi-author titles are the community's convention, and `deriveRemixCredit` keeps lineage intact. To submit your work for the community showcase, follow [`docs/COMMUNITY_SHOWCASE.md`](./docs/COMMUNITY_SHOWCASE.md).
 
 ## Product and runtime changes
 
