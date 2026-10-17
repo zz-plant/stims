@@ -379,7 +379,11 @@ export function collectAssignedNames(
 export function foldExpression(
   node: MilkdropExpressionNode,
   shadowed: ReadonlySet<string> = EMPTY_NAMES,
+  depth = 0,
 ): MilkdropExpressionNode {
+  if (depth > 200) {
+    return node;
+  }
   switch (node.type) {
     case 'literal':
       return node;
@@ -397,7 +401,7 @@ export function foldExpression(
     }
 
     case 'unary': {
-      const operand = foldExpression(node.operand, shadowed);
+      const operand = foldExpression(node.operand, shadowed, depth + 1);
       const simplified = foldUnary(node.operator, operand);
       return simplified;
     }
@@ -405,13 +409,13 @@ export function foldExpression(
     case 'binary': {
       // Do not fold assignment operators — they have side effects
       if (node.operator === '=') {
-        const left = foldExpression(node.left, shadowed);
-        const right = foldExpression(node.right, shadowed);
+        const left = foldExpression(node.left, shadowed, depth + 1);
+        const right = foldExpression(node.right, shadowed, depth + 1);
         return { type: 'binary', operator: '=', left, right };
       }
 
-      const left = foldExpression(node.left, shadowed);
-      const right = foldExpression(node.right, shadowed);
+      const left = foldExpression(node.left, shadowed, depth + 1);
+      const right = foldExpression(node.right, shadowed, depth + 1);
       const folded = foldBinary(node.operator, left, right);
       if (folded) return folded;
       return { type: 'binary', operator: node.operator, left, right };
@@ -419,7 +423,9 @@ export function foldExpression(
 
     case 'call': {
       const name = node.name.toLowerCase();
-      const args = node.args.map((arg) => foldExpression(arg, shadowed));
+      const args = node.args.map((arg) =>
+        foldExpression(arg, shadowed, depth + 1),
+      );
 
       // Fold pure functions with all-literal args
       if (PURE_FUNCTIONS.has(name) && isAllLiterals(args)) {

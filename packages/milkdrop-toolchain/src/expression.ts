@@ -254,6 +254,11 @@ function tokenize(source: string, line: number): ParseResult<Token[]> {
   return { value: diagnostics.length ? null : tokens, diagnostics };
 }
 
+type MilkdropBinaryOperator = Extract<
+  MilkdropExpressionNode,
+  { type: 'binary' }
+>['operator'];
+
 const MAX_EXPRESSION_RECURSION_DEPTH = 100;
 
 class ExpressionParser {
@@ -399,146 +404,87 @@ class ExpressionParser {
     return null;
   }
 
-  private parseLogicalOr(): MilkdropExpressionNode {
-    let node = this.parseLogicalAnd();
-    while (this.matchOperator('||')) {
-      node = {
-        type: 'binary',
-        operator: '||',
-        left: node,
-        right: this.parseLogicalAnd(),
-      };
+  private parseBinaryLoop<Op extends MilkdropBinaryOperator>(
+    parseNext: () => MilkdropExpressionNode,
+    operators: readonly Op[],
+  ): MilkdropExpressionNode {
+    let node = parseNext();
+    let depthEntered = 0;
+    try {
+      while (true) {
+        const operator = this.matchOperator(...operators);
+        if (!operator) {
+          return node;
+        }
+        if (!this.enterDepth()) {
+          return node;
+        }
+        depthEntered += 1;
+        node = {
+          type: 'binary',
+          operator: operator as Op,
+          left: node,
+          right: parseNext(),
+        };
+      }
+    } finally {
+      for (let i = 0; i < depthEntered; i++) {
+        this.leaveDepth();
+      }
     }
-    return node;
+  }
+
+  private parseLogicalOr(): MilkdropExpressionNode {
+    return this.parseBinaryLoop(() => this.parseLogicalAnd(), ['||']);
   }
 
   private parseLogicalAnd(): MilkdropExpressionNode {
-    let node = this.parseBitwiseOr();
-    while (this.matchOperator('&&')) {
-      node = {
-        type: 'binary',
-        operator: '&&',
-        left: node,
-        right: this.parseBitwiseOr(),
-      };
-    }
-    return node;
+    return this.parseBinaryLoop(() => this.parseBitwiseOr(), ['&&']);
   }
 
   private parseBitwiseOr(): MilkdropExpressionNode {
-    let node = this.parseBitwiseAnd();
-    while (this.matchOperator('|')) {
-      node = {
-        type: 'binary',
-        operator: '|',
-        left: node,
-        right: this.parseBitwiseAnd(),
-      };
-    }
-    return node;
+    return this.parseBinaryLoop(() => this.parseBitwiseAnd(), ['|']);
   }
 
   private parseBitwiseAnd(): MilkdropExpressionNode {
-    let node = this.parseEquality();
-    while (this.matchOperator('&')) {
-      node = {
-        type: 'binary',
-        operator: '&',
-        left: node,
-        right: this.parseEquality(),
-      };
-    }
-    return node;
+    return this.parseBinaryLoop(() => this.parseEquality(), ['&']);
   }
 
   private parseEquality(): MilkdropExpressionNode {
-    let node = this.parseComparison();
-    while (true) {
-      const operator = this.matchOperator('==', '!=');
-      if (!operator) {
-        return node;
-      }
-      node = {
-        type: 'binary',
-        operator: operator as '==' | '!=',
-        left: node,
-        right: this.parseComparison(),
-      };
-    }
+    return this.parseBinaryLoop(() => this.parseComparison(), ['==', '!=']);
   }
 
   private parseComparison(): MilkdropExpressionNode {
-    let node = this.parseTerm();
-    while (true) {
-      const operator = this.matchOperator('<', '<=', '>', '>=');
-      if (!operator) {
-        return node;
-      }
-      node = {
-        type: 'binary',
-        operator: operator as '<' | '<=' | '>' | '>=',
-        left: node,
-        right: this.parseTerm(),
-      };
-    }
+    return this.parseBinaryLoop(() => this.parseTerm(), ['<', '<=', '>', '>=']);
   }
 
   private parseTerm(): MilkdropExpressionNode {
-    let node = this.parseFactor();
-    while (true) {
-      const operator = this.matchOperator('+', '-');
-      if (!operator) {
-        return node;
-      }
-      node = {
-        type: 'binary',
-        operator: operator as '+' | '-',
-        left: node,
-        right: this.parseFactor(),
-      };
-    }
+    return this.parseBinaryLoop(() => this.parseFactor(), ['+', '-']);
   }
 
   private parseFactor(): MilkdropExpressionNode {
-    let node = this.parsePower();
-    while (true) {
-      const operator = this.matchOperator('*', '/', '%');
-      if (!operator) {
-        return node;
-      }
-      node = {
-        type: 'binary',
-        operator: operator as '*' | '/' | '%',
-        left: node,
-        right: this.parsePower(),
-      };
-    }
+    return this.parseBinaryLoop(() => this.parsePower(), ['*', '/', '%']);
   }
 
   private parsePower(): MilkdropExpressionNode {
-    let node = this.parseUnary();
-    while (true) {
-      const operator = this.matchOperator('^');
-      if (!operator) {
-        return node;
-      }
-      node = {
-        type: 'binary',
-        operator: '^',
-        left: node,
-        right: this.parseUnary(),
-      };
-    }
+    return this.parseBinaryLoop(() => this.parseUnary(), ['^']);
   }
 
   private parseUnary(): MilkdropExpressionNode {
     const operator = this.matchOperator('+', '-', '!');
     if (operator) {
-      return {
-        type: 'unary',
-        operator: operator as '+' | '-' | '!',
-        operand: this.parseUnary(),
-      };
+      if (!this.enterDepth()) {
+        return { type: 'literal', value: 0 };
+      }
+      try {
+        return {
+          type: 'unary',
+          operator: operator as '+' | '-' | '!',
+          operand: this.parseUnary(),
+        };
+      } finally {
+        this.leaveDepth();
+      }
     }
     return this.parsePrimary();
   }
@@ -631,7 +577,11 @@ export function evaluateMilkdropExpression(
   node: MilkdropExpressionNode,
   env: Record<string, number>,
   helpers: EvalHelpers = {},
+  depth = 0,
 ): number {
+  if (depth > 200) {
+    return 0;
+  }
   switch (node.type) {
     case 'literal':
       return node.value;
@@ -650,7 +600,12 @@ export function evaluateMilkdropExpression(
       return resolveMilkdropIdentifier(env, node.name) ?? 0;
     }
     case 'unary': {
-      const value = evaluateMilkdropExpression(node.operand, env, helpers);
+      const value = evaluateMilkdropExpression(
+        node.operand,
+        env,
+        helpers,
+        depth + 1,
+      );
       return EEL_UNARY_OPERATORS[node.operator]?.interp?.(value) ?? 0;
     }
     case 'binary': {
@@ -664,7 +619,7 @@ export function evaluateMilkdropExpression(
         // clamp in expression-jit's interpreted runner only covers the
         // outermost value, so it never caught these.
         const rvalue = finiteOrZero(
-          evaluateMilkdropExpression(node.right, env, helpers),
+          evaluateMilkdropExpression(node.right, env, helpers, depth + 1),
         );
         // Perform assignment to the left side
         if (node.left.type === 'identifier') {
@@ -684,6 +639,7 @@ export function evaluateMilkdropExpression(
               node.left.args[0] ?? { type: 'literal', value: 0 },
               env,
               helpers,
+              depth + 1,
             ),
           );
           // Bounds checking is owned by the helper provider, matching the
@@ -693,7 +649,12 @@ export function evaluateMilkdropExpression(
         return rvalue;
       }
 
-      const left = evaluateMilkdropExpression(node.left, env, helpers);
+      const left = evaluateMilkdropExpression(
+        node.left,
+        env,
+        helpers,
+        depth + 1,
+      );
       // Short-circuit like EEL (and the JIT's emitted JS): the right side of
       // a decided boolean op must not run — preset code puts assignments
       // there and relies on them being skipped.
@@ -701,10 +662,20 @@ export function evaluateMilkdropExpression(
         const leftTruthy = Math.abs(left) > MILKDROP_EEL_CLOSE_FACTOR;
         if (node.operator === '&&' && !leftTruthy) return 0;
         if (node.operator === '||' && leftTruthy) return 1;
-        const right = evaluateMilkdropExpression(node.right, env, helpers);
+        const right = evaluateMilkdropExpression(
+          node.right,
+          env,
+          helpers,
+          depth + 1,
+        );
         return Math.abs(right) > MILKDROP_EEL_CLOSE_FACTOR ? 1 : 0;
       }
-      const right = evaluateMilkdropExpression(node.right, env, helpers);
+      const right = evaluateMilkdropExpression(
+        node.right,
+        env,
+        helpers,
+        depth + 1,
+      );
       return EEL_BINARY_OPERATORS[node.operator]?.interp?.(left, right) ?? 0;
     }
     case 'call': {
@@ -715,16 +686,18 @@ export function evaluateMilkdropExpression(
       // all three args here ran both branches' assignments and diverged.
       if (lazyName === 'if') {
         const condition = node.args[0]
-          ? evaluateMilkdropExpression(node.args[0], env, helpers)
+          ? evaluateMilkdropExpression(node.args[0], env, helpers, depth + 1)
           : 0;
         const branch =
           Math.abs(condition) > MILKDROP_EEL_CLOSE_FACTOR
             ? node.args[1]
             : node.args[2];
-        return branch ? evaluateMilkdropExpression(branch, env, helpers) : 0;
+        return branch
+          ? evaluateMilkdropExpression(branch, env, helpers, depth + 1)
+          : 0;
       }
       const args = node.args.map((arg) =>
-        evaluateMilkdropExpression(arg, env, helpers),
+        evaluateMilkdropExpression(arg, env, helpers, depth + 1),
       );
       return evaluateEelCall(lazyName, args, helpers);
     }
@@ -1096,22 +1069,31 @@ export function parseMilkdropStatement(
 }
 
 export function walkMilkdropExpression(
-  node: MilkdropExpressionNode,
+  root: MilkdropExpressionNode,
   visitor: (node: MilkdropExpressionNode) => void,
 ) {
-  visitor(node);
-  switch (node.type) {
-    case 'literal':
-    case 'identifier':
-      return;
-    case 'unary':
-      walkMilkdropExpression(node.operand, visitor);
-      return;
-    case 'binary':
-      walkMilkdropExpression(node.left, visitor);
-      walkMilkdropExpression(node.right, visitor);
-      return;
-    case 'call':
-      node.args.forEach((arg) => walkMilkdropExpression(arg, visitor));
+  const stack: MilkdropExpressionNode[] = [root];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node) break;
+    visitor(node);
+    switch (node.type) {
+      case 'literal':
+      case 'identifier':
+        break;
+      case 'unary':
+        stack.push(node.operand);
+        break;
+      case 'binary':
+        // Push right then left so left is visited first
+        stack.push(node.right, node.left);
+        break;
+      case 'call':
+        for (let i = node.args.length - 1; i >= 0; i--) {
+          const arg = node.args[i];
+          if (arg) stack.push(arg);
+        }
+        break;
+    }
   }
 }

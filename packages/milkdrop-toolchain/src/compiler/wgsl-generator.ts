@@ -258,7 +258,11 @@ const NO_OVERWRITTEN_CONSTANTS: ReadonlySet<string> = new Set();
 function buildWgslExpression(
   expression: MilkdropExpressionNode,
   overwrittenConstants: ReadonlySet<string> = NO_OVERWRITTEN_CONSTANTS,
+  depth = 0,
 ): string {
+  if (depth > 200) {
+    return '0.0';
+  }
   switch (expression.type) {
     case 'literal':
       // f32 range, not f64 finiteness — see formatWgslFloat in
@@ -318,6 +322,7 @@ function buildWgslExpression(
       const operand = buildWgslExpression(
         expression.operand,
         overwrittenConstants,
+        depth + 1,
       );
       return (
         EEL_UNARY_OPERATORS[expression.operator]?.wgslVm?.(operand) ?? '0.0f'
@@ -325,8 +330,16 @@ function buildWgslExpression(
     }
 
     case 'binary': {
-      const left = buildWgslExpression(expression.left, overwrittenConstants);
-      const right = buildWgslExpression(expression.right, overwrittenConstants);
+      const left = buildWgslExpression(
+        expression.left,
+        overwrittenConstants,
+        depth + 1,
+      );
+      const right = buildWgslExpression(
+        expression.right,
+        overwrittenConstants,
+        depth + 1,
+      );
       return (
         EEL_BINARY_OPERATORS[expression.operator]?.wgslVm?.(left, right) ??
         '0.0f'
@@ -335,7 +348,7 @@ function buildWgslExpression(
 
     case 'call': {
       const args = expression.args.map((argument) =>
-        buildWgslExpression(argument, overwrittenConstants),
+        buildWgslExpression(argument, overwrittenConstants, depth + 1),
       );
       const name = expression.name.toLowerCase();
 

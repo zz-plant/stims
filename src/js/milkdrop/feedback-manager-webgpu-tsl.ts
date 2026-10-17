@@ -1757,14 +1757,18 @@ function getShaderEnvValue(
 export function compileShaderExpressionNode(
   node: MilkdropShaderExpressionNode | MilkdropExpressionNode,
   env: ShaderNodeEnv,
+  depth = 0,
 ): ShaderNodeValue | null {
+  if (depth > 200) {
+    return null;
+  }
   switch (node.type) {
     case 'literal':
       return shaderFloat(node.value);
     case 'identifier':
       return getShaderEnvValue(env, node.name);
     case 'unary': {
-      const operand = compileShaderExpressionNode(node.operand, env);
+      const operand = compileShaderExpressionNode(node.operand, env, depth + 1);
       if (!operand) {
         return null;
       }
@@ -1783,22 +1787,22 @@ export function compileShaderExpressionNode(
       if (node.operator === '=') {
         return null;
       }
-      const left = compileShaderExpressionNode(node.left, env);
-      const right = compileShaderExpressionNode(node.right, env);
+      const left = compileShaderExpressionNode(node.left, env, depth + 1);
+      const right = compileShaderExpressionNode(node.right, env, depth + 1);
       if (!left || !right) {
         return null;
       }
       return applyShaderBinaryNode(node.operator, left, right);
     }
     case 'member': {
-      const object = compileShaderExpressionNode(node.object, env);
+      const object = compileShaderExpressionNode(node.object, env, depth + 1);
       if (!object) {
         return null;
       }
       return buildDirectShaderSwizzleValue(object, node.property);
     }
     case 'index': {
-      const object = compileShaderExpressionNode(node.object, env);
+      const object = compileShaderExpressionNode(node.object, env, depth + 1);
       if (!object || object.kind === 'scalar') {
         return null;
       }
@@ -1823,7 +1827,11 @@ export function compileShaderExpressionNode(
       // vectors and on matrix columns. The index is clamped the way WGSL
       // clamps it; GLSL leaves an out-of-range read undefined, so no preset
       // can depend on it either way.
-      const runtimeIndex = compileShaderExpressionNode(node.index, env);
+      const runtimeIndex = compileShaderExpressionNode(
+        node.index,
+        env,
+        depth + 1,
+      );
       if (!runtimeIndex) {
         return null;
       }
@@ -1866,7 +1874,7 @@ export function compileShaderExpressionNode(
         name === 'tex2dbias' ||
         name === 'tex2dgrad';
       const args = node.args
-        .map((arg) => compileShaderExpressionNode(arg, env))
+        .map((arg) => compileShaderExpressionNode(arg, env, depth + 1))
         .filter((value): value is ShaderNodeValue => value !== null);
       // Sampler calls carry a sampler identifier (sampler_main, blur1Tex, …)
       // that resolves through the binding table, not the scalar env, so it is
