@@ -60,27 +60,10 @@ function buildNeutralShaderControls(): ShaderControls {
 
 const ALLOWED_GLOBAL_IDENTIFIERS = new Set(['pi', 'e']);
 
-function hasUnknownIdentifier(
-  expression: MilkdropExpressionNode | null | undefined,
-  env: Record<string, number>,
-): boolean {
-  if (!expression) {
-    return false;
-  }
-  let unknown = false;
-  walkMilkdropExpression(expression, (node) => {
-    if (node.type === 'identifier') {
-      const normalized = node.name.toLowerCase();
-      if (
-        !ALLOWED_GLOBAL_IDENTIFIERS.has(normalized) &&
-        resolveMilkdropIdentifier(env, node.name) === undefined
-      ) {
-        unknown = true;
-      }
-    }
-  });
-  return unknown;
-}
+const controlExpressionIdentifiersCache = new WeakMap<
+  MilkdropShaderControlExpressions,
+  readonly string[]
+>();
 
 function* iterShaderControlExpressions(
   expressions: MilkdropShaderControlExpressions,
@@ -117,12 +100,37 @@ function* iterShaderControlExpressions(
   yield expressions.warpTexture.volumeSliceZ;
 }
 
+function getControlExpressionIdentifiers(
+  expressions: MilkdropShaderControlExpressions,
+): readonly string[] {
+  const cached = controlExpressionIdentifiersCache.get(expressions);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const seen = new Set<string>();
+  for (const expression of iterShaderControlExpressions(expressions)) {
+    if (!expression) continue;
+    walkMilkdropExpression(expression, (node) => {
+      if (node.type === 'identifier') {
+        const normalized = node.name.toLowerCase();
+        if (!ALLOWED_GLOBAL_IDENTIFIERS.has(normalized)) {
+          seen.add(node.name);
+        }
+      }
+    });
+  }
+  const identifiers = [...seen];
+  controlExpressionIdentifiersCache.set(expressions, identifiers);
+  return identifiers;
+}
+
 function controlExpressionsNeedProgramEvaluation(
   expressions: MilkdropShaderControlExpressions,
   env: Record<string, number>,
 ): boolean {
-  for (const expression of iterShaderControlExpressions(expressions)) {
-    if (hasUnknownIdentifier(expression, env)) {
+  const identifiers = getControlExpressionIdentifiers(expressions);
+  for (let i = 0; i < identifiers.length; i += 1) {
+    if (resolveMilkdropIdentifier(env, identifiers[i]!) === undefined) {
       return true;
     }
   }

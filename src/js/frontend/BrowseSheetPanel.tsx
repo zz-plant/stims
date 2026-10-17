@@ -318,15 +318,28 @@ export function BrowseSheetPanel({
     [browseEntries, sortMode, randomSeed, deferredSearch, affinity],
   );
 
-  // At most the queue's cap (50) ids, so a scan per mounted row is free.
+  // At most the queue's cap (50) ids, so a Set lookup per mounted row is O(1).
   const queuedPresetIds = ui.presetQueue.presetIds;
-  const toggleQueued = (entry: PresetCatalogEntry) => {
-    togglePresetQueuedAction({
-      queue: ui.presetQueue,
-      entry,
-      announce: ui.setStatusMessage,
-    });
-  };
+  const queuedPresetIdSet = useMemo(
+    () => new Set(queuedPresetIds),
+    [queuedPresetIds],
+  );
+  const toggleQueued = useCallback(
+    (entry: PresetCatalogEntry) => {
+      togglePresetQueuedAction({
+        queue: ui.presetQueue,
+        entry,
+        announce: ui.setStatusMessage,
+      });
+    },
+    [ui.presetQueue, ui.setStatusMessage],
+  );
+  const handleToggleFavorite = useCallback(
+    (entry: PresetCatalogEntry) => {
+      void engine.toggleFavoritePreset(entry.id, !entry.isFavorite);
+    },
+    [engine.toggleFavoritePreset],
+  );
 
   // In list view this panel is what the digit keys index; in grid view the
   // grid publishes its own (variant-collapsed) order. Only one is mounted.
@@ -1035,9 +1048,7 @@ export function BrowseSheetPanel({
             routeState={ui.routeState}
             setRouteState={setPresetRouteState}
             currentPresetId={currentPresetId}
-            onToggleFavorite={(entry) => {
-              void engine.toggleFavoritePreset(entry.id, !entry.isFavorite);
-            }}
+            onToggleFavorite={handleToggleFavorite}
             queuedPresetIds={queuedPresetIds}
             onToggleQueued={toggleQueued}
             initialScrollTop={browseScrollMemory.grid}
@@ -1190,18 +1201,18 @@ export function BrowseSheetPanel({
                     <button
                       type="button"
                       className="ctl-preset__queue"
-                      data-queued={String(queuedPresetIds.includes(entry.id))}
+                      data-queued={String(queuedPresetIdSet.has(entry.id))}
                       aria-label={
-                        queuedPresetIds.includes(entry.id)
+                        queuedPresetIdSet.has(entry.id)
                           ? `Remove ${entry.title} from the queue`
                           : `Queue ${entry.title}`
                       }
                       title={
-                        queuedPresetIds.includes(entry.id)
+                        queuedPresetIdSet.has(entry.id)
                           ? 'Remove from queue'
                           : 'Add to queue'
                       }
-                      aria-pressed={queuedPresetIds.includes(entry.id)}
+                      aria-pressed={queuedPresetIdSet.has(entry.id)}
                       onClick={() => toggleQueued(entry)}
                     >
                       <span

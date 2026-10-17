@@ -337,49 +337,6 @@ function isParticleFieldMaterialForBackend(
     : material instanceof ShaderMaterial;
 }
 
-function getParticleFieldInstanceAnchors(
-  particleField: MilkdropParticleFieldVisual,
-  meshPositions: ArrayLike<number>,
-) {
-  if (meshPositions.length < 3) {
-    return {
-      anchors: new Float32Array(0),
-      seeds: new Float32Array(0),
-      ids: new Float32Array(0),
-    };
-  }
-
-  const instanceCount = particleField.instanceCount;
-  const pointCount = Math.floor(meshPositions.length / 3);
-  const anchors = new Float32Array(instanceCount * 3);
-  const seeds = new Float32Array(instanceCount);
-  const ids = new Float32Array(instanceCount);
-
-  for (let index = 0; index < instanceCount; index += 1) {
-    const pointIndex = Math.floor((index * pointCount) / instanceCount);
-    const baseIndex = (pointIndex % pointCount) * 3;
-    const x = meshPositions[baseIndex] ?? 0;
-    const y = meshPositions[baseIndex + 1] ?? 0;
-    const z = meshPositions[baseIndex + 2] ?? 0;
-    const seed = fract(hashNumericValues(particleField.seed, index, x, y, z));
-    const jitterX = (fract(seed * 13.371) - 0.5) * 0.03;
-    const jitterY = (fract(seed * 91.731) - 0.5) * 0.03;
-    const jitterZ = (fract(seed * 47.519) - 0.5) * 0.02;
-
-    anchors[index * 3] = x + jitterX;
-    anchors[index * 3 + 1] = y + jitterY;
-    anchors[index * 3 + 2] = z + 0.18 + jitterZ;
-    seeds[index] = seed;
-    ids[index] = index;
-  }
-
-  return {
-    anchors,
-    seeds,
-    ids,
-  };
-}
-
 function hashNumericValues(
   seed: number,
   index: number,
@@ -409,44 +366,80 @@ function fract(value: number) {
   return value - Math.floor(value);
 }
 
+function ensureParticleInstancedBuffer(
+  geometry: InstancedBufferGeometry,
+  name: string,
+  length: number,
+  itemSize: number,
+): Float32Array {
+  const existing = geometry.getAttribute(
+    name,
+  ) as InstancedBufferAttribute | null;
+  if (
+    existing instanceof InstancedBufferAttribute &&
+    existing.array.length === length
+  ) {
+    existing.needsUpdate = true;
+    return existing.array as Float32Array;
+  }
+  const values = new Float32Array(length);
+  const attribute = new InstancedBufferAttribute(values, itemSize);
+  attribute.setUsage(DynamicDrawUsage);
+  geometry.setAttribute(name, attribute);
+  return values;
+}
+
 function updateParticleFieldAttributes(
   geometry: InstancedBufferGeometry,
   particleField: MilkdropParticleFieldVisual,
   meshPositions: ArrayLike<number>,
 ) {
-  const { anchors, seeds, ids } = getParticleFieldInstanceAnchors(
-    particleField,
-    meshPositions,
-  );
+  const hasMeshPositions = meshPositions.length >= 3;
+  const instanceCount = hasMeshPositions ? particleField.instanceCount : 0;
 
   // Per-instance data must be InstancedBufferAttribute so both backends set
   // an instance step mode for it; a plain attribute would be consumed
   // per-vertex (only the plane's four vertices ever read) and every
   // instance would render identically.
-  const setInstancedAttribute = (
-    name: string,
-    values: Float32Array,
-    itemSize: number,
-  ) => {
-    const existing = geometry.getAttribute(
-      name,
-    ) as InstancedBufferAttribute | null;
-    if (
-      existing instanceof InstancedBufferAttribute &&
-      existing.array.length === values.length
-    ) {
-      (existing.array as Float32Array).set(values);
-      existing.needsUpdate = true;
-      return;
-    }
-    const attribute = new InstancedBufferAttribute(values, itemSize);
-    attribute.setUsage(DynamicDrawUsage);
-    geometry.setAttribute(name, attribute);
-  };
+  const anchors = ensureParticleInstancedBuffer(
+    geometry,
+    'instanceAnchor',
+    instanceCount * 3,
+    3,
+  );
+  const seeds = ensureParticleInstancedBuffer(
+    geometry,
+    'instanceSeed',
+    instanceCount,
+    1,
+  );
+  const ids = ensureParticleInstancedBuffer(
+    geometry,
+    'instanceId',
+    instanceCount,
+    1,
+  );
 
-  setInstancedAttribute('instanceAnchor', anchors, 3);
-  setInstancedAttribute('instanceSeed', seeds, 1);
-  setInstancedAttribute('instanceId', ids, 1);
+  if (hasMeshPositions) {
+    const pointCount = Math.floor(meshPositions.length / 3);
+    for (let index = 0; index < instanceCount; index += 1) {
+      const pointIndex = Math.floor((index * pointCount) / instanceCount);
+      const baseIndex = (pointIndex % pointCount) * 3;
+      const x = meshPositions[baseIndex] ?? 0;
+      const y = meshPositions[baseIndex + 1] ?? 0;
+      const z = meshPositions[baseIndex + 2] ?? 0;
+      const seed = fract(hashNumericValues(particleField.seed, index, x, y, z));
+      const jitterX = (fract(seed * 13.371) - 0.5) * 0.03;
+      const jitterY = (fract(seed * 91.731) - 0.5) * 0.03;
+      const jitterZ = (fract(seed * 47.519) - 0.5) * 0.02;
+
+      anchors[index * 3] = x + jitterX;
+      anchors[index * 3 + 1] = y + jitterY;
+      anchors[index * 3 + 2] = z + 0.18 + jitterZ;
+      seeds[index] = seed;
+      ids[index] = index;
+    }
+  }
 
   geometry.instanceCount = particleField.instanceCount;
 }

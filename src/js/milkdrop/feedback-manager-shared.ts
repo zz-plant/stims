@@ -522,9 +522,12 @@ function stripShaderComments(text: string): string {
  * bodies reference that the templates do not already provide, so they can be
  * declared as `uniform float` and driven from the per-frame VM state.
  */
-function extractReferencedPerFrameVariables(
-  fragments: Array<string | null>,
-): string[] {
+let cachedTemplateDeclaredIdentifiers: ReadonlySet<string> | null = null;
+
+function getTemplateDeclaredIdentifiers(): ReadonlySet<string> {
+  if (cachedTemplateDeclaredIdentifiers !== null) {
+    return cachedTemplateDeclaredIdentifiers;
+  }
   const declared = new Set<string>(MILKDROP_GLSL_RESERVED_WORDS);
   const templates = [
     MILKDROP_WARP_FRAGMENT_SHADER,
@@ -563,6 +566,14 @@ function extractReferencedPerFrameVariables(
       declared.add(match[1]);
     }
   }
+  cachedTemplateDeclaredIdentifiers = declared;
+  return declared;
+}
+
+function extractReferencedPerFrameVariables(
+  fragments: Array<string | null>,
+): string[] {
+  const declared = getTemplateDeclaredIdentifiers();
 
   const found = new Set<string>();
   for (const fragment of fragments) {
@@ -638,6 +649,17 @@ type MilkdropPerFrameDeclaration = {
   type: 'float' | 'int' | 'vec2' | 'vec3' | 'vec4';
 };
 
+const COMPONENT_INDEX: Readonly<Record<string, number>> = {
+  x: 0,
+  y: 1,
+  z: 2,
+  w: 3,
+  r: 0,
+  g: 1,
+  b: 2,
+  a: 3,
+};
+
 /**
  * A name extractReferencedPerFrameVariables finds is a genuine per-frame
  * *register* — MilkDrop's `trelx`/`tele`/`vshift`-style globals, written by
@@ -681,16 +703,7 @@ function classifyPerFrameVariable(
   let constructorSize: number | null = null;
   let bareAssignments = 0;
   let integerAssignments = 0;
-  const componentIndex: Record<string, number> = {
-    x: 0,
-    y: 1,
-    z: 2,
-    w: 3,
-    r: 0,
-    g: 1,
-    b: 2,
-    a: 3,
-  };
+  const componentIndex = COMPONENT_INDEX;
 
   for (const fragment of fragments) {
     if (!fragment) {

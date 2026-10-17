@@ -147,10 +147,15 @@ const union = (...sets: ReadonlyArray<Atoms>): Atoms => {
   for (const set of sets) for (const atom of set) out.add(atom);
   return out;
 };
+const EMPTY_ATOM_SET: Atoms = new Set();
 const keyOf = (name: string) =>
   name.startsWith('__') ? name : normalizeProgramAssignmentTarget(name);
-const hasAudio = (atoms: Atoms) =>
-  [...atoms].some((a) => a.startsWith('audio:'));
+const hasAudio = (atoms: Atoms) => {
+  for (const atom of atoms) {
+    if (atom.startsWith('audio:')) return true;
+  }
+  return false;
+};
 
 class FramePass {
   /** Atoms of each variable written so far in this frame. */
@@ -172,7 +177,7 @@ class FramePass {
     if (CLOCK.has(name)) return new Set([`clock:${name}`]);
     if (POINTER.has(name)) return new Set(['pointer']);
     // A built-in is restored to its base before every frame: a constant.
-    if (this.builtins.has(name)) return new Set();
+    if (this.builtins.has(name)) return EMPTY_ATOM_SET;
     return new Set([`prev:${name}`]);
   }
 
@@ -186,7 +191,7 @@ class FramePass {
   eval(node: MilkdropExpressionNode, guard: Atoms): Atoms {
     switch (node.type) {
       case 'literal':
-        return new Set();
+        return EMPTY_ATOM_SET;
       case 'identifier':
         return this.read(node.name);
       case 'unary':
@@ -248,7 +253,7 @@ class FramePass {
           control.kind === 'loop' ? control.count : control.condition;
         const loopGuard = union(
           guard,
-          condition ? this.eval(condition, guard) : new Set(),
+          condition ? this.eval(condition, guard) : EMPTY_ATOM_SET,
         );
         // Twice, so a value carried from one iteration to the next is seen.
         this.run(control.body, loopGuard);
@@ -382,8 +387,20 @@ const isShared = (name: string) => name === MEMORY || /^q\d+$/.test(name);
 /** Whether a custom wave or shape draws at all. */
 const isEnabled = (fields: Record<string, unknown>) =>
   Number(fields.enabled ?? 0) > 0;
-const signature = (map: ReadonlyMap<string, Atoms>) =>
-  JSON.stringify([...map].map(([k, v]) => [k, [...v].sort()]).sort());
+function envEquals(
+  left: ReadonlyMap<string, Atoms>,
+  right: ReadonlyMap<string, Atoms>,
+) {
+  if (left.size !== right.size) return false;
+  for (const [key, leftAtoms] of left) {
+    const rightAtoms = right.get(key);
+    if (!rightAtoms || leftAtoms.size !== rightAtoms.size) return false;
+    for (const atom of leftAtoms) {
+      if (!rightAtoms.has(atom)) return false;
+    }
+  }
+  return true;
+}
 
 export function analyzePresetDataflow(
   ir: MilkdropPresetIR,
@@ -417,16 +434,16 @@ export function analyzePresetDataflow(
     if (blocks[0] === ir.programs.perPixel) {
       // A vertex's rad and ang are fixed by the grid and the aspect, as in
       // MilkDrop, whatever per-frame code left in variables of those names.
-      pass.env.set('rad', new Set());
-      pass.env.set('ang', new Set());
+      pass.env.set('rad', EMPTY_ATOM_SET);
+      pass.env.set('ang', EMPTY_ATOM_SET);
     }
-    for (const block of blocks) pass.run(block.statements, new Set());
+    for (const block of blocks) pass.run(block.statements, EMPTY_ATOM_SET);
     return pass;
   };
   let guards: Atoms = new Set();
   for (let round = 0; round < 8; round += 1) {
     frame = new FramePass(builtinSet);
-    frame.run(ir.programs.perFrame.statements, new Set());
+    frame.run(ir.programs.perFrame.statements, EMPTY_ATOM_SET);
     resolved = resolvePrevious(frame.env, external);
     guards = new Set(frame.randomGuards);
     const next = new Map<string, Atoms>();
@@ -437,11 +454,14 @@ export function analyzePresetDataflow(
         if (!isShared(name)) continue;
         next.set(
           name,
-          union(next.get(name) ?? new Set(), pass.env.get(name) ?? new Set()),
+          union(
+            next.get(name) ?? EMPTY_ATOM_SET,
+            pass.env.get(name) ?? EMPTY_ATOM_SET,
+          ),
         );
       }
     }
-    if (signature(next) === signature(external)) break;
+    if (envEquals(next, external)) break;
     external = next;
   }
   const resolvedGuards = union(

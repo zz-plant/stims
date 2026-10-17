@@ -254,21 +254,34 @@ export function useWorkspaceShellOrchestration({
     routeState.presetId && !selectedPreset && !missingRequestedPreset,
   );
 
+  const collectionTags = useMemo(
+    () => getCollectionTags(enrichedCatalog),
+    [enrichedCatalog],
+  );
+  const favoritePresets = useMemo(
+    () => pickFavoritePresets(enrichedCatalog),
+    [enrichedCatalog],
+  );
+  const recentPresets = useMemo(
+    () => pickRecentPresets(enrichedCatalog),
+    [enrichedCatalog],
+  );
+
   const shellState = useMemo(
     () => ({
       catalog: enrichedCatalog,
       catalogError,
       catalogReady: catalogReady,
-      collectionTags: getCollectionTags(enrichedCatalog),
+      collectionTags,
       currentPreset,
       engineReady,
-      favoritePresets: pickFavoritePresets(enrichedCatalog),
+      favoritePresets,
       featuredPreset,
       filteredCatalog,
       audioActive,
       loadingRequestedPreset,
       missingRequestedPreset,
-      recentPresets: pickRecentPresets(enrichedCatalog),
+      recentPresets,
       runtimeReady,
       selectedPreset,
       starterPresets,
@@ -279,13 +292,16 @@ export function useWorkspaceShellOrchestration({
       enrichedCatalog,
       catalogError,
       catalogReady,
+      collectionTags,
       currentPreset,
       engineReady,
+      favoritePresets,
       featuredPreset,
       filteredCatalog,
       audioActive,
       loadingRequestedPreset,
       missingRequestedPreset,
+      recentPresets,
       routeState.panel,
       runtimeReady,
       selectedPreset,

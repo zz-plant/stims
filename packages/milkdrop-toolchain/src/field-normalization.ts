@@ -24,11 +24,24 @@ export function resolveMilkdropIdentifier(
   env: Record<string, number>,
   identifier: string,
 ) {
+  const direct = env[identifier];
+  if (direct !== undefined) {
+    return direct;
+  }
+  const directAlias = aliasMap[identifier];
+  if (directAlias) {
+    const aliased = env[directAlias];
+    if (aliased !== undefined) {
+      return aliased;
+    }
+  }
   const normalizedIdentifier = normalizeFieldSuffix(identifier);
+  if (normalizedIdentifier === identifier) {
+    return undefined;
+  }
   const aliasedIdentifier = aliasMap[normalizedIdentifier];
 
   return (
-    env[identifier] ??
     env[normalizedIdentifier] ??
     (aliasedIdentifier ? env[aliasedIdentifier] : undefined)
   );

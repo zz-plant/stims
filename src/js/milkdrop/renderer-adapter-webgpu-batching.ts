@@ -500,6 +500,49 @@ function getBatchedTargetRenderOrder(key: string) {
   }
 }
 
+function computeScalarJoinExtension(
+  previousX: number,
+  previousY: number,
+  nextX: number,
+  nextY: number,
+) {
+  const bisectorX = previousX + nextX;
+  const bisectorY = previousY + nextY;
+  const bisectorLength = Math.hypot(bisectorX, bisectorY);
+  if (bisectorLength <= 0.000001) {
+    return 1;
+  }
+
+  const normalizedBisectorX = bisectorX / bisectorLength;
+  const normalizedBisectorY = bisectorY / bisectorLength;
+  const projection = normalizedBisectorX * nextX + normalizedBisectorY * nextY;
+  return Math.min(2.5, Math.max(1, 1 / Math.max(0.35, projection)));
+}
+
+let scratchWebGpuDirectionX = new Float64Array(0);
+let scratchWebGpuDirectionY = new Float64Array(0);
+let scratchWebGpuJoinExtension = new Float64Array(0);
+
+function ensureWebGpuScratchCapacity(length: number) {
+  if (scratchWebGpuDirectionX.length >= length) {
+    return;
+  }
+  const next = Math.max(length, 256);
+  scratchWebGpuDirectionX = new Float64Array(next);
+  scratchWebGpuDirectionY = new Float64Array(next);
+  scratchWebGpuJoinExtension = new Float64Array(next);
+}
+
+let scratchProceduralPositions = new Float32Array(0);
+
+function ensureProceduralPositions(count: number): Float32Array {
+  if (scratchProceduralPositions.length >= count) {
+    return scratchProceduralPositions;
+  }
+  scratchProceduralPositions = new Float32Array(Math.max(count, 1024));
+  return scratchProceduralPositions;
+}
+
 class CompactSegmentUploadBuffer {
   private lineData: Float32Array<ArrayBufferLike>;
   private styleData: Float32Array<ArrayBufferLike>;
@@ -613,110 +656,161 @@ class CompactSegmentUploadBuffer {
   ) {
     const pointCount = Math.floor(positions.length / 3);
     const segmentCount = closeLoop ? pointCount : Math.max(0, pointCount - 1);
+    if (segmentCount <= 0) {
+      return;
+    }
+
+    const directionCount = closeLoop ? pointCount : pointCount - 1;
+    ensureWebGpuScratchCapacity(directionCount);
+    const directionX = scratchWebGpuDirectionX;
+    const directionY = scratchWebGpuDirectionY;
+    const joinExtension = scratchWebGpuJoinExtension;
+
+    for (let index = 0; index < directionCount; index += 1) {
+      const nextIndex = closeLoop ? (index + 1) % pointCount : index + 1;
+      const dx = (positions[nextIndex * 3] ?? 0) - (positions[index * 3] ?? 0);
+      const dy =
+        (positions[nextIndex * 3 + 1] ?? 0) - (positions[index * 3 + 1] ?? 0);
+      const length = Math.hypot(dx, dy);
+      if (length <= 0.000001) {
+        directionX[index] = 1;
+        directionY[index] = 0;
+      } else {
+        directionX[index] = dx / length;
+        directionY[index] = dy / length;
+      }
+    }
+
+    joinExtension[0] = closeLoop
+      ? computeScalarJoinExtension(
+          directionX[directionCount - 1] as number,
+          directionY[directionCount - 1] as number,
+          directionX[0] as number,
+          directionY[0] as number,
+        )
+      : 1;
+    for (let index = 1; index < segmentCount; index += 1) {
+      joinExtension[index] = computeScalarJoinExtension(
+        directionX[index - 1] as number,
+        directionY[index - 1] as number,
+        directionX[index] as number,
+        directionY[index] as number,
+      );
+    }
+
+    this.ensureCapacity(this.count + segmentCount);
+    const lineData = this.lineData;
+    const styleData = this.styleData;
+    const controlData = this.controlData;
+    const joinData = this.joinData;
+    const colorR = color.r;
+    const colorG = color.g;
+    const colorB = color.b;
     const perPoint =
       pointColors && pointColors.length >= pointCount * 4 ? pointColors : null;
+    const halfWidth = width * 0.5;
+    const lastPointIndex = pointCount - 1;
+    let cursor = this.count;
 
     for (let segmentIndex = 0; segmentIndex < segmentCount; segmentIndex += 1) {
-      const startPointIndex = segmentIndex;
       const endPointIndex = closeLoop
         ? (segmentIndex + 1) % pointCount
         : segmentIndex + 1;
-      const previousPointIndex = closeLoop
-        ? (startPointIndex - 1 + pointCount) % pointCount
-        : startPointIndex - 1;
-      const nextPointIndex = closeLoop
-        ? (endPointIndex + 1) % pointCount
-        : endPointIndex + 1;
 
-      const startX = positions[startPointIndex * 3] ?? 0;
-      const startY = positions[startPointIndex * 3 + 1] ?? 0;
-      const startZ = positions[startPointIndex * 3 + 2] ?? 0.24;
+      const startX = positions[segmentIndex * 3] ?? 0;
+      const startY = positions[segmentIndex * 3 + 1] ?? 0;
+      const startZ = positions[segmentIndex * 3 + 2] ?? 0.24;
       const endX = positions[endPointIndex * 3] ?? 0;
       const endY = positions[endPointIndex * 3 + 1] ?? 0;
       const endZ = positions[endPointIndex * 3 + 2] ?? 0.24;
 
-      const currentDirection = normalizeDirection(endX - startX, endY - startY);
-      const previousDirection =
-        previousPointIndex >= 0
-          ? normalizeDirection(
-              startX - (positions[previousPointIndex * 3] ?? 0),
-              startY - (positions[previousPointIndex * 3 + 1] ?? 0),
-            )
-          : null;
-      const nextDirection =
-        nextPointIndex < pointCount
-          ? normalizeDirection(
-              (positions[nextPointIndex * 3] ?? 0) - endX,
-              (positions[nextPointIndex * 3 + 1] ?? 0) - endY,
-            )
-          : null;
+      const quadOffset = cursor * 4;
+      lineData[quadOffset] = startX;
+      lineData[quadOffset + 1] = startY;
+      lineData[quadOffset + 2] = endX - startX;
+      lineData[quadOffset + 3] = endY - startY;
 
-      let segmentColor = color;
-      let segmentAlpha = alpha;
       if (perPoint) {
-        const startStyle = startPointIndex * 4;
+        const startStyle = segmentIndex * 4;
         const endStyle = endPointIndex * 4;
-        segmentPointColor.r =
+        styleData[quadOffset] =
           ((perPoint[startStyle] ?? 0) + (perPoint[endStyle] ?? 0)) * 0.5;
-        segmentPointColor.g =
+        styleData[quadOffset + 1] =
           ((perPoint[startStyle + 1] ?? 0) + (perPoint[endStyle + 1] ?? 0)) *
           0.5;
-        segmentPointColor.b =
+        styleData[quadOffset + 2] =
           ((perPoint[startStyle + 2] ?? 0) + (perPoint[endStyle + 2] ?? 0)) *
           0.5;
-        segmentColor = segmentPointColor;
-        segmentAlpha =
+        styleData[quadOffset + 3] =
           ((perPoint[startStyle + 3] ?? 0) + (perPoint[endStyle + 3] ?? 0)) *
           0.5 *
           alpha;
+      } else {
+        styleData[quadOffset] = colorR;
+        styleData[quadOffset + 1] = colorG;
+        styleData[quadOffset + 2] = colorB;
+        styleData[quadOffset + 3] = alpha;
       }
 
-      this.appendSegment(
-        startX,
-        startY,
-        startZ,
-        endX,
-        endY,
-        endZ,
-        segmentColor,
-        segmentAlpha,
-        width,
-        {
-          startExtension: computeJoinExtension(
-            previousDirection,
-            currentDirection,
-          ),
-          endExtension: computeJoinExtension(currentDirection, nextDirection),
-          startCap: !closeLoop && startPointIndex === 0 ? 1 : 0,
-          endCap: !closeLoop && endPointIndex === pointCount - 1 ? 1 : 0,
-        },
-      );
+      const controlOffset = cursor * 3;
+      controlData[controlOffset] = startZ;
+      controlData[controlOffset + 1] = endZ;
+      controlData[controlOffset + 2] = halfWidth;
+
+      joinData[quadOffset] = joinExtension[segmentIndex] as number;
+      joinData[quadOffset + 1] =
+        segmentIndex + 1 < segmentCount
+          ? (joinExtension[segmentIndex + 1] as number)
+          : closeLoop
+            ? (joinExtension[0] as number)
+            : 1;
+      joinData[quadOffset + 2] = !closeLoop && segmentIndex === 0 ? 1 : 0;
+      joinData[quadOffset + 3] =
+        !closeLoop && endPointIndex === lastPointIndex ? 1 : 0;
+      cursor += 1;
     }
+
+    this.count = cursor;
   }
 
   appendProceduralWave(wave: MilkdropProceduralWaveVisual) {
-    const positions: number[] = [];
+    const requiredLength = wave.samples.length * 3;
+    const positions = ensureProceduralPositions(requiredLength);
     const width = getMilkdropSegmentWidth(wave.thickness);
+    const maxIndex = Math.max(1, wave.samples.length - 1);
     for (let index = 0; index < wave.samples.length; index += 1) {
-      const sampleT = index / Math.max(1, wave.samples.length - 1);
+      const sampleT = index / maxIndex;
       const point = buildProceduralWavePoint(
         wave,
         sampleT,
         wave.samples[index] ?? 0,
         wave.velocities[index] ?? 0,
       );
-      positions.push(point.x, point.y, MILKDROP_WAVE_Z);
+      const offset = index * 3;
+      positions[offset] = point.x;
+      positions[offset + 1] = point.y;
+      positions[offset + 2] = MILKDROP_WAVE_Z;
     }
-    this.appendPolyline(positions, wave.color, wave.alpha, width, wave.closed);
+    this.appendPolyline(
+      positions.subarray(0, requiredLength),
+      wave.color,
+      wave.alpha,
+      width,
+      wave.closed,
+    );
   }
 
   appendProceduralCustomWave(wave: MilkdropProceduralCustomWaveVisual) {
-    const positions: number[] = [];
+    const requiredLength = wave.samples.length * 3;
+    const positions = ensureProceduralPositions(requiredLength);
     const width = getMilkdropSegmentWidth(wave.thickness);
-    // the point is MilkDrop clip space; the scene is in square units
-    const half = sceneHalfExtents(wave.signals?.aspect ?? 1);
+    const aspect = wave.signals?.aspect ?? 1;
+    const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+    const halfX = Math.max(1, safeAspect);
+    const halfY = Math.max(1, 1 / safeAspect);
+    const maxIndex = Math.max(1, wave.samples.length - 1);
     for (let index = 0; index < wave.samples.length; index += 1) {
-      const sampleT = index / Math.max(1, wave.samples.length - 1);
+      const sampleT = index / maxIndex;
       const point = buildMilkdropCustomWavePoint(
         wave.centerX,
         wave.centerY,
@@ -727,13 +821,17 @@ class CompactSegmentUploadBuffer {
         sampleT,
         wave.samples[index] ?? 0,
       );
-      positions.push(
-        point.x * half.x,
-        point.y * half.y,
-        MILKDROP_CUSTOM_WAVE_Z,
-      );
+      const offset = index * 3;
+      positions[offset] = point.x * halfX;
+      positions[offset + 1] = point.y * halfY;
+      positions[offset + 2] = MILKDROP_CUSTOM_WAVE_Z;
     }
-    this.appendPolyline(positions, wave.color, wave.alpha, width);
+    this.appendPolyline(
+      positions.subarray(0, requiredLength),
+      wave.color,
+      wave.alpha,
+      width,
+    );
   }
 
   private ensureCapacity(count: number) {
@@ -1537,6 +1635,7 @@ class ShapeBatchBucket {
   sync(shapes: MilkdropShapeVisual[], alphaMultiplier: number) {
     const fillInstances: ShapeFillInstance[] = [];
     const outlineInstances: ShapeRingInstance[] = [];
+    const hasShapeTexture = this.getShapeTexture() !== null;
     for (const shape of shapes) {
       const outlineScales = createShapeRingScales(shape.radius, {
         outerOffset: shape.thickOutline ? SHAPE_THICK_OUTLINE_OUTER_OFFSET : 0,
@@ -1553,7 +1652,7 @@ class ShapeBatchBucket {
         secondaryAlpha:
           (shape.secondaryColor?.a ?? shape.color.a ?? 0.4) * alphaMultiplier,
         useGradient: shape.secondaryColor ? 1 : 0,
-        textured: shape.textured && this.getShapeTexture() !== null ? 1 : 0,
+        textured: shape.textured && hasShapeTexture ? 1 : 0,
         textureZoom: Math.max(0.0001, shape.textureZoom ?? 1),
         textureAngle: shape.textureAngle ?? 0,
       });

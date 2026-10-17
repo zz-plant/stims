@@ -15,6 +15,18 @@ type ShaderControlAnalysis = {
   expressions: MilkdropShaderControlExpressions;
 };
 
+export function cloneShaderControls(
+  controls: MilkdropShaderControls,
+): MilkdropShaderControls {
+  return {
+    ...controls,
+    colorScale: { ...controls.colorScale },
+    tint: { ...controls.tint },
+    textureLayer: { ...controls.textureLayer },
+    warpTexture: { ...controls.warpTexture },
+  };
+}
+
 export function evaluateMilkdropShaderControlExpressions({
   controls,
   expressions,
@@ -24,7 +36,7 @@ export function evaluateMilkdropShaderControlExpressions({
   expressions: MilkdropShaderControlExpressions;
   env: Record<string, number>;
 }) {
-  const next: MilkdropShaderControls = structuredClone(controls);
+  const next: MilkdropShaderControls = cloneShaderControls(controls);
   const evaluateScalar = (
     expression: MilkdropExpressionNode | null,
     fallback: number,

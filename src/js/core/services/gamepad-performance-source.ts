@@ -80,7 +80,7 @@ export function startGamepadPerformanceSource(
   const cancelFrame =
     options.cancelFrame ?? ((handle: number) => cancelAnimationFrame(handle));
   const readGamepads =
-    options.getGamepads ?? (() => Array.from(navigator.getGamepads?.() ?? []));
+    options.getGamepads ?? (() => navigator.getGamepads?.() ?? []);
 
   const lastCc = new Map<number, number>();
   const lastButtons = new Map<number, boolean>();
@@ -100,8 +100,15 @@ export function startGamepadPerformanceSource(
 
   const poll = () => {
     if (stopped) return;
-    const pad =
-      readGamepads().find((candidate) => candidate?.connected) ?? null;
+    const pads = readGamepads();
+    let pad: Gamepad | null = null;
+    for (let i = 0; i < pads.length; i += 1) {
+      const candidate = pads[i];
+      if (candidate?.connected) {
+        pad = candidate;
+        break;
+      }
+    }
     if (pad) {
       // Bindings are installed here, on the first pad seen, rather than when
       // the service is constructed: `virtual:gamepad` is a device on every

@@ -260,16 +260,18 @@ function peakInWindow(
   framesPerWindow: number,
 ): number {
   let peak = 0;
-  for (let i = 0; i < flashFrames.length; i += 1) {
-    let count = 1;
-    for (let j = i + 1; j < flashFrames.length; j += 1) {
-      if (
-        (flashFrames[j] as number) - (flashFrames[i] as number) <
-        framesPerWindow
-      ) {
-        count += 1;
-      } else break;
+  let right = 0;
+  const len = flashFrames.length;
+  for (let left = 0; left < len; left += 1) {
+    if (right < left + 1) right = left + 1;
+    const startFrame = flashFrames[left] as number;
+    while (
+      right < len &&
+      (flashFrames[right] as number) - startFrame < framesPerWindow
+    ) {
+      right += 1;
     }
+    const count = right - left;
     if (count > peak) peak = count;
   }
   return peak;

@@ -53,35 +53,40 @@ export function resolveDirectShaderSamplerBinding(
   };
 }
 
+const VEC2_SWIZZLE_COMPONENT_MAP: Readonly<Record<string, 'x' | 'y' | 'z'>> = {
+  x: 'x',
+  y: 'y',
+  r: 'x',
+  g: 'y',
+};
+
+const VEC3_SWIZZLE_COMPONENT_MAP: Readonly<Record<string, 'x' | 'y' | 'z'>> = {
+  x: 'x',
+  y: 'y',
+  z: 'z',
+  r: 'x',
+  g: 'y',
+  b: 'z',
+};
+
 export function resolveDirectShaderSwizzle(
   kind: DirectShaderValueKind,
   property: string,
 ): DirectShaderSwizzleSpec | null {
   const normalized = property.toLowerCase();
-  const componentMap: Record<string, 'x' | 'y' | 'z'> =
-    kind === 'vec2'
-      ? {
-          x: 'x',
-          y: 'y',
-          r: 'x',
-          g: 'y',
-        }
-      : {
-          x: 'x',
-          y: 'y',
-          z: 'z',
-          r: 'x',
-          g: 'y',
-          b: 'z',
-        };
-  if (
-    normalized.length < 1 ||
-    normalized.length > 3 ||
-    [...normalized].some((entry) => !(entry in componentMap))
-  ) {
+  if (normalized.length < 1 || normalized.length > 3) {
     return null;
   }
-  const components = [...normalized].map((entry) => componentMap[entry]);
+  const componentMap =
+    kind === 'vec2' ? VEC2_SWIZZLE_COMPONENT_MAP : VEC3_SWIZZLE_COMPONENT_MAP;
+  const components: Array<'x' | 'y' | 'z'> = [];
+  for (let i = 0; i < normalized.length; i += 1) {
+    const mapped = componentMap[normalized[i]!];
+    if (!mapped) {
+      return null;
+    }
+    components.push(mapped);
+  }
   return {
     kind:
       components.length === 1

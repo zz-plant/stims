@@ -1473,11 +1473,7 @@ function StimsWorkspaceAppShell() {
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         actions={paletteActions}
-        presets={engine.filteredCatalog.map((entry) => ({
-          id: entry.id,
-          title: entry.title,
-          author: entry.author,
-        }))}
+        presets={engine.filteredCatalog}
         onSelectPreset={engine.handlePresetSelection}
       />
       <ShortcutsDialog
