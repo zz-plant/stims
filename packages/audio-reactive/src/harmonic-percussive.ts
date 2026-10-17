@@ -153,8 +153,9 @@ export function createHarmonicPercussiveAnalyser(
       // 0..255; Float32Array inputs are already normalized 0..1.
       const writeOffset = historyWrite * usable;
       if (spectrum instanceof Uint8Array) {
+        const inv255 = 1 / 255;
         for (let i = 0; i < usable; i += 1) {
-          history[writeOffset + i] = spectrum[i] / 255;
+          history[writeOffset + i] = spectrum[i]! * inv255;
         }
       } else {
         history.set(spectrum.subarray(0, usable), writeOffset);
