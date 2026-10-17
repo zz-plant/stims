@@ -205,9 +205,17 @@ function tokenize(source: string) {
   return tokens;
 }
 
+type MilkdropShaderBinaryOperator = Extract<
+  MilkdropShaderExpressionNode,
+  { type: 'binary' }
+>['operator'];
+
+const MAX_SHADER_EXPRESSION_RECURSION_DEPTH = 100;
+
 class ShaderExpressionParser {
   private readonly tokens: Token[];
   private index = 0;
+  private depth = 0;
 
   constructor(tokens: Token[]) {
     this.tokens = tokens;
@@ -216,6 +224,15 @@ class ShaderExpressionParser {
   parse() {
     const expression = this.parseLogicalOr();
     return this.peek().type === 'eof' ? expression : null;
+  }
+
+  private enterDepth(): boolean {
+    this.depth += 1;
+    return this.depth <= MAX_SHADER_EXPRESSION_RECURSION_DEPTH;
+  }
+
+  private leaveDepth() {
+    this.depth = Math.max(0, this.depth - 1);
   }
 
   private peek() {
@@ -247,188 +264,80 @@ class ShaderExpressionParser {
     return token.type === 'bracket' && token.value === value;
   }
 
-  private parseLogicalOr(): MilkdropShaderExpressionNode | null {
-    let node = this.parseLogicalAnd();
-    if (!node) {
+  private parseBinaryLoop<Op extends MilkdropShaderBinaryOperator>(
+    parseNext: () => MilkdropShaderExpressionNode | null,
+    operators: readonly Op[],
+  ): MilkdropShaderExpressionNode | null {
+    const first = parseNext();
+    if (!first) {
       return null;
     }
-    while (true) {
-      const operator = this.matchOperator('||');
-      if (!operator) {
-        return node;
+    let node: MilkdropShaderExpressionNode = first;
+    let depthEntered = 0;
+    try {
+      while (true) {
+        const operator = this.matchOperator(...operators);
+        if (!operator) {
+          return node;
+        }
+        if (!this.enterDepth()) {
+          return null;
+        }
+        depthEntered += 1;
+        const right = parseNext();
+        if (!right) {
+          return null;
+        }
+        node = {
+          type: 'binary',
+          operator: operator as Op,
+          left: node,
+          right,
+        };
       }
-      const right = this.parseLogicalAnd();
-      if (!right) {
-        return null;
+    } finally {
+      for (let i = 0; i < depthEntered; i++) {
+        this.leaveDepth();
       }
-      node = {
-        type: 'binary',
-        operator: '||',
-        left: node,
-        right,
-      };
     }
+  }
+
+  private parseLogicalOr(): MilkdropShaderExpressionNode | null {
+    return this.parseBinaryLoop(() => this.parseLogicalAnd(), ['||']);
   }
 
   private parseLogicalAnd(): MilkdropShaderExpressionNode | null {
-    let node = this.parseBitwiseOr();
-    if (!node) {
-      return null;
-    }
-    while (true) {
-      const operator = this.matchOperator('&&');
-      if (!operator) {
-        return node;
-      }
-      const right = this.parseBitwiseOr();
-      if (!right) {
-        return null;
-      }
-      node = {
-        type: 'binary',
-        operator: '&&',
-        left: node,
-        right,
-      };
-    }
+    return this.parseBinaryLoop(() => this.parseBitwiseOr(), ['&&']);
   }
 
   private parseBitwiseOr(): MilkdropShaderExpressionNode | null {
-    let node = this.parseBitwiseAnd();
-    if (!node) {
-      return null;
-    }
-    while (true) {
-      const operator = this.matchOperator('|');
-      if (!operator) {
-        return node;
-      }
-      const right = this.parseBitwiseAnd();
-      if (!right) {
-        return null;
-      }
-      node = {
-        type: 'binary',
-        operator: '|',
-        left: node,
-        right,
-      };
-    }
+    return this.parseBinaryLoop(() => this.parseBitwiseAnd(), ['|']);
   }
 
   private parseBitwiseAnd(): MilkdropShaderExpressionNode | null {
-    let node = this.parseEquality();
-    if (!node) {
-      return null;
-    }
-    while (true) {
-      const operator = this.matchOperator('&');
-      if (!operator) {
-        return node;
-      }
-      const right = this.parseEquality();
-      if (!right) {
-        return null;
-      }
-      node = {
-        type: 'binary',
-        operator: '&',
-        left: node,
-        right,
-      };
-    }
+    return this.parseBinaryLoop(() => this.parseEquality(), ['&']);
   }
 
   private parseEquality(): MilkdropShaderExpressionNode | null {
-    let node = this.parseComparison();
-    if (!node) {
-      return null;
-    }
-    while (true) {
-      const operator = this.matchOperator('==', '!=');
-      if (!operator) {
-        return node;
-      }
-      const right = this.parseComparison();
-      if (!right) {
-        return null;
-      }
-      node = {
-        type: 'binary',
-        operator: operator as '==' | '!=',
-        left: node,
-        right,
-      };
-    }
+    return this.parseBinaryLoop(() => this.parseComparison(), ['==', '!=']);
   }
 
   private parseComparison(): MilkdropShaderExpressionNode | null {
-    let node = this.parseAdditive();
-    if (!node) {
-      return null;
-    }
-    while (true) {
-      const operator = this.matchOperator('<', '<=', '>', '>=');
-      if (!operator) {
-        return node;
-      }
-      const right = this.parseAdditive();
-      if (!right) {
-        return null;
-      }
-      node = {
-        type: 'binary',
-        operator: operator as '<' | '<=' | '>' | '>=',
-        left: node,
-        right,
-      };
-    }
+    return this.parseBinaryLoop(
+      () => this.parseAdditive(),
+      ['<', '<=', '>', '>='],
+    );
   }
 
   private parseAdditive(): MilkdropShaderExpressionNode | null {
-    let node = this.parseMultiplicative();
-    if (!node) {
-      return null;
-    }
-    while (true) {
-      const operator = this.matchOperator('+', '-');
-      if (!operator) {
-        return node;
-      }
-      const right = this.parseMultiplicative();
-      if (!right) {
-        return null;
-      }
-      node = {
-        type: 'binary',
-        operator: operator as '+' | '-',
-        left: node,
-        right,
-      };
-    }
+    return this.parseBinaryLoop(() => this.parseMultiplicative(), ['+', '-']);
   }
 
   private parseMultiplicative(): MilkdropShaderExpressionNode | null {
-    let node = this.parseExponentiation();
-    if (!node) {
-      return null;
-    }
-    while (true) {
-      const operator = this.matchOperator('*', '/', '%');
-      if (!operator) {
-        return node;
-      }
-      const right = this.parseExponentiation();
-      if (!right) {
-        return null;
-      }
-      node = {
-        type: 'binary',
-        operator: operator as '*' | '/' | '%',
-        left: node,
-        right,
-      };
-    }
+    return this.parseBinaryLoop(
+      () => this.parseExponentiation(),
+      ['*', '/', '%'],
+    );
   }
 
   private parseExponentiation(): MilkdropShaderExpressionNode | null {
@@ -440,30 +349,44 @@ class ShaderExpressionParser {
     if (!operator) {
       return node;
     }
-    const right = this.parseExponentiation();
-    if (!right) {
+    if (!this.enterDepth()) {
       return null;
     }
-    return {
-      type: 'binary',
-      operator: '^',
-      left: node,
-      right,
-    };
+    try {
+      const right = this.parseExponentiation();
+      if (!right) {
+        return null;
+      }
+      return {
+        type: 'binary',
+        operator: '^',
+        left: node,
+        right,
+      };
+    } finally {
+      this.leaveDepth();
+    }
   }
 
   private parseUnary(): MilkdropShaderExpressionNode | null {
     const operator = this.matchOperator('+', '-', '!');
     if (operator) {
-      const operand = this.parseUnary();
-      if (!operand) {
+      if (!this.enterDepth()) {
         return null;
       }
-      return {
-        type: 'unary',
-        operator: operator as '+' | '-' | '!',
-        operand,
-      };
+      try {
+        const operand = this.parseUnary();
+        if (!operand) {
+          return null;
+        }
+        return {
+          type: 'unary',
+          operator: operator as '+' | '-' | '!',
+          operand,
+        };
+      } finally {
+        this.leaveDepth();
+      }
     }
     return this.parsePrimary();
   }
@@ -478,28 +401,35 @@ class ShaderExpressionParser {
       let base: MilkdropShaderExpressionNode;
       if (this.isParen('(')) {
         this.advance();
-        const args: MilkdropShaderExpressionNode[] = [];
-        while (!this.isParen(')')) {
-          const arg = this.parseLogicalOr();
-          if (!arg) {
-            return null;
-          }
-          args.push(arg);
-          if (this.peek().type === 'comma') {
-            this.advance();
-            continue;
-          }
-          if (this.isParen(')')) {
-            break;
-          }
+        if (!this.enterDepth()) {
           return null;
         }
-        this.advance();
-        base = {
-          type: 'call',
-          name: normalizeShaderCallName(token.value),
-          args,
-        };
+        try {
+          const args: MilkdropShaderExpressionNode[] = [];
+          while (!this.isParen(')')) {
+            const arg = this.parseLogicalOr();
+            if (!arg) {
+              return null;
+            }
+            args.push(arg);
+            if (this.peek().type === 'comma') {
+              this.advance();
+              continue;
+            }
+            if (this.isParen(')')) {
+              break;
+            }
+            return null;
+          }
+          this.advance();
+          base = {
+            type: 'call',
+            name: normalizeShaderCallName(token.value),
+            args,
+          };
+        } finally {
+          this.leaveDepth();
+        }
       } else {
         base = { type: 'identifier', name: token.value };
       }
@@ -518,7 +448,15 @@ class ShaderExpressionParser {
       }
       while (this.isBracket('[')) {
         this.advance();
-        const indexExpr = this.parseLogicalOr();
+        if (!this.enterDepth()) {
+          return null;
+        }
+        let indexExpr: MilkdropShaderExpressionNode | null = null;
+        try {
+          indexExpr = this.parseLogicalOr();
+        } finally {
+          this.leaveDepth();
+        }
         if (!indexExpr) {
           return null;
         }
@@ -548,7 +486,15 @@ class ShaderExpressionParser {
     }
 
     if (token.type === 'paren' && token.value === '(') {
-      const expression = this.parseLogicalOr();
+      if (!this.enterDepth()) {
+        return null;
+      }
+      let expression: MilkdropShaderExpressionNode | null = null;
+      try {
+        expression = this.parseLogicalOr();
+      } finally {
+        this.leaveDepth();
+      }
       if (!expression) {
         return null;
       }
@@ -835,14 +781,18 @@ function applyBinary(
 
 function toScalarMilkdropExpression(
   node: MilkdropShaderExpressionNode,
+  depth = 0,
 ): MilkdropExpressionNode | null {
+  if (depth > 200) {
+    return null;
+  }
   switch (node.type) {
     case 'literal':
       return { type: 'literal', value: node.value };
     case 'identifier':
       return { type: 'identifier', name: node.name.toLowerCase() };
     case 'unary': {
-      const operand = toScalarMilkdropExpression(node.operand);
+      const operand = toScalarMilkdropExpression(node.operand, depth + 1);
       if (!operand) {
         return null;
       }
@@ -853,8 +803,8 @@ function toScalarMilkdropExpression(
       };
     }
     case 'binary': {
-      const left = toScalarMilkdropExpression(node.left);
-      const right = toScalarMilkdropExpression(node.right);
+      const left = toScalarMilkdropExpression(node.left, depth + 1);
+      const right = toScalarMilkdropExpression(node.right, depth + 1);
       if (!left || !right) {
         return null;
       }
@@ -876,7 +826,7 @@ function toScalarMilkdropExpression(
         return null;
       }
       const args = node.args
-        .map((arg) => toScalarMilkdropExpression(arg))
+        .map((arg) => toScalarMilkdropExpression(arg, depth + 1))
         .filter((arg): arg is MilkdropExpressionNode => arg !== null);
       if (args.length !== node.args.length) {
         return null;
@@ -965,7 +915,11 @@ export function evaluateMilkdropShaderExpression(
   node: MilkdropShaderExpressionNode,
   env: Record<string, ShaderValue>,
   scalarEnv: Record<string, number>,
+  depth = 0,
 ): ShaderValue | null {
+  if (depth > 200) {
+    return null;
+  }
   switch (node.type) {
     case 'literal':
       return scalar(node.value);
@@ -991,6 +945,7 @@ export function evaluateMilkdropShaderExpression(
         node.operand,
         env,
         scalarEnv,
+        depth + 1,
       );
       if (!operand) {
         return null;
@@ -1020,11 +975,17 @@ export function evaluateMilkdropShaderExpression(
       return applyBinary('*', scalar(-1), operand);
     }
     case 'binary': {
-      const left = evaluateMilkdropShaderExpression(node.left, env, scalarEnv);
+      const left = evaluateMilkdropShaderExpression(
+        node.left,
+        env,
+        scalarEnv,
+        depth + 1,
+      );
       const right = evaluateMilkdropShaderExpression(
         node.right,
         env,
         scalarEnv,
+        depth + 1,
       );
       if (!left || !right) {
         return null;
@@ -1033,7 +994,9 @@ export function evaluateMilkdropShaderExpression(
     }
     case 'call': {
       const args = node.args
-        .map((arg) => evaluateMilkdropShaderExpression(arg, env, scalarEnv))
+        .map((arg) =>
+          evaluateMilkdropShaderExpression(arg, env, scalarEnv, depth + 1),
+        )
         .filter((value): value is ShaderValue => value !== null);
       if (args.length !== node.args.length) {
         return null;

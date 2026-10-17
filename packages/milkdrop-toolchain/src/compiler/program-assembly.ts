@@ -329,10 +329,20 @@ export function flattenProgramStatements(
   statements: readonly MilkdropCompiledStatement[],
 ): MilkdropCompiledStatement[] {
   const result: MilkdropCompiledStatement[] = [];
-  for (const statement of statements) {
+  const stack: MilkdropCompiledStatement[] = [];
+  for (let i = statements.length - 1; i >= 0; i--) {
+    const stmt = statements[i];
+    if (stmt) stack.push(stmt);
+  }
+  while (stack.length > 0) {
+    const statement = stack.pop();
+    if (!statement) break;
     result.push(statement);
-    if (statement.control) {
-      result.push(...flattenProgramStatements(statement.control.body));
+    if (statement.control && statement.control.body.length > 0) {
+      for (let i = statement.control.body.length - 1; i >= 0; i--) {
+        const inner = statement.control.body[i];
+        if (inner) stack.push(inner);
+      }
     }
   }
   return result;

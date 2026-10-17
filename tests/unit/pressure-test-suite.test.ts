@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'bun:test';
+import { foldExpression } from 'milkdrop-toolchain/src/compiler/ast-constant-fold.ts';
 import {
   evaluateMilkdropExpression,
   parseMilkdropExpression,
+  walkMilkdropExpression,
 } from 'milkdrop-toolchain/src/expression.ts';
 import { parseMilkdropPreset } from 'milkdrop-toolchain/src/preset-parser.ts';
+import { parseMilkdropShaderStatement } from 'milkdrop-toolchain/src/shader-ast.ts';
+import type { MilkdropExpressionNode } from 'milkdrop-toolchain/src/types.ts';
 import { WebMidiControllerService } from '../../src/js/core/services/webmidi-controller.ts';
 import { parseURLParams } from '../../src/js/core/url-params.ts';
 
@@ -119,6 +123,59 @@ describe('Comprehensive Pressure & Stress Suite', () => {
       expect(
         parsed.diagnostics.some((d) => d.code === 'expr_max_depth_exceeded'),
       ).toBe(true);
+    });
+
+    it('caps maximum recursion depth on chained unary operators', () => {
+      const deepUnary = `${'!'.repeat(150)}1`;
+      const parsed = parseMilkdropExpression(deepUnary, 1);
+      expect(
+        parsed.diagnostics.some((d) => d.code === 'expr_max_depth_exceeded'),
+      ).toBe(true);
+    });
+
+    it('caps maximum recursion depth on chained binary operators', () => {
+      const deepBinary = Array(150).fill('1').join(' + ');
+      const parsed = parseMilkdropExpression(deepBinary, 1);
+      expect(
+        parsed.diagnostics.some((d) => d.code === 'expr_max_depth_exceeded'),
+      ).toBe(true);
+    });
+
+    it('handles deeply nested shader expressions safely without recursion overflow', () => {
+      const deepShaderUnary = `ret = ${'!'.repeat(150)}1;`;
+      expect(() => parseMilkdropShaderStatement(deepShaderUnary)).not.toThrow();
+
+      const deepShaderBinary = `ret = ${Array(150).fill('1').join(' + ')};`;
+      expect(() =>
+        parseMilkdropShaderStatement(deepShaderBinary),
+      ).not.toThrow();
+
+      const deepShaderExp = `ret = ${Array(150).fill('2').join(' ^ ')};`;
+      expect(() => parseMilkdropShaderStatement(deepShaderExp)).not.toThrow();
+    });
+
+    it('handles deeply nested AST evaluation, walking, and constant folding safely without call stack overflow', () => {
+      let deepNode: MilkdropExpressionNode = { type: 'literal', value: 1 };
+      for (let i = 0; i < 300; i++) {
+        deepNode = {
+          type: 'binary',
+          operator: '+',
+          left: deepNode,
+          right: { type: 'literal', value: 1 },
+        };
+      }
+
+      expect(() => evaluateMilkdropExpression(deepNode, {})).not.toThrow();
+
+      let visitedCount = 0;
+      expect(() =>
+        walkMilkdropExpression(deepNode, () => {
+          visitedCount += 1;
+        }),
+      ).not.toThrow();
+      expect(visitedCount).toBeGreaterThan(0);
+
+      expect(() => foldExpression(deepNode)).not.toThrow();
     });
 
     it('handles presets with 10,000 fields without crashing', () => {

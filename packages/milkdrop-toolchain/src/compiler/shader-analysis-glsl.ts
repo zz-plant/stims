@@ -37,14 +37,16 @@ type GlslEmitter = {
 function emitExpression(
   node: MilkdropShaderExpressionNode,
   emitter: GlslEmitter,
+  depth = 0,
 ): string | null {
+  if (depth > 200) return null;
   switch (node.type) {
     case 'literal':
       return emitter.emitLiteral(node.value);
     case 'identifier':
       return emitter.emitIdentifier(node.name);
     case 'unary': {
-      const operand = emitExpression(node.operand, emitter);
+      const operand = emitExpression(node.operand, emitter, depth + 1);
       if (operand === null) return null;
       if (node.operator === '+') return operand;
       if (node.operator === '-') return `-(${operand})`;
@@ -53,13 +55,13 @@ function emitExpression(
       return null;
     }
     case 'binary': {
-      const left = emitExpression(node.left, emitter);
-      const right = emitExpression(node.right, emitter);
+      const left = emitExpression(node.left, emitter, depth + 1);
+      const right = emitExpression(node.right, emitter, depth + 1);
       if (left === null || right === null) return null;
       return emitter.emitBinary(left, node.operator, right);
     }
     case 'member': {
-      const object = emitExpression(node.object, emitter);
+      const object = emitExpression(node.object, emitter, depth + 1);
       if (object === null) return null;
       return emitter.emitMember(object, node.property);
     }
@@ -69,7 +71,7 @@ function emitExpression(
     case 'call': {
       const name = node.name;
       const args = node.args
-        .map((arg) => emitExpression(arg, emitter))
+        .map((arg) => emitExpression(arg, emitter, depth + 1))
         .filter((value): value is string => value !== null);
       if (args.length !== node.args.length) return null;
       if (name.includes('.')) {

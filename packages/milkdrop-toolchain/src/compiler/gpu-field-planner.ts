@@ -186,28 +186,30 @@ function collectGpuFieldIdentifierReads(
   expression: MilkdropExpressionNode,
 ): Set<string> {
   const reads = new Set<string>();
-  const visit = (node: MilkdropExpressionNode): void => {
+  const stack: MilkdropExpressionNode[] = [expression];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node) break;
     switch (node.type) {
       case 'identifier':
         reads.add(lowerGpuFieldIdentifier(node.name));
         break;
       case 'unary':
-        visit(node.operand);
+        stack.push(node.operand);
         break;
       case 'binary':
-        visit(node.left);
-        visit(node.right);
+        stack.push(node.right, node.left);
         break;
       case 'call':
-        for (const arg of node.args) {
-          visit(arg);
+        for (let i = node.args.length - 1; i >= 0; i--) {
+          const arg = node.args[i];
+          if (arg) stack.push(arg);
         }
         break;
       case 'literal':
         break;
     }
-  };
-  visit(expression);
+  }
   return reads;
 }
 
@@ -255,7 +257,11 @@ function lowerGpuFieldIdentifier(identifier: string) {
 function lowerGpuFieldExpression(
   expression: MilkdropExpressionNode,
   allowedIdentifiers: Set<string>,
+  depth = 0,
 ): MilkdropGpuFieldExpression | null {
+  if (depth > 200) {
+    return null;
+  }
   switch (expression.type) {
     case 'literal':
       return expression;
@@ -269,6 +275,7 @@ function lowerGpuFieldExpression(
       const operand = lowerGpuFieldExpression(
         expression.operand,
         allowedIdentifiers,
+        depth + 1,
       );
       return operand
         ? {
@@ -282,10 +289,15 @@ function lowerGpuFieldExpression(
       if (expression.operator === '=') {
         return null;
       }
-      const left = lowerGpuFieldExpression(expression.left, allowedIdentifiers);
+      const left = lowerGpuFieldExpression(
+        expression.left,
+        allowedIdentifiers,
+        depth + 1,
+      );
       const right = lowerGpuFieldExpression(
         expression.right,
         allowedIdentifiers,
+        depth + 1,
       );
       return left && right
         ? ({
@@ -302,7 +314,9 @@ function lowerGpuFieldExpression(
         return null;
       }
       const args = expression.args
-        .map((arg) => lowerGpuFieldExpression(arg, allowedIdentifiers))
+        .map((arg) =>
+          lowerGpuFieldExpression(arg, allowedIdentifiers, depth + 1),
+        )
         .filter((arg): arg is MilkdropGpuFieldExpression => arg !== null);
       if (args.length !== expression.args.length) {
         return null;

@@ -773,11 +773,14 @@ function parseStatements(
     }
     if (char === '{') {
       // A bare block introduces no control flow; flatten it in place.
+      if (depth >= MAX_BRANCH_DEPTH) {
+        return false;
+      }
       const inner = readBalanced(source, cursor, '{', '}');
       if (inner === null) {
         return false;
       }
-      if (!parseStatements(inner, { pos: 0 }, mask, depth, scope, out)) {
+      if (!parseStatements(inner, { pos: 0 }, mask, depth + 1, scope, out)) {
         return false;
       }
       continue;
