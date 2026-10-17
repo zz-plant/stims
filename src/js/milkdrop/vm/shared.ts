@@ -261,11 +261,13 @@ export function sceneHalfExtents(aspect: number) {
  * the mapped centre, which is what MilkDrop's aspect factors do in clip space.
  */
 export function milkdropToSceneX(value: number, aspect: number) {
-  return (value - 0.5) * 2 * sceneHalfExtents(aspect).x;
+  const safe = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+  return (value - 0.5) * 2 * Math.max(1, safe);
 }
 
 export function milkdropToSceneY(value: number, aspect: number) {
-  return (value - 0.5) * 2 * sceneHalfExtents(aspect).y;
+  const safe = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+  return (value - 0.5) * 2 * Math.max(1, 1 / safe);
 }
 
 export function normalizeTransformCenter(value: number) {

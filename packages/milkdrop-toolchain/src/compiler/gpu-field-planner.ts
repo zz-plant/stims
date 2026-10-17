@@ -393,9 +393,13 @@ export function lowerGpuFieldProgram(
   // temporary (MilkDrop per-pixel writes are vertex-local). State slots and
   // signals keep their own bindings: `allowedIdentifiers` already contains
   // them, so they never reach the register check.
+  const statementReads = program.statements.map((statement) =>
+    collectGpuFieldIdentifierReads(statement.expression),
+  );
   const registerInputIdentifiers = new Set<string>();
-  for (const statement of program.statements) {
-    for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+  for (let i = 0; i < program.statements.length; i += 1) {
+    const reads = statementReads[i] ?? new Set<string>();
+    for (const read of reads) {
       if (!allowedIdentifiers.has(read) && availableRegisters.has(read)) {
         registerInputIdentifiers.add(read);
         allowedIdentifiers.add(read);
@@ -408,8 +412,9 @@ export function lowerGpuFieldProgram(
   // above claimed it, a read would become a zero temporary: the GPU drawing
   // the preset as if it had just started while the CPU tiers read the real
   // value. Such a program stays on the CPU path instead.
-  for (const statement of program.statements) {
-    for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+  for (let i = 0; i < program.statements.length; i += 1) {
+    const reads = statementReads[i] ?? new Set<string>();
+    for (const read of reads) {
       if (read === 'progress' && !registerInputIdentifiers.has(read)) {
         return null;
       }
@@ -422,8 +427,9 @@ export function lowerGpuFieldProgram(
   // theirs. This is not a fallback guess: it is the CPU interpreter/JIT's
   // exact lookup behavior, and it lets source such as `dy-r` (where `r` was
   // never assigned) stay on the field path with `r = 0`.
-  for (const statement of program.statements) {
-    for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+  for (let i = 0; i < program.statements.length; i += 1) {
+    const reads = statementReads[i] ?? new Set<string>();
+    for (const read of reads) {
       if (
         !allowedIdentifiers.has(read) &&
         isGpuFieldTemporary(read, reservedIdentifiers)
@@ -440,8 +446,10 @@ export function lowerGpuFieldProgram(
       ),
     );
     const assignedSoFar = new Set<string>();
-    for (const statement of program.statements) {
-      for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+    for (let i = 0; i < program.statements.length; i += 1) {
+      const statement = program.statements[i]!;
+      const reads = statementReads[i] ?? new Set<string>();
+      for (const read of reads) {
         if (
           temporaries.has(read) &&
           assignedSomewhere.has(read) &&

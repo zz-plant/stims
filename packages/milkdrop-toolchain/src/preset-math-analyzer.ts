@@ -8,7 +8,7 @@
  * what a frame will look like.
  */
 
-import { readMilkdropField } from './formatter.ts';
+import { readMilkdropFields } from './formatter.ts';
 
 export type PresetMathAnalysis = {
   summary: string;
@@ -69,13 +69,22 @@ export function analyzePresetMath(source: string): PresetMathAnalysis {
   const allEquations = `${perFrameCode} ${perPixelCode}`.toLowerCase();
 
   // Read literal values
-  const zoomVal = Number(readMilkdropField(source, 'zoom') ?? '1.0');
-  const rotVal = Number(readMilkdropField(source, 'rot') ?? '0.0');
-  const warpVal = Number(readMilkdropField(source, 'warp') ?? '0.0');
-  const decayVal = Number(readMilkdropField(source, 'decay') ?? '0.98');
-  const waveR = Number(readMilkdropField(source, 'wave_r') ?? '0.8');
-  const waveG = Number(readMilkdropField(source, 'wave_g') ?? '0.5');
-  const waveB = Number(readMilkdropField(source, 'wave_b') ?? '0.3');
+  const fields = readMilkdropFields(source, [
+    'zoom',
+    'rot',
+    'warp',
+    'decay',
+    'wave_r',
+    'wave_g',
+    'wave_b',
+  ] as const);
+  const zoomVal = Number(fields.zoom ?? '1.0');
+  const rotVal = Number(fields.rot ?? '0.0');
+  const warpVal = Number(fields.warp ?? '0.0');
+  const decayVal = Number(fields.decay ?? '0.98');
+  const waveR = Number(fields.wave_r ?? '0.8');
+  const waveG = Number(fields.wave_g ?? '0.5');
+  const waveB = Number(fields.wave_b ?? '0.3');
 
   // Motion analysis
   const hasDynamicZoom = allEquations.includes('zoom');

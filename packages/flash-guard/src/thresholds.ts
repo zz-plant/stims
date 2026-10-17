@@ -118,6 +118,8 @@ export function isRedFlashTransition(
  * by the flashing region's coverage, and on sparse bright-on-black content
  * that shrinks real flashes below the threshold entirely.
  */
+let scratchSat = new Float64Array(0);
+
 export function peakWindowFraction(
   counts: ArrayLike<number>,
   tilePixels: number,
@@ -129,24 +131,35 @@ export function peakWindowFraction(
   const winPixels = winW * winH * tilePixels;
   if (winPixels <= 0 || cols <= 0 || rows <= 0) return 0;
 
-  const sat = new Float64Array((rows + 1) * (cols + 1));
+  const stride = cols + 1;
+  const needed = (rows + 1) * stride;
+  if (scratchSat.length < needed) {
+    scratchSat = new Float64Array(needed);
+  }
+  const sat = scratchSat;
+  sat.fill(0, 0, stride);
   for (let y = 0; y < rows; y += 1) {
+    sat[(y + 1) * stride] = 0;
     let rowRun = 0;
+    const rowOffset = y * cols;
+    const prevSatRow = y * stride;
+    const nextSatRow = (y + 1) * stride;
     for (let x = 0; x < cols; x += 1) {
-      rowRun += counts[y * cols + x] ?? 0;
-      sat[(y + 1) * (cols + 1) + (x + 1)] =
-        (sat[y * (cols + 1) + (x + 1)] as number) + rowRun;
+      rowRun += counts[rowOffset + x] ?? 0;
+      sat[nextSatRow + x + 1] = (sat[prevSatRow + x + 1] as number) + rowRun;
     }
   }
 
   let best = 0;
   for (let y = 0; y + winH <= rows; y += 1) {
+    const topRow = y * stride;
+    const bottomRow = (y + winH) * stride;
     for (let x = 0; x + winW <= cols; x += 1) {
       const total =
-        (sat[(y + winH) * (cols + 1) + (x + winW)] as number) -
-        (sat[y * (cols + 1) + (x + winW)] as number) -
-        (sat[(y + winH) * (cols + 1) + x] as number) +
-        (sat[y * (cols + 1) + x] as number);
+        (sat[bottomRow + x + winW] as number) -
+        (sat[topRow + x + winW] as number) -
+        (sat[bottomRow + x] as number) +
+        (sat[topRow + x] as number);
       const fraction = total / winPixels;
       if (fraction > best) best = fraction;
     }

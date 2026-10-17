@@ -88,12 +88,12 @@ export function shouldEnableParticleField({
 }
 
 function resolveParticleFieldDeviceProfile(
-  overrides: Partial<ParticleFieldDeviceProfile> = {},
+  overrides?: Partial<ParticleFieldDeviceProfile>,
 ): ParticleFieldDeviceProfile {
   return {
-    isMobile: overrides.isMobile ?? isMobileDevice(),
+    isMobile: overrides?.isMobile ?? isMobileDevice(),
     lowPower:
-      overrides.lowPower ?? getDevicePerformanceProfile().lowPower ?? false,
+      overrides?.lowPower ?? getDevicePerformanceProfile().lowPower ?? false,
   };
 }
 
@@ -1496,14 +1496,21 @@ const PER_PIXEL_WARP_TARGETS = new Set([
  * projectM references were measured against, and swapping a mesh under them
  * moved presets that already matched (glowsticks 0.43% -> 3.4%).
  */
+const presetNeedsWarpMeshCache = new WeakMap<MilkdropCompiledPreset, boolean>();
+
 export function presetNeedsWarpMesh(preset: MilkdropCompiledPreset): boolean {
-  const statements = preset.ir.perPixelStatements;
-  if (!statements || statements.length === 0) {
-    return false;
+  const cached = presetNeedsWarpMeshCache.get(preset);
+  if (cached !== undefined) {
+    return cached;
   }
-  return statements.some((statement) =>
-    PER_PIXEL_WARP_TARGETS.has(statement.target.toLowerCase()),
-  );
+  const statements = preset.ir.perPixelStatements;
+  const result =
+    Boolean(statements && statements.length > 0) &&
+    statements!.some((statement) =>
+      PER_PIXEL_WARP_TARGETS.has(statement.target.toLowerCase()),
+    );
+  presetNeedsWarpMeshCache.set(preset, result);
+  return result;
 }
 
 export function buildWarpField(

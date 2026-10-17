@@ -80,8 +80,12 @@ function fft(
   for (let i = 0; i < n; i += 1) {
     const j = reverseBits(i, bits);
     if (j > i) {
-      [real[i], real[j]] = [real[j], real[i]];
-      [imag[i], imag[j]] = [imag[j], imag[i]];
+      const tmpReal = real[i];
+      real[i] = real[j];
+      real[j] = tmpReal;
+      const tmpImag = imag[i];
+      imag[i] = imag[j];
+      imag[j] = tmpImag;
     }
   }
 
@@ -176,6 +180,7 @@ export function analyseBlockBytes(
   twiddles: ReturnType<typeof buildTwiddleTable>,
   out: Uint8Array,
   scratch: { real: Float32Array; imag: Float32Array },
+  magnitudesOut?: Float32Array,
 ): void {
   const size = block.length;
   const binCount = size / 2;
@@ -189,6 +194,9 @@ export function analyseBlockBytes(
       Math.sqrt(
         scratch.real[i] * scratch.real[i] + scratch.imag[i] * scratch.imag[i],
       ) / binCount;
+    if (magnitudesOut) {
+      magnitudesOut[i] = magnitude;
+    }
     out[i] = byteFromMagnitude(magnitude);
   }
 }

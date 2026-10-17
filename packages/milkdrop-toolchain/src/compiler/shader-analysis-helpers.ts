@@ -206,6 +206,13 @@ export const MILKDROP_TEXSIZE_NOISE_GLSL =
 export const MILKDROP_TEXSIZE_SUBSTITUTE_GLSL =
   'vec4(640.0, 640.0, 0.0015625, 0.0015625)';
 
+const SIGNAL_NAME_ALIAS_PATTERN = new RegExp(
+  `\\b(?:${Object.keys(MILKDROP_SIGNAL_NAME_ALIASES)
+    .sort((a, b) => b.length - a.length)
+    .join('|')})\\b`,
+  'giu',
+);
+
 /**
  * Builds the `\bname\b → signal*` replacement chain the raw-text normalizer
  * applies. `\b` word boundaries keep `bass` from matching inside `bass_att`,
@@ -213,18 +220,10 @@ export const MILKDROP_TEXSIZE_SUBSTITUTE_GLSL =
  * more specific alias wins when a name is a prefix of another.
  */
 export function buildMilkdropSignalNameReplacements(text: string): string {
-  let result = text;
-  const aliases = Object.keys(MILKDROP_SIGNAL_NAME_ALIASES).sort(
-    (a, b) => b.length - a.length,
+  return text.replace(
+    SIGNAL_NAME_ALIAS_PATTERN,
+    (match) => MILKDROP_SIGNAL_NAME_ALIASES[match.toLowerCase()] ?? match,
   );
-  for (const alias of aliases) {
-    const replacement = MILKDROP_SIGNAL_NAME_ALIASES[alias];
-    if (!replacement) {
-      continue;
-    }
-    result = result.replace(new RegExp(`\\b${alias}\\b`, 'giu'), replacement);
-  }
-  return result;
 }
 
 export function normalizeShaderSyntax(value: string) {

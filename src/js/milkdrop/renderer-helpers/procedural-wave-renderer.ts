@@ -30,6 +30,7 @@ import type {
 } from '../types';
 import {
   FIELD_REGISTER_UNIFORM_COUNT,
+  REGISTER_SLOT_UNIFORM_KEYS,
   syncProceduralInteractionUniforms,
 } from './procedural-field-uniforms';
 import {
@@ -119,14 +120,18 @@ function buildProceduralWaveAttributeValues(
   values: ArrayLike<number>,
   closed: boolean,
   offset = 0,
+  precomputedSampleT?: readonly number[],
 ) {
-  const sampleT = buildProceduralWaveSampleT(values.length, closed);
+  const sampleT =
+    precomputedSampleT ?? buildProceduralWaveSampleT(values.length, closed);
+  const result = new Array<number>(sampleT.length);
   // MilkDrop wraps offset reads modulo the buffer (waveL[(i + 32) % len]),
   // so shifted lookups wrap instead of clamping onto the last sample.
-  return sampleT.map((t) => {
-    const shifted = t + offset;
-    return sampleScalarValueAt(values, shifted - Math.floor(shifted));
-  });
+  for (let i = 0; i < sampleT.length; i += 1) {
+    const shifted = sampleT[i]! + offset;
+    result[i] = sampleScalarValueAt(values, shifted - Math.floor(shifted));
+  }
+  return result;
 }
 
 function buildProceduralWaveParity(sourceLength: number, closed: boolean) {
@@ -288,40 +293,44 @@ function fillProceduralWaveAttributes(
   next: Line,
   wave: MilkdropProceduralWaveVisual,
 ) {
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleT',
-    buildProceduralWaveSampleT(wave.samples.length, wave.closed),
-  );
+  const sampleT = buildProceduralWaveSampleT(wave.samples.length, wave.closed);
+  setOrUpdateScalarAttribute(next.geometry, 'sampleT', sampleT);
   const sampleDataChannels = [
-    buildProceduralWaveAttributeValues(wave.samples, wave.closed),
+    buildProceduralWaveAttributeValues(wave.samples, wave.closed, 0, sampleT),
     buildProceduralWaveAttributeValues(
       wave.samples,
       wave.closed,
       PROJECTM_STEREO_OFFSET,
+      sampleT,
     ),
     buildProceduralWaveAttributeValues(
       wave.samples,
       wave.closed,
       PROJECTM_STEREO_OFFSET * 2,
+      sampleT,
     ),
     buildProceduralWaveAttributeValues(
       wave.samples,
       wave.closed,
       PROJECTM_STEREO_OFFSET * 3,
+      sampleT,
     ),
   ];
   setOrUpdateVectorAttribute(next.geometry, 'sampleData', sampleDataChannels);
+  const velocitySampleT =
+    wave.velocities.length === wave.samples.length ? sampleT : undefined;
   const velocityChannel = buildProceduralWaveAttributeValues(
     wave.velocities,
     wave.closed,
+    0,
+    velocitySampleT,
   );
   setOrUpdateVectorAttribute(next.geometry, 'sampleMisc', [
     buildProceduralWaveParity(wave.samples.length, wave.closed),
     velocityChannel,
     velocityChannel,
   ]);
-  return { sampleDataChannels, velocityChannel };
+  return { sampleDataChannels, velocityChannel, sampleT };
 }
 
 export function syncProceduralWaveObject(

@@ -144,10 +144,59 @@ export function extractSpectralFeatures(
   sampleRate: number,
   fftSize?: number,
 ): SpectralFeatureSnapshot {
+  const rms = computeRms(timeDomain);
+  const len = amplitudes.length;
+  if (len === 0) {
+    return {
+      rms,
+      spectralCentroid: 0,
+      spectralFlatness: 0,
+      spectralRolloff: 0,
+    };
+  }
+
+  const resolvedFftSize = fftSize ?? (len - 1) * 2;
+  const binFrequencyWidth = sampleRate > 0 ? sampleRate / resolvedFftSize : 0;
+
+  let weightedSum = 0;
+  let totalMagnitude = 0;
+  let logSum = 0;
+
+  for (let i = 0; i < len; i += 1) {
+    const mag = amplitudes[i];
+    weightedSum += i * binFrequencyWidth * mag;
+    totalMagnitude += mag;
+    logSum += Math.log(mag + EPSILON);
+  }
+
+  const spectralCentroid =
+    len > 1 && sampleRate > 0 && totalMagnitude >= EPSILON
+      ? weightedSum / totalMagnitude
+      : 0;
+
+  const arithmeticMean = totalMagnitude / len;
+  const spectralFlatness =
+    arithmeticMean >= EPSILON
+      ? Math.min(1, Math.max(0, Math.exp(logSum / len) / arithmeticMean))
+      : 0;
+
+  let spectralRolloff = 0;
+  if (sampleRate > 0 && totalMagnitude >= EPSILON) {
+    const threshold = totalMagnitude * DEFAULT_ROLLOFF_RATIO;
+    let cumulative = 0;
+    for (let i = 0; i < len; i += 1) {
+      cumulative += amplitudes[i];
+      if (cumulative >= threshold) {
+        spectralRolloff = i * binFrequencyWidth;
+        break;
+      }
+    }
+  }
+
   return {
-    rms: computeRms(timeDomain),
-    spectralCentroid: computeSpectralCentroid(amplitudes, sampleRate, fftSize),
-    spectralFlatness: computeSpectralFlatness(amplitudes),
-    spectralRolloff: computeSpectralRolloff(amplitudes, sampleRate, fftSize),
+    rms,
+    spectralCentroid,
+    spectralFlatness,
+    spectralRolloff,
   };
 }

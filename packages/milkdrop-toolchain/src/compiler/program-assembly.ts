@@ -80,8 +80,8 @@ export function resolveRuntimeGlobals({
   return runtimeGlobals;
 }
 
-function buildSupportedExpressionIdentifierSet() {
-  const supported = new Set<string>([
+const BASE_SUPPORTED_EXPRESSION_IDENTIFIERS: ReadonlySet<string> =
+  new Set<string>([
     ...Object.keys(DEFAULT_MILKDROP_STATE),
     ...Object.keys(aliasMap).filter((key) => aliasMap[key] !== null),
     ...MILKDROP_INTRINSIC_IDENTIFIERS,
@@ -167,17 +167,17 @@ function buildSupportedExpressionIdentifierSet() {
     'border_b',
     'thickoutline',
   ]);
-  return supported;
-}
 
 function isSupportedExpressionIdentifier(
   identifier: string,
-  supportedIdentifiers: Set<string>,
+  assignedSet: ReadonlySet<string>,
 ) {
   const normalized = identifier.toLowerCase();
   return (
-    supportedIdentifiers.has(identifier) ||
-    supportedIdentifiers.has(normalized) ||
+    BASE_SUPPORTED_EXPRESSION_IDENTIFIERS.has(identifier) ||
+    BASE_SUPPORTED_EXPRESSION_IDENTIFIERS.has(normalized) ||
+    assignedSet.has(identifier) ||
+    assignedSet.has(normalized) ||
     /^q\d+$/u.test(normalized) ||
     /^t\d+$/u.test(normalized)
   );
@@ -187,17 +187,17 @@ export function collectExpressionCompatibilityGaps(
   expressions: MilkdropExpressionNode[],
   assignedTargets: Iterable<string>,
 ) {
-  const supportedIdentifiers = buildSupportedExpressionIdentifierSet();
+  const assignedSet = new Set<string>();
   for (const target of assignedTargets) {
-    supportedIdentifiers.add(target);
-    supportedIdentifiers.add(target.toLowerCase());
+    assignedSet.add(target);
+    assignedSet.add(target.toLowerCase());
   }
 
   const missing = new Set<string>();
   for (const expression of expressions) {
     walkMilkdropExpression(expression, (node) => {
       if (node.type === 'identifier') {
-        if (!isSupportedExpressionIdentifier(node.name, supportedIdentifiers)) {
+        if (!isSupportedExpressionIdentifier(node.name, assignedSet)) {
           const name = node.name.toLowerCase();
           missing.add(name);
         }
