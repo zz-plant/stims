@@ -87,6 +87,9 @@ function mount() {
     clear: () => {},
     move: () => {},
     popNext: () => null,
+    replaceQueue: (ids: string[]) => {
+      presetQueue.presetIds = [...ids];
+    },
   };
   const rendered = renderWorkspace(createElement(BrowseSheetPanel), {
     engine,

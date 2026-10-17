@@ -110,6 +110,9 @@ const NewHomePage = lazy(() =>
 );
 
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
+import { ManageSetsDialog } from './ManageSetsDialog.tsx';
+import { decodePresetSetPayload, saveNamedSet } from './preset-sets.ts';
+import { SharedSetDialog } from './SharedSetDialog.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
@@ -351,6 +354,7 @@ function StimsWorkspaceAppShell() {
   );
 
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showManageSets, setShowManageSets] = useState(false);
   // Drives the palette's theme row label, so it names the current choice.
   const themeChoice = useSyncExternalStore(
     subscribeToThemePreference,
@@ -559,6 +563,7 @@ function StimsWorkspaceAppShell() {
         paletteSurface,
         handleToggleFullscreen,
         setShowShortcuts,
+        setShowManageSets,
         toggleFavoriteCurrentPreset,
         liveMode,
         isFullscreen,
@@ -865,6 +870,60 @@ function StimsWorkspaceAppShell() {
     engine,
     ui.routeState.presetId,
   ]);
+
+  const [sharedSetDismissed, setSharedSetDismissed] = useState(false);
+
+  const sharedSetPayload = useMemo(() => {
+    if (!ui.routeState.sharedSet) return null;
+    const res = decodePresetSetPayload(ui.routeState.sharedSet);
+    return res.ok ? res.set : null;
+  }, [ui.routeState.sharedSet]);
+
+  useEffect(() => {
+    setSharedSetDismissed(false);
+    if (ui.routeState.sharedSet && !sharedSetPayload) {
+      ui.setStatusMessage('Invalid or corrupted preset set link.');
+      ui.commitRoute((current) => ({ ...current, sharedSet: null }));
+    }
+  }, [
+    ui.routeState.sharedSet,
+    sharedSetPayload,
+    ui.setStatusMessage,
+    ui.commitRoute,
+  ]);
+
+  const handleCloseSharedSet = useCallback(() => {
+    setSharedSetDismissed(true);
+    ui.commitRoute((current) => ({ ...current, sharedSet: null }));
+  }, [ui.commitRoute]);
+
+  const handleLoadSharedSetQueue = useCallback(
+    (presetIds: string[]) => {
+      ui.presetQueue.replaceQueue(presetIds);
+      ui.setStatusMessage(
+        `Loaded "${sharedSetPayload?.title ?? 'Set'}" (${presetIds.length} preset${presetIds.length === 1 ? '' : 's'}) into queue.`,
+      );
+      handleCloseSharedSet();
+    },
+    [
+      ui.presetQueue,
+      sharedSetPayload,
+      handleCloseSharedSet,
+      ui.setStatusMessage,
+    ],
+  );
+
+  const handleSaveSharedSet = useCallback(
+    (title: string, presetIds: string[]) => {
+      saveNamedSet(title, presetIds);
+      ui.setStatusMessage(`Saved "${title}" to your preset sets.`);
+    },
+    [ui.setStatusMessage],
+  );
+
+  const showSharedSetDialog = Boolean(
+    sharedSetPayload && !sharedSetDismissed && !pendingCode,
+  );
 
   useEffect(() => {
     if (ui.toast && !ui.toast.quiet && visibleHint) {
@@ -1485,6 +1544,25 @@ function StimsWorkspaceAppShell() {
         open={showCredits}
         onClose={() => setShowCredits(false)}
         creditsRef={creditsRef}
+      />
+      <ManageSetsDialog
+        open={showManageSets}
+        onClose={() => setShowManageSets(false)}
+        currentQueueIds={ui.presetQueue.presetIds}
+        onLoadQueue={(presetIds) => {
+          ui.presetQueue.replaceQueue(presetIds);
+          setShowManageSets(false);
+        }}
+        onNotify={ui.setStatusMessage}
+      />
+      <SharedSetDialog
+        open={showSharedSetDialog}
+        onClose={handleCloseSharedSet}
+        payload={sharedSetPayload}
+        catalog={engine.catalog}
+        existingQueueCount={ui.presetQueue.presetIds.length}
+        onLoadQueue={handleLoadSharedSetQueue}
+        onSaveSet={handleSaveSharedSet}
       />
       <HudOverlay />
     </main>

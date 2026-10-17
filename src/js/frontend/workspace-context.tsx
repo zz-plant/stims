@@ -100,6 +100,7 @@ export interface WorkspaceContextValue {
     clear: () => void;
     move: (presetId: string, direction: -1 | 1) => void;
     popNext: () => string | null;
+    replaceQueue: (newIds: string[]) => void;
   };
 
   handleImport: (files: FileList | File[] | null) => Promise<void>;

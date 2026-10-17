@@ -76,11 +76,18 @@ function logInfo(msg: string) {
 //   these with its own buttons, right next to the preview they act on. The
 //   palette rows exist so automation and keyboard users can reach them.
 // - 'queue-clear': queue management, not a mid-performance move.
+// - 'queue-save-set', 'queue-share-set', 'queue-manage-sets': set management
+//   and sharing actions are modal workflows and set preparation, not
+//   mid-performance moves on the main stage dock. 'queue-share-set' also
+//   lives in CueMonitor beside queue-clear.
 const PALETTE_ONLY_EXEMPT = new Set([
   'queue-take',
   'queue-skip',
   'queue-fade',
   'queue-clear',
+  'queue-save-set',
+  'queue-share-set',
+  'queue-manage-sets',
   'toggle-autoplay',
   // Set once before a set, from the settings sheet or the palette. A dock
   // button would sit one mis-click away from silently changing how the

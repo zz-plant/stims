@@ -23,6 +23,7 @@ import type { EngineContextValue } from './engine-context.tsx';
 import { nextFileTrack, previousFileTrack } from './file-audio.ts';
 import { openPerformPicker } from './perform-pins.ts';
 import { cyclePresetWaveMode, nudgePresetField } from './preset-nudges.ts';
+import { buildPresetSetShareUrl, saveNamedSet } from './preset-sets.ts';
 import {
   followMusicTempoAction,
   nudgeTempoAction,
@@ -53,6 +54,7 @@ export type PaletteActionContext = {
   paletteSurface: Parameters<typeof togglePanel>[0];
   handleToggleFullscreen: () => void;
   setShowShortcuts: (show: boolean) => void;
+  setShowManageSets?: (show: boolean) => void;
   toggleFavoriteCurrentPreset: () => void;
   // Row labels and the row set depend on these.
   liveMode: boolean;
@@ -431,6 +433,63 @@ export function buildPaletteActions(
       run: () => {
         uiRef.current.presetQueue.clear();
         uiRef.current.setStatusMessage('Queue cleared.');
+      },
+    },
+    {
+      id: 'queue-save-set',
+      group: 'Queue',
+      label: 'Save queue as named preset set',
+      keywords: ['set', 'playlist', 'crate', 'save'],
+      run: () => {
+        const queueIds = uiRef.current.presetQueue.presetIds;
+        if (queueIds.length === 0) {
+          uiRef.current.setStatusMessage('Queue is empty. Add presets first.');
+          return;
+        }
+        if (context.setShowManageSets) {
+          context.setShowManageSets(true);
+        } else {
+          saveNamedSet(`Set (${queueIds.length} presets)`, queueIds);
+          uiRef.current.setStatusMessage(
+            `Saved queue as named set (${queueIds.length} presets).`,
+          );
+        }
+      },
+    },
+    {
+      id: 'queue-share-set',
+      group: 'Queue',
+      label: 'Share queue as link',
+      keywords: ['share', 'link', 'set', 'url'],
+      run: () => {
+        const queueIds = uiRef.current.presetQueue.presetIds;
+        if (queueIds.length === 0) {
+          uiRef.current.setStatusMessage('Queue is empty. Add presets first.');
+          return;
+        }
+        const url = buildPresetSetShareUrl(
+          window.location.href,
+          `Set (${queueIds.length} presets)`,
+          queueIds,
+        );
+        void navigator.clipboard.writeText(url).then(
+          () =>
+            uiRef.current.setStatusMessage(
+              'Share link for queue copied to clipboard!',
+            ),
+          () => uiRef.current.setStatusMessage('Could not copy link.'),
+        );
+      },
+    },
+    {
+      id: 'queue-manage-sets',
+      group: 'Queue',
+      label: 'Manage saved preset sets',
+      keywords: ['set', 'playlist', 'crate', 'load', 'manage'],
+      run: () => {
+        if (context.setShowManageSets) {
+          context.setShowManageSets(true);
+        }
       },
     },
     {

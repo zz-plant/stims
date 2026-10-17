@@ -16,6 +16,7 @@ import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useBottomOverlaySignal } from './hooks/use-escape-handler.ts';
 import { useLivePresetTile } from './hooks/use-live-preset-tile.ts';
+import { buildPresetSetShareUrl } from './preset-sets.ts';
 import { dismissStageHint, useStageHintDismissed } from './stage-hint-cards.ts';
 import { startQueuedCrossfade } from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
@@ -306,6 +307,28 @@ export function CueMonitor() {
               view that was never built. Until that exists, the count is the
               only place the rest of the queue is even mentioned, so the
               control belongs beside it. */}
+          <button
+            type="button"
+            className={styles.clear}
+            onClick={() => {
+              const url = buildPresetSetShareUrl(
+                window.location.href,
+                `Set (${queue.presetIds.length} presets)`,
+                queue.presetIds,
+              );
+              void navigator.clipboard.writeText(url).then(
+                () =>
+                  ui.setStatusMessage(
+                    'Share link for this set copied to clipboard!',
+                  ),
+                () => ui.setStatusMessage('Could not copy link.'),
+              );
+            }}
+            data-action="queue-share-set"
+            title="Share this set as a link"
+          >
+            Share set
+          </button>
           <button
             type="button"
             className={styles.clear}

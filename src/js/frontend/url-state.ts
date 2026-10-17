@@ -25,6 +25,7 @@ const SESSION_ROUTE_SEARCH_KEYS = [
   'chromeless',
   'yt',
   't',
+  'set',
 ] as const;
 
 export function readSessionRouteStateFromSearch(
@@ -42,6 +43,7 @@ export function readSessionRouteStateFromSearch(
     invalidPanel: parsed.routing.invalidPanel,
     youtubeVideoId: parsed.routing.youtubeVideoId,
     youtubeStartSeconds: parsed.routing.youtubeStartSeconds,
+    sharedSet: parsed.routing.sharedSet,
   };
 }
 
@@ -127,6 +129,9 @@ export function buildSessionRouteSearch(
     if (state.youtubeStartSeconds && state.youtubeStartSeconds > 0) {
       nextSearch.t = String(Math.floor(state.youtubeStartSeconds));
     }
+  }
+  if (state.sharedSet) {
+    nextSearch.set = state.sharedSet;
   }
 
   return nextSearch;
