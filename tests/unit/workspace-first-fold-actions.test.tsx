@@ -454,4 +454,64 @@ describe('workspace first-fold launch hierarchy', () => {
       rendered.dispose();
     }
   });
+
+  test('the landing renders the starter showcase with 4 curated presets and soundflow preview', () => {
+    const recorded: { preset: string | null; source: string | null } = {
+      preset: null,
+      source: null,
+    };
+    const starterPresets = [
+      makePresetEntry({ id: 'shifter-curlique', title: 'Shifter - Curlique' }),
+      makePresetEntry({
+        id: 'eos-glowsticks-v2-03-music',
+        title: 'Eo.S. - Glowsticks v2.03',
+      }),
+      makePresetEntry({ id: 'geiss-casino', title: 'Geiss - Casino' }),
+      makePresetEntry({
+        id: 'aderrasi-potion-of-spirits',
+        title: 'Aderrasi - Potion of Spirits',
+      }),
+    ];
+    const rendered = renderWorkspace(<NewHomePage />, {
+      engine: {
+        catalog: starterPresets,
+        attractPreviewLive: true,
+        handleAudioStart: (source) => {
+          recorded.source = source;
+          return Promise.resolve({ ok: true, source });
+        },
+      },
+      ui: {
+        commitRoute: (fn) => {
+          const next =
+            typeof fn === 'function' ? fn(makeUiValue().routeState) : fn;
+          recorded.preset = next.presetId ?? null;
+        },
+      },
+    });
+    try {
+      const cards = rendered.container.querySelectorAll(
+        '.stims-shell__launch-starter-card',
+      );
+      expect(cards.length).toBe(4);
+      expect(cards[0].textContent).toContain('Curlique');
+      expect(cards[0].textContent).toContain('Cosmic swirl');
+
+      // Clicking a card commits the route to that preset and starts demo audio
+      rendered.click(cards[0]);
+      expect(recorded.preset).toBe('shifter-curlique');
+      expect(recorded.source).toBe('demo');
+
+      // Soundflow section renders the 3 equation cards
+      const soundflow = rendered.container.querySelector(
+        '.stims-shell__launch-soundflow',
+      );
+      expect(soundflow).not.toBeNull();
+      expect(soundflow?.textContent).toContain('zoom = 1.0 + 0.08 * bass_att');
+      expect(soundflow?.textContent).toContain('warp = 0.02 * mid_att');
+      expect(soundflow?.textContent).toContain('rot = 0.01 * sin(treb)');
+    } finally {
+      rendered.dispose();
+    }
+  });
 });
