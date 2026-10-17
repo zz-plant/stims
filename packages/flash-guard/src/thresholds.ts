@@ -78,15 +78,16 @@ export function isFlashTransition(before: number, after: number): boolean {
   );
 }
 
+const RED_FLASH_SCALE_OVER_255 = RED_FLASH_SCALE / 255;
+
 /** Red-flash value from sRGB bytes: max(0, R-G-B) scaled per PEAT. */
 export function redFlashValue(r: number, g: number, b: number): number {
-  return Math.max(0, (r - g - b) / 255) * RED_FLASH_SCALE;
+  return Math.max(0, r - g - b) * RED_FLASH_SCALE_OVER_255;
 }
 
 /** Whether an sRGB byte triple is a saturated red (R/(R+G+B) >= 0.8). */
 export function isSaturatedRed(r: number, g: number, b: number): boolean {
-  const sum = r + g + b;
-  return sum > 0 && r / sum >= RED_SATURATION_MIN;
+  return r > 0 && r >= 4 * (g + b);
 }
 
 /**
