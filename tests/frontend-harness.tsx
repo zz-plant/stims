@@ -98,6 +98,7 @@ export function makeUiValue(
       clear: noop,
       move: noop,
       popNext: () => null,
+      replaceQueue: noop,
     },
 
     handleImport: asyncNoop,

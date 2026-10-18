@@ -41,6 +41,11 @@ export interface RoutingURLParams {
    * part of canonical session state; it survives as a preserved unknown param.
    */
   syncRoom: string | null;
+  /**
+   * Named preset set from `?set=`. Consumed to preview and optionally load
+   * a shared ordered queue.
+   */
+  sharedSet: string | null;
 }
 
 export interface PerformanceURLParams {
@@ -354,6 +359,7 @@ export function parseURLParams(
         return seconds != null && seconds > 0 ? Math.floor(seconds) : null;
       })(),
       syncRoom: get('sync')?.trim() || null,
+      sharedSet: get('set')?.trim() || null,
     },
     renderer,
     corpus: get('corpus')?.trim() || null,

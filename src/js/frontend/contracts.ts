@@ -45,6 +45,8 @@ export type SessionRouteState = {
   /** Video carried by a shared link, so the recipient lands on the same track. */
   youtubeVideoId?: string | null;
   youtubeStartSeconds?: number | null;
+  /** Encoded shared preset set from ?set= */
+  sharedSet?: string | null;
   /** Semantic landing context retained while Browse shows its real filter. */
   discovery?: SemanticDiscoveryRoute;
 };
