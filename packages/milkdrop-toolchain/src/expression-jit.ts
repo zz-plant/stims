@@ -118,37 +118,57 @@ type CompileContext = {
 
 const EMPTY_CSE_ELIGIBLE: ReadonlySet<string> = new Set();
 
+type IdentifierReadInfo = {
+  identity: string;
+  read: string;
+  readKeys: readonly string[];
+};
+
+const MAX_IDENTIFIER_READ_CACHE_SIZE = 2048;
+const identifierReadCache = new Map<string, IdentifierReadInfo>();
+
 /** Read identity for one identifier node: the cache key plus the env keys
  * the emitted read observes (used by store invalidation). Shared by the
  * emitter and the per-statement eligibility counter so the two cannot
  * disagree on what counts as "the same read". */
 function identifierReadInfo(
   node: MilkdropExpressionNode & { type: 'identifier' },
-) {
+): IdentifierReadInfo {
+  const cached = identifierReadCache.get(node.name);
+  if (cached) {
+    return cached;
+  }
   const name = node.name.toLowerCase();
+  let info: IdentifierReadInfo;
   // Env-first like the interpreter: pi/e are ordinary prepopulated EEL
   // variables and preset assignments to them must stick (see expression.ts
   // identifier resolution for the rationale).
   if (name === 'pi') {
-    return { identity: 'pi', read: '(e["pi"] ?? Math.PI)', readKeys: ['pi'] };
+    info = { identity: 'pi', read: '(e["pi"] ?? Math.PI)', readKeys: ['pi'] };
+  } else if (name === 'e') {
+    info = { identity: 'e', read: '(e["e"] ?? Math.E)', readKeys: ['e'] };
+  } else {
+    const normalized = name.replace(/[^a-z0-9_]+/gu, '_');
+    const aliased = aliasMap[normalized] || normalized;
+    if (aliased !== node.name) {
+      info = {
+        identity: `${node.name}|${aliased}`,
+        read: `(e[${JSON.stringify(node.name)}] ?? e[${JSON.stringify(aliased)}] ?? 0)`,
+        readKeys: [node.name, aliased],
+      };
+    } else {
+      info = {
+        identity: node.name,
+        read: `(e[${JSON.stringify(node.name)}] ?? 0)`,
+        readKeys: [node.name],
+      };
+    }
   }
-  if (name === 'e') {
-    return { identity: 'e', read: '(e["e"] ?? Math.E)', readKeys: ['e'] };
+  if (identifierReadCache.size >= MAX_IDENTIFIER_READ_CACHE_SIZE) {
+    identifierReadCache.clear();
   }
-  const normalized = name.replace(/[^a-z0-9_]+/gu, '_');
-  const aliased = aliasMap[normalized] || normalized;
-  if (aliased !== node.name) {
-    return {
-      identity: `${node.name}|${aliased}`,
-      read: `(e[${JSON.stringify(node.name)}] ?? e[${JSON.stringify(aliased)}] ?? 0)`,
-      readKeys: [node.name, aliased],
-    };
-  }
-  return {
-    identity: node.name,
-    read: `(e[${JSON.stringify(node.name)}] ?? 0)`,
-    readKeys: [node.name],
-  };
+  identifierReadCache.set(node.name, info);
+  return info;
 }
 
 /** Drops cached reads whose value a store to `target` could have changed.
