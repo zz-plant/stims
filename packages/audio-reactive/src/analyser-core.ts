@@ -66,7 +66,12 @@ export function buildTwiddleTable(length: number) {
     cos[index] = Math.cos(phase);
     sin[index] = Math.sin(phase);
   }
-  return { cos, sin };
+  const bits = Math.log2(length);
+  const bitRev = new Uint16Array(length);
+  for (let i = 0; i < length; i += 1) {
+    bitRev[i] = reverseBits(i, bits);
+  }
+  return { cos, sin, bitRev };
 }
 
 function fft(
@@ -75,17 +80,32 @@ function fft(
   twiddles: ReturnType<typeof buildTwiddleTable>,
 ): void {
   const n = real.length;
-  const bits = Math.log2(n);
+  const bitRev = twiddles.bitRev;
 
-  for (let i = 0; i < n; i += 1) {
-    const j = reverseBits(i, bits);
-    if (j > i) {
-      const tmpReal = real[i];
-      real[i] = real[j];
-      real[j] = tmpReal;
-      const tmpImag = imag[i];
-      imag[i] = imag[j];
-      imag[j] = tmpImag;
+  if (bitRev && bitRev.length === n) {
+    for (let i = 0; i < n; i += 1) {
+      const j = bitRev[i]!;
+      if (j > i) {
+        const tmpReal = real[i]!;
+        real[i] = real[j]!;
+        real[j] = tmpReal;
+        const tmpImag = imag[i]!;
+        imag[i] = imag[j]!;
+        imag[j] = tmpImag;
+      }
+    }
+  } else {
+    const bits = Math.log2(n);
+    for (let i = 0; i < n; i += 1) {
+      const j = reverseBits(i, bits);
+      if (j > i) {
+        const tmpReal = real[i]!;
+        real[i] = real[j]!;
+        real[j] = tmpReal;
+        const tmpImag = imag[i]!;
+        imag[i] = imag[j]!;
+        imag[j] = tmpImag;
+      }
     }
   }
 
@@ -93,24 +113,27 @@ function fft(
     const halfSize = size >> 1;
     const tableStep = n / size;
 
-    for (let start = 0; start < n; start += size) {
-      for (let i = 0; i < halfSize; i += 1) {
-        const twiddleIndex = i * tableStep;
-        const cos = twiddles.cos[twiddleIndex] ?? 1;
-        const sin = twiddles.sin[twiddleIndex] ?? 0;
+    for (let i = 0; i < halfSize; i += 1) {
+      const twiddleIndex = i * tableStep;
+      const cos = twiddles.cos[twiddleIndex] ?? 1;
+      const sin = twiddles.sin[twiddleIndex] ?? 0;
 
-        const evenReal = real[start + i];
-        const evenImag = imag[start + i];
-        const oddReal = real[start + i + halfSize];
-        const oddImag = imag[start + i + halfSize];
+      for (let start = 0; start < n; start += size) {
+        const evenIdx = start + i;
+        const oddIdx = evenIdx + halfSize;
+        const oddReal = real[oddIdx]!;
+        const oddImag = imag[oddIdx]!;
 
         const tempReal = oddReal * cos - oddImag * sin;
         const tempImag = oddReal * sin + oddImag * cos;
 
-        real[start + i] = evenReal + tempReal;
-        imag[start + i] = evenImag + tempImag;
-        real[start + i + halfSize] = evenReal - tempReal;
-        imag[start + i + halfSize] = evenImag - tempImag;
+        const evenReal = real[evenIdx]!;
+        const evenImag = imag[evenIdx]!;
+
+        real[evenIdx] = evenReal + tempReal;
+        imag[evenIdx] = evenImag + tempImag;
+        real[oddIdx] = evenReal - tempReal;
+        imag[oddIdx] = evenImag - tempImag;
       }
     }
   }
@@ -189,11 +212,11 @@ export function analyseBlockBytes(
     scratch.imag[i] = 0;
   }
   fft(scratch.real, scratch.imag, twiddles);
+  const invBinCount = 1 / binCount;
   for (let i = 0; i < binCount; i += 1) {
-    const magnitude =
-      Math.sqrt(
-        scratch.real[i] * scratch.real[i] + scratch.imag[i] * scratch.imag[i],
-      ) / binCount;
+    const r = scratch.real[i]!;
+    const im = scratch.imag[i]!;
+    const magnitude = Math.sqrt(r * r + im * im) * invBinCount;
     if (magnitudesOut) {
       magnitudesOut[i] = magnitude;
     }
