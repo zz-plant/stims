@@ -103,7 +103,7 @@ bun run check:catalog-integrity
 bun run check:catalog-fidelity
 ```
 
-Promotion writes `look:` tags and a provenance manifest named decision-profiles.json alongside the catalog (NEW, created on the first promotion). Existing local catalog search consumes tags. It does not edit categories, compatibility, parity, sensory risk, certification, or performance fields. A preview-only report, missing backend/aspect, stale source, uncertain result, or disagreement cannot promote a label. Operator-provided report files are trusted local artifacts, not signed attestations.
+Promotion writes `look:` tags and a provenance manifest named decision-profiles.json alongside the catalog (NEW, created on the first promotion). Existing local catalog search consumes tags. Every apply also revalidates all saved profiles, including presets absent from the incoming report, and removes stale or missing-source profiles and their owned tags. Cleanup is saved even when no new profile qualifies. It does not edit categories, compatibility, parity, sensory risk, certification, or performance fields. A preview-only report, missing backend/aspect, stale source, uncertain result, or disagreement cannot promote a label. Operator-provided report files are trusted local artifacts, not signed attestations.
 
 ## Evaluate before expanding use
 
