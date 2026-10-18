@@ -205,8 +205,9 @@ export function createHarmonicPercussiveAnalyser(
         let harmonicPart = 0;
         let percussivePart = 0;
         if (denominator > 1e-9) {
-          harmonicPart = (magnitude * hSquared) / denominator;
-          percussivePart = (magnitude * pSquared) / denominator;
+          const factor = magnitude / denominator;
+          harmonicPart = factor * hSquared;
+          percussivePart = factor * pSquared;
         }
 
         harmonicSum += harmonicPart;

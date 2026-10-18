@@ -171,9 +171,10 @@ export function computeBandAverage(
 
   let sum = 0;
   let weightTotal = 0;
+  const count = end - start;
+  const invRange = count > 1 ? 1 / (count - 1) : 0;
   for (let index = start; index < end; index += 1) {
-    const position =
-      end - start <= 1 ? 0 : (index - start) / Math.max(1, end - start - 1);
+    const position = (index - start) * invRange;
     const weight =
       bandType === 'bass'
         ? 1.2 - position * 0.3
@@ -183,7 +184,7 @@ export function computeBandAverage(
     sum += (data[index] ?? 0) * weight;
     weightTotal += weight;
   }
-  return weightTotal > 0 ? sum / weightTotal / 255 : 0;
+  return weightTotal > 0 ? sum / (weightTotal * 255) : 0;
 }
 
 /** Waveform byte for one PCM sample in [-1, 1], as the worklet posts it. */
