@@ -139,17 +139,21 @@ function createFields(count: number): SampledFields {
 
 function fillFields(target: SampledFields, pixels: Uint8ClampedArray) {
   const { luminance, red } = target;
-  for (let i = 0; i < luminance.length; i += 1) {
-    const idx = i * 4;
+  const redValues = red.values;
+  const redSaturated = red.saturated;
+  const len = luminance.length;
+  let idx = 0;
+  for (let i = 0; i < len; i += 1) {
     const r = pixels[idx] as number;
     const g = pixels[idx + 1] as number;
     const b = pixels[idx + 2] as number;
+    idx += 4;
     luminance[i] =
       0.2126 * (LINEAR_CHANNEL_LUT[r] as number) +
       0.7152 * (LINEAR_CHANNEL_LUT[g] as number) +
       0.0722 * (LINEAR_CHANNEL_LUT[b] as number);
-    red.values[i] = redFlashValue(r, g, b);
-    red.saturated[i] = isSaturatedRed(r, g, b) ? 1 : 0;
+    redValues[i] = redFlashValue(r, g, b);
+    redSaturated[i] = isSaturatedRed(r, g, b) ? 1 : 0;
   }
   return target;
 }
