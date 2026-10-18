@@ -140,18 +140,18 @@ export function peakWindowFraction(
   const sat = scratchSat;
   sat.fill(0, 0, stride);
   for (let y = 0; y < rows; y += 1) {
-    sat[(y + 1) * stride] = 0;
-    let rowRun = 0;
-    const rowOffset = y * cols;
     const prevSatRow = y * stride;
     const nextSatRow = (y + 1) * stride;
+    sat[nextSatRow] = 0;
+    let rowRun = 0;
+    const rowOffset = y * cols;
     for (let x = 0; x < cols; x += 1) {
       rowRun += counts[rowOffset + x] ?? 0;
       sat[nextSatRow + x + 1] = (sat[prevSatRow + x + 1] as number) + rowRun;
     }
   }
 
-  let best = 0;
+  let bestTotal = 0;
   for (let y = 0; y + winH <= rows; y += 1) {
     const topRow = y * stride;
     const bottomRow = (y + winH) * stride;
@@ -161,9 +161,8 @@ export function peakWindowFraction(
         (sat[topRow + x + winW] as number) -
         (sat[bottomRow + x] as number) +
         (sat[topRow + x] as number);
-      const fraction = total / winPixels;
-      if (fraction > best) best = fraction;
+      if (total > bestTotal) bestTotal = total;
     }
   }
-  return best;
+  return bestTotal / winPixels;
 }
