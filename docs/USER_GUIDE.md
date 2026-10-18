@@ -93,3 +93,9 @@ Browser recording is beta. Resolution options do not establish the encoded resol
 ## Report a problem
 
 Include the preset or exported source, browser version, operating system, audio source, rendering backend (Settings → Graphics shows it), and steps to reproduce. If the problem looks renderer-specific, say whether it also happens with `?renderer=webgl` added to the address. For a shared-link problem, include the link when its contents are suitable to share. Say whether the problem occurs on a fresh load or after switching presets. [Open an issue](https://github.com/zz-plant/stims/issues/new/choose) with that evidence.
+
+## Check a picture against a description
+
+In Generate, expand **Check the current picture**, enter a description, and choose **Check picture**. When the optional hosted service is configured, this sends one reduced stage image and the description to Cloudflare. It sends no audio. The result can suggest trying a more specific prompt or generating again; it does not replace the preset. If you edit the source or controls while it runs, check the new picture again.
+
+This is an AI judgment about one frame. It does not verify flashing, performance, audio synchronization, or MilkDrop parity. Playback and local editing work without the service. Developer and agent workflows are in [Decision models](./DECISION_MODELS.md).

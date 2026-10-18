@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import styles from '../../css/SynthesizePanel.module.css';
+import { resolveOptionalApiUrl } from '../core/services/optional-api.ts';
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import {
   type generatePreset,
@@ -148,8 +149,11 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     stored.openrouterModel,
   );
   const [generating, setGenerating] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+  const reviewController = useRef<AbortController | null>(null);
   const [isPending, startTransition] = useTransition();
-  const isGenerating = generating || isPending;
+  const isGenerating = generating || isPending || reviewing;
+  useEffect(() => () => reviewController.current?.abort(), []);
   /** Run id for the in-flight near-black check, so a stale run's verdict
    * cannot relabel a preset the user has already replaced. */
   const visualCheckRunRef = useRef(0);
@@ -339,6 +343,60 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     offline,
     ui,
   ]);
+
+  const handlePictureCheck = useCallback(async () => {
+    if (!prompt.trim() || offline || reviewing) return;
+    reviewController.current?.abort();
+    const controller = new AbortController();
+    reviewController.current = controller;
+    const revision = window.__stims_agent?.getPerformanceRevision();
+    setReviewing(true);
+    setStatus('Checking the current picture against your description…');
+    try {
+      const [
+        { captureDecisionImage, summarizePromptMatch },
+        { requestDecision },
+      ] = await Promise.all([
+        import('./generated-preset-decision.ts'),
+        import('../core/services/decision-client.ts'),
+      ]);
+      const image = await captureDecisionImage(
+        ui.stageRef.current,
+        controller.signal,
+      );
+      const result = await requestDecision(
+        {
+          task: 'prompt-match',
+          state: { prompt: prompt.trim() },
+          images: [image],
+        },
+        { signal: controller.signal },
+      );
+      if (controller.signal.aborted) return;
+      if (revision !== window.__stims_agent?.getPerformanceRevision()) {
+        setStatus(
+          'The performance changed during the picture check. Check the new picture again.',
+        );
+        return;
+      }
+      const verdict = summarizePromptMatch(result);
+      setStatus(
+        verdict === 'match'
+          ? 'The picture appears to match your description. This is an AI visual judgment.'
+          : verdict === 'mismatch'
+            ? 'The picture appears to miss part of your description. Try a more specific prompt or generate again.'
+            : 'The picture check was uncertain. Try a clearer description or check a later frame.',
+      );
+      setCanRegenerate(verdict !== 'match');
+    } catch (error) {
+      if (!controller.signal.aborted)
+        setStatus(
+          `Picture check unavailable: ${error instanceof Error ? error.message : 'try again later'}`,
+        );
+    } finally {
+      if (!controller.signal.aborted) setReviewing(false);
+    }
+  }, [prompt, offline, reviewing, ui.stageRef]);
 
   return (
     <section className={styles.panel} aria-labelledby="synth-heading">
@@ -552,6 +610,38 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           className={styles.slider}
         />
       </label>
+
+      <details className="stims-shell__settings-advanced">
+        <summary className="stims-shell__settings-summary">
+          Check the current picture
+        </summary>
+        <div className="stims-shell__settings-advanced-body">
+          <p className={styles.intro}>
+            Compare the stage with your description. This sends one stage image
+            and the description to Cloudflare. No audio is sent.
+          </p>
+          <button
+            type="button"
+            className={styles.generateButton}
+            onClick={() => void handlePictureCheck()}
+            disabled={
+              isGenerating ||
+              offline ||
+              !prompt.trim() ||
+              !resolveOptionalApiUrl('/api/decide')
+            }
+          >
+            {reviewing
+              ? 'Checking picture…'
+              : 'Check picture against description'}
+          </button>
+          {!resolveOptionalApiUrl('/api/decide') ? (
+            <p className={styles.intro}>
+              Picture checks need a configured hosted API.
+            </p>
+          ) : null}
+        </div>
+      </details>
 
       <p className={styles.status} role="status" aria-live="polite">
         {status}

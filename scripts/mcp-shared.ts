@@ -30,6 +30,7 @@ import docsAgentsAgentHandoffs from '../docs/agents/agent-handoffs.md';
 import docsAgentsReadme from '../docs/agents/README.md';
 import docsAuthoringListening from '../docs/authoring/03-listening.md';
 import docsAuthoringReference from '../docs/authoring/reference.md';
+import docsDecisionModels from '../docs/DECISION_MODELS.md';
 import docsDevelopment from '../docs/DEVELOPMENT.md';
 import docsEvidenceClaimAudit from '../docs/evidence/public-claim-audit.md';
 import docsEvidenceLedger202605 from '../docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md';
@@ -61,6 +62,7 @@ const defaultInstructions = [
   '- session_compare — Capture before/after frames when making changes',
   '- session_watch — Record a timelapse of visuals over time',
   '- session_vibe("dark storm") — Search presets by natural language description, returns screenshots',
+  '- session_decide — Optional typed visual/audio judgment; explicit clips, suggestion by default. See docs/DECISION_MODELS.md.',
   '- session_close — Release browser resources when done',
   '',
   '## Automation (Stdio-only)',
@@ -78,6 +80,7 @@ const markdownSources = {
   'AGENTS.md': agentsGuide,
   'docs/README.md': docsReadme,
   'docs/MCP_SERVER.md': docsMcpServer,
+  'docs/DECISION_MODELS.md': docsDecisionModels,
   'docs/ARCHITECTURE.md': docsArchitecture,
   'docs/DEVELOPMENT.md': docsDevelopment,
   'docs/ROADMAP.md': docsRoadmap,

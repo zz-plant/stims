@@ -26,6 +26,7 @@ import {
   getManualTempoSource,
   type ManualTempoSource,
 } from '../core/manual-tempo.ts';
+import { getPerformanceRevision } from '../core/performance-revision.ts';
 import {
   extractFrameStats,
   type FrameStats,
@@ -547,6 +548,8 @@ export function describeAgentState(state: AgentStateSnapshot): string {
 }
 
 export interface AgentGlobal {
+  /** Changes on preset/source/control mutations, including same-id reloads. */
+  getPerformanceRevision: () => string;
   getState: () => AgentStateSnapshot;
   /** Typed events since a sequence number (0 = all retained). */
   getEvents: (sinceSeq?: number) => AgentEvent[];
@@ -581,6 +584,8 @@ export interface AgentGlobal {
    * transparent and every stat comes back zero on the default backend.
    */
   captureStats: () => Promise<FrameStats | null>;
+  /** Explicit on-demand stage JPEG, bounded to 640px. Never uploads it. */
+  captureImage: () => Promise<string | null>;
   /**
    * The preset's equation variables (q1–q32, zoom, rot, anything the
    * per-frame code assigns) as of the next rendered frame; null if no frame
@@ -797,6 +802,7 @@ export function installAgentStateGlobal(
     });
 
   const agentGlobal: AgentGlobal = {
+    getPerformanceRevision,
     getState: buildState,
     getEvents: (sinceSeq = 0) => events.filter((e) => e.seq > sinceSeq),
     run: async (actionId, params) => {
@@ -848,6 +854,14 @@ export function installAgentStateGlobal(
     waitForVariables,
     getVariables: (timeoutMs = 2_000) =>
       waitForVariables(() => true, timeoutMs).catch(() => null),
+    captureImage: async () => {
+      const canvas = providers.getStageCanvas();
+      if (!canvas) return null;
+      const { captureCanvasDecisionImage } = await import(
+        './generated-preset-decision.ts'
+      );
+      return captureCanvasDecisionImage(canvas);
+    },
     captureStats: () => {
       const canvas = providers.getStageCanvas();
       if (!canvas) return Promise.resolve(null);

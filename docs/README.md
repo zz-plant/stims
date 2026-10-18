@@ -42,6 +42,7 @@ Start with [the app](https://toil.fyi), the [user guide](./USER_GUIDE.md), or [c
 | WebGPU and WebGL rendering | [Rendering backends](./ARCHITECTURE.md#rendering-backends), [WebGPU flags](./MILKDROP_PRESET_RUNTIME.md#webgpu-descriptor-rollout-flags) |
 | Measured runtime cost | [Performance evidence](./RUNTIME_PERFORMANCE.md) |
 | Reference capture and fidelity work | [Parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md) |
+| Typed visual/audio judgments, curation, and evaluation | [Decision models](./DECISION_MODELS.md) |
 | Optional hosted endpoints | [API reference](./api.md), [OpenAPI schema](../public/openapi.json) |
 | Implemented systems and evidence limits | [Technical foundations](./TECHNICAL_ACHIEVEMENTS.md) |
 | Sensory research and literature | [Sensory accessibility](./SENSORY_ACCESSIBILITY.md), [literature map](./LITERATURE.md) |

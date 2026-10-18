@@ -61,6 +61,7 @@ These tools manage a persistent headless browser session so you can interact wit
 | `session_compare` | `sessionId`, optional `settleMs`, `label` | Before/after screenshot pair |
 | `session_watch` | `sessionId`, optional `durationMs`, `intervalMs` | Timelapse frames + state snapshots over time |
 | `session_vibe` | `vibe` (natural language description), optional `durationMs` | Searches the preset catalog by keyword relevance, returns screenshots of top 3 matches |
+| `session_decide` | `sessionId`, fixed `task`, optional `prompt`, `candidates`, `audioFile`, `videoFile`, `endpoint`, `apply` | Typed visual/audio judgment, suggestion, application status; explicit media upload to configured service |
 | `session_close` | `sessionId` | Releases browser resources |
 
 **Natural language tweaks supported by `session_tweak`:**
@@ -297,3 +298,9 @@ The server connects over stdio. MCP clients should launch this command from the 
 The Cloudflare Worker at `scripts/mcp-worker.ts` serves the Worker-compatible tools (documentation + preset catalog) over HTTP/SSE and WebSocket. It does not support session tools or automation.
 
 See `wrangler.mcp.jsonc` for configuration.
+
+## Optional decision models
+
+`session_decide` is stdio-only and uses `STIMS_DECISION_ENDPOINT` or an explicit endpoint. Visual tasks capture one reduced stage JPEG unless a video is supplied. Sound tasks require an explicit local WAV/MP3 or WebM/MP4 clip with sound; the tool opens no microphone and records no session audio. Passing a file authorizes sending that file to the configured service.
+
+The default is a suggestion. `apply: true` can select only an accepted preset from the supplied shortlist or a saved scene offered to the model. New source, preset, control, or scene changes during inference invalidate application. Scene recall uses the local four-second ramp; a superseded ramp is reported as unapplied. Make occasional phrase-level choices, then let local DSP and ramps drive frames. Question keys, request examples, and evidence limits are in [Decision models](./DECISION_MODELS.md), also available through `read_doc_section`.

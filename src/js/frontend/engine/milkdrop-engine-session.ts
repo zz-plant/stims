@@ -18,6 +18,7 @@
  * importing engine internals into a component.
  */
 import { setAudioActive, setCurrentToy } from '../../core/agent-api.ts';
+import { markPerformanceMutation } from '../../core/performance-revision.ts';
 import {
   DEFAULT_QUALITY_PRESETS,
   QUALITY_STORAGE_KEY,
@@ -328,6 +329,7 @@ export function createMilkdropEngineAdapter() {
     },
 
     async loadPreset(presetId: string) {
+      markPerformanceMutation();
       if (!experience) {
         throw new Error('MilkDrop engine session is not mounted.');
       }
@@ -340,6 +342,7 @@ export function createMilkdropEngineAdapter() {
     },
 
     async goBackPreset() {
+      markPerformanceMutation();
       if (!experience) {
         throw new Error('MilkDrop engine session is not mounted.');
       }
@@ -509,6 +512,7 @@ export function createMilkdropEngineAdapter() {
     },
 
     setCrossfade(position: number) {
+      markPerformanceMutation();
       experience?.setCrossfade(position);
     },
 
@@ -522,17 +526,20 @@ export function createMilkdropEngineAdapter() {
     },
 
     updateEditorSource(source: string) {
+      markPerformanceMutation();
       experience?.updateEditorSource(source);
     },
 
     /** Applies source and resolves with the resulting compile, so callers can
      * report real diagnostics instead of assuming success. */
     async applyEditorSourceAwaited(source: string) {
+      markPerformanceMutation();
       return (await experience?.applyEditorSourceAwaited(source)) ?? null;
     },
 
     /** Applies a group of fields in one commit and resolves with the result. */
     async applyEditorFieldsAwaited(updates: Record<string, string | number>) {
+      markPerformanceMutation();
       return (await experience?.applyEditorFieldsAwaited(updates)) ?? null;
     },
 
@@ -541,12 +548,14 @@ export function createMilkdropEngineAdapter() {
     },
 
     updateInspectorField(key: string, value: number) {
+      markPerformanceMutation();
       experience?.updateInspectorField?.(key, value);
     },
 
     /** Applies a field to the running VM without a recompile, for instant
      * drag feedback. The editor commits the value to the source on release. */
     updateFieldLive(key: string, value: number) {
+      markPerformanceMutation();
       experience?.setLiveField?.(key, value);
     },
 
@@ -570,6 +579,7 @@ export function createMilkdropEngineAdapter() {
      * what to do about it.
      */
     async importPreset(target: FileList | File[] | string) {
+      markPerformanceMutation();
       if (!experience) {
         throw new Error(
           'Failed to import the preset because the visualizer is still loading. Wait a moment, then try importing the file again.',
