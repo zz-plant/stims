@@ -38,7 +38,7 @@ const MOTIFS = [
   'radial',
 ] as const;
 const TAG_PROBABILITY = 0.9;
-const MAX_DECISION_RECORDS = 1000;
+export const MAX_DECISION_RECORDS = 1000;
 
 /** Conservative candidate labels, pending human review and contextual checks. */
 export function profileSearchTags(result: DecisionResult): string[] {
@@ -87,6 +87,40 @@ function contextKey(
 type Catalog = {
   presets: Array<{ id: string; file: string; tags?: string[] }>;
 };
+
+/** Recheck all saved profile ownership on every apply, including ids absent
+ * from the incoming report. Remove only look tags owned by invalid profiles.
+ */
+export function revalidateVisualProfiles<
+  T extends Catalog,
+  P extends { id: string; sourceHash: string; tags: string[] },
+>(
+  catalog: T,
+  profiles: readonly P[],
+  sourceHashOf: (file: string) => string | null,
+): { catalog: T; profiles: P[] } {
+  if (profiles.length > MAX_DECISION_RECORDS)
+    throw new Error('Too many saved decision profiles');
+  if (new Set(profiles.map((profile) => profile.id)).size !== profiles.length)
+    throw new Error('Duplicate saved decision profile ids');
+  const next = structuredClone(catalog);
+  const byId = new Map(next.presets.map((entry) => [entry.id, entry]));
+  const current: P[] = [];
+  for (const profile of profiles) {
+    const entry = byId.get(profile.id);
+    if (!entry) continue;
+    const hash = sourceHashOf(entry.file);
+    if (hash && hash === profile.sourceHash) {
+      current.push(profile);
+      continue;
+    }
+    const owned = new Set(
+      profile.tags.filter((tag) => tag.startsWith('look:')),
+    );
+    if (entry.tags) entry.tags = entry.tags.filter((tag) => !owned.has(tag));
+  }
+  return { catalog: next, profiles: current };
+}
 
 export interface DecisionProfileManifest {
   version: 1;

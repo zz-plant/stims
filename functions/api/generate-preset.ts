@@ -1,6 +1,7 @@
 import {
   DECISION_LIMITS,
   type DecisionQuestions,
+  decisionRecord,
 } from '../../src/js/core/decision-model.ts';
 import { buildGeneratePrompt } from '../../src/js/milkdrop/preset-prompt.ts';
 import { allowedModelOrNull, enforceAiRateLimit } from './_ai-guard.ts';
@@ -102,6 +103,21 @@ function cleanModelOutput(raw: string): string {
   return cleaned;
 }
 
+/** Qwen's hosted chat-completion envelope differs from legacy text models. */
+function generatedText(result: unknown): string | null {
+  if (!decisionRecord(result)) return null;
+  if (typeof result.response === 'string' && result.response.trim())
+    return result.response.trim();
+  const first = Array.isArray(result.choices) ? result.choices[0] : null;
+  if (
+    !decisionRecord(first) ||
+    !decisionRecord(first.message) ||
+    typeof first.message.content !== 'string'
+  )
+    return null;
+  return first.message.content.trim() || null;
+}
+
 export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
@@ -167,7 +183,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
         { role: 'user', content: userPrompt },
       ],
     });
-    const rawResponse = result.response?.trim();
+    const rawResponse = generatedText(result);
     if (!rawResponse) {
       return new Response(
         JSON.stringify({ error: 'Model returned no output.' }),
@@ -205,7 +221,10 @@ export async function onRequest(context: { request: Request; env: Env }) {
           ],
         },
       );
-      title = (nameResult.response || '').trim().replace(/["']/g, '');
+      title = (generatedText(nameResult) || 'AI Generated').replace(
+        /["']/g,
+        '',
+      );
       if (title.length > 60) title = title.slice(0, 60);
     } catch {
       // Keep the honest generic title when title generation is unavailable.

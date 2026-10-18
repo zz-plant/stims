@@ -33,7 +33,9 @@ import {
   type DecisionLabel,
   type DecisionLabRecord,
   evaluateDecisionRecords,
+  MAX_DECISION_RECORDS,
   promoteVisualProfiles,
+  revalidateVisualProfiles,
 } from '../src/js/core/decision-workflows.ts';
 import {
   type DecisionFetch,
@@ -381,18 +383,6 @@ async function main(args: string[]) {
   const applyFile = value('--apply');
   if (applyFile) {
     const catalog = readCatalog(root);
-    const promoted = promoteVisualProfiles(
-      catalog,
-      readReport(applyFile),
-      (file) => {
-        const source = path.resolve(root, 'public', file.replace(/^\//, ''));
-        return existsSync(source) ? sha256(readFileSync(source)) : null;
-      },
-    );
-    if (!promoted.manifest.profiles.length)
-      throw new Error(
-        'No profiles meet the source and four-context promotion policy.',
-      );
     const manifestPath = path.join(
       root,
       'public/milkdrop-presets/decision-profiles.json',
@@ -400,27 +390,63 @@ async function main(args: string[]) {
     const previous = existsSync(manifestPath)
       ? requireObject(readJson(manifestPath))
       : null;
-    const previousProfiles =
+    const rawProfiles =
       previous?.version === 1 && Array.isArray(previous.profiles)
         ? previous.profiles
         : [];
+    if (rawProfiles.length > MAX_DECISION_RECORDS)
+      throw new Error('Too many saved decision profiles');
+    const previousProfiles = rawProfiles.map((value) => {
+      const profile = requireObject(value);
+      if (
+        !Array.isArray(profile.tags) ||
+        profile.tags.some((tag) => typeof tag !== 'string')
+      )
+        throw new Error('Invalid saved decision profile tags');
+      return {
+        ...profile,
+        id: requireText(profile.id),
+        sourceHash: requireText(profile.sourceHash),
+        tags: profile.tags as string[],
+      };
+    });
+    const sourceHashOf = (file: string) => {
+      const source = path.resolve(root, 'public', file.replace(/^\//, ''));
+      return existsSync(source) ? sha256(readFileSync(source)) : null;
+    };
+    const current = revalidateVisualProfiles(
+      catalog,
+      previousProfiles,
+      sourceHashOf,
+    );
+    const promoted = promoteVisualProfiles(
+      current.catalog,
+      readReport(applyFile),
+      sourceHashOf,
+    );
+    if (!promoted.manifest.profiles.length && !previousProfiles.length)
+      throw new Error(
+        'No profiles meet the source and four-context promotion policy.',
+      );
     const changed = new Set(
       promoted.manifest.profiles.map((profile) => profile.id),
     );
     const manifest = {
       version: 1,
       profiles: [
-        ...previousProfiles.filter(
+        ...current.profiles.filter(
           (profile) =>
             decisionRecord(profile) && !changed.has(String(profile.id)),
         ),
         ...promoted.manifest.profiles,
       ],
     } satisfies { version: number; profiles: unknown[] };
+    if (manifest.profiles.length > MAX_DECISION_RECORDS)
+      throw new Error('Too many merged decision profiles');
     saveJson(catalogFile(root), promoted.catalog);
     saveJson(manifestPath, manifest);
     console.log(
-      `Promoted ${promoted.manifest.profiles.length} reviewed visual profiles. Run catalog integrity and fidelity checks.`,
+      `Promoted ${promoted.manifest.profiles.length} reviewed visual profiles; invalidated ${previousProfiles.length - current.profiles.length} stale profiles. Run catalog integrity and fidelity checks.`,
     );
     return;
   }

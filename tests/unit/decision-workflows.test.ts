@@ -5,6 +5,7 @@ import {
   evaluateDecisionRecords,
   profileSearchTags,
   promoteVisualProfiles,
+  revalidateVisualProfiles,
 } from '../../src/js/core/decision-workflows.ts';
 
 function profile(overrides: Partial<DecisionResult> = {}): DecisionResult {
@@ -57,6 +58,19 @@ function record(
 }
 
 describe('decision-assisted workflows', () => {
+  test('revalidation bounds saved profiles and rejects duplicate ids before copying the catalog', () => {
+    const profile = { id: 'p', sourceHash: 'source-p', tags: ['look:tunnel'] };
+    expect(() =>
+      revalidateVisualProfiles(
+        { presets: [] },
+        Array(1001).fill(profile),
+        () => null,
+      ),
+    ).toThrow('Too many');
+    expect(() =>
+      revalidateVisualProfiles({ presets: [] }, [profile, profile], () => null),
+    ).toThrow('Duplicate');
+  });
   test('offline reports are bounded before building maps or copying the catalog', () => {
     const records = Array(1001).fill(record('webgl', 1280, 720));
     expect(() => evaluateDecisionRecords(records, [])).toThrow('Too many');

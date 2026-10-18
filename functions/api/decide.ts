@@ -44,7 +44,10 @@ export async function onRequest(context: {
       503,
     );
   const limited = await enforceAiRateLimit(request, env.AI_RATE_LIMITER);
-  if (limited) return limited;
+  if (limited) {
+    limited.headers.set('Cache-Control', 'no-store');
+    return limited;
+  }
   try {
     const input = parseDecisionRequest(await readDecisionBody(request));
     return json(await runDecision(env.AI, input));

@@ -160,6 +160,7 @@ describe('bounded decision endpoint', () => {
       },
     });
     expect(response.status).toBe(429);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
     expect(key).toBe('192.0.2.1');
     expect(calls).toBe(0);
   });
@@ -368,6 +369,38 @@ async function generateWithRouting(
   return { response, models };
 }
 describe('generation decision routing', () => {
+  test('reads hosted chat-completion output after routing as well as legacy text', async () => {
+    const ai: WorkersAI = {
+      run: async (model) => {
+        if (model === '@cf/cloudflare/clef-flash')
+          return {
+            model: 'clef-flash',
+            answers: classification('simple', 0.05),
+          };
+        return {
+          choices: [
+            {
+              message: {
+                content:
+                  model === '@cf/ibm-granite/granite-4.0-h-micro'
+                    ? 'Blue rings'
+                    : '[preset00]\nfDecay=0.98\nfZoom=1.02',
+              },
+            },
+          ],
+        };
+      },
+    };
+    const response = await generate({
+      request: post({ description: 'blue circles' }),
+      env: { AI: ai },
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      milkSource: '[preset00]\nfDecay=0.98\nfZoom=1.02',
+      title: 'Blue rings',
+    });
+  });
   test('rejects invalid or oversized descriptions before routing inference', async () => {
     let calls = 0;
     const ai: WorkersAI = {
