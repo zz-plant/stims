@@ -772,8 +772,10 @@ function transformMeshPoint(
 
   const relX = rendererX - centerX;
   const relY = rendererY - centerY;
-  const rx = relX * cosRot - relY * sinRot + centerX;
-  const ry = relX * sinRot + relY * cosRot + centerY;
+  const rotX = relX * cosRot - relY * sinRot;
+  const rotY = relX * sinRot + relY * cosRot;
+  const rx = rotX + centerX;
+  const ry = rotY + centerY;
 
   // Zoom. Skipped when it cannot change the vertex: zoomExponent === 1 folds
   // the exponent to `zoom ** 1 === zoom` (exact in IEEE), and zoom === 1 folds
@@ -794,14 +796,14 @@ function transformMeshPoint(
   let zy: number;
   if (zoomExponent === 1) {
     const zoomScale = signedZoomScale(zoom, 1);
-    zx = centerX + (rx - centerX) * zoomScale;
-    zy = centerY + (ry - centerY) * zoomScale;
+    zx = centerX + rotX * zoomScale;
+    zy = centerY + rotY * zoomScale;
   } else if (zoom === 1) {
-    zx = centerX + (rx - centerX);
-    zy = centerY + (ry - centerY);
+    zx = rx;
+    zy = ry;
   } else {
-    const zoomRadius = Math.hypot(rx - centerX, ry - centerY);
-    const radiusNormalized = clamp(zoomRadius / Math.SQRT2, 0, 1);
+    const zoomRadius = Math.hypot(rotX, rotY);
+    const radiusNormalized = clamp(zoomRadius * Math.SQRT1_2, 0, 1);
     // Authored presets legitimately use extreme pairs (orbasonic ships
     // zoom=100 with zoomexp=100); unclamped, zoom^(zoomexp^(2r-1)) overflows
     // float32 at the edges and NaN-poisons the warp into a black frame.
@@ -810,8 +812,8 @@ function transformMeshPoint(
       zoom,
       zoomExponent ** (radiusNormalized * 2 - 1),
     );
-    zx = centerX + (rx - centerX) * zoomScale;
-    zy = centerY + (ry - centerY) * zoomScale;
+    zx = centerX + rotX * zoomScale;
+    zy = centerY + rotY * zoomScale;
   }
 
   // Ripple. warp === 0 makes the whole ripple exactly zero, so skip the trig
@@ -833,8 +835,9 @@ function transformMeshPoint(
       wy = zy;
     } else {
       const directionLength = Math.hypot(offsetX, offsetY);
-      wx = zx + (offsetX / directionLength) * ripple;
-      wy = zy + (offsetY / directionLength) * ripple;
+      const invDir = ripple / directionLength;
+      wx = zx + offsetX * invDir;
+      wy = zy + offsetY * invDir;
     }
   }
 
@@ -859,11 +862,9 @@ function transformMeshPoint(
   // inverse of the scatter above. Drawing the scatter instead folds the grid
   // and loses coverage wherever it leaves the screen, which cost presets that
   // the uniform path already rendered correctly.
-  const gatherRelX = rendererX - centerX;
-  const gatherRelY = rendererY - centerY;
   const gatherScale = 1 / signedZoomScale(zoom, zoomExponent);
-  const unrotX = gatherRelX * cosRot + gatherRelY * sinRot;
-  const unrotY = -gatherRelX * sinRot + gatherRelY * cosRot;
+  const unrotX = relX * cosRot + relY * sinRot;
+  const unrotY = -relX * sinRot + relY * cosRot;
   transientGatherResult.x =
     centerX + (unrotX * gatherScale) / (scaleX || 1) - translateX;
   transientGatherResult.y =
@@ -1184,11 +1185,13 @@ export function buildMeshField({
   }
 
   const latticeCache = geometryState.lattice as StaticMeshLattice;
+  const invDensityMinusOne = 1 / Math.max(1, density - 1);
   for (let row = 0; row < density; row += 1) {
+    const y = row * invDensityMinusOne * 2 - 1;
+    const rowOffset = row * density;
     for (let col = 0; col < density; col += 1) {
-      const x = (col / Math.max(1, density - 1)) * 2 - 1;
-      const y = (row / Math.max(1, density - 1)) * 2 - 1;
-      const pointIndex = row * density + col;
+      const x = col * invDensityMinusOne * 2 - 1;
+      const pointIndex = rowOffset + col;
       transientLatticeSample.milkdropX =
         latticeCache.milkdropX[pointIndex] ?? 0;
       transientLatticeSample.milkdropY =
@@ -1201,21 +1204,25 @@ export function buildMeshField({
         y,
         transientLatticeSample,
       );
-      const pointEntry: MeshFieldPoint = points[pointIndex] ?? {
-        sourceX: 0,
-        sourceY: 0,
-        x: 0,
-        y: 0,
-        warpU: 0,
-        warpV: 0,
-      };
-      pointEntry.sourceX = x;
-      pointEntry.sourceY = y;
-      pointEntry.x = point.x;
-      pointEntry.y = point.y;
-      pointEntry.warpU = transientGatherResult.x;
-      pointEntry.warpV = transientGatherResult.y;
-      points[pointIndex] = pointEntry;
+      let pointEntry = points[pointIndex];
+      if (!pointEntry) {
+        pointEntry = {
+          sourceX: x,
+          sourceY: y,
+          x: point.x,
+          y: point.y,
+          warpU: transientGatherResult.x,
+          warpV: transientGatherResult.y,
+        };
+        points[pointIndex] = pointEntry;
+      } else {
+        pointEntry.sourceX = x;
+        pointEntry.sourceY = y;
+        pointEntry.x = point.x;
+        pointEntry.y = point.y;
+        pointEntry.warpU = transientGatherResult.x;
+        pointEntry.warpV = transientGatherResult.y;
+      }
     }
   }
 
@@ -1542,13 +1549,14 @@ export function buildWarpField(
   }
   const uvBuffer = uvs ?? new Float32Array(vertexCount * 2);
 
+  let offset = 0;
   for (let index = 0; index < vertexCount; index += 1) {
     const point = meshField.points[index];
     if (!point) {
       return null;
     }
-    positions[index * 2] = point.x;
-    positions[index * 2 + 1] = point.y;
+    positions[offset] = point.x;
+    positions[offset + 1] = point.y;
     // Renderer space is [-1,1] with y up; texture space is [0,1] with v up,
     // matching how the feedback targets are sampled elsewhere.
     //
@@ -1557,12 +1565,13 @@ export function buildWarpField(
     // and measured here: it came out worse on the one preset class this path
     // serves (87.0% vs 82.9% against the projectM reference), so the scatter
     // stands until the gather's sign and aspect conventions are pinned down.
-    uvBuffer[index * 2] = (point.sourceX + 1) * 0.5;
-    uvBuffer[index * 2 + 1] = (point.sourceY + 1) * 0.5;
+    uvBuffer[offset] = (point.sourceX + 1) * 0.5;
+    uvBuffer[offset + 1] = (point.sourceY + 1) * 0.5;
     // The gather coordinate transformMeshPoint computed for this vertex, in
     // the same [0,1] texture space as uvBuffer.
-    sampleUvs[index * 2] = ((point.warpU ?? point.sourceX) + 1) * 0.5;
-    sampleUvs[index * 2 + 1] = ((point.warpV ?? point.sourceY) + 1) * 0.5;
+    sampleUvs[offset] = ((point.warpU ?? point.sourceX) + 1) * 0.5;
+    sampleUvs[offset + 1] = ((point.warpV ?? point.sourceY) + 1) * 0.5;
+    offset += 2;
   }
 
   let indices = geometryState.warpFieldIndices;
