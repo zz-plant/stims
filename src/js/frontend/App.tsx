@@ -97,6 +97,7 @@ import {
 import { TITLE_CARD_EXIT_MS, TITLE_CARD_HOLD_MS } from './PresetTitleCard.tsx';
 import { buildPaletteActions } from './palette-actions.ts';
 import { prefetchPanelChunk } from './panel-chunks.ts';
+import { getPanelDescriptor, getPanelTitle } from './panel-registry.ts';
 import {
   SilentAudioNotice,
   useAudioAwaitingGesture,
@@ -127,7 +128,7 @@ import {
   useWorkspace,
   WorkspaceProvider,
 } from './workspace-context.tsx';
-import { findActivePresetEntry, getToolLabel } from './workspace-helpers.ts';
+import { findActivePresetEntry } from './workspace-helpers.ts';
 import {
   BROWSE_PANEL_FOCUS_SELECTOR,
   WorkspaceStagePanel,
@@ -223,7 +224,8 @@ const BROWSE_SKELETON_TILES = [
  * a stack of rows.
  */
 function PanelLoadingFallback({ panel }: { panel?: string | null }) {
-  if (panel === 'browse') {
+  const descriptor = getPanelDescriptor(panel);
+  if (descriptor?.loadingShape === 'browse') {
     return (
       <div
         className="stims-shell__panel-loading"
@@ -1357,14 +1359,9 @@ function StimsWorkspaceAppShell() {
     dismissLoadingScreen();
   }, []);
 
-  const stageAnchoredToolOpen = ui.routeState.panel === 'editor';
-  // Browse virtualizes its preset list (BrowseSheetPanel), which needs a
-  // dedicated, bounded-height scroll container rather than the sheet's
-  // normal whole-body scroll — the same "manages its own scrolling" shape
-  // the editor already opts into via fillBody, just without editor's
-  // additional stage-anchored placement.
-  const sidePanelFillBody =
-    stageAnchoredToolOpen || ui.routeState.panel === 'browse';
+  // Layout flags come from the panel registry (panel-registry.ts).
+  const panelDescriptor = getPanelDescriptor(ui.routeState.panel);
+  const stageAnchoredToolOpen = panelDescriptor?.stageAnchored ?? false;
 
   return (
     <main
@@ -1434,10 +1431,10 @@ function StimsWorkspaceAppShell() {
       <SidePanel
         open={ui.routeState.panel !== null}
         onClose={() => ui.updatePanel(null)}
-        title={getToolLabel(ui.routeState.panel ?? 'browse')}
+        title={panelDescriptor?.title ?? getPanelTitle('browse')}
         stageAnchored={stageAnchoredToolOpen}
-        fillBody={sidePanelFillBody}
-        wide={ui.routeState.panel === 'browse'}
+        fillBody={panelDescriptor?.fillBody ?? false}
+        wide={panelDescriptor?.wide ?? false}
         onOpen={handleSidePanelOpen}
       >
         {/* Panel-anchored hints render inside the panel they describe, not in

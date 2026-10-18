@@ -12,20 +12,14 @@
  * Import cost is nil — the map holds thunks, so nothing is fetched until
  * something calls `prefetchPanelChunk`. Repeat calls are free: the module
  * registry dedupes, and a chunk already in flight or resolved is not refetched.
+ *
+ * Panel descriptors and metadata live in ./panel-registry.ts.
  */
 
-/** Panel route ids, as they appear in `routeState.panel`. Internal: callers
- * pass a plain string, which is what the route state actually holds. */
-type PanelChunkId =
-  | 'browse'
-  | 'capture'
-  | 'editor'
-  | 'finder'
-  | 'refine'
-  | 'settings'
-  | 'synthesize';
+import { ALL_PANEL_IDS, type RoutedPanelId } from './contracts.ts';
+import { PANEL_REGISTRY } from './panel-registry.ts';
 
-const PANEL_CHUNKS: Record<PanelChunkId, () => void> = {
+const PANEL_CHUNKS: Record<RoutedPanelId, () => void> = {
   browse: () => void import('./BrowseSheetPanel.tsx'),
   capture: () => void import('./CapturePanel.tsx'),
   editor: () => {
@@ -43,27 +37,17 @@ const PANEL_CHUNKS: Record<PanelChunkId, () => void> = {
 /** Start one panel's chunk downloading. Unknown ids are ignored. */
 export function prefetchPanelChunk(panel: string | null | undefined): void {
   if (!panel) return;
-  PANEL_CHUNKS[panel as PanelChunkId]?.();
+  PANEL_CHUNKS[panel as RoutedPanelId]?.();
 }
 
 /**
- * The panels reachable from the stage dock's menu.
- *
- * Opening that menu is the clearest statement of intent the UI gets short of
- * a click, and by then the download is on the critical path. The editor chain
- * is deliberately absent: it is by far the heaviest prefetch in the app, and
- * it already has its own gated prewarm (desktop, runtime up, real idle) that
- * knows things this call site does not.
+ * Prefetch every panel reachable from the stage dock's ☰ menu.
+ * Menu inclusion is driven by the declarative PANEL_REGISTRY.
  */
-const MENU_PANELS: PanelChunkId[] = [
-  'browse',
-  'settings',
-  'capture',
-  'finder',
-  'synthesize',
-];
-
-/** Prefetch every panel the stage menu can launch. */
 export function prefetchMenuPanelChunks(): void {
-  for (const panel of MENU_PANELS) PANEL_CHUNKS[panel]();
+  for (const panelId of ALL_PANEL_IDS) {
+    if (PANEL_REGISTRY[panelId].prefetchOnMenu) {
+      PANEL_CHUNKS[panelId]();
+    }
+  }
 }
