@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, jest, test } from 'bun:test';
 import {
+  getPerformanceRevision,
+  markPerformanceMutation,
+} from '../../src/js/core/performance-revision.ts';
+import {
   installLivePerformance,
   type LivePerformanceApi,
   type LivePerformanceDeps,
@@ -98,6 +102,24 @@ describe('live performance runtime', () => {
 
     uninstall();
     expect(window.__stims_live).toBeUndefined();
+  });
+
+  test('new set-only macros invalidate decisions while continuing ramp frames do not', async () => {
+    const { live, uninstall } = harness({
+      setTarget: () => markPerformanceMutation(),
+    });
+    live.defineMacro({
+      name: 'decision-revision',
+      steps: [{ set: { zoom: 0.9 } }],
+    });
+    const before = getPerformanceRevision();
+    await live.runMacro('decision-revision');
+    expect(getPerformanceRevision()).not.toBe(before);
+    const pending = live.ramp({ targets: { zoom: 1.1 }, durationMs: 100 });
+    const started = getPerformanceRevision();
+    await settle(pending);
+    expect(getPerformanceRevision()).toBe(started);
+    uninstall();
   });
 
   test('a later install survives an earlier teardown', () => {

@@ -227,3 +227,7 @@ copy and may change; ids must not.
   render N frames with synthetic time/audio, for capture harnesses.
 - `window.__stims_live` — performance API (ramp, listen, pattern
   playback); see `src/js/frontend/live-performance.ts`.
+
+## Explicit decision capture
+
+`await __stims_agent.captureImage()` returns one JPEG of the live stage, at most 640 pixels on its longest side, or `null` without a canvas. It reads inside a frame callback with a three-second deadline and uploads nothing. `__stims_agent.getPerformanceRevision()` is a monotonic local mutation token for preset/source/control changes; audio samples and rendered frames do not advance it. Decision consumers compare it again immediately before applying a suggestion. See [Decision models](../DECISION_MODELS.md).

@@ -647,6 +647,95 @@
           }
         }
       }
+    },
+    "/decide": {
+      "post": {
+        "summary": "Evaluate a fixed typed visual or audio question set",
+        "description": "Optional AI binding. Probabilistic observations with provisional acceptance policy; never generates source or certifies safety, parity or performance. Audio/video selects Clef Omni. Limits: 6 MiB total decoded media, 9 MiB JSON body.",
+        "operationId": "decide",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["task", "state"],
+                "properties": {
+                  "task": {
+                    "type": "string",
+                    "enum": [
+                      "visual-profile",
+                      "prompt-match",
+                      "audio-match",
+                      "scene-choice",
+                      "capture-review"
+                    ]
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": ["clef-flash", "clef-omni"]
+                  },
+                  "state": {
+                    "type": "object",
+                    "description": "At most 16 KiB. prompt-match requires prompt; audio-match candidates and scene-choice scenes are 1-12 {id,description} entries. Video-only sound tasks require videoHasAudio:true."
+                  },
+                  "images": {
+                    "type": "array",
+                    "maxItems": 4,
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Image MIME data URLs; 1 MiB decoded each."
+                  },
+                  "audio": {
+                    "type": "array",
+                    "maxItems": 2,
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "WAV/MP3 data URLs; 2 MiB decoded each."
+                  },
+                  "videos": {
+                    "type": "array",
+                    "maxItems": 1,
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "WebM/MP4 data URLs; 4 MiB decoded each. Provider validates decoding and duration."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Typed noul/choice/score answers, accepted/review disposition, model and input/question provenance. Cache-Control: no-store. See docs/DECISION_MODELS.md for the exact versioned contract."
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "405": {
+            "description": "Use POST"
+          },
+          "413": {
+            "description": "Input too large"
+          },
+          "429": {
+            "description": "Configured rate limit exceeded"
+          },
+          "502": {
+            "description": "Provider failure or malformed output"
+          },
+          "503": {
+            "description": "AI binding unavailable"
+          },
+          "504": {
+            "description": "Request/evaluation deadline exceeded"
+          }
+        }
+      }
     }
   }
 }

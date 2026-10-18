@@ -24,6 +24,7 @@ import sharp from 'sharp';
 import { z } from 'zod';
 import { resolveAgentChromiumArgs } from './browser-launch.ts';
 import { sendToil } from './embed-harness.ts';
+import { registerDecisionTools } from './mcp-decision-tools.ts';
 import { registerPerformanceTools } from './mcp-performance-tools.ts';
 import {
   openSessionPreset,
@@ -1910,6 +1911,7 @@ server.registerTool(
 // Pattern the audio, ramp visuals over time, and measure the result. Kept in
 // their own module; they need the session map, so getSession is passed in.
 registerPerformanceTools(server, getSession);
+registerDecisionTools(server, getSession);
 
 function startServer() {
   // serveStdio owns the transport and the protocol-era decision: a 2025-era

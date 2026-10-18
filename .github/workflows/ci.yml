@@ -243,6 +243,7 @@ jobs:
       matrix:
         include:
           - file: agent-integration.test.ts
+          - file: decision-workflows.test.ts
           - file: chrome-visual-contract.test.ts
           - file: embed-bridge.test.ts
           - file: landing-route.test.ts

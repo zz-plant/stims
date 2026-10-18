@@ -46,7 +46,19 @@ For routes accepting `model`, only names allowed by `functions/api/_ai-guard.ts`
 
 **Response:** `{ milkSource: string, title?: string }`
 
-Generates source from a description. Automatic classification selects a model when no allowed override is supplied. Each request invokes generation rather than retrieving a cached preset.
+Generates source from a description. A typed Clef Flash choice routes between the existing writers when no allowed override is supplied. Uncertain, malformed, unavailable, or timed-out classification falls back to the deterministic description-length heuristic. An allowed writer override bypasses classification. Each request invokes generation rather than retrieving a cached preset.
+
+### POST /api/decide
+
+Optional fixed-question decision service, requiring the `AI` binding. See [decision workflows](./DECISION_MODELS.md) for question keys, examples, evaluation, and evidence limits.
+
+**JSON body:** `{ task, state, model?, images?, audio?, videos? }`. Tasks are `visual-profile`, `prompt-match`, `audio-match`, `scene-choice`, and `capture-review`. `model` is `clef-flash` or `clef-omni`; audio/video selects Omni. Media entries are supported MIME data URLs. Arbitrary questions, model identifiers, and extra envelope fields are rejected.
+
+**Response:** `{ version: 1, task, model, answers, disposition, provenance, usage? }`. Answers are typed `noul`, `choice`, or `score` objects with probabilities. `disposition` is `accepted` or `review`, using provisional thresholds; it is not a correctness certificate. Provenance carries the question version, evaluation timestamp, and normalized input SHA-256. No preset source is generated or applied by this endpoint.
+
+Limits: four images (1 MiB each), two audio clips (2 MiB each), one video (4 MiB), 6 MiB total decoded media, 9 MiB JSON body, 16 KiB state, 4,096 characters per string, and at most twelve offered candidates/scenes. Use short clips; the provider decodes media and enforces format/duration constraints. Video-only sound tasks require `state.videoHasAudio: true`, a caller declaration checked by the evidence question rather than proof of a soundtrack.
+
+Malformed input returns 400, oversized input 413, unavailable AI 503, configured rate limit 429, provider/malformed model output 502, and evaluation deadline 504. The body reader and inference wait have bounded deadlines. A timeout ends the request wait; Workers AI does not expose cancellation of already dispatched computation here. JSON responses use `Cache-Control: no-store`; media and provider error bodies are not logged by this handler. Check status before decoding success.
 
 ### POST /api/refine-preset
 

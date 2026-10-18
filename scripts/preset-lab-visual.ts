@@ -21,6 +21,7 @@
  * and a landscape-only measurement cannot see it.
  */
 
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -98,6 +99,8 @@ type ScenarioCapture = {
 export type PresetVisualReport = {
   version: 1;
   presetId: string;
+  /** SHA-256 of the actual served preset bytes, identical across scenarios. */
+  sourceHash?: string;
   renderer: 'webgl' | 'webgpu';
   /** CSS-pixel viewport the preset was measured at. Absent before 2026-10-06,
    * when every run used DEFAULT_VIEWPORT. */
@@ -769,11 +772,34 @@ export async function runPresetVisualLab({
   });
   const captures = {} as Record<VisualScenario, ScenarioCapture>;
   let captureBackend: string | null = null;
+  const capturedSourceHashes = new Set<string>();
+  let sourceResponses = 0;
 
   try {
     const context = await browser.newContext({
       viewport: { width: viewport.width, height: viewport.height },
     });
+    const catalog = JSON.parse(
+      fs.readFileSync(
+        path.join(repoRoot, 'public/milkdrop-presets/catalog.json'),
+        'utf8',
+      ),
+    ) as { presets: Array<{ id: string; file: string }> };
+    const entry = catalog.presets.find((item) => item.id === presetId);
+    if (entry) {
+      const sourceUrl = new URL(entry.file, `http://127.0.0.1:${port}/`).href;
+      await context.route(sourceUrl, async (route) => {
+        const response = await route.fetch();
+        const body = await response.body();
+        if (response.ok()) {
+          capturedSourceHashes.add(
+            createHash('sha256').update(body).digest('hex'),
+          );
+          sourceResponses += 1;
+        }
+        await route.fulfill({ response, body });
+      });
+    }
     await context.addInitScript(() => {
       window.localStorage.setItem('stims:onboarding-complete', 'true');
     });
@@ -833,6 +859,15 @@ export async function runPresetVisualLab({
     version: 1,
     presetId,
     renderer,
+    ...(capturedSourceHashes.size === 1 &&
+    sourceResponses >= VISUAL_SCENARIOS.length &&
+    VISUAL_SCENARIOS.every(
+      (name) =>
+        captures[name].backend === renderer &&
+        captures[name].loadError === null,
+    )
+      ? { sourceHash: [...capturedSourceHashes][0] }
+      : {}),
     viewport: { width: viewport.width, height: viewport.height },
     captureBackend,
     samples,

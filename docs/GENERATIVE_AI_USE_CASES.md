@@ -108,3 +108,9 @@ Consistent with [`ROADMAP.md`](./ROADMAP.md): neural audio-to-visual generation,
 4. Generation benchmark corpus, then the closed agent loop on top of it.
 5. Shader-era generation, gated by the benchmark.
 6. Provenance metadata, then audio-aware auto-DJ.
+
+## Typed decision workflows
+
+[Decision models](./DECISION_MODELS.md) connects the existing compiler, catalog, visual captures, local search, generation tournament, and performance scenes to five fixed Clef question sets. Flash handles image observations and generation routing; Omni handles explicitly supplied audio/video evidence. The browser picture check and MCP suggestions are opt-in. The lab runner stores reviewable results, supports held-out labels, and promotes only intersected visual tags across both backends and orientations with matching capture-time source hashes.
+
+These integrations have contract and orchestration tests. They do not establish model accuracy, tagging quality, or musical fit on the Stims corpus. Acceptance thresholds are provisional until a family-held-out comparison measures coverage, errors, calibration, latency, and cost. `lab:generation-bench --visual` remains a stub: the new explicit picture check does not complete an autonomous generate-render-repair loop. Safety, parity, compatibility, and performance claims remain attached to their deterministic instruments.
