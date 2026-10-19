@@ -277,8 +277,8 @@
     "fflate": "^0.8.3",
     "flash-guard": "workspace:*",
     "milkdrop-toolchain": "workspace:*",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "three": "0.186.1"
   },
   "overrides": {
