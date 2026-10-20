@@ -19,9 +19,9 @@ export function allowedModelOrNull(model: string | undefined): string | null {
   return model && ALLOWED_CLIENT_MODELS.has(model) ? model : null;
 }
 
-// Returns a 429 response when the caller is over the per-IP limit, null when
-// the request may proceed. A missing binding (tests, wrangler dev without the
-// unsafe binding) fails open.
+// Returns an uncacheable 429 response when the caller is over the per-IP
+// limit, null when the request may proceed. A missing binding (tests,
+// wrangler dev without the unsafe binding) fails open.
 export async function enforceAiRateLimit(
   request: Request,
   limiter: RateLimiter | undefined,
@@ -45,6 +45,7 @@ export async function enforceAiRateLimit(
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Retry-After': '60',
+        'Cache-Control': 'no-store',
       },
     },
   );
