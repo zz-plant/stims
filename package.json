@@ -224,7 +224,7 @@
     "packages:split": "bun run scripts/split-package.ts"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.13.0",
+    "@axe-core/playwright": "^4.14.0",
     "@biomejs/biome": "^2.5.15",
     "@cfworker/json-schema": "^4.1.1",
     "@modelcontextprotocol/server": "2.3.1",
