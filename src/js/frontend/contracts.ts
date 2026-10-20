@@ -5,14 +5,19 @@
  */
 
 import type { SemanticDiscoveryRoute } from '../../../functions/discover-slugs.ts';
-import type { AudioSource, PanelState } from '../core/url-params.ts';
+import {
+  ALL_PANEL_IDS,
+  type AudioSource,
+  type PanelState,
+  type RoutedPanelId,
+} from '../core/url-params.ts';
 import type { VisualFidelityTier } from '../milkdrop/catalog-store-analysis.ts';
 import type {
   MilkdropPresetLineageRef,
   MilkdropVisualCertification,
 } from '../milkdrop/types.ts';
 
-export type { AudioSource, PanelState };
+export { ALL_PANEL_IDS, type AudioSource, type PanelState, type RoutedPanelId };
 
 /**
  * What starting an audio source did. `ok` is true only when the requested

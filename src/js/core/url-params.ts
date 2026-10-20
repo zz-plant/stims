@@ -7,15 +7,18 @@
  * 'synthesize', which is precisely why those panels were not URL-addressable.
  * frontend/contracts.ts re-exports these; do not reintroduce a second union.
  */
-export type PanelState =
-  | 'browse'
-  | 'capture'
-  | 'editor'
-  | 'finder'
-  | 'refine'
-  | 'settings'
-  | 'synthesize'
-  | null;
+export const ALL_PANEL_IDS = [
+  'browse',
+  'capture',
+  'editor',
+  'finder',
+  'refine',
+  'settings',
+  'synthesize',
+] as const;
+
+export type RoutedPanelId = (typeof ALL_PANEL_IDS)[number];
+export type PanelState = RoutedPanelId | null;
 export type AudioSource = 'demo' | 'file' | 'microphone' | 'tab' | 'youtube';
 export type RequestedRenderer = 'webgl' | 'webgpu' | 'auto' | null;
 
@@ -142,15 +145,7 @@ export interface ParsedURLParams {
  * they shipped — which meant the AI panels, the newest capability in the app,
  * could not be linked, bookmarked, or restored across a reload.
  */
-const VALID_PANELS = new Set<Exclude<PanelState, null>>([
-  'browse',
-  'capture',
-  'editor',
-  'finder',
-  'refine',
-  'settings',
-  'synthesize',
-]);
+const VALID_PANELS = new Set<RoutedPanelId>(ALL_PANEL_IDS);
 
 const VALID_AUDIO_SOURCES = new Set<AudioSource>([
   'demo',

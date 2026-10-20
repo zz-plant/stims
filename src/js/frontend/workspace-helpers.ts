@@ -94,27 +94,6 @@ export const TOOL_TABS: Array<Exclude<PanelState, null>> = [
   'settings',
 ];
 
-export function getToolLabel(tool: Exclude<PanelState, null>) {
-  switch (tool) {
-    case 'browse':
-      return 'Browse presets';
-    case 'editor':
-      return 'Edit preset code';
-    case 'refine':
-      return 'Refine with AI';
-    case 'finder':
-      return 'Find a preset';
-    case 'synthesize':
-      return 'Generate with AI';
-    case 'capture':
-      return 'Record video';
-    case 'settings':
-      return 'Settings';
-    default:
-      return '';
-  }
-}
-
 const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
   'collection:favorites': 'Saved presets',
   'collection:hall-of-fame': 'Hall of Fame',

@@ -27,6 +27,7 @@ import type {
 } from './contracts.ts';
 import type { EngineSnapshot } from './engine/milkdrop-engine-adapter.ts';
 import { disposeActiveFileAudio } from './file-audio.ts';
+import { isPanelStageAnchored } from './panel-registry.ts';
 import {
   buildCanonicalUrl,
   buildRemixShareUrl,
@@ -285,7 +286,7 @@ export function useWorkspaceShellOrchestration({
       runtimeReady,
       selectedPreset,
       starterPresets,
-      stageAnchoredToolOpen: routeState.panel === 'editor',
+      stageAnchoredToolOpen: isPanelStageAnchored(routeState.panel),
       updateEditorSource,
     }),
     [
