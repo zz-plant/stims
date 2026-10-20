@@ -181,16 +181,22 @@ export function useWorkspaceShellOrchestration({
     });
   }, [enrichedCatalog, routeState.collectionTag, deferredSearch]);
 
+  // Id index over the catalog, rebuilt only when the catalog changes. The
+  // first entry wins on a duplicate id, as Array.find did. filteredCatalog
+  // is a subset of the same entries, so looking there first never found a
+  // different preset; it only re-ran this lookup on every search keystroke.
+  const catalogById = useMemo(() => {
+    const index = new Map<string, PresetCatalogEntry>();
+    for (const entry of enrichedCatalog) {
+      if (!index.has(entry.id)) index.set(entry.id, entry);
+    }
+    return index;
+  }, [enrichedCatalog]);
+
+  const activePresetId = engineSnapshot?.activePresetId;
   const currentPreset = useMemo(
-    () =>
-      filteredCatalog.find(
-        (entry) => entry.id === engineSnapshot?.activePresetId,
-      ) ??
-      enrichedCatalog.find(
-        (entry) => entry.id === engineSnapshot?.activePresetId,
-      ) ??
-      null,
-    [filteredCatalog, enrichedCatalog, engineSnapshot?.activePresetId],
+    () => (activePresetId ? (catalogById.get(activePresetId) ?? null) : null),
+    [catalogById, activePresetId],
   );
 
   const starterPresets = useMemo(
@@ -205,11 +211,11 @@ export function useWorkspaceShellOrchestration({
   // featured surfaces where a first impression is being made.
   const featuredPreset = useMemo(
     () =>
-      enrichedCatalog.find((entry) => entry.id === FIRST_RUN_PRESET_ID) ??
+      catalogById.get(FIRST_RUN_PRESET_ID) ??
       starterPresets[0]?.preset ??
       enrichedCatalog[0] ??
       null,
-    [starterPresets, enrichedCatalog],
+    [catalogById, starterPresets, enrichedCatalog],
   );
 
   const resolvedRequestedPreset = useMemo(
@@ -674,9 +680,7 @@ export function useWorkspaceShellOrchestration({
     // route right after a Remix linked the parent instead.
     const activeId = engineSnapshot?.activePresetId ?? routeState.presetId;
     const sharedPreset =
-      (activeId
-        ? shellState.catalog.find((entry) => entry.id === activeId)
-        : null) ?? selectedPreset;
+      (activeId ? catalogById.get(activeId) : null) ?? selectedPreset;
     const currentUrl = buildCanonicalUrl(
       { ...routeState, presetId: activeId ?? null, agentMode: false },
       window.location,
