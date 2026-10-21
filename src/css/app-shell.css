@@ -1399,6 +1399,13 @@ body[data-page="workspace"] {
     outline-offset: 2px;
   }
 
+  .stims-shell__launch-soundflow-note {
+    margin: 0;
+    color: var(--stims-on-stage-muted);
+    font-size: var(--text-xs-plus);
+    line-height: 1.45;
+  }
+
   .stims-shell__launch-soundflow-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -1562,6 +1569,23 @@ body[data-page="workspace"] {
     color: var(--stims-muted);
     font-size: 0.875rem;
     line-height: 1.5;
+  }
+
+  .stims-shell__launch-status-action {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--stims-ink-strong);
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .stims-shell__launch-status-action:focus-visible {
+    outline: 2px solid var(--stims-accent);
+    outline-offset: 2px;
+    border-radius: var(--stims-radius-control);
   }
 
   @media (max-width: 480px) {
@@ -1913,8 +1937,10 @@ body[data-page="workspace"] {
   }
 
   /* The file card's state line, moved out of the chip (a chip has no second
-     line) to sit under the row. */
-  .stims-shell__source-feedback {
+     line) to sit under the row, and the panel's standing notes (where the
+     sound goes, which sources this browser lacks). */
+  .stims-shell__source-feedback,
+  .stims-shell__source-note {
     margin: 0;
     color: var(--stims-muted);
     font-size: 0.8125rem;

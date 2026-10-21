@@ -603,18 +603,28 @@ function Actions({
           {isStarting ? 'Starting…' : 'Play demo'}
         </button>
       )}
-      {/* Buttons above go disabled the instant this page mounts if the
-          catalog fetch failed (see engineReady in workspace-shell-hooks.ts);
-          without this, a disabled primary CTA with no visible reason reads
-          as broken rather than transient. Mirrors the same message
-          AudioSourcePanel already shows for its own source buttons. */}
+      {/* Buttons above go disabled when the preset catalog failed to
+          download (engineReady in workspace-shell-hooks.ts is exactly "no
+          catalog error"). This used to promise "Audio engine is starting.
+          This will unlock in a moment." — true only if the background
+          full-catalog load later succeeds, and a wait forever when it does
+          not. Say what failed and give the one thing that can fix it; the
+          buttons still unlock on their own if the retry lands. */}
       {!isEngineReady ? (
         <p
           id={engineStatusId}
           className="stims-shell__launch-status"
           aria-live="polite"
         >
-          Audio engine is starting. This will unlock in a moment.
+          The preset list didn&rsquo;t download. Check your connection, then{' '}
+          <button
+            type="button"
+            className="stims-shell__launch-status-action"
+            onClick={() => window.location.reload()}
+          >
+            reload
+          </button>
+          .
         </p>
       ) : null}
       {/* The same pair on every variant of this page. The returning visitor
@@ -784,7 +794,7 @@ function LaunchSoundflowPreview({
           id="soundflow-preview-heading"
           className="stims-shell__section-label"
         >
-          Live soundflow & equations
+          How sound drives a preset
         </h2>
         {showEditVisual ? (
           <button
@@ -801,6 +811,14 @@ function LaunchSoundflowPreview({
           </button>
         ) : null}
       </div>
+      {/* These three lines are illustrations, not the preset running
+          behind the page. The heading used to say "Live", and the button
+          beside it opened an editor holding entirely different code. */}
+      <p className="stims-shell__launch-soundflow-note">
+        {showEditVisual
+          ? 'Simplified examples. The editor shows the real equations of the preset running behind this page, and which sounds reach each one.'
+          : 'Simplified examples. Open any preset in the editor to see its real equations and which sounds reach each one.'}
+      </p>
       <div className="stims-shell__launch-soundflow-cards">
         <div className="stims-shell__launch-soundflow-card">
           <div className="stims-shell__launch-soundflow-band" data-band="bass">

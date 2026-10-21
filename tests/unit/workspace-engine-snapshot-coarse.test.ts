@@ -57,6 +57,7 @@ const CHANGED_VALUES: { [K in keyof EngineSnapshot]: EngineSnapshot[K] } = {
   tempoBpm: 128,
   shaderExecution: 'translated',
   appliedShaderExecution: 'controls',
+  draftUnsaved: true,
   autoplay: true,
   transitionMode: 'cut',
   blendDuration: 5,

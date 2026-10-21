@@ -13,8 +13,10 @@ Audio options depend on your browser:
 | Demo | A built-in sample; playback may require a click because of autoplay policy |
 | Microphone | Requires microphone permission and a secure context |
 | Audio file | Choose or drop one or more local files the browser can decode |
-| Tab or screen capture | Choose a supported capture source and enable audio in the browser's picker |
-| YouTube | Use the YouTube controls and supported tab capture to feed audio to the visualizer |
+| Tab or screen capture | Chrome or Edge on a desktop: choose a tab or screen and enable audio in the browser's picker. Firefox and Safari share no audio, so Stims does not offer it there |
+| YouTube | Same browsers as tab capture: the YouTube controls feed the player's sound through a share of this tab |
+
+Every source is analysed in the browser; Stims never uploads the audio.
 
 Several files play as a playlist: each track advances to the next, and the list starts again after the last. While a playlist plays, Previous track and Next track appear in the audio panel and the dock's audio menu, and your system's media keys skip tracks.
 
@@ -40,6 +42,8 @@ A moving stage does not prove that external audio reached it. Check the audio st
 Compare with the original (Cmd/Ctrl+Shift+B) shows your edit against the preset you started from. For a guided course with runnable examples, start at [Play](./authoring/00-play.md). For `.milk` syntax and signals, use the [generated reference](./authoring/reference.md).
 
 ## Save and share
+
+An edit that compiles is saved as that preset's draft in this browser, and the preset opens with it next time; the status line says so when it does, and Revert in the editor returns to the original. Text with errors is not saved: the draft keeps the last version that ran, and the browser asks before you leave the page.
 
 Use the editor's export controls to keep a `.milk` file. A file gives you a portable backup of the source independent of local browser storage.
 

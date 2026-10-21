@@ -1286,14 +1286,21 @@ function StimsWorkspaceAppShell() {
     applyAccessibility(getActiveAccessibilityPreference());
   }, []);
 
-  // Uncommitted editor edits live only in the session — there is no draft
-  // persistence — so a reload or a closed tab loses them outright. The
-  // session has tracked a `dirty` flag all along and nothing read it; this
-  // is the one place where losing work is silent and irreversible.
-  // Deliberately scoped to the editor being dirty: a beforeunload prompt on
-  // an idle visualizer would be pure nuisance.
+  // A draft that compiles is saved per preset in this browser and comes
+  // back on the next load (draft-persistence.ts), so once that write lands
+  // leaving loses nothing, and the browser's "changes may not be saved"
+  // warning was a false alarm on every edited preset. Ask only while
+  // something would be lost: text with errors (the saved copy is the last
+  // version that ran), or an edit whose write is pending or failed
+  // (IndexedDB blocked, over quota).
+  const editorHoldsUnsavedWork =
+    (editorDirty &&
+      (engineSnapshot?.sessionState?.diagnostics ?? []).some(
+        (diagnostic) => diagnostic.severity === 'error',
+      )) ||
+    (engineSnapshot?.draftUnsaved ?? false);
   useEffect(() => {
-    if (!editorDirty) return;
+    if (!editorHoldsUnsavedWork) return;
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       // Browsers show their own copy and ignore any string we return; the
@@ -1302,7 +1309,7 @@ function StimsWorkspaceAppShell() {
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [editorDirty]);
+  }, [editorHoldsUnsavedWork]);
 
   // The address bar and the in-app Share button are the same surface (both
   // read window.location), so a copied URL reproduces a session only if the

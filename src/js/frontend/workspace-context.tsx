@@ -193,6 +193,7 @@ export function coarseEngineSnapshotEqual(
     prev.tempoBpm === snap.tempoBpm &&
     prev.shaderExecution === snap.shaderExecution &&
     prev.appliedShaderExecution === snap.appliedShaderExecution &&
+    prev.draftUnsaved === snap.draftUnsaved &&
     prev.autoplay === snap.autoplay &&
     prev.transitionMode === snap.transitionMode &&
     prev.blendDuration === snap.blendDuration

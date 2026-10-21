@@ -80,3 +80,56 @@ export async function dropRedundantDraft(
   await store.clearDraft(id);
   return true;
 }
+
+/**
+ * Whether the editor's newest compiled source has reached storage. A save
+ * is queued per edit and can fail (IndexedDB blocked, over quota, private
+ * mode); until one succeeds the edit exists only in this tab, so the shell
+ * keeps its leave-page warning while `onUnsavedChange(true)` holds.
+ *
+ * Only the newest save decides the state: an older one resolving late must
+ * not mark a newer, still-pending edit as saved. A failure is reported once
+ * per run of failures, not once per keystroke pause.
+ */
+export function createDraftSaveStatus({
+  persist,
+  onUnsavedChange,
+  onFailure,
+}: {
+  persist: (id: string, source: string) => Promise<void>;
+  onUnsavedChange: (unsaved: boolean) => void;
+  onFailure: (error: unknown) => void;
+}) {
+  let revision = 0;
+  let unsaved = false;
+  let failureReported = false;
+  const setUnsaved = (next: boolean) => {
+    if (next === unsaved) return;
+    unsaved = next;
+    onUnsavedChange(next);
+  };
+  return {
+    save(id: string, source: string): Promise<void> {
+      const saveRevision = ++revision;
+      setUnsaved(true);
+      return persist(id, source).then(
+        () => {
+          if (saveRevision !== revision) return;
+          failureReported = false;
+          setUnsaved(false);
+        },
+        (error: unknown) => {
+          if (failureReported) return;
+          failureReported = true;
+          onFailure(error);
+        },
+      );
+    },
+    /** A preset load replaced the buffer: nothing edited is pending. */
+    reset() {
+      revision += 1;
+      failureReported = false;
+      setUnsaved(false);
+    },
+  };
+}

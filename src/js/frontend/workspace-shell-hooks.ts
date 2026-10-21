@@ -553,7 +553,7 @@ export function useWorkspaceShellOrchestration({
               : '';
           const msg =
             errName === 'NotAllowedError' || errName === 'PermissionDeniedError'
-              ? 'Microphone access was denied. Check browser settings and OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).'
+              ? 'Microphone access was denied. Allow it from the address bar, or in macOS Privacy & Security / Windows Privacy Settings. Demo audio needs no permission.'
               : errName === 'NotFoundError'
                 ? 'No microphone hardware found. Please connect a microphone and try again.'
                 : errName === 'NotReadableError' ||
