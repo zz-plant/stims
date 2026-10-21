@@ -546,3 +546,75 @@ describe('workspace first-fold launch hierarchy', () => {
     }
   });
 });
+
+describe('launch page after the WebGL fallback reload', () => {
+  // The fallback reloads the session's own URL, `?preset=…&audio=…`, which is
+  // exactly what a copied link looks like. The same arrival is rendered both
+  // ways so the difference is only who made it.
+  function renderArrival(rendererFallbackReload: boolean) {
+    const entry = makePresetEntry({
+      id: 'martin-witchcraft',
+      title: 'martin - witchcraft reloaded',
+      author: 'martin',
+    });
+    const statusMessages: Array<string | null> = [];
+    const audioStarts: string[] = [];
+    const rendered = renderWorkspace(
+      <NewHomePage
+        arrival={{
+          presetId: entry.id,
+          audio: 'microphone',
+          rendererFallbackReload,
+        }}
+      />,
+      {
+        ui: { setStatusMessage: (message) => statusMessages.push(message) },
+        engine: {
+          catalog: [entry],
+          handleAudioStart: async (source) => {
+            audioStarts.push(source);
+            return { ok: true, source };
+          },
+        },
+      },
+    );
+    return { rendered, statusMessages, audioStarts };
+  }
+
+  test('offers the visitor’s own source back and says why the page reloaded', () => {
+    const { rendered, statusMessages, audioStarts } = renderArrival(true);
+    try {
+      const text = rendered.text();
+      expect(text).not.toContain('Shared with you');
+      expect(text).toContain('Ready to resume');
+      expect(text).toContain('martin - witchcraft reloaded');
+      const cta = rendered.container.querySelector<HTMLButtonElement>(
+        '.stims-shell__launch-cta',
+      );
+      expect(cta?.textContent).toBe('Resume with your mic');
+      expect(statusMessages).toEqual([
+        'This preset needs the WebGL renderer, so Stims reloaded the page. Press Resume to bring your audio back.',
+      ]);
+      // Nothing started on its own; Resume starts the mic, not the demo.
+      expect(audioStarts).toEqual([]);
+      rendered.click(cta);
+      expect(audioStarts).toEqual(['microphone']);
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('the same URL from a link is still a shared arrival', () => {
+    const { rendered, statusMessages } = renderArrival(false);
+    try {
+      expect(rendered.text()).toContain('Shared with you');
+      expect(
+        rendered.container.querySelector('.stims-shell__launch-cta')
+          ?.textContent,
+      ).toBe('Start with your mic');
+      expect(statusMessages).toEqual([]);
+    } finally {
+      rendered.dispose();
+    }
+  });
+});

@@ -20,8 +20,18 @@
  * by lazy consumers and the snapshot drifts back to chunk-load time.
  */
 
+import { consumeRendererFallbackReload } from '../core/state/renderer-fallback-reload.ts';
+
 const ARRIVAL_SEARCH =
   typeof window === 'undefined' ? '' : window.location.search;
+
+// Read once, here, for the same reason as the URL: the marker is one-shot,
+// and a lazy consumer reading it later could find it already gone.
+const ARRIVAL_FROM_RENDERER_FALLBACK =
+  typeof window !== 'undefined' &&
+  consumeRendererFallbackReload(
+    new URLSearchParams(ARRIVAL_SEARCH).get('preset'),
+  );
 
 /** Raw query string the document loaded with. */
 export function getArrivalSearch(): string {
@@ -48,4 +58,13 @@ export function getArrivalPresetId(): string | null {
  */
 export function getArrivalAudioSource(): string | null {
   return getArrivalParam('audio');
+}
+
+/**
+ * This load is Stims's own reload into WebGL (`renderer-fallback-reload.ts`),
+ * not a link the visitor followed: its `?preset=` and `?audio=` are the
+ * visitor's own session, not a sender's.
+ */
+export function isArrivalRendererFallbackReload(): boolean {
+  return ARRIVAL_FROM_RENDERER_FALLBACK;
 }

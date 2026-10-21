@@ -178,7 +178,9 @@ export function useWorkspaceToast({
         ))
         ? 'error'
         : fromShell &&
-            /limit live mic access|Started with Demo Audio/i.test(message)
+            /limit live mic access|Started with Demo Audio|Stims reloaded the page/i.test(
+              message,
+            )
           ? 'warn'
           : 'info';
     showToast(
