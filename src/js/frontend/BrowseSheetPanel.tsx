@@ -22,6 +22,8 @@ import {
 import {
   loadPresetVisualVectors,
   MAX_AFFINITY_ANCHORS,
+  matchesVisualQuery,
+  scoreVisualQuery,
 } from '../core/services/preset-visual-vectors.ts';
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
@@ -34,6 +36,7 @@ import { PresetGrid } from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
 import { PresetSignals } from './PresetSignals.tsx';
 import { openPresetInPlace, presetPageHref } from './preset-link.ts';
+import { normalizeMatchText } from './preset-matching.ts';
 import { runPresetPromoteTransition } from './promote-transition.ts';
 import {
   clearQuickSelectEntries,
@@ -246,6 +249,36 @@ export function BrowseSheetPanel({
     () => false,
   );
 
+  // A search made only of visual terms ("tunnel", "blue fire") also lists and
+  // ranks presets by how much their preview looks like it. Kept with the
+  // query it answers, so a slower result for "tunnel" cannot apply to the
+  // "tunnel x" typed since; until it arrives the tags alone answer.
+  const normalizedSearch = useMemo(
+    () => normalizeMatchText(deferredSearch),
+    [deferredSearch],
+  );
+  const [visualResult, setVisualResult] = useState<{
+    query: string;
+    scores: ReadonlyMap<string, number>;
+  } | null>(null);
+  useEffect(() => {
+    if (!normalizedSearch) return;
+    let cancelled = false;
+    void scoreVisualQuery(normalizedSearch).then((scores) => {
+      if (!cancelled) setVisualResult({ query: normalizedSearch, scores });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [normalizedSearch]);
+  const visualScores = useMemo<ReadonlyMap<string, number>>(
+    () =>
+      visualResult?.query === normalizedSearch
+        ? visualResult.scores
+        : new Map(),
+    [visualResult, normalizedSearch],
+  );
+
   const browseEntries = useMemo(() => {
     const matcher = deferredSearch
       ? createFieldMatcher(deferredSearch, { allowSubsequence: false })
@@ -264,7 +297,10 @@ export function BrowseSheetPanel({
       }
       return (
         passesFlashPreference(entry, reduceFlashing) &&
-        (matcher ? matchesPreset(entry, matcher) : true) &&
+        (matcher
+          ? matchesPreset(entry, matcher) ||
+            matchesVisualQuery(entry.id, visualScores)
+          : true) &&
         matchesAuthor(entry, authorFilter)
       );
     });
@@ -272,6 +308,7 @@ export function BrowseSheetPanel({
     catalog,
     routeState.collectionTag,
     deferredSearch,
+    visualScores,
     authorFilter,
     reduceFlashing,
   ]);
@@ -314,8 +351,16 @@ export function BrowseSheetPanel({
         randomSeed,
         deferredSearch,
         affinity,
+        visualScores,
       ),
-    [browseEntries, sortMode, randomSeed, deferredSearch, affinity],
+    [
+      browseEntries,
+      sortMode,
+      randomSeed,
+      deferredSearch,
+      affinity,
+      visualScores,
+    ],
   );
 
   // At most the queue's cap (50) ids, so a Set lookup per mounted row is O(1).

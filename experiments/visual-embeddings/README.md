@@ -31,7 +31,14 @@ bun run catalog:visual-embeddings
   checkpointed every 200 previews, so an interrupted run resumes.
 
 `catalog:visual-embeddings` turns the cache into the shipped
-`public/milkdrop-presets/visual-vectors.{json,bin}` and the catalog's
-`searchTerms`. It also writes `output/visual-embeddings/report.md` for review.
-To change which words can be tagged, edit `terms.ts` and rerun both steps;
-term vectors are cheap, and image vectors come from the cache.
+`public/milkdrop-presets/visual-vectors.{json,bin}`, the term vectors in
+`public/milkdrop-presets/visual-terms.json` that Browse ranks visual-term
+searches with, and the catalog's `searchTerms`. It also writes
+`output/visual-embeddings/report.md` for review. To change which words can be
+tagged, edit `terms.ts` and rerun both steps; term vectors are cheap, and image
+vectors come from the cache.
+
+Without the previews, `bun run embed.ts --terms-only` followed by
+`bun run catalog:visual-embeddings -- --terms-only` rewrites
+`visual-terms.json` alone. New terms then rank in Browse, but `searchTerms`
+tags wait for a full run.
