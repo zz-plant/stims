@@ -59,4 +59,56 @@ describe('StimsErrorBoundary recovery details', () => {
     expect(copied).toBe(error.stack);
     expect(copyButton?.textContent).toBe('Copied error details');
   });
+
+  test('Reset settings clears preferences but keeps what the visitor made', () => {
+    (
+      globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+    const kept = {
+      'stims:versions:v1:shifter-curlique': '[]',
+      'stims:preset-sets:v1': '[]',
+      'stims:preset-queue:v1': '[]',
+      'stims:perform-pins:v1': '[]',
+      'stims:midi-state:v1': '{}',
+    };
+    const cleared = ['stims:compatibility-mode', 'stims:overlay:hud'];
+    for (const [key, value] of Object.entries(kept)) {
+      localStorage.setItem(key, value);
+    }
+    for (const key of cleared) localStorage.setItem(key, 'true');
+    localStorage.setItem('other-app:key', 'x');
+
+    const boundaryRef = createRef<StimsErrorBoundary>();
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => {
+      root?.render(
+        <StimsErrorBoundary ref={boundaryRef}>
+          <p>Visualizer</p>
+        </StimsErrorBoundary>,
+      );
+    });
+    act(() => {
+      boundaryRef.current?.setState({ error: new Error('boom') });
+    });
+
+    const resetButton = Array.from(host.querySelectorAll('button')).find(
+      (button) => button.textContent?.startsWith('Reset settings'),
+    );
+    expect(resetButton?.textContent).toContain('keeps your work');
+    act(() => resetButton?.click());
+
+    try {
+      for (const [key, value] of Object.entries(kept)) {
+        expect(localStorage.getItem(key)).toBe(value);
+      }
+      for (const key of cleared) expect(localStorage.getItem(key)).toBeNull();
+      expect(localStorage.getItem('other-app:key')).toBe('x');
+    } finally {
+      for (const key of [...Object.keys(kept), 'other-app:key']) {
+        localStorage.removeItem(key);
+      }
+    }
+  });
 });

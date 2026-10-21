@@ -22,6 +22,21 @@ function ErrorButton({
   );
 }
 
+/**
+ * Things the visitor made rather than chose, kept by Reset settings. The
+ * reset used to clear every `stims:` key, so a visitor who pressed it to get
+ * past a crash also lost their saved versions, preset sets, queue, perform
+ * pins and MIDI mappings, with nothing on the button saying so. Edited
+ * presets, drafts and favourites live in IndexedDB and were never touched.
+ */
+const USER_WORK_KEY_PREFIXES = [
+  'stims:versions:',
+  'stims:preset-sets:',
+  'stims:preset-queue:',
+  'stims:perform-pins:',
+  'stims:midi-state:',
+];
+
 export class StimsErrorBoundary extends Component<
   { children: ReactNode },
   { error: Error | null; copyStatus: 'idle' | 'copied' | 'failed' }
@@ -49,7 +64,9 @@ export class StimsErrorBoundary extends Component<
             </div>
             <h1 className="stims-shell__error-heading">Unexpected error</h1>
             <p className="stims-shell__error-copy">
-              Stims encountered an issue. Reload to retry, or try WebGL mode.
+              Something in Stims broke. Your edits and saved presets are kept.
+              Reload to try again; if it happens again, switch to the WebGL
+              renderer, which works on more graphics hardware.
             </p>
             {this.state.error && (
               <details className="stims-shell__error-details">
@@ -117,7 +134,7 @@ export class StimsErrorBoundary extends Component<
                   window.location.reload();
                 }}
               >
-                Try WebGL mode
+                Reload with WebGL
               </ErrorButton>
               <ErrorButton
                 onClick={() => {
@@ -125,7 +142,12 @@ export class StimsErrorBoundary extends Component<
                     const keys: string[] = [];
                     for (let i = 0; i < window.localStorage.length; i++) {
                       const key = window.localStorage.key(i);
-                      if (key?.startsWith('stims:')) {
+                      if (
+                        key?.startsWith('stims:') &&
+                        !USER_WORK_KEY_PREFIXES.some((prefix) =>
+                          key.startsWith(prefix),
+                        )
+                      ) {
                         keys.push(key);
                       }
                     }
@@ -142,7 +164,7 @@ export class StimsErrorBoundary extends Component<
                   window.location.href = '/';
                 }}
               >
-                Reset settings
+                Reset settings (keeps your work)
               </ErrorButton>
             </div>
           </div>

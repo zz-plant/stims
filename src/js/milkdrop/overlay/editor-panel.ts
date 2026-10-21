@@ -1649,12 +1649,18 @@ export class EditorPanel {
     // The status label already names the state and the problems strip
     // already counts it, so the note only carries what neither says: what
     // to do next.
+    // Both notes name the toolbar's Revert button by its label; they used to
+    // say "Reset", which no control here is called. They also answer the
+    // question an editor raises first: is this kept? A draft that compiles
+    // is saved per preset in this browser (draft-persistence.ts) and comes
+    // back on the next load; text with errors is not, so the stage and the
+    // saved copy both hold the last version that ran.
     const baseStatus = hasErrors
-      ? 'Fix the errors below, or Reset to return to the active source.'
+      ? 'Fix the errors below. Until then the stage and your saved draft keep the last version that ran; Revert restores the original.'
       : this.hasBufferedEdits
         ? 'Queued — Cmd/Ctrl+Enter punches it in now.'
         : state.dirty
-          ? 'Draft is live on stage. Reset returns to the saved source.'
+          ? 'Draft is live on stage and saved in this browser. Revert restores the original.'
           : '';
 
     if (hasErrors) {

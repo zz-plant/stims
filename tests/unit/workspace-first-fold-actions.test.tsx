@@ -510,6 +510,37 @@ describe('workspace first-fold launch hierarchy', () => {
       expect(soundflow?.textContent).toContain('zoom = 1.0 + 0.08 * bass_att');
       expect(soundflow?.textContent).toContain('warp = 0.02 * mid_att');
       expect(soundflow?.textContent).toContain('rot = 0.01 * sin(treb)');
+      // The equations are illustrations, so the section must say so rather
+      // than present them as the running preset.
+      expect(soundflow?.textContent).not.toMatch(/\blive\b/i);
+      expect(soundflow?.textContent).toContain('Simplified examples');
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('a catalog that failed to download says so and offers a reload', () => {
+    // engineReady is false only when the catalog failed. The landing used to
+    // answer with "Audio engine is starting. This will unlock in a moment.",
+    // a wait that never ended when the retry failed too.
+    const rendered = renderWorkspace(<NewHomePage />, {
+      engine: { engineReady: false, catalogError: 'offline' },
+    });
+    try {
+      const status = rendered.container.querySelector(
+        '.stims-shell__launch-status',
+      );
+      expect(status?.textContent).toContain('didn’t download');
+      expect(status?.textContent).not.toContain('in a moment');
+      const reload = status?.querySelector('button');
+      expect(reload?.textContent).toBe('reload');
+      expect(
+        (
+          rendered.container.querySelector(
+            '#use-demo-audio',
+          ) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
     } finally {
       rendered.dispose();
     }

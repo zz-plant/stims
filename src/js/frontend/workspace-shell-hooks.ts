@@ -553,7 +553,7 @@ export function useWorkspaceShellOrchestration({
               : '';
           const msg =
             errName === 'NotAllowedError' || errName === 'PermissionDeniedError'
-              ? 'Microphone access was denied. Check browser settings and OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).'
+              ? 'Microphone access was denied. Allow it from the address bar, or in macOS Privacy & Security / Windows Privacy Settings. Demo audio needs no permission.'
               : errName === 'NotFoundError'
                 ? 'No microphone hardware found. Please connect a microphone and try again.'
                 : errName === 'NotReadableError' ||
@@ -625,8 +625,17 @@ export function useWorkspaceShellOrchestration({
       });
       return { ok: true, source };
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Audio start failed.';
+      // Closing the share picker rejects with the browser's own wording
+      // ("Permission denied by user"), which reads as a fault. Nothing went
+      // wrong: the visitor chose not to share.
+      const shareCancelled =
+        (source === 'tab' || source === 'youtube') &&
+        (error as { name?: string } | null)?.name === 'NotAllowedError';
+      const message = shareCancelled
+        ? 'Sharing was cancelled, so nothing was captured. Pick a source to try again.'
+        : error instanceof Error
+          ? error.message
+          : 'Audio start failed.';
       setStatusMessage(message);
       return { ok: false, source: null, message };
     } finally {

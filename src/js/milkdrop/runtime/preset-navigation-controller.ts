@@ -370,9 +370,23 @@ export function createMilkdropPresetNavigationController({
       // and a reported one. It rides the existing "Loaded X." line rather
       // than adding a surface of its own, so it is a clause on a message the
       // viewer already sees, not a new banner.
-      setOverlayStatus(
+      //
+      // A stored draft replaces the file on every load and the editor then
+      // reads "Synced", so a visitor coming back to a preset they edited saw
+      // their version with nothing saying it was theirs, and no hint that
+      // the original was one button away. The " — " keeps it a visible
+      // toast rather than the quiet plain-load one.
+      const clauses = [
+        draft
+          ? 'with your saved edits (Revert in the editor restores the original)'
+          : null,
         isShaderApproximated(shaderExecution)
-          ? `Loaded ${nextCompiled.title} — shader text approximated on ${formatRenderBackendName(getActiveBackend())}.`
+          ? `shader text approximated on ${formatRenderBackendName(getActiveBackend())}`
+          : null,
+      ].filter(Boolean);
+      setOverlayStatus(
+        clauses.length > 0
+          ? `Loaded ${nextCompiled.title} — ${clauses.join('; ')}.`
           : `Loaded ${nextCompiled.title}.`,
       );
       scheduleAdjacentPresetPrefetch(id);

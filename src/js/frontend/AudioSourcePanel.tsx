@@ -7,6 +7,7 @@ import type { ClipboardEvent } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { parseYouTubeVideoReference } from '../ui/youtube-controller.ts';
 import {
+  getDeviceEnvironmentProfile,
   isInAppBrowser,
   isMobileDevice,
   openExternalBrowserIntent,
@@ -202,10 +203,18 @@ export function AudioSourcePanel({
     };
   }, [mobileDevice]);
 
-  const canCaptureDisplayAudio =
+  const hasDisplayCapture =
     typeof navigator !== 'undefined' &&
     !!navigator.mediaDevices?.getDisplayMedia &&
     !mobileDevice;
+  // Firefox and Safari open the share picker but never hand back an audio
+  // track, so the visitor picked a tab, saw nothing react, and was told to
+  // tick a "Share tab audio" box their browser does not have. Tab and
+  // YouTube capture are offered only where a share can carry sound.
+  const displayCaptureDropsAudio =
+    hasDisplayCapture &&
+    ['firefox', 'safari'].includes(getDeviceEnvironmentProfile().browserFamily);
+  const canCaptureDisplayAudio = hasDisplayCapture && !displayCaptureDropsAudio;
 
   const handlePlayYouTube = () => {
     if (youtubeReady) {
@@ -689,13 +698,27 @@ export function AudioSourcePanel({
           className="stims-shell__meta-copy"
           aria-live="polite"
         >
-          Audio engine is starting. Sources will unlock in a moment.
+          The preset list didn&rsquo;t download, so sources are off until it
+          does. Check your connection, then reload.
         </p>
       ) : null}
       {/* Cards: the link field leads, the cards follow. Chips: the chips
           lead and the field opens beneath them from its own chip. */}
       {chips ? sourceGrid : youtubeBlock}
       {chips ? youtubeBlock : sourceGrid}
+      {displayCaptureDropsAudio && (offers('tab') || offers('youtube')) ? (
+        <p className="stims-shell__source-note">
+          Tab, system and YouTube audio need Chrome or Edge. Here, play a file
+          or use the microphone.
+        </p>
+      ) : null}
+      {/* Asking for a microphone or a screen share raises the question of
+          where the sound goes. It goes nowhere: the analyser runs in this
+          page, and the audio match sends a three-phrase description of the
+          levels ("high motion"), never the audio. */}
+      <p className="stims-shell__source-note">
+        Sound is analysed in this browser and never uploaded.
+      </p>
       {chips && fileState ? (
         <p
           className="stims-shell__source-feedback"

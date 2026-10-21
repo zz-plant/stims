@@ -63,6 +63,7 @@ describe('Workspace shell toast regression', () => {
     function mountToast() {
       let latest: string | null = null;
       let latestQuiet = false;
+      let latestTone: string | null = null;
       let rerender: (props: {
         status: string | null;
         statusMessage: string | null;
@@ -78,6 +79,7 @@ describe('Workspace shell toast regression', () => {
         });
         latest = toast?.message ?? null;
         latestQuiet = toast?.quiet ?? false;
+        latestTone = toast?.tone ?? null;
         return null;
       }
       host = document.createElement('div');
@@ -98,8 +100,39 @@ describe('Workspace shell toast regression', () => {
           return latest;
         },
         quiet: () => latestQuiet,
+        tone: () => latestTone,
       };
     }
+
+    test('a microphone that fails to start gets the error toast, not a 4-second note', () => {
+      const shown = mountToast();
+      for (const message of [
+        'Microphone access was denied. Allow it from the address bar, or in macOS Privacy & Security / Windows Privacy Settings. Demo audio needs no permission.',
+        'Microphone is in use by another app (for example, Zoom or Teams). Close that app and try again.',
+        'No microphone hardware found. Please connect a microphone and try again.',
+        'No tab or system audio track was captured. Re-share and enable Share audio.',
+      ]) {
+        expect(shown.set({ status: null, statusMessage: message })).toBe(
+          message,
+        );
+        expect(shown.tone()).toBe('error');
+      }
+      // Closing the share picker is a choice, not a fault.
+      const cancelled =
+        'Sharing was cancelled, so nothing was captured. Pick a source to try again.';
+      expect(shown.set({ status: null, statusMessage: cancelled })).toBe(
+        cancelled,
+      );
+      expect(shown.tone()).toBe('info');
+    });
+
+    test('a preset that opens with saved edits says so on a visible toast', () => {
+      const shown = mountToast();
+      const message =
+        'Loaded Alpha — with your saved edits (Revert in the editor restores the original).';
+      expect(shown.set({ status: message, statusMessage: null })).toBe(message);
+      expect(shown.quiet()).toBe(false);
+    });
 
     test('a plain preset load is announced but not drawn; one with news shows', () => {
       const shown = mountToast();
