@@ -1,10 +1,13 @@
 import {
   DECISION_LIMITS,
   type DecisionQuestions,
-  decisionRecord,
 } from '../../src/js/core/decision-model.ts';
 import { buildGeneratePrompt } from '../../src/js/milkdrop/preset-prompt.ts';
-import { allowedModelOrNull, enforceAiRateLimit } from './_ai-guard.ts';
+import {
+  allowedModelOrNull,
+  enforceAiRateLimit,
+  generatedText,
+} from './_ai-guard.ts';
 import { runDecisionQuestions } from './_decision-model.ts';
 
 interface Env {
@@ -101,21 +104,6 @@ function cleanModelOutput(raw: string): string {
     cleaned = `[preset00]\n${cleaned}`;
   }
   return cleaned;
-}
-
-/** Qwen's hosted chat-completion envelope differs from legacy text models. */
-function generatedText(result: unknown): string | null {
-  if (!decisionRecord(result)) return null;
-  if (typeof result.response === 'string' && result.response.trim())
-    return result.response.trim();
-  const first = Array.isArray(result.choices) ? result.choices[0] : null;
-  if (
-    !decisionRecord(first) ||
-    !decisionRecord(first.message) ||
-    typeof first.message.content !== 'string'
-  )
-    return null;
-  return first.message.content.trim() || null;
 }
 
 export async function onRequest(context: { request: Request; env: Env }) {
