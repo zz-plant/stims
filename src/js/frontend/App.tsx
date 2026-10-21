@@ -1287,18 +1287,20 @@ function StimsWorkspaceAppShell() {
   }, []);
 
   // A draft that compiles is saved per preset in this browser and comes
-  // back on the next load (draft-persistence.ts), so leaving with one loses
-  // nothing, and the browser's "changes may not be saved" warning was a
-  // false alarm on every edited preset. Text with errors is the exception:
-  // the saved copy is the last version that ran, so the broken text in the
-  // buffer is the one thing a reload discards. Ask only then.
-  const editorHoldsUnsavedErrors =
-    editorDirty &&
-    (engineSnapshot?.sessionState?.diagnostics ?? []).some(
-      (diagnostic) => diagnostic.severity === 'error',
-    );
+  // back on the next load (draft-persistence.ts), so once that write lands
+  // leaving loses nothing, and the browser's "changes may not be saved"
+  // warning was a false alarm on every edited preset. Ask only while
+  // something would be lost: text with errors (the saved copy is the last
+  // version that ran), or an edit whose write is pending or failed
+  // (IndexedDB blocked, over quota).
+  const editorHoldsUnsavedWork =
+    (editorDirty &&
+      (engineSnapshot?.sessionState?.diagnostics ?? []).some(
+        (diagnostic) => diagnostic.severity === 'error',
+      )) ||
+    (engineSnapshot?.draftUnsaved ?? false);
   useEffect(() => {
-    if (!editorHoldsUnsavedErrors) return;
+    if (!editorHoldsUnsavedWork) return;
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       // Browsers show their own copy and ignore any string we return; the
@@ -1307,7 +1309,7 @@ function StimsWorkspaceAppShell() {
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [editorHoldsUnsavedErrors]);
+  }, [editorHoldsUnsavedWork]);
 
   // The address bar and the in-app Share button are the same surface (both
   // read window.location), so a copied URL reproduces a session only if the

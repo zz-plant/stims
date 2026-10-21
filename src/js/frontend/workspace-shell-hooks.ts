@@ -625,17 +625,8 @@ export function useWorkspaceShellOrchestration({
       });
       return { ok: true, source };
     } catch (error) {
-      // Closing the share picker rejects with the browser's own wording
-      // ("Permission denied by user"), which reads as a fault. Nothing went
-      // wrong: the visitor chose not to share.
-      const shareCancelled =
-        (source === 'tab' || source === 'youtube') &&
-        (error as { name?: string } | null)?.name === 'NotAllowedError';
-      const message = shareCancelled
-        ? 'Sharing was cancelled, so nothing was captured. Pick a source to try again.'
-        : error instanceof Error
-          ? error.message
-          : 'Audio start failed.';
+      const message =
+        error instanceof Error ? error.message : 'Audio start failed.';
       setStatusMessage(message);
       return { ok: false, source: null, message };
     } finally {

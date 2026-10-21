@@ -146,6 +146,9 @@ export interface MilkdropExperienceSnapshot {
   /** What the renderer actually ran on the last presented frame; see
    * MilkdropAppliedShaderExecution. */
   appliedShaderExecution: MilkdropAppliedShaderExecution | null;
+  /** The editor's newest compiled edit has not been written to storage:
+   * the save is pending or failed, so leaving the page would lose it. */
+  draftUnsaved: boolean;
   autoplay: boolean;
   transitionMode: 'blend' | 'cut';
   blendDuration: number;

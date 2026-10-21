@@ -26,8 +26,10 @@ function ErrorButton({
  * Things the visitor made rather than chose, kept by Reset settings. The
  * reset used to clear every `stims:` key, so a visitor who pressed it to get
  * past a crash also lost their saved versions, preset sets, queue, perform
- * pins and MIDI mappings, with nothing on the button saying so. Edited
- * presets, drafts and favourites live in IndexedDB and were never touched.
+ * pins, MIDI mappings, live-rig macros and scenes, and rebound shortcuts,
+ * with nothing on the button saying so. Edited presets, drafts and
+ * favourites live in IndexedDB and were never touched. A new key that holds
+ * something the visitor authored belongs here.
  */
 const USER_WORK_KEY_PREFIXES = [
   'stims:versions:',
@@ -35,6 +37,8 @@ const USER_WORK_KEY_PREFIXES = [
   'stims:preset-queue:',
   'stims:perform-pins:',
   'stims:midi-state:',
+  'stims:live-rig',
+  'stims:keyboard-shortcuts:',
 ];
 
 export class StimsErrorBoundary extends Component<

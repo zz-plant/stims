@@ -111,6 +111,8 @@ describe('Workspace shell toast regression', () => {
         'Microphone is in use by another app (for example, Zoom or Teams). Close that app and try again.',
         'No microphone hardware found. Please connect a microphone and try again.',
         'No tab or system audio track was captured. Re-share and enable Share audio.',
+        'Screen sharing is blocked on this page, which may be embedded in another site. Open Stims in its own tab, or use the microphone or a file.',
+        'Screen sharing is blocked by your system. On macOS, allow your browser under Privacy & Security → Screen & System Audio Recording, then try again.',
       ]) {
         expect(shown.set({ status: null, statusMessage: message })).toBe(
           message,
@@ -119,7 +121,7 @@ describe('Workspace shell toast regression', () => {
       }
       // Closing the share picker is a choice, not a fault.
       const cancelled =
-        'Sharing was cancelled, so nothing was captured. Pick a source to try again.';
+        'No tab was shared, so nothing was captured. Pick a source to try again.';
       expect(shown.set({ status: null, statusMessage: cancelled })).toBe(
         cancelled,
       );

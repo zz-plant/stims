@@ -140,8 +140,61 @@ describe('captureDisplayAudioStream', () => {
         unavailableMessage: 'unavailable',
         preferCurrentTab: true,
       }),
-    ).rejects.toThrow('denied');
+    ).rejects.toThrow('No tab was shared');
     expect(calls).toHaveLength(1);
+  });
+
+  describe('a refused picker names the cause retrying cannot fix', () => {
+    // NotAllowedError means a closed picker, a page not allowed to capture,
+    // or an OS refusal. Telling the last two to "try again" sent visitors
+    // round a loop that could never succeed.
+    const refuse = (message: string) =>
+      installGetDisplayMedia(async () => {
+        const error = new Error(message);
+        error.name = 'NotAllowedError';
+        throw error;
+      });
+    const capture = () =>
+      captureDisplayAudioStream({ unavailableMessage: 'unavailable' });
+    let restorePolicy: (() => void) | null = null;
+    afterEach(() => {
+      restorePolicy?.();
+      restorePolicy = null;
+    });
+
+    test('a Permissions Policy that forbids capture', async () => {
+      const original = Object.getOwnPropertyDescriptor(
+        document,
+        'permissionsPolicy',
+      );
+      Object.defineProperty(document, 'permissionsPolicy', {
+        configurable: true,
+        value: {
+          allowsFeature: (feature: string) => feature !== 'display-capture',
+        },
+      });
+      restorePolicy = () => {
+        if (original)
+          Object.defineProperty(document, 'permissionsPolicy', original);
+        else
+          delete (document as { permissionsPolicy?: unknown })
+            .permissionsPolicy;
+      };
+      refuse('Permission denied');
+      await expect(capture()).rejects.toThrow(/blocked on this page/);
+    });
+
+    test('the operating system', async () => {
+      refuse('Permission denied by system');
+      await expect(capture()).rejects.toThrow(/blocked by your system/);
+    });
+
+    test('the visitor closing the picker', async () => {
+      refuse('Permission denied by user');
+      await expect(capture()).rejects.toThrow(
+        'No tab was shared, so nothing was captured.',
+      );
+    });
   });
 
   test('reports a stopped share once, not once per track', async () => {

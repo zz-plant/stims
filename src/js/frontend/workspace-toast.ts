@@ -173,7 +173,7 @@ export function useWorkspaceToast({
     const resolvedTone =
       fromShell &&
       (/^(Unable to|error|failed|denied|blocked)/i.test(message) ||
-        /^(Microphone (access was denied|is in use)|No (microphone|tab|YouTube) )/.test(
+        /^(Microphone (access was denied|is in use)|No (microphone|tab or|YouTube) |Screen sharing is blocked)/.test(
           message,
         ))
         ? 'error'

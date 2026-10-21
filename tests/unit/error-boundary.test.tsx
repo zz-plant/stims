@@ -70,6 +70,8 @@ describe('StimsErrorBoundary recovery details', () => {
       'stims:preset-queue:v1': '[]',
       'stims:perform-pins:v1': '[]',
       'stims:midi-state:v1': '{}',
+      'stims:live-rig': '{}',
+      'stims:keyboard-shortcuts:v1': '{}',
     };
     const cleared = ['stims:compatibility-mode', 'stims:overlay:hud'];
     for (const [key, value] of Object.entries(kept)) {
