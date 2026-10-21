@@ -1,16 +1,11 @@
 import {
   allowedModelOrNull,
   enforceAiRateLimit,
-  type RateLimiter,
+  generatedText,
 } from './_ai-guard.ts';
 
 interface Env {
-  AI: {
-    run: (
-      model: string,
-      opts: { messages: Array<{ role: string; content: string }> },
-    ) => Promise<{ response: string }>;
-  };
+  AI?: WorkersAI;
   AI_RATE_LIMITER?: RateLimiter;
 }
 
@@ -64,7 +59,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
         });
         return new Response(
           JSON.stringify({
-            explanation: result.response.trim(),
+            explanation: generatedText(result) ?? '',
             milkSource: currentSource,
           }),
           {
@@ -106,7 +101,17 @@ Return the complete modified preset. Keep all unchanged fields identical.`;
           { role: 'user', content: userPrompt },
         ],
       });
-      milkSource = extractMilkSection(result.response);
+      const rawResponse = generatedText(result);
+      if (!rawResponse) {
+        return new Response(
+          JSON.stringify({ error: 'Model returned no output.' }),
+          {
+            status: 502,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }
+      milkSource = extractMilkSection(rawResponse);
     } else {
       return new Response(
         JSON.stringify({ error: 'AI binding not available' }),
