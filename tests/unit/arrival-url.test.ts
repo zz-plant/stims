@@ -71,6 +71,37 @@ describe('arrival URL snapshot', () => {
   });
 });
 
+describe('arrival from the WebGL fallback reload', () => {
+  const loadAfterFallbackReload = (search: string, markedPresetId: string) => {
+    const domWindow = installDomEnvironment();
+    domWindow.happyDOM.setURL(`https://toil.fyi/${search}`);
+    sessionStorage.setItem('stims:renderer-fallback-reload', markedPresetId);
+    return importFresh<ArrivalModule>('../../src/js/frontend/arrival-url.ts');
+  };
+
+  test('a load the fallback marked is its reload, not a shared link', async () => {
+    const arrival = await loadAfterFallbackReload(
+      '?preset=martin-witchcraft&audio=microphone',
+      'martin-witchcraft',
+    );
+    expect(arrival.isArrivalRendererFallbackReload()).toBe(true);
+    expect(arrival.getArrivalAudioSource()).toBe('microphone');
+  });
+
+  test('the same URL without the mark is a link', async () => {
+    const arrival = await load('?preset=martin-witchcraft&audio=microphone');
+    expect(arrival.isArrivalRendererFallbackReload()).toBe(false);
+  });
+
+  test('a mark for another preset does not claim this arrival', async () => {
+    const arrival = await loadAfterFallbackReload(
+      '?preset=geiss-casino&audio=microphone',
+      'martin-witchcraft',
+    );
+    expect(arrival.isArrivalRendererFallbackReload()).toBe(false);
+  });
+});
+
 describe('arrival URL snapshot wiring', () => {
   test('the entry module imports it eagerly, which is what pins it to document load', () => {
     const entry = readFileSync(

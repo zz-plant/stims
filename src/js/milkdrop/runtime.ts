@@ -47,6 +47,7 @@ import {
   type QualityPreset,
   setQualityPresetById,
 } from '../core/settings-panel.ts';
+import { reloadForRendererFallback } from '../core/state/renderer-fallback-reload.ts';
 import type { QualityPresetManager } from '../core/toy-quality';
 import { createRendererQualityManager } from '../core/toy-quality.ts';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
@@ -407,15 +408,7 @@ export function createMilkdropExperience({
 
   const backendFailover = createMilkdropBackendFailover({
     preferences,
-    reload: (presetId) => {
-      // Carry the preset id in the URL so the reload's renderer selection can
-      // see it: shouldPreferWebGLForKnownCompatibilityGaps only consults
-      // ?preset=, and without it the reload mounts WebGPU again, hits the same
-      // descriptor fallback, and reloads forever.
-      const url = new URL(window.location.href);
-      url.searchParams.set('preset', presetId);
-      window.location.replace(url.toString());
-    },
+    reload: (presetId) => reloadForRendererFallback(presetId),
   });
   const presentationController = createMilkdropPresentationController({
     vm,

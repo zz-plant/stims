@@ -117,6 +117,7 @@ import { SharedSetDialog } from './SharedSetDialog.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
+import { installUnsavedEditsGuard } from './unsaved-edits-guard.ts';
 import {
   buildRemixShareUrl,
   decodePresetCodeFromHash,
@@ -1301,14 +1302,7 @@ function StimsWorkspaceAppShell() {
     (engineSnapshot?.draftUnsaved ?? false);
   useEffect(() => {
     if (!editorHoldsUnsavedWork) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      // Browsers show their own copy and ignore any string we return; the
-      // assignment is only here because older engines still gate on it.
-      event.returnValue = '';
-    };
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+    return installUnsavedEditsGuard(window);
   }, [editorHoldsUnsavedWork]);
 
   // The address bar and the in-app Share button are the same surface (both

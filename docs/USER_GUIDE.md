@@ -55,7 +55,7 @@ Remix URLs have a size limit. If the source exceeds that limit, export the `.mil
 
 Use Settings to adjust quality, render scale, the renderer, motion, and flashing controls. Lower quality or render scale when frames slow down.
 
-Stims renders with WebGPU in browsers where it is stable (recent Chrome, Edge, Opera and Samsung Internet, and Safari 26 or later) and with WebGL elsewhere, including Firefox. A preset that needs something WebGPU cannot run yet switches to WebGL. Settings → Graphics shows which one is running and why WebGL was chosen; its Renderer menu (Auto, WebGPU, WebGL) takes effect after a reload. Adding `?renderer=webgl` to the address forces WebGL for one visit.
+Stims renders with WebGPU in browsers where it is stable (recent Chrome, Edge, Opera and Samsung Internet, and Safari 26 or later) and with WebGL elsewhere, including Firefox. A preset that needs something WebGPU cannot run yet switches to WebGL by reloading the page, which stops your audio; a notice says so, and Resume starts the same source again (an audio file has to be picked again). Settings → Graphics shows which one is running and why WebGL was chosen; its Renderer menu (Auto, WebGPU, WebGL) takes effect after a reload. Adding `?renderer=webgl` to the address forces WebGL for one visit.
 
 Reduce flashing and motion controls can reduce exposure, but they do not certify a preset or display as safe for every viewer. See [sensory controls](./guides/accessibility.md) for their scope.
 

@@ -22,12 +22,19 @@ import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { scheduleAfterPaint } from '../utils/browser/idle-task.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
-import { getArrivalAudioSource, getArrivalPresetId } from './arrival-url.ts';
+import {
+  getArrivalAudioSource,
+  getArrivalPresetId,
+  isArrivalRendererFallbackReload,
+} from './arrival-url.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { LaunchSignalTrace } from './SignalField.tsx';
-import { resolveSharedArrival } from './shared-arrival.ts';
+import {
+  resolveRendererFallbackArrival,
+  resolveSharedArrival,
+} from './shared-arrival.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import { describePresetMood, STIMS_REPO_URL } from './workspace-helpers.ts';
@@ -51,6 +58,18 @@ const RESUME_SOURCE_HOOK: Partial<Record<ResumableAudioSource, string>> = {
   tab: 'data-tab-audio-btn',
 };
 
+type LaunchArrival = {
+  presetId: string | null;
+  audio: string | null;
+  rendererFallbackReload: boolean;
+};
+
+const readLaunchArrival = (): LaunchArrival => ({
+  presetId: getArrivalPresetId(),
+  audio: getArrivalAudioSource(),
+  rendererFallbackReload: isArrivalRendererFallbackReload(),
+});
+
 /**
  * Home page with minimal launch interface.
  * Displays title, tagline, action buttons, and audio source selection.
@@ -61,7 +80,13 @@ const RESUME_SOURCE_HOOK: Partial<Record<ResumableAudioSource, string>> = {
  * pre-selects their last preset and offers a one-click resume with the
  * source they used last time.
  */
-export function NewHomePage() {
+export function NewHomePage({
+  // Injectable for tests: the snapshot is taken once per document, so a
+  // test cannot arrive twice.
+  arrival = readLaunchArrival(),
+}: {
+  arrival?: LaunchArrival;
+} = {}) {
   const { ui, engine } = useWorkspace();
   const [lastSession] = useState(() => getLastSession());
   const appliedResumeRef = useRef(false);
@@ -91,12 +116,22 @@ export function NewHomePage() {
   // preset navigation once a session is running), and reading it here made
   // those writes indistinguishable from a real `?preset=` arrival: a bare "/"
   // visit could auto-start demo audio with no click.
-  const [deepLinkPresetId] = useState(getArrivalPresetId);
+  //
+  // Stims's own reload into WebGL carries the same `?preset=&audio=` a
+  // copied link does, and is not one: it gets its own arrival below.
+  const [fallbackArrival] = useState(() =>
+    arrival.presetId && arrival.rendererFallbackReload
+      ? resolveRendererFallbackArrival(arrival.presetId, arrival.audio)
+      : null,
+  );
+  const [deepLinkPresetId] = useState(() =>
+    fallbackArrival ? null : arrival.presetId,
+  );
   // The source the link was copied from (see shared-arrival.ts). Only read
   // alongside a preset: a bare `?audio=` is the app's own route state.
   const [sharedArrival] = useState(() =>
     deepLinkPresetId
-      ? resolveSharedArrival(getArrivalAudioSource())
+      ? resolveSharedArrival(arrival.audio)
       : resolveSharedArrival(null),
   );
 
@@ -149,6 +184,22 @@ export function NewHomePage() {
     [engine.catalog, deepLinkPresetId],
   );
 
+  const fallbackEntry = useMemo(
+    () =>
+      fallbackArrival
+        ? resolvePresetCatalogEntry(engine.catalog, fallbackArrival.presetId)
+        : null,
+    [engine.catalog, fallbackArrival],
+  );
+
+  // The reload stopped their audio and changed nothing visible; say why, once.
+  const announceFallbackReload = useEffectEvent((notice: string) => {
+    ui.setStatusMessage(notice);
+  });
+  useEffect(() => {
+    if (fallbackArrival) announceFallbackReload(fallbackArrival.notice);
+  }, [fallbackArrival]);
+
   const startDeepLinkSession = useEffectEvent(() => {
     void engine.handleAudioStart('demo').then((outcome) => {
       if (!outcome.ok) setDeepLinkReleased(true);
@@ -170,7 +221,7 @@ export function NewHomePage() {
     // feedback at all.
     if (!deepLinkEntry && !engine.missingRequestedPreset) return;
     // A link copied from a mic, tab or YouTube session is offered as the
-    // launch button instead (see `shared` below): those sources need the
+    // launch button instead (see `resume` below): those sources need the
     // recipient's gesture, and starting the demo over them said nothing.
     if (sharedArrival.kind === 'offer') return;
     autoStartedRef.current = true;
@@ -218,16 +269,27 @@ export function NewHomePage() {
           session: { source: sharedArrival.source },
           entry: deepLinkEntry,
           title: deepLinkEntry?.title ?? prettifyPresetSlug(deepLinkPresetId),
-          shared: true,
+          origin: 'shared',
         }
-      : lastSession && resumeEntry
-        ? {
-            session: lastSession,
-            entry: resumeEntry,
-            title: resumeEntry.title,
-            shared: false,
-          }
-        : null;
+      : fallbackArrival
+        ? fallbackArrival.resumeSource
+          ? {
+              session: { source: fallbackArrival.resumeSource },
+              entry: fallbackEntry,
+              title:
+                fallbackEntry?.title ??
+                prettifyPresetSlug(fallbackArrival.presetId),
+              origin: 'renderer-fallback',
+            }
+          : null
+        : lastSession && resumeEntry
+          ? {
+              session: lastSession,
+              entry: resumeEntry,
+              title: resumeEntry.title,
+              origin: 'last-session',
+            }
+          : null;
   const handleResume = () => {
     if (!resume) return;
     startWithFeedback(resume.session.source);
@@ -356,8 +418,12 @@ type ResumeState = {
   session: { source: ResumableAudioSource };
   entry: PresetCatalogEntry | null;
   title: string;
-  /** True for a link that carried its sender's source, false for the visitor's own last session. */
-  shared: boolean;
+  /**
+   * `shared`: a link that carried its sender's source. `last-session`: the
+   * visitor's own last session. `renderer-fallback`: the session Stims just
+   * reloaded into WebGL.
+   */
+  origin: 'shared' | 'last-session' | 'renderer-fallback';
 } | null;
 
 type DeepLinkState = {
@@ -366,6 +432,12 @@ type DeepLinkState = {
   /** The catalog may still resolve the preset, so its artwork may still arrive. */
   artworkPending: boolean;
 } | null;
+
+const RESUME_HEADING: Record<NonNullable<ResumeState>['origin'], string> = {
+  shared: 'Shared with you',
+  'last-session': 'Welcome back',
+  'renderer-fallback': 'Ready to resume',
+};
 
 /** "aderrasi-potion-of-spirits" → "Aderrasi Potion Of Spirits". */
 function prettifyPresetSlug(slug: string) {
@@ -437,9 +509,7 @@ function Header({
         <Title id="stims-launch-title" className="stims-shell__launch-title">
           {discovery
             ? semanticRouteHeading(discovery)
-            : resume.shared
-              ? 'Shared with you'
-              : 'Welcome back'}
+            : RESUME_HEADING[resume.origin]}
         </Title>
         <div className="stims-shell__launch-resume-card">
           {entry ? <PresetArtwork entry={entry} compact /> : null}
@@ -576,7 +646,7 @@ function Actions({
         >
           {isStarting
             ? 'Starting…'
-            : `${resume.shared ? 'Start' : 'Resume'} with ${RESUME_SOURCE_LABEL[resume.session.source]}`}
+            : `${resume.origin === 'shared' ? 'Start' : 'Resume'} with ${RESUME_SOURCE_LABEL[resume.session.source]}`}
         </button>
       ) : (
         <button

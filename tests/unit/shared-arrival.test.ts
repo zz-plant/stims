@@ -6,6 +6,7 @@
  */
 import { describe, expect, test } from 'bun:test';
 import {
+  resolveRendererFallbackArrival,
   resolveSharedArrival,
   SHARED_FILE_NOTICE,
 } from '../../src/js/frontend/shared-arrival.ts';
@@ -32,5 +33,42 @@ describe('resolveSharedArrival', () => {
         notice: null,
       });
     }
+  });
+});
+
+describe('resolveRendererFallbackArrival', () => {
+  test.each(['demo', 'microphone', 'tab', 'youtube'] as const)(
+    'offers the visitor’s own %s back as Resume and says why the page reloaded',
+    (source) => {
+      const arrival = resolveRendererFallbackArrival(
+        'martin-witchcraft',
+        source,
+      );
+      expect(arrival.presetId).toBe('martin-witchcraft');
+      expect(arrival.resumeSource).toBe(source);
+      expect(arrival.notice).toBe(
+        'This preset needs the WebGL renderer, so Stims reloaded the page. Press Resume to bring your audio back.',
+      );
+    },
+  );
+
+  test('a file cannot be resumed: the notice asks for it again', () => {
+    expect(resolveRendererFallbackArrival('martin-witchcraft', 'file')).toEqual(
+      {
+        presetId: 'martin-witchcraft',
+        resumeSource: null,
+        notice:
+          'This preset needs the WebGL renderer, so Stims reloaded the page. Pick your audio file again to bring your audio back.',
+      },
+    );
+  });
+
+  test('with no audio running there is nothing to bring back', () => {
+    expect(resolveRendererFallbackArrival('martin-witchcraft', null)).toEqual({
+      presetId: 'martin-witchcraft',
+      resumeSource: null,
+      notice:
+        'This preset needs the WebGL renderer, so Stims reloaded the page.',
+    });
   });
 });
