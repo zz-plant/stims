@@ -235,9 +235,11 @@ export function createFlashController(
  * identically over a WebGL or a WebGPU canvas.
  *
  * CSS brightness multiplies sRGB-encoded values rather than linear light, so
- * the actual luminance reduction is steeper than the requested factor. That
- * does not matter: the governor escalates until flashes stop being observed,
- * so any monotone reduction converges. It only has to move the right way.
+ * the luminance reduction is far steeper than the factor. The governor models
+ * exactly that (`luminanceThroughBrightness`): any monotone reduction would
+ * converge, but a governor that took the factor as a luminance multiplier
+ * solved for a clamp several times darker than the threshold needs, and held
+ * real strobes there.
  *
  * Clearing rather than writing `brightness(1)` keeps the element off the
  * filter path in the common case where nothing is engaged; a filter, even an

@@ -21,6 +21,7 @@ import {
   FLASH_LUMINANCE_DELTA,
   isFlashTransition,
   isSaturatedRed,
+  luminanceThroughBrightness,
   MIN_USEFUL_GRID,
   primingHoldForMeasurement,
   RECOMMENDED_GRID,
@@ -55,34 +56,84 @@ function strobeTimeline(
 }
 
 /**
- * Runs a timeline through the governor and returns what a viewer would
- * actually see: each frame blended over the previous PRESENTED frame by the
- * hold the governor asked for. This is the renderer's side of the contract.
+ * Runs a timeline through the governor the way a canvas under a CSS
+ * brightness filter shows it, and returns what the viewer sees. The governor
+ * samples each frame as drawn (readback happens before the filter) with the
+ * filter that frame is shown through, and its decision sets the filter for
+ * the frames after it. The filter scales sRGB-encoded values, so the
+ * presented luminance goes through `luminanceThroughBrightness`, not a
+ * multiply.
  */
 function present(
   source: number[][],
   governor: ReturnType<typeof createFlashGovernor>,
 ): number[][] {
   const presented: number[][] = [];
-  let last: number[] | null = null;
+  let scale = 1;
   for (const [index, frame] of source.entries()) {
-    const now = index * FRAME_MS;
-    // The governor observes what is on screen, not the raw source — the
-    // held frame is what the viewer's eye integrates, and feeding it the
-    // source instead would make the hold invisible to its own accounting.
-    const observed = last ?? frame;
-    const { hold } = governor.sample(now, observed, COLS, ROWS);
-    const previousFrame = last;
-    const blended: number[] = previousFrame
-      ? frame.map(
-          (v, i) => (previousFrame[i] as number) * hold + v * (1 - hold),
-        )
-      : [...frame];
-    presented.push(blended);
-    last = blended;
+    presented.push(frame.map((v) => luminanceThroughBrightness(v, scale)));
+    scale = governor.sample(index * FRAME_MS, frame, COLS, ROWS, {
+      viewScale: scale,
+    }).luminanceScale;
   }
   return presented;
 }
+
+/** A swing from `low` to `high` as the viewer sees it through brightness(k). */
+function swingThrough(low: number, high: number, k: number): number {
+  return (
+    luminanceThroughBrightness(high, k) - luminanceThroughBrightness(low, k)
+  );
+}
+
+/** The brightness() factor at which that swing, on screen, is `swing`. */
+function scaleForSwing(low: number, high: number, swing: number): number {
+  let lo = 0;
+  let hi = 1;
+  for (let step = 0; step < 40; step += 1) {
+    const mid = (lo + hi) / 2;
+    if (swingThrough(low, high, mid) < swing) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
+
+describe('the brightness filter model', () => {
+  test('is the filter Chromium applies, on sRGB values', () => {
+    // Measured in headless Chromium: rgb(204,204,204) under brightness(0.5)
+    // screenshots as rgb(102,102,102). A linear-light multiply would leave
+    // more than twice that luminance on screen.
+    const grey = relativeLuminance(204, 204, 204);
+    const shown = relativeLuminance(102, 102, 102);
+    expect(luminanceThroughBrightness(grey, 0.5)).toBeCloseTo(shown, 6);
+    expect(grey * 0.5).toBeGreaterThan(2 * shown);
+  });
+
+  test('never models a colour darker than the filter leaves it', () => {
+    // Scaled as the grey of the same luminance: the curve is concave, so the
+    // model errs bright, and by little. Exact per channel is the reference:
+    // the filter scales each sRGB byte.
+    const linear = (byte: number) => {
+      const c = byte / 255;
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    const exact = (r: number, g: number, b: number) =>
+      0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+    for (const [r, g, b] of [
+      [255, 0, 0],
+      [0, 255, 0],
+      [0, 0, 255],
+      [255, 128, 0],
+    ] as const) {
+      for (const scale of [0.3, 0.5, 0.8]) {
+        const modelled = luminanceThroughBrightness(exact(r, g, b), scale);
+        const actual = exact(r * scale, g * scale, b * scale);
+        expect(modelled).toBeGreaterThanOrEqual(actual - 1e-9);
+        expect(modelled - actual).toBeLessThan(0.006);
+      }
+    }
+  });
+});
 
 describe('flash governor', () => {
   test('a 10Hz full-field strobe fails WCAG when presented raw', () => {
@@ -97,7 +148,7 @@ describe('flash governor', () => {
     expect(analysis.exceedsThreshold).toBe(true);
   });
 
-  test('the same strobe passes WCAG once the governor holds frames', () => {
+  test('the same strobe passes WCAG once the governor dims it', () => {
     const raw = strobeTimeline(180, 3);
     const governed = present(raw, createFlashGovernor());
     const analysis = analyzeFlashTimeline({
@@ -130,33 +181,28 @@ describe('flash governor', () => {
     expect(analysis.exceedsThreshold).toBe(false);
   });
 
-  test('the luminance-scale mitigation also brings the strobe under threshold', () => {
-    // The scrim path: instead of blending against the previous frame, scale
-    // the whole frame by luminanceScale. Different picture, same arithmetic
-    // — and this is the form that works on both renderer backends.
-    const raw = strobeTimeline(180, 3);
-    const governor = createFlashGovernor();
-    const scaled: number[][] = [];
-    let last: number[] | null = null;
-    for (const [index, frame] of raw.entries()) {
-      const observed = last ?? frame;
-      const { luminanceScale } = governor.sample(
-        index * FRAME_MS,
-        observed,
-        COLS,
-        ROWS,
-      );
-      const presented = frame.map((v) => v * luminanceScale);
-      scaled.push(presented);
-      last = presented;
+  test('a full-field strobe is held where its on-screen swing just clears the margin', () => {
+    // The filter scales sRGB-encoded values, so the light left on screen
+    // falls roughly as the 2.4th power of the factor. Taken as a multiply, a
+    // 0.02-to-0.95 strobe needs brightness(0.086) to bring its 0.93 swing to
+    // the 0.08 the solve aims for, and on screen that leaves 0.007: a
+    // twelfth of the target. Taken as the filter works, it needs 0.33.
+    const [low, high] = [0.02, 0.95];
+    const safetyMargin = 0.8;
+    const target = FLASH_LUMINANCE_DELTA * safetyMargin;
+    const governor = createFlashGovernor({ safetyMargin });
+    let scale = 1;
+    let darkest = 1;
+    for (let i = 0; i < 600; i += 1) {
+      const raw = Math.floor(i / 3) % 2 === 1 ? high : low;
+      scale = governor.sample(i * FRAME_MS, uniformFrame(raw), COLS, ROWS, {
+        viewScale: scale,
+      }).luminanceScale;
+      darkest = Math.min(darkest, scale);
     }
-    const analysis = analyzeFlashTimeline({
-      frames: scaled,
-      deltaMs: FRAME_MS,
-      cols: COLS,
-      rows: ROWS,
-    });
-    expect(analysis.exceedsThreshold).toBe(false);
+    expect(swingThrough(low, high, darkest)).toBeLessThan(target);
+    expect(swingThrough(low, high, darkest)).toBeGreaterThan(target - 0.002);
+    expect(darkest).toBeGreaterThan((3 * target) / (high - low));
   });
 
   test('luminanceScale is the complement of hold', () => {
@@ -422,10 +468,11 @@ describe('flash governor', () => {
   });
 
   test('the clamp is solved from the flashing area, not one bright outlier', () => {
-    // A 6x6-tile patch swings 0.3 at 5Hz while a single tile elsewhere
-    // swings 0.9 with it. The patch is what makes these frames a flash, and
-    // scaling it by about 0.27 puts it under the threshold. Solving for the
-    // outlier instead asks for 0.09 and blacks out the stage for one tile.
+    // A 6x6-tile patch swings 0.05 to 0.35 at 5Hz while a single tile
+    // elsewhere swings 0.05 to 0.95 with it. The patch is what makes these
+    // frames a flash, and brightness(0.55) puts it under the solve's target.
+    // Solving for the outlier instead asks for 0.33 and dims the whole stage
+    // for one tile.
     const grid = RECOMMENDED_GRID;
     const governor = createFlashGovernor();
     let engagedAt: number | null = null;
@@ -440,11 +487,67 @@ describe('flash governor', () => {
       if (decision.engaged) engagedAt = decision.luminanceScale;
     }
     expect(engagedAt).not.toBeNull();
-    // The first engagement already carries the engageHold ramp (0.8), so the
-    // solved scale is 0.8 * 0.27 = 0.21; the outlier's would be 0.07.
-    expect(engagedAt as number).toBeGreaterThan(0.15);
-    // And it is enough: the patch's 0.3 swing no longer qualifies.
-    expect(0.3 * (engagedAt as number)).toBeLessThan(0.1);
+    expect(engagedAt as number).toBeGreaterThan(0.45);
+    // And it is enough: the patch's swing, as the filter leaves it on
+    // screen, no longer qualifies.
+    expect(swingThrough(0.05, 0.35, engagedAt as number)).toBeLessThan(
+      FLASH_LUMINANCE_DELTA,
+    );
+  });
+
+  test('the clamp holds the strongest transition of the last second, not just the one that engaged it', () => {
+    // A full-field 0.05-to-0.9 flash, then a weak rise (a patch to 0.35)
+    // completes the second flash and engages the clamp, then the full-field
+    // swing returns. Solved for the weak rise alone the clamp was
+    // brightness(0.55), and the full-field transitions that followed in the
+    // same second read as two more flashes on screen: 5 in a second. Held
+    // for the strongest transition the content made in that second, the
+    // clamp is 0.34: under the limit, and nowhere near the 0.09 a governor
+    // that took the filter for a luminance multiplier held it at.
+    const grid = RECOMMENDED_GRID;
+    const frameOf = (base: number, patch: number, size: number) => {
+      const frame = new Array(grid * grid).fill(base);
+      for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) frame[y * grid + x] = patch;
+      }
+      return frame;
+    };
+    const cycle: [number, number[]][] = [
+      [10, frameOf(0.05, 0.05, 0)],
+      [4, frameOf(0.9, 0.9, 0)],
+      [6, frameOf(0.05, 0.05, 0)],
+      [3, frameOf(0.05, 0.35, 6)],
+      [2, frameOf(0.9, 0.9, 0)],
+      [5, frameOf(0.05, 0.05, 0)],
+    ];
+    const frames: number[][] = [];
+    for (let repeat = 0; repeat < 12; repeat += 1) {
+      for (const [count, frame] of cycle) {
+        for (let i = 0; i < count; i += 1) frames.push(frame);
+      }
+    }
+    const score = (series: number[][]) =>
+      analyzeFlashTimeline({
+        frames: series,
+        deltaMs: FRAME_MS,
+        cols: grid,
+        rows: grid,
+      }).peakFlashesPerSecond;
+    expect(score(frames)).toBeGreaterThan(3);
+
+    const governor = createFlashGovernor();
+    let scale = 1;
+    let darkest = 1;
+    const seen: number[][] = [];
+    for (const [index, frame] of frames.entries()) {
+      seen.push(frame.map((v) => luminanceThroughBrightness(v, scale)));
+      scale = governor.sample(index * FRAME_MS, frame, grid, grid, {
+        viewScale: scale,
+      }).luminanceScale;
+      darkest = Math.min(darkest, scale);
+    }
+    expect(score(seen)).toBeLessThanOrEqual(3);
+    expect(darkest).toBeGreaterThan(0.3);
   });
 
   test('the governor releases after the strobe stops', () => {
@@ -490,21 +593,20 @@ describe('flash governor', () => {
       let scale = 1;
       for (let i = 0; i < 600; i += 1) {
         const raw = Math.floor(i / 3) % 2 === 1 ? high : low;
-        const observed = uniformFrame(raw * scale);
-        scale = governor.sample(
-          i * FRAME_MS,
-          observed,
-          COLS,
-          ROWS,
-        ).luminanceScale;
+        scale = governor.sample(i * FRAME_MS, uniformFrame(raw), COLS, ROWS, {
+          viewScale: scale,
+        }).luminanceScale;
       }
       return scale;
     };
     const mild = settle(0.3, 0.45);
     const extreme = settle(0.0, 1.0);
     expect(mild).toBeGreaterThan(extreme);
-    expect(mild).toBeGreaterThan(0.4);
-    expect(extreme).toBeLessThan(0.2);
+    // Each lands where its own swing needs: brightness(0.76) for the
+    // flicker, 0.31 for black-to-white, whose swing reaches the threshold
+    // again by 0.35.
+    expect(mild).toBeGreaterThan(0.7);
+    expect(extreme).toBeLessThan(0.35);
   });
 
   test('reset clears the window and the hold', () => {
@@ -531,9 +633,10 @@ describe('flash governor', () => {
         const raw = Math.floor(i / 3) % 2 === 1 ? 1 : 0;
         const decision = governor.sample(
           i * FRAME_MS,
-          uniformFrame(raw * scale),
+          uniformFrame(raw),
           COLS,
           ROWS,
+          { viewScale: scale },
         );
         scale = decision.luminanceScale;
         if (decision.flashed) flashes += 1;
@@ -777,11 +880,12 @@ describe('the red-flash channel', () => {
   test('the red clamp is solved from the red swing, as the luminance one is', () => {
     // A 25-unit red swing needs scaling by about 0.64 to fall under 20 at
     // the 0.8 margin; a 100-unit one by about 0.16. Neither moves luminance
-    // by 0.1. The first engagement also carries the 0.2 engage hold, so the
-    // clamps land near 0.8 times those.
+    // by 0.1. The clamps land there, not at 0.8 times those: the solve
+    // composes with the filter the flash was seen through, not with the
+    // engage hold applied in the same step.
     const mild = govern(alternate(120, 3, DARK_RED, RED)).minScale;
     const strong = govern(alternate(120, 3, [40, 0, 0], [120, 0, 0])).minScale;
-    expect(mild).toBeGreaterThan(0.45);
+    expect(mild).toBeGreaterThan(0.6);
     expect(mild).toBeLessThan(0.8);
     expect(strong).toBeGreaterThan(0.1);
     expect(strong).toBeLessThan(0.16);
@@ -868,10 +972,11 @@ describe('release under a sustained strobe', () => {
       Math.floor(frame / halfPeriod) % 2 === 1 ? high : low;
 
   /**
-   * A uniform luminance sequence through an exact linear scrim: the viewer
-   * sees each value times the scale in force when it is shown, and the
-   * governor is told that scale. With no 8-bit rounding and no sRGB curve,
-   * nothing hides a flash the governor let through.
+   * A uniform luminance sequence through an exactly modelled brightness
+   * filter: the viewer sees each value through the scale in force when it is
+   * shown (`luminanceThroughBrightness`), and the governor is told that
+   * scale. With no 8-bit rounding, nothing hides a flash the governor let
+   * through.
    */
   function scrim(
     value: (frame: number) => number,
@@ -888,7 +993,11 @@ describe('release under a sustained strobe', () => {
     for (let f = 0; f < frames; f += 1) {
       const v = value(f);
       raw.push(new Array(GRID * GRID).fill(v));
-      seen.push(new Array(GRID * GRID).fill(v * scale * outside));
+      seen.push(
+        new Array(GRID * GRID).fill(
+          luminanceThroughBrightness(v, scale * outside),
+        ),
+      );
       shown.push(scale * outside);
       drawn.fill(v);
       scale = governor.sample(f * FRAME_MS, drawn, GRID, GRID, {
@@ -934,8 +1043,10 @@ describe('release under a sustained strobe', () => {
         const steady = shown.slice(5 * SECOND);
         expect(spread(steady)).toBeLessThan(0.001);
         const target = FLASH_LUMINANCE_DELTA * MARGIN;
-        expect((high - low) * Math.max(...steady)).toBeLessThanOrEqual(target);
-        expect((high - low) * Math.min(...steady)).toBeGreaterThan(
+        expect(
+          swingThrough(low, high, Math.max(...steady)),
+        ).toBeLessThanOrEqual(target);
+        expect(swingThrough(low, high, Math.min(...steady))).toBeGreaterThan(
           target * 0.98,
         );
       });
@@ -1092,7 +1203,7 @@ describe('release under a sustained strobe', () => {
     expect(scored(raw).peakFlashesPerSecond).toBeLessThanOrEqual(3);
     expect(Math.min(...shown)).toBeLessThan(1);
     expect(Math.max(...shown.slice(SETTLED))).toBeGreaterThan(
-      FLASH_LUMINANCE_DELTA / (0.95 - 0.02),
+      scaleForSwing(0.02, 0.95, FLASH_LUMINANCE_DELTA),
     );
     expect(scored(seen).peakFlashesPerSecond).toBeLessThanOrEqual(3);
   });
@@ -1106,15 +1217,15 @@ describe('release under a sustained strobe', () => {
     });
     expect(scored(seen).totalFlashes).toBe(0);
     const steady = shown.slice(5 * SECOND);
-    expect(0.93 * Math.max(...steady)).toBeLessThanOrEqual(
+    expect(swingThrough(0.02, 0.95, Math.max(...steady))).toBeLessThanOrEqual(
       FLASH_LUMINANCE_DELTA * MARGIN,
     );
   });
 
   test('a brightness setting composed into the filter is not counted twice', () => {
-    // The viewer sees half of whatever the governor lets through, and the
-    // governor is told so: it only has to make up the rest of the way to
-    // the ceiling, so its own scale settles at twice the one shown.
+    // The viewer sees the governor's filter composed with brightness(0.5),
+    // and the governor is told so: it only has to make up the rest of the
+    // way to the ceiling, so its own scale settles at twice the one shown.
     const { seen, shown, governor } = scrim(
       square(3, 0.02, 0.95),
       15 * SECOND,
@@ -1125,8 +1236,8 @@ describe('release under a sustained strobe', () => {
     expect(scored(seen, SETTLED).totalFlashes).toBe(0);
     const viewed = shown[shown.length - 1] as number;
     const target = FLASH_LUMINANCE_DELTA * MARGIN;
-    expect(0.93 * viewed).toBeLessThanOrEqual(target);
-    expect(0.93 * viewed).toBeGreaterThan(target * 0.98);
+    expect(swingThrough(0.02, 0.95, viewed)).toBeLessThanOrEqual(target);
+    expect(swingThrough(0.02, 0.95, viewed)).toBeGreaterThan(target * 0.98);
     expect(governor.getState().luminanceScale).toBeCloseTo(viewed / 0.5, 3);
   });
 });

@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- The governor models the brightness filter it applies. `luminanceScale` is
+  a CSS `brightness()` factor, which browsers apply to sRGB-encoded values,
+  so the luminance a viewer sees falls roughly as its 2.2-2.4th power, not in
+  proportion. The governor took it as a luminance multiplier: it
+  overestimated the swing left on screen, counted flashes the viewer could
+  not see, and held a 0.02-to-0.95 strobe at brightness 0.069, where 0.328
+  meets the solve's target. Each luminance sample is now taken through
+  `luminanceThroughBrightness` when judged, solved and released, so expect
+  higher `luminanceScale` values for the same content. The red channel was
+  already exact: the filter scales the red-flash value by its factor.
+- The solved step composes with the filter the flash was seen through, not
+  with the engage hold applied in the same step. Composing with that landed
+  every first engagement at 0.8 of the solved scale.
+- The solved step also holds the strongest field-wide transition the content
+  made in the last `windowMs`, not only the one that completed the flash.
+  Every field-wide transition now records its ceiling, not only those made
+  while a failing strobe is held. Solved for a weak second flash alone, the
+  clamp let the stronger transitions around it through.
+- `primingHoldForMeasurement` derives the hold from the same filter model.
+- New exports: `luminanceThroughBrightness`, `encodeSrgb`, `decodeSrgb`.
 - The governor counts red flashes. `sample()` takes `red`, the same samples'
   red-flash values and saturated-red flags (`FlashRedField`), pairs and
   windows red transitions on their own channel with the offline analysis's

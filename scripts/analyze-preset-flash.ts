@@ -95,6 +95,16 @@
  * governor counted 12 flashes on a preset this audit reads at 0. It now
  * reads the live sampler's field, pixel for pixel, red-flash field included,
  * and scores both channels of the governed timeline.
+ *
+ * The governed timeline is each frame's pixels through the stage's CSS
+ * brightness() as Chromium applies it, to sRGB bytes, at the scale in force
+ * when the frame was drawn. It used to multiply linear luminance by the
+ * scale, the same mistake the governor made about its own filter, so the two
+ * agreed with each other and not with the screen; and it applied each
+ * decision to the frame that made it, one frame sooner than the live
+ * governor's off-thread readback can. The report carries the scale too
+ * (`governedMeanScale`, `governedMinScale`): a governed peak under the
+ * limit says nothing about how dark the governor held the stage to get it.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -160,6 +170,8 @@ type CapturedFrames = {
   govRedRising: number[][];
   govRedFalling: number[][];
   governorRawPeak: number;
+  /** The governor's brightness() factor on each captured frame. */
+  govScales: number[];
   tilePixels: number;
   frameMeanLuminance: number[];
   frameMeanDelta: number[];
@@ -181,6 +193,9 @@ export interface PresetFlashReport extends FlashAnalysis {
   governorRawPeakFlashesPerSecond?: number;
   governedExceedsThreshold?: boolean;
   governedExceedsRedThreshold?: boolean;
+  /** The governor's brightness() factor over the capture (--governor). */
+  governedMeanScale?: number;
+  governedMinScale?: number;
   presetId: string;
   title: string;
   author: string;
@@ -298,6 +313,10 @@ export function parseArgs(argv: string[]) {
     captureFrames: Math.round(CAPTURE_SECONDS * fps),
     warmupFrames: Math.round(warmupSeconds * fps),
   };
+}
+
+function mean(values: number[]): number {
+  return values.reduce((sum, v) => sum + v, 0) / Math.max(1, values.length);
 }
 
 /**
@@ -603,6 +622,14 @@ async function main() {
                 saturated: new Uint8Array(govEdge * govEdge),
               };
               let govScale = 1;
+              const govScales: number[] = [];
+              // brightness() scales sRGB-encoded values, not linear light, so
+              // the governed frame is each pixel's bytes scaled and then
+              // linearized: brightness(0.5) leaves about a fifth of the
+              // luminance, not half. Tabulated per scale, which moves at most
+              // once a frame.
+              const govLut = new Float64Array(256);
+              let govLutScale = Number.NaN;
               let prevGovLum: Float64Array | null = null;
               const curGovLum = new Float64Array(sampleCount);
               // The governed red-flash values. A CSS brightness filter scales
@@ -668,6 +695,26 @@ async function main() {
                     govRed.saturated[gi] =
                       rgbSum > 0 && r / rgbSum >= 0.8 ? 1 : 0;
                   }
+                  // Shown through the mitigation in force when it was drawn.
+                  // The live decision lands after its frame (the readback is
+                  // off-thread), so it governs the frames after it.
+                  if (govLutScale !== govScale) {
+                    for (let b = 0; b < 256; b += 1) {
+                      const c = (b / 255) * govScale;
+                      govLut[b] =
+                        c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+                    }
+                    govLutScale = govScale;
+                  }
+                  for (let i = 0; i < sampleCount; i += 1) {
+                    const o = (sampleYs[i] * w + sampleXs[i]) * 4;
+                    curGovLum[i] =
+                      0.2126 * govLut[px[o]] +
+                      0.7152 * govLut[px[o + 1]] +
+                      0.0722 * govLut[px[o + 2]];
+                    curGovRed[i] = curRed[i] * govScale;
+                  }
+                  govScales.push(govScale);
                   // Judged through the mitigation already in force: the
                   // governor must observe what the viewer sees, not the raw
                   // frame, or it never registers its own effect.
@@ -693,10 +740,6 @@ async function main() {
                         { density: governorDensity, viewScale: 1 },
                       ).flashesInWindow,
                     );
-                  }
-                  for (let i = 0; i < sampleCount; i += 1) {
-                    curGovLum[i] = curLum[i] * govScale;
-                    curGovRed[i] = curRed[i] * govScale;
                   }
                 }
 
@@ -824,6 +867,7 @@ async function main() {
                 govRedRising,
                 govRedFalling,
                 governorRawPeak,
+                govScales,
                 tilePixels,
                 frameMeanLuminance,
                 frameMeanDelta,
@@ -877,6 +921,7 @@ async function main() {
             govRedRising: number[][];
             govRedFalling: number[][];
             governorRawPeak: number;
+            govScales: number[];
             tilePixels: number;
             frameMeanLuminance: number[];
             frameMeanDelta: number[];
@@ -947,6 +992,8 @@ async function main() {
                   governed.peakRedFlashesPerSecond,
                 governedExceedsRedThreshold: governed.exceedsRedThreshold,
                 governorRawPeakFlashesPerSecond: cap.governorRawPeak,
+                governedMeanScale: mean(cap.govScales),
+                governedMinScale: Math.min(...cap.govScales),
               }
             : {}),
         });
@@ -959,7 +1006,9 @@ async function main() {
             (governed
               ? `governor counts ${cap.governorRawPeak}/s, ` +
                 `governed=${governed.peakFlashesPerSecond}/s ` +
-                `(red ${governed.peakRedFlashesPerSecond}/s) `
+                `(red ${governed.peakRedFlashesPerSecond}/s) ` +
+                `at brightness mean ${mean(cap.govScales).toFixed(3)} ` +
+                `min ${Math.min(...cap.govScales).toFixed(3)} `
               : '') +
             `red=${analysis.peakRedFlashesPerSecond}/s ` +
             `motion=${analysis.motionEnergy.toFixed(4)} ` +
