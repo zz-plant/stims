@@ -15,10 +15,15 @@
  * Presets without a vector (generated, imported, or a preview the thumbnailer
  * recorded as a black frame) return null, and callers fall back to describing
  * the live frame.
+ *
+ * The visual search terms ("tunnel", "fire") ship as vectors in the same
+ * space (visual-terms.json), so a typed term ranks every preset by how much
+ * its preview looks like that word, not only the few the build tagged with it.
  */
 
 const MANIFEST_URL = '/milkdrop-presets/visual-vectors.json';
 const VECTORS_URL = '/milkdrop-presets/visual-vectors.bin';
+const TERMS_URL = '/milkdrop-presets/visual-terms.json';
 
 /**
  * Upper bound on rows read from the manifest; the catalog is ~1,800. Also the
@@ -44,6 +49,41 @@ export type VisualVectorManifest = {
 
 export type VisualMatch = { presetId: string; score: number };
 
+/**
+ * How far above the catalog's mean for a term (in standard deviations) a
+ * preview must score to count as a match. The build tags at 3.0 against
+ * full-precision vectors; on the shipped 256-d int8 cut the presets it tagged
+ * score 2.5 or more (436 of 448 on the 2026-10 catalog). Below this a ranked
+ * list fills with frames the term does not describe.
+ */
+const VISUAL_TERM_MATCH_Z = 2.5;
+
+/**
+ * True when a preset's preview matches a visual-term query strongly enough to
+ * list even though no text field names the term. `visualScores` comes from
+ * `scoreVisualQuery` and is empty for any other query, so this adds nothing
+ * until the vectors load and never widens a text search.
+ */
+export function matchesVisualQuery(
+  presetId: string,
+  visualScores: ReadonlyMap<string, number>,
+): boolean {
+  return (
+    (visualScores.get(presetId) ?? Number.NEGATIVE_INFINITY) >=
+    VISUAL_TERM_MATCH_Z
+  );
+}
+
+export type VisualTermVocabulary = {
+  version: 1;
+  /** Must equal the preset manifest's model; see `scoreVisualQuery`. */
+  model: string;
+  dims: number;
+  terms: string[];
+  /** One int8 row per term, in `terms` order. */
+  vectors: number[][];
+};
+
 function parseManifest(input: unknown): VisualVectorManifest {
   const doc = input as Partial<VisualVectorManifest> | null;
   if (
@@ -61,8 +101,60 @@ function parseManifest(input: unknown): VisualVectorManifest {
   return doc as VisualVectorManifest;
 }
 
+function parseTermVocabulary(input: unknown): VisualTermVocabulary {
+  const doc = input as Partial<VisualTermVocabulary> | null;
+  if (
+    !doc ||
+    doc.version !== 1 ||
+    typeof doc.model !== 'string' ||
+    !Number.isInteger(doc.dims) ||
+    !Array.isArray(doc.terms) ||
+    !Array.isArray(doc.vectors) ||
+    doc.terms.length !== doc.vectors.length ||
+    !doc.terms.every((term) => typeof term === 'string') ||
+    !doc.vectors.every((row) => Array.isArray(row) && row.length === doc.dims)
+  ) {
+    throw new Error('Malformed visual-terms vocabulary');
+  }
+  return doc as VisualTermVocabulary;
+}
+
+/**
+ * The vocabulary terms a typed query consists of, or null when any part of it
+ * is not one. `normalizedQuery` must already be folded the way Browse folds
+ * text (lowercase words separated by single spaces). Longest term first, so
+ * "black and white" is one term rather than an unknown "and" between two.
+ *
+ * All-or-nothing on purpose: in "geiss tunnel" the author is the point, and
+ * ranking the whole catalog by tunnel-ness would bury the text match.
+ */
+export function visualTermsInQuery(
+  normalizedQuery: string,
+  terms: readonly string[],
+): string[] | null {
+  const words = normalizedQuery.split(' ').filter(Boolean);
+  if (words.length === 0 || terms.length === 0) return null;
+  const known = new Set(terms);
+  const longest = Math.max(...terms.map((term) => term.split(' ').length));
+  const found: string[] = [];
+  let at = 0;
+  while (at < words.length) {
+    let span = Math.min(longest, words.length - at);
+    while (span > 0 && !known.has(words.slice(at, at + span).join(' '))) {
+      span -= 1;
+    }
+    if (span === 0) return null;
+    const term = words.slice(at, at + span).join(' ');
+    if (!found.includes(term)) found.push(term);
+    at += span;
+  }
+  return found;
+}
+
 export class PresetVisualVectors {
   readonly ids: readonly string[];
+  /** Provenance from the manifest; term vectors must carry the same. */
+  readonly model: string;
   readonly dims: number;
   private readonly data: Int8Array;
   private readonly norms: Float32Array;
@@ -75,6 +167,7 @@ export class PresetVisualVectors {
       );
     }
     this.ids = manifest.ids;
+    this.model = manifest.model;
     this.dims = manifest.dims;
     this.data = data;
     this.rowOf = new Map(manifest.ids.map((id, row) => [id, row]));
@@ -149,9 +242,57 @@ export class PresetVisualVectors {
     }
     return scores;
   }
+
+  /**
+   * For every preset with a vector, how strongly its preview matches the
+   * given term vectors: per term, the cosine in standard deviations above the
+   * catalog's mean for that term, then the mean across terms.
+   *
+   * Raw cosines are not comparable between terms (each phrase sits at its own
+   * distance from every image), which is why the build tags by z-score too.
+   * The mean is what lets "blue tunnel" rank presets that are both above
+   * presets that are only very much one.
+   */
+  termScores(
+    termVectors: ReadonlyArray<ArrayLike<number>>,
+  ): Map<string, number> {
+    const { data, dims, ids, norms } = this;
+    const scores = new Map<string, number>();
+    const usable = termVectors.filter((vector) => vector.length === dims);
+    if (usable.length === 0 || ids.length < 2) return scores;
+    const totals = new Float64Array(ids.length);
+    const cosines = new Float64Array(ids.length);
+    for (const vector of usable) {
+      let termNorm = 0;
+      for (let i = 0; i < dims; i += 1) termNorm += vector[i] * vector[i];
+      termNorm = Math.sqrt(termNorm) || 1;
+      let mean = 0;
+      for (let row = 0; row < ids.length; row += 1) {
+        const offset = row * dims;
+        let dot = 0;
+        for (let i = 0; i < dims; i += 1) dot += data[offset + i] * vector[i];
+        cosines[row] = dot / (norms[row] * termNorm);
+        mean += cosines[row];
+      }
+      mean /= ids.length;
+      let variance = 0;
+      for (let row = 0; row < ids.length; row += 1) {
+        variance += (cosines[row] - mean) ** 2;
+      }
+      const sd = Math.sqrt(variance / ids.length) || 1;
+      for (let row = 0; row < ids.length; row += 1) {
+        totals[row] += (cosines[row] - mean) / sd;
+      }
+    }
+    for (let row = 0; row < ids.length; row += 1) {
+      scores.set(ids[row], totals[row] / usable.length);
+    }
+    return scores;
+  }
 }
 
 let loading: Promise<PresetVisualVectors | null> | null = null;
+let loadingTerms: Promise<VisualTermVocabulary | null> | null = null;
 
 /**
  * The shipped vectors, fetched once per page. Resolves null when the files
@@ -181,9 +322,56 @@ export function loadPresetVisualVectors(): Promise<PresetVisualVectors | null> {
   return loading;
 }
 
-/** Test seam: forget the memoized load between cases. */
+/**
+ * The shipped term vocabulary, fetched once per page. Same contract as
+ * `loadPresetVisualVectors`: null on a missing or malformed file, and a
+ * failure is not memoized.
+ */
+export function loadVisualTermVocabulary(): Promise<VisualTermVocabulary | null> {
+  loadingTerms ??= (async () => {
+    try {
+      const response = await fetch(TERMS_URL);
+      if (!response.ok) {
+        loadingTerms = null;
+        return null;
+      }
+      return parseTermVocabulary(await response.json());
+    } catch (error) {
+      console.debug('Visual term vocabulary unavailable', error);
+      loadingTerms = null;
+      return null;
+    }
+  })();
+  return loadingTerms;
+}
+
+/** Test seam: forget the memoized loads between cases. */
 export function resetPresetVisualVectors(): void {
   loading = null;
+  loadingTerms = null;
+}
+
+/**
+ * Per-preset match strength for a query made only of visual terms (see
+ * `visualTermsInQuery`). Empty when it is not one, when either file is
+ * missing, or when the two files come from different models.
+ *
+ * The term vocabulary is small (about 20 KB gzip) and fetched on the first
+ * search; the preset vectors only once a query turns out to be all visual
+ * terms.
+ */
+export async function scoreVisualQuery(
+  normalizedQuery: string,
+): Promise<Map<string, number>> {
+  const vocabulary = await loadVisualTermVocabulary();
+  if (!vocabulary) return new Map();
+  const terms = visualTermsInQuery(normalizedQuery, vocabulary.terms);
+  if (!terms) return new Map();
+  const vectors = await loadPresetVisualVectors();
+  if (!vectors || vectors.model !== vocabulary.model) return new Map();
+  return vectors.termScores(
+    terms.map((term) => vocabulary.vectors[vocabulary.terms.indexOf(term)]),
+  );
 }
 
 /**

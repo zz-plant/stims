@@ -269,6 +269,12 @@ export function sortBrowseEntries(
    * a visitor with nothing saved; presets with no vector sort last.
    */
   affinity: ReadonlyMap<string, number> = new Map(),
+  /**
+   * How much each preview looks like the search, when the search is made of
+   * visual terms (`scoreVisualQuery`). 'relevance' ranks presets that name
+   * the term first, then by this. Empty for any other search.
+   */
+  visualScores: ReadonlyMap<string, number> = new Map(),
 ): PresetCatalogEntry[] {
   const sorted = [...entries];
   switch (sort) {
@@ -287,6 +293,30 @@ export function sortBrowseEntries(
     case 'relevance': {
       if (!query.trim()) return sorted;
       const matcher = createFieldMatcher(query, { allowSubsequence: false });
+      // "tunnel": the presets called tunnel-something, then every preview by
+      // how tunnel-like it looks. The tags the build wrote are one cut of
+      // that same measurement, so they would only reorder it by coarser means.
+      if (visualScores.size > 0) {
+        const literal = new Map<string, number>();
+        for (const entry of sorted) {
+          literal.set(
+            entry.id,
+            matcher.score(getPresetLiteralFields(entry)) ??
+              Number.NEGATIVE_INFINITY,
+          );
+        }
+        const compare = (a: number, b: number) =>
+          a === b ? 0 : a > b ? -1 : 1;
+        const visualOf = (entry: PresetCatalogEntry) =>
+          visualScores.get(entry.id) ?? Number.NEGATIVE_INFINITY;
+        return sorted.sort(
+          (a, b) =>
+            compare(
+              literal.get(a.id) ?? Number.NEGATIVE_INFINITY,
+              literal.get(b.id) ?? Number.NEGATIVE_INFINITY,
+            ) || compare(visualOf(a), visualOf(b)),
+        );
+      }
       const scores = new Map<string, number>();
       for (const entry of sorted) {
         scores.set(
@@ -562,17 +592,19 @@ function deriveSemanticVibeTerms(entry: PresetCatalogEntry): string[] {
 }
 
 const presetMatchFieldsCache = new WeakMap<PresetCatalogEntry, MatchField[]>();
+const presetLiteralFieldsCache = new WeakMap<
+  PresetCatalogEntry,
+  MatchField[]
+>();
 
 /**
- * The fields a typed query is matched against, weighted so a title hit
- * outranks the same hit on an author, tag or semantic term.
- *
- * searchTerms are included here (the query-matching path) and deliberately
- * kept out of buildPresetSearchIndex: describePresetMood reads that index, and
- * semantic terms like "dark" or "fire" would re-bucket preset moods.
+ * What the preset says about itself: title, author, id, tags and collection
+ * labels, without the semantic terms derived from its preview or name. A
+ * visual-term search ranks these hits first, because a preset that names the
+ * term has said so, while a preview's resemblance is a measurement.
  */
-function getPresetMatchFields(entry: PresetCatalogEntry): MatchField[] {
-  const cached = presetMatchFieldsCache.get(entry);
+function getPresetLiteralFields(entry: PresetCatalogEntry): MatchField[] {
+  const cached = presetLiteralFieldsCache.get(entry);
   if (cached !== undefined) {
     return cached;
   }
@@ -587,6 +619,26 @@ function getPresetMatchFields(entry: PresetCatalogEntry): MatchField[] {
       .map((tag) =>
         toMatchField(prettifyCollectionTag(tag), FIELD_PENALTY.tag),
       ),
+  ].filter((field) => field.text.length > 0);
+  presetLiteralFieldsCache.set(entry, fields);
+  return fields;
+}
+
+/**
+ * The fields a typed query is matched against, weighted so a title hit
+ * outranks the same hit on an author, tag or semantic term.
+ *
+ * searchTerms are included here (the query-matching path) and deliberately
+ * kept out of buildPresetSearchIndex: describePresetMood reads that index, and
+ * semantic terms like "dark" or "fire" would re-bucket preset moods.
+ */
+function getPresetMatchFields(entry: PresetCatalogEntry): MatchField[] {
+  const cached = presetMatchFieldsCache.get(entry);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const fields: MatchField[] = [
+    ...getPresetLiteralFields(entry),
     ...(entry.searchTerms ?? []).map((term) =>
       toMatchField(term, FIELD_PENALTY.semantic),
     ),

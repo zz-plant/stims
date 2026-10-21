@@ -13,13 +13,19 @@
  *   experiments/visual-embeddings/terms.ts that stand out for a preset's
  *   preview, so typing "tunnel" in Browse finds tunnels whatever the title.
  *   This script owns that field: it rewrites it on every entry.
+ * - public/milkdrop-presets/visual-terms.json: the same terms as vectors, cut
+ *   and quantized like the previews, so Browse can rank every preset against
+ *   a typed term on the device instead of only finding the ones it tagged.
  * - output/visual-embeddings/report.md: for a human, not the app. Look-alike
  *   pairs the source-text dedup missed, source near-duplicates that render
  *   differently, the unmeasured presets that most resemble a measured
  *   flasher (an order for `lab:flash-audit`, never a label), and how much
  *   neighbour ranking the 256-d int8 cut gives up against full precision.
  *
- * Usage: bun run catalog:visual-embeddings [--report-only]
+ * Usage: bun run catalog:visual-embeddings [--report-only | --terms-only]
+ *
+ * `--terms-only` rewrites visual-terms.json from the term vectors alone
+ * (`embed.ts --terms-only`), for a terms.ts edit made without the previews.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -34,6 +40,10 @@ const OUT_MANIFEST = path.join(
 const OUT_VECTORS = path.join(
   repoRoot,
   'public/milkdrop-presets/visual-vectors.bin',
+);
+const OUT_TERMS = path.join(
+  repoRoot,
+  'public/milkdrop-presets/visual-terms.json',
 );
 const OUT_REPORT = path.join(CACHE, 'report.md');
 
@@ -71,6 +81,7 @@ type ImageIndex = {
 type TermIndex = {
   model: string;
   revision: string;
+  dtype: string;
   dims: number;
   terms: string[];
 };
@@ -120,30 +131,74 @@ function topK(scores: number[], k: number, skip: number): number[] {
     .map((item) => item.index);
 }
 
+/**
+ * The provenance string both shipped files carry. The client compares the two
+ * and refuses a mismatch: vectors from different models or quantizations sit
+ * in different spaces, and their cosines would look valid while meaning
+ * nothing.
+ */
+function shippedModel(index: {
+  model: string;
+  revision: string;
+  dtype: string;
+}): string {
+  return `${index.model}@${index.revision} ${index.dtype}, ${SHIPPED_DIMS}-d int8`;
+}
+
+/** Each term cut to the shipped dimensions, renormalized and quantized. */
+function writeVisualTerms(termIndex: TermIndex, termVectors: Float32Array[]) {
+  const cut = termVectors.map((vector) =>
+    normalize(vector.slice(0, SHIPPED_DIMS)),
+  );
+  let maxAbs = 0;
+  for (const vector of cut) {
+    for (const value of vector) maxAbs = Math.max(maxAbs, Math.abs(value));
+  }
+  fs.writeFileSync(
+    OUT_TERMS,
+    `${JSON.stringify({
+      version: 1,
+      model: shippedModel(termIndex),
+      dims: SHIPPED_DIMS,
+      terms: termIndex.terms,
+      vectors: cut.map((vector) =>
+        Array.from(vector, (value) => Math.round((value / maxAbs) * 127)),
+      ),
+    })}\n`,
+  );
+  console.log(
+    `wrote ${termIndex.terms.length} term vectors to ${path.relative(repoRoot, OUT_TERMS)}`,
+  );
+}
+
 function main() {
   const reportOnly = process.argv.includes('--report-only');
+  const termsOnly = process.argv.includes('--terms-only');
+  const termsPath = path.join(CACHE, 'terms.json');
   const imagesPath = path.join(CACHE, 'images.json');
-  if (!fs.existsSync(imagesPath)) {
+  if (!fs.existsSync(termsPath) || (!termsOnly && !fs.existsSync(imagesPath))) {
     console.error(
       'No vectors in output/visual-embeddings. Run experiments/visual-embeddings/embed.ts first (see its README).',
     );
     process.exit(1);
   }
-  const imageIndex = JSON.parse(
-    fs.readFileSync(imagesPath, 'utf8'),
-  ) as ImageIndex;
-  const termIndex = JSON.parse(
-    fs.readFileSync(path.join(CACHE, 'terms.json'), 'utf8'),
-  ) as TermIndex;
-  const fullImages = rows(
-    readF32(path.join(CACHE, 'images.f32')),
-    imageIndex.dims,
-    imageIndex.entries.length,
-  );
+  const termIndex = JSON.parse(fs.readFileSync(termsPath, 'utf8')) as TermIndex;
   const termVectors = rows(
     readF32(path.join(CACHE, 'terms.f32')),
     termIndex.dims,
     termIndex.terms.length,
+  );
+  if (termsOnly) {
+    writeVisualTerms(termIndex, termVectors);
+    return;
+  }
+  const imageIndex = JSON.parse(
+    fs.readFileSync(imagesPath, 'utf8'),
+  ) as ImageIndex;
+  const fullImages = rows(
+    readF32(path.join(CACHE, 'images.f32')),
+    imageIndex.dims,
+    imageIndex.entries.length,
   );
 
   const catalogDoc = JSON.parse(fs.readFileSync(CATALOG, 'utf8')) as {
@@ -383,12 +438,13 @@ function main() {
     OUT_MANIFEST,
     `${JSON.stringify({
       version: 1,
-      model: `${imageIndex.model}@${imageIndex.revision} ${imageIndex.dtype}, ${SHIPPED_DIMS}-d int8`,
+      model: shippedModel(imageIndex),
       dims: SHIPPED_DIMS,
       ids: kept.map((entry) => entry.id),
     })}\n`,
   );
   fs.writeFileSync(OUT_VECTORS, quantized);
+  writeVisualTerms(termIndex, termVectors);
 
   for (const entry of catalogDoc.presets) {
     const terms = termsFor.get(entry.id);

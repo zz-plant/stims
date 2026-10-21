@@ -56,6 +56,8 @@ const MANIFEST_GZIP_BUDGETS: ReadonlyArray<{ file: string; max: number }> = [
   // (306 KB gzip at 1,636 presets × 256 int8 values).
   { file: 'milkdrop-presets/visual-vectors.bin', max: 360_000 },
   { file: 'milkdrop-presets/visual-vectors.json', max: 30_000 },
+  // Fetched on the first Browse search (19 KB gzip for 74 terms × 256 int8).
+  { file: 'milkdrop-presets/visual-terms.json', max: 30_000 },
 ];
 
 /**

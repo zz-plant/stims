@@ -12,6 +12,7 @@
  *
  *   cd experiments/visual-embeddings && bun install
  *   bun run embed.ts [--previews <dir>] [--out <dir>] [--device webgpu|cpu]
+ *   bun run embed.ts --terms-only   # re-embed terms.ts alone; no previews needed
  *
  * Previews are gitignored (they live in R2); generate them with
  * `bun run generate:previews` or point --previews at a checkout that has them.
@@ -154,7 +155,10 @@ function writeImages(ids: string[], records: Map<string, CachedImage>) {
 }
 
 async function main() {
-  const catalogIds = readCatalogIds();
+  // Term vectors are what `catalog:visual-terms` ships, and they need no
+  // previews: editing terms.ts should not require the R2 preview set.
+  const termsOnly = process.argv.includes('--terms-only');
+  const catalogIds = termsOnly ? [] : readCatalogIds();
   const failed = readFailedPreviewIds(new Set(catalogIds));
   const ids = catalogIds.filter((id) => {
     if (failed.has(id)) return false;
@@ -231,7 +235,7 @@ async function main() {
   }
   if (todo.length) process.stdout.write('\n');
 
-  writeImages(ids, records);
+  if (!termsOnly) writeImages(ids, records);
 
   // Phrases are queries against images, so they take the retrieval query
   // prefix; images take none (model card, "Task Instruction Prefixes").
@@ -243,11 +247,13 @@ async function main() {
   );
   const termVectors = termEmbedding.data as Float32Array;
 
+  fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(
     path.join(outDir, 'terms.json'),
     `${JSON.stringify({
       model: MODEL_ID,
       revision: MODEL_REVISION,
+      dtype: DTYPE,
       dims: DIMS,
       terms: VISUAL_TERMS.map((term) => term.term),
     })}\n`,
@@ -261,7 +267,9 @@ async function main() {
     ),
   );
   console.log(
-    `wrote ${records.size} image vectors and ${VISUAL_TERMS.length} term vectors to ${path.relative(repoRoot, outDir)}`,
+    termsOnly
+      ? `wrote ${VISUAL_TERMS.length} term vectors to ${path.relative(repoRoot, outDir)}`
+      : `wrote ${records.size} image vectors and ${VISUAL_TERMS.length} term vectors to ${path.relative(repoRoot, outDir)}`,
   );
 }
 
