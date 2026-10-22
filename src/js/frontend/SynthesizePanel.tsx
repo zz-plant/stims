@@ -78,6 +78,20 @@ function storedString(value: unknown, fallback: string) {
   return typeof value === 'string' && value.trim() ? value : fallback;
 }
 
+/**
+ * Code-split load of the Clef Omni decision helpers. Module scope on
+ * purpose: a dynamic `import()` expression inside a component makes React
+ * Compiler skip that whole function, and this file's callbacks must stay
+ * compilable. The chunks load exactly as lazily as before — only the import
+ * expression moved.
+ */
+async function loadDecisionHelpers() {
+  return Promise.all([
+    import('./generated-preset-decision.ts'),
+    import('../core/services/decision-client.ts'),
+  ]);
+}
+
 function readStoredSynthesizeSettings(): StoredSynthesizeSettings {
   const defaults: StoredSynthesizeSettings = {
     palette: 'auto',
@@ -323,9 +337,12 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
       }
     } catch (err) {
       setStatus(`Error: ${(err as Error).message}`);
-    } finally {
-      setGenerating(false);
     }
+    // Cleanup after the catch rather than in a `finally` clause: React
+    // Compiler cannot lower try/finally yet, and one unparsable function
+    // skips the whole file. The catch swallows everything, so this runs on
+    // both paths exactly as the finally did.
+    setGenerating(false);
     if (postLoadCheck) {
       void postLoadCheck();
     }
@@ -353,14 +370,16 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     const revision = window.__stims_agent?.getPerformanceRevision();
     setReviewing(true);
     setStatus('Checking the current picture against your description…');
-    try {
+    // The attempt runs as an inner function so its early returns end the
+    // attempt instead of the handler: cleanup below must run on every path,
+    // which a `finally` clause did before React Compiler made try/finally a
+    // whole-file bailout. The dynamic imports stay inside the attempt —
+    // the compiler skips that one function and compiles the rest of the file.
+    const attempt = async () => {
       const [
         { captureDecisionImage, summarizePromptMatch },
         { requestDecision },
-      ] = await Promise.all([
-        import('./generated-preset-decision.ts'),
-        import('../core/services/decision-client.ts'),
-      ]);
+      ] = await loadDecisionHelpers();
       const image = await captureDecisionImage(
         ui.stageRef.current,
         controller.signal,
@@ -389,14 +408,16 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
             : 'The picture check was uncertain. Try a clearer description or check a later frame.',
       );
       setCanRegenerate(verdict !== 'match');
+    };
+    try {
+      await attempt();
     } catch (error) {
       if (!controller.signal.aborted)
         setStatus(
           `Picture check unavailable: ${error instanceof Error ? error.message : 'try again later'}`,
         );
-    } finally {
-      if (!controller.signal.aborted) setReviewing(false);
     }
+    if (!controller.signal.aborted) setReviewing(false);
   }, [prompt, offline, reviewing, ui.stageRef]);
 
   const handleVideoCheck = useCallback(async () => {
@@ -407,14 +428,16 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     const revision = window.__stims_agent?.getPerformanceRevision();
     setReviewingVideo(true);
     setStatus('Recording animation clip for Clef Omni motion check…');
-    try {
+    // The attempt runs as an inner function so its early returns end the
+    // attempt instead of the handler: cleanup below must run on every path,
+    // which a `finally` clause did before React Compiler made try/finally a
+    // whole-file bailout. The dynamic imports stay inside the attempt —
+    // the compiler skips that one function and compiles the rest of the file.
+    const attempt = async () => {
       const [
         { captureDecisionVideo, summarizePromptMatch },
         { requestDecision },
-      ] = await Promise.all([
-        import('./generated-preset-decision.ts'),
-        import('../core/services/decision-client.ts'),
-      ]);
+      ] = await loadDecisionHelpers();
       const video = await captureDecisionVideo(
         ui.stageRef.current,
         { durationMs: 1500 },
@@ -446,14 +469,16 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
             : 'The animation check was uncertain. Try a clearer description or check a later clip.',
       );
       setCanRegenerate(verdict !== 'match');
+    };
+    try {
+      await attempt();
     } catch (error) {
       if (!controller.signal.aborted)
         setStatus(
           `Animation check unavailable: ${error instanceof Error ? error.message : 'try again later'}`,
         );
-    } finally {
-      if (!controller.signal.aborted) setReviewingVideo(false);
     }
+    if (!controller.signal.aborted) setReviewingVideo(false);
   }, [prompt, offline, reviewing, reviewingVideo, ui.stageRef]);
 
   return (

@@ -174,25 +174,26 @@ export function CapturePanel() {
     setStatus('Finishing video…');
     try {
       const blob = await exporter.stopRecording();
-      if (!blob) {
+      if (blob) {
+        exporter.downloadVideo(blob, getFilename(preset, blob.type));
+        setStatus('Video saved to your downloads.');
+        setSaved(true);
+        noteGrowthEvent('video-saved');
+      } else {
         setStatus('No video frames were captured. Try recording again.');
-        return;
       }
-      exporter.downloadVideo(blob, getFilename(preset, blob.type));
-      setStatus('Video saved to your downloads.');
-      setSaved(true);
-      noteGrowthEvent('video-saved');
     } catch (error) {
       setStatus(
         error instanceof Error
           ? `Recording could not be saved: ${error.message}`
           : 'Recording could not be saved. Try again.',
       );
-    } finally {
-      // Always clear the recording flag so a failure can't wedge the Stop
-      // button into a permanently "Finishing video…" state.
-      setRecording(false);
     }
+    // Always clear the recording flag so a failure can't wedge the Stop
+    // button into a permanently "Finishing video…" state. Runs after the
+    // catch rather than in a `finally` clause — React Compiler cannot lower
+    // try/finally yet, and one unparsable function skips the whole file.
+    setRecording(false);
   }, [preset]);
 
   return (

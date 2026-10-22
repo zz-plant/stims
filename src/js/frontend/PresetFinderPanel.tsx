@@ -136,6 +136,20 @@ function collectAudioSamples(
   });
 }
 
+/**
+ * Code-split load of the Clef Omni audio-match helpers. Module scope on
+ * purpose: a dynamic `import()` expression inside a component makes React
+ * Compiler skip that whole function, and this file's callbacks must stay
+ * compilable. The chunks load exactly as lazily as before — only the
+ * import expression moved.
+ */
+async function loadOmniMatchHelpers() {
+  return Promise.all([
+    import('../core/services/audio-clip.ts'),
+    import('../core/services/decision-audio-match.ts'),
+  ]);
+}
+
 function readStoredFinderMode(): FinderMode | null {
   try {
     const stored = localStorage.getItem(FINDER_MODE_STORAGE_KEY);
@@ -254,7 +268,12 @@ export function PresetFinderPanel({
     setResults(null);
     setOmniMatchId(null);
     setError(null);
-    try {
+    // The attempt runs as an inner function so its early returns (a run
+    // losing its claim) and its `throw new Error('No canvas found')` end
+    // the attempt instead of the handler: cleanup below must run on every
+    // path, which a `finally` clause did before React Compiler made
+    // try/finally a whole-file bailout.
+    const attempt = async () => {
       // Both services return the same {presetId, score} ranking, so the only
       // real difference between the two modes is what gets embedded.
       let matches: Array<{ presetId: string; score: number }>;
@@ -318,26 +337,29 @@ export function PresetFinderPanel({
           };
         }),
       );
+    };
+    try {
+      await attempt();
     } catch (err) {
       // A cancelled run rejects with AbortError only after it has already
       // lost its claim, so the guard skips it and real failures surface.
       if (isCurrent()) setError((err as Error).message);
-    } finally {
-      if (isLatest()) setLoading(false);
     }
+    if (isLatest()) setLoading(false);
   }, [activePresetId, catalogEntryById, mode, ui]);
 
   const matchWithClefOmni = useCallback(async () => {
     if (!results || results.length === 0 || matchingOmni) return;
     setMatchingOmni(true);
     setError(null);
-    try {
-      const { createSyntheticAudioClip } = await import(
-        '../core/services/audio-clip.ts'
-      );
-      const { matchAudioWithClefOmni: runOmniMatch } = await import(
-        '../core/services/decision-audio-match.ts'
-      );
+    // The dynamic imports stay inside the attempt: React Compiler skips
+    // that one function (import expressions are not lowered yet) and
+    // compiles the rest of the file.
+    const attempt = async () => {
+      const [
+        { createSyntheticAudioClip },
+        { matchAudioWithClefOmni: runOmniMatch },
+      ] = await loadOmniMatchHelpers();
       const audio = createSyntheticAudioClip({ durationMs: 1000 });
       const candidates = results.slice(0, 12).map((r) => ({
         id: r.id,
@@ -359,13 +381,19 @@ export function PresetFinderPanel({
       } else if (outcome.reason) {
         setError(outcome.reason);
       }
+    };
+    try {
+      await attempt();
     } catch (err) {
       setError(
         `Clef Omni audio match unavailable: ${err instanceof Error ? err.message : 'try again later'}`,
       );
-    } finally {
-      setMatchingOmni(false);
     }
+    // Cleanup after the catch rather than in a `finally` clause: React
+    // Compiler cannot lower try/finally yet, and one unparsable function
+    // skips the whole file. The catch swallows everything, so this runs on
+    // both paths exactly as the finally did.
+    setMatchingOmni(false);
   }, [results, matchingOmni]);
 
   // The panel owns its in-flight searches. Leaving cancels the controller —

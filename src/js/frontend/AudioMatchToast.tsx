@@ -21,7 +21,13 @@ export function AudioMatchToast({
   // fixed 6s deadline expires before a keyboard user can Tab to the action.
   const [held, setHeld] = useState(false);
   const onDismissRef = useRef(onDismiss);
-  onDismissRef.current = onDismiss;
+  // Updated in an effect rather than during render: React Compiler skips
+  // any function that writes a ref during render, and the only reader is
+  // the timer callback below, which fires seconds after commit — long
+  // after this effect has synced the latest callback.
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+  }, [onDismiss]);
 
   // Keyed on the preset, not the match object: the label is re-derived when
   // the catalog fills in, and a re-derived object must not restart the clock.
