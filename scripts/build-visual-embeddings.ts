@@ -146,7 +146,11 @@ function shippedModel(index: {
 }
 
 /** Each term cut to the shipped dimensions, renormalized and quantized. */
-function writeVisualTerms(termIndex: TermIndex, termVectors: Float32Array[]) {
+function writeVisualTerms(
+  termIndex: TermIndex,
+  termVectors: Float32Array[],
+  stats?: Array<[mean: number, invSd: number]>,
+) {
   const cut = termVectors.map((vector) =>
     normalize(vector.slice(0, SHIPPED_DIMS)),
   );
@@ -164,6 +168,7 @@ function writeVisualTerms(termIndex: TermIndex, termVectors: Float32Array[]) {
       vectors: cut.map((vector) =>
         Array.from(vector, (value) => Math.round((value / maxAbs) * 127)),
       ),
+      ...(stats ? { stats } : {}),
     })}\n`,
   );
   console.log(
@@ -451,7 +456,41 @@ function main() {
     })}\n`,
   );
   fs.writeFileSync(OUT_VECTORS, quantized);
-  writeVisualTerms(termIndex, termVectors);
+
+  const cutTerms = termVectors.map((vector) =>
+    normalize(vector.slice(0, SHIPPED_DIMS)),
+  );
+  let termMaxAbs = 0;
+  for (const vector of cutTerms) {
+    for (const value of vector) {
+      termMaxAbs = Math.max(termMaxAbs, Math.abs(value));
+    }
+  }
+  const quantizedTerms = cutTerms.map((vector) =>
+    Array.from(vector, (value) => Math.round((value / termMaxAbs) * 127)),
+  );
+  const shippedStats: Array<[number, number]> = quantizedTerms.map(
+    (termVec) => {
+      let termNormSq = 0;
+      for (let i = 0; i < SHIPPED_DIMS; i += 1) {
+        termNormSq += termVec[i] * termVec[i];
+      }
+      const invTermNorm = termNormSq > 0 ? 1 / Math.sqrt(termNormSq) : 0;
+      let sum = 0;
+      let sumSq = 0;
+      for (let r = 0; r < kept.length; r += 1) {
+        const cos =
+          dot(quantRows[r], termVec) / (quantNorms[r] * (1 / invTermNorm));
+        sum += cos;
+        sumSq += cos * cos;
+      }
+      const mean = sum / kept.length;
+      const variance = Math.max(0, sumSq / kept.length - mean * mean);
+      const invSd = variance > 0 ? 1 / Math.sqrt(variance) : 1;
+      return [Number(mean.toFixed(5)), Number(invSd.toFixed(5))];
+    },
+  );
+  writeVisualTerms(termIndex, termVectors, shippedStats);
 
   for (const entry of catalogDoc.presets) {
     const terms = termsFor.get(entry.id);

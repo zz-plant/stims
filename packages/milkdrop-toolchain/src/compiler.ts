@@ -27,8 +27,13 @@ const compiledPresetCache = new Map<string, MilkdropCompiledPreset>();
  * text shared one entry and the second got the first one's id back, which
  * anything keyed by preset id (solo/mute, drafts, lineage) then mixed up.
  */
-function cacheKey(raw: string, id: string | undefined) {
-  return `${id ?? ''}\u0000${raw}`;
+function cacheKey(
+  raw: string,
+  id: string | undefined,
+  title?: string | undefined,
+) {
+  const identity = id ?? title ?? '';
+  return `${identity}\u0000${raw}`;
 }
 
 function insertCompiledPresetCacheEntry(
@@ -62,8 +67,7 @@ export function compileMilkdropPresetSource(
 ): MilkdropCompiledPreset {
   // If options or custom source overrides are specified, skip simple string cache
   const isSimpleCall =
-    Object.keys(options).length === 0 &&
-    (source.id === undefined || Object.keys(source).length <= 1);
+    Object.keys(options).length === 0 && Object.keys(source).length <= 1;
   // The load path opts into the raw-string cache explicitly so re-loading a
   // preset skips the parse+IR rebuild. Only honored when no other compile
   // option could make the cached IR stale.
@@ -71,7 +75,7 @@ export function compileMilkdropPresetSource(
     isSimpleCall ||
     (options.cacheCompile === true && Object.keys(options).length === 1);
 
-  const key = cacheKey(raw, source.id);
+  const key = cacheKey(raw, source.id, source.title);
   if (cacheable) {
     const cached = compiledPresetCache.get(key);
     if (cached) {
@@ -108,7 +112,11 @@ export function warmupCompiledPresetCache(presets: MilkdropCompiledPreset[]) {
   presets.slice(-MAX_COMPILED_PRESET_CACHE).forEach((compiled) => {
     if (compiled.source?.raw) {
       insertCompiledPresetCacheEntry(
-        cacheKey(compiled.source.raw, compiled.source.id),
+        cacheKey(
+          compiled.source.raw,
+          compiled.source.id,
+          compiled.source.title,
+        ),
         compiled,
       );
     }

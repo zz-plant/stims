@@ -10,14 +10,24 @@ import type {
 } from '../types';
 
 function cloneColor(color: MilkdropColor): MilkdropColor {
-  return { ...color };
+  return { r: color.r, g: color.g, b: color.b, a: color.a };
+}
+
+function cloneNumericArray<T extends number[] | Float32Array>(arr: T): T {
+  if (arr.length === 0) return arr;
+  if (arr instanceof Float32Array) {
+    const copy = new Float32Array(arr.length);
+    copy.set(arr);
+    return copy as T;
+  }
+  return arr.slice() as T;
 }
 
 function cloneWaveVisual(wave: MilkdropWaveVisual): MilkdropWaveVisual {
   return {
     ...wave,
-    positions: wave.positions.slice(),
-    colors: wave.colors?.slice(),
+    positions: cloneNumericArray(wave.positions),
+    colors: wave.colors ? cloneNumericArray(wave.colors) : undefined,
     color: cloneColor(wave.color),
   };
 }
@@ -27,8 +37,8 @@ function cloneProceduralWaveVisual(
 ): MilkdropProceduralWaveVisual {
   return {
     ...wave,
-    samples: wave.samples.slice(),
-    velocities: wave.velocities.slice(),
+    samples: cloneNumericArray(wave.samples),
+    velocities: cloneNumericArray(wave.velocities),
     color: cloneColor(wave.color),
   };
 }
@@ -38,8 +48,10 @@ function cloneProceduralCustomWaveVisual(
 ): MilkdropProceduralCustomWaveVisual {
   return {
     ...wave,
-    samples: wave.samples.slice(),
-    sampleValues2: wave.sampleValues2?.slice(),
+    samples: cloneNumericArray(wave.samples),
+    sampleValues2: wave.sampleValues2
+      ? cloneNumericArray(wave.sampleValues2)
+      : undefined,
     signals: wave.signals ? { ...wave.signals } : wave.signals,
     color: cloneColor(wave.color),
   };
@@ -50,7 +62,7 @@ function cloneMotionVectorVisual(
 ): MilkdropMotionVectorVisual {
   return {
     ...vector,
-    positions: vector.positions.slice(),
+    positions: cloneNumericArray(vector.positions),
     color: cloneColor(vector.color),
   };
 }
