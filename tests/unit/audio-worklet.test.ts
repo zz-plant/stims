@@ -41,7 +41,12 @@ class MockAudioWorkletProcessor {
   registeredProcessors.set(name, processorCtor);
 };
 
-await import('audio-reactive/worklet');
+// A query string forces a fresh module instance: when another test file in the
+// same run already loaded the processor, a cached import would not call our
+// registerProcessor and would extend that file's AudioWorkletProcessor stub.
+await import(
+  `../../packages/audio-reactive/src/frequency-analyser-processor.ts?fresh=${Date.now()}`
+);
 
 describe('Off-main-thread AudioWorklet DSP processing', () => {
   beforeEach(() => {

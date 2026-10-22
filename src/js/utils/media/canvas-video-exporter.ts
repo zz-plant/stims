@@ -381,7 +381,7 @@ export class CanvasVideoExporter {
     document.body.appendChild(anchor);
     anchor.click();
     setTimeout(() => {
-      document.body.removeChild(anchor);
+      anchor.remove();
       URL.revokeObjectURL(url);
     }, 100);
   }
