@@ -33,9 +33,12 @@ export function SyncSessionSection() {
       setSyncUrlParam(room);
     } catch {
       // The store carries the error state for the status line below.
-    } finally {
-      setBusy(false);
     }
+    // Cleanup after the catch rather than in a `finally` clause: React
+    // Compiler cannot lower try/finally yet, and one unparsable function
+    // skips the whole file. The catch swallows everything, so this runs on
+    // both paths exactly as the finally did.
+    setBusy(false);
   };
 
   const handleCopy = async () => {

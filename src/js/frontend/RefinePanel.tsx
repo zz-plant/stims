@@ -85,10 +85,13 @@ export function RefinePanel() {
       } catch (err) {
         const error = err as Error;
         setResponse(`Could not apply ${label}: ${error.message}`);
-      } finally {
-        setState('idle');
-        ui.setStatusMessage(null);
       }
+      // Cleanup after the catch rather than in a `finally` clause: React
+      // Compiler cannot lower try/finally yet, and one unparsable function
+      // skips the whole file. The catch swallows everything, so this runs on
+      // both paths exactly as the finally did.
+      setState('idle');
+      ui.setStatusMessage(null);
     },
     [currentSource, propose, ui],
   );
@@ -97,7 +100,11 @@ export function RefinePanel() {
     if (!instruction.trim() || !currentSource) return;
     setState('refining');
     ui.setStatusMessage('Refining preset…');
-    try {
+    // The attempt runs as an inner function so its early returns end the
+    // attempt instead of the handler: cleanup below must run on every path,
+    // which a `finally` clause did before React Compiler made try/finally a
+    // whole-file bailout.
+    const attempt = async () => {
       const refinement = await refinePresetSource(
         currentSource,
         instruction.trim(),
@@ -116,20 +123,26 @@ export function RefinePanel() {
           ? `Refined: ${refinement.title || 'untitled preset'}`
           : `AI is unavailable, so the ${refinement.label} restyle was applied.`,
       );
+    };
+    try {
+      await attempt();
     } catch (err) {
       const error = err as Error;
       setResponse(`Could not apply the change: ${error.message}`);
-    } finally {
-      setState('idle');
-      ui.setStatusMessage(null);
     }
+    setState('idle');
+    ui.setStatusMessage(null);
   }, [currentSource, instruction, propose, ui]);
 
   const handleExplain = useCallback(async () => {
     if (!currentSource) return;
     setState('explaining');
     ui.setStatusMessage('Reading the equations…');
-    try {
+    // The remote attempt is an inner function so its `throw` (a non-ok
+    // response becomes an error to trigger the local fallback) stays out of
+    // the handler React Compiler parses — a throw inside try is not lowered
+    // yet, and one unparsable function skips the whole file.
+    const remoteExplain = async () => {
       // 1. Try remote model if configured
       const res = await fetch('/api/refine-preset', {
         method: 'POST',
@@ -139,12 +152,12 @@ export function RefinePanel() {
           instruction: 'explain this preset',
         }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setResponse(data.explanation || data.message || null);
-      } else {
-        throw new Error(`Server status ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Server status ${res.status}`);
+      const data = await res.json();
+      setResponse(data.explanation || data.message || null);
+    };
+    try {
+      await remoteExplain();
     } catch (err) {
       console.debug(
         'Remote explain failed, falling back to local AST analysis:',
@@ -154,10 +167,12 @@ export function RefinePanel() {
       const mathAnalysis = analyzePresetMath(currentSource);
       setAnalysis(mathAnalysis);
       setResponse(mathAnalysis.summary);
-    } finally {
-      setState('idle');
-      ui.setStatusMessage(null);
     }
+    // Cleanup after the catch rather than in a `finally` clause — the catch
+    // is itself the recovery path, so this runs on both branches exactly as
+    // the finally did, and the file stays React Compiler-parseable.
+    setState('idle');
+    ui.setStatusMessage(null);
   }, [currentSource, ui]);
 
   return (
