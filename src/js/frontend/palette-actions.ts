@@ -508,6 +508,37 @@ export function buildPaletteActions(
       },
     },
     {
+      id: 'auto-switch-scene',
+      group: 'Playback',
+      label: 'Auto-switch scene with Clef Omni',
+      keywords: ['vj', 'scene', 'switch', 'clef', 'omni', 'transition'],
+      run: () => {
+        const live = window.__stims_live;
+        if (!live) {
+          uiRef.current.setStatusMessage(
+            'Live performance runtime is not active.',
+          );
+          return;
+        }
+        void live
+          .autoSwitchScene()
+          .then((outcome) => {
+            if (outcome.applied && outcome.chosenScene) {
+              uiRef.current.setStatusMessage(
+                `Switched to scene: ${outcome.chosenScene} (Clef Omni)`,
+              );
+            } else if (outcome.reason) {
+              uiRef.current.setStatusMessage(outcome.reason);
+            }
+          })
+          .catch((err) => {
+            uiRef.current.setStatusMessage(
+              `Scene switch failed: ${err instanceof Error ? err.message : 'try again later'}`,
+            );
+          });
+      },
+    },
+    {
       // Also in the dock menu: the one safety setting that should be a tap
       // from the stage, not four tabs into Settings.
       id: 'toggle-reduce-flashing',

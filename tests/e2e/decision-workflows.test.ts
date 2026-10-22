@@ -50,7 +50,59 @@ requiredBrowserTest(
       page.on('pageerror', (error) => errors.push(error.message));
       const requests: DecisionRequest[] = [];
       await page.route('**/api/decide', async (route) => {
-        requests.push(route.request().postDataJSON());
+        const body = route.request().postDataJSON() as DecisionRequest;
+        requests.push(body);
+        if (body.task === 'scene-choice') {
+          const result: DecisionResult = {
+            version: 1,
+            task: 'scene-choice',
+            model: 'clef-omni',
+            disposition: 'accepted',
+            provenance: {
+              questionVersion: 'stims-clef-v1',
+              evaluatedAt: new Date().toISOString(),
+              inputHash: 'c'.repeat(64),
+            },
+            answers: {
+              scene: {
+                type: 'choice',
+                choice: 'scene1',
+                confidence: 0.95,
+                probabilities: { scene0: 0.05, scene1: 0.95, hold: 0.0 },
+              },
+              sufficient_evidence: { type: 'noul', noul: 0.99 },
+            },
+          };
+          return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(result),
+          });
+        }
+        if (body.videos?.length) {
+          const result: DecisionResult = {
+            version: 1,
+            task: 'prompt-match',
+            model: 'clef-omni',
+            disposition: 'accepted',
+            provenance: {
+              questionVersion: 'stims-clef-v1',
+              evaluatedAt: new Date().toISOString(),
+              inputHash: 'b'.repeat(64),
+            },
+            answers: {
+              structure_match: { type: 'noul', noul: 0.99 },
+              palette_match: { type: 'noul', noul: 0.99 },
+              composition_match: { type: 'noul', noul: 0.99 },
+              sufficient_evidence: { type: 'noul', noul: 0.99 },
+            },
+          };
+          return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(result),
+          });
+        }
         const result: DecisionResult = {
           version: 1,
           task: 'prompt-match',
@@ -126,6 +178,27 @@ requiredBrowserTest(
       expect(
         await page.evaluate(() => window.__stims_agent?.getState().presetId),
       ).toBe(preset);
+
+      // Clef Omni canvas animation check
+      await page
+        .getByRole('button', {
+          name: 'Check animation (Clef Omni)',
+          exact: true,
+        })
+        .click();
+      await page
+        .locator('p[role="status"]')
+        .filter({
+          hasText: 'The animation appears to match your description',
+        })
+        .waitFor();
+      expect(requests).toHaveLength(2);
+      expect(requests[1].task).toBe('prompt-match');
+      expect(requests[1].videos).toBeDefined();
+      expect(
+        requests[1].videos?.[0].startsWith('data:video/webm;base64,'),
+      ).toBe(true);
+
       for (const width of [375, 768, 1024, 1920]) {
         await page.setViewportSize({ width, height: 900 });
         expect(
@@ -172,6 +245,25 @@ requiredBrowserTest(
       });
       expect(revisions.before).toBe(revisions.afterFrame);
       expect(revisions.afterGesture).not.toBe(revisions.before);
+
+      // Clef Omni live VJ scene auto-switching test
+      await page.waitForFunction(() => window.__stims_live !== undefined);
+      const sceneOutcome = await page.evaluate(async () => {
+        const live = window.__stims_live;
+        if (!live) throw new Error('Missing live API');
+        live.setControl('warp', 0.2);
+        live.saveScene('ambient-flow', 'slow ambient blue flow');
+        live.setControl('warp', 1.8);
+        live.saveScene('strobe-drop', 'high energy strobe');
+        return await live.autoSwitchScene({ durationMs: 100 });
+      });
+      expect(sceneOutcome.chosenScene).toBe('strobe-drop');
+      expect(sceneOutcome.applied).toBe(true);
+      expect(sceneOutcome.confidence).toBe(0.95);
+      expect(
+        await page.evaluate(() => window.__stims_live?.getPositions().warp),
+      ).toBe(1.8);
+
       expect(errors).toEqual([]);
       expect(
         await page.evaluate(() => window.__stims_agent?.getState().lastError),
