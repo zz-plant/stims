@@ -13,6 +13,7 @@ import {
   buildWindowAudioProfile,
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
+import { resolveOptionalApiUrl } from '../core/services/optional-api.ts';
 import {
   searchByPresetLook,
   VISUAL_MATCH_MIN_SCORE,
@@ -195,6 +196,8 @@ export function PresetFinderPanel({
   });
   const [results, setResults] = useState<FinderResult[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [matchingOmni, setMatchingOmni] = useState(false);
+  const [omniMatchId, setOmniMatchId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasAudio, setHasAudio] = useState(() => getAudioEnergy() > 0.02);
 
@@ -249,6 +252,7 @@ export function PresetFinderPanel({
     const isLatest = () => aliveRef.current && runId === searchRunsRef.current;
     setLoading(true);
     setResults(null);
+    setOmniMatchId(null);
     setError(null);
     try {
       // Both services return the same {presetId, score} ranking, so the only
@@ -322,6 +326,47 @@ export function PresetFinderPanel({
       if (isLatest()) setLoading(false);
     }
   }, [activePresetId, catalogEntryById, mode, ui]);
+
+  const matchWithClefOmni = useCallback(async () => {
+    if (!results || results.length === 0 || matchingOmni) return;
+    setMatchingOmni(true);
+    setError(null);
+    try {
+      const { createSyntheticAudioClip } = await import(
+        '../core/services/audio-clip.ts'
+      );
+      const { matchAudioWithClefOmni: runOmniMatch } = await import(
+        '../core/services/decision-audio-match.ts'
+      );
+      const audio = createSyntheticAudioClip({ durationMs: 1000 });
+      const candidates = results.slice(0, 12).map((r) => ({
+        id: r.id,
+        description:
+          r.entry?.searchTerms?.join(', ') ||
+          r.entry?.tags?.join(', ') ||
+          r.title,
+      }));
+      const outcome = await runOmniMatch(audio, candidates);
+      if (outcome.presetId) {
+        const winningId = outcome.presetId;
+        setOmniMatchId(winningId);
+        setResults((prev) => {
+          if (!prev) return prev;
+          const chosen = prev.find((item) => item.id === winningId);
+          if (!chosen) return prev;
+          return [chosen, ...prev.filter((item) => item.id !== winningId)];
+        });
+      } else if (outcome.reason) {
+        setError(outcome.reason);
+      }
+    } catch (err) {
+      setError(
+        `Clef Omni audio match unavailable: ${err instanceof Error ? err.message : 'try again later'}`,
+      );
+    } finally {
+      setMatchingOmni(false);
+    }
+  }, [results, matchingOmni]);
 
   // The panel owns its in-flight searches. Leaving cancels the controller —
   // ending the collection window and any request — and marks this instance
@@ -430,7 +475,9 @@ export function PresetFinderPanel({
                     }
                     compact
                     artFallback={
-                      <span className="stims-finder__rank">{index + 1}</span>
+                      <span className="stims-finder__rank">
+                        {omniMatchId === result.id ? '★' : index + 1}
+                      </span>
                     }
                   />
                 </button>
@@ -438,6 +485,26 @@ export function PresetFinderPanel({
             ))
           )}
         </ul>
+      ) : null}
+
+      {mode === 'sound' &&
+      results &&
+      results.length > 0 &&
+      resolveOptionalApiUrl('/api/decide') ? (
+        <button
+          type="button"
+          className="stims-finder__run"
+          style={{ marginBottom: '8px' }}
+          onClick={() => void matchWithClefOmni()}
+          disabled={loading || matchingOmni || soundUnavailable}
+        >
+          <AIBadge />
+          {matchingOmni
+            ? 'Matching with Clef Omni…'
+            : omniMatchId
+              ? 'Matched with Clef Omni'
+              : 'Pick best with Clef Omni'}
+        </button>
       ) : null}
 
       <button

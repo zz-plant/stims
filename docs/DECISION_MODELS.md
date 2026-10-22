@@ -28,9 +28,9 @@ The initial policy requires decisive nouls (at most .2 or at least .8), evidence
 | --- | --- | --- |
 | Observed catalog motifs/palette and local search tags | `catalog:decisions`, `lab:decisions --apply` | Reviewed offline promotion; only `look:` tags change |
 | Writer routing | `/api/generate-preset` | Fixed Flash choice; deterministic fallback on uncertainty/failure; writer overrides bypass routing |
-| Rendered prompt check | Generate → Check the current picture; `prompt-match` task | Explicit one-frame upload; offers regeneration, keeps the current preset |
-| Music-to-preset shortlist | MCP `session_decide`, `audio-match` | Explicit clip and 1–12 supplied candidates; suggestion by default |
-| Slow performance choice | MCP `session_decide`, `scene-choice` | Chooses among at most twelve saved scenes; explicit apply uses local four-second ramp |
+| Rendered prompt check | Generate → Check picture / Check animation; `prompt-match` task | Explicit one-frame upload (Flash) or bounded 1.5s canvas WebM clip (Omni); offers regeneration, keeps current preset |
+| Music-to-preset shortlist | Preset Finder "By sound" & MCP `session_decide`, `audio-match` | Explicit clip and 1–12 supplied candidates; ranks and suggests best preset via Clef Omni |
+| Slow performance choice | Performance runtime `autoSwitchScene`, palette action `auto-switch-scene`, MCP `session_decide` | Chooses among at most twelve saved scenes; explicit apply uses local four-second ramp |
 | Capture review | `capture-review` in lab or MCP | Visibility/composition/artifact judgment, separate from measured evidence |
 
 These seams support Stims' current pipeline without adding a model to the frame loop. Search/description retrieval narrows candidates first. The generation tournament still compiles and ranks real candidates. A human can request a picture check afterward. `lab:generation-bench --visual` and an autonomous visual repair loop remain unfinished capabilities.

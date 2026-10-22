@@ -150,6 +150,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
   );
   const [generating, setGenerating] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [reviewingVideo, setReviewingVideo] = useState(false);
   const reviewController = useRef<AbortController | null>(null);
   const [isPending, startTransition] = useTransition();
   const isGenerating = generating || isPending || reviewing;
@@ -398,6 +399,63 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     }
   }, [prompt, offline, reviewing, ui.stageRef]);
 
+  const handleVideoCheck = useCallback(async () => {
+    if (!prompt.trim() || offline || reviewing || reviewingVideo) return;
+    reviewController.current?.abort();
+    const controller = new AbortController();
+    reviewController.current = controller;
+    const revision = window.__stims_agent?.getPerformanceRevision();
+    setReviewingVideo(true);
+    setStatus('Recording animation clip for Clef Omni motion check…');
+    try {
+      const [
+        { captureDecisionVideo, summarizePromptMatch },
+        { requestDecision },
+      ] = await Promise.all([
+        import('./generated-preset-decision.ts'),
+        import('../core/services/decision-client.ts'),
+      ]);
+      const video = await captureDecisionVideo(
+        ui.stageRef.current,
+        { durationMs: 1500 },
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      setStatus('Evaluating animation with Clef Omni…');
+      const result = await requestDecision(
+        {
+          task: 'prompt-match',
+          state: { prompt: prompt.trim() },
+          videos: [video],
+        },
+        { signal: controller.signal },
+      );
+      if (controller.signal.aborted) return;
+      if (revision !== window.__stims_agent?.getPerformanceRevision()) {
+        setStatus(
+          'The performance changed during the animation check. Check the new animation again.',
+        );
+        return;
+      }
+      const verdict = summarizePromptMatch(result);
+      setStatus(
+        verdict === 'match'
+          ? 'The animation appears to match your description. This is a Clef Omni motion judgment.'
+          : verdict === 'mismatch'
+            ? 'The animation appears to miss part of your description. Try a more specific prompt or generate again.'
+            : 'The animation check was uncertain. Try a clearer description or check a later clip.',
+      );
+      setCanRegenerate(verdict !== 'match');
+    } catch (error) {
+      if (!controller.signal.aborted)
+        setStatus(
+          `Animation check unavailable: ${error instanceof Error ? error.message : 'try again later'}`,
+        );
+    } finally {
+      if (!controller.signal.aborted) setReviewingVideo(false);
+    }
+  }, [prompt, offline, reviewing, reviewingVideo, ui.stageRef]);
+
   return (
     <section className={styles.panel} aria-labelledby="synth-heading">
       <div className={styles.header}>
@@ -617,24 +675,44 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         </summary>
         <div className="stims-shell__settings-advanced-body">
           <p className={styles.intro}>
-            Compare the stage with your description. This sends one stage image
-            and the description to Cloudflare. No audio is sent.
+            Compare the stage with your description. Check a single still frame
+            (Clef Flash) or record a short animation clip to evaluate dynamic
+            motion (Clef Omni). No audio is sent.
           </p>
-          <button
-            type="button"
-            className={styles.generateButton}
-            onClick={() => void handlePictureCheck()}
-            disabled={
-              isGenerating ||
-              offline ||
-              !prompt.trim() ||
-              !resolveOptionalApiUrl('/api/decide')
-            }
-          >
-            {reviewing
-              ? 'Checking picture…'
-              : 'Check picture against description'}
-          </button>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className={styles.generateButton}
+              onClick={() => void handlePictureCheck()}
+              disabled={
+                isGenerating ||
+                offline ||
+                reviewingVideo ||
+                !prompt.trim() ||
+                !resolveOptionalApiUrl('/api/decide')
+              }
+            >
+              {reviewing
+                ? 'Checking picture…'
+                : 'Check picture against description'}
+            </button>
+            <button
+              type="button"
+              className={styles.generateButton}
+              onClick={() => void handleVideoCheck()}
+              disabled={
+                isGenerating ||
+                offline ||
+                reviewing ||
+                !prompt.trim() ||
+                !resolveOptionalApiUrl('/api/decide')
+              }
+            >
+              {reviewingVideo
+                ? 'Checking animation…'
+                : 'Check animation (Clef Omni)'}
+            </button>
+          </div>
           {!resolveOptionalApiUrl('/api/decide') ? (
             <p className={styles.intro}>
               Picture checks need a configured hosted API.

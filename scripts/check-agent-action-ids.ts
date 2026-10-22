@@ -93,6 +93,8 @@ const PALETTE_ONLY_EXEMPT = new Set([
   // button would sit one mis-click away from silently changing how the
   // renderer behaves mid-show.
   'toggle-live-performance',
+  // Multimodal Clef Omni decision action to auto-switch performance scenes.
+  'auto-switch-scene',
   'open-shortcuts',
   'cycle-theme',
   'use-webgl',

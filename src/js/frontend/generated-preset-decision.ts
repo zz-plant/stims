@@ -1,5 +1,8 @@
-/** Explicit, one-frame visual review. This never records or uploads audio. */
-import type { DecisionResult } from '../core/decision-model.ts';
+/** Explicit visual and motion review. Audio is only sent when explicitly requested. */
+import {
+  DECISION_LIMITS,
+  type DecisionResult,
+} from '../core/decision-model.ts';
 
 export function summarizePromptMatch(
   result: DecisionResult,
@@ -82,5 +85,172 @@ export async function captureCanvasDecisionImage(
         );
       }
     });
+  });
+}
+
+function bufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(
+      null,
+      bytes.subarray(i, i + chunkSize) as unknown as number[],
+    );
+  }
+  return btoa(binary);
+}
+
+/** Record a short canvas clip for multimodal motion evaluation (Clef Omni). */
+export async function captureDecisionVideo(
+  stage: HTMLElement | null,
+  options?: { durationMs?: number },
+  signal?: AbortSignal,
+): Promise<string> {
+  return captureCanvasDecisionVideo(
+    stage?.querySelector('canvas') ?? null,
+    options,
+    signal,
+  );
+}
+
+export async function captureCanvasDecisionVideo(
+  canvas: HTMLCanvasElement | null,
+  options?: { durationMs?: number },
+  signal?: AbortSignal,
+): Promise<string> {
+  signal?.throwIfAborted();
+  if (!canvas || canvas.width <= 0 || canvas.height <= 0)
+    return Promise.reject(new Error('The stage has no picture to check yet.'));
+
+  if (
+    typeof MediaRecorder === 'undefined' ||
+    typeof canvas.captureStream !== 'function'
+  ) {
+    throw new Error('Video recording is not supported in this browser.');
+  }
+
+  const supported = ['video/webm;codecs=vp8', 'video/webm', 'video/mp4'].find(
+    (type) => {
+      try {
+        return MediaRecorder.isTypeSupported(type);
+      } catch {
+        return false;
+      }
+    },
+  );
+  if (!supported) {
+    throw new Error('No supported video recording format available.');
+  }
+  const cleanMime: 'video/webm' | 'video/mp4' = supported.startsWith(
+    'video/mp4',
+  )
+    ? 'video/mp4'
+    : 'video/webm';
+
+  const durationMs = Math.min(Math.max(options?.durationMs ?? 1500, 500), 4000);
+  const stream = canvas.captureStream(15);
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let recorder: MediaRecorder;
+    try {
+      recorder = new MediaRecorder(stream, {
+        mimeType: supported,
+        videoBitsPerSecond: 1_200_000,
+      });
+    } catch (error) {
+      for (const track of stream.getTracks()) track.stop();
+      return reject(
+        error instanceof Error
+          ? error
+          : new Error('Failed to initialize video recorder.'),
+      );
+    }
+
+    const chunks: Blob[] = [];
+    const cleanup = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', cancel);
+      for (const track of stream.getTracks()) track.stop();
+    };
+
+    const finish = (error?: Error, result?: string) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (error) reject(error);
+      else if (result) resolve(result);
+    };
+
+    const cancel = () => {
+      try {
+        if (recorder.state !== 'inactive') recorder.stop();
+      } catch {
+        // recorder may already be stopped
+      }
+      finish(new Error('Animation check cancelled.'));
+    };
+
+    signal?.addEventListener('abort', cancel, { once: true });
+
+    recorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) chunks.push(event.data);
+    };
+
+    recorder.onerror = () => {
+      finish(new Error('Failed to record stage animation.'));
+    };
+
+    recorder.onstop = async () => {
+      try {
+        const blob = new Blob(chunks, { type: cleanMime });
+        const buffer = await blob.arrayBuffer();
+        if (buffer.byteLength > DECISION_LIMITS.videoBytes) {
+          return finish(
+            new Error('Recorded animation exceeded the size limit.'),
+          );
+        }
+        if (buffer.byteLength === 0) {
+          return finish(new Error('No animation frames were recorded.'));
+        }
+        const base64 = bufferToBase64(buffer);
+        finish(undefined, `data:${cleanMime};base64,${base64}`);
+      } catch (error) {
+        finish(
+          error instanceof Error
+            ? error
+            : new Error('Failed to process recorded animation.'),
+        );
+      }
+    };
+
+    // Watchdog timer: duration + 3000ms grace period
+    const timer = setTimeout(() => {
+      try {
+        if (recorder.state !== 'inactive') recorder.stop();
+      } catch {
+        // no-op
+      }
+    }, durationMs + 3000);
+
+    // Stop recorder after durationMs
+    setTimeout(() => {
+      try {
+        if (recorder.state === 'recording') recorder.stop();
+      } catch {
+        // no-op
+      }
+    }, durationMs);
+
+    try {
+      recorder.start(100);
+    } catch (error) {
+      finish(
+        error instanceof Error
+          ? error
+          : new Error('Could not start stage animation recording.'),
+      );
+    }
   });
 }
