@@ -29,6 +29,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { gzipSync } from 'node:zlib';
 
 const repoRoot = new URL('..', import.meta.url).pathname;
 const CACHE = path.join(repoRoot, 'output/visual-embeddings');
@@ -456,6 +457,15 @@ function main() {
     })}\n`,
   );
   fs.writeFileSync(OUT_VECTORS, quantized);
+  // Gzip twin of the raw binary. The CDN serves the raw file uncompressed
+  // (application/octet-stream is not an auto-compressed type), so the loader
+  // fetches this file and decompresses it with DecompressionStream; write it
+  // in the same run so the two can never drift.
+  const compressed = gzipSync(quantized, { level: 9 });
+  fs.writeFileSync(`${OUT_VECTORS}.gz`, compressed);
+  console.log(
+    `wrote ${path.relative(repoRoot, OUT_VECTORS)} (${quantized.length} bytes) and ${path.relative(repoRoot, `${OUT_VECTORS}.gz`)} (${compressed.length} bytes)`,
+  );
 
   const cutTerms = termVectors.map((vector) =>
     normalize(vector.slice(0, SHIPPED_DIMS)),
