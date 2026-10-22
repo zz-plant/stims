@@ -43,6 +43,7 @@ import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { usePictureInPicture } from './hooks/usePictureInPicture.ts';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { prefetchMenuPanelChunks } from './panel-chunks.ts';
+import { getPanelTitle } from './panel-registry.ts';
 import { openPerformPicker } from './perform-pins.ts';
 import { ariaKeyShortcutsFor, shortcutHintFor } from './shortcut-registry.ts';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
@@ -489,7 +490,7 @@ export function StageControls({
   const presetItems: MenuItem[] = [
     {
       icon: 'grid' as const,
-      label: 'Browse presets',
+      label: getPanelTitle('browse'),
       action: () => run(() => togglePanel(menuSurface, 'browse')),
       actionId: 'open-browse',
       active: panel === 'browse',
@@ -497,7 +498,7 @@ export function StageControls({
     },
     {
       icon: 'eye' as const,
-      label: 'Find a preset',
+      label: getPanelTitle('finder'),
       actionId: 'find-similar',
       action: () => run(() => togglePanel(menuSurface, 'finder')),
       active: panel === 'finder',
@@ -540,7 +541,7 @@ export function StageControls({
   const studioItems: MenuItem[] = [
     {
       icon: 'sparkles' as const,
-      label: 'Generate with AI',
+      label: getPanelTitle('synthesize'),
       actionId: 'open-generate',
       action: () => run(() => togglePanel(menuSurface, 'synthesize')),
       active: panel === 'synthesize',
@@ -548,21 +549,21 @@ export function StageControls({
     },
     {
       icon: 'wand' as const,
-      label: 'Refine with AI',
+      label: getPanelTitle('refine'),
       actionId: 'open-refine',
       action: () => run(() => togglePanel(menuSurface, 'refine')),
       active: panel === 'refine',
     },
     {
       icon: 'pencil' as const,
-      label: 'Edit preset code',
+      label: getPanelTitle('editor'),
       actionId: 'open-editor',
       action: () => run(() => togglePanel(menuSurface, 'editor')),
       active: panel === 'editor',
     },
     {
       icon: 'video' as const,
-      label: 'Record video',
+      label: getPanelTitle('capture'),
       actionId: 'open-record',
       action: () => run(() => openRecordPanel(menuSurface)),
       active: panel === 'capture',
@@ -661,7 +662,7 @@ export function StageControls({
   const workspaceItems: MenuItem[] = [
     {
       icon: 'sliders' as const,
-      label: 'Settings',
+      label: getPanelTitle('settings'),
       actionId: 'open-settings',
       action: () => run(() => togglePanel(menuSurface, 'settings')),
       active: panel === 'settings',
@@ -887,13 +888,13 @@ export function StageControls({
             // words they can see (WCAG 2.5.3 Label in Name).
             aria-label={
               shaderApproximation
-                ? `${presetTitle}. Browse presets. ${shaderApproximation.detail}`
-                : `${presetTitle}. Browse presets`
+                ? `${presetTitle}. ${getPanelTitle('browse')}. ${shaderApproximation.detail}`
+                : `${presetTitle}. ${getPanelTitle('browse')}`
             }
             title={
               shaderApproximation
-                ? `${withHint('Browse presets', 'open-browse')}\n\n${shaderApproximation.detail}`
-                : withHint('Browse presets', 'open-browse')
+                ? `${withHint(getPanelTitle('browse'), 'open-browse')}\n\n${shaderApproximation.detail}`
+                : withHint(getPanelTitle('browse'), 'open-browse')
             }
             aria-keyshortcuts={ariaKeyShortcutsFor('open-browse')}
             onClick={handleBrowse}

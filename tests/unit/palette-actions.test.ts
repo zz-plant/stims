@@ -1,6 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type { EngineContextValue } from '../../src/js/frontend/engine-context.tsx';
 import { buildPaletteActions } from '../../src/js/frontend/palette-actions.ts';
+import { getPanelTitle } from '../../src/js/frontend/panel-registry.ts';
 import {
   paletteActionContext as context,
   makeEngineValue,
@@ -80,5 +81,16 @@ describe('palette actions', () => {
       .find((action) => action.id === 'toggle-watcher-hud')
       ?.run();
     expect(announce).toHaveBeenCalledWith('The stage is not running yet.');
+  });
+
+  test('routed panel actions derive their labels from the panel registry', () => {
+    const actions = buildPaletteActions(context());
+    expect(label(actions, 'open-browse')).toBe(getPanelTitle('browse'));
+    expect(label(actions, 'find-similar')).toBe(getPanelTitle('finder'));
+    expect(label(actions, 'open-editor')).toBe(getPanelTitle('editor'));
+    expect(label(actions, 'open-refine')).toBe(getPanelTitle('refine'));
+    expect(label(actions, 'open-generate')).toBe(getPanelTitle('synthesize'));
+    expect(label(actions, 'open-record')).toBe(getPanelTitle('capture'));
+    expect(label(actions, 'open-settings')).toBe(getPanelTitle('settings'));
   });
 });
