@@ -21,6 +21,7 @@ import type { CommandAction } from './command-palette-registry.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { EngineContextValue } from './engine-context.tsx';
 import { nextFileTrack, previousFileTrack } from './file-audio.ts';
+import { getPanelTitle } from './panel-registry.ts';
 import { openPerformPicker } from './perform-pins.ts';
 import { cyclePresetWaveMode, nudgePresetField } from './preset-nudges.ts';
 import { buildPresetSetShareUrl, saveNamedSet } from './preset-sets.ts';
@@ -88,7 +89,7 @@ export function buildPaletteActions(
     {
       id: 'open-browse',
       group: 'Presets',
-      label: 'Browse presets',
+      label: getPanelTitle('browse'),
       run: () => togglePanel(paletteSurface, 'browse'),
     },
     {
@@ -115,7 +116,7 @@ export function buildPaletteActions(
     {
       id: 'find-similar',
       group: 'Presets',
-      label: 'Find a preset',
+      label: getPanelTitle('finder'),
       keywords: ['similar', 'match', 'sound', 'look'],
       run: () => void engineRef.current.handleVisualSearch(),
     },
@@ -160,7 +161,7 @@ export function buildPaletteActions(
     {
       id: 'open-editor',
       group: 'Create',
-      label: 'Edit preset code',
+      label: getPanelTitle('editor'),
       run: () => togglePanel(paletteSurface, 'editor'),
     },
     {
@@ -186,27 +187,27 @@ export function buildPaletteActions(
     {
       id: 'open-refine',
       group: 'Create',
-      label: 'Refine with AI',
+      label: getPanelTitle('refine'),
       run: () => togglePanel(paletteSurface, 'refine'),
     },
     {
       id: 'open-generate',
       group: 'Create',
-      label: 'Generate with AI',
+      label: getPanelTitle('synthesize'),
       keywords: ['synthesize', 'create', 'make'],
       run: () => togglePanel(paletteSurface, 'synthesize'),
     },
     {
       id: 'open-record',
       group: 'Share',
-      label: 'Record video',
+      label: getPanelTitle('capture'),
       keywords: ['capture', 'export'],
       run: () => openRecordPanel(paletteSurface),
     },
     {
       id: 'open-settings',
       group: 'View',
-      label: 'Settings',
+      label: getPanelTitle('settings'),
       run: () => togglePanel(paletteSurface, 'settings'),
     },
     {
