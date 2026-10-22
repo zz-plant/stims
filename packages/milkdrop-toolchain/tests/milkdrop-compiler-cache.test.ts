@@ -43,4 +43,12 @@ describe('milkdrop compiled preset cache', () => {
     // Same id and text is still a cache hit.
     expect(compileMilkdropPresetSource(raw, { id: 'twin-a' })).toBe(a);
   });
+
+  test('two presets with the same text keep their own titles when id is omitted', () => {
+    const raw = 'zoom=1.01\n';
+    const a = compileMilkdropPresetSource(raw, { title: 'Preset A' });
+    const b = compileMilkdropPresetSource(raw, { title: 'Preset B' });
+    expect(a.source.title).toBe('Preset A');
+    expect(b.source.title).toBe('Preset B');
+  });
 });

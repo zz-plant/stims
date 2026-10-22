@@ -205,6 +205,22 @@ test('several terms rank what is both above what is only very much one', () => {
   expect(ranked[0]).toBe('both');
 });
 
+test('precomputed term stats match dynamic calculation and accelerate scoring', () => {
+  const vectors = termVectors();
+  const term = [127, 0, 0, 0];
+  const dynamicScores = vectors.termScores([term]);
+
+  const cos = [1, 1 / Math.SQRT2, 0, 0, 0];
+  const mean = cos.reduce((a, b) => a + b) / 5;
+  const variance = cos.reduce((a, b) => a + (b - mean) ** 2, 0) / 5;
+  const invSd = 1 / Math.sqrt(variance);
+
+  const precomputedScores = vectors.termScores([term], [[mean, invSd]]);
+  for (const [id, score] of dynamicScores) {
+    expect(precomputedScores.get(id)).toBeCloseTo(score, 4);
+  }
+});
+
 test('a term vector of the wrong width scores nothing rather than garbage', () => {
   expect(termVectors().termScores([[127, 0, 0]]).size).toBe(0);
 });

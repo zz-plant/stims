@@ -83,6 +83,10 @@ export function matchesVisualQuery(
   );
 }
 
+export type VisualTermStat =
+  | [mean: number, invSd: number]
+  | { mean: number; invSd: number };
+
 export type VisualTermVocabulary = {
   version: 1;
   /** Must equal the preset manifest's model; see `scoreVisualQuery`. */
@@ -91,6 +95,8 @@ export type VisualTermVocabulary = {
   terms: string[];
   /** One int8 row per term, in `terms` order. */
   vectors: number[][];
+  /** Precomputed catalog mean and inverse standard deviation for each term, in `terms` order. */
+  stats?: Array<[mean: number, invSd: number]>;
 };
 
 function parseManifest(input: unknown): VisualVectorManifest {
@@ -112,15 +118,26 @@ function parseManifest(input: unknown): VisualVectorManifest {
 function parseTermVocabulary(input: unknown): VisualTermVocabulary {
   const doc = input as Partial<VisualTermVocabulary> | null;
   if (
-    !doc ||
-    doc.version !== 1 ||
+    doc?.version !== 1 ||
     typeof doc.model !== 'string' ||
     !Number.isInteger(doc.dims) ||
     !Array.isArray(doc.terms) ||
     !Array.isArray(doc.vectors) ||
     doc.terms.length !== doc.vectors.length ||
     !doc.terms.every((term) => typeof term === 'string') ||
-    !doc.vectors.every((row) => Array.isArray(row) && row.length === doc.dims)
+    !doc.vectors.every(
+      (row) => Array.isArray(row) && row.length === doc.dims,
+    ) ||
+    (doc.stats !== undefined &&
+      (!Array.isArray(doc.stats) ||
+        doc.stats.length !== doc.terms.length ||
+        !doc.stats.every(
+          (pair) =>
+            Array.isArray(pair) &&
+            pair.length === 2 &&
+            typeof pair[0] === 'number' &&
+            typeof pair[1] === 'number',
+        )))
   ) {
     throw new Error('Malformed visual-terms vocabulary');
   }
@@ -168,6 +185,8 @@ export class PresetVisualVectors {
   private readonly norms: Float32Array;
   private readonly invNorms: Float32Array;
   private readonly rowOf: Map<string, number>;
+  private readonly scratchTotals: Float64Array;
+  private readonly scratchCosines: Float64Array;
 
   constructor(manifest: VisualVectorManifest, data: Int8Array) {
     if (data.length !== manifest.ids.length * manifest.dims) {
@@ -180,6 +199,8 @@ export class PresetVisualVectors {
     this.dims = manifest.dims;
     this.data = data;
     this.rowOf = new Map(manifest.ids.map((id, row) => [id, row]));
+    this.scratchTotals = new Float64Array(manifest.ids.length);
+    this.scratchCosines = new Float64Array(manifest.ids.length);
     // Quantization rounds each value, so rows are no longer unit length;
     // cosine divides by the stored norm instead of assuming 1. Precomputing
     // reciprocal norms avoids division in the similarity inner loops.
@@ -219,6 +240,20 @@ export class PresetVisualVectors {
   }
 
   /**
+   * Cosine similarity between two catalog rows by row index.
+   */
+  private rowSimilarity(rowA: number, rowB: number): number {
+    const { data, dims, invNorms } = this;
+    const offsetA = rowA * dims;
+    const offsetB = rowB * dims;
+    let dot = 0;
+    for (let i = 0; i < dims; i += 1) {
+      dot += data[offsetA + i] * data[offsetB + i];
+    }
+    return dot * (invNorms[rowA] * invNorms[rowB]);
+  }
+
+  /**
    * Cosine similarity between two catalog presets by ID, or null when either
    * preset has no vector.
    */
@@ -226,14 +261,7 @@ export class PresetVisualVectors {
     const a = this.rowOf.get(aId);
     const b = this.rowOf.get(bId);
     if (a === undefined || b === undefined) return null;
-    const { data, dims, invNorms } = this;
-    const offsetA = a * dims;
-    const offsetB = b * dims;
-    let dot = 0;
-    for (let i = 0; i < dims; i += 1) {
-      dot += data[offsetA + i] * data[offsetB + i];
-    }
-    return dot * (invNorms[a] * invNorms[b]);
+    return this.rowSimilarity(a, b);
   }
 
   /**
@@ -367,6 +395,8 @@ export class PresetVisualVectors {
 
     const selected: VisualMatch[] = [];
     const pool = [...candidates];
+    const poolRows = pool.map((cand) => this.rowOf.get(cand.presetId) ?? -1);
+    const selectedRows: number[] = [];
     const clampedLambda = Math.max(0, Math.min(1, lambda));
 
     while (selected.length < topK && pool.length > 0) {
@@ -375,9 +405,14 @@ export class PresetVisualVectors {
 
       for (let i = 0; i < pool.length; i += 1) {
         const cand = pool[i];
+        const candRow = poolRows[i];
         let maxSimToSelected = 0;
         for (let s = 0; s < selected.length; s += 1) {
-          const sim = this.similarity(cand.presetId, selected[s].presetId) ?? 0;
+          const selRow = selectedRows[s];
+          const sim =
+            candRow >= 0 && selRow >= 0
+              ? this.rowSimilarity(candRow, selRow)
+              : (this.similarity(cand.presetId, selected[s].presetId) ?? 0);
           if (sim > maxSimToSelected) maxSimToSelected = sim;
         }
 
@@ -391,7 +426,9 @@ export class PresetVisualVectors {
 
       if (bestIndex === -1) break;
       selected.push(pool[bestIndex]);
+      selectedRows.push(poolRows[bestIndex]);
       pool.splice(bestIndex, 1);
+      poolRows.splice(bestIndex, 1);
     }
 
     return selected;
@@ -507,39 +544,99 @@ export class PresetVisualVectors {
    * The mean is what lets "blue tunnel" rank presets that are both above
    * presets that are only very much one.
    */
+  /**
+   * For every preset with a vector, how strongly its preview matches the
+   * given term vectors: per term, the cosine in standard deviations above the
+   * catalog's mean for that term, then the mean across terms.
+   *
+   * Raw cosines are not comparable between terms (each phrase sits at its own
+   * distance from every image), which is why the build tags by z-score too.
+   * The mean is what lets "blue tunnel" rank presets that are both above
+   * presets that are only very much one.
+   *
+   * When optional precomputed `termStats` (`[mean, invSd]` or `{ mean, invSd }`)
+   * are provided (e.g. from `visual-terms.json`), scores are accumulated in a
+   * single pass of dot products without variance calculations.
+   */
   termScores(
     termVectors: ReadonlyArray<ArrayLike<number>>,
+    termStats?: ReadonlyArray<VisualTermStat | undefined | null>,
   ): Map<string, number> {
-    const { data, dims, ids, norms } = this;
+    const { data, dims, ids, invNorms, scratchTotals, scratchCosines } = this;
     const scores = new Map<string, number>();
-    const usable = termVectors.filter((vector) => vector.length === dims);
-    if (usable.length === 0 || ids.length < 2) return scores;
-    const totals = new Float64Array(ids.length);
-    const cosines = new Float64Array(ids.length);
-    for (const vector of usable) {
-      let termNorm = 0;
-      for (let i = 0; i < dims; i += 1) termNorm += vector[i] * vector[i];
-      termNorm = Math.sqrt(termNorm) || 1;
-      let mean = 0;
-      for (let row = 0; row < ids.length; row += 1) {
-        const offset = row * dims;
-        let dot = 0;
-        for (let i = 0; i < dims; i += 1) dot += data[offset + i] * vector[i];
-        cosines[row] = dot / (norms[row] * termNorm);
-        mean += cosines[row];
+    const count = ids.length;
+    if (count < 2) return scores;
+
+    type UsableTerm = {
+      vector: ArrayLike<number>;
+      stat?: { mean: number; invSd: number };
+    };
+    const usable: UsableTerm[] = [];
+    for (let i = 0; i < termVectors.length; i += 1) {
+      const vec = termVectors[i];
+      if (vec.length !== dims) continue;
+      const rawStat = termStats?.[i];
+      let stat: { mean: number; invSd: number } | undefined;
+      if (Array.isArray(rawStat) && rawStat.length === 2) {
+        stat = { mean: rawStat[0], invSd: rawStat[1] };
+      } else if (
+        rawStat &&
+        typeof rawStat === 'object' &&
+        'mean' in rawStat &&
+        'invSd' in rawStat
+      ) {
+        stat = { mean: rawStat.mean, invSd: rawStat.invSd };
       }
-      mean /= ids.length;
-      let variance = 0;
-      for (let row = 0; row < ids.length; row += 1) {
-        variance += (cosines[row] - mean) ** 2;
-      }
-      const sd = Math.sqrt(variance / ids.length) || 1;
-      for (let row = 0; row < ids.length; row += 1) {
-        totals[row] += (cosines[row] - mean) / sd;
+      usable.push({ vector: vec, stat });
+    }
+    if (usable.length === 0) return scores;
+
+    scratchTotals.fill(0);
+
+    for (let u = 0; u < usable.length; u += 1) {
+      const { vector, stat } = usable[u];
+      let termNormSq = 0;
+      for (let i = 0; i < dims; i += 1) termNormSq += vector[i] * vector[i];
+      const invTermNorm = termNormSq > 0 ? 1 / Math.sqrt(termNormSq) : 0;
+
+      if (stat) {
+        const { mean, invSd } = stat;
+        for (let row = 0; row < count; row += 1) {
+          const offset = row * dims;
+          let dot = 0;
+          for (let i = 0; i < dims; i += 1) {
+            dot += data[offset + i] * vector[i];
+          }
+          const cos = dot * (invNorms[row] * invTermNorm);
+          scratchTotals[row] += (cos - mean) * invSd;
+        }
+      } else {
+        let sum = 0;
+        let sumSq = 0;
+        for (let row = 0; row < count; row += 1) {
+          const offset = row * dims;
+          let dot = 0;
+          for (let i = 0; i < dims; i += 1) {
+            dot += data[offset + i] * vector[i];
+          }
+          const cos = dot * (invNorms[row] * invTermNorm);
+          scratchCosines[row] = cos;
+          sum += cos;
+          sumSq += cos * cos;
+        }
+        const mean = sum / count;
+        const variance = Math.max(0, sumSq / count - mean * mean);
+        const invSd = variance > 0 ? 1 / Math.sqrt(variance) : 1;
+
+        for (let row = 0; row < count; row += 1) {
+          scratchTotals[row] += (scratchCosines[row] - mean) * invSd;
+        }
       }
     }
-    for (let row = 0; row < ids.length; row += 1) {
-      scores.set(ids[row], totals[row] / usable.length);
+
+    const invUsable = 1 / usable.length;
+    for (let row = 0; row < count; row += 1) {
+      scores.set(ids[row], scratchTotals[row] * invUsable);
     }
     return scores;
   }
@@ -623,8 +720,10 @@ export async function scoreVisualQuery(
   if (!terms) return new Map();
   const vectors = await loadPresetVisualVectors();
   if (!vectors || vectors.model !== vocabulary.model) return new Map();
+  const indices = terms.map((term) => vocabulary.terms.indexOf(term));
   return vectors.termScores(
-    terms.map((term) => vocabulary.vectors[vocabulary.terms.indexOf(term)]),
+    indices.map((idx) => vocabulary.vectors[idx]),
+    indices.map((idx) => vocabulary.stats?.[idx]),
   );
 }
 
