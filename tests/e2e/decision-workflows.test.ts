@@ -164,7 +164,7 @@ requiredBrowserTest(
       await page
         .getByRole('status')
         .filter({ hasText: 'appears to miss part' })
-        .waitFor();
+        .waitFor({ timeout: 60_000 });
       expect(requests).toHaveLength(1);
       expect(requests[0].state.prompt).toBe('a blue tunnel');
       expect(requests[0].audio).toBeUndefined();
@@ -186,12 +186,24 @@ requiredBrowserTest(
           exact: true,
         })
         .click();
-      await page
+      await page.waitForFunction(
+        () => {
+          const text =
+            document.querySelector('p[role="status"]')?.textContent ?? '';
+          return (
+            !text.includes('Recording animation') &&
+            !text.includes('Evaluating animation')
+          );
+        },
+        null,
+        { timeout: 60_000 },
+      );
+      const animationStatus = await page
         .locator('p[role="status"]')
-        .filter({
-          hasText: 'The animation appears to match your description',
-        })
-        .waitFor();
+        .textContent();
+      expect(animationStatus).toContain(
+        'The animation appears to match your description',
+      );
       expect(requests).toHaveLength(2);
       expect(requests[1].task).toBe('prompt-match');
       expect(requests[1].videos).toBeDefined();

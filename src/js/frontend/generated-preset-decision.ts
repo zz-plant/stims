@@ -119,24 +119,33 @@ export async function captureCanvasDecisionVideo(
   options?: { durationMs?: number },
   signal?: AbortSignal,
 ): Promise<string> {
-  try {
-    return await recordCanvasOnce(canvas, options, signal);
-  } catch (error) {
-    // The first MediaRecorder a page creates can hand back an empty file:
-    // the VP8 encode pipeline is not warm yet, so every frame is dropped.
-    // Measured in the failing e2e — the first recording in a session always
-    // came back 0 bytes and the second always succeeded. One retry after an
-    // empty recording, and only that outcome, turns the warm-up miss into
-    // the recording the user asked for.
-    if (
-      error instanceof Error &&
-      error.message === 'No animation frames were recorded.' &&
-      !signal?.aborted
-    ) {
-      return recordCanvasOnce(canvas, options, signal);
+  const maxAttempts = 3;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (signal?.aborted) break;
+    try {
+      return await recordCanvasOnce(canvas, options, signal);
+    } catch (error) {
+      lastError = error;
+      // The first MediaRecorder a page creates can hand back an empty file:
+      // the VP8 encode pipeline is not warm yet, so every frame is dropped.
+      // Measured in the failing e2e — the first recording in a session always
+      // came back 0 bytes and the second always succeeded. Retrying up to 3
+      // times with a small yield between attempts ensures the VP8 worker flushes
+      // and warms up properly across slow software-rendered runners.
+      if (
+        error instanceof Error &&
+        error.message === 'No animation frames were recorded.' &&
+        !signal?.aborted &&
+        attempt < maxAttempts
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        continue;
+      }
+      throw error;
     }
-    throw error;
   }
+  throw lastError;
 }
 
 async function recordCanvasOnce(

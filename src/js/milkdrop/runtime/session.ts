@@ -15,11 +15,6 @@ function cloneColor(color: MilkdropColor): MilkdropColor {
 
 function cloneNumericArray<T extends number[] | Float32Array>(arr: T): T {
   if (arr.length === 0) return arr;
-  if (arr instanceof Float32Array) {
-    const copy = new Float32Array(arr.length);
-    copy.set(arr);
-    return copy as T;
-  }
   return arr.slice() as T;
 }
 

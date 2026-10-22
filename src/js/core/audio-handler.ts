@@ -64,6 +64,10 @@ export type { SpectralFeatureSnapshot };
 
 const DEFAULT_SAMPLE_RATE = 44_100;
 const stylizedFrequencyBuffers = new WeakMap<object, Uint8Array>();
+const frequencyFrameResults = new WeakMap<
+  object,
+  { data: Uint8Array; average: number }
+>();
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -141,6 +145,10 @@ export class FrequencyAnalyser {
   };
   private historyIndex = 0;
   private historyCount = 0;
+  private readonly recycledFreqBuffers: ArrayBuffer[] = [];
+  private readonly recycledWaveBuffers: ArrayBuffer[] = [];
+  private readonly recycledTimeBuffers: ArrayBuffer[] = [];
+  private readonly recycledTransfers: ArrayBuffer[] = [];
   private readonly sourceNode: MediaStreamAudioSourceNode;
   private readonly silentGain: GainNode;
   private workletNode?: AudioWorkletNode;
@@ -336,10 +344,14 @@ export class FrequencyAnalyser {
         this.rms = rms;
       }
 
-      const returnFreq: ArrayBuffer[] = [];
-      const returnWave: ArrayBuffer[] = [];
-      const returnTime: ArrayBuffer[] = [];
-      const transfers: ArrayBuffer[] = [];
+      this.recycledFreqBuffers.length = 0;
+      this.recycledWaveBuffers.length = 0;
+      this.recycledTimeBuffers.length = 0;
+      this.recycledTransfers.length = 0;
+      const returnFreq = this.recycledFreqBuffers;
+      const returnWave = this.recycledWaveBuffers;
+      const returnTime = this.recycledTimeBuffers;
+      const transfers = this.recycledTransfers;
 
       const collect = (buf: unknown, list: ArrayBuffer[]) => {
         if (buf instanceof ArrayBuffer) {
@@ -1840,7 +1852,15 @@ export function getFrequencyFrame(analyser: FrequencyAnalyser): {
   }
 
   const average = stylizeFrequencyDataInPlace(stylized, peak, sum);
-  return { data: stylized, average };
+  let result = frequencyFrameResults.get(key);
+  if (!result) {
+    result = { data: stylized, average };
+    frequencyFrameResults.set(key, result);
+  } else {
+    result.data = stylized;
+    result.average = average;
+  }
+  return result;
 }
 
 /**
