@@ -1,7 +1,7 @@
 {
   "name": "stims",
   "description": "Play and live-edit MilkDrop presets in your browser: original .milk files, any audio source, shareable links.",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
   "workspaces": [

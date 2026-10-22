@@ -2,9 +2,17 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-_Current release status: actively developed. Latest release: **v1.4.0**._
+_Current release status: actively developed. Latest release: **v1.5.0**._
 
 ## [Unreleased]
+
+### Planned — studio first, parity as a floor
+
+- **Remix studio**: dependable undo/redo and named snapshots, side-by-side A/B against the source preset, remix provenance retained in exported `.milk`.
+- **Creator-grade export**: deterministic frame pacing, loop-duration controls, and codec/AV-sync verification for 1080p and 4K recording.
+- Parity stays a maintenance floor, not a frontier: projectM WebGPU compute-shader lowering and the AudioWorklet analyzer migration proceed only as they serve the compatibility labels and recording path above.
+
+## [1.5.0] - 2026-10-21
 
 ### Added
 
@@ -101,12 +109,6 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 - A shared `#code=` link waits for its preset to load before restoring the edited source. It could compile against a fallback preset while the requested one was loading and then lose the restored source or the hash (#1407).
 - The boot cover and the home hero reserve the same thin scrollbar gutter, so the tagline keeps its width when the app takes over; at 412px with classic scrollbars it narrowed from 369px to 359px (#1416).
 - More preset shaders compile on WebGL. Native bodies have HLSL `saturate`, `frac`, `lerp` and `atan2` translated (65 shader stages reached GLSL with them) and assignments wrapped in the target's type, as HLSL broadcasts and truncates; comma-list and `static` declarations above `shader_body` carry over; a split `float3 dx, dy;` no longer turns `dx` into the motion control; and the warp shader declares the `r`/`g`/`b` and `hue_shader` colour uniforms it reads (#1448).
-
-### Planned — studio first, parity as a floor
-
-- **Remix studio**: dependable undo/redo and named snapshots, side-by-side A/B against the source preset, remix provenance retained in exported `.milk`.
-- **Creator-grade export**: deterministic frame pacing, loop-duration controls, and codec/AV-sync verification for 1080p and 4K recording.
-- Parity stays a maintenance floor, not a frontier: projectM WebGPU compute-shader lowering and the AudioWorklet analyzer migration proceed only as they serve the compatibility labels and recording path above.
 
 ## [1.4.0] - 2026-10-01
 
@@ -226,7 +228,8 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 - Initial release of the Stim Webtoys Library featuring Aurora Painter, Defrag Visualizer, Multi-Capability Visualizer, and Audio Light Show.
 - Core execution engine supporting Vite build, preview, Bun runtime, and test execution.
 
-[Unreleased]: https://github.com/zz-plant/stims/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/zz-plant/stims/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/zz-plant/stims/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/zz-plant/stims/releases/tag/v1.4.0
 [1.3.0]: https://github.com/zz-plant/stims/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/zz-plant/stims/compare/v1.1.0...v1.2.0
