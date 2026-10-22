@@ -94,7 +94,10 @@ function prunePreviewsFromDist() {
 
 export default defineConfig({
   plugins: [
-    react(),
+    // React Compiler (stable 1.0) auto-memoizes components and hook values
+    // that follow the Rules of React; components it cannot prove safe are
+    // left unchanged, so this is opt-in per component, not a rewrite.
+    react({ compiler: true }),
     audioWorkletTransform(),
     deferAppShellStylesheets(),
     prunePreviewsFromDist(),

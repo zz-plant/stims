@@ -1085,7 +1085,12 @@ function StimsWorkspaceAppShell() {
       audioLiveSinceRef.current = null;
       return;
     }
-    audioLiveSinceRef.current ??= performance.now();
+    // Written as an explicit null check: React Compiler does not yet lower
+    // the logical assignment operators, and an unparsed file is skipped
+    // whole, taking its components with it.
+    if (audioLiveSinceRef.current === null) {
+      audioLiveSinceRef.current = performance.now();
+    }
     if (showRotateHint || awaitingAudioGesture) return;
     const timer = window.setTimeout(
       () => showHint('first-play'),
