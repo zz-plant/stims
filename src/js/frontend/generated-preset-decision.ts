@@ -119,6 +119,31 @@ export async function captureCanvasDecisionVideo(
   options?: { durationMs?: number },
   signal?: AbortSignal,
 ): Promise<string> {
+  try {
+    return await recordCanvasOnce(canvas, options, signal);
+  } catch (error) {
+    // The first MediaRecorder a page creates can hand back an empty file:
+    // the VP8 encode pipeline is not warm yet, so every frame is dropped.
+    // Measured in the failing e2e — the first recording in a session always
+    // came back 0 bytes and the second always succeeded. One retry after an
+    // empty recording, and only that outcome, turns the warm-up miss into
+    // the recording the user asked for.
+    if (
+      error instanceof Error &&
+      error.message === 'No animation frames were recorded.' &&
+      !signal?.aborted
+    ) {
+      return recordCanvasOnce(canvas, options, signal);
+    }
+    throw error;
+  }
+}
+
+async function recordCanvasOnce(
+  canvas: HTMLCanvasElement | null,
+  options?: { durationMs?: number },
+  signal?: AbortSignal,
+): Promise<string> {
   signal?.throwIfAborted();
   if (!canvas || canvas.width <= 0 || canvas.height <= 0)
     return Promise.reject(new Error('The stage has no picture to check yet.'));

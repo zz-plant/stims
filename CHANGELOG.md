@@ -44,6 +44,10 @@ _Current release status: actively developed. Latest release: **v1.5.0**._
 - Nearby and the finder's By look tab rank presets by embeddings of their rendered previews (EmbeddingGemma 2, 256 int8 values per preset, fetched the first time a feature needs them). The old frame description gave most presets one of 81 descriptions, so most neighbours were ties. Browse can sort by Like your saved. 366 presets gained visual search terms ("tunnel", "galaxy", …), and Browse search now reads them: no catalog projection had passed `searchTerms` to the client, and "galaxy" now finds 12 presets instead of 3 (#1447).
 - A per-preset frame-cost record, `src/data/preset-frame-cost.json`, filled by `lab:cost-ingest` from `perf:certification-corpus` runs and validated by `check:preset-cost`. On low-tier devices, autoplay and shuffle skip presets measured above 12 ms of frame work. The 43 presets measured so far ran on a high-end machine and none exceeds that budget, so nothing is skipped until low-tier measurements land (#1419).
 
+### Fixed
+
+- The first "Check animation (Clef Omni)" after a page load no longer reports "No animation frames were recorded." The first MediaRecorder a page creates can hand back an empty file — the encoder pipeline is not warm yet, so every frame is dropped — and the recording now retries once on exactly that outcome. This was the deterministic failure that had kept the `decision-workflows` e2e (and with it main's CI) red since #1536 landed.
+
 ### Changed
 
 - The toolchain floor is Bun 1.4.3 (`.bun-version`, `engines.bun`, README), which the repo was already effectively on for `bun test --parallel`; 1.4 adds `bun audit fix`, `bun dedupe` and `bun prune` for the dependency-hygiene steps, plus `--cpu-prof-md` for profiling the measurement scripts from a terminal.
