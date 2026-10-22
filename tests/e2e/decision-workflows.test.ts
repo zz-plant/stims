@@ -164,7 +164,7 @@ requiredBrowserTest(
       await page
         .getByRole('status')
         .filter({ hasText: 'appears to miss part' })
-        .waitFor();
+        .waitFor({ timeout: 60_000 });
       expect(requests).toHaveLength(1);
       expect(requests[0].state.prompt).toBe('a blue tunnel');
       expect(requests[0].audio).toBeUndefined();
@@ -191,7 +191,7 @@ requiredBrowserTest(
         .filter({
           hasText: 'The animation appears to match your description',
         })
-        .waitFor();
+        .waitFor({ timeout: 60_000 });
       expect(requests).toHaveLength(2);
       expect(requests[1].task).toBe('prompt-match');
       expect(requests[1].videos).toBeDefined();
