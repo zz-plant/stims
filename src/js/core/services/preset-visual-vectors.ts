@@ -38,6 +38,15 @@ export const MAX_VISUAL_VECTOR_ROWS = 8192;
  */
 export const MAX_AFFINITY_ANCHORS = 64;
 
+/**
+ * Minimum cosine similarity for a visual match to be considered meaningful.
+ * Calibrated against EmbeddingGemma 2 representations: random unrelated
+ * preset pairs have a median cosine similarity around 0.80 (p90 ~0.86).
+ * Pairs below 0.86 are within the random noise floor and indicate no visual
+ * resemblance.
+ */
+export const VISUAL_MATCH_MIN_SCORE = 0.86;
+
 export type VisualVectorManifest = {
   version: 1;
   /** Which model and revision produced the vectors, for provenance. */
@@ -87,8 +96,7 @@ export type VisualTermVocabulary = {
 function parseManifest(input: unknown): VisualVectorManifest {
   const doc = input as Partial<VisualVectorManifest> | null;
   if (
-    !doc ||
-    doc.version !== 1 ||
+    doc?.version !== 1 ||
     typeof doc.model !== 'string' ||
     !Number.isInteger(doc.dims) ||
     (doc.dims ?? 0) <= 0 ||
@@ -158,6 +166,7 @@ export class PresetVisualVectors {
   readonly dims: number;
   private readonly data: Int8Array;
   private readonly norms: Float32Array;
+  private readonly invNorms: Float32Array;
   private readonly rowOf: Map<string, number>;
 
   constructor(manifest: VisualVectorManifest, data: Int8Array) {
@@ -172,15 +181,19 @@ export class PresetVisualVectors {
     this.data = data;
     this.rowOf = new Map(manifest.ids.map((id, row) => [id, row]));
     // Quantization rounds each value, so rows are no longer unit length;
-    // cosine divides by the stored norm instead of assuming 1.
+    // cosine divides by the stored norm instead of assuming 1. Precomputing
+    // reciprocal norms avoids division in the similarity inner loops.
     this.norms = new Float32Array(manifest.ids.length);
+    this.invNorms = new Float32Array(manifest.ids.length);
     for (let row = 0; row < manifest.ids.length; row += 1) {
       let sum = 0;
       const offset = row * this.dims;
       for (let i = 0; i < this.dims; i += 1) {
         sum += data[offset + i] * data[offset + i];
       }
-      this.norms[row] = Math.sqrt(sum) || 1;
+      const norm = Math.sqrt(sum);
+      this.norms[row] = norm || 1;
+      this.invNorms[row] = norm > 0 ? 1 / norm : 0;
     }
   }
 
@@ -188,34 +201,257 @@ export class PresetVisualVectors {
     return this.rowOf.has(presetId);
   }
 
-  private cosine(a: number, b: number): number {
-    const { data, dims } = this;
+  /**
+   * The normalized Float32Array vector (in 256-d space) for a preset, or null
+   * if this preset has no vector.
+   */
+  getVector(presetId: string): Float32Array | null {
+    const row = this.rowOf.get(presetId);
+    if (row === undefined) return null;
+    const { data, dims, invNorms } = this;
+    const offset = row * dims;
+    const invNorm = invNorms[row];
+    const vector = new Float32Array(dims);
+    for (let i = 0; i < dims; i += 1) {
+      vector[i] = data[offset + i] * invNorm;
+    }
+    return vector;
+  }
+
+  /**
+   * Cosine similarity between two catalog presets by ID, or null when either
+   * preset has no vector.
+   */
+  similarity(aId: string, bId: string): number | null {
+    const a = this.rowOf.get(aId);
+    const b = this.rowOf.get(bId);
+    if (a === undefined || b === undefined) return null;
+    const { data, dims, invNorms } = this;
     const offsetA = a * dims;
     const offsetB = b * dims;
     let dot = 0;
     for (let i = 0; i < dims; i += 1) {
       dot += data[offsetA + i] * data[offsetB + i];
     }
-    return dot / (this.norms[a] * this.norms[b]);
+    return dot * (invNorms[a] * invNorms[b]);
+  }
+
+  /**
+   * The presets whose preview vectors are closest to an arbitrary vector
+   * query (e.g. an interpolated blend, a cluster centroid, or an on-device
+   * query vector), best first.
+   */
+  searchByVector(
+    queryVector: ArrayLike<number>,
+    topK: number,
+    minScore = Number.NEGATIVE_INFINITY,
+    excludeId?: string,
+  ): VisualMatch[] {
+    if (topK <= 0 || queryVector.length !== this.dims) return [];
+
+    let qNormSum = 0;
+    for (let i = 0; i < this.dims; i += 1) {
+      qNormSum += queryVector[i] * queryVector[i];
+    }
+    const qInvNorm = qNormSum > 0 ? 1 / Math.sqrt(qNormSum) : 0;
+    if (qInvNorm === 0) return [];
+
+    const { data, dims, ids, invNorms } = this;
+    const count = ids.length;
+    const excludeRow =
+      excludeId !== undefined ? this.rowOf.get(excludeId) : undefined;
+
+    const matches: VisualMatch[] = [];
+    let minTopScore = minScore;
+
+    for (let r = 0; r < count; r += 1) {
+      if (r === excludeRow) continue;
+      const offset = r * dims;
+      let dot = 0;
+      for (let i = 0; i < dims; i += 1) {
+        dot += data[offset + i] * queryVector[i];
+      }
+      const score = dot * (qInvNorm * invNorms[r]);
+      if (score < minTopScore) continue;
+
+      if (matches.length < topK) {
+        matches.push({ presetId: ids[r], score });
+        if (matches.length === topK) {
+          matches.sort((left, right) => right.score - left.score);
+          minTopScore = Math.max(minScore, matches[topK - 1].score);
+        }
+      } else {
+        let i = topK - 1;
+        while (i > 0 && matches[i - 1].score < score) {
+          matches[i] = matches[i - 1];
+          i -= 1;
+        }
+        matches[i] = { presetId: ids[r], score };
+        minTopScore = Math.max(minScore, matches[topK - 1].score);
+      }
+    }
+
+    if (matches.length < topK) {
+      matches.sort((left, right) => right.score - left.score);
+    }
+    return matches;
+  }
+
+  /**
+   * The normalized centroid or weighted blend vector of multiple presets in
+   * visual space, or null if none of the specified presets have vectors.
+   */
+  blend(
+    presetIds: readonly string[],
+    weights?: readonly number[],
+  ): Float32Array | null {
+    const rows: number[] = [];
+    const validWeights: number[] = [];
+    for (let i = 0; i < presetIds.length; i += 1) {
+      const row = this.rowOf.get(presetIds[i]);
+      if (row !== undefined) {
+        rows.push(row);
+        validWeights.push(weights?.[i] ?? 1);
+      }
+    }
+    if (rows.length === 0) return null;
+
+    const { data, dims, invNorms } = this;
+    const blended = new Float32Array(dims);
+    let totalWeight = 0;
+
+    for (let j = 0; j < rows.length; j += 1) {
+      const r = rows[j];
+      const w = validWeights[j];
+      if (w <= 0) continue;
+      const offset = r * dims;
+      const factor = w * invNorms[r];
+      totalWeight += w;
+      for (let i = 0; i < dims; i += 1) {
+        blended[i] += data[offset + i] * factor;
+      }
+    }
+    if (totalWeight === 0) return null;
+
+    let sumSq = 0;
+    for (let i = 0; i < dims; i += 1) {
+      sumSq += blended[i] * blended[i];
+    }
+    const invLen = sumSq > 0 ? 1 / Math.sqrt(sumSq) : 0;
+    if (invLen === 0) return null;
+
+    for (let i = 0; i < dims; i += 1) {
+      blended[i] *= invLen;
+    }
+    return blended;
+  }
+
+  /**
+   * Visually similar presets chosen with Maximal Marginal Relevance (MMR)
+   * to balance similarity to `presetId` against visual diversity among the
+   * results, avoiding clusters of slight near-duplicate variations.
+   *
+   * @param lambda 1.0 = pure nearest neighbors, 0.0 = maximal diversity. Defaults to 0.7.
+   */
+  diverseNeighbours(
+    presetId: string,
+    topK: number,
+    lambda = 0.7,
+    minScore = VISUAL_MATCH_MIN_SCORE,
+  ): VisualMatch[] | null {
+    if (!this.has(presetId)) return null;
+    if (topK <= 0) return [];
+
+    const candidates = this.neighbours(presetId, topK * 4, minScore);
+    if (!candidates || candidates.length === 0) return [];
+
+    const selected: VisualMatch[] = [];
+    const pool = [...candidates];
+    const clampedLambda = Math.max(0, Math.min(1, lambda));
+
+    while (selected.length < topK && pool.length > 0) {
+      let bestIndex = -1;
+      let bestMmr = Number.NEGATIVE_INFINITY;
+
+      for (let i = 0; i < pool.length; i += 1) {
+        const cand = pool[i];
+        let maxSimToSelected = 0;
+        for (let s = 0; s < selected.length; s += 1) {
+          const sim = this.similarity(cand.presetId, selected[s].presetId) ?? 0;
+          if (sim > maxSimToSelected) maxSimToSelected = sim;
+        }
+
+        const mmrScore =
+          clampedLambda * cand.score - (1 - clampedLambda) * maxSimToSelected;
+        if (mmrScore > bestMmr) {
+          bestMmr = mmrScore;
+          bestIndex = i;
+        }
+      }
+
+      if (bestIndex === -1) break;
+      selected.push(pool[bestIndex]);
+      pool.splice(bestIndex, 1);
+    }
+
+    return selected;
   }
 
   /**
    * The presets whose previews look most like this one, best first, or null
    * when this preset has no vector.
+   *
+   * Maintains a bounded top-K list to avoid allocating 1,600+ objects and
+   * sorting the full catalog on every lookup.
    */
-  neighbours(presetId: string, topK: number): VisualMatch[] | null {
+  neighbours(
+    presetId: string,
+    topK: number,
+    minScore = Number.NEGATIVE_INFINITY,
+  ): VisualMatch[] | null {
     const row = this.rowOf.get(presetId);
     if (row === undefined) return null;
+    if (topK <= 0) return [];
+
+    const { data, dims, ids, invNorms } = this;
+    const offsetRow = row * dims;
+    const invNormRow = invNorms[row];
+    const count = ids.length;
+
     const matches: VisualMatch[] = [];
-    for (let other = 0; other < this.ids.length; other += 1) {
+    let minTopScore = minScore;
+
+    for (let other = 0; other < count; other += 1) {
       if (other === row) continue;
-      matches.push({
-        presetId: this.ids[other],
-        score: this.cosine(row, other),
-      });
+      const offsetOther = other * dims;
+      let dot = 0;
+      for (let i = 0; i < dims; i += 1) {
+        dot += data[offsetRow + i] * data[offsetOther + i];
+      }
+      const score = dot * (invNormRow * invNorms[other]);
+      if (score < minTopScore) continue;
+
+      if (matches.length < topK) {
+        matches.push({ presetId: ids[other], score });
+        if (matches.length === topK) {
+          matches.sort((left, right) => right.score - left.score);
+          minTopScore = Math.max(minScore, matches[topK - 1].score);
+        }
+      } else {
+        let i = topK - 1;
+        while (i > 0 && matches[i - 1].score < score) {
+          matches[i] = matches[i - 1];
+          i -= 1;
+        }
+        matches[i] = { presetId: ids[other], score };
+        minTopScore = Math.max(minScore, matches[topK - 1].score);
+      }
     }
-    matches.sort((left, right) => right.score - left.score);
-    return matches.slice(0, Math.max(0, topK));
+
+    if (matches.length < topK) {
+      matches.sort((left, right) => right.score - left.score);
+    }
+    return matches;
   }
 
   /**
@@ -232,13 +468,31 @@ export class PresetVisualVectors {
       .filter((row): row is number => row !== undefined);
     const scores = new Map<string, number>();
     if (anchors.length === 0) return scores;
-    for (let row = 0; row < this.ids.length; row += 1) {
+
+    const { data, dims, ids, invNorms } = this;
+    const count = ids.length;
+    const numAnchors = anchors.length;
+    const anchorOffsets = new Int32Array(numAnchors);
+    const anchorInvs = new Float32Array(numAnchors);
+    for (let a = 0; a < numAnchors; a += 1) {
+      anchorOffsets[a] = anchors[a] * dims;
+      anchorInvs[a] = invNorms[anchors[a]];
+    }
+
+    for (let row = 0; row < count; row += 1) {
+      const offsetRow = row * dims;
+      const invNormRow = invNorms[row];
       let best = Number.NEGATIVE_INFINITY;
-      for (const anchor of anchors) {
-        const score = this.cosine(row, anchor);
+      for (let a = 0; a < numAnchors; a += 1) {
+        const offsetAnchor = anchorOffsets[a];
+        let dot = 0;
+        for (let i = 0; i < dims; i += 1) {
+          dot += data[offsetRow + i] * data[offsetAnchor + i];
+        }
+        const score = dot * (invNormRow * anchorInvs[a]);
         if (score > best) best = score;
       }
-      scores.set(this.ids[row], best);
+      scores.set(ids[row], best);
     }
     return scores;
   }
@@ -381,7 +635,12 @@ export async function scoreVisualQuery(
 export async function searchByPresetLook(
   presetId: string,
   topK: number,
+  minScore = Number.NEGATIVE_INFINITY,
+  options?: { diverse?: boolean; lambda?: number },
 ): Promise<VisualMatch[] | null> {
   const vectors = await loadPresetVisualVectors();
-  return vectors?.neighbours(presetId, topK) ?? null;
+  if (!vectors) return null;
+  return options?.diverse
+    ? vectors.diverseNeighbours(presetId, topK, options.lambda, minScore)
+    : vectors.neighbours(presetId, topK, minScore);
 }
