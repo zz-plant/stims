@@ -1,4 +1,5 @@
 import { afterEach, expect, test } from 'bun:test';
+import { gzipSync } from 'node:zlib';
 import {
   loadPresetVisualVectors,
   matchesVisualQuery,
@@ -250,7 +251,7 @@ test('only a preview that clearly matches the term widens the browse filter', ()
   expect(matchesVisualQuery('no-vector', scores)).toBe(false);
 });
 
-function serveVisualFiles(termsModel: string) {
+function serveVisualFiles(termsModel: string, serveGzip = true) {
   const requested: string[] = [];
   const realFetch = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -276,6 +277,14 @@ function serveVisualFiles(termsModel: string) {
         ids: TERM_IDS,
       });
     }
+    if (url.endsWith('visual-vectors.bin.gz')) {
+      if (!serveGzip) return new Response('not found', { status: 404 });
+      return new Response(
+        gzipSync(Buffer.from(Int8Array.from(TERM_ROWS.flat())), {
+          level: 9,
+        }) as unknown as BodyInit,
+      );
+    }
     if (url.endsWith('visual-vectors.bin')) {
       return new Response(Int8Array.from(TERM_ROWS.flat()));
     }
@@ -295,6 +304,32 @@ test('a visual query is scored on the device from the shipped files', async () =
     const scores = await scoreVisualQuery('x y');
     const best = [...scores.entries()].sort((a, b) => b[1] - a[1])[0];
     expect(best[0]).toBe('both');
+  } finally {
+    served.restore();
+  }
+});
+
+test('the loader prefers the gzip twin and decompresses it locally', async () => {
+  const served = serveVisualFiles(MODEL);
+  try {
+    const vectors = await loadPresetVisualVectors();
+    expect(vectors).not.toBeNull();
+    expect(vectors?.dims).toBe(4);
+    expect(served.requested.some((url) => url.endsWith('.bin.gz'))).toBe(true);
+    expect(served.requested.some((url) => url.endsWith('.bin'))).toBe(false);
+  } finally {
+    served.restore();
+  }
+});
+
+test('a missing gzip twin falls back to the raw binary', async () => {
+  const served = serveVisualFiles(MODEL, false);
+  try {
+    const vectors = await loadPresetVisualVectors();
+    expect(vectors).not.toBeNull();
+    expect(vectors?.dims).toBe(4);
+    expect(served.requested.some((url) => url.endsWith('.bin.gz'))).toBe(true);
+    expect(served.requested.some((url) => url.endsWith('.bin'))).toBe(true);
   } finally {
     served.restore();
   }

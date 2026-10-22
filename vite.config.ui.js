@@ -6,7 +6,7 @@ import { defaultClientConditions, defineConfig } from 'vite';
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react({ compiler: true })],
   resolve: {
     dedupe: ['react', 'react-dom', 'three'],
     // The workspace packages under packages/ export their TypeScript source

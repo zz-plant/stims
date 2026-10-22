@@ -20,13 +20,19 @@ function runScript(...args: string[]): number {
 }
 
 describe('check-cache-bounds', () => {
+  // Each case spawns a fresh `bun` subprocess for a script that takes well
+  // under a second alone, but the gate runs ~450 test files in parallel and
+  // saturated process startup has pushed these past bun's 5 s default
+  // (they are repeat offenders in `bun run test:budget`). The subprocess,
+  // not the script under test, is the slow part, so these carry a generous
+  // explicit timeout instead of leaning on the default.
   test('advisory mode exits 0 on the current repo', () => {
     expect(runScript()).toBe(0);
-  });
+  }, 15000);
 
   test('strict mode exits 0 when the diff is clean of new containers', () => {
     // Runs against the live diff; a clean signal means no unbounded growth
     // container was added since the last commit.
     expect(runScript('--strict')).toBe(0);
-  });
+  }, 15000);
 });

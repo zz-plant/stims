@@ -23,6 +23,11 @@
 
 const MANIFEST_URL = '/milkdrop-presets/visual-vectors.json';
 const VECTORS_URL = '/milkdrop-presets/visual-vectors.bin';
+// The build ships a gzip-compressed twin of the vectors file: the raw binary
+// is application/octet-stream, which the CDN does not compress, so without
+// this the browser downloads all 409 KiB. The .gz twin is 292 KiB, and
+// DecompressionStream('gzip') works in every engine since 2023.
+const VECTORS_GZIP_URL = `${VECTORS_URL}.gz`;
 const TERMS_URL = '/milkdrop-presets/visual-terms.json';
 
 /**
@@ -645,6 +650,39 @@ export class PresetVisualVectors {
 let loading: Promise<PresetVisualVectors | null> | null = null;
 let loadingTerms: Promise<VisualTermVocabulary | null> | null = null;
 
+function gunzip(buffer: ArrayBuffer): Promise<ArrayBuffer> {
+  const stream = new Blob([buffer]).stream().pipeThrough(
+    // DecompressionStream accepts 'gzip' in every engine that has the API at
+    // all; the fallback below covers engines without it.
+    new DecompressionStream('gzip'),
+  );
+  return new Response(stream).arrayBuffer();
+}
+
+/**
+ * Fetches the vector payload, preferring the gzip-compressed twin and
+ * falling back to the raw file when the twin is missing or cannot be
+ * decompressed locally.
+ */
+async function fetchVectorsData(): Promise<Int8Array> {
+  if (typeof DecompressionStream === 'function') {
+    try {
+      const response = await fetch(VECTORS_GZIP_URL);
+      if (response.ok) {
+        return new Int8Array(await gunzip(await response.arrayBuffer()));
+      }
+    } catch {
+      // Fall through to the raw file: a partial or corrupt .gz must not take
+      // the whole feature down when the uncompressed twin is right there.
+    }
+  }
+  const response = await fetch(VECTORS_URL);
+  if (!response.ok) {
+    throw new Error(`${VECTORS_URL} responded ${response.status}`);
+  }
+  return new Int8Array(await response.arrayBuffer());
+}
+
 /**
  * The shipped vectors, fetched once per page. Resolves null when the files
  * are missing or malformed so callers fall back rather than fail; a failed
@@ -653,16 +691,15 @@ let loadingTerms: Promise<VisualTermVocabulary | null> | null = null;
 export function loadPresetVisualVectors(): Promise<PresetVisualVectors | null> {
   loading ??= (async () => {
     try {
-      const [manifestResponse, vectorsResponse] = await Promise.all([
+      const [manifestResponse, data] = await Promise.all([
         fetch(MANIFEST_URL),
-        fetch(VECTORS_URL),
+        fetchVectorsData(),
       ]);
-      if (!manifestResponse.ok || !vectorsResponse.ok) {
+      if (!manifestResponse.ok) {
         loading = null;
         return null;
       }
       const manifest = parseManifest(await manifestResponse.json());
-      const data = new Int8Array(await vectorsResponse.arrayBuffer());
       return new PresetVisualVectors(manifest, data);
     } catch (error) {
       console.debug('Preset visual vectors unavailable', error);

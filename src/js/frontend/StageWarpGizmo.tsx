@@ -80,7 +80,12 @@ export function StageWarpGizmo() {
         flush();
         return;
       }
-      rafRef.current ??= window.requestAnimationFrame(flush);
+      // Written as an explicit null check: React Compiler does not yet lower
+      // the logical assignment operators, and an unparsed file is skipped
+      // whole, taking its components with it.
+      if (rafRef.current === null) {
+        rafRef.current = window.requestAnimationFrame(flush);
+      }
     },
     [flush],
   );
