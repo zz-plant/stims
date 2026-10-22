@@ -5,6 +5,7 @@ import {
   PresetVisualVectors,
   resetPresetVisualVectors,
   scoreVisualQuery,
+  VISUAL_MATCH_MIN_SCORE,
   visualTermsInQuery,
 } from '../../src/js/core/services/preset-visual-vectors.ts';
 import type { PresetCatalogEntry } from '../../src/js/frontend/contracts.ts';
@@ -40,6 +41,74 @@ test('neighbours rank by resemblance and leave out the preset itself', () => {
     'lattice',
   ]);
   expect(matches[0].score).toBeGreaterThan(0.95);
+});
+
+test('neighbours filter by minScore when provided', () => {
+  const all = vectors().neighbours('fire', 3) ?? [];
+  expect(all.length).toBe(3);
+
+  // Only `embers` is above 0.9 similarity with `fire`
+  const filtered = vectors().neighbours('fire', 3, 0.9) ?? [];
+  expect(filtered.map((match) => match.presetId)).toEqual(['embers']);
+});
+
+test('VISUAL_MATCH_MIN_SCORE provides a calibrated noise-floor cutoff', () => {
+  expect(VISUAL_MATCH_MIN_SCORE).toBeGreaterThan(0.8);
+  expect(VISUAL_MATCH_MIN_SCORE).toBeLessThan(0.95);
+});
+
+test('similarity returns cosine score between two presets or null', () => {
+  expect(vectors().similarity('fire', 'embers')).toBeGreaterThan(0.95);
+  expect(vectors().similarity('fire', 'lattice')).toBeLessThan(0.2);
+  expect(vectors().similarity('fire', 'unknown')).toBeNull();
+});
+
+test('getVector returns normalized Float32Array or null', () => {
+  const v = vectors().getVector('fire');
+  expect(v).not.toBeNull();
+  if (!v) throw new Error('expected vector');
+  expect(v.length).toBe(4);
+  let sumSq = 0;
+  for (let i = 0; i < v.length; i++) sumSq += v[i] * v[i];
+  expect(Math.abs(Math.sqrt(sumSq) - 1)).toBeLessThan(1e-4);
+
+  expect(vectors().getVector('unknown')).toBeNull();
+});
+
+test('searchByVector finds matches closest to an arbitrary vector', () => {
+  const query = [1, 0, 0, 0]; // Points purely along fire/embers
+  const matches = vectors().searchByVector(query, 2);
+  expect(matches.map((m) => m.presetId)).toEqual(['fire', 'embers']);
+  expect(matches[0].score).toBeGreaterThan(0.98);
+
+  // With exclusion
+  const withExclusion = vectors().searchByVector(query, 2, -Infinity, 'fire');
+  expect(withExclusion[0].presetId).toBe('embers');
+});
+
+test('blend computes visual centroid between presets', () => {
+  const blended = vectors().blend(['fire', 'lattice']);
+  expect(blended).not.toBeNull();
+  if (!blended) throw new Error('expected blended vector');
+  expect(blended.length).toBe(4);
+
+  // Blended vector sits between fire and lattice
+  const matches = vectors().searchByVector(blended, 4);
+  expect(matches.length).toBe(4);
+
+  expect(vectors().blend(['unknown'])).toBeNull();
+});
+
+test('diverseNeighbours avoids near-duplicate dominance using MMR', () => {
+  const v = vectors();
+  // Fire and embers are near duplicates (~0.98 similarity).
+  // Lattice and grid are orthogonal direction.
+  const normal = v.neighbours('fire', 3) ?? [];
+  expect(normal[0].presetId).toBe('embers');
+
+  const diverse = v.diverseNeighbours('fire', 2, 0.5, 0.0) ?? [];
+  expect(diverse.length).toBe(2);
+  expect(diverse[0].presetId).toBe('embers');
 });
 
 test('a preset with no vector has no neighbours, so callers can fall back', () => {

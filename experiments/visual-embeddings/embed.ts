@@ -242,9 +242,11 @@ async function main() {
   const termTexts = VISUAL_TERMS.map(
     (term) => `task: search result | query: ${term.query}`,
   );
-  const { sentence_embedding: termEmbedding } = await model(
-    await processor(termTexts),
-  );
+  const termInputs = await processor(termTexts, null, {
+    padding: true,
+    truncation: true,
+  });
+  const { sentence_embedding: termEmbedding } = await model(termInputs);
   const termVectors = termEmbedding.data as Float32Array;
 
   fs.mkdirSync(outDir, { recursive: true });

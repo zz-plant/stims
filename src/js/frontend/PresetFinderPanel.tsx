@@ -13,7 +13,10 @@ import {
   buildWindowAudioProfile,
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
-import { searchByPresetLook } from '../core/services/preset-visual-vectors.ts';
+import {
+  searchByPresetLook,
+  VISUAL_MATCH_MIN_SCORE,
+} from '../core/services/preset-visual-vectors.ts';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { AIBadge } from './AIBadge.tsx';
 import type { PresetCatalogEntry } from './contracts.ts';
@@ -276,12 +279,17 @@ export function PresetFinderPanel({
         // The preset's own preview vector when it has one; the live frame's
         // description otherwise (generated or imported presets).
         const byPreset = activePresetId
-          ? await searchByPresetLook(activePresetId, LOOK_RESULT_DEPTH)
+          ? await searchByPresetLook(
+              activePresetId,
+              LOOK_RESULT_DEPTH,
+              VISUAL_MATCH_MIN_SCORE,
+              { diverse: true },
+            )
           : null;
         if (!isCurrent()) return;
         if (byPreset) {
           matches = byPreset;
-          floor = Number.NEGATIVE_INFINITY;
+          floor = VISUAL_MATCH_MIN_SCORE;
         } else {
           const canvas = ui.stageRef.current?.querySelector(
             'canvas',

@@ -611,8 +611,16 @@ export async function playNearbyPreset({
       injectedPresetLook ??
       (await import('../core/services/preset-visual-vectors.ts'))
         .searchByPresetLook;
+    const minScore = injectedPresetLook
+      ? 0
+      : (await import('../core/services/preset-visual-vectors.ts'))
+          .VISUAL_MATCH_MIN_SCORE;
     const byPreset = currentPresetId
-      ? await searchByPresetLook(currentPresetId, NEARBY_SEARCH_RESULTS)
+      ? await searchByPresetLook(
+          currentPresetId,
+          NEARBY_SEARCH_RESULTS,
+          minScore,
+        )
       : null;
     if (byPreset) {
       matches = byPreset;
