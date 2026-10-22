@@ -52,6 +52,9 @@ export function usePerformanceHardware({
 }): void {
   const runPaletteActionRef = useRef(runPaletteAction);
   runPaletteActionRef.current = runPaletteAction;
+  const engineRef = useRef(engine);
+  engineRef.current = engine;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: shell-lifetime hardware wiring reads latest values through refs
   useEffect(() => {
     return deferToIdle(() => {
       webMidiService.initialize();
@@ -64,7 +67,7 @@ export function usePerformanceHardware({
           ? () => {}
           : installLivePerformance({
               setTarget: (target, value) => {
-                engine.updateInspectorField(target, value);
+                engineRef.current.updateInspectorField(target, value);
               },
               injectMidiCC: (cc, value) => {
                 webMidiService.injectControlChange(
@@ -74,10 +77,10 @@ export function usePerformanceHardware({
                 );
               },
               nextPreset: () => {
-                engine.handleShufflePreset();
+                engineRef.current.handleShufflePreset();
               },
               previousPreset: () => {
-                engine.handlePreviousPreset();
+                engineRef.current.handlePreviousPreset();
               },
               startStreamAudio: async (stream) => {
                 const nextRoute = {
@@ -85,7 +88,7 @@ export function usePerformanceHardware({
                   audioSource: 'file' as const,
                 };
                 uiRef.current.commitRoute(nextRoute);
-                await engine.startAudioSource({
+                await engineRef.current.startAudioSource({
                   source: 'file',
                   stream,
                   launchState: nextRoute,
@@ -94,21 +97,23 @@ export function usePerformanceHardware({
             });
 
       const crossfader = createHardwareCrossfader({
-        getPosition: () => engine.getCrossfade(),
-        setPosition: (position) => engine.setCrossfade(position),
+        getPosition: () => engineRef.current.getCrossfade(),
+        setPosition: (position) => engineRef.current.setCrossfade(position),
         startQueued: () =>
           startQueuedCrossfade({
             queue: uiRef.current.presetQueue,
-            startManualCrossfade: () => engine.startManualCrossfade(),
+            startManualCrossfade: () =>
+              engineRef.current.startManualCrossfade(),
             setRouteState: uiRef.current.setRouteState,
             activePresetId: engineSnapshotRef.current?.activePresetId ?? null,
           }),
         announce: (message) => uiRef.current.setStatusMessage(message),
       });
       const controls = createPerformanceControlApplier({
-        setFieldLive: (target, value) => engine.updateFieldLive(target, value),
+        setFieldLive: (target, value) =>
+          engineRef.current.updateFieldLive(target, value),
         commitField: (target, value) =>
-          engine.updateInspectorField(target, value),
+          engineRef.current.updateInspectorField(target, value),
         crossfade: (position) => crossfader.move(position),
       });
       webMidiService.setLearnRangeResolver(learnRangeFor);
@@ -156,13 +161,5 @@ export function usePerformanceHardware({
         stopClockFollow();
       };
     });
-  }, [
-    engine,
-    uiRef.current.setRouteState,
-    uiRef.current.commitRoute,
-    uiRef.current.setStatusMessage,
-    uiRef.current.routeState,
-    uiRef.current.presetQueue,
-    engineSnapshotRef.current?.activePresetId,
-  ]);
+  }, []);
 }
