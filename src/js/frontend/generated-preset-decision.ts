@@ -3,6 +3,7 @@ import {
   DECISION_LIMITS,
   type DecisionResult,
 } from '../core/decision-model.ts';
+import { setRecordingActive } from '../core/services/recording-state.ts';
 
 export function summarizePromptMatch(
   result: DecisionResult,
@@ -203,8 +204,12 @@ async function recordCanvasOnce(
     }
 
     const chunks: Blob[] = [];
+    setRecordingActive(true);
+    let stopTimer: ReturnType<typeof setTimeout> | undefined;
     const cleanup = () => {
+      setRecordingActive(false);
       clearTimeout(timer);
+      clearTimeout(stopTimer);
       signal?.removeEventListener('abort', cancel);
       for (const track of stream.getTracks()) track.stop();
     };
@@ -219,7 +224,12 @@ async function recordCanvasOnce(
 
     const cancel = () => {
       try {
-        if (recorder.state !== 'inactive') recorder.stop();
+        if (recorder.state !== 'inactive') {
+          if (typeof recorder.requestData === 'function') {
+            recorder.requestData();
+          }
+          recorder.stop();
+        }
       } catch {
         // recorder may already be stopped
       }
@@ -262,23 +272,33 @@ async function recordCanvasOnce(
     // Watchdog timer: duration + 3000ms grace period
     const timer = setTimeout(() => {
       try {
-        if (recorder.state !== 'inactive') recorder.stop();
+        if (recorder.state !== 'inactive') {
+          if (typeof recorder.requestData === 'function') {
+            recorder.requestData();
+          }
+          recorder.stop();
+        }
       } catch {
         // no-op
       }
     }, durationMs + 3000);
 
     // Stop recorder after durationMs
-    setTimeout(() => {
+    stopTimer = setTimeout(() => {
       try {
-        if (recorder.state === 'recording') recorder.stop();
+        if (recorder.state === 'recording') {
+          if (typeof recorder.requestData === 'function') {
+            recorder.requestData();
+          }
+          recorder.stop();
+        }
       } catch {
         // no-op
       }
     }, durationMs);
 
     try {
-      recorder.start(100);
+      recorder.start();
     } catch (error) {
       finish(
         error instanceof Error
