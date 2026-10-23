@@ -170,6 +170,12 @@ export async function onRequest(context: { request: Request; env: Env }) {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
+      // qwen3-30b-a3b-fp8 is a reasoning model: its thinking output is billed
+      // from the same completion budget, and the default 2000-token cap is
+      // often exhausted by reasoning_content alone, returning an empty
+      // `content` (observed intermittently on the routing pilot bench).
+      // Raise the cap so the final answer always has room.
+      max_tokens: 8192,
     });
     const rawResponse = generatedText(result);
     if (!rawResponse) {
