@@ -258,7 +258,7 @@ async function main() {
   const termTexts = VISUAL_TERMS.map(
     (term) => `task: search result | query: ${term.query}`,
   );
-  const termInputs = await processor(termTexts, null, {
+  const termInputs = await processor(termTexts, null, null, null, {
     padding: true,
     truncation: true,
   });
