@@ -181,4 +181,43 @@ describe('toy runtime preview loop', () => {
     tick(3.02);
     expect(update).toHaveBeenCalledTimes(0);
   });
+
+  test('hiding during a no-audio recording swaps the idle loop to the timer path', async () => {
+    const { createToyRuntime } = await freshImport();
+    const { setRecordingActive, resetRecordingActiveForTests } = await import(
+      '../../src/js/core/services/recording-state.ts'
+    );
+    const update = mock((_frame: { analyser: unknown }) => {});
+    const runtime = createToyRuntime({
+      container: document.createElement('div'),
+      performance: { applyRendererSettings: false },
+      plugins: [{ update }],
+    });
+
+    // The idle preview loop is running on requestAnimationFrame.
+    runtime.resumePreview?.();
+    pumpIdleFrames(1);
+    expect(update).toHaveBeenCalledTimes(1);
+    const scheduledRafs = rafCallbacks.length;
+    expect(scheduledRafs).toBeGreaterThan(0);
+
+    // A recording starts, then the tab hides. The already-parked rAF is
+    // suspended by the browser; the visibility handler must cancel it and
+    // re-schedule on the timer path so frames keep coming.
+    setRecordingActive(true);
+    Object.defineProperty(document, 'hidden', {
+      value: true,
+      configurable: true,
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    // The pending rAF is dropped; a timer-backed tick is scheduled instead.
+    expect(rafCallbacks.length).toBeLessThanOrEqual(scheduledRafs);
+
+    resetRecordingActiveForTests();
+    Object.defineProperty(document, 'hidden', {
+      value: false,
+      configurable: true,
+    });
+  });
 });

@@ -81,10 +81,22 @@ export function createStageLuminanceApplier(stage: HTMLElement) {
 }
 
 /**
- * The composed scale on that same stage, for the controller's feedback
- * correction. Paired with the applier above so a caller cannot wire one
- * without the other and leave the governor reading its own channel.
+ * The composed scale the governor should judge its samples through: its own
+ * channel times the presentation (blackout) channel, but NOT the visitor's
+ * comfort ceiling.
+ *
+ * Paired with the applier above so a caller cannot wire one without the
+ * other and leave the governor reading its own channel.
+ *
+ * The ceiling is deliberately excluded. A recording carries the governor and
+ * the blackout but omits the ceiling (a comfort setting for this screen, not
+ * for the file), so the governor must decide against that same content: if it
+ * were fed the ceiling too, a swing the ceiling made sub-threshold would read
+ * as "already mitigated", the governor would hold back, and the recording —
+ * which has no ceiling — would encode the flash at full strength. Over-clamping
+ * the live view when a ceiling is active is the safe direction; under-clamping
+ * the recording is not.
  */
 export function createStageCompositedScale(stage: HTMLElement) {
-  return () => stageLuminanceScale(stage);
+  return () => stageLuminanceScale(stage, ['governor', 'presentation']);
 }

@@ -46,11 +46,17 @@ function updateCamera(camera: ExportCamera, width: number, height: number) {
     typeof camera.top === 'number' &&
     typeof camera.bottom === 'number'
   ) {
+    // Mirror initCamera (core/camera-setup.ts): both frustum axes are in
+    // square units, so portrait aspect ratios widen the vertical half-extent
+    // rather than keeping it at ±1. The old code left top/bottom at ±1, so a
+    // 9:16 export clipped or distorted every wave and shape whose y reached
+    // past that band.
     const halfWidth = Math.max(1, aspect);
+    const halfHeight = Math.max(1, 1 / aspect);
     camera.left = -halfWidth;
     camera.right = halfWidth;
-    camera.top = 1;
-    camera.bottom = -1;
+    camera.top = halfHeight;
+    camera.bottom = -halfHeight;
   }
   camera.updateProjectionMatrix?.();
 }

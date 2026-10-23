@@ -242,14 +242,17 @@ export function NewHomePage({
   // is pressed, which takes seconds on a phone. A CTA that just sits there
   // reads as broken and invites rage-taps; show the in-flight state.
   const [audioStarting, setAudioStarting] = useState(false);
-  const startWithFeedback = (source: ResumableAudioSource) => {
+  const startWithFeedback = (
+    source: ResumableAudioSource,
+    presetId?: string,
+  ) => {
     // The CTAs stay focusable while this runs (see `aria-disabled` below), so
     // a second Enter can land before the first start resolves.
     if (audioStarting) return;
     setAudioStarting(true);
-    void Promise.resolve(engine.handleAudioStart(source)).finally(() =>
-      setAudioStarting(false),
-    );
+    void Promise.resolve(
+      engine.handleAudioStart(source, undefined, presetId ?? null),
+    ).finally(() => setAudioStarting(false));
   };
   const handlePlayDemo = () => {
     noteGrowthEvent('demo-started');
@@ -360,7 +363,11 @@ export function NewHomePage({
                 noteGrowthEvent('demo-started', presetId);
                 ui.commitRoute((current) => ({ ...current, presetId }));
                 if (!engine.audioActive) {
-                  startWithFeedback('demo');
+                  // The route commit above only schedules a state update; this
+                  // starts from the pre-click route state, so the selected id
+                  // rides along explicitly or the demo would start the
+                  // previous/default preset instead.
+                  startWithFeedback('demo', presetId);
                 }
               }}
             />
