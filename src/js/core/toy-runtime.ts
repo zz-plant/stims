@@ -14,6 +14,7 @@ import {
   subscribeToPerformanceSettings,
 } from './performance-panel';
 import { getPowerSavingFrameCapHz } from './power-state';
+import { createBackgroundFrameTimer } from './services/background-frame-timer.ts';
 import {
   isRecordingActive,
   subscribeRecordingActive,
@@ -524,23 +525,24 @@ export function createToyRuntime({
   let heldStepsPending = 0;
   const MAX_HELD_STEPS = 4;
 
-  let previewTimerId: ReturnType<typeof setTimeout> | null = null;
   // The preview loop's own scheduleNext, captured so the visibility handler
   // can swap a pending requestAnimationFrame (suspended in a hidden tab) for
   // the timer path when a recording without audio keeps the loop alive.
   let previewScheduleRef: (() => void) | null = null;
+  // Set by the hidden+recording branch of scheduleNext; cleared by stop.
+  let previewBackgroundTimer: ReturnType<
+    typeof createBackgroundFrameTimer
+  > | null = null;
 
   const stopPreviewLoop = () => {
     if (!previewActive) return;
     previewActive = false;
     previewScheduleRef = null;
+    previewBackgroundTimer?.dispose();
+    previewBackgroundTimer = null;
     if (previewAnimationId !== null) {
       cancelAnimationFrame(previewAnimationId);
       previewAnimationId = null;
-    }
-    if (previewTimerId !== null) {
-      clearTimeout(previewTimerId);
-      previewTimerId = null;
     }
   };
 
@@ -568,6 +570,10 @@ export function createToyRuntime({
     // loop most likely to be left burning battery on a page nobody is watching.
     const previewFrameGate = createFrameGate(getPowerSavingFrameCapHz);
 
+    // While hidden and recording, the browser throttles both
+    // requestAnimationFrame and window setTimeout to ~1 Hz, so neither can
+    // drive a recording. The worker timer (background-frame-timer.ts) is
+    // exempt, so the hidden+recording branch schedules through it instead.
     const scheduleNext = () => {
       if (!previewActive) return;
       if (
@@ -575,11 +581,20 @@ export function createToyRuntime({
         document.hidden &&
         isRecordingActive()
       ) {
-        previewTimerId = setTimeout(() => {
-          previewTimerId = null;
-          tick(timeSource.now());
-        }, 16);
+        if (!previewBackgroundTimer) {
+          previewBackgroundTimer = createBackgroundFrameTimer(() => {
+            if (
+              typeof document !== 'undefined' &&
+              document.hidden &&
+              isRecordingActive()
+            ) {
+              tick(timeSource.now());
+            }
+          }, 16);
+        }
+        previewBackgroundTimer.start();
       } else {
+        previewBackgroundTimer?.stop();
         previewAnimationId = requestAnimationFrame(tick);
       }
     };
