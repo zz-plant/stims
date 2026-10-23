@@ -137,6 +137,24 @@ export function encodePresetSetPayload(
   return `${SET_PAYLOAD_PREFIX}${base64Url}`;
 }
 
+/**
+ * Inflates DEFLATE data with a hard cap on decoded size, enforced during
+ * decompression rather than after. `set` comes from an untrusted shared URL,
+ * and a high-ratio DEFLATE payload can expand far past MAX_DECODED_SET_BYTES
+ * before a post-inflation length check runs. fflate's `out` option writes into
+ * a caller-provided buffer and never grows it, so the full expanded form is
+ * never allocated: output past the cap is truncated to the cap, and the
+ * returned length exceeding the cap is how truncation is detected.
+ */
+function boundedInflate(
+  bytes: Uint8Array,
+  maxBytes: number,
+): Uint8Array | null {
+  const cap = new Uint8Array(maxBytes + 1);
+  const decompressed = inflateSync(bytes, { out: cap });
+  return decompressed.length > maxBytes ? null : decompressed;
+}
+
 export function decodePresetSetPayload(raw: string): PresetSetDecodeResult {
   if (!raw || typeof raw !== 'string') {
     return { ok: false, error: 'Empty set payload' };
@@ -149,8 +167,14 @@ export function decodePresetSetPayload(raw: string): PresetSetDecodeResult {
   try {
     const base64 = base64UrlToBase64(payloadStr);
     const bytes = base64ToBytes(base64);
-    const decompressed = inflateSync(bytes);
-    if (decompressed.byteLength > MAX_DECODED_SET_BYTES) {
+    // Bound during decompression, not after: `set` comes from an untrusted
+    // shared URL, and a high-ratio DEFLATE payload can expand far past
+    // MAX_DECODED_SET_BYTES before a post-inflation length check runs. The
+    // streaming inflater reports chunks as it goes, so we stop accumulating
+    // (and reject) the moment the decoded size passes the cap instead of
+    // materialising the whole inflated output first.
+    const decompressed = boundedInflate(bytes, MAX_DECODED_SET_BYTES);
+    if (decompressed === null) {
       return { ok: false, error: 'Preset set payload exceeds size limit' };
     }
     const text = strFromU8(decompressed);
