@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { deflateSync } from 'fflate';
 import {
   buildPresetSetShareUrl,
   decodePresetSetPayload,
@@ -8,6 +9,7 @@ import {
   MAX_SET_TITLE_LENGTH,
   PRESET_SETS_STORAGE_KEY,
   readSavedPresetSets,
+  SET_PAYLOAD_PREFIX,
   sanitizeSetTitle,
   saveNamedSet,
 } from '../../src/js/frontend/preset-sets.ts';
@@ -134,6 +136,23 @@ describe('preset-sets (#1412)', () => {
       const emptyEncoded = encodePresetSetPayload('No Presets', []);
       const result = decodePresetSetPayload(emptyEncoded);
       expect(result.ok).toBe(false);
+    });
+
+    test('rejects a payload that inflates past the size cap', () => {
+      // Craft a high-ratio DEFLATE payload directly: ~1 MB of repeated
+      // bytes compresses to under 1 KB, so it sails past any compressed-size
+      // check and would balloon on the old post-inflation length test.
+      const bomb = new Uint8Array(1_000_000).fill(65);
+      const compressed = deflateSync(bomb);
+      const base64 = btoa(String.fromCharCode(...compressed))
+        .replace(/\+/gu, '-')
+        .replace(/\//gu, '_')
+        .replace(/=+$/u, '');
+      const result = decodePresetSetPayload(`${SET_PAYLOAD_PREFIX}${base64}`);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toContain('exceeds size limit');
+      }
     });
   });
 });

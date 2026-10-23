@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, jest } from 'bun:test';
 import { isHiddenTabSuspendingFrames } from '../../src/js/core/hidden-tab-policy.ts';
 import { resetLivePerformanceModeForTests } from '../../src/js/core/live-performance-mode.ts';
 import { getPowerSavingFrameCapHz } from '../../src/js/core/power-state.ts';
@@ -193,23 +193,37 @@ describe('Recording Background & Vertical/Square Export', () => {
   });
 
   describe('background frame timer', () => {
-    it('dispatches ticks and disposes cleanly', async () => {
-      let ticks = 0;
-      const timer = createBackgroundFrameTimer(() => {
-        ticks += 1;
-      }, 10);
+    it('dispatches ticks and disposes cleanly', () => {
+      // The timer prefers a Web Worker, whose internal setInterval fake
+      // timers cannot reach, so this test drives the fallback setInterval
+      // path deterministically. Real Worker coverage is the e2e recording
+      // suites' job; asserting tick dispatch here must not depend on how
+      // many wall-clock milliseconds a CPU-starved runner grants a 10 ms
+      // interval.
+      const realWorker = globalThis.Worker;
+      delete (globalThis as { Worker?: typeof Worker }).Worker;
+      jest.useFakeTimers();
+      try {
+        let ticks = 0;
+        const timer = createBackgroundFrameTimer(() => {
+          ticks += 1;
+        }, 10);
 
-      timer.start();
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      timer.stop();
-      const currentTicks = ticks;
-      expect(currentTicks).toBeGreaterThan(0);
+        timer.start();
+        jest.advanceTimersByTime(50);
+        timer.stop();
+        const currentTicks = ticks;
+        expect(currentTicks).toBeGreaterThan(0);
 
-      // Verify stopping halts ticks
-      await new Promise((resolve) => setTimeout(resolve, 30));
-      expect(ticks).toBe(currentTicks);
+        // Verify stopping halts ticks
+        jest.advanceTimersByTime(30);
+        expect(ticks).toBe(currentTicks);
 
-      timer.dispose();
+        timer.dispose();
+      } finally {
+        jest.useRealTimers();
+        globalThis.Worker = realWorker;
+      }
     });
   });
 });
