@@ -26,6 +26,7 @@ import {
 import { type NodeBuilder, RenderTarget, TSL } from 'three/webgpu';
 import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
 import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
+import { compositeSharedUniformDefaultsBag } from './feedback-composite-contract.ts';
 import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
@@ -61,6 +62,34 @@ const {
 } = TSL;
 
 export type CompositeUniformBag = Record<string, any>;
+
+/**
+ * TSL uniform nodes for the shared deterministic composite defaults, from the
+ * contract table. The WebGL bag reads the same table through
+ * compositeSharedUniformDefaultsBag(); keeping both bags on the one table is
+ * what the differential test (milkdrop-feedback-uniform-contract.test.ts)
+ * proves. WebGPU-only uniforms (mixAlpha, zoom, feedbackTexture,
+ * warpCenterScale, warpZoomExponent, post/*, texsizeNoise*) and
+ * profile/size-derived shared ones (feedbackSoftness, currentFrameBoost,
+ * texelSize, texsize, rand_preset) stay with this manager.
+ */
+function sharedCompositeUniformNodes(): Record<string, any> {
+  const nodes: Record<string, any> = {};
+  for (const [name, entry] of Object.entries(
+    compositeSharedUniformDefaultsBag(),
+  )) {
+    const value = entry.value;
+    nodes[name] =
+      typeof value === 'number'
+        ? uniform(value)
+        : value instanceof Color
+          ? uniform(value)
+          : value instanceof Vector2
+            ? uniform(value)
+            : uniform(value as Vector4);
+  }
+  return nodes;
+}
 
 export type FeedbackRendererLike = {
   render: (scene: Scene, camera: Camera) => void;
@@ -449,24 +478,9 @@ export function createCompositeUniforms(
     patternTex3D: texture3D(shared3DPlaceholderRGBA),
     fractalTex3D: texture3D(shared3DPlaceholderRGBA),
     mixAlpha: uniform(0.18),
-    videoEchoAlpha: uniform(0),
-    videoEchoZoom: uniform(1),
+    ...sharedCompositeUniformNodes(),
     zoom: uniform(1.02),
-    videoEchoOrientation: uniform(0),
-    brighten: uniform(0),
-    darken: uniform(0),
-    darkenCenter: uniform(0),
-    solarize: uniform(0),
-    invert: uniform(0),
-    redBlueStereo: uniform(0),
-    gammaAdj: uniform(1),
-    textureWrap: uniform(0),
     feedbackTexture: uniform(0),
-    warpScale: uniform(0),
-    offsetX: uniform(0),
-    offsetY: uniform(0),
-    rotation: uniform(0),
-    zoomMul: uniform(1),
     // Per-frame BASE values of the warp variables the per-fragment per-pixel
     // program may overwrite, packed the way the q/t register banks are: one
     // vec4 (cx, cy, sx, sy) plus the scalar exponent, rather than five
@@ -476,16 +490,6 @@ export function createCompositeUniforms(
     // Defaults are MilkDrop's: centre of screen, no anisotropy, flat exponent.
     warpCenterScale: uniform(new Vector4(0.5, 0.5, 1, 1)),
     warpZoomExponent: uniform(1),
-    saturation: uniform(1),
-    contrast: uniform(1),
-    colorScale: uniform(new Color(1, 1, 1)),
-    hueShift: uniform(0),
-    brightenBoost: uniform(0),
-    invertBoost: uniform(0),
-    solarizeBoost: uniform(0),
-    vignette: uniform(0),
-    chromaticAberration: uniform(0),
-    tint: uniform(new Color(1, 1, 1)),
     // Seed the WebGPU path from its backend profile so feedback blur and
     // current-frame weighting stay in the same lane as the WebGPU renderer.
     feedbackSoftness: uniform(
@@ -494,40 +498,6 @@ export function createCompositeUniforms(
     currentFrameBoost: uniform(
       WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.currentFrameBoost,
     ),
-    overlayTextureSource: uniform(0),
-    overlayTextureMode: uniform(0),
-    overlayTextureSampleDimension: uniform(0),
-    overlayTextureInvert: uniform(0),
-    overlayTextureAmount: uniform(0),
-    overlayTextureScale: uniform(new Vector2(1, 1)),
-    overlayTextureOffset: uniform(new Vector2(0, 0)),
-    overlayTextureVolumeSliceZ: uniform(0),
-    warpTextureSource: uniform(0),
-    warpTextureSampleDimension: uniform(0),
-    warpTextureAmount: uniform(0),
-    warpTextureScale: uniform(new Vector2(1, 1)),
-    warpTextureOffset: uniform(new Vector2(0, 0)),
-    warpTextureVolumeSliceZ: uniform(0),
-    signalBass: uniform(0),
-    signalBassAtt: uniform(0),
-    signalMid: uniform(0),
-    signalMidAtt: uniform(0),
-    signalTreb: uniform(0),
-    signalTrebAtt: uniform(0),
-    // Neutral defaults mirror the CPU VM (vm/shared.ts).
-    signalPercussive: uniform(1),
-    signalHarmonic: uniform(1),
-    signalPercussiveLow: uniform(1),
-    signalPercussiveMid: uniform(1),
-    signalPercussiveHigh: uniform(1),
-    signalPercussiveRatio: uniform(0.5),
-    signalBeat: uniform(0),
-    signalBeatPulse: uniform(0),
-    signalEnergy: uniform(0),
-    signalTime: uniform(0),
-    signalFrame: uniform(0),
-    signalProgress: uniform(0),
-    signalFps: uniform(60),
     // MilkDrop per-frame registers (`tele`, `hordist`, …) that a directly
     // executed shader body reads without ever assigning. WebGL declares each
     // as `uniform float` and drives it from the VM's frame state; here the
@@ -545,8 +515,6 @@ export function createCompositeUniforms(
     perPixelT: Array.from({ length: 8 }, () =>
       uniform(new Vector4(0, 0, 0, 0)),
     ),
-    aspect: uniform(new Vector4(1, 1, 1, 1)),
-    decay: uniform(0.98),
     postBloomStrength: uniform(0),
     postBloomThreshold: uniform(0.85),
     postBloomRadius: uniform(0.5),
@@ -563,16 +531,6 @@ export function createCompositeUniforms(
     // Butterchurn bodies reference per-preset random constants as
     // rand_preset; the WebGL path rolls fresh values once per preset load.
     rand_preset: uniform(new Vector4(0, 0, 0, 0)),
-    // Butterchurn shader bodies multiply blur samplers by scaleN/biasN
-    // (derived from the preset's blur1_min/blur1_max … ranges). The WebGL
-    // templates expose them as uniforms; mirror that so warp/comp statements
-    // that reference them don't drop.
-    scale1: uniform(1),
-    bias1: uniform(0),
-    scale2: uniform(1),
-    bias2: uniform(0),
-    scale3: uniform(1),
-    bias3: uniform(0),
     texsizeNoiseLq: uniform(new Vector4(256, 256, 1 / 256, 1 / 256)),
     texsizeNoiseHq: uniform(new Vector4(256, 256, 1 / 256, 1 / 256)),
     texsizeNoisevolHq: uniform(
