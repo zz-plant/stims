@@ -525,10 +525,15 @@ export function createToyRuntime({
   const MAX_HELD_STEPS = 4;
 
   let previewTimerId: ReturnType<typeof setTimeout> | null = null;
+  // The preview loop's own scheduleNext, captured so the visibility handler
+  // can swap a pending requestAnimationFrame (suspended in a hidden tab) for
+  // the timer path when a recording without audio keeps the loop alive.
+  let previewScheduleRef: (() => void) | null = null;
 
   const stopPreviewLoop = () => {
     if (!previewActive) return;
     previewActive = false;
+    previewScheduleRef = null;
     if (previewAnimationId !== null) {
       cancelAnimationFrame(previewAnimationId);
       previewAnimationId = null;
@@ -578,6 +583,7 @@ export function createToyRuntime({
         previewAnimationId = requestAnimationFrame(tick);
       }
     };
+    previewScheduleRef = scheduleNext;
 
     const tick = (now: number) => {
       if (!previewActive) return;
@@ -646,6 +652,19 @@ export function createToyRuntime({
     const handlePreviewVisibilityChange = () => {
       if (document.hidden && !isRecordingActive()) {
         stopPreviewLoop();
+        return;
+      }
+      // Recording without audio keeps the preview loop alive while hidden, but
+      // a loop that was already running when the tab hid is parked on a
+      // requestAnimationFrame the browser has now suspended. Cancel that
+      // pending frame and re-schedule: scheduleNext sees the hidden+recording
+      // state and switches to the timer path.
+      if (document.hidden && isRecordingActive() && previewActive) {
+        if (previewAnimationId !== null) {
+          cancelAnimationFrame(previewAnimationId);
+          previewAnimationId = null;
+        }
+        previewScheduleRef?.();
         return;
       }
       if (!analyser) {
