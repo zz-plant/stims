@@ -60,13 +60,17 @@ function buildHealedPresetRoute(
   missingRequestedPreset: boolean,
   featuredPreset: PresetCatalogEntry | null | undefined,
   audioSource: AudioSource,
+  presetOverride?: string | null,
 ): {
   nextRouteState: SessionRouteState;
   healMessage: string | null;
 } {
+  // A starter card selection calls commitRoute then immediately starts demo
+  // audio. The route state closure is still the pre-click one, so the
+  // selected id is handed in explicitly; it must win over the stale route.
   const healedPresetId = missingRequestedPreset
     ? (featuredPreset?.id ?? null)
-    : routeState.presetId;
+    : (presetOverride ?? routeState.presetId);
   const healMessage =
     missingRequestedPreset && featuredPreset
       ? `Requested preset unavailable. Starting with ${featuredPreset.title}.`
@@ -431,6 +435,7 @@ export function useWorkspaceShellOrchestration({
   const handleAudioStart = async (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
     deviceId?: string,
+    presetOverride?: string | null,
   ): Promise<AudioStartOutcome> => {
     if (audioStartInProgressRef.current) {
       return {
@@ -479,6 +484,7 @@ export function useWorkspaceShellOrchestration({
         shellState.missingRequestedPreset,
         shellState.featuredPreset,
         source,
+        presetOverride,
       );
 
       if (healMessage) {

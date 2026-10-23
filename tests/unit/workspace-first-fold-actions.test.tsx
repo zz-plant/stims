@@ -456,9 +456,14 @@ describe('workspace first-fold launch hierarchy', () => {
   });
 
   test('the landing renders the starter showcase with 4 curated presets and soundflow preview', () => {
-    const recorded: { preset: string | null; source: string | null } = {
+    const recorded: {
+      preset: string | null;
+      source: string | null;
+      audioPreset: string | null;
+    } = {
       preset: null,
       source: null,
+      audioPreset: null,
     };
     const starterPresets = [
       makePresetEntry({ id: 'shifter-curlique', title: 'Shifter - Curlique' }),
@@ -476,8 +481,9 @@ describe('workspace first-fold launch hierarchy', () => {
       engine: {
         catalog: starterPresets,
         attractPreviewLive: true,
-        handleAudioStart: (source) => {
+        handleAudioStart: (source, _deviceId, presetOverride) => {
           recorded.source = source;
+          recorded.audioPreset = presetOverride ?? null;
           return Promise.resolve({ ok: true, source });
         },
       },
@@ -501,6 +507,9 @@ describe('workspace first-fold launch hierarchy', () => {
       rendered.click(cards[0]);
       expect(recorded.preset).toBe('shifter-curlique');
       expect(recorded.source).toBe('demo');
+      // The selected preset rides into the audio start too, so the demo does
+      // not launch the previous/default preset from a stale route state.
+      expect(recorded.audioPreset).toBe('shifter-curlique');
 
       // Soundflow section renders the 3 equation cards
       const soundflow = rendered.container.querySelector(
