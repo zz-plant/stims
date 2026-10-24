@@ -950,17 +950,25 @@ function LaunchSoundflowPreview({
  */
 function ProjectMeta() {
   return (
-    <p className="stims-shell__launch-meta">
-      <a
-        className="stims-shell__launch-meta-link"
-        href={STIMS_REPO_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => noteGrowthEvent('github-clicked')}
-      >
-        <UiIcon name="github" className="stims-shell__launch-meta-icon" />
-        Open source on GitHub
-      </a>
-    </p>
+    <>
+      <p className="stims-shell__launch-meta">
+        <a
+          className="stims-shell__launch-meta-link"
+          href={STIMS_REPO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => noteGrowthEvent('github-clicked')}
+        >
+          <UiIcon name="github" className="stims-shell__launch-meta-icon" />
+          Open source on GitHub
+        </a>
+      </p>
+      {/* Same register as the GitHub line: a fact about the product, stated
+          once, so the beacons described in docs/PRODUCT_MOMENTS.md are not a
+          secret. */}
+      <p className="stims-shell__launch-meta stims-shell__launch-meta-note">
+        Usage is counted as anonymous events — no account.
+      </p>
+    </>
   );
 }

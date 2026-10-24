@@ -1683,6 +1683,10 @@ body[data-page="workspace"] {
     line-height: 1.4;
   }
 
+  .stims-shell__launch-meta-note {
+    color: var(--stims-muted);
+  }
+
   .stims-shell__launch-meta-link {
     display: inline-flex;
     align-items: center;
