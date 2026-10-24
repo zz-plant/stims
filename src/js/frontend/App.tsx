@@ -1489,6 +1489,7 @@ function StimsWorkspaceAppShell() {
           {ui.routeState.panel === 'finder' ? (
             <PresetFinderPanel
               initialMode={engineSnapshot?.audioActive ? 'sound' : 'look'}
+              offline={offline}
               onClose={() => ui.updatePanel(null)}
             />
           ) : null}

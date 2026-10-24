@@ -19,6 +19,7 @@ import {
   VISUAL_MATCH_MIN_SCORE,
 } from '../core/services/preset-visual-vectors.ts';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
+import type { UiIconName } from '../ui/icon-library.ts';
 import { AIBadge } from './AIBadge.tsx';
 import type { PresetCatalogEntry } from './contracts.ts';
 import {
@@ -27,6 +28,7 @@ import {
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
 import { PresetIdentity } from './PresetIdentity.tsx';
+import { ReferenceFinderPanel } from './ReferenceFinderPanel.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -44,7 +46,7 @@ import { useWorkspace } from './workspace-context.tsx';
  * different output, so those stay separate; this is not a merge of everything
  * with "AI" in the name.
  */
-export type FinderMode = 'sound' | 'look';
+export type FinderMode = 'sound' | 'look' | 'reference';
 
 /**
  * Cosine floor below which a result is not worth showing.
@@ -153,7 +155,9 @@ async function loadOmniMatchHelpers() {
 function readStoredFinderMode(): FinderMode | null {
   try {
     const stored = localStorage.getItem(FINDER_MODE_STORAGE_KEY);
-    return stored === 'sound' || stored === 'look' ? stored : null;
+    return stored === 'sound' || stored === 'look' || stored === 'reference'
+      ? stored
+      : null;
   } catch {
     return null;
   }
@@ -170,7 +174,7 @@ const MODES: Array<{
   id: FinderMode;
   label: string;
   hint: string;
-  icon: 'music' | 'eye';
+  icon: UiIconName;
 }> = [
   {
     id: 'sound',
@@ -184,13 +188,21 @@ const MODES: Array<{
     hint: 'Ranks the catalog by resemblance to the preset on stage.',
     icon: 'eye',
   },
+  {
+    id: 'reference',
+    label: 'By reference',
+    hint: 'Ranks the catalog against a look you describe or an image.',
+    icon: 'image',
+  },
 ];
 
 export function PresetFinderPanel({
   initialMode = 'sound',
+  offline = false,
   onClose,
 }: {
   initialMode?: FinderMode;
+  offline?: boolean;
   onClose: () => void;
 }) {
   const { engine, ui } = useWorkspace();
@@ -275,8 +287,9 @@ export function PresetFinderPanel({
     // try/finally a whole-file bailout.
     const attempt = async () => {
       // Both services return the same {presetId, score} ranking, so the only
-      // real difference between the two modes is what gets embedded.
-      let matches: Array<{ presetId: string; score: number }>;
+      // real difference between the two modes is what gets embedded. The
+      // reference mode never reaches this callback, so its branch stays empty.
+      let matches: Array<{ presetId: string; score: number }> = [];
       let floor = MIN_SCORE;
       if (mode === 'sound') {
         // Listen for a span, then profile the window: the mean balance says
@@ -298,7 +311,7 @@ export function PresetFinderPanel({
             )
           : [];
         if (!isCurrent()) return;
-      } else {
+      } else if (mode === 'look') {
         // The preset's own preview vector when it has one; the live frame's
         // description otherwise (generated or imported presets).
         const byPreset = activePresetId
@@ -413,8 +426,10 @@ export function PresetFinderPanel({
   useEffect(() => {
     if (autoRunRef.current === mode) return;
     // The audio search needs something audible to profile; without it the
-    // old panel sat waiting rather than returning an empty result.
+    // old panel sat waiting rather than returning an empty result. The
+    // reference mode has no auto-run: its trigger is the user's own search.
     if (mode === 'sound' && !hasAudio) return;
+    if (mode === 'reference') return;
     autoRunRef.current = mode;
     void search();
   }, [mode, hasAudio, search]);
@@ -468,92 +483,98 @@ export function PresetFinderPanel({
         ))}
       </div>
 
-      <p className="stims-finder__hint">{activeMode.hint}</p>
+      {mode === 'reference' ? (
+        <ReferenceFinderPanel offline={offline} />
+      ) : (
+        <>
+          <p className="stims-finder__hint">{activeMode.hint}</p>
 
-      {loading ? (
-        <div className="stims-finder__status" role="status">
-          {mode === 'sound' ? 'Analyzing audio…' : 'Analyzing frame…'}
-        </div>
-      ) : error ? (
-        <div className="stims-finder__status stims-finder__status--error">
-          {error}
-        </div>
-      ) : results ? (
-        <ul className="stims-finder__results">
-          {results.length === 0 ? (
-            <li className="stims-finder__empty">No matches found</li>
-          ) : (
-            results.map((result, index) => (
-              <li key={result.id} className="stims-finder__item">
-                <button
-                  type="button"
-                  className="stims-finder__result"
-                  onClick={() => {
-                    engine.handlePlayPreset(result.id);
-                    onClose();
-                  }}
-                >
-                  <PresetIdentity
-                    entry={result.entry}
-                    title={result.title}
-                    subtitle={
-                      result.entry?.author
-                        ? `by ${result.entry.author}`
-                        : 'Unknown author'
-                    }
-                    compact
-                    artFallback={
-                      <span className="stims-finder__rank">
-                        {omniMatchId === result.id ? '★' : index + 1}
-                      </span>
-                    }
-                  />
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      ) : null}
+          {loading ? (
+            <div className="stims-finder__status" role="status">
+              {mode === 'sound' ? 'Analyzing audio…' : 'Analyzing frame…'}
+            </div>
+          ) : error ? (
+            <div className="stims-finder__status stims-finder__status--error">
+              {error}
+            </div>
+          ) : results ? (
+            <ul className="stims-finder__results">
+              {results.length === 0 ? (
+                <li className="stims-finder__empty">No matches found</li>
+              ) : (
+                results.map((result, index) => (
+                  <li key={result.id} className="stims-finder__item">
+                    <button
+                      type="button"
+                      className="stims-finder__result"
+                      onClick={() => {
+                        engine.handlePlayPreset(result.id);
+                        onClose();
+                      }}
+                    >
+                      <PresetIdentity
+                        entry={result.entry}
+                        title={result.title}
+                        subtitle={
+                          result.entry?.author
+                            ? `by ${result.entry.author}`
+                            : 'Unknown author'
+                        }
+                        compact
+                        artFallback={
+                          <span className="stims-finder__rank">
+                            {omniMatchId === result.id ? '★' : index + 1}
+                          </span>
+                        }
+                      />
+                    </button>
+                  </li>
+                ))
+              )}
+            </ul>
+          ) : null}
 
-      {mode === 'sound' &&
-      results &&
-      results.length > 0 &&
-      resolveOptionalApiUrl('/api/decide') ? (
-        <button
-          type="button"
-          className="stims-finder__run"
-          style={{ marginBottom: '8px' }}
-          onClick={() => void matchWithClefOmni()}
-          disabled={loading || matchingOmni || soundUnavailable}
-        >
-          <AIBadge />
-          {matchingOmni
-            ? 'Matching with Clef Omni…'
-            : omniMatchId
-              ? 'Matched with Clef Omni'
-              : 'Pick best with Clef Omni'}
-        </button>
-      ) : null}
+          {mode === 'sound' &&
+          results &&
+          results.length > 0 &&
+          resolveOptionalApiUrl('/api/decide') ? (
+            <button
+              type="button"
+              className="stims-finder__run"
+              style={{ marginBottom: '8px' }}
+              onClick={() => void matchWithClefOmni()}
+              disabled={loading || matchingOmni || soundUnavailable}
+            >
+              <AIBadge />
+              {matchingOmni
+                ? 'Matching with Clef Omni…'
+                : omniMatchId
+                  ? 'Matched with Clef Omni'
+                  : 'Pick best with Clef Omni'}
+            </button>
+          ) : null}
 
-      <button
-        type="button"
-        className="stims-finder__run"
-        onClick={() => void search()}
-        disabled={loading || soundUnavailable}
-      >
-        <UiIcon
-          name="refresh"
-          className="stims-icon-slot stims-icon-slot--sm"
-          aria-hidden="true"
-        />
-        {mode === 'sound' ? 'Analyze audio' : 'Analyze frame'}
-      </button>
+          <button
+            type="button"
+            className="stims-finder__run"
+            onClick={() => void search()}
+            disabled={loading || soundUnavailable}
+          >
+            <UiIcon
+              name="refresh"
+              className="stims-icon-slot stims-icon-slot--sm"
+              aria-hidden="true"
+            />
+            {mode === 'sound' ? 'Analyze audio' : 'Analyze frame'}
+          </button>
 
-      {soundUnavailable ? (
-        <p className="stims-finder__hint">
-          Start audio to search by sound, or switch to By look.
-        </p>
-      ) : null}
+          {soundUnavailable ? (
+            <p className="stims-finder__hint">
+              Start audio to search by sound, or switch to By look.
+            </p>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }
