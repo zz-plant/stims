@@ -426,22 +426,12 @@ export function ReferenceFinderPanel({
   const imageBase64Ready = imageFile !== null;
 
   return (
-    <section
-      className={styles.panel}
-      aria-labelledby="reference-finder-heading"
-    >
-      <div className={styles.header}>
-        <div>
-          <h4 id="reference-finder-heading" className={styles.heading}>
-            Start from a reference
-          </h4>
-          <p className={styles.intro}>
-            Find an editable starting preset that matches a look you describe.
-            Search happens on this device; nothing is sent unless you ask Clef
-            to check an image.
-          </p>
-        </div>
-      </div>
+    <section className={styles.panel}>
+      <p className={styles.intro}>
+        Find an editable starting preset that matches a look you describe.
+        Search happens on this device; nothing is sent unless you ask Clef to
+        check an image.
+      </p>
 
       <label className={styles.field}>
         <span className={styles.label}>Reference description</span>
