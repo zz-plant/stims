@@ -70,7 +70,7 @@ export type VisualMatch = { presetId: string; score: number };
  * score 2.5 or more (436 of 448 on the 2026-10 catalog). Below this a ranked
  * list fills with frames the term does not describe.
  */
-const VISUAL_TERM_MATCH_Z = 2.5;
+export const VISUAL_TERM_MATCH_Z = 2.5;
 
 /**
  * True when a preset's preview matches a visual-term query strongly enough to

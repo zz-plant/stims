@@ -32,14 +32,19 @@ The initial policy requires decisive nouls (at most .2 or at least .8), evidence
 | Music-to-preset shortlist | Preset Finder "By sound" & MCP `session_decide`, `audio-match` | Explicit clip and 1–12 supplied candidates; ranks and suggests best preset via Clef Omni |
 | Slow performance choice | Performance runtime `autoSwitchScene`, palette action `auto-switch-scene`, MCP `session_decide` | Chooses among at most twelve saved scenes; explicit apply uses local four-second ramp |
 | Capture review | `capture-review` in lab or MCP | Visibility/composition/artifact judgment, separate from measured evidence |
+| Reference starting point | Generate → Start from a reference; `reference-choice` task | On-device retrieval first; an explicit image upload lets Flash pick among at most twelve supplied candidates or abstain; opening stays a local action |
 
 These seams support Stims' current pipeline without adding a model to the frame loop. Search/description retrieval narrows candidates first. The generation tournament still compiles and ranks real candidates. A human can request a picture check afterward. `lab:generation-bench --visual` and an autonomous visual repair loop remain unfinished capabilities.
 
+## Shipped learning-loop foundation
+
+The bounded [episode store](./LEARNING_LOOPS_SPEC.md#ll-00-episode-and-index-foundation) (`learning-loop-store.ts`) records each reference-remix run on the device: intent, retrieved candidate set, and explicit outcomes (proposal shown, applied, accepted, rejected), capped at 100 episodes and 32 MiB with oldest-first eviction. The Generate panel's "Start from a reference" section retrieves a shortlist on the device (text scorer + EmbeddingGemma 2 visual terms, no upload), optionally asks Clef to pick against an uploaded reference image (`reference-choice`), and opens the chosen preset as an editable starting point. Accepted references seed later runs, exercising reuse of an accepted episode. What remains of LL-01 is the writer-proposed diff and render-and-measure step; the question-version and calibration work described below applies to it when it lands.
+
 ## Planned learning loops
 
-The [learning-loop specification](./LEARNING_LOOPS_SPEC.md) extends these seams with retrieval-backed remixing, preservation checks, repair memory, effect teaching, phrase-aware performance, experiment selection, session taste, catalog refresh, and a research-only parameter surrogate. The [roadmap](./ROADMAP.md#learning-loops-for-authoring-and-discovery) sequences them; the episode store and expanded multimodal index are planned dependencies of the first remix workflow.
+The [learning-loop specification](./LEARNING_LOOPS_SPEC.md) extends these seams with retrieval-backed remixing, preservation checks, repair memory, effect teaching, phrase-aware performance, experiment selection, session taste, catalog refresh, and a research-only parameter surrogate. The [roadmap](./ROADMAP.md#learning-loops-for-authoring-and-discovery) sequences them. The episode store and reference retrieval shipped first as the foundation of the remix workflow; the remaining loops build on them.
 
-The current endpoint still accepts only its five fixed tasks. New preservation, repair-strategy, or experiment-selection judgments need server-owned versioned schemas and labeled evaluation. EmbeddingGemma retrieval supplies examples; frontier writers supply proposed patches; Clef supplies bounded judgments. Deterministic checks, explicit review, source freshness, and application authority stay in Stims. Human acceptance, model critiques, and measured results have separate provenance.
+The endpoint now accepts six fixed tasks; `reference-choice` carries its own question version (`stims-reference-choice-v1`) alongside the five original tasks on the shared `stims-clef-v1` envelope. New preservation, repair-strategy, or experiment-selection judgments need server-owned versioned schemas and labeled evaluation. EmbeddingGemma retrieval supplies examples; frontier writers supply proposed patches; Clef supplies bounded judgments. Deterministic checks, explicit review, source freshness, and application authority stay in Stims. Human acceptance, model critiques, and measured results have separate provenance.
 
 ## Service and consent
 

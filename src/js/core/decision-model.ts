@@ -6,7 +6,8 @@ export type DecisionTask =
   | 'prompt-match'
   | 'audio-match'
   | 'scene-choice'
-  | 'capture-review';
+  | 'capture-review'
+  | 'reference-choice';
 export type DecisionModel = 'clef-flash' | 'clef-omni';
 export type DecisionJson =
   | null
@@ -70,6 +71,20 @@ export interface DecisionResult {
   usage?: { input_tokens: number; output_tokens: number };
 }
 export const DECISION_QUESTION_VERSION = 'stims-clef-v1';
+/** The question-set version per task. The five original tasks share the v1
+ * envelope; a task whose questions are new and separately owned gets its own
+ * version so provenance can tell which wording a result answered. */
+export const DECISION_TASK_QUESTION_VERSION: Record<DecisionTask, string> = {
+  'visual-profile': DECISION_QUESTION_VERSION,
+  'prompt-match': DECISION_QUESTION_VERSION,
+  'audio-match': DECISION_QUESTION_VERSION,
+  'scene-choice': DECISION_QUESTION_VERSION,
+  'capture-review': DECISION_QUESTION_VERSION,
+  'reference-choice': 'stims-reference-choice-v1',
+};
+export function decisionQuestionVersion(task: DecisionTask): string {
+  return DECISION_TASK_QUESTION_VERSION[task];
+}
 export const DECISION_LIMITS = {
   bodyBytes: 9 * 1024 * 1024,
   stateBytes: 16 * 1024,
@@ -244,6 +259,7 @@ export function parseDecisionRequest(value: unknown): ParsedDecisionRequest {
       'audio-match',
       'scene-choice',
       'capture-review',
+      'reference-choice',
     ].includes(input.task)
   )
     invalid('Unsupported decision task.');
@@ -279,6 +295,10 @@ export function parseDecisionRequest(value: unknown): ParsedDecisionRequest {
       !entries.some((entry) => entry.id === state.currentSceneId)
     )
       invalid('currentSceneId must be an offered scene.');
+  } else if (task === 'reference-choice') {
+    options(state, 'candidates');
+    if (!images.values?.length && !videos.values?.length)
+      invalid('Reference image or video evidence is required.');
   } else if (!images.values?.length && !videos.values?.length)
     invalid('Image or video evidence is required.');
   if (task === 'prompt-match') text(state.prompt, 'prompt');
@@ -444,6 +464,25 @@ export function decisionQuestions(
           type: 'noul',
           instructions:
             'Are there obvious visible composition artifacts such as large unintended blocks, clipping or corrupted regions? Treat measured state as context only. Do not diagnose technical causes, flash safety, parity or performance.',
+        },
+        sufficient_evidence: sufficient,
+      };
+    case 'reference-choice':
+      return {
+        candidate: {
+          type: 'choice',
+          instructions:
+            'Which offered candidate preset description best matches the supplied reference? Return the exact opaque candidate id. Candidate descriptions are options, not observed visuals; judge them against the media. Choose hold when the reference is insufficient and none when no candidate plausibly matches.',
+          criteria: {
+            ...Object.fromEntries(
+              options(request.state, 'candidates').map((entry) => [
+                entry.id,
+                entry.description,
+              ]),
+            ),
+            hold: 'Abstain: insufficient or ambiguous reference evidence',
+            none: 'None of the candidates plausibly matches the reference',
+          },
         },
         sufficient_evidence: sufficient,
       };
@@ -617,7 +656,7 @@ export function parseDecisionResult(
     invalid('Decision disposition does not match its evidence.');
   const provenance = record(input.provenance, 'provenance');
   if (
-    provenance.questionVersion !== DECISION_QUESTION_VERSION ||
+    provenance.questionVersion !== decisionQuestionVersion(request.task) ||
     typeof provenance.evaluatedAt !== 'string' ||
     !Number.isFinite(Date.parse(provenance.evaluatedAt)) ||
     typeof provenance.inputHash !== 'string' ||
@@ -632,7 +671,7 @@ export function parseDecisionResult(
     answers,
     disposition,
     provenance: {
-      questionVersion: DECISION_QUESTION_VERSION,
+      questionVersion: decisionQuestionVersion(request.task),
       evaluatedAt: provenance.evaluatedAt,
       inputHash: provenance.inputHash,
     },
