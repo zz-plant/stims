@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import {
   chosenOption,
+  type DecisionAnswers,
   decisionDisposition,
   decisionQuestions,
+  decisionQuestionVersion,
   parseDecisionAnswers,
   parseDecisionRequest,
   parseDecisionResult,
@@ -271,6 +273,155 @@ describe('decision answer validation', () => {
           },
         },
         questions,
+      ),
+    ).toThrow();
+  });
+});
+
+describe('reference-choice task', () => {
+  const referenceImage = 'data:image/png;base64,iVBORw0KGgo=';
+  const referenceRequest = {
+    task: 'reference-choice' as const,
+    state: {
+      candidates: [
+        { id: 'preset-a', description: 'slow neon tunnel' },
+        { id: 'preset-b', description: 'radial pastel lattice' },
+      ],
+    },
+    images: [referenceImage],
+  };
+  const referenceAnswers = {
+    candidate: {
+      type: 'choice',
+      choice: 'preset-a',
+      probabilities: {
+        'preset-a': 0.85,
+        'preset-b': 0.05,
+        hold: 0.05,
+        none: 0.05,
+      },
+      confidence: 0.9,
+    },
+    sufficient_evidence: { type: 'noul', noul: 0.95 },
+  };
+
+  test('parses a request and requires candidates plus image or video evidence', () => {
+    const parsed = parseDecisionRequest(referenceRequest);
+    expect(parsed.task).toBe('reference-choice');
+    expect(parsed.model).toBe('clef-flash');
+    expect(decisionQuestionVersion('reference-choice')).toBe(
+      'stims-reference-choice-v1',
+    );
+    expect(
+      safeParseDecisionRequest({
+        task: 'reference-choice',
+        state: { candidates: [{ id: 'preset-a', description: 'x' }] },
+      }).success,
+    ).toBe(false);
+    expect(
+      safeParseDecisionRequest({
+        task: 'reference-choice',
+        state: {},
+        images: [referenceImage],
+      }).success,
+    ).toBe(false);
+    expect(
+      safeParseDecisionRequest({
+        task: 'reference-choice',
+        state: { candidates: [] },
+        images: [referenceImage],
+      }).success,
+    ).toBe(false);
+  });
+
+  test('builds a fixed choice schema with hold and none', () => {
+    const questions = decisionQuestions(referenceRequest);
+    expect(questions.candidate).toMatchObject({
+      type: 'choice',
+      criteria: {
+        'preset-a': 'slow neon tunnel',
+        'preset-b': 'radial pastel lattice',
+        hold: expect.stringContaining('Abstain'),
+        none: expect.stringContaining('None'),
+      },
+    });
+    expect(questions.sufficient_evidence).toMatchObject({ type: 'noul' });
+  });
+
+  test('round-trips a valid result with its own question version', () => {
+    const request = parseDecisionRequest(referenceRequest);
+    const answers = parseDecisionAnswers(
+      referenceAnswers,
+      decisionQuestions(request),
+    );
+    const result = parseDecisionResult(
+      {
+        version: 1,
+        task: 'reference-choice',
+        model: 'clef-flash',
+        answers,
+        disposition: decisionDisposition('reference-choice', answers),
+        provenance: {
+          questionVersion: 'stims-reference-choice-v1',
+          evaluatedAt: '2026-10-23T00:00:00.000Z',
+          inputHash: 'a'.repeat(64),
+        },
+      },
+      request,
+    );
+    expect(result.provenance.questionVersion).toBe('stims-reference-choice-v1');
+    expect(chosenOption(result)).toBe('preset-a');
+  });
+
+  test('hold and none abstain, and a wrong question version is rejected', () => {
+    const request = parseDecisionRequest(referenceRequest);
+    const questions = decisionQuestions(request);
+    const holdAnswers: DecisionAnswers = {
+      candidate: {
+        type: 'choice',
+        choice: 'hold',
+        probabilities: {
+          'preset-a': 0.1,
+          'preset-b': 0.1,
+          hold: 0.7,
+          none: 0.1,
+        },
+        confidence: 0.9,
+      },
+      sufficient_evidence: { type: 'noul', noul: 0.9 },
+    };
+    const holdResult = parseDecisionResult(
+      {
+        version: 1,
+        task: 'reference-choice',
+        model: 'clef-flash',
+        answers: parseDecisionAnswers(holdAnswers, questions),
+        disposition: decisionDisposition('reference-choice', holdAnswers),
+        provenance: {
+          questionVersion: 'stims-reference-choice-v1',
+          evaluatedAt: '2026-10-23T00:00:00.000Z',
+          inputHash: 'b'.repeat(64),
+        },
+      },
+      request,
+    );
+    expect(holdResult.disposition).toBe('review');
+    expect(chosenOption(holdResult)).toBeNull();
+    expect(() =>
+      parseDecisionResult(
+        {
+          version: 1,
+          task: 'reference-choice',
+          model: 'clef-flash',
+          answers,
+          disposition: 'accepted',
+          provenance: {
+            questionVersion: 'stims-clef-v1',
+            evaluatedAt: '2026-10-23T00:00:00.000Z',
+            inputHash: 'c'.repeat(64),
+          },
+        },
+        request,
       ),
     ).toThrow();
   });

@@ -1,6 +1,6 @@
 # Learning loops for discovery, authoring, and performance
 
-**Status: planned, 2026-10-23.** The loops below extend shipped retrieval, generation, decision, and measurement tools. No episode store, automatic visual repair loop, continuous conductor, or learned parameter surrogate is implemented by this specification. The [roadmap](./ROADMAP.md#learning-loops-for-authoring-and-discovery) owns priority; this document owns the proposed contracts and release criteria. [Decision models](./DECISION_MODELS.md) describes the current API.
+**Status: foundation shipped, 2026-10-23.** The loops below extend shipped retrieval, generation, decision, and measurement tools. The episode store (LL-00) and the retrieval half of [LL-01](#ll-01-reference-to-editable-preset) are implemented; the automatic visual repair loop, continuous conductor, and learned parameter surrogate are not. The [roadmap](./ROADMAP.md#learning-loops-for-authoring-and-discovery) owns priority; this document owns the proposed contracts and release criteria. [Decision models](./DECISION_MODELS.md) describes the current API.
 
 The first deliverable is a reference-guided remix: find an editable starting point, propose a small change, compare it under matching conditions, and retain an explicit outcome. Each later loop must improve a studio task: browse, listen, edit, compare, save, share, or record. Shared storage and measurement work ships with that task.
 

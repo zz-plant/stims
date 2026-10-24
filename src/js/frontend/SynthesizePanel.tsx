@@ -16,6 +16,7 @@ import { probePresetReactivity } from '../milkdrop/reactivity-probe.ts';
 import { AIBadge } from './AIBadge.tsx';
 import { checkStageForNearBlack } from './generated-preset-visual-check.ts';
 import { ParametricIdenticon } from './ParametricIdenticon.tsx';
+import { ReferenceFinderPanel } from './ReferenceFinderPanel.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
 function toFileList(milkSource: string) {
@@ -743,6 +744,15 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
               Picture checks need a configured hosted API.
             </p>
           ) : null}
+        </div>
+      </details>
+
+      <details className="stims-shell__settings-advanced">
+        <summary className="stims-shell__settings-summary">
+          Start from a reference
+        </summary>
+        <div className="stims-shell__settings-advanced-body">
+          <ReferenceFinderPanel offline={offline} />
         </div>
       </details>
 

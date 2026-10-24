@@ -1,7 +1,6 @@
 // Shared decision inference and body limits. The underscore prevents routing.
 import {
   DECISION_LIMITS,
-  DECISION_QUESTION_VERSION,
   type DecisionModel,
   type DecisionQuestions,
   type DecisionRequest,
@@ -9,6 +8,7 @@ import {
   DecisionValidationError,
   decisionDisposition,
   decisionQuestions,
+  decisionQuestionVersion,
   decisionRecord,
   effectiveDecisionModel,
   parseDecisionAnswers,
@@ -153,7 +153,7 @@ export async function runDecision(
   const model = effectiveDecisionModel(request);
   const questions = decisionQuestions(request);
   const fingerprint = JSON.stringify({
-    questionVersion: DECISION_QUESTION_VERSION,
+    questionVersion: decisionQuestionVersion(request.task),
     ...request,
     model,
   });
@@ -179,7 +179,7 @@ export async function runDecision(
     answers: output.answers,
     disposition: decisionDisposition(request.task, output.answers),
     provenance: {
-      questionVersion: DECISION_QUESTION_VERSION,
+      questionVersion: decisionQuestionVersion(request.task),
       evaluatedAt: new Date().toISOString(),
       inputHash,
     },
