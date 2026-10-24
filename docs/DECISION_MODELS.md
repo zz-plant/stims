@@ -35,6 +35,12 @@ The initial policy requires decisive nouls (at most .2 or at least .8), evidence
 
 These seams support Stims' current pipeline without adding a model to the frame loop. Search/description retrieval narrows candidates first. The generation tournament still compiles and ranks real candidates. A human can request a picture check afterward. `lab:generation-bench --visual` and an autonomous visual repair loop remain unfinished capabilities.
 
+## Planned learning loops
+
+The [learning-loop specification](./LEARNING_LOOPS_SPEC.md) extends these seams with retrieval-backed remixing, preservation checks, repair memory, effect teaching, phrase-aware performance, experiment selection, session taste, catalog refresh, and a research-only parameter surrogate. The [roadmap](./ROADMAP.md#learning-loops-for-authoring-and-discovery) sequences them; the episode store and expanded multimodal index are planned dependencies of the first remix workflow.
+
+The current endpoint still accepts only its five fixed tasks. New preservation, repair-strategy, or experiment-selection judgments need server-owned versioned schemas and labeled evaluation. EmbeddingGemma retrieval supplies examples; frontier writers supply proposed patches; Clef supplies bounded judgments. Deterministic checks, explicit review, source freshness, and application authority stay in Stims. Human acceptance, model critiques, and measured results have separate provenance.
+
 ## Service and consent
 
 The optional [API](./api.md#post-apidecide) is `/api/decide` with the existing `AI` binding and optional `AI_RATE_LIMITER`. No new secret or package is required. Local Vite has no inference endpoint by default: configure `VITE_STIMS_API_BASE` for the browser, or pass `--endpoint` / `STIMS_DECISION_ENDPOINT` for tools. Failures leave playback and local edits usable.
