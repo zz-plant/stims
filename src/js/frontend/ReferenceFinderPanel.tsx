@@ -23,6 +23,7 @@ import {
   newSessionId,
 } from '../core/services/learning-loop-store.ts';
 import { resolveOptionalApiUrl } from '../core/services/optional-api.ts';
+import { AIBadge } from './AIBadge.tsx';
 import {
   chooseReferenceWithClef,
   type ReferenceShortlist,
@@ -84,9 +85,7 @@ export function ReferenceFinderPanel({
   const [retainImage, setRetainImage] = useState(false);
   const [shortlist, setShortlist] = useState<ReferenceShortlist | null>(null);
   const [clefPickId, setClefPickId] = useState<string | null>(null);
-  const [status, setStatus] = useState(
-    'Describe the look you want; Stims finds editable starting presets on this device.',
-  );
+  const [status, setStatus] = useState('');
   const [finding, setFinding] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [openingId, setOpeningId] = useState<string | null>(null);
@@ -426,22 +425,11 @@ export function ReferenceFinderPanel({
   const imageBase64Ready = imageFile !== null;
 
   return (
-    <section
-      className={styles.panel}
-      aria-labelledby="reference-finder-heading"
-    >
-      <div className={styles.header}>
-        <div>
-          <h4 id="reference-finder-heading" className={styles.heading}>
-            Start from a reference
-          </h4>
-          <p className={styles.intro}>
-            Find an editable starting preset that matches a look you describe.
-            Search happens on this device; nothing is sent unless you ask Clef
-            to check an image.
-          </p>
-        </div>
-      </div>
+    <section className={styles.panel}>
+      <p className={styles.intro}>
+        Find an editable preset from your description — search stays on this
+        device; only an image you ask Clef to check is sent.
+      </p>
 
       <label className={styles.field}>
         <span className={styles.label}>Reference description</span>
@@ -506,6 +494,7 @@ export function ReferenceFinderPanel({
             !hostedAvailable
           }
         >
+          <AIBadge />
           {selecting ? 'Asking Clef…' : 'Ask Clef to pick'}
         </button>
       </div>
