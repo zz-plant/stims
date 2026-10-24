@@ -23,6 +23,7 @@ import {
   newSessionId,
 } from '../core/services/learning-loop-store.ts';
 import { resolveOptionalApiUrl } from '../core/services/optional-api.ts';
+import { AIBadge } from './AIBadge.tsx';
 import {
   chooseReferenceWithClef,
   type ReferenceShortlist,
@@ -493,6 +494,7 @@ export function ReferenceFinderPanel({
             !hostedAvailable
           }
         >
+          <AIBadge />
           {selecting ? 'Asking Clef…' : 'Ask Clef to pick'}
         </button>
       </div>

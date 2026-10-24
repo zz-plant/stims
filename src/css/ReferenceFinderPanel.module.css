@@ -117,6 +117,10 @@
   color: inherit;
 }
 
+.accept:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--stims-good) 22%, transparent);
+}
+
 .reject {
   border: 1px solid var(--stims-line-soft);
   background: transparent;
