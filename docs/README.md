@@ -57,6 +57,7 @@ These documents describe priorities, proposed behavior, or an investigation at a
 
 - [Roadmap](./ROADMAP.md) and [product moments](./PRODUCT_MOMENTS.md)
 - [Generative AI proposals](./GENERATIVE_AI_USE_CASES.md)
+- [Learning-loop specification](./LEARNING_LOOPS_SPEC.md): planned retrieval, remix, repair, teaching, performance, and feedback contracts
 
 ## Historical evidence
 

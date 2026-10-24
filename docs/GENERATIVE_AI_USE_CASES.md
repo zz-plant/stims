@@ -1,8 +1,10 @@
 # Generative AI use cases
 
-Stims already ships a substantial generative-AI surface: hosted Workers AI endpoints for preset generation, refinement, blending, image-guided generation, and semantic search, plus a bundled Generate panel and headless measurement labs. The framing for what comes next is extension and hardening of what exists — not greenfield — and follows the roadmap principle that a foundation is not a feature until it is connected, usable, and verified.
+Stims ships hosted preset generation, refinement, blending, image-guided generation, and semantic search, plus a Generate panel, local visual retrieval, typed decision tools, and measurement labs. Extend these around an editable result that a user can compare, accept, save, and share. The roadmap principle still applies: a foundation becomes a feature when it is connected, usable, and verified.
 
 Companion docs: [`api.md`](./api.md) (endpoint reference), [`MCP_SERVER.md`](./MCP_SERVER.md) (agent tooling), [`MILKDROP_CODING_GUIDE.md`](./MILKDROP_CODING_GUIDE.md) (the authoring spec generation targets), [`ROADMAP.md`](./ROADMAP.md) (overall priorities), [`guides/training-models.md`](./guides/training-models.md) (datasets and benchmarks for training and scoring models).
+
+The [learning-loop specification](./LEARNING_LOOPS_SPEC.md) owns the planned episode/index contracts, nine workflows, model roles, privacy, budgets, and release criteria. The sections below summarize current capabilities and the remaining generation work.
 
 ## Current state
 
@@ -20,6 +22,8 @@ Companion docs: [`api.md`](./api.md) (endpoint reference), [`MCP_SERVER.md`](./M
 | Real-compiler validation | [`functions/api/validate-preset.ts`](../functions/api/validate-preset.ts) | POST source → compiles with the real preset compiler and returns its diagnostics (parse + EEL compile errors, warnings); shader GLSL itself still only classifies statically |
 | Generate panel | [`src/js/frontend/SynthesizePanel.tsx`](../src/js/frontend/SynthesizePanel.tsx) | Bundled UI; hosted route, loopback OpenAI-compatible (local) provider, or a BYOK OpenRouter provider (browser sends the key straight to openrouter.ai) |
 | Client generation core | [`src/js/milkdrop/preset-generator.ts`](../src/js/milkdrop/preset-generator.ts), [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) | Provider abstraction; prompt scaffolding shared by client and Worker; compiles returned source before loading |
+| Generation tournament | [`preset-generator.ts`](../src/js/milkdrop/preset-generator.ts) | Compiles and scores multiple candidates using reactivity/richness signals; does not yet retrieve edit episodes or run visual repair |
+| Typed media judgments | [Decision models](./DECISION_MODELS.md) | Explicit picture/animation checks, audio shortlist selection, one-shot performance scene choice, and reviewed offline catalog/capture judgments |
 | Deterministic fallback | [`src/js/milkdrop/ai-preset-synthesizer.ts`](../src/js/milkdrop/ai-preset-synthesizer.ts) | Non-LLM themed template synthesizer; offline fallback and eval control |
 | Measurement labs | [`scripts/preset-lab-reactivity.ts`](../scripts/preset-lab-reactivity.ts), [`scripts/preset-lab-visual.ts`](../scripts/preset-lab-visual.ts) | Headless per-variable reactivity verdicts; browser pixel/reactivity metrics; both support baseline/compare |
 | Generation benchmark | [`scripts/preset-lab-generation-bench.ts`](../scripts/preset-lab-generation-bench.ts) | `lab:generation-bench` scores any generation provider (default: the deterministic synthesizer as control) against a frozen prompt set on real-compiler compile success and the reactivity probe, with baseline/compare; render-based visual metrics remain an open stub (`--visual`) |
@@ -34,7 +38,7 @@ Per [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md), the Generate pan
 Closed since this list was first written: the generation quality gate and the generation bench (#1404, recorded below), local-model scoring on the edit and shader-fix benchmarks (`lab:llm-answer`, #1445), and remix lineage in exports and share links (#1371, #1403).
 
 1. No generation flow has browser-backed end-to-end proof on a configured deployment, for the hosted route, the loopback provider, or OpenRouter.
-2. Nothing closes the loop: no command runs generate → diagnose → measure → regenerate, and the bench's render-based metric (`--visual`) is a stub.
+2. No automatic visual repair loop runs generate → diagnose → render/measure → revise → review. The existing tournament compiles and ranks candidates, while explicit media checks remain separate actions. The bench's render-based metric (`--visual`) is still a stub.
 3. Generated shader blocks are not checked before they are shown. [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) tells models to avoid `[warp_shader]`/`[comp_shader]` unless asked and gives no worked example; the static compiler only classifies shader text, and the GPU compiles it at render time. The shader-fix bench compiles model answers offline, which measures repair of existing translations, not generation.
 4. Generated presets record no provenance: the prompt, source presets and model are not written to the exported file. Remix lineage is.
 
@@ -74,13 +78,15 @@ Exit criteria:
 
 ### Closed-loop iteration and a generation benchmark
 
-- Chain generate → validate → measure → regenerate as an agent-facing loop, building on the MCP server's existing describe → see → tweak → compare tooling, with lab compare modes ("movers" tables, side-by-side contact sheets) as the iteration signal.
-- Done in part: [`lab:generation-bench`](../scripts/preset-lab-generation-bench.ts) establishes the corpus half — a frozen 20-prompt set scored per generation on real-compiler compile success and the reactivity probe, with baseline/compare and the deterministic synthesizer as the control provider; model-backed providers run behind flags. Still missing: render-based visual metrics (`--visual` is a documented stub pending the browser path) and the closed agent loop itself.
+Start with [reference to editable preset (LL-01)](./LEARNING_LOOPS_SPEC.md#ll-01-reference-to-editable-preset), then [intent-preserving remix (LL-02)](./LEARNING_LOOPS_SPEC.md#ll-02-intent-preserving-remix) and [repair memory (LL-03)](./LEARNING_LOOPS_SPEC.md#ll-03-repair-memory). EmbeddingGemma retrieves source/render/edit examples; Clef checks narrow properties or selects a supplied strategy; an evaluated writer drafts the patch. Compile, render, measure, review, and record an explicit outcome within the spec's attempt and resource bounds.
+
+[`lab:generation-bench`](../scripts/preset-lab-generation-bench.ts) already scores a frozen prompt set on real-compiler success and the reactivity probe, with baseline/compare and the deterministic synthesizer as control. Render-based metrics and the autonomous iteration path remain open. Pair the existing CPU VM dataset with actual captures before using it for visual learning. Each proposed change needs before/after evidence under matching conditions; teacher/model preferences stay separate from human outcomes.
 
 Exit criteria:
 
-- an agent (or CI job) can run the full loop headlessly from one command; and
-- prompt or model-routing changes land with before/after benchmark numbers.
+- a bounded run retrieves a relevant example, drafts and verifies a patch, and returns reviewable evidence without replacing the working source on failure;
+- the workflow stores and reuses an explicit outcome, with stale-source and cancellation coverage; and
+- prompt or routing changes land with family-held-out baseline comparisons covering acceptance, preservation/repair failures, latency, and usage.
 
 ### Verified shader generation
 
@@ -91,23 +97,24 @@ Exit criteria:
 
 - generated presets can include working shader blocks, verified by a render-compile check in the benchmark corpus rather than by static diagnostics or inspection.
 
-## Later: identity and ambient intelligence
+## Later: provenance and session assistance
 
-- **Provenance and attribution.** Record generation/remix provenance (prompt, source presets, model) in exported `.milk` files or companion metadata, extending [`preset-credit.ts`](../src/js/milkdrop/preset-credit.ts). Prerequisite for any community-gallery promotion of generated work.
-- **Audio-aware auto-DJ.** Grow the client's [`audio-matcher`](../src/js/core/services/audio-matcher.ts) service (which matches audio character against preset embeddings via `visual-search`) into a session mode that re-ranks or transitions presets as the audio changes, treated as an optional enhancement over local playback. The redundant server-side `audio-select` route was retired in favor of this client path.
+- **Provenance and attribution.** Offer generation/remix provenance in exported `.milk` files or companion metadata, extending [`preset-credit.ts`](../src/js/milkdrop/preset-credit.ts). Preserve source credit and model identity; include private prompts or reference media only when explicitly selected. Reviewed provenance is a prerequisite for community-gallery promotion of generated work.
+- **Phrase-aware performance (LL-05).** The client already offers one-shot Omni audio matching and a saved-scene choice. Extend these with look-ahead, bridge presets, local ramps, bounded change rates, and immediate manual takeover under the [performance contract](./LEARNING_LOOPS_SPEC.md#ll-05-phrase-aware-performance). Evaluate unfamiliar music and shuffled-audio controls before claiming musical fit.
+- **Teaching and session taste (LL-04/07).** Retrieve a proven effect and one small editable example, or diversify suggestions from explicit local outcomes. Keep explanations tied to actual dataflow and make preference history deletable; [the spec](./LEARNING_LOOPS_SPEC.md#loop-requirements) owns acceptance criteria.
 
 ## Research, not roadmap commitments
 
-Consistent with [`ROADMAP.md`](./ROADMAP.md): neural audio-to-visual generation, latent/Gaussian-splat rendering, and fine-tuning custom preset models remain research. Code may exist, but it stays labeled scaffolding until an end-to-end product workflow and verification plan exist.
+Consistent with [`ROADMAP.md`](./ROADMAP.md): neural audio-to-visual generation, latent/Gaussian-splat rendering, and fine-tuning custom preset models remain research. [Measured parameter optimization (LL-09)](./LEARNING_LOOPS_SPEC.md#ll-09-measured-parameter-optimization) also needs paired render measurements and a held-out gain over simple search before a product commitment. Code may exist, but it stays labeled scaffolding until an end-to-end workflow and verification plan exist.
 
 ## Suggested implementation order
 
 1. Generation quality gate and end-to-end verification of the existing Generate flow (unblocks honest claims about everything else).
-2. Refine-in-editor with source diffs (highest roadmap alignment: Remix studio).
-3. Blend and image-to-preset surfaces; semantic search enhancer.
-4. Generation benchmark corpus, then the closed agent loop on top of it.
-5. Shader-era generation, gated by the benchmark.
-6. Provenance metadata, then audio-aware auto-DJ.
+2. Reference-guided remix with bounded local episodes and the reference corpus refresh (LL-00/01/08); retain the shipped source-diff review flow.
+3. Intent-preserving edits and repair memory (LL-02/03), with rendered benchmarks and generation provenance.
+4. Experiment selection (LL-06) only where those workflows need more evidence; use existing instruments and a fixed capture budget.
+5. Teaching and local session taste (LL-04/07); separately evaluate the armed performance pilot (LL-05).
+6. Shader-era generation after render-compile and held-out repair evidence support it. Keep parameter surrogates (LL-09) in research until their prerequisites are met.
 
 ## Typed decision workflows
 

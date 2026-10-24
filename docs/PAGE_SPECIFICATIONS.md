@@ -22,3 +22,18 @@ For usage, see the [user guide](./USER_GUIDE.md). These are expected contracts, 
 | Section | Expected data and state | Layout and interaction expectations | Accessibility and status behaviors |
 | --- | --- | --- | --- |
 | **Alias behavior** | Loads a lightweight HTML document that preserves the current query string and hash and redirects to `/`. It is `noindex,follow` and canonicals to `https://toil.fyi/`. | Users and old links that open `/milkdrop/` should land in the same unified app route without losing launch intent. Search Console's "Alternate page with proper canonical tag" classification is intentional for this URL. | Redirect fallback link remains visible if scripting is unavailable. `bun run check:seo` verifies the alias canonical, noindex directive, and sitemap exclusion. |
+
+## Planned learning-loop interactions
+
+**Planned contracts, not shipped features.** Scope and release criteria live in the [learning-loop specification](./LEARNING_LOOPS_SPEC.md); these extend the existing panels on `/` without adding a separate studio route.
+
+| Surface | Proposed interaction and state | Acceptance behavior |
+| --- | --- | --- |
+| **Browse / reference finder** (LL-01/08) | Choose a reference or description, inspect retrieved examples, then open an editable starting point. Show missing/stale coverage and the evidence behind a suggestion | Local search works while encoders load or hosted calls fail. A no-match result offers ordinary browsing; it does not imply a faithful reproduction |
+| **Generate / assisted edit** (LL-01/02/03) | Show the requested change, properties to preserve, source diff, and before/after evidence under matching conditions. Distinguish preparing, measuring, review, failed, cancelled, and stale states | Apply/Discard and undo remain explicit. Recheck the source revision before Apply; retain the working original when compilation or rendering fails. Applying and accepting are separate outcomes |
+| **Learn / explanation** (LL-04) | Explain the actual source and measured audio/control relation, then offer one small reviewed edit | Source links and compare/undo are keyboard reachable. Unsupported explanations show uncertainty instead of fabricated behavior |
+| **Performance** (LL-05) | Arm a bounded policy separately from requesting one suggestion; show the current scene, pending choice, and local hold/takeover controls | Manual takeover disarms pending choices immediately. Late or stale results cannot switch scenes; network failure leaves direct performance controls usable |
+| **Session history / preferences** (LL-00/07) | Record explicit accept/reject/revert outcomes and explain which local actions informed a recommendation | Reset/delete removes derived preferences and vectors. Shared URLs and exports omit private history unless explicitly selected |
+| **Capture / hosted request** (all loops using media) | State which selected image, clip, source, or text is sent, where it is sent, and what is retained. Show the run budget and a Cancel action | No recording follows from opening a panel. Permission denial or capture failure keeps playback available; cancelled runs cannot apply late results |
+
+Use existing status announcements for progress and failure without moving focus on every update. Review controls have visible focus and text labels; color alone cannot encode pass/fail or confidence. Honor reduced motion in comparisons. Browser acceptance covers narrow layouts, keyboard review, permission denial, unavailable services, cancellation, and an edit made while inference is pending.
