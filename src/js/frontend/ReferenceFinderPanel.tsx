@@ -84,9 +84,7 @@ export function ReferenceFinderPanel({
   const [retainImage, setRetainImage] = useState(false);
   const [shortlist, setShortlist] = useState<ReferenceShortlist | null>(null);
   const [clefPickId, setClefPickId] = useState<string | null>(null);
-  const [status, setStatus] = useState(
-    'Describe the look you want; Stims finds editable starting presets on this device.',
-  );
+  const [status, setStatus] = useState('');
   const [finding, setFinding] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [openingId, setOpeningId] = useState<string | null>(null);
@@ -428,9 +426,8 @@ export function ReferenceFinderPanel({
   return (
     <section className={styles.panel}>
       <p className={styles.intro}>
-        Find an editable starting preset that matches a look you describe.
-        Search happens on this device; nothing is sent unless you ask Clef to
-        check an image.
+        Find an editable preset from your description — search stays on this
+        device; only an image you ask Clef to check is sent.
       </p>
 
       <label className={styles.field}>
