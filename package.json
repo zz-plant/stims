@@ -243,7 +243,7 @@
     "dependency-cruiser": "^18.6.0",
     "eel-conformance": "workspace:*",
     "esbuild": "^0.28.2",
-    "happy-dom": "20.14.5",
+    "happy-dom": "21.0.4",
     "knip": "6.41.0",
     "lefthook": "2.1.16",
     "marked": "^18.1.1",
@@ -286,7 +286,7 @@
   "overrides": {
     "sharp": "^0.35.5",
     "source-map-js": "^1.2.2",
-    "undici": "^7.29.1",
+    "undici": "^7.30.1",
     "nanoid": "^3.3.17",
     "@codemirror/language": "6.12.4",
     "@codemirror/view": "6.43.13",
