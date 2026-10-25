@@ -123,6 +123,60 @@ BACKFILL_TOKEN=<token> bun run previews:sync
 
 Run that after `scripts/generate-thumbnails.ts` regenerates previews; pass specific filenames to sync only what changed. The token is the `stims-embed-backfill` Worker secret. A non-Cloudflare static host would need the previews directory copied into its document root instead.
 
+### Video link previews
+
+The optional video preview path stores small GIF flipbooks and JPEG posters
+in the existing `stims-static` R2 bucket. Cloudflare Media Transformations
+converts each requested GIF to a cached MP4; no graphics browser runs on the
+server. Enable Transformations for the `toil.fyi` zone before turning on
+`VIDEO_PREVIEWS_ENABLED` in `wrangler.site.jsonc`. The flag defaults to `false`,
+so ordinary image previews continue working until that service is ready.
+
+Harvest the frames already rendered during thumbnail selection, then inspect
+and prepare a publication without writing to R2:
+
+```bash
+bun run generate:previews -- --ids=shifter-curlique --force --flipbooks --workers=1 --port=5277
+bun run previews:publish-video -- --ids=shifter-curlique --dry-run
+```
+
+The generated files live under ignored `output/flipbooks/`. Checkpoint timing
+is approximate: the preview holds a sampled image until the next checkpoint.
+The encoder analyzes the quantized frames across the loop boundary and refuses
+clips with detected general or red flashes. This result describes the sampled
+clip, not the preset at its normal rendering rate.
+
+To publish the reviewed assets, use the same upload credential as PNG previews:
+
+```bash
+BACKFILL_TOKEN=<token> bun run previews:publish-video -- --ids=shifter-curlique
+```
+
+The publisher uploads the GIF, JPEG and record before updating the preset's
+pointer. The homepage uses the preset named by `HOMEPAGE_VIDEO_PRESET`. Preset
+pages with no published pointer retain their image metadata. Verify the public
+GIF route supports GET, HEAD and byte ranges, then verify its
+`/cdn-cgi/media/mode=video,width=320,height=180,fit=scale-down,audio=false/https://toil.fyi/api/flipbooks/<id>.gif`
+URL returns playable MP4 before setting `VIDEO_PREVIEWS_ENABLED` to `true` and
+deploying. Test the resulting link in the intended sharing apps; metadata does
+not guarantee every app displays video.
+
+The stage menu's **Create video link…** flow explicitly publishes four seconds
+of small frames and the current preset code to `/api/flipbooks/`. It sends no
+audio. The endpoint requires same-origin JSON and the `VIDEO_UPLOAD_LIMITER`
+binding (three attempts per IP per minute); missing configuration fails closed.
+Requests are bounded by actual streamed bytes, frame count, dimensions, source
+size and duration. The resulting `/s/<id>` page includes an inert source payload
+so the recipient opens the published source without fetching or executing code
+from another site. It is `noindex,follow` and keeps its own sharing canonical.
+
+Successful browser publications return a deletion token. The dialog offers
+**Delete public link** while it retains that token; the HTTP equivalent is
+`DELETE /api/flipbooks/<id>` with `Authorization: Bearer <deleteToken>`. Deletion
+removes the record, GIF and poster. Previously downloaded or CDN-cached copies
+cannot be recalled. To remove a curated preview, remove its preset pointer and
+the three assets from R2 through the authenticated asset-management workflow.
+
 ### Preset embeddings backfill is on-demand
 
 The same Worker owns the preset embeddings index (D1 + Vectorize) that powers "By look / By sound" matching. It has no scheduled trigger: after catalog content or visual descriptions change (`catalog:generate`, `generate:descriptions`), re-embed with:

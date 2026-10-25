@@ -30,7 +30,6 @@
  * Outputs: public/milkdrop-presets/previews/{presetId}.png (480×270)
  */
 
-import { createHash } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
@@ -42,6 +41,8 @@ import {
 import { join } from 'node:path';
 import { type BrowserContext, chromium } from 'playwright';
 import sharp from 'sharp';
+import { encodeFlipbookGif } from '../src/js/utils/media/preview-flipbook.ts';
+import { checkpointFlipbook } from './checkpoint-flipbook.ts';
 import { ensureDevServer } from './dev-server.ts';
 import {
   analyzeFrame,
@@ -55,6 +56,8 @@ const LIBRARIES_DIR = 'public/milkdrop-presets/libraries';
 const PREVIEW_W = 480;
 const PREVIEW_H = 270;
 const DEFAULT_LIMIT = 50;
+// Optional: preserve the frames already rendered during thumbnail selection.
+const CAPTURE_FLIPBOOKS = process.argv.includes('--flipbooks');
 const DEFAULT_WORKERS = 8;
 const DEFAULT_PORT = 5173;
 // Simulated-frame budget per capture attempt (60fps sim time). Feedback
@@ -98,6 +101,7 @@ const PAGE_RECYCLE_EVERY = 100;
 interface PresetEntry {
   id: string;
   title: string;
+  file?: string;
   preview?: unknown;
 }
 
@@ -158,7 +162,7 @@ function parseArgs() {
  * preview art by convention (`previews/{id}.png`), so a generated file is all
  * they need; no catalog entry has to change.
  */
-async function loadAllCatalogEntries(): Promise<PresetEntry[]> {
+export async function loadAllCatalogEntries(): Promise<PresetEntry[]> {
   // Libraries are discovered by directory, matching loadCatalogEntries in
   // preset-lab-reactivity.ts, so a newly vendored library needs no edit here.
   const librariesRoot = new URL(`../${LIBRARIES_DIR}/`, import.meta.url);
@@ -393,7 +397,13 @@ class RenderSession {
     // without beats in it.
     const captureFrame = async (beatPulse: boolean) => {
       const capture = await page.evaluate(
-        ({ minFrames, maxFrames, beatPulse, plateauCheckpoints }) => {
+        ({
+          minFrames,
+          maxFrames,
+          beatPulse,
+          plateauCheckpoints,
+          keepFlipbook,
+        }) => {
           const step = window.__STIMS_AGENT_RENDER_FRAMES__;
           if (typeof step !== 'function') {
             return { error: 'render hook missing' };
@@ -430,6 +440,11 @@ class RenderSession {
           if (!fullCtx || !smallCtx) {
             return { error: '2d context unavailable' };
           }
+          const strip = document.createElement('canvas');
+          strip.width = 192;
+          strip.height = 108;
+          const stripCtx = keepFlipbook ? strip.getContext('2d') : null;
+          const checkpoints: { frame: number; image: string }[] = [];
 
           const snapshot = () => {
             gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
@@ -518,6 +533,13 @@ class RenderSession {
           let sinceImprovement = 0;
           for (;;) {
             const s = snapshot();
+            if (stripCtx && checkpoints.length < 24) {
+              stripCtx.drawImage(full, 0, 0, 192, 108);
+              checkpoints.push({
+                frame: rendered,
+                image: strip.toDataURL('image/png'),
+              });
+            }
             const sc = score(s);
             if (!best || sc > best.score) {
               best = {
@@ -545,6 +567,7 @@ class RenderSession {
             dataUrl: best.dataUrl,
             rendered,
             framesUsed: best.framesUsed,
+            checkpoints,
           };
         },
         {
@@ -552,6 +575,7 @@ class RenderSession {
           maxFrames: MAX_FRAMES,
           beatPulse,
           plateauCheckpoints: PLATEAU_CHECKPOINTS,
+          keepFlipbook: CAPTURE_FLIPBOOKS,
         },
       );
 
@@ -563,12 +587,19 @@ class RenderSession {
         capture.dataUrl.slice('data:image/png;base64,'.length),
         'base64',
       );
-      return { buffer, stats: await analyzeFrame(buffer) };
+      return {
+        buffer,
+        stats: await analyzeFrame(buffer),
+        checkpoints: capture.checkpoints,
+        framesUsed: capture.framesUsed,
+      };
     };
 
     let failure = 'unknown';
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      let { buffer, stats } = await captureFrame(this.beatPulse);
+      let { buffer, stats, checkpoints, framesUsed } = await captureFrame(
+        this.beatPulse,
+      );
       // Beat-gated presets stay near black under the smooth idle signal, and
       // a third of the corpus's previews came out that way. A dark capture
       // gets one more pass with beats in the signal, keeping whichever frame
@@ -580,7 +611,7 @@ class RenderSession {
           !isFlood(pulsed.stats) &&
           frameScore(pulsed.stats) > frameScore(stats)
         ) {
-          ({ buffer, stats } = pulsed);
+          ({ buffer, stats, checkpoints, framesUsed } = pulsed);
         }
       }
 
@@ -618,6 +649,26 @@ class RenderSession {
           }
           this.seenHashes.set(stats.hash, preset.id);
           await writePreview(buffer, outPath);
+          if (CAPTURE_FLIPBOOKS) {
+            try {
+              const clip = await checkpointFlipbook(checkpoints, framesUsed);
+              const gif = encodeFlipbookGif(clip);
+              mkdirSync('output/flipbooks', { recursive: true });
+              writeFileSync(
+                join('output/flipbooks', `${preset.id}.json`),
+                JSON.stringify({
+                  presetId: preset.id,
+                  title: preset.title,
+                  clip,
+                }),
+              );
+              writeFileSync(join('output/flipbooks', `${preset.id}.gif`), gif);
+            } catch (error) {
+              console.warn(
+                `No video preview for ${preset.id}: ${error instanceof Error ? error.message : error}`,
+              );
+            }
+          }
           this.tally.improved++;
           this.rendered++;
           return;

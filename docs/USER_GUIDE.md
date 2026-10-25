@@ -49,6 +49,14 @@ Use the editor's export controls to keep a `.milk` file. A file gives you a port
 
 Share produces a remix URL containing the source. It can carry original-author and remix-lineage metadata; that metadata is attribution, not independent verification of authorship. Depending on the browser, Share opens a native share sheet or copies the link. Open the link in a fresh tab to confirm the recipient sees the intended edit.
 
+When video publishing is enabled, the stage’s **More actions → Create video
+link…** dialog can publish a small, silent preview with the current preset
+code. Choose **Create public link** to capture four seconds; opening the
+dialog captures nothing. Anyone with the resulting link can view and copy
+the code. Audio stays in your browser. Keep the preset unchanged during
+capture. The dialog offers sharing and deletion after publication; deletion
+does not recall copies already downloaded or cached by other services.
+
 Remix URLs have a size limit. If the source exceeds that limit, export the `.milk` file instead. Browser drafts and queues are local to that browser; they are not cloud accounts or cross-device backups. Links are designed to carry source, not your microphone stream, audio file, or API key.
 
 ## Tune playback
