@@ -1,0 +1,13 @@
+.card {
+  background: var(--bg-color-secondary);
+  color: var(--text-color);
+}
+
+.card p,
+.card h2 {
+  color: inherit;
+}
+
+.card a {
+  overflow-wrap: anywhere;
+}

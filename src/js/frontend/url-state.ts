@@ -8,6 +8,7 @@ import type {
   PanelState,
   SessionRouteState,
 } from './contracts.ts';
+import { readSharedVideoArrival } from './shared-video-arrival.ts';
 
 export { normalizeCollectionTag };
 
@@ -150,6 +151,10 @@ export function readSessionRouteState(
         : new URL(input?.href ?? 'https://toil.fyi/');
 
   const state = readSessionRouteStateFromSearch(parsePlainSearch(url.search));
+  if (/^\/s\/[a-f0-9]{64}$/.test(url.pathname)) {
+    const shared = readSharedVideoArrival();
+    if (shared) return { ...state, presetId: shared.presetId, panel: 'editor' };
+  }
   const discovery = resolveSemanticRoute(url.pathname);
   if (!discovery) return state;
 
@@ -239,7 +244,7 @@ export function decodePresetCodeFromHash(
   hashInput: string = typeof window !== 'undefined' ? window.location.hash : '',
 ): string | null {
   const hash = hashInput.startsWith('#') ? hashInput.slice(1) : hashInput;
-  if (!hash) return null;
+  if (!hash) return readSharedVideoArrival()?.source ?? null;
 
   const params = new URLSearchParams(hash);
   const codeParam = params.get('code');

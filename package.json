@@ -180,6 +180,7 @@
     "preview": "vite preview --host",
     "preview:deploy": "bun run scripts/deploy-preview.ts",
     "previews:sync": "bun run scripts/sync-previews-r2.ts",
+    "previews:publish-video": "bun run scripts/publish-video-previews.ts",
     "previews:audit": "bun run scripts/audit-production-previews.ts",
     "profile:frame": "bun run scripts/profile-frame.ts",
     "release:notes": "bun run scripts/release-notes.ts",

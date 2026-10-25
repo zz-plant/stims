@@ -15,10 +15,10 @@ const workerOutputDir = await mkdtemp(
   path.join(tmpdir(), 'stims-site-worker-'),
 );
 
-function run(command, args) {
+function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
-      cwd: rootDir,
+      cwd: options.cwd ?? rootDir,
       env: process.env,
       stdio: 'inherit',
     });
@@ -40,6 +40,15 @@ function run(command, args) {
 }
 
 try {
+  // The Pages functions bundle resolves workspace packages by their default
+  // export condition, which points at each package's built dist/ — while the
+  // Vite app imports package source through the "stims-source" condition and
+  // never needs it. Build the packages the functions bundle reaches first,
+  // or a fresh checkout (CI, a clean clone) fails to resolve them.
+  await run('bun', ['run', 'build'], {
+    cwd: path.join(rootDir, 'packages', 'flash-guard'),
+  });
+
   const buildResults = await Promise.allSettled([
     run('bun', ['run', 'build']),
     run('bunx', [

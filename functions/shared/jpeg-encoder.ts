@@ -164,6 +164,7 @@ function forwardDct(block: Float32Array): void {
       let tmp12 = tmp1 - tmp2;
       block[o] = tmp10 + tmp11;
       block[o + 4 * stride] = tmp10 - tmp11;
+      // biome-ignore lint/suspicious/noApproximativeNumericConstant: the IJG fixed-point constants (jfdctflt.c), not Math constants — changing them changes pixels
       const z1 = (tmp12 + tmp13) * 0.707106781;
       block[o + 2 * stride] = tmp13 + z1;
       block[o + 6 * stride] = tmp13 - z1;
@@ -171,9 +172,11 @@ function forwardDct(block: Float32Array): void {
       tmp10 = tmp4 + tmp5;
       tmp11 = tmp5 + tmp6;
       tmp12 = tmp6 + tmp7;
+      // biome-ignore lint/suspicious/noApproximativeNumericConstant: IJG jfdctflt.c constant
       const z5 = (tmp10 - tmp12) * 0.382683433;
       const z2 = 0.5411961 * tmp10 + z5;
       const z4 = 1.306562965 * tmp12 + z5;
+      // biome-ignore lint/suspicious/noApproximativeNumericConstant: IJG jfdctflt.c constant
       const z3 = tmp11 * 0.707106781;
       const z11 = tmp7 + z3;
       const z13 = tmp7 - z3;

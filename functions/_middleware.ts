@@ -22,6 +22,14 @@ import {
   buildHubCollectionContent,
   collectionSectionHtml,
 } from './shared/collection-page.ts';
+import {
+  appendVideoMetadata,
+  renderVideoSharePage,
+} from './shared/flipbook-page.ts';
+import {
+  type FlipbookEnv,
+  loadPresetFlipbook,
+} from './shared/flipbook-store.ts';
 import { loadPresetMeta, presetIndexing } from './shared/preset-meta.ts';
 import {
   buildPresetPageContent,
@@ -48,7 +56,9 @@ export const APP_ROOT_SELECTOR = 'div#app';
 interface EventContext {
   request: Request;
   next: () => Promise<Response>;
-  env?: { ASSETS?: { fetch: (request: Request) => Promise<Response> } };
+  env?: FlipbookEnv & {
+    ASSETS?: { fetch: (request: Request) => Promise<Response> };
+  };
 }
 
 function escapeAttribute(value: string) {
@@ -90,6 +100,19 @@ function allowExternalFraming(response: Response, enabled: boolean) {
 }
 
 export async function onRequest(context: EventContext): Promise<Response> {
+  const url = new URL(context.request.url);
+  if (url.pathname.startsWith('/s/'))
+    return renderVideoSharePage(context, url.pathname.slice(3));
+  const response = await rewritePresetPage(context);
+  if (url.pathname !== '/' || !context.env) return response;
+  const preset =
+    url.searchParams.get('preset') ?? context.env.HOMEPAGE_VIDEO_PRESET;
+  if (!preset) return response;
+  const clip = await loadPresetFlipbook(context.env, preset);
+  return clip ? appendVideoMetadata(response, clip, url.origin) : response;
+}
+
+async function rewritePresetPage(context: EventContext): Promise<Response> {
   const { request, next } = context;
   const url = new URL(request.url);
   const embedRequest = isEmbedRequest(url);

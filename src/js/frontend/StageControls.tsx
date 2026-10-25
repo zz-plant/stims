@@ -5,6 +5,8 @@
 
 import { describeShaderApproximation } from 'milkdrop-toolchain/src/shader-execution-mode.ts';
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useRef,
@@ -76,6 +78,12 @@ type MenuItem = {
   // exists — labels are copy and may change; data-action must not.
   actionId?: string;
 };
+
+const VideoShareDialog = lazy(() =>
+  import('./VideoShareDialog.tsx').then((module) => ({
+    default: module.VideoShareDialog,
+  })),
+);
 
 /**
  * The transition ladder the stage menu offers as directly pickable options.
@@ -151,6 +159,7 @@ export function StageControls({
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
+  const [videoShareOpen, setVideoShareOpen] = useState(false);
   const panel = ui.routeState.panel;
   const transitionMode = engineSnapshot?.transitionMode ?? 'blend';
   const blendDuration =
@@ -687,6 +696,11 @@ export function StageControls({
       action: () => run(() => void ui.handleShowCurrentLink()),
     },
     {
+      icon: 'link' as const,
+      label: 'Create video link…',
+      action: () => run(() => setVideoShareOpen(true)),
+    },
+    {
       icon: 'pulse' as const,
       label: hostingRoom ? 'Copy watch party link' : 'Start watch party',
       actionId: 'watch-party',
@@ -1209,6 +1223,11 @@ export function StageControls({
           <span>Controls</span>
         </button>
       </div>
+      {videoShareOpen ? (
+        <Suspense fallback={null}>
+          <VideoShareDialog onClose={() => setVideoShareOpen(false)} />
+        </Suspense>
+      ) : null}
     </>
   );
 }
