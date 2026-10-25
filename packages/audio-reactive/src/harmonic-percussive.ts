@@ -69,7 +69,8 @@ const EMPTY_LEVELS: HarmonicPercussiveLevels = Object.freeze({
 });
 
 /** Median of the first `count` entries of `scratch`, via insertion sort.
- * `count` is <= 9 in practice, where insertion sort beats anything cleverer. */
+ * Fallback for arbitrary sizes; 7- and 9-element medians route through
+ * branchless selection networks below. */
 function medianInPlace(scratch: Float32Array, count: number): number {
   for (let i = 1; i < count; i += 1) {
     const value = scratch[i];
@@ -84,6 +85,105 @@ function medianInPlace(scratch: Float32Array, count: number): number {
   return (count & 1) === 1
     ? scratch[mid]
     : (scratch[mid - 1] + scratch[mid]) * 0.5;
+}
+
+/** Optimal 9-element median selection network (Paeth 1990 / Devillard 1998,
+ * 19 compare-swaps). Evaluated branchlessly via hardware Math.min/Math.max
+ * instructions, avoiding CPU branch mispredictions on audio spectrum noise. */
+function median9Branchless(
+  p0: number,
+  p1: number,
+  p2: number,
+  p3: number,
+  p4: number,
+  p5: number,
+  p6: number,
+  p7: number,
+  p8: number,
+): number {
+  let t: number;
+  t = Math.min(p1, p2);
+  p2 = Math.max(p1, p2);
+  p1 = t;
+  t = Math.min(p4, p5);
+  p5 = Math.max(p4, p5);
+  p4 = t;
+  t = Math.min(p7, p8);
+  p8 = Math.max(p7, p8);
+  p7 = t;
+  t = Math.min(p0, p1);
+  p1 = Math.max(p0, p1);
+  p0 = t;
+  t = Math.min(p3, p4);
+  p4 = Math.max(p3, p4);
+  p3 = t;
+  t = Math.min(p6, p7);
+  p7 = Math.max(p6, p7);
+  p6 = t;
+  t = Math.min(p1, p2);
+  p2 = Math.max(p1, p2);
+  p1 = t;
+  t = Math.min(p4, p5);
+  p5 = Math.max(p4, p5);
+  p4 = t;
+  t = Math.min(p7, p8);
+  p8 = Math.max(p7, p8);
+  p7 = t;
+  p3 = Math.max(p0, p3);
+  p5 = Math.min(p5, p8);
+  t = Math.min(p4, p7);
+  p7 = Math.max(p4, p7);
+  p4 = t;
+  p6 = Math.max(p3, p6);
+  p4 = Math.max(p1, p4);
+  p2 = Math.min(p2, p5);
+  p4 = Math.min(p4, p7);
+  t = Math.min(p4, p2);
+  p2 = Math.max(p4, p2);
+  p4 = t;
+  p4 = Math.max(p6, p4);
+  return Math.min(p4, p2);
+}
+
+/** Optimal 7-element median selection network (Devillard 1998, 13 compare-swaps).
+ * Evaluated branchlessly via hardware Math.min/Math.max instructions. */
+function median7Branchless(
+  p0: number,
+  p1: number,
+  p2: number,
+  p3: number,
+  p4: number,
+  p5: number,
+  p6: number,
+): number {
+  let t: number;
+  t = Math.min(p0, p5);
+  p5 = Math.max(p0, p5);
+  p0 = t;
+  t = Math.min(p0, p3);
+  p3 = Math.max(p0, p3);
+  p0 = t;
+  t = Math.min(p1, p6);
+  p6 = Math.max(p1, p6);
+  p1 = t;
+  t = Math.min(p2, p4);
+  p4 = Math.max(p2, p4);
+  p2 = t;
+  p1 = Math.max(p0, p1);
+  t = Math.min(p3, p5);
+  p5 = Math.max(p3, p5);
+  p3 = t;
+  t = Math.min(p2, p6);
+  p6 = Math.max(p2, p6);
+  p2 = t;
+  p3 = Math.max(p2, p3);
+  p3 = Math.min(p3, p6);
+  p4 = Math.min(p4, p5);
+  t = Math.min(p1, p4);
+  p4 = Math.max(p1, p4);
+  p1 = t;
+  p3 = Math.max(p1, p3);
+  return Math.min(p3, p4);
 }
 
 export function createHarmonicPercussiveAnalyser(
@@ -164,15 +264,68 @@ export function createHarmonicPercussiveAnalyser(
       historyFilled = Math.min(timeFrames, historyFilled + 1);
 
       // Percussive estimate: median across frequency of the current frame.
-      for (let i = 0; i < usable; i += 1) {
-        for (let k = 0; k < freqBins; k += 1) {
-          const index = Math.min(
-            usable - 1,
-            Math.max(0, i + k - freqHalf), // clamp at the edges
+      // Interior bins run through a branchless 9-element median network with
+      // direct register access, avoiding scratch copies and branch mispredicts.
+      if (freqBins === 9 && usable >= 9) {
+        for (let i = 0; i < 4; i += 1) {
+          for (let k = 0; k < 9; k += 1) {
+            freqScratch[k] = history[writeOffset + Math.max(0, i + k - 4)] ?? 0;
+          }
+          percussiveEstimate[i] = median9Branchless(
+            freqScratch[0] ?? 0,
+            freqScratch[1] ?? 0,
+            freqScratch[2] ?? 0,
+            freqScratch[3] ?? 0,
+            freqScratch[4] ?? 0,
+            freqScratch[5] ?? 0,
+            freqScratch[6] ?? 0,
+            freqScratch[7] ?? 0,
+            freqScratch[8] ?? 0,
           );
-          freqScratch[k] = history[writeOffset + index];
         }
-        percussiveEstimate[i] = medianInPlace(freqScratch, freqBins);
+        const interiorEnd = usable - 4;
+        for (let i = 4; i < interiorEnd; i += 1) {
+          const base = writeOffset + i;
+          percussiveEstimate[i] = median9Branchless(
+            history[base - 4] ?? 0,
+            history[base - 3] ?? 0,
+            history[base - 2] ?? 0,
+            history[base - 1] ?? 0,
+            history[base] ?? 0,
+            history[base + 1] ?? 0,
+            history[base + 2] ?? 0,
+            history[base + 3] ?? 0,
+            history[base + 4] ?? 0,
+          );
+        }
+        for (let i = interiorEnd; i < usable; i += 1) {
+          for (let k = 0; k < 9; k += 1) {
+            freqScratch[k] =
+              history[writeOffset + Math.min(usable - 1, i + k - 4)] ?? 0;
+          }
+          percussiveEstimate[i] = median9Branchless(
+            freqScratch[0] ?? 0,
+            freqScratch[1] ?? 0,
+            freqScratch[2] ?? 0,
+            freqScratch[3] ?? 0,
+            freqScratch[4] ?? 0,
+            freqScratch[5] ?? 0,
+            freqScratch[6] ?? 0,
+            freqScratch[7] ?? 0,
+            freqScratch[8] ?? 0,
+          );
+        }
+      } else {
+        for (let i = 0; i < usable; i += 1) {
+          for (let k = 0; k < freqBins; k += 1) {
+            const index = Math.min(
+              usable - 1,
+              Math.max(0, i + k - freqHalf), // clamp at the edges
+            );
+            freqScratch[k] = history[writeOffset + index] ?? 0;
+          }
+          percussiveEstimate[i] = medianInPlace(freqScratch, freqBins);
+        }
       }
 
       const lowEnd = Math.min(usable, Math.ceil(LOW_MAX_HZ / binHz));
@@ -185,15 +338,32 @@ export function createHarmonicPercussiveAnalyser(
       let lowBins = 0;
       let midBins = 0;
       let highBins = 0;
+      const u2 = usable * 2;
+      const u3 = usable * 3;
+      const u4 = usable * 4;
+      const u5 = usable * 5;
+      const u6 = usable * 6;
 
       for (let i = 0; i < usable; i += 1) {
-        // Harmonic estimate: median across time for this bin. With a single
-        // frame of history this equals the frame itself, so the very first
-        // frame reads as fully harmonic rather than producing garbage.
-        for (let t = 0; t < historyFilled; t += 1) {
-          timeScratch[t] = history[t * usable + i];
+        // Harmonic estimate: median across time for this bin. Steady-state
+        // history (7 frames) routes through the branchless 7-element network.
+        let harmonicEstimate: number;
+        if (timeFrames === 7 && historyFilled === 7) {
+          harmonicEstimate = median7Branchless(
+            history[i] ?? 0,
+            history[usable + i] ?? 0,
+            history[u2 + i] ?? 0,
+            history[u3 + i] ?? 0,
+            history[u4 + i] ?? 0,
+            history[u5 + i] ?? 0,
+            history[u6 + i] ?? 0,
+          );
+        } else {
+          for (let t = 0; t < historyFilled; t += 1) {
+            timeScratch[t] = history[t * usable + i] ?? 0;
+          }
+          harmonicEstimate = medianInPlace(timeScratch, historyFilled);
         }
-        const harmonicEstimate = medianInPlace(timeScratch, historyFilled);
         const percussive = percussiveEstimate[i];
         const magnitude = history[writeOffset + i];
 

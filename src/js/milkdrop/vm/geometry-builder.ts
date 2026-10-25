@@ -42,7 +42,6 @@ import {
   MAX_MOTION_VECTOR_COLUMNS,
   MAX_MOTION_VECTOR_ROWS,
   type MeshField,
-  type MeshFieldPoint,
   type MotionVectorDescriptorContext,
   type MotionVectorHistoryPoint,
   type MutableState,
@@ -406,6 +405,9 @@ type MeshTransformFrame = {
   scaleY: number;
   translateX: number;
   translateY: number;
+  gatherScale: number;
+  invScaleX: number;
+  invScaleY: number;
   isIdentity: boolean;
   // Per-frame BASE values of the built-in per-pixel variables, read raw off
   // `state` once per pass. Only the ones the per-pixel program WRITES are
@@ -563,6 +565,9 @@ function createMeshTransformFrame({
     scaleY,
     translateX,
     translateY,
+    gatherScale: 1 / signedZoomScale(zoom, zoomExponent),
+    invScaleX: 1 / (scaleX || 1),
+    invScaleY: 1 / (scaleY || 1),
     isIdentity,
     baseZoom,
     baseZoomExp,
@@ -802,7 +807,7 @@ function transformMeshPoint(
     zx = rx;
     zy = ry;
   } else {
-    const zoomRadius = Math.hypot(rotX, rotY);
+    const zoomRadius = Math.sqrt(rotX * rotX + rotY * rotY);
     const radiusNormalized = clamp(zoomRadius * Math.SQRT1_2, 0, 1);
     // Authored presets legitimately use extreme pairs (orbasonic ships
     // zoom=100 with zoomexp=100); unclamped, zoom^(zoomexp^(2r-1)) overflows
@@ -834,7 +839,7 @@ function transformMeshPoint(
       wx = zx + ripple;
       wy = zy;
     } else {
-      const directionLength = Math.hypot(offsetX, offsetY);
+      const directionLength = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
       const invDir = ripple / directionLength;
       wx = zx + offsetX * invDir;
       wy = zy + offsetY * invDir;
@@ -862,13 +867,18 @@ function transformMeshPoint(
   // inverse of the scatter above. Drawing the scatter instead folds the grid
   // and loses coverage wherever it leaves the screen, which cost presets that
   // the uniform path already rendered correctly.
-  const gatherScale = 1 / signedZoomScale(zoom, zoomExponent);
+  const gatherScale =
+    frame.writesZoom || frame.writesZoomExp
+      ? 1 / signedZoomScale(zoom, zoomExponent)
+      : frame.gatherScale;
+  const invScaleX = frame.writesSx ? 1 / (scaleX || 1) : frame.invScaleX;
+  const invScaleY = frame.writesSy ? 1 / (scaleY || 1) : frame.invScaleY;
   const unrotX = relX * cosRot + relY * sinRot;
   const unrotY = -relX * sinRot + relY * cosRot;
   transientGatherResult.x =
-    centerX + (unrotX * gatherScale) / (scaleX || 1) - translateX;
+    centerX + unrotX * gatherScale * invScaleX - translateX;
   transientGatherResult.y =
-    centerY + (unrotY * gatherScale) / (scaleY || 1) - translateY;
+    centerY + unrotY * gatherScale * invScaleY - translateY;
   return transformed;
 }
 
@@ -1814,23 +1824,26 @@ export function buildMotionVectors({
         : 0;
       const baseDx = sourceDx + historyDx;
       const baseDy = sourceDy + historyDy;
-      const baseMagnitude = Math.hypot(baseDx, baseDy);
       let dx = baseDx;
       let dy = baseDy;
 
       if (hasLegacyMotionVectorControls && explicitLegacyMagnitude > 0.0001) {
-        if (baseMagnitude < 0.0001) {
+        const baseSq = baseDx * baseDx + baseDy * baseDy;
+        if (baseSq < 0.0001 * 0.0001) {
           continue;
         }
-        const normalizedX = baseDx / baseMagnitude;
-        const normalizedY = baseDy / baseMagnitude;
-        dx = normalizedX * explicitLegacyMagnitude;
-        dy = normalizedY * explicitLegacyMagnitude;
-      }
-
-      const magnitude = Math.hypot(dx, dy);
-      if (magnitude < 0.002) {
-        continue;
+        const baseMagnitude = Math.sqrt(baseSq);
+        const invMagnitude = explicitLegacyMagnitude / baseMagnitude;
+        dx = baseDx * invMagnitude;
+        dy = baseDy * invMagnitude;
+        if (explicitLegacyMagnitude < 0.002) {
+          continue;
+        }
+      } else {
+        const magSq = baseDx * baseDx + baseDy * baseDy;
+        if (magSq < 0.002 * 0.002) {
+          continue;
+        }
       }
       const vector = vectors[vectorCount] ?? {
         positions: [0, 0, 0, 0, 0, 0],

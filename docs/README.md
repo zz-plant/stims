@@ -14,6 +14,7 @@ Start with [the app](https://toil.fyi), the [user guide](./USER_GUIDE.md), or [c
 | Capture a visual in OBS | [OBS setup](./OBS.md) |
 | Share the project | [Launch material](./LAUNCH.md), [package launch drafts](./PACKAGE_LAUNCHES.md) |
 | Understand project credits | [Lineage and credits](./LINEAGE_AND_CREDITS.md) |
+| Track upstream PRs and proposals | [Upstream contributions](./UPSTREAM_CONTRIBUTIONS.md) |
 | Submit a remix or view community showcase | [Community showcase & intake](./COMMUNITY_SHOWCASE.md) |
 
 ## Contribute
