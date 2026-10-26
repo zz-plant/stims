@@ -38,7 +38,8 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 - **Play** a 1,787-preset catalog of the originals, curated picks first. Presets stay `.milk` files: there is no conversion step, and export gives you `.milk` back.
 - **Edit while it plays**, as MilkDrop 2 let you. The source opens in an editor with completions and compiler diagnostics; `zoom`, `warp`, `rot` and `decay` are sliders. When an equation drives one, the slider names the audio that reaches it (`eq · bass`), read from the code.
 - **Point it at anything:** a browser tab, a YouTube link, your microphone, a local file, or the built-in demo loop.
-- **Send a link.** The address bar is the session. Whoever opens it sees the same preset, edits included, and one click turns the sound on.
+- **Send a link.** The address bar is the session, and whoever opens it needs nothing installed: every bundled preset's code fits in the link — edits and remix lineage included — and one click turns the sound on.
+- **Perform with it.** WebMIDI learn maps knobs and faders to controls (mappings persist per device), a cue monitor crossfades between two running presets, and a chromeless projector window mirrors the stage to a second display.
 - **Calm by default.** Nothing plays until you start audio, one action stops everything, and motion follows your system's reduce-motion setting.
 
 **Why "Stims"?** It's built for stimmers as much as for MilkDrop fans: the [sensory controls](./docs/guides/accessibility.md) let you decide how much happens on screen and when it stops. MilkDrop presets can flash. Presets measured as frequent flashers carry a warning, and Settings → Reduce flashing hides them; most presets haven't been measured yet.
@@ -47,14 +48,15 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 
 Butterchurn and projectM are the renderers most people embed or run today. Stims is a whole app, on a renderer of its own.
 
-|                     | Stims                                                    | Butterchurn             | projectM                    |
-| ------------------- | -------------------------------------------------------- | ----------------------- | --------------------------- |
-| **What it is**      | A browser app you open                                   | A JS renderer you embed | A native library and player |
-| **Presets**         | `.milk` files, as-is                                     | Converted to JSON first | `.milk` files               |
-| **Editing**         | Live editor with diagnostics and sliders                 | None built in           | None built in               |
-| **Finding presets** | Search, collections, previews, favorites, history, links | Up to the host app      | Playlist files              |
+|                     | Stims                                                                                 | Butterchurn             | projectM                    |
+| ------------------- | ------------------------------------------------------------------------------------- | ----------------------- | --------------------------- |
+| **What it is**      | A browser app you open                                                                | A JS renderer you embed | A native library and player |
+| **Presets**         | `.milk` files, as-is                                                                  | Converted to JSON first | `.milk` files               |
+| **Editing**         | Live editor with diagnostics and sliders                                              | None built in           | None built in               |
+| **Flashing safety** | Flash audit against WCAG 2.3.1, live governor, brightness ceiling and motion dampener | None built in           | None built in               |
+| **Finding presets** | Search, collections, previews, favorites, history, links                              | Up to the host app      | Playlist files              |
 
-**How close to MilkDrop is it?** A CI test compiles all 1,750 presets in the bundled Butterchurn pack for both WebGL2 and WebGPU. None is unsupported on either, and 1,578 run with no approximation on both; the other 172 approximate a shader on WebGPU or use a name the expression VM doesn't know ([the test](./tests/corpus/butterchurn-corpus-support.test.ts)). Matching projectM pixel for pixel is a stricter check, made one preset at a time against native projectM captures, and it covers only a few presets so far ([results](./src/data/milkdrop-parity/measured-results.json), [method](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md)). If a preset looks wrong, [report it](#help-out); that is the most useful help there is.
+**How close to MilkDrop is it?** A CI test compiles all 1,750 presets in the bundled Butterchurn pack — a different population from the 1,787-preset catalog above — for both WebGL2 and WebGPU. None is unsupported on either, and 1,578 run with no approximation on both; the other 172 approximate a shader on WebGPU or use a name the expression VM doesn't know ([the test](./tests/corpus/butterchurn-corpus-support.test.ts)). Matching projectM pixel for pixel is a stricter check, made one preset at a time against native projectM captures, and it covers only a few presets so far ([results](./src/data/milkdrop-parity/measured-results.json), [method](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md)). If a preset looks wrong, [report it](#help-out); that is the most useful help there is.
 
 The [full comparison](./docs/learn/milkdrop-vs-butterchurn-projectm.md) says which one to pick for what.
 
@@ -116,6 +118,8 @@ To learn the equation language, start with [the authoring curriculum](./docs/aut
 ### Standalone packages
 
 Four parts of Stims are standalone packages under [`packages/`](./packages/README.md): the app imports them, they have no dependency on the app, and each has a read-only mirror repository, a demo site and an npm-ready build. `eel-conformance`, `flash-guard` and `milkdrop-toolchain` are on npm at 0.1.0, with 0.1.1 merged and not yet published; `audio-reactive` is not published and stays a workspace package. [Publishing](./packages/README.md#publishing) has the release state and steps.
+
+The corpus also does stewardship work outside this repository: butterchurn and eel-wasm both have open PRs that adopt `eel-conformance` as their engine's test suite ([butterchurn#108](https://github.com/jberg/butterchurn/pull/108), [eel-wasm#66](https://github.com/captbaritone/eel-wasm/pull/66)), and the [ns-eel2 source audit](./packages/eel-conformance/docs/ns-eel2-source-audit.md) pins what MilkDrop 2's expression language actually does, cited from the C source MilkDrop ships.
 
 | Package                                               | What it is                                                                                                                                                    |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
