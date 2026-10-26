@@ -23,7 +23,7 @@ function saved(): Record<string, unknown> | null {
 
 beforeEach(() => {
   localStorage.clear();
-  // No OS reduced-motion signal, so the setting defaults off.
+  // No OS reduced-motion signal: flashing protection still defaults on.
   globalThis.window.matchMedia = ((query: string) =>
     ({
       media: query,
@@ -55,6 +55,10 @@ describe('?reduceFlashing=1', () => {
   });
 
   test('turns the setting on for the visit without saving it', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ reduceFlashing: false }),
+    );
     visit('?reduceFlashing=1');
     expect(getActiveAccessibilityPreference().reduceFlashing).toBe(true);
 
@@ -77,5 +81,28 @@ describe('?reduceFlashing=1', () => {
     setAccessibilityPreference({ reduceFlashing: false });
     expect(getActiveAccessibilityPreference().reduceFlashing).toBe(false);
     expect(saved()).toMatchObject({ reduceFlashing: false });
+  });
+});
+
+describe('default flashing protection', () => {
+  test('protects a first visit without an OS motion preference', () => {
+    expect(getActiveAccessibilityPreference().reduceFlashing).toBe(true);
+  });
+
+  test('protects old, invalid and damaged saved preferences', () => {
+    for (const raw of ['{}', '{"reduceFlashing":"off"}', 'broken']) {
+      localStorage.setItem(STORAGE_KEY, raw);
+      visit('');
+      expect(getActiveAccessibilityPreference().reduceFlashing).toBe(true);
+    }
+  });
+
+  test('keeps an explicit opt-out after reload and unrelated settings edits', () => {
+    setAccessibilityPreference({ reduceFlashing: false });
+    visit('');
+    expect(getActiveAccessibilityPreference().reduceFlashing).toBe(false);
+    setAccessibilityPreference({ stageBrightness: 0.7 });
+    visit('');
+    expect(getActiveAccessibilityPreference().reduceFlashing).toBe(false);
   });
 });

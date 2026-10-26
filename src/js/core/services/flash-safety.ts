@@ -13,8 +13,7 @@
  * - Whether to act. Gated on the `reduceFlashing` accessibility preference,
  *   which already means "do not hand me strobing content" for the catalog.
  *   Clamping live output is the runtime half of the same promise, and the
- *   preference defaults on under prefers-reduced-motion, so the people most
- *   likely to need it do not have to go looking for a switch.
+ *   preference defaults on unless the visitor has saved an opt-out.
  * - Where the mitigation goes. The stage's CSS brightness filter is shared
  *   with the visitor's comfort ceiling, so the governor writes its channel
  *   through `stage-luminance.ts` and reads the composed scale back for its

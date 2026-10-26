@@ -27,7 +27,9 @@ export function SharedSetDialog({
   onSaveSet: (title: string, presetIds: string[]) => void;
 }) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
-  const [savedLocally, setSavedLocally] = useState(false);
+  const [savedPayload, setSavedPayload] =
+    useState<SharedPresetSetPayload | null>(null);
+  const savedLocally = payload !== null && savedPayload === payload;
 
   useFocusTrap({
     active: open,
@@ -70,7 +72,7 @@ export function SharedSetDialog({
 
   const handleSave = () => {
     onSaveSet(payload.title, validIds);
-    setSavedLocally(true);
+    setSavedPayload(payload);
   };
 
   return (

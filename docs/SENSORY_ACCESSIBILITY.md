@@ -19,7 +19,7 @@ Three specific properties do the real work, and are the actual scope of this doc
 
 Confirmed in the current codebase, not aspirational:
 - Explicit source selection. The home page starts no sound without a user action; a `?preset=` link starts the demo track by itself, which most browsers hold until the first gesture (`src/js/frontend/NewHomePage.tsx`, `SilentAudioNotice.tsx`).
-- Comfort settings (`src/js/frontend/SettingsSheetPanel.tsx`, `src/js/core/accessibility-preferences.ts`): a stage brightness ceiling (down to 30%), a motion scale for camera movement, Freeze visuals, and Reduce flashing. An OS reduced-motion request turns Reduce flashing on, starts the motion scale at 40%, and keeps the home page still.
+- Comfort settings (`src/js/frontend/SettingsSheetPanel.tsx`, `src/js/core/accessibility-preferences.ts`): a stage brightness ceiling (down to 30%), a motion scale for camera movement, Freeze visuals, and Reduce flashing. Reduce flashing defaults on unless a saved preference disables it. An OS reduced-motion request starts the motion scale at 40% and keeps the home page still.
 - Reduce flashing: hides presets measured above the WCAG limit from Browse, shuffle, and autoplay, labels them ⚡ Flashing, and runs a live governor (`packages/flash-guard`) that dims the stage when it detects strobing. `?reduceFlashing=1` turns it on for one visit. It is a mitigation: the governor reacts after a flash, and it can only hide presets that have been measured.
 - Cut/Blend transition mode with an adjustable duration.
 - Immediate stop (`handleAudioStop`).
@@ -146,7 +146,7 @@ Cheapest to most involved. Items already built are marked.
 7. **Opt-in, consent-gated research telemetry**, entirely separate from the existing `?agent=true` debug-snapshot machinery (that's dev tooling, not built for human-subjects data collection) — needs real privacy design before it exists at all, not a bolted-on analytics SDK.
 8. **The public `/accessibility/` page.** ✅ Draft exists — [`docs/guides/accessibility.md`](./guides/accessibility.md): plain-language, no clinical framing, no efficacy claims, limited to the controls that are actually shipped, including Reduce flashing and what it does not cover.
 
-On the product surface: Reduce flashing shipped (the live governor in #1141, the dock and palette switches and shuffle exclusion in #1370, per-pixel governor sampling in #1383, the `?reduceFlashing=1` link in #1444), along with the ⚡ Flashing label on measured presets. It is on by default only when the OS asks for reduced motion. Turning it on for everyone, opt-out rather than opt-in, is still an open product call ([ROADMAP.md](./ROADMAP.md#up-next-in-order), item 1).
+On the product surface: Reduce flashing shipped (the live governor in #1141, the dock and palette switches and shuffle exclusion in #1370, per-pixel governor sampling in #1383, the `?reduceFlashing=1` link in #1444), along with the ⚡ Flashing label on measured presets. It now defaults on for new visitors and saved preferences missing the field, while explicit saved opt-outs remain respected. Verification of this default is tracked ([ROADMAP.md](./ROADMAP.md#up-next-in-order), item 1).
 
 ## Consent and ethics
 
