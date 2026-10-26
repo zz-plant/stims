@@ -244,7 +244,7 @@
     "eel-conformance": "workspace:*",
     "esbuild": "^0.28.2",
     "happy-dom": "21.0.4",
-    "knip": "6.41.0",
+    "knip": "6.42.1",
     "lefthook": "2.1.16",
     "marked": "^18.1.1",
     "oxc-transform-react": "^0.155.0",
