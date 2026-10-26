@@ -27,6 +27,24 @@ Audited against the code on 2026-10-06. PR numbers mark what changed in that pas
 
 See [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) for file-level status and [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md) for evidence boundaries.
 
+## Where Stims can win
+
+Build on the source format, an inspectable editor, GPU equation execution and measured compatibility. These advantages should guide the studio loop. Competitor implementation details, upstream adoption and corpus counts need dated source evidence before they become public comparisons; the figures proposed on 2026-10-26 are research inputs, not release claims.
+
+| Direction | Existing foundation | Next deliverable and acceptance criteria |
+| --- | --- | --- |
+| GPU equation execution | WebGPU lowers eligible per-pixel and per-point programs into field programs; CPU fallback remains ([architecture](./ARCHITECTURE.md#rendering-backends)). | Measure native 9:16, 1:1 and 4K output on named hardware, backend and preset sets. Report frame-time distributions and fallback coverage before claiming 4K60. Follow with deterministic off-clock export through the recording workstream. |
+| Direct `.milk` round-trip | Source import, editor, export and embedded remix lineage. | Extend behavioral round-trip coverage across equations, shader blocks, metadata and lineage; publish supported constructs and known losses. Keep original authored source available through repair and assisted editing. |
+| Inspectable authoring | Block diagnostics, static audio dataflow, variable watch HUD and semantic version comparisons. | Finish live WGSL inspection in the Shader tab; verify a browse → edit → diagnose → compare → export workflow with an authored-block error and a changed audio dependency. |
+| Photosensitivity mitigation | Live governor, WCAG 2.3.1 audit, brightness ceiling and motion dampener. | Enable Reduce flashing by default, preserve explicit opt-outs and test first visits, old preferences and shared links. Verify both backends, recording and embedded presentation, then audit the corpus with real music. Do not describe these mitigations as a guarantee of safety or suitability for clinical use. |
+| Demonstrable fidelity | Native reference captures, guarded promotion, parity diffs and EEL conformance tests. | Refresh measured results, demote failing labels and publish backend-specific coverage with provenance. Keep compile success separate from visual fidelity; confirm upstream test adoption with links and revisions before citing it. |
+| Ecosystem repair bench | Compiler diagnostics, replay, conformance and parity tools. | Start from [tracked upstream contributions](./UPSTREAM_CONTRIBUTIONS.md), preserving open versus merged status. Inventory upstream quarantines and compile failures at pinned revisions; distinguish unsupported language from engine bugs and conversion loss. Repair one reproducible class with a minimized fixture, before/after output and an upstream-ready patch. Expand only from measured results. |
+| Stewardship of the format | Source-format tooling and the `eel-conformance` package. | Turn the [ns-eel2 source audit](../packages/eel-conformance/docs/ns-eel2-source-audit.md) into a versioned semantics reference with source revisions, executable cases and documented disagreements between implementations. Separate observed behavior from proposed extensions and provide a contribution process for disputed cases. |
+| Sharing and remix community | Compressed code URLs and portable lineage. | Validate the existing named-set implementation (`preset-sets.ts`, palette and Cue controls; #1412), then deliver a credited remix showcase (#1411). Verify clean-browser import, ordering, missing-preset recovery and preserved attribution; define consent and moderation before accepting public submissions. |
+| Model-assisted authoring | Parsed programs, static dataflow and local retrieval. | Run the bounded pilots in [the learning-loop spec](./LEARNING_LOOPS_SPEC.md): retrieve comparable edits, propose an inspectable diff and measure held-out compile, semantic and rendered outcomes against a simple baseline. Preserve consent, provenance and abstention. Do not infer authoring quality from retrieval availability. |
+
+Execution order: finish default-on flashing mitigation first; refresh the fidelity evidence and establish a reproducible repair inventory next; then complete native recording dimensions and validate named sets. Editor inspection and model pilots should reuse those workflows and their evidence. Stewardship grows through documented semantics and upstream repairs, with no separate standards bureaucracy required.
+
 ## Workstreams
 
 Four lanes cut across the sections below. Keep one owner per lane where possible. Parity and runtime work can move in parallel, but a change to a public claim waits for the proof lane to catch up.
@@ -44,10 +62,10 @@ The proof loop below is a floor, not a frontier: it stays green and does not gro
 
 ### Up next, in order
 
-Each of these needs a real GPU, a second display, or a product decision.
-1. **Reduce flashing on by default.** The governor sees real frames (#1370), and its read costs the main thread 0.1 ms (#1375). It disagreed with the WCAG audit on the first-run preset (`shifter-curlique`, #1376), and the governor was wrong three ways (#1383). It judged one sample per tile, so moving texture read as flashing. It counted its own dimming step as the content darkening. And it skipped frames, so some comparisons spanned 33 ms and doubled the motion they judged. It now counts what the audit counts on the same frames: 0, 13 and 52 flashes/s on `shifter-curlique`, psychaos and krash. Live with Reduce flashing on, `shifter-curlique` had a mean brightness of 0.30 to 0.71; it now stays at full brightness in silence, on WebGL and at 390×844. With demo audio on WebGPU, one run in five still dimmed it briefly, to 0.62 at the lowest (see [Product moments](./PRODUCT_MOMENTS.md#open-questions)). What is left is the product call to turn it on for everyone.
+These combine implementation work with verification on a real GPU or a second display.
+1. **Reduce flashing on by default.** The governor sees real frames (#1370), and its read costs the main thread 0.1 ms (#1375). It disagreed with the WCAG audit on the first-run preset (`shifter-curlique`, #1376), and the governor was wrong three ways (#1383). It judged one sample per tile, so moving texture read as flashing. It counted its own dimming step as the content darkening. And it skipped frames, so some comparisons spanned 33 ms and doubled the motion they judged. It now counts what the audit counts on the same frames: 0, 13 and 52 flashes/s on `shifter-curlique`, psychaos and krash. Live with Reduce flashing on, `shifter-curlique` had a mean brightness of 0.30 to 0.71; it now stays at full brightness in silence, on WebGL and at 390×844. With demo audio on WebGPU, one run in five still dimmed it briefly, to 0.62 at the lowest (see [Product moments](./PRODUCT_MOMENTS.md#open-questions)). The 2026-10-26 roadmap work enables the default for new or incomplete preferences while retaining explicit saved opt-outs. Validation: 21 focused tests and `bun run check` pass; `agent-boot-smoke.test.ts` passes on WebGL and WebGPU on an isolated rerun after an initial concurrent-run timeout. The embed protocol suite also passes, and real square/portrait recordings decode with the default enabled. A fresh real-music audit and a measured governor test in each presentation surface remain open. The historical first-run measurements above are not a fresh corpus-wide safety audit.
 2. **Re-measure parity and demote what fails.** The certified labels rest on a July results file that the September suite contradicts (see [Proof floor](#proof-floor--maintained-not-expanded)).
-3. **Recording that holds up** ([#1441](https://github.com/zz-plant/stims/issues/1441)). Render 9:16 and 1:1 natively, keep frames coming when the tab is hidden, lift the power-saving frame cap while recording, and add a browser test that measures the file.
+3. **Recording that holds up** ([#1441](https://github.com/zz-plant/stims/issues/1441)). Native 9:16 and 1:1 recording is implemented and browser-tested by decoding downloaded files. Hidden-tab pumping and recording-aware power policy also have implementations; verify background continuity on actual browsers and measure duration, decoded frame counts and audio synchronization.
 4. **A flash audit of the whole corpus with real music.**
 
 ### Verify what ships
@@ -102,15 +120,15 @@ Exit criteria:
 ### Creator-grade export & vertical formats
 
 Recording is a `MediaRecorder` beta. 4K, the three 1080×1920 presets and the 1080×1080 square render natively, by resizing the renderer; Full HD crops and scales the live canvas. Frames are copied in the render loop's frame-drawn notification with the flash governor's dimming, the blackout and the white flash painted in; the brightness ceiling is left out (`stage-presentation.ts`). The first four items below are [#1441](https://github.com/zz-plant/stims/issues/1441).
-- Keep frames coming when the tab is hidden during a recording. Switching tabs freezes the video while the audio runs on: `hidden-tab-policy.ts` does not exempt recording, and browsers pause `requestAnimationFrame` in hidden tabs anyway, so a recording needs a frame source that does not depend on it.
-- Lift the power-saving frame cap while recording; `captureStream(60)` asks for frames the cap withholds.
+- Keep frames coming when the tab is hidden during a recording. `hidden-tab-policy.ts` now exempts active recording and `animation-loop.ts` has background frame pumping. Verify sustained background output on supported browsers; the implementation alone does not establish continuity.
+- Verify the recording-aware power policy in `power-state.ts` against decoded frame counts; `captureStream(60)` alone does not establish 60 fps.
 - Pick up an audio source that changes mid-recording (audio is composed once, at start).
-- Portrait and social aspect ratios rendered natively: 9:16 (1080×1920) and 1:1, reusing the native capture and resize path the 4K preset already uses.
+- Native portrait and square dimensions are verified on WebGL by `tests/e2e/native-recording.test.ts`: real downloaded files decode at 1080×1920 and 1080×1080. Repeat on WebGPU and measure sustained output.
 - Transparent background alpha channel export (`WebM with alpha` / `ProRes 4444`) for video editors overlaying visualizers on DJ footage. MilkDrop's composite is opaque by design, so this is also a design decision.
 - On-screen track title & artwork overlay: customizable lower-third typography badge rendered directly into video frames. Needs a metadata source; nothing parses ID3 today.
 - Seamless 15s and 30s loop export for Spotify Canvas and VJ banks.
 - Deterministic frame pacing and loop-duration controls. Nothing renders frames off the live clock yet; recording captures the live canvas.
-- Verify codec, aspect ratio, duration, and frame count in browser-backed tests. Today's recording tests are all mocked.
+- Measure duration, decoded frame counts and audio synchronization in browser-backed tests. Real MediaRecorder files now pass decoding and square/portrait dimension checks; this does not establish sustained frame rate or audio synchronization.
 - Label `MediaRecorder` as the compatibility fallback once a deterministic path exists.
 
 Exit criteria:
@@ -133,7 +151,7 @@ Open:
 - **Mood.** Mood comes from title keywords (`describePresetMood`). The autotagger's `category:*` tags can only be reached by typing them.
 - **Visual similarity.** Nearby, the finder's "By look", Browse's "Like your saved" sort, and visual-term search use static EmbeddingGemma 2 vectors on the device (#1447, #1529). Diversity ranking, normalized vectors, and an image-neighbor cutoff shipped in #1534; these do not establish cross-modal retrieval quality. The [vector service](../src/js/core/services/preset-visual-vectors.ts) owns ranking. The optional [hosted fallback](../functions/api/visual-search.ts) uses BGE description embeddings in a separate space. Richer descriptions, multiple capture contexts, and retrieval of successful edits are planned in the [learning-loop spec](./LEARNING_LOOPS_SPEC.md).
 - **Community signals.** `setRating` has no UI, and there are no notes or glitch reports. A credited showcase of submitted remixes is [#1411](https://github.com/zz-plant/stims/issues/1411).
-- **Named sets.** The queue cannot be saved under a name or shared as a set ([#1412](https://github.com/zz-plant/stims/issues/1412)).
+- **Named sets.** Named-set persistence and sharing are implemented in `preset-sets.ts`, the command palette and Cue controls. A clean-browser test saves and loads a sequence with repeats, reports missing entries and checks persistence after reload. Share URLs drop the sender’s draft and preset selection; saving retains repeated entries. Browser-local custom preset source portability remains unverified ([#1412](https://github.com/zz-plant/stims/issues/1412)).
 - **Shareable views.** A shared Browse URL keeps the collection but not the search, author, or sort.
 - **Fidelity in Browse.** A fidelity sort or badge needs measurements; one preset in 1,787 has one.
 
@@ -217,7 +235,7 @@ Shipped:
 - A brightness ceiling, 30–100%.
 
 Open:
-- **Default-on.** Reduce flashing follows the OS reduced-motion setting, so it is off for most visitors. The cost that kept it opt-in is gone (#1375); see item 1 in [Up next](#up-next-in-order).
+- **Default-on.** The preference now defaults on for new and incomplete saved settings, preserving explicit opt-outs. Verify presentation and recording with this default; see item 1 in [Up next](#up-next-in-order).
 - **The shield itself.** It is a CSS brightness filter that reacts after it detects a flash, so the first one or two get through. A clamp in the shader would act before the frame is shown.
 - **Calm filter.** A "Calm stimming" filter has no data to stand on: motion is measured for 50 presets and flashing for 102.
 - **Room controls.** Gamma and contrast are missing; CSS has no gamma filter, so this needs an SVG filter or a shader uniform.

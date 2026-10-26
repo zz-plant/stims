@@ -101,7 +101,7 @@ export function saveNamedSet(
   presetIds: string[],
 ): SavedPresetSet {
   const cleanTitle = sanitizeSetTitle(title);
-  const cleanIds = Array.from(new Set(presetIds)).slice(0, MAX_PRESETS_PER_SET);
+  const cleanIds = presetIds.slice(0, MAX_PRESETS_PER_SET);
   const now = Date.now();
   const newSet: SavedPresetSet = {
     id: `set-${now}-${Math.random().toString(36).slice(2, 8)}`,
@@ -228,6 +228,11 @@ export function buildPresetSetShareUrl(
     typeof input === 'string'
       ? new URL(input, 'https://toil.fyi')
       : new URL(input.toString());
+  // A set is a workspace link. A sender may be editing a private draft;
+  // carrying #code would also suppress the recipient's set import dialog.
+  url.pathname = '/';
+  url.hash = '';
+  url.searchParams.delete('preset');
   const payload = encodePresetSetPayload(title, presetIds);
   url.searchParams.set('set', payload);
   return url.toString();

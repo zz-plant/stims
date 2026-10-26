@@ -60,6 +60,17 @@ describe('preset-sets (#1412)', () => {
       expect(stored[0].presetIds).toEqual(['preset-1', 'preset-2']);
     });
 
+    test('saving a shared sequence keeps repeated presets and order', () => {
+      const ids = ['geiss-casino', 'shifter-curlique', 'geiss-casino'];
+      const decoded = decodePresetSetPayload(
+        encodePresetSetPayload('Reprise', ids),
+      );
+      expect(decoded.ok).toBe(true);
+      if (!decoded.ok) throw new Error(decoded.error);
+      saveNamedSet(decoded.set.title, decoded.set.presets);
+      expect(readSavedPresetSets()[0]?.presetIds).toEqual(ids);
+    });
+
     test('deletes saved preset set', () => {
       const set1 = saveNamedSet('Set A', ['p1']);
       const set2 = saveNamedSet('Set B', ['p2']);
@@ -117,6 +128,27 @@ describe('preset-sets (#1412)', () => {
           'krash-cerebral',
         ]);
       }
+    });
+
+    test('shares the set without carrying a sender draft or preset selection', () => {
+      const sender = new URL(
+        'https://toil.fyi/milkdrop/?preset=private-edit&audio=demo&reduceFlashing=1#code=private-draft',
+      );
+      const shared = new URL(
+        buildPresetSetShareUrl(sender, 'Evening', ['geiss-casino']),
+      );
+      expect(shared.pathname).toBe('/');
+      expect(shared.hash).toBe('');
+      expect(shared.searchParams.has('preset')).toBe(false);
+      expect(shared.searchParams.get('audio')).toBe('demo');
+      expect(shared.searchParams.get('reduceFlashing')).toBe('1');
+      expect(
+        decodePresetSetPayload(shared.searchParams.get('set') ?? ''),
+      ).toMatchObject({
+        ok: true,
+        set: { title: 'Evening', presets: ['geiss-casino'] },
+      });
+      expect(sender.hash).toBe('#code=private-draft');
     });
 
     test('rejects empty or unsupported prefixes', () => {
