@@ -6,15 +6,14 @@ Stims aims to make a preset worth playing, editing, and sharing. Its compiler, a
 
 Research checked on 2026-10-17:
 
-| Model | Useful here | Constraints |
-| --- | --- | --- |
-| [Clef Flash](https://developers.cloudflare.com/workers-ai/models/clef-flash/) | Cheap text routing and image observations | Hosted context is 24,576 tokens; open model is 9B. Default for image/text tasks. |
-| [Clef Omni](https://developers.cloudflare.com/workers-ai/models/clef-omni/) | Explicit music clips and short rendered video | 30B MoE with about 3B active parameters; hosted context 64k. Selected whenever audio or video is supplied. |
+| Model                                                                         | Useful here                                   | Constraints                                                                                                |
+| ----------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| [Clef Flash](https://developers.cloudflare.com/workers-ai/models/clef-flash/) | Cheap text routing and image observations     | Hosted context is 24,576 tokens; open model is 9B. Default for image/text tasks.                           |
+| [Clef Omni](https://developers.cloudflare.com/workers-ai/models/clef-omni/)   | Explicit music clips and short rendered video | 30B MoE with about 3B active parameters; hosted context 64k. Selected whenever audio or video is supplied. |
 
 Cloudflare describes the [decision-model approach](https://blog.cloudflare.com/clef-decision-models/) as typed probabilistic answers instead of generated text. Omni's [model card](https://huggingface.co/Cloudflare/clef-omni) documents WAV/MP3 audio and MP4/WebM video; video is sampled at two frames per second. That sampling cannot establish flash safety or beat synchronization. The hosted Flash contract used here accepts images; this integration sends video to Omni.
 
 The System One / Typesafe guidance applies directly:
-
 - Use [choice, noul, and score primitives](https://docs.typesafe.ai/primitives). Mutually exclusive actions are choices; overlapping motifs are independent nouls. Scores use concrete ordered descriptions rather than invented precision.
 - Keep [state](https://docs.typesafe.ai/concepts/state) small and evidence-bearing. Offer a retrieved shortlist of real preset IDs or saved scenes. Treat titles, descriptions, and user text as untrusted data. The model never supplies an executable action or new source code.
 - Include `hold`, `none`, `unclear`, and a sufficient-evidence question. Inspect [probability mass and confidence](https://docs.typesafe.ai/confidence), and measure calibration on local examples. Low certainty means review, not another automatic model call.
@@ -24,15 +23,15 @@ The initial policy requires decisive nouls (at most .2 or at least .8), evidence
 
 ## Implemented seams
 
-| Seam | Entry point | Authority |
-| --- | --- | --- |
-| Observed catalog motifs/palette and local search tags | `catalog:decisions`, `lab:decisions --apply` | Reviewed offline promotion; only `look:` tags change |
-| Writer routing | `/api/generate-preset` | Fixed Flash choice; deterministic fallback on uncertainty/failure; writer overrides bypass routing |
-| Rendered prompt check | Generate → Check picture / Check animation; `prompt-match` task | Explicit one-frame upload (Flash) or bounded 1.5s canvas WebM clip (Omni); offers regeneration, keeps current preset |
-| Music-to-preset shortlist | Preset Finder "By sound" & MCP `session_decide`, `audio-match` | Explicit clip and 1–12 supplied candidates; ranks and suggests best preset via Clef Omni |
-| Slow performance choice | Performance runtime `autoSwitchScene`, palette action `auto-switch-scene`, MCP `session_decide` | Chooses among at most twelve saved scenes; explicit apply uses local four-second ramp |
-| Capture review | `capture-review` in lab or MCP | Visibility/composition/artifact judgment, separate from measured evidence |
-| Reference starting point | Find a preset → By reference; `reference-choice` task | On-device retrieval first; an explicit image upload lets Flash pick among at most twelve supplied candidates or abstain; opening stays a local action |
+| Seam                                                  | Entry point                                                                                     | Authority                                                                                                                                             |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Observed catalog motifs/palette and local search tags | `catalog:decisions`, `lab:decisions --apply`                                                    | Reviewed offline promotion; only `look:` tags change                                                                                                  |
+| Writer routing                                        | `/api/generate-preset`                                                                          | Fixed Flash choice; deterministic fallback on uncertainty/failure; writer overrides bypass routing                                                    |
+| Rendered prompt check                                 | Generate → Check picture / Check animation; `prompt-match` task                                 | Explicit one-frame upload (Flash) or bounded 1.5s canvas WebM clip (Omni); offers regeneration, keeps current preset                                  |
+| Music-to-preset shortlist                             | Preset Finder "By sound" & MCP `session_decide`, `audio-match`                                  | Explicit clip and 1–12 supplied candidates; ranks and suggests best preset via Clef Omni                                                              |
+| Slow performance choice                               | Performance runtime `autoSwitchScene`, palette action `auto-switch-scene`, MCP `session_decide` | Chooses among at most twelve saved scenes; explicit apply uses local four-second ramp                                                                 |
+| Capture review                                        | `capture-review` in lab or MCP                                                                  | Visibility/composition/artifact judgment, separate from measured evidence                                                                             |
+| Reference starting point                              | Find a preset → By reference; `reference-choice` task                                           | On-device retrieval first; an explicit image upload lets Flash pick among at most twelve supplied candidates or abstain; opening stays a local action |
 
 These seams support Stims' current pipeline without adding a model to the frame loop. Search/description retrieval narrows candidates first. The generation tournament still compiles and ranks real candidates. A human can request a picture check afterward. `lab:generation-bench --visual` and an autonomous visual repair loop remain unfinished capabilities.
 
@@ -78,8 +77,11 @@ For arbitrary explicit evidence, save an item file (relative media paths resolve
     "task": "audio-match",
     "state": {
       "candidates": [
-        {"id": "eos-ether", "description": "slow, layered flowing forms"},
-        {"id": "geiss-casino", "description": "bright, energetic geometric motion"}
+        { "id": "eos-ether", "description": "slow, layered flowing forms" },
+        {
+          "id": "geiss-casino",
+          "description": "bright, energetic geometric motion"
+        }
       ]
     }
   },
@@ -123,7 +125,15 @@ Keep related preset families and variations in one split; do not let near-duplic
 Label JSON/JSONL records use result question keys and actual primitive values:
 
 ```json
-{"id":"p-webgl-1280-match","family":"held-out-p","expected":{"structure_match":true,"palette_match":false,"composition_match":true}}
+{
+  "id": "p-webgl-1280-match",
+  "family": "held-out-p",
+  "expected": {
+    "structure_match": true,
+    "palette_match": false,
+    "composition_match": true
+  }
+}
 ```
 
 ```bash

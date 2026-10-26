@@ -5,7 +5,7 @@ viewport segments where exposed by the browser. It does **not** infer fold
 posture from viewport width and does **not** simulate hardware.
 
 ```ts
-import { observeFoldableViewport } from "../../src/js/utils/foldable-viewport";
+import { observeFoldableViewport } from '../../src/js/utils/foldable-viewport';
 
 const stop = observeFoldableViewport(window, ({ posture, segments }) => {
   // Use physical segment information only when actually available.

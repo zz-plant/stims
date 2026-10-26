@@ -11,12 +11,10 @@ Stims is an independent browser-native visualizer in the MilkDrop lineage. The g
 Own the compiler, VM, renderer, and measured reference corpus needed to make support claims honest.
 
 Primary requirement:
-
 - Stims itself must compile and run `.milk` presets imported from the broader projectM ecosystem.
 - External `projectM` reference images are proof inputs, not a client runtime dependency.
 
 Primary files:
-
 - `packages/milkdrop-toolchain/src/compiler/*`
 - `src/js/milkdrop/vm/*`
 - `src/js/milkdrop/renderer-helpers/*`
@@ -25,7 +23,6 @@ Primary files:
 - `tests/corpus/milkdrop-projectm-compat.test.ts`
 
 Exit signal:
-
 - certification-corpus presets compile and step inside Stims
 - measured visual results exist for the certified corpus
 - shipped fidelity labels are derived from evidence, not optimism
@@ -37,7 +34,6 @@ Proof loop: the 13 certified references in `src/data/milkdrop-parity/visual-refe
 Own the hot path where frame time and GC pressure matter most.
 
 Primary files:
-
 - `src/js/milkdrop/runtime.ts`
 - `src/js/milkdrop/vm.ts`
 - `src/js/milkdrop/vm/frame-generation.ts`
@@ -45,7 +41,6 @@ Primary files:
 - `src/js/milkdrop/renderer-adapter*.ts`
 
 Exit signal:
-
 - fewer per-frame allocations in the core render loop
 - no visible regression in preset playback or controls
 
@@ -54,13 +49,11 @@ Exit signal:
 Own the React shell, route state, and overlay UX that make Stims feel better than a desktop port in the browser.
 
 Primary files:
-
 - `src/js/frontend/*`
 - `src/js/milkdrop/overlay/*`
 - `public/milkdrop-presets/catalog.json`
 
 Exit signal:
-
 - launch, browse, and recovery flows are cleaner than the legacy path
 - mobile and keyboard workflows remain coherent
 
@@ -69,7 +62,6 @@ Exit signal:
 Own the evidence chain that justifies stronger claims and keeps the repo honest.
 
 Primary files:
-
 - `scripts/run-quality-gate.ts`
 - `scripts/run-parity-diff-suite.ts`
 - `scripts/promote-parity-suite-result.ts`
@@ -79,7 +71,6 @@ Primary files:
 - `docs/LINEAGE_AND_CREDITS.md`
 
 Exit signal:
-
 - quality gates cover the relevant claims
 - public wording matches the strongest evidence actually present
 

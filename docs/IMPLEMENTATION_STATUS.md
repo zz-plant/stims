@@ -4,18 +4,18 @@ Current capabilities are mapped to their implementation below. Source availabili
 
 ## Available in the app
 
-| Capability | Implementation | Scope |
-| --- | --- | --- |
-| One workspace for play, browse, and edit | `src/js/frontend/App.tsx`, `src/js/frontend/url-state.ts` | `/` is canonical; `/milkdrop/` redirects with query and hash |
-| Catalog discovery and preset selection | `public/milkdrop-presets/catalog.json`, `src/js/milkdrop/catalog-store.ts` | Search and collection browsing; catalog membership is not visual certification |
-| Live source editing and diagnostics | `src/js/milkdrop/overlay/editor-panel.ts` | Tune, source, shader, compatibility, and version tools depend on the loaded source |
-| Remix links and file import/export | `src/js/frontend/url-state.ts`, `src/js/milkdrop/overlay/` | URL source has a size limit; local drafts are browser storage |
-| Shared audio analysis | `src/js/core/audio-handler.ts`, `packages/audio-reactive/` | Demo, mic, local file, and supported capture sources; permission and browser limits apply |
-| Quality, motion, and flashing controls | `src/js/core/state/`, `src/js/core/services/flash-safety.ts` | Controls reduce or tune output; they do not certify universal safety |
-| MIDI mapping and automation | `src/js/core/services/webmidi-controller.ts`, `scripts/mcp-server.ts` | Persistent local mappings and reconnect handling; hardware support needs device verification |
-| WebGPU and WebGL rendering | `src/js/milkdrop/renderer-adapter.ts`, `src/js/core/renderer-capabilities.ts` | WebGPU where the browser ships it as stable, WebGL2 elsewhere ([selection rule](./ARCHITECTURE.md#rendering-backends)). Measured fidelity evidence exists for WebGPU only; WebGL has none |
-| Preset frame-cost gating | `src/js/core/preset-cost-signal.ts`, `src/data/preset-frame-cost.json` | Recorded hardware measurements inform low-tier autoplay and shuffle; unmeasured presets remain eligible, and the measurements are not a performance guarantee on every device |
-| Standalone libraries | [Packages](../packages/README.md) | Workspace source, tests, builds, and demos; registry publication is a separate release step |
+| Capability                               | Implementation                                                                | Scope                                                                                                                                                                                     |
+| ---------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One workspace for play, browse, and edit | `src/js/frontend/App.tsx`, `src/js/frontend/url-state.ts`                     | `/` is canonical; `/milkdrop/` redirects with query and hash                                                                                                                              |
+| Catalog discovery and preset selection   | `public/milkdrop-presets/catalog.json`, `src/js/milkdrop/catalog-store.ts`    | Search and collection browsing; catalog membership is not visual certification                                                                                                            |
+| Live source editing and diagnostics      | `src/js/milkdrop/overlay/editor-panel.ts`                                     | Tune, source, shader, compatibility, and version tools depend on the loaded source                                                                                                        |
+| Remix links and file import/export       | `src/js/frontend/url-state.ts`, `src/js/milkdrop/overlay/`                    | URL source has a size limit; local drafts are browser storage                                                                                                                             |
+| Shared audio analysis                    | `src/js/core/audio-handler.ts`, `packages/audio-reactive/`                    | Demo, mic, local file, and supported capture sources; permission and browser limits apply                                                                                                 |
+| Quality, motion, and flashing controls   | `src/js/core/state/`, `src/js/core/services/flash-safety.ts`                  | Controls reduce or tune output; they do not certify universal safety                                                                                                                      |
+| MIDI mapping and automation              | `src/js/core/services/webmidi-controller.ts`, `scripts/mcp-server.ts`         | Persistent local mappings and reconnect handling; hardware support needs device verification                                                                                              |
+| WebGPU and WebGL rendering               | `src/js/milkdrop/renderer-adapter.ts`, `src/js/core/renderer-capabilities.ts` | WebGPU where the browser ships it as stable, WebGL2 elsewhere ([selection rule](./ARCHITECTURE.md#rendering-backends)). Measured fidelity evidence exists for WebGPU only; WebGL has none |
+| Preset frame-cost gating                 | `src/js/core/preset-cost-signal.ts`, `src/data/preset-frame-cost.json`        | Recorded hardware measurements inform low-tier autoplay and shuffle; unmeasured presets remain eligible, and the measurements are not a performance guarantee on every device             |
+| Standalone libraries                     | [Packages](../packages/README.md)                                             | Workspace source, tests, builds, and demos; registry publication is a separate release step                                                                                               |
 
 ## Beta and deployment-dependent paths
 

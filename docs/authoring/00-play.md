@@ -39,7 +39,7 @@ Keep a `.milk` export as a portable backup. Local drafts and version history sta
 
 ## 6 · Share it
 
-Use Share or **Copy link to this edit** (it reads *this preset* until you change something) to create a remix URL. Depending on the browser, sharing opens a native sheet or copies the link. Open the resulting URL in a fresh tab to confirm it carries your edit.
+Use Share or **Copy link to this edit** (it reads _this preset_ until you change something) to create a remix URL. Depending on the browser, sharing opens a native sheet or copies the link. Open the resulting URL in a fresh tab to confirm it carries your edit.
 
 The link carries the preset source after `#code=`, so nothing is stored on a server, and links have a size limit: export a `.milk` file for source that does not fit. projectM, Butterchurn, and Winamp can render an exported file differently from Stims, so check it in the player you plan to use.
 
@@ -49,14 +49,14 @@ When ready to contribute a preset, see [contributing presets](../../CONTRIBUTING
 
 ## Quick reference
 
-| Action | Where | Result |
-| --- | --- | --- |
-| Browse | Workspace | Catalog search and collections |
-| Edit | Edit this visual | Live source and studio panes |
-| Tune | Studio | Controls tied to the loaded source |
-| Remix | Editor **⋯** menu | A draft retaining supplied credit lineage |
-| Explain / Refine | Studio assistance | Provider-dependent explanation or proposed edits |
-| Share | Share or Copy link | Source in a portable URL, within size limits |
-| Export | Editor menu | A `.milk` source file |
+| Action           | Where              | Result                                           |
+| ---------------- | ------------------ | ------------------------------------------------ |
+| Browse           | Workspace          | Catalog search and collections                   |
+| Edit             | Edit this visual   | Live source and studio panes                     |
+| Tune             | Studio             | Controls tied to the loaded source               |
+| Remix            | Editor **⋯** menu  | A draft retaining supplied credit lineage        |
+| Explain / Refine | Studio assistance  | Provider-dependent explanation or proposed edits |
+| Share            | Share or Copy link | Source in a portable URL, within size limits     |
+| Export           | Editor menu        | A `.milk` source file                            |
 
 For audio and capture setup, see the [user guide](../USER_GUIDE.md). Next: [Track 1 — How MilkDrop thinks](./01-how-milkdrop-thinks.md).

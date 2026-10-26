@@ -1,6 +1,6 @@
 # Track 4 — Warp fields
 
-Every knob in Tracks 1–3 applied to the *whole screen at once*: one `zoom` value, one `rot` value, the same for every pixel. `per_pixel` code breaks that — it runs once per mesh point, so the same knobs can take a different value depending on *where* the point is. This is how MilkDrop gets depth, tunnels, and ripples out of a flat feedback loop.
+Every knob in Tracks 1–3 applied to the _whole screen at once_: one `zoom` value, one `rot` value, the same for every pixel. `per_pixel` code breaks that — it runs once per mesh point, so the same knobs can take a different value depending on _where_ the point is. This is how MilkDrop gets depth, tunnels, and ripples out of a flat feedback loop.
 
 ## Lesson 1 · One value everywhere
 
@@ -26,7 +26,7 @@ per_pixel_1=zoom=(zoom-1)*rad+1;
 
 Read it at the two extremes. At `rad=0`: `(zoom-1)*0+1` collapses to `1` — the center point is untouched, no matter what `zoom` was set to. At `rad=1`: `(zoom-1)*1+1` simplifies back to `zoom` — the edge gets the full per-frame value. Everywhere in between is a smooth ramp. One line turns a flat push into something with a center of gravity — the difference between a screensaver and a tunnel.
 
-This is the single most-copied line in the entire preset corpus for a reason: it's cheap, it's one line, and it instantly adds depth to *any* motion you already have.
+This is the single most-copied line in the entire preset corpus for a reason: it's cheap, it's one line, and it instantly adds depth to _any_ motion you already have.
 
 ## Lesson 3 · `ang` — direction from center
 
@@ -39,12 +39,11 @@ per_pixel_3=dy=dy+dr*sin(-ang)*0.6;
 ```
 
 [**▶ Run the rings**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBQYXR0ZXJuIDQgZnJvbSB0aGUgY29kaW5nIGd1aWRlOiBjb25jZW50cmljIHJpbmdzIGRyaWZ0aW5nIGlud2FyZC4KLy8gcmFkKjEyIGZpdHMgYWJvdXQgdHdvIHJpbmdzIGJldHdlZW4gdGhlIGNlbnRlciBhbmQgdGhlIGVkZ2UgKDEyIC8gMnBpKTsKLy8gK3RpbWUqMC41IHNsaWRlcyB0aGVtIGlud2FyZCAoLXRpbWUqMC41IHNlbmRzIHRoZW0gb3V0d2FyZCk7IGFuZwovLyAoYnVpbHQtaW4gYW5nbGUgZnJvbSBjZW50ZXIpIHN0ZWVycyBlYWNoIHBpeGVsJ3MgcHVzaCBhbG9uZyBpdHMgb3duCi8vIHJhZGlhbCBkaXJlY3Rpb24gdmlhIGNvcyhhbmcpL3NpbigtYW5nKS4KZlJhdGluZz01CmZEZWNheT0wLjk3CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MApwZXJfcGl4ZWxfMT1kcj0wLjAxKzAuMDIqc2luKHJhZCoxMit0aW1lKjAuNSk7CnBlcl9waXhlbF8yPWR4PWR4K2RyKmNvcyhhbmcpKjAuNjsKcGVyX3BpeGVsXzM9ZHk9ZHkrZHIqc2luKC1hbmcpKjAuNjsK "examples/42-radial-rings.milk")
-
 - `rad*12` — the `12` is a frequency in radians, not a count. Across a `rad` of 0 to 1 it covers 12 ÷ 2π, about two full sine cycles, so about two rings between the center and the edge. Raise it to `40` and count again (about six).
-- `time*0.5` inside the same `sin(...)` — slides the ring pattern over time. Because the time term is added, the rings drift *inward*; write `-time*0.5` and they travel outward, like ripples leaving a source.
-- `dr` is a *magnitude* — how far this pixel should be pushed this frame. `cos(ang)` and `sin(-ang)` turn that magnitude into a direction: push each point *along its own radial line*, not sideways. That's why the result is rings centered on the screen rather than a wave sliding across it.
+- `time*0.5` inside the same `sin(...)` — slides the ring pattern over time. Because the time term is added, the rings drift _inward_; write `-time*0.5` and they travel outward, like ripples leaving a source.
+- `dr` is a _magnitude_ — how far this pixel should be pushed this frame. `cos(ang)` and `sin(-ang)` turn that magnitude into a direction: push each point _along its own radial line_, not sideways. That's why the result is rings centered on the screen rather than a wave sliding across it.
 
-`dx`/`dy` here work exactly like Track 2's screen-wide push, set to a *different value per pixel* instead of one constant.
+`dx`/`dy` here work exactly like Track 2's screen-wide push, set to a _different value per pixel_ instead of one constant.
 
 ## Lesson 4 · Bridging per_frame and per_pixel with q-vars
 
@@ -77,10 +76,10 @@ per_pixel_5=dy=dy+0.02*nx/nrad;
 
 [**▶ Run the off-center current**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBBIHBlci1waXhlbCBjdXJyZW50IHRoYXQgaXNuJ3QgY2VudGVyZWQgb24gY3gvY3k6IGl0IHJlYWRzIHRoZSByYXcKLy8gbWVzaCBjb29yZGluYXRlcyB4LHkgZGlyZWN0bHkgaW5zdGVhZCBvZiByYWQvYW5nLCBzbyB0aGUgImNlbnRlciIgb2YKLy8gdGhlIHN3aXJsIGlzIHdoZXJldmVyIHRoaXMgbGluZSBwdXRzIGl0LCBpbmRlcGVuZGVudCBvZiB0aGUgcm90YXRpb24KLy8gcGl2b3QuCmZSYXRpbmc9NQpmRGVjYXk9MC45NwpmV2F2ZUFscGhhPTEuMgpmV2F2ZVNjYWxlPTEKbldhdmVNb2RlPTAKYldhdmVUaGljaz0xCmJNYXhpbWl6ZVdhdmVDb2xvcj0xCmJUZXhXcmFwPTEKem9vbT0xCnJvdD0wCmN4PTAuNQpjeT0wLjUKZHg9MApkeT0wCnN4PTEKc3k9MQp3YXJwPTAKd2F2ZV9yPTAuMgp3YXZlX2c9MC44NQp3YXZlX2I9MQp3YXZlX3g9MC41CndhdmVfeT0wLjUKb2JfYT0wCmliX2E9MAptdl9hPTAKcGVyX3BpeGVsXzE9bng9eC0wLjc1OwpwZXJfcGl4ZWxfMj1ueT15LTAuMzsKcGVyX3BpeGVsXzM9bnJhZD1zcXJ0KG54Km54K255Km55KSswLjAwMTsKcGVyX3BpeGVsXzQ9ZHg9ZHgtMC4wMipueS9ucmFkOwpwZXJfcGl4ZWxfNT1keT1keSswLjAyKm54L25yYWQ7Cg%3D%3D "examples/44-off-center-current.milk")
 
-`nx`/`ny` recenter the coordinate system on an arbitrary point — here `(0.75, 0.3)`, off in the upper right, independent of wherever `cx`/`cy` has the rotation pivot. `nrad` is a hand-built distance (the `+0.001` avoids a division by exactly zero at the new center). The `-ny/nrad, nx/nrad` pair is a 90°-rotated unit vector — pushing perpendicular to the radius produces a *swirl* around the off-center point rather than a push toward or away from it. Whenever a preset has a distortion source that clearly isn't at screen center, this is usually how.
+`nx`/`ny` recenter the coordinate system on an arbitrary point — here `(0.75, 0.3)`, off in the upper right, independent of wherever `cx`/`cy` has the rotation pivot. `nrad` is a hand-built distance (the `+0.001` avoids a division by exactly zero at the new center). The `-ny/nrad, nx/nrad` pair is a 90°-rotated unit vector — pushing perpendicular to the radius produces a _swirl_ around the off-center point rather than a push toward or away from it. Whenever a preset has a distortion source that clearly isn't at screen center, this is usually how.
 
 ## What you can now build
 
 Anything that varies across the screen — tunnels, ripples, off-center vortices, audio-breathing rings — is per-pixel code doing what this track's examples do: read `rad`/`ang` (or build your own coordinate system from `x`/`y`), turn that into a push, and optionally scale it by a q-var carried over from `per_frame`.
 
-**Next: [Track 5 — Waves and shapes](05-waves-and-shapes.md)**, where custom waves and shapes — the layer drawn *on top* of the warped feedback loop — get their own equations.
+**Next: [Track 5 — Waves and shapes](05-waves-and-shapes.md)**, where custom waves and shapes — the layer drawn _on top_ of the warped feedback loop — get their own equations.

@@ -11,7 +11,6 @@ The showcase is intended to highlight community-created MilkDrop remixes running
 Submissions are collected in the [GitHub Discussions Remix Thread](https://github.com/zz-plant/stims/discussions/1341) or via a pull request.
 
 To be featured in the credited showcase, each submission must include all of the following six fields:
-
 1. **Title**: The title of your remix (e.g. `Cerebral Demons (Gentle Spin Mix)`).
 2. **Creator handle & link**: Your preferred name or handle, and an optional link to your profile, portfolio, or social presence (e.g. GitHub username or personal website).
 3. **Working remix link or `.milk` source**:
@@ -30,7 +29,6 @@ To be featured in the credited showcase, each submission must include all of the
 ## 2. Review and verification criteria
 
 Every submission is reviewed in a clean browser session before acceptance:
-
 1. **Cold-load verification**: The remix URL must load cleanly in an incognito/private window without requiring an active user account or pre-existing localStorage state.
 2. **Visual correctness**: The edit must compile cleanly with 0 fatal errors in the MilkDrop editor and render without a blank/black canvas.
 3. **Audio reactivity**: The preset must demonstrate real reactivity to incoming audio or the demo track, confirmed via `bun run lab:reactivity` or live inspection.

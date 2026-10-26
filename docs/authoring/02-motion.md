@@ -1,6 +1,6 @@
 # Track 2 — Motion
 
-Every knob in this track answers the same question: *where does the previous frame get redrawn?* You already know `zoom`. Here are the rest, one at a time on [the bench](01-how-milkdrop-thinks.md), then combined, then read in the wild.
+Every knob in this track answers the same question: _where does the previous frame get redrawn?_ You already know `zoom`. Here are the rest, one at a time on [the bench](01-how-milkdrop-thinks.md), then combined, then read in the wild.
 
 ## Lesson 1 · `zoom`, pushed harder
 
@@ -10,7 +10,7 @@ zoom=1.04
 
 [**▶ Run the tunnel rush**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgbGVzc29uIGJlbmNoOiBhIGJyaWdodCB3YXZlZm9ybSwgbm8gbW90aW9uLCBub3RoaW5nIGhpZGRlbi4KLy8gRXZlcnkgVHJhY2sgMSBhbmQgVHJhY2sgMiBleGFtcGxlIGlzIHRoaXMgZmlsZSB3aXRoIG9uZSBvciB0d28gbGluZXMgY2hhbmdlZC4KZlJhdGluZz01CmZEZWNheT0wLjk4CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEuMDQKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MAo%3D "examples/20-zoom-rush.milk")
 
-At 4% per frame the compounding stops being subtle: this is the classic flying-through-a-tunnel move. Above `1` flies outward, below `1` falls inward, and the distance from `1` is speed. Almost every preset keeps it within `0.9–1.1`; the drama comes from *changing* it (as in Lesson 4 of Track 1), not from large constants.
+At 4% per frame the compounding stops being subtle: this is the classic flying-through-a-tunnel move. Above `1` flies outward, below `1` falls inward, and the distance from `1` is speed. Almost every preset keeps it within `0.9–1.1`; the drama comes from _changing_ it (as in Lesson 4 of Track 1), not from large constants.
 
 ## Lesson 2 · `rot` and the pivot
 
@@ -68,7 +68,7 @@ fWarpScale=1.5
 
 `warp` displaces the previous frame through a built-in animated noise field — instant liquid. `fWarpAnimSpeed` sets how fast the field churns, and `fWarpScale` how large its blobs are.
 
-> **The classic beginner trap:** `warp=1` plus high `decay` turns everything into brown smudge within seconds — the noise field stirs the paint and nothing erases it. Experienced authors keep `warp` low or zero and build distortion with per-pixel equations instead, where *they* control the field. The [anti-pattern table](../MILKDROP_CODING_GUIDE.md#anti-patterns) has the full list.
+> **The classic beginner trap:** `warp=1` plus high `decay` turns everything into brown smudge within seconds — the noise field stirs the paint and nothing erases it. Experienced authors keep `warp` low or zero and build distortion with per-pixel equations instead, where _they_ control the field. The [anti-pattern table](../MILKDROP_CODING_GUIDE.md#anti-patterns) has the full list.
 
 ## Lesson 6 · Combining knobs
 
@@ -86,13 +86,12 @@ per_frame_4=wave_b = wave_b + 0.25*(0.6*sin(0.814*time) + 0.4*sin(1.011*time));
 [**▶ Run the gentle vortex**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgbGVzc29uIGJlbmNoOiBhIGJyaWdodCB3YXZlZm9ybSwgbm8gbW90aW9uLCBub3RoaW5nIGhpZGRlbi4KLy8gRXZlcnkgVHJhY2sgMSBhbmQgVHJhY2sgMiBleGFtcGxlIGlzIHRoaXMgZmlsZSB3aXRoIG9uZSBvciB0d28gbGluZXMgY2hhbmdlZC4KZlJhdGluZz01CmZEZWNheT0wLjk3CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEuMDA4CnJvdD0wCmN4PTAuNQpjeT0wLjUKZHg9MApkeT0wCnN4PTEKc3k9MQp3YXJwPTAKd2F2ZV9yPTAuMgp3YXZlX2c9MC44NQp3YXZlX2I9MQp3YXZlX3g9MC41CndhdmVfeT0wLjUKb2JfYT0wCmliX2E9MAptdl9hPTAKcGVyX2ZyYW1lXzE9cm90ID0gMC4wMDggKyAwLjAwNCpzaW4odGltZSowLjEzKTsKcGVyX2ZyYW1lXzI9d2F2ZV9yID0gd2F2ZV9yICsgMC4yNSooMC42KnNpbigwLjk4KnRpbWUpICsgMC40KnNpbigxLjA0Nyp0aW1lKSk7CnBlcl9mcmFtZV8zPXdhdmVfZyA9IHdhdmVfZyArIDAuMjUqKDAuNipzaW4oMC44MzUqdGltZSkgKyAwLjQqc2luKDEuMDgxKnRpbWUpKTsKcGVyX2ZyYW1lXzQ9d2F2ZV9iID0gd2F2ZV9iICsgMC4yNSooMC42KnNpbigwLjgxNCp0aW1lKSArIDAuNCpzaW4oMS4wMTEqdGltZSkpOwo%3D "examples/26-gentle-vortex.milk")
 
 Line by line:
-
 - `per_frame_1` — the spiral's twist is not constant: it drifts between `0.004` and `0.012` on a slow sine (`time*0.13` ≈ one swing per 48 s). The motion never settles, so the eye never files it away.
-- `per_frame_2–4` — each color channel wanders on a *sum of two sines at unrelated frequencies* (`0.98` vs `1.047`, …). Irrational-ratio frequencies never realign, so the palette never repeats. This is **color cycling with irrational frequencies** — [Pattern 5 in the coding guide](../MILKDROP_CODING_GUIDE.md#pattern-5-color-cycling-with-irrational-frequencies), and a Geiss signature you'll see next.
+- `per_frame_2–4` — each color channel wanders on a _sum of two sines at unrelated frequencies_ (`0.98` vs `1.047`, …). Irrational-ratio frequencies never realign, so the palette never repeats. This is **color cycling with irrational frequencies** — [Pattern 5 in the coding guide](../MILKDROP_CODING_GUIDE.md#pattern-5-color-cycling-with-irrational-frequencies), and a Geiss signature you'll see next.
 
 **Turn one knob.** Make the vortex violent: shorten `decay`, raise the `rot` swing, and speed up the color sines. Then make it glacial. The same six lines cover the whole mood spectrum.
 
-## Lesson 7 · Dissection: *Geiss — Happy Drops* (Ryan Geiss)
+## Lesson 7 · Dissection: _Geiss — Happy Drops_ (Ryan Geiss)
 
 Time to read a real one. This ships in the Stims catalog and is old enough to drink. Its six `per_frame` lines are pure Track 2 material; its three `per_pixel` lines are a preview of Tracks 3 and 4.
 
@@ -121,7 +120,7 @@ per_pixel_3=dy = dy + dr*sin(-ang);
 - `per_frame_1`–`per_frame_3` — Lesson 6's irrational-frequency color drift at full strength. Each channel swings `0.35` either side of a neutral `0.65`, so red, green, and blue each wander between `0.3` and `1.0` on their own unrelated sines, and the palette never repeats.
 - `per_frame_4` — the same two-sine trick applied to motion. The file's base `rot` is `0`, so the twist wanders between `-0.04` and `0.04`: at its peak twice your spiral's `0.02`, but it keeps reversing (each sine takes 16–23 seconds per cycle), so it never settles into a plain spiral.
 - `per_frame_5`/`per_frame_6` — the pivot from Lesson 2, set wandering. `cx` and `cy` each drift up to `0.11` from center, so the point the rotation turns around slides slowly around the middle of the screen.
-- `per_pixel_1`–`per_pixel_3` — the preview. These lines run *per mesh point*, and `rad`/`ang` are each point's distance and direction from the screen center. `dr` pushes every point about `0.01` outward along its own radial line each frame — a steady outward stream, like a gentle `zoom`. On top of that, `bass_att-1` is how far the bass sits above its average, clamped to `0–0.5`: in quiet passages it is zero, but on a bass hit `sin(rad*15)` adds alternating bands of stronger and weaker push across the radius. Those bands, smeared outward by the feedback loop, are the drops. Track 3 covers `bass_att`; making knobs vary across the screen is all of [Track 4](04-warp-fields.md).
+- `per_pixel_1`–`per_pixel_3` — the preview. These lines run _per mesh point_, and `rad`/`ang` are each point's distance and direction from the screen center. `dr` pushes every point about `0.01` outward along its own radial line each frame — a steady outward stream, like a gentle `zoom`. On top of that, `bass_att-1` is how far the bass sits above its average, clamped to `0–0.5`: in quiet passages it is zero, but on a bass hit `sin(rad*15)` adds alternating bands of stronger and weaker push across the radius. Those bands, smeared outward by the feedback loop, are the drops. Track 3 covers `bass_att`; making knobs vary across the screen is all of [Track 4](04-warp-fields.md).
 
 **Exercise.** Remix Happy Drops (**Remix** in the editor's **⋯** menu preserves the credit lineage): cool the palette by lowering the base `wave_r` to `0.3` and its swing to `0.15`, give `rot` a base of `0.05` so the twist keeps one direction, and turn the stream inward by changing `0.01` to `-0.01` in `per_pixel_1`. Export it, or copy the URL — the link is the preset.
 

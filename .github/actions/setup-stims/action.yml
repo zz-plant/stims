@@ -1,21 +1,21 @@
-name: 'Setup Stims Environment'
-description: 'Sets up Bun, configures dependency cache, and runs frozen lockfile install'
+name: "Setup Stims Environment"
+description: "Sets up Bun, configures dependency cache, and runs frozen lockfile install"
 
 inputs:
   checkout:
-    description: 'Whether to check out the repository'
+    description: "Whether to check out the repository"
     required: false
-    default: 'true'
+    default: "true"
   cache-compute:
     description: >-
       Cache node_modules/.cache, where `typecheck` and `check:architecture`
       keep their incremental state. Enable it only in a job that actually runs
       those checks — see the step below for why.
     required: false
-    default: 'false'
+    default: "false"
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Checkout
       if: inputs.checkout == 'true'

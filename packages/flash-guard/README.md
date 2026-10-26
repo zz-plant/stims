@@ -32,13 +32,13 @@ flowchart LR
 
 ## The rule, as implemented
 
-| WCAG 2.3.1 says | `flash-guard` does | Constant |
-| --- | --- | --- |
-| A flash is a pair of opposing changes in relative luminance of 10% or more of maximum | A tile transition qualifies when the swing is at least 0.1; a flash is counted when a qualifying field-wide transition reverses the previous one | `FLASH_LUMINANCE_DELTA` |
-| ...where the darker image is below 0.80 | The darker end of the pair must be under 0.8 | `FLASH_DARKER_CEILING` |
-| The area that flashes must exceed 25% of any 10-degree visual field | A window a third of each axis is slid across the tile grid with a summed-area table; the transition counts if any window has 25% qualifying pixels | `FLASH_AREA_FRACTION`, `VISUAL_FIELD_FRACTION` |
-| More than three flashes in any one-second period fails | Peak count over any sliding 1 s window, compared against 3 | `FLASHES_PER_SECOND_LIMIT` |
-| Red flash: a transition to or from a saturated red | Saturated when R/(R+G+B) is at least 0.8; qualifies when the red-flash value max(0, R-G-B)·320 changes by more than 20 | `RED_SATURATION_MIN`, `RED_FLASH_SCALE`, `RED_FLASH_DELTA` |
+| WCAG 2.3.1 says                                                                       | `flash-guard` does                                                                                                                                 | Constant                                                   |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| A flash is a pair of opposing changes in relative luminance of 10% or more of maximum | A tile transition qualifies when the swing is at least 0.1; a flash is counted when a qualifying field-wide transition reverses the previous one   | `FLASH_LUMINANCE_DELTA`                                    |
+| ...where the darker image is below 0.80                                               | The darker end of the pair must be under 0.8                                                                                                       | `FLASH_DARKER_CEILING`                                     |
+| The area that flashes must exceed 25% of any 10-degree visual field                   | A window a third of each axis is slid across the tile grid with a summed-area table; the transition counts if any window has 25% qualifying pixels | `FLASH_AREA_FRACTION`, `VISUAL_FIELD_FRACTION`             |
+| More than three flashes in any one-second period fails                                | Peak count over any sliding 1 s window, compared against 3                                                                                         | `FLASHES_PER_SECOND_LIMIT`                                 |
+| Red flash: a transition to or from a saturated red                                    | Saturated when R/(R+G+B) is at least 0.8; qualifies when the red-flash value max(0, R-G-B)·320 changes by more than 20                             | `RED_SATURATION_MIN`, `RED_FLASH_SCALE`, `RED_FLASH_DELTA` |
 
 Magnitude is decided per pixel before any spatial aggregation. Averaging luminance over a tile first scales every swing down by the flashing region's coverage, and on sparse bright-on-black content that pushed real flashes two orders of magnitude under the threshold.
 
@@ -70,7 +70,11 @@ for (let f = 0; f < 120; f += 1) {
   frames.push(px);
 }
 
-const result = analyzeRgbaFrames(frames, { width: 640, height: 360, deltaMs: 1000 / 60 });
+const result = analyzeRgbaFrames(frames, {
+  width: 640,
+  height: 360,
+  deltaMs: 1000 / 60,
+});
 console.log(result);
 console.log('risk:', classifyFlashRisk(result));
 ```
@@ -99,7 +103,10 @@ A 4 Hz square wave is 8 flashes a second: every change after the first completes
 ### Govern a canvas while it draws
 
 ```ts
-import { createBrightnessFilterApplier, createFlashController } from 'flash-guard';
+import {
+  createBrightnessFilterApplier,
+  createFlashController,
+} from 'flash-guard';
 
 const controller = createFlashController({
   canvas,
@@ -108,8 +115,8 @@ const controller = createFlashController({
 });
 
 function render(now: number) {
-  draw();                 // whatever you draw
-  controller.tick(now);   // sample inside the same task as the draw
+  draw(); // whatever you draw
+  controller.tick(now); // sample inside the same task as the draw
   requestAnimationFrame(render);
 }
 ```
@@ -127,9 +134,15 @@ let scale = 1;
 for (let f = 0; f < 120; f += 1) {
   const on = Math.floor(f / 7.5) % 2 === 1;
   frame.fill(on ? 0.95 : 0.02); // the frame as drawn
-  const d = governor.sample(f * (1000 / 60), frame, RECOMMENDED_GRID, RECOMMENDED_GRID, {
-    viewScale: scale, // the mitigation the viewer is seeing it through
-  });
+  const d = governor.sample(
+    f * (1000 / 60),
+    frame,
+    RECOMMENDED_GRID,
+    RECOMMENDED_GRID,
+    {
+      viewScale: scale, // the mitigation the viewer is seeing it through
+    },
+  );
   scale = d.luminanceScale;
 }
 ```
@@ -154,7 +167,6 @@ That loop hands it one value per tile, which is exact for a uniform strobe. For 
 ## How the governor decides
 
 Drawn from the source, where each choice records the measurement that forced it.
-
 - **It engages before the limit.** Intervention starts at the second flash in the window (`engageAt`), not the fourth. Acting only on the fourth would mean the failing sequence had already been shown.
 - **It solves rather than ramps.** On a flash it computes the largest scale at which the transition it just observed no longer covers 25% of any visual field, then jumps there in one step. Blind ramping from a gentle start let a black-to-white strobe land nine flashes before the clamp caught up, when the limit is three. The solve uses the whole field, not its single largest swing: one bright point crossing one sample is not what made the frame a flash, and solving for it took a calm preset from full brightness to 9% on the first flash. It also holds the strongest field-wide transition the content made in the last second, not only the one that completed the flash: the second flash of a strobe can be its weakest, and a clamp solved for a rise covering a third of a visual field let the full-field transitions around it through, 5 flashes in a second on screen.
 - **It models the filter it applies.** `luminanceScale` is a CSS `brightness()` factor, and Chromium applies brightness to sRGB-encoded values: `rgb(204,204,204)` under `brightness(0.5)` screenshots as 102, not the 149 a linear-light multiply gives. So the governor takes each sample through `luminanceThroughBrightness` rather than multiplying it, exact for grey and never darker than the truth for colour. Taken as a multiply, a 0.02-to-0.95 strobe was held at brightness 0.069, where the swing on screen is 0.005; modelled, it holds at 0.328, where the swing sits just under the 0.08 the solve aims for.
@@ -170,31 +182,31 @@ Drawn from the source, where each choice records the measurement that forced it.
 The sampler takes a snapshot of the canvas inside the draw with `createImageBitmap`, already downscaled (nearest neighbour) to the 128x128 field, and hands it to a worker whose readback does the waiting for the GPU. Measured on an M1 Max at 1280x720 in headless Chromium, per sample, first at a 16x16 grid:
 
 | Backend | Main thread, synchronous read | Main thread, off-thread read | Grid arrives after |
-| --- | --- | --- | --- |
-| WebGPU | 1.9 to 2.3 ms | 0.1 ms | 2.1 to 2.3 ms |
-| WebGL | 2.7 to 3.6 ms | 0.1 ms | 2.8 to 3.2 ms |
+| ------- | ----------------------------- | ---------------------------- | ------------------ |
+| WebGPU  | 1.9 to 2.3 ms                 | 0.1 ms                       | 2.1 to 2.3 ms      |
+| WebGL   | 2.7 to 3.6 ms                 | 0.1 ms                       | 2.8 to 3.2 ms      |
 
 The off-thread grid matched the synchronous read exactly over 12 frames on each backend. Where workers or `OffscreenCanvas` are missing, the synchronous read is used. At the 128x128 field the capture still costs 0.1 ms of main thread and the field arrives 3.0 to 3.5 ms later; judging it costs 0.09 ms on a still frame and 0.24 ms on busy texture.
 
 ## API
 
-| Export | Purpose |
-| --- | --- |
-| `analyzeRgbaFrames(frames, options)` | RGBA frames in, `FlashAnalysis` out. Options: `width`, `height`, `deltaMs`, optional `cols`, `rows`, `stride`, `flipY`. |
-| `createFlashFrameCounter(options)` | Streaming form: `push(frame)`, `analyze()`, `input()`, `reset()`. |
-| `analyzeFlashEvents(input)` | Per-transition, per-tile qualifying-pixel counts in (`FlashCountInput`), analysis out. The offline path that evaluates red flash. |
-| `analyzeFlashTimeline({ frames, deltaMs, cols?, rows? })` | Per-frame luminance grids in, analysis out. |
-| `classifyFlashRisk(analysis)` | `'none'`, `'low'`, `'medium'` or `'high'`; `high` means over the WCAG limit on either channel. `describeFlashRisk(level)` gives a short label. |
-| `createFlashGovernor(options?)` | The live state machine: `sample(nowMs, samples, cols, rows, { density?, viewScale?, red? })` returns `{ hold, luminanceScale, flashesInWindow, redFlashesInWindow, engaged, flashed, redFlashed }`; also `prime(hold)`, `reset()`, `getState()`. `samples` is `cols * density` by `rows * density`, and `red` (`FlashRedField`) is the same samples' red-flash values and saturated-red flags. |
-| `primingHoldForMeasurement({ flashRiskLevel, maxLuminanceDelta })` | A starting hold for content already measured `high`, so its first flashes are mitigated rather than counted. |
-| `createFlashController(options)` | Sampler plus governor plus the apply-on-change loop: `start()`, `stop()`, `tick(now)`, `prime(hold)`, `release()`, `getState()`. |
-| `createBrightnessFilterApplier(element)` | An `applyLuminanceScale` that writes a CSS `brightness()` filter, clearing it at 1. |
-| `createFlashSampler({ grid?, density?, createWorker? })` | Canvas to luminance and red-flash fields, off the main thread when possible, with up to `MAX_CAPTURES_IN_FLIGHT` readbacks queued. `createMainThreadFlashReader(grid, density)` is the synchronous fallback. |
-| `RECOMMENDED_GRID`, `RECOMMENDED_SAMPLE_DENSITY`, `MIN_USEFUL_GRID`, `MIN_SAMPLE_INTERVAL_MS` | 16 tiles a side, 8 samples along each tile edge, the coarsest grid that discriminates, and the gate between compared frames. |
-| `relativeLuminance(r, g, b)`, `linearizeChannel(byte)`, `LINEAR_CHANNEL_LUT` | WCAG relative luminance from sRGB bytes, and the 256-entry table it reads. |
-| `luminanceThroughBrightness(luminance, scale)`, `encodeSrgb(linear)`, `decodeSrgb(encoded)` | The luminance a viewer sees through `brightness(scale)`, and the sRGB transfer functions it is built from. |
-| `isFlashTransition`, `isRedFlashTransition`, `isSaturatedRed`, `redFlashValue`, `peakWindowFraction`, `flashSwing` | The primitives every path above is built from. |
-| `FLASHES_PER_SECOND_LIMIT`, `FLASH_LUMINANCE_DELTA`, `FLASH_DARKER_CEILING`, `FLASH_AREA_FRACTION`, `VISUAL_FIELD_FRACTION`, `RED_SATURATION_MIN`, `RED_FLASH_DELTA`, `RED_FLASH_SCALE` | The thresholds, defined once. |
+| Export                                                                                                                                                                                  | Purpose                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `analyzeRgbaFrames(frames, options)`                                                                                                                                                    | RGBA frames in, `FlashAnalysis` out. Options: `width`, `height`, `deltaMs`, optional `cols`, `rows`, `stride`, `flipY`.                                                                                                                                                                                                                                                                       |
+| `createFlashFrameCounter(options)`                                                                                                                                                      | Streaming form: `push(frame)`, `analyze()`, `input()`, `reset()`.                                                                                                                                                                                                                                                                                                                             |
+| `analyzeFlashEvents(input)`                                                                                                                                                             | Per-transition, per-tile qualifying-pixel counts in (`FlashCountInput`), analysis out. The offline path that evaluates red flash.                                                                                                                                                                                                                                                             |
+| `analyzeFlashTimeline({ frames, deltaMs, cols?, rows? })`                                                                                                                               | Per-frame luminance grids in, analysis out.                                                                                                                                                                                                                                                                                                                                                   |
+| `classifyFlashRisk(analysis)`                                                                                                                                                           | `'none'`, `'low'`, `'medium'` or `'high'`; `high` means over the WCAG limit on either channel. `describeFlashRisk(level)` gives a short label.                                                                                                                                                                                                                                                |
+| `createFlashGovernor(options?)`                                                                                                                                                         | The live state machine: `sample(nowMs, samples, cols, rows, { density?, viewScale?, red? })` returns `{ hold, luminanceScale, flashesInWindow, redFlashesInWindow, engaged, flashed, redFlashed }`; also `prime(hold)`, `reset()`, `getState()`.`samples` is `cols * density` by `rows * density`, and `red` (`FlashRedField`) is the same samples' red-flash values and saturated-red flags. |
+| `primingHoldForMeasurement({ flashRiskLevel, maxLuminanceDelta })`                                                                                                                      | A starting hold for content already measured `high`, so its first flashes are mitigated rather than counted.                                                                                                                                                                                                                                                                                  |
+| `createFlashController(options)`                                                                                                                                                        | Sampler plus governor plus the apply-on-change loop: `start()`, `stop()`, `tick(now)`, `prime(hold)`, `release()`, `getState()`.                                                                                                                                                                                                                                                              |
+| `createBrightnessFilterApplier(element)`                                                                                                                                                | An `applyLuminanceScale` that writes a CSS `brightness()` filter, clearing it at 1.                                                                                                                                                                                                                                                                                                           |
+| `createFlashSampler({ grid?, density?, createWorker? })`                                                                                                                                | Canvas to luminance and red-flash fields, off the main thread when possible, with up to `MAX_CAPTURES_IN_FLIGHT` readbacks queued. `createMainThreadFlashReader(grid, density)` is the synchronous fallback.                                                                                                                                                                                  |
+| `RECOMMENDED_GRID`, `RECOMMENDED_SAMPLE_DENSITY`, `MIN_USEFUL_GRID`, `MIN_SAMPLE_INTERVAL_MS`                                                                                           | 16 tiles a side, 8 samples along each tile edge, the coarsest grid that discriminates, and the gate between compared frames.                                                                                                                                                                                                                                                                  |
+| `relativeLuminance(r, g, b)`, `linearizeChannel(byte)`, `LINEAR_CHANNEL_LUT`                                                                                                            | WCAG relative luminance from sRGB bytes, and the 256-entry table it reads.                                                                                                                                                                                                                                                                                                                    |
+| `luminanceThroughBrightness(luminance, scale)`, `encodeSrgb(linear)`, `decodeSrgb(encoded)`                                                                                             | The luminance a viewer sees through `brightness(scale)`, and the sRGB transfer functions it is built from.                                                                                                                                                                                                                                                                                    |
+| `isFlashTransition`, `isRedFlashTransition`, `isSaturatedRed`, `redFlashValue`, `peakWindowFraction`, `flashSwing`                                                                      | The primitives every path above is built from.                                                                                                                                                                                                                                                                                                                                                |
+| `FLASHES_PER_SECOND_LIMIT`, `FLASH_LUMINANCE_DELTA`, `FLASH_DARKER_CEILING`, `FLASH_AREA_FRACTION`, `VISUAL_FIELD_FRACTION`, `RED_SATURATION_MIN`, `RED_FLASH_DELTA`, `RED_FLASH_SCALE` | The thresholds, defined once.                                                                                                                                                                                                                                                                                                                                                                 |
 
 ## Development
 
@@ -214,15 +226,15 @@ bun --cwd packages/flash-guard test
 
 Extracted from [zz-plant/stims](https://github.com/zz-plant/stims):
 
-| Package file | Stims source |
-| --- | --- |
-| `src/thresholds.ts` | `src/js/core/flash-thresholds.ts` |
-| `src/analysis.ts` | `scripts/flash-analysis.ts`, with its two entry points now sharing one pairing and windowing implementation |
-| `src/frames.ts` | New: the per-pixel counting that was inlined in `scripts/analyze-preset-flash.ts`, with the thresholds read from `thresholds.ts` instead of retyped |
-| `src/governor.ts` | `src/js/core/services/flash-governor.ts` |
-| `src/controller.ts` | `src/js/core/services/flash-safety.ts`, with the accessibility preference and the stage filter replaced by callbacks |
-| `src/sampler.ts`, `src/readback.worker.ts` | `src/js/core/services/flash-sampler.ts`, `flash-readback.worker.ts`, with the worker factory injectable |
-| `src/risk.ts` | The classifier from `src/js/core/sensory-profile.ts` |
+| Package file                               | Stims source                                                                                                                                        |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/thresholds.ts`                        | `src/js/core/flash-thresholds.ts`                                                                                                                   |
+| `src/analysis.ts`                          | `scripts/flash-analysis.ts`, with its two entry points now sharing one pairing and windowing implementation                                         |
+| `src/frames.ts`                            | New: the per-pixel counting that was inlined in `scripts/analyze-preset-flash.ts`, with the thresholds read from `thresholds.ts` instead of retyped |
+| `src/governor.ts`                          | `src/js/core/services/flash-governor.ts`                                                                                                            |
+| `src/controller.ts`                        | `src/js/core/services/flash-safety.ts`, with the accessibility preference and the stage filter replaced by callbacks                                |
+| `src/sampler.ts`, `src/readback.worker.ts` | `src/js/core/services/flash-sampler.ts`, `flash-readback.worker.ts`, with the worker factory injectable                                             |
+| `src/risk.ts`                              | The classifier from `src/js/core/sensory-profile.ts`                                                                                                |
 
 Tests: the Stims suites (`flash-analysis`, `flash-governor`, `flash-safety`, `flash-sampler`) carried over, plus a new suite for the pixel frontend that checks it against the luminance path and exercises the visual-field window and the red channel. `bun test` runs 74 tests across 5 files.
 

@@ -1,4 +1,5 @@
 ---
+
 name: perform-livecoding
 description: "Play Stims as an AV instrument — live-code the audio with Strudel patterns, ride the visual params with timed gestures, and listen back to close the loop. Use when the task is performing or jamming rather than testing, debugging, or tuning preset fidelity."
 ---
@@ -12,7 +13,7 @@ that audio runs.
 ## When to use
 
 - "Play something", "jam", "perform", "do a set", "make it build then drop"
-- You want the audio *and* visuals moving together, not one preset held still
+- You want the audio _and_ visuals moving together, not one preset held still
 - You are demoing what the instrument can do
 
 **Not** for preset fidelity tuning (`improve-preset-fidelity`), browser QA
@@ -20,14 +21,14 @@ that audio runs.
 
 ## The verbs
 
-| Verb | Tool | What it is |
-|------|------|------------|
-| Play | `session_play_pattern` | Strudel pattern → session audio → drives the visuals |
-| Shape | `session_ramp` | Glide targets over a duration, as one gesture |
-| Move | `session_bind` / `session_unbind` | Continuous modulation: an LFO, or the audio itself |
-| Name | `session_macro` | Save a sequence of the above and call it by name |
-| Keep | `session_scene` | Snapshot positions + modulators; recall ramps into it |
-| Listen | `session_listen` | Measure the real signal: RMS, bands, tempo, fps |
+| Verb   | Tool                              | What it is                                            |
+| ------ | --------------------------------- | ----------------------------------------------------- |
+| Play   | `session_play_pattern`            | Strudel pattern → session audio → drives the visuals  |
+| Shape  | `session_ramp`                    | Glide targets over a duration, as one gesture         |
+| Move   | `session_bind` / `session_unbind` | Continuous modulation: an LFO, or the audio itself    |
+| Name   | `session_macro`                   | Save a sequence of the above and call it by name      |
+| Keep   | `session_scene`                   | Snapshot positions + modulators; recall ramps into it |
+| Listen | `session_listen`                  | Measure the real signal: RMS, bands, tempo, fps       |
 
 Setup is `start_agent_session`. Pass `headless=false` for a visible window —
 a physical MIDI controller plugged into that same tab co-performs through the
@@ -39,7 +40,6 @@ page, so `bun run dev` plus the devtools console works for quick experiments.
 ## Gestures vs. movement
 
 These are different things and the instrument treats them differently.
-
 - A **gesture** is something you do: `session_ramp`. It has a start, an end,
   and a duration.
 - **Movement** is something that keeps happening: `session_bind`. It has no
@@ -49,7 +49,7 @@ Reaching for a ramp when you want movement is the most common mistake — it
 means issuing a call per gesture forever, and anything beat-synced is
 impossible because a round-trip is far longer than a beat.
 
-They compose. A modulator is an *offset* around the value ramps leave behind:
+They compose. A modulator is an _offset_ around the value ramps leave behind:
 
 ```
 value = centre + depth × source
@@ -78,7 +78,7 @@ changes. `cycles: 1` is once per Strudel cycle, `0.25` once per four.
 
 Start depths small; `min`/`max` clamp anything that runs away. Several
 modulators on one target sum, so an LFO plus an audio follower on the same
-parameter gives movement that breathes *and* reacts.
+parameter gives movement that breathes _and_ reacts.
 
 ## A vocabulary for the piece
 
@@ -108,7 +108,7 @@ play a pattern → listen (is it audible? right tempo?) → ramp visuals to matc
 ```
 
 Listening is not optional politeness. `session_play_pattern` returning
-successfully only means the pattern *evaluated* — `session_listen` is what
+successfully only means the pattern _evaluated_ — `session_listen` is what
 proves sound is reaching the analyser. Check `source: "stream"`; a `telemetry`
 source means nothing was measured and the numbers are a frozen snapshot.
 
@@ -119,14 +119,14 @@ so iterate rather than composing a masterpiece blind.
 
 ```js
 // foundation
-stack(s("bd*4"), s("hh*8").gain(.4))
+stack(s('bd*4'), s('hh*8').gain(0.4));
 
 // add movement
 stack(
-  s("bd*4"),
-  s("[~ hh]*4").gain(.5),
-  note("<c2 eb2 f2 g1>").s("sawtooth").lpf(500)
-)
+  s('bd*4'),
+  s('[~ hh]*4').gain(0.5),
+  note('<c2 eb2 f2 g1>').s('sawtooth').lpf(500),
+);
 ```
 
 `cps` is cycles per second: `0.5` ≈ 120bpm in 4/4. Set it on the call rather
@@ -153,7 +153,7 @@ bloom:  {"decay": 0.995}              over 8000ms, curve "sine"
 - `exp` is back-loaded; good for gain-like targets and for drops
 
 Ramps of 2–8s read as musical. Under ~300ms is a step change, so use
-`session_midi_set` for that and save the ramp for motion you want *seen*.
+`session_midi_set` for that and save the ramp for motion you want _seen_.
 
 The call returns when the gesture lands, so chaining calls sequences a
 performance. A second ramp on a target already in flight supersedes the first
@@ -178,7 +178,7 @@ duration and reporting values it never reached.
   Strudel engine and the dirt-samples index over the network (~700ms locally,
   longer cold), and individual drum samples stream in after the pattern starts.
   A `session_listen` immediately afterwards can honestly report `rmsMax: 0`
-  because nothing is audible *yet*. Give the first pattern a few seconds before
+  because nothing is audible _yet_. Give the first pattern a few seconds before
   trusting a silent reading, or listen again. Later calls are fast.
 - **A preset must be loaded first.** The runtime installs when the workspace
   mounts; the tools say so plainly if you get there early.

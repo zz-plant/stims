@@ -1,6 +1,6 @@
 # Track 6 — Shaders
 
-Everything through Track 5 is EEL: small equations evaluated by the VM, with eligible per-pixel and wave-point programs lowered to the GPU on WebGPU. Shaders differ in kind as well as syntax: code that runs on the GPU, once per *screen pixel*, every frame. This is where reaction-diffusion, edge detection, and fractal iteration live: effects that need every pixel to see its neighbors. EEL's per-pixel context can't do that.
+Everything through Track 5 is EEL: small equations evaluated by the VM, with eligible per-pixel and wave-point programs lowered to the GPU on WebGPU. Shaders differ in kind as well as syntax: code that runs on the GPU, once per _screen pixel_, every frame. This is where reaction-diffusion, edge detection, and fractal iteration live: effects that need every pixel to see its neighbors. EEL's per-pixel context can't do that.
 
 **Of the 1,787 catalog presets, 1,060 (59%) carry both a warp and a composite shader, and 1,201 (67%) carry at least one** (non-empty `[warp_shader]`/`[comp_shader]` or `warp_N`/`comp_N` source, counted October 2026).
 
@@ -23,7 +23,6 @@ ret *= 0.98;
 Compare this against [the shaderless bench](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgYmVuY2gsIHVuY2hhbmdlZCDigJQgbm8gc2hhZGVyIGJsb2NrcyB5ZXQuIFRyYWNrIDYncyBiZWZvcmUtc2hvdC4KZlJhdGluZz01CmZEZWNheT0wLjk4CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MAo%3D "examples/60-shader-baseline.milk"); they should look identical, because these two lines are MilkDrop's default warp with the bench's `fDecay=0.98` written in.
 
 A warp shader runs once per pixel and answers one question: what color does this pixel carry into the next frame? Three names do the work:
-
 - `sampler_main` is the previous frame.
 - `uv` is the point in that frame this pixel reads from. The motion from Tracks 2 and 4 (`zoom`, `rot`, `dx`, `dy`, `warp` and their per-pixel forms) has already moved it; the bench holds all of those at rest, so here `uv` is the pixel's own position.
 - `ret` is the answer: a color (`vec3`), not a coordinate. Waves and shapes are drawn over it, and the result is the next frame's `sampler_main`.
@@ -46,11 +45,10 @@ ret *= 0.98;
 [**▶ Run the ripple**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBBIHJpcHBsZTogcmVhZCB0aGUgcHJldmlvdXMgZnJhbWUgYXQgYSBjb29yZGluYXRlIHB1c2hlZCBhbG9uZyBhIHNpbmUgb2YKLy8gZGlzdGFuY2UgZnJvbSBjZW50ZXIuIFNhbWUgaWRlYSBhcyBUcmFjayA0J3MgcmluZ3MsIHdyaXR0ZW4gaW4gR0xTTCBhbmQKLy8gcnVuIHBlciBwaXhlbCBvbiB0aGUgR1BVLiBUaGUgc2hhZGVyIG93bnMgdGhlIGZhZGUsIHNvIGZEZWNheSBpcyAxLgpmUmF0aW5nPTUKZkRlY2F5PTEKZldhdmVBbHBoYT0xLjIKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wLjIKd2F2ZV9nPTAuODUKd2F2ZV9iPTEKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wClt3YXJwX3NoYWRlcl0KdmVjMiBjZW50ZXIgPSB1diAtIHZlYzIoMC41LCAwLjUpOwpmbG9hdCBkaXN0ID0gbGVuZ3RoKGNlbnRlcik7CmZsb2F0IHJpcHBsZSA9IDAuMDEgKiBzaW4oZGlzdCAqIDQwLjAgLSB0aW1lICogMi4wKTsKdmVjMiBkaXIgPSBjZW50ZXIgLyAoZGlzdCArIDAuMDAwMSk7CnJldCA9IHRleHR1cmUyRChzYW1wbGVyX21haW4sIHV2ICsgZGlyICogcmlwcGxlKS5yZ2I7CnJldCAqPSAwLjk4Owo%3D "examples/62-warp-shader-ripple.milk")
 
 This is Track 4's radial-rings trick, rewritten for the GPU:
-
 - `center`/`dist` — the same recentering move as Track 4's off-center-current lesson, written with GLSL's `vec2`/`length()` instead of hand-rolled `sqrt(x*x+y*y)`.
 - `ripple` — a sine of distance, the same idea as `sin(rad*12+time*0.5)` in EEL; the coefficient on `dist` sets how many rings fit, and the coefficient on `time` sets their speed. The minus sign sends these rings outward, the opposite of Track 4's `+time`.
 - `dir = center / (dist + 0.0001)` — a unit vector pointing away from center; the `+0.0001` is the same divide-by-zero guard Track 4's off-center lesson used, now in GLSL.
-- `texture2D(sampler_main, uv + dir * ripple)` — read the previous frame a short way along that direction instead of at `uv`. This is what "warp" means concretely: you're not moving pixels; you're changing *which* previous-frame pixel gets sampled into this one.
+- `texture2D(sampler_main, uv + dir * ripple)` — read the previous frame a short way along that direction instead of at `uv`. This is what "warp" means concretely: you're not moving pixels; you're changing _which_ previous-frame pixel gets sampled into this one.
 - `ret *= 0.98` — Lesson 1's fade, which every warp shader writes for itself.
 
 The displacement compounds. Each frame reads from a picture the last frame already displaced, so the rings drag the waveform's trails into radial streaks, where a single displaced read would only make the waveform wobble.
@@ -67,7 +65,7 @@ ret = c * vec3(1.0, 0.85, 0.6);
 
 [**▶ Run the tint**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgc21hbGxlc3QgcG9zc2libGUgY29tcF9zaGFkZXI6IHNhbXBsZSB0aGUgY29tcG9zaXRlZCBmcmFtZSBhbmQKLy8gdGludCBpdC4gY29tcF9zaGFkZXIgcnVucyBhZnRlciB3YXZlcy9zaGFwZXMgYXJlIGRyYXduLCBzbyB0aGlzCi8vIGNvbG9ycyBldmVyeXRoaW5nIFRyYWNrcyAxLTUgYWxyZWFkeSBwdXQgb24gc2NyZWVuLgpmUmF0aW5nPTUKZkRlY2F5PTAuOTgKZldhdmVBbHBoYT0xLjIKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wLjIKd2F2ZV9nPTAuODUKd2F2ZV9iPTEKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wCltjb21wX3NoYWRlcl0KdmVjMyBjID0gdGV4dHVyZTJEKHNhbXBsZXJfbWFpbiwgdXYpLnJnYjsKcmV0ID0gYyAqIHZlYzMoMS4wLCAwLjg1LCAwLjYpOwo%3D "examples/63-comp-shader-tint.milk")
 
-`comp_shader` runs *after* the warp shader and after waves/shapes are drawn — it's the last stop before the pixel hits the screen. `sampler_main` is the composited frame so far; `texture2D(sampler_main, uv).rgb` reads this pixel's color. Multiplying by `vec3(1.0, 0.85, 0.6)` is a tone-map: full red, 85% green, and 60% blue — a warm amber grade over everything Tracks 1–5 already produced.
+`comp_shader` runs _after_ the warp shader and after waves/shapes are drawn — it's the last stop before the pixel hits the screen. `sampler_main` is the composited frame so far; `texture2D(sampler_main, uv).rgb` reads this pixel's color. Multiplying by `vec3(1.0, 0.85, 0.6)` is a tone-map: full red, 85% green, and 60% blue — a warm amber grade over everything Tracks 1–5 already produced.
 
 Both shaders write a color to `ret`; what differs is where it goes. A warp shader's `ret` becomes the next frame's starting picture, so its changes compound frame after frame. A comp shader's `ret` goes to the screen and nowhere else, so the amber grade is applied once per frame and never builds up.
 
@@ -107,7 +105,7 @@ ret *= 0.98;
 
 [**▶ Run the audio-reactive ripple**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBUaGUgcmlwcGxlLCBub3cgZHJpdmVuIGJ5IGF1ZGlvOiBwZXJfZnJhbWUgc21vb3RocyBiYXNzIGludG8gcTEsIGFuZAovLyB0aGUgd2FycCBzaGFkZXIgcmVhZHMgcTEgYXMgYSB1bmlmb3JtIGZsb2F0LiBUaGUgc2FtZSBxLXZhciBicmlkZ2UKLy8gZnJvbSBUcmFjayA0LCBjcm9zc2luZyBmcm9tIEVFTCBpbnRvIEdMU0wgdGhpcyB0aW1lLgpmUmF0aW5nPTUKZkRlY2F5PTEKZldhdmVBbHBoYT0xLjIKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wLjIKd2F2ZV9nPTAuODUKd2F2ZV9iPTEKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wCnBlcl9mcmFtZV8xPXJhPTYvZnBzOwpwZXJfZnJhbWVfMj1iYXNzX2F2Zz1iYXNzX2F2ZyooMS1yYSkrcmEqYmFzczsKcGVyX2ZyYW1lXzM9cTE9YmFzc19hdmc7Clt3YXJwX3NoYWRlcl0KdmVjMiBjZW50ZXIgPSB1diAtIHZlYzIoMC41LCAwLjUpOwpmbG9hdCBkaXN0ID0gbGVuZ3RoKGNlbnRlcik7CmZsb2F0IHJpcHBsZSA9ICgwLjAwNSArIDAuMDIgKiBxMSkgKiBzaW4oZGlzdCAqIDQwLjAgLSB0aW1lICogMi4wKTsKdmVjMiBkaXIgPSBjZW50ZXIgLyAoZGlzdCArIDAuMDAwMSk7CnJldCA9IHRleHR1cmUyRChzYW1wbGVyX21haW4sIHV2ICsgZGlyICogcmlwcGxlKS5yZ2I7CnJldCAqPSAwLjk4Owo%3D "examples/65-warp-shader-reactive.milk")
 
-Nothing new syntactically — `q1` is read on the GLSL side exactly like any other identifier, because to the shader it is a uniform the compiler wires up automatically. Shaders can read the raw bands too: `bass`, `mid`, `treb` and their `_att` forms are uniforms, and the shaders in [*Mashup (326)*](https://toil.fyi/?preset=royal-mashup-326) read `mid_att` and `treb_att`. **Anything smoothed or derived still comes from `per_frame`, across the same q-register bridge every other layer uses.**
+Nothing new syntactically — `q1` is read on the GLSL side exactly like any other identifier, because to the shader it is a uniform the compiler wires up automatically. Shaders can read the raw bands too: `bass`, `mid`, `treb` and their `_att` forms are uniforms, and the shaders in [_Mashup (326)_](https://toil.fyi/?preset=royal-mashup-326) read `mid_att` and `treb_att`. **Anything smoothed or derived still comes from `per_frame`, across the same q-register bridge every other layer uses.**
 
 ## Engine limits worth knowing before you write your own
 

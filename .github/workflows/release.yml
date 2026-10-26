@@ -14,13 +14,13 @@ name: Release
 
 on:
   push:
-    tags: ['v*.*.*']
+    tags: ["v*.*.*"]
   workflow_dispatch:
     inputs:
       commit:
-        description: 'Commit on main to release (default: the head of main)'
+        description: "Commit on main to release (default: the head of main)"
         required: false
-        default: ''
+        default: ""
 
 permissions:
   contents: read
@@ -77,7 +77,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-stims
         with:
-          checkout: 'false'
+          checkout: "false"
 
       - name: Write release notes
         env:

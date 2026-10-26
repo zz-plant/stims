@@ -31,7 +31,6 @@ Transitions are a continuous morph — nothing blinks, nothing jars.
 ## Layer 1: UX Principles (the "why")
 
 Every concrete decision traces to one of these:
-
 1. **Stage is canvas is interface.** The visualizer is never obscured, shrunk, or
    paused for UI. All controls are rendered ON the stage (as overlays) or as
    translucent sheets that let the visual bleed through.
@@ -54,36 +53,39 @@ Every concrete decision traces to one of these:
 Working backwards from principles to concrete interactions:
 
 ### Desktop
-| Gesture | Action |
-|---------|--------|
-| Move mouse | Summon control layer (3s fade-after-stop) |
-| Scroll up/down | Browse preset list (overlaid on stage edge) |
-| `E` | Toggle editor (translucent sheet, RHS) |
-| `B` | Toggle browse (bottom sheet, visual bleeds through) |
-| `S` | Toggle settings (thin LHS panel) |
-| Arrow L/R | Previous/next preset |
-| `Space` | Play/pause audio |
-| `F` | Fullscreen |
-| Click-drag on stage | Direct parameter manipulation (warp, zoom, rotate) |
+
+| Gesture             | Action                                              |
+| ------------------- | --------------------------------------------------- |
+| Move mouse          | Summon control layer (3s fade-after-stop)           |
+| Scroll up/down      | Browse preset list (overlaid on stage edge)         |
+| `E`                 | Toggle editor (translucent sheet, RHS)              |
+| `B`                 | Toggle browse (bottom sheet, visual bleeds through) |
+| `S`                 | Toggle settings (thin LHS panel)                    |
+| Arrow L/R           | Previous/next preset                                |
+| `Space`             | Play/pause audio                                    |
+| `F`                 | Fullscreen                                          |
+| Click-drag on stage | Direct parameter manipulation (warp, zoom, rotate)  |
 
 ### Mobile
-| Gesture | Action |
-|---------|--------|
-| Tap | Summon/auto-hide controls |
+
+| Gesture              | Action                                   |
+| -------------------- | ---------------------------------------- |
+| Tap                  | Summon/auto-hide controls                |
 | Swipe up from bottom | Browse sheet (50% height, visual bleeds) |
-| Swipe down | Dismiss any open sheet |
-| Swipe L/R on stage | Previous/next preset (with crossfade) |
-| Long press | Quick-action radial menu |
-| Two-finger tap | Save current look |
-| Three-finger swipe | Browse saved presets |
-| Pinch | Zoom into visual detail |
+| Swipe down           | Dismiss any open sheet                   |
+| Swipe L/R on stage   | Previous/next preset (with crossfade)    |
+| Long press           | Quick-action radial menu                 |
+| Two-finger tap       | Save current look                        |
+| Three-finger swipe   | Browse saved presets                     |
+| Pinch                | Zoom into visual detail                  |
 
 ### Universal
-| Action | Feedback |
-|--------|----------|
-| Preset change | Visual morph transition (no cut) |
-| Save | Brief ripple from save point |
-| Error | Red flash at edge, then fade |
+
+| Action        | Feedback                              |
+| ------------- | ------------------------------------- |
+| Preset change | Visual morph transition (no cut)      |
+| Save          | Brief ripple from save point          |
+| Error         | Red flash at edge, then fade          |
 | AI generation | Visual blooms from center as it loads |
 
 ---
@@ -134,7 +136,6 @@ Viewport (100vw x 100vh)
 ```
 
 Key architectural decisions:
-
 - **Single shell** — `App.tsx` shrinks from 717 lines to ~100. It lays out
   `StageElement` + `ControlLayer` + active sheet. No mobile/desktop branches.
 - **Sheet is one component** — `BottomSheet.tsx` generalizes to handle bottom,
@@ -175,7 +176,6 @@ EngineSnapshot (per-frame, immutable, same ref means no change)
 ```
 
 Key decisions:
-
 - **URL is the truth** — `SessionRouteState` serializes to/from URL. Shared
   links restore exact UI state (which panel open, which preset, which audio).
   Currently, only `presetId`, `collectionTag`, `panel`, and `audioSource` survive
@@ -193,7 +193,6 @@ Key decisions:
 ## Layer 5: Infrastructure (the "patterns")
 
 Working backwards from state to patterns:
-
 1. **URL state via `useSearchParams` (React Router or native)** — replace custom
    `url-state.ts` (253 lines of manual serialization) with standard library.
    Eliminates the `commitRoute`/`setRouteState` split — route changes ARE state
@@ -229,24 +228,25 @@ Working backwards from state to patterns:
 
 ## Gap Analysis: Current → Ideal
 
-| Dimension | Current | Ideal | Gap |
-|-----------|---------|-------|-----|
-| **Stage priority** | Stage shrinks when panel open | Stage always full-viewport | Panels need `backdrop-filter` overlay mode |
-| **Chrome persistence** | Toolbar always visible (StimsControlDock) | All UI ephemeral | Need auto-hide + gesture summon for ALL controls, including audio meter |
-| **Mobile/Desktop split** | Two code paths (MobileControlBar vs StimsControlDock) | Single adaptive shell | Unify into one responsive component |
-| **Sheet system** | 4+ distinct sheet components with separate logic | One `<Sheet>` component with position/size props | Generalize `BottomSheet.tsx` |
-| **App.tsx surface** | 717-line monolith | ~100-line layout shell | Extract keyboard shortcuts, fullscreen, theme, contextual help, mobile bar into dedicated hooks/components |
-| **URL state** | Custom `url-state.ts` (253 lines) | Standard `useSearchParams` | Replace custom code unless Vite-specific constraints prevent it |
-| **Per-frame updates** | `EngineSnapshotCtx` re-renders entire tree | Per-key subscription | Implement ref-based snapshot with selective subscription |
-| **Animation** | CSS classes toggled | CSS view transitions + gesture-driven | Add view-transition API, deprecate manual class swapping |
-| **Gesture system** | Ad-hoc `onTouchStart`/`onMouseDown` handlers | Unified `useStageGesture` | Build gesture normalization layer |
-| **Undo/redo** | None (editor has undo via CodeMirror) | System-wide undo (save, delete, edit) | Add global `UndoStack` |
+| Dimension                | Current                                               | Ideal                                            | Gap                                                                                                        |
+| ------------------------ | ----------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| **Stage priority**       | Stage shrinks when panel open                         | Stage always full-viewport                       | Panels need `backdrop-filter` overlay mode                                                                 |
+| **Chrome persistence**   | Toolbar always visible (StimsControlDock)             | All UI ephemeral                                 | Need auto-hide + gesture summon for ALL controls, including audio meter                                    |
+| **Mobile/Desktop split** | Two code paths (MobileControlBar vs StimsControlDock) | Single adaptive shell                            | Unify into one responsive component                                                                        |
+| **Sheet system**         | 4+ distinct sheet components with separate logic      | One `<Sheet>` component with position/size props | Generalize `BottomSheet.tsx`                                                                               |
+| **App.tsx surface**      | 717-line monolith                                     | ~100-line layout shell                           | Extract keyboard shortcuts, fullscreen, theme, contextual help, mobile bar into dedicated hooks/components |
+| **URL state**            | Custom `url-state.ts` (253 lines)                     | Standard `useSearchParams`                       | Replace custom code unless Vite-specific constraints prevent it                                            |
+| **Per-frame updates**    | `EngineSnapshotCtx` re-renders entire tree            | Per-key subscription                             | Implement ref-based snapshot with selective subscription                                                   |
+| **Animation**            | CSS classes toggled                                   | CSS view transitions + gesture-driven            | Add view-transition API, deprecate manual class swapping                                                   |
+| **Gesture system**       | Ad-hoc `onTouchStart`/`onMouseDown` handlers          | Unified `useStageGesture`                        | Build gesture normalization layer                                                                          |
+| **Undo/redo**            | None (editor has undo via CodeMirror)                 | System-wide undo (save, delete, edit)            | Add global `UndoStack`                                                                                     |
 
 ---
 
 ## Roadmap: Phased Implementation
 
 ### Phase 1: Sheet Unification (low risk, high impact)
+
 1. Generalize `BottomSheet.tsx` to accept `position` prop (`bottom|left|right`)
 2. Replace `WorkspaceToolSheet` → use `<Sheet position="bottom">`
 3. Replace `SplitViewBrowse` → use `<Sheet position="right" size={0.55}>`
@@ -255,6 +255,7 @@ Working backwards from state to patterns:
 6. Delete `StimsStageFrame` space-sharing logic → stage is always 100vw×100vh
 
 ### Phase 2: Ephemeral Controls (medium risk, high impact)
+
 1. Build `useAutoHideActivity(delayMs)` hook
 2. Build `ControlLayer` component wrapping current controls
 3. Migrate `StimsControlDock` into `ControlLayer.BottomEdge`
@@ -263,6 +264,7 @@ Working backwards from state to patterns:
 6. Extract "now playing" bar into `ControlLayer.TopEdge`
 
 ### Phase 3: App Shell Decomposition (high risk, high impact)
+
 1. Extract keyboard shortcuts into `useKeyboardShortcuts` hook
 2. Extract fullscreen into `useFullscreen` hook
 3. Extract theme into `useTheme` hook
@@ -272,12 +274,14 @@ Working backwards from state to patterns:
 7. `App.tsx` becomes: `<Stage> <ControlLayer> <Sheet> <ToastLayer> </Stage>`
 
 ### Phase 4: Gesture Normalization (medium risk, medium impact)
+
 1. Build `useStageGesture()` hook normalizing touch/mouse/keyboard
 2. Define semantic event types (`NEXT`, `PREV`, `OPEN_BROWSE`, `SAVE`, etc.)
 3. Wire `ControlLayer` and `Sheet` to consume semantic events
 4. Remove ad-hoc handlers from individual components
 
 ### Phase 5: Per-Frame Rendering Optimization (high risk, medium impact)
+
 1. Replace `EngineSnapshotCtx` with ref-based store
 2. Add `subscribeToSnapshotKey(key, callback)` API
 3. Migrate consumers (audio meter, energy display) to selective subscription
@@ -287,7 +291,6 @@ Working backwards from state to patterns:
 
 > **Superseded:** items 1–2 below were tried and removed (#1162) — see the
 > note under proposal 6 above.
-
 1. Add `@view-transition` to preset change animation
 2. Add `@view-transition` to sheet open/close
 3. Make all transitions continuous (morph, not cut)

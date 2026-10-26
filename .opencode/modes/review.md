@@ -1,7 +1,6 @@
 # Review Mode
 
 You are in **code review mode**. Focus on:
-
 1. **Read the changed files** — understand what the diff achieves
 2. **Check for bugs** — edge cases, null safety, error paths, race conditions
 3. **Verify patterns** — does the change follow existing codebase conventions?

@@ -13,12 +13,12 @@ Demo: the [corpus browser](https://zz-plant.github.io/stims/eel-conformance/) re
 
 ## What is in the box
 
-| Path | What it is |
-| --- | --- |
+| Path           | What it is                                            |
+| -------------- | ----------------------------------------------------- |
 | `cases/*.json` | The corpus. Portable data; this is the specification. |
-| `schema.json` | JSON Schema (draft-07) for a case group. |
+| `schema.json`  | JSON Schema (draft-07) for a case group.              |
 | `src/index.ts` | Loader, the specification constants, and the harness. |
-| `dist/cli.js` | `eel-conformance`, a command-line view of the corpus. |
+| `dist/cli.js`  | `eel-conformance`, a command-line view of the corpus. |
 
 ```
 $ eel-conformance sections
@@ -51,7 +51,6 @@ A case looks like this:
 ## Runner contract
 
 A conforming runner executes one case like this:
-
 1. **Start from zero.** Every variable is 0 until assigned. Reading an unknown name is legal and yields 0, never an error. Apply the case's `env` on top.
 2. **Allocate both guest buffers** at 1,048,576 f32 slots each, zero-filled, then apply `megabuf` and `gmegabuf` from the case. `megabuf` is per-preset scratch; `gmegabuf` is shared across presets.
 3. **Execute `program` as one block**, in order. It is a single program, not independent lines: state carries from each statement to the next.
@@ -63,9 +62,8 @@ Buffer size is part of the contract, not an implementation detail. Bounds behavi
 ### Case status
 
 Each case is `pinned` (the default) or `provisional`.
-
 - **pinned**: derived from documented MilkDrop 2.x / ns-eel behaviour. A conforming implementation must produce this value.
-- **provisional**: this corpus's *observed* behaviour, not yet confirmed against ns-eel. A provisional case is a question, not a requirement. Enforcing it still has value, since silent drift is worse than a wrong-but-known value, but do not port one into another implementation without checking upstream first.
+- **provisional**: this corpus's _observed_ behaviour, not yet confirmed against ns-eel. A provisional case is a question, not a requirement. Enforcing it still has value, since silent drift is worse than a wrong-but-known value, but do not port one into another implementation without checking upstream first.
 
 ## Install
 
@@ -83,9 +81,11 @@ The harness does the seeding and the comparing; you supply the one thing that is
 import { conforms, formatReport, runConformance } from 'eel-conformance';
 import { execute } from './my-eel-engine';
 
-const report = await runConformance(({ program, env, megabuf, gmegabuf, random }) => {
-  execute(program.join('\n'), { env, megabuf, gmegabuf, rand: random });
-});
+const report = await runConformance(
+  ({ program, env, megabuf, gmegabuf, random }) => {
+    execute(program.join('\n'), { env, megabuf, gmegabuf, rand: random });
+  },
+);
 
 console.log(formatReport(report));
 process.exit(conforms(report) ? 0 : 1);
@@ -100,8 +100,7 @@ Stims runs this corpus against the three CPU execution paths of [`milkdrop-toolc
 Sections, in file order: arithmetic operators and precedence; bitwise and logical operators; the truthiness threshold and short-circuiting; math functions and their domain guards; rounding, clamping and interpolation helpers; variables and the finite clamp; `megabuf` / `gmegabuf` guest memory; `loop` / `while` control flow; and the random functions.
 
 Rules that most often catch a new implementation:
-
-- **Division by zero is 0**, but the guard is *exact zero*: `1 / 0.0000001` divides normally and yields ten million. A tolerance guard here silently zeroes results real presets depend on.
+- **Division by zero is 0**, but the guard is _exact zero_: `1 / 0.0000001` divides normally and yields ten million. A tolerance guard here silently zeroes results real presets depend on.
 - **`%` truncates both operands to integers first**; float remainder is `mod()` / `fmod()`. They are different operators, not spellings of one.
 - **Truthiness is `|v| > 1e-5`**, not `v != 0`, for `if`, `&&`, `||`, `!` and `bnot`. But see the open question about `while` below.
 - **`==` is exact; `equal()` uses the close factor.** Only one of them is tolerant.
@@ -116,14 +115,13 @@ Rules that most often catch a new implementation:
 ## Open questions
 
 The three provisional cases are places where the originating implementation had to pick a behaviour and the reference is unverified. Resolving them against ns-eel would be the most useful contribution to this specification.
-
 1. **`while` condition truthiness** (`control-flow/while-condition-is-exact-zero`). A `while()` condition is tested against exact zero, while every other boolean context uses the `|v| > 1e-5` threshold. A condition decaying to `1e-6` therefore keeps looping instead of exiting. If the close-factor rule turns out to be correct, a class of presets is currently spinning to the iteration cap (2,097,152) every frame.
 2. **Unary minus versus `^`** (`operators-arithmetic/precedence-unary-minus-over-pow`). `-2 ^ 2` parses as `(-2)^2 = 4`, not `-(2^2) = -4`. Most languages that spell exponentiation as an operator bind unary minus more loosely. No Butterchurn-corpus preset appears to depend on it.
 3. **`^` associativity** (`operators-arithmetic/pow-left-associative`). `2 ^ 3 ^ 2` parses left-associatively as 64, not the more usual right-associative 512.
 
 ## Contributing a case
 
-Add it to the appropriate group in `cases/`. Keep `id` stable: never reuse an id for different semantics, because other implementations track results by it. Say in `note` *why* the value is what it is and what depends on it; a case whose expected value nobody can justify becomes unchangeable for the wrong reason. `eel-conformance validate` checks the shape, and `bun test` checks the invariants the schema cannot express.
+Add it to the appropriate group in `cases/`. Keep `id` stable: never reuse an id for different semantics, because other implementations track results by it. Say in `note` _why_ the value is what it is and what depends on it; a case whose expected value nobody can justify becomes unchangeable for the wrong reason. `eel-conformance validate` checks the shape, and `bun test` checks the invariants the schema cannot express.
 
 Changing an existing pinned value is a platform-semantics decision. Check a preset corpus for content depending on the old behaviour before editing.
 

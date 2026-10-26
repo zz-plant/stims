@@ -1,4 +1,5 @@
 ---
+
 name: review-workspace-ui-state
 description: "Review changes to React workspace UI state, URL routing, toast/panel behavior, or engine adapter interactions. Use when a PR touches src/js/frontend/*, especially App.tsx, workspace hooks, or url-state.ts."
 ---

@@ -56,14 +56,12 @@
 ## 0.1.1
 
 Documentation only; no code changes.
-
 - docs: README reflects the published package. It leads with the install command, moves the clone-and-build steps under Development, links the live demo site, and uses absolute links that resolve on npm and on the mirror, including the `demo/` page the npm package does not contain.
 
 ## 0.1.0
 
 First release as a package, extracted from
 [zz-plant/stims](https://github.com/zz-plant/stims).
-
 - Thresholds, offline analysis (`analyzeFlashEvents`, `analyzeFlashTimeline`),
   the live governor, the off-thread sampler and the risk classifier, carried
   over with their tests.

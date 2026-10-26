@@ -16,13 +16,13 @@ For product priorities read [`../ROADMAP.md`](../ROADMAP.md); for which visitor 
 
 ## Pages
 
-| Page | Covers |
-| --- | --- |
-| [`agent-handoffs.md`](./agent-handoffs.md) | Bootstrap, worktrees and shared-checkout rules, task slicing, the handoff packet and return contract |
+| Page                                                 | Covers                                                                                                   |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| [`agent-handoffs.md`](./agent-handoffs.md)           | Bootstrap, worktrees and shared-checkout rules, task slicing, the handoff packet and return contract     |
 | [`tooling-and-quality.md`](./tooling-and-quality.md) | Dev loops, quality gates and their timings, task-specific checks, the optional LM Studio session scripts |
-| [`custom-capabilities.md`](./custom-capabilities.md) | The skill index and how to change a skill |
-| [`browser-automation.md`](./browser-automation.md) | `__stims_agent`, `bun run ctl`, and every URL flag (`?agent=true`, `?mockAudio=demo`, …) |
-| [`visual-testing.md`](./visual-testing.md) | Browser QA by change type, measured preset labs, GPU-less environments |
-| [`src-map.md`](./src-map.md) | Where code lives, which tests cover it, which guards scan it |
+| [`custom-capabilities.md`](./custom-capabilities.md) | The skill index and how to change a skill                                                                |
+| [`browser-automation.md`](./browser-automation.md)   | `__stims_agent`, `bun run ctl`, and every URL flag (`?agent=true`, `?mockAudio=demo`, …)                 |
+| [`visual-testing.md`](./visual-testing.md)           | Browser QA by change type, measured preset labs, GPU-less environments                                   |
+| [`src-map.md`](./src-map.md)                         | Where code lives, which tests cover it, which guards scan it                                             |
 
 Documentation changes follow [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md); [`../README.md`](../README.md) is the canonical docs index.

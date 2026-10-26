@@ -14,7 +14,6 @@ bun run test:integration   # real Chromium: boot, routes, audio, renderer
 ## Manual checklist
 
 Run it on `bun run dev` at `http://localhost:5173/?agent=true`, with demo audio unless the change is about another input.
-
 1. **Boot**: open `/`. The workspace, launch controls and preset browser render.
 2. **Demo audio**: start demo audio. The visuals respond without a reload and the address stays on `/`.
 3. **Preset link**: open `/?preset=rovastar-parallel-universe&audio=demo`. That preset, not a default, is the one playing.

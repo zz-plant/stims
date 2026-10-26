@@ -4,17 +4,16 @@ The site is one Cloudflare Worker serving the built app; the MCP endpoint is an 
 
 ## Choose your deployment track
 
-| Track | Use when | Primary path |
-| --- | --- | --- |
-| **Track A (default): Site Worker via Cloudflare Workers Builds** | Nearly every release. | Cloudflare Workers Builds runs `bun run site:build:gated` and `wrangler deploy` on every push — production from `main`, preview URLs from other branches. GitHub Actions only gates merges; it does not deploy. |
-| **Track B (optional): MCP Worker transport** | You changed MCP HTTP/WebSocket transport behavior or Worker-only MCP deployment settings. | Track A flow for the site plus `bun run mcp:check` and `bun run mcp:deploy` when you need the remote MCP endpoint updated. |
+| Track                                                            | Use when                                                                                  | Primary path                                                                                                                                                                                                    |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Track A (default): Site Worker via Cloudflare Workers Builds** | Nearly every release.                                                                     | Cloudflare Workers Builds runs `bun run site:build:gated` and `wrangler deploy` on every push — production from `main`, preview URLs from other branches. GitHub Actions only gates merges; it does not deploy. |
+| **Track B (optional): MCP Worker transport**                     | You changed MCP HTTP/WebSocket transport behavior or Worker-only MCP deployment settings. | Track A flow for the site plus `bun run mcp:check` and `bun run mcp:deploy` when you need the remote MCP endpoint updated.                                                                                      |
 
 To deploy only the site, follow Track A and skip Track B.
 
 ## Track A quick path (default production flow)
 
 The site deploys as the `stims` Worker with static assets, configured in [`wrangler.site.jsonc`](../wrangler.site.jsonc). Cloudflare Workers Builds watches the GitHub repo and builds/deploys on push, so a release is:
-
 1. Run the quality gate, which includes the README claim and generated-artifact checks:
 
    ```bash
@@ -50,7 +49,6 @@ Keep the orchestration in `scripts/build-site.mjs`. Running both compilers as a 
 ### One-time Workers Builds setup
 
 Done in the Cloudflare dashboard (Workers & Pages → the `stims` Worker → Settings → Builds, or "Import a repository" if the Worker does not exist yet):
-
 1. Connect the `zz-plant/stims` GitHub repository.
 2. Build command: `bun run site:build:gated`. Deploy command: `bunx wrangler deploy --config wrangler.site.jsonc`. Non-production branch command: `bunx wrangler versions upload --config wrangler.site.jsonc`.
 
@@ -79,7 +77,6 @@ bun run build -- --reuse
 ### Artifact Layout
 
 After `bun run build`, expect the following structure:
-
 - `dist/`: HTML entry points and hashed JS/CSS assets under `dist/assets/`.
 - `dist/.vite/manifest.json`: build metadata that `--reuse` checks for.
 
@@ -88,7 +85,6 @@ When deploying to static hosting, serve the contents of `dist/` directly and kee
 ## Verify Locally
 
 Use the same scripts defined in `package.json` to validate the production output:
-
 - Preview the build with Vite’s preview server (binds to all interfaces):
 
   ```bash
@@ -106,7 +102,6 @@ Both commands expect a fresh `bun run build` and read from `dist/`.
 ## Static Hosting Expectations
 
 Any static host should point its document root to the `dist/` directory and preserve the following:
-
 - `dist/index.html` (and other HTML entry points).
 - `dist/assets/**` for hashed JS/CSS.
 
@@ -193,7 +188,6 @@ It POSTs the Worker's authenticated backfill route until a run reports no work l
 The site previously deployed as a Cloudflare Pages project with its own Wrangler TOML config, deploy helper script, and `pages:*` package scripts. That path was removed after the `toil.fyi` custom domain moved to the `stims` Worker; the manual fallback is now `bun run site:deploy` (see the Track A quick path above).
 
 Manual deploy authentication notes:
-
 - Local interactive deploys can use `bun run cf:whoami` plus Wrangler login state.
 - Non-interactive deploys require `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
@@ -202,7 +196,6 @@ Manual deploy authentication notes:
 The MCP HTTP/WebSocket endpoint lives in [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). It has its own Wrangler config in [`wrangler.mcp.jsonc`](../wrangler.mcp.jsonc), separate from the site config in [`wrangler.site.jsonc`](../wrangler.site.jsonc).
 
 Common commands (Bun-first):
-
 - Validate the Worker deploy config before shipping:
 
   ```bash
@@ -222,7 +215,6 @@ Common commands (Bun-first):
   ```
 
 Expected artifacts and checkpoints:
-
 - Worker script bundled by Wrangler (appears as `stims-mcp` in the dashboard; `stims` is the site Worker).
 - Preview URL surfaced by `wrangler dev` for local testing and a production URL after `wrangler deploy`.
 - The compatibility date and flags live in [`wrangler.mcp.jsonc`](../wrangler.mcp.jsonc); WebSocket support depends on them.

@@ -1,8 +1,8 @@
-name: 'Setup Playwright Environment'
-description: 'Caches Playwright browser binaries and provisions Chromium dependencies'
+name: "Setup Playwright Environment"
+description: "Caches Playwright browser binaries and provisions Chromium dependencies"
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Cache Playwright browsers
       id: playwright-cache

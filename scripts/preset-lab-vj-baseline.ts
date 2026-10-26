@@ -530,13 +530,13 @@ export function describeCells(group: readonly Cell[]) {
 
 /** describeCells per memory group and class. */
 export function summariseMemory(cells: readonly Cell[]) {
-  const describe = describeCells;
+  const summariseGroup = describeCells;
   const classes = [...new Set(cells.map((cell) => cell.memory as string))];
   return {
-    bounded: describe(
+    bounded: summariseGroup(
       cells.filter((c) => memoryGroup(c.memory ?? 'unprobed') === 'bounded'),
     ),
-    stateful: describe(
+    stateful: summariseGroup(
       cells.filter((c) => memoryGroup(c.memory ?? 'unprobed') === 'stateful'),
     ),
     byClass: Object.fromEntries(
@@ -544,7 +544,7 @@ export function summariseMemory(cells: readonly Cell[]) {
         .sort()
         .map((name) => [
           name,
-          describe(cells.filter((cell) => cell.memory === name)),
+          summariseGroup(cells.filter((cell) => cell.memory === name)),
         ]),
     ),
   };

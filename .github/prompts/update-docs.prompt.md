@@ -1,4 +1,5 @@
 ---
+
 name: update-docs
 description: "Guide for updating or adding agent documentation: from planning to validation to cross-linking. Use when adding/editing agent guides, architecture docs, or README updates."
 ---
@@ -9,12 +10,12 @@ You're updating or adding documentation. Follow this flow.
 
 ## 1. Determine the Document Type
 
-| Type | Location | When to update | Validation |
-|------|----------|---------------|----|
-| Agent guidance | `docs/agents/*.md` | Agent workflows, tools, task routing | Links stay current |
-| Architecture | `docs/*.md` | Runtime behavior, design decisions | Accuracy with code |
-| Entry points | `README.md`, `AGENTS.md`, `docs/README.md` | When adding/moving docs | `docs/DOCS_MAINTENANCE.md` |
-| In-code comments | `src/`, `packages/`, `scripts/`, `tests/` | Complex logic, non-obvious patterns | Stays in sync with code |
+| Type             | Location                                   | When to update                       | Validation                 |
+| ---------------- | ------------------------------------------ | ------------------------------------ | -------------------------- |
+| Agent guidance   | `docs/agents/*.md`                         | Agent workflows, tools, task routing | Links stay current         |
+| Architecture     | `docs/*.md`                                | Runtime behavior, design decisions   | Accuracy with code         |
+| Entry points     | `README.md`, `AGENTS.md`, `docs/README.md` | When adding/moving docs              | `docs/DOCS_MAINTENANCE.md` |
+| In-code comments | `src/`, `packages/`, `scripts/`, `tests/`  | Complex logic, non-obvious patterns  | Stays in sync with code    |
 
 ## 2. Plan Your Changes
 
@@ -30,9 +31,10 @@ You're updating or adding documentation. Follow this flow.
 - [ ] Code examples are current and tested
 
 ### Markdown checklist:
+
 - [ ] Headings hierarchy is logical (h1 → h2 → h3)
 - [ ] Lists use consistent formatting
-- [ ] Code blocks have language tags (```bash, ```typescript)
+- [ ] Code blocks have language tags (`bash, `typescript)
 - [ ] Links use relative paths: `[Testing](../../docs/TESTING.md)`
 
 ## 4. Validate Links and Format
@@ -48,7 +50,6 @@ bun run check:readme-claims
 ## 5. Cross-Link Maintenance
 
 If you added, moved, renamed, or removed a doc:
-
 - [ ] Update `docs/README.md` (canonical index)
 - [ ] Update `docs/agents/README.md` if the doc lives in `docs/agents/`
 - [ ] Update `AGENTS.md` if agents need it at session start

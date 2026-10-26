@@ -26,27 +26,27 @@ Test files fan out across `bun test --parallel` workers sized to your CPU count;
 
 To regenerate the README's Play → Edit → Share clip, start `bun run dev`, then run `bun scripts/generate-workflow-demo.ts`. It records the real UI, verifies the copied URL preserves the edited source, and writes a silent MP4 and an accelerated animated WebP under `docs/assets/clips/`; `--preview-only` re-encodes the WebP from the committed MP4 without recording. Browser evidence and raw recordings remain in `output/playwright/workflow-demo/`. Review the generated media before publishing it; [launch material](./LAUNCH.md) contains copy and measurement commands.
 
-| Task | Command |
-| --- | --- |
-| Check local readiness | `bun run doctor` |
-| List every script with its purpose | `bun run help` |
-| Start dev server | `bun run dev` |
-| Start dev and verification watchers | `bun run dev:agent` |
-| Start dev server on all interfaces | `bun run dev:host` |
-| WebGPU-focused local session | `bun run dev:webgpu` |
-| Fast quality gate (lint + types + guards) | `bun run check:quick` |
-| Full quality gate (guards + gate test suite) | `bun run check` |
-| Complete quality gate (guards + all test profiles) | `bun run check:all` |
-| README public-claim drift check | `bun run check:readme-claims` |
-| SEO surface check | `bun run check:seo` |
-| Architecture boundary check | `bun run check:architecture` |
-| Asset health check | `bun run assets:check` |
-| Run default tests (unit + compat) | `bun run test` |
-| Run a specific test file | `bun run test tests/path/to/spec.test.ts` |
-| Run another test profile | See [`TESTING.md`](./TESTING.md#select-a-profile) |
-| Run certification-corpus browser performance suite | `bun run perf:certification-corpus` |
-| Build production assets | `bun run build` |
-| Preview production build | `bun run preview` |
+| Task                                               | Command                                           |
+| -------------------------------------------------- | ------------------------------------------------- |
+| Check local readiness                              | `bun run doctor`                                  |
+| List every script with its purpose                 | `bun run help`                                    |
+| Start dev server                                   | `bun run dev`                                     |
+| Start dev and verification watchers                | `bun run dev:agent`                               |
+| Start dev server on all interfaces                 | `bun run dev:host`                                |
+| WebGPU-focused local session                       | `bun run dev:webgpu`                              |
+| Fast quality gate (lint + types + guards)          | `bun run check:quick`                             |
+| Full quality gate (guards + gate test suite)       | `bun run check`                                   |
+| Complete quality gate (guards + all test profiles) | `bun run check:all`                               |
+| README public-claim drift check                    | `bun run check:readme-claims`                     |
+| SEO surface check                                  | `bun run check:seo`                               |
+| Architecture boundary check                        | `bun run check:architecture`                      |
+| Asset health check                                 | `bun run assets:check`                            |
+| Run default tests (unit + compat)                  | `bun run test`                                    |
+| Run a specific test file                           | `bun run test tests/path/to/spec.test.ts`         |
+| Run another test profile                           | See [`TESTING.md`](./TESTING.md#select-a-profile) |
+| Run certification-corpus browser performance suite | `bun run perf:certification-corpus`               |
+| Build production assets                            | `bun run build`                                   |
+| Preview production build                           | `bun run preview`                                 |
 
 Performance comparisons need more controls than an ordinary smoke test. Follow
 [`RUNTIME_PERFORMANCE.md`](./RUNTIME_PERFORMANCE.md) to hold the preset, audio,
@@ -84,4 +84,3 @@ Use the narrowest command that fits the change. [`TESTING.md`](./TESTING.md) map
 - [`LINEAGE_AND_CREDITS.md`](./LINEAGE_AND_CREDITS.md)
 - [`MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md)
-

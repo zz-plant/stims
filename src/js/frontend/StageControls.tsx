@@ -142,6 +142,18 @@ function transitionActionId(step: (typeof TRANSITION_STEPS)[number]) {
  * a URL or a picker, so they stay in the audio setup panel; these three start
  * (or fail with a useful message) straight from the menu.
  */
+/**
+ * The dock menu lists the same actions the command palette does, so it
+ * teaches the same keys. Resolved per render through the registry rather
+ * than baked in, so a rebind is reflected here too. Module-level so React
+ * does not remount it (and lose its subtree) on every parent render.
+ */
+const MenuHint = ({ actionId }: { actionId: string }) => {
+  const hint = shortcutHintFor(actionId);
+  if (!hint) return null;
+  return <kbd className={styles.menuHint}>{hint}</kbd>;
+};
+
 const AUDIO_SOURCE_OPTIONS = [
   { source: 'demo' as const, shortLabel: 'Demo', name: 'Demo audio' },
   { source: 'microphone' as const, shortLabel: 'Mic', name: 'Microphone' },
@@ -722,17 +734,6 @@ export function StageControls({
   const withHint = (label: string, actionId: string) => {
     const hint = shortcutHintFor(actionId);
     return hint ? `${label} (${hint})` : label;
-  };
-
-  /**
-   * The dock menu lists the same actions the command palette does, so it
-   * teaches the same keys. Resolved per render through the registry rather
-   * than baked in, so a rebind is reflected here too.
-   */
-  const MenuHint = ({ actionId }: { actionId: string }) => {
-    const hint = shortcutHintFor(actionId);
-    if (!hint) return null;
-    return <kbd className={styles.menuHint}>{hint}</kbd>;
   };
 
   const renderMenuItem = (item: MenuItem) => (

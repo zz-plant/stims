@@ -25,7 +25,6 @@ The [OBS Browser Source reference](https://obsproject.com/kb/browser-source) def
 ## Your own music: capture a regular browser
 
 Use this path when you need the browser's file picker, microphone permissions, or tab-audio sharing, or when Browser Source does not render correctly.
-
 1. Open [Stims](https://toil.fyi/?renderer=webgl) in Chrome or another WebGL2-capable browser. Start **Play demo** first to confirm that the stage renders.
 2. Use the audio control to select a local file, microphone, or tab audio. Tab audio depends on browser and operating-system support; select the tab that plays the music and enable audio sharing when the picker offers it.
 3. Select your preset, then use the stage's fullscreen control. The dock hides while watching and returns when the pointer moves.

@@ -10,11 +10,11 @@ bun run dev
 
 This launches the Vite dev server at `http://localhost:5173/`. The key URLs for agent work are:
 
-| URL | Purpose | When to use |
-|-----|---------|------------|
-| `http://localhost:5173/` | Canonical workspace route | Testing launch controls, preset browsing, and live session behavior |
-| `http://localhost:5173/?agent=true` | Agent testing mode on the canonical route | Every QA session (see below) |
-| `http://localhost:5173/milkdrop/?agent=true` | Compatibility-alias verification | Confirming old links redirect into the same root workspace state |
+| URL                                          | Purpose                                   | When to use                                                         |
+| -------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------- |
+| `http://localhost:5173/`                     | Canonical workspace route                 | Testing launch controls, preset browsing, and live session behavior |
+| `http://localhost:5173/?agent=true`          | Agent testing mode on the canonical route | Every QA session (see below)                                        |
+| `http://localhost:5173/milkdrop/?agent=true` | Compatibility-alias verification          | Confirming old links redirect into the same root workspace state    |
 
 ### Agent testing mode (`?agent=true`)
 
@@ -38,11 +38,11 @@ macOS: Cmd+Option+I
 
 ### Layers you can inspect
 
-| Tab | Use for |
-|-----|---------|
-| **Elements** | Inspect DOM structure, verify CSS is applied, check layout |
-| **Console** | View log messages, check for errors/warnings, execute debug commands |
-| **Network** | Check asset loading, preset/texture fetch timing, data sizes |
+| Tab             | Use for                                                               |
+| --------------- | --------------------------------------------------------------------- |
+| **Elements**    | Inspect DOM structure, verify CSS is applied, check layout            |
+| **Console**     | View log messages, check for errors/warnings, execute debug commands  |
+| **Network**     | Check asset loading, preset/texture fetch timing, data sizes          |
 | **Performance** | Record frame rate, identify rendering bottlenecks, check memory usage |
 
 ### Common checks
@@ -137,7 +137,6 @@ Playwright's default headless Chromium launches the real Chrome binary,
 which needs a real GPU for WebGL/WebGPU. On a GPU-less host (most cloud
 agent sandboxes) that silently produces a black canvas — no error, just a
 blank capture that looks like a rendering bug.
-
 - `bun run ctl` (`scripts/stims-ctl.ts`) and `bun run mcp` (`scripts/mcp-server.ts`)
   default to **software rendering (SwiftShader)** for exactly this reason —
   deterministic and works with no GPU, at some speed cost. Set
@@ -212,7 +211,6 @@ These tools help you:
 For coordinated successor work, keep browser QA aligned with [the roadmap's workstreams](../ROADMAP.md#workstreams) so proof, parity, and product claims stay synchronized.
 
 For the bundled shipped presets, test them in the same order used by the parity corpus so evidence stays easy to compare:
-
 - `eos-glowsticks-v2-03-music`
 - `rovastar-parallel-universe`
 - `eos-phat-cubetrace-v2`
@@ -226,7 +224,6 @@ See the Parity docs for details:
 ## Quick mobile testing (no device needed)
 
 DevTools in most browsers can simulate mobile devices without a phone. In Chrome/Edge/Firefox:
-
 1. Press F12 to open DevTools
 2. Look for the "Device Toggle" button (phone/tablet icon, usually top-left of DevTools)
 3. Click it to simulate a mobile viewport
@@ -235,14 +232,14 @@ DevTools in most browsers can simulate mobile devices without a phone. In Chrome
 
 ## Troubleshooting visual issues
 
-| Problem | Diagnostic | Solution |
-|---------|-----------|----------|
-| Page is blank or shows errors | Open DevTools Console (F12) | Check error messages; if build is stale, stop/restart `bun run dev` |
-| Changes don't appear in browser | Dev server may be out of sync | Stop (Ctrl+C), run `bun run dev` again |
-| Audio not detected | Check microphone/speaker permissions | Browser may need permission to access audio; confirm in browser settings |
-| Preset won't load | Check Network tab in DevTools | Ensure preset file exists and is being fetched successfully |
-| Frame rate is low | Check Performance tab; identify long tasks | May be rendering issue; compare with baseline or upstream |
-| Mobile layout is broken | Use DevTools device simulator | Test at 375px, 768px, 1024px, 1920px widths |
+| Problem                         | Diagnostic                                 | Solution                                                                 |
+| ------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------ |
+| Page is blank or shows errors   | Open DevTools Console (F12)                | Check error messages; if build is stale, stop/restart `bun run dev`      |
+| Changes don't appear in browser | Dev server may be out of sync              | Stop (Ctrl+C), run `bun run dev` again                                   |
+| Audio not detected              | Check microphone/speaker permissions       | Browser may need permission to access audio; confirm in browser settings |
+| Preset won't load               | Check Network tab in DevTools              | Ensure preset file exists and is being fetched successfully              |
+| Frame rate is low               | Check Performance tab; identify long tasks | May be rendering issue; compare with baseline or upstream                |
+| Mobile layout is broken         | Use DevTools device simulator              | Test at 375px, 768px, 1024px, 1920px widths                              |
 
 ## Next steps
 

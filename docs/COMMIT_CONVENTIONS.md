@@ -10,17 +10,17 @@ refactor(mcp)!: retire toy tools, fold audio guide into presets
 
 An optional body explains the problem and resulting behavior. Reference an issue when the change addresses it; use a closing keyword only when the implementation completes that issue.
 
-| Type | Use |
-| --- | --- |
-| `feat` | New behavior |
-| `fix` | Correct a bug |
-| `perf` | Improve measured performance |
-| `refactor` | Restructure code without changing behavior |
-| `test` | Add or repair tests |
-| `docs` | Documentation |
-| `style` | Formatting without a behavior change |
-| `chore`, `build`, `ci` | Maintenance, build, or CI work |
-| `revert`, `hotfix` | Reversion or urgent correction |
+| Type                   | Use                                        |
+| ---------------------- | ------------------------------------------ |
+| `feat`                 | New behavior                               |
+| `fix`                  | Correct a bug                              |
+| `perf`                 | Improve measured performance               |
+| `refactor`             | Restructure code without changing behavior |
+| `test`                 | Add or repair tests                        |
+| `docs`                 | Documentation                              |
+| `style`                | Formatting without a behavior change       |
+| `chore`, `build`, `ci` | Maintenance, build, or CI work             |
+| `revert`, `hotfix`     | Reversion or urgent correction             |
 
 ## Enforcement
 

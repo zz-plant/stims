@@ -5,13 +5,11 @@ The attribution rules apply everywhere Stims mentions the MilkDrop lineage: publ
 ## Baseline wording
 
 Use language like:
-
 - "Play and live-edit MilkDrop presets in your browser." This is the public pitch: the README tagline, the page title, and link previews all use it. It names what Stims does with the presets rather than claiming to be MilkDrop, and it is more accurate than "MilkDrop-inspired", because the presets are the original `.milk` files.
 - "Independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop."
 - "Able to load and render presets from the MilkDrop/projectM ecosystem. Visual fidelity is measured one preset at a time against native projectM; only a few presets have been measured, and most of those still differ visibly." Quote counts only from the current scoreboard in [the parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md#current-scoreboard), never from memory.
 
 Avoid language like:
-
 - "Official MilkDrop for the web."
 - "Winamp MilkDrop in the browser."
 - "Full projectM replacement" unless the implementation and test harness actually prove that claim.
@@ -23,13 +21,11 @@ Avoid language like:
 ## What Stims contributes
 
 Product copy (the home page, page titles, link previews) says what Stims does and needs no novelty claim. Any surface that says what is new, such as the README, `llms.txt`, the technical docs or a launch post, uses these three, in this order:
-
 1. **Per-pixel equations run on the GPU, held to the CPU's answer.** Preset equations compile to one IR that runs on an interpreter or a JavaScript JIT. On WebGPU, per-pixel and custom-wave point equations that read only their own inputs are also lowered into the shader and evaluated for every vertex in parallel ([`gpu-field-planner.ts`](../packages/milkdrop-toolchain/src/compiler/gpu-field-planner.ts)); on 2026-10-01 that covered 1,094 of the 1,102 catalog presets with per-pixel code. That is the new part: Butterchurn and projectM run per-pixel equations on the CPU, one grid point at a time. Seeded differential fuzz tests ([`eel-tier-differential`](../tests/unit/eel-tier-differential.test.ts), [`gpu-field-tier-differential`](../tests/unit/gpu-field-tier-differential.test.ts)) hold the tiers to the same results. Their first runs found 18 shipped preset blocks the JIT could not compile and divergent results in 32% of GPU-lowered programs.
 2. **Fidelity is measured, not asserted.** Stims is compared with frames from native projectM, both stepped on a fixed clock, and a difference counts only when it exceeds that preset's own run-to-run noise (`bun run parity:noise`). Results are published per preset, failures included ([scoreboard](./MILKDROP_PROJECTM_PARITY_PLAN.md#current-scoreboard)), and `parity:promote-reference` refuses to certify a reference that a blank frame would pass.
 3. **The preset corpus is read as a set of programs.** `bun run lab:dataflow` works out, from the equations alone, which audio signals reach each control and each drawn program, and the editor shows the same reading beside each slider an equation drives (`eq · bass`). It sorts all 2,679 presets in the lab corpus in seconds, and in 73 of them the audio reaches nothing on screen. Used as training data, the corpus shows that presets behave as threshold programs: gradient-boosted trees beat every network tried, and 41% of memoryless audio-driven controls can be recovered as exact equations from their behaviour ([findings](./guides/training-models.md)).
 
 Present these as what is not new:
-
 - **Running MilkDrop presets in a browser.** Butterchurn did it first.
 - **Editing a preset while it plays.** MilkDrop 2 had a built-in editor. Stims brings it back, adding completions, compiler diagnostics, sliders, and a link that carries the edit. Compare it only with Butterchurn and projectM, which have no editor, and say "brings back".
 - **Playing `.milk` files without converting them.** projectM does too; the contrast holds only against Butterchurn.
@@ -37,10 +33,10 @@ Present these as what is not new:
 ## Credits Stims owes
 
 - **Ryan Geiss / MilkDrop**: Credit the original creative and technical lineage of the flagship MilkDrop visualizer, per-pixel warp equations, and Winamp plugin.
-- **Jordan Berg (`jberg`) & Butterchurn Contributors**: Credit the pioneering web implementation of MilkDrop in WebGL that made web-based visualization accessible to millions. Butterchurn's home is butterchurnviz.com; milkdrop.org is a separate, later community site that *uses* Butterchurn for its browser previews, so do not credit Butterchurn to it.
+- **Jordan Berg (`jberg`) & Butterchurn Contributors**: Credit the pioneering web implementation of MilkDrop in WebGL that made web-based visualization accessible to millions. Butterchurn's home is butterchurnviz.com; milkdrop.org is a separate, later community site that _uses_ Butterchurn for its browser previews, so do not credit Butterchurn to it.
 - **Carmelo Piccione, Mischa Spiegelmock & projectM Contributors**: Credit them whenever projectM materially informs the work through code, tests, behavior diffing, compatibility research, reference captures, or preset collections.
-- **Preset Authors**: Credit the artists who created the shipped presets, import fixtures, screenshots, and compatibility corpora. The most-credited handles in the catalog are *Geiss, Flexi, Martin, Rovastar, Eo.S., Stahlregen, Unchained, fiShbRaiN, Phat, Aderrasi, Shifter, Zylot, ORB, suksma, Cope, Goody, and Krash*, with roughly 120 more behind them. Any name added to this list must appear in the shipped catalog — see [Verifying a credit](#verifying-a-credit).
-- **Curators**: Credit pack compilers as curators, distinctly from authors. Curation decided which presets anyone ever saw: *djdafreund* (Better Living Through Chemicals, which ships inside projectM as `bltc201`) and *Jason Fletcher / ISOSCELES* (Cream of the Crop, the default projectM pack since 2022) are the two whose selections Stims inherits.
+- **Preset Authors**: Credit the artists who created the shipped presets, import fixtures, screenshots, and compatibility corpora. The most-credited handles in the catalog are _Geiss, Flexi, Martin, Rovastar, Eo.S., Stahlregen, Unchained, fiShbRaiN, Phat, Aderrasi, Shifter, Zylot, ORB, suksma, Cope, Goody, and Krash_, with roughly 120 more behind them. Any name added to this list must appear in the shipped catalog — see [Verifying a credit](#verifying-a-credit).
+- **Curators**: Credit pack compilers as curators, distinctly from authors. Curation decided which presets anyone ever saw: _djdafreund_ (Better Living Through Chemicals, which ships inside projectM as `bltc201`) and _Jason Fletcher / ISOSCELES_ (Cream of the Crop, the default projectM pack since 2022) are the two whose selections Stims inherits.
 - **Winamp / Nullsoft**: Credit the original public product context when discussing MilkDrop history.
 
 ## How to credit a preset author
@@ -49,7 +45,6 @@ Preset authors published under handles. Those handles are the names the work
 entered the world under, the names the community uses, and the names embedded
 in the filenames — so they are what Stims credits, and the correct spelling is
 the published one, not a tidied-up one.
-
 - **Spell the handle as published.** `fiShbRaiN`, not `Fishbrain`. `Eo.S.`, not
   `EoS`. `shifter` and `suksma` stay lowercase because that is how they signed
   their work. The canonical spelling for every handle Stims knows lives in
@@ -76,7 +71,7 @@ the published one, not a tidied-up one.
 - **Use a legal name only where the person publishes under one.** Ryan Geiss;
   Jason Fletcher, who credits himself as both Fletcher and ISOSCELES; Bill
   Melgren, whose name appears in Geiss's own credits and in filenames as
-  *Bmelgren*. Everyone else is their handle and nothing else. Do not add an
+  _Bmelgren_. Everyone else is their handle and nothing else. Do not add an
   author's employer, location, or personal accounts to this repo.
 - **Link a byline only to a page the author publishes under.** Pointing a name
   at a pack that redistributes their work implies it is their site and quietly
@@ -87,10 +82,9 @@ the published one, not a tidied-up one.
 
 Every name in public copy must be checkable against something in this repo.
 Before adding one:
-
 1. **Confirm it is in the shipped catalog.** A name that appears in no preset
    cannot be described as powering the catalog. This is not hypothetical — the
-   README previously credited *FSP*, *Unbalanced*, and *Yad* for the catalog's
+   README previously credited _FSP_, _Unbalanced_, and _Yad_ for the catalog's
    presets, and none of the three appear in any of them.
 2. **Confirm the role.** Author, curator, or engine contributor are different
    claims. We previously labelled Eo.S. the curator of Cream of the Crop (that

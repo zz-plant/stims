@@ -5,7 +5,6 @@ A MilkDrop preset is a text file of small equations. The engine runs them every 
 ## Lesson 1 · The screen is the memory
 
 Many MilkDrop effects — tunnels, trails, plasma, smoke — build on one feedback loop:
-
 1. Take the image currently on screen.
 2. Redraw it, slightly transformed.
 3. Draw this frame's audio waveform on top.
@@ -35,9 +34,9 @@ zoom=0.99
 
 Now history collapses toward the center instead.
 
-> **If you know Shadertoy:** a fragment shader there is stateless — every frame is computed from scratch out of `time` and coordinates. MilkDrop is the opposite: every frame is a function of the *previous frame*. That's why a single constant produces motion, and why intuition from stateless shaders doesn't transfer until you internalize the loop.
+> **If you know Shadertoy:** a fragment shader there is stateless — every frame is computed from scratch out of `time` and coordinates. MilkDrop is the opposite: every frame is a function of the _previous frame_. That's why a single constant produces motion, and why intuition from stateless shaders doesn't transfer until you internalize the loop.
 
-**Turn one knob.** In either run link, edit the `zoom` value in the editor (it applies as you type — `Cmd/Ctrl+Enter` forces it). Find the value where motion is *barely* perceptible. Most of the presets you'll love live within a few percent of `1`.
+**Turn one knob.** In either run link, edit the `zoom` value in the editor (it applies as you type — `Cmd/Ctrl+Enter` forces it). Find the value where motion is _barely_ perceptible. Most of the presets you'll love live within a few percent of `1`.
 
 ## Lesson 2 · The pipeline
 
@@ -54,13 +53,13 @@ flowchart LR
     OUT -. becomes next frame's input .-> PF
 ```
 
-| Stage | Runs | You write it as | Typical job |
-|---|---|---|---|
-| per-frame | once per frame | `per_frame_N=` lines | Read audio, set the motion/color knobs |
-| per-pixel | once per mesh point per frame | `per_pixel_N=` lines | Vary those knobs across the screen (Track 4) |
-| warp shader | every pixel | `[warp_shader]` block | Distort the previous frame (Track 6) |
-| draw | once per frame | wave/shape settings + equations | Add the new ink: waveform, custom waves, shapes (Track 5) |
-| comp shader | every pixel | `[comp_shader]` block | Final color grade of everything (Track 6) |
+| Stage       | Runs                          | You write it as                 | Typical job                                               |
+| ----------- | ----------------------------- | ------------------------------- | --------------------------------------------------------- |
+| per-frame   | once per frame                | `per_frame_N=` lines            | Read audio, set the motion/color knobs                    |
+| per-pixel   | once per mesh point per frame | `per_pixel_N=` lines            | Vary those knobs across the screen (Track 4)              |
+| warp shader | every pixel                   | `[warp_shader]` block           | Distort the previous frame (Track 6)                      |
+| draw        | once per frame                | wave/shape settings + equations | Add the new ink: waveform, custom waves, shapes (Track 5) |
+| comp shader | every pixel                   | `[comp_shader]` block           | Final color grade of everything (Track 6)                 |
 
 Everything in Tracks 1–2 happens at the first station. `zoom` in the file is the starting value of a knob; `per_frame` code can overwrite it every frame — that's Lesson 4.
 
@@ -96,14 +95,13 @@ per_frame_1=zoom = 1 + 0.02*sin(time*0.8);
 
 Three timing variables cover nearly everything:
 
-| Variable | What it is | Reach for it when |
-|---|---|---|
-| `time` | seconds, fractional | smooth motion — `sin(time*k)` is the heartbeat of the entire art form |
-| `frame` | frames since start, integer | counting and stepping — `frame%40` fires every 40th frame |
-| `fps` | current frame rate | correcting speed so the preset runs identically on slow and fast machines — the classic idiom is a `(75/fps)` factor on anything accumulated per frame |
+| Variable | What it is                  | Reach for it when                                                                                                                                      |
+| -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `time`   | seconds, fractional         | smooth motion — `sin(time*k)` is the heartbeat of the entire art form                                                                                  |
+| `frame`  | frames since start, integer | counting and stepping — `frame%40` fires every 40th frame                                                                                              |
+| `fps`    | current frame rate          | correcting speed so the preset runs identically on slow and fast machines — the classic idiom is a `(75/fps)` factor on anything accumulated per frame |
 
 Language notes you now need (the expression language is NS-EEL, inherited from Winamp):
-
 - Every statement is an assignment ending in `;`. No declarations — assign to any name and it exists.
 - Everything is a number. There are no strings or booleans; comparisons like `equal(a,b)` and `above(a,b)` return 1 or 0, and anything within 0.00001 of zero counts as false.
 - Names are case-insensitive.
@@ -112,9 +110,9 @@ Language notes you now need (the expression language is NS-EEL, inherited from W
 
 ## What you can now predict
 
-- Why `zoom=1.01` makes trails *stream* rather than *jump*: compounding.
+- Why `zoom=1.01` makes trails _stream_ rather than _jump_: compounding.
 - Why a bright flash lingers: `decay` is the only eraser.
-- Why nothing in MilkDrop needs a "trail" feature: trails are what a feedback loop *is*.
+- Why nothing in MilkDrop needs a "trail" feature: trails are what a feedback loop _is_.
 - What any `per_frame` line does: overwrite a knob before this frame's redraw.
 
 **Next:** [Track 2 — Motion](02-motion.md). Every remaining motion knob, one at a time, then a line-by-line read of a real Geiss preset.

@@ -1,4 +1,5 @@
 ---
+
 name: modify-visualizer-runtime
 description: "Modify the flagship visualizer runtime safely. Use when changing the shared runtime, loader, renderer, shell, controls, audio flows, capability checks, or canonical-route behavior."
 ---

@@ -6,26 +6,26 @@ The first deliverable is a reference-guided remix: find an editable starting poi
 
 ## Existing capabilities and missing connections
 
-| Capability | Existing seam | Gap the loops address |
-| --- | --- | --- |
-| Visual retrieval | [Preview vectors](../src/js/core/services/preset-visual-vectors.ts): local neighbors, diversity ranking, visual terms, vector search and blending | Arbitrary reference queries, multiple capture contexts, and retrieval of edits or failures |
-| Description retrieval | [Hosted visual search](../functions/api/visual-search.ts) uses BGE description vectors | Richer descriptions and evaluation against direct multimodal retrieval; BGE and EmbeddingGemma vectors belong to separate spaces |
-| Generation and edits | [Generation tournament](../src/js/milkdrop/preset-generator.ts), [refine](../functions/api/refine-preset.ts), [reviewable source diff](../src/js/milkdrop/overlay/source-diff.ts) | Retrieved examples, bounded render-and-repair, and durable accept/revert outcomes |
-| Typed judgments | [Fixed Clef tasks](../src/js/core/decision-model.ts) and [decision endpoint](../functions/api/decide.ts) | Task-specific calibration and new server-owned schemas where the five existing tasks do not fit |
-| Audio and animation checks | [By sound](../src/js/frontend/PresetFinderPanel.tsx), [Check animation](../src/js/frontend/SynthesizePanel.tsx), and [performance scenes](../src/js/frontend/live-performance.ts) | Repeated phrase-aware decisions with cancellation, look-ahead, and manual takeover |
-| Deterministic evidence | [Visual lab](../scripts/preset-lab-visual.ts), [reactivity lab](../scripts/preset-lab-reactivity.ts), [dataset builder](../scripts/preset-lab-dataset.ts), and the [instrument index](./agents/tooling-and-quality.md) | Pair source changes with measured renders and user outcomes; the CPU VM dataset alone contains no rendered pixels |
+| Capability                 | Existing seam                                                                                                                                                                                                          | Gap the loops address                                                                                                            |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Visual retrieval           | [Preview vectors](../src/js/core/services/preset-visual-vectors.ts): local neighbors, diversity ranking, visual terms, vector search and blending                                                                      | Arbitrary reference queries, multiple capture contexts, and retrieval of edits or failures                                       |
+| Description retrieval      | [Hosted visual search](../functions/api/visual-search.ts) uses BGE description vectors                                                                                                                                 | Richer descriptions and evaluation against direct multimodal retrieval; BGE and EmbeddingGemma vectors belong to separate spaces |
+| Generation and edits       | [Generation tournament](../src/js/milkdrop/preset-generator.ts), [refine](../functions/api/refine-preset.ts), [reviewable source diff](../src/js/milkdrop/overlay/source-diff.ts)                                      | Retrieved examples, bounded render-and-repair, and durable accept/revert outcomes                                                |
+| Typed judgments            | [Fixed Clef tasks](../src/js/core/decision-model.ts) and [decision endpoint](../functions/api/decide.ts)                                                                                                               | Task-specific calibration and new server-owned schemas where the five existing tasks do not fit                                  |
+| Audio and animation checks | [By sound](../src/js/frontend/PresetFinderPanel.tsx), [Check animation](../src/js/frontend/SynthesizePanel.tsx), and [performance scenes](../src/js/frontend/live-performance.ts)                                      | Repeated phrase-aware decisions with cancellation, look-ahead, and manual takeover                                               |
+| Deterministic evidence     | [Visual lab](../scripts/preset-lab-visual.ts), [reactivity lab](../scripts/preset-lab-reactivity.ts), [dataset builder](../scripts/preset-lab-dataset.ts), and the [instrument index](./agents/tooling-and-quality.md) | Pair source changes with measured renders and user outcomes; the CPU VM dataset alone contains no rendered pixels                |
 
 The generation tournament already compiles and scores candidates. It does not retrieve successful edit episodes or run a full visual repair loop. `lab:generation-bench --visual` remains a stub. The existing one-shot Omni audio and scene actions do not establish musical fit or a continuous performance mode.
 
 ## Model roles
 
-| Role | Proposed responsibility | Authority |
-| --- | --- | --- |
-| EmbeddingGemma 2 | Retrieve reference looks, source fragments, edit episodes, audio contexts, and related failures; retain separate representations for each evidence type | Supplies candidates, never a validity or safety verdict |
-| Clef Flash | Text/image observations, candidate fit, and choosing a bounded next step | Typed advisory answers with hold/review paths |
-| Clef Omni | Audio/video fit and broad motion judgments when those inputs are explicitly supplied | Same action limits; no timing or flash-safety verdict |
-| Frontier writer or teacher | Difficult source patches, repair hypotheses, explanations, and occasional offline critiques | Produces a proposal; a teacher label stays distinct from a human outcome |
-| Stims code and instruments | Bounds, source identity, compilation, rendering, measurements, review, and application | Own all side effects and hard gates |
+| Role                       | Proposed responsibility                                                                                                                                 | Authority                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| EmbeddingGemma 2           | Retrieve reference looks, source fragments, edit episodes, audio contexts, and related failures; retain separate representations for each evidence type | Supplies candidates, never a validity or safety verdict                  |
+| Clef Flash                 | Text/image observations, candidate fit, and choosing a bounded next step                                                                                | Typed advisory answers with hold/review paths                            |
+| Clef Omni                  | Audio/video fit and broad motion judgments when those inputs are explicitly supplied                                                                    | Same action limits; no timing or flash-safety verdict                    |
+| Frontier writer or teacher | Difficult source patches, repair hypotheses, explanations, and occasional offline critiques                                                             | Produces a proposal; a teacher label stays distinct from a human outcome |
+| Stims code and instruments | Bounds, source identity, compilation, rendering, measurements, review, and application                                                                  | Own all side effects and hard gates                                      |
 
 Select writers by a frozen Stims benchmark through the existing provider abstraction. Record the exact provider/model revision and prompt version. Evaluate a stronger coding model for difficult repairs and a multimodal model for reference critique; do not assume one vendor or a general leaderboard winner wins every task. Teacher critiques can propose labels or examples for review, but cannot certify their own generated output or silently become training truth.
 
@@ -35,16 +35,16 @@ Ship the smallest store needed for LL-01. An episode connects an intent to a sou
 
 ### Episode record
 
-| Field group | Required contract |
-| --- | --- |
-| Identity | Schema version, episode ID, parent episode, loop ID, creation time, local session ID, preset identity and remix-family/lineage identity |
-| Intent | User request, explicit properties to preserve, reference artifact IDs, and whether each annotation came from the user, a model, or an instrument |
-| Source | Before/after source hashes, source references, proposed diff, compiler/toolchain version, and source revision expected at apply time |
-| Evidence | Content-addressed artifact references; requested and actual backend, viewport/aspect, engine revision, audio scenario or clip hash, seed, capture time and time window; unknown fields stay unknown |
-| Measurements | Instrument/version, conditions, raw result reference, pass/fail/unmeasured status, and scope of each measured claim |
-| Model receipt | Provider/model revision, question/prompt version, input digest, offered candidate IDs, component answers, disposition, latency, usage when available, and failure status |
-| Outcome | Separate events for proposal shown, applied, explicitly accepted, rejected, and reverted; unreviewed is the default. Include the user-selected reason when supplied |
-| Ownership | Local/private or reviewed-public origin, source license/credit, consent for retained artifacts, and retention policy |
+| Field group   | Required contract                                                                                                                                                                                   |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identity      | Schema version, episode ID, parent episode, loop ID, creation time, local session ID, preset identity and remix-family/lineage identity                                                             |
+| Intent        | User request, explicit properties to preserve, reference artifact IDs, and whether each annotation came from the user, a model, or an instrument                                                    |
+| Source        | Before/after source hashes, source references, proposed diff, compiler/toolchain version, and source revision expected at apply time                                                                |
+| Evidence      | Content-addressed artifact references; requested and actual backend, viewport/aspect, engine revision, audio scenario or clip hash, seed, capture time and time window; unknown fields stay unknown |
+| Measurements  | Instrument/version, conditions, raw result reference, pass/fail/unmeasured status, and scope of each measured claim                                                                                 |
+| Model receipt | Provider/model revision, question/prompt version, input digest, offered candidate IDs, component answers, disposition, latency, usage when available, and failure status                            |
+| Outcome       | Separate events for proposal shown, applied, explicitly accepted, rejected, and reverted; unreviewed is the default. Include the user-selected reason when supplied                                 |
+| Ownership     | Local/private or reviewed-public origin, source license/credit, consent for retained artifacts, and retention policy                                                                                |
 
 Applying a diff does not imply satisfaction. Acceptance is an explicit outcome; a later revert remains linked to that acceptance. Dwell, skips, and model agreement are weak signals stored separately. Shared remixes keep their existing lineage; private prompts, clips, and episode history are excluded from exports and share URLs unless explicitly selected.
 
@@ -63,7 +63,6 @@ Matching space does not imply matching thresholds. Calibrate image-neighbor, tex
 Precompute public corpus vectors where possible. Any browser encoder is loaded on demand, with a measured memory/download budget and a cancellation path; playback and local search must remain available when it cannot load. A hosted embedding path needs an explicit indication of the text/media being sent. This spec does not require downloading the full multimodal model on first visit.
 
 Foundation acceptance:
-
 - A changed source or incompatible index revision cannot retrieve an apparently current episode; missing evidence stays visible.
 - Round-trip, migration, quota failure, eviction, and delete tests cover source, vectors, and artifact references together.
 - A local-only session causes no episode/media upload; normal share/export omits private history.
@@ -88,7 +87,6 @@ No loop can overrule compiler, flash, performance, compatibility, or parity fail
 ### LL-01: reference to editable preset
 
 **Trigger:** a user supplies an image, short clip, or visual description and asks for a starting preset. Retrieve rendered examples with EmbeddingGemma 2; Clef selects a plausible supplied candidate or abstains. Offer the existing source first. If the user asks for changes, a writer proposes the smallest useful diff and Stims measures the result under matching conditions.
-
 - Compare against existing visual-term search, local neighbors, and the current image-description generation path on held-out reference briefs. Include references with no suitable catalog match.
 - Preserve source credit and lineage. Show why an example was retrieved and which requested properties are unsupported; a similarity score is not a claim of reproduction.
 - Measure time to an explicitly accepted editable result, acceptance rate, number of drafts, and user effort. Include reference-encoding/download time in latency.
@@ -97,7 +95,6 @@ No loop can overrule compiler, flash, performance, compatibility, or parity fail
 ### LL-02: intent-preserving remix
 
 **Trigger:** an edit such as “keep the tunnel and palette; make the bass response stronger.” Retrieve accepted before/after edits with related source structure and measured behavior. Clef judges each requested change and preservation property separately; the writer drafts a constrained patch.
-
 - Explicitly list what must change and remain. Missing evidence or conflicting constraints produces review/clarification, not silent relaxation.
 - Compare before/after with the same audio, seed, viewport, backend, and observation window. Use dataflow/reactivity evidence for audio coupling and captures for appearance; neither substitutes for the other.
 - Test negative constraints and edits that improve the request while breaking a preserved property. Keep a working original and inspectable diff throughout.
@@ -106,7 +103,6 @@ No loop can overrule compiler, flash, performance, compatibility, or parity fail
 ### LL-03: repair memory
 
 **Trigger:** a compile error, shader failure, blank/frozen result, NaN, or measured regression. Retrieve related diagnostics, source fragments, and verified repairs. Clef may select a diagnostic or repair strategy; a writer proposes a patch. Re-run the failing instrument and the checks that patch can break.
-
 - Reuse replay, NaN sweep, backend diff, compiler/shader checks, visual/reactivity labs, and existing fixtures. Generalize a repair only after testing the related family or subsystem.
 - Keep failures and repairs from the same remix family in one evaluation split. A successful repair must fix the original failure without a new measured regression; compile-only success is reported separately.
 - After the draft budget is exhausted, return diagnostics, best reviewed proposal, and remaining uncertainty. Do not swap the working preset or weaken a guard to make a repair pass.
@@ -115,7 +111,6 @@ No loop can overrule compiler, flash, performance, compatibility, or parity fail
 ### LL-04: learn this effect
 
 **Trigger:** a user asks how a visible or musical effect works. Retrieve a small source example plus the corresponding rendered effect. For an audio claim, deterministic dataflow must establish the audio → equation → drawn-control path. A writer explains it and offers one reviewed edit; Clef can flag mismatch between the example and request.
-
 - Explanations link the actual variables and source lines, distinguish measured behavior from interpretation, and avoid inventing capabilities from a preset title.
 - The learner can compare, apply, and undo the example in the current session. Large rewrites do not count as a small teaching edit.
 - Measure the first successful independent edit and task completion against the existing authoring docs. Model agreement with its own explanation is not the outcome.
@@ -123,7 +118,6 @@ No loop can overrule compiler, flash, performance, compatibility, or parity fail
 ### LL-05: phrase-aware performance
 
 **Trigger:** a performer explicitly arms assistance for a saved set. Extend the existing Omni shortlist/scene action with phrase/section context and a look-ahead window. Retrieve suitable scenes or bridge presets, then choose among `hold`, a supplied scene, or a supplied bridge. Local ramps and modulators execute movement.
-
 - Hosted decisions operate at phrase scale; Stims retains beat timing. Gate proposed changes on local readiness, comfort settings, permitted parameter ranges, and current scene/audio revision.
 - Declare a minimum dwell and maximum change rate in the armed policy. Discard late choices; manual takeover immediately disarms pending automation and restores direct control.
 - Evaluate unfamiliar music, shuffled-audio controls, silence, repetitive picks, recording, and unavailable/slow inference. No audio permission or continuous upload follows from opening the panel.
@@ -132,7 +126,6 @@ No loop can overrule compiler, flash, performance, compatibility, or parity fail
 ### LL-06: choose the next experiment
 
 **Trigger:** an authoring or repair pilot has a concrete evidence gap. Cluster related source/capture failures and model disagreement; use Clef to choose from a supplied menu of existing instruments and contexts, including `stop`. The lab runner owns the arguments, budget, and execution.
-
 - Each proposed run names the studio question it resolves, the missing context, and the maximum capture/call cost. A disagreement alone is not proof of an engine defect.
 - Prioritize representative uncovered families and failure clusters while reserving a fixed evaluation sample; do not repeatedly select only hard cases and report their rate as corpus prevalence.
 - Measure confirmed failures per GPU-minute and coverage gained per capture against a fixed stratified schedule. Report CPU software-rendered correctness separately from hardware performance.
@@ -141,7 +134,6 @@ No loop can overrule compiler, flash, performance, compatibility, or parity fail
 ### LL-07: session taste
 
 **Trigger:** an explicit save, accepted edit, rejection, or “less like this.” Build a local session preference from versioned episode representations; retrieve a diverse set with an explanation of the supporting actions. Clef may check stated constraints on the shortlist.
-
 - Dwell/skip signals receive separate, weaker treatment and never imply a health, mood, or sensory-safety preference. Explicit exclusions override similarity ranking.
 - Provide reset/delete and a way to explore outside the preference. No private listening or source history is uploaded automatically.
 - Compare accepted discoveries, diversity, repetition, and overrides with current favorites/history ranking. Test a cold session, conflicting feedback, and the deletion of an episode that contributed to the preference.
@@ -149,7 +141,6 @@ No loop can overrule compiler, flash, performance, compatibility, or parity fail
 ### LL-08: catalog refresh
 
 **Trigger:** a source, renderer, capture policy, or embedding revision changes. Invalidate affected representations, selectively recapture the contexts needed by the consuming workflow, generate richer descriptions/vectors, and submit proposed labels for review. Clef can flag description/capture mismatch.
-
 - Retain backend, aspect, audio/time context and hashes for each representation; a landscape preview cannot stand in for portrait behavior. Sample multiple motion/audio contexts where a single frame misses the requested property.
 - Refresh can run incrementally and resume without publishing mixed incompatible spaces. Old artifacts may remain inspectable with a stale label but cannot support current promoted claims.
 - Compare retrieval relevance, stale-result rate, coverage, and duplicate-description collapse with the current static vectors and BGE description fallback. Publication uses deterministic index validation and existing catalog promotion rules.
@@ -158,7 +149,6 @@ No loop can overrule compiler, flash, performance, compatibility, or parity fail
 ### LL-09: measured parameter optimization
 
 **Status: research.** Pair bounded source/parameter changes with actual render, reactivity, comfort, and frame-cost measurements. Train a small surrogate to propose the next local experiment; run that experiment and update the dataset. EmbeddingGemma can retrieve similar measured episodes; Clef can choose among supplied experiment types.
-
 - CPU VM trajectories are useful features and stress cases, not visual labels. Obtain paired rendered outcomes with capture hashes before fitting a visual surrogate.
 - Split by family and reserve unseen parameter ranges/audio/backend contexts. Report uncertainty and reject extrapolation outside the evaluated domain.
 - Compare improvement per experiment against random bounded search and a simple local search. Check that any gain survives new seeds and actual devices; no performance conclusions from software rasterization.
@@ -166,12 +156,12 @@ No loop can overrule compiler, flash, performance, compatibility, or parity fail
 
 ## Delivery sequence and release evidence
 
-| Stage | Scope | Exit evidence |
-| --- | --- | --- |
-| A: reference-guided remix | LL-00 + LL-01, with LL-08 limited to their reference corpus | One reviewable workflow stores and reuses an outcome; a frozen baseline comparison measures accepted editable results and total latency |
-| B: reliable edits and repairs | LL-02 + LL-03; LL-06 only for their measurement gaps | Preserved-property failures and held-out repairs are measured; bounded retries, cancellation, and stale-result tests pass |
-| C: learning and session assistance | LL-04 + LL-07; LL-05 as a separately armed performance pilot | Task-specific benefit, privacy/deletion, diversity, takeover, and slow/unavailable-service behavior are measured |
-| Research | LL-09 | Paired render dataset and held-out improvement over simple search before a product commitment |
+| Stage                              | Scope                                                        | Exit evidence                                                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| A: reference-guided remix          | LL-00 + LL-01, with LL-08 limited to their reference corpus  | One reviewable workflow stores and reuses an outcome; a frozen baseline comparison measures accepted editable results and total latency |
+| B: reliable edits and repairs      | LL-02 + LL-03; LL-06 only for their measurement gaps         | Preserved-property failures and held-out repairs are measured; bounded retries, cancellation, and stale-result tests pass               |
+| C: learning and session assistance | LL-04 + LL-07; LL-05 as a separately armed performance pilot | Task-specific benefit, privacy/deletion, diversity, takeover, and slow/unavailable-service behavior are measured                        |
+| Research                           | LL-09                                                        | Paired render dataset and held-out improvement over simple search before a product commitment                                           |
 
 Before tuning, freeze briefs, source/capture revisions, remix-family splits, baseline policies, evaluation budgets, success margins, and permitted regression rates. Use independently labeled references and blind user comparisons. The first pilot may be small, but its size and uncertainty must be reported; fixture correctness alone cannot demonstrate product benefit.
 

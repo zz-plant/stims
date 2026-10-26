@@ -9,7 +9,6 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 ## Problem Summary
 
 Status checked against the code on 2026-10-13. Only problems 2 and 4 remain open.
-
 1. **WebGPU feedback pipeline had split ownership.** Resolved: native TSL feedback has run by default on the full WebGPU path since 2026-08-06 (`789c1e9a`), and `feedback-render-targets.ts` allocates targets for both backends.
 2. **TSL duplication.** Open: `feedback-manager-webgpu-tsl.ts` still mirrors the GLSL composite shader as TSL node graphs by hand.
 3. **Worker renderer was WebGPU-only with no fallback.** Moot: the unwired worker renderer prototype was deleted in #1104 and its protocol in #1454.
@@ -23,7 +22,6 @@ Status checked against the code on 2026-10-13. Only problems 2 and 4 remain open
 ### 1) Unify Feedback Pipeline to Be Backend-Native
 
 Feedback render targets should be backend-aware so WebGPU sessions stop round-tripping through WebGL internals.
-
 - Keep renderer feedback/fallback decisions in `renderer-execution-plan.ts`
 - Extract WebGL feedback target construction behind `feedback-render-targets.ts`
 - Implement a WebGPU render target variant using `three/webgpu`
@@ -34,7 +32,6 @@ Files: `src/js/milkdrop/renderer-execution-plan.ts`, `src/js/milkdrop/feedback-r
 ### 2) Consolidate Composite Shader Source of Truth
 
 Composite shading should have one source of truth instead of the GLSL/TSL dual-maintenance problem.
-
 - Define the composite pipeline as a declarative IR
 - Generate both GLSL and TSL from the single IR
 - Explore using TSL for both backends (TSL can emit GLSL)
@@ -44,7 +41,6 @@ Files: a new composite-pipeline IR module (not yet written — an earlier stub w
 ### 3) Add WebGL Fallback to Worker Renderer
 
 Offscreen rendering should also work on WebGL-only devices.
-
 - Add `WorkerWebGLOffscreenRenderer` using `OffscreenCanvas.getContext('webgl2')`
 - Route via the existing message protocol
 - Keep the worker WebGL path simple (no feedback/batching)
@@ -69,7 +65,6 @@ Files: `src/js/core/renderer-setup.ts`
 ### 4) Vectorize WGSL Code Generation
 
 Generate `vec2f`/`vec3f` WGSL types where expression trees operate on related scalars.
-
 - Track value "width" through the expression tree
 - Emit vectorized WGSL when all operands share a width
 - Fuse adjacent scalar assignments into vector assignments
@@ -79,7 +74,6 @@ Files: `packages/milkdrop-toolchain/src/compiler/wgsl-generator.ts`, `src/js/mil
 ### 5) Implement RenderBundle for Static Draw Calls
 
 Pre-record static draw commands to reduce per-frame CPU overhead.
-
 - Identify static draw calls (background quad, border outlines)
 - Pre-record as WebGPU RenderBundles
 - Execute bundles in the render pass
@@ -89,7 +83,6 @@ Files: new `src/js/milkdrop/renderer-bundles.ts`, `src/js/milkdrop/renderer-adap
 ### 6) Gradual WebGPU Enablement
 
 Phase WebGPU enablement by platform instead of a universal off.
-
 - Platform-specific gating (Chrome 120+ desktop first)
 - Track engagement/error/fallback rates via telemetry
 
@@ -98,7 +91,6 @@ Files: `src/js/core/renderer-query-override.ts`
 ### 7) Split Compiler Execution Contracts
 
 Shader execution support should be explicit, without raw field checks spread across compiler and renderer modules.
-
 - Keep direct shader execution classification in `compiler/shader-execution-classification.ts`
 - Move compatibility aggregation out of `compiler/ir.ts` into a narrow compiler compatibility module
 - Move descriptor-plan assembly inputs into a typed compiler output object so renderer planning does not re-derive compiler intent
@@ -107,12 +99,12 @@ Files: `packages/milkdrop-toolchain/src/compiler/ir.ts`, `packages/milkdrop-tool
 
 ## Sequencing
 
-| Milestone | Workstream(s) | Dependency |
-|---|---|---|
-| **A: Safe Wins** | 1 (Execution-plan centralization), 4 (Vectorize WGSL), 5 (RenderBundles), 7 (Compiler execution contracts) | None — additive |
-| **B: Worker Completeness** | 3 (Worker WebGL fallback) | None — additive |
-| **C: Pipeline Unification** | 1 (Backend-native feedback), 2 (Single IR) | Matures together |
-| **D: Rollout** | 6 (Gradual enablement) | After C passes visual parity |
+| Milestone                   | Workstream(s)                                                                                              | Dependency                   |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| **A: Safe Wins**            | 1 (Execution-plan centralization), 4 (Vectorize WGSL), 5 (RenderBundles), 7 (Compiler execution contracts) | None — additive              |
+| **B: Worker Completeness**  | 3 (Worker WebGL fallback)                                                                                  | None — additive              |
+| **C: Pipeline Unification** | 1 (Backend-native feedback), 2 (Single IR)                                                                 | Matures together             |
+| **D: Rollout**              | 6 (Gradual enablement)                                                                                     | After C passes visual parity |
 
 ## Validation
 

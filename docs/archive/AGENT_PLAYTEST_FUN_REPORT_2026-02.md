@@ -10,7 +10,6 @@ _Tester:_ GPT agent (rapid exploratory playtest)
 This pass focused on the **first 2 minutes** of use, where delight and stimulation are either established or lost.
 
 I ran a local dev server and did a lightweight browser-driven session across:
-
 - Library landing page (`/`).
 - Toy shell with representative toys:
   - `holy`
@@ -18,7 +17,6 @@ I ran a local dev server and did a lightweight browser-driven session across:
   - `pocket-pulse`
 
 I looked for:
-
 - Time-to-delight (how quickly users can get a rewarding reaction).
 - Choice friction (how hard it is to pick a toy and start playing).
 - Discoverability of high-reward actions (audio, touch, movement, presets).
@@ -81,12 +79,10 @@ I looked for:
 ## Candidate A/B experiment (small and high-confidence)
 
 Test on homepage hero:
-
 - **Variant A:** current controls.
 - **Variant B:** current controls + `Surprise me` + `Party mode` entry point.
 
 Track:
-
 - Time to first interaction.
 - Number of toys visited per session.
 - Session duration.

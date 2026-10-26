@@ -5,7 +5,6 @@
 ## Scope
 
 This audit reviews the production SEO surface for [https://toil.fyi](https://toil.fyi):
-
 - Homepage metadata and structured data (`/`)
 - Representative toy landing page (`/toys/cube-wave/`)
 - Discovery assets (`/robots.txt`, `/sitemap.xml`, `/sitemap-1.xml`)
@@ -14,7 +13,6 @@ This audit reviews the production SEO surface for [https://toil.fyi](https://toi
 ## Executive summary
 
 The site now has solid technical SEO defaults and the two highest-priority opportunities from the previous audit are addressed:
-
 - **P0 complete:** generated SEO pages now use PNG social images (`og:image`) with explicit `image/png` type metadata.
 - **P1 complete:** sitemap chunk entries include per-URL `lastmod` values.
 
@@ -44,7 +42,6 @@ Other foundations remain strong: canonical tags, robots directives, JSON-LD on m
 ## Follow-up findings: potential search presence constraints (2026-02-21)
 
 The technical SEO baseline is healthy, but these factors may still limit search visibility growth:
-
 1. **Homepage crawl paths rely heavily on JavaScript-rendered cards.**
    The homepage keeps the primary library container empty in source (`<main id="toy-list" class="webtoy-container"></main>`), and the full toy grid links are injected client-side. Search crawlers that execute limited JavaScript can still discover URLs through the sitemap, but they may see weaker contextual internal-link signals from the most authoritative page (`/`).
 

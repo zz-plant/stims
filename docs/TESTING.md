@@ -10,19 +10,19 @@ Test files live under `tests/unit`, `tests/compat`, `tests/corpus`, or `tests/e2
 
 ## Select a profile
 
-| Command | Coverage |
-| --- | --- |
-| `bun run test` or `bun run test:fast` | Unit + compatibility (`fast`, the default when no profile is given) |
-| `bun run test:unit` | Unit only |
-| `bun run test:compat` | Compatibility only |
-| `bun run test:corpus` | Corpus and parity contracts |
-| `bun run test:gate` | Unit + compatibility + corpus |
-| `bun run test:e2e` | Browser end-to-end suites |
-| `bun run test:integration` | Only `tests/e2e/agent-integration.test.ts` |
-| `bun run test -- --profile all` | All four categories |
-| `bun run test -- tests/unit/frontend-url-state.test.ts` | A selected file |
-| `bun run test:changed` | Affected tests in the default fast profile |
-| `bun run check:packages` | Standalone package typechecks and tests |
+| Command                                                 | Coverage                                                            |
+| ------------------------------------------------------- | ------------------------------------------------------------------- |
+| `bun run test` or `bun run test:fast`                   | Unit + compatibility (`fast`, the default when no profile is given) |
+| `bun run test:unit`                                     | Unit only                                                           |
+| `bun run test:compat`                                   | Compatibility only                                                  |
+| `bun run test:corpus`                                   | Corpus and parity contracts                                         |
+| `bun run test:gate`                                     | Unit + compatibility + corpus                                       |
+| `bun run test:e2e`                                      | Browser end-to-end suites                                           |
+| `bun run test:integration`                              | Only `tests/e2e/agent-integration.test.ts`                          |
+| `bun run test -- --profile all`                         | All four categories                                                 |
+| `bun run test -- tests/unit/frontend-url-state.test.ts` | A selected file                                                     |
+| `bun run test:changed`                                  | Affected tests in the default fast profile                          |
+| `bun run check:packages`                                | Standalone package typechecks and tests                             |
 
 The runner uses parallel execution for ordinary files. `STIMS_TEST_SHARDS` controls parallelism; `1` disables it. Browser-backed files marked with `browserTest` run in separate serial passes, including browser files within the corpus category. E2E files are serial.
 
@@ -32,12 +32,12 @@ Use `--no-bail` to report failures beyond the first failing file, `--timeout <ms
 
 ## Quality gates
 
-| Command | Checks and tests |
-| --- | --- |
-| `bun run check:quick` | Changed-file lint, types, assets, and guard checks; no root test suite |
-| `bun run check` | Full Biome check, types, guards, package checks, then `test:gate` |
-| `bun run check:all` | Full checks, then all profiles including E2E |
-| `bun run verify --changed` | Scoped verification chosen from changed files |
+| Command                    | Checks and tests                                                       |
+| -------------------------- | ---------------------------------------------------------------------- |
+| `bun run check:quick`      | Changed-file lint, types, assets, and guard checks; no root test suite |
+| `bun run check`            | Full Biome check, types, guards, package checks, then `test:gate`      |
+| `bun run check:all`        | Full checks, then all profiles including E2E                           |
+| `bun run verify --changed` | Scoped verification chosen from changed files                          |
 
 The gate runs preflight checks, concurrent checks that fail fast, and a postflight test pass. `scripts/run-quality-gate.ts` owns the check list; [generated guardrails](./GUARDRAILS.md) explain each guard. Use `--quiet` for compact passing output. CI uses `--no-tests` because test jobs run separately.
 
@@ -51,15 +51,15 @@ Cloudflare Workers Builds owns preview and production deployment on pushes; GitH
 
 ## Choose evidence for the change
 
-| Change | Useful verification |
-| --- | --- |
-| Shell, routing, shared links | URL-state unit tests; browser integration; fresh-load shared-link tests |
-| Editor | Compiler/editor contracts plus real apply, undo, export, and share flows |
-| Audio lifecycle | Worklet and handler tests plus permission/input checks in a real browser |
-| Renderer or fallback | Both backends (`?renderer=webgl` forces WebGL; `lab:backend-diff` compares them), capability tests, rendered comparisons, and integration |
-| Compiler or EEL semantics | Package suite, compatibility + corpus tests, tier differential tests |
-| Capture | Inspect a downloaded recording's encoded size, audio, and frame pacing |
-| Public copy or generated docs | Claim/reference guards and the affected generator's check mode |
+| Change                        | Useful verification                                                                                                                       |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Shell, routing, shared links  | URL-state unit tests; browser integration; fresh-load shared-link tests                                                                   |
+| Editor                        | Compiler/editor contracts plus real apply, undo, export, and share flows                                                                  |
+| Audio lifecycle               | Worklet and handler tests plus permission/input checks in a real browser                                                                  |
+| Renderer or fallback          | Both backends (`?renderer=webgl` forces WebGL; `lab:backend-diff` compares them), capability tests, rendered comparisons, and integration |
+| Compiler or EEL semantics     | Package suite, compatibility + corpus tests, tier differential tests                                                                      |
+| Capture                       | Inspect a downloaded recording's encoded size, audio, and frame pacing                                                                    |
+| Public copy or generated docs | Claim/reference guards and the affected generator's check mode                                                                            |
 
 A change to the runtime, renderer, audio, shell, or routes needs a browser check as well as tests; a change to pure logic can stop at the narrowest test file.
 

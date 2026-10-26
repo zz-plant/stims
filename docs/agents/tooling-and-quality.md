@@ -20,19 +20,18 @@ bun run dev:agent
 
 One process runs the dev server, a quiet typecheck watcher, and the fast test profile (unit + compat) in watch mode; any of the three exiting stops the rest. Other dev modes:
 
-| Command | What it runs | When to use |
-| --- | --- | --- |
-| `bun run dev` | Vite only | Visual QA at `http://localhost:5173/?agent=true` |
-| `bun run dev:host` | Vite on the LAN | Testing from another device |
-| `bun run dev:webgpu` | WebGPU-focused dev harness | WebGPU backend work |
-| `bun run dev:ui` | Vite with `vite.config.ui.js` | Standalone component-harness work |
+| Command              | What it runs                  | When to use                                      |
+| -------------------- | ----------------------------- | ------------------------------------------------ |
+| `bun run dev`        | Vite only                     | Visual QA at `http://localhost:5173/?agent=true` |
+| `bun run dev:host`   | Vite on the LAN               | Testing from another device                      |
+| `bun run dev:webgpu` | WebGPU-focused dev harness    | WebGPU backend work                              |
+| `bun run dev:ui`     | Vite with `vite.config.ui.js` | Standalone component-harness work                |
 
 `.vscode/tasks.json` exposes the same loops as `agent:*` VS Code tasks.
 
 ### Optional: LM Studio sessions (`session:codex`, `model:codex`)
 
 Both scripts drive personal `lmstudio-*` helper commands that the repo does not ship (`scripts/codex-session.sh`, `scripts/codex-model-route.sh`). No other script or gate depends on them.
-
 - `bun run session:codex -- --profile <name>` starts a managed dev server, optionally a watcher, and warms local model roles. Profiles: `fast`, `review` (typecheck watcher), `compat`, `integration`, `parity`, `visual`, `full` (unit watcher). Without the helpers it prints a warning, skips the model warm-up, and still starts the server and watcher. Control it with `--status`, `--stop`, and `--port <n> --stop` for a non-default port.
 - `bun run model:codex -- --mode auto --task "<task>"` routes a task description to a local model role. Without the helpers it exits with an error; `--no-exec` prints the routing plan only, and `--status` lists which helpers resolve.
 
@@ -55,11 +54,11 @@ bun run format     # format
 
 ## Quality gates
 
-| Command | Tier | What runs | Time |
-| --- | --- | --- | --- |
-| `bun run check:quick` | Edit time; also the pre-commit hook | Changed-file lint, typecheck, and the guards; no tests | about 30 s |
-| `bun run check` | Before every commit | Full Biome check, typecheck, every guard, package suites, then the gate tests (unit + compat + corpus) | 2–5 min |
-| `bun run check:all` | Before merging compiler, renderer-adapter or parity work | Everything above plus the browser e2e suites | 5 min+ |
+| Command               | Tier                                                     | What runs                                                                                              | Time       |
+| --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------- |
+| `bun run check:quick` | Edit time; also the pre-commit hook                      | Changed-file lint, typecheck, and the guards; no tests                                                 | about 30 s |
+| `bun run check`       | Before every commit                                      | Full Biome check, typecheck, every guard, package suites, then the gate tests (unit + compat + corpus) | 2–5 min    |
+| `bun run check:all`   | Before merging compiler, renderer-adapter or parity work | Everything above plus the browser e2e suites                                                           | 5 min+     |
 
 `check:quick` runs its independent steps in parallel; add `-- --serial` when debugging one. Inside a Claude Code session the gate prints one line per passing step (`--verbose` or `STIMS_QUIET=0` restores full output), and a failing step always prints in full. Every guard and its tier is listed in [`docs/GUARDRAILS.md`](../GUARDRAILS.md); test profiles and CI coverage are in [Testing](../TESTING.md).
 
