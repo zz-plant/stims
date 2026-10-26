@@ -45,10 +45,10 @@
   },
   "placement": { "mode": "smart" },
   "ai": { "binding": "AI" },
-  // Enable only after the zone's Media Transformations can return an MP4
-  // from /api/flipbooks/<id>.gif. Ordinary image sharing works while disabled.
+  // Encode silent MP4s once while publishing; serve stored output from R2.
+  "media": { "binding": "MEDIA" },
   "vars": {
-    "VIDEO_PREVIEWS_ENABLED": "false",
+    "VIDEO_PREVIEWS_ENABLED": "true",
     "HOMEPAGE_VIDEO_PRESET": "shifter-curlique"
   },
   // Telemetry sink for /api/telemetry — without this binding every client

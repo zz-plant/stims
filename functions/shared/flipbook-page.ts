@@ -12,6 +12,7 @@ export function appendVideoMetadata(
   origin: string,
 ): Response {
   if (
+    !clip.videoReady ||
     typeof HTMLRewriter === 'undefined' ||
     response.status !== 200 ||
     !response.headers.get('content-type')?.includes('text/html')
