@@ -1,6 +1,7 @@
 /** Storage contract for immutable GIF previews and their public share pages. */
 import type { PreviewFlipbook } from '../../src/js/utils/media/preview-flipbook.ts';
 import type { RateLimiter } from '../api/_ai-guard.ts';
+import type { PreviewMedia } from './flipbook-video.ts';
 
 export interface FlipbookBucket {
   get(key: string): Promise<{
@@ -20,6 +21,7 @@ export type FlipbookEnv = {
   VIDEO_PREVIEWS_ENABLED?: string;
   VIDEO_UPLOAD_LIMITER?: RateLimiter;
   HOMEPAGE_VIDEO_PRESET?: string;
+  MEDIA?: PreviewMedia;
 };
 export type PublishedFlipbook = {
   version: 1;
@@ -32,9 +34,11 @@ export type PublishedFlipbook = {
   delayMs: number;
   frameCount: number;
   deleteHash?: string;
+  videoReady?: boolean;
 };
 export const isFlipbookId = (id: string) => /^[a-f0-9]{64}$/.test(id);
 export const gifKey = (id: string) => `flipbooks/${id}.gif`;
+export const videoKey = (id: string) => `flipbooks/${id}.mp4`;
 export const recordKey = (id: string) => `flipbooks/${id}.json`;
 export const presetFlipbookKey = (id: string) => `flipbooks/presets/${id}.json`;
 
