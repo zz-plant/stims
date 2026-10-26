@@ -13,6 +13,7 @@ const record = {
   height: 108,
   delayMs: 200,
   frameCount: 20,
+  videoReady: true,
 };
 const shell =
   '<html><head><title>Stims</title><link rel="canonical" href="https://toil.fyi/"><meta property="og:title" content="Stims"><meta property="og:url" content="https://toil.fyi/"><meta property="og:image" content="https://toil.fyi/og/milkdrop.png"><meta name="robots" content="index,follow"></head><body><div id="app"></div></body></html>';
@@ -65,7 +66,7 @@ describe('video share metadata', () => {
     ).toBe('video/mp4');
     expect(
       doc.querySelector('meta[property="og:video"]')?.getAttribute('content'),
-    ).toContain(`/api/flipbooks/${id}.gif`);
+    ).toBe(`https://toil.fyi/api/flipbooks/${id}.mp4`);
     expect(
       doc.querySelector('meta[property="og:image"]')?.getAttribute('content'),
     ).toBe(`https://toil.fyi/api/flipbooks/${id}.jpg`);
@@ -91,5 +92,21 @@ describe('video share metadata', () => {
 
   test('unknown or deleted public links return a real 404', async () => {
     expect((await onRequest(context(`/s/${'b'.repeat(64)}`))).status).toBe(404);
+  });
+
+  test('legacy records without a completed MP4 retain only the image preview', async () => {
+    const request = context(`/s/${id}`);
+    const original = request.env.STATIC_R2.get;
+    request.env.STATIC_R2.get = async (key: string) => {
+      const object = await original(key);
+      if (key !== `flipbooks/${id}.json` || !object) return object;
+      return {
+        ...object,
+        json: async () => ({ ...record, videoReady: false }),
+      };
+    };
+    const html = await (await onRequest(request)).text();
+    expect(html).not.toContain('og:video');
+    expect(html).toContain(`/api/flipbooks/${id}.jpg`);
   });
 });

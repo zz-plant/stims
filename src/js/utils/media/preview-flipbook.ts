@@ -164,6 +164,5 @@ export function encodeFlipbookGif(input: PreviewFlipbook): Uint8Array {
 }
 
 export function previewVideoUrl(origin: string, id: string): string {
-  const source = new URL(`/api/flipbooks/${id}.gif`, origin).toString();
-  return `${origin}/cdn-cgi/media/mode=video,width=320,height=180,fit=scale-down,audio=false/${source}`;
+  return new URL(`/api/flipbooks/${id}.mp4`, origin).toString();
 }

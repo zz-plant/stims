@@ -13,7 +13,9 @@ import {
   publishedFlipbook,
   recordKey,
   sha256,
+  videoKey,
 } from '../../shared/flipbook-store.ts';
+import { encodeFlipbookVideo } from '../../shared/flipbook-video.ts';
 import { encodeJpeg } from '../../shared/jpeg-encoder.ts';
 
 const json = (value: unknown, status = 200) =>
@@ -53,14 +55,15 @@ export async function onRequest({
     return json({
       available:
         env.VIDEO_PREVIEWS_ENABLED === 'true' &&
-        Boolean(env.STATIC_R2 && env.VIDEO_UPLOAD_LIMITER),
+        Boolean(env.STATIC_R2 && env.VIDEO_UPLOAD_LIMITER && env.MEDIA),
     });
   }
   if (request.method === 'POST' && !path) {
     if (
       env.VIDEO_PREVIEWS_ENABLED !== 'true' ||
       !env.STATIC_R2 ||
-      !env.VIDEO_UPLOAD_LIMITER
+      !env.VIDEO_UPLOAD_LIMITER ||
+      !env.MEDIA
     ) {
       return json({ error: 'Video link publishing is unavailable.' }, 503);
     }
@@ -72,8 +75,11 @@ export async function onRequest({
       const limited = await env.VIDEO_UPLOAD_LIMITER.limit({
         key: request.headers.get('cf-connecting-ip') || 'unknown',
       });
-      if (!limited.success)
-        return json({ error: 'Try again in a minute.' }, 429);
+      if (!limited.success) {
+        const response = json({ error: 'Try again in a minute.' }, 429);
+        response.headers.set('Retry-After', '60');
+        return response;
+      }
     } catch {
       return json({ error: 'Publishing is temporarily unavailable.' }, 503);
     }
@@ -105,9 +111,18 @@ export async function onRequest({
         }),
       );
       const existing = await loadFlipbook(env, id);
-      if (existing)
+      if (existing?.videoReady)
         return json({ url: `${url.origin}/s/${id}`, id, deleteToken: null });
       const gif = encodeFlipbookGif(clip);
+      let video: Uint8Array;
+      try {
+        video = await encodeFlipbookVideo(env.MEDIA, gif, clip);
+      } catch {
+        return json(
+          { error: 'Video conversion is temporarily unavailable. Try again.' },
+          503,
+        );
+      }
       const token = crypto.randomUUID();
       const record = publishedFlipbook(
         id,
@@ -116,8 +131,12 @@ export async function onRequest({
         data.source,
         clip,
       );
-      record.deleteHash = await sha256(token);
-      // Publish the record last: its presence means its GIF is ready to fetch.
+      record.deleteHash = existing?.deleteHash ?? (await sha256(token));
+      record.videoReady = true;
+      // Publish the record last: all media must already be ready to fetch.
+      await env.STATIC_R2.put(videoKey(id), video, {
+        httpMetadata: { contentType: 'video/mp4' },
+      });
       await env.STATIC_R2.put(gifKey(id), gif, {
         httpMetadata: { contentType: 'image/gif' },
       });
@@ -135,7 +154,11 @@ export async function onRequest({
         httpMetadata: { contentType: 'application/json' },
       });
       return json(
-        { url: `${url.origin}/s/${id}`, id, deleteToken: token },
+        {
+          url: `${url.origin}/s/${id}`,
+          id,
+          deleteToken: existing?.deleteHash ? null : token,
+        },
         201,
       );
     } catch (error) {
@@ -149,12 +172,13 @@ export async function onRequest({
   }
   const isGif = path.endsWith('.gif');
   const isJpeg = path.endsWith('.jpg');
-  const isImage = isGif || isJpeg;
-  const id = isImage ? path.slice(0, -4) : path;
+  const isVideo = path.endsWith('.mp4');
+  const isMedia = isGif || isJpeg || isVideo;
+  const id = isMedia ? path.slice(0, -4) : path;
   if (!isFlipbookId(id)) return json({ error: 'Not found.' }, 404);
   const record = await loadFlipbook(env, id);
   if (!record || !env.STATIC_R2) return json({ error: 'Not found.' }, 404);
-  if (request.method === 'DELETE' && !isImage) {
+  if (request.method === 'DELETE' && !isMedia) {
     const token =
       request.headers.get('authorization')?.replace(/^Bearer /, '') ?? '';
     if (
@@ -168,6 +192,7 @@ export async function onRequest({
     await env.STATIC_R2.delete([
       recordKey(id),
       gifKey(id),
+      videoKey(id),
       `flipbooks/${id}.jpg`,
     ]);
     return new Response(null, {
@@ -177,14 +202,15 @@ export async function onRequest({
   }
   if (!['GET', 'HEAD'].includes(request.method))
     return json({ error: 'Method not allowed.' }, 405);
-  if (!isImage) return json({ ...record, deleteHash: undefined });
+  if (!isMedia) return json({ ...record, deleteHash: undefined });
+  if (isVideo && !record.videoReady) return json({ error: 'Not found.' }, 404);
   const object = await env.STATIC_R2.get(
-    isGif ? gifKey(id) : `flipbooks/${id}.jpg`,
+    isVideo ? videoKey(id) : isGif ? gifKey(id) : `flipbooks/${id}.jpg`,
   );
   if (!object || object.size > MAX_FLIPBOOK_BYTES)
     return json({ error: 'Not found.' }, 404);
   const headers = new Headers({
-    'Content-Type': isGif ? 'image/gif' : 'image/jpeg',
+    'Content-Type': isVideo ? 'video/mp4' : isGif ? 'image/gif' : 'image/jpeg',
     'Content-Length': String(object.size),
     'Accept-Ranges': 'bytes',
     ETag: `"${id}"`,

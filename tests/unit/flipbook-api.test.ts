@@ -4,6 +4,11 @@ import { quantizePreviewFrame } from '../../src/js/utils/media/preview-flipbook.
 
 function fixture() {
   const objects = new Map<string, Uint8Array>();
+  let transforms = 0;
+  const video = new Uint8Array([
+    0, 0, 0, 20, 102, 116, 121, 112, 105, 115, 111, 109, 0, 0, 0, 0, 105, 115,
+    111, 109,
+  ]);
   const bucket = {
     async get(key: string) {
       const bytes = objects.get(key);
@@ -45,6 +50,25 @@ function fixture() {
     STATIC_R2: bucket,
     VIDEO_PREVIEWS_ENABLED: 'true',
     VIDEO_UPLOAD_LIMITER: { limit: async () => ({ success: true }) },
+    MEDIA: {
+      input(input: ReadableStream<Uint8Array>) {
+        return {
+          transform: () => ({
+            output: () => ({
+              response: async () => {
+                expect(
+                  (await new Response(input).text()).startsWith('GIF89a'),
+                ).toBe(true);
+                transforms++;
+                return new Response(video, {
+                  headers: { 'Content-Type': 'video/mp4' },
+                });
+              },
+            }),
+          }),
+        };
+      },
+    },
   };
   const request = (
     method: string,
@@ -64,10 +88,43 @@ function fixture() {
       }),
       env,
     });
-  return { request, objects, body, env };
+  return { request, objects, body, env, video, transforms: () => transforms };
 }
 
 describe('public flipbook publishing', () => {
+  test('stores the transformed MP4 before publishing, serves ranges, and reuses it', async () => {
+    const f = fixture();
+    const result = await (await f.request('POST', '', f.body)).json();
+    const video = await f.request('GET', `${result.id}.mp4`);
+    expect(video.status).toBe(200);
+    expect(video.headers.get('content-type')).toBe('video/mp4');
+    expect(new Uint8Array(await video.arrayBuffer())).toEqual(f.video);
+    const range = await f.request('GET', `${result.id}.mp4`, undefined, {
+      Range: 'bytes=4-7',
+    });
+    expect(range.status).toBe(206);
+    expect(await range.text()).toBe('ftyp');
+    expect(await (await f.request('HEAD', `${result.id}.mp4`)).text()).toBe('');
+    expect((await (await f.request('GET', result.id)).json()).videoReady).toBe(
+      true,
+    );
+    expect((await f.request('POST', '', f.body)).status).toBe(200);
+    expect(f.transforms()).toBe(1);
+    await f.request('DELETE', result.id, undefined, {
+      Authorization: `Bearer ${result.deleteToken}`,
+    });
+    expect(f.objects.size).toBe(0);
+  });
+
+  test('a failed media conversion publishes no record or assets', async () => {
+    const f = fixture();
+    f.env.MEDIA.input = () => {
+      throw new Error('Service unavailable');
+    };
+    expect((await f.request('POST', '', f.body)).status).toBe(503);
+    expect(f.objects.size).toBe(0);
+  });
+
   test('publishes once, serves real GIF bytes with ranges, and requires its deletion token', async () => {
     const f = fixture();
     const response = await f.request('POST', '', f.body);

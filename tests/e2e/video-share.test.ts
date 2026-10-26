@@ -34,6 +34,22 @@ requiredBrowserTest(
     const env = {
       VIDEO_PREVIEWS_ENABLED: 'true',
       VIDEO_UPLOAD_LIMITER: { limit: async () => ({ success: true }) },
+      MEDIA: {
+        input: () => ({
+          transform: () => ({
+            output: () => ({
+              response: async () =>
+                new Response(
+                  new Uint8Array([
+                    0, 0, 0, 20, 102, 116, 121, 112, 105, 115, 111, 109, 0, 0,
+                    0, 0, 105, 115, 111, 109,
+                  ]),
+                  { headers: { 'Content-Type': 'video/mp4' } },
+                ),
+            }),
+          }),
+        }),
+      },
       STATIC_R2: {
         async get(key: string) {
           const value = objects.get(key);
@@ -175,6 +191,11 @@ requiredBrowserTest(
         'source',
         'title',
       ]);
+      // The recipient must not inherit the sender's saved editor draft.
+      await page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
       const receiver = await context.newPage();
       await receiver.goto(
         `${sharedUrl}?agent=true&renderer=webgl&lockQualityStep=6`,
