@@ -20,6 +20,22 @@ import {
 } from '../src/js/utils/media/preview-flipbook.ts';
 import { loadAllCatalogEntries } from './generate-thumbnails.ts';
 
+export async function publishWithRetry(
+  request: () => Promise<Response>,
+  wait: (delayMs: number) => Promise<unknown> = (delayMs) => Bun.sleep(delayMs),
+): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    const response = await request();
+    if (response.status !== 429 || attempt === 3) return response;
+    const seconds = Number(response.headers.get('Retry-After') ?? 60);
+    const delay = Number.isFinite(seconds)
+      ? Math.max(1, Math.min(60, seconds)) * 1000
+      : 60_000;
+    await response.body?.cancel();
+    await wait(delay);
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
@@ -74,11 +90,13 @@ async function main() {
       const existing = await fetch(`${site}/api/flipbooks/${hash}`);
       const ready = existing.ok && (await existing.json()).videoReady === true;
       if (!ready) {
-        const response = await fetch(`${site}/api/flipbooks/`, {
-          method: 'POST',
-          headers: { Origin: site, 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
+        const response = await publishWithRetry(() =>
+          fetch(`${site}/api/flipbooks/`, {
+            method: 'POST',
+            headers: { Origin: site, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          }),
+        );
         const result = await response.json();
         if (!response.ok || result.id !== hash)
           throw new Error(

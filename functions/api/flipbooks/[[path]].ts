@@ -75,8 +75,11 @@ export async function onRequest({
       const limited = await env.VIDEO_UPLOAD_LIMITER.limit({
         key: request.headers.get('cf-connecting-ip') || 'unknown',
       });
-      if (!limited.success)
-        return json({ error: 'Try again in a minute.' }, 429);
+      if (!limited.success) {
+        const response = json({ error: 'Try again in a minute.' }, 429);
+        response.headers.set('Retry-After', '60');
+        return response;
+      }
     } catch {
       return json({ error: 'Publishing is temporarily unavailable.' }, 503);
     }

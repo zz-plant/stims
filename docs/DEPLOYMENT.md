@@ -163,6 +163,9 @@ and byte ranges. Confirm its video plays and the page's `og:video` tag points
 at it. Test the resulting link in the intended sharing apps; metadata does
 not guarantee every app displays video. Pass `--site=https://<preview-host>`
 to the publisher to use a particular deployed version of the API.
+Batch publications wait and retry HTTP 429 responses, up to three retries per
+capture; a persistent limit stops the command without changing that preset's
+pointer. Rerunning the same batch reuses its completed videos.
 
 The stage menu's **Create video link…** flow explicitly publishes four seconds
 of small frames and the current preset code to `/api/flipbooks/`. It sends no
