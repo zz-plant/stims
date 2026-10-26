@@ -41,7 +41,7 @@ The two references agree on most things and disagree on one (unary minus vs
   (name it for what it now pins, e.g. `while-condition-uses-close-factor`),
   set `status: pinned`, and delete provisional open question 1 from the
   README. The README's "rules that most often catch" list also needs this
-  reversal: while is NOT different from other boolean contexts.
+  reversal: while uses the same rule as every other boolean context.
 
 Related facts about `while`:
 - **Arity 1 in both references.** ns-eel2 registers `while` with 1 parameter
@@ -63,11 +63,11 @@ Related facts about `while`:
   (`pow_expr: pow_expr '^' unary_expr`), so unary minus binds tighter than
   `^` → **+4**.
 - No preset in the bundled Butterchurn corpus depends on either.
-- **Disposition**: keep the case provisional but rewrite the note — the
-  honest state is "references disagree; ns-eel2 gives -4, modern EEL2 gives
-  +4; this platform implements +4, matching modern EEL2". If the corpus
-  declares MilkDrop 2.x as its reference, the expected value flips to -4 and
-  our engines must change.
+- **Disposition**: keep the case provisional but rewrite the note — it
+  should say the references disagree (ns-eel2 gives -4, modern EEL2 gives
+  +4) and that this platform implements +4, matching modern EEL2. If the
+  corpus declares MilkDrop 2.x as its reference, the expected value flips
+  to -4 and our engines must change.
 
 ### 3. `2 ^ 3 ^ 2` — LEFT-ASSOCIATIVE, 64. The pin was right.
 
@@ -128,7 +128,7 @@ two layers apart. Suggested mechanism: keep one corpus but tag cases with
 
 Our own tiers implement the overturned pins (`==` exact, `int()` truncating,
 while exact-zero, `-2^2` as +4 with ns-eel2 claiming -4, `pi`/`e` as variables,
-sqrt/log/pow/exp guards). Each corpus correction therefore lands with a
-matching engine change, or the conformance suite goes red on purpose until it
-does. That is the suite doing its job — but the two should ship together, and
-this document is the checklist.
+sqrt/log/pow/exp guards). Each correction therefore ships with its matching
+engine change, or the conformance suite goes red on purpose until it does —
+the suite doing its job. Ship the two together; this document is the
+checklist.
