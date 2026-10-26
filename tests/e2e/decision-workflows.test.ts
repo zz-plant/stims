@@ -247,7 +247,10 @@ requiredBrowserTest(
           () =>
             live.listModulators().find((m) => m.id === 'decision-test')
               ?.value !== initial,
-          10_000,
+          // CI software rasterizers can drop to a few frames per second
+          // under parallel e2e load; this is a frame-driven predicate, not
+          // a timing assertion.
+          30_000,
         );
         const afterFrame = agent.getPerformanceRevision();
         live.setControl('zoom', 1.02);
