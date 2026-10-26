@@ -1,4 +1,5 @@
 ---
+
 name: review-webgpu-parity
 description: "Review changes to WebGPU/WebGL dual-backend parity. Use when a PR touches feedback managers, renderer adapters, shader lowering, or any code that affects both WebGPU and WebGL rendering paths."
 ---
@@ -42,11 +43,11 @@ Use this skill when reviewing or authoring changes to `src/js/milkdrop/feedback-
 - [ ] If changing wave, shape, or custom-wave blend behavior, confirm the additive/multiplicative/alpha order matches the projectM baseline.
 - [ ] Prefer adding a regression test (see `tests/unit/milkdrop-renderer-adapter.test.ts` for patterns).
 - [ ] A reference implementation (projectM source, butterchurn) tells you what
-      to **try**, not what to **ship**. Shape `a2 = 0` semantics are verifiably
-      butterchurn's, and applying them alone moved krash from 47% to ~90%
-      because they are only correct paired with the textured-shape multiply.
-      If a semantically-correct change measures worse, the usual reason is a
-      second defect it now exposes — look for the pair before reverting.
+  to **try**, not what to **ship**. Shape `a2 = 0` semantics are verifiably
+  butterchurn's, and applying them alone moved krash from 47% to ~90%
+  because they are only correct paired with the textured-shape multiply.
+  If a semantically-correct change measures worse, the usual reason is a
+  second defect it now exposes — look for the pair before reverting.
 
 ### 4. Reference presets must not shift — measured, not eyeballed
 
@@ -65,11 +66,11 @@ A raw delta smaller than the band is noise, whatever it looks like.
 
 Which presets to check, and why:
 
-| Preset | Role |
-| --- | --- |
-| `260-compshader-noise_lq` | Repeats bit-exactly (band 0.000pp). Any movement at all is real. Best single canary. |
-| `100-square` | The tonal canary. Re-measure it after **any** color, gamma, or transfer change — a change that flatters one preset by cancelling two errors shows up here. |
-| `eos-phat-cubetrace-v2`, `rovastar-parallel-universe` | Feedback- and echo-heavy; catch composite/accumulator mistakes. |
+| Preset                                                | Role                                                                                                                                                       |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `260-compshader-noise_lq`                             | Repeats bit-exactly (band 0.000pp). Any movement at all is real. Best single canary.                                                                       |
+| `100-square`                                          | The tonal canary. Re-measure it after **any** color, gamma, or transfer change — a change that flatters one preset by cancelling two errors shows up here. |
+| `eos-phat-cubetrace-v2`, `rovastar-parallel-universe` | Feedback- and echo-heavy; catch composite/accumulator mistakes.                                                                                            |
 
 Do **not** use `krash-rovastar-cerebral-demons-stars` or
 `eos-glowsticks-v2-03-music` as evidence. Their references are near-black at
@@ -90,9 +91,8 @@ outright — a shader that no longer compiles, so every preset renders black —
 passes the entire parity suite untouched. This has actually shipped: a display
 shader called a helper that was not in scope on the WebGL path, and the
 WebGPU-only captures never saw it.
-
 - [ ] Any change to shared shader text (`feedback-manager-shared.ts` templates,
-      helper consts, uniform bags) is swept on WebGL before merge:
+  helper consts, uniform bags) is swept on WebGL before merge:
 
   ```bash
   bun run sweep:milkdrop-loops -- --limit 40     # WebGL by default
@@ -102,7 +102,7 @@ WebGPU-only captures never saw it.
   the luminance numbers: a shader compile failure shows up there first.
 
 - [ ] Presets that come back blank are compared against the pre-change build
-      before being called a regression — several are blank already:
+  before being called a regression — several are blank already:
 
   ```bash
   git stash -u && git checkout <base-sha> -- src/js/milkdrop/
@@ -113,16 +113,15 @@ WebGPU-only captures never saw it.
 ### 6. Trust the instrument before the reading
 
 A parity number is only as good as the capture behind it.
-
 - [ ] If `play-toy` prints `Deterministic capture drifted`, **every number from
       that run is void**. It means live frames rendered over the deterministic
-      one, on the decorative audio signal instead of the pinned reference
-      signal — the state being measured is not the state that was set up.
+  one, on the decorative audio signal instead of the pinned reference
+  signal — the state being measured is not the state that was set up.
 - [ ] Noise bands measured before a capture-path change are stale. Re-run
-      `bun run parity:noise -- --preset <id> --repeats 3 --write` before
-      judging small deltas against them.
+  `bun run parity:noise -- --preset <id> --repeats 3 --write` before
+  judging small deltas against them.
 - [ ] Attribute a delta by capture → revert → capture. If reverting does not
-      restore the old number, the delta was never yours.
+  restore the old number, the delta was never yours.
 
 ### 7. Prefer an invariant to a reference
 
@@ -131,7 +130,7 @@ effect must satisfy by definition, then measure it on any capture.
 
 Video echo is the worked example. At `fVideoEchoAlpha=0.5` with
 `nVideoEchoOrientation=3`, the output is a 50/50 blend of the frame and its
-180-degree rotation, so it must equal its own 180-degree rotation for *any*
+180-degree rotation, so it must equal its own 180-degree rotation for _any_
 content and any audio. projectM's reference self-correlates at 0.9994; ours
 scored 0.665 while echo was being applied to the accumulator instead of at
 display, and 0.973 after the fix — a complete diagnosis with no reference

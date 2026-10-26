@@ -11,7 +11,6 @@ The first-run preset has been replaced four times. Each pick passed a measuremen
 ## Policies
 
 These are settled. Apply them without asking; change them here, with a reason, when they stop fitting.
-
 1. **The renderer follows MilkDrop's maths.** butterchurn's per-vertex loop is the reference for warp semantics, and native projectM captures are the reference for pixels (see the [parity plan](./MILKDROP_PROJECTM_PARITY_PLAN.md)). When a faithful preset looks wrong in some context, such as a preset written for 16:9 shown on a phone, the fix goes in curation and selection, not in the renderer's maths.
 2. **A phone held upright is a measured context.** Anything a visitor sees first (the first-run preset, the attract preview, the landing) is measured at 390x844 as well as 1280x720.
 3. **Both backends count.** Over the 30 days to 2026-10-07, renderer-tagged events split 640 WebGPU to 632 WebGL ([current split](./ARCHITECTURE.md#rendering-backends)). Evidence for anything visitors see by default covers both backends.
@@ -70,7 +69,6 @@ These are settled. Apply them without asking; change them here, with a reason, w
 ## Measuring Open one up
 
 There are two parts.
-
 - **The funnel.** Audible start, then editor opened, then first edit applied, then shared or saved, by device: the "Open one up funnel" report in `bun run telemetry:report` (#1377). No target until a month of clean data exists. The first-edit step has three events since the 2026-10-09 split: the frozen guide-button `growth-first-edit-applied`, plus `growth-first-code-edit-applied` and `growth-first-tune-edit-applied` (once per page load each); see [Open questions](#open-questions).
 - **The end-to-end check.** `tests/e2e/open-one-up.test.ts`, in CI's integration matrix on WebGL.
   1. From the first-run state, with no deep link, it plays the demo, moves the pointer over the stage to bring the dock back, and opens the editor with the dock's Edit button.
@@ -84,7 +82,6 @@ There are two parts.
 ### What makes it hard to find
 
 Measured on 2026-10-07 against the dev server on WebGL, walking the same path. These are candidate explanations for the funnel, not measured causes of it.
-
 - **The landing promises the editor and offers no way in.** The promise sits above Play demo and Browse presets, and no control on the landing opens the editor. The `E` shortcut does, and the page does not mention it.
 - **Edit hides while the visitor watches.** After a few seconds without pointer movement the dock folds into a "Controls" pill and Edit leaves the accessibility tree. The hint shown then names → and ?, not E.
 - **On a phone the editor covers the stage.** Below 480 px wide, Edit moves into ≡ More actions. At 390x844 the editor sheet then covers all but the top 70 px of the stage, so the change cannot be watched while it runs.
@@ -101,17 +98,17 @@ Measured on 2026-10-07 against the dev server on WebGL, walking the same path. T
 
 ## Decision log
 
-| Date | Decision | Where |
-| --- | --- | --- |
-| 2026-10-06 | The renderer stays faithful to MilkDrop. Phones are handled by choosing a first-run preset that works there. | #1376 |
-| 2026-10-06 | First-run audio reactivity is gated on dataflow; pixel deltas are recorded but not enforced. | #1376 |
-| 2026-10-07 | Beacons carry orientation, device class and audio source. Automated browsers do not post. | #1377 |
-| 2026-10-07 | Nothing plays a preset on arrival except attract mode. `/discover/` and `/author/` pages keep Browse open on their collection, `/` keeps its URL, and low-power or reduced-motion visitors get the static landing the attract gate always promised. | #1380 |
-| 2026-10-07 | Beacons carry an arrival class taken from the referrer's host, never the URL or the host itself, and each page load sends one `landing` event. | #1381 |
-| 2026-10-07 | The editor's per-control sounds are gated on static dataflow end to end, in CI on WebGL. | `tests/e2e/open-one-up.test.ts` |
-| 2026-10-07 | The governor and the audit disagreed on `shifter-curlique`, and the governor was wrong: it judged one sample per tile, counted its own dimming, and skipped frames. The audit's per-pixel rule is the reference; the governor now applies it to 64 pixels per tile on every frame. | #1383 |
-| 2026-10-09 | The funnel's first-edit step splits without rewriting history: `growth-first-edit-applied` keeps its frozen guide-button meaning, and `growth-first-code-edit-applied` / `growth-first-tune-edit-applied` count the first typed code edit and first committed Tune control, once per page load each. A visitor's own actions count; AI proposals and agent applies do not. | `src/js/frontend/first-edit.ts` |
-| 2026-10-13 | A catalog flash verdict is the worse of the audit at 60 and 30 fps. A preset over the WCAG limit sinks to the bottom of curated rank, so it leaves the front of Browse and a new visitor's Next walk; it stays in the hall of fame with the ⚡ Flashing label. README clip counts describe the clip, not the preset. | `scripts/merge-flash-audit.ts`, `scripts/score-catalog-quality.ts` |
+| Date       | Decision                                                                                                                                                                                                                                                                                                                                                                   | Where                                                              |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| 2026-10-06 | The renderer stays faithful to MilkDrop. Phones are handled by choosing a first-run preset that works there.                                                                                                                                                                                                                                                               | #1376                                                              |
+| 2026-10-06 | First-run audio reactivity is gated on dataflow; pixel deltas are recorded but not enforced.                                                                                                                                                                                                                                                                               | #1376                                                              |
+| 2026-10-07 | Beacons carry orientation, device class and audio source. Automated browsers do not post.                                                                                                                                                                                                                                                                                  | #1377                                                              |
+| 2026-10-07 | Nothing plays a preset on arrival except attract mode. `/discover/` and `/author/` pages keep Browse open on their collection, `/` keeps its URL, and low-power or reduced-motion visitors get the static landing the attract gate always promised.                                                                                                                        | #1380                                                              |
+| 2026-10-07 | Beacons carry an arrival class taken from the referrer's host, never the URL or the host itself, and each page load sends one `landing` event.                                                                                                                                                                                                                             | #1381                                                              |
+| 2026-10-07 | The editor's per-control sounds are gated on static dataflow end to end, in CI on WebGL.                                                                                                                                                                                                                                                                                   | `tests/e2e/open-one-up.test.ts`                                    |
+| 2026-10-07 | The governor and the audit disagreed on `shifter-curlique`, and the governor was wrong: it judged one sample per tile, counted its own dimming, and skipped frames. The audit's per-pixel rule is the reference; the governor now applies it to 64 pixels per tile on every frame.                                                                                         | #1383                                                              |
+| 2026-10-09 | The funnel's first-edit step splits without rewriting history: `growth-first-edit-applied` keeps its frozen guide-button meaning, and `growth-first-code-edit-applied` / `growth-first-tune-edit-applied` count the first typed code edit and first committed Tune control, once per page load each. A visitor's own actions count; AI proposals and agent applies do not. | `src/js/frontend/first-edit.ts`                                    |
+| 2026-10-13 | A catalog flash verdict is the worse of the audit at 60 and 30 fps. A preset over the WCAG limit sinks to the bottom of curated rank, so it leaves the front of Browse and a new visitor's Next walk; it stays in the hall of fame with the ⚡ Flashing label. README clip counts describe the clip, not the preset.                                                       | `scripts/merge-flash-audit.ts`, `scripts/score-catalog-quality.ts` |
 
 ## Working with this file
 

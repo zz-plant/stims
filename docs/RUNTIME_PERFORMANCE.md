@@ -7,7 +7,6 @@ backend, or machine does not establish universal FPS or visual-fidelity claims.
 
 The certification-corpus performance runner records both delivered cadence and
 work performed inside each frame:
-
 - average and median delivered FPS;
 - average, median, and p95 cadence;
 - average and p95 frame work;
@@ -26,7 +25,6 @@ when a fast tier is already display-capped. Both must be reported.
 ## Fixed-tier comparison contract
 
 Before/after comparisons must hold these inputs constant:
-
 1. Preset, audio source, viewport, renderer profile, and browser build.
 2. Adaptive-quality step via `--lock-quality-step`.
 3. Warmup and capture windows.
@@ -112,11 +110,11 @@ fading-out preset. Measured in isolation on synthetic frames under Bun
 (JavaScriptCore, not V8, so the shape is indicative), 3 fresh-process runs per
 row, 3,000 individually timed calls, 2026-09-29:
 
-| Frame density | Cold first call | p50 | p95 | Worst (max) |
-| --- | --- | --- | --- | --- |
-| 4 custom waves × 512 pts | ~0.2 ms | 0.01 ms | 0.06 ms | 1.6–2.8 ms |
-| 8 waves × 1024 pts, 200 motion vectors | ~0.6 ms | 0.06 ms | 0.27 ms | 3.0–5.4 ms |
-| 16 waves × 2048 pts, 1000 motion vectors | ~2.5 ms | 0.33 ms | 1.0 ms | 5.4–7.8 ms |
+| Frame density                            | Cold first call | p50     | p95     | Worst (max) |
+| ---------------------------------------- | --------------- | ------- | ------- | ----------- |
+| 4 custom waves × 512 pts                 | ~0.2 ms         | 0.01 ms | 0.06 ms | 1.6–2.8 ms  |
+| 8 waves × 1024 pts, 200 motion vectors   | ~0.6 ms         | 0.06 ms | 0.27 ms | 3.0–5.4 ms  |
+| 16 waves × 2048 pts, 1000 motion vectors | ~2.5 ms         | 0.33 ms | 1.0 ms  | 5.4–7.8 ms  |
 
 On the densest case the cold call is about 15% of a 16.7 ms frame and the
 worst tail 5–8 ms, so one transition frame on a very dense preset could miss
@@ -127,7 +125,6 @@ blend buffers are the idea on file, after item 1 shows what remains.
 ## Deliberate boundaries
 
 Each of these was measured or reasoned through and left as is. Re-open one only with the evidence it names.
-
 - **WebGPU render bundles stay off.** The 2026-10-11 hardware A/B below
   found no cadence effect. Re-evaluate only with a component-level profile
   showing CPU submission time that cadence sampling cannot see.
@@ -174,7 +171,6 @@ The JIT now skips the redundant mirror while preserving explicit environment
 writes for `q` registers and buffer targets.
 
 Measurement setup:
-
 - Host: Apple M1 Max, 64 GB RAM.
 - Browser path: Chromium with native WebGPU; no fallback.
 - Viewport: 1280×720.
@@ -184,13 +180,13 @@ Measurement setup:
 - Warmup: 2,000 ms.
 - Capture: 8,000 ms; the longer 8× repeat used 3,000/10,000 ms.
 
-| CDP CPU throttle | Median FPS before | Median FPS after | Average frame work before | Average frame work after | Interpretation |
-| --- | ---: | ---: | ---: | ---: | --- |
-| 1× | 120.48 | 120.48 | 3.43 ms | 2.87 ms | Display-capped; 16.5% more frame-time headroom. |
-| 2× | 120.48 | 120.48 | 7.96 ms | 6.75 ms | Display-capped; 15.2% more frame-time headroom. |
-| 4× | 58.14 | 59.88 | 17.56 ms | 15.31 ms | Crossed below the 16.7 ms work budget. |
-| 6× | 38.61 | 39.68–39.84 | 25.91 ms | 24.08–24.26 ms | Repeatable median and frame-work improvement. |
-| 8× | 24.57 | 23.92 / 29.59 | 35.51 ms | 40.45 / 33.09 ms | Scheduler-sensitive; do not promote as a stable uplift. |
+| CDP CPU throttle | Median FPS before | Median FPS after | Average frame work before | Average frame work after | Interpretation                                          |
+| ---------------- | ----------------: | ---------------: | ------------------------: | -----------------------: | ------------------------------------------------------- |
+| 1×               |            120.48 |           120.48 |                   3.43 ms |                  2.87 ms | Display-capped; 16.5% more frame-time headroom.         |
+| 2×               |            120.48 |           120.48 |                   7.96 ms |                  6.75 ms | Display-capped; 15.2% more frame-time headroom.         |
+| 4×               |             58.14 |            59.88 |                  17.56 ms |                 15.31 ms | Crossed below the 16.7 ms work budget.                  |
+| 6×               |             38.61 |      39.68–39.84 |                  25.91 ms |           24.08–24.26 ms | Repeatable median and frame-work improvement.           |
+| 8×               |             24.57 |    23.92 / 29.59 |                  35.51 ms |         40.45 / 33.09 ms | Scheduler-sensitive; do not promote as a stable uplift. |
 
 The result supports a narrow claim: the duplicate-store removal reduces frame
 work for this equation-heavy stress case across the measured tiers. It does not
@@ -199,7 +195,6 @@ establish the same percentage for every preset, device, renderer, or display.
 ## 2026-08-24 startup and deploy-build result
 
 Measured on the same checkout and machine:
-
 - Cold Chromium production load, three fresh contexts, service workers
   blocked, 4× CPU throttle, 150 ms latency, and 200,000 bytes/s downstream:
   median `shell-rendered` improved from 2,288.4 ms to 2,120.7 ms, while
@@ -225,19 +220,19 @@ below narrow what to measure next; they support no universal FPS claim.
 Setup: Apple M-series, 120 Hz display (8.33 ms budget), quality step 0,
 renderScale 1.25, demo audio, `shifter-glassworms-flare` and `eos-apocalypse`.
 
-| Observation | Result |
-| --- | --- |
-| `shifter-glassworms-flare` cadence | p50 8.30 ms — the vsync floor, not a work measurement. The tail (p95 9.3–10.3 ms across runs, one 16.6 ms skip) shows roughly one frame in ten missing vsync. Sub-budget frame work is not resolvable by cadence sampling. |
-| `eos-apocalypse` cadence | p50 8.3 ms (vsync floor), p95 10.0 ms — roughly one frame in five misses vsync on the strongest consumer tier; frame work under the budget is not resolvable from cadence. |
-| JS CPU profile, glassworms, 7.3 s | `runProgram` self ~2.0 s plus anonymous JIT program bodies ~2.5 s of 6.5 s sampled: ~68% of non-idle JavaScript in the VM/EEL, matching the ~59% share the 2026-08 profile found. The JIT bodies' self time is the largest single bucket. |
-| WebGPU render bundles A/B ×2 | p95 10.1–10.3 ms both conditions; the deltas are within run-to-run noise. No cadence-level effect (sub-budget work savings would be invisible to this method); the flag stays off. |
-| Blend crossfade cadence (×2) | During-blend p50/p95 (8.3/10.3) ≈ steady state (8.3/10.1): the outgoing preset's full VM step is invisible in cadence at this tier. |
-| Transition-start spike (×2, reproduced) | One to two single frames of 258–433 ms at blend start on every preset switch — the most user-visible artifact measured. |
-| `cloneBlendState` context | Its 2.5–8 ms synthetic tail is second-order next to the 250–430 ms transition-start spike; revisit after that is fixed. |
+| Observation                             | Result                                                                                                                                                                                                                                    |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shifter-glassworms-flare` cadence      | p50 8.30 ms — the vsync floor, not a work measurement. The tail (p95 9.3–10.3 ms across runs, one 16.6 ms skip) shows roughly one frame in ten missing vsync. Sub-budget frame work is not resolvable by cadence sampling.                |
+| `eos-apocalypse` cadence                | p50 8.3 ms (vsync floor), p95 10.0 ms — roughly one frame in five misses vsync on the strongest consumer tier; frame work under the budget is not resolvable from cadence.                                                                |
+| JS CPU profile, glassworms, 7.3 s       | `runProgram` self ~2.0 s plus anonymous JIT program bodies ~2.5 s of 6.5 s sampled: ~68% of non-idle JavaScript in the VM/EEL, matching the ~59% share the 2026-08 profile found. The JIT bodies' self time is the largest single bucket. |
+| WebGPU render bundles A/B ×2            | p95 10.1–10.3 ms both conditions; the deltas are within run-to-run noise. No cadence-level effect (sub-budget work savings would be invisible to this method); the flag stays off.                                                        |
+| Blend crossfade cadence (×2)            | During-blend p50/p95 (8.3/10.3) ≈ steady state (8.3/10.1): the outgoing preset's full VM step is invisible in cadence at this tier.                                                                                                       |
+| Transition-start spike (×2, reproduced) | One to two single frames of 258–433 ms at blend start on every preset switch — the most user-visible artifact measured.                                                                                                                   |
+| `cloneBlendState` context               | Its 2.5–8 ms synthetic tail is second-order next to the 250–430 ms transition-start spike; revisit after that is fixed.                                                                                                                   |
 
 Narrow claims: on the strongest consumer tier both presets ride the vsync
 ceiling with a missed-frame tail (one frame in ten and one in five), which
-bounds work *above* the budget only — cadence sampling cannot say how much
+bounds work _above_ the budget only — cadence sampling cannot say how much
 headroom remains below it, and weaker devices also adapt to lower quality
 steps. The weaker-tier deficit is established by the fixed-tier runner
 instead (the 2026-08-24 table: `eos-apocalypse` at 15.31 ms of a 16.7 ms
@@ -264,7 +259,6 @@ Two changes to the CPU JIT, aimed at the per-point/per-vertex hot path that
 the shifter-glassworms-flare profile attributes ~68% of non-idle JavaScript to
 (anonymous JIT bodies plus TurboFan-inlined bodies attributed to
 `runProgram`):
-
 - **Inlined RNG.** `rand()`/`randint()` drew through a per-call closure
   (`vm.ts` `nextRandom`). The VM now passes its RNG state as a mutable cell
   and the compiled body advances the LCG in place — one cell load on entry,
@@ -285,7 +279,6 @@ the shifter-glassworms-flare profile attributes ~68% of non-idle JavaScript to
 
 Evidence, all on this host (SwiftShader; timing numbers are INDICATIVE ONLY,
 never a hardware claim):
-
 - `lab:replay --record` on unchanged code, then replay after both changes:
   240 frames of `shifter-glassworms-flare` verified **bit-for-bit** — the RNG
   sequence and every cached read are semantically identical.
@@ -300,7 +293,7 @@ never a hardware claim):
   barriers) confirmed each new test goes red on the corresponding bug.
 
 Known pre-existing divergence found during this work (not introduced, not
-fixed): a random call *inside another random call's argument* draws in
+fixed): a random call _inside another random call's argument_ draws in
 opposite orders on the interpreter (args first) and the JIT (draw first);
 two bundled `cotc-suksma-*` presets nest `rand` but run on the JIT tier
 consistently, so production output is unaffected. The conformance corpus
@@ -314,7 +307,6 @@ was the outstanding item for both changes; the measured result follows.
 Measured on the same machine as the 2026-10-11 spot-check, with the runner
 itself (`perf:certification-corpus --no-headless`, real WebGPU,
 `timingMode: gpu-phase-timestamps`, quality step 1 locked, three trials):
-
 - Before (main, 2026-10-11 corpus sweep): `shifter-glassworms-flare`
   **median 5.24 ms** average frame work.
 - After (this change): **median 4.51 ms** (trials 4.41 / 4.51 / 4.72;
@@ -337,7 +329,6 @@ by trace and mesh digests. Measured with the same hardware protocol as the
 2026-10-11 spot-check (runner, `--no-headless`, real WebGPU, quality step 1
 locked, three trials), on `eos-apocalypse` (references few per-pixel
 built-ins):
-
 - Before (main, 2026-10-11 corpus sweep): median 4.14 ms average frame work
   (trials 3.78 / 4.14 / 4.49).
 - After: **median 3.77 ms** (trials 3.37 / 3.77 / 4.18) — the entire

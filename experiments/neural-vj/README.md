@@ -7,27 +7,27 @@ baselines, from `lab:dataset` exports. The findings are summarised in
 the raw numbers are in [`results/`](results/).
 
 Everything is scored with **audio R²** (`vj_lab.score_audio`, the same metric
-`lab:vj-baseline` reports): the share of each preset's *between-song*
+`lab:vj-baseline` reports): the share of each preset's _between-song_
 behaviour a model predicts beyond the clock oracle, on columns at least 10%
 audio-driven. Clockwork presets (the same function of time on every song,
 about a third of the corpus) are counted and left out.
 
 ## Files
 
-| File | What it is |
-| --- | --- |
-| `synth_songs.py` | Varied synthetic songs (tempo, drums, bass, chords, arrangement), one seed per song |
-| `synth_ood.py` | Four out-of-distribution styles the song generator never makes: ambient, breakbeat, sparse hits, noise wash |
-| `vj_lab.py` | Data loading, audio features, the metric, ridge / leaky-integrator / reservoir baselines, paired bootstrap statistics |
-| `vj_models.py` | Shared-trunk networks (dilated TCN, diagonal state space, minGRU) with per-preset readouts |
-| `train_job.py`, `pretrain_job.py` | One network per process (supervised; audio-only future-spectrum pretraining) |
-| `run_known.py` | Phase 1: known presets, held-out songs, the full model ladder plus LightGBM |
-| `run_fewshot.py` | Phase 2: presets from unseen families, fitted from 1 or 4 calibration songs |
-| `run_events.py` | Phase 4a: timing the jumps of counters and toggles (event F1), with a LightGBM event classifier against value models |
-| `run_match.py` | Phase 4b: whether how strongly a preset reacts depends on the song, and ranking presets for an unseen song |
-| `run_symbolic.py` | Phase 4c: recovering memoryless preset equations from behaviour by sparse regression over MilkDrop-shaped terms |
-| `run_codecond.py` | Phase 3: the same, with each column's features and prior chosen from the preset's equations (`lab:dataflow --all` labels) |
-| `verify_lgbm.py` | Independent refit of the LightGBM result and a permutation (mismatched-audio) leakage check |
+| File                              | What it is                                                                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `synth_songs.py`                  | Varied synthetic songs (tempo, drums, bass, chords, arrangement), one seed per song                                       |
+| `synth_ood.py`                    | Four out-of-distribution styles the song generator never makes: ambient, breakbeat, sparse hits, noise wash               |
+| `vj_lab.py`                       | Data loading, audio features, the metric, ridge / leaky-integrator / reservoir baselines, paired bootstrap statistics     |
+| `vj_models.py`                    | Shared-trunk networks (dilated TCN, diagonal state space, minGRU) with per-preset readouts                                |
+| `train_job.py`, `pretrain_job.py` | One network per process (supervised; audio-only future-spectrum pretraining)                                              |
+| `run_known.py`                    | Phase 1: known presets, held-out songs, the full model ladder plus LightGBM                                               |
+| `run_fewshot.py`                  | Phase 2: presets from unseen families, fitted from 1 or 4 calibration songs                                               |
+| `run_events.py`                   | Phase 4a: timing the jumps of counters and toggles (event F1), with a LightGBM event classifier against value models      |
+| `run_match.py`                    | Phase 4b: whether how strongly a preset reacts depends on the song, and ranking presets for an unseen song                |
+| `run_symbolic.py`                 | Phase 4c: recovering memoryless preset equations from behaviour by sparse regression over MilkDrop-shaped terms           |
+| `run_codecond.py`                 | Phase 3: the same, with each column's features and prior chosen from the preset's equations (`lab:dataflow --all` labels) |
+| `verify_lgbm.py`                  | Independent refit of the LightGBM result and a permutation (mismatched-audio) leakage check                               |
 
 ## Reproduce
 

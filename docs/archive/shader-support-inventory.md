@@ -7,7 +7,6 @@ Analysis date: 2026-07-18. Based on the current audit of `packages/milkdrop-tool
 ## Scope
 
 This inventory covers every `shader_body`, `ret`, or `warp_shader`/`comp_shader` construct that enters the compiler through `extractShaderControls` (`shader-analysis.ts:1084`). Each line is processed through two paths:
-
 1. **AST path** (`applyShaderAstStatement`, line 68) — Full parsed AST with expression evaluation, sampler info extraction, and control extraction.
 2. **Heuristic path** (`applyShaderProgramHeuristicLine`, line 714) — Regex-based fallback for lines that parse as `key=value` but don't produce a valid MilkdropShaderStatement.
 
@@ -23,86 +22,86 @@ Every construct below compiles AND generates correct GPU output on both WebGL an
 
 ### Scalar Control Assignments
 
-| Pattern | Support location |
-|---|---|
-| `dx=`, `dy=`, `rot=`, `zoom=` | `shader-control-application.ts:153-218` |
-| `saturation=`, `contrast=` | `shader-control-application.ts:219-249` |
-| `r=`, `g=`, `b=`, `red=`, `green=`, `blue=` | `shader-control-application.ts:250-297` |
-| `hue=`, `hue_shift=` | `shader-control-application.ts:298-313` |
-| `mix=`, `feedback=`, `feedback_alpha=` | `shader-control-application.ts:314-330` |
-| `brighten=`, `invert=`, `solarize=` | `shader-control-application.ts:331-375` |
-| `warp=`, `warp_scale=` | `shader-control-application.ts:137-152` |
-| `texture_amount=`, `texture_mix=` | `shader-control-application.ts:376-390` |
+| Pattern                                                  | Support location                        |
+| -------------------------------------------------------- | --------------------------------------- |
+| `dx=`, `dy=`, `rot=`, `zoom=`                            | `shader-control-application.ts:153-218` |
+| `saturation=`, `contrast=`                               | `shader-control-application.ts:219-249` |
+| `r=`, `g=`, `b=`, `red=`, `green=`, `blue=`              | `shader-control-application.ts:250-297` |
+| `hue=`, `hue_shift=`                                     | `shader-control-application.ts:298-313` |
+| `mix=`, `feedback=`, `feedback_alpha=`                   | `shader-control-application.ts:314-330` |
+| `brighten=`, `invert=`, `solarize=`                      | `shader-control-application.ts:331-375` |
+| `warp=`, `warp_scale=`                                   | `shader-control-application.ts:137-152` |
+| `texture_amount=`, `texture_mix=`                        | `shader-control-application.ts:376-390` |
 | `texture_scale=`, `texture_scale_x=`, `texture_scale_y=` | `shader-control-application.ts:391-426` |
-| `texture_offset_x=`, `texture_offset_y=` | `shader-control-application.ts:427-456` |
-| `warp_texture_amount=`, `warp_texture_scale=`, etc. | `shader-control-application.ts:457-537` |
+| `texture_offset_x=`, `texture_offset_y=`                 | `shader-control-application.ts:427-456` |
+| `warp_texture_amount=`, `warp_texture_scale=`, etc.      | `shader-control-application.ts:457-537` |
 
 Expressions are evaluated at runtime via `evaluateMilkdropShaderControlExpressions` (`shader-analysis-evaluation.ts:13-113`).
 
 ### Vector and Compound Assignments
 
-| Pattern | Support location |
-|---|---|
-| `uv += vec2(x, y)`, `uv -= vec2(x, y)` | `shader-analysis.ts:177-207` |
-| `uv = uv + vec2(x, y)`, `uv = uv - vec2(x, y)` | `shader-analysis.ts:210-253` |
-| `uv = (uv-0.5)/scale + 0.5 + vec2(ox, oy)` (affine transform) | `shader-analysis.ts:820-871` (heuristic) |
-| `tint = r, g, b` / `tint += r, g, b` | `shader-analysis.ts:256-295` |
-| `texture_offset = vec2(x, y)` / `texture_scroll = ...` | `shader-analysis.ts:297-319` and `shader-control-application.ts:685-711` |
-| `texture_offset = scalar` / `texture_scroll = scalar` | Scalar is splatted to both axes in the AST and heuristic paths. |
-| `texture_scale = vec2(x, y)` / `texture_scale = scalar` | `shader-analysis.ts:322-345` and `shader-control-application.ts:713-739`; scalar is splatted to both axes. |
-| `warp_texture_offset = vec2(...)` / `warp_texture_scale = vec2(...)` | `shader-analysis.ts:347-395` and `shader-control-application.ts:741-795` |
-| `warp_texture_offset = scalar` / `warp_texture_scale = scalar` | Scalar is splatted to both axes in the AST and heuristic paths. |
+| Pattern                                                              | Support location                                                                                           |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `uv += vec2(x, y)`, `uv -= vec2(x, y)`                               | `shader-analysis.ts:177-207`                                                                               |
+| `uv = uv + vec2(x, y)`, `uv = uv - vec2(x, y)`                       | `shader-analysis.ts:210-253`                                                                               |
+| `uv = (uv-0.5)/scale + 0.5 + vec2(ox, oy)` (affine transform)        | `shader-analysis.ts:820-871` (heuristic)                                                                   |
+| `tint = r, g, b` / `tint += r, g, b`                                 | `shader-analysis.ts:256-295`                                                                               |
+| `texture_offset = vec2(x, y)` / `texture_scroll = ...`               | `shader-analysis.ts:297-319` and `shader-control-application.ts:685-711`                                   |
+| `texture_offset = scalar` / `texture_scroll = scalar`                | Scalar is splatted to both axes in the AST and heuristic paths.                                            |
+| `texture_scale = vec2(x, y)` / `texture_scale = scalar`              | `shader-analysis.ts:322-345` and `shader-control-application.ts:713-739`; scalar is splatted to both axes. |
+| `warp_texture_offset = vec2(...)` / `warp_texture_scale = vec2(...)` | `shader-analysis.ts:347-395` and `shader-control-application.ts:741-795`                                   |
+| `warp_texture_offset = scalar` / `warp_texture_scale = scalar`       | Scalar is splatted to both axes in the AST and heuristic paths.                                            |
 
 ### Sampler Source / Mode Selection
 
-| Pattern | Support location |
-|---|---|
-| `texture_source = sampler_<name>` | `shader-analysis.ts:138-151` |
+| Pattern                                | Support location             |
+| -------------------------------------- | ---------------------------- |
+| `texture_source = sampler_<name>`      | `shader-analysis.ts:138-151` |
 | `warp_texture_source = sampler_<name>` | `shader-analysis.ts:165-175` |
-| `texture_mode = <mode>` | `shader-analysis.ts:153-163` |
+| `texture_mode = <mode>`                | `shader-analysis.ts:153-163` |
 
 Recognized texture sources: `noise`, `perlin`, `simplex`, `voronoi`, `aura`, `caustics`, `pattern`, `fractal`, `video` (`shader-samplers.ts:3-17`). All FW aliases (`fw_noise_lq` → `noise`, `fw_noisevol_lq` → `simplex`, etc.) normalise correctly (`shader-samplers.ts:32-46`).
 
 ### ret / shader_body Patterns (AST Path)
 
-| Pattern | Support location |
-|---|---|
-| `ret = tex2d(sampler_main, uv).rgb` (identity) | `shader-analysis.ts:398-401` |
-| `ret = tex2d(sampler_main, uv).rgb * scalar` (uniform color scale) | `shader-analysis.ts:418-492` |
-| `ret = mix(main, main * scalar, amount)` | Lowers to a blended color-scale factor while retaining the direct program for exact execution. |
-| `ret = tex2d(sampler_main, uv).rgb * vec3(r,g,b)` (per-channel scale) | `shader-analysis.ts:418-492` |
-| `ret = tex2d(sampler_<aux>, uv).rgb` (replace with aux sample) | `shader-analysis.ts:403-416` |
-| `ret = tex3d(sampler_<aux>, vec3(uv, z)).xyz` (3D aux sample) | `shader-analysis.ts:403-416` |
-| `ret = mix(main, aux, amount)` and swapped argument order | `shader-analysis.ts:495-528`; swapped order is normalized to `1 - amount`. |
-| `ret = mix(main, 1.0 - tex2d(sampler_<aux>, uv).rgb, amount)` (inverted aux) | `shader-analysis.ts:530-556` |
-| `ret = mix(main, abs(tex2d(sampler_main, uv).rgb - 0.5) * 1.5, amount)` (solarize) | `shader-analysis.ts:557-569` |
-| `ret = mix(main, vec3(r,g,b), amount)` (tint blend) | `shader-analysis.ts:570-622` |
-| `ret = tex2d(sampler_main, uv).rgb + tex2d(sampler_<aux>, uv).rgb * amount` (add mode) | `shader-analysis.ts:626-646` |
-| `ret = tex2d(sampler_main, uv).rgb * (tex2d(sampler_<aux>, uv).rgb * amount)` (multiply mode) | `shader-analysis.ts:648-668` |
-| `shader_body = tex2d(sampler_main, uv).rgb` (identity passthrough) | `shader-analysis.ts:748-750` (heuristic) + line 397-401 (AST via `shader_body` → `ret` equivalence) |
+| Pattern                                                                                       | Support location                                                                                    |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `ret = tex2d(sampler_main, uv).rgb` (identity)                                                | `shader-analysis.ts:398-401`                                                                        |
+| `ret = tex2d(sampler_main, uv).rgb * scalar` (uniform color scale)                            | `shader-analysis.ts:418-492`                                                                        |
+| `ret = mix(main, main * scalar, amount)`                                                      | Lowers to a blended color-scale factor while retaining the direct program for exact execution.      |
+| `ret = tex2d(sampler_main, uv).rgb * vec3(r,g,b)` (per-channel scale)                         | `shader-analysis.ts:418-492`                                                                        |
+| `ret = tex2d(sampler_<aux>, uv).rgb` (replace with aux sample)                                | `shader-analysis.ts:403-416`                                                                        |
+| `ret = tex3d(sampler_<aux>, vec3(uv, z)).xyz` (3D aux sample)                                 | `shader-analysis.ts:403-416`                                                                        |
+| `ret = mix(main, aux, amount)` and swapped argument order                                     | `shader-analysis.ts:495-528`; swapped order is normalized to `1 - amount`.                          |
+| `ret = mix(main, 1.0 - tex2d(sampler_<aux>, uv).rgb, amount)` (inverted aux)                  | `shader-analysis.ts:530-556`                                                                        |
+| `ret = mix(main, abs(tex2d(sampler_main, uv).rgb - 0.5) * 1.5, amount)` (solarize)            | `shader-analysis.ts:557-569`                                                                        |
+| `ret = mix(main, vec3(r,g,b), amount)` (tint blend)                                           | `shader-analysis.ts:570-622`                                                                        |
+| `ret = tex2d(sampler_main, uv).rgb + tex2d(sampler_<aux>, uv).rgb * amount` (add mode)        | `shader-analysis.ts:626-646`                                                                        |
+| `ret = tex2d(sampler_main, uv).rgb * (tex2d(sampler_<aux>, uv).rgb * amount)` (multiply mode) | `shader-analysis.ts:648-668`                                                                        |
+| `shader_body = tex2d(sampler_main, uv).rgb` (identity passthrough)                            | `shader-analysis.ts:748-750` (heuristic) + line 397-401 (AST via `shader_body` → `ret` equivalence) |
 
 ### Heuristic ret / shader_body Patterns (regex fallback)
 
-| Pattern | Support location |
-|---|---|
-| `ret = tex2d(sampler_main, uv).rgb * scalar` | `shader-analysis.ts:881-903` |
-| `ret = tex2d(sampler_main, uv).rgb * vec3(r,g,b)` | `shader-analysis.ts:918-964` |
-| `ret = pow(tex2d(sampler_main, uv).rgb, vec3(gamma))` | `shader-analysis.ts:905-916` |
-| `ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex2d(...), amount)` | `shader-analysis.ts:966-987` |
-| `ret = mix(tex2d(sampler_main, uv).rgb, abs(tex2d(...)-0.5)*1.5, amount)` | `shader-analysis.ts:989-1005` |
-| `ret = mix(tex2d(sampler_main, uv).rgb, vec3(r,g,b), amount)` | `shader-analysis.ts:1007-1044` |
-| `ret = 1.0 - tex2d(sampler_main, uv).rgb` (full invert) | `shader-analysis.ts:1047-1062` |
-| `ret = abs(tex2d(sampler_main, uv).rgb - 0.5) * 1.5` (full solarize) | `shader-analysis.ts:1063-1079` |
+| Pattern                                                                   | Support location               |
+| ------------------------------------------------------------------------- | ------------------------------ |
+| `ret = tex2d(sampler_main, uv).rgb * scalar`                              | `shader-analysis.ts:881-903`   |
+| `ret = tex2d(sampler_main, uv).rgb * vec3(r,g,b)`                         | `shader-analysis.ts:918-964`   |
+| `ret = pow(tex2d(sampler_main, uv).rgb, vec3(gamma))`                     | `shader-analysis.ts:905-916`   |
+| `ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex2d(...), amount)`        | `shader-analysis.ts:966-987`   |
+| `ret = mix(tex2d(sampler_main, uv).rgb, abs(tex2d(...)-0.5)*1.5, amount)` | `shader-analysis.ts:989-1005`  |
+| `ret = mix(tex2d(sampler_main, uv).rgb, vec3(r,g,b), amount)`             | `shader-analysis.ts:1007-1044` |
+| `ret = 1.0 - tex2d(sampler_main, uv).rgb` (full invert)                   | `shader-analysis.ts:1047-1062` |
+| `ret = abs(tex2d(sampler_main, uv).rgb - 0.5) * 1.5` (full solarize)      | `shader-analysis.ts:1063-1079` |
 
 ### Temp Variables and Declarations
 
-| Pattern | Support location |
-|---|---|
-| `float x = <expression>` / `const x = <expression>` | `shader-analysis.ts:118-136` (declaration), `shader-ast.ts:434-462` (parse) |
-| `vec2 v = vec2(x, y)` / `vec3 v = vec3(x, y, z)` | `shader-analysis.ts:118-136` (non-reserved targets stored in shaderValueEnv) |
-| `float2` / `float3` aliases | Normalized to `vec2`/`vec3` in `shader-expression-shared.ts:37-38` |
-| `x = <expr>` (bare assignment to unknown identifier — runtime temp) | `shader-analysis.ts:1207-1265` (fallback parser path) |
-| `return <expr>` (comp shader return) | `shader-ast.ts:414-432` (parsed as `target: 'return'`) |
+| Pattern                                                             | Support location                                                             |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `float x = <expression>` / `const x = <expression>`                 | `shader-analysis.ts:118-136` (declaration), `shader-ast.ts:434-462` (parse)  |
+| `vec2 v = vec2(x, y)` / `vec3 v = vec3(x, y, z)`                    | `shader-analysis.ts:118-136` (non-reserved targets stored in shaderValueEnv) |
+| `float2` / `float3` aliases                                         | Normalized to `vec2`/`vec3` in `shader-expression-shared.ts:37-38`           |
+| `x = <expr>` (bare assignment to unknown identifier — runtime temp) | `shader-analysis.ts:1207-1265` (fallback parser path)                        |
+| `return <expr>` (comp shader return)                                | `shader-ast.ts:414-432` (parsed as `target: 'return'`)                       |
 
 ### Math Functions
 
@@ -245,7 +244,7 @@ Every location where semantic analysis reports `supported: true` or `shaderTextE
 
 ### 3.4 Direct programs remain backend-gated
 
-**What happens**: Direct shader programs are only passed to a backend when their execution classification says that backend can run them. Unsupported or unmeasured patterns retain the raw source and an explicit controls-fallback requirement instead of being silently advertised as exact. Native WebGPU feedback remains disabled until composite parity is measured. *(Superseded: native TSL feedback has been on by default on the full WebGPU path since 2026-08-06, `789c1e9a`.)*
+**What happens**: Direct shader programs are only passed to a backend when their execution classification says that backend can run them. Unsupported or unmeasured patterns retain the raw source and an explicit controls-fallback requirement instead of being silently advertised as exact. Native WebGPU feedback remains disabled until composite parity is measured. _(Superseded: native TSL feedback has been on by default on the full WebGPU path since 2026-08-06, `789c1e9a`.)_
 
 ### 3.5 Poly-filled `||` and `&&` produce different precision than MilkDrop VM
 
@@ -275,11 +274,11 @@ Ranked by impact: how many certification-corpus and real-world presets would mov
 
 ## 5. Summary Counts
 
-| Category | Count |
-|---|---|
-| Fully supported patterns | ~60 (all control keys, all math/vector intrinsics, LOD sampling, all sampler call variants, AST and heuristic paths) |
-| Unsupported/partial patterns | 2 |
-| Silent fallback locations | 5 |
+| Category                     | Count                                                                                                                |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Fully supported patterns     | ~60 (all control keys, all math/vector intrinsics, LOD sampling, all sampler call variants, AST and heuristic paths) |
+| Unsupported/partial patterns | 2                                                                                                                    |
+| Silent fallback locations    | 5                                                                                                                    |
 
 **Top 3 by impact**:
 1. Native WebGPU feedback and capture certification

@@ -1,4 +1,5 @@
 ---
+
 name: fix-bug
 description: "Guide for diagnosing and fixing a bug end-to-end: from reproduction to test to verification. Use when addressing reported issues or regressions."
 ---

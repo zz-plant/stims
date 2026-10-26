@@ -2,7 +2,7 @@
 
 Stims plays MilkDrop presets in a browser tab, with nothing to install. On most computers [toil.fyi](https://toil.fyi) opens with a preset already animating, silently, until you start some audio. On a low-powered device, or when your system asks for reduced motion, the stage waits until you start audio.
 
-MilkDrop is the music visualizer Ryan Geiss wrote for Winamp. A MilkDrop *preset* is a small text file of equations that decides how the picture moves, and it reacts to whatever is playing. People have been trading and remixing those files for more than two decades, and Stims runs them on the web.
+MilkDrop is the music visualizer Ryan Geiss wrote for Winamp. A MilkDrop _preset_ is a small text file of equations that decides how the picture moves, and it reacts to whatever is playing. People have been trading and remixing those files for more than two decades, and Stims runs them on the web.
 
 ## What you can do with it
 

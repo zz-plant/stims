@@ -12,12 +12,12 @@ Every great preset follows the same flow:
 raw audio → smoothing → accumulation → position/color
 ```
 
-| Stage | Variable | What it produces |
-|---|---|---|
-| Raw | `bass_att`, `mid_att`, `treb_att` | Attack-smoothed audio levels |
-| Smooth | `*_avg` via RC filter | Butter-smooth tracking |
-| Accumulate | `mtime`, `q1` | Continuous animation clock |
-| Output | `q8` (volume), `q2` (beat) | Master intensity signals |
+| Stage      | Variable                          | What it produces             |
+| ---------- | --------------------------------- | ---------------------------- |
+| Raw        | `bass_att`, `mid_att`, `treb_att` | Attack-smoothed audio levels |
+| Smooth     | `*_avg` via RC filter             | Butter-smooth tracking       |
+| Accumulate | `mtime`, `q1`                     | Continuous animation clock   |
+| Output     | `q8` (volume), `q2` (beat)        | Master intensity signals     |
 
 ---
 
@@ -137,14 +137,14 @@ The cooldown timer prevents rapid re-triggering from sustained bass. `trigger` f
 
 ## Anti-patterns
 
-| Don't | Because | Do instead |
-|---|---|---|
-| `warp=1.0` + `decay>0.95` | Uncontrolled feedback smudge | `warp=0`, per-pixel dx/dy/rot |
-| `dx=0.01` for every pixel | Looks like a screensaver | `dx=dx+newrad*0.003` — varies by position |
-| `wave_r=wave_g=wave_b=0.65` | Grey, dead look | Offset phases, irrational frequencies |
-| Raw `bass`/`mid`/`treb` | Jittery, amateur feel | Use `bass_att` or RC filter |
-| No per_pixel code | No depth or spatial variation | At minimum: `zoom=(zoom-1)*rad+1` |
-| No fps correction | Different machines, different results | `(75/fps)` multiplier |
+| Don't                       | Because                               | Do instead                                |
+| --------------------------- | ------------------------------------- | ----------------------------------------- |
+| `warp=1.0` + `decay>0.95`   | Uncontrolled feedback smudge          | `warp=0`, per-pixel dx/dy/rot             |
+| `dx=0.01` for every pixel   | Looks like a screensaver              | `dx=dx+newrad*0.003` — varies by position |
+| `wave_r=wave_g=wave_b=0.65` | Grey, dead look                       | Offset phases, irrational frequencies     |
+| Raw`bass`/`mid`/`treb`      | Jittery, amateur feel                 | Use `bass_att` or RC filter               |
+| No per_pixel code           | No depth or spatial variation         | At minimum: `zoom=(zoom-1)*rad+1`         |
+| No fps correction           | Different machines, different results | `(75/fps)` multiplier                     |
 
 ---
 
@@ -189,18 +189,18 @@ Both shaders write a `vec3` color to `ret`. Only the warp shader's output feeds 
 
 Key uniforms available in both shaders:
 
-| Uniform | Type | What it is |
-|---|---|---|
-| `sampler_main` | sampler2D | The frame buffer (video feedback) |
-| `sampler_fc_main` | sampler2D | Frame-color: main composited frame |
-| `sampler_blur1`–`sampler_blur3` | sampler2D | 3 blur levels (2, 4, 8px) |
-| `sampler_noise_lq` | sampler2D | 256×256 low-quality noise |
-| `sampler_noisevol_hq` | sampler3D | 128×128×128 high-quality volumetric noise |
-| `q1`–`q8` | float | Frame state passed from per_frame |
-| `t1`–`t32` | float | Per-slot temp state |
-| `time`, `fps`, `frame` | float | Timing |
-| `bass`, `mid`, `treb` | float | Raw audio |
-| `bass_att`, `mid_att`, `treb_att` | float | Attack-smoothed audio |
+| Uniform                           | Type      | What it is                                |
+| --------------------------------- | --------- | ----------------------------------------- |
+| `sampler_main`                    | sampler2D | The frame buffer (video feedback)         |
+| `sampler_fc_main`                 | sampler2D | Frame-color: main composited frame        |
+| `sampler_blur1`–`sampler_blur3`   | sampler2D | 3 blur levels (2, 4, 8px)                 |
+| `sampler_noise_lq`                | sampler2D | 256×256 low-quality noise                 |
+| `sampler_noisevol_hq`             | sampler3D | 128×128×128 high-quality volumetric noise |
+| `q1`–`q8`                         | float     | Frame state passed from per_frame         |
+| `t1`–`t32`                        | float     | Per-slot temp state                       |
+| `time`, `fps`, `frame`            | float     | Timing                                    |
+| `bass`, `mid`, `treb`             | float     | Raw audio                                 |
+| `bass_att`, `mid_att`, `treb_att` | float     | Attack-smoothed audio                     |
 
 ### Pattern 9: Reaction-diffusion warp
 
@@ -292,16 +292,16 @@ Audio drives the Julia constant (`fract(q1*0.1)`), creating reactive fractal dis
 
 ## EEL-era vs GLSL-era comparison
 
-| | Classic (2001–2007) | Modern (2008–present) |
-|---|---|---|
-| **Primary code** | `per_frame` + `per_pixel` in EEL | `[warp_shader]` + `[comp_shader]` in GLSL |
-| **Motion** | `dx`, `dy`, `zoom`, `rot` per pixel | Texture coordinate displacement in warp shader |
-| **Color** | `wave_r/g/b` cycling | Full RGB compositing with tone mapping |
-| **Effects** | Video echo (`fVideoEchoZoom`) | Edge detection, blur subtraction, noise injection |
-| **Math** | Sin/cos/pow with audio variables | Iterated fractals, reaction-diffusion PDEs |
-| **Texture** | Implicit frame buffer only | Noise textures, blur passes, 3D volumes |
-| **Complexity** | 20–60 lines per preset | 50–200 lines per preset |
-| **Audio** | Volume + time accumulation | Conditional branching (`if(q21 < q26)`) in shaders |
+|                  | Classic (2001–2007)                 | Modern (2008–present)                              |
+| ---------------- | ----------------------------------- | -------------------------------------------------- |
+| **Primary code** | `per_frame` + `per_pixel` in EEL    | `[warp_shader]` + `[comp_shader]` in GLSL          |
+| **Motion**       | `dx`, `dy`, `zoom`, `rot` per pixel | Texture coordinate displacement in warp shader     |
+| **Color**        | `wave_r/g/b` cycling                | Full RGB compositing with tone mapping             |
+| **Effects**      | Video echo (`fVideoEchoZoom`)       | Edge detection, blur subtraction, noise injection  |
+| **Math**         | Sin/cos/pow with audio variables    | Iterated fractals, reaction-diffusion PDEs         |
+| **Texture**      | Implicit frame buffer only          | Noise textures, blur passes, 3D volumes            |
+| **Complexity**   | 20–60 lines per preset              | 50–200 lines per preset                            |
+| **Audio**        | Volume + time accumulation          | Conditional branching (`if(q21 < q26)`) in shaders |
 
 ### Key insight for AI generation
 

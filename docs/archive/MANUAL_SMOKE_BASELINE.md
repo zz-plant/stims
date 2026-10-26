@@ -5,7 +5,6 @@
 ## What counts as the baseline
 
 For startup, routing, and lifecycle changes, collect:
-
 - The repo quality gates:
 
   ```bash
@@ -32,7 +31,6 @@ For startup, routing, and lifecycle changes, collect:
 ## When to run this baseline
 
 Run the full baseline when a change touches any of these areas:
-
 - `index.html` or `milkdrop/index.html`
 - `src/js/app.ts` or `src/js/frontend/*`
 - `src/js/frontend/engine/*` or launch/session UI
@@ -67,13 +65,11 @@ bun run play:toy milkdrop \
 ```
 
 Expected outputs:
-
 - one PNG per capture,
 - one `.debug.json` snapshot per capture,
 - `parity-artifacts.manifest.json` entries in `./screenshots/milestone-a`.
 
 Notes from headless runs:
-
 - Playwright/SwiftShader captures may emit a `"Not supported"` console message while still completing the fallback path successfully.
 - Treat the capture as passing when the session loads, `audioActive` is true, and both artifact files are written.
 
@@ -82,7 +78,6 @@ These captures are not repo-tracked artifacts. They are sign-off evidence for th
 ## Manual smoke checklist
 
 Use demo audio unless the change specifically targets microphone behavior.
-
 1. **Canonical root route**
    - Open `/`.
    - Confirm the workspace shell renders directly on the root route.

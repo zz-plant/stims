@@ -3,7 +3,6 @@
 ## Set up
 
 You need:
-
 - [Bun](https://bun.sh) 1.3.14, the version `package.json` pins. Node 22 is declared for the Node-based tools.
 - [mise](https://mise.jdx.dev), only for `bun run setup`, which starts with `mise trust` so mise applies `mise.toml` (Bun 1.3.14, Node 22). Without mise, run `bun run setup:codex`: the same bootstrap minus that step.
 - Playwright's Chromium, for browser-backed tests and the capture tools (`lab:visual`, `parity:capture`, `ui:diff`). Unit and compatibility tests run without it.
@@ -40,7 +39,6 @@ Open `http://localhost:5173/?agent=true` for browser checks: agent mode keeps re
 ## Quality checks
 
 Use these commands before opening a PR:
-
 - Full gate for JS/TS changes:
 
   ```bash
@@ -92,14 +90,12 @@ The agent session helpers (`session:codex`, `model:codex`) depend on local model
 ## Documentation expectations
 
 When workflows or structure change, update docs in the same PR (including deployment-track guidance in `docs/DEPLOYMENT.md` when release flow changes). For site deploy changes, keep [`wrangler.site.jsonc`](./wrangler.site.jsonc) aligned with the live Cloudflare Workers Builds config instead of treating the dashboard as the only source of truth.
-
 - Follow [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md) as the canonical docs synchronization contract.
 - Treat [`docs/README.md`](./docs/README.md) as the canonical docs index and update it whenever docs are added, renamed, moved, or deleted.
 
 ## Contributing presets
 
 Presets are contributions too — you don't need to touch engine code.
-
 1. **Learn or refresh**: the guided course lives at [`docs/authoring/README.md`](./docs/authoring/README.md); the generated language reference at [`docs/authoring/reference.md`](./docs/authoring/reference.md).
 2. **Author in the live editor** (`bun run dev`, then the Editor panel — or on the deployed site). Export produces a `.milk` file; Remix preserves credit lineage automatically.
 3. **Measure before you submit**: `bun run lab:reactivity -- --file path/to/your.milk` reports whether each variable actually reacts to audio — aim for a `reactive` verdict. (`bun run lab:visual` adds pixel-level verdicts but currently only accepts catalog `--preset` ids, so it runs after your preset lands in `public/milkdrop-presets/`.)
@@ -108,7 +104,6 @@ Presets are contributions too — you don't need to touch engine code.
 ## Product and runtime changes
 
 For product-facing work, keep these areas aligned together:
-
 - Root workspace and engine seam code in `src/js/frontend/`, `src/js/core/`, and `src/js/milkdrop/`.
 - Edge functions, AI endpoints, and middleware in `functions/` and `functions/api/`.
 - Type contracts and ambient declarations in `src/types/`.

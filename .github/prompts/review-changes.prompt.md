@@ -1,4 +1,5 @@
 ---
+
 name: review-changes
 description: "Checklist for reviewing code/docs before committing or merging. Use when doing self-review, pre-commit validation, or reviewing agent work."
 ---
@@ -19,23 +20,27 @@ If anything fails, fix it before proceeding.
 ## 2. Code Review Checklist
 
 ### Structure & Clarity
+
 - [ ] Code follows the conventions in `AGENTS.md`
 - [ ] Variable/function names are descriptive
 - [ ] Complex logic has comments explaining the "why"
 - [ ] No dead code or unused imports
 
 ### Types & Safety
+
 - [ ] No `@ts-nocheck` directives anywhere
 - [ ] TypeScript passes strict mode
 - [ ] Types are accurate (no `any` unless justified)
 
 ### Testing
+
 - [ ] Tests added for new behavior
 - [ ] Tests updated for changed behavior
 - [ ] Required profiles pass; affected browser checks run separately
 - [ ] Edge cases covered (not just happy path)
 
 ### Performance
+
 - [ ] No obvious inefficiencies added
 - [ ] Loops don't unnecessarily run multiple times
 - [ ] No blocking operations on main thread (if runtime-critical)
@@ -43,11 +48,13 @@ If anything fails, fix it before proceeding.
 ## 3. Documentation Review
 
 ### For code changes:
+
 - [ ] Complex functions have JSDoc comments
 - [ ] Architecture docs updated if design changed
 - [ ] Examples in comments are current
 
 ### For doc changes:
+
 - [ ] Links are relative and correct
 - [ ] markdown formatting is clean
 - [ ] Cross-link checklist done (see `docs/DOCS_MAINTENANCE.md`)

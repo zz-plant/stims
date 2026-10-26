@@ -33,15 +33,14 @@
 
 Use one owner per slice when work is parallelized:
 
-| Slice | Primary files | Typical validation |
-| --- | --- | --- |
-| Runtime and shell | `src/js/core/`, `src/js/frontend/`, `src/css/`, app entry points | targeted test file, the covering `tests/e2e/` file, then `bun run check` |
-| Presets and compatibility | `src/js/milkdrop/`, preset fixtures, catalog assets | targeted test file, `bun run test:compat`, then `bun run check` |
-| Browser verification | tests, Playwright helpers, visual QA docs | `bun run dev`, `http://localhost:5173/?agent=true`, targeted browser checks |
-| Docs and metadata | `docs/`, `AGENTS.md`, `.agent/`, MCP-facing markdown wiring | `bun run check:doc-references`, `bun run check:skill-index`, and `bun run test tests/unit/mcp-server.test.ts` if MCP wiring changed |
+| Slice                     | Primary files                                                    | Typical validation                                                                                                                  |
+| ------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime and shell         | `src/js/core/`, `src/js/frontend/`, `src/css/`, app entry points | targeted test file, the covering `tests/e2e/` file, then `bun run check`                                                            |
+| Presets and compatibility | `src/js/milkdrop/`, preset fixtures, catalog assets              | targeted test file, `bun run test:compat`, then `bun run check`                                                                     |
+| Browser verification      | tests, Playwright helpers, visual QA docs                        | `bun run dev`, `http://localhost:5173/?agent=true`, targeted browser checks                                                         |
+| Docs and metadata         | `docs/`, `AGENTS.md`, `.agent/`, MCP-facing markdown wiring      | `bun run check:doc-references`, `bun run check:skill-index`, and `bun run test tests/unit/mcp-server.test.ts` if MCP wiring changed |
 
 Keep ownership crisp:
-
 - Avoid splitting a single file family across multiple agents unless the task is already partitioned by file.
 - Do not mix product code and docs cleanup in a sidecar task unless the docs must move with that code.
 - Treat `/milkdrop/` as a compatibility alias; canonical product behavior lives on `/`.
@@ -55,7 +54,6 @@ in shared `screenshots/` paths. That assumption has produced measurably wrong
 results — a screenshot taken while another session's edit hot-reloaded, a
 capture of a preset another session had edited in place. Treat the shared tree
 as read-mostly:
-
 - **Work in your own worktree, on your own port.** `bun run worktree:new -- <branch>`
   creates a worktree off the latest `origin/main`, installs its dependencies,
   and prints its path; work only there. Run the dev server with
@@ -81,7 +79,6 @@ as read-mostly:
 ## Handoff packet
 
 When assigning work to a subagent, include:
-
 - **Task**: one sentence describing the desired outcome.
 - **Owned files or directories**: the exact write scope.
 - **Constraints**: product rules, compatibility expectations, or docs that must stay aligned.
@@ -105,7 +102,6 @@ Return with:
 ## Return contract
 
 A useful subagent return should answer these questions without extra digging:
-
 - What changed?
 - Which files were touched?
 - Which commands were run, and did they pass?
@@ -115,7 +111,6 @@ A useful subagent return should answer these questions without extra digging:
 ## When not to split work
 
 Keep the task with one agent when:
-
 - the next action is blocked on immediate code understanding in one file cluster,
 - the change is mostly exploration rather than implementation,
 - the work depends on fast iteration between code edits and browser verification,

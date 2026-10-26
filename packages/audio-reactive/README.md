@@ -46,7 +46,6 @@ bun --cwd packages/audio-reactive test
 The examples below import it by package name, which resolves through the Bun workspace after installation. Outside the workspace, run the build above, then install the tarball that `npm pack` writes in `packages/audio-reactive`.
 
 Two entry points:
-
 - `audio-reactive`: every pure function and type (see [API](#api)). Safe to import on the main thread, in a worker, or in Bun/Node.
 - `audio-reactive/worklet`: the compiled `FrequencyAnalyserProcessor`. It calls `registerProcessor('frequency-analyser', ...)` at module top level and must only be loaded through `audioContext.audioWorklet.addModule(...)`. It is not re-exported from the main entry.
 
@@ -114,12 +113,15 @@ node.port.onmessage = (event) => {
 
   // Hand the buffers back once you are done with them so the worklet does
   // not allocate a fresh set per packet.
-  node.port.postMessage({
-    type: 'recycle-buffers',
-    freq: [frequencyData.buffer],
-    wave: [waveformData.buffer],
-    timeDomain: [timeDomainData.buffer],
-  }, [frequencyData.buffer, waveformData.buffer, timeDomainData.buffer]);
+  node.port.postMessage(
+    {
+      type: 'recycle-buffers',
+      freq: [frequencyData.buffer],
+      wave: [waveformData.buffer],
+      timeDomain: [timeDomainData.buffer],
+    },
+    [frequencyData.buffer, waveformData.buffer, timeDomainData.buffer],
+  );
 };
 ```
 
@@ -130,7 +132,10 @@ import { createAudioReactivityInterpolator } from 'audio-reactive';
 
 const interpolator = createAudioReactivityInterpolator();
 node.port.onmessage = (event) => {
-  interpolator.pushSample({ ...event.data.energy, rms: event.data.rms }, performance.now());
+  interpolator.pushSample(
+    { ...event.data.energy, rms: event.data.rms },
+    performance.now(),
+  );
 };
 function frame(now: number) {
   const { bass, mid, treble, rms } = interpolator.sample(now);
@@ -169,7 +174,10 @@ for (let i = 0; i < samples.length; i += 1) {
 
 const window = buildHannWindow(fftSize);
 const twiddles = buildTwiddleTable(fftSize);
-const scratch = { real: new Float32Array(fftSize), imag: new Float32Array(fftSize) };
+const scratch = {
+  real: new Float32Array(fftSize),
+  imag: new Float32Array(fftSize),
+};
 const spectrum = new Uint8Array(fftSize / 2);
 const hpss = createHarmonicPercussiveAnalyser();
 const beats = createBeatTracker();
@@ -184,12 +192,20 @@ for (let start = 0; start + fftSize <= samples.length; start += fftSize) {
   const energy = getWeightedEnergy(bands);
   const hp = hpss.analyse(spectrum, sampleRate);
   const timeMs = (start / sampleRate) * 1000;
-  const beat = beats.update({ bands, weightedEnergy: energy, deltaMs: blockMs }, timeMs);
+  const beat = beats.update(
+    { bands, weightedEnergy: energy, deltaMs: blockMs },
+    timeMs,
+  );
   if (beat.isBeat) beatCount += 1;
 
   const frame = start / fftSize;
   if (frame === 20 || frame === 21 || frame === 22) {
-    const features = extractSpectralFeatures(block, spectrum, sampleRate, fftSize);
+    const features = extractSpectralFeatures(
+      block,
+      spectrum,
+      sampleRate,
+      fftSize,
+    );
     console.log(
       `t=${(timeMs / 1000).toFixed(3)}s`,
       `bass=${bands.bass.toFixed(3)} mid=${bands.mid.toFixed(3)} treble=${bands.treble.toFixed(3)}`,
@@ -200,7 +216,9 @@ for (let start = 0; start + fftSize <= samples.length; start += fftSize) {
     );
   }
 }
-console.log(`beats detected in ${seconds}s: ${beatCount} (clicks placed: ${seconds * 2})`);
+console.log(
+  `beats detected in ${seconds}s: ${beatCount} (clicks placed: ${seconds * 2})`,
+);
 ```
 
 Output:
@@ -218,34 +236,34 @@ The frame holding the click reads as broadband (flatness 0.995, centroid near 11
 
 All exports come from `audio-reactive` unless marked `/worklet`.
 
-| Export | Purpose |
-| --- | --- |
-| `buildHannWindow(length)` | Hann window as a `Float32Array`. |
-| `buildTwiddleTable(length)` | Precomputed `{ cos, sin }` twiddles for `analyseBlockBytes`. |
-| `validateFftSize(value)` | Returns a power-of-two FFT size or throws `RangeError`; defaults to 1024. |
-| `analyseBlockBytes(block, window, twiddles, out, scratch)` | Hann, radix-2 FFT, magnitude / binCount, dB-to-byte; writes `block.length / 2` bytes into `out`. |
-| `computeBandAverage(bytes, sampleRate, fftSize, minHz, maxHz, bandType)` | Weighted mean of a byte spectrum over a Hz range, 0..1. |
-| `byteFromSample(sample)` | Waveform byte for one PCM sample in [-1, 1]. |
-| `createHarmonicPercussiveAnalyser(options?)` | Median-filter HPSS over successive byte spectra; `analyse(bytes, sampleRate)` returns `HarmonicPercussiveLevels`. |
-| `computeRms(timeDomain)` | RMS of `Float32Array` or `Uint8Array` samples. |
-| `computeSpectralCentroid(amplitudes, sampleRate, fftSize?)` | Spectral centre of mass in Hz. |
-| `computeSpectralFlatness(amplitudes)` | Geometric / arithmetic mean, 0..1. |
-| `computeSpectralRolloff(amplitudes, sampleRate, fftSize?, ratio?)` | Frequency below which `ratio` (default 0.85) of the energy lies. |
-| `extractSpectralFeatures(timeDomain, amplitudes, sampleRate, fftSize?)` | All four features as a `SpectralFeatureSnapshot`. |
-| `createBeatTracker(options?)` | Multi-band onset tracker with attack/release envelopes; `update({ bands, weightedEnergy, deltaMs }, timeMs)` returns a `BeatTrackerUpdate`. `mode: 'projectM'` selects a single running-average threshold. |
-| `getFrequencyBandLevels(bytes, sampleRate?, bandRanges?, fftSize?)` | `{ bass, mid, treble }` in 0..1 from Hz ranges (`DEFAULT_FREQUENCY_BAND_RANGES`). |
-| `getExtendedFrequencyBandLevels(...)` | Adds `subBass` (24-60 Hz) and `kick` (60-250 Hz). |
-| `getFourBandTransientMetrics(bytes, previousBytes?, sampleRate?)` | `{ subBassEnv, kickTransient, vocalMidEnv, snareSnap }` from frame-to-frame deltas. |
-| `getBandLevels({ analyser?, data, sampleRate?, ratios?, bandRanges? })` | Band levels from an analyser hook, Hz ranges, or bin-ratio fallback. |
-| `getWeightedEnergy(bands, { weights?, boost? })` | Single 0..1 energy from weighted bands. |
-| `updateEnergyPeak(currentPeak, weightedEnergy, { decay?, floor? })` | Decaying peak tracker. |
-| `createWaveformAutoGain(options?)` | Boost-only auto-gain for byte waveforms: `measure(wave)` returns a gain, `apply(in, out, gain)` scales around 128. |
-| `createAudioReactivityInterpolator()` | Hermite spline over `{ bass, mid, treble, rms }` packets: `pushSample(sample, timeMs)`, `sample(timeMs)`, `reset()`. |
-| `AudioLifecycleTracker` | State machine for `AudioContext` lifecycle (`idle` through `disposed`) with assertions for leaks, permission ordering and terminal dispose. Intended for tests. |
-| `AudioGenerationToken` | Monotonic generation counter to detect superseded async mounts. |
-| `PERMISSION_REQUIRED_SOURCES` | Set of `AudioSourceKind` values that need a permission prompt (`microphone`). |
-| `isAudioAwaitingGesture()`, `subscribeAudioGestureGate(fn)`, `reportAudioAwaitingGesture(bool)`, `resetAudioGestureGate()` | Observable flag for "audio is set up but suspended until a user gesture". Module-level state. |
-| `FrequencyAnalyserProcessor` (`/worklet`) | The `AudioWorkletProcessor`; the module registers it as `'frequency-analyser'` on load. |
+| Export                                                                                                                     | Purpose                                                                                                                                                                                                   |
+| -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `buildHannWindow(length)`                                                                                                  | Hann window as a `Float32Array`.                                                                                                                                                                          |
+| `buildTwiddleTable(length)`                                                                                                | Precomputed `{ cos, sin }` twiddles for `analyseBlockBytes`.                                                                                                                                              |
+| `validateFftSize(value)`                                                                                                   | Returns a power-of-two FFT size or throws `RangeError`; defaults to 1024.                                                                                                                                 |
+| `analyseBlockBytes(block, window, twiddles, out, scratch)`                                                                 | Hann, radix-2 FFT, magnitude / binCount, dB-to-byte; writes `block.length / 2` bytes into `out`.                                                                                                          |
+| `computeBandAverage(bytes, sampleRate, fftSize, minHz, maxHz, bandType)`                                                   | Weighted mean of a byte spectrum over a Hz range, 0..1.                                                                                                                                                   |
+| `byteFromSample(sample)`                                                                                                   | Waveform byte for one PCM sample in [-1, 1].                                                                                                                                                              |
+| `createHarmonicPercussiveAnalyser(options?)`                                                                               | Median-filter HPSS over successive byte spectra; `analyse(bytes, sampleRate)` returns `HarmonicPercussiveLevels`.                                                                                         |
+| `computeRms(timeDomain)`                                                                                                   | RMS of `Float32Array` or `Uint8Array` samples.                                                                                                                                                            |
+| `computeSpectralCentroid(amplitudes, sampleRate, fftSize?)`                                                                | Spectral centre of mass in Hz.                                                                                                                                                                            |
+| `computeSpectralFlatness(amplitudes)`                                                                                      | Geometric / arithmetic mean, 0..1.                                                                                                                                                                        |
+| `computeSpectralRolloff(amplitudes, sampleRate, fftSize?, ratio?)`                                                         | Frequency below which `ratio` (default 0.85) of the energy lies.                                                                                                                                          |
+| `extractSpectralFeatures(timeDomain, amplitudes, sampleRate, fftSize?)`                                                    | All four features as a `SpectralFeatureSnapshot`.                                                                                                                                                         |
+| `createBeatTracker(options?)`                                                                                              | Multi-band onset tracker with attack/release envelopes; `update({ bands, weightedEnergy, deltaMs }, timeMs)` returns a `BeatTrackerUpdate`.`mode: 'projectM'` selects a single running-average threshold. |
+| `getFrequencyBandLevels(bytes, sampleRate?, bandRanges?, fftSize?)`                                                        | `{ bass, mid, treble }` in 0..1 from Hz ranges (`DEFAULT_FREQUENCY_BAND_RANGES`).                                                                                                                         |
+| `getExtendedFrequencyBandLevels(...)`                                                                                      | Adds `subBass` (24-60 Hz) and `kick` (60-250 Hz).                                                                                                                                                         |
+| `getFourBandTransientMetrics(bytes, previousBytes?, sampleRate?)`                                                          | `{ subBassEnv, kickTransient, vocalMidEnv, snareSnap }` from frame-to-frame deltas.                                                                                                                       |
+| `getBandLevels({ analyser?, data, sampleRate?, ratios?, bandRanges? })`                                                    | Band levels from an analyser hook, Hz ranges, or bin-ratio fallback.                                                                                                                                      |
+| `getWeightedEnergy(bands, { weights?, boost? })`                                                                           | Single 0..1 energy from weighted bands.                                                                                                                                                                   |
+| `updateEnergyPeak(currentPeak, weightedEnergy, { decay?, floor? })`                                                        | Decaying peak tracker.                                                                                                                                                                                    |
+| `createWaveformAutoGain(options?)`                                                                                         | Boost-only auto-gain for byte waveforms: `measure(wave)` returns a gain, `apply(in, out, gain)` scales around 128.                                                                                        |
+| `createAudioReactivityInterpolator()`                                                                                      | Hermite spline over `{ bass, mid, treble, rms }` packets: `pushSample(sample, timeMs)`, `sample(timeMs)`, `reset()`.                                                                                      |
+| `AudioLifecycleTracker`                                                                                                    | State machine for `AudioContext` lifecycle (`idle` through `disposed`) with assertions for leaks, permission ordering and terminal dispose. Intended for tests.                                           |
+| `AudioGenerationToken`                                                                                                     | Monotonic generation counter to detect superseded async mounts.                                                                                                                                           |
+| `PERMISSION_REQUIRED_SOURCES`                                                                                              | Set of `AudioSourceKind` values that need a permission prompt (`microphone`).                                                                                                                             |
+| `isAudioAwaitingGesture()`, `subscribeAudioGestureGate(fn)`, `reportAudioAwaitingGesture(bool)`, `resetAudioGestureGate()` | Observable flag for "audio is set up but suspended until a user gesture". Module-level state.                                                                                                             |
+| `FrequencyAnalyserProcessor` (`/worklet`)                                                                                  | The `AudioWorkletProcessor`; the module registers it as `'frequency-analyser'` on load.                                                                                                                   |
 
 Types: `HarmonicPercussiveLevels`, `HarmonicPercussiveOptions`, `SpectralFeatureSnapshot`, `AudioBandLevels`, `BeatTrackerOptions`, `BeatTrackerUpdate`, `BandLevels`, `BandRatios`, `BandWeights`, `ExtendedBandLevels`, `FourBandTransientMetrics`, `FrequencyBandRange`, `FrequencyBandRanges`, `AudioEnergySnapshot`, `AudioReactivityInterpolator`, `AudioContextLike`, `AudioLifecycleState`, `AudioSourceKind`.
 
@@ -277,18 +295,18 @@ The code is developed in [zz-plant/stims](https://github.com/zz-plant/stims) und
 
 Extracted from [zz-plant/stims](https://github.com/zz-plant/stims), the source of the visualizer at toil.fyi. Files carried over unchanged apart from flattening import paths:
 
-| Package file | Stims source |
-| --- | --- |
-| `src/analyser-core.ts` | `src/js/utils/audio/analyser-core.ts` |
+| Package file                          | Stims source                                         |
+| ------------------------------------- | ---------------------------------------------------- |
+| `src/analyser-core.ts`                | `src/js/utils/audio/analyser-core.ts`                |
 | `src/frequency-analyser-processor.ts` | `src/js/utils/audio/frequency-analyser-processor.ts` |
-| `src/harmonic-percussive.ts` | `src/js/utils/audio/harmonic-percussive.ts` |
-| `src/spectral-features.ts` | `src/js/utils/audio/spectral-features.ts` |
-| `src/beat.ts` | `src/js/utils/audio/beat.ts` |
-| `src/reactivity.ts` | `src/js/utils/audio/reactivity.ts` |
-| `src/audio-interpolator.ts` | `src/js/core/audio-interpolator.ts` |
-| `src/audio-lifecycle.ts` | `src/js/core/audio-lifecycle.ts` |
-| `src/audio-gesture-gate.ts` | `src/js/core/audio-gesture-gate.ts` |
-| `src/audio-worklet.d.ts` | `src/js/audio-worklet.d.ts` |
+| `src/harmonic-percussive.ts`          | `src/js/utils/audio/harmonic-percussive.ts`          |
+| `src/spectral-features.ts`            | `src/js/utils/audio/spectral-features.ts`            |
+| `src/beat.ts`                         | `src/js/utils/audio/beat.ts`                         |
+| `src/reactivity.ts`                   | `src/js/utils/audio/reactivity.ts`                   |
+| `src/audio-interpolator.ts`           | `src/js/core/audio-interpolator.ts`                  |
+| `src/audio-lifecycle.ts`              | `src/js/core/audio-lifecycle.ts`                     |
+| `src/audio-gesture-gate.ts`           | `src/js/core/audio-gesture-gate.ts`                  |
+| `src/audio-worklet.d.ts`              | `src/js/audio-worklet.d.ts`                          |
 
 Some source comments still refer to Stims paths (`scripts/audio-file-inputs.ts`, `audio-handler.ts`, `workspace-hooks.ts`); those describe where the code came from and do not affect behaviour.
 

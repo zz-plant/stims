@@ -10,7 +10,6 @@ the default projectM preset pack in 2022 — which makes it the point at which o
 curator's taste became the default visual experience for most users of the
 format. Credit the curation as curation, distinctly from the preset authors; see
 [`docs/LINEAGE_AND_CREDITS.md`](../../../../docs/LINEAGE_AND_CREDITS.md).
-
 - Source repository: `https://github.com/projectM-visualizer/presets-cream-of-the-crop`
 - Source commit: `0180df21f5e0bd39b9060cc5de420ed2f1f9e509`
 - Retrieved for Stims: `2026-04-11`

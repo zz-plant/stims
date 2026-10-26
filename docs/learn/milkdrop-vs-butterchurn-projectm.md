@@ -6,18 +6,17 @@ Butterchurn and projectM are the projects most people arrive from, and both are 
 
 ## Side by side
 
-| | Stims | Butterchurn | projectM |
-| --- | --- | --- | --- |
-| **Primary form** | A hosted browser app you use directly | An embeddable JS renderer | A native library and desktop/plugin player |
-| **Preset input** | `.milk` source, imported as-is and exported in MilkDrop 2's own format | Presets converted to a Butterchurn JSON format ahead of time | `.milk` source |
-| **Authoring** | In-session editor with completions, compiler diagnostics, and live `zoom`/`warp`/`rot`/`decay` controls | No built-in editor; authoring happens elsewhere | No built-in editor; authoring happens elsewhere |
-| **Discovery** | Search, filters, collections, previews, favorites, queues, history, deep links | Preset list supplied by the embedding app | Playlist files |
-| **Fidelity claims** | Per-preset labels that separate "compiles and runs" from "diffed against a projectM reference" | Broad practical compatibility, established over years of use | The reference implementation Stims diffs against |
+|                     | Stims                                                                                                   | Butterchurn                                                  | projectM                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------ |
+| **Primary form**    | A hosted browser app you use directly                                                                   | An embeddable JS renderer                                    | A native library and desktop/plugin player       |
+| **Preset input**    | `.milk` source, imported as-is and exported in MilkDrop 2's own format                                  | Presets converted to a Butterchurn JSON format ahead of time | `.milk` source                                   |
+| **Authoring**       | In-session editor with completions, compiler diagnostics, and live `zoom`/`warp`/`rot`/`decay` controls | No built-in editor; authoring happens elsewhere              | No built-in editor; authoring happens elsewhere  |
+| **Discovery**       | Search, filters, collections, previews, favorites, queues, history, deep links                          | Preset list supplied by the embedding app                    | Playlist files                                   |
+| **Fidelity claims** | Per-preset labels that separate "compiles and runs" from "diffed against a projectM reference"          | Broad practical compatibility, established over years of use | The reference implementation Stims diffs against |
 
 ## What Stims adds
 
 Butterchurn ran MilkDrop presets in a browser first, and MilkDrop 2 already let you edit a preset while it played; the Stims editor brings that back. Three things underneath are new:
-
 - **The warp runs on the GPU.** On WebGPU, a preset's per-pixel equations run for every point of the warp mesh at once, in all but 8 of the 1,102 catalog presets that have them. Butterchurn and projectM work through the points one at a time on the CPU.
 - **Fidelity is measured, one preset at a time.** Frames are compared with native projectM, and every measured preset's result is published, failures included. Only a few presets have been measured so far.
 - **The equations are read, not only run.** Without playing a preset, Stims can say which parts of the music reach which parts of the picture.

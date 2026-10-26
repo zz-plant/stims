@@ -1,4 +1,5 @@
 ---
+
 name: audit-recurring-fixes
 description: "Audit commit history to find recurring fix patterns and update prevention skills. Use when analyzing what keeps breaking, updating review skills, or refreshing the fix-pattern audit doc."
 ---
@@ -47,13 +48,13 @@ the skills together with the date stamp they carry.
 
 Look for these recurring themes:
 
-| Theme | Keywords in commit messages | Typical files |
-|-------|---------------------------|---------------|
-| **Parity drift** | `parity`, `blend`, `feedback`, `shader`, `wave`, `webgpu` | `feedback-manager-*`, `renderer-adapter*`, `compiler/gpu-descriptor-plan.ts` |
+| Theme                  | Keywords in commit messages                                 | Typical files                                                                               |
+| ---------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **Parity drift**       | `parity`, `blend`, `feedback`, `shader`, `wave`, `webgpu`   | `feedback-manager-*`, `renderer-adapter*`, `compiler/gpu-descriptor-plan.ts`                |
 | **Fallback fragility** | `fallback`, `timeout`, `renderScale`, `capability`, `probe` | `renderer-setup.ts`, `renderer-capabilities.ts`, `render-service.ts`, `backend-fallback.ts` |
-| **Test harness drift** | `test`, `expect`, `fixture`, `harness` | `tests/unit/milkdrop-renderer-adapter.test.ts`, `tests/environment/*` |
-| **UI/state races** | `toast`, `toggle`, `url`, `workspace`, `panel` | `frontend/App.tsx`, `frontend/workspace-hooks.ts`, `frontend/url-state.ts` |
-| **Deploy/tooling** | `deploy`, `config`, `wrangler`, `ci` | `wrangler.site.jsonc`, `scripts/build.mjs` |
+| **Test harness drift** | `test`, `expect`, `fixture`, `harness`                      | `tests/unit/milkdrop-renderer-adapter.test.ts`, `tests/environment/*`                       |
+| **UI/state races**     | `toast`, `toggle`, `url`, `workspace`, `panel`              | `frontend/App.tsx`, `frontend/workspace-hooks.ts`, `frontend/url-state.ts`                  |
+| **Deploy/tooling**     | `deploy`, `config`, `wrangler`, `ci`                        | `wrangler.site.jsonc`, `scripts/build.mjs`                                                  |
 
 ### 3. Find the hottest files
 
@@ -68,7 +69,6 @@ High-churn + high-fix-density files are **instability clusters**.
 ### 4. Update prevention skills
 
 If a new fix category is emerging or an existing one is growing:
-
 1. Read the relevant review skill:
    - `.agent/skills/review-webgpu-parity/SKILL.md`
    - `.agent/skills/review-renderer-fallback/SKILL.md`
@@ -77,7 +77,7 @@ If a new fix category is emerging or an existing one is growing:
 
 2. Add new checklist items or tighten existing ones based on the fresh fix patterns.
 
-3. If a *new* category appears (e.g., "audio permission regressions"), create a new review skill following the pattern:
+3. If a _new_ category appears (e.g., "audio permission regressions"), create a new review skill following the pattern:
    - `name` and `description` frontmatter
    - "Why this exists" paragraph
    - Pre-merge checklist with file-specific validation commands

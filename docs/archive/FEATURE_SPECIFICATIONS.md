@@ -6,16 +6,16 @@ See the [user guide](../USER_GUIDE.md) for usage and [implementation status](../
 
 ## Capability map
 
-| Area | Current state | Primary sources |
-| --- | --- | --- |
-| Root app route | `/` is the canonical workspace route and owns launch, browse, session, and settings surfaces. | `index.html`, `src/js/app.ts`, `src/js/frontend/App.tsx` |
-| Legacy alias | `/milkdrop/` preserves older links by redirecting into `/` with query and hash state intact. | `milkdrop/index.html`, `docs/PAGE_SPECIFICATIONS.md` |
-| URL normalization | Legacy `experience`, `panel`, `collection`, `preset`, `audio`, and `agent` params are read; canonical URLs are written back from typed route state. | `src/js/frontend/url-state.ts` |
-| Engine seam | The React shell talks to the MilkDrop engine through the adapter for runtime ownership and approved public engine modules for editor/catalog helpers; `.dependency-cruiser.mjs` enforces the boundary. | `src/js/frontend/engine/milkdrop-engine-adapter.ts` |
-| Preset runtime | MilkDrop compiler, runtime, and editor remain live behind the adapter. | `src/js/milkdrop/runtime.ts`, `src/js/milkdrop/overlay/` |
-| Audio inputs | Demo, microphone, local audio file, supported tab capture, and YouTube-backed capture are available from the workspace launch surface. | `src/js/frontend/App.tsx`, `src/js/ui/audio-advanced-sources.ts`, `src/js/ui/youtube-controller.ts` |
-| Quality + fallback | WebGL is the default, WebGPU is optional, and users can tune quality, render scale, pixel ratio, and compatibility mode. | `src/js/core/renderer-capabilities.ts`, `src/js/core/settings-panel.ts`, `src/js/core/state/render-preference-store.ts` |
-| Automation + QA | Agent mode, canonical route testing, and browser-backed smoke coverage are live on the root route. | `src/js/core/agent-api.ts`, `tests/e2e/agent-integration.test.ts` |
+| Area               | Current state                                                                                                                                                                                          | Primary sources                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Root app route     | `/` is the canonical workspace route and owns launch, browse, session, and settings surfaces.                                                                                                          | `index.html`, `src/js/app.ts`, `src/js/frontend/App.tsx`                                                                |
+| Legacy alias       | `/milkdrop/` preserves older links by redirecting into `/` with query and hash state intact.                                                                                                           | `milkdrop/index.html`, `docs/PAGE_SPECIFICATIONS.md`                                                                    |
+| URL normalization  | Legacy `experience`, `panel`, `collection`, `preset`, `audio`, and `agent` params are read; canonical URLs are written back from typed route state.                                                    | `src/js/frontend/url-state.ts`                                                                                          |
+| Engine seam        | The React shell talks to the MilkDrop engine through the adapter for runtime ownership and approved public engine modules for editor/catalog helpers; `.dependency-cruiser.mjs` enforces the boundary. | `src/js/frontend/engine/milkdrop-engine-adapter.ts`                                                                     |
+| Preset runtime     | MilkDrop compiler, runtime, and editor remain live behind the adapter.                                                                                                                                 | `src/js/milkdrop/runtime.ts`, `src/js/milkdrop/overlay/`                                                                |
+| Audio inputs       | Demo, microphone, local audio file, supported tab capture, and YouTube-backed capture are available from the workspace launch surface.                                                                 | `src/js/frontend/App.tsx`, `src/js/ui/audio-advanced-sources.ts`, `src/js/ui/youtube-controller.ts`                     |
+| Quality + fallback | WebGL is the default, WebGPU is optional, and users can tune quality, render scale, pixel ratio, and compatibility mode.                                                                               | `src/js/core/renderer-capabilities.ts`, `src/js/core/settings-panel.ts`, `src/js/core/state/render-preference-store.ts` |
+| Automation + QA    | Agent mode, canonical route testing, and browser-backed smoke coverage are live on the root route.                                                                                                     | `src/js/core/agent-api.ts`, `tests/e2e/agent-integration.test.ts`                                                       |
 
 ## Root workspace (`/`)
 
@@ -92,13 +92,13 @@ See the [user guide](../USER_GUIDE.md) for usage and [implementation status](../
 
 ## Persistence
 
-| Purpose | Storage |
-| --- | --- |
-| Quality preset | `localStorage` |
-| Compatibility mode | `localStorage` |
-| Render scale | `localStorage` |
-| Max pixel ratio | `localStorage` |
-| Motion enabled | `localStorage` |
+| Purpose             | Storage        |
+| ------------------- | -------------- |
+| Quality preset      | `localStorage` |
+| Compatibility mode  | `localStorage` |
+| Render scale        | `localStorage` |
+| Max pixel ratio     | `localStorage` |
+| Motion enabled      | `localStorage` |
 | Recent YouTube list | `localStorage` |
 
 ## Frontend surface
@@ -106,7 +106,6 @@ See the [user guide](../USER_GUIDE.md) for usage and [implementation status](../
 The pre-React DOM shell (`loader.ts`, `router.ts`, `toy-view.ts`, `library-view*`, `bootstrap/*`) has been deleted; `milkdrop/index.html` is the only remaining compatibility surface and it redirects to `/`.
 
 Product-facing frontend work belongs in:
-
 - `src/js/app.ts`
 - `src/js/frontend/*`
 - `src/js/frontend/engine/milkdrop-engine-adapter.ts`

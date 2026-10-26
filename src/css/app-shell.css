@@ -1104,7 +1104,7 @@ body[data-page="workspace"] {
      space but too shallow to do that) and no taller: title, card, Resume,
      the other sources and Browse should all fit one phone screen. */
   .stims-shell__launch-center[data-variant="resume"]
-  .stims-shell__launch-title {
+    .stims-shell__launch-title {
     font-size: clamp(2.25rem, 5vw, 3.5rem);
   }
 

@@ -12,8 +12,8 @@ martin - the forge of isengard [flexi's moebius transformation vs. logarithmic s
 martin - lightning [Goody tunnel artifact tweak]
 ```
 
-That last pair is the sharpest version of it: the bracket credits a *named
-mathematical technique* attributed to another author, not a preset. Citation
+That last pair is the sharpest version of it: the bracket credits a _named
+mathematical technique_ attributed to another author, not a preset. Citation
 practice, invented independently, inside a text field meant for names.
 
 The glossary is built from the 1,787 presets Stims ships.
@@ -25,10 +25,9 @@ and the handles most often credited on those presets.
 
 **A byline is evidence of who applied a technique, not proof of who invented
 it.** These counts tell you where a technique shows up and in whose company. To
-establish origin, you need the *earliest datable* appearance, and dating one takes
+establish origin, you need the _earliest datable_ appearance, and dating one takes
 forum timestamps and pack release dates the catalog does not carry. Entries below are
 marked accordingly:
-
 - **[A]** — attribution is in the marker's own name (`Flexi-Tex`, `Stahl's
   Mirror Crossfire`, `Krash's beat code`). The convention names the author.
 - **[C]** — a handle dominates the co-credit data strongly enough to be worth
@@ -38,35 +37,35 @@ marked accordingly:
 
 ## The glossary
 
-| Technique | Shipped | Most-credited | | What the marker signals |
-|---|---:|---|---|---|
-| **Jelly** (`Jelly`, `Jelly V2/V3/V4`, `Reverse Jelly V3`, `bccn Jelly V4`, `[jelly5.5]`) | 59 | Flexi (27), Geiss (21), Stahlregen (15) | [C] | The single largest named family in the catalog, and the only one with real version discipline — V2 through V5.5, plus a `Reverse` variant. A wobbling, viscous displacement of the feedback frame. |
-| **Painterly** | 29 | Geiss (22), Aderrasi (5) | [C] | Softened, brush-like accumulation. Appears both alone and compounded (`Painterly Relief Mix`, `Painterly Tendrils Colorfast`). |
-| **Kaleidoscope** | 20 | Geiss (15), Rovastar (6) | [?] | Angular mirroring, from the plain `Kaleidoscope Mix` through `Flexi's kaleidoscope`. |
-| **Relief** (`Relief Mix`, `Bas Relief`, `Beetle Relief`) | 18 | Geiss (17), Flexi (4) | [C] | Edge-lit embossing that reads as raised surface. Almost never appears without Geiss in the chain. |
-| **Emboss** (`Emboss`, `Color Emboss Mix`, `Geiss Emboss Mix`) | 11 | Geiss (10), Flexi (3) | [C] | Directional-difference shading. `Geiss Emboss Mix` is [A]. |
-| **Saturation** (`Saturation Remix`, `Color Saturation Boosted`) | 10 | Geiss (10) | [C] | Chroma push on the composite pass. Every shipped instance credits Geiss. |
-| **Ripple** (`Ripples`, `Ripple Mix`, `Martin's ripple on water insertion`) | 10 | Flexi (4), shifter (3) | [?] | Concentric radial displacement. The `Martin's …` variant is [A]. |
-| **Composite** (`Geiss composite mix`, `Flexi composite`) | 9 | Geiss (3), Flexi (2), ORB (2) | [A] | Names whose composite-pass treatment was grafted on. |
-| **Grow Mix** (`Grow Mix`, `2`, `3`, `3c - finally mirrored`) | 9 | Geiss (7), fiShbRaiN (5) | [C] | Outward-scaling accumulation. The numbered series is a single lineage — see the *witchcraft* family. |
-| **Crossfire** (`Stahl's Mirror Crossfire Mix`) | 7 | Geiss (6), Mstress (2) | [A] | Mirrored cross-blend. The marker names Stahlregen. |
-| **Kali Mix** | 6 | Aderrasi (6), Geiss (3) | [?] | An *Airhandler* branch specifically — the root of a three-deep derivation chain, and the deepest documented lineage in the catalog. |
-| **Filament Mix** | 6 | Geiss (4), Stahlregen (1) | [?] | Thin, threadlike trails through the warp field. |
-| **Glow Mix** (also `Everglow`, `Blur and Glow Remix`) | 5 | Geiss (4), shifter (3) | [?] | Bloom on the composite. |
-| **LSB Mix** | 3 | Geiss (3) | [?] | Low-bit manipulation for banding/noise texture. Rare and worth a dissection. |
-| **HPF** | 2 | Eo.S. (1), Geiss (1) | [?] | High-pass filtering on the feedback frame. |
-| **Flexi-Tex Shader** | 1 | Stahlregen, Eo.S., Geiss | [A] | Flexi's texture-shader technique, credited by name on a preset he is not a byline author of. |
+| Technique                                                                                | Shipped | Most-credited                           |     | What the marker signals                                                                                                                                                                            |
+| ---------------------------------------------------------------------------------------- | ------: | --------------------------------------- | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Jelly** (`Jelly`, `Jelly V2/V3/V4`, `Reverse Jelly V3`, `bccn Jelly V4`, `[jelly5.5]`) |      59 | Flexi (27), Geiss (21), Stahlregen (15) | [C] | The single largest named family in the catalog, and the only one with real version discipline — V2 through V5.5, plus a `Reverse` variant. A wobbling, viscous displacement of the feedback frame. |
+| **Painterly**                                                                            |      29 | Geiss (22), Aderrasi (5)                | [C] | Softened, brush-like accumulation. Appears both alone and compounded (`Painterly Relief Mix`, `Painterly Tendrils Colorfast`).                                                                     |
+| **Kaleidoscope**                                                                         |      20 | Geiss (15), Rovastar (6)                | [?] | Angular mirroring, from the plain `Kaleidoscope Mix` through `Flexi's kaleidoscope`.                                                                                                               |
+| **Relief** (`Relief Mix`, `Bas Relief`, `Beetle Relief`)                                 |      18 | Geiss (17), Flexi (4)                   | [C] | Edge-lit embossing that reads as raised surface. Almost never appears without Geiss in the chain.                                                                                                  |
+| **Emboss** (`Emboss`, `Color Emboss Mix`, `Geiss Emboss Mix`)                            |      11 | Geiss (10), Flexi (3)                   | [C] | Directional-difference shading. `Geiss Emboss Mix` is [A].                                                                                                                                         |
+| **Saturation** (`Saturation Remix`, `Color Saturation Boosted`)                          |      10 | Geiss (10)                              | [C] | Chroma push on the composite pass. Every shipped instance credits Geiss.                                                                                                                           |
+| **Ripple** (`Ripples`, `Ripple Mix`, `Martin's ripple on water insertion`)               |      10 | Flexi (4), shifter (3)                  | [?] | Concentric radial displacement. The `Martin's …` variant is [A].                                                                                                                                   |
+| **Composite** (`Geiss composite mix`, `Flexi composite`)                                 |       9 | Geiss (3), Flexi (2), ORB (2)           | [A] | Names whose composite-pass treatment was grafted on.                                                                                                                                               |
+| **Grow Mix** (`Grow Mix`, `2`, `3`, `3c - finally mirrored`)                             |       9 | Geiss (7), fiShbRaiN (5)                | [C] | Outward-scaling accumulation. The numbered series is a single lineage — see the _witchcraft_ family.                                                                                               |
+| **Crossfire** (`Stahl's Mirror Crossfire Mix`)                                           |       7 | Geiss (6), Mstress (2)                  | [A] | Mirrored cross-blend. The marker names Stahlregen.                                                                                                                                                 |
+| **Kali Mix**                                                                             |       6 | Aderrasi (6), Geiss (3)                 | [?] | An _Airhandler_ branch specifically — the root of a three-deep derivation chain, and the deepest documented lineage in the catalog.                                                                |
+| **Filament Mix**                                                                         |       6 | Geiss (4), Stahlregen (1)               | [?] | Thin, threadlike trails through the warp field.                                                                                                                                                    |
+| **Glow Mix** (also `Everglow`, `Blur and Glow Remix`)                                    |       5 | Geiss (4), shifter (3)                  | [?] | Bloom on the composite.                                                                                                                                                                            |
+| **LSB Mix**                                                                              |       3 | Geiss (3)                               | [?] | Low-bit manipulation for banding/noise texture. Rare and worth a dissection.                                                                                                                       |
+| **HPF**                                                                                  |       2 | Eo.S. (1), Geiss (1)                    | [?] | High-pass filtering on the feedback frame.                                                                                                                                                         |
+| **Flexi-Tex Shader**                                                                     |       1 | Stahlregen, Eo.S., Geiss                | [A] | Flexi's texture-shader technique, credited by name on a preset he is not a byline author of.                                                                                                       |
 
 Component credits are tracked separately from the mix vocabulary because they
-cite *code*, not a look. `parsePresetCredit` lifts them out of the title into
+cite _code_, not a look. `parsePresetCredit` lifts them out of the title into
 `componentCredits` — see
 [`preset-credit.ts`](../../src/js/milkdrop/preset-credit.ts).
 
-| Component | Shipped | | Notes |
-|---|---:|---|---|
-| **Krash's beat code** (`(+Krash's beat code)`, `(Krash's beat detection)`, `+ krash beatdetect`) | 8 | [A] | A beat-detection routine that propagated by being copied into other authors' presets and credited inline. The scene's earliest component-library convention, and the clearest evidence that remixing here was open circulation with attribution — not, as is sometimes claimed, reverse engineering. |
+| Component                                                                                        | Shipped |     | Notes                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------ | ------: | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Krash's beat code** (`(+Krash's beat code)`, `(Krash's beat detection)`, `+ krash beatdetect`) |       8 | [A] | A beat-detection routine that propagated by being copied into other authors' presets and credited inline. The scene's earliest component-library convention, and the clearest evidence that remixing here was open circulation with attribution — not, as is sometimes claimed, reverse engineering. |
 
-Two more component credits sit in the *author* field rather than the title, so
+Two more component credits sit in the _author_ field rather than the title, so
 they are handled by the handle registry instead:
 `martin [shadow harlequins shape code]` and `shadow harlequin - babylon warp
 drive resurrection call [Flexi's insertion of Martin's ripple on water
@@ -77,15 +76,14 @@ shader]`. Same practice, different field.
 Not techniques, but part of the same filename grammar, and part of the
 authorship record:
 
-| Marker | Shipped | Meaning |
-|---|---:|---|
-| `(ATI fix)` (6), `(geiss flicker fix)` (3), `[fixed]` (1) | 10 | The preset was modified to run correctly on another vendor's hardware. Unglamorous, uncredited-elsewhere labor. |
-| `-ps2` / `-ps3` / `(ps2.0)` | 9 | Shader-model variants of the same work, from the MilkDrop 2 transition. Stims strips the suffix for family grouping, so `rogue wave -ps2` and `-ps3` sit together. |
+| Marker                                                    | Shipped | Meaning                                                                                                                                                            |
+| --------------------------------------------------------- | ------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `(ATI fix)` (6), `(geiss flicker fix)` (3), `[fixed]` (1) |      10 | The preset was modified to run correctly on another vendor's hardware. Unglamorous, uncredited-elsewhere labor.                                                    |
+| `-ps2` / `-ps3` / `(ps2.0)`                               |       9 | Shader-model variants of the same work, from the MilkDrop 2 transition. Stims strips the suffix for family grouping, so `rogue wave -ps2` and `-ps3` sit together. |
 
 ## Open questions
 
 The glossary is deliberately incomplete, and these are the gaps worth closing:
-
 1. **First datable appearance of each technique.** This is the question that
    turns [C] and [?] into [A]. It needs forum post timestamps and pack release
    dates, not filenames.

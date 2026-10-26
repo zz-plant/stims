@@ -12,7 +12,6 @@ Use this runtime when changing the shipped MilkDrop experience instead of re-int
 ## Signal contract for preset authors
 
 Preset equations can read the existing audio/time globals plus these shared interaction signals:
-
 - `inputX` / `input_x`, `inputY` / `input_y`
   - Normalized centroid from `-1..1`.
 - `inputDx` / `input_dx`, `inputDy` / `input_dy`
@@ -51,7 +50,6 @@ Both camelCase and snake_case aliases are exposed so preset equations can stay r
 Every entry in `public/milkdrop-presets/catalog.json` must have a unique `id`. Ids are the key for React lists, `Object.fromEntries` lookups, the SEO route map in `scripts/generate-seo.ts`, the search index, and the `.milk` filename on disk — a repeat silently drops one of the pair instead of failing, so `bun run check:catalog-integrity` rejects duplicates outright.
 
 `scripts/import-butterchurn-presets.ts` derives Butterchurn ids from `slugify(<source filename>)`, which collapses every non-alphanumeric run to `-`. The upstream corpus ships filenames that differ only in those characters (`_Geiss - Desert Rose 2` vs `Geiss - Desert Rose 2`, `Rovastar & Unchained - …` vs `Rovastar + Unchained - …`), so slugs collide. `assignPresetIds()` resolves this deterministically across the whole sorted file list, independent of what the catalog already contains:
-
 - the first filename (ASCII sort) for a slug keeps the bare slug;
 - a later filename whose bytes are identical is a true duplicate of the upstream corpus and is not imported at all;
 - a later filename whose bytes differ is a genuinely distinct preset and gets `-alt`, then `-alt-2`, and so on.
@@ -62,17 +60,17 @@ The `-alt` suffix is therefore load-bearing, not cosmetic: `geiss-desert-rose-2`
 
 Each WebGPU descriptor optimization can be switched per session with a query param or a `localStorage` key. Query params take `1`/`0` (also `true`/`false`, `on`/`off`); storage keys also take `enabled`/`disabled`. Defaults come from `DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS` in `src/js/milkdrop/webgpu-optimization-flags.ts`, and `resolveMilkdropWebGpuFeatureRouting` in `src/js/milkdrop/webgpu-query-override.ts` then turns features off for the safe WebGPU path (low-power phones) and the compatibility adapter.
 
-| Flag | Query param (`localStorage`: `stims:experiments:` + same name) | Default | Purpose |
-| --- | --- | --- | --- |
-| Main wave | `milkdrop-webgpu-main-wave` | On (full path) | Descriptor-backed main-wave rendering. |
-| Custom waves | `milkdrop-webgpu-custom-waves` | On (full path) | Authored custom-wave descriptor uploads. |
-| Mesh field | `milkdrop-webgpu-mesh` | On (full path) | Procedural mesh descriptors and per-pixel field programs. |
-| Motion vectors | `milkdrop-webgpu-motion-vectors` | On (full path) | Procedural motion-vector descriptors. |
-| Feedback shaders | `milkdrop-webgpu-feedback` | On (full path) | Native TSL feedback: warp and comp shaders run directly. Off, the feedback loop still runs, but on the uniform-only controls approximation instead of the authored shader bodies, which is how a feedback bug is bisected. The safe path and `?renderer=webgl` also turn it off (`shouldEnableNativeMilkdropWebGpuFeedback`). |
-| WebGL fallback | `milkdrop-webgpu-fallback` | Off | When on, any preset whose plan routes to WebGL is reloaded there. When off, only presets with genuinely unsupported features fall back; feedback-compatibility presets run natively. Certification sessions (`?renderer=webgpu&corpus=certification`) force it off unless set explicitly. |
-| Compute VM | `milkdrop-webgpu-compute-vm` | Off | Runs per-frame equations as WebGPU compute. Upload, dispatch and readback cost 0.9–8 ms a frame against 0.05–0.75 µs for the CPU JIT (`bun run lab:vm-tier-bench`, 2026-08-22). Never on the compatibility adapter. |
-| Render bundles | `milkdrop-webgpu-render-bundles` | Off | Records static draws as WebGPU render bundles. An A/B on hardware on 2026-10-11 found no cadence effect ([Runtime performance](./RUNTIME_PERFORMANCE.md)). |
-| Branch desugar | `milkdrop-webgpu-branch-desugar` | Off | Flattens `if`/`else` and bounded loops in shader bodies so 154 more bodies execute directly. Six presets still render white or black under it; they are named in `packages/milkdrop-toolchain/src/compiler/shader-branch-desugar.ts`. |
+| Flag             | Query param (`localStorage`: `stims:experiments:` + same name) | Default        | Purpose                                                                                                                                                                                                                                                                                                                       |
+| ---------------- | -------------------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main wave        | `milkdrop-webgpu-main-wave`                                    | On (full path) | Descriptor-backed main-wave rendering.                                                                                                                                                                                                                                                                                        |
+| Custom waves     | `milkdrop-webgpu-custom-waves`                                 | On (full path) | Authored custom-wave descriptor uploads.                                                                                                                                                                                                                                                                                      |
+| Mesh field       | `milkdrop-webgpu-mesh`                                         | On (full path) | Procedural mesh descriptors and per-pixel field programs.                                                                                                                                                                                                                                                                     |
+| Motion vectors   | `milkdrop-webgpu-motion-vectors`                               | On (full path) | Procedural motion-vector descriptors.                                                                                                                                                                                                                                                                                         |
+| Feedback shaders | `milkdrop-webgpu-feedback`                                     | On (full path) | Native TSL feedback: warp and comp shaders run directly. Off, the feedback loop still runs, but on the uniform-only controls approximation instead of the authored shader bodies, which is how a feedback bug is bisected. The safe path and `?renderer=webgl` also turn it off (`shouldEnableNativeMilkdropWebGpuFeedback`). |
+| WebGL fallback   | `milkdrop-webgpu-fallback`                                     | Off            | When on, any preset whose plan routes to WebGL is reloaded there. When off, only presets with genuinely unsupported features fall back; feedback-compatibility presets run natively. Certification sessions (`?renderer=webgpu&corpus=certification`) force it off unless set explicitly.                                     |
+| Compute VM       | `milkdrop-webgpu-compute-vm`                                   | Off            | Runs per-frame equations as WebGPU compute. Upload, dispatch and readback cost 0.9–8 ms a frame against 0.05–0.75 µs for the CPU JIT (`bun run lab:vm-tier-bench`, 2026-08-22). Never on the compatibility adapter.                                                                                                           |
+| Render bundles   | `milkdrop-webgpu-render-bundles`                               | Off            | Records static draws as WebGPU render bundles. An A/B on hardware on 2026-10-11 found no cadence effect ([Runtime performance](./RUNTIME_PERFORMANCE.md)).                                                                                                                                                                    |
+| Branch desugar   | `milkdrop-webgpu-branch-desugar`                               | Off            | Flattens `if`/`else` and bounded loops in shader bodies so 154 more bodies execute directly. Six presets still render white or black under it; they are named in `packages/milkdrop-toolchain/src/compiler/shader-branch-desugar.ts`.                                                                                         |
 
 When a WebGPU session runs with a flag that differs from what the defaults resolve to on the same path, the runtime sets the engine snapshot's `status` to `WebGPU rollout flags active: ...`, naming each one and its value (`directFeedbackShaders off, renderBundles on`). Defaults never trigger it: not the four flags that are off by default, and not the features the safe path turns off. An override the path ignores, such as the compute VM on the compatibility adapter, is not listed either. The workspace toast suppresses the message, so it never shows on stage, and the next runtime status (`Loaded …`) replaces it in the snapshot. `__stims_agent.getState().statusLog` still records it, with `source: 'runtime'`: the runtime hands every status it sets to the shell's agent log as it sets it.
 
@@ -99,7 +97,6 @@ comparison contract, and reproduction command.
 ## Shader execution classification
 
 Direct shader payloads keep a separate execution classification in `packages/milkdrop-toolchain/src/compiler/shader-execution-classification.ts`. Runtime consumers should use this helper instead of checking `supportedBackends`, `rawGlsl`, and `requiresControlFallback` directly. The current categories are:
-
 - `backend-executable`
 - `backend-executable-with-control-fallback`
 - `control-fallback-required`
@@ -107,7 +104,6 @@ Direct shader payloads keep a separate execution classification in `packages/mil
 ## Testing expectations
 
 Use both layers:
-
 - Fast logic coverage in unit tests for compiler/runtime helpers, rollout-flag gating, and representative descriptor fixtures.
 - Browser-backed interaction coverage in `tests/e2e/agent-integration.test.ts` for the shipped visualizer flow.
 - JIT/interpreter differential coverage plus the aliased-scope write-count

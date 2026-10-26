@@ -7,9 +7,9 @@ contract, the section list, the gotchas and the open questions.
 
 What stays here:
 
-| Path | What it is |
-| --- | --- |
-| `index.ts` | Re-exports the package loader, so in-repo imports keep working. |
+| Path                  | What it is                                                                                                                                          |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.ts`            | Re-exports the package loader, so in-repo imports keep working.                                                                                     |
 | `reference-runner.ts` | A conforming runner written against this repo's three tiers (`expression`, `interpreter`, `jit`): the worked example for anyone porting the corpus. |
 
 Run it against this repo's tiers:

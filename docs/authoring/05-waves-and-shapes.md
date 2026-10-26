@@ -1,6 +1,6 @@
 # Track 5 — Waves and shapes
 
-Everything so far distorts the feedback loop — the paint already on screen. Waves and shapes are the *new* ink laid on top each frame, before the loop's distortion is applied to it next time around.
+Everything so far distorts the feedback loop — the paint already on screen. Waves and shapes are the _new_ ink laid on top each frame, before the loop's distortion is applied to it next time around.
 
 Most presets draw with this layer: **of the 1,787 catalog presets, 1,040 (58%) enable a custom wave or shape**, 547 a wave and 824 a shape. Those counts take only slots whose `_enabled` value is nonzero, as of October 2026. Preset files list every slot, disabled ones included, so counting `wavecode_`/`shapecode_` lines finds them in nearly every file.
 
@@ -25,7 +25,7 @@ wavecode_0_a=1
 
 ## Lesson 2 · Shaping every sample point
 
-`wave_N_per_point` equations run once *per sample point* of the wave — the finest-grained code in the whole language, potentially hundreds of times a frame for one wave:
+`wave_N_per_point` equations run once _per sample point_ of the wave — the finest-grained code in the whole language, potentially hundreds of times a frame for one wave:
 
 ```text
 wave_0_per_point1=t=sample*6.283185+time*0.3;
@@ -36,7 +36,6 @@ wave_0_per_point3=y=0.5+0.3*cos(t*2)*(1+0.3*value);
 [**▶ Run the Lissajous wave**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBTYW1lIGN1c3RvbSB3YXZlLCBub3cgc2hhcGVkIGJ5IGEgcGVyLXBvaW50IGVxdWF0aW9uIGluc3RlYWQgb2YgdGhlCi8vIGF1ZGlvIHNhbXBsZSBkaXJlY3RseS4gd2F2ZV8wX3Blcl9wb2ludDEgcnVucyBvbmNlIHBlciBzYW1wbGUgcG9pbnQKLy8gKHNhbXBsZSBydW5zIDAuLjEgYWNyb3NzIHRoZSB3YXZlKTsgeCx5IGFyZSB3aGF0IGl0IG11c3Qgc2V0LgpmUmF0aW5nPTUKZkRlY2F5PTAuOTcKZldhdmVBbHBoYT0wLjYKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wLjEKd2F2ZV9nPTAuMgp3YXZlX2I9MC4zCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MAp3YXZlY29kZV8wX2VuYWJsZWQ9MQp3YXZlY29kZV8wX3NhbXBsZXM9MjAwCndhdmVjb2RlXzBfc2VwPTAKd2F2ZWNvZGVfMF9zY2FsaW5nPTEKd2F2ZWNvZGVfMF9zbW9vdGhpbmc9MC41CndhdmVjb2RlXzBfcj0xCndhdmVjb2RlXzBfZz0wLjcKd2F2ZWNvZGVfMF9iPTAuMgp3YXZlY29kZV8wX2E9MQp3YXZlXzBfcGVyX3BvaW50MT10PXNhbXBsZSo2LjI4MzE4NSt0aW1lKjAuMzsKd2F2ZV8wX3Blcl9wb2ludDI9eD0wLjUrMC4zKnNpbih0KjMpKigxKzAuMyp2YWx1ZSk7CndhdmVfMF9wZXJfcG9pbnQzPXk9MC41KzAuMypjb3ModCoyKSooMSswLjMqdmFsdWUpOwo%3D "examples/51-wave-lissajous.milk")
 
 The two inputs unique to this context:
-
 - `sample` — this point's position along the wave, `0` to `1`. Multiplying by `6.283185` (2π) turns it into a full angle sweep — the standard move whenever a wave should trace a closed curve instead of a left-to-right line.
 - `value` — the actual audio sample at this point, roughly `-1..1`. Folding it into the radius (`1+0.3*value`) is how the shape stays a recognizable curve while still visibly responding to the waveform, rather than the waveform being replaced outright.
 
@@ -111,7 +110,7 @@ shape_0_per_frame2=ang=time*0.5;
 
 [**▶ Run the reactive wave and shape**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBFdmVyeXRoaW5nIGluIFRyYWNrIDUgY29tYmluZWQgYW5kIG1hZGUgYXVkaW8tcmVhY3RpdmU6IHE4IGNhcnJpZXMKLy8gc21vb3RoZWQgdm9sdW1lIGZyb20gcGVyX2ZyYW1lIGludG8gYm90aCB0aGUgc2hhcGUgKHJhZGl1cykgYW5kIHRoZQovLyB3YXZlIChhbXBsaXR1ZGUgdmlhIHZhbHVlJ3MgbmF0dXJhbCBzY2FsaW5nKSwgdGhlIHNhbWUgcS12YXIgYnJpZGdlCi8vIFRyYWNrIDQgdXNlZCBmb3IgcGVyX3BpeGVsLgpmUmF0aW5nPTUKZkRlY2F5PTAuOTcKZldhdmVBbHBoYT0wLjUKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wLjEKd2F2ZV9nPTAuMgp3YXZlX2I9MC4zCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MAp3YXZlY29kZV8wX2VuYWJsZWQ9MQp3YXZlY29kZV8wX3NhbXBsZXM9MjAwCndhdmVjb2RlXzBfc2VwPTAKd2F2ZWNvZGVfMF9zY2FsaW5nPTEKd2F2ZWNvZGVfMF9zbW9vdGhpbmc9MC41CndhdmVjb2RlXzBfcj0xCndhdmVjb2RlXzBfZz0wLjcKd2F2ZWNvZGVfMF9iPTAuMgp3YXZlY29kZV8wX2E9MQpzaGFwZWNvZGVfMF9lbmFibGVkPTEKc2hhcGVjb2RlXzBfc2lkZXM9NQpzaGFwZWNvZGVfMF9hZGRpdGl2ZT0wCnNoYXBlY29kZV8wX3RoaWNrb3V0bGluZT0xCnNoYXBlY29kZV8wX3RleHR1cmVkPTAKc2hhcGVjb2RlXzBfeD0wLjUKc2hhcGVjb2RlXzBfeT0wLjUKc2hhcGVjb2RlXzBfcmFkPTAuMTUKc2hhcGVjb2RlXzBfYW5nPTAKc2hhcGVjb2RlXzBfcj0wLjkKc2hhcGVjb2RlXzBfZz0wLjYKc2hhcGVjb2RlXzBfYj0wLjEKc2hhcGVjb2RlXzBfYT0xCnBlcl9mcmFtZV8xPXJhPTYvZnBzOwpwZXJfZnJhbWVfMj1iYXNzX2F2Zz1iYXNzX2F2ZyooMS1yYSkrcmEqYmFzczsKcGVyX2ZyYW1lXzM9cTg9YmFzc19hdmc7CndhdmVfMF9wZXJfcG9pbnQxPXQ9c2FtcGxlKjYuMjgzMTg1K3RpbWUqMC4zOwp3YXZlXzBfcGVyX3BvaW50Mj14PTAuNSsoMC4yKzAuMTUqcTgpKnNpbih0KjMpOwp3YXZlXzBfcGVyX3BvaW50Mz15PTAuNSsoMC4yKzAuMTUqcTgpKmNvcyh0KjIpOwpzaGFwZV8wX3Blcl9mcmFtZTE9cmFkPTAuMStxOCowLjE1OwpzaGFwZV8wX3Blcl9mcmFtZTI9YW5nPXRpbWUqMC41Owo%3D "examples/55-reactive-shape-and-wave.milk")
 
-`q8` is computed exactly once, in the root `per_frame`, and both the wave's per-point code and the shape's per-frame code read the same value that frame. Wave and shape code can read `bass`, `mid`, and `treb` directly — the custom wave in $$$ Royal's [*Mashup (326)*](https://toil.fyi/?preset=royal-mashup-326) does, in its per-point code. A value smoothed once in the root `per_frame` and handed over in a q-var is the same for every wave, shape, and mesh point that reads it, so the usual pattern is that `per_frame` does the listening (Track 3) and the waves and shapes read the result.
+`q8` is computed exactly once, in the root `per_frame`, and both the wave's per-point code and the shape's per-frame code read the same value that frame. Wave and shape code can read `bass`, `mid`, and `treb` directly — the custom wave in $$$ Royal's [_Mashup (326)_](https://toil.fyi/?preset=royal-mashup-326) does, in its per-point code. A value smoothed once in the root `per_frame` and handed over in a q-var is the same for every wave, shape, and mesh point that reads it, so the usual pattern is that `per_frame` does the listening (Track 3) and the waves and shapes read the result.
 
 ## What you can now build
 

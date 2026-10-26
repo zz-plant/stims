@@ -3,7 +3,6 @@
 > Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical screenshot-review context rather than the current product-positioning baseline.
 
 This pass reviews important user-facing pages/sections from a local dev build (`bun run dev:host`):
-
 1. Homepage + top navigation + hero call-to-action
 2. Library controls + filter/search panel
 3. Library card grid (discovery/scanning section)

@@ -2,7 +2,6 @@
 
 These `.milk` files are unmodified copies of a broader, curated slice of the
 upstream `projectM` regression preset corpus.
-
 - Upstream repo: `https://github.com/projectM-visualizer/projectm`
 - Upstream source tree: `presets/tests/`
 - Upstream commit: `36490443622c7cd671e41e512568a845add3a392`
@@ -21,7 +20,6 @@ upstream `projectM` regression preset corpus.
   remains the vendored upstream wave/shader-oriented suite.
 
 Selected fixture files and hashes:
-
 - `000-empty.milk` -> `presets/tests/000-empty.milk`
   sha256 `79f6a03143e38ec0a06c1f697b4216758afd7c31aff83bbb2519909e254a7ae1`
 - `001-line.milk` -> `presets/tests/001-line.milk`

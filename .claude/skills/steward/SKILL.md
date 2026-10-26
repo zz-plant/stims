@@ -1,4 +1,5 @@
 ---
+
 name: steward
 description: "Repo-specific conventions for opening, watching and driving a Stims pull request to green: what CI's shapes mean, which bot comments are noise, how to restart a branch after a squash-merge, and how to verify Worker changes on the branch preview. Use when you open or watch a PR here."
 ---
@@ -43,7 +44,7 @@ generic PR rules: it covers conventions and traps specific to Stims.
   the **CI Status** aggregate. The browser, gate and parity jobs only run when
   the PR changes code.
 - **CI Status goes red on a superseded run.** The aggregate counts a
-  *cancelled* job as failed, and a new push cancels the previous run. If the
+  _cancelled_ job as failed, and a new push cancels the previous run. If the
   red check is on an older commit than the PR head, read its log: when the
   Quality gate line says `success` and the test jobs say `cancelled`, it is not a
   real failure. Wait for the run on the current head; do not re-push or re-run.
@@ -56,7 +57,7 @@ generic PR rules: it covers conventions and traps specific to Stims.
 - **The Codex connector** posts inline review comments with a `P1`/`P2`
   badge: those are real findings, so answer them. A comment saying its usage
   limit is reached is not a finding and means no automated review will arrive.
-- A finding about a *measurement* usually means the benchmark did not match how
+- A finding about a _measurement_ usually means the benchmark did not match how
   the code runs (a warmed average for a once-per-transition path). Re-measure the
   way it actually runs (cold call, p95, max) and narrow the claim to what the
   data shows.

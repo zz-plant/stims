@@ -16,7 +16,6 @@ there are no import cycles, the shared core does not depend on the React
 shell, and the engine runtime is imported from exactly two files. The two
 boundaries that matter most, however, are not encoded in anything the
 compiler or the guards can check:
-
 1. **React ↔ engine.** The snapshot the shell reads from the engine is typed
    `any`, and the guard the agent docs say enforces the seam does not exist.
 2. **Catalog file → rendered row.** Preset data crosses four hand-listed
@@ -31,14 +30,14 @@ god component and the flat engine directory, safe to reshape.
 
 ## Proposed changes at a glance
 
-| # | Change | Kind | Size | What it buys |
-| --- | --- | --- | --- | --- |
-| 1 | Declare the engine seam: an experience-controller interface and a typed snapshot | types | M | Ends the `any` channel behind 200+ shell reads |
-| 2 | Make the boundary guard real: a dependency-cruiser seam rule with an explicit engine public surface | guard | S | The rule `.github/AGENTS.md` already claims |
-| 3 | One catalog-entry contract: derive the row type from the engine type, collapse four projections into one, add a field-survival test | types + code | M | Closes the field-loss class that shipped twice |
-| 4 | Decompose `App.tsx` by lifecycle concern and split the workspace context by change cadence | refactor | L | Attacks the #3 fix category at its hottest file |
-| 5 | Give `src/js/milkdrop/` a shape: one folder per concern, each with an index that is its public surface | move | L | The map in `src-map.md` becomes the directory |
-| 6 | Feedback composite: one uniform table both managers own, verified by a differential test, before any single IR | data + test | M | The sequencing the two removed IR stubs got wrong |
+| #   | Change                                                                                                                              | Kind         | Size | What it buys                                      |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------ | ---- | ------------------------------------------------- |
+| 1   | Declare the engine seam: an experience-controller interface and a typed snapshot                                                    | types        | M    | Ends the `any` channel behind 200+ shell reads    |
+| 2   | Make the boundary guard real: a dependency-cruiser seam rule with an explicit engine public surface                                 | guard        | S    | The rule `.github/AGENTS.md` already claims       |
+| 3   | One catalog-entry contract: derive the row type from the engine type, collapse four projections into one, add a field-survival test | types + code | M    | Closes the field-loss class that shipped twice    |
+| 4   | Decompose `App.tsx` by lifecycle concern and split the workspace context by change cadence                                          | refactor     | L    | Attacks the #3 fix category at its hottest file   |
+| 5   | Give `src/js/milkdrop/` a shape: one folder per concern, each with an index that is its public surface                              | move         | L    | The map in `src-map.md` becomes the directory     |
+| 6   | Feedback composite: one uniform table both managers own, verified by a differential test, before any single IR                      | data + test  | M    | The sequencing the two removed IR stubs got wrong |
 
 Sizes: S is one PR of an afternoon, M is two to three PRs, L is a series of
 mechanical PRs. Sequencing and dependencies are in
@@ -47,7 +46,6 @@ mechanical PRs. Sequencing and dependencies are in
 ## What is already strong
 
 These are measured, not assumed, and nothing below should regress them.
-
 - **No import cycles.** `bun run check:architecture` cruises 1,717 modules
   and 5,106 dependencies with zero violations in 15 s.
 - **Layering holds.** `src/js/core/` imports from `src/js/milkdrop/` in
@@ -74,7 +72,6 @@ These are measured, not assumed, and nothing below should regress them.
 ### 1. The engine seam is type-erased
 
 **Evidence.**
-
 - `buildExperienceController(deps: Record<string, any>)` at
   [`src/js/milkdrop/runtime.ts:1094`](../../src/js/milkdrop/runtime.ts)
   assembles the object the shell talks to. Its public methods are
@@ -87,13 +84,13 @@ These are measured, not assumed, and nothing below should regress them.
   return type through `ReturnType<...>`, so all three are `any` in the
   shell. A type probe (appendix) confirms it, with a negative control:
 
-  | Type at the seam | Probe result |
-  | --- | --- |
-  | `ReturnType<controller['getStateSnapshot']>` | `any` |
-  | `EngineSnapshot['catalogEntries']` | `any` |
-  | `EngineSnapshot['sessionState']` | `any` |
-  | `EngineSnapshot['adaptiveQuality']` | `any` |
-  | `Parameters<controller['applyFields']>[0]` | `unknown` |
+  | Type at the seam                             | Probe result                  |
+  | -------------------------------------------- | ----------------------------- |
+  | `ReturnType<controller['getStateSnapshot']>` | `any`                         |
+  | `EngineSnapshot['catalogEntries']`           | `any`                         |
+  | `EngineSnapshot['sessionState']`             | `any`                         |
+  | `EngineSnapshot['adaptiveQuality']`          | `any`                         |
+  | `Parameters<controller['applyFields']>[0]`   | `unknown`                     |
   | `EngineSnapshot['activePresetId']` (control) | `string \| null`, as declared |
 
 - The adapter's own type is inferred, not declared:
@@ -115,7 +112,6 @@ state" fix category that skill exists for is the #3 category at 19% of fix
 commits (measured 2026-08-27 over 400 commits).
 
 **Proposal.**
-
 1. Declare `MilkdropExperienceSnapshot` and `MilkdropExperienceController`
    as interfaces in
    [`src/js/milkdrop/runtime-types.ts`](../../src/js/milkdrop/runtime-types.ts),
@@ -147,7 +143,6 @@ scoped to the fields already clean, and ratchet the rest field by field.
 ### 2. The documented boundary guard does not exist
 
 **Evidence.**
-
 - [`.github/AGENTS.md`](../../.github/AGENTS.md) described
   `check:architecture` as "the `frontend/*` → engine boundary; only the
   engine adapter may cross it", and
@@ -172,7 +167,6 @@ scoped to the fields already clean, and ratchet the rest field by field.
   importers each) and `vm.ts` and `runtime-signals.ts` (5 each).
 
 **Proposal.**
-
 1. Define the engine's public surface as an explicit allowlist in the
    cruiser config, seeded with exactly the 20 modules imported today, so the
    rules land green and any new deep import is a violation from day one.
@@ -191,8 +185,8 @@ scoped to the fields already clean, and ratchet the rest field by field.
      allowlist and stay there until change 5 moves them to the preset
      surface; without the exemption this rule is red on `main` from its
      first run.
-   Apply the same allowlist to `scripts/` at `warn` severity so the report
-   shows the coupling without blocking the lab tooling.
+     Apply the same allowlist to `scripts/` at `warn` severity so the report
+     shows the coupling without blocking the lab tooling.
 3. Delete the two dead `info` rules, and give the guard the docblock
    `check:script-docs` and `generate:guardrails` expect, so it leaves the
    "Not yet documented" list.
@@ -207,7 +201,6 @@ change 5 retires it.
 ### 3. Catalog data crosses the seam by hand-copied projections
 
 **Evidence.**
-
 - The shell declares its own `PresetCatalogEntry` in
   [`src/js/frontend/contracts.ts`](../../src/js/frontend/contracts.ts) as a
   parallel of the engine's `MilkdropCatalogEntry` in
@@ -235,7 +228,6 @@ trip. The comments were added after the fact as warnings; nothing stops the
 third occurrence.
 
 **Proposal.**
-
 1. Make the row type derived, not parallel: `PresetCatalogEntry` becomes
    `Pick<MilkdropCatalogEntry, ...>` plus the few view-only fields
    (`file`, boolean `supports`, `expectedFidelityClass`). A field renamed or
@@ -262,7 +254,6 @@ test of its own.
 ### 4. The shell has one god component and one god context
 
 **Evidence.**
-
 - [`src/js/frontend/App.tsx`](../../src/js/frontend/App.tsx) is 1,653 lines
   with 49 imports, 33 `useEffect` calls, 9 refs, and 7 state cells. The next
   most effect-heavy module, `workspace-hooks.ts`, has 12; no other file has
@@ -283,7 +274,6 @@ test of its own.
   citing a fresher number.
 
 **Proposal.**
-
 1. Extract the 33 effects into lifecycle hooks grouped by concern, following
    the precedent of the hooks that already exist
    ([`hooks/use-audio-source-sync.ts`](../../src/js/frontend/hooks/use-audio-source-sync.ts),
@@ -319,7 +309,6 @@ extraction is compiler-checked.
 ### 5. The engine directory is a flat bag of eight concerns
 
 **Evidence.**
-
 - `src/js/milkdrop/` has 88 top-level files (33,054 lines) beside its
   subfolders. By prefix they group into catalog (10 files), compiler
   front-end (about 14: `compiler.ts`, `expression*`, `shader-ast.ts`,
@@ -364,7 +353,6 @@ and the one-folder-per-PR cadence.
 ### 6. Feedback composite: one uniform table before one IR
 
 **Evidence.**
-
 - The renderer and feedback family is 15,124 lines. The two largest files in
   the repo are [`feedback-manager-webgpu-tsl.ts`](../../src/js/milkdrop/feedback-manager-webgpu-tsl.ts)
   (3,789 lines) and [`feedback-manager-shared.ts`](../../src/js/milkdrop/feedback-manager-shared.ts)
@@ -387,7 +375,6 @@ uniform or a pass the other lacks, and nothing but a parity capture notices.
 
 **Proposal.** Invert the dependency and take the smallest step that has a
 consumer on day one:
-
 1. Add `src/js/milkdrop/feedback-composite-contract.ts` (NEW) holding the
    composite's shared semantics as data: each entry names the semantic
    (the per-pixel `q` and `t` registers, decay, echo, the noise samplers,
@@ -422,12 +409,12 @@ change is reversible by deleting the import.
 
 ## Sequencing
 
-| Phase | Changes | Why this order |
-| --- | --- | --- |
-| A: safe wins | 2 (rule with seed allowlist, dead-rule cleanup, guard docblock); 1 step 1 (declare interfaces, land the probe test); 3 (derived row type and field-survival test) | All additive, all land green, and together they give later phases a compiler and a cruiser to lean on |
-| B: contracts | 1 steps 2 and 3 (type the deps, flip the probe); 6 (uniform table and differential test) | Type errors surfaced here are the debt being paid; the feedback table gives the parity lane an immediate guard |
-| C: shell | 4, one concern per PR, ratchet lowered each time | Needs the typed snapshot from B to be safely reviewable |
-| D: shape | 5, one folder per PR; then tighten change 2 to "import through the folder index" | Needs the rule from A so each move is provably boundary-neutral |
+| Phase        | Changes                                                                                                                                                           | Why this order                                                                                                 |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| A: safe wins | 2 (rule with seed allowlist, dead-rule cleanup, guard docblock); 1 step 1 (declare interfaces, land the probe test); 3 (derived row type and field-survival test) | All additive, all land green, and together they give later phases a compiler and a cruiser to lean on          |
+| B: contracts | 1 steps 2 and 3 (type the deps, flip the probe); 6 (uniform table and differential test)                                                                          | Type errors surfaced here are the debt being paid; the feedback table gives the parity lane an immediate guard |
+| C: shell     | 4, one concern per PR, ratchet lowered each time                                                                                                                  | Needs the typed snapshot from B to be safely reviewable                                                        |
+| D: shape     | 5, one folder per PR; then tighten change 2 to "import through the folder index"                                                                                  | Needs the rule from A so each move is provably boundary-neutral                                                |
 
 Phases A and B are the proposal's core and stand on their own. C and D are
 where the payoff compounds, and each can stop early without leaving the
@@ -435,14 +422,14 @@ tree in a worse state than today.
 
 ## Guardrails this proposal adds
 
-| Guard | Where it runs | Rule |
-| --- | --- | --- |
-| `frontend-engine-seam` cruiser rule | `check:architecture` | The shell outside `frontend/engine/` imports only the engine's public surface |
-| `engine-runtime-only-via-adapter` cruiser rule | `check:architecture` | Only `frontend/engine/` imports the runtime, renderers, feedback managers, VM, or compiler entry |
-| `tests/unit/engine-seam-types.test.ts` (NEW) | `check` | No `any` reaches the seam |
-| `tests/unit/catalog-projection-contract.test.ts` (NEW) | `check` | Every measured catalog field survives to the rendered row |
-| `scripts/check-app-shell-effects.ts` (NEW) | `check:quick` | Raw effects in `App.tsx` only go down |
-| `tests/unit/milkdrop-feedback-uniform-contract.test.ts` (NEW) | `check` | Every composite uniform is a shared semantic bound on both backends or a declared backend-specific entry |
+| Guard                                                         | Where it runs        | Rule                                                                                                     |
+| ------------------------------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------- |
+| `frontend-engine-seam` cruiser rule                           | `check:architecture` | The shell outside `frontend/engine/` imports only the engine's public surface                            |
+| `engine-runtime-only-via-adapter` cruiser rule                | `check:architecture` | Only `frontend/engine/` imports the runtime, renderers, feedback managers, VM, or compiler entry         |
+| `tests/unit/engine-seam-types.test.ts` (NEW)                  | `check`              | No `any` reaches the seam                                                                                |
+| `tests/unit/catalog-projection-contract.test.ts` (NEW)        | `check`              | Every measured catalog field survives to the rendered row                                                |
+| `scripts/check-app-shell-effects.ts` (NEW)                    | `check:quick`        | Raw effects in `App.tsx` only go down                                                                    |
+| `tests/unit/milkdrop-feedback-uniform-contract.test.ts` (NEW) | `check`              | Every composite uniform is a shared semantic bound on both backends or a declared backend-specific entry |
 
 The effect guard is a script rather than a unit test because
 `check:test-source-greps` rejects new unit tests that read production
@@ -526,10 +513,19 @@ type C = ReturnType<typeof createMilkdropExperience>;
 type S = ReturnType<C['getStateSnapshot']>;
 type IsAny<T> = 0 extends 1 & T ? true : false;
 export const snapshotIsAny: IsAny<S> = true;
-export const catalogEntriesIsAny: IsAny<EngineSnapshot['catalogEntries']> = true;
-export const sessionStateIsAny: IsAny<NonNullable<EngineSnapshot['sessionState']>> = true;
-export const adaptiveQualityIsAny: IsAny<NonNullable<EngineSnapshot['adaptiveQuality']>> = true;
-export const applyFieldsParamIsUnknown: unknown extends Parameters<C['applyFields']>[0] ? true : false = true;
+export const catalogEntriesIsAny: IsAny<EngineSnapshot['catalogEntries']> =
+  true;
+export const sessionStateIsAny: IsAny<
+  NonNullable<EngineSnapshot['sessionState']>
+> = true;
+export const adaptiveQualityIsAny: IsAny<
+  NonNullable<EngineSnapshot['adaptiveQuality']>
+> = true;
+export const applyFieldsParamIsUnknown: unknown extends Parameters<
+  C['applyFields']
+>[0]
+  ? true
+  : false = true;
 // Control: declared `string | null`, so this line MUST error.
 export const control: IsAny<EngineSnapshot['activePresetId']> = true;
 ```

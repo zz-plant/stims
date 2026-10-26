@@ -10,9 +10,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/**'
-      - 'scripts/build-packages-site.ts'
-      - '.github/workflows/pages-packages.yml'
+      - "packages/**"
+      - "scripts/build-packages-site.ts"
+      - ".github/workflows/pages-packages.yml"
   workflow_dispatch:
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-stims
         with:
-          checkout: 'false'
+          checkout: "false"
 
       - name: Build every package site
         run: bun run site:packages

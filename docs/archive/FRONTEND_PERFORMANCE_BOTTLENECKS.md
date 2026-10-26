@@ -91,11 +91,11 @@ warmed average. Measured in isolation on synthetic frames under Bun
 (JavaScriptCore, not V8, so treat the shape as indicative), 3 fresh-process
 runs per row, 3000 individually timed calls, 2026-09-29:
 
-| Frame density | Cold first call | p50 | p95 | Worst (max) |
-| --- | --- | --- | --- | --- |
-| 4 custom waves × 512 pts | ~0.2 ms | 0.01 ms | 0.06 ms | 1.6–2.8 ms |
-| 8 waves × 1024 pts, 200 motion vectors | ~0.6 ms | 0.06 ms | 0.27 ms | 3.0–5.4 ms |
-| 16 waves × 2048 pts, 1000 motion vectors | ~2.5 ms | 0.33 ms | 1.0 ms | 5.4–7.8 ms |
+| Frame density                            | Cold first call | p50     | p95     | Worst (max) |
+| ---------------------------------------- | --------------- | ------- | ------- | ----------- |
+| 4 custom waves × 512 pts                 | ~0.2 ms         | 0.01 ms | 0.06 ms | 1.6–2.8 ms  |
+| 8 waves × 1024 pts, 200 motion vectors   | ~0.6 ms         | 0.06 ms | 0.27 ms | 3.0–5.4 ms  |
+| 16 waves × 2048 pts, 1000 motion vectors | ~2.5 ms         | 0.33 ms | 1.0 ms  | 5.4–7.8 ms  |
 
 Typical frames are well under a millisecond. On the densest synthetic case the
 cold call is ~15% of a 16.7 ms frame and the worst observed tail (allocation/GC
@@ -130,7 +130,7 @@ Measured 2026-10-11 on a headed, hardware-accelerated tab (native WebGPU,
 120 Hz): each `next-preset` crossfade showed one 316 ms frame (run 1) and two
 spikes of 258 ms and 433 ms at ~0.3 s and ~0.75 s into the blend (run 2),
 while the blend's steady per-frame cadence stayed at baseline (p50 8.3 ms,
-p95 10.3 ms). The spike is at the transition *start*, not in the per-frame
+p95 10.3 ms). The spike is at the transition _start_, not in the per-frame
 double-step: the incoming preset's WebGPU pipeline compilation plus blend
 setup landing on the first blend frames is the prime suspect — the same
 class of first-draw pipeline cost the feedback managers already warm up
@@ -179,7 +179,7 @@ cannot see.
   `three.core.js` holds the classes both renderers share; only
   `three.module.js` adds `WebGLRenderer`, and splitting them in `manualChunks`
   isolates 82 KB gzipped that a WebGPU session never executes. It does not
-  help: 43 of our modules import from `'three'`, which *is* `three.module.js`,
+  help: 43 of our modules import from `'three'`, which _is_ `three.module.js`,
   so it stays eagerly reachable and rolldown correctly merges it back into the
   core chunk (verified — the split chunk hash returns byte-identical). Making
   `webgl-renderer.ts` a dynamic import, mirroring the WebGPU path, changes the
@@ -191,7 +191,7 @@ cannot see.
 - **The many small chunks are the price of four HTML entries.** 61 of 102
   chunks are under 5 KB (105 KB total). That looks like pure request
   overhead. Grouping app code by directory in `manualChunks` cuts the count to
-  60 — and takes the *eager* payload from 503 KB to 2237 KB, because the
+  60 — and takes the _eager_ payload from 503 KB to 2237 KB, because the
   groups drag lazily-imported renderer code into the entry graph. A narrower
   utils-only grouping still traded 3 fewer requests for 39 KB of extra
   critical-path bytes. The fine-grained split is load-bearing: chunks differ by
@@ -208,7 +208,6 @@ The fixed-tier browser method and latest measured result live in
 [`RUNTIME_PERFORMANCE.md`](../RUNTIME_PERFORMANCE.md). Use its quality lock,
 warmup, duration, backend, and CPU-throttle contract before claiming an FPS
 uplift; source inspection or a successful browser load is insufficient.
-
 - `bun run check:bundle-size` (scripts/check-bundle-size.ts) asserts bundle
   budgets against `dist/` after a build — run it whenever imports or vendor
   chunking change.
@@ -222,7 +221,6 @@ uplift; source inspection or a successful browser load is insufficient.
 ## Latest startup and deploy-build evidence
 
 Measured 2026-08-24 on the same checkout and machine:
-
 - Cold Chromium production load, three fresh contexts, service workers
   blocked, 4× CPU throttle, 150 ms latency, and 200,000 bytes/s downstream:
   median `shell-rendered` improved from 2,288.4 ms to 2,120.7 ms, while

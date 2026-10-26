@@ -1,4 +1,5 @@
 ---
+
 name: implement-feature
 description: "Guide for implementing a new feature end-to-end: from requirement to tested code to PR-ready. Use when adding a new capability, UI element, or behavior to Stims."
 ---

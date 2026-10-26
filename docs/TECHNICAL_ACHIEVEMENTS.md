@@ -151,8 +151,8 @@ See [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) for
 
 ## Foundations that are not shipped workflows
 
-| Foundation | Current status |
-| --- | --- |
-| Stem-oriented signals | Retired. Zero-filled runtime fields and an unwired pseudo-stem calculation were removed; reintroduction requires real separation with measured budgets. |
-| Creator-certified high-resolution export | Native resize and audio-track composition are implemented; encoded output and synchronization still need browser-backed certification. |
-| Model-backed Generate panel | Hosted and loopback provider paths are wired; availability, output quality, and the full browser flow still need end-to-end proof. |
+| Foundation                               | Current status                                                                                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stem-oriented signals                    | Retired. Zero-filled runtime fields and an unwired pseudo-stem calculation were removed; reintroduction requires real separation with measured budgets. |
+| Creator-certified high-resolution export | Native resize and audio-track composition are implemented; encoded output and synchronization still need browser-backed certification.                  |
+| Model-backed Generate panel              | Hosted and loopback provider paths are wired; availability, output quality, and the full browser flow still need end-to-end proof.                      |

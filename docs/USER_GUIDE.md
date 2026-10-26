@@ -8,13 +8,13 @@ The root workspace contains the stage, preset browser, editor, and settings. Sel
 
 Audio options depend on your browser:
 
-| Source | What to expect |
-| --- | --- |
-| Demo | A built-in sample; playback may require a click because of autoplay policy |
-| Microphone | Requires microphone permission and a secure context |
-| Audio file | Choose or drop one or more local files the browser can decode |
+| Source                | What to expect                                                                                                                                                    |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Demo                  | A built-in sample; playback may require a click because of autoplay policy                                                                                        |
+| Microphone            | Requires microphone permission and a secure context                                                                                                               |
+| Audio file            | Choose or drop one or more local files the browser can decode                                                                                                     |
 | Tab or screen capture | Chrome or Edge on a desktop: choose a tab or screen and enable audio in the browser's picker. Firefox and Safari share no audio, so Stims does not offer it there |
-| YouTube | Same browsers as tab capture: the YouTube controls feed the player's sound through a share of this tab |
+| YouTube               | Same browsers as tab capture: the YouTube controls feed the player's sound through a share of this tab                                                            |
 
 Every source is analysed in the browser; Stims never uploads the audio.
 
@@ -71,26 +71,26 @@ Reduce flashing and motion controls can reduce exposure, but they do not certify
 
 Press `?` for the full list, where most keys can also be rebound. Cmd+K (Ctrl+K on Windows and Linux) opens the command palette, which reaches every action, including those without a key.
 
-| Key | Action |
-| --- | --- |
-| Space | Pause or resume the picture; the preset and audio stay |
-| N or → / P, ← or Backspace | Next preset (random) / previous preset |
-| L | Stay on this preset (pause auto-advance) |
-| T | Turn autoplay on or off |
-| 1–9 | Play that numbered preset in Browse, once focus leaves the search box |
-| B, M, S | Browse, find a preset, Settings |
-| E | Edit the preset's code; Cmd/Ctrl+Enter compiles it |
-| F | Full screen |
-| C | Record video |
-| U | Add this preset to the queue |
-| Shift+D | Live performance mode |
-| D | Black out the picture while held; two quick taps keep it black until the next press |
-| Y | Flash the screen white while held; tapping repeatedly strobes |
-| V | Cycle the theme (dark, light, system) |
-| H | Switch transitions between blend and cut |
-| W, I, O, J | Nudge the running preset: next waveform, zoom in, more warp, bigger waveform; with Shift, the opposite |
-| `>` / `<` | Rotate clockwise / counterclockwise |
-| Esc | Close panels |
+| Key                        | Action                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Space                      | Pause or resume the picture; the preset and audio stay                                                 |
+| N or → / P, ← or Backspace | Next preset (random) / previous preset                                                                 |
+| L                          | Stay on this preset (pause auto-advance)                                                               |
+| T                          | Turn autoplay on or off                                                                                |
+| 1–9                        | Play that numbered preset in Browse, once focus leaves the search box                                  |
+| B, M, S                    | Browse, find a preset, Settings                                                                        |
+| E                          | Edit the preset's code; Cmd/Ctrl+Enter compiles it                                                     |
+| F                          | Full screen                                                                                            |
+| C                          | Record video                                                                                           |
+| U                          | Add this preset to the queue                                                                           |
+| Shift+D                    | Live performance mode                                                                                  |
+| D                          | Black out the picture while held; two quick taps keep it black until the next press                    |
+| Y                          | Flash the screen white while held; tapping repeatedly strobes                                          |
+| V                          | Cycle the theme (dark, light, system)                                                                  |
+| H                          | Switch transitions between blend and cut                                                               |
+| W, I, O, J                 | Nudge the running preset: next waveform, zoom in, more warp, bigger waveform; with Shift, the opposite |
+| `>` / `<`                  | Rotate clockwise / counterclockwise                                                                    |
+| Esc                        | Close panels                                                                                           |
 
 ## Optional AI assistance
 

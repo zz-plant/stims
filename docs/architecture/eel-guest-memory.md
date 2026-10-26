@@ -9,16 +9,15 @@ platform-profile spec (`spec/eel-conformance/`) and the declarative op table
 
 EEL "guest memory" is everything a program can address beyond scalar locals:
 
-| Region | Backing store (canonical) | Size | Lifetime / sharing |
-| --- | --- | --- | --- |
-| `megabuf(i)` | `MilkdropVm.megabuf: Float32Array` (vm.ts) | `MILKDROP_MEGABUF_SIZE` = 1,048,576 f32 (4 MiB) | Per VM; zeroed on every preset `reset()` |
-| `gmegabuf(i)` | module-level `sharedGlobalBuffer` (vm.ts) | `MILKDROP_GMEGABUF_SIZE` = 1,048,576 f32 | One per process, lazily allocated, **never** reset — shared across presets, matching MilkDrop |
-| `q1..q32` | `MilkdropVm.registers` (prototype-chains to `state`) | 32 scalars | Reset per preset; per-frame → per-pixel/per-wave bus |
-| `t1..t8` | `registers` / per-wave `locals` | 8 scalars | Per-wave working set |
-| per-frame user vars (incl. `regNN`-style names) | `MilkdropVm.state` | unbounded map | Persist across frames |
+| Region                                          | Backing store (canonical)                            | Size                                            | Lifetime / sharing                                                                            |
+| ----------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `megabuf(i)`                                    | `MilkdropVm.megabuf: Float32Array` (vm.ts)           | `MILKDROP_MEGABUF_SIZE` = 1,048,576 f32 (4 MiB) | Per VM; zeroed on every preset `reset()`                                                      |
+| `gmegabuf(i)`                                   | module-level `sharedGlobalBuffer` (vm.ts)            | `MILKDROP_GMEGABUF_SIZE` = 1,048,576 f32        | One per process, lazily allocated, **never** reset — shared across presets, matching MilkDrop |
+| `q1..q32`                                       | `MilkdropVm.registers` (prototype-chains to `state`) | 32 scalars                                      | Reset per preset; per-frame → per-pixel/per-wave bus                                          |
+| `t1..t8`                                        | `registers` / per-wave `locals`                      | 8 scalars                                       | Per-wave working set                                                                          |
+| per-frame user vars (incl. `regNN`-style names) | `MilkdropVm.state`                                   | unbounded map                                   | Persist across frames                                                                         |
 
 Access semantics (the platform profile; identical on every tier):
-
 - Index: `Math.trunc` (`milkdropTruncInt` in WGSL — non-finite → 0 via its finite guard, but a
   NaN/±Inf index must miss the bounds check like the CPU, see "index guard" below).
 - Bounds: half-open `[0, size)`. Out-of-range read → `0`; out-of-range write → dropped.
@@ -29,32 +28,34 @@ Access semantics (the platform profile; identical on every tier):
 The CPU Float32Arrays are the **canonical copy**. Every other representation (GPU storage
 buffers) is a mirror that must be re-synchronized at defined points. This is forced by the
 frame structure: `per_frame` may run on the GPU compute VM while `per_pixel`, custom waves and
-shapes still run on the CPU JIT *in the same frame*, and all of them share megabuf.
+shapes still run on the CPU JIT _in the same frame_, and all of them share megabuf.
 
 ## Tier-by-tier implementation
 
 ### Interpreter and CSP fallback
+
 `expression.ts` owns no storage; reads/writes go through injected helpers
 (`MilkdropExpressionHelpers.megabuf/gmegabuf/megabufWrite/gmegabufWrite`). The VM provides
 helpers closing over the same Float32Arrays the JIT receives.
 
 ### CPU JIT
+
 `expression-jit.ts` — compiled programs receive `(env, state, registers, locals, megabuf,
 gmegabuf, nextRandom)`; `compileBufferRead`/`compileStore` inline the trunc/bounds/clamp
 semantics. This tier defines the reference behavior for buffers (the interpreter's conformance
 spec currently stubs the helpers).
 
 ### GPU compute VM (per-frame programs) — landed by this increment
-`compiler/wgsl-generator.ts` + `vm-gpu.ts`:
 
+`compiler/wgsl-generator.ts` + `vm-gpu.ts`:
 - Bind group 0 grows two conditional bindings:
   - `@binding(2) var<storage, read_write> megabuf: array<f32, 1048576>` when the program
     touches megabuf;
   - `@binding(3) var<storage, read_write> gmegabuf: array<f32, 1048576>` when it touches
     gmegabuf.
-  (`@binding(0)` state struct and `@binding(1)` signals are unchanged. The pipeline layout is
-  explicit; `layout: 'auto'` prunes bindings unreachable from the entry point and silently
-  breaks the dispatch — same trap the gpu-differential harness documents.)
+    (`@binding(0)` state struct and `@binding(1)` signals are unchanged. The pipeline layout is
+    explicit; `layout: 'auto'` prunes bindings unreachable from the entry point and silently
+    breaks the dispatch — same trap the gpu-differential harness documents.)
 - Reads compile to `milkdropMegabufRead(index)` / `milkdropGmegabufRead(index)`; statement
   targets `megabuf(expr) = v` compile to `milkdropMegabufWrite(index, value)`. The helpers are
   emitted by the generator (not `wgsl-eel-helpers.ts`, because they reference module-scope
@@ -92,6 +93,7 @@ spec currently stubs the helpers).
   compiled IR) is deliberately deferred until profiles show it matters.
 
 ### GPU field path (per-pixel/per-point programs) — next increment
+
 `compiler/gpu-field-planner.ts` + `renderer-backends/webgpu-procedural-materials.ts` today pack
 per-frame register inputs positionally into `registersA..H` vec4 uniforms (32-scalar cap) and
 bail lowering entirely on `megabuf`/`gmegabuf`/unknown reads. Per the GPU-lowering census, the
@@ -99,7 +101,6 @@ remaining non-lowerable per-pixel presets are mostly per-frame user-variable rea
 gmegabuf/randint users (61 of 1,619).
 
 Planned shape:
-
 1. **Register bus → storage buffer.** Replace the positional vec4 packing with a single
    `array<f32>` storage binding holding the register file: q1..q32, then the program's
    per-frame-assigned user variables in `registerInputs` sort order. The planner's
@@ -109,7 +110,7 @@ Planned shape:
    frame instead of 32 uniform slots.
 2. **Buffer reads.** The same storage-binding mechanism then carries megabuf/gmegabuf
    (read-only in the field stages: per-pixel writes to megabuf are per-vertex-local on the CPU
-   tier only in theory — in practice per_pixel megabuf *writes* do persist on CPU, so
+   tier only in theory — in practice per_pixel megabuf _writes_ do persist on CPU, so
    write-bearing per-pixel programs stay CPU-lowered until we accept the divergence or add
    atomics; reads are the census blocker and are safe).
 3. Three.js TSL constraint: the field emitters are `wgslFn` value-parameter functions with no
@@ -152,7 +153,7 @@ against real presets before this increment.
 Fixed by extending the existing `pi`/`e` "overwritten constant" mechanism
 (`compiler/wgsl-generator.ts`) to cover signal names too, and making it **order-sensitive** — built
 incrementally per-statement as the program compiles, not precomputed over the whole block, so a
-read *before* the first assignment still correctly resolves to the raw signal (matching the CPU's
+read _before_ the first assignment still correctly resolves to the raw signal (matching the CPU's
 env, which has no own property until the assignment statement executes). Regression tests in
 `packages/milkdrop-toolchain/tests/wgsl-generator.test.ts` pin both directions (read-after-assign, read-before-assign).
 
