@@ -77,18 +77,21 @@ resolve_repo_root() {
 validate_bun_version() {
   local bun_version
   bun_version="$(bun --version)"
-  local bun_major bun_minor
+  local bun_major bun_minor bun_patch
   bun_major="${bun_version%%.*}"
   local remainder
   remainder="${bun_version#*.}"
   bun_minor="${remainder%%.*}"
+  bun_patch="${remainder#*.}"
+  bun_patch="${bun_patch%%[!0-9]*}"
 
-  if [[ -z "$bun_major" || -z "$bun_minor" ]]; then
+  if [[ -z "$bun_major" || -z "$bun_minor" || -z "$bun_patch" ]]; then
     fail "unable to parse Bun version '$bun_version'."
   fi
 
-  if (( bun_major < 1 || (bun_major == 1 && bun_minor < 3) )); then
-    warn "Bun >=1.3.0 is recommended by package engines (found $bun_version)."
+  # Mirrors engines.bun in package.json.
+  if (( bun_major < 1 || (bun_major == 1 && (bun_minor < 4 || (bun_minor == 4 && bun_patch < 4))) )); then
+    warn "Bun >=1.4.4 is recommended by package engines (found $bun_version)."
   fi
 }
 
