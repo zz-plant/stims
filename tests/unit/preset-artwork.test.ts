@@ -74,6 +74,7 @@ async function renderArtwork(
   props: {
     entry: PresetCatalogEntry;
     preview?: MilkdropPresetRenderPreview | null;
+    audition?: boolean;
   },
 ): Promise<{ dispose: () => void }> {
   const root = createRoot(container);
@@ -224,6 +225,25 @@ describe('PresetArtwork', () => {
 
     expect(previewImageSrc(container)).toBe('data:image/webp;base64,late');
     expect(previewStatus(container)).toBe('ready');
+
+    rendered.dispose();
+    dispose();
+  });
+
+  test('an auditioned tile hosts the live tile and says it is rendering', async () => {
+    const { container, dispose } = createToyContainer('artwork-audition');
+    const entry = makeEntry('auditioned', '/presets/auditioned.milk');
+    const rendered = await renderArtwork(container, {
+      entry,
+      preview: null,
+      audition: true,
+    });
+    await failThumbnail(container);
+
+    expect(
+      container.querySelector('[data-live-tile="auditioned"]'),
+    ).not.toBeNull();
+    expect(previewStatus(container)).toBe('capturing');
 
     rendered.dispose();
     dispose();

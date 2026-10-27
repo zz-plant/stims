@@ -47,7 +47,13 @@ import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { prefetchMenuPanelChunks } from './panel-chunks.ts';
 import { getPanelTitle } from './panel-registry.ts';
 import { openPerformPicker } from './perform-pins.ts';
-import { ariaKeyShortcutsFor, shortcutHintFor } from './shortcut-registry.ts';
+import {
+  ariaKeyShortcutsFor,
+  readShortcutOverrides,
+  type ShortcutOverrides,
+  shortcutHintFor,
+  subscribeShortcutOverrides,
+} from './shortcut-registry.ts';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
 import { UiIcon } from './UiIcon.tsx';
 import {
@@ -69,6 +75,10 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 type MenuItem = {
   icon: UiIconName;
   label: string;
+  // The bare action. The menu wraps it in `run` (close, then refocus the
+  // trigger) at the button, so these lists hold no function that reads a
+  // ref: React Compiler skips a component that passes one through a call
+  // during render, and these lists go through `.map` there.
   action: () => void;
   active?: boolean;
   // Short group header rendered above the item. Separators between groups
@@ -148,8 +158,14 @@ function transitionActionId(step: (typeof TRANSITION_STEPS)[number]) {
  * than baked in, so a rebind is reflected here too. Module-level so React
  * does not remount it (and lose its subtree) on every parent render.
  */
-const MenuHint = ({ actionId }: { actionId: string }) => {
-  const hint = shortcutHintFor(actionId);
+const MenuHint = ({
+  actionId,
+  overrides,
+}: {
+  actionId: string;
+  overrides: ShortcutOverrides;
+}) => {
+  const hint = shortcutHintFor(actionId, overrides);
   if (!hint) return null;
   return <kbd className={styles.menuHint}>{hint}</kbd>;
 };
@@ -159,6 +175,22 @@ const AUDIO_SOURCE_OPTIONS = [
   { source: 'microphone' as const, shortLabel: 'Mic', name: 'Microphone' },
   { source: 'tab' as const, shortLabel: 'Tab', name: 'Tab or system audio' },
 ];
+
+/**
+ * The stage element as it is now, for a handler to read when it runs.
+ *
+ * A function rather than `ui.stageRef.current` inline in a callback: React
+ * Compiler infers that `.current` read as a dependency the callback's list
+ * cannot name (a `.current` in a dependency list is the bug, not the fix),
+ * and skips the whole component. Named as a ref instead, the read makes every
+ * menu list that reaches the handler a ref read during render. Read here, the
+ * dependency is `ui`, which is what the list already says.
+ */
+function currentStageElement(ui: {
+  stageRef: { readonly current: HTMLElement | null };
+}): HTMLElement | null {
+  return ui.stageRef.current;
+}
 
 export function StageControls({
   isFullscreen,
@@ -240,6 +272,14 @@ export function StageControls({
     subscribePresetLock,
     isPresetLocked,
     () => false,
+  );
+  // Read as state rather than through the registry's defaulted argument, so
+  // a rebind re-renders the hints: compiled, a call with constant arguments
+  // runs once.
+  const shortcutOverrides = useSyncExternalStore(
+    subscribeShortcutOverrides,
+    readShortcutOverrides,
+    readShortcutOverrides,
   );
   const reduceFlashing = useSyncExternalStore(
     subscribeToAccessibilityPreference,
@@ -449,7 +489,7 @@ export function StageControls({
     pulseHaptic(10);
     void playNearbyPreset(
       nearbyPresetRequest({
-        stage: ui.stageRef.current,
+        stage: currentStageElement(ui),
         catalog: engine.catalog,
         currentPresetId,
         play: (presetId) => engine.handlePresetSelection(presetId),
@@ -512,7 +552,7 @@ export function StageControls({
     {
       icon: 'grid' as const,
       label: getPanelTitle('browse'),
-      action: () => run(() => togglePanel(menuSurface, 'browse')),
+      action: () => togglePanel(menuSurface, 'browse'),
       actionId: 'open-browse',
       active: panel === 'browse',
       sectionLabel: 'Presets and setlist',
@@ -521,27 +561,27 @@ export function StageControls({
       icon: 'eye' as const,
       label: getPanelTitle('finder'),
       actionId: 'find-similar',
-      action: () => run(() => togglePanel(menuSurface, 'finder')),
+      action: () => togglePanel(menuSurface, 'finder'),
       active: panel === 'finder',
     },
     {
       icon: 'nearby' as const,
       label: 'Nearby preset',
       actionId: 'nearby-preset',
-      action: () => run(() => handleNearby()),
+      action: () => handleNearby(),
     },
     {
       icon: 'pin' as const,
       label: presetLocked ? 'Stop staying here' : 'Stay here',
       actionId: 'toggle-preset-lock',
-      action: () => run(() => handleToggleLock()),
+      action: () => handleToggleLock(),
       active: presetLocked,
     },
     {
       icon: 'bookmark' as const,
       label: 'Queue this preset',
       actionId: 'queue-add',
-      action: () => run(() => queueCurrentPreset()),
+      action: () => queueCurrentPreset(),
     },
     // Listed here as well as on the bar: on phones the bar drops the star to
     // give the title room to be read, and press-and-hold on the stage is a
@@ -552,7 +592,7 @@ export function StageControls({
             icon: 'star' as const,
             label: presetSaved ? 'Remove from saved' : 'Save preset',
             actionId: 'save-preset',
-            action: () => run(() => handleToggleSave()),
+            action: () => handleToggleSave(),
             active: presetSaved,
           } satisfies MenuItem,
         ]
@@ -564,7 +604,7 @@ export function StageControls({
       icon: 'sparkles' as const,
       label: getPanelTitle('synthesize'),
       actionId: 'open-generate',
-      action: () => run(() => togglePanel(menuSurface, 'synthesize')),
+      action: () => togglePanel(menuSurface, 'synthesize'),
       active: panel === 'synthesize',
       sectionLabel: 'Create and edit',
     },
@@ -572,21 +612,21 @@ export function StageControls({
       icon: 'wand' as const,
       label: getPanelTitle('refine'),
       actionId: 'open-refine',
-      action: () => run(() => togglePanel(menuSurface, 'refine')),
+      action: () => togglePanel(menuSurface, 'refine'),
       active: panel === 'refine',
     },
     {
       icon: 'pencil' as const,
       label: getPanelTitle('editor'),
       actionId: 'open-editor',
-      action: () => run(() => togglePanel(menuSurface, 'editor')),
+      action: () => togglePanel(menuSurface, 'editor'),
       active: panel === 'editor',
     },
     {
       icon: 'video' as const,
       label: getPanelTitle('capture'),
       actionId: 'open-record',
-      action: () => run(() => openRecordPanel(menuSurface)),
+      action: () => openRecordPanel(menuSurface),
       active: panel === 'capture',
     },
   ];
@@ -596,7 +636,7 @@ export function StageControls({
       icon: 'sliders' as const,
       label: 'Performance controls',
       actionId: 'perform-pin',
-      action: () => run(() => openPerformPicker()),
+      action: () => openPerformPicker(),
     },
     ...(engineSnapshot?.audioSource
       ? [
@@ -604,7 +644,7 @@ export function StageControls({
             icon: playbackPaused ? ('play' as const) : ('pause' as const),
             label: playbackPaused ? 'Resume' : 'Pause',
             actionId: 'toggle-playback',
-            action: () => run(() => engine.handleTogglePlayback()),
+            action: () => engine.handleTogglePlayback(),
           } satisfies MenuItem,
           {
             icon: 'volume-off' as const,
@@ -613,7 +653,7 @@ export function StageControls({
             // read as pause — the thing above it is pause.
             label: 'Stop audio and go back to start',
             actionId: 'stop-audio',
-            action: () => run(() => engine.handleAudioStop()),
+            action: () => engine.handleAudioStop(),
           } satisfies MenuItem,
         ]
       : []),
@@ -624,7 +664,7 @@ export function StageControls({
       icon: 'expand' as const,
       label: isFullscreen ? 'Exit full screen' : 'Full screen',
       actionId: 'toggle-fullscreen',
-      action: () => run(() => onToggleFullscreen()),
+      action: () => onToggleFullscreen(),
       sectionLabel: 'Display and streaming',
     },
     // A safety setting, so a tap from the stage rather than the last switch
@@ -633,7 +673,7 @@ export function StageControls({
       icon: 'sun' as const,
       label: 'Reduce flashing',
       actionId: 'toggle-reduce-flashing',
-      action: () => run(() => toggleReduceFlashingAction(ui.setStatusMessage)),
+      action: () => toggleReduceFlashingAction(ui.setStatusMessage),
       active: reduceFlashing,
     },
     ...(pip.supported
@@ -644,7 +684,7 @@ export function StageControls({
               ? 'Exit picture in picture'
               : 'Picture in picture',
             actionId: 'toggle-pip',
-            action: () => run(() => pip.toggle()),
+            action: () => pip.toggle(),
             active: pip.active,
           } satisfies MenuItem,
         ]
@@ -654,26 +694,23 @@ export function StageControls({
       label: projector.open ? 'Close projector window' : 'Projector window',
       actionId: 'toggle-projector',
       action: () =>
-        run(() =>
-          toggleProjectorAction({
-            stage: () => ui.stageRef.current,
-            announce: ui.setStatusMessage,
-          }),
-        ),
+        toggleProjectorAction({
+          stage: () => ui.stageRef.current,
+          announce: ui.setStatusMessage,
+        }),
       active: projector.open,
     },
     {
       icon: 'expand' as const,
       label: 'Cast to a TV or Chromecast',
       actionId: 'external-display',
-      action: () =>
-        run(() => presentToExternalDisplayAction(ui.setStatusMessage)),
+      action: () => presentToExternalDisplayAction(ui.setStatusMessage),
     },
     {
       icon: 'image' as const,
       label: 'Camera as video input',
       actionId: 'toggle-camera',
-      action: () => run(() => toggleCameraAction(ui.setStatusMessage)),
+      action: () => toggleCameraAction(ui.setStatusMessage),
     },
   ];
 
@@ -685,7 +722,7 @@ export function StageControls({
       icon: 'sliders' as const,
       label: getPanelTitle('settings'),
       actionId: 'open-settings',
-      action: () => run(() => togglePanel(menuSurface, 'settings')),
+      action: () => togglePanel(menuSurface, 'settings'),
       active: panel === 'settings',
       sectionLabel: 'Workspace and system',
     },
@@ -695,7 +732,7 @@ export function StageControls({
             icon: 'sparkles' as const,
             label: 'Command palette',
             actionId: 'open-palette',
-            action: () => run(onOpenPalette),
+            action: onOpenPalette,
           } satisfies MenuItem,
         ]
       : []),
@@ -705,18 +742,18 @@ export function StageControls({
         ? 'Share link (carries your edits)'
         : 'Share link',
       actionId: 'share-link',
-      action: () => run(() => void ui.handleShowCurrentLink()),
+      action: () => void ui.handleShowCurrentLink(),
     },
     {
       icon: 'link' as const,
       label: 'Create video link…',
-      action: () => run(() => setVideoShareOpen(true)),
+      action: () => setVideoShareOpen(true),
     },
     {
       icon: 'pulse' as const,
       label: hostingRoom ? 'Copy watch party link' : 'Start watch party',
       actionId: 'watch-party',
-      action: () => run(handleWatchParty),
+      action: handleWatchParty,
     },
     ...(hostingRoom
       ? [
@@ -724,7 +761,7 @@ export function StageControls({
             icon: 'close' as const,
             label: 'End watch party',
             actionId: 'end-watch-party',
-            action: () => run(() => endWatchParty(ui.setStatusMessage)),
+            action: () => endWatchParty(ui.setStatusMessage),
           } satisfies MenuItem,
         ]
       : []),
@@ -732,7 +769,7 @@ export function StageControls({
 
   /** "Previous" -> "Previous (P)", and just "Previous" when unbound. */
   const withHint = (label: string, actionId: string) => {
-    const hint = shortcutHintFor(actionId);
+    const hint = shortcutHintFor(actionId, shortcutOverrides);
     return hint ? `${label} (${hint})` : label;
   };
 
@@ -759,16 +796,20 @@ export function StageControls({
         // aria-keyshortcuts is what announces the key instead.
         aria-label={item.label}
         aria-keyshortcuts={
-          item.actionId ? ariaKeyShortcutsFor(item.actionId) : undefined
+          item.actionId
+            ? ariaKeyShortcutsFor(item.actionId, shortcutOverrides)
+            : undefined
         }
-        onClick={item.action}
+        onClick={() => run(item.action)}
       >
         <UiIcon
           name={item.icon}
           className="stims-icon-slot stims-icon-slot--sm"
         />
         <span>{item.label}</span>
-        {item.actionId ? <MenuHint actionId={item.actionId} /> : null}
+        {item.actionId ? (
+          <MenuHint actionId={item.actionId} overrides={shortcutOverrides} />
+        ) : null}
       </button>
     </div>
   );
@@ -821,7 +862,10 @@ export function StageControls({
             data-action="previous-preset"
             aria-label="Previous preset"
             title={withHint('Previous', 'previous-preset')}
-            aria-keyshortcuts={ariaKeyShortcutsFor('previous-preset')}
+            aria-keyshortcuts={ariaKeyShortcutsFor(
+              'previous-preset',
+              shortcutOverrides,
+            )}
             onClick={handlePrevious}
           >
             <UiIcon
@@ -840,7 +884,10 @@ export function StageControls({
             data-action="nearby-preset"
             aria-label="Play a preset that looks like this one"
             title={withHint('Nearby', 'nearby-preset')}
-            aria-keyshortcuts={ariaKeyShortcutsFor('nearby-preset')}
+            aria-keyshortcuts={ariaKeyShortcutsFor(
+              'nearby-preset',
+              shortcutOverrides,
+            )}
             onClick={handleNearby}
           >
             <UiIcon
@@ -855,7 +902,10 @@ export function StageControls({
             data-action="next-preset"
             aria-label="Shuffle to a random preset"
             title={withHint('Surprise me', 'next-preset')}
-            aria-keyshortcuts={ariaKeyShortcutsFor('next-preset')}
+            aria-keyshortcuts={ariaKeyShortcutsFor(
+              'next-preset',
+              shortcutOverrides,
+            )}
             onClick={handleShuffle}
           >
             <UiIcon
@@ -878,7 +928,10 @@ export function StageControls({
               data-action="open-editor"
               aria-label="Edit this visual"
               title={withHint('Edit this visual', 'open-editor')}
-              aria-keyshortcuts={ariaKeyShortcutsFor('open-editor')}
+              aria-keyshortcuts={ariaKeyShortcutsFor(
+                'open-editor',
+                shortcutOverrides,
+              )}
               onClick={() => {
                 signalActivity();
                 ui.updatePanel('editor');
@@ -911,7 +964,10 @@ export function StageControls({
                 ? `${withHint(getPanelTitle('browse'), 'open-browse')}\n\n${shaderApproximation.detail}`
                 : withHint(getPanelTitle('browse'), 'open-browse')
             }
-            aria-keyshortcuts={ariaKeyShortcutsFor('open-browse')}
+            aria-keyshortcuts={ariaKeyShortcutsFor(
+              'open-browse',
+              shortcutOverrides,
+            )}
             onClick={handleBrowse}
           >
             <span className={styles.titleText}>{presetTitle}</span>
@@ -949,7 +1005,10 @@ export function StageControls({
                 presetSaved ? 'Remove from saved' : 'Save preset',
                 'save-preset',
               )}
-              aria-keyshortcuts={ariaKeyShortcutsFor('save-preset')}
+              aria-keyshortcuts={ariaKeyShortcutsFor(
+                'save-preset',
+                shortcutOverrides,
+              )}
               onClick={handleToggleSave}
             >
               <UiIcon
@@ -976,7 +1035,10 @@ export function StageControls({
                 playbackPaused ? 'Resume' : 'Pause',
                 'toggle-playback',
               )}
-              aria-keyshortcuts={ariaKeyShortcutsFor('toggle-playback')}
+              aria-keyshortcuts={ariaKeyShortcutsFor(
+                'toggle-playback',
+                shortcutOverrides,
+              )}
               onClick={() => {
                 signalActivity();
                 pulseHaptic(10);
@@ -1000,7 +1062,10 @@ export function StageControls({
               isFullscreen ? 'Exit full screen' : 'Full screen',
               'toggle-fullscreen',
             )}
-            aria-keyshortcuts={ariaKeyShortcutsFor('toggle-fullscreen')}
+            aria-keyshortcuts={ariaKeyShortcutsFor(
+              'toggle-fullscreen',
+              shortcutOverrides,
+            )}
             onClick={() => {
               signalActivity();
               pulseHaptic(10);
@@ -1188,7 +1253,10 @@ export function StageControls({
           data-visible={String(!visible)}
           aria-label="Edit this visual"
           title={withHint('Edit this visual', 'open-editor')}
-          aria-keyshortcuts={ariaKeyShortcutsFor('open-editor')}
+          aria-keyshortcuts={ariaKeyShortcutsFor(
+            'open-editor',
+            shortcutOverrides,
+          )}
           inert={visible || undefined}
           onClick={() => {
             signalActivity();
