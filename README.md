@@ -81,7 +81,7 @@ Playing MilkDrop presets in a browser isn't new: Butterchurn did it first. Neith
 
 ## Quick start
 
-You need [Bun](https://bun.sh) 1.4.3+ and a browser with WebGL2. WebGPU is optional.
+You need [Bun](https://bun.sh) 1.4.4+ and a browser with WebGL2. WebGPU is optional.
 
 ```bash
 git clone https://github.com/zz-plant/stims.git
