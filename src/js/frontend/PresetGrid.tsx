@@ -25,7 +25,7 @@ import {
 
 /** What the queue is for, where nothing else on these tiles says so. */
 export const QUEUE_ADD_HINT =
-  'Add to the queue: presets lined up to play next, from the cue deck';
+  'Add to the queue: presets lined up to play next, shown in Up next';
 export const QUEUE_REMOVE_HINT = 'Remove from the queue';
 
 /** Column sizing. Rows carry their own inline `grid-template-columns` built

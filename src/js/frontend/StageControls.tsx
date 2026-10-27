@@ -285,7 +285,7 @@ export function StageControls({
       return;
     }
     ui.presetQueue.add(presetId);
-    ui.setStatusMessage('Queued. It shows in the cue monitor.');
+    ui.setStatusMessage('Queued. It shows in Up next.');
   };
   // favoritePresets is the store-derived list, so it stays fresh across
   // toggles even if the selectedPreset entry object is a stale snapshot.

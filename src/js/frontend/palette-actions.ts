@@ -478,7 +478,7 @@ export function buildPaletteActions(
           return;
         }
         uiRef.current.presetQueue.add(presetId);
-        uiRef.current.setStatusMessage('Queued. It shows in the cue monitor.');
+        uiRef.current.setStatusMessage('Queued. It shows in Up next.');
       },
     },
     {

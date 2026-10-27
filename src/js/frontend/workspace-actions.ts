@@ -362,7 +362,7 @@ export function togglePresetQueuedAction({
     return false;
   }
   queue.add(entry.id);
-  announce(`Queued “${title}”. It shows in the cue monitor.`);
+  announce(`Queued “${title}”. It shows in Up next.`);
   return true;
 }
 
@@ -812,7 +812,7 @@ export async function playNearbyPreset({
     // A neighbourhood can genuinely run out — a preset with few look-alikes,
     // all of them just played. Saying so beats silently doing nothing, and
     // names the control that does still have somewhere to go.
-    announce('No new neighbors for this one. Try Surprise me.');
+    announce('No new neighbors for this one. Play a random preset instead.');
     return;
   }
 

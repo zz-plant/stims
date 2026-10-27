@@ -101,7 +101,7 @@ test('an exhausted neighbourhood says so and points at the control that still mo
   });
 
   expect(played).toEqual([]);
-  expect(announcements.at(-1)).toContain('Surprise me');
+  expect(announcements.at(-1)).toContain('Play a random preset');
 });
 
 test('the dev server having no index is explained, not reported as a failure', async () => {
