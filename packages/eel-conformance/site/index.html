@@ -88,7 +88,7 @@
     <h2>Run it against your engine</h2>
     <p class="sub">The TypeScript harness does the seeding and comparing; you supply the one thing that is yours. A runner in any other language reads the JSON directly.</p>
 <pre><code>import { conforms, formatReport, runConformance } from 'eel-conformance';
-import { execute } from './my-eel-engine';
+import { execute } from './my-eel-engine.js';
 
 const report = await runConformance(({ program, env, megabuf, gmegabuf, random }) =&gt; {
   execute(program.join('\n'), { env, megabuf, gmegabuf, rand: random });
