@@ -1,3 +1,4 @@
+import { noteActionUse } from '../core/services/action-telemetry.ts';
 import { MIDI_CONTROLLER_PROFILES } from './midi-controller-presets.ts';
 import { padActionIdOf } from './midi-pad-actions.ts';
 import { describePinnableField } from './perform-pins.ts';
@@ -65,7 +66,10 @@ export function bindMidiToMilkdropControls(
     }
     // A command fires once, on the press. The release carries no value, and
     // there is no field to mirror onto other controls.
-    if (event.on !== false && event.value !== undefined) runAction?.(actionId);
+    if (event.on !== false && event.value !== undefined && runAction) {
+      noteActionUse(actionId, 'pad');
+      runAction(actionId);
+    }
   });
 
   return () => {

@@ -1,4 +1,5 @@
 import { type RefObject, useEffect, useRef } from 'react';
+import { noteActionUse } from '../../core/services/action-telemetry.ts';
 import { pulseHaptic } from '../haptics.ts';
 
 const WHEEL_DEBOUNCE_MS = 400;
@@ -206,8 +207,10 @@ export function useStageGesture({
       event.preventDefault();
       event.stopPropagation();
       if (delta > 0) {
+        noteActionUse('next-preset', 'gesture');
         shuffleRef.current();
       } else {
+        noteActionUse('previous-preset', 'gesture');
         prevRef.current();
       }
     };
@@ -338,6 +341,7 @@ export function useStageGesture({
         longPressTimerRef.current = setTimeout(() => {
           longPressFired = true;
           pulseHaptic(24, hapticsEnabled);
+          noteActionUse('save-preset', 'gesture');
           toggleFavoriteRef.current?.();
         }, longPressMs);
       };
@@ -382,12 +386,14 @@ export function useStageGesture({
           if (!swipeReady) return;
           lastSwipeRef.current = now;
           if (dx > 0) {
+            noteActionUse('previous-preset', 'gesture');
             prevRef.current();
             pulseHaptic(12, hapticsEnabled);
             statusRef.current?.(
               'Previous preset. Swipe left for another surprise.',
             );
           } else {
+            noteActionUse('next-preset', 'gesture');
             shuffleRef.current();
             pulseHaptic(12, hapticsEnabled);
             statusRef.current?.('Shuffled preset. Swipe right to go back.');
@@ -403,12 +409,14 @@ export function useStageGesture({
           if (!swipeReady) return;
           lastSwipeRef.current = now;
           if (dy < 0) {
+            noteActionUse('open-browse', 'gesture');
             openBrowseRef.current?.();
             pulseHaptic([8, 20, 8], hapticsEnabled);
             statusRef.current?.(
               'Browse opened. Swipe down on the stage to close.',
             );
           } else {
+            noteActionUse('close-panel', 'gesture');
             closePanelRef.current?.();
             pulseHaptic(10, hapticsEnabled);
             statusRef.current?.('Panel closed.');
@@ -431,6 +439,7 @@ export function useStageGesture({
           ) {
             lastTapTimeRef.current = 0;
             pulseHaptic([10, 20, 10], hapticsEnabled);
+            noteActionUse('toggle-fullscreen', 'gesture');
             toggleFullscreenRef.current?.();
             statusRef.current?.('Full screen toggled.');
             return;
