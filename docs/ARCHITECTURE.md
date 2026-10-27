@@ -162,7 +162,8 @@ Primary implementation:
 ### App bootstrap
 
 - [`src/js/app.ts`](../src/js/app.ts) renders [`src/js/frontend/App.tsx`](../src/js/frontend/App.tsx) into `#app` through the workspace router.
-- After the first paint it installs crash and renderer telemetry, gamepad navigation, the older `window.stimState` surface ([`core/agent-api.ts`](../src/js/core/agent-api.ts)), and, in agent mode only, the `window.stims.agent` driver ([`core/agent-driver.ts`](../src/js/core/agent-driver.ts)). Capture scripts such as `play-toy`, `stims-ctl` and `lab:visual` still read `window.stimState`.
+- In agent mode it installs the `window.stims.agent` driver ([`core/agent-driver.ts`](../src/js/core/agent-driver.ts)) before rendering, so the driver exists by the time `#stims-main` does and `ready()` can be called on it.
+- After the first paint it installs crash and renderer telemetry, gamepad navigation and the older `window.stimState` surface ([`core/agent-api.ts`](../src/js/core/agent-api.ts)). Capture scripts such as `play-toy`, `stims-ctl` and `lab:visual` still read `window.stimState`.
 - The automation API for agents and e2e tests is `window.__stims_agent` ([`frontend/agent-state.ts`](../src/js/frontend/agent-state.ts)), which App installs in every mode. See [`docs/agents/browser-automation.md`](./agents/browser-automation.md).
 - The engine's chunks load only once a session needs them. A bare landing boots the decorative attract render in idle time; a `?preset=` or `?audio=` arrival mounts once the launch page has painted (`afterLoadPhasePainted('launch-rendered')` in [`workspace-hooks.ts`](../src/js/frontend/workspace-hooks.ts)), so the page naming the preset is not sharing the connection with them. `bun run check:bundle-size` fails a build that puts three.js or its WebGPU bundle on the eager path.
 

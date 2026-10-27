@@ -20,7 +20,8 @@ const originalScreenDescriptor = Object.getOwnPropertyDescriptor(
   'screen',
 );
 
-async function loadAppShell() {
+/** `afterEvaluate` runs once app.ts has evaluated, before the boot is awaited. */
+async function loadAppShell(afterEvaluate?: () => void) {
   (globalThis as any).__stimsLoaderOverrides = {
     initNavigation: mockInitNavigation,
     loadToy: mockLoadToy,
@@ -28,6 +29,7 @@ async function loadAppShell() {
   };
 
   await importFresh('../../src/js/app.ts');
+  afterEvaluate?.();
   // The shell mounts a React tree; keeping the boot's awaited window inside
   // act() flushes the concurrent render and effects deterministically so they
   // do not warn about updates landing after the test's assertions.
@@ -76,6 +78,7 @@ describe('home shell user journeys', () => {
     document.body.innerHTML = '';
     document.body.removeAttribute('data-page');
     delete (globalThis as any).__stimsLoaderOverrides;
+    delete (globalThis as any).stims;
   });
 
   test('homepage stays on the root route and renders the editorial shell', async () => {
@@ -100,6 +103,26 @@ describe('home shell user journeys', () => {
     expect(mockLoadFromQuery).not.toHaveBeenCalled();
     expect(mockInitNavigation).not.toHaveBeenCalled();
     expect(mockLoadToy).not.toHaveBeenCalled();
+  });
+
+  test('agent mode installs window.stims.agent before the shell renders', async () => {
+    window.location.href = 'https://example.com/?agent=true';
+    // Cast, not annotated: assigned in a callback, so TS would narrow to null.
+    let atEvaluate = null as { ready: string; shellRendered: boolean } | null;
+
+    await loadAppShell(() => {
+      atEvaluate = {
+        ready: typeof (globalThis as any).stims?.agent?.ready,
+        shellRendered: document.getElementById('stims-main') !== null,
+      };
+    });
+
+    // A driver waits for #stims-main and then calls
+    // window.stims?.agent?.ready(). Installed after the first paint, the
+    // driver was still missing at that point, so the call skipped the wait
+    // and the caller read the boot preset before the deep link applied.
+    expect(atEvaluate).toEqual({ ready: 'function', shellRendered: false });
+    expect(document.getElementById('stims-main')).not.toBeNull();
   });
 
   test('shell cleanup cancels deferred full-catalog hydration', async () => {
