@@ -134,6 +134,62 @@ bun run ctl -- --step-timeout 90000 \
   process **exits non-zero** if any step failed, and prints `Step failed: …`
   to stderr, so a shell script can branch on it.
 
+## On the tab you are watching: the live channel
+
+`bun run ctl` and the MCP sessions launch a browser of their own. The live
+channel drives the tab already open on `bun run dev` instead: a vite plugin
+(`scripts/vite-live-channel.ts`) relays commands over the WebSocket vite holds
+open for hot reload, and the page half (`src/js/frontend/live-channel.ts`)
+answers them. Neither exists in a build.
+
+**Which tab.** Every tab on the dev server reports to it, and one of them is
+the stage: a visible, focused tab first, then a visible one. Ties go to the tab
+brought forward last, so clicking into a terminal leaves the stage where it
+is. An automated tab (`navigator.webdriver`: Playwright, the MCP sessions,
+`ctl`) becomes the stage only with `?liveChannel=1` in its URL. The Browser
+pane reports itself hidden, so it is the stage only when no visible tab is
+connected.
+
+**Out, in `scratch/live/`:**
+
+- `events.jsonl`: one JSON object per line. The stage's `getEvents()` entries
+  carry `from: "page"`, stage changes `from: "channel"`, and every command,
+  with its result and duration, `from: "agent"`. Rotated to `events.1.jsonl`
+  at 5 MB. Follow it with `tail -f`, or wake on a line such as `"type":"error"`.
+- `state.json`: the stage's latest `getState()` without `statusLog`, plus
+  `performanceRevision` and the `__stims_live` fader positions, rewritten about
+  once a second.
+- `frame.jpg`: the last capture. `server.json`: the port this dev server took.
+
+**In, as commands:**
+
+```bash
+bun run live -- status
+bun run live -- run select-preset '{"id":"geiss-casino"}'
+bun run live -- call ramp '{"targets":{"warp":2.4},"durationMs":6000}'
+bun run live -- capture     # → scratch/live/frame.jpg
+bun run live -- send '{"type":"toil:set_audio","source":"demo"}'
+```
+
+`send` takes any `toil:*` message (the protocol `--post` uses above),
+`{"type":"live","method":…,"args":[…]}` for a `window.__stims_live` method, or
+`{"type":"capture"}`. The CLI posts to `POST /__stims-live/command` and reads
+`GET /__stims-live/state`; curl works too, with
+`Content-Type: application/json`. Both routes answer this machine only. A
+command the stage never answers fails after 45 s; pass `--timeout` for a
+longer ramp.
+
+**In, as files.** Saving `scratch/live/preset.milk` applies it as preset
+source (`toil:apply_source`), and the compile result, diagnostics and line
+numbers included, lands in `events.jsonl` under `via: "file:preset.milk"`.
+Saving `scratch/live/pattern.js` plays it as a Strudel pattern; saving it
+empty hushes. A save applies when its content changed or the stage did.
+Strudel needs an audio context the page has already unlocked with a click.
+
+The lab and e2e servers that `scripts/dev-server.ts` spawns set
+`STIMS_LIVE_CHANNEL=0`, so automated runs never write these files. Set it
+yourself to turn the channel off.
+
 ## Events
 
 `getEvents(sinceSeq = 0)` → `[{seq, at, type, data}]`, last 100 retained.

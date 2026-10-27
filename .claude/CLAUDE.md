@@ -15,6 +15,10 @@
   defines the `preview_start` servers: `stims-dev` (`bun run dev`, port 5173,
   moves to a free port when taken), fixed-port `stims-dev-5991` and
   `stims-dev-scratch` (5992), and `stims-prod-preview` (5993) for a built `dist/`.
+- **MCP and the live channel**: `.mcp.json` registers the `stims` MCP server
+  (`bun run mcp`); its session tools drive a browser of their own. To act on
+  the tab the user is watching, use `bun run live` and read `scratch/live/`
+  (the [live channel](../docs/agents/browser-automation.md#on-the-tab-you-are-watching-the-live-channel)).
 - **Web sessions**: on Claude Code on the web (`CLAUDE_CODE_REMOTE=true`) the
   `SessionStart` hook in `.claude/hooks/session-start.sh` installs dependencies
   from the frozen lockfile and skips the checks; local sessions run
