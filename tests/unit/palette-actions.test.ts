@@ -1,4 +1,9 @@
-import { describe, expect, mock, test } from 'bun:test';
+import { afterEach, describe, expect, mock, test } from 'bun:test';
+import {
+  resetStageUtilitiesForTests,
+  stageUtilityMode,
+} from '../../src/js/core/services/stage-utilities.ts';
+import { buildPaletteResults } from '../../src/js/frontend/command-palette-registry.ts';
 import type { EngineContextValue } from '../../src/js/frontend/engine-context.tsx';
 import { buildPaletteActions } from '../../src/js/frontend/palette-actions.ts';
 import { getPanelTitle } from '../../src/js/frontend/panel-registry.ts';
@@ -162,5 +167,42 @@ describe('palette actions', () => {
     );
     run();
     expect(clear).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('palette rows for commands that had no other route', () => {
+  afterEach(() => {
+    resetStageUtilitiesForTests();
+    window.__stims_live = undefined;
+  });
+
+  test('the D blackout has a row once the stage is live, and it latches', () => {
+    expect(
+      buildPaletteActions(context()).some((a) => a.id === 'toggle-blackout'),
+    ).toBe(false);
+    const actions = buildPaletteActions(context({ liveMode: true }));
+    const blackout = actions.find((a) => a.id === 'toggle-blackout');
+    expect(blackout?.label).toBe('Black out the picture');
+    blackout?.run();
+    expect(stageUtilityMode()).toBe('blackout');
+    expect(blackout?.label).toBe('End the blackout');
+    blackout?.run();
+    expect(stageUtilityMode()).toBe('normal');
+  });
+
+  test('the AI scene pick is offered only once two scenes exist', () => {
+    const actions = buildPaletteActions(context({ liveMode: true }));
+    const offered = () =>
+      buildPaletteResults({ query: 'scene', actions }).some(
+        (result) => result.id === 'action:auto-switch-scene',
+      );
+    expect(offered()).toBe(false);
+    window.__stims_live = {
+      listScenes: () => [
+        { name: 'calm', positions: {}, modulators: [] },
+        { name: 'peak', positions: {}, modulators: [] },
+      ],
+    } as unknown as typeof window.__stims_live;
+    expect(offered()).toBe(true);
   });
 });

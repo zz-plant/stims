@@ -54,6 +54,10 @@ export function installDomEnvironment() {
   // reached the canvas threw ReferenceError, which the DOM swallows as a
   // listener error, so keyboard input looked simply inert under test.
   defineGlobal('HTMLTextAreaElement', windowInstance.HTMLTextAreaElement);
+  // Focus handlers test `relatedTarget instanceof Node` (the stage dock's
+  // blur, for one); without the global, any test that moved focus out of
+  // such a container threw ReferenceError from inside React's dispatch.
+  defineGlobal('Node', windowInstance.Node);
   defineGlobal('Event', windowInstance.Event);
   defineGlobal('CustomEvent', windowInstance.CustomEvent);
   defineGlobal('DOMParser', windowInstance.DOMParser);

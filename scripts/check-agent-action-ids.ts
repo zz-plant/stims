@@ -87,7 +87,6 @@ const PALETTE_ONLY_EXEMPT = new Set([
   'queue-clear',
   'queue-save-set',
   'queue-share-set',
-  'queue-manage-sets',
   'toggle-autoplay',
   // Set once before a set, from the settings sheet or the palette. A dock
   // button would sit one mis-click away from silently changing how the
@@ -95,7 +94,6 @@ const PALETTE_ONLY_EXEMPT = new Set([
   'toggle-live-performance',
   // Multimodal Clef Omni decision action to auto-switch performance scenes.
   'auto-switch-scene',
-  'open-shortcuts',
   'cycle-theme',
   'use-webgl',
   // An authoring instrument, not a mid-performance move (StageControls.tsx
@@ -131,6 +129,10 @@ const PALETTE_ONLY_EXEMPT = new Set([
   'tempo-follow-music',
   'tempo-nudge-earlier',
   'tempo-nudge-later',
+  // A live cut made on the beat: the D key (held, or latched with a double
+  // tap) or a MIDI pad mapped to this id, which runs the palette row. A menu
+  // row is two taps away, too slow for the moment it exists for.
+  'toggle-blackout',
 ]);
 
 /**

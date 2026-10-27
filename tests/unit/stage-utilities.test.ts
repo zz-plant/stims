@@ -9,6 +9,7 @@ import {
   resetStageUtilitiesForTests,
   type StageUtilityMode,
   stageUtilityMode,
+  toggleBlackout,
 } from '../../src/js/core/services/stage-utilities.ts';
 
 const T0 = 1000;
@@ -157,5 +158,23 @@ describe('releaseStageUtilities', () => {
   test('is safe to call when nothing is engaged', () => {
     releaseStageUtilities();
     expect(stageUtilityMode()).toBe('normal');
+  });
+});
+
+describe('blackout from a command', () => {
+  test('latches, since no release follows, and the next run ends it', () => {
+    toggleBlackout();
+    expect(stageUtilityMode()).toBe<StageUtilityMode>('blackout');
+    // A stray D keyup (a key let go from before) must not end it.
+    handleBlackoutKeyUp(T0);
+    expect(stageUtilityMode()).toBe<StageUtilityMode>('blackout');
+    toggleBlackout();
+    expect(stageUtilityMode()).toBe<StageUtilityMode>('normal');
+  });
+
+  test('one press of D ends it, as it ends a double-tap latch', () => {
+    toggleBlackout();
+    expect(modeAfterDown(0)).toBe<StageUtilityMode>('normal');
+    expect(modeAfterRelease(100)).toBe<StageUtilityMode>('normal');
   });
 });
