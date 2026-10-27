@@ -232,9 +232,10 @@
       "curatedRank": 1710,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 38,
-        "meanLuminance": 0.16552074056197877,
-        "measuredAt": "2026-10-14T02:35:36.478Z"
+        "maxTransitionsPerSecondEstimate": 6,
+        "meanLuminance": 0.2161081136314744,
+        "maxLuminanceDelta": 0.46979980468749993,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -555,9 +556,10 @@
       "curatedRank": 1732,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 5,
-        "meanLuminance": 0.1416879304676621,
-        "measuredAt": "2026-10-14T02:35:36.478Z"
+        "maxTransitionsPerSecondEstimate": 4,
+        "meanLuminance": 0.1391393532918929,
+        "maxLuminanceDelta": 0.44189453125,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -661,8 +663,9 @@
       "sensoryProfile": {
         "flashRiskLevel": "high",
         "maxTransitionsPerSecondEstimate": 8,
-        "meanLuminance": 0.08976271254289594,
-        "measuredAt": "2026-10-14T01:28:44.962Z"
+        "meanLuminance": 0.08976273184123265,
+        "maxLuminanceDelta": 0.2746826171875,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -1123,8 +1126,9 @@
       "sensoryProfile": {
         "flashRiskLevel": "high",
         "maxTransitionsPerSecondEstimate": 11,
-        "meanLuminance": 0.45442851899494535,
-        "measuredAt": "2026-10-14T03:22:49.716Z"
+        "meanLuminance": 0.45439832742157965,
+        "maxLuminanceDelta": 0.39926757812499997,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -1923,9 +1927,10 @@
       "curatedRank": 1766,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 9,
-        "meanLuminance": 0.42259755406380534,
-        "measuredAt": "2026-10-14T05:02:10.829Z"
+        "maxTransitionsPerSecondEstimate": 11,
+        "meanLuminance": 0.3697162772485896,
+        "maxLuminanceDelta": 0.6980957031250001,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -2471,8 +2476,9 @@
       "sensoryProfile": {
         "flashRiskLevel": "high",
         "maxTransitionsPerSecondEstimate": 34,
-        "meanLuminance": 0.46593347932642876,
-        "measuredAt": "2026-10-14T05:02:10.829Z"
+        "meanLuminance": 0.34299217828300554,
+        "maxLuminanceDelta": 0.3080810546874999,
+        "measuredAt": "2026-10-27T22:26:13.161Z"
       }
     },
     {
@@ -3097,9 +3103,10 @@
       "curatedRank": 1782,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 14,
-        "meanLuminance": 0.027848460510083856,
-        "measuredAt": "2026-10-14T05:02:10.829Z"
+        "maxTransitionsPerSecondEstimate": 6,
+        "meanLuminance": 0.14656999410671012,
+        "maxLuminanceDelta": 0.473974609375,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -3559,9 +3566,10 @@
       "curatedRank": 1783,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 9,
-        "meanLuminance": 0.07852282814650605,
-        "measuredAt": "2026-10-14T05:02:10.829Z"
+        "maxTransitionsPerSecondEstimate": 7,
+        "meanLuminance": 0.08091006723049732,
+        "maxLuminanceDelta": 0.2905029296875,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -3865,8 +3873,9 @@
       "sensoryProfile": {
         "flashRiskLevel": "high",
         "maxTransitionsPerSecondEstimate": 5,
-        "meanLuminance": 0.07820498228418649,
-        "measuredAt": "2026-10-14T07:01:55.503Z"
+        "meanLuminance": 0.015306764939633517,
+        "maxLuminanceDelta": 0.989013671875,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -22686,8 +22695,9 @@
       "sensoryProfile": {
         "flashRiskLevel": "high",
         "maxTransitionsPerSecondEstimate": 32,
-        "meanLuminance": 0.45406741432900766,
-        "measuredAt": "2026-10-14T02:35:36.478Z"
+        "meanLuminance": 0.44767155737023123,
+        "maxLuminanceDelta": 0.2740234375,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -28786,9 +28796,10 @@
       "curatedRank": 1787,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 22,
-        "meanLuminance": 0.28349053680457803,
-        "measuredAt": "2026-10-14T02:35:36.478Z"
+        "maxTransitionsPerSecondEstimate": 15,
+        "meanLuminance": 0.22504526682022818,
+        "maxLuminanceDelta": 1,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -29499,9 +29510,10 @@
       "curatedRank": 1740,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 24,
-        "meanLuminance": 0.4824401027013358,
-        "measuredAt": "2026-10-14T03:22:49.716Z"
+        "maxTransitionsPerSecondEstimate": 28,
+        "meanLuminance": 0.5656093532026883,
+        "maxLuminanceDelta": 0.5682373046875,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -38099,9 +38111,10 @@
       "curatedRank": 1778,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 17,
-        "meanLuminance": 0.2849030538353057,
-        "measuredAt": "2026-10-14T05:02:10.829Z"
+        "maxTransitionsPerSecondEstimate": 19,
+        "meanLuminance": 0.2854060925105219,
+        "maxLuminanceDelta": 0.27116699218750007,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -41516,9 +41529,10 @@
       "curatedRank": 1741,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 8,
-        "meanLuminance": 0.22243205112330167,
-        "measuredAt": "2026-10-14T02:35:36.478Z"
+        "maxTransitionsPerSecondEstimate": 5,
+        "meanLuminance": 0.23532003204342655,
+        "maxLuminanceDelta": 0.306103515625,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -48361,9 +48375,10 @@
       "curatedRank": 1750,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 12,
-        "meanLuminance": 0.7144880117809901,
-        "measuredAt": "2026-10-14T03:22:49.716Z"
+        "maxTransitionsPerSecondEstimate": 13,
+        "meanLuminance": 0.7212274603755167,
+        "maxLuminanceDelta": 0.3513671875,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -55558,8 +55573,9 @@
       "sensoryProfile": {
         "flashRiskLevel": "high",
         "maxTransitionsPerSecondEstimate": 43,
-        "meanLuminance": 0.28416797592661225,
-        "measuredAt": "2026-10-14T05:02:10.829Z"
+        "meanLuminance": 0.30331927797759584,
+        "maxLuminanceDelta": 0.4812255859375001,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -61888,9 +61904,10 @@
       "curatedRank": 1785,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 5,
-        "meanLuminance": 0.019849349417262803,
-        "measuredAt": "2026-08-20T02:30:10.318Z"
+        "maxTransitionsPerSecondEstimate": 4,
+        "meanLuminance": 0.007304082385565418,
+        "maxLuminanceDelta": 0.1714111328125,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -62175,9 +62192,10 @@
       "curatedRank": 1765,
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 19,
-        "meanLuminance": 0.3312031390573245,
-        "measuredAt": "2026-10-14T05:02:10.829Z"
+        "maxTransitionsPerSecondEstimate": 8,
+        "meanLuminance": 0.2519196265980419,
+        "maxLuminanceDelta": 0.37993164062499996,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
