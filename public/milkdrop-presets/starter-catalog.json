@@ -266,9 +266,10 @@
       },
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 38,
-        "meanLuminance": 0.16552074056197877,
-        "measuredAt": "2026-10-14T02:35:36.478Z"
+        "maxTransitionsPerSecondEstimate": 6,
+        "meanLuminance": 0.2161081136314744,
+        "maxLuminanceDelta": 0.46979980468749993,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -567,9 +568,10 @@
       },
       "sensoryProfile": {
         "flashRiskLevel": "high",
-        "maxTransitionsPerSecondEstimate": 5,
-        "meanLuminance": 0.1416879304676621,
-        "measuredAt": "2026-10-14T02:35:36.478Z"
+        "maxTransitionsPerSecondEstimate": 4,
+        "meanLuminance": 0.1391393532918929,
+        "maxLuminanceDelta": 0.44189453125,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -667,8 +669,9 @@
       "sensoryProfile": {
         "flashRiskLevel": "high",
         "maxTransitionsPerSecondEstimate": 8,
-        "meanLuminance": 0.08976271254289594,
-        "measuredAt": "2026-10-14T01:28:44.962Z"
+        "meanLuminance": 0.08976273184123265,
+        "maxLuminanceDelta": 0.2746826171875,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {
@@ -1093,8 +1096,9 @@
       "sensoryProfile": {
         "flashRiskLevel": "high",
         "maxTransitionsPerSecondEstimate": 11,
-        "meanLuminance": 0.45442851899494535,
-        "measuredAt": "2026-10-14T03:22:49.716Z"
+        "meanLuminance": 0.45439832742157965,
+        "maxLuminanceDelta": 0.39926757812499997,
+        "measuredAt": "2026-10-27T20:02:17.619Z"
       }
     },
     {

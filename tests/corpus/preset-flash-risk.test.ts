@@ -47,7 +47,7 @@ describe('preset flash-risk lab', () => {
         headless: true,
       });
 
-      expect(report.version).toBe(1);
+      expect(report.version).toBe(2);
       expect(report.renderer).toBe('webgl');
       expect(report.loadError).toBeNull();
       expect(report.consoleErrors).toHaveLength(0);
@@ -68,7 +68,7 @@ describe('preset flash-risk lab', () => {
       // the report is verified everywhere.
       if (isSoftwareRenderer(report.captureBackend)) {
         // Still has to have sampled repeatedly — two samples is the minimum
-        // for maxLuminanceDelta to mean anything, and a broken sampler
+        // for maxMeanLuminanceDelta to mean anything, and a broken sampler
         // returning one frame (or none) fails here.
         expect(report.sampleCount).toBeGreaterThan(1);
       } else {
@@ -76,7 +76,7 @@ describe('preset flash-risk lab', () => {
       }
       expect(report.meanLuminance).toBeGreaterThanOrEqual(0);
       expect(report.meanLuminance).toBeLessThanOrEqual(255);
-      expect(report.maxLuminanceDelta).toBeGreaterThanOrEqual(0);
+      expect(report.maxMeanLuminanceDelta).toBeGreaterThanOrEqual(0);
       expect(report.maxTransitionsPerSecondEstimate).toBeGreaterThanOrEqual(0);
       expect(fs.existsSync(report.artifacts.reportJson)).toBe(true);
     },
