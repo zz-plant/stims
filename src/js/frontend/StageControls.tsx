@@ -23,6 +23,7 @@ import {
   subscribePresetLock,
   togglePresetLock,
 } from '../core/preset-lock.ts';
+import { noteActionUse } from '../core/services/action-telemetry.ts';
 import {
   getExternalDisplayState,
   hasMultipleScreens,
@@ -809,7 +810,12 @@ export function StageControls({
       // clip and the preset's code where anyone with the address can see it.
       icon: 'upload' as const,
       label: 'Publish a public video link…',
-      action: () => setVideoShareOpen(true),
+      // No data-action: there is no palette row for it to match, so the
+      // click is noted here instead of by the delegated listener.
+      action: () => {
+        noteActionUse('publish-video-link', 'menu');
+        setVideoShareOpen(true);
+      },
     },
     {
       icon: 'pulse' as const,
@@ -888,7 +894,11 @@ export function StageControls({
 
   return (
     <>
-      <div className={styles.bar} data-visible={String(visible)}>
+      <div
+        className={styles.bar}
+        data-visible={String(visible)}
+        data-telemetry-surface="dock"
+      >
         {/* Hover and focus are tracked on the pill, the element the pointer
             can actually hit — the bar around it is pointer-events: none. */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: these handlers only note that a pointer or focus is inside the container of buttons, to keep it from auto-hiding; the buttons themselves are the interactions */}
@@ -1183,6 +1193,7 @@ export function StageControls({
           ref={menuRef}
           className={styles.menu}
           role="menu"
+          data-telemetry-surface="menu"
           aria-label="More actions"
         >
           {/* Two columns from 640px up, one below. As a single column of 26
@@ -1320,7 +1331,11 @@ export function StageControls({
           underneath the word "Controls". Driving both from the same flag
           lets the CSS hand off cleanly — the incoming one waits for the
           outgoing one to clear. */}
-      <div className={styles.foldedDock} data-visible={String(!visible)}>
+      <div
+        className={styles.foldedDock}
+        data-visible={String(!visible)}
+        data-telemetry-surface="dock"
+      >
         {/* The bar is `visibility: hidden` while folded, so its Edit button
             leaves the accessibility tree exactly when a visitor reading the
             stage would most need to find it (docs/PRODUCT_MOMENTS.md,

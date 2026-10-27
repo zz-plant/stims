@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { escapeIsClaimed } from '../../core/modal-utils.ts';
+import { noteActionUse } from '../../core/services/action-telemetry.ts';
 import {
   handleBlackoutKeyDown,
   handleBlackoutKeyUp,
@@ -19,8 +20,25 @@ import {
   parseShortcut,
   readShortcutOverrides,
   SHORTCUT_REGISTRY,
+  type ShortcutOverrides,
   shortcutHintFor,
 } from '../shortcut-registry.ts';
+
+/**
+ * Notes a keydown this hook acted on, under the palette id of the binding it
+ * matched where there is one, so a key and a palette row for the same action
+ * read as one action from two surfaces.
+ */
+function noteShortcutUse(event: KeyboardEvent, overrides: ShortcutOverrides) {
+  const entry = SHORTCUT_REGISTRY.find((definition) =>
+    eventMatchesShortcut(event, definition.id, overrides),
+  );
+  if (entry) {
+    noteActionUse(entry.paletteActionId ?? entry.id, 'key');
+  } else if (/^[1-9]$/.test(event.key)) {
+    noteActionUse('quick-select', 'key');
+  }
+}
 
 export function useKeyboardShortcuts({
   liveMode,
@@ -234,6 +252,7 @@ export function useKeyboardShortcuts({
           break;
         }
       }
+      if (event.defaultPrevented) noteShortcutUse(event, shortcutOverrides);
     };
 
     document.addEventListener(

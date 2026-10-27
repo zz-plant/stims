@@ -37,6 +37,7 @@ import {
 } from '../core/accessibility-preferences.ts';
 import { describeHiddenTabFreezeRisk } from '../core/live-performance-mode.ts';
 import { setMotionPreference } from '../core/motion-preferences.ts';
+import { installActionClickTelemetry } from '../core/services/action-telemetry.ts';
 import {
   buildAudioProfile,
   pickAudioMatch,
@@ -1287,6 +1288,10 @@ function StimsWorkspaceAppShell() {
   // Settings or the palette, and — when the choice is "system" — OS theme
   // flips, without a reload.
   useEffect(() => startThemeSync(), []);
+
+  // Every click on a control with a data-action, with the surface it sat
+  // on; the palette, keys, gestures and pads note their own runs.
+  useEffect(() => installActionClickTelemetry(), []);
 
   useEffect(() => {
     applyAccessibility(getActiveAccessibilityPreference());

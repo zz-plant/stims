@@ -30,6 +30,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import styles from '../../css/CommandPalette.module.css';
+import { noteActionUse } from '../core/services/action-telemetry.ts';
 import {
   buildPaletteResults,
   type CommandAction,
@@ -191,6 +192,7 @@ export function CommandPalette({
     // one's focus trap/restore for the same tick.
     onClose();
     if (result.kind === 'action') {
+      noteActionUse(result.action.id, 'palette');
       result.action.run();
     } else {
       onSelectPreset?.(result.preset.id);

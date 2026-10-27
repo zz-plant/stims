@@ -701,7 +701,10 @@ export function SettingsSheetPanel({
   };
 
   return (
-    <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
+    <div
+      className="stims-shell__sheet-panel stims-shell__sheet-panel--settings"
+      data-telemetry-surface="settings"
+    >
       <div
         className="ctl-tabs"
         role="tablist"

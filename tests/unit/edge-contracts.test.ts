@@ -116,6 +116,15 @@ describe('edge-contracts validators', () => {
     expect(() =>
       TelemetryEventSchema.parse({ event: 'x', audioSource: 'spotify' }),
     ).toThrow();
+    expect(
+      TelemetryEventSchema.parse({
+        event: 'action:queue-add',
+        surface: 'menu',
+      }),
+    ).toEqual({ event: 'action:queue-add', surface: 'menu' });
+    expect(() =>
+      TelemetryEventSchema.parse({ event: 'x', surface: 'toolbar' }),
+    ).toThrow();
   });
 
   test('SyncRoomCreateResponseSchema requires room and hostKey', () => {
