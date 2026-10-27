@@ -30,6 +30,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import styles from '../../css/CommandPalette.module.css';
+import { noteActionUse } from '../core/services/action-telemetry.ts';
 import {
   buildPaletteResults,
   type CommandAction,
@@ -191,6 +192,7 @@ export function CommandPalette({
     // one's focus trap/restore for the same tick.
     onClose();
     if (result.kind === 'action') {
+      noteActionUse(result.action.id, 'palette');
       result.action.run();
     } else {
       onSelectPreset?.(result.preset.id);
@@ -383,6 +385,10 @@ export function useCommandPaletteHotkey(onOpen: () => void) {
       // the help dialog lists it rather than it being folded into this file.
       if (eventMatchesShortcut(event, 'palette', readShortcutOverrides())) {
         event.preventDefault();
+        // Noted here, not in useKeyboardShortcuts: that hook leaves this
+        // chord alone and ignores keys typed into fields, where this one
+        // still opens the palette.
+        noteActionUse('open-palette', 'key');
         onOpenRef.current();
       }
     };

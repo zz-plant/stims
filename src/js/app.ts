@@ -1,5 +1,6 @@
 import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { installAgentDriver } from './core/agent-driver.ts';
 import {
   applyDeviceTierToDocument,
   startRefreshRateSampling,
@@ -19,6 +20,19 @@ type StimsAppGlobals = typeof globalThis & {
   __stimsAppReady?: Promise<void>;
   __stimsStarterCatalogPromise?: Promise<unknown>;
 };
+
+/**
+ * Installs `window.stims.agent` (agent mode only) before anything renders.
+ *
+ * A driver cannot call `ready()` until this has run, and drivers wait on the
+ * shell's DOM first (`#stims-main`), so the driver has to exist by then. It
+ * used to be installed with the post-paint services below, two frames and a
+ * dynamic import after React's first commit: a caller that saw `#stims-main`
+ * and ran `window.stims?.agent?.ready()` got `undefined` back at once, and
+ * read the bundled boot preset while the `?preset=` link was still loading.
+ * The module is small and imports nothing the entry does not already load.
+ */
+installAgentDriver();
 
 /**
  * Kick off the starter catalog fetch immediately, before React mounts.
@@ -64,13 +78,7 @@ async function startPostPaintServices() {
       ({ installRendererTelemetryPersistence }) =>
         installRendererTelemetryPersistence(),
     ),
-    Promise.all([
-      import('./core/agent-api.ts'),
-      import('./core/agent-driver.ts'),
-    ]).then(([{ initAgentAPI }, { installAgentDriver }]) => {
-      initAgentAPI();
-      installAgentDriver();
-    }),
+    import('./core/agent-api.ts').then(({ initAgentAPI }) => initAgentAPI()),
     import('./utils/browser/gamepad-navigation.ts').then(
       ({ initGamepadNavigation }) =>
         // Keyboard-as-remote only where the keyboard *is* a remote. On a

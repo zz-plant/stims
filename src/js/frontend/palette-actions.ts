@@ -20,6 +20,10 @@ import {
 } from '../core/services/external-display-service.ts';
 import { getProjectorState } from '../core/services/projector-window-service.ts';
 import { isRecordingActive } from '../core/services/recording-state.ts';
+import {
+  stageUtilityMode,
+  toggleBlackout,
+} from '../core/services/stage-utilities.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
   setThemePreference,
@@ -491,6 +495,23 @@ export function buildPaletteActions(
       keywords: ['bpm', 'phase', 'tap', 'sync'],
       run: () => nudgeTempoAction(1, uiRef.current.setStatusMessage),
     },
+    // The D key's blackout, as a row: it was the one live cut with no
+    // command, so a MIDI pad (which runs palette ids) could not reach it.
+    ...(liveMode
+      ? [
+          {
+            id: 'toggle-blackout',
+            group: 'Perform',
+            get label() {
+              return stageUtilityMode() === 'blackout'
+                ? 'End the blackout'
+                : 'Black out the picture';
+            },
+            keywords: ['blackout', 'dark', 'cut', 'break', 'vj'],
+            run: () => toggleBlackout(),
+          } satisfies CommandAction,
+        ]
+      : []),
     {
       id: 'queue-add',
       group: 'Queue',
@@ -658,6 +679,10 @@ export function buildPaletteActions(
       group: 'Playback',
       label: 'Pick the next scene with AI (Clef Omni)',
       keywords: ['vj', 'scene', 'switch', 'clef', 'omni', 'transition'],
+      // Scenes are saved only through the live-coding console API
+      // (__stims_live.saveScene), so for everyone else this row could only
+      // ever answer "save at least two scenes".
+      isAvailable: () => (window.__stims_live?.listScenes().length ?? 0) >= 2,
       run: () => {
         const live = window.__stims_live;
         if (!live) {

@@ -220,6 +220,22 @@ export function buildReports(days: number): Report[] {
       columns: ['arrival', 'step', 'landing', 'count', 'avg_dwell_ms'],
     },
     {
+      // Which actions visitors run and from where (action-telemetry.ts,
+      // added 2026-10-27): `action:<id>` once per action and surface per page
+      // load, so a count is page loads that used that route, not presses.
+      // An action that never appears is one nobody reached; one that appears
+      // only from `palette` or `key` has no visible route anyone used. The
+      // surface blob is filtered on so AE can type it before rows exist.
+      title: `Actions by surface, page loads (last ${days}d)`,
+      sql: `SELECT blob1 AS action, blob10 AS surface, blob7 AS device,
+                   COUNT() AS loads
+            FROM ${DATASET}
+            WHERE timestamp > ${since}
+              AND blob1 LIKE 'action:%' AND blob10 != ''
+            GROUP BY blob1, blob10, blob7 ORDER BY loads DESC LIMIT 200`,
+      columns: ['action', 'surface', 'device', 'loads'],
+    },
+    {
       title: `Dwell and frame rate by screen (last ${days}d)`,
       sql: `SELECT blob7 AS device, blob6 AS orientation, blob2 AS renderer,
                    COUNT() AS views, AVG(double4) AS avg_dwell_ms,
