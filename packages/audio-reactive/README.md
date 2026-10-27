@@ -39,7 +39,7 @@ flowchart LR
 
 ```sh
 bun install --frozen-lockfile
-bun --cwd packages/audio-reactive run build
+bun --cwd=packages/audio-reactive run build
 bun --cwd packages/audio-reactive test
 ```
 

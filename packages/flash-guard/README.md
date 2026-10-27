@@ -216,7 +216,7 @@ Build and test from a clone of zz-plant/stims:
 
 ```sh
 bun install --frozen-lockfile
-bun --cwd packages/flash-guard run build
+bun --cwd=packages/flash-guard run build
 bun --cwd packages/flash-guard test
 ```
 

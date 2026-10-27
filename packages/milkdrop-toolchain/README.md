@@ -292,7 +292,7 @@ Build and test from a clone of zz-plant/stims:
 
 ```sh
 bun install --frozen-lockfile
-bun --cwd packages/milkdrop-toolchain run build
+bun --cwd=packages/milkdrop-toolchain run build
 bun --cwd packages/milkdrop-toolchain test
 ```
 
