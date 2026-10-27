@@ -54,7 +54,7 @@ export function FirstEditGuide({
             setEdit(null);
           }}
         >
-          {edit ? 'Undo example' : 'Add a slow spin'}
+          {edit ? 'Remove the spin' : 'Add a slow spin'}
         </button>
         <button
           type="button"

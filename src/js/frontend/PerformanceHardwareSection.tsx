@@ -60,6 +60,8 @@ function groupChoices(actions: readonly PadActionChoice[]) {
   return [...groups];
 }
 
+const NO_MIDI_REASON = 'Connect a MIDI controller to map knobs.';
+
 export function PerformanceHardwareSection({
   padActions = [],
 }: {
@@ -176,16 +178,23 @@ export function PerformanceHardwareSection({
   };
 
   const globalLearnArmed = globalLearn.phase === 'armed';
+  const knobLearnBlocked = !midiConnected
+    ? NO_MIDI_REASON
+    : globalLearnArmed
+      ? 'Finish or cancel the mapping above first.'
+      : !learnTarget.trim()
+        ? 'Type a name first.'
+        : null;
   const globalLearnStatus = (() => {
     switch (globalLearn.phase) {
       case 'armed':
         if (globalLearn.target)
           return `Target: ${globalLearn.target}. Now move a knob`;
         if (globalLearn.pendingCc)
-          return `CC${globalLearn.pendingCc.cc} received. Now touch a control`;
+          return `Knob ${globalLearn.pendingCc.cc} moved. Now touch a control`;
         return "Touch a control in the editor's Tune tab or the stage, then move a knob…";
       case 'bound':
-        return `Bound CC${globalLearn.cc} → ${globalLearn.target}`;
+        return `Knob ${globalLearn.cc} now moves ${globalLearn.target}`;
       default:
         return null;
     }
@@ -197,9 +206,9 @@ export function PerformanceHardwareSection({
         <h3 className="ctl-section__title">Performance hardware</h3>
       </div>
       <p className="ctl-section__note">
-        Connect a class-compliant MIDI controller and learn your own mappings,
-        or let Claude drive the show through an MCP session (shows up below as
-        "Claude (MCP)").
+        Connect a MIDI controller that needs no driver and map its knobs, or let
+        Claude drive the show through an MCP session (shows up below as "Claude
+        (MCP)").
       </p>
       {/* A gamepad has arrived here as a device since the performance source
           shipped, but the copy named only MIDI and Claude, so the one piece
@@ -275,11 +284,11 @@ export function PerformanceHardwareSection({
               disabled={!midiConnected}
               onClick={() => webMidiService.armGlobalLearn()}
             >
-              Learn from a control
+              Map a knob to a control
             </button>
           )}
           <span className="ctl-readout" role="status">
-            {globalLearnStatus}
+            {globalLearnStatus ?? (midiConnected ? null : NO_MIDI_REASON)}
           </span>
         </div>
       </div>
@@ -327,7 +336,7 @@ export function PerformanceHardwareSection({
                 disabled={!padAction}
                 onClick={startPadLearn}
               >
-                Learn
+                Map the next pad I hit
               </button>
             )}
           </div>
@@ -364,15 +373,17 @@ export function PerformanceHardwareSection({
             <button
               type="button"
               className="ctl-btn"
-              disabled={
-                !learnTarget.trim() || !midiConnected || globalLearnArmed
-              }
+              disabled={knobLearnBlocked !== null}
               onClick={startLearn}
             >
-              Learn
+              Map the next knob I move
             </button>
           )}
         </div>
+        {/* A greyed-out button said nothing about why. */}
+        {knobLearnBlocked && !learning ? (
+          <span className="ctl-readout">{knobLearnBlocked}</span>
+        ) : null}
       </div>
     </section>
   );

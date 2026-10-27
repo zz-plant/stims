@@ -6,7 +6,7 @@
  * Retrieval runs entirely on the device (the static EmbeddingGemma 2 preview
  * vectors and the same text scorer Browse uses), so it works offline and
  * while any hosted service is down. The image is sent to the hosted Clef
- * service only when the user clicks "Ask Clef to pick", and is retained on
+ * service only when the user clicks "Let AI pick one (Clef)", and is retained on
  * this device only when the user checks the retention box. Outcome episodes
  * are recorded in the bounded local store (LL-00): proposal shown, applied,
  * and an explicit accept or reject. Accepted references are offered again so
@@ -416,7 +416,7 @@ export function ReferenceFinderPanel({
     setImageFile(file);
     if (file) {
       setStatus(
-        'Your reference image is sent to the hosted Clef service only when you click "Ask Clef to pick", and is not kept on this device unless you check the box below.',
+        'Your reference image is sent to the hosted Clef service only when you click "Let AI pick one (Clef)", and is not kept on this device unless you check the box below.',
       );
     }
   }, []);
@@ -495,7 +495,7 @@ export function ReferenceFinderPanel({
           }
         >
           <AIBadge />
-          {selecting ? 'Asking Clef…' : 'Ask Clef to pick'}
+          {selecting ? 'Asking Clef…' : 'Let AI pick one (Clef)'}
         </button>
       </div>
 
@@ -508,8 +508,8 @@ export function ReferenceFinderPanel({
 
       {!imageFile && shortlist && hostedAvailable ? (
         <p className={styles.hint}>
-          Ask Clef to pick needs a reference image to judge against; without
-          one, the on-device ranking stands.
+          Letting AI pick needs a reference image to judge against; without one,
+          the on-device ranking stands.
         </p>
       ) : null}
 
@@ -543,15 +543,18 @@ export function ReferenceFinderPanel({
                     </span>
                   </div>
                 </div>
+                {/* It imports a copy into the library, plays it and opens
+                    the editor; "Open" alone read as a preview. */}
                 <button
                   type="button"
                   className={styles.open}
+                  title="Adds a copy to your library, plays it and opens it in the editor"
                   onClick={() => void handleOpen(candidate)}
                   disabled={working}
                 >
                   {openingId === candidate.presetId
                     ? 'Opening…'
-                    : 'Open as starting point'}
+                    : 'Edit a copy'}
                 </button>
               </li>
             ))}
@@ -564,7 +567,7 @@ export function ReferenceFinderPanel({
           <p className={styles.hint}>
             {notSaved
               ? 'Outcome not saved to this device (local store full or unavailable).'
-              : 'Did this starting point work for you?'}
+              : 'Did this starting point work for you? Your answer improves later searches; the preset stays loaded either way.'}
           </p>
           <div className={styles.actions}>
             <button
@@ -581,7 +584,7 @@ export function ReferenceFinderPanel({
               onClick={() => void recordOutcome('rejected')}
               disabled={working}
             >
-              Not this one
+              Not a good match
             </button>
           </div>
         </div>

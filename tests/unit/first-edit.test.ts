@@ -93,7 +93,7 @@ describe('first edit guide card', () => {
       expect(card?.textContent).toContain(
         'Spin added. Try changing 0.02, or copy a remix link from the editor toolbar.',
       );
-      expect(buttonWithText(rendered, 'Undo example')).not.toBeNull();
+      expect(buttonWithText(rendered, 'Remove the spin')).not.toBeNull();
     } finally {
       rendered.dispose();
     }

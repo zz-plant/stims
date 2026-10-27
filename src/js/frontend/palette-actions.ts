@@ -8,20 +8,33 @@
  * the context at run time, so the list only needs rebuilding when a row's
  * label or presence changes — the flags at the bottom of the context.
  */
-import { toggleLivePerformanceMode } from '../core/live-performance-mode.ts';
-import { togglePresetLock } from '../core/preset-lock.ts';
+import { getActiveAccessibilityPreference } from '../core/accessibility-preferences.ts';
+import {
+  getLivePerformanceMode,
+  toggleLivePerformanceMode,
+} from '../core/live-performance-mode.ts';
+import { isPresetLocked, togglePresetLock } from '../core/preset-lock.ts';
+import {
+  getExternalDisplayState,
+  hasMultipleScreens,
+} from '../core/services/external-display-service.ts';
+import { getProjectorState } from '../core/services/projector-window-service.ts';
+import { isRecordingActive } from '../core/services/recording-state.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
   setThemePreference,
   type ThemeChoice,
 } from '../core/theme-preferences.ts';
-import { toggleWatcherHud } from '../milkdrop/overlay/watcher-hud.ts';
+import { createTwoStepConfirm } from '../core/two-step-confirm.ts';
+import {
+  isWatchHudActive,
+  toggleWatcherHud,
+} from '../milkdrop/overlay/watcher-hud.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import type { CommandAction } from './command-palette-registry.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { EngineContextValue } from './engine-context.tsx';
 import { nextFileTrack, previousFileTrack } from './file-audio.ts';
-import { getPanelTitle } from './panel-registry.ts';
 import { openPerformPicker } from './perform-pins.ts';
 import { cyclePresetWaveMode, nudgePresetField } from './preset-nudges.ts';
 import { buildPresetSetShareUrl, saveNamedSet } from './preset-sets.ts';
@@ -31,11 +44,18 @@ import {
   tapTempoAction,
 } from './tempo-actions.ts';
 import {
+  cameraMenuLabel,
+  castMenuLabel,
   endWatchParty,
+  isCameraInputOn,
   nearbyPresetRequest,
   openRecordPanel,
+  panelToggleLabel,
+  playbackToggleLabel,
   playNearbyPreset,
   presentToExternalDisplayAction,
+  projectorMenuLabel,
+  recordMenuLabel,
   setTransition,
   startAudioSource,
   startOrCopyWatchPartyAction,
@@ -45,6 +65,15 @@ import {
   toggleProjectorAction,
   toggleReduceFlashingAction,
 } from './workspace-actions.ts';
+
+/**
+ * Rows whose effect depends on state (a toggle, a panel that closes when it
+ * is already open) read their label through a getter, so the palette shows
+ * what the row will do when it renders rather than when the list was last
+ * rebuilt. The list rebuilds only on the flags in PaletteActionContext.
+ */
+const TUNE_SUFFIX = ' (edits this preset)';
+
 import type { WorkspaceContextValue } from './workspace-context.tsx';
 
 export type PaletteActionContext = {
@@ -66,6 +95,16 @@ export type PaletteActionContext = {
   playbackPaused: boolean;
 };
 
+const THEME_ORDER: ThemeChoice[] = ['dark', 'light', 'system'];
+
+function nextTheme(choice: ThemeChoice): ThemeChoice {
+  return THEME_ORDER[(THEME_ORDER.indexOf(choice) + 1) % THEME_ORDER.length];
+}
+
+function themeName(choice: ThemeChoice): string {
+  return choice === 'system' ? 'match system' : choice;
+}
+
 export function buildPaletteActions(
   context: PaletteActionContext,
 ): CommandAction[] {
@@ -85,38 +124,67 @@ export function buildPaletteActions(
     editorDirty,
     playbackPaused,
   } = context;
+  const routePanel = () => uiRef.current.routeState?.panel ?? null;
+  const currentPresetSaved = () => {
+    const engine = engineBridgeRef.current;
+    const id = engine.selectedPreset?.id ?? engine.featuredPreset?.id ?? null;
+    return (
+      id !== null && engine.favoritePresets.some((preset) => preset.id === id)
+    );
+  };
+  // Clearing the queue has no undo. From a list of commands there is no
+  // button to relabel, so the first run arms it and says so; running it
+  // again within a few seconds clears.
+  const clearQueue = createTwoStepConfirm({
+    onConfirm: () => {
+      uiRef.current.presetQueue.clear();
+      uiRef.current.setStatusMessage('Queue cleared.');
+    },
+    onChange: ({ armed }) => {
+      if (!armed) return;
+      const count = uiRef.current.presetQueue.presetIds.length;
+      uiRef.current.setStatusMessage(
+        `Run “Clear the queue” again to remove all ${count} queued.`,
+      );
+    },
+  });
   return [
     {
       id: 'open-browse',
       group: 'Presets',
-      label: getPanelTitle('browse'),
+      get label() {
+        return panelToggleLabel('browse', routePanel() === 'browse');
+      },
       run: () => togglePanel(paletteSurface, 'browse'),
     },
     {
       id: 'next-preset',
       group: 'Presets',
-      label: 'Next preset (random)',
-      keywords: ['shuffle', 'surprise'],
+      label: 'Play a random preset',
+      keywords: ['shuffle', 'surprise', 'next'],
       run: () => void engineRef.current.handleShufflePreset(),
     },
     {
       id: 'previous-preset',
       group: 'Presets',
-      label: 'Previous preset',
-      keywords: ['back'],
+      label: 'Back to the last preset',
+      keywords: ['back', 'previous'],
       run: () => void engineRef.current.handlePreviousPreset(),
     },
     {
       id: 'save-preset',
       group: 'Presets',
-      label: 'Save preset',
+      // The row toggles: on a saved preset it removes it from saved.
+      get label() {
+        return currentPresetSaved() ? 'Remove from saved' : 'Save preset';
+      },
       keywords: ['favorite', 'star'],
       run: toggleFavoriteCurrentPreset,
     },
     {
       id: 'find-similar',
       group: 'Presets',
-      label: getPanelTitle('finder'),
+      label: panelToggleLabel('finder', false),
       keywords: ['similar', 'match', 'sound', 'look'],
       run: () => void engineRef.current.handleVisualSearch(),
     },
@@ -126,7 +194,7 @@ export function buildPaletteActions(
       // same thing.
       id: 'nearby-preset',
       group: 'Presets',
-      label: 'Nearby preset (looks like this one)',
+      label: 'Play a similar-looking preset',
       keywords: ['similar', 'like', 'neighbour', 'neighbor'],
       run: () =>
         void playNearbyPreset(
@@ -149,19 +217,23 @@ export function buildPaletteActions(
       // keybinding layer's `L` flips the same store.
       id: 'toggle-preset-lock',
       group: 'Presets',
-      label: 'Stay on this preset',
-      keywords: ['lock', 'hold', 'stay', 'pin'],
+      get label() {
+        return isPresetLocked() ? 'Let autoplay move on' : 'Keep this preset';
+      },
+      keywords: ['lock', 'hold', 'stay', 'pin', 'autoplay'],
       run: () =>
         uiRef.current.setStatusMessage(
           togglePresetLock()
-            ? 'Staying on this preset. Auto-advance is paused.'
-            : 'Auto-advance on.',
+            ? 'Keeping this preset. Autoplay won’t change it.'
+            : 'Autoplay can move on again.',
         ),
     },
     {
       id: 'open-editor',
       group: 'Create',
-      label: getPanelTitle('editor'),
+      get label() {
+        return panelToggleLabel('editor', routePanel() === 'editor');
+      },
       run: () => togglePanel(paletteSurface, 'editor'),
     },
     {
@@ -171,7 +243,11 @@ export function buildPaletteActions(
       // screen is the point of the overlay.
       id: 'toggle-watcher-hud',
       group: 'Create',
-      label: 'Toggle the variable watch HUD',
+      get label() {
+        return isWatchHudActive()
+          ? 'Hide variable graphs on the stage'
+          : 'Graph the variables pinned in Inspect, over the stage';
+      },
       keywords: ['watch', 'graph', 'plot', 'inspect', 'pin', 'hud', 'stage'],
       run: () => {
         const on = toggleWatcherHud(uiRef.current.stageRef?.current ?? null);
@@ -187,27 +263,40 @@ export function buildPaletteActions(
     {
       id: 'open-refine',
       group: 'Create',
-      label: getPanelTitle('refine'),
+      get label() {
+        return panelToggleLabel('refine', routePanel() === 'refine');
+      },
       run: () => togglePanel(paletteSurface, 'refine'),
     },
     {
       id: 'open-generate',
       group: 'Create',
-      label: getPanelTitle('synthesize'),
+      get label() {
+        return panelToggleLabel('synthesize', routePanel() === 'synthesize');
+      },
       keywords: ['synthesize', 'create', 'make'],
       run: () => togglePanel(paletteSurface, 'synthesize'),
     },
     {
       id: 'open-record',
       group: 'Share',
-      label: getPanelTitle('capture'),
+      // Opens the form, starts recording with the remembered format, or
+      // closes the panel and saves the take: the label says which.
+      get label() {
+        return recordMenuLabel({
+          panelOpen: routePanel() === 'capture',
+          recording: isRecordingActive(),
+        });
+      },
       keywords: ['capture', 'export'],
       run: () => openRecordPanel(paletteSurface),
     },
     {
       id: 'open-settings',
       group: 'View',
-      label: getPanelTitle('settings'),
+      get label() {
+        return panelToggleLabel('settings', routePanel() === 'settings');
+      },
       run: () => togglePanel(paletteSurface, 'settings'),
     },
     {
@@ -223,15 +312,14 @@ export function buildPaletteActions(
       // the one extra press cycling costs.
       id: 'cycle-theme',
       group: 'View',
-      label: `Theme: ${themeChoice === 'system' ? 'match system' : themeChoice}`,
-      keywords: ['dark', 'light', 'appearance', 'contrast'],
+      // Names the theme it switches to; "Theme: dark" read as the current
+      // value and then changed it.
+      label: `Switch theme to ${themeName(nextTheme(themeChoice))} (now ${themeName(themeChoice)})`,
+      keywords: ['dark', 'light', 'appearance', 'contrast', 'theme'],
       run: () => {
-        const order: ThemeChoice[] = ['dark', 'light', 'system'];
-        const next = order[(order.indexOf(themeChoice) + 1) % order.length];
+        const next = nextTheme(themeChoice);
         setThemePreference({ theme: next });
-        uiRef.current.setStatusMessage(
-          `Theme: ${next === 'system' ? 'match system' : next}`,
-        );
+        uiRef.current.setStatusMessage(`Theme: ${themeName(next)}`);
       },
     },
     {
@@ -240,7 +328,7 @@ export function buildPaletteActions(
       // a preset is chugging and Settings is three interactions away.
       id: 'use-webgl',
       group: 'View',
-      label: 'Switch renderer to WebGL (reloads)',
+      label: 'Switch renderer to WebGL (reloads the page and stops the sound)',
       keywords: ['backend', 'webgpu', 'compatibility', 'slow', 'performance'],
       run: () => {
         setCompatibilityMode(true);
@@ -260,15 +348,29 @@ export function buildPaletteActions(
     {
       id: 'toggle-camera',
       group: 'View',
-      label: 'Camera as video input',
+      get label() {
+        return cameraMenuLabel(isCameraInputOn());
+      },
       keywords: ['webcam', 'video', 'input', 'source'],
       run: () => toggleCameraAction(uiRef.current.setStatusMessage),
     },
     {
       id: 'toggle-projector',
       group: 'Share',
-      label: 'Projector window (mirrors the stage)',
-      keywords: ['projector', 'monitor', 'second screen', 'display', 'output'],
+      get label() {
+        return projectorMenuLabel(
+          getProjectorState().open,
+          hasMultipleScreens(),
+        );
+      },
+      keywords: [
+        'projector',
+        'monitor',
+        'second screen',
+        'display',
+        'output',
+        'mirror',
+      ],
       run: () =>
         toggleProjectorAction({
           stage: () => uiRef.current.stageRef.current,
@@ -278,8 +380,10 @@ export function buildPaletteActions(
     {
       id: 'external-display',
       group: 'Share',
-      label: 'Cast to a TV or Chromecast',
-      keywords: ['chromecast', 'present', 'tv', 'cast'],
+      get label() {
+        return castMenuLabel(getExternalDisplayState().mode !== null);
+      },
+      keywords: ['chromecast', 'present', 'tv', 'cast', 'watch party'],
       run: () => presentToExternalDisplayAction(uiRef.current.setStatusMessage),
     },
     {
@@ -291,7 +395,17 @@ export function buildPaletteActions(
       // one property that makes it interesting was invisible. Naming it
       // costs a word and is the difference between a URL and a way to send
       // someone the preset you are in the middle of writing.
-      label: editorDirty ? 'Share link (carries your edits)' : 'Share link',
+      // A preset of your own travels as code in the link even unedited,
+      // because nobody else has it; say so as for an edit.
+      get label() {
+        if (editorDirty) return 'Share link (carries your edits)';
+        const entry =
+          engineBridgeRef.current.selectedPreset ??
+          engineBridgeRef.current.featuredPreset;
+        return entry && !entry.bundledFile
+          ? 'Share link (carries this preset’s code)'
+          : 'Share link';
+      },
       keywords: ['copy', 'url', 'remix', 'draft'],
       run: () => void uiRef.current.handleShowCurrentLink(),
     },
@@ -300,7 +414,7 @@ export function buildPaletteActions(
       group: 'Share',
       label: hostingWatchParty
         ? 'Copy watch party link'
-        : 'Start watch party (copy link)',
+        : 'Start watch party (copies link)',
       keywords: ['sync', 'room', 'host', 'together'],
       run: () => startOrCopyWatchPartyAction(uiRef.current.setStatusMessage),
     },
@@ -318,7 +432,7 @@ export function buildPaletteActions(
     {
       id: 'perform-pin',
       group: 'Perform',
-      label: 'Pin a parameter to the stage',
+      label: 'Add a live slider to the stage',
       keywords: ['perform', 'fader', 'control', 'surface'],
       run: () => openPerformPicker(),
     },
@@ -341,21 +455,21 @@ export function buildPaletteActions(
     {
       id: 'tempo-nudge-earlier',
       group: 'Perform',
-      label: 'Nudge the beat grid earlier',
+      label: 'Shift the beat timing earlier',
       keywords: ['bpm', 'phase', 'tap', 'sync'],
       run: () => nudgeTempoAction(-1, uiRef.current.setStatusMessage),
     },
     {
       id: 'tempo-nudge-later',
       group: 'Perform',
-      label: 'Nudge the beat grid later',
+      label: 'Shift the beat timing later',
       keywords: ['bpm', 'phase', 'tap', 'sync'],
       run: () => nudgeTempoAction(1, uiRef.current.setStatusMessage),
     },
     {
       id: 'queue-add',
       group: 'Queue',
-      label: 'Add this preset to the queue',
+      label: 'Queue this preset to play next',
       keywords: ['cue', 'crate', 'next', 'setlist'],
       run: () => {
         const presetId = engineSnapshotRef.current?.activePresetId ?? null;
@@ -370,7 +484,7 @@ export function buildPaletteActions(
     {
       id: 'queue-take',
       group: 'Queue',
-      label: 'Take the cued preset',
+      label: 'Play the next queued preset now',
       keywords: ['cue', 'next', 'play'],
       run: () => {
         const presetId = uiRef.current.presetQueue.popNext();
@@ -390,7 +504,7 @@ export function buildPaletteActions(
     {
       id: 'queue-skip',
       group: 'Queue',
-      label: 'Skip the cued preset',
+      label: 'Remove the next preset from the queue',
       keywords: ['cue', 'drop', 'pass'],
       run: () => {
         const next = uiRef.current.presetQueue.presetIds[0];
@@ -404,7 +518,7 @@ export function buildPaletteActions(
     {
       id: 'queue-fade',
       group: 'Queue',
-      label: 'Crossfade to the cued preset by hand',
+      label: 'Play the next queued preset with a crossfade slider',
       keywords: ['cue', 'fader', 'blend', 'mix'],
       run: () => {
         const next = uiRef.current.presetQueue.presetIds[0];
@@ -432,14 +546,17 @@ export function buildPaletteActions(
       label: 'Clear the queue',
       keywords: ['cue', 'crate', 'empty'],
       run: () => {
-        uiRef.current.presetQueue.clear();
-        uiRef.current.setStatusMessage('Queue cleared.');
+        if (uiRef.current.presetQueue.presetIds.length === 0) {
+          uiRef.current.setStatusMessage('The queue is already empty.');
+          return;
+        }
+        clearQueue.press();
       },
     },
     {
       id: 'queue-save-set',
       group: 'Queue',
-      label: 'Save queue as named preset set',
+      label: 'Save the queue as a named set…',
       keywords: ['set', 'playlist', 'crate', 'save'],
       run: () => {
         const queueIds = uiRef.current.presetQueue.presetIds;
@@ -460,7 +577,7 @@ export function buildPaletteActions(
     {
       id: 'queue-share-set',
       group: 'Queue',
-      label: 'Share queue as link',
+      label: 'Copy a link to the queue',
       keywords: ['share', 'link', 'set', 'url'],
       run: () => {
         const queueIds = uiRef.current.presetQueue.presetIds;
@@ -496,7 +613,11 @@ export function buildPaletteActions(
     {
       id: 'toggle-live-performance',
       group: 'Playback',
-      label: 'Toggle live performance mode',
+      get label() {
+        return getLivePerformanceMode()
+          ? 'Turn off live performance mode'
+          : 'Turn on live performance mode';
+      },
       keywords: ['vj', 'show', 'projector', 'gig', 'stage', 'perform'],
       run: () => {
         const live = toggleLivePerformanceMode();
@@ -510,7 +631,7 @@ export function buildPaletteActions(
     {
       id: 'auto-switch-scene',
       group: 'Playback',
-      label: 'Auto-switch scene with Clef Omni',
+      label: 'Pick the next scene with AI (Clef Omni)',
       keywords: ['vj', 'scene', 'switch', 'clef', 'omni', 'transition'],
       run: () => {
         const live = window.__stims_live;
@@ -543,15 +664,23 @@ export function buildPaletteActions(
       // from the stage, not four tabs into Settings.
       id: 'toggle-reduce-flashing',
       group: 'View',
-      label: 'Toggle reduce flashing',
+      get label() {
+        return getActiveAccessibilityPreference().reduceFlashing
+          ? 'Turn off Reduce flashing'
+          : 'Turn on Reduce flashing';
+      },
       keywords: ['flash', 'strobe', 'seizure', 'photosensitive', 'safety'],
       run: () => toggleReduceFlashingAction(uiRef.current.setStatusMessage),
     },
     {
       id: 'toggle-autoplay',
       group: 'Playback',
-      label: 'Toggle autoplay',
-      keywords: ['shuffle', 'automatic'],
+      get label() {
+        return engineSnapshotRef.current?.autoplay
+          ? 'Turn off autoplay'
+          : 'Turn on autoplay';
+      },
+      keywords: ['shuffle', 'automatic', 'autoplay'],
       run: () =>
         toggleAutoplay(
           engineRef.current,
@@ -564,7 +693,12 @@ export function buildPaletteActions(
       // this only flips which of the two the next switch uses.
       id: 'toggle-transition-mode',
       group: 'Playback',
-      label: 'Switch between blend and cut',
+      get label() {
+        return (engineSnapshotRef.current?.transitionMode ?? 'blend') ===
+          'blend'
+          ? 'Switch transitions to instant cut'
+          : 'Switch transitions to blend';
+      },
       keywords: ['transition', 'blend', 'cut', 'mode'],
       run: () => {
         const next =
@@ -640,14 +774,14 @@ export function buildPaletteActions(
     {
       id: 'audio-microphone',
       group: 'Audio',
-      label: 'Use microphone audio',
+      label: 'Use microphone audio (asks for microphone access)',
       keywords: ['source', 'mic'],
       run: () => startAudioSource(engineRef.current, 'microphone'),
     },
     {
       id: 'audio-tab',
       group: 'Audio',
-      label: 'Use tab or system audio',
+      label: 'Use tab or system audio (asks what to share)',
       keywords: ['source', 'capture', 'spotify', 'system', 'screen'],
       run: () => startAudioSource(engineRef.current, 'tab'),
     },
@@ -656,7 +790,12 @@ export function buildPaletteActions(
           {
             id: 'toggle-playback',
             group: 'Audio',
-            label: playbackPaused ? 'Resume' : 'Pause',
+            get label() {
+              return playbackToggleLabel(
+                engineSnapshotRef.current?.audioSource ?? null,
+                playbackPaused,
+              );
+            },
             keywords: ['pause', 'resume', 'play', 'hold', 'freeze'],
             run: () => engineRef.current.handleTogglePlayback(),
           } satisfies CommandAction,
@@ -695,7 +834,7 @@ export function buildPaletteActions(
     {
       id: 'wave-mode-next',
       group: 'Tune',
-      label: 'Next waveform',
+      label: `Next waveform${TUNE_SUFFIX}`,
       keywords: ['wave', 'mode', 'shape'],
       run: () =>
         void cyclePresetWaveMode(
@@ -707,7 +846,7 @@ export function buildPaletteActions(
     {
       id: 'wave-mode-previous',
       group: 'Tune',
-      label: 'Previous waveform',
+      label: `Previous waveform${TUNE_SUFFIX}`,
       keywords: ['wave', 'mode', 'shape'],
       run: () =>
         void cyclePresetWaveMode(
@@ -719,7 +858,7 @@ export function buildPaletteActions(
     {
       id: 'nudge-zoom-in',
       group: 'Tune',
-      label: 'Zoom in',
+      label: `Zoom in${TUNE_SUFFIX}`,
       keywords: ['nudge', 'adjust', 'zoom'],
       run: () =>
         void nudgePresetField(
@@ -732,7 +871,7 @@ export function buildPaletteActions(
     {
       id: 'nudge-zoom-out',
       group: 'Tune',
-      label: 'Zoom out',
+      label: `Zoom out${TUNE_SUFFIX}`,
       keywords: ['nudge', 'adjust', 'zoom'],
       run: () =>
         void nudgePresetField(
@@ -745,7 +884,7 @@ export function buildPaletteActions(
     {
       id: 'nudge-warp-up',
       group: 'Tune',
-      label: 'More warp',
+      label: `More warp${TUNE_SUFFIX}`,
       keywords: ['nudge', 'adjust', 'warp'],
       run: () =>
         void nudgePresetField(
@@ -758,7 +897,7 @@ export function buildPaletteActions(
     {
       id: 'nudge-warp-down',
       group: 'Tune',
-      label: 'Less warp',
+      label: `Less warp${TUNE_SUFFIX}`,
       keywords: ['nudge', 'adjust', 'warp'],
       run: () =>
         void nudgePresetField(
@@ -771,7 +910,7 @@ export function buildPaletteActions(
     {
       id: 'nudge-wave-scale-up',
       group: 'Tune',
-      label: 'Bigger waveform',
+      label: `Bigger waveform${TUNE_SUFFIX}`,
       keywords: ['nudge', 'adjust', 'waveScale'],
       run: () =>
         void nudgePresetField(
@@ -784,7 +923,7 @@ export function buildPaletteActions(
     {
       id: 'nudge-wave-scale-down',
       group: 'Tune',
-      label: 'Smaller waveform',
+      label: `Smaller waveform${TUNE_SUFFIX}`,
       keywords: ['nudge', 'adjust', 'waveScale'],
       run: () =>
         void nudgePresetField(
@@ -797,7 +936,7 @@ export function buildPaletteActions(
     {
       id: 'nudge-rotate-right',
       group: 'Tune',
-      label: 'Rotate clockwise',
+      label: `Rotate clockwise${TUNE_SUFFIX}`,
       keywords: ['nudge', 'adjust', 'rotation'],
       run: () =>
         void nudgePresetField(
@@ -810,7 +949,7 @@ export function buildPaletteActions(
     {
       id: 'nudge-rotate-left',
       group: 'Tune',
-      label: 'Rotate counterclockwise',
+      label: `Rotate counterclockwise${TUNE_SUFFIX}`,
       keywords: ['nudge', 'adjust', 'rotation'],
       run: () =>
         void nudgePresetField(

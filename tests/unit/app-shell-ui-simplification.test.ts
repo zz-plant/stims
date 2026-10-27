@@ -90,10 +90,9 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('Single-route workspace');
     expect(stageSource).toContain('className="stims-shell__stage-frame"');
     expect(stageControlsSource).toContain('className={styles.pill}');
-    // The copy is unchanged; the tooltip now appends the current keyboard
-    // shortcut through withHint(), so the literal is no longer adjacent to
-    // the title= attribute.
-    expect(stageControlsSource).toContain("withHint('Surprise me'");
+    // The name rides in data-hint (shown on hover and focus) with the
+    // current keyboard shortcut appended through withHint().
+    expect(stageControlsSource).toContain("withHint('Play a random preset'");
     expect(uiSource).toContain('liveMode && !missingRequestedPreset ?');
     expect(homeSource).toContain('Browse presets');
     // The four source cards each keep one short line of copy saying what the
@@ -101,9 +100,11 @@ describe('Workspace shell UI simplification regression', () => {
     // leading icon (the uppercase kicker labels and the decorative shader
     // identicons went with it), so these assert the current lines.
     expect(audioSourcePanelSource).toContain('No permission needed');
-    expect(audioSourcePanelSource).toContain('Whatever is playing in the room');
     expect(audioSourcePanelSource).toContain(
-      'Any tab, Spotify, or your system audio',
+      'Asks for microphone access; hears the room',
+    );
+    expect(audioSourcePanelSource).toContain(
+      'Opens the share picker: any tab, Spotify, or system audio',
     );
     // The section heading names the whole section, never one of its children.
     expect(audioSourcePanelSource).not.toContain(
@@ -119,7 +120,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(browseSource).not.toContain('hiddenCount');
     expect(browseSource).toContain('useVirtualizer');
     expect(browseSource).toContain("import { UiIcon } from './UiIcon.tsx';");
-    expect(browseSource).toContain('aria-label="Shuffle presets"');
+    expect(browseSource).toContain('aria-label="Play a random preset"');
   });
 
   test('renders SidePanel when routeState.panel is not null', () => {

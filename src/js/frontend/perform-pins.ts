@@ -36,18 +36,26 @@ export const PINNABLE_FIELDS: ReadonlyArray<{
   { target: 'zoom', label: 'Zoom', min: 0.8, max: 1.2, step: 0.001 },
   { target: 'warp', label: 'Warp', min: 0, max: 2, step: 0.01 },
   { target: 'rot', label: 'Rotate', min: -0.2, max: 0.2, step: 0.001 },
-  { target: 'decay', label: 'Decay', min: 0.85, max: 1, step: 0.001 },
+  // Plain names first; the MilkDrop field follows where the plain name alone
+  // would not tell an author which variable moves.
+  {
+    target: 'decay',
+    label: 'Trail length (decay)',
+    min: 0.85,
+    max: 1,
+    step: 0.001,
+  },
   { target: 'cx', label: 'Center X', min: 0, max: 1, step: 0.01 },
   { target: 'cy', label: 'Center Y', min: 0, max: 1, step: 0.01 },
   { target: 'dx', label: 'Drift X', min: -0.1, max: 0.1, step: 0.001 },
   { target: 'dy', label: 'Drift Y', min: -0.1, max: 0.1, step: 0.001 },
   { target: 'sx', label: 'Stretch X', min: 0.9, max: 1.1, step: 0.001 },
   { target: 'sy', label: 'Stretch Y', min: 0.9, max: 1.1, step: 0.001 },
-  { target: 'wave_a', label: 'Wave alpha', min: 0, max: 1, step: 0.01 },
-  { target: 'q1', label: 'q1', min: 0, max: 1, step: 0.01 },
-  { target: 'q2', label: 'q2', min: 0, max: 1, step: 0.01 },
-  { target: 'q3', label: 'q3', min: 0, max: 1, step: 0.01 },
-  { target: 'q4', label: 'q4', min: 0, max: 1, step: 0.01 },
+  { target: 'wave_a', label: 'Wave opacity', min: 0, max: 1, step: 0.01 },
+  { target: 'q1', label: 'Preset variable q1', min: 0, max: 1, step: 0.01 },
+  { target: 'q2', label: 'Preset variable q2', min: 0, max: 1, step: 0.01 },
+  { target: 'q3', label: 'Preset variable q3', min: 0, max: 1, step: 0.01 },
+  { target: 'q4', label: 'Preset variable q4', min: 0, max: 1, step: 0.01 },
 ];
 
 const PINNABLE_BY_TARGET = new Map(

@@ -43,6 +43,54 @@
   outline-offset: 1px;
 }
 
+/* The status sentence and what a click does, on hover and keyboard focus.
+   Same panel colours as the dock's other name labels, no motion. */
+.trigger[data-hint] {
+  position: relative;
+}
+
+.trigger[data-hint]::after {
+  content: attr(data-hint);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: max-content;
+  max-width: 260px;
+  padding: 4px 8px;
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+  border-radius: var(--radius-sm);
+  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  color: var(--ctl-ink);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+@media (hover: hover) {
+  .trigger[data-hint]:hover::after {
+    visibility: visible;
+  }
+}
+
+.trigger[data-hint]:focus-visible::after {
+  visibility: visible;
+}
+
+.trigger[data-hint][aria-expanded="true"]:hover::after,
+.trigger[data-hint][aria-expanded="true"]:focus-visible::after {
+  visibility: hidden;
+}
+
+/* A short consequence beside a popover item's label. */
+.itemHint {
+  font-size: 0.6875rem;
+  color: var(--ctl-ink-3);
+}
+
 .trigger[aria-expanded="true"] {
   color: var(--stims-cool, #77c9ff);
   background: var(--ctl-accent-dim);

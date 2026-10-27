@@ -24,6 +24,7 @@ import {
   startFileAudio,
   subscribeFilePlaylist,
 } from './file-audio.ts';
+import { useTwoStepConfirm } from './hooks/use-two-step-confirm.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -84,6 +85,23 @@ function formatPlaybackTime(totalSeconds: number) {
     : `${minutes}:${paddedSeconds}`;
 }
 
+/**
+ * One sentence for the chip row: which chips raise a prompt or a picker.
+ * Only names the chips this row offers.
+ */
+function describeChipOutcomes(
+  offers: (source: AudioSourceId) => boolean,
+  canCaptureDisplayAudio: boolean,
+): string {
+  const parts: string[] = [];
+  if (offers('microphone')) parts.push('Microphone asks for permission');
+  parts.push('Audio file opens a file picker');
+  if (canCaptureDisplayAudio && (offers('tab') || offers('youtube'))) {
+    parts.push("Tab / system and YouTube open your browser's share picker");
+  }
+  return `${parts.join('. ')}.`;
+}
+
 export function AudioSourcePanel({
   showHelp = true,
   layout = 'cards',
@@ -120,6 +138,10 @@ export function AudioSourcePanel({
   const youtubeTransport = ui.youtubeTransport;
   const youtubeTransportControls = ui.youtubeTransportControls;
   const youtubeUrl = ui.youtubeUrl;
+
+  const clearRecentConfirm = useTwoStepConfirm(() =>
+    engine.clearRecentYouTubeVideos(),
+  );
 
   const fileCardId = `${sourcePanelId}-file-card`;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -319,7 +341,10 @@ export function AudioSourcePanel({
               Loading…
             </>
           ) : youtubeReady ? (
-            'Start capture'
+            // The second press opens the browser's screen-share picker: the
+            // video plays in this tab, so its sound arrives as a share of
+            // the tab. "Start capture" did not say a picker was coming.
+            "Share this tab's audio"
           ) : (
             'Load'
           )}
@@ -393,9 +418,13 @@ export function AudioSourcePanel({
             <button
               type="button"
               className="stims-shell__clear-filters stims-shell__clear-filters--compact"
-              onClick={engine.clearRecentYouTubeVideos}
+              onClick={clearRecentConfirm.press}
+              onBlur={clearRecentConfirm.disarm}
+              data-armed={clearRecentConfirm.armed ? 'true' : undefined}
             >
-              Clear history
+              {clearRecentConfirm.armed
+                ? 'Clear the list for good'
+                : 'Clear recent videos'}
             </button>
           </div>
           <div className="stims-shell__chip-list">
@@ -404,6 +433,8 @@ export function AudioSourcePanel({
                 key={video.id}
                 type="button"
                 className="stims-shell__chip stims-shell__chip--media"
+                aria-label={`Play ${video.title}; opens the screen-share picker`}
+                title="Loads the video, then opens the screen-share picker for this tab"
                 onClick={() => onLoadRecentYouTubeVideo(video.id)}
               >
                 {video.thumbnail ? (
@@ -477,7 +508,6 @@ export function AudioSourcePanel({
           data-mic-audio-btn="true"
           type="button"
           className={cardClassName}
-          title={chips ? 'Whatever is playing in the room' : undefined}
           disabled={!engineReady}
           aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() =>
@@ -492,7 +522,9 @@ export function AudioSourcePanel({
             className="stims-shell__source-card-icon stims-icon-slot"
           />
           <strong>Microphone</strong>
-          {chips ? null : <span>Whatever is playing in the room</span>}
+          {chips ? null : (
+            <span>Asks for microphone access; hears the room</span>
+          )}
         </button>
       ) : null}
       {offers('microphone') && audioDevices.length > 1 ? (
@@ -520,7 +552,6 @@ export function AudioSourcePanel({
         id={fileCardId}
         data-file-audio-btn="true"
         className={cardClassName}
-        title={chips ? 'Pick a track, or drop one here' : undefined}
         data-drag-active={dragActive || undefined}
         disabled={!engineReady || fileState?.loading}
         aria-describedby={!engineReady ? disabledDescription : undefined}
@@ -620,10 +651,6 @@ export function AudioSourcePanel({
           id={`${sourcePanelId}-use-tab-audio`}
           data-tab-audio-btn="true"
           className={cardClassName}
-          // A chip has no subtitle line, and this is where Spotify lives:
-          // it plays in a tab or a desktop app, so tab or system capture is
-          // how it reaches the visuals.
-          title={chips ? 'Any tab, Spotify, or your system audio' : undefined}
           disabled={!engineReady}
           aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() => onAudioStart('tab')}
@@ -633,7 +660,11 @@ export function AudioSourcePanel({
             className="stims-shell__source-card-icon stims-icon-slot"
           />
           <strong>{chips ? 'Tab / system' : 'Tab or system audio'}</strong>
-          {chips ? null : <span>Any tab, Spotify, or your system audio</span>}
+          {chips ? null : (
+            <span>
+              Opens the share picker: any tab, Spotify, or system audio
+            </span>
+          )}
         </button>
       ) : null}
       {chips && offersYouTube ? (
@@ -705,7 +736,20 @@ export function AudioSourcePanel({
       {/* Cards: the link field leads, the cards follow. Chips: the chips
           lead and the field opens beneath them from its own chip. */}
       {chips ? sourceGrid : youtubeBlock}
+      {/* Chips have no subtitle line, and a tooltip never shows on touch or
+          to the keyboard, so what each chip asks of the browser is said
+          here, once, under the row. */}
+      {chips ? (
+        <p className="stims-shell__source-note">
+          {describeChipOutcomes(offers, canCaptureDisplayAudio)}
+        </p>
+      ) : null}
       {chips ? youtubeBlock : sourceGrid}
+      {!chips && engine.audioActive ? (
+        <p className="stims-shell__source-note">
+          Picking a source replaces the one playing now.
+        </p>
+      ) : null}
       {displayCaptureDropsAudio && (offers('tab') || offers('youtube')) ? (
         <p className="stims-shell__source-note">
           Tab, system and YouTube audio need Chrome or Edge. Here, play a file

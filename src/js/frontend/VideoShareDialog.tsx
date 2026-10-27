@@ -9,6 +9,7 @@ import {
   useEscapeHandler,
 } from './hooks/use-escape-handler.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
+import { useTwoStepConfirm } from './hooks/use-two-step-confirm.ts';
 import { codeForLocalShare } from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
@@ -125,6 +126,14 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
     } else setMessage('Could not delete the public link. Try again.');
   };
 
+  // Deleting takes the page down for everyone the link went to; one press
+  // arms it, the second deletes.
+  const confirmDelete = useTwoStepConfirm(() => {
+    void remove().catch(() =>
+      setMessage('Could not delete the link. Try again.'),
+    );
+  });
+
   return createPortal(
     <div className="stims-shell__credits-overlay">
       <div
@@ -152,8 +161,17 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
         </p>
         {published ? (
           <>
+            {/* A new tab: in this one the link replaced the live session,
+                audio and any unsaved edit with the published page. */}
             <p style={{ overflowWrap: 'anywhere' }}>
-              <a href={published.url}>{published.url}</a>
+              <a
+                href={published.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Open the public page in a new tab: ${published.url}`}
+              >
+                {published.url}
+              </a>
             </p>
             <button
               type="button"
@@ -176,13 +194,13 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
               <button
                 type="button"
                 className="cta-button ghost"
-                onClick={() => {
-                  void remove().catch(() =>
-                    setMessage('Could not delete the link. Try again.'),
-                  );
-                }}
+                data-armed={confirmDelete.armed ? 'true' : undefined}
+                onClick={confirmDelete.press}
+                onBlur={confirmDelete.disarm}
               >
-                Delete public link
+                {confirmDelete.armed
+                  ? 'Delete it for everyone'
+                  : 'Delete public link'}
               </button>
             ) : null}
           </>

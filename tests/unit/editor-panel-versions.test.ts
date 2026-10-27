@@ -141,7 +141,7 @@ describe('editor panel named versions', () => {
     save(panel, 'v1');
     load(panel, src.v2, src.id);
 
-    button(versionRows(panel)[0] as HTMLElement, 'Restore').click();
+    button(versionRows(panel)[0] as HTMLElement, 'Restore version').click();
 
     expect(panel.getEditorSource()).toBe(src.v1);
     expect(onEditorSourceChange).toHaveBeenCalledWith(src.v1);
@@ -151,14 +151,19 @@ describe('editor panel named versions', () => {
     panel.dispose();
   });
 
-  test('Delete removes just that version', () => {
+  test('Delete asks once, then removes just that version', () => {
     const { panel } = mount(memoryStorage());
     save(panel, 'keep');
     save(panel, 'drop');
     const drop = versionRows(panel).find((r) =>
       r.textContent?.includes('drop'),
     );
-    button(drop as HTMLElement, 'Delete').click();
+    const remove = button(drop as HTMLElement, 'Delete');
+    remove.click();
+    // One press only arms it: both versions are still there.
+    expect(versionRows(panel)).toHaveLength(2);
+    expect(remove.textContent).toBe('Delete this version');
+    remove.click();
     expect(versionRows(panel).map((r) => r.textContent)).toEqual([
       expect.stringContaining('keep'),
     ]);

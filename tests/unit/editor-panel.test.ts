@@ -425,7 +425,7 @@ describe('EditorPanel class integration', () => {
       );
       const refine = Array.from(
         panel.element.querySelectorAll<HTMLButtonElement>('button'),
-      ).find((b) => b.textContent === 'Refine');
+      ).find((b) => b.textContent === 'Refine with AI');
       if (!input || !refine) throw new Error('assist controls not rendered');
 
       input.value = 'make it bluer';

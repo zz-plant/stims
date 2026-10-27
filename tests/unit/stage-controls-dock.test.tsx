@@ -103,7 +103,7 @@ describe('stage dock auto-hide', () => {
   test('focus inside the pill holds it up, and the handle stays out of the way', () => {
     jest.useFakeTimers();
     const rendered = mount();
-    const next = rendered.byLabel('Shuffle to a random preset');
+    const next = rendered.byLabel('Play a random preset');
 
     act(() => next?.focus());
     elapse(AUTO_HIDE_MS * 2);
@@ -225,7 +225,9 @@ describe('stage dock transport', () => {
       },
     );
 
-    const pause = rendered.byLabel('Pause');
+    // Demo audio keeps sounding through a pause, so the button says it
+    // pauses the visuals.
+    const pause = rendered.byLabel('Pause visuals');
     expect(pause).not.toBeNull();
     // Stopping is no longer one click on the bar.
     expect(
@@ -241,8 +243,8 @@ describe('stage dock transport', () => {
   test('a paused stage says so in the title and offers Resume', () => {
     const rendered = mount(liveSnapshot({ playbackPaused: true }));
 
-    expect(rendered.byLabel('Resume')).not.toBeNull();
-    expect(rendered.byLabel('Pause')).toBeNull();
+    expect(rendered.byLabel('Resume visuals')).not.toBeNull();
+    expect(rendered.byLabel('Pause visuals')).toBeNull();
     expect(pill(rendered)?.textContent).toContain('Paused');
 
     rendered.dispose();
@@ -378,5 +380,139 @@ describe('stage dock transition control', () => {
       checked: [],
       label: 'Transition, currently Blend 3s',
     });
+  });
+});
+
+describe('stage dock says what each control will do', () => {
+  function openMenu(rendered: ReturnType<typeof mount>) {
+    rendered.click(rendered.byLabel('More actions'));
+    return (action: string) =>
+      rendered.container.querySelector<HTMLElement>(
+        `[role="menu"] [data-action="${action}"]`,
+      );
+  }
+
+  test('pause names whether the sound stops with the picture', () => {
+    // A file track pauses with the picture; the demo loop keeps playing.
+    const file = mount(liveSnapshot({ audioSource: 'file' }));
+    expect(file.byLabel('Pause')).not.toBeNull();
+    expect(file.byLabel('Pause visuals')).toBeNull();
+    file.dispose();
+
+    const demo = mount();
+    const pause = demo.byLabel('Pause visuals');
+    expect(pause?.dataset.hint).toContain('Sound keeps playing.');
+    demo.dispose();
+  });
+
+  test('icon buttons carry their name for hover and keyboard focus', () => {
+    // A `title` never reaches a keyboard user; data-hint drives the label the
+    // dock shows on :hover and :focus-visible.
+    const rendered = mount();
+    for (const name of [
+      'Back to the last preset',
+      'Play a similar-looking preset',
+      'Play a random preset',
+      'More actions',
+    ]) {
+      const button = rendered.byLabel(name);
+      expect(button?.dataset.hint?.startsWith(name)).toBe(true);
+      expect(button?.hasAttribute('title')).toBe(false);
+    }
+    rendered.dispose();
+  });
+
+  test('a panel item that would close its open panel says so', () => {
+    const rendered = renderWorkspace(
+      createElement(StageControls, {
+        isFullscreen: false,
+        onToggleFullscreen: () => {},
+      }),
+      {
+        snapshot: liveSnapshot(),
+        ui: {
+          routeState: {
+            presetId: null,
+            collectionTag: null,
+            panel: 'browse',
+            audioSource: null,
+            agentMode: false,
+          },
+        },
+      },
+    );
+    const item = openMenu(rendered);
+    expect(item('open-browse')?.getAttribute('aria-label')).toBe(
+      'Close Browse',
+    );
+    expect(item('open-settings')?.getAttribute('aria-label')).toBe('Settings');
+    rendered.dispose();
+  });
+
+  test('cast, camera and video publishing say what they start', () => {
+    const rendered = mount();
+    const item = openMenu(rendered);
+    // Casting runs through a watch party; the row says so before the click.
+    expect(item('external-display')?.getAttribute('aria-label')).toBe(
+      'Cast to a TV or Chromecast (starts a watch party)',
+    );
+    expect(item('external-display')?.getAttribute('aria-checked')).toBe(
+      'false',
+    );
+    // A toggle that shows its state and names the permission prompt.
+    expect(item('toggle-camera')?.getAttribute('role')).toBe(
+      'menuitemcheckbox',
+    );
+    expect(item('toggle-camera')?.getAttribute('aria-label')).toBe(
+      'Use camera as video input (asks for camera access)',
+    );
+    const publish = [
+      ...rendered.container.querySelectorAll<HTMLElement>(
+        '[role="menu"] [role^="menuitem"]',
+      ),
+    ].find((element) =>
+      element.getAttribute('aria-label')?.startsWith('Publish'),
+    );
+    expect(publish?.getAttribute('aria-label')).toBe(
+      'Publish a public video link…',
+    );
+    rendered.dispose();
+  });
+
+  test('the record item says it will stop and save a running recording', async () => {
+    const { setRecordingActive, resetRecordingActiveForTests } = await import(
+      '../../src/js/core/services/recording-state.ts'
+    );
+    const rendered = renderWorkspace(
+      createElement(StageControls, {
+        isFullscreen: false,
+        onToggleFullscreen: () => {},
+      }),
+      {
+        snapshot: liveSnapshot(),
+        ui: {
+          routeState: {
+            presetId: null,
+            collectionTag: null,
+            panel: 'capture',
+            audioSource: null,
+            agentMode: false,
+          },
+        },
+      },
+    );
+    try {
+      const item = openMenu(rendered);
+      expect(item('open-record')?.getAttribute('aria-label')).toBe(
+        'Close the recording panel',
+      );
+      act(() => setRecordingActive(true));
+      expect(item('open-record')?.getAttribute('aria-label')).toBe(
+        'Stop recording and save',
+      );
+    } finally {
+      act(() => resetRecordingActiveForTests());
+      rendered.dispose();
+    }
   });
 });

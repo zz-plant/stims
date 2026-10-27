@@ -147,28 +147,28 @@ export function PerformSurface() {
     if (!hadSessionBeforeBoot()) return null;
     if (window.matchMedia('(max-width: 719px)').matches) return null;
     return (
-      <aside className={styles.surface} aria-label="Performance controls">
+      <aside className={styles.surface} aria-label="Live sliders">
         <div className={styles.header}>
-          <span className={styles.label}>Perform</span>
+          <span className={styles.label}>Live sliders</span>
           <button
             type="button"
             className={styles.pick}
             onClick={() => setPicking(true)}
             data-action="perform-pin"
           >
-            Pin…
+            Add a slider…
           </button>
         </div>
         <p className={styles.empty}>
-          Put your go-to parameters here as sliders you can drive live on the
-          stage. Nothing pinned yet — pick one to begin.
+          Put the settings you change most here as sliders you can move while
+          the preset plays. None added yet.
+          {/* Hides the card for good; "Dismiss" read as closing it for now. */}
           <button
             type="button"
             className={styles.dismiss}
             onClick={() => dismissStageHint('perform')}
-            aria-label="Dismiss perform surface hint"
           >
-            Dismiss
+            Don’t show again
           </button>
         </p>
       </aside>
@@ -176,9 +176,9 @@ export function PerformSurface() {
   }
 
   return (
-    <aside className={styles.surface} aria-label="Performance controls">
+    <aside className={styles.surface} aria-label="Live sliders">
       <div className={styles.header}>
-        <span className={styles.label}>Perform</span>
+        <span className={styles.label}>Live sliders</span>
         <button
           type="button"
           className={styles.pick}
@@ -186,7 +186,7 @@ export function PerformSurface() {
           aria-expanded={picking}
           data-action="perform-pin"
         >
-          {picking ? 'Done' : 'Pin…'}
+          {picking ? 'Done adding' : 'Add a slider…'}
         </button>
       </div>
 
@@ -242,7 +242,8 @@ export function PerformSurface() {
                 type="button"
                 className={styles.unpin}
                 onClick={() => unpin(target)}
-                aria-label={`Unpin ${field.label}`}
+                aria-label={`Remove the ${field.label} slider`}
+                title={`Remove the ${field.label} slider`}
               >
                 ×
               </button>
@@ -285,7 +286,7 @@ export function PerformSurface() {
 
       {pinned.length === 0 ? (
         <p className={styles.empty}>
-          Nothing pinned yet. Pick a parameter to put it on the stage.
+          No sliders yet. Pick a setting above to add one.
         </p>
       ) : null}
     </aside>

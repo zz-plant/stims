@@ -157,7 +157,7 @@ requiredBrowserTest(
       );
       await page
         .getByRole('button', {
-          name: 'Check picture against description',
+          name: 'Check picture with AI (Clef Flash)',
           exact: true,
         })
         .click();
@@ -182,7 +182,7 @@ requiredBrowserTest(
       // Clef Omni canvas animation check
       await page
         .getByRole('button', {
-          name: 'Check animation (Clef Omni)',
+          name: 'Check animation with AI (Clef Omni)',
           exact: true,
         })
         .click();
@@ -221,7 +221,7 @@ requiredBrowserTest(
         expect(
           await page
             .getByRole('button', {
-              name: 'Check picture against description',
+              name: 'Check picture with AI (Clef Flash)',
               exact: true,
             })
             .isVisible(),

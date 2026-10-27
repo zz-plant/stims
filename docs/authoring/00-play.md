@@ -13,7 +13,7 @@ flowchart LR
 
 ## 1 · Find one you love
 
-Open [toil.fyi](https://toil.fyi/) and use Browse. Search matches titles, authors, tags, and, for some presets, words for how they look, such as "tunnel" or "galaxy"; collections narrow the results. With a preset on stage, **Nearby** in the dock plays one that looks like it, and **Find a preset → By look** lists more, ranked in your browser from each preset's preview image.
+Open [toil.fyi](https://toil.fyi/) and use Browse. Search matches titles, authors, tags, and, for some presets, words for how they look, such as "tunnel" or "galaxy"; collections narrow the results. With a preset on stage, **Play a similar-looking preset** in the dock plays one that looks like it, and **Find a preset → By look** lists more, ranked in your browser from each preset's preview image.
 
 Credits keep each preset's authors, including the names a remix chain accumulated.
 

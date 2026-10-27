@@ -5,6 +5,8 @@ import { getPanelTitle } from '../../src/js/frontend/panel-registry.ts';
 import {
   paletteActionContext as context,
   makeEngineValue,
+  makePresetEntry,
+  makeUiValue,
 } from '../frontend-harness.tsx';
 
 /**
@@ -86,11 +88,79 @@ describe('palette actions', () => {
   test('routed panel actions derive their labels from the panel registry', () => {
     const actions = buildPaletteActions(context());
     expect(label(actions, 'open-browse')).toBe(getPanelTitle('browse'));
-    expect(label(actions, 'find-similar')).toBe(getPanelTitle('finder'));
     expect(label(actions, 'open-editor')).toBe(getPanelTitle('editor'));
     expect(label(actions, 'open-refine')).toBe(getPanelTitle('refine'));
     expect(label(actions, 'open-generate')).toBe(getPanelTitle('synthesize'));
-    expect(label(actions, 'open-record')).toBe(getPanelTitle('capture'));
     expect(label(actions, 'open-settings')).toBe(getPanelTitle('settings'));
+    // The finder's title names a thing; the row says what it finds.
+    expect(label(actions, 'find-similar')).toBe(
+      'Find presets that match the music or picture',
+    );
+  });
+
+  test('a panel row that would close its open panel says so', () => {
+    // togglePanel closes the panel that is already open. The row used to
+    // keep saying "Browse presets" while it closed Browse.
+    const uiRef = {
+      current: makeUiValue({
+        routeState: {
+          presetId: null,
+          collectionTag: null,
+          panel: 'browse',
+          audioSource: null,
+          agentMode: false,
+        },
+      }),
+    };
+    const actions = buildPaletteActions(context({ uiRef }));
+    expect(label(actions, 'open-browse')).toBe('Close Browse');
+    expect(label(actions, 'open-editor')).toBe(getPanelTitle('editor'));
+
+    // Read when the row renders, not when the list was built.
+    uiRef.current = makeUiValue();
+    expect(label(actions, 'open-browse')).toBe(getPanelTitle('browse'));
+  });
+
+  test('toggle rows name the way they will go', () => {
+    const saved = makePresetEntry({ id: 'kept', bundledFile: 'kept.milk' });
+    const engineBridgeRef = {
+      current: makeEngineValue({
+        selectedPreset: saved,
+        favoritePresets: [saved],
+      }),
+    } as { current: EngineContextValue };
+    const actions = buildPaletteActions(context({ engineBridgeRef }));
+    expect(label(actions, 'save-preset')).toBe('Remove from saved');
+    engineBridgeRef.current = makeEngineValue({
+      selectedPreset: saved,
+      favoritePresets: [],
+    });
+    expect(label(actions, 'save-preset')).toBe('Save preset');
+  });
+
+  test('clearing the queue takes a second run', () => {
+    const clear = mock(() => {});
+    const announce = mock(() => {});
+    const uiRef = {
+      current: makeUiValue({
+        setStatusMessage: announce,
+        presetQueue: {
+          ...makeUiValue().presetQueue,
+          presetIds: ['a', 'b'],
+          clear,
+        },
+      }),
+    };
+    const actions = buildPaletteActions(context({ uiRef }));
+    const run = () =>
+      actions.find((action) => action.id === 'queue-clear')?.run();
+
+    run();
+    expect(clear).not.toHaveBeenCalled();
+    expect(announce).toHaveBeenCalledWith(
+      'Run “Clear the queue” again to remove all 2 queued.',
+    );
+    run();
+    expect(clear).toHaveBeenCalledTimes(1);
   });
 });

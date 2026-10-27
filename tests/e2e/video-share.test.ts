@@ -149,7 +149,10 @@ requiredBrowserTest(
         .getByRole('button', { name: 'More actions', exact: true })
         .click({ timeout: 30_000 });
       await page
-        .getByRole('menuitem', { name: 'Create video link…', exact: true })
+        .getByRole('menuitem', {
+          name: 'Publish a public video link…',
+          exact: true,
+        })
         .click();
       const dialog = page.getByRole('dialog', { name: 'Create a video link' });
       const create = dialog.getByRole('button', {

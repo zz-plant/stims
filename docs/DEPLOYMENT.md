@@ -167,7 +167,7 @@ Batch publications wait and retry HTTP 429 responses, up to three retries per
 capture; a persistent limit stops the command without changing that preset's
 pointer. Rerunning the same batch reuses its completed videos.
 
-The stage menu's **Create video link…** flow explicitly publishes four seconds
+The stage menu's **Publish a public video link…** flow explicitly publishes four seconds
 of small frames and the current preset code to `/api/flipbooks/`. It sends no
 audio. The endpoint requires same-origin JSON and the `VIDEO_UPLOAD_LIMITER`
 and `MEDIA` bindings (three attempts per IP per minute); missing configuration fails closed.

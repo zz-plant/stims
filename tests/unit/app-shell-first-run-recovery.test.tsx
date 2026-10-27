@@ -52,7 +52,8 @@ describe('Workspace shell first-run and recovery regression', () => {
       // StageControls styles itself through CSS modules, so probe by a stable
       // aria-label from its transport cluster rather than a class name.
       const controls = (r: typeof withMissing) =>
-        r.container.querySelectorAll('[aria-label="Previous preset"]').length;
+        r.container.querySelectorAll('[aria-label="Back to the last preset"]')
+          .length;
       expect(controls(without)).toBeGreaterThan(0);
       expect(controls(withMissing)).toBe(0);
     } finally {

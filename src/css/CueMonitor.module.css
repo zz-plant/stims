@@ -202,6 +202,12 @@
   color: var(--text-color);
 }
 
+/* Armed: the next press clears the queue. Warm, the accent this card keeps
+   for the controls that change what plays. */
+.clear[data-armed="true"] {
+  color: var(--stims-focus-95, #f47a54);
+}
+
 /* Phones: the dock and the stage gestures own the bottom-right corner, and a
    208px card there covers a meaningful share of a small stage. */
 @media (max-width: 640px) {

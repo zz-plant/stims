@@ -32,7 +32,11 @@ import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { useScrollerOverflow } from './hooks/use-scroller-overflow.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
-import { PresetGrid } from './PresetGrid.tsx';
+import {
+  PresetGrid,
+  QUEUE_ADD_HINT,
+  QUEUE_REMOVE_HINT,
+} from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
 import { PresetSignals } from './PresetSignals.tsx';
 import { openPresetInPlace, presetPageHref } from './preset-link.ts';
@@ -93,6 +97,16 @@ const PRESET_ROW_OVERSCAN = 8;
  */
 const browseScrollMemory: { grid: number; list: number } = { grid: 0, list: 0 };
 
+/**
+ * Where the browser can pick a folder, the import button picks a folder (a
+ * MilkDrop install is a folder of hundreds of .milk files) and cannot pick a
+ * single file; elsewhere it opens a file picker. The label says which.
+ */
+const IMPORT_LABEL =
+  typeof window !== 'undefined' && 'showDirectoryPicker' in window
+    ? 'Import a folder of presets (.milk, .txt or .zip files in it)'
+    : 'Import preset files (.milk or .zip)';
+
 function readSortMode(): SortMode {
   return parseBrowseSortMode(readStored('stims:browse-sort')) ?? 'curated';
 }
@@ -145,9 +159,22 @@ export function BrowseSheetPanel({
   const selectPreset = useCallback(
     (presetId: string) => {
       onPresetChosen?.(presetId);
+      // The first-use hint says a card plays its preset. Before any audio
+      // has started, selecting only moved the route: on a phone, or with
+      // the background preview off, the panel closed onto nothing playing.
+      // Start the demo track with the chosen preset, as the home cards do.
+      if (!engine.audioActive) {
+        void engine.handleAudioStart('demo', undefined, presetId);
+        return;
+      }
       engine.handlePresetSelection(presetId);
     },
-    [engine.handlePresetSelection, onPresetChosen],
+    [
+      engine.audioActive,
+      engine.handleAudioStart,
+      engine.handlePresetSelection,
+      onPresetChosen,
+    ],
   );
   const presetPreviews = engine.presetPreviews;
   const routeState = ui.routeState;
@@ -177,6 +204,10 @@ export function BrowseSheetPanel({
     // the default browse view and a tile click is the "tap a card" this
     // panel's first-use hint is about.
     if (next.presetId) onPresetChosen?.(next.presetId);
+    if (next.presetId && !engine.audioActive) {
+      void engine.handleAudioStart('demo', undefined, next.presetId);
+      return;
+    }
     ui.commitRoute((current) => ({
       ...current,
       ...next,
@@ -414,6 +445,22 @@ export function BrowseSheetPanel({
    * touched by "Clear filters". The result was a library quietly missing
    * presets with nothing on screen accounting for them.
    */
+  /**
+   * Live, the engine's weighted shuffle picks. Before any audio has
+   * started there is nothing for it to switch, so pick from the list on
+   * screen (which already leaves out what Reduce flashing hides) and start
+   * it like a card click.
+   */
+  const playRandomPreset = () => {
+    if (engine.audioActive) {
+      engine.handleShufflePreset();
+      return;
+    }
+    const pool = sorted.filter((entry) => entry.id !== currentPresetId);
+    const pick = pool[Math.floor(Math.random() * pool.length)] ?? sorted[0];
+    if (pick) selectPreset(pick.id);
+  };
+
   const flashHiddenCount = useMemo(() => {
     if (!reduceFlashing) return 0;
     return catalog.filter((entry) => !passesFlashPreference(entry, true))
@@ -662,13 +709,15 @@ export function BrowseSheetPanel({
               }
             }}
           />
+          {/* Plays a random preset and closes Browse; it does not reorder
+              the list (the sort menu's Random does that). */}
           <button
             type="button"
             className="ctl-btn ctl-btn--icon"
-            onClick={engine.handleShufflePreset}
+            onClick={playRandomPreset}
             disabled={catalog.length === 0}
-            aria-label="Shuffle presets"
-            title="Shuffle presets"
+            aria-label="Play a random preset"
+            title="Play a random preset"
           >
             <UiIcon
               name="shuffle"
@@ -716,8 +765,8 @@ export function BrowseSheetPanel({
                 importInputRef.current?.click();
               }
             }}
-            aria-label="Import preset file or folder"
-            title="Import preset file or folder (File System Access API)"
+            aria-label={IMPORT_LABEL}
+            title={`${IMPORT_LABEL}. Imported presets open in the editor.`}
           >
             <UiIcon
               name="upload"
@@ -733,8 +782,8 @@ export function BrowseSheetPanel({
             onClick={() => {
               void engine.exportUserPresets();
             }}
-            aria-label="Export my presets as a .zip"
-            title="Export the presets you made or imported as a .zip of MilkDrop 2 files"
+            aria-label="Download my presets as a .zip"
+            title="Download the presets you made or imported, as a .zip of MilkDrop 2 files"
           >
             <UiIcon
               name="download"
@@ -926,8 +975,11 @@ export function BrowseSheetPanel({
             <span>
               {`Reduce flashing is hiding ${flashHiddenCount.toLocaleString()} preset${
                 flashHiddenCount === 1 ? '' : 's'
-              }.`}
+              }. Turning it off shows them and stops the stage dimming flashes.`}
             </span>
+            {/* This switches the saved setting off everywhere, live dimming
+                included. It used to read "Show them", which sounded like a
+                list filter. */}
             <button
               type="button"
               className="ctl-btn ctl-btn--quiet"
@@ -935,7 +987,7 @@ export function BrowseSheetPanel({
                 setAccessibilityPreference({ reduceFlashing: false })
               }
             >
-              Show them
+              Turn off Reduce flashing
             </button>
           </p>
         ) : null}
@@ -1254,8 +1306,8 @@ export function BrowseSheetPanel({
                       }
                       title={
                         queuedPresetIdSet.has(entry.id)
-                          ? 'Remove from queue'
-                          : 'Add to queue'
+                          ? QUEUE_REMOVE_HINT
+                          : QUEUE_ADD_HINT
                       }
                       aria-pressed={queuedPresetIdSet.has(entry.id)}
                       onClick={() => toggleQueued(entry)}
