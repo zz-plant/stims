@@ -6,6 +6,10 @@ _Current release status: actively developed. Latest release: **v1.5.0**._
 
 ## [Unreleased]
 
+### Changed
+
+- The toolchain is on Bun 1.4.4 (`.bun-version`, `mise.toml`, `packageManager`, `engines.bun`). Workers Builds reads its Bun version from `packageManager`, so production builds move too; Cloudflare's build images reject the compromised eMudhra intermediates, and Bun releases before 1.4.4 still trust them.
+
 ### Planned — studio first, parity as a floor
 
 - **Remix studio**: dependable undo/redo and named snapshots, side-by-side A/B against the source preset, remix provenance retained in exported `.milk`.

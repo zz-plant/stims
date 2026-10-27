@@ -6,7 +6,7 @@ For a concise parallel execution map across parity, runtime performance, browser
 
 ## Toolchain
 
-`package.json` pins Bun 1.4.3 and declares Node 22 for Node-based tooling; [Contributing](../CONTRIBUTING.md#set-up) has the setup steps. Current tooling uses React 19, Vite 8, TypeScript 7, Biome 2, and Playwright; exact versions belong in `package.json` and `bun.lock`. Dependency-cruiser uses the SWC parser. The [September audit](./archive/TECH_STACK_MODERNIZATION_2026-09.md) is historical and does not define today's version constraints.
+`package.json` pins Bun 1.4.4 and declares Node 22 for Node-based tooling; [Contributing](../CONTRIBUTING.md#set-up) has the setup steps. Current tooling uses React 19, Vite 8, TypeScript 7, Biome 2, and Playwright; exact versions belong in `package.json` and `bun.lock`. Dependency-cruiser uses the SWC parser. The [September audit](./archive/TECH_STACK_MODERNIZATION_2026-09.md) is historical and does not define today's version constraints.
 
 ## Core workflow
 

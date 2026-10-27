@@ -3,8 +3,8 @@
 ## Set up
 
 You need:
-- [Bun](https://bun.sh) 1.3.14, the version `package.json` pins. Node 22 is declared for the Node-based tools.
-- [mise](https://mise.jdx.dev), only for `bun run setup`, which starts with `mise trust` so mise applies `mise.toml` (Bun 1.3.14, Node 22). Without mise, run `bun run setup:codex`: the same bootstrap minus that step.
+- [Bun](https://bun.sh) 1.4.4, the version `package.json` pins. Node 22 is declared for the Node-based tools.
+- [mise](https://mise.jdx.dev), only for `bun run setup`, which starts with `mise trust` so mise applies `mise.toml` (Bun 1.4.4, Node 22). Without mise, run `bun run setup:codex`: the same bootstrap minus that step.
 - Playwright's Chromium, for browser-backed tests and the capture tools (`lab:visual`, `parity:capture`, `ui:diff`). Unit and compatibility tests run without it.
 
 ```bash
