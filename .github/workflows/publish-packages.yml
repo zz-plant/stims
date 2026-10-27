@@ -88,9 +88,9 @@ jobs:
         env:
           NAME: ${{ steps.target.outputs.name }}
         run: |
-          bun --cwd "packages/$NAME" run typecheck
+          bun --cwd="packages/$NAME" run typecheck
           bun --cwd "packages/$NAME" test
-          bun --cwd "packages/$NAME" run build
+          bun --cwd="packages/$NAME" run build
 
       # The tarball should be a function of the source, not of the machine:
       # build twice from clean and fail if the two dists differ, before

@@ -107,7 +107,7 @@ move.
 1. Root `package.json`: `"audio-reactive": "workspace:*"` →
    `"audio-reactive": "^0.1.0"` (the version already in the package file).
 2. Delete the local `node_modules/audio-reactive` symlink and re-link from the
-   package's build: `bun --cwd packages/audio-reactive run build` then
+   package's build: `bun --cwd=packages/audio-reactive run build` then
    `bun link`/`file:` override for local dev, or simply accept that dev now
    exercises the published shape (build first). The repo's
    `stims-source` condition must not be relied on for this package anymore:

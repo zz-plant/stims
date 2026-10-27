@@ -79,7 +79,7 @@ The harness does the seeding and the comparing; you supply the one thing that is
 
 ```ts
 import { conforms, formatReport, runConformance } from 'eel-conformance';
-import { execute } from './my-eel-engine';
+import { execute } from './my-eel-engine.js';
 
 const report = await runConformance(
   ({ program, env, megabuf, gmegabuf, random }) => {
@@ -133,7 +133,7 @@ Build and test from a clone of zz-plant/stims:
 
 ```sh
 bun install --frozen-lockfile
-bun --cwd packages/eel-conformance run build
+bun --cwd=packages/eel-conformance run build
 bun --cwd packages/eel-conformance test
 ```
 
