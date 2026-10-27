@@ -116,10 +116,15 @@ class FakeTab {
 }
 
 /** Polls a condition the server reaches asynchronously; never a fixed sleep. */
-async function until<T>(read: () => T | undefined, timeoutMs = 3000) {
+async function until<T>(
+  read: () => T | undefined | Promise<T | undefined>,
+  timeoutMs = 3000,
+) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
-    const value = read();
+    // Awaited: a pending Promise is truthy, so an unawaited async read
+    // returned on the first pass without waiting for anything.
+    const value = await read();
     if (value) return value;
     if (Date.now() > deadline) throw new Error('condition not reached');
     await new Promise((resolve) => setTimeout(resolve, 20));
