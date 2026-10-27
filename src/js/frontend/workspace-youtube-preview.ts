@@ -16,7 +16,7 @@ const INVALID_YOUTUBE_FEEDBACK =
 const VALID_YOUTUBE_FEEDBACK = 'Press Load to continue.';
 const LOADING_YOUTUBE_FEEDBACK = 'Loading the embedded player…';
 const READY_YOUTUBE_FEEDBACK =
-  'Video is ready. Choose Start capture to continue.';
+  "Video is ready. Choose Share this tab's audio to continue.";
 
 export function readStoredWorkspaceYouTubeUrl() {
   try {

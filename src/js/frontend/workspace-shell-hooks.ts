@@ -664,7 +664,11 @@ export function useWorkspaceShellOrchestration({
       // idle preview, which has no pause.
       return;
     }
-    setStatusMessage(applied ? 'Paused. Press Space to resume.' : 'Resumed.');
+    setStatusMessage(
+      applied
+        ? 'Visuals paused. Press Space to resume them.'
+        : 'Visuals resumed.',
+    );
   };
 
   const handleImport = async (files: FileList | File[] | null) => {

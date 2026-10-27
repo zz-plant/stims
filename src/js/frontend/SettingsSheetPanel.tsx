@@ -45,6 +45,7 @@ import {
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
+import { useTwoStepConfirm } from './hooks/use-two-step-confirm.ts';
 import {
   type PadActionChoice,
   PerformanceHardwareSection,
@@ -272,7 +273,7 @@ function AccessibilitySection({
       </div>
       <SwitchRow
         label="Freeze visuals"
-        hint="Holds the current frame still so you can inspect it or reduce motion."
+        hint="Holds the current frame still, and stays on after a reload. Space pauses the visuals for now instead."
         checked={prefs.freezeFrame}
         onChange={(freezeFrame) => {
           setPrefs((p) => ({ ...p, freezeFrame }));
@@ -479,6 +480,7 @@ function PerformanceSection() {
     );
   };
 
+  const resetConfirm = useTwoStepConfirm(() => resetPerformance());
   const resetPerformance = () => {
     import('../core/state/performance-settings-store.ts').then(
       ({ resetPerformanceSettingsToDefaults }) => {
@@ -493,12 +495,18 @@ function PerformanceSection() {
       <div className="ctl-section__head">
         <h3 className="ctl-section__title">Performance</h3>
         {perf.loaded ? (
+          // Resets the three controls in this section only; quality, power
+          // saving and live mode keep their values. Asks once, in place.
           <button
             type="button"
             className="ctl-btn ctl-btn--quiet"
-            onClick={resetPerformance}
+            onClick={resetConfirm.press}
+            onBlur={resetConfirm.disarm}
+            data-armed={resetConfirm.armed ? 'true' : undefined}
           >
-            Reset
+            {resetConfirm.armed
+              ? 'Reset these three for good'
+              : 'Reset detail, particles and resolution'}
           </button>
         ) : null}
       </div>
@@ -925,7 +933,8 @@ export function SettingsSheetPanel({
               <div className="ctl-row">
                 <span className="ctl-row__text">
                   <span className="ctl-row__hint">
-                    The new renderer starts on the next load.
+                    The new renderer starts on the next load. Reloading stops
+                    the audio; you start it again after.
                   </span>
                 </span>
                 <button
@@ -933,7 +942,7 @@ export function SettingsSheetPanel({
                   className="ctl-btn"
                   onClick={() => window.location.reload()}
                 >
-                  Reload now
+                  Reload (stops audio)
                 </button>
               </div>
             ) : null}
@@ -952,16 +961,16 @@ export function SettingsSheetPanel({
               }
             />
             <SwitchRow
-              label="Strudel live-coding lab"
-              hint="Code music patterns on the stage and drive the visuals with them."
+              label="Music-pattern coding lab (Strudel)"
+              hint="Opens a panel on the stage where you write music patterns in code; they play and drive the visuals."
               checked={overlays.strudelLab}
               onChange={(next) =>
                 setStageOverlayPreference({ strudelLab: next })
               }
             />
             <SwitchRow
-              label="Debug HUD"
-              hint="Overlays frames per second, quality, and uniform readouts."
+              label="Performance readout on the stage"
+              hint="Overlays frames per second, the quality level, and the values the shaders receive."
               checked={overlays.debugHud}
               onChange={(next) => setStageOverlayPreference({ debugHud: next })}
             />
@@ -1018,8 +1027,8 @@ export function SettingsSheetPanel({
               onChange={(next) => onHapticsEnabledChange?.(next)}
             />
             <SwitchRow
-              label="Motion control"
-              hint="Steers the visuals by tilting a supported device."
+              label="Steer by tilting the device"
+              hint="On a phone or tablet with a motion sensor, tilting it moves the visuals. Not the Motion slider, which scales camera movement."
               checked={motionPreference.enabled}
               onChange={onMotionPreferenceChange}
             />

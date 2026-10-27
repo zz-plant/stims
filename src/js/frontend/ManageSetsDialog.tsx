@@ -5,6 +5,7 @@ import {
   useEscapeHandler,
 } from './hooks/use-escape-handler.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
+import { useTwoStepConfirm } from './hooks/use-two-step-confirm.ts';
 import {
   buildPresetSetShareUrl,
   deleteSavedPresetSet,
@@ -207,6 +208,13 @@ export function ManageSetsDialog({
           </div>
         )}
 
+        {sets.length > 0 && currentQueueIds.length > 0 ? (
+          <p style={{ fontSize: '0.8rem', opacity: 0.75, margin: '0 0 8px' }}>
+            Loading a set replaces your current queue ({currentQueueIds.length}{' '}
+            {currentQueueIds.length === 1 ? 'preset' : 'presets'}).
+          </p>
+        ) : null}
+
         <div
           style={{
             maxHeight: '280px',
@@ -230,71 +238,108 @@ export function ManageSetsDialog({
             </p>
           ) : (
             sets.map((set) => (
-              <div
+              <SavedSetRow
                 key={set.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 12px',
-                  background: 'rgba(255,255,255,0.03)',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                }}
-              >
-                <div style={{ minWidth: 0, flex: 1, marginRight: '12px' }}>
-                  <div
-                    style={{
-                      fontWeight: 500,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {set.title}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', opacity: 0.6 }}>
-                    {set.presetIds.length}{' '}
-                    {set.presetIds.length === 1 ? 'preset' : 'presets'}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                  <button
-                    type="button"
-                    className="cta-button secondary"
-                    onClick={() => handleLoad(set)}
-                    style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                    title="Load into queue"
-                  >
-                    Play
-                  </button>
-                  <button
-                    type="button"
-                    className="cta-button ghost"
-                    onClick={() => handleCopyLink(set)}
-                    style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                    title="Copy shareable link"
-                  >
-                    Share
-                  </button>
-                  <button
-                    type="button"
-                    className="cta-button ghost"
-                    onClick={() => handleDelete(set.id, set.title)}
-                    style={{
-                      padding: '4px 8px',
-                      fontSize: '0.75rem',
-                      opacity: 0.6,
-                    }}
-                    title="Delete set"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
+                set={set}
+                replacesQueue={currentQueueIds.length > 0}
+                onLoad={() => handleLoad(set)}
+                onCopyLink={() => void handleCopyLink(set)}
+                onDelete={() => handleDelete(set.id, set.title)}
+              />
             ))
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One saved set. Its own component so each row's delete can ask once, in
+ * place: deleting a set has no undo, and its control used to be a bare ✕
+ * right under the dialog's own close ✕.
+ */
+function SavedSetRow({
+  set,
+  replacesQueue,
+  onLoad,
+  onCopyLink,
+  onDelete,
+}: {
+  set: SavedPresetSet;
+  replacesQueue: boolean;
+  onLoad: () => void;
+  onCopyLink: () => void;
+  onDelete: () => void;
+}) {
+  const deleteConfirm = useTwoStepConfirm(onDelete);
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '8px 12px',
+        background: 'rgba(255,255,255,0.03)',
+        borderRadius: '6px',
+        border: '1px solid rgba(255,255,255,0.06)',
+      }}
+    >
+      <div style={{ minWidth: 0, flex: 1, marginRight: '12px' }}>
+        <div
+          style={{
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {set.title}
+        </div>
+        <div style={{ fontSize: '0.75rem', opacity: 0.6 }}>
+          {set.presetIds.length}{' '}
+          {set.presetIds.length === 1 ? 'preset' : 'presets'}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+        {/* It fills the queue and plays nothing; it used to read "Play". */}
+        <button
+          type="button"
+          className="cta-button secondary"
+          onClick={onLoad}
+          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+          aria-label={`${replacesQueue ? 'Replace the queue with' : 'Load into the queue:'} ${set.title}`}
+        >
+          {replacesQueue ? 'Replace queue' : 'Load into queue'}
+        </button>
+        <button
+          type="button"
+          className="cta-button ghost"
+          onClick={onCopyLink}
+          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+          aria-label={`Copy a link to ${set.title}`}
+        >
+          Copy link
+        </button>
+        <button
+          type="button"
+          className="cta-button ghost"
+          onClick={deleteConfirm.press}
+          onBlur={deleteConfirm.disarm}
+          data-armed={deleteConfirm.armed ? 'true' : undefined}
+          style={{
+            padding: '4px 8px',
+            fontSize: '0.75rem',
+            opacity: deleteConfirm.armed ? 1 : 0.6,
+          }}
+          aria-label={
+            deleteConfirm.armed
+              ? `Delete ${set.title} for good`
+              : `Delete ${set.title}`
+          }
+        >
+          {deleteConfirm.armed ? 'Delete for good' : 'Delete'}
+        </button>
       </div>
     </div>
   );

@@ -135,6 +135,16 @@ function readStoredSynthesizeSettings(): StoredSynthesizeSettings {
   }
 }
 
+/** Where a Generate press sends the description, in the words of the button's
+ * outcome line. The provider sits in a collapsed section by default. */
+function providerDestination(provider: ProviderKind) {
+  return provider === 'local'
+    ? 'Ollama on this computer'
+    : provider === 'openrouter'
+      ? 'OpenRouter'
+      : "Stims's hosted AI model";
+}
+
 function providerStatus(provider: ProviderKind, offline: boolean) {
   if (provider === 'hosted' && offline) {
     return 'AI imports are paused while offline. Reconnect, or switch to local mode if Ollama is running on this device.';
@@ -719,7 +729,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
             >
               {reviewing
                 ? 'Checking picture…'
-                : 'Check picture against description'}
+                : 'Check picture with AI (Clef Flash)'}
             </button>
             <button
               type="button"
@@ -735,7 +745,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
             >
               {reviewingVideo
                 ? 'Checking animation…'
-                : 'Check animation (Clef Omni)'}
+                : 'Check animation with AI (Clef Omni)'}
             </button>
           </div>
           {!resolveOptionalApiUrl('/api/decide') ? (
@@ -754,9 +764,10 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
             <button
               type="button"
               className={styles.regenerateButton}
+              title="Generates a new preset, adds it to your library and plays it"
               onClick={() => void handleGenerate()}
             >
-              Regenerate
+              Generate another
             </button>
           </>
         ) : null}
@@ -776,8 +787,14 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         }
         onClick={() => void handleGenerate()}
       >
-        {isGenerating ? 'Generating…' : 'Generate with model'}
+        {isGenerating ? 'Generating…' : 'Generate and play'}
       </button>
+      {/* Every press adds a library entry and swaps the stage; the provider
+          choice lives in a section that starts collapsed. */}
+      <p className={styles.intro}>
+        Sends your description to {providerDestination(provider)}. The new
+        preset is added to your library and replaces the one playing.
+      </p>
     </section>
   );
 }

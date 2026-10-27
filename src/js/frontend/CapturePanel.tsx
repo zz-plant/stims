@@ -101,12 +101,31 @@ export function CapturePanel() {
     };
   }, [engine, ui.stageRef]);
 
+  // Closing the panel mid-recording (the menu's Record item again, Escape,
+  // another panel) used to stop the recorder and drop what it held: only the
+  // Stop button downloaded. A recording is never thrown away, so leaving
+  // saves it the way Stop does.
+  const presetRef = useRef(preset);
+  presetRef.current = preset;
+  const announceRef = useRef(ui.setStatusMessage);
+  announceRef.current = ui.setStatusMessage;
   useEffect(
     () => () => {
       const exporter = exporterRef.current;
-      if (exporter?.getRecordingStatus()) {
-        void exporter.stopRecording().catch(() => {});
-      }
+      if (!exporter?.getRecordingStatus()) return;
+      const format = presetRef.current;
+      const announce = announceRef.current;
+      void exporter
+        .stopRecording()
+        .then((blob) => {
+          if (!blob) return;
+          exporter.downloadVideo(blob, getFilename(format, blob.type));
+          noteGrowthEvent('video-saved');
+          announce('Recording stopped and saved to your downloads.');
+        })
+        .catch(() => {
+          announce('Recording stopped but could not be saved.');
+        });
     },
     [],
   );

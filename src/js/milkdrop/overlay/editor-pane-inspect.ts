@@ -109,18 +109,20 @@ export class InspectPane {
     const pause = document.createElement('button');
     pause.type = 'button';
     pause.className = 'stims-editor__inspect-btn';
-    pause.textContent = 'Pause';
+    // Named for the list, not the picture: it sat beside the stage's own
+    // hold, and a bare "Pause" read as that one.
+    pause.textContent = 'Pause list';
     pause.setAttribute('aria-pressed', 'false');
     pause.addEventListener('click', () => {
       this.inspectPaused = !this.inspectPaused;
-      pause.textContent = this.inspectPaused ? 'Resume' : 'Pause';
+      pause.textContent = this.inspectPaused ? 'Update list' : 'Pause list';
       pause.setAttribute('aria-pressed', String(this.inspectPaused));
     });
     const reset = document.createElement('button');
     reset.type = 'button';
     reset.className = 'stims-editor__inspect-btn';
-    reset.textContent = 'Reset';
-    reset.title = 'Clear min/max and history';
+    reset.textContent = 'Clear min/max';
+    reset.title = 'Forget the min/max ranges and sparklines collected so far';
     reset.addEventListener('click', () => {
       this.variableHistory.reset();
       this.paintInspect(true);
@@ -129,8 +131,9 @@ export class InspectPane {
     const freeze = document.createElement('button');
     freeze.type = 'button';
     freeze.className = 'stims-editor__inspect-btn';
-    freeze.textContent = 'Freeze';
-    freeze.title = 'Hold the visuals on this frame';
+    freeze.textContent = 'Pause stage';
+    freeze.title =
+      'Hold the visuals on this frame, as Space does; the sound keeps playing';
     freeze.setAttribute('aria-pressed', 'false');
     freeze.addEventListener('click', () => {
       const wanted = !this.stageFrozen;
@@ -138,7 +141,7 @@ export class InspectPane {
       this.setStageFrozen(applied);
       freezeNote.textContent =
         wanted && !applied
-          ? 'Start audio to freeze \u2014 before that the stage is a preview.'
+          ? 'Start audio to pause the stage \u2014 before that it is a preview.'
           : '';
     });
     const step = document.createElement('button');
@@ -193,7 +196,7 @@ export class InspectPane {
   setStageFrozen(frozen: boolean) {
     this.stageFrozen = frozen;
     if (this.freezeButton) {
-      this.freezeButton.textContent = frozen ? 'Unfreeze' : 'Freeze';
+      this.freezeButton.textContent = frozen ? 'Resume stage' : 'Pause stage';
       this.freezeButton.setAttribute('aria-pressed', String(frozen));
     }
     if (this.stepButton) this.stepButton.disabled = !frozen;

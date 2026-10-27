@@ -325,7 +325,7 @@ describe('editor panel Textures tab', () => {
       updatedRow.querySelectorAll<HTMLButtonElement>(
         '.stims-editor__texture-btn',
       ),
-    ).find((btn) => btn.textContent === 'Reset');
+    ).find((btn) => btn.textContent === 'Remove image');
     expect(resetBtn).toBeTruthy();
 
     panel.dispose();
@@ -340,7 +340,7 @@ describe('editor panel Textures tab', () => {
     if (!row) return;
     let resetBtn = Array.from(
       row.querySelectorAll<HTMLButtonElement>('.stims-editor__texture-btn'),
-    ).find((btn) => btn.textContent === 'Reset');
+    ).find((btn) => btn.textContent === 'Remove image');
     expect(resetBtn).toBeTruthy();
 
     resetBtn?.click();
@@ -354,7 +354,7 @@ describe('editor panel Textures tab', () => {
     );
     resetBtn = Array.from(
       row.querySelectorAll<HTMLButtonElement>('.stims-editor__texture-btn'),
-    ).find((btn) => btn.textContent === 'Reset');
+    ).find((btn) => btn.textContent === 'Remove image');
     expect(resetBtn).toBeUndefined();
 
     panel.dispose();

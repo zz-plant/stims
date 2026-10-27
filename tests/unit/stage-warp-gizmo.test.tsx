@@ -149,7 +149,7 @@ describe('StageWarpGizmo', () => {
     expect(handle?.dataset.driven).toBe('true');
     // The marker is showing the literal in the draft, which is not where the
     // warp is actually centred — saying so is the whole point of the flag.
-    expect(handle?.textContent).toContain('eq');
+    expect(handle?.textContent).toContain('set by the code');
     expect(handle?.getAttribute('aria-label')).toContain('every frame');
 
     rendered.dispose();
@@ -160,7 +160,8 @@ describe('StageWarpGizmo', () => {
     const handle = handleOf(rendered.container);
 
     expect(handle?.dataset.driven).toBeUndefined();
-    expect(handle?.textContent).toContain('0.40, 0.60');
+    // Names itself: a bare coordinate pair did not say what it was.
+    expect(handle?.textContent).toBe('Warp center 0.40, 0.60');
 
     rendered.dispose();
   });

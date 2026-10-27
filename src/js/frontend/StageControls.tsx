@@ -24,9 +24,18 @@ import {
   togglePresetLock,
 } from '../core/preset-lock.ts';
 import {
+  getExternalDisplayState,
+  hasMultipleScreens,
+  subscribeExternalDisplay,
+} from '../core/services/external-display-service.ts';
+import {
   getProjectorState,
   subscribeProjector,
 } from '../core/services/projector-window-service.ts';
+import {
+  isRecordingActive,
+  subscribeRecordingActive,
+} from '../core/services/recording-state.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import type { UiIconName } from '../ui/icon-library.ts';
@@ -57,14 +66,25 @@ import {
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
 import { UiIcon } from './UiIcon.tsx';
 import {
+  cameraMenuLabel,
+  castMenuLabel,
   endWatchParty,
+  isCameraInputOn,
   nearbyPresetRequest,
   openRecordPanel,
+  panelToggleLabel,
+  playbackToggleLabel,
   playNearbyPreset,
   presentToExternalDisplayAction,
+  projectorMenuLabel,
+  recordMenuLabel,
+  refreshCameraInput,
+  SOUND_KEEPS_PLAYING,
   setTransition,
+  soundStopsOnPause,
   startAudioSource,
   startOrCopyWatchPartyAction,
+  subscribeCameraInput,
   toggleCameraAction,
   togglePanel,
   toggleProjectorAction,
@@ -170,10 +190,23 @@ const MenuHint = ({
   return <kbd className={styles.menuHint}>{hint}</kbd>;
 };
 
+/**
+ * "Tab" alone named nothing a first-time visitor could act on, and both Mic
+ * and Tab open a browser prompt; the accessible names say so, and the group
+ * hint says it for everyone.
+ */
 const AUDIO_SOURCE_OPTIONS = [
   { source: 'demo' as const, shortLabel: 'Demo', name: 'Demo audio' },
-  { source: 'microphone' as const, shortLabel: 'Mic', name: 'Microphone' },
-  { source: 'tab' as const, shortLabel: 'Tab', name: 'Tab or system audio' },
+  {
+    source: 'microphone' as const,
+    shortLabel: 'Mic',
+    name: 'Microphone (asks for microphone access)',
+  },
+  {
+    source: 'tab' as const,
+    shortLabel: 'Tab audio',
+    name: 'Tab or system audio (asks what to share)',
+  },
 ];
 
 /**
@@ -297,6 +330,24 @@ export function StageControls({
     syncSession.role === 'host' && syncSession.status !== 'idle'
       ? syncSession.room
       : null;
+  // The menu rows for these say which way a click goes, so they follow the
+  // services rather than their own clicks: a cast can end from the receiver,
+  // a recording from its panel, a camera from its device.
+  const casting = useSyncExternalStore(
+    subscribeExternalDisplay,
+    () => getExternalDisplayState().mode !== null,
+    () => false,
+  );
+  const recording = useSyncExternalStore(
+    subscribeRecordingActive,
+    isRecordingActive,
+    () => false,
+  );
+  const cameraOn = useSyncExternalStore(
+    subscribeCameraInput,
+    isCameraInputOn,
+    () => false,
+  );
 
   const [showMenu, setShowMenu] = useState(false);
   // A pointer resting on the bar, or focus inside it. Measured before this
@@ -331,6 +382,8 @@ export function StageControls({
     previousPreset: () => void engine.handlePreviousPreset(),
     nextPreset: () => void engine.handleShufflePreset(),
     togglePlayback: () => engine.handleTogglePlayback(),
+    playbackLabel: (paused) =>
+      playbackToggleLabel(engineSnapshot?.audioSource ?? null, paused),
   });
   const energyRef = useRef<HTMLSpanElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -372,7 +425,9 @@ export function StageControls({
   // could not start until one was picked. Start them here instead, while the
   // menu is being read. Idempotent, so reopening the menu costs nothing.
   useEffect(() => {
-    if (showMenu) prefetchMenuPanelChunks();
+    if (!showMenu) return;
+    prefetchMenuPanelChunks();
+    refreshCameraInput();
   }, [showMenu]);
 
   useEffect(() => {
@@ -503,8 +558,8 @@ export function StageControls({
     pulseHaptic(10);
     ui.setStatusMessage(
       togglePresetLock()
-        ? 'Staying on this preset. Auto-advance is paused.'
-        : 'Auto-advance on.',
+        ? 'Keeping this preset. Autoplay won’t change it.'
+        : 'Autoplay can move on again.',
     );
   }, [ui, signalActivity]);
 
@@ -551,7 +606,7 @@ export function StageControls({
   const presetItems: MenuItem[] = [
     {
       icon: 'grid' as const,
-      label: getPanelTitle('browse'),
+      label: panelToggleLabel('browse', panel === 'browse'),
       action: () => togglePanel(menuSurface, 'browse'),
       actionId: 'open-browse',
       active: panel === 'browse',
@@ -559,27 +614,27 @@ export function StageControls({
     },
     {
       icon: 'eye' as const,
-      label: getPanelTitle('finder'),
+      label: panelToggleLabel('finder', panel === 'finder'),
       actionId: 'find-similar',
       action: () => togglePanel(menuSurface, 'finder'),
       active: panel === 'finder',
     },
     {
       icon: 'nearby' as const,
-      label: 'Nearby preset',
+      label: 'Play a similar-looking preset',
       actionId: 'nearby-preset',
       action: () => handleNearby(),
     },
     {
       icon: 'pin' as const,
-      label: presetLocked ? 'Stop staying here' : 'Stay here',
+      label: presetLocked ? 'Let autoplay move on' : 'Keep this preset',
       actionId: 'toggle-preset-lock',
       action: () => handleToggleLock(),
       active: presetLocked,
     },
     {
       icon: 'bookmark' as const,
-      label: 'Queue this preset',
+      label: 'Queue this preset to play next',
       actionId: 'queue-add',
       action: () => queueCurrentPreset(),
     },
@@ -602,7 +657,7 @@ export function StageControls({
   const studioItems: MenuItem[] = [
     {
       icon: 'sparkles' as const,
-      label: getPanelTitle('synthesize'),
+      label: panelToggleLabel('synthesize', panel === 'synthesize'),
       actionId: 'open-generate',
       action: () => togglePanel(menuSurface, 'synthesize'),
       active: panel === 'synthesize',
@@ -610,21 +665,21 @@ export function StageControls({
     },
     {
       icon: 'wand' as const,
-      label: getPanelTitle('refine'),
+      label: panelToggleLabel('refine', panel === 'refine'),
       actionId: 'open-refine',
       action: () => togglePanel(menuSurface, 'refine'),
       active: panel === 'refine',
     },
     {
       icon: 'pencil' as const,
-      label: getPanelTitle('editor'),
+      label: panelToggleLabel('editor', panel === 'editor'),
       actionId: 'open-editor',
       action: () => togglePanel(menuSurface, 'editor'),
       active: panel === 'editor',
     },
     {
       icon: 'video' as const,
-      label: getPanelTitle('capture'),
+      label: recordMenuLabel({ panelOpen: panel === 'capture', recording }),
       actionId: 'open-record',
       action: () => openRecordPanel(menuSurface),
       active: panel === 'capture',
@@ -633,8 +688,8 @@ export function StageControls({
 
   const vjItems: MenuItem[] = [
     {
-      icon: 'sliders' as const,
-      label: 'Performance controls',
+      icon: 'gauge' as const,
+      label: 'Add live sliders…',
       actionId: 'perform-pin',
       action: () => openPerformPicker(),
     },
@@ -642,7 +697,10 @@ export function StageControls({
       ? [
           {
             icon: playbackPaused ? ('play' as const) : ('pause' as const),
-            label: playbackPaused ? 'Resume' : 'Pause',
+            label: playbackToggleLabel(
+              engineSnapshot.audioSource,
+              playbackPaused,
+            ),
             actionId: 'toggle-playback',
             action: () => engine.handleTogglePlayback(),
           } satisfies MenuItem,
@@ -690,8 +748,8 @@ export function StageControls({
         ]
       : []),
     {
-      icon: 'expand' as const,
-      label: projector.open ? 'Close projector window' : 'Projector window',
+      icon: 'external-link' as const,
+      label: projectorMenuLabel(projector.open, hasMultipleScreens()),
       actionId: 'toggle-projector',
       action: () =>
         toggleProjectorAction({
@@ -701,16 +759,18 @@ export function StageControls({
       active: projector.open,
     },
     {
-      icon: 'expand' as const,
-      label: 'Cast to a TV or Chromecast',
+      icon: 'arrow-right' as const,
+      label: castMenuLabel(casting),
       actionId: 'external-display',
       action: () => presentToExternalDisplayAction(ui.setStatusMessage),
+      active: casting,
     },
     {
       icon: 'image' as const,
-      label: 'Camera as video input',
+      label: cameraMenuLabel(cameraOn),
       actionId: 'toggle-camera',
       action: () => toggleCameraAction(ui.setStatusMessage),
+      active: cameraOn,
     },
   ];
 
@@ -720,7 +780,7 @@ export function StageControls({
   const workspaceItems: MenuItem[] = [
     {
       icon: 'sliders' as const,
-      label: getPanelTitle('settings'),
+      label: panelToggleLabel('settings', panel === 'settings'),
       actionId: 'open-settings',
       action: () => togglePanel(menuSurface, 'settings'),
       active: panel === 'settings',
@@ -729,7 +789,7 @@ export function StageControls({
     ...(onOpenPalette
       ? [
           {
-            icon: 'sparkles' as const,
+            icon: 'menu' as const,
             label: 'Command palette',
             actionId: 'open-palette',
             action: onOpenPalette,
@@ -745,13 +805,17 @@ export function StageControls({
       action: () => void ui.handleShowCurrentLink(),
     },
     {
-      icon: 'link' as const,
-      label: 'Create video link…',
+      // Not the link icon: Share link above copies a link, this publishes a
+      // clip and the preset's code where anyone with the address can see it.
+      icon: 'upload' as const,
+      label: 'Publish a public video link…',
       action: () => setVideoShareOpen(true),
     },
     {
       icon: 'pulse' as const,
-      label: hostingRoom ? 'Copy watch party link' : 'Start watch party',
+      label: hostingRoom
+        ? 'Copy watch party link'
+        : 'Start watch party (copies link)',
       actionId: 'watch-party',
       action: handleWatchParty,
     },
@@ -772,6 +836,14 @@ export function StageControls({
     const hint = shortcutHintFor(actionId, shortcutOverrides);
     return hint ? `${label} (${hint})` : label;
   };
+  const playbackLabel = playbackToggleLabel(
+    engineSnapshot?.audioSource ?? null,
+    playbackPaused,
+  );
+  const playbackHint =
+    !playbackPaused && !soundStopsOnPause(engineSnapshot?.audioSource ?? null)
+      ? `${withHint(playbackLabel, 'toggle-playback')}. ${SOUND_KEEPS_PLAYING}`
+      : withHint(playbackLabel, 'toggle-playback');
 
   const renderMenuItem = (item: MenuItem) => (
     <div key={item.label}>
@@ -860,8 +932,8 @@ export function StageControls({
             className={styles.navBtn}
             data-primary="true"
             data-action="previous-preset"
-            aria-label="Previous preset"
-            title={withHint('Previous', 'previous-preset')}
+            aria-label="Back to the last preset"
+            data-hint={withHint('Back to the last preset', 'previous-preset')}
             aria-keyshortcuts={ariaKeyShortcutsFor(
               'previous-preset',
               shortcutOverrides,
@@ -882,8 +954,11 @@ export function StageControls({
             type="button"
             className={styles.navBtn}
             data-action="nearby-preset"
-            aria-label="Play a preset that looks like this one"
-            title={withHint('Nearby', 'nearby-preset')}
+            aria-label="Play a similar-looking preset"
+            data-hint={withHint(
+              'Play a similar-looking preset',
+              'nearby-preset',
+            )}
             aria-keyshortcuts={ariaKeyShortcutsFor(
               'nearby-preset',
               shortcutOverrides,
@@ -900,8 +975,8 @@ export function StageControls({
             className={styles.navBtn}
             data-primary="true"
             data-action="next-preset"
-            aria-label="Shuffle to a random preset"
-            title={withHint('Surprise me', 'next-preset')}
+            aria-label="Play a random preset"
+            data-hint={withHint('Play a random preset', 'next-preset')}
             aria-keyshortcuts={ariaKeyShortcutsFor(
               'next-preset',
               shortcutOverrides,
@@ -1001,7 +1076,7 @@ export function StageControls({
               data-saved={String(presetSaved)}
               aria-pressed={presetSaved}
               aria-label={presetSaved ? 'Remove from saved' : 'Save preset'}
-              title={withHint(
+              data-hint={withHint(
                 presetSaved ? 'Remove from saved' : 'Save preset',
                 'save-preset',
               )}
@@ -1030,11 +1105,8 @@ export function StageControls({
               className={styles.navBtn}
               data-action="toggle-playback"
               data-paused={String(playbackPaused)}
-              aria-label={playbackPaused ? 'Resume' : 'Pause'}
-              title={withHint(
-                playbackPaused ? 'Resume' : 'Pause',
-                'toggle-playback',
-              )}
+              aria-label={playbackLabel}
+              data-hint={playbackHint}
               aria-keyshortcuts={ariaKeyShortcutsFor(
                 'toggle-playback',
                 shortcutOverrides,
@@ -1058,7 +1130,7 @@ export function StageControls({
             data-action="toggle-fullscreen"
             aria-pressed={isFullscreen}
             aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
-            title={withHint(
+            data-hint={withHint(
               isFullscreen ? 'Exit full screen' : 'Full screen',
               'toggle-fullscreen',
             )}
@@ -1085,7 +1157,7 @@ export function StageControls({
             aria-expanded={showMenu}
             aria-haspopup="menu"
             aria-label="More actions"
-            title="More actions"
+            data-hint="More actions"
             onClick={() => {
               signalActivity();
               pulseHaptic(10);
@@ -1150,6 +1222,11 @@ export function StageControls({
                   </span>
                 )}
               </span>
+              {/* A tap here mid-set changes the saved default that Settings
+                  shows too, not only the next switch. */}
+              <span className={styles.menuGroupHint} id="menu-transition-hint">
+                How the next preset arrives. Saved as your default.
+              </span>
               <div className={styles.menuGroupOptions}>
                 {TRANSITION_STEPS.map((step) => {
                   const checked = isTransitionStep(
@@ -1164,6 +1241,7 @@ export function StageControls({
                       role="menuitemradio"
                       aria-checked={checked}
                       aria-label={`Transition: ${describeTransitionStep(step)}`}
+                      aria-describedby="menu-transition-hint"
                       className={styles.menuOption}
                       data-action={transitionActionId(step)}
                       data-active={String(checked)}
@@ -1194,6 +1272,10 @@ export function StageControls({
             >
               <span className={styles.menuGroupLabel} aria-hidden="true">
                 Audio source
+              </span>
+              <span className={styles.menuGroupHint} aria-hidden="true">
+                Replaces the current sound. Mic and Tab audio ask the browser
+                for permission.
               </span>
               <div className={styles.menuGroupOptions}>
                 {AUDIO_SOURCE_OPTIONS.map((option) => (

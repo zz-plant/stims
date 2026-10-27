@@ -544,13 +544,17 @@ export function PresetFinderPanel({
               style={{ marginBottom: '8px' }}
               onClick={() => void matchWithClefOmni()}
               disabled={loading || matchingOmni || soundUnavailable}
+              // "Clef Omni" named a model nobody had been introduced to. It
+              // sends the top results' titles and tags (and a generated test
+              // tone, not your audio) to that model, which reorders them.
+              title="Sends the top results' titles and tags to Clef Omni, an AI model, which moves its pick to the top. Your audio is not sent."
             >
               <AIBadge />
               {matchingOmni
-                ? 'Matching with Clef Omni…'
+                ? 'Asking the AI model…'
                 : omniMatchId
-                  ? 'Matched with Clef Omni'
-                  : 'Pick best with Clef Omni'}
+                  ? 'AI pick moved to the top'
+                  : 'Ask an AI model for the best match'}
             </button>
           ) : null}
 

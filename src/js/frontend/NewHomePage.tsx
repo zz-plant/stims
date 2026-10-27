@@ -52,6 +52,19 @@ const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
  * whatever it resumed with, so `enableDemoAudio()` on a returning visitor's
  * page asked for their microphone.
  */
+/**
+ * What pressing Resume asks of the browser. "Resume" reads as carrying on,
+ * but a microphone or a screen share is granted per visit, so the button
+ * starts the permission prompt or the share picker again.
+ */
+const RESUME_SOURCE_NOTE: Record<ResumableAudioSource, string> = {
+  demo: 'The demo plays a built-in synth loop, not a song, and asks for no permissions.',
+  microphone: 'Your browser asks for the microphone again.',
+  tab: 'Your browser opens its screen-share picker again; tick Share audio.',
+  youtube:
+    'Your browser opens its screen-share picker for this tab, to hear the video.',
+};
+
 const RESUME_SOURCE_HOOK: Partial<Record<ResumableAudioSource, string>> = {
   demo: 'data-demo-audio-btn',
   microphone: 'data-mic-audio-btn',
@@ -319,6 +332,15 @@ export function NewHomePage({
         }
       : null;
 
+  // The preset running behind the page, named on the Edit button so it is
+  // clear what "edit" opens.
+  const attractTitle =
+    engine.attractPreviewLive && engine.selectedPreset?.title
+      ? splitPresetDisplay(
+          engine.selectedPreset.title,
+          engine.selectedPreset.author,
+        ).title
+      : null;
   return (
     <section
       className="stims-shell__launch stims-shell__launch--minimal"
@@ -344,16 +366,14 @@ export function NewHomePage({
           onBrowsePresets={handleBrowsePresets}
           onEditVisual={handleEditVisual}
           showEditVisual={engine.attractPreviewLive}
+          editTitle={attractTitle}
         />
         {/* Sits under the button it describes. As the last sentence of a
             paragraph below both buttons it arrived after the choice it was
             meant to inform. */}
-        {resume ? null : (
-          <p className="stims-shell__launch-note">
-            The demo plays a built-in synth loop, not a song, and asks for no
-            permissions.
-          </p>
-        )}
+        <p className="stims-shell__launch-note">
+          {RESUME_SOURCE_NOTE[resume?.session.source ?? 'demo']}
+        </p>
         <AudioSources resume={resume} />
         {resume || deepLink ? null : (
           <>
@@ -571,6 +591,8 @@ interface ActionsProps {
   onBrowsePresets: () => void;
   onEditVisual: () => void;
   showEditVisual: boolean;
+  /** The running preset's display title, when one is known. */
+  editTitle: string | null;
 }
 
 function Actions({
@@ -582,6 +604,7 @@ function Actions({
   onBrowsePresets,
   onEditVisual,
   showEditVisual,
+  editTitle,
 }: ActionsProps) {
   const engineStatusId = useId();
   const ctaRef = useRef<HTMLButtonElement>(null);
@@ -731,7 +754,7 @@ function Actions({
           data-action="open-editor"
           onClick={onEditVisual}
         >
-          Edit this one
+          {editTitle ? `Edit ${editTitle}` : 'Edit the preset behind this page'}
         </button>
       ) : null}
       {/* Demo audio is not the visitor's own audio, so it does not belong
@@ -812,7 +835,7 @@ function LaunchStarterShowcase({
           id="starter-showcase-heading"
           className="stims-shell__section-label"
         >
-          Explore iconic looks
+          Play an iconic look
         </h2>
       </div>
       <div className="stims-shell__launch-showcase-grid">

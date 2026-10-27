@@ -21,7 +21,7 @@ export class ReferencePane {
     const hint = document.createElement('p');
     hint.className = 'stims-editor__hint';
     hint.textContent =
-      'Search functions and variables by name or by what they do. Click one to insert it at the cursor.';
+      'Search functions and variables by name or by what they do. Click one to insert it at the cursor, in place of any selected code.';
     const search = document.createElement('input');
     search.type = 'search';
     search.className = 'stims-editor__ref-search';
@@ -47,6 +47,8 @@ export class ReferencePane {
           row.className = 'stims-editor__ref-row';
           row.setAttribute('role', 'listitem');
           row.dataset.ref = entry.name;
+          // The rows read as documentation; say that a click edits the code.
+          row.title = `Insert ${entry.insertText} at the cursor`;
           const head = document.createElement('span');
           head.className = 'stims-editor__ref-head';
           const name = document.createElement('code');

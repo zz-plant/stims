@@ -21,6 +21,8 @@ export type PopoutTransport = {
   previousPreset: () => void;
   nextPreset: () => void;
   togglePlayback: () => void;
+  /** Name of the play/pause button, which depends on the audio source. */
+  playbackLabel?: (paused: boolean) => string;
 };
 
 /**
@@ -68,6 +70,9 @@ export function usePictureInPicture(
             nextPreset: () => transportRef.current?.nextPreset(),
             togglePlayback: () => transportRef.current?.togglePlayback(),
             isPaused: () => transportRef.current?.paused ?? false,
+            playbackLabel: (paused) =>
+              transportRef.current?.playbackLabel?.(paused) ??
+              (paused ? 'Resume' : 'Pause'),
           },
         })
       : createPictureInPictureController({ getCanvas, getStage });

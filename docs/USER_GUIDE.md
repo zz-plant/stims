@@ -32,7 +32,7 @@ A moving stage does not prove that external audio reached it. Check the audio st
    - **Insert**: technique recipes, each added to the block it belongs in.
    - **Reference**: every built-in function and variable, searchable, inserted at the cursor.
    - **Assist**: AI refinement, when a provider is configured (see below).
-   - **Inspect**: live values of the preset's variables, with Freeze and Step for the stage.
+   - **Inspect**: live values of the preset's variables, with Pause stage and Step for the stage.
    - **Shader**: the warp and composite shaders, their compile errors, and the GLSL the GPU runs.
    - **Compat**: what will not run as written here, and what will not carry over to MilkDrop 2.
    - **Textures**: the image files the preset samples.

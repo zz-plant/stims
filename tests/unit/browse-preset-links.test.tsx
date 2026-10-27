@@ -74,7 +74,11 @@ afterEach(() => {
   localStorage.removeItem('stims:browse-view');
 });
 
-/** Mounts Browse and records every preset it opens, by either path. */
+/**
+ * Mounts Browse during playback and records every preset it opens, by either
+ * path. Before any audio has started a card starts the demo instead
+ * (predictable-controls.test.tsx).
+ */
 function mount(
   sessionHistory: Array<{ presetId: string; title: string; at: number }> = [],
 ) {
@@ -91,6 +95,7 @@ function mount(
         catalog,
         filteredCatalog: catalog,
         collectionTags: getCollectionTags(catalog),
+        audioActive: true,
         handlePresetSelection: (id: string) => {
           opened.push(id);
         },

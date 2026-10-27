@@ -172,7 +172,11 @@ describe('document picture-in-picture', () => {
     const labels = [...pip.pipDocument.querySelectorAll('button')].map((b) =>
       b.getAttribute('aria-label'),
     );
-    expect(labels).toEqual(['Previous preset', 'Pause', 'Next preset']);
+    expect(labels).toEqual([
+      'Previous preset',
+      'Pause',
+      'Play a random preset',
+    ]);
     // Mirrored, never moved.
     expect(pip.pipDocument.getElementById('stage')?.tagName).toBe('VIDEO');
   });
@@ -187,12 +191,35 @@ describe('document picture-in-picture', () => {
     });
     await controller.enter();
 
-    for (const label of ['Previous preset', 'Next preset', 'Pause']) {
+    for (const label of ['Previous preset', 'Play a random preset', 'Pause']) {
       pip.pipDocument
         .querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)
         ?.click();
     }
     expect(calls).toEqual(['previous', 'next', 'toggle']);
+  });
+
+  test('names the play/pause button the way the shell asks', async () => {
+    const pip = install();
+    const { actions, setPaused } = buildActions();
+    const controller = createDocumentPictureInPictureController({
+      getCanvas: () => fakeCanvas(),
+      getStage: () => null,
+      // A microphone keeps sounding while the picture is paused.
+      actions: {
+        ...actions,
+        playbackLabel: (paused) =>
+          paused ? 'Resume visuals' : 'Pause visuals',
+      },
+    });
+    await controller.enter();
+    const button = () =>
+      pip.pipDocument.querySelector('[data-action="playback"]');
+    controller.syncPlaybackState();
+    expect(button()?.getAttribute('aria-label')).toBe('Pause visuals');
+    setPaused(true);
+    controller.syncPlaybackState();
+    expect(button()?.getAttribute('aria-label')).toBe('Resume visuals');
   });
 
   test('tracks playback state changed from either window', async () => {

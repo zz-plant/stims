@@ -43,6 +43,12 @@ export type DocumentPictureInPictureActions = {
   togglePlayback: () => void;
   /** Drives the play/pause button's label and icon. */
   isPaused: () => boolean;
+  /**
+   * The play/pause button's name for a paused state. The shell knows the
+   * audio source and so whether pausing stops the sound or only the
+   * picture; without it the button falls back to Pause and Resume.
+   */
+  playbackLabel?: (paused: boolean) => string;
 };
 
 export type DocumentPictureInPictureEnterResult =
@@ -100,7 +106,7 @@ const CONTROL_BUTTONS: ReadonlyArray<{
 }> = [
   { id: 'previous', label: 'Previous preset', glyph: '⏮' },
   { id: 'playback', label: 'Pause', glyph: '⏸' },
-  { id: 'next', label: 'Next preset', glyph: '⏭' },
+  { id: 'next', label: 'Play a random preset', glyph: '⏭' },
 ];
 
 function buildMarkup(theme: string): string {
@@ -240,7 +246,8 @@ export function createDocumentPictureInPictureController({
     if (!button) return;
     const paused = actions.isPaused();
     button.textContent = paused ? '▶' : '⏸';
-    const label = paused ? 'Resume' : 'Pause';
+    const label =
+      actions.playbackLabel?.(paused) ?? (paused ? 'Resume' : 'Pause');
     button.setAttribute('aria-label', label);
     button.setAttribute('title', label);
   };

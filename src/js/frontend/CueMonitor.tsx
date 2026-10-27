@@ -16,6 +16,7 @@ import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useBottomOverlaySignal } from './hooks/use-escape-handler.ts';
 import { useLivePresetTile } from './hooks/use-live-preset-tile.ts';
+import { useTwoStepConfirm } from './hooks/use-two-step-confirm.ts';
 import { buildPresetSetShareUrl } from './preset-sets.ts';
 import { dismissStageHint, useStageHintDismissed } from './stage-hint-cards.ts';
 import { startQueuedCrossfade } from './workspace-actions.ts';
@@ -178,6 +179,10 @@ export function CueMonitor() {
     if (next) queue.remove(next.id);
   }, [next, queue]);
 
+  // Clearing empties the whole queue, the preset showing here included, and
+  // there is no undo: the first press asks, the second clears.
+  const confirmClear = useTwoStepConfirm(() => queue.clear());
+
   // Starting a fade pops the entry, so taking the last queued preset would
   // otherwise unmount this panel — and the fader with it — halfway through
   // the gesture. An in-flight fade keeps the panel alive on its own.
@@ -195,20 +200,22 @@ export function CueMonitor() {
     // Nor while the Perform card is still up in the other corner.
     if (!showsHint) return null;
     return (
-      <aside className={styles.cue} aria-label="Cue monitor">
+      <aside className={styles.cue} aria-label="Up next">
         <div className={styles.header}>
-          <span className={styles.label}>Cue deck</span>
+          <span className={styles.label}>Up next</span>
+          {/* Words, not a ×: this hides the hint for good, where a × reads
+              as closing it for now. */}
           <button
             type="button"
             className={styles.dismiss}
             onClick={() => dismissStageHint('cue')}
-            aria-label="Dismiss cue deck hint"
           >
-            ×
+            Don’t show again
           </button>
         </div>
         <p className={styles.emptyHint}>
-          Queue presets to preview the next one here before it hits the stage.
+          Queue presets from Browse or the ☰ menu to see the next one here
+          before it plays.
         </p>
       </aside>
     );
@@ -229,10 +236,10 @@ export function CueMonitor() {
         : '';
 
   return (
-    <aside className={styles.cue} aria-label="Cue monitor">
+    <aside className={styles.cue} aria-label="Up next">
       <div className={styles.header}>
         <span className={styles.label}>
-          {fading ? 'Fading' : arming ? 'Cueing' : 'Next'}
+          {fading ? 'Crossfading' : arming ? 'Getting ready' : 'Up next'}
         </span>
         {/* The tempo readout lives here rather than on the transport: this is
             the surface you are looking at while deciding when to take. */}
@@ -254,13 +261,17 @@ export function CueMonitor() {
       ) : null}
       {next ? (
         <div className={styles.actions}>
+          {/* Named by outcome. "Take" was broadcast jargon, and "Skip" in a
+              player means "go to the next one"; here it only drops this
+              entry from the queue. */}
           <button
             type="button"
             className={styles.take}
             onClick={take}
             data-action="queue-take"
+            aria-describedby="cue-take-hint"
           >
-            Take
+            Play now
           </button>
           <button
             type="button"
@@ -268,7 +279,7 @@ export function CueMonitor() {
             onClick={skip}
             data-action="queue-skip"
           >
-            Skip
+            Remove from queue
           </button>
         </div>
       ) : null}
@@ -290,14 +301,21 @@ export function CueMonitor() {
           />
         </label>
       ) : next ? (
-        <button
-          type="button"
-          className={styles.skip}
-          onClick={startFade}
-          data-action="queue-fade"
-        >
-          Fade by hand
-        </button>
+        <>
+          <button
+            type="button"
+            className={styles.skip}
+            onClick={startFade}
+            data-action="queue-fade"
+            aria-describedby="cue-take-hint"
+          >
+            Play with a crossfade slider
+          </button>
+          <p className={styles.remaining} id="cue-take-hint">
+            Play now switches with your transition setting. The slider lets you
+            drag between the two presets yourself.
+          </p>
+        </>
       ) : null}
       {remaining > 0 ? (
         <p className={styles.remaining}>
@@ -325,17 +343,20 @@ export function CueMonitor() {
               );
             }}
             data-action="queue-share-set"
-            title="Share this set as a link"
           >
-            Share set
+            Copy link to this set
           </button>
           <button
             type="button"
             className={styles.clear}
-            onClick={queue.clear}
+            data-armed={confirmClear.armed ? 'true' : undefined}
+            onClick={confirmClear.press}
+            onBlur={confirmClear.disarm}
             data-action="queue-clear"
           >
-            Clear
+            {confirmClear.armed
+              ? `Clear all ${queue.entries.length} queued`
+              : 'Clear queue'}
           </button>
         </p>
       ) : null}

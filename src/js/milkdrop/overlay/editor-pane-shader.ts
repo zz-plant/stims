@@ -176,6 +176,7 @@ export class ShaderPane {
     toggle.type = 'button';
     toggle.className = 'stims-editor__btn stims-editor__outline-glsl';
     toggle.textContent = 'Show GLSL';
+    toggle.title = 'Show the GLSL code the GPU runs for this shader';
     const detail = document.createElement('div');
     detail.className = 'stims-editor__shader-translation';
     const note = document.createElement('p');

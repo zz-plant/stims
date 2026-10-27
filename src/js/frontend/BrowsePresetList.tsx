@@ -21,6 +21,7 @@ import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
+import { QUEUE_ADD_HINT, QUEUE_REMOVE_HINT } from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
 import { PresetSignals } from './PresetSignals.tsx';
 import { openPresetInPlace, presetPageHref } from './preset-link.ts';
@@ -375,8 +376,8 @@ export function BrowsePresetList({
                 }
                 title={
                   queuedPresetIdSet.has(entry.id)
-                    ? 'Remove from queue'
-                    : 'Add to queue'
+                    ? QUEUE_REMOVE_HINT
+                    : QUEUE_ADD_HINT
                 }
                 aria-pressed={queuedPresetIdSet.has(entry.id)}
                 onClick={() => onToggleQueued(entry)}

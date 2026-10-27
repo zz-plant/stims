@@ -428,7 +428,9 @@ describe('workspace first-fold launch hierarchy', () => {
       // The word it does, carrying the promise's "one", beside the ranked
       // pair — same shape as Browse presets, so the row reads as three
       // pointer-reachable choices.
-      expect(edit?.textContent).toBe('Edit this one');
+      // Names what it opens: with no preset known yet, the one behind the
+      // page.
+      expect(edit?.textContent).toBe('Edit the preset behind this page');
       expect(edit?.className).toBe('stims-shell__launch-secondary');
       expect(
         rendered.container.querySelector('.stims-shell__launch-cta'),

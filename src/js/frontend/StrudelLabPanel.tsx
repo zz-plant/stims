@@ -199,19 +199,24 @@ export function StrudelLabPanel() {
               type="button"
               className={styles.closeButton}
               onClick={() => setOpen(false)}
-              aria-label="Collapse Strudel lab"
+              aria-label="Hide the lab; the pattern keeps playing"
+              title="Hide the lab; the pattern keeps playing"
             >
               ×
             </button>
           </div>
         </header>
 
+        {/* A chip swaps out the whole pattern; the lead-in says so before
+            the click instead of after. */}
         <div className={styles.examples}>
+          <span className={styles.status}>Replace the pattern with:</span>
           {EXAMPLES.map((example) => (
             <button
               key={example.label}
               type="button"
               className={styles.exampleChip}
+              aria-label={`Replace the pattern with ${example.label}`}
               onClick={() => setCode(example.code)}
             >
               {example.label}

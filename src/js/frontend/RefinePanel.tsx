@@ -115,13 +115,18 @@ export function RefinePanel() {
         );
         return;
       }
+      // The fallback is named in the proposal's own heading: it used to look
+      // like the AI's answer until after Apply, and the note said "applied"
+      // about a change still waiting for review.
       propose(
-        refinement.method === 'ai' ? 'AI refinement' : refinement.label,
+        refinement.method === 'ai'
+          ? 'AI refinement'
+          : `${refinement.label} restyle, not from AI`,
         currentSource,
         refinement.milkSource,
         refinement.method === 'ai'
           ? `Refined: ${refinement.title || 'untitled preset'}`
-          : `AI is unavailable, so the ${refinement.label} restyle was applied.`,
+          : `AI is unavailable, so this is the ${refinement.label} restyle, made in this browser. Review it before applying.`,
       );
     };
     try {
@@ -166,7 +171,9 @@ export function RefinePanel() {
       // 2. Local fallback: a summary read from the equations themselves
       const mathAnalysis = analyzePresetMath(currentSource);
       setAnalysis(mathAnalysis);
-      setResponse(mathAnalysis.summary);
+      setResponse(
+        `The AI service did not answer, so this comes from reading the equations in this browser. ${mathAnalysis.summary}`,
+      );
     }
     // Cleanup after the catch rather than in a `finally` clause — the catch
     // is itself the recovery path, so this runs on both branches exactly as
@@ -235,7 +242,7 @@ export function RefinePanel() {
           onClick={() => void handleExplain()}
           disabled={state !== 'idle' || !currentSource}
         >
-          {state === 'explaining' ? 'Reading…' : 'Explain'}
+          {state === 'explaining' ? 'Reading…' : 'Explain with AI'}
         </button>
       </div>
 
