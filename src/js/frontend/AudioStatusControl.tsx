@@ -335,7 +335,9 @@ export function AudioStatusControl({
                     type="button"
                     role="menuitem"
                     className={styles.item}
-                    data-action="previous-track"
+                    // The palette's ids for the same steps, so a track change
+                    // reads as one action whichever surface ran it.
+                    data-action="prev-audio-track"
                     onClick={() => run(() => void previousFileTrack())}
                   >
                     Previous track
@@ -344,7 +346,7 @@ export function AudioStatusControl({
                     type="button"
                     role="menuitem"
                     className={styles.item}
-                    data-action="next-track"
+                    data-action="next-audio-track"
                     onClick={() => run(() => void nextFileTrack())}
                   >
                     Next track

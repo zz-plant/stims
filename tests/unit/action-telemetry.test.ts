@@ -7,6 +7,7 @@ import {
   resetActionTelemetryForTests,
 } from '../../src/js/core/services/action-telemetry.ts';
 import { resetTelemetryContextForTests } from '../../src/js/core/services/telemetry-context.ts';
+import { useCommandPaletteHotkey } from '../../src/js/frontend/CommandPalette.tsx';
 import { useKeyboardShortcuts } from '../../src/js/frontend/hooks/useKeyboardShortcuts.ts';
 
 /**
@@ -178,6 +179,35 @@ describe('keyboard shortcuts', () => {
     press('§');
     await flush();
     expect(sent()).toEqual(['action:open-browse@key']);
+    act(() => root.unmount());
+  });
+});
+
+describe('the command palette chord', () => {
+  function Palette({ onOpen }: { onOpen: () => void }) {
+    useCommandPaletteHotkey(onOpen);
+    return null;
+  }
+
+  test('opening the palette from the keyboard is noted, from a field too', async () => {
+    const host = document.createElement('div');
+    const field = document.createElement('input');
+    document.body.append(host, field);
+    const root = createRoot(host);
+    let opened = 0;
+    act(() => root.render(createElement(Palette, { onOpen: () => opened++ })));
+    field.dispatchEvent(
+      new window.KeyboardEvent('keydown', {
+        key: 'k',
+        metaKey: true,
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    await flush();
+    expect(opened).toBe(1);
+    expect(sent()).toEqual(['action:open-palette@key']);
     act(() => root.unmount());
   });
 });

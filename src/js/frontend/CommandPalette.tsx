@@ -385,6 +385,10 @@ export function useCommandPaletteHotkey(onOpen: () => void) {
       // the help dialog lists it rather than it being folded into this file.
       if (eventMatchesShortcut(event, 'palette', readShortcutOverrides())) {
         event.preventDefault();
+        // Noted here, not in useKeyboardShortcuts: that hook leaves this
+        // chord alone and ignores keys typed into fields, where this one
+        // still opens the palette.
+        noteActionUse('open-palette', 'key');
         onOpenRef.current();
       }
     };
