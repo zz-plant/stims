@@ -45,7 +45,7 @@ only dev dependencies):
 ```bash
 bun run check:packages            # typecheck + test every package
 bun --cwd packages/flash-guard test
-bun --cwd packages/flash-guard run build   # emits dist/ (gitignored)
+bun --cwd=packages/flash-guard run build   # emits dist/ (gitignored)
 ```
 
 Run `bun test` from inside a package directory, not the root: each package has
@@ -123,8 +123,8 @@ share one stylesheet (`site/styles.css`, kept identical in each package) and
 need no build tooling beyond Bun.
 
 ```bash
-bun --cwd packages/flash-guard run site:build     # one site, into packages/flash-guard/_site/
-bun --cwd packages/flash-guard run site:preview   # ...served on http://localhost:8787
+bun --cwd=packages/flash-guard run site:build     # one site, into packages/flash-guard/_site/
+bun --cwd=packages/flash-guard run site:preview   # ...served on http://localhost:8787
 bun run site:packages                             # all four plus an index, into ./_site/
 bun run site:packages -- --serve                  # ...served on http://localhost:8788
 ```

@@ -236,7 +236,7 @@ export function PresetGrid({
   onToggleFavorite,
   queuedPresetIds,
   onToggleQueued,
-  initialScrollTop = 0,
+  readInitialScrollTop,
   onScrollTopChange,
   filterEpoch = 0,
   showQuickSelectKeys,
@@ -253,8 +253,10 @@ export function PresetGrid({
   onToggleFavorite: (entry: PresetCatalogEntry) => void;
   queuedPresetIds: readonly string[];
   onToggleQueued: (entry: PresetCatalogEntry) => void;
-  /** Offset this view was left at, restored on mount. */
-  initialScrollTop?: number;
+  /** The offset this view was left at, read once on mount. A reader,
+   * not a value: the panel keeps it in module scope, and a compiled parent
+   * would hand a remounted grid the value it cached at an earlier render. */
+  readInitialScrollTop?: () => number;
   onScrollTopChange?: (top: number) => void;
   /** Bumped by the panel when filters change, so the grid returns to the
    * top in step with the list instead of holding an offset into a result
@@ -354,12 +356,13 @@ export function PresetGrid({
   // Restore where this view was left. Deferred past the commit for the same
   // reason the keyboard jumps are: a scroll event landing mid-render
   // collides with the virtualizer's flushSync and wedges it.
-  // Mount only: later `initialScrollTop` values are this component
-  // reporting its own scrolling back up, and re-applying them would fight
-  // the user mid-scroll.
+  // Mount only: later offsets are this component reporting its own
+  // scrolling back up, and re-applying them would fight the user
+  // mid-scroll.
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only restore
   useEffect(() => {
     const element = scrollRef.current;
+    const initialScrollTop = readInitialScrollTop?.() ?? 0;
     if (!element || initialScrollTop <= 0) return;
     const timer = window.setTimeout(() => {
       element.scrollTop = initialScrollTop;

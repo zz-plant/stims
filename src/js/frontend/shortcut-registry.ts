@@ -408,12 +408,34 @@ export function getShortcutKeys(
 // parsed overrides are cached; writes go through writeShortcutOverrides
 // below, and cross-tab edits invalidate via the storage event.
 let overridesCache: ShortcutOverrides | null = null;
+const overridesListeners = new Set<() => void>();
+function notifyOverridesListeners() {
+  for (const listener of overridesListeners) listener();
+}
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
     if (event.key === SHORTCUT_STORAGE_KEY || event.key === null) {
       overridesCache = null;
+      notifyOverridesListeners();
     }
   });
+}
+
+/**
+ * Subscribes to rebinds, for `useSyncExternalStore` with
+ * `readShortcutOverrides` as the snapshot (it returns the same object until
+ * the bindings change).
+ *
+ * A component that shows hints should read the overrides this way and pass
+ * them to `shortcutHintFor` / `ariaKeyShortcutsFor`, not lean on their
+ * defaulted argument: React Compiler memoizes a call whose arguments never
+ * change, so a defaulted read is made once and a rebind never shows.
+ */
+export function subscribeShortcutOverrides(listener: () => void) {
+  overridesListeners.add(listener);
+  return () => {
+    overridesListeners.delete(listener);
+  };
 }
 
 export function readShortcutOverrides(): ShortcutOverrides {
@@ -439,6 +461,7 @@ export function writeShortcutOverrides(overrides: ShortcutOverrides): boolean {
     return false;
   }
   overridesCache = overrides;
+  notifyOverridesListeners();
   return true;
 }
 

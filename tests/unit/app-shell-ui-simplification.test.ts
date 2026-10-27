@@ -114,11 +114,11 @@ describe('Workspace shell UI simplification regression', () => {
     // button; both views are virtualized now, so the batch constant, the
     // `visible` slice and that button are all gone. The contract that
     // replaced them is that the result set is windowed rather than paged —
-    // asserted properly against rendered output in preset-grid.test.tsx,
-    // and guarded here only against the paging UI creeping back.
+    // asserted properly against rendered output in preset-grid.test.tsx and
+    // browse-list-view.test.tsx, and guarded here only against the paging UI
+    // creeping back.
     expect(browseSource).not.toContain('BATCH_SIZE');
     expect(browseSource).not.toContain('hiddenCount');
-    expect(browseSource).toContain('useVirtualizer');
     expect(browseSource).toContain("import { UiIcon } from './UiIcon.tsx';");
     expect(browseSource).toContain('aria-label="Play a random preset"');
   });

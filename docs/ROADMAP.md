@@ -71,7 +71,7 @@ These combine implementation work with verification on a real GPU or a second di
 ### Verify what ships
 
 Each of these is built and needs evidence from a real browser, device or registry before it is claimed.
-- **Shared remixes across browsers** ([#1408](https://github.com/zz-plant/stims/issues/1408)). #1415 made the shared-draft test deterministic and #1416 fixed the startup-cover scrollbar handoff; the cross-browser reproduction and the in-app black stage are still open.
+- **Shared remixes across browsers** ([#1408](https://github.com/zz-plant/stims/issues/1408)). #1415 made the shared-draft test deterministic and #1416 fixed the startup-cover scrollbar handoff. The [2026-10-27 run](./QA_PLAN.md#2026-10-27-shared-remix-flow-1408) restored the shared draft in Chromium and WebKit on both backends and traced the black stage to the flash governor dimming a preset measured high; Firefox, Safari and the Codex in-app browser are still unverified.
 - **The OBS recipe** ([#1409](https://github.com/zz-plant/stims/issues/1409)), validated with native recordings and real audio routing.
 - **The published packages** ([#1410](https://github.com/zz-plant/stims/issues/1410)). `eel-conformance`, `flash-guard` and `milkdrop-toolchain` reached npm at 0.1.0 on 2026-10-13, and `audio-reactive` stays off it (#1446). The issue stays open until each is checked from a clean consumer.
 
