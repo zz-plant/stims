@@ -230,10 +230,16 @@ export function StageControls({
   isFullscreen,
   onToggleFullscreen,
   onOpenPalette,
+  onOpenShortcuts,
+  onOpenSets,
 }: {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   onOpenPalette?: () => void;
+  /** The ? dialog: every key and every stage gesture. */
+  onOpenShortcuts?: () => void;
+  /** Saved preset sets: save the queue under a name, load or share one. */
+  onOpenSets?: () => void;
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -639,6 +645,18 @@ export function StageControls({
       actionId: 'queue-add',
       action: () => queueCurrentPreset(),
     },
+    // The setlist this section is named for. Saving and loading sets was a
+    // palette-only command, so nothing on screen said they existed.
+    ...(onOpenSets
+      ? [
+          {
+            icon: 'music' as const,
+            label: 'Preset sets…',
+            actionId: 'queue-manage-sets',
+            action: onOpenSets,
+          } satisfies MenuItem,
+        ]
+      : []),
     // Listed here as well as on the bar: on phones the bar drops the star to
     // give the title room to be read, and press-and-hold on the stage is a
     // gesture nobody can see. This row is the one place it is always named.
@@ -794,6 +812,19 @@ export function StageControls({
             label: 'Command palette',
             actionId: 'open-palette',
             action: onOpenPalette,
+          } satisfies MenuItem,
+        ]
+      : []),
+    // The swipe-up, hold-to-save and Shift+scroll gestures are listed only
+    // in this dialog. On a phone, with no ? key, it sat three levels down
+    // (Settings, its fourth tab, a button).
+    ...(onOpenShortcuts
+      ? [
+          {
+            icon: 'info' as const,
+            label: 'Shortcuts and gestures',
+            actionId: 'open-shortcuts',
+            action: onOpenShortcuts,
           } satisfies MenuItem,
         ]
       : []),
@@ -1201,7 +1232,11 @@ export function StageControls({
               at every common desktop height, and the two routes to everything
               it does not list — Settings and the palette — were the last two
               items. Reading order is the same in both layouts: what to play,
-              how it plays, then the workspace, display, and studio tools. */}
+              how it plays, then the studio tools, workspace and display.
+              The studio tools lead the second column: as its last group they
+              started at the menu's bottom edge at 1280x720 and at the end of
+              the phone's single column, and they carry the landing's promise
+              (edit the code) and its AI tools. */}
           <div className={styles.menuColumn}>
             {presetItems.map(renderMenuItem)}
 
@@ -1314,11 +1349,11 @@ export function StageControls({
           </div>
 
           <div className={styles.menuColumn}>
+            {studioItems.map(renderMenuItem)}
+            <div className={styles.menuSep} />
             {workspaceItems.map(renderMenuItem)}
             <div className={styles.menuSep} />
             {displayItems.map(renderMenuItem)}
-            <div className={styles.menuSep} />
-            {studioItems.map(renderMenuItem)}
           </div>
         </div>
       ) : null}

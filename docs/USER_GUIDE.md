@@ -49,8 +49,8 @@ Use the editor's export controls to keep a `.milk` file. A file gives you a port
 
 Share produces a remix URL containing the source. It can carry original-author and remix-lineage metadata; that metadata is attribution, not independent verification of authorship. Depending on the browser, Share opens a native share sheet or copies the link. Open the link in a fresh tab to confirm the recipient sees the intended edit.
 
-When video publishing is enabled, the stage’s **More actions → Create video
-link…** dialog can publish a small, silent preview with the current preset
+When video publishing is enabled, the stage’s **More actions → Publish a
+public video link…** dialog can publish a small, silent preview with the current preset
 code. Choose **Create public link** to capture four seconds; opening the
 dialog captures nothing. Anyone with the resulting link can view and copy
 the code. Audio stays in your browser. Keep the preset unchanged during
@@ -63,34 +63,34 @@ Remix URLs have a size limit. If the source exceeds that limit, export the `.mil
 
 Use Settings to adjust quality, render scale, the renderer, motion, and flashing controls. Lower quality or render scale when frames slow down.
 
-Stims renders with WebGPU in browsers where it is stable (recent Chrome, Edge, Opera and Samsung Internet, and Safari 26 or later) and with WebGL elsewhere, including Firefox. A preset that needs something WebGPU cannot run yet switches to WebGL by reloading the page, which stops your audio; a notice says so, and Resume starts the same source again (an audio file has to be picked again). Settings → Graphics shows which one is running and why WebGL was chosen; its Renderer menu (Auto, WebGPU, WebGL) takes effect after a reload. Adding `?renderer=webgl` to the address forces WebGL for one visit.
+Stims renders with WebGPU in browsers where it is stable (recent Chrome, Edge, Opera and Samsung Internet, and Safari 26 or later) and with WebGL elsewhere, including Firefox. A preset that needs something WebGPU cannot run yet switches to WebGL by reloading the page, which stops your audio; a notice says so, and Resume starts the same source again (an audio file has to be picked again). Settings → Visuals and display → Graphics shows which one is running and why WebGL was chosen; its Renderer menu (Auto, WebGPU, WebGL) takes effect after a reload. Adding `?renderer=webgl` to the address forces WebGL for one visit.
 
 Reduce flashing and motion controls can reduce exposure, but they do not certify a preset or display as safe for every viewer. See [sensory controls](./guides/accessibility.md) for their scope.
 
 ## Keyboard shortcuts
 
-Press `?` for the full list, where most keys can also be rebound. Cmd+K (Ctrl+K on Windows and Linux) opens the command palette, which reaches every action, including those without a key.
+Press `?`, or choose **More actions → Shortcuts and gestures** on a touch screen, for the full list of keys and stage gestures; most keys can also be rebound there. Cmd+K (Ctrl+K on Windows and Linux) opens the command palette, which reaches every action, including those without a key.
 
-| Key                        | Action                                                                                                 |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Space                      | Pause or resume the picture; the preset and audio stay                                                 |
-| N or → / P, ← or Backspace | Next preset (random) / previous preset                                                                 |
-| L                          | Stay on this preset (pause auto-advance)                                                               |
-| T                          | Turn autoplay on or off                                                                                |
-| 1–9                        | Play that numbered preset in Browse, once focus leaves the search box                                  |
-| B, M, S                    | Browse, find a preset, Settings                                                                        |
-| E                          | Edit the preset's code; Cmd/Ctrl+Enter compiles it                                                     |
-| F                          | Full screen                                                                                            |
-| C                          | Record video                                                                                           |
-| U                          | Add this preset to the queue                                                                           |
-| Shift+D                    | Live performance mode                                                                                  |
-| D                          | Black out the picture while held; two quick taps keep it black until the next press                    |
-| Y                          | Flash the screen white while held; tapping repeatedly strobes                                          |
-| V                          | Cycle the theme (dark, light, system)                                                                  |
-| H                          | Switch transitions between blend and cut                                                               |
-| W, I, O, J                 | Nudge the running preset: next waveform, zoom in, more warp, bigger waveform; with Shift, the opposite |
-| `>` / `<`                  | Rotate clockwise / counterclockwise                                                                    |
-| Esc                        | Close panels                                                                                           |
+| Key                        | Action                                                                                                                                                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Space                      | Pause or resume the picture; the preset and audio stay                                                                                                                                 |
+| N or → / P, ← or Backspace | Next preset (random) / previous preset                                                                                                                                                 |
+| L                          | Stay on this preset (pause auto-advance)                                                                                                                                               |
+| T                          | Turn autoplay on or off                                                                                                                                                                |
+| 1–9                        | Play that numbered preset in Browse, once focus leaves the search box                                                                                                                  |
+| B, M, S                    | Browse, find a preset, Settings                                                                                                                                                        |
+| E                          | Edit the preset's code; Cmd/Ctrl+Enter compiles it                                                                                                                                     |
+| F                          | Full screen                                                                                                                                                                            |
+| C                          | Record video                                                                                                                                                                           |
+| U                          | Add this preset to the queue; **More actions → Preset sets…** saves the queue under a name, or loads or shares a saved one                                                             |
+| Shift+D                    | Live performance mode                                                                                                                                                                  |
+| D                          | Black out the picture while held; two quick taps keep it black until the next press. The palette's **Black out the picture** keeps it black until run again, and a MIDI pad can run it |
+| Y                          | Flash the screen white while held; tapping repeatedly strobes                                                                                                                          |
+| V                          | Cycle the theme (dark, light, system)                                                                                                                                                  |
+| H                          | Switch transitions between blend and cut                                                                                                                                               |
+| W, I, O, J                 | Nudge the running preset: next waveform, zoom in, more warp, bigger waveform; with Shift, the opposite                                                                                 |
+| `>` / `<`                  | Rotate clockwise / counterclockwise                                                                                                                                                    |
+| Esc                        | Close panels                                                                                                                                                                           |
 
 ## Optional AI assistance
 
@@ -104,7 +104,7 @@ Browser recording is beta. Resolution options do not establish the encoded resol
 
 ## Report a problem
 
-Include the preset or exported source, browser version, operating system, audio source, rendering backend (Settings → Graphics shows it), and steps to reproduce. If the problem looks renderer-specific, say whether it also happens with `?renderer=webgl` added to the address. For a shared-link problem, include the link when its contents are suitable to share. Say whether the problem occurs on a fresh load or after switching presets. [Open an issue](https://github.com/zz-plant/stims/issues/new/choose) with that evidence.
+Include the preset or exported source, browser version, operating system, audio source, rendering backend (Settings → Visuals and display → Graphics shows it), and steps to reproduce. If the problem looks renderer-specific, say whether it also happens with `?renderer=webgl` added to the address. For a shared-link problem, include the link when its contents are suitable to share. Say whether the problem occurs on a fresh load or after switching presets. [Open an issue](https://github.com/zz-plant/stims/issues/new/choose) with that evidence.
 
 ## Check a picture against a description
 

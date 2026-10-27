@@ -542,3 +542,59 @@ describe('stage dock says what each control will do', () => {
     }
   });
 });
+
+describe('stage dock menu reaches what had no visible route', () => {
+  function menuActions(rendered: ReturnType<typeof mount>) {
+    rendered.click(rendered.byLabel('More actions'));
+    const menu = rendered.container.querySelector('[role="menu"]');
+    // The menu's two column wrappers, in reading order.
+    return [...(menu?.children ?? [])].map((column) =>
+      [...column.querySelectorAll<HTMLElement>('[data-action]')].map(
+        (item) => item.dataset.action,
+      ),
+    );
+  }
+
+  test('the studio tools lead the second column, ahead of the workspace', () => {
+    const rendered = mount();
+    const [, second] = menuActions(rendered);
+    expect(second?.slice(0, 4)).toEqual([
+      'open-generate',
+      'open-refine',
+      'open-editor',
+      'open-record',
+    ]);
+    expect(second?.indexOf('open-editor')).toBeLessThan(
+      second?.indexOf('open-settings') ?? -1,
+    );
+    rendered.dispose();
+  });
+
+  test('preset sets and the shortcuts dialog open from the menu', () => {
+    const onOpenSets = jest.fn();
+    const onOpenShortcuts = jest.fn();
+    const rendered = renderWorkspace(
+      createElement(StageControls, {
+        isFullscreen: false,
+        onToggleFullscreen: () => {},
+        onOpenSets,
+        onOpenShortcuts,
+      }),
+      { snapshot: liveSnapshot() },
+    );
+    const item = (action: string) => {
+      rendered.click(rendered.byLabel('More actions'));
+      return rendered.container.querySelector<HTMLElement>(
+        `[role="menu"] [data-action="${action}"]`,
+      );
+    };
+    const shortcuts = item('open-shortcuts');
+    // The row teaches the key it stands for, like its neighbours.
+    expect(shortcuts?.getAttribute('aria-keyshortcuts')).toContain('?');
+    rendered.click(shortcuts);
+    expect(onOpenShortcuts).toHaveBeenCalledTimes(1);
+    rendered.click(item('queue-manage-sets'));
+    expect(onOpenSets).toHaveBeenCalledTimes(1);
+    rendered.dispose();
+  });
+});
