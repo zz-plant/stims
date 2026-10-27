@@ -58,7 +58,7 @@ const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
  * starts the permission prompt or the share picker again.
  */
 const RESUME_SOURCE_NOTE: Record<ResumableAudioSource, string> = {
-  demo: 'The demo plays a built-in synth loop, not a song, and asks for no permissions.',
+  demo: 'A built-in synth loop, no permissions needed.',
   microphone: 'Your browser asks for the microphone again.',
   tab: 'Your browser opens its screen-share picker again; tick Share audio.',
   youtube:
@@ -917,8 +917,8 @@ function LaunchSoundflowPreview({
           beside it opened an editor holding entirely different code. */}
       <p className="stims-shell__launch-soundflow-note">
         {showEditVisual
-          ? 'Simplified examples. The editor shows the real equations of the preset running behind this page, and which sounds reach each one.'
-          : 'Simplified examples. Open any preset in the editor to see its real equations and which sounds reach each one.'}
+          ? 'Simplified examples. The editor shows the real equations behind this page.'
+          : 'Simplified examples. The editor shows any preset’s real equations.'}
       </p>
       <div className="stims-shell__launch-soundflow-cards">
         <div className="stims-shell__launch-soundflow-card">

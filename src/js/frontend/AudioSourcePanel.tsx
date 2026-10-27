@@ -86,20 +86,43 @@ function formatPlaybackTime(totalSeconds: number) {
 }
 
 /**
- * One sentence for the chip row: which chips raise a prompt or a picker.
- * Only names the chips this row offers.
+ * The one note under the sources. It used to be up to four stacked lines
+ * (what each chip opens, that a pick replaces the playing source, which
+ * sources need Chrome, where the sound goes), and together they buried the
+ * two things a visitor checks before pressing: will the browser ask, and
+ * does the audio leave the page.
+ *
+ * Only chips name the prompt, because a card says it on its own subtitle
+ * line. The file picker goes unnamed; nobody is surprised by one.
+ *
+ * "Never uploaded" is literal: the analyser runs in this page, and the audio
+ * match sends a three-phrase description of the levels ("high motion"),
+ * never the audio.
  */
-function describeChipOutcomes(
+function describeSourceNote(
+  chips: boolean,
   offers: (source: AudioSourceId) => boolean,
   canCaptureDisplayAudio: boolean,
+  displayCaptureDropsAudio: boolean,
 ): string {
-  const parts: string[] = [];
-  if (offers('microphone')) parts.push('Microphone asks for permission');
-  parts.push('Audio file opens a file picker');
-  if (canCaptureDisplayAudio && (offers('tab') || offers('youtube'))) {
-    parts.push("Tab / system and YouTube open your browser's share picker");
+  const sentences: string[] = [];
+  const asked = [
+    offers('microphone') ? 'the microphone' : null,
+    canCaptureDisplayAudio && offers('tab') ? 'a tab' : null,
+    canCaptureDisplayAudio && offers('youtube') ? 'YouTube' : null,
+  ].filter((name): name is string => name !== null);
+  if (chips && asked.length > 0) {
+    const list =
+      asked.length > 1
+        ? `${asked.slice(0, -1).join(', ')} or ${asked[asked.length - 1]}`
+        : asked[0];
+    sentences.push(`Your browser asks before Stims hears ${list}.`);
   }
-  return `${parts.join('. ')}.`;
+  if (displayCaptureDropsAudio && (offers('tab') || offers('youtube'))) {
+    sentences.push('Tab, system and YouTube audio need Chrome or Edge.');
+  }
+  sentences.push('Sound is analysed in this browser and never uploaded.');
+  return sentences.join(' ');
 }
 
 export function AudioSourcePanel({
@@ -687,6 +710,17 @@ export function AudioSourcePanel({
     </div>
   );
 
+  const sourceNote = (
+    <p className="stims-shell__source-note">
+      {describeSourceNote(
+        chips,
+        offers,
+        canCaptureDisplayAudio,
+        displayCaptureDropsAudio,
+      )}
+    </p>
+  );
+
   return (
     <section
       className={
@@ -734,35 +768,22 @@ export function AudioSourcePanel({
         </p>
       ) : null}
       {/* Cards: the link field leads, the cards follow. Chips: the chips
-          lead and the field opens beneath them from its own chip. */}
-      {chips ? sourceGrid : youtubeBlock}
-      {/* Chips have no subtitle line, and a tooltip never shows on touch or
-          to the keyboard, so what each chip asks of the browser is said
-          here, once, under the row. */}
+          lead and the field opens beneath them from its own chip, below the
+          note, so opening it does not push the note away from the row it
+          describes. */}
       {chips ? (
-        <p className="stims-shell__source-note">
-          {describeChipOutcomes(offers, canCaptureDisplayAudio)}
-        </p>
-      ) : null}
-      {chips ? youtubeBlock : sourceGrid}
-      {!chips && engine.audioActive ? (
-        <p className="stims-shell__source-note">
-          Picking a source replaces the one playing now.
-        </p>
-      ) : null}
-      {displayCaptureDropsAudio && (offers('tab') || offers('youtube')) ? (
-        <p className="stims-shell__source-note">
-          Tab, system and YouTube audio need Chrome or Edge. Here, play a file
-          or use the microphone.
-        </p>
-      ) : null}
-      {/* Asking for a microphone or a screen share raises the question of
-          where the sound goes. It goes nowhere: the analyser runs in this
-          page, and the audio match sends a three-phrase description of the
-          levels ("high motion"), never the audio. */}
-      <p className="stims-shell__source-note">
-        Sound is analysed in this browser and never uploaded.
-      </p>
+        <>
+          {sourceGrid}
+          {sourceNote}
+          {youtubeBlock}
+        </>
+      ) : (
+        <>
+          {youtubeBlock}
+          {sourceGrid}
+          {sourceNote}
+        </>
+      )}
       {chips && fileState ? (
         <p
           className="stims-shell__source-feedback"
@@ -777,25 +798,20 @@ export function AudioSourcePanel({
           <summary className="stims-shell__settings-summary">
             <span>Audio help</span>
             <span className="stims-shell__meta-copy">
-              Permissions and troubleshooting
+              Microphone troubleshooting
             </span>
           </summary>
+          {/* In-app browsers are left out: the callout above already names
+              them, with the button that fixes it, when this is one. */}
           <div className="stims-shell__settings-advanced-body">
             <p className="stims-shell__meta-copy">
-              <strong>Permissions:</strong> Allow microphone access in site
-              permissions. If access is blocked, check macOS Privacy & Security
-              or Windows Privacy Settings.
+              <strong>Microphone blocked:</strong> allow it in this site&rsquo;s
+              settings, then in macOS Privacy & Security or Windows privacy
+              settings.
             </p>
             <p className="stims-shell__meta-copy">
-              <strong>Smartphones and in-app browsers:</strong> In-app browsers
-              (Instagram, TikTok, Twitter) may block mic capture. Tap
-              &quot;...&quot; and select &quot;Open in Safari / Chrome&quot;.
-            </p>
-            <p className="stims-shell__meta-copy">
-              <strong>Local testing and Bluetooth:</strong> Mic capture requires
-              HTTPS or localhost. If you use Bluetooth earbuds, OS settings may
-              switch sound to call mode; use a built-in or wired mic for the
-              best music quality.
+              <strong>Bluetooth earbuds:</strong> their mic switches them to
+              call quality. A built-in or wired mic hears music better.
             </p>
           </div>
         </details>
