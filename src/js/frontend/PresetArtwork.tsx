@@ -74,7 +74,11 @@ export function PresetArtwork({
   audition?: boolean;
 }) {
   const tone = getPresetArtworkTone(entry);
-  const liveTile = useLivePresetTile(entry, { audition });
+  // Destructured rather than read off the result during render: the result
+  // holds a ref, so React Compiler counts any property read from it as a ref
+  // read and skips the component. `enabled` itself is plain data.
+  const { enabled: liveTileEnabled, hostRef: liveTileHostRef } =
+    useLivePresetTile(entry, { audition });
   const staticThumbUrl = `/milkdrop-presets/previews/${entry.id}.png`;
   // The static R2 thumbnail is the default artwork; a ready runtime snapshot
   // only upgrades it. A failed capture must not hide the thumbnail.
@@ -137,7 +141,7 @@ export function PresetArtwork({
   // Anything else with no stored frame has no preview, and says so.
   const previewStatus = realImageUrl
     ? 'ready'
-    : liveTile.enabled && !capture.settled
+    : liveTileEnabled && !capture.settled
       ? 'capturing'
       : 'unavailable';
 
@@ -177,9 +181,9 @@ export function PresetArtwork({
           }
         />
       )}
-      {liveTile.enabled ? (
+      {liveTileEnabled ? (
         <div
-          ref={liveTile.hostRef}
+          ref={liveTileHostRef}
           data-live-tile={entry.id}
           style={{
             position: 'absolute',
