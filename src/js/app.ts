@@ -79,6 +79,13 @@ async function startPostPaintServices() {
         // happened when this layer handled them too.
         initGamepadNavigation({ keyboardNavigation: isSmartTvDevice() }),
     ),
+    // Dev server only: vite replaces import.meta.hot with undefined in a
+    // build, which drops this branch and the chunk it imports.
+    import.meta.hot
+      ? import('./frontend/live-channel.ts').then(({ installLiveChannel }) => {
+          if (import.meta.hot) installLiveChannel(import.meta.hot);
+        })
+      : undefined,
   ]);
 }
 

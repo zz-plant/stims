@@ -155,6 +155,7 @@
     "lint": "bun run scripts/run-biome.ts lint",
     "lint:changed": "bun run scripts/lint-changed.ts",
     "lint:fix": "bun run scripts/run-biome.ts lint --write",
+    "live": "bun run scripts/live-channel-cli.ts",
     "mcp": "bun run scripts/mcp-server.ts",
     "mcp:check": "bunx wrangler deploy --dry-run --config wrangler.mcp.jsonc",
     "mcp:deploy": "bunx wrangler deploy --config wrangler.mcp.jsonc",

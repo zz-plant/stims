@@ -295,7 +295,9 @@ both drive the engine through the same live-binding pipeline.
 bun run mcp
 ```
 
-The server connects over stdio. MCP clients should launch this command from the repo root.
+The server connects over stdio. Claude Code starts it from the repository's `.mcp.json` once the `stims` server is approved; other MCP clients should launch this command from the repo root.
+
+Session tools drive a browser the server launches. To act on the tab a person already has open on `bun run dev`, use the [live channel](./agents/browser-automation.md#on-the-tab-you-are-watching-the-live-channel) instead.
 
 ## Worker Deployment (Alternative Transport)
 

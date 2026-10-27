@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { build } from 'esbuild';
 import { defaultClientConditions, defineConfig } from 'vite';
+import { liveChannel } from './scripts/vite-live-channel.ts';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
@@ -101,6 +102,9 @@ export default defineConfig({
     audioWorkletTransform(),
     deferAppShellStylesheets(),
     prunePreviewsFromDist(),
+    // Dev server only: relays an agent's commands to the visible tab and
+    // writes that tab's events to scratch/live/ (scripts/vite-live-channel.ts).
+    liveChannel(),
   ],
   resolve: {
     dedupe: ['react', 'react-dom', 'three'],

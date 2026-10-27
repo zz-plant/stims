@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "stims": {
+      "command": "bun",
+      "args": ["run", "scripts/mcp-server.ts"]
+    }
+  }
+}

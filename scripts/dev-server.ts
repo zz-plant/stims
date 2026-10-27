@@ -238,7 +238,9 @@ export async function spawnDevServer({
         cwd,
         detached: true,
         stdio: ['ignore', logFd, logFd],
-        env: { ...process.env, BROWSER: 'none' },
+        // STIMS_LIVE_CHANNEL=0: an automated run must not take over the
+        // scratch/live/ files of the dev server a person is watching.
+        env: { ...process.env, BROWSER: 'none', STIMS_LIVE_CHANNEL: '0' },
       });
     } finally {
       closeSync(logFd);
