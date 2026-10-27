@@ -91,7 +91,7 @@ const STAGE_CANVAS_SELECTOR = '.stims-shell__stage-frame canvas';
 type LuminanceSample = { t: number; y: number };
 
 export type FlashRiskReport = {
-  version: 1;
+  version: 2;
   presetId: string;
   renderer: 'webgl';
   captureBackend: string | null;
@@ -100,7 +100,13 @@ export type FlashRiskReport = {
   sampleCount: number;
   meanFps: number;
   meanLuminance: number;
-  maxLuminanceDelta: number;
+  /**
+   * Largest change in whole-frame mean luminance (0..255) between consecutive
+   * samples. A frame mean, not a per-pixel or per-field swing: unrelated to
+   * the catalog profile's `maxLuminanceDelta`, which is the WCAG audit's
+   * flash swing on a 0..1 scale. Named apart so the two cannot be confused.
+   */
+  maxMeanLuminanceDelta: number;
   /**
    * Highest count of luminance-delta transitions (see
    * FLASH_LUMINANCE_DELTA_THRESHOLD) inside any rolling 1-second window of
@@ -341,12 +347,15 @@ export async function runPresetFlashRiskLab({
     luminances.length > 0
       ? luminances.reduce((sum, value) => sum + value, 0) / luminances.length
       : 0;
-  let maxLuminanceDelta = 0;
+  let maxMeanLuminanceDelta = 0;
   for (let i = 1; i < series.length; i += 1) {
     const prev = series[i - 1];
     const curr = series[i];
     if (!prev || !curr) continue;
-    maxLuminanceDelta = Math.max(maxLuminanceDelta, Math.abs(curr.y - prev.y));
+    maxMeanLuminanceDelta = Math.max(
+      maxMeanLuminanceDelta,
+      Math.abs(curr.y - prev.y),
+    );
   }
   const lastSample = series[series.length - 1];
   const actualDurationMs = lastSample ? lastSample.t : durationMs;
@@ -355,7 +364,7 @@ export async function runPresetFlashRiskLab({
 
   const reportJsonPath = path.join(reportDir, 'flash-risk.json');
   const report: FlashRiskReport = {
-    version: 1,
+    version: 2,
     presetId,
     renderer: 'webgl',
     captureBackend,
@@ -364,7 +373,7 @@ export async function runPresetFlashRiskLab({
     sampleCount: series.length,
     meanFps,
     meanLuminance,
-    maxLuminanceDelta,
+    maxMeanLuminanceDelta,
     maxTransitionsPerSecondEstimate: maxTransitionsInRollingWindow(
       series,
       1000,
@@ -389,7 +398,7 @@ function formatFlashRiskReportText(report: FlashRiskReport): string {
   );
   lines.push(`- mean luminance: ${report.meanLuminance.toFixed(1)} / 255`);
   lines.push(
-    `- largest single frame-to-frame luminance swing: ${report.maxLuminanceDelta.toFixed(1)}`,
+    `- largest frame-to-frame change in mean luminance: ${report.maxMeanLuminanceDelta.toFixed(1)} / 255`,
   );
   lines.push(
     `- estimated flash-transition rate: ${report.maxTransitionsPerSecondEstimate} in the busiest 1s window ` +
