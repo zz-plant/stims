@@ -23,6 +23,7 @@ import {
   subscribePresetLock,
   togglePresetLock,
 } from '../core/preset-lock.ts';
+import { noteActionUse } from '../core/services/action-telemetry.ts';
 import {
   getExternalDisplayState,
   hasMultipleScreens,
@@ -229,10 +230,16 @@ export function StageControls({
   isFullscreen,
   onToggleFullscreen,
   onOpenPalette,
+  onOpenShortcuts,
+  onOpenSets,
 }: {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   onOpenPalette?: () => void;
+  /** The ? dialog: every key and every stage gesture. */
+  onOpenShortcuts?: () => void;
+  /** Saved preset sets: save the queue under a name, load or share one. */
+  onOpenSets?: () => void;
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -638,6 +645,18 @@ export function StageControls({
       actionId: 'queue-add',
       action: () => queueCurrentPreset(),
     },
+    // The setlist this section is named for. Saving and loading sets was a
+    // palette-only command, so nothing on screen said they existed.
+    ...(onOpenSets
+      ? [
+          {
+            icon: 'music' as const,
+            label: 'Preset sets…',
+            actionId: 'queue-manage-sets',
+            action: onOpenSets,
+          } satisfies MenuItem,
+        ]
+      : []),
     // Listed here as well as on the bar: on phones the bar drops the star to
     // give the title room to be read, and press-and-hold on the stage is a
     // gesture nobody can see. This row is the one place it is always named.
@@ -796,6 +815,19 @@ export function StageControls({
           } satisfies MenuItem,
         ]
       : []),
+    // The swipe-up, hold-to-save and Shift+scroll gestures are listed only
+    // in this dialog. On a phone, with no ? key, it sat three levels down
+    // (Settings, its fourth tab, a button).
+    ...(onOpenShortcuts
+      ? [
+          {
+            icon: 'info' as const,
+            label: 'Shortcuts and gestures',
+            actionId: 'open-shortcuts',
+            action: onOpenShortcuts,
+          } satisfies MenuItem,
+        ]
+      : []),
     {
       icon: 'link' as const,
       label: engineSnapshot?.sessionState?.dirty
@@ -809,7 +841,12 @@ export function StageControls({
       // clip and the preset's code where anyone with the address can see it.
       icon: 'upload' as const,
       label: 'Publish a public video link…',
-      action: () => setVideoShareOpen(true),
+      // No data-action: there is no palette row for it to match, so the
+      // click is noted here instead of by the delegated listener.
+      action: () => {
+        noteActionUse('publish-video-link', 'menu');
+        setVideoShareOpen(true);
+      },
     },
     {
       icon: 'pulse' as const,
@@ -888,7 +925,11 @@ export function StageControls({
 
   return (
     <>
-      <div className={styles.bar} data-visible={String(visible)}>
+      <div
+        className={styles.bar}
+        data-visible={String(visible)}
+        data-telemetry-surface="dock"
+      >
         {/* Hover and focus are tracked on the pill, the element the pointer
             can actually hit — the bar around it is pointer-events: none. */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: these handlers only note that a pointer or focus is inside the container of buttons, to keep it from auto-hiding; the buttons themselves are the interactions */}
@@ -1183,6 +1224,7 @@ export function StageControls({
           ref={menuRef}
           className={styles.menu}
           role="menu"
+          data-telemetry-surface="menu"
           aria-label="More actions"
         >
           {/* Two columns from 640px up, one below. As a single column of 26
@@ -1190,7 +1232,11 @@ export function StageControls({
               at every common desktop height, and the two routes to everything
               it does not list — Settings and the palette — were the last two
               items. Reading order is the same in both layouts: what to play,
-              how it plays, then the workspace, display, and studio tools. */}
+              how it plays, then the studio tools, workspace and display.
+              The studio tools lead the second column: as its last group they
+              started at the menu's bottom edge at 1280x720 and at the end of
+              the phone's single column, and they carry the landing's promise
+              (edit the code) and its AI tools. */}
           <div className={styles.menuColumn}>
             {presetItems.map(renderMenuItem)}
 
@@ -1303,11 +1349,11 @@ export function StageControls({
           </div>
 
           <div className={styles.menuColumn}>
+            {studioItems.map(renderMenuItem)}
+            <div className={styles.menuSep} />
             {workspaceItems.map(renderMenuItem)}
             <div className={styles.menuSep} />
             {displayItems.map(renderMenuItem)}
-            <div className={styles.menuSep} />
-            {studioItems.map(renderMenuItem)}
           </div>
         </div>
       ) : null}
@@ -1320,7 +1366,11 @@ export function StageControls({
           underneath the word "Controls". Driving both from the same flag
           lets the CSS hand off cleanly — the incoming one waits for the
           outgoing one to clear. */}
-      <div className={styles.foldedDock} data-visible={String(!visible)}>
+      <div
+        className={styles.foldedDock}
+        data-visible={String(!visible)}
+        data-telemetry-surface="dock"
+      >
         {/* The bar is `visibility: hidden` while folded, so its Edit button
             leaves the accessibility tree exactly when a visitor reading the
             stage would most need to find it (docs/PRODUCT_MOMENTS.md,

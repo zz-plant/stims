@@ -345,6 +345,7 @@ export function NewHomePage({
     <section
       className="stims-shell__launch stims-shell__launch--minimal"
       data-audio-controls
+      data-telemetry-surface="landing"
       aria-labelledby="stims-launch-title"
     >
       <div
