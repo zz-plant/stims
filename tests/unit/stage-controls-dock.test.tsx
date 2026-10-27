@@ -2,6 +2,7 @@ import { afterEach, describe, expect, jest, test } from 'bun:test';
 import { act, createElement } from 'react';
 import { createEmptyEngineSnapshot } from '../../src/js/frontend/engine/engine-snapshot.ts';
 import { StageControls } from '../../src/js/frontend/StageControls.tsx';
+import { writeShortcutOverrides } from '../../src/js/frontend/shortcut-registry.ts';
 import { makePresetEntry, renderWorkspace } from '../frontend-harness.tsx';
 
 /**
@@ -207,6 +208,27 @@ describe('stage dock transport', () => {
     expect(edit?.getAttribute('aria-keyshortcuts')).toBe('E');
 
     rendered.dispose();
+  });
+
+  test('a rebind reaches the open dock without waiting for another render', () => {
+    // Nothing else on the dock changes when a key is rebound in the
+    // shortcuts dialog, so the hints have to hear about the rebind itself.
+    const rendered = mount();
+    try {
+      const previous = rendered.byLabel('Previous preset');
+      expect(previous?.getAttribute('title')).toBe('Previous (P)');
+
+      act(() => {
+        writeShortcutOverrides({ previous: ['K'] });
+      });
+      expect(previous?.getAttribute('title')).toBe('Previous (K)');
+      expect(previous?.getAttribute('aria-keyshortcuts')).toBe('K');
+    } finally {
+      act(() => {
+        writeShortcutOverrides({});
+      });
+      rendered.dispose();
+    }
   });
 
   test('the transport slot pauses and resumes instead of stopping', () => {
