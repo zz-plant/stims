@@ -1270,20 +1270,6 @@ function StimsWorkspaceAppShell() {
     };
   }, [engineSnapshot?.audioActive, engineSnapshot?.audioSource]);
 
-  useEffect(() => {
-    const handleOpenShortcuts = () => setShowShortcuts(true);
-    window.addEventListener('stims:shortcuts:open', handleOpenShortcuts);
-    return () =>
-      window.removeEventListener('stims:shortcuts:open', handleOpenShortcuts);
-  }, []);
-
-  useEffect(() => {
-    const handleOpenCredits = () => setShowCredits(true);
-    window.addEventListener('stims:credits:open', handleOpenCredits);
-    return () =>
-      window.removeEventListener('stims:credits:open', handleOpenCredits);
-  }, []);
-
   // Paints the stored choice and keeps painting it: preference changes from
   // Settings or the palette, and — when the choice is "system" — OS theme
   // flips, without a reload.
@@ -1410,6 +1396,8 @@ function StimsWorkspaceAppShell() {
         liveMode={liveMode}
         onToggleFullscreen={handleToggleFullscreen}
         onOpenPalette={() => setPaletteOpen(true)}
+        onOpenShortcuts={() => setShowShortcuts(true)}
+        onOpenSets={() => setShowManageSets(true)}
       />
       {presetPage ? (
         <PresetPageDetails

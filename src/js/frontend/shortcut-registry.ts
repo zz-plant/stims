@@ -295,6 +295,9 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     group: 'Live stage utilities',
     label: 'Blackout the picture (hold, or double-tap to latch)',
     defaultKeys: ['D'],
+    // The palette row latches (stage-utilities toggleBlackout); the key
+    // keeps its own hold handling in useKeyboardShortcuts.
+    paletteActionId: 'toggle-blackout',
   },
   {
     // Y, for the moment the lights hit. Never latches: a white screen is

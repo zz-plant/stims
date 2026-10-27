@@ -16,6 +16,7 @@ import {
   getActiveAccessibilityPreference,
   setAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
+import { buildEmbedIframe, buildEmbedUrl } from '../core/embed-snippet.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import {
   closeProjectorWindow,
@@ -25,7 +26,10 @@ import {
 } from '../core/services/projector-window-service.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { MilkdropPresetLineageRef } from '../milkdrop/types.ts';
-import { shareOrCopyLink } from '../utils/media/share-link.ts';
+import {
+  copyTextToClipboard,
+  shareOrCopyLink,
+} from '../utils/media/share-link.ts';
 import type {
   AudioSource,
   PanelState,
@@ -321,6 +325,106 @@ export function codeForLocalShare(
   return local && !dirty && title
     ? upsertMilkdropField(source, 'title', title)
     : source;
+}
+
+/**
+ * What an embed of the playing preset would show.
+ *
+ * The frame names the preset by id and plays it as the catalog has it. It
+ * does not carry a draft: a `#code=` arrival opens the editor sheet, which
+ * would cover the stage of a chromeless embed, and a page that pastes a
+ * snippet keeps it long after the draft has moved on. A preset made or
+ * imported here has an id no other browser can load, so it has no embed.
+ */
+export type EmbedCodeState = 'none' | 'ready' | 'without-edits' | 'local';
+
+export function embedCodeState(
+  entry: Pick<PresetCatalogEntry, 'bundledFile'> | null | undefined,
+  dirty: boolean,
+): EmbedCodeState {
+  if (!entry) return 'none';
+  if (!entry.bundledFile) return 'local';
+  return dirty ? 'without-edits' : 'ready';
+}
+
+/** The palette row and the dock button's accessible name. */
+export function copyEmbedCodeLabel(state: EmbedCodeState): string {
+  if (state === 'without-edits') {
+    return 'Copy embed code (without your unsaved edits)';
+  }
+  if (state === 'local') return 'Copy embed code (catalog presets only)';
+  return 'Copy embed code';
+}
+
+/** Said beside the control before it is pressed, when the embed would not
+ * show what is on stage. */
+export function embedCodeNote(state: EmbedCodeState): string | null {
+  if (state === 'without-edits') {
+    return 'Embed plays this preset without your unsaved edits.';
+  }
+  if (state === 'local') {
+    return 'This preset lives only in your browser, so it has no embed.';
+  }
+  return null;
+}
+
+/**
+ * Put an `<iframe>` for the playing preset on the clipboard, for pasting
+ * into another page's HTML. Copy only, never the native share sheet: a
+ * snippet of markup is not something to send to a messaging app.
+ */
+export async function copyEmbedCodeAction({
+  entry,
+  dirty,
+  announce,
+  origin = typeof window === 'undefined' ? '' : window.location.origin,
+  copy = copyTextToClipboard,
+}: {
+  entry: Pick<
+    PresetCatalogEntry,
+    'id' | 'title' | 'author' | 'bundledFile'
+  > | null;
+  dirty: boolean;
+  announce: (message: string) => void;
+  origin?: string;
+  /** Test seam for the clipboard. */
+  copy?: (text: string) => Promise<boolean>;
+}): Promise<boolean> {
+  const state = embedCodeState(entry, dirty);
+  if (!entry || state === 'none') {
+    announce('Nothing is playing to embed yet.');
+    return false;
+  }
+  if (state === 'local') {
+    announce(
+      'This preset lives only in your browser, so another page cannot load it. Share link carries its code instead.',
+    );
+    return false;
+  }
+
+  const { title, byline } = splitPresetDisplay(
+    entry.title || entry.id,
+    entry.author,
+  );
+  const snippet = buildEmbedIframe({
+    origin,
+    presetId: entry.id,
+    title: byline ? `${title} by ${byline} · Stims` : `${title} · Stims`,
+  });
+  if (!(await copy(snippet))) {
+    announce(
+      `Could not reach the clipboard. The embed address is ${buildEmbedUrl(origin, entry.id)}`,
+    );
+    return false;
+  }
+
+  noteGrowthEvent('embed-code-copied', entry.id);
+  announce(
+    state === 'without-edits'
+      ? `Embed code for “${title}” copied. It plays the preset without your unsaved edits.`
+      : `Embed code for “${title}” copied. Paste it into a page’s HTML.`,
+  );
+  return true;
 }
 
 /** Flip Reduce flashing and say what it now does. */

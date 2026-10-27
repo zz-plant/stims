@@ -103,6 +103,7 @@ export function makeUiValue(
 
     handleImport: asyncNoop,
     handleShowCurrentLink: asyncNoop,
+    handleCopyEmbedCode: async () => false,
     updatePanel: noop,
     ...overrides,
   };

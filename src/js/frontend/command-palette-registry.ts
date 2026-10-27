@@ -23,6 +23,12 @@ export type CommandAction = {
    * order is the point and section breaks would fight it.
    */
   group?: string;
+  /**
+   * Read each time the palette opens; false hides the row. For an action the
+   * visitor cannot use yet and has no way to set up from the palette, so it
+   * is not offered as a row that only answers with an error.
+   */
+  isAvailable?: () => boolean;
   run: () => void;
 };
 
@@ -113,10 +119,11 @@ export function buildPaletteResults({
   useCounts,
 }: BuildPaletteResultsInput): PaletteResult[] {
   const trimmed = query.trim();
+  const offered = actions.filter((action) => action.isAvailable?.() !== false);
 
   if (trimmed.length === 0) {
     // Empty query: most-used actions first, authored order as the tiebreak.
-    const ranked = actions.map((action, index) => ({
+    const ranked = offered.map((action, index) => ({
       action,
       index,
       boost: frecencyBoost(useCounts?.[`action:${action.id}`]),
@@ -132,7 +139,7 @@ export function buildPaletteResults({
 
   const results: PaletteResult[] = [];
 
-  for (const action of actions) {
+  for (const action of offered) {
     const score = scoreAction(trimmed, action);
     if (score !== null) {
       const id = `action:${action.id}`;
