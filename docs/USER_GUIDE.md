@@ -49,6 +49,8 @@ Use the editor's export controls to keep a `.milk` file. A file gives you a port
 
 Share produces a remix URL containing the source. It can carry original-author and remix-lineage metadata; that metadata is attribution, not independent verification of authorship. Depending on the browser, Share opens a native share sheet or copies the link. Open the link in a fresh tab to confirm the recipient sees the intended edit.
 
+To put a preset on your own web page, press **Embed** beside **More actions → Share link**, or run **Copy embed code** from the command palette. It copies an `<iframe>` for the playing preset, such as `<iframe src="https://toil.fyi/?embed=true&preset=shifter-curlique" …>`, to paste into the page's HTML. The frame plays the preset as the catalog has it, without unsaved edits; while you have edits, the menu says so under the row. A preset made or imported in your browser has no embed, because no other browser can load it; Share link carries its code instead. The frame is 800×450 and shrinks to fit a narrower column. Browsers usually hold its sound until the visitor clicks inside the frame, and the microphone or tab audio only start if the visitor picks that source and allows it.
+
 When video publishing is enabled, the stage’s **More actions → Create video
 link…** dialog can publish a small, silent preview with the current preset
 code. Choose **Create public link** to capture four seconds; opening the

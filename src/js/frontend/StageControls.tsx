@@ -68,6 +68,9 @@ import { UiIcon } from './UiIcon.tsx';
 import {
   cameraMenuLabel,
   castMenuLabel,
+  copyEmbedCodeLabel,
+  embedCodeNote,
+  embedCodeState,
   endWatchParty,
   isCameraInputOn,
   nearbyPresetRequest,
@@ -91,6 +94,7 @@ import {
   toggleReduceFlashingAction,
 } from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
+import { findActivePresetEntry } from './workspace-helpers.ts';
 
 type MenuItem = {
   icon: UiIconName;
@@ -107,6 +111,19 @@ type MenuItem = {
   // Stable automation id, matching the command-palette action id where one
   // exists — labels are copy and may change; data-action must not.
   actionId?: string;
+  // A second, smaller action on the same row, for a variant of the row's own
+  // verb (Share link's embed code). The menu is past thirty rows and scrolls
+  // on phones, so a variant shares its parent's row instead of adding one.
+  companion?: {
+    text: string;
+    label: string;
+    actionId: string;
+    action: () => void;
+    // Shown under the row, and read with the companion, when its outcome
+    // differs from what the row's neighbour suggests.
+    note?: string | null;
+    unavailable?: boolean;
+  };
 };
 
 const VideoShareDialog = lazy(() =>
@@ -263,6 +280,12 @@ export function StageControls({
   );
   const currentPresetId =
     engine.selectedPreset?.id ?? engine.featuredPreset?.id ?? null;
+  const embedState = embedCodeState(
+    findActivePresetEntry(engineSnapshot?.activePresetId, engine) ??
+      engine.selectedPreset ??
+      engine.featuredPreset,
+    engineSnapshot?.sessionState?.dirty ?? false,
+  );
 
   // When the active backend cannot run a preset's shader text, the renderer
   // substitutes a uniform-only approximation — a plausible frame that is not
@@ -803,6 +826,14 @@ export function StageControls({
         : 'Share link',
       actionId: 'share-link',
       action: () => void ui.handleShowCurrentLink(),
+      companion: {
+        text: 'Embed',
+        label: copyEmbedCodeLabel(embedState),
+        actionId: 'copy-embed-code',
+        action: () => void ui.handleCopyEmbedCode(),
+        note: embedCodeNote(embedState),
+        unavailable: embedState === 'local',
+      },
     },
     {
       // Not the link icon: Share link above copies a link, this publishes a
@@ -845,13 +876,8 @@ export function StageControls({
       ? `${withHint(playbackLabel, 'toggle-playback')}. ${SOUND_KEEPS_PLAYING}`
       : withHint(playbackLabel, 'toggle-playback');
 
-  const renderMenuItem = (item: MenuItem) => (
-    <div key={item.label}>
-      {item.sectionLabel ? (
-        <div className={styles.menuLabel} aria-hidden="true">
-          {item.sectionLabel}
-        </div>
-      ) : null}
+  const renderMenuItem = (item: MenuItem) => {
+    const button = (
       <button
         type="button"
         data-action={item.actionId}
@@ -883,8 +909,43 @@ export function StageControls({
           <MenuHint actionId={item.actionId} overrides={shortcutOverrides} />
         ) : null}
       </button>
-    </div>
-  );
+    );
+    const { companion } = item;
+    const noteId = companion?.note ? `menu-note-${companion.actionId}` : null;
+    return (
+      <div key={item.label}>
+        {item.sectionLabel ? (
+          <div className={styles.menuLabel} aria-hidden="true">
+            {item.sectionLabel}
+          </div>
+        ) : null}
+        {companion ? (
+          <div className={styles.menuRow}>
+            {button}
+            <button
+              type="button"
+              role="menuitem"
+              data-action={companion.actionId}
+              className={`${styles.menuOption} ${styles.menuCompanion}`}
+              aria-label={companion.label}
+              aria-describedby={noteId ?? undefined}
+              aria-disabled={companion.unavailable ? true : undefined}
+              onClick={() => run(companion.action)}
+            >
+              {companion.text}
+            </button>
+          </div>
+        ) : (
+          button
+        )}
+        {noteId ? (
+          <span className={styles.menuNote} id={noteId}>
+            {companion?.note}
+          </span>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
     <>
