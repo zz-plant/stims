@@ -57,6 +57,27 @@ describe('AudioSourcePanel expectations', () => {
     }
   });
 
+  // The prompt, the missing sources and the privacy line used to be a note
+  // each, so the row carried up to four stacked disclaimers.
+  test.each(['chrome', 'firefox'] as const)(
+    'on %s, says everything under the sources in one note',
+    (browser) => {
+      const rendered = renderAs(browser);
+      try {
+        const notes = Array.from(
+          rendered.container.querySelectorAll('.stims-shell__source-note'),
+        ).map((note) => note.textContent ?? '');
+        expect(notes).toEqual([
+          browser === 'chrome'
+            ? 'Your browser asks before Stims hears the microphone, a tab or YouTube. Sound is analysed in this browser and never uploaded.'
+            : 'Your browser asks before Stims hears the microphone. Tab, system and YouTube audio need Chrome or Edge. Sound is analysed in this browser and never uploaded.',
+        ]);
+      } finally {
+        rendered.dispose();
+      }
+    },
+  );
+
   test('offers tab and YouTube capture where a share carries audio', () => {
     const rendered = renderAs('chrome');
     try {

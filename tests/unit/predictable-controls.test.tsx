@@ -339,8 +339,9 @@ describe('Audio sources', () => {
       createElement(AudioSourcePanel, { layout: 'chips' }),
     );
     try {
-      expect(rendered.text()).toContain('Microphone asks for permission');
-      expect(rendered.text()).toContain('Audio file opens a file picker');
+      expect(rendered.text()).toContain(
+        'Your browser asks before Stims hears the microphone',
+      );
     } finally {
       rendered.dispose();
     }

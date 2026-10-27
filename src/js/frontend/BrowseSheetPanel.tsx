@@ -834,7 +834,7 @@ export function BrowseSheetPanel({
             <span>
               {`Reduce flashing is hiding ${flashHiddenCount.toLocaleString()} preset${
                 flashHiddenCount === 1 ? '' : 's'
-              }. Turning it off shows them and stops the stage dimming flashes.`}
+              }. Turning it off also stops the stage dimming flashes.`}
             </span>
             {/* This switches the saved setting off everywhere, live dimming
                 included. It used to read "Show them", which sounded like a
