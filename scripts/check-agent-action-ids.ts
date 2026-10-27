@@ -289,6 +289,8 @@ function extractDockActionIds(source: string): {
     const expr = m[1].trim();
     const isKnownShape =
       expr === 'item.actionId' ||
+      // A MenuItem's companion button, fed by its own `actionId:` literal.
+      expr === 'companion.actionId' ||
       expr === 'transitionActionId(step)' ||
       expr.startsWith('`audio-');
     if (!isKnownShape) {

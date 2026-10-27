@@ -105,6 +105,8 @@ export interface WorkspaceContextValue {
 
   handleImport: (files: FileList | File[] | null) => Promise<void>;
   handleShowCurrentLink: () => Promise<void>;
+  /** Copies an `<iframe>` for the preset on stage; resolves true once copied. */
+  handleCopyEmbedCode: () => Promise<boolean>;
   updatePanel: (panel: PanelState) => void;
 }
 
@@ -385,6 +387,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       presetQueue,
       handleImport: shellOrchestration.handleImport,
       handleShowCurrentLink: shellOrchestration.handleShowCurrentLink,
+      handleCopyEmbedCode: shellOrchestration.handleCopyEmbedCode,
       updatePanel: shellOrchestration.updatePanel,
     }),
     [
@@ -422,6 +425,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       presetQueue,
       shellOrchestration.handleImport,
       shellOrchestration.handleShowCurrentLink,
+      shellOrchestration.handleCopyEmbedCode,
       shellOrchestration.updatePanel,
     ],
   );

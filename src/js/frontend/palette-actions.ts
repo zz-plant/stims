@@ -50,6 +50,8 @@ import {
 import {
   cameraMenuLabel,
   castMenuLabel,
+  copyEmbedCodeLabel,
+  embedCodeState,
   endWatchParty,
   isCameraInputOn,
   nearbyPresetRequest,
@@ -69,6 +71,7 @@ import {
   toggleProjectorAction,
   toggleReduceFlashingAction,
 } from './workspace-actions.ts';
+import { findActivePresetEntry } from './workspace-helpers.ts';
 
 /**
  * Rows whose effect depends on state (a toggle, a panel that closes when it
@@ -412,6 +415,28 @@ export function buildPaletteActions(
       },
       keywords: ['copy', 'url', 'remix', 'draft'],
       run: () => void uiRef.current.handleShowCurrentLink(),
+    },
+    {
+      id: 'copy-embed-code',
+      group: 'Share',
+      // Names the one way the frame differs from the stage before it is
+      // copied: it plays the preset as the catalog has it, never the draft.
+      get label() {
+        const engine = engineBridgeRef.current;
+        return copyEmbedCodeLabel(
+          embedCodeState(
+            findActivePresetEntry(
+              engineSnapshotRef.current?.activePresetId,
+              engine,
+            ) ??
+              engine.selectedPreset ??
+              engine.featuredPreset,
+            editorDirty,
+          ),
+        );
+      },
+      keywords: ['embed', 'iframe', 'html', 'website', 'blog', 'snippet'],
+      run: () => void uiRef.current.handleCopyEmbedCode(),
     },
     {
       id: 'watch-party',
