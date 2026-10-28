@@ -117,11 +117,26 @@
   outline-offset: 2px;
 }
 
-/* Phones drop it from the bar, as they drop save and full screen (see the
-   480px block below): every 44px control there comes out of the title,
-   which is the one thing the bar exists to show, and with Edit in the row it
-   read "Cere…". "Edit preset code" stays one tap away in the menu. */
+/* Phones keep Edit on the bar as a pencil in its ring. Every 44px there
+   comes out of the title, the one thing the bar exists to show: with the
+   word as well, a 390px phone left the title 46px and cut "Curlique" short.
+   The folded dock's chip says "Edit" in words, and the button's accessible
+   name says what it does. Narrower than a 375px phone the pencil goes too:
+   at 360px it left the title 42px, short of "Curlique"; the folded chip and
+   the menu still open the editor there. */
 @media (max-width: 480px) {
+  .editEntry {
+    justify-content: center;
+    width: 44px;
+    padding: 0;
+  }
+
+  .editLabel {
+    display: none;
+  }
+}
+
+@media (max-width: 374px) {
   .editEntry {
     display: none;
   }
@@ -353,6 +368,63 @@
   outline-offset: 1px;
 }
 
+/* The icon buttons' names, shown on hover and on keyboard focus. A `title`
+   tooltip appears only after a hover delay and never for a keyboard user,
+   so a row of glyphs (a ring, a shuffle, a star) had to be guessed at.
+   Above the button, in the menu's own panel colours, with no motion. */
+.navBtn[data-hint],
+.menuBtn[data-hint] {
+  position: relative;
+}
+
+.navBtn[data-hint]::after,
+.menuBtn[data-hint]::after {
+  content: attr(data-hint);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+  border-radius: var(--radius-sm);
+  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  color: var(--ctl-ink);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* Hover only where a pointer can hover: on touch, :hover sticks after a tap
+   and would leave a label hanging over the stage. */
+@media (hover: hover) {
+  .navBtn[data-hint]:hover::after,
+  .menuBtn[data-hint]:hover::after {
+    visibility: visible;
+  }
+}
+
+.navBtn[data-hint]:focus-visible::after,
+.menuBtn[data-hint]:focus-visible::after {
+  visibility: visible;
+}
+
+/* The menu button sits at the pill's right end; its label would hang off
+   the screen edge if centred. */
+.menuBtn[data-hint]::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+/* Not while its menu is open: the menu already says what it is. */
+.menuBtn[data-hint][aria-expanded="true"]:hover::after,
+.menuBtn[data-hint][aria-expanded="true"]:focus-visible::after {
+  visibility: hidden;
+}
+
 /* Dims the stage behind the open menu.
 
    The menu is 26 items and, on a phone, most of the screen. Without a scrim
@@ -487,6 +559,14 @@
   color: var(--ctl-ink-3);
 }
 
+/* What the row does beyond its rungs: the transition is a saved default,
+   and two of the audio sources open a browser prompt. */
+.menuGroupHint {
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--ctl-ink-3);
+}
+
 /* The engine's actual value, printed only when no rung below is it. */
 .menuGroupValue {
   color: var(--ctl-ink-2);
@@ -534,6 +614,40 @@
 .menuOption:focus-visible {
   outline: 2px solid var(--stims-accent);
   outline-offset: 1px;
+}
+
+/* ── A row with a companion (Share link + Embed) ──────────────────────
+   The row's own item keeps its full hit area; the companion is one of the
+   flat options the radio rows use, sized to its word. */
+.menuRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.menuRow > .menuItem {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.menuCompanion {
+  flex: 0 0 auto;
+  margin-right: 4px;
+  padding: 5px 10px;
+}
+
+.menuCompanion[aria-disabled="true"] {
+  color: var(--ctl-ink-3);
+  border-style: dashed;
+}
+
+/* Lined up under the row's label, past the icon slot. */
+.menuNote {
+  display: block;
+  padding: 0 10px 6px 34px;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--ctl-ink-3);
 }
 
 .menuSep {
@@ -626,18 +740,9 @@
   cursor: pointer;
   transition:
     opacity 0.25s ease,
-    transform var(--spring-enter),
+    transform var(--motion-enter),
     border-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
-}
-
-/* Phones drop the bar's own Edit below 480px (the editor sheet covers the
-   stage there); the folded chip follows it rather than advertising harder
-   into the same open problem. */
-@media (max-width: 480px) {
-  .foldedEdit {
-    display: none;
-  }
 }
 
 .foldedEdit:focus-visible {
@@ -666,7 +771,7 @@
   cursor: pointer;
   transition:
     opacity 0.25s ease,
-    transform var(--spring-enter),
+    transform var(--motion-enter),
     border-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
@@ -693,8 +798,16 @@
   visibility: visible;
   transition:
     opacity 0.25s ease 0.15s,
-    transform var(--spring-enter) 0.15s,
+    transform var(--motion-enter) 0.15s,
     visibility 0s linear 0.15s;
+}
+
+/* Beside the Edit chip on a phone, the handle gives up width so the pair
+   stays on screen: at its full 280px the two ran 15px past a 360px screen. */
+@media (max-width: 480px) {
+  .handle {
+    min-width: min(280px, calc(100vw - 112px));
+  }
 }
 
 .handle[data-visible="true"]:hover {
@@ -807,6 +920,10 @@
 
   .menuOption {
     padding: 10px 6px;
+  }
+
+  .menuCompanion {
+    padding: 10px 12px;
   }
 }
 

@@ -5,7 +5,7 @@
 
 import { isolateHistory, redo, undo } from '@codemirror/commands';
 import type { EditorState } from '@codemirror/state';
-import type { EditorView } from '@codemirror/view';
+import { EditorView } from '@codemirror/view';
 import {
   computeMidiGutterInfo,
   findMilkdropEquationLine,
@@ -24,6 +24,7 @@ import {
 } from 'milkdrop-toolchain/src/preset-dataflow.ts';
 import { analyzePresetMath } from 'milkdrop-toolchain/src/preset-math-analyzer.ts';
 import { webMidiService } from '../../core/services/webmidi-controller.ts';
+import { attachTwoStepConfirm } from '../../core/two-step-confirm.ts';
 import { renderIconSvg } from '../../ui/icon-library.ts';
 import {
   COLOR_GROUPS,
@@ -57,10 +58,20 @@ import {
   mutatePresetStyle,
   PRESET_MUTATION_STYLES,
 } from '../preset-mutations.ts';
+import { clearRenderIsolation } from '../render-isolation.ts';
 import { parseSlotName, slotControls } from '../slot-controls.ts';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { subscribeVariables } from '../variable-probe.ts';
-import { createEditorView, setMidiGutterInfo } from './editor-codemirror.ts';
+import {
+  audioSourcesByLine,
+  type FieldAudio,
+  formatAudioSources,
+} from './editor-audio-sources.ts';
+import {
+  createEditorView,
+  setAudioSourcesReader,
+  setMidiGutterInfo,
+} from './editor-codemirror.ts';
 import { computeAstDiagnostics, mergeDiagnostics } from './editor-parser';
 import {
   type AssignedVariable,
@@ -186,8 +197,8 @@ function liveHintForFields(doc: string, keys: string[]): string {
     const kind = getFieldOverwriteKind(doc, key);
     if (kind === 'none') continue;
     return kind === 'relative'
-      ? 'Overwritten every frame — this drag moves its base'
-      : "Overwritten every frame — this value won't stick";
+      ? 'Overwritten every frame: this drag moves its base'
+      : "Overwritten every frame: this value won't stick";
   }
   return '';
 }
@@ -209,6 +220,13 @@ function audioReaching(
   return reached.length > 0 ? [...new Set(reached.flat())].sort() : null;
 }
 
+/** The inline sources' tooltip: `zoom follows bass, mid, treb`. */
+function describeAudioSources(fields: FieldAudio[]): string {
+  return `${fields
+    .map(({ field, audio }) => `${field} follows ${audio.join(', ')}`)
+    .join('; ')}, through the equations on stage.`;
+}
+
 export class EditorPanel {
   readonly element: HTMLElement;
 
@@ -221,17 +239,22 @@ export class EditorPanel {
   private readonly shaderPane: ShaderPane;
   private readonly callbacks: EditorPanelCallbacks;
   private readonly note: HTMLElement;
+  private readonly actionNotice: HTMLElement;
+  private actionNoticeTimer: number | undefined;
   private readonly stateEl: HTMLElement;
   private readonly stateLabel: HTMLElement;
+  /** What the state line says to a screen reader; see renderSessionState. */
+  private readonly stateAnnouncement: HTMLElement;
   private readonly safetyFlag: HTMLElement;
   private readonly stage: HTMLElement;
   private readonly problems: HTMLElement;
+  private readonly problemsToggle: HTMLButtonElement;
   private readonly problemsCount: HTMLElement;
   private readonly problemsBody: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly deleteButton: HTMLButtonElement;
-  /** Relabelled per compile: what the link carries depends on `state.dirty`. */
-  private readonly shareLinkItem: HTMLButtonElement;
+  /** Renamed per compile: what the link carries depends on `state.dirty`. */
+  private readonly shareLinkButton: HTMLButtonElement;
   private readonly editor: EditorView;
   private readonly clearEditorDebounce: () => void;
   private readonly resetEditorHistory: () => void;
@@ -356,6 +379,15 @@ export class EditorPanel {
     signature: string;
     dataflow: PresetDataflow;
   } | null = null;
+  /** The dataflow the code's inline sources were last read from. */
+  private audioSourcesDataflow: PresetDataflow | null = null;
+  /** A preset just loaded: once its sources are known, scroll the code to
+   * the first line that has some, unless the visitor got there first. */
+  private revealAudioSourcesPending = false;
+  private revealObserver: ResizeObserver | null = null;
+  /** The note's last content, so an unchanged note is not rewritten: it is
+   * a live region, and a rewrite can be read out again. */
+  private noteKey = '';
   /** Whether the Tune pane is on screen: its tab selected, the dock open. */
   private tuneVisible = true;
   /** Faders whose tick follows the frame, keyed to the name the VM keeps
@@ -413,11 +445,21 @@ export class EditorPanel {
     this.stateEl = document.createElement('span');
     this.stateEl.className = 'stims-editor__state';
     this.stateEl.dataset.state = 'synced';
+    // A live region, so a compile error is heard as well as seen: "Holding
+    // last good frame" was never announced. It speaks from its own text, not
+    // the visible label, which flips to "Queued" at every pause in typing.
+    this.stateEl.setAttribute('role', 'status');
+    this.stateEl.setAttribute('aria-atomic', 'true');
     const stateDot = document.createElement('span');
     stateDot.className = 'stims-editor__dot';
+    stateDot.setAttribute('aria-hidden', 'true');
     this.stateLabel = document.createElement('span');
     this.stateLabel.textContent = 'Synced';
-    this.stateEl.append(stateDot, this.stateLabel);
+    this.stateLabel.setAttribute('aria-hidden', 'true');
+    this.stateAnnouncement = document.createElement('span');
+    this.stateAnnouncement.className = 'stims-editor__sr-only';
+    this.stateAnnouncement.textContent = 'Synced';
+    this.stateEl.append(stateDot, this.stateLabel, this.stateAnnouncement);
 
     const flags = document.createElement('div');
     flags.className = 'stims-editor__flags';
@@ -439,15 +481,20 @@ export class EditorPanel {
 
     // ── Toolbar ───────────────────────────────────────────────────
     // One primary action, one destructive-free secondary, undo/redo as a
-    // single segmented control, and everything preset-level behind an
-    // overflow menu. The old row gave nine buttons identical weight.
+    // single segmented control, the share link, and everything else behind an
+    // overflow menu. The old row gave nine buttons identical weight. It wraps
+    // rather than overflows: at 1280x720 it ran 58px past the panel and the
+    // menu, with Remix, Download and Import in it, sat off screen.
     const toolbar = document.createElement('div');
     toolbar.className = 'stims-editor__toolbar';
 
-    const applyButton = this.createButton('Update now', {
+    // Edits reach the stage on their own after a short pause; this only
+    // skips the wait. "Update now" read as a save.
+    const applyButton = this.createButton('Apply to stage now', {
       variant: 'primary',
-      title: 'Apply the draft now (Cmd/Ctrl+Enter)',
-      ariaLabel: 'Update now — apply the draft (Cmd/Ctrl+Enter)',
+      title:
+        'Edits reach the stage on their own after a short pause; this applies them at once (Cmd/Ctrl+Enter). It does not save.',
+      ariaLabel: 'Apply to stage now (Cmd/Ctrl+Enter)',
       onClick: () => this.applyCurrentSource(),
     });
     applyButton.dataset.action = 'apply';
@@ -455,10 +502,13 @@ export class EditorPanel {
     // Back to the preset as shipped (or as saved, for one you made). This
     // used to reset to the *active* source, which with edits applied as you
     // type was the edit itself — so it did nothing, and an edited preset had
-    // no way back. Undoable like any other edit.
+    // no way back. Undoable like any other edit. "Revert" on the button, as
+    // the notes above the code call it; the full name keeps the destination,
+    // and the shorter label keeps the toolbar to one row in the desktop rail.
     const revertButton = this.createButton('Revert', {
-      title: 'Revert to the original preset (Cmd/Ctrl+Z undoes it)',
-      ariaLabel: 'Revert to the original preset',
+      title:
+        'Put back the preset as shipped, or as you last saved it if it is yours. Cmd/Ctrl+Z undoes it.',
+      ariaLabel: 'Revert to original',
       onClick: () => void this.revertToOriginal(),
     });
     revertButton.dataset.action = 'editor-revert-original';
@@ -488,9 +538,6 @@ export class EditorPanel {
         },
       }),
     );
-
-    const spacer = document.createElement('div');
-    spacer.className = 'stims-editor__spacer';
 
     const menuWrap = document.createElement('div');
     menuWrap.className = 'stims-editor__menu-wrap';
@@ -574,26 +621,62 @@ export class EditorPanel {
     });
     const menuSeparator = document.createElement('div');
     menuSeparator.className = 'stims-editor__menu-sep';
-    this.deleteButton = menuItem(
-      'Delete preset',
-      () => this.callbacks.onDeletePreset(),
-      'danger',
-    );
+    // Deleting removes the preset from the library for good, so the item
+    // asks once, in place: the first press arms it, the second deletes. It
+    // is built apart from menuItem because that closes the menu on press.
+    this.deleteButton = document.createElement('button');
+    this.deleteButton.type = 'button';
+    this.deleteButton.className = 'stims-editor__menu-item';
+    this.deleteButton.setAttribute('role', 'menuitem');
+    this.deleteButton.tabIndex = -1;
+    this.deleteButton.dataset.tone = 'danger';
+    this.deleteButton.dataset.action = 'editor-delete-preset';
+    this.deleteButton.textContent = 'Delete preset';
+    this.deleteButton.title =
+      "Removes this preset from your library. This can't be undone.";
+    attachTwoStepConfirm(this.deleteButton, {
+      confirmLabel: 'Delete for good',
+      onConfirm: () => {
+        closeMenu();
+        this.callbacks.onDeletePreset();
+      },
+    });
     this.deleteButton.hidden = true;
-    // Sits with Export because they answer the same question — "how do I get
-    // this out of here" — and a link is the answer people reach for first.
-    this.shareLinkItem = menuItem('Copy link to this preset', () =>
-      this.callbacks.onCopyShareLink(),
+    // A navigation aid, not a preset action, so it leads the menu on its own.
+    // It was a toolbar button, which pushed the menu off the panel.
+    const jumpItem = menuItem('Jump to variable…', () =>
+      this.openVariableJump(),
     );
-    this.shareLinkItem.dataset.action = 'editor-copy-share-link';
+    jumpItem.dataset.action = 'editor-jump-variable';
+    jumpItem.title = 'Find a variable and move the cursor to it';
+    jumpItem.setAttribute('aria-keyshortcuts', 'Control+J Meta+J');
+    const jumpShortcut = document.createElement('span');
+    jumpShortcut.className = 'stims-editor__shortcut';
+    jumpShortcut.textContent = '⌘/Ctrl+J';
+    jumpShortcut.setAttribute('aria-hidden', 'true');
+    jumpItem.append(jumpShortcut);
+    const jumpSeparator = document.createElement('div');
+    jumpSeparator.className = 'stims-editor__menu-sep';
+    // "Remix" leads because the authoring lessons teach it by that name.
+    const remixItem = menuItem('Remix: save a copy and edit it', () =>
+      this.callbacks.onDuplicatePreset(),
+    );
+    remixItem.title =
+      'Adds a remix of this preset to your library and switches the stage to it';
+    const exportItem = menuItem('Download .milk file', () =>
+      this.exportPreset(),
+    );
+    exportItem.title =
+      'Downloads the version on stage as a MilkDrop 2 .milk file';
     menu.append(
-      menuItem('Remix', () => this.callbacks.onDuplicatePreset()),
-      menuItem('Snapshot as Slot A', () => this.snapshotSlotA()),
-      menuItem('Snapshot as Slot B', () => this.snapshotSlotB()),
-      menuItem('Clear snapshots', () => this.clearSnapshots()),
-      menuItem('Import…', () => this.callbacks.onRequestImport()),
-      menuItem('Export', () => this.callbacks.onExport()),
-      this.shareLinkItem,
+      jumpItem,
+      jumpSeparator,
+      remixItem,
+      menuItem('Keep this as A, to compare', () => this.snapshotSlotA()),
+      menuItem('Keep this as B, to compare', () => this.snapshotSlotB()),
+      menuItem('Stop comparing A and B', () => this.forgetSnapshots()),
+      menuItem('Import preset files…', () => this.callbacks.onRequestImport()),
+      exportItem,
       menuSeparator,
       this.deleteButton,
     );
@@ -621,33 +704,47 @@ export class EditorPanel {
       document.removeEventListener('keydown', dismissMenuOnEscape, true);
     };
 
-    this.abButton = this.createButton('A/B', {
+    this.abButton = this.createButton('Show original', {
       title: 'Compare with the original (Cmd/Ctrl+Shift+B)',
-      ariaLabel: 'Compare with the original (Cmd/Ctrl+Shift+B)',
+      ariaLabel: 'Show original (Cmd/Ctrl+Shift+B)',
       onClick: () => void this.toggleAbSnapshot(),
     });
     this.abButton.dataset.action = 'ab-toggle';
+    this.abButton.setAttribute('aria-pressed', 'false');
 
-    const jumpButton = this.createButton('Jump', {
-      ariaLabel: 'Jump to variable (Cmd/Ctrl+J)',
-      onClick: () => this.openVariableJump(),
+    // "Copy link" everywhere it is named: here, in the first-edit guide and
+    // in the hint the first edit raises. It was a menu item, "Copy link to
+    // this edit", that the guide sent people to "the editor toolbar" for.
+    this.shareLinkButton = this.createButton('Copy link', {
+      title:
+        'Copies a link to this preset. Edit anything and the link carries your draft too.',
+      ariaLabel: 'Copy link to this preset',
+      onClick: () => this.callbacks.onCopyShareLink(),
     });
-    jumpButton.dataset.action = 'editor-jump-variable';
+    this.shareLinkButton.dataset.action = 'editor-copy-share-link';
 
     toolbar.append(
       applyButton,
       revertButton,
       this.abButton,
       undoRedo,
-      jumpButton,
-      spacer,
+      this.shareLinkButton,
       menuWrap,
     );
 
     this.note = document.createElement('div');
     this.note.className = 'stims-editor__note';
+    this.note.setAttribute('role', 'status');
     this.note.textContent = '';
     this.note.hidden = true;
+
+    // What a toolbar or menu action did, when that is not visible in the
+    // code: an A/B slot taken, an export that is not the editor's text.
+    this.actionNotice = document.createElement('p');
+    this.actionNotice.className =
+      'stims-editor__hint stims-editor__action-notice';
+    this.actionNotice.setAttribute('aria-live', 'polite');
+    this.actionNotice.hidden = true;
 
     // ── Stage: the code, and anything layered over it ─────────────
     this.stage = document.createElement('div');
@@ -690,9 +787,10 @@ export class EditorPanel {
       isChangeSuppressed: () => this.suppressEditorChange,
       onQuickFixDiagnostic: (diagnostic) =>
         this.applyQuickFixForDiagnostic(diagnostic),
-      // Escape out of the code lands on the primary action rather than
-      // dropping focus on <body>.
-      onEscapeBlur: () => applyButton.focus(),
+      // Escape out of the code lands on the control after it, as Tab would
+      // anywhere else. It used to land on Apply, above the code, so the next
+      // Tab went straight back in and indented the preset.
+      onEscapeBlur: () => this.problemsToggle.focus(),
       onJumpToVariable: () => this.openVariableJump(),
       onToggleAbSnapshot: () => void this.toggleAbSnapshot(),
     });
@@ -706,6 +804,12 @@ export class EditorPanel {
     this.flushEditorDocChange = editorViewState.flushDocChange;
     this.setEditorDiagnostics = editorViewState.setDiagnostics;
 
+    // Clicking or tabbing into the code before the sources arrive means the
+    // visitor has a place in it already; the reveal would move them off it.
+    editorHost.addEventListener('focusin', () => {
+      this.revealAudioSourcesPending = false;
+    });
+
     this.stage.append(this.note, editorHost);
 
     // ── Problems strip ────────────────────────────────────────────
@@ -718,6 +822,7 @@ export class EditorPanel {
     const problemsHead = document.createElement('div');
     problemsHead.className = 'stims-editor__problems-head';
     const problemsToggle = document.createElement('button');
+    this.problemsToggle = problemsToggle;
     problemsToggle.type = 'button';
     problemsToggle.className = 'stims-editor__problems-toggle';
     problemsToggle.setAttribute('aria-expanded', 'true');
@@ -806,7 +911,7 @@ export class EditorPanel {
       // Selecting a tab in a collapsed dock should show it, not silently
       // change a hidden selection.
       dock.dataset.open = 'true';
-      dockToggle.textContent = '▾';
+      paintDockToggle(true);
       tabButtons.forEach((other, otherIndex) => {
         const selected = other === tab;
         other.setAttribute('aria-selected', String(selected));
@@ -825,6 +930,10 @@ export class EditorPanel {
       tab.type = 'button';
       tab.className = 'stims-editor__tab';
       tab.textContent = pane.label;
+      // The short names are kept (the docs teach them); the tooltip says
+      // what each holds, for the ones a newcomer cannot guess.
+      const tabHint = TAB_HINTS[pane.id];
+      if (tabHint) tab.title = tabHint;
       tab.id = `stims-editor-tab-${pane.id}`;
       tab.setAttribute('role', 'tab');
       tab.setAttribute('aria-selected', String(index === 0));
@@ -883,13 +992,22 @@ export class EditorPanel {
     const dockToggle = document.createElement('button');
     dockToggle.type = 'button';
     dockToggle.className = 'stims-editor__dock-toggle';
-    dockToggle.textContent = '▾';
-    dockToggle.title = 'Collapse the dock to give the code more room';
-    dockToggle.setAttribute('aria-label', 'Toggle editor dock');
+    // The glyph alone never said which way it goes, and the tooltip stayed
+    // "Collapse" after a collapse; both now follow the state.
+    const paintDockToggle = (open: boolean) => {
+      dockToggle.textContent = open ? '▾' : '▴';
+      const label = open
+        ? 'Collapse the tabs to give the code more room'
+        : 'Expand the tabs';
+      dockToggle.title = label;
+      dockToggle.setAttribute('aria-label', label);
+      dockToggle.setAttribute('aria-expanded', String(open));
+    };
+    paintDockToggle(true);
     dockToggle.addEventListener('click', () => {
       const open = dock.dataset.open !== 'true';
       dock.dataset.open = String(open);
-      dockToggle.textContent = open ? '▾' : '▴';
+      paintDockToggle(open);
       const tuneTab = tabButtons[panes.findIndex((pane) => pane.id === 'tune')];
       this.setTuneVisible(
         open && tuneTab?.getAttribute('aria-selected') === 'true',
@@ -905,7 +1023,14 @@ export class EditorPanel {
     tabRow.append(tabs, dockToggle);
     dock.append(tabRow, dockBody);
 
-    this.element.append(statusBar, toolbar, this.stage, this.problems, dock);
+    this.element.append(
+      statusBar,
+      toolbar,
+      this.actionNotice,
+      this.stage,
+      this.problems,
+      dock,
+    );
 
     const diagnosticsListener = ((
       e: CustomEvent<{ diagnostics: MilkdropDiagnostic[] }>,
@@ -1132,7 +1257,7 @@ export class EditorPanel {
     const hint = document.createElement('p');
     hint.className = 'stims-editor__hint';
     hint.textContent =
-      'Every result arrives as a reviewable diff over the code — nothing is applied until you accept it.';
+      "These send this preset's code to an AI service. Code changes arrive as a diff to review; nothing is applied until you accept it. Quick restyles below run in this browser.";
 
     const form = document.createElement('div');
     form.className = 'stims-editor__assist-form';
@@ -1141,11 +1266,13 @@ export class EditorPanel {
     input.className = 'stims-editor__assist-input';
     input.placeholder = 'make it more blue · add a slow rotation';
     input.setAttribute('aria-label', 'Describe the change you want');
-    const refineBtn = this.createButton('Refine', {
+    const refineBtn = this.createButton('Refine with AI', {
+      title:
+        "Sends the code and your request to an AI service; you review the change before it's applied",
       onClick: () => {
         void this.runAssist({
           button: refineBtn,
-          label: 'Refine',
+          label: 'Refine with AI',
           instruction: input.value.trim(),
           proposalLabel: 'Refine',
           onApplied: () => {
@@ -1161,26 +1288,30 @@ export class EditorPanel {
 
     const actions = document.createElement('div');
     actions.className = 'stims-editor__assist-actions';
-    const explainBtn = this.createButton('Explain', {
-      title: 'Explain what this preset does visually',
+    const explainBtn = this.createButton('Explain with AI', {
+      title:
+        'Sends the code to an AI service for a plain-language account of what it draws; the code is not changed',
       onClick: () => {
         void this.runAssist({
           button: explainBtn,
-          label: 'Explain',
+          label: 'Explain with AI',
           instruction: 'explain this preset',
         });
       },
     });
-    const variationsBtn = this.createButton('Variations', {
-      title: 'Generate preset variations',
+    // The endpoint takes a description, not a preset, so what comes back are
+    // new presets prompted by the start of this code, not edits of it.
+    const variationsBtn = this.createButton('New presets from this, with AI', {
+      title:
+        'Sends the start of this code to an AI service, which writes three new presets inspired by it. Review each before applying one.',
       onClick: () => this.handleBatchGenerate(),
     });
 
     const blend = document.createElement('div');
     blend.className = 'stims-editor__blend';
     blend.hidden = true;
-    const blendBtn = this.createButton('Blend…', {
-      title: 'Blend with another preset',
+    const blendBtn = this.createButton('Blend with AI…', {
+      title: "Combine this preset with another one's code, using an AI service",
       onClick: () => {
         blend.hidden = !blend.hidden;
         if (!blend.hidden) blendTextarea.focus();
@@ -1190,12 +1321,14 @@ export class EditorPanel {
 
     const blendTextarea = document.createElement('textarea');
     blendTextarea.className = 'stims-editor__assist-textarea';
-    blendTextarea.placeholder = 'Paste a second preset source or preset ID';
+    // The text goes to the service as the second preset's code: an id typed
+    // here was sent as if it were code.
+    blendTextarea.placeholder = "Paste the other preset's code";
     blendTextarea.rows = 4;
     blendTextarea.setAttribute('aria-label', 'Second preset to blend with');
     const blendActions = document.createElement('div');
     blendActions.className = 'stims-editor__assist-actions';
-    const blendSubmit = this.createButton('Blend', {
+    const blendSubmit = this.createButton('Blend with AI', {
       onClick: () => {
         const sourceB = blendTextarea.value.trim();
         if (!sourceB || this.aiPending) return;
@@ -1288,7 +1421,10 @@ export class EditorPanel {
       if (options.instruction === 'explain this preset') {
         const currentSource = this.editor.state.doc.toString();
         const mathAnalysis = analyzePresetMath(currentSource);
-        this.showExplanation(mathAnalysis.summary);
+        // Said up front: the button promised AI, and this is not it.
+        this.showExplanation(
+          `The AI service did not answer, so this comes from reading the equations in this browser. ${mathAnalysis.summary}`,
+        );
         options.button.textContent = options.label;
         this.setRefinePending(false);
         return;
@@ -1449,7 +1585,10 @@ export class EditorPanel {
         const restore = document.createElement('button');
         restore.type = 'button';
         restore.className = 'stims-editor__btn';
-        restore.textContent = 'Restore';
+        restore.textContent = 'Restore version';
+        restore.title =
+          'Puts this version in the editor and on stage. The code there now is kept as a checkpoint.';
+        restore.setAttribute('aria-label', `Restore version ${version.name}`);
         restore.addEventListener('click', () =>
           this.restoreSource(version.source),
         );
@@ -1457,10 +1596,14 @@ export class EditorPanel {
         remove.type = 'button';
         remove.className = 'stims-editor__btn';
         remove.textContent = 'Delete';
+        remove.title = "Deletes this saved version. This can't be undone.";
         remove.setAttribute('aria-label', `Delete version ${version.name}`);
-        remove.addEventListener('click', () => {
-          this.versions.remove(presetKey, version.id);
-          this.paintVersions();
+        attachTwoStepConfirm(remove, {
+          confirmLabel: 'Delete this version',
+          onConfirm: () => {
+            this.versions.remove(presetKey, version.id);
+            this.paintVersions();
+          },
         });
         head.append(meta, compare, restore, remove);
         row.appendChild(head);
@@ -1564,6 +1707,7 @@ export class EditorPanel {
       this.clearEditorDebounce();
     }
     if (presetLoaded) {
+      this.revealAudioSourcesPending = true;
       // A/B slots hold whole buffers. Carried across a switch, toggling
       // pasted the previous preset's code into this one.
       this.clearSnapshots();
@@ -1606,6 +1750,9 @@ export class EditorPanel {
         },
       });
       this.suppressEditorChange = false;
+      // Replacing the whole buffer deleted every tag; read them again even
+      // when the compile on stage is the one they came from.
+      this.audioSourcesDataflow = null;
     }
     if (nextSource === this.editor.state.doc.toString()) {
       this.hasBufferedEdits = false;
@@ -1649,23 +1796,36 @@ export class EditorPanel {
     // The status label already names the state and the problems strip
     // already counts it, so the note only carries what neither says: what
     // to do next.
+    // Both notes name the toolbar's Revert button by its label; they used to
+    // say "Reset", which no control here is called. They also answer the
+    // question an editor raises first: is this kept? A draft that compiles
+    // is saved per preset in this browser (draft-persistence.ts) and comes
+    // back on the next load; text with errors is not, so the stage and the
+    // saved copy both hold the last version that ran.
+    // The note is a live region, so it changes only when its message does:
+    // once a draft is live, a pause in typing leaves it saying so instead of
+    // flipping to "Queued" and back, which the state line already shows.
     const baseStatus = hasErrors
-      ? 'Fix the errors below, or Reset to return to the active source.'
-      : this.hasBufferedEdits
-        ? 'Queued — Cmd/Ctrl+Enter punches it in now.'
-        : state.dirty
-          ? 'Draft is live on stage. Reset returns to the saved source.'
+      ? 'Fix the errors below. Until then the stage and your saved draft keep the last version that ran; Revert restores the original.'
+      : state.dirty
+        ? 'Draft is live on stage and saved in this browser. Revert restores the original.'
+        : this.hasBufferedEdits
+          ? 'Queued — Cmd/Ctrl+Enter punches it in now.'
           : '';
 
-    if (hasErrors) {
-      this.note.innerHTML = `${renderIconSvg('warning', {
-        className: 'stims-editor__note-icon',
-      })}<span>${escapeHtml(baseStatus)}</span>`;
-    } else {
-      this.note.textContent = baseStatus;
+    const noteKey = `${hasErrors}|${shouldShowStatus}|${baseStatus}`;
+    if (noteKey !== this.noteKey) {
+      this.noteKey = noteKey;
+      if (hasErrors) {
+        this.note.innerHTML = `${renderIconSvg('warning', {
+          className: 'stims-editor__note-icon',
+        })}<span>${escapeHtml(baseStatus)}</span>`;
+      } else {
+        this.note.textContent = baseStatus;
+      }
+      this.note.hidden = !shouldShowStatus;
+      this.note.classList.toggle('stims-editor__note--error', hasErrors);
     }
-    this.note.hidden = !shouldShowStatus;
-    this.note.classList.toggle('stims-editor__note--error', hasErrors);
 
     // The dot answers "is what I see on stage what I typed?" — the only
     // question the old four badges were collectively trying to answer.
@@ -1678,10 +1838,11 @@ export class EditorPanel {
           : 'synced';
     // Says out loud that the draft rides along, at the one moment the claim
     // is checkable: the reader has unsaved edits in front of them.
-    this.shareLinkItem.textContent = state.dirty
-      ? 'Copy link to this edit'
-      : 'Copy link to this preset';
-    this.shareLinkItem.title = state.dirty
+    this.shareLinkButton.setAttribute(
+      'aria-label',
+      state.dirty ? 'Copy link to this edit' : 'Copy link to this preset',
+    );
+    this.shareLinkButton.title = state.dirty
       ? 'Copies a link carrying your unsaved source, so it opens in their editor exactly as it is here.'
       : 'Copies a link to this preset. Edit anything and the link carries your draft too.';
 
@@ -1693,8 +1854,23 @@ export class EditorPanel {
         : state.dirty
           ? 'Draft live'
           : 'Synced';
+    // Heard: an error count that changes, and the draft going live or back
+    // to the original. Not heard: "Queued", at every pause in typing.
+    const announcement = hasErrors
+      ? `Holding last good frame: ${errors.length} ${
+          errors.length === 1 ? 'error' : 'errors'
+        }`
+      : this.hasBufferedEdits
+        ? this.stateAnnouncement.textContent
+        : state.dirty
+          ? 'Draft live'
+          : 'Synced';
+    if (announcement !== this.stateAnnouncement.textContent) {
+      this.stateAnnouncement.textContent = announcement;
+    }
 
     this.updateControlDataflow(state.activeCompiled);
+    this.paintAudioSources();
     this.compatPane.update(state);
     this.shaderPane.update(state);
     this.texturesPane.update(state);
@@ -1835,6 +2011,74 @@ export class EditorPanel {
     };
   }
 
+  /** Puts the driving sounds on the code's lines, from the same dataflow the
+   * Tune chips read, and on a fresh preset scrolls the first of them into
+   * view: the code opens on line 1, and the first-run preset's equations
+   * start at line 208. */
+  private paintAudioSources(): void {
+    const dataflow = this.controlDataflow?.dataflow ?? null;
+    if (dataflow !== this.audioSourcesDataflow) {
+      this.audioSourcesDataflow = dataflow;
+      this.editor.dispatch({
+        effects: setAudioSourcesReader.of(
+          dataflow
+            ? (doc) =>
+                audioSourcesByLine(doc, dataflow).map(({ line, fields }) => ({
+                  line,
+                  text: formatAudioSources(fields),
+                  title: describeAudioSources(fields),
+                }))
+            : null,
+        ),
+      });
+    }
+    if (!this.revealAudioSourcesPending || !dataflow) return;
+    const first = audioSourcesByLine(
+      this.editor.state.doc.toString(),
+      dataflow,
+    )[0];
+    if (!first) {
+      this.revealAudioSourcesPending = false;
+      return;
+    }
+    const scroller = this.editor.scrollDOM;
+    const reveal = () => {
+      // The visitor may have clicked into the code, or a preset load may
+      // have replaced it, while this waited for layout.
+      if (
+        !this.revealAudioSourcesPending ||
+        first.line > this.editor.state.doc.lines
+      )
+        return;
+      this.revealAudioSourcesPending = false;
+      this.editor.dispatch({
+        effects: EditorView.scrollIntoView(
+          this.editor.state.doc.line(first.line).from,
+          { y: 'start' },
+        ),
+      });
+    };
+    // The first compile can arrive before the panel has its height: the code
+    // is then as tall as the document, there is nothing to scroll, and an
+    // immediate scroll was lost. Wait until the code scrolls.
+    if (
+      scroller.scrollHeight > scroller.clientHeight ||
+      typeof ResizeObserver === 'undefined'
+    ) {
+      reveal();
+      return;
+    }
+    this.revealObserver?.disconnect();
+    const observer = new ResizeObserver(() => {
+      if (scroller.scrollHeight <= scroller.clientHeight) return;
+      observer.disconnect();
+      this.revealObserver = null;
+      reveal();
+    });
+    this.revealObserver = observer;
+    observer.observe(scroller);
+  }
+
   private refreshMidiGutter(): void {
     const entries =
       this.midiTargets.size === 0
@@ -1908,9 +2152,10 @@ export class EditorPanel {
     this.sliderInputs.forEach((item, key) => {
       const armed = this.learningSliderKey === key;
       item.learnButton.dataset.armed = armed ? 'true' : 'false';
+      item.learnButton.setAttribute('aria-pressed', String(armed));
       item.learnButton.title = armed
         ? `Listening… move a knob or fader to map it to ${key}.`
-        : `MIDI-learn ${key}: click, then move a knob or fader.`;
+        : `Map ${key} to a MIDI control: click, then move a knob or fader.`;
     });
     this.refreshLiveTicks(doc, dataflow);
     this.refreshLiveHintsFromDoc();
@@ -2055,7 +2300,13 @@ export class EditorPanel {
     this.disposeMidiListener = null;
     this.disposeMenuDismiss?.();
     this.disposeMenuDismiss = null;
+    this.revealObserver?.disconnect();
+    this.revealObserver = null;
     window.clearTimeout(this.abNoticeTimer);
+    window.clearTimeout(this.actionNoticeTimer);
+    // Solo and Mute hide parts of the live picture; closing the editor
+    // closes the only place that shows they are on, so they end with it.
+    clearRenderIsolation();
     this.clearEditorDebounce();
     if (this.bufferedEditDebounceId !== null) {
       window.clearTimeout(this.bufferedEditDebounceId);
@@ -2121,8 +2372,13 @@ export class EditorPanel {
     if (this.snapshotSlot === 'A') {
       this.snapshotSourceA = currentDoc;
       if (this.snapshotSourceB === null) {
+        // Nothing to swap to yet: this press keeps the current code as B.
+        // It used to do that with no visible change at all.
         this.snapshotSlot = 'B';
         this.paintAbButton();
+        this.showActionNotice(
+          'Kept the current code as B. Edit it, then press again to compare with A.',
+        );
         this.applyCurrentSource();
         return;
       }
@@ -2168,6 +2424,11 @@ export class EditorPanel {
     this.applyCurrentSource();
   }
 
+  /**
+   * The button names what the next press shows; the view on screen now is
+   * its pressed state and its tooltip. It used to name the view on screen,
+   * so "Original" was the label of the press that left the original.
+   */
   private paintAbButton(notice?: string) {
     const button = this.abButton;
     if (!button) return;
@@ -2179,8 +2440,10 @@ export class EditorPanel {
     }
     if (this.snapshotSourceA === null && this.snapshotSourceB === null) {
       button.dataset.slot = 'none';
-      button.textContent = 'A/B';
+      button.textContent = 'Show original';
       button.title = 'Compare with the original (Cmd/Ctrl+Shift+B)';
+      button.setAttribute('aria-label', 'Show original (Cmd/Ctrl+Shift+B)');
+      button.setAttribute('aria-pressed', 'false');
       return;
     }
     button.dataset.slot = this.snapshotSlot;
@@ -2188,21 +2451,29 @@ export class EditorPanel {
     const showing =
       this.snapshotSlot === 'A'
         ? original
-          ? 'Original'
-          : 'Slot A'
+          ? 'the original'
+          : 'A'
         : original
-          ? 'Your edit'
-          : 'Slot B';
-    const other =
+          ? 'your edit'
+          : 'B';
+    const next =
       this.snapshotSlot === 'A'
         ? original
-          ? 'your edit'
-          : 'slot B'
+          ? 'Back to your edit'
+          : this.snapshotSourceB === null
+            ? 'Keep this as B'
+            : 'Show B'
         : original
-          ? 'the original'
-          : 'slot A';
-    button.textContent = showing;
-    button.title = `Showing ${showing.toLowerCase()} (Cmd/Ctrl+Shift+B shows ${other})`;
+          ? 'Show original'
+          : 'Show A';
+    button.textContent = next;
+    button.title = `Showing ${showing}. Cmd/Ctrl+Shift+B does the same.`;
+    button.setAttribute('aria-label', `${next} (now showing ${showing})`);
+    // Pressed while the comparison is away from the code you were editing.
+    button.setAttribute(
+      'aria-pressed',
+      String(this.snapshotSlot === 'A' && original),
+    );
   }
 
   public snapshotSlotA(): void {
@@ -2210,6 +2481,7 @@ export class EditorPanel {
     this.snapshotSlot = 'A';
     this.abBaseline = 'snapshot';
     this.paintAbButton();
+    this.showActionNotice('Kept the current code as A.');
   }
 
   public snapshotSlotB(): void {
@@ -2217,12 +2489,37 @@ export class EditorPanel {
     this.snapshotSlot = 'B';
     this.abBaseline = 'snapshot';
     this.paintAbButton();
+    this.showActionNotice('Kept the current code as B.');
+  }
+
+  /**
+   * The menu's way out of a comparison. Unlike clearSnapshots, which a
+   * preset load calls and where the buffer is about to be replaced, the
+   * user stays on this preset, so the edit they were comparing comes back
+   * first: clearing while the original showed used to drop it.
+   */
+  public forgetSnapshots(): void {
+    if (this.abEditState !== null) {
+      this.restoreEditorState(this.abEditState);
+      this.abEditState = null;
+      this.clearSnapshots();
+      this.applyCurrentSource();
+      this.showActionNotice('Stopped comparing. Your edit is back.');
+      return;
+    }
+    const hadSlots =
+      this.snapshotSourceA !== null || this.snapshotSourceB !== null;
+    this.clearSnapshots();
+    if (hadSlots) {
+      this.showActionNotice('Stopped comparing. The code shown stays.');
+    }
   }
 
   public clearSnapshots(): void {
     if (this.abEditState !== null) {
       // Dropped, not restored: whatever replaces the buffer next (a preset
-      // load, a revert) is what should be there.
+      // load, a revert) is what should be there. The menu goes through
+      // forgetSnapshots, which restores the edit first.
       this.abEditState = null;
       this.endReadOnly();
     }
@@ -2231,6 +2528,39 @@ export class EditorPanel {
     this.snapshotSlot = 'A';
     this.abBaseline = 'snapshot';
     this.paintAbButton();
+  }
+
+  private showActionNotice(text: string) {
+    window.clearTimeout(this.actionNoticeTimer);
+    this.actionNotice.textContent = text;
+    this.actionNotice.hidden = false;
+    this.actionNoticeTimer = window.setTimeout(() => {
+      this.actionNotice.hidden = true;
+      this.actionNotice.textContent = '';
+    }, 6000);
+  }
+
+  /**
+   * Export writes what is on stage. When the editor holds something else
+   * (code that does not compile, or the original under A/B), the file would
+   * not match what the user is looking at, so say which one they got.
+   */
+  private exportPreset() {
+    this.callbacks.onExport();
+    const state = this.lastSessionState;
+    const hasErrors =
+      state?.diagnostics.some((diag) => diag.severity === 'error') ?? false;
+    if (this.abEditState !== null) {
+      this.showActionNotice(
+        'Downloaded the original, which is on stage now. Go back to your edit to download that instead.',
+      );
+    } else if (hasErrors) {
+      this.showActionNotice(
+        "Downloaded the last version that ran. The editor's code has errors, so it is not in the file.",
+      );
+    } else {
+      this.showActionNotice('Downloaded the .milk file.');
+    }
   }
 
   /** Replace the buffer with the original preset, as one undoable edit. */
@@ -2363,7 +2693,7 @@ export class EditorPanel {
     hintSummary.textContent = 'How Tune works';
     const hintBody = document.createElement('p');
     hintBody.textContent =
-      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value (set) or the preset recomputes it per frame (eq), and from which audio — naming every driving band (eq · bass, mid, treb). Click a chip to jump to the equation doing it.';
+      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value (set) or the preset recomputes it per frame (eq), and from which audio — naming every driving band (eq · bass, mid, treb). midi means a MIDI control or an agent drives it; eq ⚠ means one does, but the equations overwrite it every frame. Click an eq chip to jump to the equation doing it. The ⏺ beside a slider maps it to the next MIDI knob or fader you move; + and × choose whether audio modulation adds to the value or multiplies it.';
     hint.append(hintSummary, hintBody);
     panel.appendChild(hint);
 
@@ -2738,7 +3068,9 @@ export class EditorPanel {
     learnButton.type = 'button';
     learnButton.className = 'stims-editor__slider-btn';
     learnButton.textContent = '⏺';
-    learnButton.setAttribute('aria-label', `MIDI-learn ${s.label}`);
+    learnButton.setAttribute('aria-label', `Map ${s.label} to a MIDI control`);
+    learnButton.setAttribute('aria-pressed', 'false');
+    learnButton.title = `Map ${s.label} to a MIDI control: click, then move a knob or fader.`;
     learnButton.addEventListener('click', () => this.toggleSliderLearn(s.key));
 
     const resetButton = document.createElement('button');
@@ -3605,7 +3937,8 @@ export class EditorPanel {
     btn.type = 'button';
     btn.className = 'stims-editor__btn stims-editor__fix';
     btn.textContent = 'Fix with AI';
-    btn.title = 'Send this error to the AI for automatic correction';
+    btn.title =
+      'Sends the whole preset and this error to an AI service; you review the fix before it is applied';
     btn.style.display = 'none';
     btn.addEventListener('click', () => this.handleQuickFix());
     return btn;
@@ -3627,14 +3960,23 @@ export class EditorPanel {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ currentSource: source, instruction }),
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.milkSource) {
-          this.proposeAssistedEdit(data.milkSource, 'AI fix');
-        }
-        this.setRefinePending(false);
+      .then((r) => {
+        if (!r.ok) throw new Error(`Refine API: ${r.status}`);
+        return r.json();
       })
-      .catch(() => this.setRefinePending(false));
+      .then((data) => {
+        this.setRefinePending(false);
+        if (!data.milkSource) throw new Error('No fix in the response');
+        this.proposeAssistedEdit(data.milkSource, 'AI fix');
+      })
+      .catch(() => {
+        // A failure used to end in silence: the button came back and
+        // nothing said the fix never arrived.
+        this.setRefinePending(false);
+        this.showActionNotice(
+          'The AI service did not send a fix. Try again, or fix the line by hand.',
+        );
+      });
   }
 
   private handleBatchGenerate() {
@@ -3646,19 +3988,53 @@ export class EditorPanel {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ description: source.slice(0, 500), count: 3 }),
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.presets && data.presets.length > 0) {
-          this.proposeAssistedEdit(data.presets[0], 'Variation');
-          document.dispatchEvent(
-            new CustomEvent('stims:batch-results', {
-              detail: { presets: data.presets.slice(1) },
-            }),
-          );
-        }
-        this.setRefinePending(false);
+      .then((r) => {
+        if (!r.ok) throw new Error(`Batch API: ${r.status}`);
+        return r.json();
       })
-      .catch(() => this.setRefinePending(false));
+      .then((data) => {
+        this.setRefinePending(false);
+        const presets: string[] = Array.isArray(data.presets)
+          ? data.presets.filter(
+              (preset: unknown): preset is string =>
+                typeof preset === 'string' && preset.trim().length > 0,
+            )
+          : [];
+        if (presets.length === 0) throw new Error('No presets returned');
+        // All of them, one diff at a time. Only the first used to be shown;
+        // the rest went out as an event nothing listened for.
+        this.showVariationChooser(presets);
+      })
+      .catch(() => {
+        this.setRefinePending(false);
+        this.showActionNotice(
+          'The AI service did not send any presets. Try again later.',
+        );
+      });
+  }
+
+  /** One button per returned preset, each opening it as a diff to review. */
+  private showVariationChooser(presets: string[]) {
+    const label = (index: number) =>
+      `New preset ${index + 1} of ${presets.length}`;
+    this.proposeAssistedEdit(presets[0], label(0));
+    if (!this.assistPane || presets.length < 2) return;
+    this.assistPane.querySelector('.stims-editor__variations')?.remove();
+    const card = document.createElement('div');
+    card.className = 'stims-editor__variations stims-editor__assist-actions';
+    const intro = document.createElement('p');
+    intro.className = 'stims-editor__hint';
+    intro.textContent = `The AI wrote ${presets.length} presets. Open each as a diff to review:`;
+    card.appendChild(intro);
+    presets.forEach((preset, index) => {
+      card.appendChild(
+        this.createButton(`Review ${index + 1}`, {
+          ariaLabel: `Review ${label(index).toLowerCase()}`,
+          onClick: () => this.proposeAssistedEdit(preset, label(index)),
+        }),
+      );
+    });
+    this.assistPane.appendChild(card);
   }
 
   private doBlend(sourceB: string) {
@@ -3670,21 +4046,27 @@ export class EditorPanel {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sourceA: source, sourceB }),
     })
-      .then((r) => r.json())
-      .then((data) => {
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((data: { milkSource?: string }) => {
+        this.setRefinePending(false);
         if (data.milkSource) {
           this.proposeAssistedEdit(data.milkSource, 'Blend');
         } else {
-          const blended = blendPresetSources(source, sourceB);
-          this.proposeAssistedEdit(blended, 'Blend');
+          this.proposeLocalBlend(source, sourceB);
         }
-        this.setRefinePending(false);
       })
       .catch(() => {
-        const blended = blendPresetSources(source, sourceB);
-        this.proposeAssistedEdit(blended, 'Blend');
         this.setRefinePending(false);
+        this.proposeLocalBlend(source, sourceB);
       });
+  }
+
+  /** The no-AI blend, named as such: the button promised AI. */
+  private proposeLocalBlend(source: string, sourceB: string) {
+    this.proposeAssistedEdit(
+      blendPresetSources(source, sourceB),
+      'Blend made in this browser (the AI service did not answer)',
+    );
   }
 
   private setRefinePending(pending: boolean) {
@@ -3752,7 +4134,11 @@ export class EditorPanel {
       const restoreBtn = document.createElement('button');
       restoreBtn.type = 'button';
       restoreBtn.className = 'stims-editor__btn';
-      restoreBtn.textContent = 'Restore';
+      // Named apart from a saved version's Restore: a checkpoint is gone
+      // after a reload, a version is not.
+      restoreBtn.textContent = 'Restore checkpoint';
+      restoreBtn.title =
+        'Puts this checkpoint in the editor and on stage. Checkpoints last until the page reloads.';
       restoreBtn.addEventListener('click', () =>
         this.restoreSource(snapshot.source),
       );
@@ -3762,6 +4148,17 @@ export class EditorPanel {
     });
   }
 }
+
+const TAB_HINTS: Record<string, string> = {
+  outline: "The preset's parts by line, with solo and mute for what each draws",
+  assist: 'Change or explain the code with AI, or apply a quick restyle',
+  inspect: "Live values of the preset's variables, and a stage pause",
+  shader: 'The warp and composite shaders, and the GPU code they become',
+  compat:
+    'What will not run as written here, and what will not carry back to MilkDrop 2',
+  textures: 'The images this preset samples',
+  history: 'Saved versions and automatic checkpoints',
+};
 
 /** A `<pre>` of diff lines: `+` added, `-` removed, `\u22ef` a skipped run. */
 function buildDiffElement(diff: SourceDiffLine[]): HTMLElement {

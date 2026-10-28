@@ -85,7 +85,7 @@ function BlackoutReleaseHint() {
   if (!key) return null;
   return (
     <>
-      {' — press '}
+      {': press '}
       <kbd>{formatShortcutForDisplay(key)}</kbd>
       {' to restore'}
     </>

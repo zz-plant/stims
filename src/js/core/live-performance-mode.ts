@@ -133,5 +133,5 @@ export function describeHiddenTabFreezeRisk(): string | null {
   // An open picture-in-picture window keeps the browser scheduling frames
   // for this tab, so the stage output survives being switched away from.
   if (document.pictureInPictureElement !== null) return null;
-  return 'Stage output pauses while this tab is in the background — the browser stops scheduling frames. Keep the show window visible, or pop the stage out to picture-in-picture or a second screen before switching tabs.';
+  return 'Stage output pauses while this tab is in the background: the browser stops scheduling frames. Keep the show window visible, or pop the stage out to picture-in-picture or a second screen before switching tabs.';
 }

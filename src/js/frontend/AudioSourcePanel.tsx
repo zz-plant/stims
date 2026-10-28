@@ -7,6 +7,7 @@ import type { ClipboardEvent } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { parseYouTubeVideoReference } from '../ui/youtube-controller.ts';
 import {
+  getDeviceEnvironmentProfile,
   isInAppBrowser,
   isMobileDevice,
   openExternalBrowserIntent,
@@ -23,6 +24,7 @@ import {
   startFileAudio,
   subscribeFilePlaylist,
 } from './file-audio.ts';
+import { useTwoStepConfirm } from './hooks/use-two-step-confirm.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -83,6 +85,46 @@ function formatPlaybackTime(totalSeconds: number) {
     : `${minutes}:${paddedSeconds}`;
 }
 
+/**
+ * The one note under the sources. It used to be up to four stacked lines
+ * (what each chip opens, that a pick replaces the playing source, which
+ * sources need Chrome, where the sound goes), and together they buried the
+ * two things a visitor checks before pressing: will the browser ask, and
+ * does the audio leave the page.
+ *
+ * Only chips name the prompt, because a card says it on its own subtitle
+ * line. The file picker goes unnamed; nobody is surprised by one.
+ *
+ * "Never uploaded" is literal: the analyser runs in this page, and the audio
+ * match sends a three-phrase description of the levels ("high motion"),
+ * never the audio.
+ */
+function describeSourceNote(
+  chips: boolean,
+  offers: (source: AudioSourceId) => boolean,
+  canCaptureDisplayAudio: boolean,
+  displayCaptureDropsAudio: boolean,
+): string {
+  const sentences: string[] = [];
+  const asked = [
+    offers('microphone') ? 'the microphone' : null,
+    canCaptureDisplayAudio && offers('tab') ? 'a tab' : null,
+    canCaptureDisplayAudio && offers('youtube') ? 'YouTube' : null,
+  ].filter((name): name is string => name !== null);
+  if (chips && asked.length > 0) {
+    const list =
+      asked.length > 1
+        ? `${asked.slice(0, -1).join(', ')} or ${asked[asked.length - 1]}`
+        : asked[0];
+    sentences.push(`Your browser asks before Stims hears ${list}.`);
+  }
+  if (displayCaptureDropsAudio && (offers('tab') || offers('youtube'))) {
+    sentences.push('Tab, system and YouTube audio need Chrome or Edge.');
+  }
+  sentences.push('Sound is analysed in this browser and never uploaded.');
+  return sentences.join(' ');
+}
+
 export function AudioSourcePanel({
   showHelp = true,
   layout = 'cards',
@@ -119,6 +161,10 @@ export function AudioSourcePanel({
   const youtubeTransport = ui.youtubeTransport;
   const youtubeTransportControls = ui.youtubeTransportControls;
   const youtubeUrl = ui.youtubeUrl;
+
+  const clearRecentConfirm = useTwoStepConfirm(() =>
+    engine.clearRecentYouTubeVideos(),
+  );
 
   const fileCardId = `${sourcePanelId}-file-card`;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -202,10 +248,18 @@ export function AudioSourcePanel({
     };
   }, [mobileDevice]);
 
-  const canCaptureDisplayAudio =
+  const hasDisplayCapture =
     typeof navigator !== 'undefined' &&
     !!navigator.mediaDevices?.getDisplayMedia &&
     !mobileDevice;
+  // Firefox and Safari open the share picker but never hand back an audio
+  // track, so the visitor picked a tab, saw nothing react, and was told to
+  // tick a "Share tab audio" box their browser does not have. Tab and
+  // YouTube capture are offered only where a share can carry sound.
+  const displayCaptureDropsAudio =
+    hasDisplayCapture &&
+    ['firefox', 'safari'].includes(getDeviceEnvironmentProfile().browserFamily);
+  const canCaptureDisplayAudio = hasDisplayCapture && !displayCaptureDropsAudio;
 
   const handlePlayYouTube = () => {
     if (youtubeReady) {
@@ -310,7 +364,10 @@ export function AudioSourcePanel({
               Loading…
             </>
           ) : youtubeReady ? (
-            'Start capture'
+            // The second press opens the browser's screen-share picker: the
+            // video plays in this tab, so its sound arrives as a share of
+            // the tab. "Start capture" did not say a picker was coming.
+            "Share this tab's audio"
           ) : (
             'Load'
           )}
@@ -384,9 +441,13 @@ export function AudioSourcePanel({
             <button
               type="button"
               className="stims-shell__clear-filters stims-shell__clear-filters--compact"
-              onClick={engine.clearRecentYouTubeVideos}
+              onClick={clearRecentConfirm.press}
+              onBlur={clearRecentConfirm.disarm}
+              data-armed={clearRecentConfirm.armed ? 'true' : undefined}
             >
-              Clear history
+              {clearRecentConfirm.armed
+                ? 'Clear the list for good'
+                : 'Clear recent videos'}
             </button>
           </div>
           <div className="stims-shell__chip-list">
@@ -395,6 +456,8 @@ export function AudioSourcePanel({
                 key={video.id}
                 type="button"
                 className="stims-shell__chip stims-shell__chip--media"
+                aria-label={`Play ${video.title}; opens the screen-share picker`}
+                title="Loads the video, then opens the screen-share picker for this tab"
                 onClick={() => onLoadRecentYouTubeVideo(video.id)}
               >
                 {video.thumbnail ? (
@@ -468,7 +531,6 @@ export function AudioSourcePanel({
           data-mic-audio-btn="true"
           type="button"
           className={cardClassName}
-          title={chips ? 'Whatever is playing in the room' : undefined}
           disabled={!engineReady}
           aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() =>
@@ -483,7 +545,9 @@ export function AudioSourcePanel({
             className="stims-shell__source-card-icon stims-icon-slot"
           />
           <strong>Microphone</strong>
-          {chips ? null : <span>Whatever is playing in the room</span>}
+          {chips ? null : (
+            <span>Asks for microphone access; hears the room</span>
+          )}
         </button>
       ) : null}
       {offers('microphone') && audioDevices.length > 1 ? (
@@ -511,7 +575,6 @@ export function AudioSourcePanel({
         id={fileCardId}
         data-file-audio-btn="true"
         className={cardClassName}
-        title={chips ? 'Pick a track, or drop one here' : undefined}
         data-drag-active={dragActive || undefined}
         disabled={!engineReady || fileState?.loading}
         aria-describedby={!engineReady ? disabledDescription : undefined}
@@ -611,10 +674,6 @@ export function AudioSourcePanel({
           id={`${sourcePanelId}-use-tab-audio`}
           data-tab-audio-btn="true"
           className={cardClassName}
-          // A chip has no subtitle line, and this is where Spotify lives:
-          // it plays in a tab or a desktop app, so tab or system capture is
-          // how it reaches the visuals.
-          title={chips ? 'Any tab, Spotify, or your system audio' : undefined}
           disabled={!engineReady}
           aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() => onAudioStart('tab')}
@@ -624,7 +683,11 @@ export function AudioSourcePanel({
             className="stims-shell__source-card-icon stims-icon-slot"
           />
           <strong>{chips ? 'Tab / system' : 'Tab or system audio'}</strong>
-          {chips ? null : <span>Any tab, Spotify, or your system audio</span>}
+          {chips ? null : (
+            <span>
+              Opens the share picker: any tab, Spotify, or system audio
+            </span>
+          )}
         </button>
       ) : null}
       {chips && offersYouTube ? (
@@ -645,6 +708,17 @@ export function AudioSourcePanel({
         </button>
       ) : null}
     </div>
+  );
+
+  const sourceNote = (
+    <p className="stims-shell__source-note">
+      {describeSourceNote(
+        chips,
+        offers,
+        canCaptureDisplayAudio,
+        displayCaptureDropsAudio,
+      )}
+    </p>
   );
 
   return (
@@ -689,13 +763,27 @@ export function AudioSourcePanel({
           className="stims-shell__meta-copy"
           aria-live="polite"
         >
-          Audio engine is starting. Sources will unlock in a moment.
+          The preset list didn&rsquo;t download, so sources are off until it
+          does. Check your connection, then reload.
         </p>
       ) : null}
       {/* Cards: the link field leads, the cards follow. Chips: the chips
-          lead and the field opens beneath them from its own chip. */}
-      {chips ? sourceGrid : youtubeBlock}
-      {chips ? youtubeBlock : sourceGrid}
+          lead and the field opens beneath them from its own chip, below the
+          note, so opening it does not push the note away from the row it
+          describes. */}
+      {chips ? (
+        <>
+          {sourceGrid}
+          {sourceNote}
+          {youtubeBlock}
+        </>
+      ) : (
+        <>
+          {youtubeBlock}
+          {sourceGrid}
+          {sourceNote}
+        </>
+      )}
       {chips && fileState ? (
         <p
           className="stims-shell__source-feedback"
@@ -710,25 +798,20 @@ export function AudioSourcePanel({
           <summary className="stims-shell__settings-summary">
             <span>Audio help</span>
             <span className="stims-shell__meta-copy">
-              Permissions and troubleshooting
+              Microphone troubleshooting
             </span>
           </summary>
+          {/* In-app browsers are left out: the callout above already names
+              them, with the button that fixes it, when this is one. */}
           <div className="stims-shell__settings-advanced-body">
             <p className="stims-shell__meta-copy">
-              <strong>Permissions:</strong> Allow microphone access in site
-              permissions. If access is blocked, check macOS Privacy & Security
-              or Windows Privacy Settings.
+              <strong>Microphone blocked:</strong> allow it in this site&rsquo;s
+              settings, then in macOS Privacy & Security or Windows privacy
+              settings.
             </p>
             <p className="stims-shell__meta-copy">
-              <strong>Smartphones and in-app browsers:</strong> In-app browsers
-              (Instagram, TikTok, Twitter) may block mic capture. Tap
-              &quot;...&quot; and select &quot;Open in Safari / Chrome&quot;.
-            </p>
-            <p className="stims-shell__meta-copy">
-              <strong>Local testing and Bluetooth:</strong> Mic capture requires
-              HTTPS or localhost. If you use Bluetooth earbuds, OS settings may
-              switch sound to call mode; use a built-in or wired mic for the
-              best music quality.
+              <strong>Bluetooth earbuds:</strong> their mic switches them to
+              call quality. A built-in or wired mic hears music better.
             </p>
           </div>
         </details>

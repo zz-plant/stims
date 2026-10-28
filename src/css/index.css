@@ -138,7 +138,7 @@ header {
   overflow: hidden;
   box-shadow: 0 1px 0 var(--stims-white-04) inset;
   transition:
-    transform var(--spring-enter),
+    transform var(--motion-enter),
     box-shadow 0.2s ease,
     background-color 0.25s ease,
     color 0.25s ease,

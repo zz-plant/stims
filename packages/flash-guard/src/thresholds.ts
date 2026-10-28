@@ -42,10 +42,58 @@ export const FLASH_AREA_FRACTION = 0.25;
  */
 export const VISUAL_FIELD_FRACTION = 1 / 3;
 
+/** sRGB-encoded value -> linear light, both 0..1. */
+export function decodeSrgb(encoded: number): number {
+  return encoded <= 0.04045
+    ? encoded / 12.92
+    : ((encoded + 0.055) / 1.055) ** 2.4;
+}
+
+/** Linear light -> sRGB-encoded value, both 0..1; inverts `decodeSrgb`. */
+export function encodeSrgb(linear: number): number {
+  return linear <= 0.0031308
+    ? linear * 12.92
+    : 1.055 * linear ** (1 / 2.4) - 0.055;
+}
+
 /** sRGB byte -> linear-light component, per WCAG relative luminance. */
 export function linearizeChannel(byte: number): number {
-  const c = byte / 255;
-  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  return decodeSrgb(byte / 255);
+}
+
+/**
+ * The relative luminance a viewer sees of `luminance` (linear light, 0..1)
+ * through a CSS `brightness(scale)` filter, which is how the governor's
+ * mitigation reaches the screen (`createBrightnessFilterApplier`, or a black
+ * scrim at alpha 1 - scale, which composites the same way).
+ *
+ * Not `luminance * scale`. Chromium applies brightness() to sRGB-encoded
+ * values, not linear light: rgb(204,204,204) under brightness(0.5)
+ * screenshots as 102, where a linear-light multiply gives about 149
+ * (headless Chromium, 2026-10-07). So the light reaching the viewer falls
+ * roughly as the 2.2-2.4th power of the scale: brightness(0.5) leaves about
+ * a fifth of it, not half. Modelled as a multiply, the governor
+ * overestimated the swing left on screen, kept counting flashes the viewer
+ * could no longer see, and held real strobes several times darker than the
+ * threshold asks.
+ *
+ * Exact for grey. A colour is scaled as the grey of the same luminance,
+ * which is never darker than the colour really ends up and at most 0.005
+ * brighter (worst on saturated red and blue): the curve is concave, so a
+ * mix of channels loses more light than their mean predicts. A swing whose
+ * darker end is a saturated colour can therefore read up to 0.005 small,
+ * inside the 0.02 margin the governor solves to.
+ *
+ * The red-flash value needs no such model: it is linear in the sRGB
+ * channels, so the filter scales it by exactly `scale`.
+ */
+export function luminanceThroughBrightness(
+  luminance: number,
+  scale: number,
+): number {
+  if (scale >= 1) return luminance;
+  if (scale <= 0) return 0;
+  return decodeSrgb(scale * encodeSrgb(Math.min(1, Math.max(0, luminance))));
 }
 
 /**
@@ -78,15 +126,16 @@ export function isFlashTransition(before: number, after: number): boolean {
   );
 }
 
+const RED_FLASH_SCALE_OVER_255 = RED_FLASH_SCALE / 255;
+
 /** Red-flash value from sRGB bytes: max(0, R-G-B) scaled per PEAT. */
 export function redFlashValue(r: number, g: number, b: number): number {
-  return Math.max(0, (r - g - b) / 255) * RED_FLASH_SCALE;
+  return Math.max(0, r - g - b) * RED_FLASH_SCALE_OVER_255;
 }
 
 /** Whether an sRGB byte triple is a saturated red (R/(R+G+B) >= 0.8). */
 export function isSaturatedRed(r: number, g: number, b: number): boolean {
-  const sum = r + g + b;
-  return sum > 0 && r / sum >= RED_SATURATION_MIN;
+  return r > 0 && r >= 4 * (g + b);
 }
 
 /**
@@ -118,6 +167,8 @@ export function isRedFlashTransition(
  * by the flashing region's coverage, and on sparse bright-on-black content
  * that shrinks real flashes below the threshold entirely.
  */
+let scratchSat = new Float64Array(0);
+
 export function peakWindowFraction(
   counts: ArrayLike<number>,
   tilePixels: number,
@@ -129,27 +180,37 @@ export function peakWindowFraction(
   const winPixels = winW * winH * tilePixels;
   if (winPixels <= 0 || cols <= 0 || rows <= 0) return 0;
 
-  const sat = new Float64Array((rows + 1) * (cols + 1));
+  const stride = cols + 1;
+  const needed = (rows + 1) * stride;
+  if (scratchSat.length < needed) {
+    scratchSat = new Float64Array(needed);
+  }
+  const sat = scratchSat;
+  sat.fill(0, 0, stride);
   for (let y = 0; y < rows; y += 1) {
+    const prevSatRow = y * stride;
+    const nextSatRow = (y + 1) * stride;
+    sat[nextSatRow] = 0;
     let rowRun = 0;
+    const rowOffset = y * cols;
     for (let x = 0; x < cols; x += 1) {
-      rowRun += counts[y * cols + x] ?? 0;
-      sat[(y + 1) * (cols + 1) + (x + 1)] =
-        (sat[y * (cols + 1) + (x + 1)] as number) + rowRun;
+      rowRun += counts[rowOffset + x] ?? 0;
+      sat[nextSatRow + x + 1] = (sat[prevSatRow + x + 1] as number) + rowRun;
     }
   }
 
-  let best = 0;
+  let bestTotal = 0;
   for (let y = 0; y + winH <= rows; y += 1) {
+    const topRow = y * stride;
+    const bottomRow = (y + winH) * stride;
     for (let x = 0; x + winW <= cols; x += 1) {
       const total =
-        (sat[(y + winH) * (cols + 1) + (x + winW)] as number) -
-        (sat[y * (cols + 1) + (x + winW)] as number) -
-        (sat[(y + winH) * (cols + 1) + x] as number) +
-        (sat[y * (cols + 1) + x] as number);
-      const fraction = total / winPixels;
-      if (fraction > best) best = fraction;
+        (sat[bottomRow + x + winW] as number) -
+        (sat[topRow + x + winW] as number) -
+        (sat[bottomRow + x] as number) +
+        (sat[topRow + x] as number);
+      if (total > bestTotal) bestTotal = total;
     }
   }
-  return best;
+  return bestTotal / winPixels;
 }

@@ -1,7 +1,9 @@
 ---
+
 description: "Run the fast quality gate (lint, typecheck, guards; no tests)"
 agent: build
 ---
+
 Run `bun run check:quick` from the repository root.
 
 If it fails, report each failing step with its output, fix the root cause, and

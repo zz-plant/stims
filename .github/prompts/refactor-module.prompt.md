@@ -1,4 +1,5 @@
 ---
+
 name: refactor-module
 description: "Guide for refactoring a module: from analysis to clean code to verified tests. Use when improving code structure, removing duplication, or improving maintainability."
 ---

@@ -45,6 +45,12 @@
   },
   "placement": { "mode": "smart" },
   "ai": { "binding": "AI" },
+  // Encode silent MP4s once while publishing; serve stored output from R2.
+  "media": { "binding": "MEDIA" },
+  "vars": {
+    "VIDEO_PREVIEWS_ENABLED": "true",
+    "HOMEPAGE_VIDEO_PRESET": "shifter-curlique"
+  },
   // Telemetry sink for /api/telemetry — without this binding every client
   // data point is silently dropped.
   "analytics_engine_datasets": [
@@ -55,6 +61,11 @@
   "vectorize": [{ "binding": "VECTOR_INDEX", "index_name": "stims-presets" }],
   // Per-IP limiter for the Workers AI endpoints (GA ratelimit binding).
   "ratelimits": [
+    {
+      "name": "VIDEO_UPLOAD_LIMITER",
+      "namespace_id": "1002",
+      "simple": { "limit": 3, "period": 60 }
+    },
     {
       "name": "AI_RATE_LIMITER",
       "namespace_id": "1001",

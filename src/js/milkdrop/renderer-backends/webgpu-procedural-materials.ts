@@ -340,7 +340,11 @@ function buildGpuFieldExpressionWgslSource(
   expression: MilkdropGpuFieldExpression,
   registerInputs: ReadonlySet<string>,
   temporaries: readonly string[] = [],
+  depth = 0,
 ): string {
+  if (depth > 200) {
+    return '0.0';
+  }
   switch (expression.type) {
     case 'literal':
       return formatWgslFloat(expression.value);
@@ -355,6 +359,7 @@ function buildGpuFieldExpressionWgslSource(
         expression.operand,
         registerInputs,
         temporaries,
+        depth + 1,
       );
       return (
         EEL_UNARY_OPERATORS[expression.operator]?.wgslField?.(operand) ?? '0.0'
@@ -365,11 +370,13 @@ function buildGpuFieldExpressionWgslSource(
         expression.left,
         registerInputs,
         temporaries,
+        depth + 1,
       );
       const right = buildGpuFieldExpressionWgslSource(
         expression.right,
         registerInputs,
         temporaries,
+        depth + 1,
       );
       return (
         EEL_BINARY_OPERATORS[expression.operator]?.wgslField?.(left, right) ??
@@ -378,7 +385,12 @@ function buildGpuFieldExpressionWgslSource(
     }
     case 'call': {
       const args = expression.args.map((arg) =>
-        buildGpuFieldExpressionWgslSource(arg, registerInputs, temporaries),
+        buildGpuFieldExpressionWgslSource(
+          arg,
+          registerInputs,
+          temporaries,
+          depth + 1,
+        ),
       );
       // Every planner-allowlisted call has a wgslField renderer in the shared
       // table; the passthrough fallback is defensive only.

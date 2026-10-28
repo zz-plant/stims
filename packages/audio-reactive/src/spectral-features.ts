@@ -28,14 +28,14 @@ export function computeRms(timeDomain: Float32Array | Uint8Array): number {
       const v = timeDomain[i];
       sumSquares += v * v;
     }
-  } else {
-    // Uint8Array centered around 128 (0..255 byte domain)
-    for (let i = 0; i < len; i += 1) {
-      const v = (timeDomain[i] - 128) / 128;
-      sumSquares += v * v;
-    }
+    return Math.sqrt(sumSquares / len);
   }
-  return Math.sqrt(sumSquares / len);
+  // Uint8Array centered around 128 (0..255 byte domain)
+  for (let i = 0; i < len; i += 1) {
+    const delta = timeDomain[i] - 128;
+    sumSquares += delta * delta;
+  }
+  return Math.sqrt(sumSquares / (len * 16384));
 }
 
 /**
@@ -52,19 +52,19 @@ export function computeSpectralCentroid(
   const resolvedFftSize = fftSize ?? (len - 1) * 2;
   const binFrequencyWidth = sampleRate / resolvedFftSize;
 
-  let weightedSum = 0;
+  let indexSum = 0;
   let totalMagnitude = 0;
 
   for (let i = 0; i < len; i += 1) {
     const mag = amplitudes[i];
-    weightedSum += i * binFrequencyWidth * mag;
+    indexSum += i * mag;
     totalMagnitude += mag;
   }
 
   if (totalMagnitude < EPSILON) {
     return 0;
   }
-  return weightedSum / totalMagnitude;
+  return (indexSum * binFrequencyWidth) / totalMagnitude;
 }
 
 /**
@@ -77,6 +77,7 @@ export function computeSpectralFlatness(
   const len = amplitudes.length;
   if (len === 0) return 0;
 
+  const invLen = 1 / len;
   let logSum = 0;
   let linearSum = 0;
 
@@ -86,12 +87,12 @@ export function computeSpectralFlatness(
     linearSum += mag;
   }
 
-  const arithmeticMean = linearSum / len;
+  const arithmeticMean = linearSum * invLen;
   if (arithmeticMean < EPSILON) {
     return 0;
   }
 
-  const geometricMean = Math.exp(logSum / len);
+  const geometricMean = Math.exp(logSum * invLen);
   return Math.min(1, Math.max(0, geometricMean / arithmeticMean));
 }
 
@@ -144,10 +145,60 @@ export function extractSpectralFeatures(
   sampleRate: number,
   fftSize?: number,
 ): SpectralFeatureSnapshot {
+  const rms = computeRms(timeDomain);
+  const len = amplitudes.length;
+  if (len === 0) {
+    return {
+      rms,
+      spectralCentroid: 0,
+      spectralFlatness: 0,
+      spectralRolloff: 0,
+    };
+  }
+
+  const resolvedFftSize = fftSize ?? (len - 1) * 2;
+  const binFrequencyWidth = sampleRate > 0 ? sampleRate / resolvedFftSize : 0;
+
+  const invLen = 1 / len;
+  let indexSum = 0;
+  let totalMagnitude = 0;
+  let logSum = 0;
+
+  for (let i = 0; i < len; i += 1) {
+    const mag = amplitudes[i];
+    indexSum += i * mag;
+    totalMagnitude += mag;
+    logSum += Math.log(mag + EPSILON);
+  }
+
+  const spectralCentroid =
+    len > 1 && sampleRate > 0 && totalMagnitude >= EPSILON
+      ? (indexSum * binFrequencyWidth) / totalMagnitude
+      : 0;
+
+  const arithmeticMean = totalMagnitude * invLen;
+  const spectralFlatness =
+    arithmeticMean >= EPSILON
+      ? Math.min(1, Math.max(0, Math.exp(logSum * invLen) / arithmeticMean))
+      : 0;
+
+  let spectralRolloff = 0;
+  if (sampleRate > 0 && totalMagnitude >= EPSILON) {
+    const threshold = totalMagnitude * DEFAULT_ROLLOFF_RATIO;
+    let cumulative = 0;
+    for (let i = 0; i < len; i += 1) {
+      cumulative += amplitudes[i];
+      if (cumulative >= threshold) {
+        spectralRolloff = i * binFrequencyWidth;
+        break;
+      }
+    }
+  }
+
   return {
-    rms: computeRms(timeDomain),
-    spectralCentroid: computeSpectralCentroid(amplitudes, sampleRate, fftSize),
-    spectralFlatness: computeSpectralFlatness(amplitudes),
-    spectralRolloff: computeSpectralRolloff(amplitudes, sampleRate, fftSize),
+    rms,
+    spectralCentroid,
+    spectralFlatness,
+    spectralRolloff,
   };
 }

@@ -1,4 +1,5 @@
 ---
+
 name: review-deploy-tooling
 description: "Review changes to CI, wrangler config, build scripts, Cloudflare deploy, or tooling. Use when a PR touches .github/workflows/ci.yml, wrangler.site.jsonc, scripts/build.mjs, or package.json scripts."
 ---
@@ -39,7 +40,6 @@ Use this skill when reviewing or authoring changes to `.github/workflows/ci.yml`
 Cloudflare Workers Builds deploys the `stims` Worker on push: production from
 `main`, a preview version from every other branch. GitHub Actions only gates
 merges. A release is therefore:
-
 1. `bun run check`
 2. `bun run site:check` — builds `dist/` and the Worker bundle, then dry-runs
    `wrangler deploy` against `wrangler.site.jsonc`

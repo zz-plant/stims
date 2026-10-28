@@ -54,7 +54,7 @@ export function FirstEditGuide({
             setEdit(null);
           }}
         >
-          {edit ? 'Undo example' : 'Add a slow spin'}
+          {edit ? 'Remove the spin' : 'Add a slow spin'}
         </button>
         <button
           type="button"
@@ -75,7 +75,7 @@ export function FirstEditGuide({
         {edit === null
           ? null
           : canUndo
-            ? 'Spin added. Try changing 0.02, or copy a remix link from the editor toolbar.'
+            ? 'Spin added. Try changing 0.02, or press Copy link above the code to share it.'
             : 'Your source has changed. Use the editor’s undo to step back through your edits.'}
       </p>
     </section>

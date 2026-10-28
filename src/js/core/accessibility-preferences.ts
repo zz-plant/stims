@@ -8,9 +8,9 @@ export type AccessibilityPreference = {
   freezeFrame: boolean;
   /**
    * Hide presets measured above the WCAG 2.3.1 flash threshold from browse
-   * and shuffle. Defaults on when the OS asks for reduced motion — someone
-   * who has already said "less movement" should not have to find this
-   * switch before the catalog stops handing them strobing presets.
+   * and shuffle, and enable the live flash governor. Defaults on unless
+   * the visitor has explicitly saved an opt-out. This mitigates flash
+   * exposure; it does not establish that a preset is safe for everyone.
    */
   reduceFlashing: boolean;
   /**
@@ -121,7 +121,7 @@ function readFromStorage(): AccessibilityPreference {
       textScale: 1,
       highContrast: prefersMoreContrast(),
       freezeFrame: false,
-      reduceFlashing: prefersReducedMotion(),
+      reduceFlashing: true,
       stageBrightness: 1,
       motionScale: defaultMotionScale(),
     };
@@ -133,11 +133,11 @@ function readFromStorage(): AccessibilityPreference {
       highContrast: parsed.highContrast === true,
       freezeFrame: parsed.freezeFrame === true,
       // Absent from a preference saved before this field existed: fall back
-      // to the OS signal rather than to a bare false.
+      // to protection rather than to a bare false.
       reduceFlashing:
         typeof parsed.reduceFlashing === 'boolean'
           ? parsed.reduceFlashing
-          : prefersReducedMotion(),
+          : true,
       stageBrightness: clampStageBrightness(parsed.stageBrightness),
       motionScale:
         typeof parsed.motionScale === 'number'
@@ -149,7 +149,7 @@ function readFromStorage(): AccessibilityPreference {
       textScale: 1,
       highContrast: prefersMoreContrast(),
       freezeFrame: false,
-      reduceFlashing: prefersReducedMotion(),
+      reduceFlashing: true,
       stageBrightness: 1,
       motionScale: defaultMotionScale(),
     };

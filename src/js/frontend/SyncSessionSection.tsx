@@ -31,22 +31,32 @@ export function SyncSessionSection() {
     try {
       const room = await startHostSession();
       setSyncUrlParam(room);
+      // Same outcome as the palette's "Start watch party": the room exists
+      // to be shared, so its link goes on the clipboard at once.
+      await copyLink(room);
     } catch {
       // The store carries the error state for the status line below.
-    } finally {
-      setBusy(false);
     }
+    // Cleanup after the catch rather than in a `finally` clause: React
+    // Compiler cannot lower try/finally yet, and one unparsable function
+    // skips the whole file. The catch swallows everything, so this runs on
+    // both paths exactly as the finally did.
+    setBusy(false);
   };
 
-  const handleCopy = async () => {
-    if (!session.room) return;
+  const copyLink = async (room: string) => {
     try {
-      await navigator.clipboard.writeText(syncShareUrl(session.room));
+      await navigator.clipboard.writeText(syncShareUrl(room));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard unavailable; the link is still visible in the URL bar.
     }
+  };
+
+  const handleCopy = async () => {
+    if (!session.room) return;
+    await copyLink(session.room);
   };
 
   const handleLeave = () => {
@@ -61,8 +71,8 @@ export function SyncSessionSection() {
       : session.status === 'connecting'
         ? 'Connecting…'
         : session.role === 'host'
-          ? `Hosting room ${session.room} — ${others} ${others === 1 ? 'viewer' : 'viewers'} watching.`
-          : `Watching room ${session.room} — presets follow the host.`;
+          ? `Hosting room ${session.room}: ${others} ${others === 1 ? 'viewer' : 'viewers'} watching.`
+          : `Watching room ${session.room}: presets follow the host.`;
 
   return (
     <section className="ctl-section">
@@ -74,7 +84,7 @@ export function SyncSessionSection() {
           <span className="ctl-row__text">
             <span className="ctl-row__label">Watch party</span>
             <span className="ctl-row__hint">
-              Start a watch party and share the link. Everyone who opens it sees
+              Creates a room and copies its link. Anyone who opens the link sees
               the presets you play, live.
             </span>
           </span>
@@ -84,7 +94,7 @@ export function SyncSessionSection() {
             disabled={busy}
             onClick={() => void handleStart()}
           >
-            {busy ? 'Starting…' : 'Start watch party'}
+            {busy ? 'Starting…' : 'Start watch party (copies link)'}
           </button>
         </div>
       ) : (
@@ -105,7 +115,7 @@ export function SyncSessionSection() {
             className="ctl-btn ctl-btn--quiet"
             onClick={handleLeave}
           >
-            Leave
+            {session.role === 'host' ? 'End watch party' : 'Leave watch party'}
           </button>
         </div>
       )}

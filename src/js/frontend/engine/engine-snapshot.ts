@@ -66,6 +66,9 @@ export type EngineSnapshot = {
    * been presented, and while the preset's programs are still compiling.
    */
   appliedShaderExecution: MilkdropAppliedShaderExecution | null;
+  /** The newest editor edit is not in storage yet; see
+   * MilkdropExperienceSnapshot.draftUnsaved. */
+  draftUnsaved: boolean;
   autoplay: boolean;
   transitionMode: 'blend' | 'cut';
   blendDuration: number;
@@ -92,6 +95,7 @@ export function createEmptyEngineSnapshot(): EngineSnapshot {
     tempoBpm: null,
     shaderExecution: null,
     appliedShaderExecution: null,
+    draftUnsaved: false,
     autoplay: false,
     transitionMode: 'blend',
     blendDuration: 0.3,
@@ -120,6 +124,7 @@ function shallowEqual(a: EngineSnapshot, b: EngineSnapshot): boolean {
     a.tempoBpm === b.tempoBpm &&
     a.shaderExecution === b.shaderExecution &&
     a.appliedShaderExecution === b.appliedShaderExecution &&
+    a.draftUnsaved === b.draftUnsaved &&
     a.autoplay === b.autoplay &&
     a.transitionMode === b.transitionMode &&
     a.blendDuration === b.blendDuration
@@ -164,6 +169,7 @@ export function buildEngineSnapshot({
     tempoBpm: snapshot?.tempoBpm ?? null,
     shaderExecution: snapshot?.shaderExecution ?? null,
     appliedShaderExecution: snapshot?.appliedShaderExecution ?? null,
+    draftUnsaved: snapshot?.draftUnsaved ?? false,
     autoplay: snapshot?.autoplay ?? false,
     transitionMode: snapshot?.transitionMode ?? 'blend',
     blendDuration: snapshot?.blendDuration ?? 0.3,

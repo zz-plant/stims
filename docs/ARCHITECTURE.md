@@ -16,7 +16,6 @@ The root route at `/` is the product surface. `milkdrop/index.html` exists only 
 ## Rendering backends
 
 Other docs link here for which backend runs, which one is judged, and how visitors split.
-
 - **Selection.** WebGPU is chosen where the browser ships it as stable and grants an adapter: Chrome and Edge 120+, Opera 99+, Samsung Internet 24+ and Safari 26+, never Firefox (`isWebGPUStableInThisBrowser` in [`core/renderer-query-override.ts`](../src/js/core/renderer-query-override.ts)). The capability probe asks for a core adapter, then the compatibility feature level ([`core/renderer-capabilities.ts`](../src/js/core/renderer-capabilities.ts)). WebGL2 runs everywhere else, when WebGPU initialization fails ([`core/renderer-setup.ts`](../src/js/core/renderer-setup.ts)), when the visitor turns on compatibility mode, and under `?renderer=webgl`; `?renderer=webgpu` forces WebGPU.
 - **Per-preset exception.** A preset whose WebGPU plan carries unsupported features is pinned to WebGL for the session and the page reloads into it ([`runtime/backend-fallback.ts`](../src/js/milkdrop/runtime/backend-fallback.ts)).
 - **Full and safe WebGPU paths.** Low-power phones get the safe path: procedural descriptors off and feedback shaders replaced by a scalar approximation. Everything else gets the full path, including native TSL feedback ([`webgpu-query-override.ts`](../src/js/milkdrop/webgpu-query-override.ts)). The flags that tune the full path are listed in [Preset runtime](./MILKDROP_PRESET_RUNTIME.md#webgpu-descriptor-rollout-flags).
@@ -108,7 +107,6 @@ flowchart LR
 ## URL state (no router)
 
 Stims uses the native History API instead of a client-side router. The app is a single-page SPA with one route (`/`); all persistent state lives in URL search params.
-
 - URL reads → `window.location.search` via `readSessionRouteState()`
 - URL writes → `window.history.replaceState(null, '', newUrl)` on state changes
 - Back/forward → `popstate` event listener re-reads the URL
@@ -164,7 +162,8 @@ Primary implementation:
 ### App bootstrap
 
 - [`src/js/app.ts`](../src/js/app.ts) renders [`src/js/frontend/App.tsx`](../src/js/frontend/App.tsx) into `#app` through the workspace router.
-- After the first paint it installs crash and renderer telemetry, gamepad navigation, the older `window.stimState` surface ([`core/agent-api.ts`](../src/js/core/agent-api.ts)), and, in agent mode only, the `window.stims.agent` driver ([`core/agent-driver.ts`](../src/js/core/agent-driver.ts)). Capture scripts such as `play-toy`, `stims-ctl` and `lab:visual` still read `window.stimState`.
+- In agent mode it installs the `window.stims.agent` driver ([`core/agent-driver.ts`](../src/js/core/agent-driver.ts)) before rendering, so the driver exists by the time `#stims-main` does and `ready()` can be called on it.
+- After the first paint it installs crash and renderer telemetry, gamepad navigation and the older `window.stimState` surface ([`core/agent-api.ts`](../src/js/core/agent-api.ts)). Capture scripts such as `play-toy`, `stims-ctl` and `lab:visual` still read `window.stimState`.
 - The automation API for agents and e2e tests is `window.__stims_agent` ([`frontend/agent-state.ts`](../src/js/frontend/agent-state.ts)), which App installs in every mode. See [`docs/agents/browser-automation.md`](./agents/browser-automation.md).
 - The engine's chunks load only once a session needs them. A bare landing boots the decorative attract render in idle time; a `?preset=` or `?audio=` arrival mounts once the launch page has painted (`afterLoadPhasePainted('launch-rendered')` in [`workspace-hooks.ts`](../src/js/frontend/workspace-hooks.ts)), so the page naming the preset is not sharing the connection with them. `bun run check:bundle-size` fails a build that puts three.js or its WebGPU bundle on the eager path.
 
@@ -183,7 +182,6 @@ Primary implementation:
 ### Engine seam
 
 The seam has two tiers, both enforced by `bun run check:architecture` through the rules in [`.dependency-cruiser.mjs`](../.dependency-cruiser.mjs):
-
 - **`frontend/engine/` owns the session.** [`milkdrop-engine-adapter.ts`](../src/js/frontend/engine/milkdrop-engine-adapter.ts) re-exports the session built in [`milkdrop-engine-session.ts`](../src/js/frontend/engine/milkdrop-engine-session.ts). Only this folder may import the runtime, renderers, feedback managers, VM or compiler entry (`engine-runtime-only-via-adapter`). The adapter owns:
   - mount and dispose, and pausing the preview
   - preset loading and history, playback pause and single-frame step
@@ -225,7 +223,6 @@ The React shell drives engine capabilities through the adapter; the engine owns 
 ## Edge runtime & Cloudflare architecture
 
 Stims pairs its browser-native visualizer client with a serverless edge backend on Cloudflare Workers:
-
 - **Site Worker with Static Assets**: The entire production bundle (`dist/`) is served at the edge with smart routing. Navigations hit [`functions/_middleware.ts`](../functions/_middleware.ts) first for dynamic SEO, JSON-LD, and Open Graph rewrites via `HTMLRewriter`.
 - **Workers AI & Vectorize**: `/api/visual-search` runs semantic search using `@cf/baai/bge-base-en-v1.5` embeddings over Vectorize indices (with fallback to cosine scanning over D1 database storage). It serves "By sound" in the finder, and "By look" and Nearby only for presets with no preview vector. Catalog presets are matched on the device from `public/milkdrop-presets/visual-vectors.bin` (rows named in `visual-vectors.json`), EmbeddingGemma 2 embeddings of each rendered preview built by `bun run catalog:visual-embeddings` ([`experiments/visual-embeddings/`](../experiments/visual-embeddings/README.md)). `/api/generate-preset` uses reasoning and coding models to synthesize `.milk` source on the fly.
 - **D1 SQL & R2 Storage**: D1 (`stims-gallery`) holds the preset embeddings behind the `/api/visual-search` fallback; R2 (`stims-static`) holds the preset preview images served to the browse grid and Open Graph cards.

@@ -137,6 +137,11 @@ export function createProceduralInteractionUniformState() {
   } satisfies ProceduralInteractionUniformState;
 }
 
+export const REGISTER_SLOT_UNIFORM_KEYS: readonly string[] = Array.from(
+  { length: FIELD_REGISTER_UNIFORM_COUNT },
+  (_, slot) => `registerSlot${slot}`,
+);
+
 export function syncProceduralFieldUniforms(
   material: ShaderMaterial,
   {
@@ -208,7 +213,8 @@ export function syncProceduralFieldUniforms(
   const registerInputs = program?.registerInputs;
   for (let slot = 0; slot < FIELD_REGISTER_UNIFORM_COUNT; slot += 1) {
     const name = registerInputs?.[slot];
-    material.uniforms[`registerSlot${slot}`].value =
+    const slotKey = REGISTER_SLOT_UNIFORM_KEYS[slot]!;
+    material.uniforms[slotKey].value =
       name !== undefined ? (registers?.[name] ?? 0) : 0;
   }
 }

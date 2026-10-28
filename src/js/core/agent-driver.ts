@@ -1,7 +1,9 @@
 /**
  * A single, versioned control surface for driving Stims from outside the
  * page — headless capture scripts, perf sweeps, MCP sessions. Installed at
- * `window.stims.agent` only in agent mode (`?agent=true`).
+ * `window.stims.agent` only in agent mode (`?agent=true`), by app.ts as it
+ * evaluates, so it exists before the shell renders any DOM a driver could
+ * wait on.
  *
  * This exists because the alternative — reaching into whichever ad hoc
  * global happened to be exposed for a different purpose

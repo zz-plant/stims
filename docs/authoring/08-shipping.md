@@ -4,17 +4,17 @@
 
 A preset can compile, run, and still differ visibly across players. The table below describes implemented Stims paths and their limits. It is not a native Winamp, projectM, or Butterchurn test matrix. Verify your source in each intended player before claiming cross-engine compatibility.
 
-| Feature | Implemented path | Limits to check |
-| --- | --- | --- |
-| EEL equations, registers, and buffers | Toolchain interpreter and JIT; eligible per-pixel and wave-point programs also lower to WGSL | GPU lowering has a support gate; stateful or unsupported programs can stay on the CPU |
-| `loop()` / `while()` | Bounded execution in the toolchain | The iteration guard prevents an unbounded block from hanging the app |
-| HLSL-style and GLSL-style shader source | Supported syntax is parsed and normalized; WebGL emits GLSL and WebGPU uses supported direct statements | This is a subset, not a general HLSL/GLSL compiler; inspect shader diagnostics |
-| Matrix locals | Supported matrix declarations, operations, and literal-index writes | Runtime-index writes can leave the direct WebGPU path; local matrices are not arbitrary injected uniforms |
-| LOD, bias, and gradient sampling | Selected HLSL sampling calls have backend implementations | Support varies by sampler and backend; check the actual compiled shader |
-| Warp and composite stages | Separate runtime targets and stage-specific sampler bindings | Blend, coordinate, and rasterization differences still require measured comparison |
-| Built-in and custom sampler names | Frame buffers, blur, noise, and bundled texture resolution | Unknown or legacy aliases can use approximations; the Textures pane shows resolved bindings |
-| Arbitrary external texture files | No general URL/file loader from preset source | Custom names resolve within the bundled texture set; the pane previews those files |
-| 3D volume sampling | WebGL uses an atlas path; WebGPU uses native 3D textures on supported samplers | Different sampling paths do not establish which output matches a native reference |
+| Feature                                 | Implemented path                                                                                        | Limits to check                                                                                           |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| EEL equations, registers, and buffers   | Toolchain interpreter and JIT; eligible per-pixel and wave-point programs also lower to WGSL            | GPU lowering has a support gate; stateful or unsupported programs can stay on the CPU                     |
+| `loop()` / `while()`                    | Bounded execution in the toolchain                                                                      | The iteration guard prevents an unbounded block from hanging the app                                      |
+| HLSL-style and GLSL-style shader source | Supported syntax is parsed and normalized; WebGL emits GLSL and WebGPU uses supported direct statements | This is a subset, not a general HLSL/GLSL compiler; inspect shader diagnostics                            |
+| Matrix locals                           | Supported matrix declarations, operations, and literal-index writes                                     | Runtime-index writes can leave the direct WebGPU path; local matrices are not arbitrary injected uniforms |
+| LOD, bias, and gradient sampling        | Selected HLSL sampling calls have backend implementations                                               | Support varies by sampler and backend; check the actual compiled shader                                   |
+| Warp and composite stages               | Separate runtime targets and stage-specific sampler bindings                                            | Blend, coordinate, and rasterization differences still require measured comparison                        |
+| Built-in and custom sampler names       | Frame buffers, blur, noise, and bundled texture resolution                                              | Unknown or legacy aliases can use approximations; the Textures pane shows resolved bindings               |
+| Arbitrary external texture files        | No general URL/file loader from preset source                                                           | Custom names resolve within the bundled texture set; the pane previews those files                        |
+| 3D volume sampling                      | WebGL uses an atlas path; WebGPU uses native 3D textures on supported samplers                          | Different sampling paths do not establish which output matches a native reference                         |
 
 Use **Compat**, **Shader**, and **Textures** in the studio to inspect the loaded preset. The implementation owners are `packages/milkdrop-toolchain/src/compiler/`, `src/js/milkdrop/feedback-manager-shared.ts`, and the WebGPU feedback modules. The [coding guide](../MILKDROP_CODING_GUIDE.md#engine-limitations) explains sampler and dialect limits.
 

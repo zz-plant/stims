@@ -173,17 +173,24 @@ export function trapFocusWithin(panel: HTMLElement) {
     }
   };
 
+  let isRefocusing = false;
   const handleFocusIn = (event: FocusEvent) => {
+    if (isRefocusing) return;
     if (!isInnermostTrap(panel)) return;
     if (!isNode(event.target) || panel.contains(event.target)) {
       return;
     }
 
     const items = focusable();
-    if (items.length > 0) {
-      items[0].focus();
-    } else {
-      panel.focus();
+    try {
+      isRefocusing = true;
+      if (items.length > 0) {
+        items[0].focus();
+      } else {
+        panel.focus();
+      }
+    } finally {
+      isRefocusing = false;
     }
   };
 

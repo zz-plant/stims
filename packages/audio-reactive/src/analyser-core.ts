@@ -66,47 +66,61 @@ export function buildTwiddleTable(length: number) {
     cos[index] = Math.cos(phase);
     sin[index] = Math.sin(phase);
   }
-  return { cos, sin };
+  const bits = Math.log2(length);
+  const bitRev = new Uint16Array(length);
+  for (let i = 0; i < length; i += 1) {
+    bitRev[i] = reverseBits(i, bits);
+  }
+  return { cos, sin, bitRev };
 }
 
-function fft(
+function fftRealInput(
   real: Float32Array,
   imag: Float32Array,
   twiddles: ReturnType<typeof buildTwiddleTable>,
 ): void {
   const n = real.length;
-  const bits = Math.log2(n);
+  const cosTable = twiddles.cos;
+  const sinTable = twiddles.sin;
 
-  for (let i = 0; i < n; i += 1) {
-    const j = reverseBits(i, bits);
-    if (j > i) {
-      [real[i], real[j]] = [real[j], real[i]];
-      [imag[i], imag[j]] = [imag[j], imag[i]];
-    }
-  }
-
-  for (let size = 2; size <= n; size <<= 1) {
+  for (let size = 8; size <= n; size <<= 1) {
     const halfSize = size >> 1;
     const tableStep = n / size;
 
+    // i = 0 (cos = 1, sin = 0): avoid trigonometric multiplication
     for (let start = 0; start < n; start += size) {
-      for (let i = 0; i < halfSize; i += 1) {
-        const twiddleIndex = i * tableStep;
-        const cos = twiddles.cos[twiddleIndex] ?? 1;
-        const sin = twiddles.sin[twiddleIndex] ?? 0;
+      const oddIdx = start + halfSize;
+      const evenReal = real[start] ?? 0;
+      const oddReal = real[oddIdx] ?? 0;
+      const evenImag = imag[start] ?? 0;
+      const oddImag = imag[oddIdx] ?? 0;
+      real[start] = evenReal + oddReal;
+      imag[start] = evenImag + oddImag;
+      real[oddIdx] = evenReal - oddReal;
+      imag[oddIdx] = evenImag - oddImag;
+    }
 
-        const evenReal = real[start + i];
-        const evenImag = imag[start + i];
-        const oddReal = real[start + i + halfSize];
-        const oddImag = imag[start + i + halfSize];
+    for (let i = 1; i < halfSize; i += 1) {
+      const twiddleIndex = i * tableStep;
+      const cos = cosTable[twiddleIndex] ?? 1;
+      const sin = sinTable[twiddleIndex] ?? 0;
+
+      for (let start = 0; start < n; start += size) {
+        const evenIdx = start + i;
+        const oddIdx = evenIdx + halfSize;
+        const oddReal = real[oddIdx] ?? 0;
+        const oddImag = imag[oddIdx] ?? 0;
 
         const tempReal = oddReal * cos - oddImag * sin;
         const tempImag = oddReal * sin + oddImag * cos;
 
-        real[start + i] = evenReal + tempReal;
-        imag[start + i] = evenImag + tempImag;
-        real[start + i + halfSize] = evenReal - tempReal;
-        imag[start + i + halfSize] = evenImag - tempImag;
+        const evenReal = real[evenIdx] ?? 0;
+        const evenImag = imag[evenIdx] ?? 0;
+
+        real[evenIdx] = evenReal + tempReal;
+        imag[evenIdx] = evenImag + tempImag;
+        real[oddIdx] = evenReal - tempReal;
+        imag[oddIdx] = evenImag - tempImag;
       }
     }
   }
@@ -144,9 +158,10 @@ export function computeBandAverage(
 
   let sum = 0;
   let weightTotal = 0;
+  const count = end - start;
+  const invRange = count > 1 ? 1 / (count - 1) : 0;
   for (let index = start; index < end; index += 1) {
-    const position =
-      end - start <= 1 ? 0 : (index - start) / Math.max(1, end - start - 1);
+    const position = (index - start) * invRange;
     const weight =
       bandType === 'bass'
         ? 1.2 - position * 0.3
@@ -156,7 +171,7 @@ export function computeBandAverage(
     sum += (data[index] ?? 0) * weight;
     weightTotal += weight;
   }
-  return weightTotal > 0 ? sum / weightTotal / 255 : 0;
+  return weightTotal > 0 ? sum / (weightTotal * 255) : 0;
 }
 
 /** Waveform byte for one PCM sample in [-1, 1], as the worklet posts it. */
@@ -176,19 +191,61 @@ export function analyseBlockBytes(
   twiddles: ReturnType<typeof buildTwiddleTable>,
   out: Uint8Array,
   scratch: { real: Float32Array; imag: Float32Array },
+  magnitudesOut?: Float32Array,
 ): void {
   const size = block.length;
-  const binCount = size / 2;
-  for (let i = 0; i < size; i += 1) {
-    scratch.real[i] = block[i] * window[i];
-    scratch.imag[i] = 0;
+  const binCount = size >> 1;
+  const real = scratch.real;
+  const imag = scratch.imag;
+  const bitRev = twiddles.bitRev;
+
+  if (size === 2) {
+    const x0 = (block[0] ?? 0) * (window[0] ?? 0);
+    const x1 = (block[1] ?? 0) * (window[1] ?? 0);
+    real[0] = x0 + x1;
+    real[1] = x0 - x1;
+    imag[0] = 0;
+    imag[1] = 0;
+  } else {
+    // Single fused pass: windowing + bit-reversal + imag zeroing + radix-4
+    // (stages 1 & 2) real-input base butterflies without intermediate passes.
+    for (let start = 0; start < size; start += 4) {
+      const i0 = bitRev[start] ?? 0;
+      const i1 = bitRev[start + 1] ?? 0;
+      const i2 = bitRev[start + 2] ?? 0;
+      const i3 = bitRev[start + 3] ?? 0;
+
+      const x0 = (block[i0] ?? 0) * (window[i0] ?? 0);
+      const x1 = (block[i1] ?? 0) * (window[i1] ?? 0);
+      const x2 = (block[i2] ?? 0) * (window[i2] ?? 0);
+      const x3 = (block[i3] ?? 0) * (window[i3] ?? 0);
+
+      const s0 = x0 + x1;
+      const d0 = x0 - x1;
+      const s1 = x2 + x3;
+      const d1 = x2 - x3;
+
+      real[start] = s0 + s1;
+      imag[start] = 0;
+      real[start + 1] = d0;
+      imag[start + 1] = -d1;
+      real[start + 2] = s0 - s1;
+      imag[start + 2] = 0;
+      real[start + 3] = d0;
+      imag[start + 3] = d1;
+    }
   }
-  fft(scratch.real, scratch.imag, twiddles);
+
+  fftRealInput(real, imag, twiddles);
+
+  const invBinCount = 1 / binCount;
   for (let i = 0; i < binCount; i += 1) {
-    const magnitude =
-      Math.sqrt(
-        scratch.real[i] * scratch.real[i] + scratch.imag[i] * scratch.imag[i],
-      ) / binCount;
+    const r = real[i] ?? 0;
+    const im = imag[i] ?? 0;
+    const magnitude = Math.sqrt(r * r + im * im) * invBinCount;
+    if (magnitudesOut) {
+      magnitudesOut[i] = magnitude;
+    }
     out[i] = byteFromMagnitude(magnitude);
   }
 }

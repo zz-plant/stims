@@ -80,6 +80,21 @@ export function handleBlackoutKeyUp(now = Date.now()) {
   if (mode === 'blackout') setMode('normal');
 }
 
+/**
+ * A blackout from a command rather than a key: the palette or a MIDI pad.
+ * Nothing follows with a release, so it latches, and the next run ends it,
+ * the same as a press of D does while latched.
+ */
+export function toggleBlackout() {
+  if (mode === 'blackout') {
+    blackoutLatched = false;
+    setMode('normal');
+    return;
+  }
+  blackoutLatched = true;
+  setMode('blackout');
+}
+
 /** A flash keydown: white for exactly as long as the key is down. */
 export function handleFlashKeyDown(repeat: boolean) {
   if (repeat) return;

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { build } from 'esbuild';
 import { defaultClientConditions, defineConfig } from 'vite';
+import { liveChannel } from './scripts/vite-live-channel.ts';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
@@ -94,10 +95,16 @@ function prunePreviewsFromDist() {
 
 export default defineConfig({
   plugins: [
-    react(),
+    // React Compiler (stable 1.0) auto-memoizes components and hook values
+    // that follow the Rules of React; components it cannot prove safe are
+    // left unchanged, so this is opt-in per component, not a rewrite.
+    react({ compiler: true }),
     audioWorkletTransform(),
     deferAppShellStylesheets(),
     prunePreviewsFromDist(),
+    // Dev server only: relays an agent's commands to the visible tab and
+    // writes that tab's events to scratch/live/ (scripts/vite-live-channel.ts).
+    liveChannel(),
   ],
   resolve: {
     dedupe: ['react', 'react-dom', 'three'],

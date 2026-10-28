@@ -9,7 +9,7 @@ is a separate, much harder case (see the readme's relationship section and the
 import census at the bottom of this file).
 
 This is a decision artifact, not a work order: execute it only when a trigger
-fires, and land Phase 0 and Phase 1 in `stims` *before* touching the repo.
+fires, and land Phase 0 and Phase 1 in `stims` _before_ touching the repo.
 
 ---
 
@@ -44,7 +44,7 @@ fires, and land Phase 0 and Phase 1 in `stims` *before* touching the repo.
 - Sites: `pages-packages.yml` deploys all four `site/` dirs to
   `zz-plant.github.io/stims/<name>/`.
 
-The only thing that is hard about the move is *source-level consumption*. The
+The only thing that is hard about the move is _source-level consumption_. The
 repo topology, history, and publishing plumbing are all already there.
 
 ---
@@ -57,7 +57,6 @@ the new repo?**
 Versioned `dist/` is the only sane answer — anything else (cross-repo
 workspaces, submodules, git deps) re-creates monorepo coordination without
 atomic commits. Accepting that means accepting, for this one package:
-
 1. Every `audio-reactive` change the app wants now goes through
    `bump → tag → publish → bun update`, instead of landing in the same commit.
 2. The app's dev loop reads `dist/`, so a broken build emits before the app
@@ -74,7 +73,6 @@ Phase 0 proves the seam before any of this is irreversible.
 
 Goal: evidence that Stims works against built `dist/`, so the API contract the
 app actually needs is known and frozen.
-
 1. **Pin the public surface.** The app imports two subpaths: `.` and
    `./worklet`. Treat `packages/audio-reactive/src/index.ts` and
    `packages/audio-reactive/src/frequency-analyser-processor.ts` (the worklet
@@ -95,7 +93,7 @@ app actually needs is known and frozen.
    break; prove it here.
 4. **Record the results** in this file (or the PR): gate pass/fail, worklet
    outcome, and any `exports`/`files` gaps (e.g. `files` already ships `dist`
-   + `src`; decide whether `src` stays in the tarball).
+   - `src`; decide whether `src` stays in the tarball).
 
 Exit criteria: a green full gate with the app reading `dist/`, including the
 worklet import.
@@ -104,13 +102,12 @@ worklet import.
 
 ## Phase 1 — Flip Stims to a versioned dependency (package still in-repo)
 
-Goal: land the app-side change while rollback is one line, *before* any repo
+Goal: land the app-side change while rollback is one line, _before_ any repo
 move.
-
 1. Root `package.json`: `"audio-reactive": "workspace:*"` →
    `"audio-reactive": "^0.1.0"` (the version already in the package file).
 2. Delete the local `node_modules/audio-reactive` symlink and re-link from the
-   package's build: `bun --cwd packages/audio-reactive run build` then
+   package's build: `bun --cwd=packages/audio-reactive run build` then
    `bun link`/`file:` override for local dev, or simply accept that dev now
    exercises the published shape (build first). The repo's
    `stims-source` condition must not be relied on for this package anymore:
@@ -137,7 +134,6 @@ its own; history is already there.
 The mirror is already a full clone of the package's history, so no migration
 step exists — this phase is repository settings and new workflow files in the
 package repo:
-
 1. GitHub settings on `zz-plant/audio-reactive`: enable issues and Actions;
    the repo keeps its name/URL (its `package.json` `repository` field already
    points at `zz-plant/stims` with `directory: packages/audio-reactive` — flip
@@ -166,7 +162,6 @@ against it (mirror matrix, publish choices, `packages/` directory, README
 table); `check:no-source-seams` fails on any `workspace:` dependency or `src/`
 subpath import a promotion leaves behind, and `check:dist-determinism` guards
 the published tarball. What remains by hand:
-
 1. Flip the entry in `scripts/package-manifest.ts` to
    `role: 'promoted'` — the guards then name every remaining seam and surface
    until each is fixed.
@@ -191,7 +186,6 @@ the published tarball. What remains by hand:
 ## Rollback
 
 Every phase is reversible until the registry publish is consumed:
-
 - Failing Phase 1 → revert the one-line dep change.
 - Failing Phase 2/3 → re-add `packages/audio-reactive/` from the mirror
   (history intact) and restore the matrix entries; the app never stopped
@@ -203,15 +197,15 @@ Every phase is reversible until the registry publish is consumed:
 
 ## Costing
 
-| Item | Now (monorepo) | After split | One-time |
-| --- | --- | --- | --- |
-| Change reaches app | same commit, instant | bump → tag → publish → `bun update` (≥ one release round-trip, minutes) | — |
-| Dev loop for app+package | edit → gate (~1 min) | edit → pkg test → build → app gate | — |
-| Gate coverage of the package | `check:packages` in Stims CI (55 tests) | package's own CI; Stims gate covers only the app integration | new CI file |
-| Trusted publishing | registered to `zz-plant/stims` | registered to `zz-plant/audio-reactive` | npm settings |
-| History | split mirror (read-only) | canonical, full history already present | none (git) |
-| Sites | one Pages deploy of 4 dirs | package repo deploys its own | Pages config |
-| Coordination | atomic commits, one gate | version skew possible; release checklist per change | docs |
+| Item                         | Now (monorepo)                          | After split                                                             | One-time     |
+| ---------------------------- | --------------------------------------- | ----------------------------------------------------------------------- | ------------ |
+| Change reaches app           | same commit, instant                    | bump → tag → publish → `bun update` (≥ one release round-trip, minutes) | —            |
+| Dev loop for app+package     | edit → gate (~1 min)                    | edit → pkg test → build → app gate                                      | —            |
+| Gate coverage of the package | `check:packages` in Stims CI (55 tests) | package's own CI; Stims gate covers only the app integration            | new CI file  |
+| Trusted publishing           | registered to `zz-plant/stims`          | registered to `zz-plant/audio-reactive`                                 | npm settings |
+| History                      | split mirror (read-only)                | canonical, full history already present                                 | none (git)   |
+| Sites                        | one Pages deploy of 4 dirs              | package repo deploys its own                                            | Pages config |
+| Coordination                 | atomic commits, one gate                | version skew possible; release checklist per change                     | docs         |
 
 The recurring tax is version skew + release round-trip. It is cheap only while
 `audio-reactive` changes rarely and never in lockstep with the app. The moment
@@ -224,7 +218,6 @@ before promoting.
 ## When to pull the trigger
 
 Execute this plan when any of:
-
 1. **An external consumer installs `audio-reactive`** (npm downloads, an issue
    filed on the current mirror, a fork) — the first real signal of independent
    value.

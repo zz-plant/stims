@@ -1,4 +1,5 @@
 ---
+
 name: review-test-harness
 description: "Review changes to tests, fixtures, or integration harnesses. Use when a PR adds, modifies, or removes tests, or when test expectations, stubs, or environment setup change."
 ---
@@ -9,7 +10,7 @@ Use this skill when reviewing or authoring changes to any file under `tests/`, `
 
 ## Why this exists
 
-**16% of fix commits — the #4 category** (steady). Test harness drift: failing expectations, architecture path string mismatches, fixture module refactors, and integration harness startup flakiness. Counting only commits that are *mostly* test changes; half of all fix commits touch `tests/` at all, since a fix and its regression test land together. Measured 2026-08-27 over the last 400 commits (134 fix/revert), one category per commit by dominant file share; re-run it with [`audit-recurring-fixes`](../audit-recurring-fixes/SKILL.md) rather than trusting this number.
+**16% of fix commits — the #4 category** (steady). Test harness drift: failing expectations, architecture path string mismatches, fixture module refactors, and integration harness startup flakiness. Counting only commits that are _mostly_ test changes; half of all fix commits touch `tests/` at all, since a fix and its regression test land together. Measured 2026-08-27 over the last 400 commits (134 fix/revert), one category per commit by dominant file share; re-run it with [`audit-recurring-fixes`](../audit-recurring-fixes/SKILL.md) rather than trusting this number.
 
 ## Pre-merge checklist
 

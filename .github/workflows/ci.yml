@@ -84,7 +84,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-stims
         with:
-          checkout: 'false'
+          checkout: "false"
 
       - name: Check commit subjects in this PR
         run: |
@@ -107,10 +107,10 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-stims
         with:
-          checkout: 'false'
+          checkout: "false"
           # The only job that runs `typecheck` and `check:architecture`, so the
           # only one that should publish their incremental caches.
-          cache-compute: 'true'
+          cache-compute: "true"
 
       # Fails on high/critical advisories against the lockfile. Moderate and
       # below only report locally via `bun audit`; gate them here once the
@@ -170,7 +170,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-stims
         with:
-          checkout: 'false'
+          checkout: "false"
 
       - name: Run gate test suite
         run: bun run test:fast
@@ -209,7 +209,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-stims
         with:
-          checkout: 'false'
+          checkout: "false"
 
       # The loop-preset visual sweep in tests/corpus/ launches headless
       # Chromium, so the corpus is no longer browser-free.
@@ -243,15 +243,17 @@ jobs:
       matrix:
         include:
           - file: agent-integration.test.ts
+          - file: decision-workflows.test.ts
           - file: chrome-visual-contract.test.ts
           - file: embed-bridge.test.ts
+          - file: embed-snippet.test.ts
           - file: landing-route.test.ts
           - file: open-one-up.test.ts
           - file: e2e-engine-mount.test.ts
-            tests: '^(?!switches preset)'
+            tests: "^(?!switches preset)"
           - file: e2e-engine-mount.test.ts
             part: preset switch
-            tests: '^switches preset'
+            tests: "^switches preset"
     steps:
       # The runner must read the local composite action's action.yml from
       # disk before it can run it, so the repository has to be checked out
@@ -264,7 +266,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-stims
         with:
-          checkout: 'false'
+          checkout: "false"
 
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
@@ -323,7 +325,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-stims
         with:
-          checkout: 'false'
+          checkout: "false"
 
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
@@ -335,7 +337,7 @@ jobs:
       - name: Capture bundled preset visuals (software rendering — no GPU on this runner)
         timeout-minutes: 10
         env:
-          STIMS_SOFTWARE_RENDER: '1'
+          STIMS_SOFTWARE_RENDER: "1"
         run: |
           bun run lab:visual -- \
             --preset eos-glowsticks-v2-03-music \

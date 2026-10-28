@@ -13,7 +13,14 @@ import {
   resetAccessibilityPreferenceState,
   setAccessibilityPreference,
 } from '../../src/js/core/accessibility-preferences.ts';
-import { createFlashSafetyController } from '../../src/js/core/services/flash-safety.ts';
+import {
+  createFlashSafetyController,
+  createStageCompositedScale,
+} from '../../src/js/core/services/flash-safety.ts';
+import {
+  resetStageLuminance,
+  setStageLuminanceChannel,
+} from '../../src/js/core/services/stage-luminance.ts';
 
 const FRAME_MS = 1000 / 60;
 
@@ -100,5 +107,22 @@ describe('flash safety adapter', () => {
     setAccessibilityPreference({ reduceFlashing: false });
     setAccessibilityPreference({ reduceFlashing: true });
     expect(applied.length).toBe(appliedAtStop);
+  });
+
+  test('the governor feedback excludes the comfort ceiling', () => {
+    // A recording carries the governor and the blackout but not the ceiling,
+    // so the governor must decide against that same content: a swing the
+    // ceiling made sub-threshold would otherwise read as already mitigated
+    // and pass through undimmed into the file.
+    const stage = document.createElement('div');
+    setStageLuminanceChannel(stage, 'ceiling', 0.3);
+    setStageLuminanceChannel(stage, 'governor', 0.5);
+    setStageLuminanceChannel(stage, 'presentation', 0.25);
+
+    const composited = createStageCompositedScale(stage);
+    // governor × presentation, no ceiling.
+    expect(composited()).toBeCloseTo(0.5 * 0.25, 5);
+
+    resetStageLuminance(stage);
   });
 });

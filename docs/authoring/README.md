@@ -6,18 +6,18 @@ If you want the reference instead of the course, see [the language reference](re
 
 ## The path
 
-| Track | What you learn |
-|---|---|
-| [0 · Play](00-play.md) | Remix an existing preset and share it — no code |
-| [1 · How MilkDrop thinks](01-how-milkdrop-thinks.md) | The feedback loop, the pipeline, `decay`, `time` |
-| [2 · Motion](02-motion.md) | `zoom`, `rot`, `dx/dy`, `sx/sy`, `warp` — and a line-by-line dissection of a Geiss classic |
-| [3 · Listening](03-listening.md) | Audio bands, smoothing, beat detection, measured reactivity |
-| [4 · Warp fields](04-warp-fields.md) | Per-pixel equations: `rad`, `ang`, tunnels, and ripples |
-| [5 · Waves and shapes](05-waves-and-shapes.md) | Custom waves, custom shapes, the q-var bridge |
-| [6 · Shaders](06-shaders.md) | Warp and composite shaders, the pair most catalog presets carry |
-| [7 · Taste](07-taste.md) | Five masterwork dissections: reaction-diffusion, tempo tracking, hand-rolled HSL, and more |
-| [8 · Shipping](08-shipping.md) | Implemented paths, compatibility limits, performance, publishing |
-| [9 · Technique glossary](09-technique-glossary.md) | The named-technique vocabulary — Jelly, Relief, Painterly, Krash's beat code — counted across the shipped catalog |
+| Track                                                | What you learn                                                                                                    |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| [0 · Play](00-play.md)                               | Remix an existing preset and share it — no code                                                                   |
+| [1 · How MilkDrop thinks](01-how-milkdrop-thinks.md) | The feedback loop, the pipeline, `decay`, `time`                                                                  |
+| [2 · Motion](02-motion.md)                           | `zoom`, `rot`, `dx/dy`, `sx/sy`, `warp` — and a line-by-line dissection of a Geiss classic                        |
+| [3 · Listening](03-listening.md)                     | Audio bands, smoothing, beat detection, measured reactivity                                                       |
+| [4 · Warp fields](04-warp-fields.md)                 | Per-pixel equations: `rad`, `ang`, tunnels, and ripples                                                           |
+| [5 · Waves and shapes](05-waves-and-shapes.md)       | Custom waves, custom shapes, the q-var bridge                                                                     |
+| [6 · Shaders](06-shaders.md)                         | Warp and composite shaders, the pair most catalog presets carry                                                   |
+| [7 · Taste](07-taste.md)                             | Five masterwork dissections: reaction-diffusion, tempo tracking, hand-rolled HSL, and more                        |
+| [8 · Shipping](08-shipping.md)                       | Implemented paths, compatibility limits, performance, publishing                                                  |
+| [9 · Technique glossary](09-technique-glossary.md)   | The named-technique vocabulary — Jelly, Relief, Painterly, Krash's beat code — counted across the shipped catalog |
 
 All ten tracks are live. Follow-on work is in the roadmap's [Learn by editing](../ROADMAP.md#learn-by-editing) section; the plan that scoped the tracks is [archived](../archive/PRESET_AUTHORING_DOCS_PLAN.md).
 

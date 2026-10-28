@@ -1,9 +1,17 @@
-import { describe, expect, mock, test } from 'bun:test';
+import { afterEach, describe, expect, mock, test } from 'bun:test';
+import {
+  resetStageUtilitiesForTests,
+  stageUtilityMode,
+} from '../../src/js/core/services/stage-utilities.ts';
+import { buildPaletteResults } from '../../src/js/frontend/command-palette-registry.ts';
 import type { EngineContextValue } from '../../src/js/frontend/engine-context.tsx';
 import { buildPaletteActions } from '../../src/js/frontend/palette-actions.ts';
+import { getPanelTitle } from '../../src/js/frontend/panel-registry.ts';
 import {
   paletteActionContext as context,
   makeEngineValue,
+  makePresetEntry,
+  makeUiValue,
 } from '../frontend-harness.tsx';
 
 /**
@@ -80,5 +88,121 @@ describe('palette actions', () => {
       .find((action) => action.id === 'toggle-watcher-hud')
       ?.run();
     expect(announce).toHaveBeenCalledWith('The stage is not running yet.');
+  });
+
+  test('routed panel actions derive their labels from the panel registry', () => {
+    const actions = buildPaletteActions(context());
+    expect(label(actions, 'open-browse')).toBe(getPanelTitle('browse'));
+    expect(label(actions, 'open-editor')).toBe(getPanelTitle('editor'));
+    expect(label(actions, 'open-refine')).toBe(getPanelTitle('refine'));
+    expect(label(actions, 'open-generate')).toBe(getPanelTitle('synthesize'));
+    expect(label(actions, 'open-settings')).toBe(getPanelTitle('settings'));
+    // The finder's title names a thing; the row says what it finds.
+    expect(label(actions, 'find-similar')).toBe(
+      'Find presets that match the music or picture',
+    );
+  });
+
+  test('a panel row that would close its open panel says so', () => {
+    // togglePanel closes the panel that is already open. The row used to
+    // keep saying "Browse presets" while it closed Browse.
+    const uiRef = {
+      current: makeUiValue({
+        routeState: {
+          presetId: null,
+          collectionTag: null,
+          panel: 'browse',
+          audioSource: null,
+          agentMode: false,
+        },
+      }),
+    };
+    const actions = buildPaletteActions(context({ uiRef }));
+    expect(label(actions, 'open-browse')).toBe('Close Browse');
+    expect(label(actions, 'open-editor')).toBe(getPanelTitle('editor'));
+
+    // Read when the row renders, not when the list was built.
+    uiRef.current = makeUiValue();
+    expect(label(actions, 'open-browse')).toBe(getPanelTitle('browse'));
+  });
+
+  test('toggle rows name the way they will go', () => {
+    const saved = makePresetEntry({ id: 'kept', bundledFile: 'kept.milk' });
+    const engineBridgeRef = {
+      current: makeEngineValue({
+        selectedPreset: saved,
+        favoritePresets: [saved],
+      }),
+    } as { current: EngineContextValue };
+    const actions = buildPaletteActions(context({ engineBridgeRef }));
+    expect(label(actions, 'save-preset')).toBe('Remove from saved');
+    engineBridgeRef.current = makeEngineValue({
+      selectedPreset: saved,
+      favoritePresets: [],
+    });
+    expect(label(actions, 'save-preset')).toBe('Save preset');
+  });
+
+  test('clearing the queue takes a second run', () => {
+    const clear = mock(() => {});
+    const announce = mock(() => {});
+    const uiRef = {
+      current: makeUiValue({
+        setStatusMessage: announce,
+        presetQueue: {
+          ...makeUiValue().presetQueue,
+          presetIds: ['a', 'b'],
+          clear,
+        },
+      }),
+    };
+    const actions = buildPaletteActions(context({ uiRef }));
+    const run = () =>
+      actions.find((action) => action.id === 'queue-clear')?.run();
+
+    run();
+    expect(clear).not.toHaveBeenCalled();
+    expect(announce).toHaveBeenCalledWith(
+      'Run “Clear the queue” again to remove all 2 queued.',
+    );
+    run();
+    expect(clear).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('palette rows for commands that had no other route', () => {
+  afterEach(() => {
+    resetStageUtilitiesForTests();
+    window.__stims_live = undefined;
+  });
+
+  test('the D blackout has a row once the stage is live, and it latches', () => {
+    expect(
+      buildPaletteActions(context()).some((a) => a.id === 'toggle-blackout'),
+    ).toBe(false);
+    const actions = buildPaletteActions(context({ liveMode: true }));
+    const blackout = actions.find((a) => a.id === 'toggle-blackout');
+    expect(blackout?.label).toBe('Black out the picture');
+    blackout?.run();
+    expect(stageUtilityMode()).toBe('blackout');
+    expect(blackout?.label).toBe('End the blackout');
+    blackout?.run();
+    expect(stageUtilityMode()).toBe('normal');
+  });
+
+  test('the AI scene pick is offered only once two scenes exist', () => {
+    const actions = buildPaletteActions(context({ liveMode: true }));
+    const offered = () =>
+      buildPaletteResults({ query: 'scene', actions }).some(
+        (result) => result.id === 'action:auto-switch-scene',
+      );
+    expect(offered()).toBe(false);
+    window.__stims_live = {
+      listScenes: () => [
+        { name: 'calm', positions: {}, modulators: [] },
+        { name: 'peak', positions: {}, modulators: [] },
+      ],
+    } as unknown as typeof window.__stims_live;
+    expect(offered()).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "milkdrop-toolchain",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Parse, compile, analyze, format and export MilkDrop .milk presets in TypeScript: EEL2 interpreter and JIT, IR, HLSL shader analysis, GLSL and WGSL generation.",
   "keywords": [
     "milkdrop",
@@ -58,7 +58,7 @@
     "site:preview": "bun run scripts/build-site.ts && bunx serve _site -l 8787"
   },
   "devDependencies": {
-    "@types/bun": "^1.4.2",
+    "@types/bun": "^1.4.4",
     "typescript": "^7.0.2"
   },
   "engines": {

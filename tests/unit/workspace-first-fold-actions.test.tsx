@@ -428,7 +428,9 @@ describe('workspace first-fold launch hierarchy', () => {
       // The word it does, carrying the promise's "one", beside the ranked
       // pair — same shape as Browse presets, so the row reads as three
       // pointer-reachable choices.
-      expect(edit?.textContent).toBe('Edit this one');
+      // Names what it opens: with no preset known yet, the one behind the
+      // page.
+      expect(edit?.textContent).toBe('Edit the preset behind this page');
       expect(edit?.className).toBe('stims-shell__launch-secondary');
       expect(
         rendered.container.querySelector('.stims-shell__launch-cta'),
@@ -450,6 +452,178 @@ describe('workspace first-fold launch hierarchy', () => {
       expect(
         rendered.container.querySelector('[data-action="open-editor"]'),
       ).toBeNull();
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('the landing renders the starter showcase with 4 curated presets and soundflow preview', () => {
+    const recorded: {
+      preset: string | null;
+      source: string | null;
+      audioPreset: string | null;
+    } = {
+      preset: null,
+      source: null,
+      audioPreset: null,
+    };
+    const starterPresets = [
+      makePresetEntry({ id: 'shifter-curlique', title: 'Shifter - Curlique' }),
+      makePresetEntry({
+        id: 'eos-glowsticks-v2-03-music',
+        title: 'Eo.S. - Glowsticks v2.03',
+      }),
+      makePresetEntry({ id: 'geiss-casino', title: 'Geiss - Casino' }),
+      makePresetEntry({
+        id: 'aderrasi-potion-of-spirits',
+        title: 'Aderrasi - Potion of Spirits',
+      }),
+    ];
+    const rendered = renderWorkspace(<NewHomePage />, {
+      engine: {
+        catalog: starterPresets,
+        attractPreviewLive: true,
+        handleAudioStart: (source, _deviceId, presetOverride) => {
+          recorded.source = source;
+          recorded.audioPreset = presetOverride ?? null;
+          return Promise.resolve({ ok: true, source });
+        },
+      },
+      ui: {
+        commitRoute: (fn) => {
+          const next =
+            typeof fn === 'function' ? fn(makeUiValue().routeState) : fn;
+          recorded.preset = next.presetId ?? null;
+        },
+      },
+    });
+    try {
+      const cards = rendered.container.querySelectorAll(
+        '.stims-shell__launch-starter-card',
+      );
+      expect(cards.length).toBe(4);
+      expect(cards[0].textContent).toContain('Curlique');
+      expect(cards[0].textContent).toContain('Cosmic swirl');
+
+      // Clicking a card commits the route to that preset and starts demo audio
+      rendered.click(cards[0]);
+      expect(recorded.preset).toBe('shifter-curlique');
+      expect(recorded.source).toBe('demo');
+      // The selected preset rides into the audio start too, so the demo does
+      // not launch the previous/default preset from a stale route state.
+      expect(recorded.audioPreset).toBe('shifter-curlique');
+
+      // Soundflow section renders the 3 equation cards
+      const soundflow = rendered.container.querySelector(
+        '.stims-shell__launch-soundflow',
+      );
+      expect(soundflow).not.toBeNull();
+      expect(soundflow?.textContent).toContain('zoom = 1.0 + 0.08 * bass_att');
+      expect(soundflow?.textContent).toContain('warp = 0.02 * mid_att');
+      expect(soundflow?.textContent).toContain('rot = 0.01 * sin(treb)');
+      // The equations are illustrations, so the section must say so rather
+      // than present them as the running preset.
+      expect(soundflow?.textContent).not.toMatch(/\blive\b/i);
+      expect(soundflow?.textContent).toContain('Simplified examples');
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('a catalog that failed to download says so and offers a reload', () => {
+    // engineReady is false only when the catalog failed. The landing used to
+    // answer with "Audio engine is starting. This will unlock in a moment.",
+    // a wait that never ended when the retry failed too.
+    const rendered = renderWorkspace(<NewHomePage />, {
+      engine: { engineReady: false, catalogError: 'offline' },
+    });
+    try {
+      const status = rendered.container.querySelector(
+        '.stims-shell__launch-status',
+      );
+      expect(status?.textContent).toContain('didn’t download');
+      expect(status?.textContent).not.toContain('in a moment');
+      const reload = status?.querySelector('button');
+      expect(reload?.textContent).toBe('reload');
+      expect(
+        (
+          rendered.container.querySelector(
+            '#use-demo-audio',
+          ) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+    } finally {
+      rendered.dispose();
+    }
+  });
+});
+
+describe('launch page after the WebGL fallback reload', () => {
+  // The fallback reloads the session's own URL, `?preset=…&audio=…`, which is
+  // exactly what a copied link looks like. The same arrival is rendered both
+  // ways so the difference is only who made it.
+  function renderArrival(rendererFallbackReload: boolean) {
+    const entry = makePresetEntry({
+      id: 'martin-witchcraft',
+      title: 'martin - witchcraft reloaded',
+      author: 'martin',
+    });
+    const statusMessages: Array<string | null> = [];
+    const audioStarts: string[] = [];
+    const rendered = renderWorkspace(
+      <NewHomePage
+        arrival={{
+          presetId: entry.id,
+          audio: 'microphone',
+          rendererFallbackReload,
+        }}
+      />,
+      {
+        ui: { setStatusMessage: (message) => statusMessages.push(message) },
+        engine: {
+          catalog: [entry],
+          handleAudioStart: async (source) => {
+            audioStarts.push(source);
+            return { ok: true, source };
+          },
+        },
+      },
+    );
+    return { rendered, statusMessages, audioStarts };
+  }
+
+  test('offers the visitor’s own source back and says why the page reloaded', () => {
+    const { rendered, statusMessages, audioStarts } = renderArrival(true);
+    try {
+      const text = rendered.text();
+      expect(text).not.toContain('Shared with you');
+      expect(text).toContain('Ready to resume');
+      expect(text).toContain('martin - witchcraft reloaded');
+      const cta = rendered.container.querySelector<HTMLButtonElement>(
+        '.stims-shell__launch-cta',
+      );
+      expect(cta?.textContent).toBe('Resume with your mic');
+      expect(statusMessages).toEqual([
+        'This preset needs the WebGL renderer, so Stims reloaded the page. Press Resume to bring your audio back.',
+      ]);
+      // Nothing started on its own; Resume starts the mic, not the demo.
+      expect(audioStarts).toEqual([]);
+      rendered.click(cta);
+      expect(audioStarts).toEqual(['microphone']);
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('the same URL from a link is still a shared arrival', () => {
+    const { rendered, statusMessages } = renderArrival(false);
+    try {
+      expect(rendered.text()).toContain('Shared with you');
+      expect(
+        rendered.container.querySelector('.stims-shell__launch-cta')
+          ?.textContent,
+      ).toBe('Start with your mic');
+      expect(statusMessages).toEqual([]);
     } finally {
       rendered.dispose();
     }

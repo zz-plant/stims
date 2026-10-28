@@ -3,11 +3,9 @@
 This directory stores checked-in reference renders captured from `projectM` for certified visual-parity checks.
 
 The source of truth for this fixture set is:
-
 - [`src/data/milkdrop-parity/visual-reference-manifest.json`](../../../../src/data/milkdrop-parity/visual-reference-manifest.json)
 
 Each promoted native projectM preset must include:
-
 - a reference image,
 - a native capture metadata sidecar,
 - a manifest entry with:
@@ -19,7 +17,6 @@ Each promoted native projectM preset must include:
   - provenance for the imported artifact.
 
 Native capture flow on Apple Silicon macOS:
-
 1. Install Homebrew `projectm`. The formula includes `projectMSDL`, `libprojectM`, and the SDL2 compatibility dependency; there is no separate `projectmsdl` formula.
 2. Capture one isolated upstream fixture into a review-only directory:
 

@@ -97,7 +97,7 @@ describe('workspace YouTube preview helpers', () => {
       }),
     ).toMatchObject({
       canLoad: true,
-      feedback: 'Video is ready. Choose Start capture to continue.',
+      feedback: "Video is ready. Choose Share this tab's audio to continue.",
       invalid: false,
       reference,
     });

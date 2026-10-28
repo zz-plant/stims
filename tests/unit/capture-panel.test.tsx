@@ -164,8 +164,8 @@ test('a recording survives the engine value changing while it runs', async () =>
   expect(view.text()).not.toMatch(/no video frames/i);
 });
 
-test('leaving the panel mid-recording still ends the recording', () => {
-  installRecordingBrowser();
+test('leaving the panel mid-recording saves the recording', async () => {
+  const saved = installRecordingBrowser();
   const stopped: string[] = [];
   const recorderProto = (
     globalThis as unknown as { MediaRecorder: { prototype: { stop(): void } } }
@@ -186,7 +186,11 @@ test('leaving the panel mid-recording still ends the recording', () => {
     ),
   );
 
-  view.dispose();
+  await act(async () => {
+    view?.dispose();
+  });
   view = null;
   expect(stopped).toEqual(['stop']);
+  // Closing the panel is not a way to discard a take: the video downloads.
+  expect(saved).toHaveLength(1);
 });

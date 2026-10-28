@@ -22,12 +22,19 @@ import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { scheduleAfterPaint } from '../utils/browser/idle-task.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
-import { getArrivalAudioSource, getArrivalPresetId } from './arrival-url.ts';
+import {
+  getArrivalAudioSource,
+  getArrivalPresetId,
+  isArrivalRendererFallbackReload,
+} from './arrival-url.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { LaunchSignalTrace } from './SignalField.tsx';
-import { resolveSharedArrival } from './shared-arrival.ts';
+import {
+  resolveRendererFallbackArrival,
+  resolveSharedArrival,
+} from './shared-arrival.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import { describePresetMood, STIMS_REPO_URL } from './workspace-helpers.ts';
@@ -45,11 +52,36 @@ const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
  * whatever it resumed with, so `enableDemoAudio()` on a returning visitor's
  * page asked for their microphone.
  */
+/**
+ * What pressing Resume asks of the browser. "Resume" reads as carrying on,
+ * but a microphone or a screen share is granted per visit, so the button
+ * starts the permission prompt or the share picker again.
+ */
+const RESUME_SOURCE_NOTE: Record<ResumableAudioSource, string> = {
+  demo: 'A built-in synth loop, no permissions needed.',
+  microphone: 'Your browser asks for the microphone again.',
+  tab: 'Your browser opens its screen-share picker again; tick Share audio.',
+  youtube:
+    'Your browser opens its screen-share picker for this tab, to hear the video.',
+};
+
 const RESUME_SOURCE_HOOK: Partial<Record<ResumableAudioSource, string>> = {
   demo: 'data-demo-audio-btn',
   microphone: 'data-mic-audio-btn',
   tab: 'data-tab-audio-btn',
 };
+
+type LaunchArrival = {
+  presetId: string | null;
+  audio: string | null;
+  rendererFallbackReload: boolean;
+};
+
+const readLaunchArrival = (): LaunchArrival => ({
+  presetId: getArrivalPresetId(),
+  audio: getArrivalAudioSource(),
+  rendererFallbackReload: isArrivalRendererFallbackReload(),
+});
 
 /**
  * Home page with minimal launch interface.
@@ -61,7 +93,13 @@ const RESUME_SOURCE_HOOK: Partial<Record<ResumableAudioSource, string>> = {
  * pre-selects their last preset and offers a one-click resume with the
  * source they used last time.
  */
-export function NewHomePage() {
+export function NewHomePage({
+  // Injectable for tests: the snapshot is taken once per document, so a
+  // test cannot arrive twice.
+  arrival = readLaunchArrival(),
+}: {
+  arrival?: LaunchArrival;
+} = {}) {
   const { ui, engine } = useWorkspace();
   const [lastSession] = useState(() => getLastSession());
   const appliedResumeRef = useRef(false);
@@ -91,12 +129,22 @@ export function NewHomePage() {
   // preset navigation once a session is running), and reading it here made
   // those writes indistinguishable from a real `?preset=` arrival: a bare "/"
   // visit could auto-start demo audio with no click.
-  const [deepLinkPresetId] = useState(getArrivalPresetId);
+  //
+  // Stims's own reload into WebGL carries the same `?preset=&audio=` a
+  // copied link does, and is not one: it gets its own arrival below.
+  const [fallbackArrival] = useState(() =>
+    arrival.presetId && arrival.rendererFallbackReload
+      ? resolveRendererFallbackArrival(arrival.presetId, arrival.audio)
+      : null,
+  );
+  const [deepLinkPresetId] = useState(() =>
+    fallbackArrival ? null : arrival.presetId,
+  );
   // The source the link was copied from (see shared-arrival.ts). Only read
   // alongside a preset: a bare `?audio=` is the app's own route state.
   const [sharedArrival] = useState(() =>
     deepLinkPresetId
-      ? resolveSharedArrival(getArrivalAudioSource())
+      ? resolveSharedArrival(arrival.audio)
       : resolveSharedArrival(null),
   );
 
@@ -149,6 +197,22 @@ export function NewHomePage() {
     [engine.catalog, deepLinkPresetId],
   );
 
+  const fallbackEntry = useMemo(
+    () =>
+      fallbackArrival
+        ? resolvePresetCatalogEntry(engine.catalog, fallbackArrival.presetId)
+        : null,
+    [engine.catalog, fallbackArrival],
+  );
+
+  // The reload stopped their audio and changed nothing visible; say why, once.
+  const announceFallbackReload = useEffectEvent((notice: string) => {
+    ui.setStatusMessage(notice);
+  });
+  useEffect(() => {
+    if (fallbackArrival) announceFallbackReload(fallbackArrival.notice);
+  }, [fallbackArrival]);
+
   const startDeepLinkSession = useEffectEvent(() => {
     void engine.handleAudioStart('demo').then((outcome) => {
       if (!outcome.ok) setDeepLinkReleased(true);
@@ -170,7 +234,7 @@ export function NewHomePage() {
     // feedback at all.
     if (!deepLinkEntry && !engine.missingRequestedPreset) return;
     // A link copied from a mic, tab or YouTube session is offered as the
-    // launch button instead (see `shared` below): those sources need the
+    // launch button instead (see `resume` below): those sources need the
     // recipient's gesture, and starting the demo over them said nothing.
     if (sharedArrival.kind === 'offer') return;
     autoStartedRef.current = true;
@@ -191,14 +255,17 @@ export function NewHomePage() {
   // is pressed, which takes seconds on a phone. A CTA that just sits there
   // reads as broken and invites rage-taps; show the in-flight state.
   const [audioStarting, setAudioStarting] = useState(false);
-  const startWithFeedback = (source: ResumableAudioSource) => {
+  const startWithFeedback = (
+    source: ResumableAudioSource,
+    presetId?: string,
+  ) => {
     // The CTAs stay focusable while this runs (see `aria-disabled` below), so
     // a second Enter can land before the first start resolves.
     if (audioStarting) return;
     setAudioStarting(true);
-    void Promise.resolve(engine.handleAudioStart(source)).finally(() =>
-      setAudioStarting(false),
-    );
+    void Promise.resolve(
+      engine.handleAudioStart(source, undefined, presetId ?? null),
+    ).finally(() => setAudioStarting(false));
   };
   const handlePlayDemo = () => {
     noteGrowthEvent('demo-started');
@@ -218,16 +285,27 @@ export function NewHomePage() {
           session: { source: sharedArrival.source },
           entry: deepLinkEntry,
           title: deepLinkEntry?.title ?? prettifyPresetSlug(deepLinkPresetId),
-          shared: true,
+          origin: 'shared',
         }
-      : lastSession && resumeEntry
-        ? {
-            session: lastSession,
-            entry: resumeEntry,
-            title: resumeEntry.title,
-            shared: false,
-          }
-        : null;
+      : fallbackArrival
+        ? fallbackArrival.resumeSource
+          ? {
+              session: { source: fallbackArrival.resumeSource },
+              entry: fallbackEntry,
+              title:
+                fallbackEntry?.title ??
+                prettifyPresetSlug(fallbackArrival.presetId),
+              origin: 'renderer-fallback',
+            }
+          : null
+        : lastSession && resumeEntry
+          ? {
+              session: lastSession,
+              entry: resumeEntry,
+              title: resumeEntry.title,
+              origin: 'last-session',
+            }
+          : null;
   const handleResume = () => {
     if (!resume) return;
     startWithFeedback(resume.session.source);
@@ -254,10 +332,20 @@ export function NewHomePage() {
         }
       : null;
 
+  // The preset running behind the page, named on the Edit button so it is
+  // clear what "edit" opens.
+  const attractTitle =
+    engine.attractPreviewLive && engine.selectedPreset?.title
+      ? splitPresetDisplay(
+          engine.selectedPreset.title,
+          engine.selectedPreset.author,
+        ).title
+      : null;
   return (
     <section
       className="stims-shell__launch stims-shell__launch--minimal"
       data-audio-controls
+      data-telemetry-surface="landing"
       aria-labelledby="stims-launch-title"
     >
       <div
@@ -279,17 +367,37 @@ export function NewHomePage() {
           onBrowsePresets={handleBrowsePresets}
           onEditVisual={handleEditVisual}
           showEditVisual={engine.attractPreviewLive}
+          editTitle={attractTitle}
         />
         {/* Sits under the button it describes. As the last sentence of a
             paragraph below both buttons it arrived after the choice it was
             meant to inform. */}
-        {resume ? null : (
-          <p className="stims-shell__launch-note">
-            The demo plays a built-in synth loop, not a song, and asks for no
-            permissions.
-          </p>
-        )}
+        <p className="stims-shell__launch-note">
+          {RESUME_SOURCE_NOTE[resume?.session.source ?? 'demo']}
+        </p>
         <AudioSources resume={resume} />
+        {resume || deepLink ? null : (
+          <>
+            <LaunchStarterShowcase
+              catalog={engine.catalog}
+              onSelectPreset={(presetId) => {
+                noteGrowthEvent('demo-started', presetId);
+                ui.commitRoute((current) => ({ ...current, presetId }));
+                if (!engine.audioActive) {
+                  // The route commit above only schedules a state update; this
+                  // starts from the pre-click route state, so the selected id
+                  // rides along explicitly or the demo would start the
+                  // previous/default preset instead.
+                  startWithFeedback('demo', presetId);
+                }
+              }}
+            />
+            <LaunchSoundflowPreview
+              showEditVisual={engine.attractPreviewLive}
+              onEditVisual={handleEditVisual}
+            />
+          </>
+        )}
         <ProjectMeta />
       </div>
       {resume || deepLink ? null : <AttractCaption />}
@@ -338,8 +446,12 @@ type ResumeState = {
   session: { source: ResumableAudioSource };
   entry: PresetCatalogEntry | null;
   title: string;
-  /** True for a link that carried its sender's source, false for the visitor's own last session. */
-  shared: boolean;
+  /**
+   * `shared`: a link that carried its sender's source. `last-session`: the
+   * visitor's own last session. `renderer-fallback`: the session Stims just
+   * reloaded into WebGL.
+   */
+  origin: 'shared' | 'last-session' | 'renderer-fallback';
 } | null;
 
 type DeepLinkState = {
@@ -348,6 +460,12 @@ type DeepLinkState = {
   /** The catalog may still resolve the preset, so its artwork may still arrive. */
   artworkPending: boolean;
 } | null;
+
+const RESUME_HEADING: Record<NonNullable<ResumeState>['origin'], string> = {
+  shared: 'Shared with you',
+  'last-session': 'Welcome back',
+  'renderer-fallback': 'Ready to resume',
+};
 
 /** "aderrasi-potion-of-spirits" → "Aderrasi Potion Of Spirits". */
 function prettifyPresetSlug(slug: string) {
@@ -419,9 +537,7 @@ function Header({
         <Title id="stims-launch-title" className="stims-shell__launch-title">
           {discovery
             ? semanticRouteHeading(discovery)
-            : resume.shared
-              ? 'Shared with you'
-              : 'Welcome back'}
+            : RESUME_HEADING[resume.origin]}
         </Title>
         <div className="stims-shell__launch-resume-card">
           {entry ? <PresetArtwork entry={entry} compact /> : null}
@@ -476,6 +592,8 @@ interface ActionsProps {
   onBrowsePresets: () => void;
   onEditVisual: () => void;
   showEditVisual: boolean;
+  /** The running preset's display title, when one is known. */
+  editTitle: string | null;
 }
 
 function Actions({
@@ -487,6 +605,7 @@ function Actions({
   onBrowsePresets,
   onEditVisual,
   showEditVisual,
+  editTitle,
 }: ActionsProps) {
   const engineStatusId = useId();
   const ctaRef = useRef<HTMLButtonElement>(null);
@@ -558,7 +677,7 @@ function Actions({
         >
           {isStarting
             ? 'Starting…'
-            : `${resume.shared ? 'Start' : 'Resume'} with ${RESUME_SOURCE_LABEL[resume.session.source]}`}
+            : `${resume.origin === 'shared' ? 'Start' : 'Resume'} with ${RESUME_SOURCE_LABEL[resume.session.source]}`}
         </button>
       ) : (
         <button
@@ -585,18 +704,28 @@ function Actions({
           {isStarting ? 'Starting…' : 'Play demo'}
         </button>
       )}
-      {/* Buttons above go disabled the instant this page mounts if the
-          catalog fetch failed (see engineReady in workspace-shell-hooks.ts);
-          without this, a disabled primary CTA with no visible reason reads
-          as broken rather than transient. Mirrors the same message
-          AudioSourcePanel already shows for its own source buttons. */}
+      {/* Buttons above go disabled when the preset catalog failed to
+          download (engineReady in workspace-shell-hooks.ts is exactly "no
+          catalog error"). This used to promise "Audio engine is starting.
+          This will unlock in a moment." — true only if the background
+          full-catalog load later succeeds, and a wait forever when it does
+          not. Say what failed and give the one thing that can fix it; the
+          buttons still unlock on their own if the retry lands. */}
       {!isEngineReady ? (
         <p
           id={engineStatusId}
           className="stims-shell__launch-status"
           aria-live="polite"
         >
-          Audio engine is starting. This will unlock in a moment.
+          The preset list didn&rsquo;t download. Check your connection, then{' '}
+          <button
+            type="button"
+            className="stims-shell__launch-status-action"
+            onClick={() => window.location.reload()}
+          >
+            reload
+          </button>
+          .
         </p>
       ) : null}
       {/* The same pair on every variant of this page. The returning visitor
@@ -626,7 +755,7 @@ function Actions({
           data-action="open-editor"
           onClick={onEditVisual}
         >
-          Edit this one
+          {editTitle ? `Edit ${editTitle}` : 'Edit the preset behind this page'}
         </button>
       ) : null}
       {/* Demo audio is not the visitor's own audio, so it does not belong
@@ -680,23 +809,190 @@ function AudioSources({ resume }: { resume: ResumeState }) {
   );
 }
 
+const STARTER_SHOWCASE_PRESETS: readonly {
+  id: string;
+  vibe: string;
+}[] = [
+  { id: 'shifter-curlique', vibe: 'Cosmic swirl' },
+  { id: 'eos-glowsticks-v2-03-music', vibe: 'Neon trails' },
+  { id: 'geiss-casino', vibe: 'Psychedelic pulse' },
+  { id: 'aderrasi-potion-of-spirits', vibe: 'Fractal geometry' },
+];
+
+function LaunchStarterShowcase({
+  catalog,
+  onSelectPreset,
+}: {
+  catalog: readonly PresetCatalogEntry[];
+  onSelectPreset: (presetId: string) => void;
+}) {
+  return (
+    <section
+      className="stims-shell__launch-showcase"
+      aria-labelledby="starter-showcase-heading"
+    >
+      <div className="stims-shell__launch-showcase-header">
+        <h2
+          id="starter-showcase-heading"
+          className="stims-shell__section-label"
+        >
+          Play an iconic look
+        </h2>
+      </div>
+      <div className="stims-shell__launch-showcase-grid">
+        {STARTER_SHOWCASE_PRESETS.map((item) => {
+          const entry = resolvePresetCatalogEntry(catalog, item.id);
+          const rawTitle = entry?.title ?? prettifyPresetSlug(item.id);
+          const display = splitPresetDisplay(rawTitle, entry?.author);
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className="stims-shell__launch-starter-card"
+              onClick={() => onSelectPreset(item.id)}
+            >
+              <div className="stims-shell__launch-starter-thumb">
+                {entry ? (
+                  <PresetArtwork entry={entry} compact />
+                ) : (
+                  <div
+                    className="stims-shell__preset-art"
+                    data-compact="true"
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
+              <div className="stims-shell__launch-starter-info">
+                <span className="stims-shell__launch-starter-title">
+                  {display.title}
+                </span>
+                <span className="stims-shell__launch-starter-vibe">
+                  {item.vibe}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function LaunchSoundflowPreview({
+  showEditVisual,
+  onEditVisual,
+}: {
+  showEditVisual: boolean;
+  onEditVisual: () => void;
+}) {
+  return (
+    <section
+      className="stims-shell__launch-soundflow"
+      aria-labelledby="soundflow-preview-heading"
+    >
+      <div className="stims-shell__launch-soundflow-header">
+        <h2
+          id="soundflow-preview-heading"
+          className="stims-shell__section-label"
+        >
+          How sound drives a preset
+        </h2>
+        {showEditVisual ? (
+          <button
+            type="button"
+            className="stims-shell__launch-soundflow-edit"
+            data-action="open-editor"
+            onClick={onEditVisual}
+          >
+            <UiIcon
+              name="pencil"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            Open formula editor
+          </button>
+        ) : null}
+      </div>
+      {/* These three lines are illustrations, not the preset running
+          behind the page. The heading used to say "Live", and the button
+          beside it opened an editor holding entirely different code. */}
+      <p className="stims-shell__launch-soundflow-note">
+        {showEditVisual
+          ? 'Simplified examples. The editor shows the real equations behind this page.'
+          : 'Simplified examples. The editor shows any preset’s real equations.'}
+      </p>
+      <div className="stims-shell__launch-soundflow-cards">
+        <div className="stims-shell__launch-soundflow-card">
+          <div className="stims-shell__launch-soundflow-band" data-band="bass">
+            Bass
+          </div>
+          <div className="stims-shell__launch-soundflow-detail">
+            <code className="stims-shell__launch-soundflow-code">
+              zoom = 1.0 + 0.08 * bass_att
+            </code>
+            <span className="stims-shell__launch-soundflow-effect">
+              Frame pulse & scale
+            </span>
+          </div>
+        </div>
+        <div className="stims-shell__launch-soundflow-card">
+          <div className="stims-shell__launch-soundflow-band" data-band="mid">
+            Mid
+          </div>
+          <div className="stims-shell__launch-soundflow-detail">
+            <code className="stims-shell__launch-soundflow-code">
+              warp = 0.02 * mid_att
+            </code>
+            <span className="stims-shell__launch-soundflow-effect">
+              Fluid wave distortion
+            </span>
+          </div>
+        </div>
+        <div className="stims-shell__launch-soundflow-card">
+          <div
+            className="stims-shell__launch-soundflow-band"
+            data-band="treble"
+          >
+            Treble
+          </div>
+          <div className="stims-shell__launch-soundflow-detail">
+            <code className="stims-shell__launch-soundflow-code">
+              rot = 0.01 * sin(treb)
+            </code>
+            <span className="stims-shell__launch-soundflow-effect">
+              Rotation & particle spin
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /**
  * Closes the launch column with the project's provenance. Deliberately muted —
  * the repository is a fact about Stims, not a competing call to action.
  */
 function ProjectMeta() {
   return (
-    <p className="stims-shell__launch-meta">
-      <a
-        className="stims-shell__launch-meta-link"
-        href={STIMS_REPO_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => noteGrowthEvent('github-clicked')}
-      >
-        <UiIcon name="github" className="stims-shell__launch-meta-icon" />
-        Open source on GitHub
-      </a>
-    </p>
+    <>
+      <p className="stims-shell__launch-meta">
+        <a
+          className="stims-shell__launch-meta-link"
+          href={STIMS_REPO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => noteGrowthEvent('github-clicked')}
+        >
+          <UiIcon name="github" className="stims-shell__launch-meta-icon" />
+          Open source on GitHub
+        </a>
+      </p>
+      {/* Same register as the GitHub line: a fact about the product, stated
+          once, so the beacons described in docs/PRODUCT_MOMENTS.md are not a
+          secret. */}
+      <p className="stims-shell__launch-meta stims-shell__launch-meta-note">
+        Usage is counted as anonymous events — no account.
+      </p>
+    </>
   );
 }

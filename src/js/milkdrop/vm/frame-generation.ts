@@ -257,18 +257,21 @@ function isClosedMainWaveMode(mode: number) {
   return mode === 0 || mode === 1;
 }
 
+// Modes 2 and 3 share identical geometry in MilkDrop (same 512-sample
+// Lissajous); keep their sample counts equal so mode blending stays 1:1.
+const BASE_MAIN_WAVE_COUNT_BY_MODE: readonly number[] = [
+  176, 168, 160, 160, 192, 176, 192, 160,
+];
+
 function getMainWaveSampleCount(
   mode: number,
   detailScale: number,
   sourceLength: number,
 ) {
-  // Modes 2 and 3 share identical geometry in MilkDrop (same 512-sample
-  // Lissajous); keep their sample counts equal so mode blending stays 1:1.
-  const baseCountByMode = [176, 168, 160, 160, 192, 176, 192, 160];
   const sourceFloor = sourceLength > 0 ? Math.min(sourceLength, 1024) : 64;
   return clamp(
     Math.round(
-      mix(baseCountByMode[mode] ?? 168, sourceFloor, 0.45) *
+      mix(BASE_MAIN_WAVE_COUNT_BY_MODE[mode] ?? 168, sourceFloor, 0.45) *
         clamp(detailScale, 0.5, 3.5),
     ),
     48,

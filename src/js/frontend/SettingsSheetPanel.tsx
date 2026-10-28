@@ -45,6 +45,7 @@ import {
 import { DEFAULT_BLEND_DURATION_SECONDS } from '../milkdrop/runtime/first-run-preset.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
+import { useTwoStepConfirm } from './hooks/use-two-step-confirm.ts';
 import {
   type PadActionChoice,
   PerformanceHardwareSection,
@@ -66,18 +67,11 @@ function SwitchRow({
   hint,
   checked,
   onChange,
-  describedById,
 }: {
   label: string;
   hint?: string;
   checked: boolean;
   onChange: (next: boolean) => void;
-  /**
-   * A note elsewhere on the panel that qualifies what this switch promises.
-   * Sighted users read it as an adjacent paragraph; without this it is not
-   * announced anywhere near the control it is about.
-   */
-  describedById?: string;
 }) {
   return (
     <label className="ctl-row">
@@ -89,7 +83,6 @@ function SwitchRow({
         type="checkbox"
         role="switch"
         aria-checked={checked}
-        aria-describedby={describedById}
         className="ctl-switch"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
@@ -206,25 +199,19 @@ function AccessibilitySection({
           setAccessibilityPreference({ highContrast });
         }}
       />
-      {/* The stage-comfort controls, gathered and labelled by what they
-          actually promise. They were previously interleaved with the chrome
-          settings above, which put a hard limit and a best-effort mitigation
-          side by side with nothing distinguishing them. */}
-      <p className="ctl-row__hint" id="comfort-note">
-        Brightness is a hard ceiling: it applies over every preset, on either
-        renderer. Motion scales the camera — zoom, spin, drift — and leaves the
-        audio reaction alone. Reduce flashing is a mitigation, not a guarantee —
-        it filters the presets that have been measured and dims strobing as it
-        is detected.
-      </p>
+      {/* The stage-comfort controls, gathered after the chrome settings
+          above. Each hint says what its control promises, so a hard limit
+          (brightness) and a best-effort mitigation (flashing) read
+          differently. A shared paragraph used to say this for all three and
+          repeated half of each row's own hint. */}
       <div className="ctl-row">
         <span className="ctl-row__text">
           <label className="ctl-row__label" htmlFor="a11y-stage-brightness">
             Stage brightness
           </label>
-          <span className="ctl-row__hint">
-            The lowest setting is 30% — dark enough to rest against, still
-            bright enough to see.
+          <span className="ctl-row__hint" id="a11y-stage-brightness-hint">
+            A hard ceiling over every preset. The lowest, 30%, is dark enough to
+            rest against.
           </span>
         </span>
         <input
@@ -234,7 +221,7 @@ function AccessibilitySection({
           max={1}
           step={0.05}
           value={prefs.stageBrightness}
-          aria-describedby="comfort-note"
+          aria-describedby="a11y-stage-brightness-hint"
           aria-valuetext={`${Math.round(prefs.stageBrightness * 100)} percent`}
           onChange={(event) => {
             const stageBrightness = clampStageBrightness(
@@ -250,8 +237,9 @@ function AccessibilitySection({
           <label className="ctl-row__label" htmlFor="a11y-motion-scale">
             Motion
           </label>
-          <span className="ctl-row__hint">
-            At 0% the picture holds still and the waveforms keep dancing.
+          <span className="ctl-row__hint" id="a11y-motion-scale-hint">
+            Scales zoom, spin and drift. At 0% the picture holds still while the
+            waveforms keep dancing.
           </span>
         </span>
         <input
@@ -261,7 +249,7 @@ function AccessibilitySection({
           max={1}
           step={0.05}
           value={prefs.motionScale}
-          aria-describedby="comfort-note"
+          aria-describedby="a11y-motion-scale-hint"
           aria-valuetext={`${Math.round(prefs.motionScale * 100)} percent`}
           onChange={(event) => {
             const motionScale = clampMotionScale(Number(event.target.value));
@@ -272,7 +260,7 @@ function AccessibilitySection({
       </div>
       <SwitchRow
         label="Freeze visuals"
-        hint="Holds the current frame still so you can inspect it or reduce motion."
+        hint="Holds the current frame still, and stays on after a reload. Space pauses the visuals for now instead."
         checked={prefs.freezeFrame}
         onChange={(freezeFrame) => {
           setPrefs((p) => ({ ...p, freezeFrame }));
@@ -281,8 +269,7 @@ function AccessibilitySection({
       />
       <SwitchRow
         label="Reduce flashing"
-        hint="Hides presets measured above the WCAG flash threshold. Presets that haven't been measured stay in the list, without a label."
-        describedById="comfort-note"
+        hint="Hides presets measured above the WCAG flash threshold and dims strobing as it happens. A mitigation, not a guarantee: unmeasured presets stay in the list."
         checked={prefs.reduceFlashing}
         onChange={(reduceFlashing) => {
           setPrefs((p) => ({ ...p, reduceFlashing }));
@@ -479,6 +466,7 @@ function PerformanceSection() {
     );
   };
 
+  const resetConfirm = useTwoStepConfirm(() => resetPerformance());
   const resetPerformance = () => {
     import('../core/state/performance-settings-store.ts').then(
       ({ resetPerformanceSettingsToDefaults }) => {
@@ -493,12 +481,18 @@ function PerformanceSection() {
       <div className="ctl-section__head">
         <h3 className="ctl-section__title">Performance</h3>
         {perf.loaded ? (
+          // Resets the three controls in this section only; quality, power
+          // saving and live mode keep their values. Asks once, in place.
           <button
             type="button"
             className="ctl-btn ctl-btn--quiet"
-            onClick={resetPerformance}
+            onClick={resetConfirm.press}
+            onBlur={resetConfirm.disarm}
+            data-armed={resetConfirm.armed ? 'true' : undefined}
           >
-            Reset
+            {resetConfirm.armed
+              ? 'Reset these three for good'
+              : 'Reset detail, particles and resolution'}
           </button>
         ) : null}
       </div>
@@ -693,7 +687,10 @@ export function SettingsSheetPanel({
   };
 
   return (
-    <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
+    <div
+      className="stims-shell__sheet-panel stims-shell__sheet-panel--settings"
+      data-telemetry-surface="settings"
+    >
       <div
         className="ctl-tabs"
         role="tablist"
@@ -925,7 +922,8 @@ export function SettingsSheetPanel({
               <div className="ctl-row">
                 <span className="ctl-row__text">
                   <span className="ctl-row__hint">
-                    The new renderer starts on the next load.
+                    The new renderer starts on the next load. Reloading stops
+                    the audio; you start it again after.
                   </span>
                 </span>
                 <button
@@ -933,7 +931,7 @@ export function SettingsSheetPanel({
                   className="ctl-btn"
                   onClick={() => window.location.reload()}
                 >
-                  Reload now
+                  Reload (stops audio)
                 </button>
               </div>
             ) : null}
@@ -952,16 +950,16 @@ export function SettingsSheetPanel({
               }
             />
             <SwitchRow
-              label="Strudel live-coding lab"
-              hint="Code music patterns on the stage and drive the visuals with them."
+              label="Music-pattern coding lab (Strudel)"
+              hint="Opens a panel on the stage where you write music patterns in code; they play and drive the visuals."
               checked={overlays.strudelLab}
               onChange={(next) =>
                 setStageOverlayPreference({ strudelLab: next })
               }
             />
             <SwitchRow
-              label="Debug HUD"
-              hint="Overlays frames per second, quality, and uniform readouts."
+              label="Performance readout on the stage"
+              hint="Overlays frames per second, the quality level, and the values the shaders receive."
               checked={overlays.debugHud}
               onChange={(next) => setStageOverlayPreference({ debugHud: next })}
             />
@@ -1018,8 +1016,8 @@ export function SettingsSheetPanel({
               onChange={(next) => onHapticsEnabledChange?.(next)}
             />
             <SwitchRow
-              label="Motion control"
-              hint="Steers the visuals by tilting a supported device."
+              label="Steer by tilting the device"
+              hint="On a phone or tablet with a motion sensor, tilting it moves the visuals. Not the Motion slider, which scales camera movement."
               checked={motionPreference.enabled}
               onChange={onMotionPreferenceChange}
             />

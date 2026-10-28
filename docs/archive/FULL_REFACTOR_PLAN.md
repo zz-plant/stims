@@ -46,13 +46,11 @@ This plan outlines a staged, low-risk refactor of the Stim Webtoys codebase with
 **Objective:** establish a safe baseline before structural change.
 
 Tasks:
-
 - Record current behavior for representative toys (visual + audio reactivity sanity checks).
 - Expand test coverage for critical initialization and toy registration paths where missing.
 - Capture baseline metrics (load timing, runtime errors, toy boot failures).
 
 Exit criteria:
-
 - Baseline test suite and smoke checks documented.
 - Known behavior snapshots available for comparison during later phases.
 
@@ -61,13 +59,11 @@ Exit criteria:
 **Objective:** separate framework-level responsibilities from toy logic.
 
 Tasks:
-
 - Define and enforce a narrow toy lifecycle contract (init/update/dispose and optional hooks).
 - Extract common bootstrapping concerns into shared helpers/modules.
 - Centralize audio analysis interfaces and event wiring boundaries.
 
 Exit criteria:
-
 - New/updated shared interfaces documented.
 - At least one pilot toy migrated fully to the extracted boundary.
 
@@ -76,13 +72,11 @@ Exit criteria:
 **Objective:** make toy implementations structurally consistent.
 
 Tasks:
-
 - Standardize file-level organization patterns for toy scripts.
 - Eliminate duplicated utility code by moving stable logic into shared modules.
 - Apply migration recipe toy-by-toy with a checklist.
 
 Exit criteria:
-
 - Majority of active toys migrated to normalized structure.
 - Duplicated boilerplate reduced and tracked.
 
@@ -91,13 +85,11 @@ Exit criteria:
 **Objective:** prevent drift between toy metadata, docs, and runtime entry points.
 
 Tasks:
-
 - Strengthen validation around toy slug/index/entry-point relationships.
 - Add or tighten consistency checks and CI-friendly error messages.
 - Ensure docs synchronization workflow remains explicit for toy additions/renames.
 
 Exit criteria:
-
 - Drift checks fail fast with actionable guidance.
 - Toy add/rename workflow is reproducible from docs alone.
 
@@ -106,13 +98,11 @@ Exit criteria:
 **Objective:** improve efficiency after architecture stabilizes.
 
 Tasks:
-
 - Profile hot paths in render/update loops.
 - Remove redundant allocations and repeated setup work.
 - Improve failure isolation so one toy issue does not degrade global runtime behavior.
 
 Exit criteria:
-
 - Measurable perf and reliability improvements against baseline.
 - No regressions in toy behavior or checks.
 
@@ -121,13 +111,11 @@ Exit criteria:
 **Objective:** ensure long-term sustainability after refactor.
 
 Tasks:
-
 - Update architecture and toy development docs with final patterns.
 - Refresh contributor workflows and agent overlays where scripts or patterns changed.
 - Publish migration notes and examples for future contributors.
 
 Exit criteria:
-
 - Docs fully aligned with implementation.
 - New contributor can create/migrate a toy following docs without code archaeology.
 

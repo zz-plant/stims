@@ -14,11 +14,9 @@ Current target, reference, and result inventories live under `src/data/milkdrop-
 Semantic compatibility remains necessary, but it is no longer sufficient for claiming preset fidelity.
 
 Every milestone in this backlog should move at least one preset class from:
-
 - "compiles and renders plausibly"
 
 to:
-
 - "matches projectM within an explicit visual tolerance"
 
 ## Historical status snapshot
@@ -32,7 +30,7 @@ to:
 > resets clock, GPU history **and the VM**, a reset that eliminated krash's
 > bimodal renders and eos-glowsticks' intermittent blank frames (bands now
 > 0.000-2.4pp); and the harness provenance hash invalidates every reference
-> when the C++ harness *or* the audio signal changes. Current medians and the
+> when the C++ harness _or_ the audio signal changes. Current medians and the
 > measurement rules live in `MILKDROP_PROJECTM_PARITY_PLAN.md` — read its
 > "Measurement rules" section before trusting or producing any parity number.
 
@@ -408,7 +406,6 @@ Acceptance criteria:
 ## Definition of done
 
 The shift away from merely semantic compatibility is complete when:
-
 - fidelity labels are driven by measured visual evidence,
 - certified presets are checked in CI against projectM references,
 - compiler/runtime compatibility reports remain available as supporting diagnostics,

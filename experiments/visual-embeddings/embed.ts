@@ -12,6 +12,7 @@
  *
  *   cd experiments/visual-embeddings && bun install
  *   bun run embed.ts [--previews <dir>] [--out <dir>] [--device webgpu|cpu]
+ *   bun run embed.ts --terms-only   # re-embed terms.ts alone; no previews needed
  *
  * Previews are gitignored (they live in R2); generate them with
  * `bun run generate:previews` or point --previews at a checkout that has them.
@@ -35,7 +36,23 @@ import { VISUAL_TERMS } from './terms.ts';
 
 const MODEL_ID = 'onnx-community/embeddinggemma-2-ONNX';
 const MODEL_REVISION = 'daa72c51243991dfcaf9f9137d2c573d8f7790c0';
-const DTYPE = 'q8';
+// The model repo ships model.onnx (fp32), model_fp16, model_q4, model_q4f16
+// and model_quantized (q8). q8 is the shipped default; passing --dtype fp16
+// or q4f16 runs the same weights at lower precision, which speeds up a full
+// re-embedding pass on this machine. A different dtype also changes the
+// embeddings slightly, so every derived artifact (the image index, the
+// shipped vectors and term stats) must be regenerated in the same pass — the
+// image index records the dtype, and the build scripts reject a mismatch.
+const ALLOWED_DTYPES = ['fp32', 'fp16', 'q4', 'q4f16', 'q8'] as const;
+const DTYPE = ((): string => {
+  const requested = arg('dtype', 'q8');
+  if (!(ALLOWED_DTYPES as readonly string[]).includes(requested)) {
+    throw new Error(
+      `Unknown --dtype "${requested}". The model repo provides: ${ALLOWED_DTYPES.join(', ')}.`,
+    );
+  }
+  return requested;
+})();
 const DIMS = 768;
 const BATCH = 8;
 const CHECKPOINT_BATCHES = 25;
@@ -154,7 +171,10 @@ function writeImages(ids: string[], records: Map<string, CachedImage>) {
 }
 
 async function main() {
-  const catalogIds = readCatalogIds();
+  // Term vectors are what `catalog:visual-terms` ships, and they need no
+  // previews: editing terms.ts should not require the R2 preview set.
+  const termsOnly = process.argv.includes('--terms-only');
+  const catalogIds = termsOnly ? [] : readCatalogIds();
   const failed = readFailedPreviewIds(new Set(catalogIds));
   const ids = catalogIds.filter((id) => {
     if (failed.has(id)) return false;
@@ -231,23 +251,27 @@ async function main() {
   }
   if (todo.length) process.stdout.write('\n');
 
-  writeImages(ids, records);
+  if (!termsOnly) writeImages(ids, records);
 
   // Phrases are queries against images, so they take the retrieval query
   // prefix; images take none (model card, "Task Instruction Prefixes").
   const termTexts = VISUAL_TERMS.map(
     (term) => `task: search result | query: ${term.query}`,
   );
-  const { sentence_embedding: termEmbedding } = await model(
-    await processor(termTexts),
-  );
+  const termInputs = await processor(termTexts, null, null, null, {
+    padding: true,
+    truncation: true,
+  });
+  const { sentence_embedding: termEmbedding } = await model(termInputs);
   const termVectors = termEmbedding.data as Float32Array;
 
+  fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(
     path.join(outDir, 'terms.json'),
     `${JSON.stringify({
       model: MODEL_ID,
       revision: MODEL_REVISION,
+      dtype: DTYPE,
       dims: DIMS,
       terms: VISUAL_TERMS.map((term) => term.term),
     })}\n`,
@@ -261,7 +285,9 @@ async function main() {
     ),
   );
   console.log(
-    `wrote ${records.size} image vectors and ${VISUAL_TERMS.length} term vectors to ${path.relative(repoRoot, outDir)}`,
+    termsOnly
+      ? `wrote ${VISUAL_TERMS.length} term vectors to ${path.relative(repoRoot, outDir)}`
+      : `wrote ${records.size} image vectors and ${VISUAL_TERMS.length} term vectors to ${path.relative(repoRoot, outDir)}`,
   );
 }
 

@@ -48,6 +48,7 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private waveBufR: Uint8Array;
   private timeDomainBuf: Float32Array;
   private readonly prevMagnitudes: Float32Array;
+  private readonly currentMagnitudes: Float32Array;
   private readonly twiddles: ReturnType<typeof buildTwiddleTable>;
   private readonly scratchL: { real: Float32Array; imag: Float32Array };
   private readonly scratchR: { real: Float32Array; imag: Float32Array };
@@ -110,6 +111,7 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     this.waveBufR = new Uint8Array(this.fftSize);
     this.timeDomainBuf = new Float32Array(this.fftSize);
     this.prevMagnitudes = new Float32Array(this.frequencyBinCount);
+    this.currentMagnitudes = new Float32Array(this.frequencyBinCount);
     this.twiddles = buildTwiddleTable(this.fftSize);
     this.scratchL = { real: this.outputReal, imag: this.outputImag };
     this.scratchR = { real: this.outputRealR, imag: this.outputImagR };
@@ -180,6 +182,7 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     const zeroCrossingRate = zeroCrossings / (this.fftSize - 1);
 
     this.analyseCount += 1;
+    const isMessageTick = this.analyseCount % this.messageEvery === 0;
 
     // Byte-map every analyse — not just on message ticks — so the HPSS
     // time-median history advances at full analyse cadence. The byte domain
@@ -193,8 +196,9 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
       this.twiddles,
       this.freqBuf,
       this.scratchL,
+      isMessageTick ? this.currentMagnitudes : undefined,
     );
-    if (this.hasStereoInput) {
+    if (this.hasStereoInput && isMessageTick) {
       analyseBlockBytes(
         this.bufferR,
         this.window,
@@ -206,17 +210,13 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
 
     this.hpLevels = this.hpAnalyser.analyse(this.freqBuf, this.sampleRate);
 
-    if (this.analyseCount % this.messageEvery === 0) {
+    if (isMessageTick) {
       let maxMag = 0;
       let sumMag = 0;
       let spectralFlux = 0;
 
       for (let i = 0; i < this.frequencyBinCount; i += 1) {
-        const magnitude =
-          Math.sqrt(
-            this.outputReal[i] * this.outputReal[i] +
-              this.outputImag[i] * this.outputImag[i],
-          ) / this.frequencyBinCount;
+        const magnitude = this.currentMagnitudes[i];
 
         const diff = magnitude - this.prevMagnitudes[i];
         if (diff > 0) {

@@ -1028,7 +1028,7 @@ export function createAdaptiveQualityController({
           ...state,
           reasons: [
             ...heuristic.reasons,
-            `Sustained headroom — stepping up to ${QUALITY_STEPS[qualityStep].id}.`,
+            `Sustained headroom: stepping up to ${QUALITY_STEPS[qualityStep].id}.`,
           ],
         };
         return publish();

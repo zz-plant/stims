@@ -248,7 +248,7 @@
 
 /* Both chips in the same corner: the rarer variant count steps left. */
 .stims-preset-grid__item:has(.stims-preset-grid__quick-key)
-.stims-preset-grid__variants {
+  .stims-preset-grid__variants {
   right: calc(var(--space-xs, 4px) + 26px);
 }
 

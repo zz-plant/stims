@@ -41,7 +41,16 @@ describe('frontend url state', () => {
       invalidPanel: null,
       youtubeVideoId: null,
       youtubeStartSeconds: null,
+      sharedSet: null,
     });
+  });
+
+  test('reads and round-trips a shared set URL parameter', () => {
+    const state = readSessionRouteState('https://toil.fyi/?set=s1~testpayload');
+    expect(state.sharedSet).toBe('s1~testpayload');
+
+    const nextSearch = buildSessionRouteSearch(state, {});
+    expect(nextSearch.set).toBe('s1~testpayload');
   });
 
   test('reads a shared YouTube video and start offset', () => {

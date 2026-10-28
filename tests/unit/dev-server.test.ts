@@ -1,20 +1,26 @@
 /**
- * Behavioural coverage for the e2e dev-server harness's port ownership.
+ * Behavioural coverage for dev-server port ownership, through both front ends
+ * of `scripts/dev-server.ts`: the e2e harness's `startDevServer` and the lab
+ * scripts' `ensureDevServer`.
  *
- * The defect: another checkout's vite already listened on a suite's port, the
- * suite's own vite exited on --strictPort, and the readiness poll saw the
- * foreign server answer and returned success. landing-route.test.ts then
- * passed or failed depending on what the other session's worktree served.
+ * The defect, in both: another checkout's vite already listened on the port
+ * and the caller used it. The e2e harness's own vite exited on --strictPort
+ * and its readiness poll saw the foreign server answer, so
+ * landing-route.test.ts passed or failed depending on what the other
+ * session's worktree served. `ensureDevServer` reused any server on its port
+ * outright, so lab:visual measured a five-day-old server's runtime code.
  *
- * These run the real harness against a stand-in for vite: a few lines of Bun
+ * These run the real code against a stand-in for vite: a few lines of Bun
  * that bind the port and print vite's `Local:` line, or lose the race for the
- * port, or hang, on cue. The foreign server is a `Bun.serve` in this process,
- * so the harness should name this process as the port's owner.
+ * port, or hang, on cue. A foreign server is either a `Bun.serve` in this
+ * process, which the code should name as the port's owner, or a stand-in
+ * started in another directory, when the test is about whose checkout it is.
  */
 import { afterEach, describe, expect, test } from 'bun:test';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { ensureDevServer } from '../../scripts/dev-server.ts';
 import { type DevServerHandle, startDevServer } from '../e2e/dev-server.ts';
 
 /**
@@ -120,7 +126,7 @@ async function freePort(): Promise<number> {
 }
 
 function scratchDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'e2e-dev-server-'));
+  const dir = mkdtempSync(join(tmpdir(), 'dev-server-test-'));
   cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }
@@ -139,6 +145,29 @@ async function accepts(url: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Runs the stand-in vite server on `port` with `dir` as its working directory,
+ * as a checkout's vite runs from that checkout, and resolves once it listens.
+ */
+async function serverIn(dir: string, port: number) {
+  const server = Bun.spawn(
+    ['bun', '-e', FAKE_VITE_SERVER, '--', String(port)],
+    {
+      cwd: dir,
+      stdio: ['ignore', 'ignore', 'ignore'],
+    },
+  );
+  cleanups.push(async () => {
+    server.kill('SIGKILL');
+    await server.exited;
+  });
+  while (!(await accepts(`http://127.0.0.1:${port}`))) {
+    if (server.exitCode !== null) throw new Error('stand-in server exited');
+    await Bun.sleep(20);
+  }
+  return server;
 }
 
 describe('startDevServer port ownership', () => {
@@ -215,5 +244,103 @@ describe('startDevServer port ownership', () => {
     // The wrapper dies at once; the server under it holds the port for 500ms.
     await handle.stop();
     expect(await accepts(handle.url)).toBe(false);
+  }, 30000);
+});
+
+describe('ensureDevServer checkout ownership', () => {
+  test('refuses a server started from another directory, names it, and spawns nothing', async () => {
+    const port = await freePort();
+    const elsewhere = scratchDir();
+    const holder = await serverIn(elsewhere, port);
+    const marker = join(scratchDir(), 'spawned');
+
+    const { value, error } = await settle(
+      ensureDevServer(port, process.cwd(), {
+        command: fakeVite('serve', port, marker),
+      }),
+    );
+    if (value) cleanups.push(() => value.close());
+
+    expect(value).toBeNull();
+    expect(error?.message).toContain(`Port ${port} is already in use by`);
+    expect(error?.message).toContain('--port <n>');
+    if (Bun.which('lsof')) {
+      expect(error?.message).toContain(
+        `pid ${holder.pid} (bun) in ${realpathSync(elsewhere)}, which is not a dev server for this checkout`,
+      );
+    } else {
+      expect(error?.message).toContain('cannot be confirmed as a dev server');
+    }
+    expect(existsSync(marker)).toBe(false);
+  }, 30000);
+
+  // Without lsof nothing can prove a server is this checkout's, so none is
+  // reused; the refusal above covers that case.
+  test.skipIf(!Bun.which('lsof'))(
+    'reuses a server started from this checkout and leaves it running on close',
+    async () => {
+      const port = await freePort();
+      // A temp dir is reached through a symlink on macOS (/var -> /private/var),
+      // while lsof reports the resolved path; the comparison must agree.
+      const checkout = scratchDir();
+      await serverIn(checkout, port);
+      const marker = join(scratchDir(), 'spawned');
+
+      const server = await ensureDevServer(port, checkout, {
+        command: fakeVite('serve', port, marker),
+      });
+      await server.close();
+
+      expect(existsSync(marker)).toBe(false);
+      const response = await fetch(`http://127.0.0.1:${port}`);
+      expect(await response.text()).toBe('fake vite');
+    },
+    30000,
+  );
+
+  test('starts its own server on a free port; close frees the port for the next run', async () => {
+    const port = await freePort();
+    const checkout = scratchDir();
+    const first = await ensureDevServer(port, checkout, {
+      command: fakeVite('serve', port),
+    });
+    cleanups.push(() => first.close());
+    const response = await fetch(`http://127.0.0.1:${port}`);
+    expect(await response.text()).toBe('fake vite');
+
+    // A script that starts one server per preset (lab:visual) calls again
+    // right after close. The stand-in holds the port for 500ms after SIGTERM,
+    // so a close that only signalled would hand the next call a dying server.
+    await first.close();
+    const marker = join(scratchDir(), 'spawned');
+    const second = await ensureDevServer(port, checkout, {
+      command: fakeVite('serve', port, marker),
+    });
+    cleanups.push(() => second.close());
+    expect(existsSync(marker)).toBe(true);
+  }, 30000);
+
+  test('does not adopt a server that answers while its own child hangs', async () => {
+    const port = await freePort();
+    const marker = join(scratchDir(), 'spawned');
+    const starting = settle(
+      ensureDevServer(port, process.cwd(), {
+        startupTimeoutMs: 4000,
+        command: fakeVite('hang', port, marker),
+      }),
+    );
+
+    // The marker means the child is running, so the ownership probe has
+    // already found the port free: whatever answers next is not the child.
+    while (!existsSync(marker)) await Bun.sleep(20);
+    foreignServer(port);
+
+    const { value, error } = await starting;
+    if (value) cleanups.push(() => value.close());
+
+    expect(value).toBeNull();
+    expect(error?.message).toContain(
+      `Something answers on http://127.0.0.1:${port}`,
+    );
   }, 30000);
 });

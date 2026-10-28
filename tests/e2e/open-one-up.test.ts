@@ -15,6 +15,11 @@
  *   4. The stage shows it within a bounded number of engine frames, and the
  *      demo audio and the preset are still running.
  *
+ * A second test walks the same moment on a phone held upright (390x844),
+ * where the editor is a bottom sheet: the folded dock's Edit chip opens it,
+ * the middle of the stage stays in view above the sheet, and the edit lands
+ * on stage there.
+ *
  * WebGL, so CI's SwiftShader runner can run it. Every wait on the stage is
  * counted in engine frames, never wall-clock time: a slow machine renders
  * fewer frames during the same debounce and compile, so a frame bound is
@@ -233,6 +238,49 @@ async function readEditorRoom(page: Page): Promise<{
     }),
     'measuring the editor',
   );
+}
+
+type CodeSource = { code: string; text: string };
+
+/**
+ * The driving sounds the code itself shows without being scrolled: each tag
+ * inside the code's box, with the code on its line. A fresh preset opens the
+ * code at the first line that has one; the first-run preset's equations
+ * start at line 208, and the code used to open on line 1.
+ */
+async function readCodeSources(page: Page): Promise<CodeSource[]> {
+  return bounded(
+    page.evaluate(() => {
+      const box = document
+        .querySelector('.stims-editor__code')
+        ?.getBoundingClientRect();
+      if (!box) return [];
+      return Array.from(document.querySelectorAll('.cm-audio-sources'))
+        .filter((tag) => {
+          const r = tag.getBoundingClientRect();
+          return r.height > 0 && r.top >= box.top && r.bottom <= box.bottom;
+        })
+        .map((tag) => ({
+          code: (tag.closest('.cm-line')?.textContent ?? '').replace(
+            tag.textContent ?? '',
+            '',
+          ),
+          text: tag.textContent ?? '',
+        }));
+    }),
+    'reading the sounds the code shows',
+  );
+}
+
+/** Reads the code's sources every few engine frames until some show. */
+async function waitForCodeSources(page: Page): Promise<CodeSource[]> {
+  const deadline = Date.now() + EDITOR_TIMEOUT_MS;
+  let sources = await readCodeSources(page);
+  while (sources.length === 0 && Date.now() < deadline) {
+    await waitForFrames(page, 10);
+    sources = await readCodeSources(page);
+  }
+  return sources;
 }
 
 type ChipReading = { label: string; state: string; audio: string[] };
@@ -531,6 +579,14 @@ requiredBrowserTest(
         'a driven chip on screen without scrolling at 1280x720',
       ).toBe(true);
 
+      // The code names the same sounds where it sets the field, on screen
+      // on the first open without scrolling it.
+      const sources = await waitForCodeSources(page);
+      expect(
+        sources.find((source) => source.code.startsWith('zoom='))?.text,
+        'the sounds on the zoom line at 1280x720',
+      ).toBe(`← ${ZOOM_AUDIO.join(', ')}`);
+
       // The edit. Baseline first: the stage must not already look edited,
       // or the check below would pass on a frame the edit never touched.
       const baseline = await bounded(captureAgentStats(page));
@@ -626,4 +682,535 @@ requiredBrowserTest(
   // rendering at the worst moment. Each step fails at its own deadline with a
   // message naming it; this backstop only exists so the first real error wins.
   { timeout: 1_110_000 },
+);
+
+/**
+ * A phone held upright, the context policy 2 in docs/PRODUCT_MOMENTS.md
+ * measures beside 1280x720. Below 768px wide the editor is a bottom sheet;
+ * at 92dvh it left the top 70px of the stage, so an edit could not be
+ * watched while it ran.
+ */
+const PHONE_VIEWPORT = { width: 390, height: 844 };
+
+/**
+ * Stage left above the sheet. 204px measured on the first open, where the
+ * old 92dvh sheet left 68px. The bound sits under the measurement so a
+ * different font's line metrics cannot fail it, and far above the old 68px.
+ */
+const MIN_PHONE_STAGE_PX = 180;
+
+requiredBrowserTest(
+  'open one up on a phone: the folded dock opens the editor, and the edit shows above the sheet',
+  async () => {
+    const browser = await withDeadline(
+      chromium.launch({ headless: HEADLESS, args: WEBGL_RENDERER_ARGS }),
+      LAUNCH_TIMEOUT_MS,
+      'launching Chromium',
+    );
+    const ctx = await browser.newContext({
+      viewport: PHONE_VIEWPORT,
+      deviceScaleFactor: 1,
+      isMobile: true,
+      hasTouch: true,
+    });
+    const page = await ctx.newPage();
+    page.on('pageerror', (error) => {
+      console.log(`[OPEN ONE UP PHONE PAGE ERROR] ${error.message}`);
+    });
+
+    try {
+      await page.goto(
+        `${SERVER_URL}/?agent=true&renderer=webgl&lockQualityStep=6`,
+        { waitUntil: 'domcontentloaded', timeout: LIVE_TIMEOUT_MS },
+      );
+      const playDemo = page.locator(
+        '.stims-shell__launch-cta[data-demo-audio-btn]',
+      );
+      await playDemo.waitFor({
+        state: 'attached',
+        timeout: HOME_CHUNK_TIMEOUT_MS,
+      });
+      await playDemo.tap({ timeout: CLICK_TIMEOUT_MS });
+      await waitForAgentState(
+        page,
+        (state) =>
+          agentPredicates.engineLive()(state) &&
+          agentPredicates.presetIs(FIRST_RUN_PRESET_ID)(state) &&
+          state.audioSource === 'demo',
+        LIVE_TIMEOUT_MS,
+      );
+
+      // A visitor watching the stage sees the folded dock: the bar folds
+      // after a few idle seconds and leaves the Edit chip beside Controls.
+      // A tap's pointerdown used to bring the bar back and make the chip
+      // inert before its click arrived, so the tap opened nothing.
+      const foldedEdit = page.locator(
+        'button[data-action="open-editor"][data-visible="true"]',
+      );
+      await foldedEdit.waitFor({
+        state: 'visible',
+        timeout: CLICK_TIMEOUT_MS,
+      });
+      await foldedEdit.tap({ timeout: CLICK_TIMEOUT_MS });
+      await waitForAgentState(
+        page,
+        (state) => state.panel === 'editor',
+        EDITOR_TIMEOUT_MS,
+      );
+      await page
+        .locator('.stims-editor__code .cm-content')
+        .waitFor({ timeout: EDITOR_TIMEOUT_MS });
+      // The first open names Tab and Esc in a note over the editor for a few
+      // seconds; the layout below is the one the visitor edits in after it.
+      await page
+        .locator('[role="dialog"] [data-anchor="panel"]')
+        .waitFor({ state: 'detached', timeout: EDITOR_TIMEOUT_MS });
+
+      const sheet = await bounded(
+        page.evaluate(() => {
+          const panel = document
+            .querySelector('[role="dialog"][data-stage-anchored="true"]')
+            ?.getBoundingClientRect();
+          const stage = document
+            .querySelector('.stims-shell__stage-root')
+            ?.getBoundingClientRect();
+          const code = document
+            .querySelector('.stims-editor__code')
+            ?.getBoundingClientRect();
+          const gizmo = document
+            .querySelector('.stims-stage-gizmo')
+            ?.getBoundingClientRect();
+          const sheetTop = panel?.top ?? 0;
+          return {
+            sheetTop,
+            stageMiddle: stage ? stage.top + stage.height / 2 : Number.NaN,
+            stageTop: stage?.top ?? Number.NaN,
+            gizmoTop: gizmo?.top ?? Number.NaN,
+            codeOnScreen: Boolean(
+              code && code.top >= sheetTop && code.bottom <= window.innerHeight,
+            ),
+          };
+        }),
+        'measuring the editor sheet',
+      );
+      expect(
+        sheet.sheetTop,
+        'stage left above the sheet at 390x844',
+      ).toBeGreaterThanOrEqual(MIN_PHONE_STAGE_PX);
+      // The middle of the frame, where a preset's zoom and rotation centre,
+      // is in that strip rather than under the sheet.
+      expect(sheet.stageMiddle, 'the stage middle').toBeGreaterThan(0);
+      expect(sheet.stageMiddle, 'the stage middle').toBeLessThan(
+        sheet.sheetTop,
+      );
+      // The warp-centre handle maps pointer positions over its own layer,
+      // so that layer has to ride up with the canvas it steers.
+      expect(sheet.gizmoTop, 'the warp-centre layer').toBeCloseTo(
+        sheet.stageTop,
+        0,
+      );
+      expect(sheet.codeOnScreen, 'the code inside the sheet').toBe(true);
+      const room = await readEditorRoom(page);
+      expect(room.codeLines, 'lines of code at 390x844').toBeGreaterThanOrEqual(
+        MIN_CODE_LINES,
+      );
+      expect(room.tuneOnScreen, 'the Tune tab at 390x844').toBe(true);
+      // The Tune chips sit below the fold in the sheet; the code says it.
+      const sources = await waitForCodeSources(page);
+      expect(
+        sources.find((source) => source.code.startsWith('zoom='))?.text,
+        'the sounds on the zoom line at 390x844',
+      ).toBe(`← ${ZOOM_AUDIO.join(', ')}`);
+
+      const baseline = await bounded(captureAgentStats(page));
+      expect(baseline).not.toBeNull();
+      if (!baseline) return;
+      expect(showsEdit(baseline), 'the stage before the edit').toBe(false);
+
+      await page
+        .locator('.stims-editor .cm-content')
+        .tap({ timeout: CLICK_TIMEOUT_MS });
+      await page.keyboard.press('ControlOrMeta+End');
+      await page.keyboard.press('Enter');
+      await page.keyboard.insertText(EDIT_LINE);
+
+      const typedAt = await frameCount(page);
+      let stats = await bounded(captureAgentStats(page));
+      while (!(stats && showsEdit(stats))) {
+        const elapsed = (await frameCount(page)) - typedAt;
+        if (elapsed > EDIT_FRAME_BUDGET) {
+          throw new Error(
+            `The edit was not on stage ${elapsed} frames after it was typed ` +
+              `(budget ${EDIT_FRAME_BUDGET}). Last histogram: ${JSON.stringify(stats?.histogram)}`,
+          );
+        }
+        await waitForFrames(page, 4);
+        stats = await bounded(captureAgentStats(page));
+      }
+
+      const after = await bounded(getAgentState(page));
+      expect(after.presetId).toBe(FIRST_RUN_PRESET_ID);
+      expect(after.audioSource).toBe('demo');
+      expect(after.panel).toBe('editor');
+      expect(after.lastError).toBeNull();
+    } catch (error) {
+      await writeAgentFailureArtifact(page, 'open-one-up-phone');
+      throw error;
+    } finally {
+      await closeQuietly(ctx, browser);
+    }
+  },
+  // Every bound reached in sequence: launch 60 + goto 60 + home chunk 90 +
+  // tap 30 + live 60 + fold 30 + chip tap 30 + panel 60 + code 60 + note 60
+  // + 3 page reads 45 + code tap 30 + edit frames 60 + failure dump 30 +
+  // teardown 30 = 735s; the backstop lets the first real error win.
+  { timeout: 780_000 },
+);
+
+/** WCAG AA for body text, which the code is. */
+const MIN_CODE_CONTRAST = 4.5;
+
+/**
+ * The lowest contrast any code text on screen has against the well, and
+ * against the well under the active-line tint: every token colour, the line
+ * numbers and the sounds. Also the Tune pane's "hand-written equation"
+ * label against the panel behind it, and whether the fade under the last
+ * line ends in the well's own colour.
+ */
+async function readCodeContrast(page: Page): Promise<{
+  theme: string;
+  worst: { text: string; ratio: number };
+  handWritten: number | null;
+  fadeEndsInWell: boolean;
+}> {
+  return bounded(
+    page.evaluate(() => {
+      type Rgba = { r: number; g: number; b: number; a: number };
+      const parse = (css: string): Rgba => {
+        const parts = (/rgba?\(([^)]+)\)/.exec(css)?.[1] ?? '0 0 0 0')
+          .split(/[\s,/]+/)
+          .filter(Boolean)
+          .map(Number);
+        return {
+          r: parts[0] ?? 0,
+          g: parts[1] ?? 0,
+          b: parts[2] ?? 0,
+          a: parts[3] ?? 1,
+        };
+      };
+      const over = (top: Rgba, under: Rgba): Rgba => ({
+        r: top.r * top.a + under.r * (1 - top.a),
+        g: top.g * top.a + under.g * (1 - top.a),
+        b: top.b * top.a + under.b * (1 - top.a),
+        a: 1,
+      });
+      const channel = (v: number) => {
+        const c = v / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      };
+      const luminance = (c: Rgba) =>
+        0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b);
+      const ratio = (a: Rgba, b: Rgba) => {
+        const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+        return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05);
+      };
+      /** What is painted behind `element`: every background down to it. */
+      const backdrop = (element: Element): Rgba => {
+        const chain: Element[] = [];
+        for (let el: Element | null = element; el; el = el.parentElement) {
+          chain.unshift(el);
+        }
+        return chain.reduce(
+          (under, el) =>
+            over(parse(getComputedStyle(el).backgroundColor), under),
+          { r: 255, g: 255, b: 255, a: 1 } as Rgba,
+        );
+      };
+      /** Its colour as drawn: its alpha times every ancestor's opacity. */
+      const ink = (element: Element): Rgba => {
+        const color = parse(getComputedStyle(element).color);
+        let opacity = 1;
+        for (let el: Element | null = element; el; el = el.parentElement) {
+          opacity *= Number(getComputedStyle(el).opacity);
+        }
+        return { ...color, a: color.a * opacity };
+      };
+
+      const code = document.querySelector('.stims-editor__code') as Element;
+      const box = code.getBoundingClientRect();
+      const well = backdrop(code);
+      const activeTint = parse(
+        getComputedStyle(code).getPropertyValue('--ed-code-active').trim() ||
+          'rgba(0,0,0,0)',
+      );
+      const activeLine = over(activeTint, well);
+      let worst = { text: '', ratio: Number.POSITIVE_INFINITY };
+      const texts = document.querySelectorAll(
+        '.cm-line, .cm-line span, .cm-lineNumbers .cm-gutterElement',
+      );
+      for (const element of texts) {
+        const r = element.getBoundingClientRect();
+        if (!element.textContent?.trim() || r.height === 0) continue;
+        if (r.bottom < box.top || r.top > box.bottom - 22) continue;
+        const color = ink(element);
+        for (const ground of [well, activeLine]) {
+          const value = ratio(over(color, ground), ground);
+          if (value < worst.ratio) {
+            worst = {
+              text: element.textContent.trim().slice(0, 40),
+              ratio: value,
+            };
+          }
+        }
+      }
+
+      const readout = document.querySelector(
+        '.stims-editor__mod[data-state="custom"] .stims-editor__mod-readout',
+      );
+      const handWritten = readout
+        ? ratio(over(ink(readout), backdrop(readout)), backdrop(readout))
+        : null;
+
+      const fade = getComputedStyle(code, '::after').backgroundImage;
+      const stops = fade.match(/rgba?\([^)]+\)/g) ?? [];
+      const last = parse(stops.at(-1) ?? '');
+      const wellColor = parse(getComputedStyle(code).backgroundColor);
+      return {
+        theme: document.documentElement.classList.contains('light')
+          ? 'light'
+          : 'dark',
+        worst,
+        handWritten,
+        fadeEndsInWell:
+          last.a === 1 &&
+          last.r === wellColor.r &&
+          last.g === wellColor.g &&
+          last.b === wellColor.b,
+      };
+    }),
+    'measuring the code contrast',
+  );
+}
+
+requiredBrowserTest(
+  'the editor reads in both themes, keeps its toolbar in the panel, lets Escape past the code and announces errors',
+  async () => {
+    const browser = await withDeadline(
+      chromium.launch({ headless: HEADLESS, args: WEBGL_RENDERER_ARGS }),
+      LAUNCH_TIMEOUT_MS,
+      'launching Chromium',
+    );
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+      deviceScaleFactor: 1,
+      colorScheme: 'light',
+    });
+    const page = await ctx.newPage();
+    page.on('pageerror', (error) => {
+      console.log(`[EDITOR PANEL PAGE ERROR] ${error.message}`);
+    });
+
+    try {
+      await page.goto(
+        `${SERVER_URL}/?agent=true&renderer=webgl&lockQualityStep=6`,
+        { waitUntil: 'domcontentloaded', timeout: LIVE_TIMEOUT_MS },
+      );
+      const playDemo = page.locator(
+        '.stims-shell__launch-cta[data-demo-audio-btn]',
+      );
+      await playDemo.waitFor({
+        state: 'attached',
+        timeout: HOME_CHUNK_TIMEOUT_MS,
+      });
+      await playDemo.click({ timeout: CLICK_TIMEOUT_MS });
+      await waitForAgentState(
+        page,
+        (state) =>
+          agentPredicates.engineLive()(state) &&
+          agentPredicates.presetIs(FIRST_RUN_PRESET_ID)(state),
+        LIVE_TIMEOUT_MS,
+      );
+      await bounded(
+        page.evaluate(() => window.__stims_agent?.run('open-editor')),
+        'opening the editor',
+      );
+      await waitForAgentState(
+        page,
+        (state) => state.panel === 'editor',
+        EDITOR_TIMEOUT_MS,
+      );
+      await page
+        .locator('.stims-editor__code .cm-content')
+        .waitFor({ timeout: EDITOR_TIMEOUT_MS });
+      expect(
+        (await waitForCodeSources(page)).length,
+        'sounds in the code',
+      ).toBeGreaterThan(0);
+
+      // Both themes, on the opening lines (fields) and on the equations,
+      // where keywords, registers and functions are coloured too. The well
+      // stayed dark under the light palette at 1.9-2.6:1.
+      for (const colorScheme of ['light', 'dark'] as const) {
+        await page.emulateMedia({ colorScheme });
+        await page.waitForFunction(
+          (light) =>
+            document.documentElement.classList.contains('light') === light,
+          colorScheme === 'light',
+          { timeout: PAGE_CALL_TIMEOUT_MS },
+        );
+        for (const where of ['top', 'equations'] as const) {
+          if (where === 'equations') {
+            await bounded(
+              page.evaluate(() => {
+                const scroller = document.querySelector('.cm-scroller');
+                if (scroller) scroller.scrollTop = scroller.scrollHeight;
+              }),
+              'scrolling to the equations',
+            );
+            await waitForFrames(page, 3);
+          }
+          const reading = await readCodeContrast(page);
+          expect(reading.theme).toBe(colorScheme);
+          expect(
+            reading.worst.ratio,
+            `lowest code contrast, ${colorScheme} theme, ${where}: "${reading.worst.text}"`,
+          ).toBeGreaterThanOrEqual(MIN_CODE_CONTRAST);
+          expect(
+            reading.fadeEndsInWell,
+            `the fade ends in the well's colour, ${colorScheme} theme`,
+          ).toBe(true);
+          expect(
+            reading.handWritten,
+            `"hand-written equation" contrast, ${colorScheme} theme`,
+          ).toBeGreaterThanOrEqual(MIN_CODE_CONTRAST);
+        }
+      }
+
+      // The toolbar stays inside the panel, so the overflow menu is on
+      // screen and focusing it cannot scroll the panel sideways. At this
+      // size it ran 58px past the panel's right edge.
+      const menuButton = page.locator(
+        '.stims-editor__toolbar [aria-label="Preset actions"]',
+      );
+      await menuButton.focus({ timeout: CLICK_TIMEOUT_MS });
+      const toolbar = await bounded(
+        page.evaluate(() => {
+          const bar = document
+            .querySelector('.stims-editor__toolbar')
+            ?.getBoundingClientRect();
+          const host = document.querySelector(
+            '.stims-shell__editor-host',
+          ) as HTMLElement | null;
+          const items = Array.from(
+            document.querySelectorAll('.stims-editor__toolbar > *'),
+          ).map((item) => item.getBoundingClientRect());
+          return {
+            inside: Boolean(
+              bar &&
+                items.every(
+                  (item) =>
+                    item.left >= bar.left - 0.5 &&
+                    item.right <= bar.right + 0.5,
+                ),
+            ),
+            rows: new Set(items.map((item) => Math.round(item.top))).size,
+            hostScrollLeft: host?.scrollLeft ?? -1,
+          };
+        }),
+        'measuring the toolbar',
+      );
+      expect(toolbar.inside, 'every toolbar control inside the toolbar').toBe(
+        true,
+      );
+      expect(toolbar.rows, 'toolbar rows at 1280x720').toBe(1);
+      expect(toolbar.hostScrollLeft, 'the editor scrolled sideways').toBe(0);
+      await page.keyboard.press('Enter');
+      const menuOnScreen = await bounded(
+        page.evaluate(() =>
+          Array.from(
+            document.querySelectorAll('.stims-editor__menu [role="menuitem"]'),
+          )
+            .filter((item) => !(item as HTMLElement).hidden)
+            .every((item) => {
+              const r = item.getBoundingClientRect();
+              return r.width > 0 && r.left >= 0 && r.right <= window.innerWidth;
+            }),
+        ),
+        'measuring the menu',
+      );
+      expect(menuOnScreen, 'every menu item on screen').toBe(true);
+      await page.keyboard.press('Escape');
+
+      // Escape out of the code moves on past it, so the next Tab reaches
+      // the dock instead of going back in and indenting the preset.
+      await page
+        .locator('.stims-editor .cm-content')
+        .click({ timeout: CLICK_TIMEOUT_MS });
+      await page.keyboard.press('Escape');
+      const afterEscape = await bounded(
+        page.evaluate(() => {
+          const code = document.querySelector('.stims-editor .cm-editor');
+          const active = document.activeElement;
+          return {
+            inCode: Boolean(code && active && code.contains(active)),
+            afterCode: Boolean(
+              code &&
+                active &&
+                code.compareDocumentPosition(active) &
+                  Node.DOCUMENT_POSITION_FOLLOWING,
+            ),
+          };
+        }),
+        'reading focus after Escape',
+      );
+      expect(afterEscape, 'focus after Escape').toEqual({
+        inCode: false,
+        afterCode: true,
+      });
+      await page.keyboard.press('Tab');
+      expect(
+        await bounded(
+          page.evaluate(() =>
+            Boolean(
+              document
+                .querySelector('.stims-editor .cm-editor')
+                ?.contains(document.activeElement),
+            ),
+          ),
+        ),
+        'Tab after Escape went back into the code',
+      ).toBe(false);
+
+      // A compile error is announced, with its count.
+      await page
+        .locator('.stims-editor .cm-content')
+        .click({ timeout: CLICK_TIMEOUT_MS });
+      await page.keyboard.press('ControlOrMeta+End');
+      await page.keyboard.press('Enter');
+      await page.keyboard.insertText('per_frame_99=zoom = sin(;');
+      const status = page.locator('.stims-editor__state[role="status"]');
+      await status.waitFor({ timeout: EDITOR_TIMEOUT_MS });
+      await page.waitForFunction(
+        () =>
+          document
+            .querySelector('.stims-editor__state')
+            ?.getAttribute('data-state') === 'error',
+        null,
+        { timeout: EDITOR_TIMEOUT_MS },
+      );
+      expect(await status.textContent()).toMatch(
+        /Holding last good frame: \d+ errors?$/u,
+      );
+    } catch (error) {
+      await writeAgentFailureArtifact(page, 'editor-panel-reach');
+      throw error;
+    } finally {
+      await closeQuietly(ctx, browser);
+    }
+  },
+  // launch 60 + goto 60 + home chunk 90 + click 30 + live 60 + open 15 +
+  // panel 60 + code 60 + sources 60 + 2 themes x (15 + 2 x (15 + 60 + 15))
+  // + toolbar 45 + menu 15 + Escape 45 + error 120 + failure dump 30 +
+  // teardown 30 = 1200s; the backstop lets the first real error win.
+  { timeout: 1_260_000 },
 );

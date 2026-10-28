@@ -1,5 +1,8 @@
-// Shared guards for the Workers AI endpoints. The leading underscore keeps
-// `wrangler pages functions build` from turning this module into a route.
+import { decisionRecord } from '../../src/js/core/decision-model.ts';
+
+// Shared guards and output parsing for the Workers AI endpoints. The leading
+// underscore keeps `wrangler pages functions build` from turning this module
+// into a route.
 
 export interface RateLimiter {
   limit(options: { key: string }): Promise<{ success: boolean }>;
@@ -19,9 +22,9 @@ export function allowedModelOrNull(model: string | undefined): string | null {
   return model && ALLOWED_CLIENT_MODELS.has(model) ? model : null;
 }
 
-// Returns a 429 response when the caller is over the per-IP limit, null when
-// the request may proceed. A missing binding (tests, wrangler dev without the
-// unsafe binding) fails open.
+// Returns an uncacheable 429 response when the caller is over the per-IP
+// limit, null when the request may proceed. A missing binding (tests,
+// wrangler dev without the unsafe binding) fails open.
 export async function enforceAiRateLimit(
   request: Request,
   limiter: RateLimiter | undefined,
@@ -45,7 +48,23 @@ export async function enforceAiRateLimit(
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Retry-After': '60',
+        'Cache-Control': 'no-store',
       },
     },
   );
+}
+
+/** Qwen's hosted chat-completion envelope differs from legacy text models. */
+export function generatedText(result: unknown): string | null {
+  if (!decisionRecord(result)) return null;
+  if (typeof result.response === 'string' && result.response.trim())
+    return result.response.trim();
+  const first = Array.isArray(result.choices) ? result.choices[0] : null;
+  if (
+    !decisionRecord(first) ||
+    !decisionRecord(first.message) ||
+    typeof first.message.content !== 'string'
+  )
+    return null;
+  return first.message.content.trim() || null;
 }

@@ -1,4 +1,5 @@
 ---
+
 name: update-test
 description: "Add or repair behavioral tests using the repo's Bun runner and browser harness."
 ---
@@ -9,12 +10,12 @@ description: "Add or repair behavioral tests using the repo's Bun runner and bro
 
 Use `bun:test` for root and package suites. Place root tests under `tests/unit`, `tests/compat`, `tests/corpus`, or `tests/e2e`; find an existing test for the same owner before creating a new fixture. Package tests belong in that package's `tests/` directory and use its own Bun configuration.
 
-| Need | Environment |
-| --- | --- |
-| Pure logic or a simulated DOM | Unit suite with the root preload |
-| Compatibility semantics | Compatibility or corpus suite |
-| Real layout, permissions, GPU, or audio behavior | Playwright browser harness |
-| Standalone library behavior | Package suite |
+| Need                                             | Environment                      |
+| ------------------------------------------------ | -------------------------------- |
+| Pure logic or a simulated DOM                    | Unit suite with the root preload |
+| Compatibility semantics                          | Compatibility or corpus suite    |
+| Real layout, permissions, GPU, or audio behavior | Playwright browser harness       |
+| Standalone library behavior                      | Package suite                    |
 
 ## Write a behavioral contract
 

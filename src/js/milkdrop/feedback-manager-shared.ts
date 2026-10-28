@@ -61,6 +61,7 @@ import {
   resolveEffectiveTexture,
   subscribeTextureOverrides,
 } from './custom-texture-manager.ts';
+import { compositeSharedUniformDefaultsBag } from './feedback-composite-contract.ts';
 import {
   MILKDROP_BLEND_DISSOLVE,
   MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
@@ -522,9 +523,12 @@ function stripShaderComments(text: string): string {
  * bodies reference that the templates do not already provide, so they can be
  * declared as `uniform float` and driven from the per-frame VM state.
  */
-function extractReferencedPerFrameVariables(
-  fragments: Array<string | null>,
-): string[] {
+let cachedTemplateDeclaredIdentifiers: ReadonlySet<string> | null = null;
+
+function getTemplateDeclaredIdentifiers(): ReadonlySet<string> {
+  if (cachedTemplateDeclaredIdentifiers !== null) {
+    return cachedTemplateDeclaredIdentifiers;
+  }
   const declared = new Set<string>(MILKDROP_GLSL_RESERVED_WORDS);
   const templates = [
     MILKDROP_WARP_FRAGMENT_SHADER,
@@ -563,6 +567,14 @@ function extractReferencedPerFrameVariables(
       declared.add(match[1]);
     }
   }
+  cachedTemplateDeclaredIdentifiers = declared;
+  return declared;
+}
+
+function extractReferencedPerFrameVariables(
+  fragments: Array<string | null>,
+): string[] {
+  const declared = getTemplateDeclaredIdentifiers();
 
   const found = new Set<string>();
   for (const fragment of fragments) {
@@ -638,6 +650,17 @@ type MilkdropPerFrameDeclaration = {
   type: 'float' | 'int' | 'vec2' | 'vec3' | 'vec4';
 };
 
+const COMPONENT_INDEX: Readonly<Record<string, number>> = {
+  x: 0,
+  y: 1,
+  z: 2,
+  w: 3,
+  r: 0,
+  g: 1,
+  b: 2,
+  a: 3,
+};
+
 /**
  * A name extractReferencedPerFrameVariables finds is a genuine per-frame
  * *register* — MilkDrop's `trelx`/`tele`/`vshift`-style globals, written by
@@ -681,16 +704,7 @@ function classifyPerFrameVariable(
   let constructorSize: number | null = null;
   let bareAssignments = 0;
   let integerAssignments = 0;
-  const componentIndex: Record<string, number> = {
-    x: 0,
-    y: 1,
-    z: 2,
-    w: 3,
-    r: 0,
-    g: 1,
-    b: 2,
-    a: 3,
-  };
+  const componentIndex = COMPONENT_INDEX;
 
   for (const fragment of fragments) {
     if (!fragment) {
@@ -1696,51 +1710,9 @@ class SharedMilkdropFeedbackManager
         blur1Tex: { value: this.blurTargets[0].texture },
         blur2Tex: { value: this.blurTargets[1].texture },
         blur3Tex: { value: this.blurTargets[2].texture },
-        ...BLUR_RANGE_UNIFORM_DEFAULTS,
-        videoEchoAlpha: { value: 0 },
-        videoEchoZoom: { value: 1 },
-        videoEchoOrientation: { value: 0 },
-        brighten: { value: 0 },
-        darken: { value: 0 },
-        darkenCenter: { value: 0 },
-        solarize: { value: 0 },
-        invert: { value: 0 },
-        redBlueStereo: { value: 0 },
-        gammaAdj: { value: 1 },
-        textureWrap: { value: 0 },
-        warpScale: { value: 0 },
-        offsetX: { value: 0 },
-        offsetY: { value: 0 },
-        rotation: { value: 0 },
-        zoomMul: { value: 1 },
-        saturation: { value: 1 },
-        contrast: { value: 1 },
-        colorScale: { value: new Color(1, 1, 1) },
-        hueShift: { value: 0 },
-        brightenBoost: { value: 0 },
-        invertBoost: { value: 0 },
-        solarizeBoost: { value: 0 },
-        vignette: { value: 0 },
-        chromaticAberration: { value: 0 },
-        tint: { value: new Color(1, 1, 1) },
+        ...compositeSharedUniformDefaultsBag(),
         feedbackSoftness: { value: this.profile.feedbackSoftness },
         currentFrameBoost: { value: this.profile.currentFrameBoost },
-        overlayTextureSource: { value: 0 },
-        overlayTextureMode: { value: 0 },
-        overlayTextureSampleDimension: { value: 0 },
-        overlayTextureInvert: { value: 0 },
-        overlayTextureAmount: { value: 0 },
-        overlayTextureScale: { value: new Vector2(1, 1) },
-        overlayTextureOffset: { value: new Vector2(0, 0) },
-        overlayTextureVolumeSliceZ: { value: 0 },
-        warpTextureSource: { value: 0 },
-        warpTextureSampleDimension: { value: 0 },
-        warpTextureAmount: { value: 0 },
-        warpTextureScale: { value: new Vector2(1, 1) },
-        warpTextureOffset: { value: new Vector2(0, 0) },
-        warpTextureVolumeSliceZ: { value: 0 },
-        ...SIGNAL_UNIFORM_DEFAULTS,
-        aspect: { value: new Vector4(1, 1, 1, 1) },
         _qa: { value: new Vector4() },
         _qb: { value: new Vector4() },
         _qc: { value: new Vector4() },
@@ -1757,7 +1729,6 @@ class SharedMilkdropFeedbackManager
             Math.random(),
           ),
         },
-        decay: { value: 0.98 },
         hasDirectWarp: { value: 0 },
         texelSize: {
           value: new Vector2(

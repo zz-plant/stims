@@ -52,9 +52,20 @@ per_frame_3=q2 = foo(1);
 
 const compiled = compileMilkdropPresetSource(source, { id: 'demo' });
 
-console.log('decay:', compiled.ir.numericFields.decay, 'wave mode:', compiled.ir.numericFields.wave_mode);
-console.log('per-frame statements:', compiled.ir.programs.perFrame.statements.length);
-console.log('per-pixel statements:', compiled.ir.programs.perPixel.statements.length);
+console.log(
+  'decay:',
+  compiled.ir.numericFields.decay,
+  'wave mode:',
+  compiled.ir.numericFields.wave_mode,
+);
+console.log(
+  'per-frame statements:',
+  compiled.ir.programs.perFrame.statements.length,
+);
+console.log(
+  'per-pixel statements:',
+  compiled.ir.programs.perPixel.statements.length,
+);
 console.log('fidelity:', compiled.ir.compatibility.parity.fidelityClass);
 for (const d of compiled.diagnostics) {
   console.log(`${d.severity} ${d.code} ${d.message}`);
@@ -76,14 +87,29 @@ Field names are normalized to the MilkDrop 2 spelling (`fDecay` becomes `decay`,
 ### Evaluate an EEL2 expression
 
 ```ts
-import { evaluateMilkdropExpression, parseMilkdropExpression } from 'milkdrop-toolchain';
+import {
+  evaluateMilkdropExpression,
+  parseMilkdropExpression,
+} from 'milkdrop-toolchain';
 
 const env = { bass: 1.4, zoom: 1 };
-const expr = parseMilkdropExpression('zoom * (1 + 0.1 * if(above(bass, 1), bass - 1, 0)) + 3 / 0', 1);
+const expr = parseMilkdropExpression(
+  'zoom * (1 + 0.1 * if(above(bass, 1), bass - 1, 0)) + 3 / 0',
+  1,
+);
 console.log('diagnostics:', expr.diagnostics.length);
 console.log('value:', evaluateMilkdropExpression(expr.value!, env));
-console.log('int division:', evaluateMilkdropExpression(parseMilkdropExpression('7 % 2.9', 1).value!, {}));
-console.log('truthiness:', evaluateMilkdropExpression(parseMilkdropExpression('if(0.000001, 1, 2)', 1).value!, {}));
+console.log(
+  'int division:',
+  evaluateMilkdropExpression(parseMilkdropExpression('7 % 2.9', 1).value!, {}),
+);
+console.log(
+  'truthiness:',
+  evaluateMilkdropExpression(
+    parseMilkdropExpression('if(0.000001, 1, 2)', 1).value!,
+    {},
+  ),
+);
 ```
 
 Output:
@@ -100,7 +126,10 @@ truthiness: 2
 ### Compile an EEL2 block to WGSL
 
 ```ts
-import { compileMilkdropPresetSource, compileProgramToWgsl } from 'milkdrop-toolchain';
+import {
+  compileMilkdropPresetSource,
+  compileProgramToWgsl,
+} from 'milkdrop-toolchain';
 
 const compiled = compileMilkdropPresetSource(
   '[preset00]\nper_frame_1=q1 = q1 + bass * 0.1;\nper_frame_2=zoom = 1 + sin(time) * 0.01;\n',
@@ -155,85 +184,85 @@ Everything below is exported from the package root. Each module under `src/` is 
 
 ### Preset text
 
-| Export | Purpose |
-| --- | --- |
-| `parsePresetSyntax(source)` / `printPresetSyntax(tree)` | Lossless line-level syntax tree of a `.milk` file; printing gives back the exact bytes. |
-| `fieldAssignments(tree)`, `isShaderSection(name)`, `splitInlineComment(line)` | Helpers over the syntax tree. |
-| `parseMilkdropPreset(source)` | Fields and sections of a preset, with parse diagnostics. |
+| Export                                                                        | Purpose                                                                                 |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `parsePresetSyntax(source)` / `printPresetSyntax(tree)`                       | Lossless line-level syntax tree of a `.milk` file; printing gives back the exact bytes. |
+| `fieldAssignments(tree)`, `isShaderSection(name)`, `splitInlineComment(line)` | Helpers over the syntax tree.                                                           |
+| `parseMilkdropPreset(source)`                                                 | Fields and sections of a preset, with parse diagnostics.                                |
 
 ### Compiler
 
-| Export | Purpose |
-| --- | --- |
-| `compileMilkdropPresetSource(raw, source?, options?)` | Parse, build the IR, format, and cache; returns a `MilkdropCompiledPreset`. |
-| `createIR(ast, diagnostics, source?, options?)`, `createMilkdropIr(...)` | The IR builder without the cache or formatter. |
-| `createPresetSource(partial, raw, title, author)` | Fill in a `MilkdropPresetSource` record. |
-| `clearCompiledPresetCache()`, `getCompiledPresetCacheSize()`, `warmupCompiledPresetCache(presets)` | Control the compile cache. |
-| `DEFAULT_MILKDROP_STATE`, `createDefaultCustomWaveSlot()`, `createDefaultShapeSlot()`, `MAX_CUSTOM_WAVES`, `MAX_CUSTOM_SHAPES` | MilkDrop's default per-frame state and slot templates. |
-| `buildParityReport(ir, options)` | Per-backend parity report: what runs as written, what is approximated, what is blocked. |
-| `buildBackendDivergence`, `buildVisualFallbacks`, `buildBlockingConstructDetails`, `buildDegradationReasons`, `classifyFidelity`, `buildCompatibilityEvidence` | The pieces of the compatibility classification. |
-| `loadMilkdropParityAllowlist()`, `isMilkdropParityConstructAllowlisted(...)` | The parity allowlist (`data/parity-allowlist.json`), empty by default. |
+| Export                                                                                                                                                         | Purpose                                                                                 |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `compileMilkdropPresetSource(raw, source?, options?)`                                                                                                          | Parse, build the IR, format, and cache; returns a `MilkdropCompiledPreset`.             |
+| `createIR(ast, diagnostics, source?, options?)`, `createMilkdropIr(...)`                                                                                       | The IR builder without the cache or formatter.                                          |
+| `createPresetSource(partial, raw, title, author)`                                                                                                              | Fill in a `MilkdropPresetSource` record.                                                |
+| `clearCompiledPresetCache()`, `getCompiledPresetCacheSize()`, `warmupCompiledPresetCache(presets)`                                                             | Control the compile cache.                                                              |
+| `DEFAULT_MILKDROP_STATE`, `createDefaultCustomWaveSlot()`, `createDefaultShapeSlot()`, `MAX_CUSTOM_WAVES`, `MAX_CUSTOM_SHAPES`                                 | MilkDrop's default per-frame state and slot templates.                                  |
+| `buildParityReport(ir, options)`                                                                                                                               | Per-backend parity report: what runs as written, what is approximated, what is blocked. |
+| `buildBackendDivergence`, `buildVisualFallbacks`, `buildBlockingConstructDetails`, `buildDegradationReasons`, `classifyFidelity`, `buildCompatibilityEvidence` | The pieces of the compatibility classification.                                         |
+| `loadMilkdropParityAllowlist()`, `isMilkdropParityConstructAllowlisted(...)`                                                                                   | The parity allowlist (`data/parity-allowlist.json`), empty by default.                  |
 
 ### EEL2 expressions
 
-| Export | Purpose |
-| --- | --- |
-| `parseMilkdropExpression(source, line)` | Parse one expression to an AST, with diagnostics. |
-| `parseMilkdropStatement(source, line)`, `splitMilkdropStatements(source)` | Parse `target = expr;` statements, split a block on `;`. |
-| `evaluateMilkdropExpression(node, env, helpers?)` | Tree-walking interpreter. |
-| `walkMilkdropExpression(node, visit)` | Visit every node of an AST. |
-| `findNearestMatch(name, candidates)` | Spelling suggestion for unknown identifiers. |
-| `compileMilkdropProgram(block)` | JIT a program block to a JavaScript function; falls back to the interpreter when `new Function` is unavailable. |
-| `prewarmMilkdropPrograms(ir, shouldAbort?)` | Compile every block of a preset ahead of time, yielding between blocks. |
-| `MILKDROP_MEGABUF_SIZE`, `MILKDROP_GMEGABUF_SIZE` | Size of the `megabuf` and `gmegabuf` scratch arrays. |
-| `EEL_FUNCTIONS`, `EEL_BINARY_OPERATORS`, `EEL_UNARY_OPERATORS`, `getEelFunctionSpec(name)`, `evaluateEelCall(...)`, `toMilkdropInt(v)`, `MILKDROP_EEL_CLOSE_FACTOR` | The one function table the interpreter, JIT and WGSL generator all read. |
-| `compileProgramToWgsl(block, options?)` | Lower a program block to a WGSL compute shader. |
-| `buildWgslExpressionString(node, ...)` | Lower one expression to WGSL. |
-| `MILKDROP_WGSL_SIGNAL_FIELDS`, `MILKDROP_WGSL_SIGNAL_ALIAS_MAP`, `deriveMilkdropViewportSignalValues(signals)` | The `VmSignals` uniform layout and its aliases. |
-| `resolveMilkdropIdentifier(env, name)`, `normalizeFieldSuffix`, `normalizeProgramAssignmentTarget`, `aliasMap` | Case-insensitive identifier and field-name resolution. |
-| `MILKDROP_FIELDS`, `buildFieldAliasMap()`, `editorFieldKey(key)`, `MILKDROP2_FIELD_PAIRS`, `SHAPE_FIELD_ALIASES`, `IGNORED_FIELD_SPELLINGS` | The field table: every known preset field, its type, default and spellings. |
-| `MILKDROP_BUILTIN_DOCS`, `MILKDROP_INTRINSIC_FUNCTION_NAMES`, `MILKDROP_INTRINSIC_IDENTIFIER_NAMES`, `MILKDROP_INTRINSIC_FUNCTIONS`, `MILKDROP_INTRINSIC_IDENTIFIERS`, `milkdropVariableNames(...)`, `MILKDROP_REGISTER_WORD_PATTERN`, `MILKDROP_FUNCTION_SNIPPET_TEMPLATES`, `MILKDROP_Q_REGISTER_COUNT`, `MILKDROP_T_REGISTER_COUNT` | Documentation of every builtin, for editors and linters. |
+| Export                                                                                                                                                                                                                                                                                                                                 | Purpose                                                                                                         |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `parseMilkdropExpression(source, line)`                                                                                                                                                                                                                                                                                                | Parse one expression to an AST, with diagnostics.                                                               |
+| `parseMilkdropStatement(source, line)`, `splitMilkdropStatements(source)`                                                                                                                                                                                                                                                              | Parse `target = expr;` statements, split a block on `;`.                                                        |
+| `evaluateMilkdropExpression(node, env, helpers?)`                                                                                                                                                                                                                                                                                      | Tree-walking interpreter.                                                                                       |
+| `walkMilkdropExpression(node, visit)`                                                                                                                                                                                                                                                                                                  | Visit every node of an AST.                                                                                     |
+| `findNearestMatch(name, candidates)`                                                                                                                                                                                                                                                                                                   | Spelling suggestion for unknown identifiers.                                                                    |
+| `compileMilkdropProgram(block)`                                                                                                                                                                                                                                                                                                        | JIT a program block to a JavaScript function; falls back to the interpreter when `new Function` is unavailable. |
+| `prewarmMilkdropPrograms(ir, shouldAbort?)`                                                                                                                                                                                                                                                                                            | Compile every block of a preset ahead of time, yielding between blocks.                                         |
+| `MILKDROP_MEGABUF_SIZE`, `MILKDROP_GMEGABUF_SIZE`                                                                                                                                                                                                                                                                                      | Size of the `megabuf` and `gmegabuf` scratch arrays.                                                            |
+| `EEL_FUNCTIONS`, `EEL_BINARY_OPERATORS`, `EEL_UNARY_OPERATORS`, `getEelFunctionSpec(name)`, `evaluateEelCall(...)`, `toMilkdropInt(v)`, `MILKDROP_EEL_CLOSE_FACTOR`                                                                                                                                                                    | The one function table the interpreter, JIT and WGSL generator all read.                                        |
+| `compileProgramToWgsl(block, options?)`                                                                                                                                                                                                                                                                                                | Lower a program block to a WGSL compute shader.                                                                 |
+| `buildWgslExpressionString(node, ...)`                                                                                                                                                                                                                                                                                                 | Lower one expression to WGSL.                                                                                   |
+| `MILKDROP_WGSL_SIGNAL_FIELDS`, `MILKDROP_WGSL_SIGNAL_ALIAS_MAP`, `deriveMilkdropViewportSignalValues(signals)`                                                                                                                                                                                                                         | The `VmSignals` uniform layout and its aliases.                                                                 |
+| `resolveMilkdropIdentifier(env, name)`, `normalizeFieldSuffix`, `normalizeProgramAssignmentTarget`, `aliasMap`                                                                                                                                                                                                                         | Case-insensitive identifier and field-name resolution.                                                          |
+| `MILKDROP_FIELDS`, `buildFieldAliasMap()`, `editorFieldKey(key)`, `MILKDROP2_FIELD_PAIRS`, `SHAPE_FIELD_ALIASES`, `IGNORED_FIELD_SPELLINGS`                                                                                                                                                                                            | The field table: every known preset field, its type, default and spellings.                                     |
+| `MILKDROP_BUILTIN_DOCS`, `MILKDROP_INTRINSIC_FUNCTION_NAMES`, `MILKDROP_INTRINSIC_IDENTIFIER_NAMES`, `MILKDROP_INTRINSIC_FUNCTIONS`, `MILKDROP_INTRINSIC_IDENTIFIERS`, `milkdropVariableNames(...)`, `MILKDROP_REGISTER_WORD_PATTERN`, `MILKDROP_FUNCTION_SNIPPET_TEMPLATES`, `MILKDROP_Q_REGISTER_COUNT`, `MILKDROP_T_REGISTER_COUNT` | Documentation of every builtin, for editors and linters.                                                        |
 
 ### Shader text
 
-| Export | Purpose |
-| --- | --- |
-| `extractShaderSource(fields, stage)`, `ensureShaderBody(text)` | Recover the warp or comp shader text from the preset's backtick lines. |
-| `parseMilkdropShaderStatement(line)` | Parse one HLSL statement to a shader AST. |
-| `evaluateMilkdropShaderExpression(node, env)` | Constant-evaluate a shader expression. |
-| `extractShaderControls(...)` | Read the colour, texture and warp controls a shader body sets. |
-| `evaluateMilkdropShaderControlProgram(...)`, `evaluateMilkdropShaderControlExpressions(...)` | Evaluate those controls against a frame's variables. |
-| `normalizeHlslToGlsl(body, ...)` | Translate an HLSL shader body to GLSL ES. |
-| `extractNativeShaderBody(text)`, `splitShaderGlobalsAndBody(text)` | Split `shader_body { ... }` from its globals. |
-| `generateGlslFromShaderStatements(statements, stage)` | Rebuild GLSL from parsed statements. |
-| `createCompositeGlslEmitter(...)`, `injectDirectShaderGlsl(...)`, `generateShaderVariantTag(...)` | Lower-level GLSL emission. |
-| `desugarShaderBranches(body)`, `setShaderBranchDesugarEnabled(flag)`, `isShaderBranchDesugarEnabled()` | Optional pass that rewrites `if` branches into `mix`/`select` form. Off by default; the setter is module-level state. |
-| `clearShaderAnalysisCaches()` | Drop the memoized analyses. |
-| `MILKDROP_SHADER_TEXTURE_SAMPLERS`, `normalizeMilkdropShaderSamplerName`, `isMilkdropShaderSamplerName`, `isMilkdropVolumeShaderSamplerName`, `classifyTex3dSamplerEquivalence`, `TEX3D_NOT_EQUIVALENT_SAMPLERS`, `MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS`, `getMilkdropShaderAuxTextureSourceId` | The sampler and texture name tables. |
-| `MILKDROP_TEXTURE_FILES`, `CUSTOM_TEXTURE_FILES` | Texture file names MilkDrop ships. |
-| `describeShaderTranslations(compiled)`, `describeExecutionMode(mode)` | Per-stage summary: source, GLSL, which path produced it, per-backend execution mode. |
-| `resolveShaderExecutionMode(compiled, backend)`, `isShaderApproximated(mode)`, `describeShaderApproximation(...)` | The shared vocabulary for "does this backend run the shader as written". |
+| Export                                                                                                                                                                                                                                                                                            | Purpose                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `extractShaderSource(fields, stage)`, `ensureShaderBody(text)`                                                                                                                                                                                                                                    | Recover the warp or comp shader text from the preset's backtick lines.                                                |
+| `parseMilkdropShaderStatement(line)`                                                                                                                                                                                                                                                              | Parse one HLSL statement to a shader AST.                                                                             |
+| `evaluateMilkdropShaderExpression(node, env)`                                                                                                                                                                                                                                                     | Constant-evaluate a shader expression.                                                                                |
+| `extractShaderControls(...)`                                                                                                                                                                                                                                                                      | Read the colour, texture and warp controls a shader body sets.                                                        |
+| `evaluateMilkdropShaderControlProgram(...)`, `evaluateMilkdropShaderControlExpressions(...)`                                                                                                                                                                                                      | Evaluate those controls against a frame's variables.                                                                  |
+| `normalizeHlslToGlsl(body, ...)`                                                                                                                                                                                                                                                                  | Translate an HLSL shader body to GLSL ES.                                                                             |
+| `extractNativeShaderBody(text)`, `splitShaderGlobalsAndBody(text)`                                                                                                                                                                                                                                | Split `shader_body { ... }` from its globals.                                                                         |
+| `generateGlslFromShaderStatements(statements, stage)`                                                                                                                                                                                                                                             | Rebuild GLSL from parsed statements.                                                                                  |
+| `createCompositeGlslEmitter(...)`, `injectDirectShaderGlsl(...)`, `generateShaderVariantTag(...)`                                                                                                                                                                                                 | Lower-level GLSL emission.                                                                                            |
+| `desugarShaderBranches(body)`, `setShaderBranchDesugarEnabled(flag)`, `isShaderBranchDesugarEnabled()`                                                                                                                                                                                            | Optional pass that rewrites `if` branches into `mix`/`select` form. Off by default; the setter is module-level state. |
+| `clearShaderAnalysisCaches()`                                                                                                                                                                                                                                                                     | Drop the memoized analyses.                                                                                           |
+| `MILKDROP_SHADER_TEXTURE_SAMPLERS`, `normalizeMilkdropShaderSamplerName`, `isMilkdropShaderSamplerName`, `isMilkdropVolumeShaderSamplerName`, `classifyTex3dSamplerEquivalence`, `TEX3D_NOT_EQUIVALENT_SAMPLERS`, `MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS`, `getMilkdropShaderAuxTextureSourceId` | The sampler and texture name tables.                                                                                  |
+| `MILKDROP_TEXTURE_FILES`, `CUSTOM_TEXTURE_FILES`                                                                                                                                                                                                                                                  | Texture file names MilkDrop ships.                                                                                    |
+| `describeShaderTranslations(compiled)`, `describeExecutionMode(mode)`                                                                                                                                                                                                                             | Per-stage summary: source, GLSL, which path produced it, per-backend execution mode.                                  |
+| `resolveShaderExecutionMode(compiled, backend)`, `isShaderApproximated(mode)`, `describeShaderApproximation(...)`                                                                                                                                                                                 | The shared vocabulary for "does this backend run the shader as written".                                              |
 
 ### Formatting and export
 
-| Export | Purpose |
-| --- | --- |
-| `formatMilkdropPreset(compiled)` | Serialize a compiled preset back to `.milk` text in the editor dialect. |
-| `readMilkdropField(source, key)`, `findMilkdropFieldLine(...)`, `findMilkdropEquationLine(...)` | Read a field or locate its line in the text. |
-| `upsertMilkdropField(source, key, value)`, `upsertMilkdropFields(source, entries)` | Set fields in preset text without disturbing the rest. |
-| `isFieldShadowedByEquations(...)`, `getFieldOverwriteKind(...)`, `computeMidiGutterInfo(...)` | Which fields an equation overwrites each frame. |
-| `emitProgramLines(...)`, `serializeString(v)`, `formatNumber(v)`, `resolveShaderText(ir, stage)`, `resolveFormattedTitle(...)`, `FALLBACK_TITLE` | Formatter building blocks. |
-| `exportMilkdrop2Preset(compiled)` | Write the MilkDrop 2 file format: `MILKDROP_PRESET_VERSION`, MilkDrop's key names, backtick shader lines. |
-| `MILKDROP2_STIMS_KEYS` | Keys that only Stims reads and the exporter writes only when they differ from the default. |
-| `lineageFromFields(fields)`, `lineageFieldLines(refs)`, `isLineageFieldKey(key)` | Remix lineage metadata stored in the preset. |
+| Export                                                                                                                                           | Purpose                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `formatMilkdropPreset(compiled)`                                                                                                                 | Serialize a compiled preset back to `.milk` text in the editor dialect.                                   |
+| `readMilkdropField(source, key)`, `findMilkdropFieldLine(...)`, `findMilkdropEquationLine(...)`                                                  | Read a field or locate its line in the text.                                                              |
+| `upsertMilkdropField(source, key, value)`, `upsertMilkdropFields(source, entries)`                                                               | Set fields in preset text without disturbing the rest.                                                    |
+| `isFieldShadowedByEquations(...)`, `getFieldOverwriteKind(...)`, `computeMidiGutterInfo(...)`                                                    | Which fields an equation overwrites each frame.                                                           |
+| `emitProgramLines(...)`, `serializeString(v)`, `formatNumber(v)`, `resolveShaderText(ir, stage)`, `resolveFormattedTitle(...)`, `FALLBACK_TITLE` | Formatter building blocks.                                                                                |
+| `exportMilkdrop2Preset(compiled)`                                                                                                                | Write the MilkDrop 2 file format: `MILKDROP_PRESET_VERSION`, MilkDrop's key names, backtick shader lines. |
+| `MILKDROP2_STIMS_KEYS`                                                                                                                           | Keys that only Stims reads and the exporter writes only when they differ from the default.                |
+| `lineageFromFields(fields)`, `lineageFieldLines(refs)`, `isLineageFieldKey(key)`                                                                 | Remix lineage metadata stored in the preset.                                                              |
 
 ### Static analysis
 
-| Export | Purpose |
-| --- | --- |
-| `analyzePresetDataflow(ir)` | Which audio signals reach which control or drawn part, read from the equations. |
-| `controlAudio`, `drawnPartAudio`, `frameValueName`, `dataflowSignature` | Query and fingerprint a dataflow result. |
-| `analyzePresetMath(source)` | Motion, reactivity and complexity summary of a preset's equations. |
+| Export                                                                  | Purpose                                                                         |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `analyzePresetDataflow(ir)`                                             | Which audio signals reach which control or drawn part, read from the equations. |
+| `controlAudio`, `drawnPartAudio`, `frameValueName`, `dataflowSignature` | Query and fingerprint a dataflow result.                                        |
+| `analyzePresetMath(source)`                                             | Motion, reactivity and complexity summary of a preset's equations.              |
 
 ### Types
 
@@ -249,7 +278,6 @@ The `MilkdropCompiledPreset`, `MilkdropPresetIR`, `MilkdropProgramBlock`, `Milkd
 ## Semantics
 
 The EEL2 semantics implemented by the interpreter, the JIT and the WGSL generator follow the corpus in the sibling package [`eel-conformance`](https://github.com/zz-plant/stims/tree/main/packages/eel-conformance), a set of portable JSON cases with a JSON Schema and a runner contract. This package does not depend on the corpus or run it. Stims runs it against three CPU paths, single-statement evaluation, the CSP-fallback interpreter and the JIT, in `tests/unit/eel-conformance-spec.test.ts`; no WGSL tier runs it. Five behaviours that differ from JavaScript and trip up most reimplementations:
-
 1. Division by exact zero yields `0`, not `Infinity` or `NaN` (`3 / 0` is `0`).
 2. `%` truncates both operands to integers first, and a zero divisor yields `0`.
 3. Truthiness is `|v| > 0.00001`: `if(0.000001, a, b)` takes the `b` branch.
@@ -264,7 +292,7 @@ Build and test from a clone of zz-plant/stims:
 
 ```sh
 bun install --frozen-lockfile
-bun --cwd packages/milkdrop-toolchain run build
+bun --cwd=packages/milkdrop-toolchain run build
 bun --cwd packages/milkdrop-toolchain test
 ```
 

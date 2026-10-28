@@ -186,28 +186,30 @@ function collectGpuFieldIdentifierReads(
   expression: MilkdropExpressionNode,
 ): Set<string> {
   const reads = new Set<string>();
-  const visit = (node: MilkdropExpressionNode): void => {
+  const stack: MilkdropExpressionNode[] = [expression];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node) break;
     switch (node.type) {
       case 'identifier':
         reads.add(lowerGpuFieldIdentifier(node.name));
         break;
       case 'unary':
-        visit(node.operand);
+        stack.push(node.operand);
         break;
       case 'binary':
-        visit(node.left);
-        visit(node.right);
+        stack.push(node.right, node.left);
         break;
       case 'call':
-        for (const arg of node.args) {
-          visit(arg);
+        for (let i = node.args.length - 1; i >= 0; i--) {
+          const arg = node.args[i];
+          if (arg) stack.push(arg);
         }
         break;
       case 'literal':
         break;
     }
-  };
-  visit(expression);
+  }
   return reads;
 }
 
@@ -255,7 +257,11 @@ function lowerGpuFieldIdentifier(identifier: string) {
 function lowerGpuFieldExpression(
   expression: MilkdropExpressionNode,
   allowedIdentifiers: Set<string>,
+  depth = 0,
 ): MilkdropGpuFieldExpression | null {
+  if (depth > 200) {
+    return null;
+  }
   switch (expression.type) {
     case 'literal':
       return expression;
@@ -269,6 +275,7 @@ function lowerGpuFieldExpression(
       const operand = lowerGpuFieldExpression(
         expression.operand,
         allowedIdentifiers,
+        depth + 1,
       );
       return operand
         ? {
@@ -282,10 +289,15 @@ function lowerGpuFieldExpression(
       if (expression.operator === '=') {
         return null;
       }
-      const left = lowerGpuFieldExpression(expression.left, allowedIdentifiers);
+      const left = lowerGpuFieldExpression(
+        expression.left,
+        allowedIdentifiers,
+        depth + 1,
+      );
       const right = lowerGpuFieldExpression(
         expression.right,
         allowedIdentifiers,
+        depth + 1,
       );
       return left && right
         ? ({
@@ -302,7 +314,9 @@ function lowerGpuFieldExpression(
         return null;
       }
       const args = expression.args
-        .map((arg) => lowerGpuFieldExpression(arg, allowedIdentifiers))
+        .map((arg) =>
+          lowerGpuFieldExpression(arg, allowedIdentifiers, depth + 1),
+        )
         .filter((arg): arg is MilkdropGpuFieldExpression => arg !== null);
       if (args.length !== expression.args.length) {
         return null;
@@ -379,9 +393,13 @@ export function lowerGpuFieldProgram(
   // temporary (MilkDrop per-pixel writes are vertex-local). State slots and
   // signals keep their own bindings: `allowedIdentifiers` already contains
   // them, so they never reach the register check.
+  const statementReads = program.statements.map((statement) =>
+    collectGpuFieldIdentifierReads(statement.expression),
+  );
   const registerInputIdentifiers = new Set<string>();
-  for (const statement of program.statements) {
-    for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+  for (let i = 0; i < program.statements.length; i += 1) {
+    const reads = statementReads[i] ?? new Set<string>();
+    for (const read of reads) {
       if (!allowedIdentifiers.has(read) && availableRegisters.has(read)) {
         registerInputIdentifiers.add(read);
         allowedIdentifiers.add(read);
@@ -394,8 +412,9 @@ export function lowerGpuFieldProgram(
   // above claimed it, a read would become a zero temporary: the GPU drawing
   // the preset as if it had just started while the CPU tiers read the real
   // value. Such a program stays on the CPU path instead.
-  for (const statement of program.statements) {
-    for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+  for (let i = 0; i < program.statements.length; i += 1) {
+    const reads = statementReads[i] ?? new Set<string>();
+    for (const read of reads) {
       if (read === 'progress' && !registerInputIdentifiers.has(read)) {
         return null;
       }
@@ -408,8 +427,9 @@ export function lowerGpuFieldProgram(
   // theirs. This is not a fallback guess: it is the CPU interpreter/JIT's
   // exact lookup behavior, and it lets source such as `dy-r` (where `r` was
   // never assigned) stay on the field path with `r = 0`.
-  for (const statement of program.statements) {
-    for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+  for (let i = 0; i < program.statements.length; i += 1) {
+    const reads = statementReads[i] ?? new Set<string>();
+    for (const read of reads) {
       if (
         !allowedIdentifiers.has(read) &&
         isGpuFieldTemporary(read, reservedIdentifiers)
@@ -426,8 +446,10 @@ export function lowerGpuFieldProgram(
       ),
     );
     const assignedSoFar = new Set<string>();
-    for (const statement of program.statements) {
-      for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+    for (let i = 0; i < program.statements.length; i += 1) {
+      const statement = program.statements[i]!;
+      const reads = statementReads[i] ?? new Set<string>();
+      for (const read of reads) {
         if (
           temporaries.has(read) &&
           assignedSomewhere.has(read) &&

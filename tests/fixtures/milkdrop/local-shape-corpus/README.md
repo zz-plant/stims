@@ -6,7 +6,6 @@ shader text, and alias normalization, but they do not include presets that
 exercise custom shape slots.
 
 This local corpus keeps shape coverage in a corpus-style form by focusing on:
-
 - shape scalar fields,
 - shape init and per-frame programs,
 - legacy slot spellings such as `shapecode_32_*`,

@@ -111,7 +111,7 @@ requiredBrowserTest(
       await picker.selectOption('next-preset');
       await page
         .locator('.ctl-midi-learn-row', { has: picker })
-        .getByRole('button', { name: 'Learn' })
+        .getByRole('button', { name: 'Map the next pad I hit' })
         .click();
 
       // The poller starts when the browser is idle and installs the pad's
@@ -125,12 +125,12 @@ requiredBrowserTest(
       const before = (await getAgentState(page)).presetId;
       await setButton(page, PAD_BUTTON, true);
       await page
-        .getByText('Mapped a pad to "Next preset (random)". Hit it to run it.')
+        .getByText('Mapped a pad to "Play a random preset". Hit it to run it.')
         .waitFor({ timeout: 20000 });
       await setButton(page, PAD_BUTTON, false);
       await page
         .getByRole('button', {
-          name: `Remove mapping for pad ${PAD_BUTTON} (Next preset (random))`,
+          name: `Remove mapping for pad ${PAD_BUTTON} (Play a random preset)`,
         })
         .waitFor({ timeout: 5000 });
       expect((await getAgentState(page)).presetId).toBe(before);

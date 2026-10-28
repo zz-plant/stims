@@ -37,6 +37,7 @@ import {
 } from '../core/accessibility-preferences.ts';
 import { describeHiddenTabFreezeRisk } from '../core/live-performance-mode.ts';
 import { setMotionPreference } from '../core/motion-preferences.ts';
+import { installActionClickTelemetry } from '../core/services/action-telemetry.ts';
 import {
   buildAudioProfile,
   pickAudioMatch,
@@ -97,6 +98,7 @@ import {
 import { TITLE_CARD_EXIT_MS, TITLE_CARD_HOLD_MS } from './PresetTitleCard.tsx';
 import { buildPaletteActions } from './palette-actions.ts';
 import { prefetchPanelChunk } from './panel-chunks.ts';
+import { getPanelDescriptor, getPanelTitle } from './panel-registry.ts';
 import {
   SilentAudioNotice,
   useAudioAwaitingGesture,
@@ -110,9 +112,13 @@ const NewHomePage = lazy(() =>
 );
 
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
+import { ManageSetsDialog } from './ManageSetsDialog.tsx';
+import { decodePresetSetPayload, saveNamedSet } from './preset-sets.ts';
+import { SharedSetDialog } from './SharedSetDialog.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
+import { installUnsavedEditsGuard } from './unsaved-edits-guard.ts';
 import {
   buildRemixShareUrl,
   decodePresetCodeFromHash,
@@ -124,7 +130,7 @@ import {
   useWorkspace,
   WorkspaceProvider,
 } from './workspace-context.tsx';
-import { findActivePresetEntry, getToolLabel } from './workspace-helpers.ts';
+import { findActivePresetEntry } from './workspace-helpers.ts';
 import {
   BROWSE_PANEL_FOCUS_SELECTOR,
   WorkspaceStagePanel,
@@ -220,7 +226,8 @@ const BROWSE_SKELETON_TILES = [
  * a stack of rows.
  */
 function PanelLoadingFallback({ panel }: { panel?: string | null }) {
-  if (panel === 'browse') {
+  const descriptor = getPanelDescriptor(panel);
+  if (descriptor?.loadingShape === 'browse') {
     return (
       <div
         className="stims-shell__panel-loading"
@@ -351,6 +358,7 @@ function StimsWorkspaceAppShell() {
   );
 
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showManageSets, setShowManageSets] = useState(false);
   // Drives the palette's theme row label, so it names the current choice.
   const themeChoice = useSyncExternalStore(
     subscribeToThemePreference,
@@ -559,6 +567,7 @@ function StimsWorkspaceAppShell() {
         paletteSurface,
         handleToggleFullscreen,
         setShowShortcuts,
+        setShowManageSets,
         toggleFavoriteCurrentPreset,
         liveMode,
         isFullscreen,
@@ -866,6 +875,60 @@ function StimsWorkspaceAppShell() {
     ui.routeState.presetId,
   ]);
 
+  const [sharedSetDismissed, setSharedSetDismissed] = useState(false);
+
+  const sharedSetPayload = useMemo(() => {
+    if (!ui.routeState.sharedSet) return null;
+    const res = decodePresetSetPayload(ui.routeState.sharedSet);
+    return res.ok ? res.set : null;
+  }, [ui.routeState.sharedSet]);
+
+  useEffect(() => {
+    setSharedSetDismissed(false);
+    if (ui.routeState.sharedSet && !sharedSetPayload) {
+      ui.setStatusMessage('Invalid or corrupted preset set link.');
+      ui.commitRoute((current) => ({ ...current, sharedSet: null }));
+    }
+  }, [
+    ui.routeState.sharedSet,
+    sharedSetPayload,
+    ui.setStatusMessage,
+    ui.commitRoute,
+  ]);
+
+  const handleCloseSharedSet = useCallback(() => {
+    setSharedSetDismissed(true);
+    ui.commitRoute((current) => ({ ...current, sharedSet: null }));
+  }, [ui.commitRoute]);
+
+  const handleLoadSharedSetQueue = useCallback(
+    (presetIds: string[]) => {
+      ui.presetQueue.replaceQueue(presetIds);
+      ui.setStatusMessage(
+        `Loaded "${sharedSetPayload?.title ?? 'Set'}" (${presetIds.length} preset${presetIds.length === 1 ? '' : 's'}) into queue.`,
+      );
+      handleCloseSharedSet();
+    },
+    [
+      ui.presetQueue,
+      sharedSetPayload,
+      handleCloseSharedSet,
+      ui.setStatusMessage,
+    ],
+  );
+
+  const handleSaveSharedSet = useCallback(
+    (title: string, presetIds: string[]) => {
+      saveNamedSet(title, presetIds);
+      ui.setStatusMessage(`Saved "${title}" to your preset sets.`);
+    },
+    [ui.setStatusMessage],
+  );
+
+  const showSharedSetDialog = Boolean(
+    sharedSetPayload && !sharedSetDismissed && !pendingCode,
+  );
+
   useEffect(() => {
     if (ui.toast && !ui.toast.quiet && visibleHint) {
       dismissHint();
@@ -1023,7 +1086,12 @@ function StimsWorkspaceAppShell() {
       audioLiveSinceRef.current = null;
       return;
     }
-    audioLiveSinceRef.current ??= performance.now();
+    // Written as an explicit null check: React Compiler does not yet lower
+    // the logical assignment operators, and an unparsed file is skipped
+    // whole, taking its components with it.
+    if (audioLiveSinceRef.current === null) {
+      audioLiveSinceRef.current = performance.now();
+    }
     if (showRotateHint || awaitingAudioGesture) return;
     const timer = window.setTimeout(
       () => showHint('first-play'),
@@ -1202,46 +1270,36 @@ function StimsWorkspaceAppShell() {
     };
   }, [engineSnapshot?.audioActive, engineSnapshot?.audioSource]);
 
-  useEffect(() => {
-    const handleOpenShortcuts = () => setShowShortcuts(true);
-    window.addEventListener('stims:shortcuts:open', handleOpenShortcuts);
-    return () =>
-      window.removeEventListener('stims:shortcuts:open', handleOpenShortcuts);
-  }, []);
-
-  useEffect(() => {
-    const handleOpenCredits = () => setShowCredits(true);
-    window.addEventListener('stims:credits:open', handleOpenCredits);
-    return () =>
-      window.removeEventListener('stims:credits:open', handleOpenCredits);
-  }, []);
-
   // Paints the stored choice and keeps painting it: preference changes from
   // Settings or the palette, and — when the choice is "system" — OS theme
   // flips, without a reload.
   useEffect(() => startThemeSync(), []);
 
+  // Every click on a control with a data-action, with the surface it sat
+  // on; the palette, keys, gestures and pads note their own runs.
+  useEffect(() => installActionClickTelemetry(), []);
+
   useEffect(() => {
     applyAccessibility(getActiveAccessibilityPreference());
   }, []);
 
-  // Uncommitted editor edits live only in the session — there is no draft
-  // persistence — so a reload or a closed tab loses them outright. The
-  // session has tracked a `dirty` flag all along and nothing read it; this
-  // is the one place where losing work is silent and irreversible.
-  // Deliberately scoped to the editor being dirty: a beforeunload prompt on
-  // an idle visualizer would be pure nuisance.
+  // A draft that compiles is saved per preset in this browser and comes
+  // back on the next load (draft-persistence.ts), so once that write lands
+  // leaving loses nothing, and the browser's "changes may not be saved"
+  // warning was a false alarm on every edited preset. Ask only while
+  // something would be lost: text with errors (the saved copy is the last
+  // version that ran), or an edit whose write is pending or failed
+  // (IndexedDB blocked, over quota).
+  const editorHoldsUnsavedWork =
+    (editorDirty &&
+      (engineSnapshot?.sessionState?.diagnostics ?? []).some(
+        (diagnostic) => diagnostic.severity === 'error',
+      )) ||
+    (engineSnapshot?.draftUnsaved ?? false);
   useEffect(() => {
-    if (!editorDirty) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      // Browsers show their own copy and ignore any string we return; the
-      // assignment is only here because older engines still gate on it.
-      event.returnValue = '';
-    };
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [editorDirty]);
+    if (!editorHoldsUnsavedWork) return;
+    return installUnsavedEditsGuard(window);
+  }, [editorHoldsUnsavedWork]);
 
   // The address bar and the in-app Share button are the same surface (both
   // read window.location), so a copied URL reproduces a session only if the
@@ -1298,14 +1356,9 @@ function StimsWorkspaceAppShell() {
     dismissLoadingScreen();
   }, []);
 
-  const stageAnchoredToolOpen = ui.routeState.panel === 'editor';
-  // Browse virtualizes its preset list (BrowseSheetPanel), which needs a
-  // dedicated, bounded-height scroll container rather than the sheet's
-  // normal whole-body scroll — the same "manages its own scrolling" shape
-  // the editor already opts into via fillBody, just without editor's
-  // additional stage-anchored placement.
-  const sidePanelFillBody =
-    stageAnchoredToolOpen || ui.routeState.panel === 'browse';
+  // Layout flags come from the panel registry (panel-registry.ts).
+  const panelDescriptor = getPanelDescriptor(ui.routeState.panel);
+  const stageAnchoredToolOpen = panelDescriptor?.stageAnchored ?? false;
 
   return (
     <main
@@ -1343,6 +1396,8 @@ function StimsWorkspaceAppShell() {
         liveMode={liveMode}
         onToggleFullscreen={handleToggleFullscreen}
         onOpenPalette={() => setPaletteOpen(true)}
+        onOpenShortcuts={() => setShowShortcuts(true)}
+        onOpenSets={() => setShowManageSets(true)}
       />
       {presetPage ? (
         <PresetPageDetails
@@ -1375,10 +1430,10 @@ function StimsWorkspaceAppShell() {
       <SidePanel
         open={ui.routeState.panel !== null}
         onClose={() => ui.updatePanel(null)}
-        title={getToolLabel(ui.routeState.panel ?? 'browse')}
+        title={panelDescriptor?.title ?? getPanelTitle('browse')}
         stageAnchored={stageAnchoredToolOpen}
-        fillBody={sidePanelFillBody}
-        wide={ui.routeState.panel === 'browse'}
+        fillBody={panelDescriptor?.fillBody ?? false}
+        wide={panelDescriptor?.wide ?? false}
         onOpen={handleSidePanelOpen}
       >
         {/* Panel-anchored hints render inside the panel they describe, not in
@@ -1427,6 +1482,7 @@ function StimsWorkspaceAppShell() {
           {ui.routeState.panel === 'finder' ? (
             <PresetFinderPanel
               initialMode={engineSnapshot?.audioActive ? 'sound' : 'look'}
+              offline={offline}
               onClose={() => ui.updatePanel(null)}
             />
           ) : null}
@@ -1473,11 +1529,7 @@ function StimsWorkspaceAppShell() {
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         actions={paletteActions}
-        presets={engine.filteredCatalog.map((entry) => ({
-          id: entry.id,
-          title: entry.title,
-          author: entry.author,
-        }))}
+        presets={engine.filteredCatalog}
         onSelectPreset={engine.handlePresetSelection}
       />
       <ShortcutsDialog
@@ -1489,6 +1541,25 @@ function StimsWorkspaceAppShell() {
         open={showCredits}
         onClose={() => setShowCredits(false)}
         creditsRef={creditsRef}
+      />
+      <ManageSetsDialog
+        open={showManageSets}
+        onClose={() => setShowManageSets(false)}
+        currentQueueIds={ui.presetQueue.presetIds}
+        onLoadQueue={(presetIds) => {
+          ui.presetQueue.replaceQueue(presetIds);
+          setShowManageSets(false);
+        }}
+        onNotify={ui.setStatusMessage}
+      />
+      <SharedSetDialog
+        open={showSharedSetDialog}
+        onClose={handleCloseSharedSet}
+        payload={sharedSetPayload}
+        catalog={engine.catalog}
+        existingQueueCount={ui.presetQueue.presetIds.length}
+        onLoadQueue={handleLoadSharedSetQueue}
+        onSaveSet={handleSaveSharedSet}
       />
       <HudOverlay />
     </main>

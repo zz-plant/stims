@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import styles from '../../css/SynthesizePanel.module.css';
+import { resolveOptionalApiUrl } from '../core/services/optional-api.ts';
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import {
   type generatePreset,
@@ -77,6 +78,20 @@ function storedString(value: unknown, fallback: string) {
   return typeof value === 'string' && value.trim() ? value : fallback;
 }
 
+/**
+ * Code-split load of the Clef Omni decision helpers. Module scope on
+ * purpose: a dynamic `import()` expression inside a component makes React
+ * Compiler skip that whole function, and this file's callbacks must stay
+ * compilable. The chunks load exactly as lazily as before — only the import
+ * expression moved.
+ */
+async function loadDecisionHelpers() {
+  return Promise.all([
+    import('./generated-preset-decision.ts'),
+    import('../core/services/decision-client.ts'),
+  ]);
+}
+
 function readStoredSynthesizeSettings(): StoredSynthesizeSettings {
   const defaults: StoredSynthesizeSettings = {
     palette: 'auto',
@@ -120,6 +135,16 @@ function readStoredSynthesizeSettings(): StoredSynthesizeSettings {
   }
 }
 
+/** Where a Generate press sends the description, in the words of the button's
+ * outcome line. The provider sits in a collapsed section by default. */
+function providerDestination(provider: ProviderKind) {
+  return provider === 'local'
+    ? 'Ollama on this computer'
+    : provider === 'openrouter'
+      ? 'OpenRouter'
+      : "Stims's hosted AI model";
+}
+
 function providerStatus(provider: ProviderKind, offline: boolean) {
   if (provider === 'hosted' && offline) {
     return 'AI imports are paused while offline. Reconnect, or switch to local mode if Ollama is running on this device.';
@@ -148,8 +173,12 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     stored.openrouterModel,
   );
   const [generating, setGenerating] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+  const [reviewingVideo, setReviewingVideo] = useState(false);
+  const reviewController = useRef<AbortController | null>(null);
   const [isPending, startTransition] = useTransition();
-  const isGenerating = generating || isPending;
+  const isGenerating = generating || isPending || reviewing;
+  useEffect(() => () => reviewController.current?.abort(), []);
   /** Run id for the in-flight near-black check, so a stale run's verdict
    * cannot relabel a preset the user has already replaced. */
   const visualCheckRunRef = useRef(0);
@@ -318,9 +347,12 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
       }
     } catch (err) {
       setStatus(`Error: ${(err as Error).message}`);
-    } finally {
-      setGenerating(false);
     }
+    // Cleanup after the catch rather than in a `finally` clause: React
+    // Compiler cannot lower try/finally yet, and one unparsable function
+    // skips the whole file. The catch swallows everything, so this runs on
+    // both paths exactly as the finally did.
+    setGenerating(false);
     if (postLoadCheck) {
       void postLoadCheck();
     }
@@ -339,6 +371,125 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     offline,
     ui,
   ]);
+
+  const handlePictureCheck = useCallback(async () => {
+    if (!prompt.trim() || offline || reviewing) return;
+    reviewController.current?.abort();
+    const controller = new AbortController();
+    reviewController.current = controller;
+    const revision = window.__stims_agent?.getPerformanceRevision();
+    setReviewing(true);
+    setStatus('Checking the current picture against your description…');
+    // The attempt runs as an inner function so its early returns end the
+    // attempt instead of the handler: cleanup below must run on every path,
+    // which a `finally` clause did before React Compiler made try/finally a
+    // whole-file bailout. The dynamic imports stay inside the attempt —
+    // the compiler skips that one function and compiles the rest of the file.
+    const attempt = async () => {
+      const [
+        { captureDecisionImage, summarizePromptMatch },
+        { requestDecision },
+      ] = await loadDecisionHelpers();
+      const image = await captureDecisionImage(
+        ui.stageRef.current,
+        controller.signal,
+      );
+      const result = await requestDecision(
+        {
+          task: 'prompt-match',
+          state: { prompt: prompt.trim() },
+          images: [image],
+        },
+        { signal: controller.signal },
+      );
+      if (controller.signal.aborted) return;
+      if (revision !== window.__stims_agent?.getPerformanceRevision()) {
+        setStatus(
+          'The performance changed during the picture check. Check the new picture again.',
+        );
+        return;
+      }
+      const verdict = summarizePromptMatch(result);
+      setStatus(
+        verdict === 'match'
+          ? 'The picture appears to match your description. This is an AI visual judgment.'
+          : verdict === 'mismatch'
+            ? 'The picture appears to miss part of your description. Try a more specific prompt or generate again.'
+            : 'The picture check was uncertain. Try a clearer description or check a later frame.',
+      );
+      setCanRegenerate(verdict !== 'match');
+    };
+    try {
+      await attempt();
+    } catch (error) {
+      if (!controller.signal.aborted)
+        setStatus(
+          `Picture check unavailable: ${error instanceof Error ? error.message : 'try again later'}`,
+        );
+    }
+    if (!controller.signal.aborted) setReviewing(false);
+  }, [prompt, offline, reviewing, ui.stageRef]);
+
+  const handleVideoCheck = useCallback(async () => {
+    if (!prompt.trim() || offline || reviewing || reviewingVideo) return;
+    reviewController.current?.abort();
+    const controller = new AbortController();
+    reviewController.current = controller;
+    const revision = window.__stims_agent?.getPerformanceRevision();
+    setReviewingVideo(true);
+    setStatus('Recording animation clip for Clef Omni motion check…');
+    // The attempt runs as an inner function so its early returns end the
+    // attempt instead of the handler: cleanup below must run on every path,
+    // which a `finally` clause did before React Compiler made try/finally a
+    // whole-file bailout. The dynamic imports stay inside the attempt —
+    // the compiler skips that one function and compiles the rest of the file.
+    const attempt = async () => {
+      const [
+        { captureDecisionVideo, summarizePromptMatch },
+        { requestDecision },
+      ] = await loadDecisionHelpers();
+      const video = await captureDecisionVideo(
+        ui.stageRef.current,
+        { durationMs: 1500 },
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      setStatus('Evaluating animation with Clef Omni…');
+      const result = await requestDecision(
+        {
+          task: 'prompt-match',
+          state: { prompt: prompt.trim() },
+          videos: [video],
+        },
+        { signal: controller.signal },
+      );
+      if (controller.signal.aborted) return;
+      if (revision !== window.__stims_agent?.getPerformanceRevision()) {
+        setStatus(
+          'The performance changed during the animation check. Check the new animation again.',
+        );
+        return;
+      }
+      const verdict = summarizePromptMatch(result);
+      setStatus(
+        verdict === 'match'
+          ? 'The animation appears to match your description. This is a Clef Omni motion judgment.'
+          : verdict === 'mismatch'
+            ? 'The animation appears to miss part of your description. Try a more specific prompt or generate again.'
+            : 'The animation check was uncertain. Try a clearer description or check a later clip.',
+      );
+      setCanRegenerate(verdict !== 'match');
+    };
+    try {
+      await attempt();
+    } catch (error) {
+      if (!controller.signal.aborted)
+        setStatus(
+          `Animation check unavailable: ${error instanceof Error ? error.message : 'try again later'}`,
+        );
+    }
+    if (!controller.signal.aborted) setReviewingVideo(false);
+  }, [prompt, offline, reviewing, reviewingVideo, ui.stageRef]);
 
   return (
     <section className={styles.panel} aria-labelledby="synth-heading">
@@ -553,6 +704,58 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         />
       </label>
 
+      <details className="stims-shell__settings-advanced">
+        <summary className="stims-shell__settings-summary">
+          Check the current picture
+        </summary>
+        <div className="stims-shell__settings-advanced-body">
+          <p className={styles.intro}>
+            Compare the stage with your description. Check a single still frame
+            (Clef Flash) or record a short animation clip to evaluate dynamic
+            motion (Clef Omni). No audio is sent.
+          </p>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className={styles.generateButton}
+              onClick={() => void handlePictureCheck()}
+              disabled={
+                isGenerating ||
+                offline ||
+                reviewingVideo ||
+                !prompt.trim() ||
+                !resolveOptionalApiUrl('/api/decide')
+              }
+            >
+              {reviewing
+                ? 'Checking picture…'
+                : 'Check picture with AI (Clef Flash)'}
+            </button>
+            <button
+              type="button"
+              className={styles.generateButton}
+              onClick={() => void handleVideoCheck()}
+              disabled={
+                isGenerating ||
+                offline ||
+                reviewing ||
+                !prompt.trim() ||
+                !resolveOptionalApiUrl('/api/decide')
+              }
+            >
+              {reviewingVideo
+                ? 'Checking animation…'
+                : 'Check animation with AI (Clef Omni)'}
+            </button>
+          </div>
+          {!resolveOptionalApiUrl('/api/decide') ? (
+            <p className={styles.intro}>
+              Picture checks need a configured hosted API.
+            </p>
+          ) : null}
+        </div>
+      </details>
+
       <p className={styles.status} role="status" aria-live="polite">
         {status}
         {canRegenerate && !isGenerating ? (
@@ -561,9 +764,10 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
             <button
               type="button"
               className={styles.regenerateButton}
+              title="Generates a new preset, adds it to your library and plays it"
               onClick={() => void handleGenerate()}
             >
-              Regenerate
+              Generate another
             </button>
           </>
         ) : null}
@@ -583,8 +787,14 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         }
         onClick={() => void handleGenerate()}
       >
-        {isGenerating ? 'Generating…' : 'Generate with model'}
+        {isGenerating ? 'Generating…' : 'Generate and play'}
       </button>
+      {/* Every press adds a library entry and swaps the stage; the provider
+          choice lives in a section that starts collapsed. */}
+      <p className={styles.intro}>
+        Sends your description to {providerDestination(provider)}. The new
+        preset is added to your library and replaces the one playing.
+      </p>
     </section>
   );
 }

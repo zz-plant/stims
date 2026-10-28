@@ -1,4 +1,5 @@
 ---
+
 name: review-module-loading
 description: "Review changes to app boot, lazy module loading, catalog resolution, or gamepad polling. Use when a PR touches src/js/app.ts, src/js/frontend/load-status.ts, src/js/frontend/use-lazy-factory.ts, src/js/milkdrop/catalog-store*.ts, index.html, or gamepad polling code."
 ---

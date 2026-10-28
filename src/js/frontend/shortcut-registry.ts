@@ -97,7 +97,7 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     // destructive thing, with no key to undo it. It now holds the picture
     // and releases it; stopping audio is a named item in the dock menu.
     id: 'audio',
-    label: 'Pause / resume (playback choices before you start)',
+    label: 'Pause or resume the visuals (before you start: audio choices)',
     defaultKeys: ['Space'],
     paletteActionId: 'toggle-playback',
   },
@@ -133,19 +133,19 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   },
   {
     id: 'visualsearch',
-    label: 'Find a preset',
+    label: 'Find presets that match the music or picture',
     defaultKeys: ['M'],
     paletteActionId: 'find-similar',
   },
   {
     id: 'shuffle',
-    label: 'Next preset (random)',
+    label: 'Play a random preset',
     defaultKeys: ['N', 'ArrowRight'],
     paletteActionId: 'next-preset',
   },
   {
     id: 'previous',
-    label: 'Previous preset',
+    label: 'Back to the last preset',
     // Backspace came from the runtime's own key layer, where it went back
     // undocumented; kept as an alias now that the layer is gone.
     defaultKeys: ['P', 'ArrowLeft', 'Backspace'],
@@ -153,7 +153,7 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   },
   {
     id: 'favorite',
-    label: 'Save current preset',
+    label: 'Save this preset, or remove it from saved',
     // Not L: that is preset lock, below.
     defaultKeys: ['A'],
     paletteActionId: 'save-preset',
@@ -164,7 +164,7 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     // entry only documented it. That layer is gone — the standalone overlay
     // it served redirects here now — so the shell dispatches the key itself.
     id: 'preset-lock',
-    label: 'Stay on this preset (pause auto-advance)',
+    label: 'Keep this preset (autoplay won’t change it)',
     defaultKeys: ['L'],
     paletteActionId: 'toggle-preset-lock',
     dispatchViaPalette: true,
@@ -221,7 +221,7 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   // holds Q, R, X and Z as performance keys whenever the stage has focus.
   {
     id: 'queue-add',
-    label: 'Add this preset to the queue',
+    label: 'Queue this preset to play next',
     // Not Q: the canvas takes it as a performance key.
     defaultKeys: ['U'],
     paletteActionId: 'queue-add',
@@ -230,14 +230,14 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   {
     // Shift+D, for "display" — the mode is about driving one.
     id: 'live-performance',
-    label: 'Toggle live performance mode',
+    label: 'Turn live performance mode on or off',
     defaultKeys: ['Shift+D'],
     paletteActionId: 'toggle-live-performance',
     dispatchViaPalette: true,
   },
   {
     id: 'autoplay',
-    label: 'Toggle autoplay',
+    label: 'Turn autoplay on or off',
     defaultKeys: ['T'],
     paletteActionId: 'toggle-autoplay',
     dispatchViaPalette: true,
@@ -260,7 +260,7 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   {
     // C, not R: the overlay layer owns R.
     id: 'record',
-    label: 'Record video',
+    label: 'Record video (press again to stop and save)',
     defaultKeys: ['C'],
     paletteActionId: 'open-record',
     dispatchViaPalette: true,
@@ -295,6 +295,9 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     group: 'Live stage utilities',
     label: 'Blackout the picture (hold, or double-tap to latch)',
     defaultKeys: ['D'],
+    // The palette row latches (stage-utilities toggleBlackout); the key
+    // keeps its own hold handling in useKeyboardShortcuts.
+    paletteActionId: 'toggle-blackout',
   },
   {
     // Y, for the moment the lights hit. Never latches: a white screen is
@@ -313,77 +316,77 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   {
     id: 'transition-mode',
     group: 'Tune the playing preset',
-    label: 'Switch between blend and cut',
+    label: 'Switch between blend and cut (saved as your default)',
     defaultKeys: ['H'],
     paletteActionId: 'toggle-transition-mode',
     dispatchViaPalette: true,
   },
   {
     id: 'wave-mode-next',
-    label: 'Next waveform',
+    label: 'Next waveform (edits this preset)',
     defaultKeys: ['W'],
     paletteActionId: 'wave-mode-next',
     dispatchViaPalette: true,
   },
   {
     id: 'wave-mode-previous',
-    label: 'Previous waveform',
+    label: 'Previous waveform (edits this preset)',
     defaultKeys: ['Shift+W'],
     paletteActionId: 'wave-mode-previous',
     dispatchViaPalette: true,
   },
   {
     id: 'zoom-in',
-    label: 'Zoom in',
+    label: 'Zoom in (edits this preset)',
     defaultKeys: ['I'],
     paletteActionId: 'nudge-zoom-in',
     dispatchViaPalette: true,
   },
   {
     id: 'zoom-out',
-    label: 'Zoom out',
+    label: 'Zoom out (edits this preset)',
     defaultKeys: ['Shift+I'],
     paletteActionId: 'nudge-zoom-out',
     dispatchViaPalette: true,
   },
   {
     id: 'warp-up',
-    label: 'More warp',
+    label: 'More warp (edits this preset)',
     defaultKeys: ['O'],
     paletteActionId: 'nudge-warp-up',
     dispatchViaPalette: true,
   },
   {
     id: 'warp-down',
-    label: 'Less warp',
+    label: 'Less warp (edits this preset)',
     defaultKeys: ['Shift+O'],
     paletteActionId: 'nudge-warp-down',
     dispatchViaPalette: true,
   },
   {
     id: 'wave-scale-up',
-    label: 'Bigger waveform',
+    label: 'Bigger waveform (edits this preset)',
     defaultKeys: ['J'],
     paletteActionId: 'nudge-wave-scale-up',
     dispatchViaPalette: true,
   },
   {
     id: 'wave-scale-down',
-    label: 'Smaller waveform',
+    label: 'Smaller waveform (edits this preset)',
     defaultKeys: ['Shift+J'],
     paletteActionId: 'nudge-wave-scale-down',
     dispatchViaPalette: true,
   },
   {
     id: 'rotate-right',
-    label: 'Rotate clockwise',
+    label: 'Rotate clockwise (edits this preset)',
     defaultKeys: ['>'],
     paletteActionId: 'nudge-rotate-right',
     dispatchViaPalette: true,
   },
   {
     id: 'rotate-left',
-    label: 'Rotate counterclockwise',
+    label: 'Rotate counterclockwise (edits this preset)',
     defaultKeys: ['<'],
     paletteActionId: 'nudge-rotate-left',
     dispatchViaPalette: true,
@@ -408,12 +411,34 @@ export function getShortcutKeys(
 // parsed overrides are cached; writes go through writeShortcutOverrides
 // below, and cross-tab edits invalidate via the storage event.
 let overridesCache: ShortcutOverrides | null = null;
+const overridesListeners = new Set<() => void>();
+function notifyOverridesListeners() {
+  for (const listener of overridesListeners) listener();
+}
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
     if (event.key === SHORTCUT_STORAGE_KEY || event.key === null) {
       overridesCache = null;
+      notifyOverridesListeners();
     }
   });
+}
+
+/**
+ * Subscribes to rebinds, for `useSyncExternalStore` with
+ * `readShortcutOverrides` as the snapshot (it returns the same object until
+ * the bindings change).
+ *
+ * A component that shows hints should read the overrides this way and pass
+ * them to `shortcutHintFor` / `ariaKeyShortcutsFor`, not lean on their
+ * defaulted argument: React Compiler memoizes a call whose arguments never
+ * change, so a defaulted read is made once and a rebind never shows.
+ */
+export function subscribeShortcutOverrides(listener: () => void) {
+  overridesListeners.add(listener);
+  return () => {
+    overridesListeners.delete(listener);
+  };
 }
 
 export function readShortcutOverrides(): ShortcutOverrides {
@@ -439,6 +464,7 @@ export function writeShortcutOverrides(overrides: ShortcutOverrides): boolean {
     return false;
   }
   overridesCache = overrides;
+  notifyOverridesListeners();
   return true;
 }
 

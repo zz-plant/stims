@@ -1,4 +1,5 @@
 ---
+
 name: close-parity-gap
 description: "Diagnose and close a rendering gap against native projectM with measured evidence: pick a reference that can actually discriminate, prove the capture describes the current build, and judge every delta against the preset's measured run-to-run noise band."
 ---
@@ -35,12 +36,11 @@ lists the rest.
 
 ### 1. The reference may not be able to discriminate
 
-Some certified references are near-black. A renderer that draws *nothing*
+Some certified references are near-black. A renderer that draws _nothing_
 scores as well against them as a correct one, so a green result proves
 nothing. The suite now refuses to grade against those — a result with
 `referenceSignal: 'no-signal'` comes back as status `reference-no-signal`,
 with the mismatch ratio reported for information only.
-
 - Never cite **krash** or **glowsticks** as evidence. Their references are the
   ones a blank frame passes.
 - **260** (bit-exact) and **100-square** (a tonal canary) are the presets that
@@ -64,11 +64,11 @@ spread and writes a per-preset band to
 `src/data/milkdrop-parity/parity-noise-bands.json`; the suite then reports a
 `changeVerdict` per preset:
 
-| `changeVerdict` | Means |
-| --- | --- |
-| `improved` / `regressed` | The delta is larger than the band. Real. |
-| `no-measurable-change` | The delta is inside the band. The same build moves this much on its own — calling it an improvement is reading noise. |
-| `noise-band-unmeasured` | No band exists yet. You cannot grade this preset until you measure one. |
+| `changeVerdict`          | Means                                                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `improved` / `regressed` | The delta is larger than the band. Real.                                                                              |
+| `no-measurable-change`   | The delta is inside the band. The same build moves this much on its own — calling it an improvement is reading noise. |
+| `noise-band-unmeasured`  | No band exists yet. You cannot grade this preset until you measure one.                                               |
 
 Before believing a delta on a preset with no band:
 
@@ -97,8 +97,8 @@ the faster way to localize a backend-specific gap.
 
 ## Prefer an invariant to a reference when one exists
 
-A reference tells you *that* you differ. An invariant derived from the
-effect's own definition tells you *how*, and needs no capture at all — video
+A reference tells you _that_ you differ. An invariant derived from the
+effect's own definition tells you _how_, and needs no capture at all — video
 echo's 180-degree rotational symmetry located a real bug with no reference
 read. When the effect you are debugging has a property that must hold by
 construction (symmetry, energy conservation, idempotence, a fixed point),

@@ -47,6 +47,7 @@ import {
   type QualityPreset,
   setQualityPresetById,
 } from '../core/settings-panel.ts';
+import { reloadForRendererFallback } from '../core/state/renderer-fallback-reload.ts';
 import type { QualityPresetManager } from '../core/toy-quality';
 import { createRendererQualityManager } from '../core/toy-quality.ts';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
@@ -55,6 +56,7 @@ import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { createMilkdropCatalogStore } from './catalog-store';
 import {
   createDraftPersistence,
+  createDraftSaveStatus,
   createOriginalSourceResolver,
   dropRedundantDraft,
 } from './draft-persistence.ts';
@@ -144,6 +146,10 @@ const EDIT_SUPERSEDED =
   'A newer edit or preset load replaced this one before it compiled, so it was not applied.';
 
 /** Why a requested crossfade became a cut, in the performer's terms. */
+/** Said once when a draft write fails, so the edit is not assumed safe. */
+const DRAFT_SAVE_FAILED_STATUS =
+  "Couldn't save your edit in this browser — storage is blocked or full. Export the .milk file to keep it.";
+
 const BLEND_REFUSAL_STATUS = {
   workload: 'Too much on screen to crossfade — switched instantly.',
   'frame-pressure':
@@ -402,15 +408,7 @@ export function createMilkdropExperience({
 
   const backendFailover = createMilkdropBackendFailover({
     preferences,
-    reload: (presetId) => {
-      // Carry the preset id in the URL so the reload's renderer selection can
-      // see it: shouldPreferWebGLForKnownCompatibilityGaps only consults
-      // ?preset=, and without it the reload mounts WebGPU again, hits the same
-      // descriptor fallback, and reloads forever.
-      const url = new URL(window.location.href);
-      url.searchParams.set('preset', presetId);
-      window.location.replace(url.toString());
-    },
+    reload: (presetId) => reloadForRendererFallback(presetId),
   });
   const presentationController = createMilkdropPresentationController({
     vm,
@@ -448,6 +446,11 @@ export function createMilkdropExperience({
   let lastPublishedAppliedShaderExecution: MilkdropAppliedShaderExecution | null =
     null;
 
+  /** The editor's newest compiled edit has not reached storage yet (see
+   * createDraftSaveStatus below). Declared here because snapshots can be
+   * built before the session subscription that updates it is wired. */
+  let draftUnsaved = false;
+
   const buildSnapshot = (): MilkdropExperienceSnapshot => {
     // One read per snapshot: `snapshot()` allocates.
     const beat = beatClock.snapshot(performance.now());
@@ -473,6 +476,7 @@ export function createMilkdropExperience({
         activeBackend,
       ),
       appliedShaderExecution: lastPublishedAppliedShaderExecution,
+      draftUnsaved,
       autoplay,
       transitionMode,
       blendDuration,
@@ -1055,10 +1059,17 @@ export function createMilkdropExperience({
         : compiled.formattedSource;
     },
   );
-  const persistDraft = createDraftPersistence(
-    catalogStore,
-    resolveOriginalSource,
-  );
+  const draftSaves = createDraftSaveStatus({
+    persist: createDraftPersistence(catalogStore, resolveOriginalSource),
+    onUnsavedChange: (unsaved) => {
+      draftUnsaved = unsaved;
+      emitChange();
+    },
+    onFailure: (error) => {
+      log.warn('Draft could not be saved', error);
+      setOverlayStatus(DRAFT_SAVE_FAILED_STATUS);
+    },
+  });
   _disposeSessionSubscription = session.subscribe((state) => {
     if (!lifetime.isActive()) {
       return;
@@ -1111,6 +1122,7 @@ export function createMilkdropExperience({
           // because it compiles the original, and this is the start of a
           // transition.
           applyCompiledPreset(nextCompiled);
+          draftSaves.reset();
           if (!previewMode) {
             const loadedId = nextCompiled.source.id;
             scheduleIdleTask(
@@ -1137,9 +1149,7 @@ export function createMilkdropExperience({
       );
       applyPresetPerformanceOverride(nextCompiled.source.id);
       applyCompiledPreset(nextCompiled);
-      void persistDraft(nextCompiled.source.id, state.source).catch(
-        (error: unknown) => log.warn('Draft could not be saved', error),
-      );
+      void draftSaves.save(nextCompiled.source.id, state.source);
     }
     emitChange();
   });

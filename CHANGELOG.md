@@ -2,12 +2,25 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-_Current release status: actively developed. Latest release: **v1.4.0**._
+_Current release status: actively developed. Latest release: **v1.5.0**._
 
 ## [Unreleased]
 
+### Changed
+
+- The toolchain is on Bun 1.4.4 (`.bun-version`, `mise.toml`, `packageManager`, `engines.bun`). Workers Builds reads its Bun version from `packageManager`, so production builds move too; Cloudflare's build images reject the compromised eMudhra intermediates, and Bun releases before 1.4.4 still trust them.
+
+### Planned — studio first, parity as a floor
+
+- **Remix studio**: dependable undo/redo and named snapshots, side-by-side A/B against the source preset, remix provenance retained in exported `.milk`.
+- **Creator-grade export**: deterministic frame pacing, loop-duration controls, and codec/AV-sync verification for 1080p and 4K recording.
+- Parity stays a maintenance floor, not a frontier: projectM WebGPU compute-shader lowering and the AudioWorklet analyzer migration proceed only as they serve the compatibility labels and recording path above.
+
+## [1.5.0] - 2026-10-21
+
 ### Added
 
+- A Browse search made only of visual terms ("tunnel", "red fire", "ocean waves") also lists every preset whose preview looks like it. Presets whose title, author or tags name the term come first, then the rest in order of resemblance. The terms ship as EmbeddingGemma 2 vectors (`visual-terms.json`, 19 KB gzip) and are scored on the device against the preset preview vectors. Before, a term found only the presets the build had tagged with it, and two terms needed both tags on one preset: "tunnel" listed 7 presets and now lists 28; "red fire" listed none and now lists 6. A search with any other word is unchanged, and the preview vectors are fetched only for an all-visual search.
 - `/presets/` lists every indexable preset, A–Z with its credit, and every collection and author page with its count. It is static HTML in the `/learn/` shell (`scripts/preset-index-page.ts`).
 - Each `/author/<slug>` and `/discover/<slug>` page lists every preset in its collection as links: in the raw HTML, written by the edge into `#app`, and below the stage once the app mounts (`CollectionPageDetails`). Long lists are grouped under letter headings with jump links. Before, the only list was Browse's, rendered client-side and virtualized, so a hub's raw HTML held no preset link and a rendering crawler saw 30 to 36.
 - Every page ends with a site index linking `/presets/` and every hub. The home page, the hubs and the preset pages carry it in their raw HTML, and the app renders it below the stage. It replaces a nav clipped to one pixel and marked `inert`, which listed six of the thirteen topic pages and no author page.
@@ -35,8 +48,16 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 - Nearby and the finder's By look tab rank presets by embeddings of their rendered previews (EmbeddingGemma 2, 256 int8 values per preset, fetched the first time a feature needs them). The old frame description gave most presets one of 81 descriptions, so most neighbours were ties. Browse can sort by Like your saved. 366 presets gained visual search terms ("tunnel", "galaxy", …), and Browse search now reads them: no catalog projection had passed `searchTerms` to the client, and "galaxy" now finds 12 presets instead of 3 (#1447).
 - A per-preset frame-cost record, `src/data/preset-frame-cost.json`, filled by `lab:cost-ingest` from `perf:certification-corpus` runs and validated by `check:preset-cost`. On low-tier devices, autoplay and shuffle skip presets measured above 12 ms of frame work. The 43 presets measured so far ran on a high-end machine and none exceeds that budget, so nothing is skipped until low-tier measurements land (#1419).
 
+### Fixed
+
+- The first "Check animation (Clef Omni)" after a page load no longer reports "No animation frames were recorded." The first MediaRecorder a page creates can hand back an empty file — the encoder pipeline is not warm yet, so every frame is dropped — and the recording now retries once on exactly that outcome. This was the deterministic failure that had kept the `decision-workflows` e2e (and with it main's CI) red since #1536 landed.
+
 ### Changed
 
+- The toolchain floor is Bun 1.4.3 (`.bun-version`, `engines.bun`, README), which the repo was already effectively on for `bun test --parallel`; 1.4 adds `bun audit fix`, `bun dedupe` and `bun prune` for the dependency-hygiene steps, plus `--cpu-prof-md` for profiling the measurement scripts from a terminal.
+- React Compiler 1.0 compiles the frontend components through `react({ compiler: true })` in both Vite configs. 46 of the 59 files under `src/js/frontend/` compile today; the rest bail and are left untouched by design. Two files were rewritten to unblock whole files (`App.tsx`, `StageWarpGizmo.tsx`: logical assignment operators are not lowered yet, and one unparsable function skips the file). The heavy re-render sources — `App.tsx`, `BrowseSheetPanel.tsx`, `PresetFinderPanel.tsx` — still bail on refs-during-render, try/finally and dynamic-import patterns; shrinking those is the remaining adoption work.
+- The visual search vectors ship a gzip twin, `visual-vectors.bin.gz` (292 KB, built in the same run as the raw binary). The loader decompresses it with `DecompressionStream` and falls back to the raw file. The raw binary is `application/octet-stream`, which the CDN serves uncompressed, so a first visual search downloaded 409 KB and now downloads 292 KB. `check:bundle-size` budgets the twin and verifies it round-trips to the raw file byte for byte.
+- The offline embedding script takes `--dtype` (`fp32|fp16|q4|q4f16|q8`, default `q8`), so a full re-embedding pass can run the model repo's lower-precision weights instead of waiting on q8. The image index records the dtype, and a dtype change must regenerate every derived artifact in the same pass.
 - The start page paints its headline and tagline from the HTML instead of waiting for the app bundle. On a bare `/` with no saved session, the boot cover carries the first-visit header where the launch column draws it, so the crossfade to the app moves no line. Other arrivals keep the plain wordmark cover, because their header differs. In Lighthouse's mobile run of a local production build, the start page's largest contentful paint fell from 4.8 s to 2.7 s.
 - A `?preset=` or `?audio=` arrival mounts the engine once the launch page has painted. The engine's chunks (about 300 kB gzipped on WebGL) used to start downloading alongside that page's own and slow it. `check:bundle-size` now also fails a build that puts three.js on the eager path.
 - The sitemap, `/presets/`, the hub lists and the related links all read one catalog table, `public/preset-meta.json`, built from the root catalog and every library. The sitemap used to read the root catalog alone, so 144 library presets linked from preset pages were missing from it and 72 sitemap presets had no inbound link. It now lists 2,488 presets, each linked from `/presets/`; it listed 1,787.
@@ -96,12 +117,6 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 - A shared `#code=` link waits for its preset to load before restoring the edited source. It could compile against a fallback preset while the requested one was loading and then lose the restored source or the hash (#1407).
 - The boot cover and the home hero reserve the same thin scrollbar gutter, so the tagline keeps its width when the app takes over; at 412px with classic scrollbars it narrowed from 369px to 359px (#1416).
 - More preset shaders compile on WebGL. Native bodies have HLSL `saturate`, `frac`, `lerp` and `atan2` translated (65 shader stages reached GLSL with them) and assignments wrapped in the target's type, as HLSL broadcasts and truncates; comma-list and `static` declarations above `shader_body` carry over; a split `float3 dx, dy;` no longer turns `dx` into the motion control; and the warp shader declares the `r`/`g`/`b` and `hue_shader` colour uniforms it reads (#1448).
-
-### Planned — studio first, parity as a floor
-
-- **Remix studio**: dependable undo/redo and named snapshots, side-by-side A/B against the source preset, remix provenance retained in exported `.milk`.
-- **Creator-grade export**: deterministic frame pacing, loop-duration controls, and codec/AV-sync verification for 1080p and 4K recording.
-- Parity stays a maintenance floor, not a frontier: projectM WebGPU compute-shader lowering and the AudioWorklet analyzer migration proceed only as they serve the compatibility labels and recording path above.
 
 ## [1.4.0] - 2026-10-01
 
@@ -174,7 +189,7 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 ### Fixed
 
 - Mesh transform cache removed: it quantized coordinates to 1/2048, so distinct points collided onto one key and a motion-vector point could receive a mesh vertex's transform from the opposite edge of the screen — four vectors per frame drawn ~2.0 NDC out of place. It served ~86 of ~24,320 transform calls per frame while every per-pixel preset paid a key computation, pool bump and `Map.set` on all ~1764 vertices (`fix(milkdrop)`).
-- **Correction to `0eb14b23`:** that commit's message claims its per-vertex hoist was bit-exact. Later verification with fixtures that genuinely emit motion vectors found one branch — no per-pixel program, legacy `mv_dx`/`mv_dy`, direct path (≤288 cells) — where four vectors per frame differed. The change was in fact a partial *fix* for the cache-collision bug above rather than a no-op, and no shipped preset reached that branch (all 1,782 swept). The cache removal supersedes it.
+- **Correction to `0eb14b23`:** that commit's message claims its per-vertex hoist was bit-exact. Later verification with fixtures that genuinely emit motion vectors found one branch — no per-pixel program, legacy `mv_dx`/`mv_dy`, direct path (≤288 cells) — where four vectors per frame differed. The change was in fact a partial _fix_ for the cache-collision bug above rather than a no-op, and no shipped preset reached that branch (all 1,782 swept). The cache removal supersedes it.
 - Enhanced microphone permission error guidance and fallback device error handling (`fix(audio)`).
 - Microphone capture behavior repaired on mobile browsers (`fix(audio)`).
 
@@ -221,7 +236,8 @@ _Current release status: actively developed. Latest release: **v1.4.0**._
 - Initial release of the Stim Webtoys Library featuring Aurora Painter, Defrag Visualizer, Multi-Capability Visualizer, and Audio Light Show.
 - Core execution engine supporting Vite build, preview, Bun runtime, and test execution.
 
-[Unreleased]: https://github.com/zz-plant/stims/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/zz-plant/stims/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/zz-plant/stims/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/zz-plant/stims/releases/tag/v1.4.0
 [1.3.0]: https://github.com/zz-plant/stims/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/zz-plant/stims/compare/v1.1.0...v1.2.0

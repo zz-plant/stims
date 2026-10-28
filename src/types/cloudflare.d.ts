@@ -99,6 +99,12 @@ declare namespace Cloudflare {
     run(
       model: string,
       inputs: {
+        model?: 'clef-flash' | 'clef-omni';
+        state?: Record<string, unknown>;
+        questions?: Record<string, unknown>;
+        images?: string[];
+        audio?: string[];
+        videos?: string[];
         prompt?: string;
         messages?: Array<{ role: string; content: string }>;
         text?: string[];

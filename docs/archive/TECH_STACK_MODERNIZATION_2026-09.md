@@ -25,20 +25,20 @@ three.js (47 files, including a 3,789-line TSL feedback manager) and React
 (68 files, hooks-only). Every other runtime dependency is lazy, chunk-isolated,
 and behind a seam.
 
-| Dependency | Before | Now / latest | Verdict |
-| --- | --- | --- | --- |
-| TypeScript | 6.0.3 (`ignoreDeprecations: "6.0"`) | **7.0.2** — Go-native compiler, stable 2026-07-08 | **Landed** for `bun run typecheck` (pinned via `bunx`); `typescript` stays 6.0.3 for API consumers. Cold typecheck 33.6s → 3.3s, warm 3.9s → 0.8s |
-| MCP SDK | `@modelcontextprotocol/sdk` 1.30.0 | **`@modelcontextprotocol/server` 2.0.0** — spec 2026-07-28 | **Landed.** stdio + Worker, both eras served |
-| esbuild (direct) | 0.28.1, one call site | Rolldown `build()` (already Vite's bundler) | Tier 2 — ported and reverted; browser gate flaked 3/14 vs 4/5 (details in §7) |
-| Vite | 8.0.16, `rollupOptions` | 8.2.2, `rolldownOptions` | **Landed** (rename). `codeSplitting` deferred with measurements below |
-| husky | 9.1.7 | **lefthook** 2.1.12 | **Landed.** Same two hooks, one YAML |
-| dependency-cruiser + diff-scoped `check:unused-exports` | 18.2 | **knip** 6.34 added as `check:dead-code` | **Landed.** 1 dead file, 1 unused devDep, 1 unlisted dep fixed |
-| Bun | 1.3.14 | 1.4.0 (2026-08-20) | Tier 2 — two weeks old |
-| React | 19.2.8 | React Compiler 1.0 via Oxc port | Tier 2 — needs UI QA |
-| three | 0.185.1 | r186; Chrome 146 WebGPU Compatibility Mode | Tier 2 — gating only |
-| Cloudflare | wrangler 4.123, Workers static assets, Pages-Functions bundle | `@cloudflare/vite-plugin` 1.51 | Tier 2 |
-| Biome | 2.5.8 | Oxlint type-aware as an add-on | Keep |
-| meyda, comlink, CodeMirror 6, `@tanstack/react-virtual`, zod 4, Playwright | current | no compelling successor | Keep (reasons below) |
+| Dependency                                                                 | Before                                                        | Now / latest                                               | Verdict                                                                                                                                           |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TypeScript                                                                 | 6.0.3 (`ignoreDeprecations: "6.0"`)                           | **7.0.2** — Go-native compiler, stable 2026-07-08          | **Landed** for `bun run typecheck` (pinned via `bunx`); `typescript` stays 6.0.3 for API consumers. Cold typecheck 33.6s → 3.3s, warm 3.9s → 0.8s |
+| MCP SDK                                                                    | `@modelcontextprotocol/sdk` 1.30.0                            | **`@modelcontextprotocol/server` 2.0.0** — spec 2026-07-28 | **Landed.** stdio + Worker, both eras served                                                                                                      |
+| esbuild (direct)                                                           | 0.28.1, one call site                                         | Rolldown `build()` (already Vite's bundler)                | Tier 2 — ported and reverted; browser gate flaked 3/14 vs 4/5 (details in §7)                                                                     |
+| Vite                                                                       | 8.0.16, `rollupOptions`                                       | 8.2.2, `rolldownOptions`                                   | **Landed** (rename). `codeSplitting` deferred with measurements below                                                                             |
+| husky                                                                      | 9.1.7                                                         | **lefthook** 2.1.12                                        | **Landed.** Same two hooks, one YAML                                                                                                              |
+| dependency-cruiser + diff-scoped `check:unused-exports`                    | 18.2                                                          | **knip** 6.34 added as `check:dead-code`                   | **Landed.** 1 dead file, 1 unused devDep, 1 unlisted dep fixed                                                                                    |
+| Bun                                                                        | 1.3.14                                                        | 1.4.0 (2026-08-20)                                         | Tier 2 — two weeks old                                                                                                                            |
+| React                                                                      | 19.2.8                                                        | React Compiler 1.0 via Oxc port                            | Tier 2 — needs UI QA                                                                                                                              |
+| three                                                                      | 0.185.1                                                       | r186; Chrome 146 WebGPU Compatibility Mode                 | Tier 2 — gating only                                                                                                                              |
+| Cloudflare                                                                 | wrangler 4.123, Workers static assets, Pages-Functions bundle | `@cloudflare/vite-plugin` 1.51                             | Tier 2                                                                                                                                            |
+| Biome                                                                      | 2.5.8                                                         | Oxlint type-aware as an add-on                             | Keep                                                                                                                                              |
+| meyda, comlink, CodeMirror 6, `@tanstack/react-virtual`, zod 4, Playwright | current                                                       | no compelling successor                                    | Keep (reasons below)                                                                                                                              |
 
 Measurement method: `bun run typecheck` timed cold (tsbuildinfo removed) and
 warm; `bun run build` chunk names and byte sizes compared against a saved
@@ -47,13 +47,14 @@ baseline; `bun run check:dead-code` output triaged by hand.
 ## Tier 1 — landed in this PR
 
 ### 1. TypeScript 7 (Go-native compiler)
+
 **Area:** developer loop / CI. The single biggest wall-clock win available:
 the checker is a structurally identical port, so there is no new type system
 to migrate to, only removed options. This repo's `tsconfig.json` already
 used `moduleResolution: "bundler"` and `esModuleInterop: true`, so the only
 change was deleting `ignoreDeprecations`.
 
-**The trap:** TS 7 does not yet publish the compiler *API*, only the CLI.
+**The trap:** TS 7 does not yet publish the compiler _API_, only the CLI.
 dependency-cruiser 18 pins `typescript <7` and, when it finds 7, silently
 falls back to its JavaScript-only parser: `check:architecture` reported
 "no violations" while cruising **96 modules / 184 edges instead of 1,764 /
@@ -76,10 +77,10 @@ which CI already caches keyed on `bun.lock`). `ignoreDeprecations` is
 removed; TS 6's `tsc --noEmit` still passes on the same tsconfig, and
 `check:architecture` cruises the full graph again.
 
-| | TS 6.0.3 | TS 7.0.2 via bunx |
-| --- | --- | --- |
-| Cold `bun run typecheck` | 33.6s | 3.3s |
-| Warm (incremental) | 3.9s | 0.8s |
+|                          | TS 6.0.3 | TS 7.0.2 via bunx |
+| ------------------------ | -------- | ----------------- |
+| Cold `bun run typecheck` | 33.6s    | 3.3s              |
+| Warm (incremental)       | 3.9s     | 0.8s              |
 
 **Remains:** move `typescript` itself to 7 once dependency-cruiser ships TS 7
 API support (it says so in its `missing-typescript-transpiler` warning), and
@@ -87,6 +88,7 @@ check any new `@types/*` package for TS-6-only syntax; none in this tree used
 any.
 
 ### 2. MCP SDK v2 (spec 2026-07-28)
+
 **Area:** agent tooling. The monolithic SDK split into
 `@modelcontextprotocol/server` and `/client`; the new revision is stateless
 by default (no session affinity — any Worker isolate can answer any
@@ -108,11 +110,12 @@ request), adds `Mcp-Method`/`Mcp-Name` routing headers, and keeps
   from `@modelcontextprotocol/server`. `bun run mcp:check` bundles clean.
 - `@cfworker/json-schema` stays a devDependency: v2 lists it only as its own
   devDependency but resolves it at runtime from the cf-worker validator.
-**Remains:** the Worker still answers 2025-era `GET`/`DELETE` session
-operations with 405 by design; if a client needs sessionful legacy serving,
-route with `isLegacyRequest` in front of a `legacy: 'reject'` handler.
+  **Remains:** the Worker still answers 2025-era `GET`/`DELETE` session
+  operations with 405 by design; if a client needs sessionful legacy serving,
+  route with `isLegacyRequest` in front of a `legacy: 'reject'` handler.
 
 ### 3. Vite 8.2 and the `rolldownOptions` rename
+
 **Area:** build. `build.rollupOptions` → `build.rolldownOptions` in both
 Vite configs. Vite 8.2.2 also merged two single-module chunks
 (`collection-intent`, `youtube-controller`) into their importers on its own:
@@ -123,11 +126,11 @@ unchanged at 127.6 kB, Vite-reported build time 4.0s → 1.9s.
 function form of `manualChunks` in favour of Rolldown's `codeSplitting`, but
 the two are not equivalent for this graph:
 
-| Variant | Chunks | Entry `index` | `vendor-three` | `vendor-three-webgpu` |
-| --- | --- | --- | --- | --- |
-| `manualChunks` function (kept) | 112 | 127.6 kB | 617 kB | 648 kB |
-| groups, recursive capture (default) | 112 | 127.6 kB | 370 kB | 894 kB |
-| groups, `includeDependenciesRecursively: false` | 81 | 291.4 kB | 617 kB | 648 kB |
+| Variant                                         | Chunks | Entry `index` | `vendor-three` | `vendor-three-webgpu` |
+| ----------------------------------------------- | ------ | ------------- | -------------- | --------------------- |
+| `manualChunks` function (kept)                  | 112    | 127.6 kB      | 617 kB         | 648 kB                |
+| groups, recursive capture (default)             | 112    | 127.6 kB      | 370 kB         | 894 kB                |
+| groups, `includeDependenciesRecursively: false` | 81     | 291.4 kB      | 617 kB         | 648 kB                |
 
 Recursive capture lets the webgpu group swallow ~250 kB of three's core, so
 the WebGL path would fetch the WebGPU chunk. Turning capture off is rejected
@@ -138,6 +141,7 @@ intended split byte-for-byte, so it stays, with the reasoning in the config
 comment. Revisit when Rolldown offers non-recursive groups under `'strict'`.
 
 ### 4. lefthook replaces husky
+
 **Area:** contributor hygiene. lefthook is a single Go binary with parallel
 hooks and one YAML file; no Node on `PATH` and no `.husky/_` shim directory.
 The two hooks are unchanged in substance: `pre-commit` still delegates to
@@ -151,6 +155,7 @@ existing clones: husky leaves `core.hooksPath` pointing at its shim, so
 core.hooksPath` is run; `bun install` prints that instruction.
 
 ### 5. knip as `check:dead-code`
+
 **Area:** dead code / dependency hygiene. `check:unused-exports` is
 deliberately diff-scoped and grep-based; dependency-cruiser models edges but
 only flags orphans. knip finds unused files, exports, dependencies,
@@ -170,12 +175,13 @@ the full `bun run check` gate. First run findings and their disposition:
 - 118 unused exports and 70 unused exported types are reported as warnings,
   not failures: the codebase exports test seams (`reset*ForTests`) and
   public-surface barrels on purpose. Trim them opportunistically.
-`check:unused-exports` and dependency-cruiser (`no-circular`,
-`no-prod-to-tests`) stay; knip does not replace the circular-import rule.
+  `check:unused-exports` and dependency-cruiser (`no-circular`,
+  `no-prod-to-tests`) stay; knip does not replace the circular-import rule.
 
 ## Tier 2 — next, needs QA before landing
 
 ### 6. React Compiler via the Oxc port
+
 `@vitejs/plugin-react` 6 already runs JSX and Fast Refresh through Oxc;
 `react({ compiler: true })` adds `oxc-transform-react`, a Rust port of the
 React Compiler (>10× faster than the Babel plugin). The UI has 79 `memo` and
@@ -186,6 +192,7 @@ subscribe through `useSyncExternalStore` (11 components). Start with
 `compilationMode: 'annotation'` on the browse grid and settings sheet.
 
 ### 7. esbuild → Rolldown for the AudioWorklet bundle (ported, then reverted)
+
 The only direct use of `esbuild` is `vite.config.js`'s
 `audio-worklet-transform` plugin, which inlines
 `packages/audio-reactive/src/frequency-analyser-processor.ts` and its DSP imports into
@@ -196,11 +203,11 @@ would retire the last non-Vite toolchain. It was ported, then reverted
 before merge, because the browser-backed corpus gate became unstable on the
 development container:
 
-| Worklet bundler in the dev server | `bun run test:corpus` passes |
-| --- | --- |
-| esbuild (per request, as shipped) | 4 of 5 runs (incl. 2 of 2 on `main`) |
-| Rolldown, per request | 2 of 11 |
-| Rolldown, pre-built at server start | 1 of 3 |
+| Worklet bundler in the dev server   | `bun run test:corpus` passes         |
+| ----------------------------------- | ------------------------------------ |
+| esbuild (per request, as shipped)   | 4 of 5 runs (incl. 2 of 2 on `main`) |
+| Rolldown, per request               | 2 of 11                              |
+| Rolldown, pre-built at server start | 1 of 3                               |
 
 The failing test is `tests/corpus/preset-flash-risk.test.ts`, which drives a
 real Chromium against a test-spawned dev server while the rest of the corpus
@@ -217,6 +224,7 @@ corpus tests or give them a dedicated worker, and measure ten runs before
 trusting it.
 
 ### 8. Bun 1.4
+
 Released 2026-08-20. Directly relevant here: `Bun.Image` (decode/resize/encode
 PNG/WebP/JPEG, "faster than sharp") could replace `sharp` across 15 scripts
 and 6 tests in the parity and preview pipeline; `Bun.WebView` (headless
@@ -229,6 +237,7 @@ Try `Bun.Image` in `scripts/generate-thumbnails.ts` first — it is the
 hottest sharp call site and has a golden-output test.
 
 ### 9. `@cloudflare/vite-plugin` for the site Worker
+
 `scripts/build-site.mjs` runs `vite build` and `wrangler pages functions
 build` concurrently and stitches `dist/_worker.js` by hand, because the site
 Worker was born as a Pages project. The Cloudflare Vite plugin (1.51) runs
@@ -244,6 +253,7 @@ cron; `wrangler.embed.jsonc`) and Browser Rendering's REST
 entirely.
 
 ### 10. three r186 and WebGPU Compatibility Mode
+
 three.js is not swappable — the backend seam in
 `src/js/milkdrop/renderer-types.ts` abstracts WebGL vs WebGPU, not three —
 and staying on the latest release remains the right call. Two upstream
@@ -266,6 +276,7 @@ unchanged; its feature requests already degrade dynamically.
 ## Tier 3 — architectural
 
 ### 11. One shader IR for GLSL and TSL
+
 `src/js/milkdrop/feedback-manager-webgpu-tsl.ts` (3,789 LOC) hand-mirrors
 the GLSL composite pass in `src/js/milkdrop/feedback-manager-shared.ts`
 (3,030 LOC). `docs/WEBGPU_ARCHITECTURAL_REVAMP.md` workstream 2 already
@@ -274,6 +285,7 @@ and letting three generate both backends is the named candidate. This is
 the biggest maintenance sink in the renderer and no dependency swap touches it.
 
 ### 12. Worker-thread renderer over OffscreenCanvas
+
 A worker renderer prototype (`renderer-worker.ts`, a 10-message
 `renderer-worker-protocol.ts` with a `SharedArrayBuffer` audio ring, and
 `worker-renderer-track.ts`) was never wired to a host and is deleted; recover
@@ -285,6 +297,7 @@ CodeMirror) stops competing with the render budget. Prerequisite: the
 `?agent=true` hidden-tab rendering path must keep working from a worker.
 
 ### 13. WebCodecs export
+
 Video export uses `MediaRecorder` (`src/js/utils/media/canvas-video-exporter.ts`);
 `VideoFrame` is already used for capture but there is no `VideoEncoder`.
 The roadmap's "creator-grade export" (deterministic pacing, 4K, AV-sync
@@ -293,6 +306,7 @@ time source at a fixed cadence instead of whatever the realtime recorder
 sampled.
 
 ### 14. ~~Fold meyda into the AudioWorklet~~ — Shipped
+
 `meyda` has been eliminated. `packages/audio-reactive/src/spectral-features.ts`
 provides zero-dependency implementations of RMS, spectral centroid, flatness,
 and rolloff. The worklet (`frequency-analyser-processor.ts`) computes these
@@ -300,6 +314,7 @@ natively; the AnalyserNode fallback calls `extractSpectralFeatures()` directly.
 The `vendor-meyda` chunk no longer exists.
 
 ### 15. Oxlint type-aware pass
+
 Biome 2's own type inference catches roughly three in four floating-promise
 cases in published comparisons; Oxlint's type-aware mode uses the real
 TypeScript checker (now native, see §1) and is 5–10× faster than ESLint. Biome stays the formatter and

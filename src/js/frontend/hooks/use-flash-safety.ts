@@ -64,8 +64,13 @@ export function useFlashSafety(
       controller = createFlashSafetyController({
         canvas,
         applyLuminanceScale: createStageLuminanceApplier(stage),
-        // Reads the whole filter, not just the governor's share of it, so a
-        // visitor brightness ceiling does not make the loop over-clamp.
+        // The governor's own channel plus the blackout, not the visitor's
+        // comfort ceiling. A recording carries the governor and the blackout
+        // but omits the ceiling, so the governor must decide against that
+        // same content; feeding it the ceiling too would let a swing the
+        // ceiling made sub-threshold through at full strength in the file.
+        // Over-clamping the live view while a ceiling is active is the safe
+        // direction; under-clamping the recording is not.
         compositedScale: createStageCompositedScale(stage),
       });
       controllerRef.current = controller;

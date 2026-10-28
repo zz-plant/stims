@@ -1,14 +1,12 @@
 /**
- * Browse Sheet Panel Component — renders the virtualized 1,787-preset library browser with search
+ * Browse Sheet Panel Component — renders the 1,787-preset library browser with search
  * filtering, collection tabs, mood curation, live animated previews, and queue management.
  */
 
-import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   useCallback,
   useDeferredValue,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -22,23 +20,24 @@ import {
 import {
   loadPresetVisualVectors,
   MAX_AFFINITY_ANCHORS,
+  matchesVisualQuery,
+  scoreVisualQuery,
 } from '../core/services/preset-visual-vectors.ts';
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
-import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
+import { BrowsePresetList } from './BrowsePresetList.tsx';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { useScrollerOverflow } from './hooks/use-scroller-overflow.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { PresetGrid } from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
-import { PresetSignals } from './PresetSignals.tsx';
 import { openPresetInPlace, presetPageHref } from './preset-link.ts';
+import { normalizeMatchText } from './preset-matching.ts';
 import { runPresetPromoteTransition } from './promote-transition.ts';
 import {
   clearQuickSelectEntries,
   publishQuickSelectEntries,
-  quickSelectDigit,
 } from './quick-select.ts';
 import { SkeletonPresetCard } from './SkeletonPresetCard.tsx';
 import { UiIcon } from './UiIcon.tsx';
@@ -48,7 +47,6 @@ import {
   type BrowseSortMode,
   buildAppliedFilterSummary,
   createFieldMatcher,
-  describePresetMood,
   getAuthorOptions,
   getCollectionCounts,
   getFeaturedCollectionTags,
@@ -70,14 +68,6 @@ export {
 
 type SortMode = BrowseSortMode;
 
-// Measured rendered row height (52px content) plus the 2px gap the old
-// `.ctl-presets { gap: 2px }` used to provide for free — absolutely
-// positioned virtualized rows ignore CSS gap, so each row's own box is
-// rendered PRESET_ROW_HEIGHT - PRESET_ROW_GAP tall to reproduce it.
-const PRESET_ROW_HEIGHT = 54;
-const PRESET_ROW_GAP = 2;
-const PRESET_ROW_OVERSCAN = 8;
-
 /**
  * Where each view was left, so toggling grid/list or reopening the panel
  * does not dump you back at the top of ~2,700 results.
@@ -90,6 +80,16 @@ const PRESET_ROW_OVERSCAN = 8;
  */
 const browseScrollMemory: { grid: number; list: number } = { grid: 0, list: 0 };
 
+/**
+ * Where the browser can pick a folder, the import button picks a folder (a
+ * MilkDrop install is a folder of hundreds of .milk files) and cannot pick a
+ * single file; elsewhere it opens a file picker. The label says which.
+ */
+const IMPORT_LABEL =
+  typeof window !== 'undefined' && 'showDirectoryPicker' in window
+    ? 'Import a folder of presets (.milk, .txt or .zip files in it)'
+    : 'Import preset files (.milk or .zip)';
+
 function readSortMode(): SortMode {
   return parseBrowseSortMode(readStored('stims:browse-sort')) ?? 'curated';
 }
@@ -101,6 +101,34 @@ function readSortMode(): SortMode {
  */
 function readGridView(): boolean {
   return (readStored('stims:browse-view') ?? 'grid') === 'grid';
+}
+
+/**
+ * Opens the directory picker and collects the preset files in the folder.
+ *
+ * Module scope, not inline in the import button's handler: React Compiler
+ * cannot lower a `for await` loop and skips the whole enclosing component.
+ * Rejects when the visitor cancels the picker.
+ */
+async function pickPresetFilesFromDirectory(): Promise<File[]> {
+  const dirHandle = await (
+    window as unknown as {
+      showDirectoryPicker: () => Promise<FileSystemDirectoryHandle>;
+    }
+  ).showDirectoryPicker();
+  const files: File[] = [];
+  for await (const entry of dirHandle.values()) {
+    if (
+      entry.kind === 'file' &&
+      (entry.name.endsWith('.milk') ||
+        entry.name.endsWith('.txt') ||
+        entry.name.endsWith('.zip'))
+    ) {
+      const file = await entry.getFile();
+      files.push(file);
+    }
+  }
+  return files;
 }
 
 export function BrowseSheetPanel({
@@ -139,12 +167,29 @@ export function BrowseSheetPanel({
    * directly, so "the visitor picked this" has a single definition that
    * callers can hook — and so a new selection site cannot quietly skip it.
    */
+  // Read off `engine` before the callbacks close over them: a dependency
+  // list naming `engine.method` cannot be preserved by React Compiler, which
+  // infers `engine` from the call. The methods are plain closures.
+  const {
+    audioActive,
+    handleAudioStart,
+    handlePresetSelection,
+    toggleFavoritePreset,
+  } = engine;
   const selectPreset = useCallback(
     (presetId: string) => {
       onPresetChosen?.(presetId);
-      engine.handlePresetSelection(presetId);
+      // The first-use hint says a card plays its preset. Before any audio
+      // has started, selecting only moved the route: on a phone, or with
+      // the background preview off, the panel closed onto nothing playing.
+      // Start the demo track with the chosen preset, as the home cards do.
+      if (!audioActive) {
+        void handleAudioStart('demo', undefined, presetId);
+        return;
+      }
+      handlePresetSelection(presetId);
     },
-    [engine.handlePresetSelection, onPresetChosen],
+    [audioActive, handleAudioStart, handlePresetSelection, onPresetChosen],
   );
   const presetPreviews = engine.presetPreviews;
   const routeState = ui.routeState;
@@ -174,6 +219,10 @@ export function BrowseSheetPanel({
     // the default browse view and a tile click is the "tap a card" this
     // panel's first-use hint is about.
     if (next.presetId) onPresetChosen?.(next.presetId);
+    if (next.presetId && !engine.audioActive) {
+      void engine.handleAudioStart('demo', undefined, next.presetId);
+      return;
+    }
     ui.commitRoute((current) => ({
       ...current,
       ...next,
@@ -192,10 +241,6 @@ export function BrowseSheetPanel({
     onCollectionTagChange(null);
     setAuthorFilter(null);
   };
-  const presetListRef = useRef<HTMLUListElement | null>(null);
-  const presetScrollRef = useRef<HTMLDivElement | null>(null);
-  const lineageWrapperRef = useRef<HTMLDivElement | null>(null);
-  const [lineageHeight, setLineageHeight] = useState(0);
   const recentRailRef = useRef<HTMLUListElement | null>(null);
   const collectionChipsRef = useRef<HTMLElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -246,6 +291,36 @@ export function BrowseSheetPanel({
     () => false,
   );
 
+  // A search made only of visual terms ("tunnel", "blue fire") also lists and
+  // ranks presets by how much their preview looks like it. Kept with the
+  // query it answers, so a slower result for "tunnel" cannot apply to the
+  // "tunnel x" typed since; until it arrives the tags alone answer.
+  const normalizedSearch = useMemo(
+    () => normalizeMatchText(deferredSearch),
+    [deferredSearch],
+  );
+  const [visualResult, setVisualResult] = useState<{
+    query: string;
+    scores: ReadonlyMap<string, number>;
+  } | null>(null);
+  useEffect(() => {
+    if (!normalizedSearch) return;
+    let cancelled = false;
+    void scoreVisualQuery(normalizedSearch).then((scores) => {
+      if (!cancelled) setVisualResult({ query: normalizedSearch, scores });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [normalizedSearch]);
+  const visualScores = useMemo<ReadonlyMap<string, number>>(
+    () =>
+      visualResult?.query === normalizedSearch
+        ? visualResult.scores
+        : new Map(),
+    [visualResult, normalizedSearch],
+  );
+
   const browseEntries = useMemo(() => {
     const matcher = deferredSearch
       ? createFieldMatcher(deferredSearch, { allowSubsequence: false })
@@ -264,7 +339,10 @@ export function BrowseSheetPanel({
       }
       return (
         passesFlashPreference(entry, reduceFlashing) &&
-        (matcher ? matchesPreset(entry, matcher) : true) &&
+        (matcher
+          ? matchesPreset(entry, matcher) ||
+            matchesVisualQuery(entry.id, visualScores)
+          : true) &&
         matchesAuthor(entry, authorFilter)
       );
     });
@@ -272,6 +350,7 @@ export function BrowseSheetPanel({
     catalog,
     routeState.collectionTag,
     deferredSearch,
+    visualScores,
     authorFilter,
     reduceFlashing,
   ]);
@@ -314,19 +393,40 @@ export function BrowseSheetPanel({
         randomSeed,
         deferredSearch,
         affinity,
+        visualScores,
       ),
-    [browseEntries, sortMode, randomSeed, deferredSearch, affinity],
+    [
+      browseEntries,
+      sortMode,
+      randomSeed,
+      deferredSearch,
+      affinity,
+      visualScores,
+    ],
   );
 
-  // At most the queue's cap (50) ids, so a scan per mounted row is free.
+  // At most the queue's cap (50) ids, so a Set lookup per mounted row is O(1).
   const queuedPresetIds = ui.presetQueue.presetIds;
-  const toggleQueued = (entry: PresetCatalogEntry) => {
-    togglePresetQueuedAction({
-      queue: ui.presetQueue,
-      entry,
-      announce: ui.setStatusMessage,
-    });
-  };
+  const queuedPresetIdSet = useMemo(
+    () => new Set(queuedPresetIds),
+    [queuedPresetIds],
+  );
+  const toggleQueued = useCallback(
+    (entry: PresetCatalogEntry) => {
+      togglePresetQueuedAction({
+        queue: ui.presetQueue,
+        entry,
+        announce: ui.setStatusMessage,
+      });
+    },
+    [ui.presetQueue, ui.setStatusMessage],
+  );
+  const handleToggleFavorite = useCallback(
+    (entry: PresetCatalogEntry) => {
+      void toggleFavoritePreset(entry.id, !entry.isFavorite);
+    },
+    [toggleFavoritePreset],
+  );
 
   // In list view this panel is what the digit keys index; in grid view the
   // grid publishes its own (variant-collapsed) order. Only one is mounted.
@@ -356,132 +456,27 @@ export function BrowseSheetPanel({
    * touched by "Clear filters". The result was a library quietly missing
    * presets with nothing on screen accounting for them.
    */
+  /**
+   * Live, the engine's weighted shuffle picks. Before any audio has
+   * started there is nothing for it to switch, so pick from the list on
+   * screen (which already leaves out what Reduce flashing hides) and start
+   * it like a card click.
+   */
+  const playRandomPreset = () => {
+    if (engine.audioActive) {
+      engine.handleShufflePreset();
+      return;
+    }
+    const pool = sorted.filter((entry) => entry.id !== currentPresetId);
+    const pick = pool[Math.floor(Math.random() * pool.length)] ?? sorted[0];
+    if (pick) selectPreset(pick.id);
+  };
+
   const flashHiddenCount = useMemo(() => {
     if (!reduceFlashing) return 0;
     return catalog.filter((entry) => !passesFlashPreference(entry, true))
       .length;
   }, [catalog, reduceFlashing]);
-
-  // The list is virtualized (see rowVirtualizer below), so only a small
-  // window of rows exists as real DOM nodes at any time — the roving
-  // tabindex + DOM-querying pattern useListKeyboardNav uses for the other
-  // lists on this panel can't see rows that aren't currently rendered.
-  // rovingIndex is this list's own analog: the single index that owns
-  // tabIndex 0 (everything else rendered gets -1), moved by explicit
-  // index arithmetic on keydown instead of by walking DOM children.
-  const activeIndex = useMemo(
-    () => sorted.findIndex((entry) => entry.id === currentPresetId),
-    [sorted, currentPresetId],
-  );
-  const [rovingIndex, setRovingIndex] = useState(0);
-  const pendingFocusIndexRef = useRef<number | null>(null);
-
-  const rowVirtualizer = useVirtualizer({
-    count: sorted.length,
-    getScrollElement: () => presetScrollRef.current,
-    estimateSize: () => PRESET_ROW_HEIGHT,
-    overscan: PRESET_ROW_OVERSCAN,
-    scrollMargin: lineageHeight,
-  });
-
-  // The lineage section (family/lineage cards) renders above the virtual
-  // list but inside the same scroll container, so its height has to be fed
-  // back into the virtualizer as scrollMargin — otherwise row offsets would
-  // assume the list starts at the scroll container's top instead of below
-  // the lineage block. Its content changes with the catalog/filters, so a
-  // ResizeObserver keeps this in sync rather than a one-shot measurement.
-  // gridView is a real dependency despite not being read in the body: it's
-  // what mounts/unmounts lineageWrapperRef's node (only rendered in list
-  // view), so the effect must re-run on toggle to (re)attach the observer.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
-  useLayoutEffect(() => {
-    const node = lineageWrapperRef.current;
-    if (!node) {
-      setLineageHeight(0);
-      return;
-    }
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) setLineageHeight(entry.contentRect.height);
-    });
-    observer.observe(node);
-    setLineageHeight(node.getBoundingClientRect().height);
-    return () => observer.disconnect();
-  }, [gridView]);
-
-  // Re-seed the roving position and scroll it into view whenever the active
-  // preset changes (initial open, or selected some other way — a route
-  // change, autoplay). Deliberately not reactive to `rovingIndex`, `sorted`,
-  // or `activeIndex` themselves: `rovingIndex` is driven by the user's own
-  // arrow-key moves and must not be fought by this effect re-centering on
-  // every keypress, and `sorted`/`activeIndex` change on every keystroke of
-  // a search — this should only re-seed when the *active preset itself*
-  // changes, or when a set of results goes from/to empty.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
-  useEffect(() => {
-    const target = activeIndex >= 0 ? activeIndex : 0;
-    setRovingIndex(target);
-    if (sorted.length > 0) {
-      rowVirtualizer.scrollToIndex(target, { align: 'auto' });
-    }
-  }, [currentPresetId, sorted.length === 0]);
-
-  // Applies a keyboard-driven roving-index move once its row has actually
-  // rendered — scrollToIndex's resulting range change lands a render after
-  // the state update that requests it, so focusing synchronously in the
-  // same handler would often miss (the row doesn't exist yet).
-  useLayoutEffect(() => {
-    const pending = pendingFocusIndexRef.current;
-    if (pending === null) return;
-    const row = presetListRef.current?.querySelector<HTMLElement>(
-      `[data-preset-index="${pending}"] .ctl-preset__open`,
-    );
-    if (row) {
-      row.focus();
-      pendingFocusIndexRef.current = null;
-    }
-  });
-
-  const handlePresetListKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLUListElement>) => {
-      if (sorted.length === 0) return;
-      const active = document.activeElement;
-      const activeItem =
-        active instanceof HTMLElement
-          ? active.closest<HTMLElement>('[data-preset-index]')
-          : null;
-      // Focus is on something else inside the container (e.g. a favorite
-      // button) — arrow keys fall through to default behavior rather than
-      // guessing which row "owns" it, matching useListKeyboardNav.
-      if (!activeItem) return;
-      const currentIndex = Number(activeItem.dataset.presetIndex);
-
-      let nextIndex = -1;
-      switch (event.key) {
-        case 'ArrowDown':
-          nextIndex = currentIndex + 1;
-          break;
-        case 'ArrowUp':
-          nextIndex = currentIndex - 1;
-          break;
-        case 'Home':
-          nextIndex = 0;
-          break;
-        case 'End':
-          nextIndex = sorted.length - 1;
-          break;
-        default:
-          return;
-      }
-      if (nextIndex < 0 || nextIndex >= sorted.length) return;
-      event.preventDefault();
-      event.stopPropagation();
-      pendingFocusIndexRef.current = nextIndex;
-      setRovingIndex(nextIndex);
-      rowVirtualizer.scrollToIndex(nextIndex, { align: 'auto' });
-    },
-    [sorted.length, rowVirtualizer],
-  );
 
   useListKeyboardNav(recentRailRef, {
     itemSelector: '.ctl-recent-rail__item',
@@ -522,18 +517,19 @@ export function BrowseSheetPanel({
     return entries;
   }, [sessionHistory, catalog, currentPresetId]);
 
-  // Jump the virtualized list back to the top when filters change — mirrors
-  // the old pagination reset (a fresh filter previously meant "start from
-  // batch one again"); scrollToIndex needs a guard for an empty result set.
+  // Send both views back to the top when filters change — mirrors the old
+  // pagination reset (a fresh filter previously meant "start from batch one
+  // again").
   //
-  // The mount run is skipped so it cannot stomp the remembered offset being
-  // restored below: this effect's deps are all filter values, which "change"
-  // once on mount by definition. `filterEpoch` lets the grid — which owns
-  // its own scroll element — reset in step without having to work out for
-  // itself whether a new entry list came from a filter or a re-sort.
+  // The mount run is skipped so it cannot stomp the remembered offset each
+  // view restores on mount: this effect's deps are all filter values, which
+  // "change" once on mount by definition. `filterEpoch` lets the list and
+  // the grid — which each own their scroll element — reset in step without
+  // having to work out whether a new entry list came from a filter or a
+  // re-sort.
   const filterSettledRef = useRef(false);
   const [filterEpoch, setFilterEpoch] = useState(0);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll-to-top on filter changes specifically, not sorted identity
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on filter changes specifically, not sorted identity
   useEffect(() => {
     if (!filterSettledRef.current) {
       filterSettledRef.current = true;
@@ -544,28 +540,12 @@ export function BrowseSheetPanel({
     browseScrollMemory.list = 0;
     browseScrollMemory.grid = 0;
     setFilterEpoch((epoch) => epoch + 1);
-    if (sorted.length > 0) {
-      rowVirtualizer.scrollToIndex(0, { align: 'start' });
-    }
   }, [searchQuery, routeState.collectionTag, authorFilter]);
-
-  // Restore the list's remembered offset on mount (panel reopen, or a
-  // toggle back from grid). Deferred past the commit for the same reason
-  // the grid defers its jumps: a scroll event landing while React renders
-  // collides with the virtualizer's flushSync and leaves it wedged.
-  useEffect(() => {
-    const element = presetScrollRef.current;
-    const saved = browseScrollMemory.list;
-    if (!element || saved <= 0) return;
-    const timer = window.setTimeout(() => {
-      element.scrollTop = saved;
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   return (
     <div
       className="stims-shell__sheet-panel stims-shell__sheet-panel--browse"
+      data-telemetry-surface="browse"
       data-filter-active={String(hasFilter)}
       // Scopes the bounded-flex-column layout the virtualized list needs
       // (see chrome.css's [data-fill="true"] rules) to list view only.
@@ -604,13 +584,15 @@ export function BrowseSheetPanel({
               }
             }}
           />
+          {/* Plays a random preset and closes Browse; it does not reorder
+              the list (the sort menu's Random does that). */}
           <button
             type="button"
             className="ctl-btn ctl-btn--icon"
-            onClick={engine.handleShufflePreset}
+            onClick={playRandomPreset}
             disabled={catalog.length === 0}
-            aria-label="Shuffle presets"
-            title="Shuffle presets"
+            aria-label="Play a random preset"
+            title="Play a random preset"
           >
             <UiIcon
               name="shuffle"
@@ -631,23 +613,7 @@ export function BrowseSheetPanel({
                 'showDirectoryPicker' in window
               ) {
                 try {
-                  const dirHandle = await (
-                    window as unknown as {
-                      showDirectoryPicker: () => Promise<FileSystemDirectoryHandle>;
-                    }
-                  ).showDirectoryPicker();
-                  const files: File[] = [];
-                  for await (const entry of dirHandle.values()) {
-                    if (
-                      entry.kind === 'file' &&
-                      (entry.name.endsWith('.milk') ||
-                        entry.name.endsWith('.txt') ||
-                        entry.name.endsWith('.zip'))
-                    ) {
-                      const file = await entry.getFile();
-                      files.push(file);
-                    }
-                  }
+                  const files = await pickPresetFilesFromDirectory();
                   if (files.length > 0) {
                     onImport(files);
                   }
@@ -658,8 +624,8 @@ export function BrowseSheetPanel({
                 importInputRef.current?.click();
               }
             }}
-            aria-label="Import preset file or folder"
-            title="Import preset file or folder (File System Access API)"
+            aria-label={IMPORT_LABEL}
+            title={`${IMPORT_LABEL}. Imported presets open in the editor.`}
           >
             <UiIcon
               name="upload"
@@ -675,8 +641,8 @@ export function BrowseSheetPanel({
             onClick={() => {
               void engine.exportUserPresets();
             }}
-            aria-label="Export my presets as a .zip"
-            title="Export the presets you made or imported as a .zip of MilkDrop 2 files"
+            aria-label="Download my presets as a .zip"
+            title="Download the presets you made or imported, as a .zip of MilkDrop 2 files"
           >
             <UiIcon
               name="download"
@@ -868,8 +834,11 @@ export function BrowseSheetPanel({
             <span>
               {`Reduce flashing is hiding ${flashHiddenCount.toLocaleString()} preset${
                 flashHiddenCount === 1 ? '' : 's'
-              }.`}
+              }. Turning it off also stops the stage dimming flashes.`}
             </span>
+            {/* This switches the saved setting off everywhere, live dimming
+                included. It used to read "Show them", which sounded like a
+                list filter. */}
             <button
               type="button"
               className="ctl-btn ctl-btn--quiet"
@@ -877,7 +846,7 @@ export function BrowseSheetPanel({
                 setAccessibilityPreference({ reduceFlashing: false })
               }
             >
-              Show them
+              Turn off Reduce flashing
             </button>
           </p>
         ) : null}
@@ -1035,12 +1004,10 @@ export function BrowseSheetPanel({
             routeState={ui.routeState}
             setRouteState={setPresetRouteState}
             currentPresetId={currentPresetId}
-            onToggleFavorite={(entry) => {
-              void engine.toggleFavoritePreset(entry.id, !entry.isFavorite);
-            }}
+            onToggleFavorite={handleToggleFavorite}
             queuedPresetIds={queuedPresetIds}
             onToggleQueued={toggleQueued}
-            initialScrollTop={browseScrollMemory.grid}
+            readInitialScrollTop={() => browseScrollMemory.grid}
             onScrollTopChange={(top) => {
               browseScrollMemory.grid = top;
             }}
@@ -1049,197 +1016,23 @@ export function BrowseSheetPanel({
           />
         ) : null}
 
-        {catalogReady && !gridView && sorted.length > 0 ? (
-          // Virtualized: only the rows within the scroll viewport (plus
-          // PRESET_ROW_OVERSCAN on each side) exist as real DOM nodes,
-          // regardless of how many presets match the current filter — see
-          // handlePresetListKeyDown above for how arrow/Home/End nav still
-          // reaches rows that aren't currently rendered.
-          <div
-            ref={presetScrollRef}
-            className="ctl-presets-scroll"
-            // Written straight to module scope, never to state: this fires
-            // on every scroll frame and a re-render per frame would undo the
-            // virtualization it is riding on.
-            onScroll={(event) => {
-              browseScrollMemory.list = event.currentTarget.scrollTop;
-            }}
-          >
-            {/* The lineage section scrolls WITH the list (matching its old
-                position in normal document flow before virtualization)
-                rather than sitting fixed above it. Its height varies with
-                content, so the virtualizer needs scrollMargin kept in sync
-                via the ResizeObserver below — otherwise its virtual-row
-                offsets would assume the list starts right at the scroll
-                container's top. */}
-            <div ref={lineageWrapperRef}>
-              <PresetLineageSection
-                catalog={catalog}
-                currentPresetId={currentPresetId}
-                onSelect={selectPreset}
-              />
-            </div>
-            <ul
-              ref={presetListRef}
-              className="ctl-presets"
-              onKeyDown={handlePresetListKeyDown}
-              style={{
-                // getTotalSize() includes scrollMargin (the lineage block's
-                // height, reserved above the rows) — the lineage block
-                // already occupies that space in normal flow via
-                // lineageWrapperRef above, so it must be subtracted here or
-                // the rows would get scrollMargin worth of extra blank
-                // space stacked on top of them too.
-                height:
-                  rowVirtualizer.getTotalSize() -
-                  rowVirtualizer.options.scrollMargin,
-                position: 'relative',
-              }}
-            >
-              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const entry = sorted[virtualRow.index];
-                if (!entry) return null;
-                // Titles carry the author chain inline, so the byline would
-                // otherwise repeat it verbatim on the line below.
-                const display = splitPresetDisplay(entry.title, entry.author);
-                return (
-                  <li
-                    key={entry.id}
-                    data-preset-index={virtualRow.index}
-                    className="ctl-preset"
-                    data-active={String(entry.id === currentPresetId)}
-                    // Only ~15 <li> exist at a time; without these a screen
-                    // reader announces "list, 15 items" for the full result
-                    // set however large it actually is.
-                    aria-setsize={sorted.length}
-                    aria-posinset={virtualRow.index + 1}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: virtualRow.size - PRESET_ROW_GAP,
-                      transform: `translateY(${virtualRow.start - rowVirtualizer.options.scrollMargin}px)`,
-                    }}
-                  >
-                    {/* A link to the preset's page, like the grid tiles:
-                        crawlable, and openable in a new tab. */}
-                    <a
-                      href={presetPageHref(entry.id)}
-                      className="ctl-preset__open"
-                      tabIndex={virtualRow.index === rovingIndex ? 0 : -1}
-                      aria-current={
-                        entry.id === currentPresetId ? 'true' : undefined
-                      }
-                      aria-keyshortcuts={
-                        showQuickSelectKeys
-                          ? (quickSelectDigit(virtualRow.index) ?? undefined)
-                          : undefined
-                      }
-                      onClick={(event) =>
-                        openPresetInPlace(event, () => {
-                          setRovingIndex(virtualRow.index);
-                          runPresetPromoteTransition({
-                            sourceElement: event.currentTarget,
-                            presetId: entry.id,
-                          });
-                          selectPreset(entry.id);
-                        })
-                      }
-                    >
-                      <span className="ctl-preset__art">
-                        <PresetArtwork
-                          entry={entry}
-                          compact
-                          preview={presetPreviews[entry.id] ?? null}
-                        />
-                        {showQuickSelectKeys &&
-                        quickSelectDigit(virtualRow.index) ? (
-                          <span
-                            className="ctl-preset__quick-key"
-                            aria-hidden="true"
-                          >
-                            {quickSelectDigit(virtualRow.index)}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="ctl-preset__copy">
-                        <span className="ctl-preset__title">
-                          {display.title}
-                        </span>
-                        {/* The credit, not a mood. describePresetMood
-                            keyword-matches the title to guess a vibe and
-                            falls back to "Instant pick", which is not a
-                            mood at all — so the one metadata line each row
-                            gets was spent restating the title in vaguer
-                            words, right next to the title. The author is
-                            real, cited metadata and is how people actually
-                            navigate this catalog (Geiss, Rovastar, Flexi).
-                            The mood still earns its keep in PresetArtwork,
-                            where it stands in for a missing thumbnail. */}
-                        <span className="ctl-preset__meta">
-                          {display.byline ?? describePresetMood(entry)}
-                          {/* Inline with the credit, not on its own line:
-                              the virtualizer measures rows at a fixed
-                              PRESET_ROW_HEIGHT, so a third line overflows
-                              and each chip crowds the next row's title. */}
-                          <PresetSignals entry={entry} />
-                        </span>
-                      </span>
-                    </a>
-                    <button
-                      type="button"
-                      className="ctl-preset__queue"
-                      data-queued={String(queuedPresetIds.includes(entry.id))}
-                      aria-label={
-                        queuedPresetIds.includes(entry.id)
-                          ? `Remove ${entry.title} from the queue`
-                          : `Queue ${entry.title}`
-                      }
-                      title={
-                        queuedPresetIds.includes(entry.id)
-                          ? 'Remove from queue'
-                          : 'Add to queue'
-                      }
-                      aria-pressed={queuedPresetIds.includes(entry.id)}
-                      onClick={() => toggleQueued(entry)}
-                    >
-                      <span
-                        className="ctl-preset__queue-icon"
-                        aria-hidden="true"
-                      />
-                    </button>
-                    <button
-                      type="button"
-                      className="ctl-preset__fav"
-                      data-saved={String(Boolean(entry.isFavorite))}
-                      aria-label={
-                        entry.isFavorite
-                          ? `Remove ${entry.title} from saved`
-                          : `Save ${entry.title}`
-                      }
-                      title={
-                        entry.isFavorite ? 'Remove from saved' : 'Save preset'
-                      }
-                      aria-pressed={Boolean(entry.isFavorite)}
-                      onClick={() => {
-                        void engine.toggleFavoritePreset(
-                          entry.id,
-                          !entry.isFavorite,
-                        );
-                      }}
-                    >
-                      <span
-                        className="ctl-preset__fav-icon"
-                        aria-hidden="true"
-                      />
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ) : null}
+        <BrowsePresetList
+          visible={catalogReady && !gridView && sorted.length > 0}
+          entries={sorted}
+          catalog={catalog}
+          currentPresetId={currentPresetId}
+          presetPreviews={presetPreviews}
+          queuedPresetIdSet={queuedPresetIdSet}
+          showQuickSelectKeys={showQuickSelectKeys}
+          filterEpoch={filterEpoch}
+          readInitialScrollTop={() => browseScrollMemory.list}
+          onScrollTopChange={(top) => {
+            browseScrollMemory.list = top;
+          }}
+          onSelect={selectPreset}
+          onToggleQueued={toggleQueued}
+          onToggleFavorite={handleToggleFavorite}
+        />
       </section>
     </div>
   );

@@ -102,18 +102,52 @@ describe('A/B compare', () => {
     panel.writeVariableToEditor('zoom', 1.5);
     const edited = panel.getEditorSource();
 
+    const ab = () =>
+      panel.element.querySelector<HTMLButtonElement>(
+        '[data-action="ab-toggle"]',
+      );
+    // The label is what the next press does; the pressed state is the view.
+    expect(ab()?.textContent).toBe('Show original');
     await panel.toggleAbSnapshot();
     expect(panel.getEditorSource()).toBe(ORIGINAL_A);
     expect(onEditorSourceChange).toHaveBeenLastCalledWith(ORIGINAL_A);
-    expect(
-      panel.element.querySelector('[data-action="ab-toggle"]')?.textContent,
-    ).toBe('Original');
+    expect(ab()?.textContent).toBe('Back to your edit');
+    expect(ab()?.getAttribute('aria-pressed')).toBe('true');
 
     await panel.toggleAbSnapshot();
     expect(panel.getEditorSource()).toBe(edited);
+    expect(ab()?.textContent).toBe('Show original');
+    expect(ab()?.getAttribute('aria-pressed')).toBe('false');
+    dispose();
+  });
+
+  test('stopping the comparison from the menu keeps the edit', async () => {
+    const { panel, load, dispose } = mount({ alpha: ORIGINAL_A });
+    load('alpha', ORIGINAL_A);
+    panel.writeVariableToEditor('zoom', 1.5);
+    const edited = panel.getEditorSource();
+    await panel.toggleAbSnapshot(); // showing the original, read-only
+    const item = [
+      ...panel.element.querySelectorAll<HTMLButtonElement>(
+        '.stims-editor__menu-item',
+      ),
+    ].find((button) => button.textContent === 'Stop comparing A and B');
+    item?.click();
+    expect(panel.getEditorSource()).toBe(edited);
+    expect(panel.getSnapshotState().sourceA).toBeNull();
+    dispose();
+  });
+
+  test('a press that only keeps B says so', async () => {
+    const { panel, load, dispose } = mount();
+    load('alpha', ORIGINAL_A);
+    panel.snapshotSlotA();
+    panel.writeVariableToEditor('zoom', 1.5);
+    await panel.toggleAbSnapshot();
+    expect(panel.getSnapshotState().sourceB).toBeNull();
     expect(
-      panel.element.querySelector('[data-action="ab-toggle"]')?.textContent,
-    ).toBe('Your edit');
+      panel.element.querySelector('.stims-editor__action-notice')?.textContent,
+    ).toContain('Kept the current code as B');
     dispose();
   });
 
@@ -196,7 +230,7 @@ describe('revert to original', () => {
     await Promise.resolve();
     const restoreButtons = () =>
       [...panel.element.querySelectorAll('button')].filter(
-        (button) => button.textContent === 'Restore',
+        (button) => button.textContent === 'Restore checkpoint',
       );
     expect(restoreButtons().length).toBe(1);
 

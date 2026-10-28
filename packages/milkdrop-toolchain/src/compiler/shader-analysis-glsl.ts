@@ -37,14 +37,16 @@ type GlslEmitter = {
 function emitExpression(
   node: MilkdropShaderExpressionNode,
   emitter: GlslEmitter,
+  depth = 0,
 ): string | null {
+  if (depth > 200) return null;
   switch (node.type) {
     case 'literal':
       return emitter.emitLiteral(node.value);
     case 'identifier':
       return emitter.emitIdentifier(node.name);
     case 'unary': {
-      const operand = emitExpression(node.operand, emitter);
+      const operand = emitExpression(node.operand, emitter, depth + 1);
       if (operand === null) return null;
       if (node.operator === '+') return operand;
       if (node.operator === '-') return `-(${operand})`;
@@ -53,13 +55,13 @@ function emitExpression(
       return null;
     }
     case 'binary': {
-      const left = emitExpression(node.left, emitter);
-      const right = emitExpression(node.right, emitter);
+      const left = emitExpression(node.left, emitter, depth + 1);
+      const right = emitExpression(node.right, emitter, depth + 1);
       if (left === null || right === null) return null;
       return emitter.emitBinary(left, node.operator, right);
     }
     case 'member': {
-      const object = emitExpression(node.object, emitter);
+      const object = emitExpression(node.object, emitter, depth + 1);
       if (object === null) return null;
       return emitter.emitMember(object, node.property);
     }
@@ -69,7 +71,7 @@ function emitExpression(
     case 'call': {
       const name = node.name;
       const args = node.args
-        .map((arg) => emitExpression(arg, emitter))
+        .map((arg) => emitExpression(arg, emitter, depth + 1))
         .filter((value): value is string => value !== null);
       if (args.length !== node.args.length) return null;
       if (name.includes('.')) {
@@ -141,6 +143,67 @@ const COMPARISON_HELPERS: Readonly<Record<string, string>> = {
   '!=': 'milkdropNe',
 };
 
+const GLSL_IDENTIFIER_UNIFORM_MAP: Readonly<Record<string, string>> = {
+  ...MILKDROP_SIGNAL_NAME_ALIASES,
+  rand_frame: MILKDROP_RAND_FRAME_GLSL,
+  // Emitter-only signal aliases: camelCase attenuated bands and energy
+  // synonyms the raw-text normalizer leaves untouched.
+  bassatt: 'signalBassAtt',
+  midatt: 'signalMidAtt',
+  midsatt: 'signalMidAtt',
+  percussiveratio: 'signalPercussiveRatio',
+  percussivelow: 'signalPercussiveLow',
+  percussivemid: 'signalPercussiveMid',
+  percussivehigh: 'signalPercussiveHigh',
+  music: 'signalEnergy',
+  weighted_energy: 'signalEnergy',
+  // aspect is an actual composite shader uniform, not a signal alias.
+  aspect: 'aspect',
+  pi: '3.14159265359',
+  e: '2.71828182846',
+  warp: 'warpScale',
+  warp_scale: 'warpScale',
+  dx: 'offsetX',
+  offset_x: 'offsetX',
+  translate_x: 'offsetX',
+  dy: 'offsetY',
+  offset_y: 'offsetY',
+  translate_y: 'offsetY',
+  rot: 'rotation',
+  rotation: 'rotation',
+  zoom: 'zoomMul',
+  scale: 'zoomMul',
+  saturation: 'saturation',
+  sat: 'saturation',
+  contrast: 'contrast',
+  r: 'colorScale.r',
+  red: 'colorScale.r',
+  g: 'colorScale.g',
+  green: 'colorScale.g',
+  b: 'colorScale.b',
+  blue: 'colorScale.b',
+  hue: 'hueShift',
+  hue_shift: 'hueShift',
+  mix: 'mixAlpha',
+  feedback: 'mixAlpha',
+  feedback_alpha: 'mixAlpha',
+  // brighten/invert/solarize are scalar shader controls in ProjectM;
+  // the composite shader combines them with post-effect toggles via the
+  // *Boost uniforms, so mapping here is the best available approximation.
+  brighten: 'brightenBoost',
+  invert: 'invertBoost',
+  solarize: 'solarizeBoost',
+  tint_r: 'tint.r',
+  tint_g: 'tint.g',
+  tint_b: 'tint.b',
+  // MilkDrop's hue_* builtins are float3s. Same values as the raw-body
+  // chain in shader-analysis.ts; left unmapped, the hoister declared
+  // them `uniform float` and every `hue_shader.zxy` failed to compile.
+  hue_shader: 'vec3(colorScale * tint)',
+  hue_secondary: 'vec3(tint)',
+  hue_tertiary: 'vec3(colorScale)',
+};
+
 export function createCompositeGlslEmitter(
   shadowedIdentifiers: ReadonlySet<string> = new Set(),
   scalarLocals: ReadonlySet<string> = new Set(),
@@ -156,74 +219,9 @@ export function createCompositeGlslEmitter(
       // an undeclared `L` — hoisted as a zero uniform, a silently wrong
       // picture. Reads of a written name follow the target's spelling.
       if (shadowedIdentifiers.has(lower)) return lower;
-      // Signal aliases come from the shared table; only the non-signal
-      // composite uniforms and literal constants live in this map.
-      const uniformMap: Record<string, string> = {
-        ...MILKDROP_SIGNAL_NAME_ALIASES,
-        rand_frame: MILKDROP_RAND_FRAME_GLSL,
-        // Emitter-only signal aliases: camelCase attenuated bands and energy
-        // synonyms the raw-text normalizer leaves untouched.
-        bassatt: 'signalBassAtt',
-        midatt: 'signalMidAtt',
-        midsatt: 'signalMidAtt',
-        percussiveratio: 'signalPercussiveRatio',
-        percussivelow: 'signalPercussiveLow',
-        percussivemid: 'signalPercussiveMid',
-        percussivehigh: 'signalPercussiveHigh',
-        music: 'signalEnergy',
-        weighted_energy: 'signalEnergy',
-        // aspect is an actual composite shader uniform, not a signal alias.
-        aspect: 'aspect',
-        pi: '3.14159265359',
-        e: '2.71828182846',
-        warp: 'warpScale',
-        warp_scale: 'warpScale',
-        dx: 'offsetX',
-        offset_x: 'offsetX',
-        translate_x: 'offsetX',
-        dy: 'offsetY',
-        offset_y: 'offsetY',
-        translate_y: 'offsetY',
-        rot: 'rotation',
-        rotation: 'rotation',
-        zoom: 'zoomMul',
-        scale: 'zoomMul',
-        saturation: 'saturation',
-        sat: 'saturation',
-        contrast: 'contrast',
-        r: 'colorScale.r',
-        red: 'colorScale.r',
-        g: 'colorScale.g',
-        green: 'colorScale.g',
-        b: 'colorScale.b',
-        blue: 'colorScale.b',
-        hue: 'hueShift',
-        hue_shift: 'hueShift',
-        mix: 'mixAlpha',
-        feedback: 'mixAlpha',
-        feedback_alpha: 'mixAlpha',
-        // brighten/invert/solarize are scalar shader controls in ProjectM;
-        // the composite shader combines them with post-effect toggles via the
-        // *Boost uniforms, so mapping here is the best available approximation.
-        brighten: 'brightenBoost',
-        invert: 'invertBoost',
-        solarize: 'solarizeBoost',
-        tint_r: 'tint.r',
-        tint_g: 'tint.g',
-        tint_b: 'tint.b',
-        // MilkDrop's hue_* builtins are float3s. Same values as the raw-body
-        // chain in shader-analysis.ts; left unmapped, the hoister declared
-        // them `uniform float` and every `hue_shader.zxy` failed to compile.
-        hue_shader: 'vec3(colorScale * tint)',
-        hue_secondary: 'vec3(tint)',
-        hue_tertiary: 'vec3(colorScale)',
-        // Deliberately absent: \`uv\`. Both stage templates declare their own
-        // \`vec2 uv\` — in the warp stage it is the warped coordinate, the one
-        // the preset's motion lives in — and rewriting reads to \`vUv\` made
-        // every emitted warp body sample the previous frame unwarped, while
-        // its writes (\`uv *= …\`) still went to the template's copy.
-      };
-      const mapped = uniformMap[lower];
+      // Deliberately absent:
+      // Both stage templates declare their own vec2 uv.
+      const mapped = GLSL_IDENTIFIER_UNIFORM_MAP[lower];
       if (mapped !== undefined) return mapped;
       // texsize* are vec4s (xy = size, zw = 1/size). The raw-GLSL path
       // rewrites them in shader-analysis.ts, but statement-emitted programs
@@ -734,35 +732,36 @@ function splitGlslConstructorArgs(expression: string): string[] | null {
  * path and procedural feed-forward noise do not, so they fall back to the
  * base-mip sample.
  */
+const LOD_TEXTURE_NAME_MAP: Readonly<Record<string, string>> = {
+  main: 'currentTex',
+  fw_main: 'currentTex',
+  pw_main: 'previousTex',
+  pc_main: 'previousTex',
+  fc_main: 'warpTex',
+  blur1: 'blur1Tex',
+  blur2: 'blur2Tex',
+  blur3: 'blur3Tex',
+  noise: 'noiseTex',
+  noise_lq: 'noiseTex',
+  noise_mq: 'noiseTex',
+  noise_hq: 'noiseTex',
+  pw_noise_lq: 'noiseTex',
+  perlin: 'perlinTex',
+  simplex: 'simplexTex',
+  voronoi: 'voronoiTex',
+  aura: 'auraTex',
+  caustics: 'causticsTex',
+  pattern: 'patternTex',
+  fractal: 'fractalTex',
+  video: 'videoTex',
+};
+
 function resolveLodTextureName(samplerArg: string): string | null {
   const lower = samplerArg.toLowerCase();
   const raw = lower.startsWith('sampler_')
     ? lower.slice('sampler_'.length)
     : lower;
-  const map: Record<string, string> = {
-    main: 'currentTex',
-    fw_main: 'currentTex',
-    pw_main: 'previousTex',
-    pc_main: 'previousTex',
-    fc_main: 'warpTex',
-    blur1: 'blur1Tex',
-    blur2: 'blur2Tex',
-    blur3: 'blur3Tex',
-    noise: 'noiseTex',
-    noise_lq: 'noiseTex',
-    noise_mq: 'noiseTex',
-    noise_hq: 'noiseTex',
-    pw_noise_lq: 'noiseTex',
-    perlin: 'perlinTex',
-    simplex: 'simplexTex',
-    voronoi: 'voronoiTex',
-    aura: 'auraTex',
-    caustics: 'causticsTex',
-    pattern: 'patternTex',
-    fractal: 'fractalTex',
-    video: 'videoTex',
-  };
-  return map[raw] ?? null;
+  return LOD_TEXTURE_NAME_MAP[raw] ?? null;
 }
 
 /**
@@ -856,6 +855,12 @@ function localDeclarationType(
   return declaration;
 }
 
+const VEC_CONSTRUCTOR_PREFIX_REGEX: Readonly<Record<2 | 3 | 4, RegExp>> = {
+  2: /^(?:vec|milkdropVec)2\(/u,
+  3: /^(?:vec|milkdropVec)3\(/u,
+  4: /^(?:vec|milkdropVec)4\(/u,
+};
+
 export function generateGlslFromShaderStatements(
   statements: MilkdropShaderStatement[],
   _stage: 'warp' | 'comp',
@@ -925,10 +930,7 @@ export function generateGlslFromShaderStatements(
     const rhs =
       width === 1
         ? `milkdropScalar(${expressionGlsl})`
-        : width &&
-            !new RegExp(`^(?:vec|milkdropVec)${width}\\(`, 'u').test(
-              expressionGlsl,
-            )
+        : width && !VEC_CONSTRUCTOR_PREFIX_REGEX[width].test(expressionGlsl)
           ? `vec${width}(${expressionGlsl})`
           : expressionGlsl;
     const glslOperator = COMPOUND_OPERATORS.has(operator) ? operator : '=';
@@ -1095,6 +1097,8 @@ function combineWidths(
   return result;
 }
 
+const COMPONENTWISE_BINARY_OPERATORS = new Set(['+', '-', '*', '/', '%']);
+
 /**
  * The number of components an expression is known to produce, or null when
  * that depends on something this pass does not track (an undeclared name, a
@@ -1119,7 +1123,7 @@ function expressionWidth(
         ? null
         : expressionWidth(expression.operand, locals);
     case 'binary':
-      return ['+', '-', '*', '/', '%'].includes(expression.operator)
+      return COMPONENTWISE_BINARY_OPERATORS.has(expression.operator)
         ? combineWidths([
             expressionWidth(expression.left, locals),
             expressionWidth(expression.right, locals),

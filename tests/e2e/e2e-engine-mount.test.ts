@@ -128,7 +128,16 @@ async function waitForRenderedContent(page: import('playwright').Page) {
  */
 async function waitForMountedStage(page: import('playwright').Page) {
   await page.waitForSelector('#stims-main', { timeout: 30000 });
-  await page.evaluate(() => window.stims?.agent?.ready({ timeoutMs: 55000 }));
+  // Throws rather than optional-chaining past a missing driver: `?.ready()`
+  // on an absent driver resolves at once, and the boot-preset assertion
+  // below then fails on the wrong preset instead of naming the cause.
+  await page.evaluate(() => {
+    const agent = window.stims?.agent;
+    if (!agent) {
+      throw new Error('window.stims.agent is not installed');
+    }
+    return agent.ready({ timeoutMs: 55000 });
+  });
   await page.waitForSelector('.stims-shell__stage-frame canvas', {
     timeout: 30000,
   });

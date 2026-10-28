@@ -335,6 +335,7 @@ describe('milkdrop preset navigation controller', () => {
       const cleared: string[] = [];
       const applied: string[] = [];
       const transitions: number[] = [];
+      const statuses: string[] = [];
       const controller = createMilkdropPresetNavigationController({
         catalogStore: {
           async getPresetSource(id: string) {
@@ -369,7 +370,9 @@ describe('milkdrop preset navigation controller', () => {
           applied.push(compiled.source.id);
         },
         applyPresetPerformanceOverride: () => undefined,
-        setOverlayStatus: () => undefined,
+        setOverlayStatus: (message: string) => {
+          statuses.push(message);
+        },
         shouldFallbackToWebgl: () => false,
         triggerWebglFallback: () => false,
         rememberLastPreset: () => undefined,
@@ -379,8 +382,23 @@ describe('milkdrop preset navigation controller', () => {
         },
       });
 
-      return { controller, fetched, applied, transitions, cleared };
+      return { controller, fetched, applied, transitions, cleared, statuses };
     };
+
+    test("says when a load brings back the visitor's saved edits", async () => {
+      // A stored draft replaces the file and the editor reads "Synced", so
+      // without this line a returning editor could not tell their version
+      // from the original.
+      const edited = buildSkipHarness('title=active-preset\nzoom=2\n');
+      await edited.controller.selectPreset('active-preset');
+      expect(edited.statuses.at(-1)).toBe(
+        'Loaded active-preset — with your saved edits (Revert in the editor restores the original).',
+      );
+
+      const untouched = buildSkipHarness(null);
+      await untouched.controller.selectPreset('active-preset');
+      expect(untouched.statuses.at(-1)).toBe('Loaded active-preset.');
+    });
 
     test('does not reload the preset that is already active', async () => {
       const { controller, fetched, applied, transitions } =

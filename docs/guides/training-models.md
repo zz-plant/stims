@@ -11,7 +11,6 @@ has the one-line purpose of each; the docblock atop each script is its full
 reference.
 
 **Findings so far**, each detailed below:
-
 - Score on **audio R²**, not R². About a third of presets run the same
   function of time on every song, and a clock-only model scores near 1 on
   them.
@@ -28,7 +27,7 @@ reference.
   each control only the signals it reads gains a median +0.12 per preset
   (the median preset's score rises from −0.12 to −0.03).
 - **Stateful controls** (beat counters, toggles) defeat every regression, so
-  they are scored on when they change. A classifier that predicts *when* a
+  they are scored on when they change. A classifier that predicts _when_ a
   jump happens times them (event F1 0.44, against 0 for every value model).
 - **Song-aware preset picking** beats a fixed ranking within a musical
   style, but not across styles.
@@ -42,22 +41,22 @@ reference.
 
 ## The tools
 
-| Goal | Command | Output |
-| --- | --- | --- |
-| Audio → per-frame preset state, for the whole corpus | `bun run lab:dataset` | `inputs/`, `signals/`, `states/` `.npy` + `index.jsonl` + `manifest.json` |
-| Same, from real music | `bun run lab:dataset -- --audio song.wav` | one `audio-<stem>` scenario per WAV |
-| Smaller files | `bun run lab:dataset -- --dtype float16 --every 2` | `<f2` arrays, every 2nd frame |
-| One preset's trace, replayable bit for bit | `bun run lab:replay -- --preset <id> --record t.json [--audio song.wav]` | `TraceFile` JSON |
-| What each human remix changed | `bun run lab:remix-pairs -- --sources` | JSONL of (parent, child, changes) |
-| Score a preset-editing model | `bun run lab:edit-eval -- --export tasks.jsonl`, then `--score answers.jsonl --out edit-report.json` | summary on stdout, including audio edits read from the equations (recall of the human remix's audio dependency changes); report JSON with `--out` |
-| Behaviour embeddings, neighbours, 2-D map | `bun run lab:preset-map -- --dataset <dir>` | `embeddings.npy`, `neighbors.json`, `map2d.json` |
-| Which audio signals reach each column and drawn program, from the equations alone | `bun run lab:dataflow -- --all --out labels.json` | per-preset labels: tier, audio columns and their signals, history |
-| Check a dataset's measured labels against the equations | `bun run lab:dataflow -- --dataset <dir>` | column and preset confusion tables, soundness violations |
-| How long each preset control remembers the audio | `bun run lab:memory-probe -- --audio song.wav` | `probe.jsonl`: memory class and linearity per (preset, column) |
-| The bar an audio → controls model must clear | `bun run lab:vj-baseline -- --dataset <dir> [--features leaky] [--memory <probe dir>]` | audio R² beyond the clock, per preset and per memory class; event F1 of jumps (model and clock oracle) |
-| Score a shader-fixing model | `bun run lab:shader-fix-bench -- --export tasks.jsonl`, then `--score answers.jsonl --out shader-report.json` | summary on stdout; report JSON with `--out` |
-| Answer either benchmark with a local Ollama model | `bun run lab:llm-answer -- --bench edit\|shader --tasks tasks.jsonl --model <name> --out answers.jsonl [--format edit] [--rounds 3]` | answers JSONL ready for `--score`; `<out>.meta.jsonl` with timing, tokens and raw replies |
-| Flash risk of rendered output (needs a browser) | `bun run lab:flash-audit` | per-preset WCAG 2.3.1 counts |
+| Goal                                                                              | Command                                                                                                                              | Output                                                                                                                                            |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Audio → per-frame preset state, for the whole corpus                              | `bun run lab:dataset`                                                                                                                | `inputs/`, `signals/`, `states/` `.npy` + `index.jsonl` + `manifest.json`                                                                         |
+| Same, from real music                                                             | `bun run lab:dataset -- --audio song.wav`                                                                                            | one `audio-<stem>` scenario per WAV                                                                                                               |
+| Smaller files                                                                     | `bun run lab:dataset -- --dtype float16 --every 2`                                                                                   | `<f2` arrays, every 2nd frame                                                                                                                     |
+| One preset's trace, replayable bit for bit                                        | `bun run lab:replay -- --preset <id> --record t.json [--audio song.wav]`                                                             | `TraceFile` JSON                                                                                                                                  |
+| What each human remix changed                                                     | `bun run lab:remix-pairs -- --sources`                                                                                               | JSONL of (parent, child, changes)                                                                                                                 |
+| Score a preset-editing model                                                      | `bun run lab:edit-eval -- --export tasks.jsonl`, then `--score answers.jsonl --out edit-report.json`                                 | summary on stdout, including audio edits read from the equations (recall of the human remix's audio dependency changes); report JSON with `--out` |
+| Behaviour embeddings, neighbours, 2-D map                                         | `bun run lab:preset-map -- --dataset <dir>`                                                                                          | `embeddings.npy`, `neighbors.json`, `map2d.json`                                                                                                  |
+| Which audio signals reach each column and drawn program, from the equations alone | `bun run lab:dataflow -- --all --out labels.json`                                                                                    | per-preset labels: tier, audio columns and their signals, history                                                                                 |
+| Check a dataset's measured labels against the equations                           | `bun run lab:dataflow -- --dataset <dir>`                                                                                            | column and preset confusion tables, soundness violations                                                                                          |
+| How long each preset control remembers the audio                                  | `bun run lab:memory-probe -- --audio song.wav`                                                                                       | `probe.jsonl`: memory class and linearity per (preset, column)                                                                                    |
+| The bar an audio → controls model must clear                                      | `bun run lab:vj-baseline -- --dataset <dir> [--features leaky] [--memory <probe dir>]`                                               | audio R² beyond the clock, per preset and per memory class; event F1 of jumps (model and clock oracle)                                            |
+| Score a shader-fixing model                                                       | `bun run lab:shader-fix-bench -- --export tasks.jsonl`, then `--score answers.jsonl --out shader-report.json`                        | summary on stdout; report JSON with `--out`                                                                                                       |
+| Answer either benchmark with a local Ollama model                                 | `bun run lab:llm-answer -- --bench edit\|shader --tasks tasks.jsonl --model <name> --out answers.jsonl [--format edit] [--rounds 3]` | answers JSONL ready for `--score`; `<out>.meta.jsonl` with timing, tokens and raw replies                                                         |
+| Flash risk of rendered output (needs a browser)                                   | `bun run lab:flash-audit`                                                                                                            | per-preset WCAG 2.3.1 counts                                                                                                                      |
 
 ## Splits: always by family
 
@@ -95,11 +94,11 @@ program draws.
 
 How far to trust it, measured against `lab:dataset` exports:
 
-| Export | Soundness (differs by song, but no path found) | Precision (audio path found, and it differs by song) |
-| --- | --- | --- |
-| 158 presets × 32 songs | 0 of 14,004 cells | 932 of 980 |
-| same presets, 4 unfamiliar-style songs (one per style) | 0 | 922 of 980 |
-| 2,445 held-out presets × 4 probes | 1 of 215,160 (a documented 5e-4 wobble) | 11,797 of 13,532 |
+| Export                                                 | Soundness (differs by song, but no path found) | Precision (audio path found, and it differs by song) |
+| ------------------------------------------------------ | ---------------------------------------------- | ---------------------------------------------------- |
+| 158 presets × 32 songs                                 | 0 of 14,004 cells                              | 932 of 980                                           |
+| same presets, 4 unfamiliar-style songs (one per style) | 0                                              | 922 of 980                                           |
+| 2,445 held-out presets × 4 probes                      | 1 of 215,160 (a documented 5e-4 wobble)        | 11,797 of 13,532                                     |
 
 It is conservative by design:
 - a path the audio never exercised on those songs still counts (these
@@ -107,7 +106,6 @@ It is conservative by design:
 - shaders count only by the audio uniform names they read.
 
 Uses:
-
 - **Labels with no rendering.** `lab:dataflow --all` sorts all 2,679 presets
   in 22 s:
   - driven: the audio moves something drawn (2,232);
@@ -130,7 +128,6 @@ Uses:
 
 A sync pair is a window of audio and the visual response it caused. The
 dataset gives it to you frame-aligned:
-
 1. Export with real music, keeping the synthetic probes as controls:
 
    ```bash
@@ -189,13 +186,13 @@ dataset gives it to you frame-aligned:
 
    Measured so far:
 
-   | Training audio | Model | Audio R² |
-   | --- | --- | --- |
-   | The four built-in probe scenarios (whole corpus, 1714 audio-reactive presets, 787 clockwork) | clock + lagged audio (`lab:vj-baseline`) | −0.04 |
-   | 24 varied synthetic songs, 4 held out (158 presets) | clock + lagged audio | 0.19 |
-   | same | leaky integrators, spectrum bands and onsets, per-preset ridge | 0.33 |
-   | 11 real-music clips of 30 s, each held out in turn (115 presets, 73 audio-reactive) | clock + lagged audio | −0.02 |
-   | same | clock + lagged audio + leaky integrators (`--features leaky`) | 0.02 |
+   | Training audio                                                                               | Model                                                          | Audio R² |
+   | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | -------- |
+   | The four built-in probe scenarios (whole corpus, 1714 audio-reactive presets, 787 clockwork) | clock + lagged audio (`lab:vj-baseline`)                       | −0.04    |
+   | 24 varied synthetic songs, 4 held out (158 presets)                                          | clock + lagged audio                                           | 0.19     |
+   | same                                                                                         | leaky integrators, spectrum bands and onsets, per-preset ridge | 0.33     |
+   | 11 real-music clips of 30 s, each held out in turn (115 presets, 73 audio-reactive)          | clock + lagged audio                                           | −0.02    |
+   | same                                                                                         | clock + lagged audio + leaky integrators (`--features leaky`)  | 0.02     |
 
    Each probe isolates one band, so a model fitted on three cannot say
    anything about the fourth. Use the probes for smoke tests, and many
@@ -222,14 +219,14 @@ median over presets.
 
 **Known presets, songs they have never heard:**
 
-| Model | Held-out songs | Unfamiliar styles | Per preset vs ridge+ (95% CI) |
-| --- | --- | --- | --- |
-| lagged audio, ridge | 0.19 | 0.15 | −0.04 |
-| ridge+: leaky integrators, spectrum bands, onsets | 0.33 | 0.17 | — |
-| dilated TCN, ridge readout | 0.37 | 0.18 | ≈ 0 |
-| diagonal state space, ridge readout | 0.35 | 0.11 | ≈ 0 |
-| minGRU (selective recurrence), ridge readout, 2 seeds | 0.48 | 0.26 | +0.02 [+0.00, +0.05] |
-| LightGBM on the ridge+ features | 0.60 | 0.46 | +0.05 [+0.03, +0.09] |
+| Model                                                 | Held-out songs | Unfamiliar styles | Per preset vs ridge+ (95% CI) |
+| ----------------------------------------------------- | -------------- | ----------------- | ----------------------------- |
+| lagged audio, ridge                                   | 0.19           | 0.15              | −0.04                         |
+| ridge+: leaky integrators, spectrum bands, onsets     | 0.33           | 0.17              | —                             |
+| dilated TCN, ridge readout                            | 0.37           | 0.18              | ≈ 0                           |
+| diagonal state space, ridge readout                   | 0.35           | 0.11              | ≈ 0                           |
+| minGRU (selective recurrence), ridge readout, 2 seeds | 0.48           | 0.26              | +0.02 [+0.00, +0.05]          |
+| LightGBM on the ridge+ features                       | 0.60           | 0.46              | +0.05 [+0.03, +0.09]          |
 
 Gradient-boosted trees on the same inputs as ridge+ beat every network, most
 of all on unfamiliar music. Scored against another song's audio, they fall to
@@ -247,12 +244,12 @@ what defeats the models there is long-lived state, not missing inputs.
 **Presets from families the model never saw**, fitted from a few calibration
 songs (26 audio-reactive of 38):
 
-| Method | 4 calibration songs | 1 calibration song |
-| --- | --- | --- |
-| no calibration (the average preset) | −0.43 | −0.58 |
-| learned features, readout shrunk toward the training presets' mean | −0.00 | −0.29 |
-| average of that and the same on hand features | +0.11 | −0.13 |
-| learned features with all 20 of the preset's songs (ceiling) | 0.18 | — |
+| Method                                                             | 4 calibration songs | 1 calibration song |
+| ------------------------------------------------------------------ | ------------------- | ------------------ |
+| no calibration (the average preset)                                | −0.43               | −0.58              |
+| learned features, readout shrunk toward the training presets' mean | −0.00               | −0.29              |
+| average of that and the same on hand features                      | +0.11               | −0.13              |
+| learned features with all 20 of the preset's songs (ceiling)       | 0.18                | —                  |
 
 A new preset's audio response cannot be predicted from other presets'
 behaviour alone, and four songs of its own only just beat the clock.
@@ -262,13 +259,13 @@ column only the signals `lab:dataflow` says it reads, plus quartile hinges
 and onsets for each, and leaky integrals of them when the column carries
 history. Same split, songs and metric as above:
 
-| Method | 4 calibration songs | 1 calibration song |
-| --- | --- | --- |
-| hand features, all signals (the row above's baseline) | −0.12 | −0.27 |
-| the same new basis over every signal | −0.13 | −0.28 |
-| **the basis restricted to the column's own signals** | −0.03 | −0.23 |
-| average of that and the learned features | **+0.12** | −0.20 |
-| restricted, with all 20 of the preset's songs (ceiling) | 0.10 | — |
+| Method                                                  | 4 calibration songs | 1 calibration song |
+| ------------------------------------------------------- | ------------------- | ------------------ |
+| hand features, all signals (the row above's baseline)   | −0.12               | −0.27              |
+| the same new basis over every signal                    | −0.13               | −0.28              |
+| **the basis restricted to the column's own signals**    | −0.03               | −0.23              |
+| average of that and the learned features                | **+0.12**           | −0.20              |
+| restricted, with all 20 of the preset's songs (ceiling) | 0.10                | —                  |
 
 Restriction alone gains a median +0.12 per preset over the hand baseline at
 four songs, 95% CI [+0.04, +0.26], better on 81% of presets, and matches the
@@ -281,7 +278,7 @@ with the same dependency signature is worse than the global one with no
 calibration at all (−0.76 against −0.60): the equations say which signals
 matter, not a column's sign or scale.
 
-The larger point: a preset's equations *are* its exact model. Running them
+The larger point: a preset's equations _are_ its exact model. Running them
 on the new song (the VM does it in real time) gives audio R² 1. A learned
 model of an unseen preset is useful only where the equations are
 unavailable or too slow, and the structure they expose is worth more than
@@ -315,20 +312,19 @@ Scored with `lab:vj-baseline -- --memory <probe dir>` on the 11-clip dataset
 (median audio R² per preset column; cell counts differ between targets because
 a column's per-frame change can be audio-driven when its value is not):
 
-| Memory | lags, value | leaky, value | leaky, per-frame change |
-| --- | --- | --- | --- |
-| Bounded: instant | 0.38 (61) | 0.39 (61) | 0.09 (82) |
-| Bounded: seconds | 0.34 (26) | 0.45 (26) | 0.74 (115) |
-| Stateful: long (over 4 s) | −0.05 (32) | −0.03 (32) | 0.08 (33) |
-| Stateful: persistent | −0.05 (128) | −0.02 (128) | −0.04 (133) |
-| Stateful: gated (audio-driven, but no bump moved it) | −0.10 (200) | −0.08 (200) | 0.01 (224) |
+| Memory                                               | lags, value | leaky, value | leaky, per-frame change |
+| ---------------------------------------------------- | ----------- | ------------ | ----------------------- |
+| Bounded: instant                                     | 0.38 (61)   | 0.39 (61)    | 0.09 (82)               |
+| Bounded: seconds                                     | 0.34 (26)   | 0.45 (26)    | 0.74 (115)              |
+| Stateful: long (over 4 s)                            | −0.05 (32)  | −0.03 (32)   | 0.08 (33)               |
+| Stateful: persistent                                 | −0.05 (128) | −0.02 (128)  | −0.04 (133)             |
+| Stateful: gated (audio-driven, but no bump moved it) | −0.10 (200) | −0.08 (200)  | 0.01 (224)              |
 
 "Gated" columns are mostly threshold-driven counters: a half-standard-deviation
 bump rarely crosses an adaptive threshold, yet different songs leave the
 counter in different states.
 
 What follows:
-
 - **Score the two groups separately.** Bounded columns are a well-posed
   regression, and the linear model already explains 0.39 of an instant
   column's audio-driven motion and 0.74 of a seconds column's per-frame
@@ -371,11 +367,11 @@ columns that jump: a jump is over a quarter of the column's training range,
 
 Event F1 on the test songs (median, with the share of cells over 0.5):
 
-| Cells | Clock oracle | Ridge | LightGBM, value | **LightGBM, events** |
-| --- | --- | --- | --- | --- |
-| all 458 | 0.00 (9%) | 0.00 (26%) | 0.12 (34%) | **0.61 (58%)** |
-| 348 with history (counters, toggles) | 0.00 (5%) | 0.00 (9%) | 0.00 (16%) | **0.44 (46%)** |
-| 110 memoryless | 0.16 (20%) | 0.74 (81%) | 0.94 (90%) | 0.93 (95%) |
+| Cells                                | Clock oracle | Ridge      | LightGBM, value | **LightGBM, events** |
+| ------------------------------------ | ------------ | ---------- | --------------- | -------------------- |
+| all 458                              | 0.00 (9%)    | 0.00 (26%) | 0.12 (34%)      | **0.61 (58%)**       |
+| 348 with history (counters, toggles) | 0.00 (5%)    | 0.00 (9%)  | 0.00 (16%)      | **0.44 (46%)**       |
+| 110 memoryless                       | 0.16 (20%)   | 0.74 (81%) | 0.94 (90%)      | 0.93 (95%)           |
 
 Predicting when a counter ticks is learnable even though its value is not:
 a counter's value depends on how many ticks came before, its timing on the
@@ -393,11 +389,11 @@ preset p's motion on song s that departs from its clock-only trajectory. On
 The interaction is real: computed on each half of every song, it agrees at
 r = 0.47. Ranking presets for 8 held-out songs:
 
-| Ranking | Spearman | Top-10 precision |
-| --- | --- | --- |
-| fixed (each preset's mean fit) | 0.91 | 0.72 |
-| linear map from 39 song statistics, through each preset's dataflow profile | 0.91 | 0.71 |
-| mean fit on the 3 training songs nearest in those statistics | **0.96** (7 of 8 songs won) | **0.78** |
+| Ranking                                                                    | Spearman                    | Top-10 precision |
+| -------------------------------------------------------------------------- | --------------------------- | ---------------- |
+| fixed (each preset's mean fit)                                             | 0.91                        | 0.72             |
+| linear map from 39 song statistics, through each preset's dataflow profile | 0.91                        | 0.71             |
+| mean fit on the 3 training songs nearest in those statistics               | **0.96** (7 of 8 songs won) | **0.78**         |
 
 On the 4 unfamiliar-style songs, nearest songs gains nothing (0.59 against
 0.60). The fixed ranking itself falls to 0.60, so which presets react most
@@ -414,10 +410,10 @@ library of MilkDrop-shaped terms:
 
 It keeps the sparsest fit within 0.001 validation R² of the best.
 
-| Signals offered | Median R² (test) | Exact (R² > 0.999) | R² > 0.9 | Median terms |
-| --- | --- | --- | --- | --- |
-| the ones `lab:dataflow` says it reads | 0.983 | 41% | 79% | 10 |
-| all 13 | 0.988 | 40% | 82% | 94 |
+| Signals offered                       | Median R² (test) | Exact (R² > 0.999) | R² > 0.9 | Median terms |
+| ------------------------------------- | ---------------- | ------------------ | -------- | ------------ |
+| the ones `lab:dataflow` says it reads | 0.983            | 41%                | 79%      | 10           |
+| all 13                                | 0.988            | 40%                | 82%      | 94           |
 
 The 56 exact recoveries have a median of 4 terms, and 27 have 3 or fewer,
 for example `warp = 2*bass` and `zoomexp = 1 + 50*mid_att`. Given every
@@ -438,15 +434,14 @@ next step.
 broken stages). A fix must compile, keep every texture the body samples,
 and change at most 30% of its lines or two lines.
 
-| Setup | Compiles | Fixed | Distinct bodies fixed | Median s/task |
-| --- | --- | --- | --- | --- |
-| baseline: unchanged | 0 | 0 | 0 | — |
-| baseline: empty body | 162 | 0 | 0 | — |
-| whole body, one reply | 13 | 11 | 5 | 25 |
-| SEARCH/REPLACE edits, one reply, error line withheld | 9 | 6 | 5 | 11 |
-| SEARCH/REPLACE edits, one reply | 19 | 17 | 9 | 11 |
-| **the same, up to three replies with the next compiler error** | **45** | **39** | **15** | 37 |
-
+| Setup                                                          | Compiles | Fixed  | Distinct bodies fixed | Median s/task |
+| -------------------------------------------------------------- | -------- | ------ | --------------------- | ------------- |
+| baseline: unchanged                                            | 0        | 0      | 0                     | —             |
+| baseline: empty body                                           | 162      | 0      | 0                     | —             |
+| whole body, one reply                                          | 13       | 11     | 5                     | 25            |
+| SEARCH/REPLACE edits, one reply, error line withheld           | 9        | 6      | 5                     | 11            |
+| SEARCH/REPLACE edits, one reply                                | 19       | 17     | 9                     | 11            |
+| **the same, up to three replies with the next compiler error** | **45**   | **39** | **15**                | 37            |
 - **Point at the line.** glslang numbers the assembled shader, so a
   task's error used to cite line 675 of a 16-line body. Tasks now carry
   `errorLine`; withholding it cuts one-reply fixes from 17 to 6.
@@ -476,13 +471,13 @@ against native projectM references is the check for that.
 
 **Editing presets.** The 35 held-out remix tasks:
 
-| Answer | Instructions satisfied | Changed | Distance from human remix | Audio-edit recall | Median s/task |
-| --- | --- | --- | --- | --- | --- |
-| baseline: parent unchanged | 0% | 0/35 | 0.131 | 0% | — |
-| baseline: one-click restyle (bass pulse) | 7% | 35/35 | 0.204 | 0% | — |
-| baseline: the human remix | 100% | 21/35 | 0 | 100% | — |
-| whole preset | 47% | 16/35 | 0.159 | 20% | 170 |
-| SEARCH/REPLACE edits | 51% | 21/35 | 0.173 | 20% | 94 |
+| Answer                                   | Instructions satisfied | Changed | Distance from human remix | Audio-edit recall | Median s/task |
+| ---------------------------------------- | ---------------------- | ------- | ------------------------- | ----------------- | ------------- |
+| baseline: parent unchanged               | 0%                     | 0/35    | 0.131                     | 0%                | —             |
+| baseline: one-click restyle (bass pulse) | 7%                     | 35/35   | 0.204                     | 0%                | —             |
+| baseline: the human remix                | 100%                   | 21/35   | 0                         | 100%              | —             |
+| whole preset                             | 47%                    | 16/35   | 0.159                     | 20%               | 170           |
+| SEARCH/REPLACE edits                     | 51%                    | 21/35   | 0.173                     | 20%               | 94            |
 
 Every answer compiles and runs. The model follows about half the directed
 changes. In the answers read, settings move the named way, while
@@ -504,7 +499,6 @@ wave colours, q1–q32 …). They do not include what the shaders, custom waves
 and shapes, or per-pixel equations draw. `lab:dataflow` says statically
 which audio reaches those programs, but not what they draw. Consequences,
 measured on the full corpus:
-
 - `lab:preset-map` finds 719 of 2679 presets whose features are identical to
   another's; it lists them as `duplicates` rather than pretending to rank
   them.

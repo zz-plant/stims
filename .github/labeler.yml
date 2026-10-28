@@ -1,38 +1,38 @@
 documentation:
   - changed-files:
       - any-glob-to-any-file:
-          - 'docs/**'
-          - '*.md'
+          - "docs/**"
+          - "*.md"
 
 github:
   - changed-files:
       - any-glob-to-any-file:
-          - '.github/**'
+          - ".github/**"
 
 frontend:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/js/frontend/**'
+          - "src/js/frontend/**"
 
 renderer:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/js/milkdrop/**'
-          - 'src/shaders/**'
+          - "src/js/milkdrop/**"
+          - "src/shaders/**"
 
 styles:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/css/**'
+          - "src/css/**"
 
 tests:
   - changed-files:
       - any-glob-to-any-file:
-          - 'tests/**'
+          - "tests/**"
 
 scripts:
   - changed-files:
       - any-glob-to-any-file:
-          - 'scripts/**'
-          - 'package.json'
-          - 'bun.lock'
+          - "scripts/**"
+          - "package.json"
+          - "bun.lock"

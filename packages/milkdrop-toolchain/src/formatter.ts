@@ -583,6 +583,10 @@ export function getFieldOverwriteKind(
     `\\b${escapeRegExpLiteral(normalizedTarget)}\\b`,
     'iu',
   );
+  const assignPattern = new RegExp(
+    `^\\s*${escapeRegExpLiteral(normalizedTarget)}\\s*=(?!=)`,
+    'iu',
+  );
   let last: 'absolute' | 'relative' | null = null;
   for (const line of assignmentLines(source)) {
     if (!scope.covers(line.key as string)) continue;
@@ -591,10 +595,6 @@ export function getFieldOverwriteKind(
     // assignment to the target wins — so classify each and keep the last.
     // The per-statement match mirrors isFieldShadowedByEquations' `(?!=)`
     // guard, so `zoom == x` stays "none" rather than reading as an overwrite.
-    const assignPattern = new RegExp(
-      `^\\s*${escapeRegExpLiteral(normalizedTarget)}\\s*=(?!=)`,
-      'iu',
-    );
     for (const statement of valuePart.split(';')) {
       if (!assignPattern.test(statement)) continue;
       const statementEqIdx = statement.indexOf('=');
@@ -636,16 +636,24 @@ export function findMilkdropEquationLine(
  * agree on what counts as "the" line for a given field — including its alias
  * spelling, so `decay` finds a preset's `fDecay=` line.
  */
-function fieldLineFor(source: string, target: string) {
+function fieldLineForFromLines(
+  lines: ReturnType<typeof assignmentLines>,
+  target: string,
+) {
   if (!target.trim()) return null;
   const normalizedTarget = normalizeFieldKey(target);
   // Last wins in the compiler, so the last line is the one that decides the
   // value — and therefore the one a gutter marker should point at.
   return (
-    assignmentLines(source).findLast(
+    lines.findLast(
       (line) => normalizeFieldKey(line.key as string) === normalizedTarget,
     ) ?? null
   );
+}
+
+function fieldLineFor(source: string, target: string) {
+  if (!target.trim()) return null;
+  return fieldLineForFromLines(assignmentLines(source), target);
 }
 
 export function findMilkdropFieldLine(
@@ -663,11 +671,11 @@ export function findMilkdropFieldLine(
  * Returns null when the field has no literal line (the caller supplies the
  * MilkDrop default) or when its value is an expression rather than a number.
  */
-export function readMilkdropField(
-  source: string,
+function readMilkdropFieldFromLines(
+  lines: ReturnType<typeof assignmentLines>,
   target: string,
 ): number | null {
-  const line = fieldLineFor(source, target);
+  const line = fieldLineForFromLines(lines, target);
   if (line === null) return null;
 
   const rawValue = stripInlineCommentFromLine(line.value as string).trim();
@@ -679,6 +687,26 @@ export function readMilkdropField(
   }
   const parsed = Number.parseFloat(rawValue);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function readMilkdropField(
+  source: string,
+  target: string,
+): number | null {
+  if (!target.trim()) return null;
+  return readMilkdropFieldFromLines(assignmentLines(source), target);
+}
+
+export function readMilkdropFields<T extends string>(
+  source: string,
+  targets: readonly T[],
+): Record<T, number | null> {
+  const lines = assignmentLines(source);
+  const result = {} as Record<T, number | null>;
+  for (const target of targets) {
+    result[target] = readMilkdropFieldFromLines(lines, target);
+  }
+  return result;
 }
 
 export interface MidiGutterEntry {
@@ -698,18 +726,34 @@ export function computeMidiGutterInfo(
 ): MidiGutterEntry[] {
   const entries: MidiGutterEntry[] = [];
   const seen = new Set<string>();
+  let lines: ReturnType<typeof assignmentLines> | null = null;
   for (const rawTarget of targets) {
     const target = rawTarget.trim();
     if (!target || seen.has(target)) continue;
     seen.add(target);
 
-    const line = findMilkdropFieldLine(source, target);
-    if (line === null) continue;
+    lines ??= assignmentLines(source);
+    const fieldLine = fieldLineForFromLines(lines, target);
+    if (fieldLine === null) continue;
+
+    const scope = equationScope(target);
+    let shadowed = false;
+    if (scope) {
+      const assignPattern = new RegExp(
+        `(?:^|;)\\s*${escapeRegExpLiteral(scope.variable)}\\s*=(?!=)`,
+        'iu',
+      );
+      shadowed = lines.some(
+        (line) =>
+          scope.covers(line.key as string) &&
+          assignPattern.test(stripInlineCommentFromLine(line.value as string)),
+      );
+    }
 
     entries.push({
-      line,
+      line: fieldLine.number,
       target,
-      status: isFieldShadowedByEquations(source, target) ? 'shadowed' : 'live',
+      status: shadowed ? 'shadowed' : 'live',
     });
   }
   return entries;

@@ -8,6 +8,7 @@ import type {
   PanelState,
   SessionRouteState,
 } from './contracts.ts';
+import { readSharedVideoArrival } from './shared-video-arrival.ts';
 
 export { normalizeCollectionTag };
 
@@ -25,6 +26,7 @@ const SESSION_ROUTE_SEARCH_KEYS = [
   'chromeless',
   'yt',
   't',
+  'set',
 ] as const;
 
 export function readSessionRouteStateFromSearch(
@@ -42,6 +44,7 @@ export function readSessionRouteStateFromSearch(
     invalidPanel: parsed.routing.invalidPanel,
     youtubeVideoId: parsed.routing.youtubeVideoId,
     youtubeStartSeconds: parsed.routing.youtubeStartSeconds,
+    sharedSet: parsed.routing.sharedSet,
   };
 }
 
@@ -128,6 +131,9 @@ export function buildSessionRouteSearch(
       nextSearch.t = String(Math.floor(state.youtubeStartSeconds));
     }
   }
+  if (state.sharedSet) {
+    nextSearch.set = state.sharedSet;
+  }
 
   return nextSearch;
 }
@@ -145,6 +151,11 @@ export function readSessionRouteState(
         : new URL(input?.href ?? 'https://toil.fyi/');
 
   const state = readSessionRouteStateFromSearch(parsePlainSearch(url.search));
+  if (/^\/s\/[a-f0-9]{64}$/.test(url.pathname)) {
+    const shared = readSharedVideoArrival();
+    if (shared && !state.presetId)
+      return { ...state, presetId: shared.presetId, panel: 'editor' };
+  }
   const discovery = resolveSemanticRoute(url.pathname);
   if (!discovery) return state;
 
@@ -234,7 +245,7 @@ export function decodePresetCodeFromHash(
   hashInput: string = typeof window !== 'undefined' ? window.location.hash : '',
 ): string | null {
   const hash = hashInput.startsWith('#') ? hashInput.slice(1) : hashInput;
-  if (!hash) return null;
+  if (!hash) return readSharedVideoArrival()?.source ?? null;
 
   const params = new URLSearchParams(hash);
   const codeParam = params.get('code');

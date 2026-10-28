@@ -6,7 +6,6 @@ exploration plus the repo's own measured artifacts. Each entry records what
 was **done in the accompanying PR** and what remains.
 
 Baselines that anchored the ranking:
-
 - Stored Lighthouse run (`tests/accessibility/lighthouse.json`, 2026-06-19,
   mobile): **Performance 0.33** (TBT 7,820 ms, TTI 15.2 s, LCP 6.9 s);
   Accessibility 1.00, Best-practices 0.96, SEO 1.00.
@@ -21,6 +20,7 @@ Baselines that anchored the ranking:
 ## Tier 1
 
 ### 1. Startup performance (Lighthouse 0.33)
+
 **Area:** Performance / audit. The worst number in the repo: TBT 7.8 s,
 TTI 15.2 s, 95%-unused CSS, 249 KiB unused JS.
 **Done:** Meyda (~100 KB, only needed on the AnalyserNode fallback) and
@@ -32,6 +32,7 @@ the three.js surface the launch screen actually uses is the next big win.
 Re-run Lighthouse after deploy to re-baseline.
 
 ### 2. Catalog delivery
+
 **Area:** Performance. `catalog.json` (1.75 MB) and `search-index.json`
 (1.13 MB) re-downloaded on every load: no cache headers, network-first
 service worker that also blocked responses on `cache.put`.
@@ -44,6 +45,7 @@ the response (regression test updated to pin the new contract).
 the ~80–150 ms main-thread `JSON.parse` block is untouched.
 
 ### 3. Make the fidelity classifier real
+
 **Area:** Fidelity / audit. `classifyFidelity` returned `exact` for every
 preset; corpus "support" tests were vacuous; unknown EEL identifiers
 silently evaluated to 0; the 169 presets whose shaders run directly on
@@ -61,6 +63,7 @@ identifier is `else`, which suggests an EEL `if/else` parsing gap worth a
 look.
 
 ### 4. Fix the six presets with measured visual failures
+
 **Area:** Fidelity. Named, reproducible, checked-in failures
 (`webgpu-certification-report.json`): `rovastar-parallel-universe` 98%
 mismatch on both backends (a shipped bundled preset), `eos-phat-cubetrace-v2`
@@ -73,6 +76,7 @@ against the native projectM references.
 the repo since the failures are already measured and reproducible.
 
 ### 5. Flash safety
+
 **Area:** Safety / audit. Roadmap exit criteria unmet: no default-on
 flash-rate cap, red-flash criterion unimplemented, audit runs incomplete
 (16/50 timeouts), only synthetic audio measured.
@@ -89,6 +93,7 @@ and the user-facing flash-limit control itself (a product decision: an
 intensity limiter between "full motion" and the existing freeze-all).
 
 ### 6. Honor prefers-reduced-motion
+
 **Area:** Accessibility (WCAG 2.3.3). `reducedMotion` was computed and then
 ignored — `workspace-hooks.ts` gated the full-screen animated attract mode
 on `lowPower` with a comment falsely claiming reduced-motion was folded in.
@@ -99,12 +104,14 @@ steering, not animation — and `view-transition.ts` already honored the OS
 flag — so no change was needed there.)
 
 ### 7. Renderer Proxy bound-method churn
+
 **Area:** Performance. Every `renderer.*` access minted a fresh bound
 closure (~30–60/frame) and made frame-path call sites megamorphic.
 **Done:** bound methods cached per live renderer instance with automatic
 rebinding on renderer recreation; redundant `set` writes skipped.
 
 ### 8. Browser Back
+
 **Area:** UX. Only `replaceState` was ever used, so Back from an open
 bottom sheet exited the site — the single biggest everyday mobile
 navigation defect.
@@ -116,12 +123,14 @@ sheet); every other route change stays a replace so history isn't flooded.
 ### 9. Surface silently-degraded WebGPU presets — folded into #3 (done).
 
 ### 10. Loading states for lazy panels
+
 **Area:** UX. All nine lazy panels used `Suspense fallback={null}` — a
 blank sheet during chunk loads that are seconds long on cold caches.
 **Done:** skeleton-row fallback (`role="status"`) for both the panel sheet
 and the launch screen.
 
 ### 11. Measured reactivity instead of keyword tags
+
 **Area:** UX / fidelity. `collection:audio-reactive` is a title-regex match
 (1,391/1,787 presets); sampled measurement shows ~8% of the catalog barely
 reacts; `reactivity-probe.ts` measures properly but only feeds AI
@@ -133,6 +142,7 @@ catalog, rank default recommendations by them, and add a swing-magnitude
 ceiling detector to the corpus suite.
 
 ### 12. Wire the continuous DRS controller
+
 **Area:** Performance. A unit-tested PID resolution scaler
 (`continuous-drs.ts`) sits unwired while the shipping path uses the
 discrete step-hunting it was written to replace.
@@ -142,6 +152,7 @@ degradation via `engine-quality-store.ts` and sheds engines under load.
 **Remaining:** the DRS wiring itself.
 
 ### 13. Frame-state cloning on the low-quality path
+
 **Area:** Performance (mobile). 120–180 large object clones per second
 imposed exactly on weak devices.
 **Done:** the shared `createEnv` prototype-write deopt is fixed (guarded
@@ -152,6 +163,7 @@ a shared scratch object would risk cross-engine aliasing. See the rewritten
 `FRONTEND_PERFORMANCE_BOTTLENECKS.md` for the fix shape.
 
 ### 14. Keyboard-focus-safe auto-hide
+
 **Area:** Accessibility (WCAG 2.4.7). Stage controls went
 `visibility: hidden` under a focused control after 3 s, dropping focus to
 `<body>`.
@@ -163,6 +175,7 @@ WCAG 2.2.1 dismissibility for hints remains a deliberate trade-off, not an
 oversight.
 
 ### 15. A11y quick wins
+
 **Area:** Accessibility / audit.
 **Done:** Label-in-Name failures fixed on the three primary CTAs (redundant
 aria-labels removed — visible text is the accessible name; WCAG 2.5.3
@@ -175,12 +188,14 @@ external troubleshooting links announce "(opens in a new tab)".
 automated contrast assertion.
 
 ### 16. WebGL-failure dead end
+
 **Area:** UX. The no-GPU overlay promised a compatibility mode it never
 offered — its only action reloaded into the same failure.
 **Done:** a "Try compatibility mode" button (same recovery as the error
 boundary) plus honest copy.
 
 ### 17. First-run experience
+
 **Area:** UX. Two of three onboarding hints were unreachable dead code: they
 fired exactly when a panel opened, but the component unmounted whenever a
 panel was open — and `IMPLEMENTATION_STATUS.md` marks the feature done.
@@ -191,6 +206,7 @@ actually appear on first use.
 `stim-user-critiques.md` (starter presets, visible reactivity indicator).
 
 ### 18. SEO: doorway-page risk and the internal link graph
+
 **Area:** SEO. `/discover/<slug>` synthesized a unique self-canonical page
 for ANY slug (unbounded thin-page space — a penalty risk hiding behind the
 1.00 score), while zero discover hubs appeared in any sitemap and the 1,787
@@ -205,7 +221,8 @@ mock — including the collapse case where a silent no-op would have pointed
 per-topic preset listings (and per-preset related links) is the next step.
 
 ### 19. Make the quality gate tell the truth
-**Area:** Audit. The gate validated catalog *shape*, never catalog *truth*.
+
+**Area:** Audit. The gate validated catalog _shape_, never catalog _truth_.
 **Done:** catalog integrity now consumes `preview-failures.json` (a
 known-black preset can no longer ship with `preview: true` — the one
 existing offender is fixed); a bundle-size budget exists; the committed
@@ -217,6 +234,7 @@ suite is `test.skip` in CI), and a regenerated, valid perf baseline via
 `perf:low-resource` on a GPU-capable machine.
 
 ### 20. Measured visual coverage and stale claims
+
 **Area:** Fidelity / audit. Only 3/1,787 presets have measured parity
 results; 62/71 certification-corpus presets are unmeasured; 14 bundled
 presets ship with zero equations (static frames); parity docs disagreed

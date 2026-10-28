@@ -60,6 +60,8 @@ function groupChoices(actions: readonly PadActionChoice[]) {
   return [...groups];
 }
 
+const NO_MIDI_REASON = 'Connect a MIDI controller to map knobs.';
+
 export function PerformanceHardwareSection({
   padActions = [],
 }: {
@@ -176,16 +178,23 @@ export function PerformanceHardwareSection({
   };
 
   const globalLearnArmed = globalLearn.phase === 'armed';
+  const knobLearnBlocked = !midiConnected
+    ? NO_MIDI_REASON
+    : globalLearnArmed
+      ? 'Finish or cancel the mapping above first.'
+      : !learnTarget.trim()
+        ? 'Type a name first.'
+        : null;
   const globalLearnStatus = (() => {
     switch (globalLearn.phase) {
       case 'armed':
         if (globalLearn.target)
-          return `Target: ${globalLearn.target} — now move a knob`;
+          return `Target: ${globalLearn.target}. Now move a knob`;
         if (globalLearn.pendingCc)
-          return `CC${globalLearn.pendingCc.cc} received — now touch a control`;
+          return `Knob ${globalLearn.pendingCc.cc} moved. Now touch a control`;
         return "Touch a control in the editor's Tune tab or the stage, then move a knob…";
       case 'bound':
-        return `Bound CC${globalLearn.cc} → ${globalLearn.target}`;
+        return `Knob ${globalLearn.cc} now moves ${globalLearn.target}`;
       default:
         return null;
     }
@@ -197,9 +206,9 @@ export function PerformanceHardwareSection({
         <h3 className="ctl-section__title">Performance hardware</h3>
       </div>
       <p className="ctl-section__note">
-        Connect a class-compliant MIDI controller and learn your own mappings —
-        or let Claude drive the show through an MCP session (shows up below as
-        "Claude (MCP)").
+        Connect a MIDI controller that needs no driver and map its knobs, or let
+        Claude drive the show through an MCP session (shows up below as "Claude
+        (MCP)").
       </p>
       {/* A gamepad has arrived here as a device since the performance source
           shipped, but the copy named only MIDI and Claude, so the one piece
@@ -207,7 +216,7 @@ export function PerformanceHardwareSection({
       <p className="ctl-section__note">
         A game controller counts too, with nothing to connect: plug one in and
         it appears below as "Gamepad", sticks and triggers already mapped. Known
-        controllers — nanoKONTROL2, Launch Control XL, MiniLab 3 — arrive with
+        controllers (nanoKONTROL2, Launch Control XL, MiniLab 3) arrive with
         their factory mapping instead of the generic one.
       </p>
 
@@ -255,7 +264,7 @@ export function PerformanceHardwareSection({
           <span className="ctl-row__label">Learn from a control</span>
           <span className="ctl-row__hint">
             No typing: arm learn, touch the on-screen control you want (in the
-            editor's Tune tab or on the stage), then move a knob — in either
+            editor's Tune tab or on the stage), then move a knob, in either
             order.
           </span>
         </span>
@@ -275,11 +284,11 @@ export function PerformanceHardwareSection({
               disabled={!midiConnected}
               onClick={() => webMidiService.armGlobalLearn()}
             >
-              Learn from a control
+              Map a knob to a control
             </button>
           )}
           <span className="ctl-readout" role="status">
-            {globalLearnStatus}
+            {globalLearnStatus ?? (midiConnected ? null : NO_MIDI_REASON)}
           </span>
         </div>
       </div>
@@ -327,7 +336,7 @@ export function PerformanceHardwareSection({
                 disabled={!padAction}
                 onClick={startPadLearn}
               >
-                Learn
+                Map the next pad I hit
               </button>
             )}
           </div>
@@ -338,7 +347,7 @@ export function PerformanceHardwareSection({
         <span className="ctl-row__text">
           <span className="ctl-row__label">Map a knob by name</span>
           <span className="ctl-row__hint">
-            For variables with no control of their own — q1–q8, t1–t8, or
+            For variables with no control of their own: q1–q8, t1–t8, or
             anything a preset defines. Name it, then move a knob to bind it.
           </span>
           <span className="ctl-row__hint">
@@ -364,15 +373,17 @@ export function PerformanceHardwareSection({
             <button
               type="button"
               className="ctl-btn"
-              disabled={
-                !learnTarget.trim() || !midiConnected || globalLearnArmed
-              }
+              disabled={knobLearnBlocked !== null}
               onClick={startLearn}
             >
-              Learn
+              Map the next knob I move
             </button>
           )}
         </div>
+        {/* A greyed-out button said nothing about why. */}
+        {knobLearnBlocked && !learning ? (
+          <span className="ctl-readout">{knobLearnBlocked}</span>
+        ) : null}
       </div>
     </section>
   );

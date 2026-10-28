@@ -11,11 +11,11 @@ without DOM scraping. Everything here is installed in **all modes** by
 await __stims_agent.waitFor((s) => s.engineState === 'ready');
 
 // Act, then assert — run() resolves after the next state commit:
-const result = await __stims_agent.run('audio-demo');   // {ok, settled}
+const result = await __stims_agent.run('audio-demo'); // {ok, settled}
 await __stims_agent.waitFor((s) => s.engineState === 'live');
 
 // Verify effects from the log, not from vanished toasts:
-__stims_agent.getState().statusLog.at(-1);              // {at, message, source}
+__stims_agent.getState().statusLog.at(-1); // {at, message, source}
 ```
 
 ## Readiness
@@ -34,24 +34,24 @@ __stims_agent.getState().statusLog.at(-1);              // {at, message, source}
 
 `__stims_agent.getState()` returns one JSON snapshot:
 
-| Field | Meaning |
-| --- | --- |
-| `engineState` | `'booting' \| 'ready' \| 'live'` (mirrors the body attribute) |
-| `engineReady`, `liveMode`, `backend` | engine status; backend is `'webgl' \| 'webgpu'` once mounted |
-| `panel` | open side panel (`browse`, `settings`, `editor`, …) or null |
-| `presetId`, `presetTitle`, `presetAuthor` | active preset; title and author come from the catalog entry for `presetId`, so all three name the same preset |
-| `catalogSize` | presets the shell can pick from; `0` until the deferred catalog load lands, which is later than `ready`, so `next-preset` is a no-op before then — `waitFor((s) => s.catalogSize > 0)` before choosing presets |
-| `audioSource`, `audioEnergy` | current source and live RMS energy |
-| `playbackPaused` | the stage is holding its frame at the user's request (Space, the dock's pause button, `toggle-playback`); everything stays mounted, unlike `stop-audio`, which unmounts the engine and returns to the start page |
-| `autoplay`, `transition` | playback settings (`transition.mode`, `transition.blendDuration`) |
-| `shaderExecution` | the compiler's verdict: can the active backend run the preset's shader text? `'direct'` yes; `'none'` the preset has no shader text; `'translated'` / `'unsupported'` no, so the renderer substitutes a **uniform-only approximation** — a plausible frame that is not the preset; `null` nothing compiled yet (never read null as "fine"). It does not see routing that overrides it: `?milkdrop-webgpu-feedback=0` and the safe WebGPU path leave it at `'direct'` |
-| `appliedShaderExecution` | what the renderer ran on the last presented frame: `'direct'` the authored shader text; `'controls'` the uniform-only approximation (for a `'none'` preset, that is the preset as authored); `'off'` no feedback pass at all (the safe WebGPU path); `null` no frame presented since the preset loaded, or its programs are still compiling. Wait for it to be non-null; in a hidden pane, pump frames with `__STIMS_AGENT_RENDER_FRAMES__` |
-| `fps`, `quality` | measured frame rate and adaptive-quality diagnostics (from the agent telemetry feed) |
-| `lastError` | most recent window error / unhandled rejection message, or null |
-| `statusLog` | last 20 status messages, `{at, message, source}`. `source` is `'shell'` for the workspace's status line or `'runtime'` for the engine's (`Loaded …`, blend refusals, `WebGPU rollout flags active: …`). Runtime statuses are logged as they are set, including the ones the toast hides and the ones the next status overwrites in the engine snapshot |
-| `documentHidden`, `agentMode` | `document.hidden` right now, and whether the page was loaded with `?agent=true` |
-| `renderingSuspended` | the frame loop is **skipping frames because this tab is hidden**. A hidden tab without `?agent=true` renders nothing: the canvas goes black with no error and looks like a shader failure, so check this first. Computed by the same rule the frame loop acts on (`src/js/core/hidden-tab-policy.ts`), so the two cannot disagree |
-| `tempo` | `{bpm, source}`: the tempo auto-advance lands its switches on. `source` is `'audio'` (estimated from onsets; `bpm` stays null until the estimate is confident), `'tap'` (`run('tap-tempo')` on each beat, first tap on the downbeat) or `'midi-clock'` (an external clock is running) |
+| Field                                     | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `engineState`                             | `'booting' \| 'ready' \| 'live'` (mirrors the body attribute)                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `engineReady`, `liveMode`, `backend`      | engine status; backend is `'webgl' \| 'webgpu'` once mounted                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `panel`                                   | open side panel (`browse`, `settings`, `editor`, …) or null                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `presetId`, `presetTitle`, `presetAuthor` | active preset; title and author come from the catalog entry for `presetId`, so all three name the same preset                                                                                                                                                                                                                                                                                                                                                        |
+| `catalogSize`                             | presets the shell can pick from; `0` until the deferred catalog load lands, which is later than `ready`, so `next-preset` is a no-op before then — `waitFor((s) => s.catalogSize > 0)` before choosing presets                                                                                                                                                                                                                                                       |
+| `audioSource`, `audioEnergy`              | current source and live RMS energy                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `playbackPaused`                          | the stage is holding its frame at the user's request (Space, the dock's pause button, `toggle-playback`); everything stays mounted, unlike `stop-audio`, which unmounts the engine and returns to the start page                                                                                                                                                                                                                                                     |
+| `autoplay`, `transition`                  | playback settings (`transition.mode`, `transition.blendDuration`)                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `shaderExecution`                         | the compiler's verdict: can the active backend run the preset's shader text? `'direct'` yes; `'none'` the preset has no shader text; `'translated'` / `'unsupported'` no, so the renderer substitutes a **uniform-only approximation** — a plausible frame that is not the preset; `null` nothing compiled yet (never read null as "fine"). It does not see routing that overrides it: `?milkdrop-webgpu-feedback=0` and the safe WebGPU path leave it at `'direct'` |
+| `appliedShaderExecution`                  | what the renderer ran on the last presented frame: `'direct'` the authored shader text; `'controls'` the uniform-only approximation (for a `'none'` preset, that is the preset as authored); `'off'` no feedback pass at all (the safe WebGPU path); `null` no frame presented since the preset loaded, or its programs are still compiling. Wait for it to be non-null; in a hidden pane, pump frames with `__STIMS_AGENT_RENDER_FRAMES__`                          |
+| `fps`, `quality`                          | measured frame rate and adaptive-quality diagnostics (from the agent telemetry feed)                                                                                                                                                                                                                                                                                                                                                                                 |
+| `lastError`                               | most recent window error / unhandled rejection message, or null                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `statusLog`                               | last 20 status messages, `{at, message, source}`. `source` is `'shell'` for the workspace's status line or `'runtime'` for the engine's (`Loaded …`, blend refusals, `WebGPU rollout flags active: …`). Runtime statuses are logged as they are set, including the ones the toast hides and the ones the next status overwrites in the engine snapshot                                                                                                               |
+| `documentHidden`, `agentMode`             | `document.hidden` right now, and whether the page was loaded with `?agent=true`                                                                                                                                                                                                                                                                                                                                                                                      |
+| `renderingSuspended`                      | the frame loop is **skipping frames because this tab is hidden**. A hidden tab without `?agent=true` renders nothing: the canvas goes black with no error and looks like a shader failure, so check this first. Computed by the same rule the frame loop acts on (`src/js/core/hidden-tab-policy.ts`), so the two cannot disagree                                                                                                                                    |
+| `tempo`                                   | `{bpm, source}`: the tempo auto-advance lands its switches on. `source` is `'audio'` (estimated from onsets; `bpm` stays null until the estimate is confident), `'tap'` (`run('tap-tempo')` on each beat, first tap on the downbeat) or `'midi-clock'` (an external clock is running)                                                                                                                                                                                |
 
 **Staleness caveat:** a `getState()` read in the same tick as an action can
 predate the React commit. Use `await run(...)` / `waitFor(...)` instead of
@@ -134,6 +134,62 @@ bun run ctl -- --step-timeout 90000 \
   process **exits non-zero** if any step failed, and prints `Step failed: …`
   to stderr, so a shell script can branch on it.
 
+## On the tab you are watching: the live channel
+
+`bun run ctl` and the MCP sessions launch a browser of their own. The live
+channel drives the tab already open on `bun run dev` instead: a vite plugin
+(`scripts/vite-live-channel.ts`) relays commands over the WebSocket vite holds
+open for hot reload, and the page half (`src/js/frontend/live-channel.ts`)
+answers them. Neither exists in a build.
+
+**Which tab.** Every tab on the dev server reports to it, and one of them is
+the stage: a visible, focused tab first, then a visible one. Ties go to the tab
+brought forward last, so clicking into a terminal leaves the stage where it
+is. An automated tab (`navigator.webdriver`: Playwright, the MCP sessions,
+`ctl`) becomes the stage only with `?liveChannel=1` in its URL. The Browser
+pane reports itself hidden, so it is the stage only when no visible tab is
+connected.
+
+**Out, in `scratch/live/`:**
+
+- `events.jsonl`: one JSON object per line. The stage's `getEvents()` entries
+  carry `from: "page"`, stage changes `from: "channel"`, and every command,
+  with its result and duration, `from: "agent"`. Rotated to `events.1.jsonl`
+  at 5 MB. Follow it with `tail -f`, or wake on a line such as `"type":"error"`.
+- `state.json`: the stage's latest `getState()` without `statusLog`, plus
+  `performanceRevision` and the `__stims_live` fader positions, rewritten about
+  once a second.
+- `frame.jpg`: the last capture. `server.json`: the port this dev server took.
+
+**In, as commands:**
+
+```bash
+bun run live -- status
+bun run live -- run select-preset '{"id":"geiss-casino"}'
+bun run live -- call ramp '{"targets":{"warp":2.4},"durationMs":6000}'
+bun run live -- capture     # → scratch/live/frame.jpg
+bun run live -- send '{"type":"toil:set_audio","source":"demo"}'
+```
+
+`send` takes any `toil:*` message (the protocol `--post` uses above),
+`{"type":"live","method":…,"args":[…]}` for a `window.__stims_live` method, or
+`{"type":"capture"}`. The CLI posts to `POST /__stims-live/command` and reads
+`GET /__stims-live/state`; curl works too, with
+`Content-Type: application/json`. Both routes answer this machine only. A
+command the stage never answers fails after 45 s; pass `--timeout` for a
+longer ramp.
+
+**In, as files.** Saving `scratch/live/preset.milk` applies it as preset
+source (`toil:apply_source`), and the compile result, diagnostics and line
+numbers included, lands in `events.jsonl` under `via: "file:preset.milk"`.
+Saving `scratch/live/pattern.js` plays it as a Strudel pattern; saving it
+empty hushes. A save applies when its content changed or the stage did.
+Strudel needs an audio context the page has already unlocked with a click.
+
+The lab and e2e servers that `scripts/dev-server.ts` spawns set
+`STIMS_LIVE_CHANNEL=0`, so automated runs never write these files. Set it
+yourself to turn the channel off.
+
 ## Events
 
 `getEvents(sinceSeq = 0)` → `[{seq, at, type, data}]`, last 100 retained.
@@ -146,7 +202,7 @@ produced exactly these events") instead of diffing snapshots by hand.
 `error` events capture window errors and unhandled rejections — check them
 before diagnosing a black canvas. `shader-execution` events carry
 `{from, to, backend, presetId, approximated}` and fire on both axes that can
-change the answer — a preset switch *and* a backend fallback with the preset
+change the answer — a preset switch _and_ a backend fallback with the preset
 held still. They follow `shaderExecution` only: `appliedShaderExecution` drops
 to null on every load and settles a frame later, so it has no event; read it
 with `waitFor`.
@@ -227,3 +283,7 @@ copy and may change; ids must not.
   render N frames with synthetic time/audio, for capture harnesses.
 - `window.__stims_live` — performance API (ramp, listen, pattern
   playback); see `src/js/frontend/live-performance.ts`.
+
+## Explicit decision capture
+
+`await __stims_agent.captureImage()` returns one JPEG of the live stage, at most 640 pixels on its longest side, or `null` without a canvas. It reads inside a frame callback with a three-second deadline and uploads nothing. `__stims_agent.getPerformanceRevision()` is a monotonic local mutation token for preset/source/control changes; audio samples and rendered frames do not advance it. Decision consumers compare it again immediately before applying a suggestion. See [Decision models](../DECISION_MODELS.md).

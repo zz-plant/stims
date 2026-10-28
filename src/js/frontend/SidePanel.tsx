@@ -236,6 +236,23 @@ export function SidePanel({
     }
   }, []);
 
+  // Phone sheet: while it is up, the stage's render root rides up by half the
+  // sheet's height (SidePanel.module.css), so the middle of the visual sits
+  // in the strip of stage left above the sheet. Published from here rather
+  // than read from the route, because the stage must start back down as the
+  // sheet starts its exit: the route only changes once the exit is over, and
+  // until then the sheet would slide off a band of bare frame under the
+  // lifted canvas.
+  useEffect(() => {
+    if (!stageAnchored || !isActive) return;
+    const root = document.getElementById('stims-main');
+    if (!root) return;
+    root.dataset.stageLifted = 'true';
+    return () => {
+      delete root.dataset.stageLifted;
+    };
+  }, [stageAnchored, isActive]);
+
   useEffect(() => {
     if (!stageAnchored) return;
     const style = shellRootStyle();

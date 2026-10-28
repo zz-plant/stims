@@ -163,7 +163,8 @@ describe('Settings: map a pad to a command', () => {
         picker.dispatchEvent(new Event('change', { bubbles: true }));
       });
       const learn = [...view.container.querySelectorAll('button')].find(
-        (button) => button.textContent === 'Learn' && !button.disabled,
+        (button) =>
+          button.textContent === 'Map the next pad I hit' && !button.disabled,
       );
       view.click(learn);
       expect(view.text()).toContain(
@@ -194,7 +195,8 @@ describe('Settings: map a pad to a command', () => {
       <PerformanceHardwareSection padActions={padActions} />,
     );
     const learn = [...view.container.querySelectorAll('button')].find(
-      (button) => button.textContent === 'Learn' && !button.disabled,
+      (button) =>
+        button.textContent === 'Map the next pad I hit' && !button.disabled,
     );
     view.click(learn);
     expect(webMidiService.getNoteLearnTarget()).toBe('action:next-preset');

@@ -76,17 +76,24 @@ function logInfo(msg: string) {
 //   these with its own buttons, right next to the preview they act on. The
 //   palette rows exist so automation and keyboard users can reach them.
 // - 'queue-clear': queue management, not a mid-performance move.
+// - 'queue-save-set', 'queue-share-set', 'queue-manage-sets': set management
+//   and sharing actions are modal workflows and set preparation, not
+//   mid-performance moves on the main stage dock. 'queue-share-set' also
+//   lives in CueMonitor beside queue-clear.
 const PALETTE_ONLY_EXEMPT = new Set([
   'queue-take',
   'queue-skip',
   'queue-fade',
   'queue-clear',
+  'queue-save-set',
+  'queue-share-set',
   'toggle-autoplay',
   // Set once before a set, from the settings sheet or the palette. A dock
   // button would sit one mis-click away from silently changing how the
   // renderer behaves mid-show.
   'toggle-live-performance',
-  'open-shortcuts',
+  // Multimodal Clef Omni decision action to auto-switch performance scenes.
+  'auto-switch-scene',
   'cycle-theme',
   'use-webgl',
   // An authoring instrument, not a mid-performance move (StageControls.tsx
@@ -122,6 +129,10 @@ const PALETTE_ONLY_EXEMPT = new Set([
   'tempo-follow-music',
   'tempo-nudge-earlier',
   'tempo-nudge-later',
+  // A live cut made on the beat: the D key (held, or latched with a double
+  // tap) or a MIDI pad mapped to this id, which runs the palette row. A menu
+  // row is two taps away, too slow for the moment it exists for.
+  'toggle-blackout',
 ]);
 
 /**
@@ -278,6 +289,8 @@ function extractDockActionIds(source: string): {
     const expr = m[1].trim();
     const isKnownShape =
       expr === 'item.actionId' ||
+      // A MenuItem's companion button, fed by its own `actionId:` literal.
+      expr === 'companion.actionId' ||
       expr === 'transitionActionId(step)' ||
       expr.startsWith('`audio-');
     if (!isKnownShape) {

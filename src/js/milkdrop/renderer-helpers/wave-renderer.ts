@@ -78,19 +78,30 @@ function getWaveLayerCount(wave: MilkdropWaveVisual) {
   return wave.drawMode === 'dots' || wave.thickness > 1 ? 4 : 1;
 }
 
+const STATIC_SINGLE_WAVE_OFFSET = [{ x: 0, y: 0 }];
+const REUSABLE_THICK_WAVE_OFFSETS = [
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+];
+
 function getWaveLayerOffsets(layerCount: number, thickness: number) {
   if (layerCount < 4) {
-    return [{ x: 0, y: 0 }];
+    return STATIC_SINGLE_WAVE_OFFSET;
   }
   // Use thickness to determine offset: thicker = wider multi-pass spread.
   // At thickness=2, offset ~2px at 1080p. At thickness=5, offset ~6px.
   const spread = getMilkdropThickWaveSpread(thickness);
-  return [
-    { x: 0, y: 0 },
-    { x: spread, y: 0 },
-    { x: spread, y: spread },
-    { x: 0, y: spread },
-  ];
+  REUSABLE_THICK_WAVE_OFFSETS[0].x = 0;
+  REUSABLE_THICK_WAVE_OFFSETS[0].y = 0;
+  REUSABLE_THICK_WAVE_OFFSETS[1].x = spread;
+  REUSABLE_THICK_WAVE_OFFSETS[1].y = 0;
+  REUSABLE_THICK_WAVE_OFFSETS[2].x = spread;
+  REUSABLE_THICK_WAVE_OFFSETS[2].y = spread;
+  REUSABLE_THICK_WAVE_OFFSETS[3].x = 0;
+  REUSABLE_THICK_WAVE_OFFSETS[3].y = spread;
+  return REUSABLE_THICK_WAVE_OFFSETS;
 }
 
 function createWaveLayerObject(

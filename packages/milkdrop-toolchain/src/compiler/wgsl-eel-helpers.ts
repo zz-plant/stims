@@ -124,8 +124,13 @@ export const MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE = `
     return select(0.0, 1.0, abs(left - right) <= 0.00001);
   }
 
-  fn milkdropRand(seed: f32, time: f32) -> f32 {
-    return milkdropFrac(sin(dot(vec2<f32>(seed, time), vec2<f32>(12.9898, 78.233))) * 43758.5453);
+  fn milkdropRand(scale: f32, time: f32) -> f32 {
+    let unit = milkdropFrac(sin(dot(vec2<f32>(scale, time), vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    return unit * max(scale, 0.0);
+  }
+
+  fn milkdropRandInt(scale: f32, time: f32) -> f32 {
+    return floor(milkdropRand(scale, time));
   }
 
   fn milkdropTruncInt(value: f32) -> i32 {

@@ -45,7 +45,18 @@ describe('/api/telemetry', () => {
       'phone',
       'demo',
       'search',
+      '',
     ]);
+  });
+
+  test('appends the surface an action was run from', async () => {
+    const { points } = await post({
+      event: 'action:open-editor',
+      surface: 'menu',
+    });
+
+    expect(points[0]?.blobs?.[0]).toBe('action:open-editor');
+    expect(points[0]?.blobs?.[9]).toBe('menu');
   });
 
   test('writes an unknown context value as empty', async () => {
@@ -55,15 +66,16 @@ describe('/api/telemetry', () => {
       device: '<script>',
       audioSource: 'spotify',
       arrival: 'https://www.google.com/',
+      surface: 'toolbar',
     });
 
-    expect(points[0]?.blobs?.slice(5)).toEqual(['', '', '', '']);
+    expect(points[0]?.blobs?.slice(5)).toEqual(['', '', '', '', '']);
   });
 
   test('keeps accepting beacons from clients that send no context', async () => {
     const { response, points } = await post({ event: 'growth-demo-started' });
 
     expect(response.status).toBe(204);
-    expect(points[0]?.blobs?.slice(5)).toEqual(['', '', '', '']);
+    expect(points[0]?.blobs?.slice(5)).toEqual(['', '', '', '', '']);
   });
 });

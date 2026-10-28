@@ -33,7 +33,6 @@ The milestone backlog this plan absorbed on 2026-10-13 is [archived](./archive/M
 ## Measurement rules
 
 Each was learned by producing a wrong number first.
-
 1. **Never trust a single capture on a preset whose band is wide.** Check `parity-noise-bands.json` first. To attribute a delta to a change, capture with it, revert, and capture again; if reverting does not restore the old number, the delta was noise. On 2026-09-01 the bands ran from 0.02 percentage points (300-beatdetect) to 14.85 (cubetrace), so a five-point move is a result on one preset and noise on another.
 2. **A better score on one preset is not evidence.** Two errors cancelling produce beautiful numbers: defaulting `gammaadj` to 1 put 260's mean at exactly the reference's 127.7 while taking 100-square from 1.43% to 85.74%. Re-measure 100-square (band 0.17 percentage points on 2026-09-01) alongside any tonal change.
 3. **Measure transfers, don't derive them.** The present path applies `out = in^(1/gammaAdj)` with gammaAdj defaulting to 2, established by rendering a constant-output comp shader through `__STIMS_AGENT_BRIDGE__.applyEditorSource` and reading the canvas back, after three source-reading attempts got it wrong. projectM's `fGammaAdj = 1.0` init line is overwritten by its parser; do not "fix" our default to match it.
@@ -50,28 +49,27 @@ Unmeasured since 2026-09-01. Later renderer changes, including the #1223 feedbac
 
 The 2026-09-01 suite graded the 13 references: 1 pass, 10 fail, 2 `reference-no-signal`. The medians below come from `parity-noise-bands.json` (WebGPU, 7 repeats, measured the same day; glowsticks 3 repeats on 2026-08-26). Earlier columns are the 2026-08-26 three-repeat medians and the 2026-08-27 single run after the harness and echo fixes.
 
-| Preset | Fail threshold | 2026-08-26 | 2026-08-27 | 2026-09-01 median (band) | Verdict |
-| --- | --- | --- | --- | --- | --- |
-| 100-square | 2% | 1.20% | 1.50% | 1.39% (0.17) | pass |
-| 300-beatdetect-bassmidtreb | 2% | 5.79% | 5.79% | 5.79% (0.02) | fail |
-| 250-wavecode | 2% | 7.36% | 7.30% | 7.37% (0.64) | fail |
-| 260-compshader-noise_lq | 2% | 33.72% | 33.72% | 91.64% (0.21) | fail |
-| 261-compshader-noisevol_lq | 2% | 75.55% | 76.24% | 77.33% (3.66) | fail |
-| eos-glowsticks-v2-03-music | 5% | 1.08% | 1.08% | 1.08% (0.02) | no signal |
-| krash-rovastar-cerebral-demons-stars | 5% | 86.29% | 95.26% | 95.28% (0.03) | no signal |
-| eos-phat-cubetrace-v2 | 5% | 64.59% | 29.25% | 24.28% (14.85) | fail |
-| eos-phat-magnetosphere-13-pulsar | 5% | 100.00% | — | 24.90% (11.51) | fail |
-| rovastar-parallel-universe | 5% | 82.21% | 67.99% | 68.15% (3.24) | fail |
-| eos-phat-dark-heart | 5% | 93.37% | — | 90.84% (0.59) | fail |
-| orb-acid-in-my-eyes | 5% | 97.73% | — | 91.74% (3.44) | fail |
-| rovastar-mosaics-of-ages | 5% | 99.71% | 100.00% | 100.00% (0.00) | fail |
+| Preset                               | Fail threshold | 2026-08-26 | 2026-08-27 | 2026-09-01 median (band) | Verdict   |
+| ------------------------------------ | -------------- | ---------- | ---------- | ------------------------ | --------- |
+| 100-square                           | 2%             | 1.20%      | 1.50%      | 1.39% (0.17)             | pass      |
+| 300-beatdetect-bassmidtreb           | 2%             | 5.79%      | 5.79%      | 5.79% (0.02)             | fail      |
+| 250-wavecode                         | 2%             | 7.36%      | 7.30%      | 7.37% (0.64)             | fail      |
+| 260-compshader-noise_lq              | 2%             | 33.72%     | 33.72%     | 91.64% (0.21)            | fail      |
+| 261-compshader-noisevol_lq           | 2%             | 75.55%     | 76.24%     | 77.33% (3.66)            | fail      |
+| eos-glowsticks-v2-03-music           | 5%             | 1.08%      | 1.08%      | 1.08% (0.02)             | no signal |
+| krash-rovastar-cerebral-demons-stars | 5%             | 86.29%     | 95.26%     | 95.28% (0.03)            | no signal |
+| eos-phat-cubetrace-v2                | 5%             | 64.59%     | 29.25%     | 24.28% (14.85)           | fail      |
+| eos-phat-magnetosphere-13-pulsar     | 5%             | 100.00%    | —          | 24.90% (11.51)           | fail      |
+| rovastar-parallel-universe           | 5%             | 82.21%     | 67.99%     | 68.15% (3.24)            | fail      |
+| eos-phat-dark-heart                  | 5%             | 93.37%     | —          | 90.84% (0.59)            | fail      |
+| orb-acid-in-my-eyes                  | 5%             | 97.73%     | —          | 91.74% (3.44)            | fail      |
+| rovastar-mosaics-of-ages             | 5%             | 99.71%     | 100.00%    | 100.00% (0.00)           | fail      |
 
 `measured-results.json` (last written 2026-07-29) still marks 250-wavecode, 300-beatdetect and glowsticks as passing, and the catalog fidelity check trusts it.
 
 ## Open work
 
 In order. Each item is judged on WebGPU against projectM unless it says otherwise.
-
 1. **Re-measure and demote.** Re-run capture, noise and suite on the 13 references, then demote every promoted result the suite contradicts.
 2. **Retire the no-signal references.** Remove krash and glowsticks from the certified set and judge krash against butterchurn. Its remaining defect there is the textured-shape multiply (`texture(prev, uv) * vertexColor`), with a secondary resolution-dependent feedback attractor.
 3. **Seed the capture.** mosaics swung 66.3–99.7% and cubetrace 29.3–38.3% across repeats after the harness fix. The prime suspect is the per-preset `Math.random` constants drawn at load: `play-toy` has a `randomSeed` option that `lab:backend-diff` passes and the parity capture does not.

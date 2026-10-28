@@ -17,7 +17,7 @@ name: Mirror packages
 on:
   push:
     branches: [main]
-    paths: ['packages/**']
+    paths: ["packages/**"]
   workflow_dispatch:
 
 permissions:

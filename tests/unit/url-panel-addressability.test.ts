@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  ALL_PANEL_IDS,
   type PanelState,
   parseURLParams,
 } from '../../src/js/core/url-params.ts';
@@ -29,6 +30,11 @@ describe('panel URL addressability', () => {
     'settings',
     'synthesize',
   ];
+
+  test('ALL_PANEL_IDS matches the canonical set of addressable panels', () => {
+    expect([...ALL_PANEL_IDS]).toEqual(ALL_PANELS);
+  });
+
   for (const panel of ALL_PANELS) {
     test(`?tool=${panel} round-trips`, () => {
       expect(panelFor(`tool=${panel}`)).toBe(panel);

@@ -6,7 +6,7 @@
   border-radius: var(--radius-lg);
   background: var(--stims-panel-strong);
   border: 1px solid var(--stims-line-strong);
-  border-left: 3px solid var(--stims-accent);
+  border-left: 3px solid var(--stims-accent); /* impeccable-disable-line side-tab: the stripe marks the toast as a help/status signal */
   box-shadow:
     var(--stims-shadow),
     0 0 16px rgba(244, 122, 84, 0.08);
@@ -16,7 +16,7 @@
   line-height: 1.45;
   letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
-  animation: help-enter var(--spring-enter) both;
+  animation: help-enter var(--motion-enter) both;
   pointer-events: none;
 }
 

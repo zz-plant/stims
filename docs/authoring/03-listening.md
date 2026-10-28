@@ -38,7 +38,7 @@ per_frame_3=zoom = 1.01 + bass_avg*0.15;
 
 `bass_avg` isn't a built-in — it's an ordinary variable. In NS-EEL, any name you assign persists from frame to frame automatically (there's no declaration step), so `bass_avg*(1-ra) + ra*bass` is a proper exponential moving average. At 60 fps, `6/fps` is `0.1`, so each frame `bass_avg` drifts 10% of the way from where it was toward the current `bass`. A per-frame `ra` of `0.05–0.15` (a numerator of 3–9 at 60 fps) is the useful range — smaller is smoother and laggier, larger snaps closer to raw. Dividing by `fps` keeps the cutoff the same regardless of frame rate: at 30 fps each frame takes a step twice as large. It's the same correction you saw as `75/fps` in Track 1, written as a rate per second instead of against a 75fps reference — the more common form when a preset builds its own filter.
 
-Why bother when `_att` already exists? Control. You choose the exact cutoff, and the same technique smooths *anything* — not just the three built-in bands, but `vol`, a derived signal, even another filter's output.
+Why bother when `_att` already exists? Control. You choose the exact cutoff, and the same technique smooths _anything_ — not just the three built-in bands, but `vol`, a derived signal, even another filter's output.
 
 ## Lesson 3 · The volume-clock pattern
 
@@ -55,9 +55,8 @@ per_frame_5=zoom = 1 + 0.03*vol;
 [**▶ Run the volume clock**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBQYXR0ZXJuIDEgZnJvbSB0aGUgY29kaW5nIGd1aWRlOiBzcXVhcmVkIHZvbHVtZSBkcml2aW5nIGFuIGFjY3VtdWxhdGluZwovLyBjbG9jaywgaW5zdGVhZCBvZiBkcml2aW5nIHpvb20gZGlyZWN0bHkuIFF1aWV0IHBhc3NhZ2VzIG5lYXJseSBmcmVlemUKLy8gdGhlIGNsb2NrOyBsb3VkIG9uZXMgc3BpbiBpdC4KZlJhdGluZz01CmZEZWNheT0wLjk3CmZXYXZlQWxwaGE9MS4yCmZXYXZlU2NhbGU9MQpuV2F2ZU1vZGU9MApiV2F2ZVRoaWNrPTEKYk1heGltaXplV2F2ZUNvbG9yPTEKYlRleFdyYXA9MQp6b29tPTEKcm90PTAKY3g9MC41CmN5PTAuNQpkeD0wCmR5PTAKc3g9MQpzeT0xCndhcnA9MAp3YXZlX3I9MC4yCndhdmVfZz0wLjg1CndhdmVfYj0xCndhdmVfeD0wLjUKd2F2ZV95PTAuNQpvYl9hPTAKaWJfYT0wCm12X2E9MApwZXJfZnJhbWVfMT12b2wgPSAoYmFzcyttaWQrdHJlYikqMC4zMzM7CnBlcl9mcmFtZV8yPXZvbCA9IHZvbCp2b2w7CnBlcl9mcmFtZV8zPW10aW1lID0gbXRpbWUgKyB2b2wqMC4wMiooNzUvZnBzKTsKcGVyX2ZyYW1lXzQ9cm90ID0gc2luKG10aW1lKSowLjAzOwpwZXJfZnJhbWVfNT16b29tID0gMSArIDAuMDMqdm9sOwo%3D "examples/33-vol-clock.milk")
 
 Two ideas stacked:
-
-- **Squaring compresses quiet and amplifies loud.** `vol*vol` on a 0–1ish range pushes background hiss toward zero while barely touching a loud passage — the preset visibly *rests* between hits instead of humming continuously.
-- **`mtime` accumulates instead of following.** `rot` doesn't read `vol` directly — it reads `sin(mtime)`, and `mtime` only advances when there's volume to advance it. During a quiet bridge the clock nearly stops and the whole preset holds its pose; during a loud chorus it races. This is why energetic presets still feel *composed* rather than nervous: the music controls tempo, not just amplitude.
+- **Squaring compresses quiet and amplifies loud.** `vol*vol` on a 0–1ish range pushes background hiss toward zero while barely touching a loud passage — the preset visibly _rests_ between hits instead of humming continuously.
+- **`mtime` accumulates instead of following.** `rot` doesn't read `vol` directly — it reads `sin(mtime)`, and `mtime` only advances when there's volume to advance it. During a quiet bridge the clock nearly stops and the whole preset holds its pose; during a loud chorus it races. This is why energetic presets still feel _composed_ rather than nervous: the music controls tempo, not just amplitude.
 
 ## Lesson 4 · Detecting a beat without a beat detector
 
@@ -73,13 +72,12 @@ per_frame_4=wave_g = 0.85 - beat_fired*0.3;
 [**▶ Run the beat flash**](https://toil.fyi/?tool=editor#code=u1~W3ByZXNldDAwXQovLyBQYXR0ZXJuIDYgZnJvbSB0aGUgY29kaW5nIGd1aWRlOiBhbiBhZGFwdGl2ZSBiZWF0IHRocmVzaG9sZC4gYmFzc190aHJlc2gKLy8ganVtcHMgdG8gMi4wIHRoZSBpbnN0YW50IGEgYmVhdCBmaXJlcyAoc28gaXQgY2FuJ3QgcmV0cmlnZ2VyIG5leHQgZnJhbWUpLAovLyB0aGVuIGRlY2F5cyBiYWNrIHRvd2FyZCAxLjMg4oCUIHNlbGYtdHVuaW5nIHRvIGxvdWQgb3IgcXVpZXQgdHJhY2tzLgpmUmF0aW5nPTUKZkRlY2F5PTAuOTYKZldhdmVBbHBoYT0xLjIKZldhdmVTY2FsZT0xCm5XYXZlTW9kZT0wCmJXYXZlVGhpY2s9MQpiTWF4aW1pemVXYXZlQ29sb3I9MQpiVGV4V3JhcD0xCnpvb209MS4wMQpyb3Q9MApjeD0wLjUKY3k9MC41CmR4PTAKZHk9MApzeD0xCnN5PTEKd2FycD0wCndhdmVfcj0wLjIKd2F2ZV9nPTAuODUKd2F2ZV9iPTEKd2F2ZV94PTAuNQp3YXZlX3k9MC41Cm9iX2E9MAppYl9hPTAKbXZfYT0wCnBlcl9mcmFtZV8xPWJhc3NfdGhyZXNoID0gYWJvdmUoYmFzc19hdHQsYmFzc190aHJlc2gpKjIgKyAoMS1hYm92ZShiYXNzX2F0dCxiYXNzX3RocmVzaCkpKigoYmFzc190aHJlc2gtMS4zKSowLjk2KzEuMyk7CnBlcl9mcmFtZV8yPWJlYXRfZmlyZWQgPSBlcXVhbChiYXNzX3RocmVzaCwyKTsKcGVyX2ZyYW1lXzM9d2F2ZV9yID0gMC4yICsgYmVhdF9maXJlZCowLjc7CnBlcl9mcmFtZV80PXdhdmVfZyA9IDAuODUgLSBiZWF0X2ZpcmVkKjAuMzsK "examples/34-beat-flash.milk")
 
 Read the first line as a state machine with two states, chosen by `above(bass_att, bass_thresh)` (1 if a beat just cleared the bar, else 0):
-
 - **Beat fired** (`above` is 1): the whole right-hand expression collapses to `1*2 + 0*(...)` — `bass_thresh` snaps to `2.0`. The bar is now so high that next frame's `bass_att` almost certainly can't clear it. That is exactly the point: one hit can't retrigger itself for several frames.
 - **No beat** (`above` is 0): it collapses to `0*2 + 1*((bass_thresh-1.3)*0.96+1.3)` — `bass_thresh` decays 4% of the way back toward a `1.3` floor every frame. Give it enough quiet frames and the bar is low again, ready for the next hit.
 
 No branch, not even an `if` — `above()` returning exactly 1 or 0 is what lets both terms share one line while only one of them ever survives. This self-tuning bar is why the same threshold code works on a whisper-quiet ambient track and a wall-of-noise one: it's relative to recent loudness, not an absolute number picked for one song.
 
-The second line reads the beat off the bar itself: `equal(bass_thresh,2)` is 1 only on the frame the bar snapped up. Testing `above(bass_att,bass_thresh)` again would compare against the *new* bar of `2.0`, which almost nothing clears, so the flash would never fire.
+The second line reads the beat off the bar itself: `equal(bass_thresh,2)` is 1 only on the frame the bar snapped up. Testing `above(bass_att,bass_thresh)` again would compare against the _new_ bar of `2.0`, which almost nothing clears, so the flash would never fire.
 
 `beat_fired` is reusable: anything that should happen once per beat can multiply by it. Track 7 dissects a Geiss preset that uses the same gate to fire a single-frame directional impulse instead of a color flash.
 
@@ -97,29 +95,29 @@ bun run lab:reactivity -- --file docs/authoring/examples/35-reactive-vortex.milk
 
 The report gives each variable a verdict:
 
-| Verdict | Meaning |
-|---|---|
-| `reactive` | measurably correlated with audio — the number you want |
-| `autonomous` | moves, but on its own clock (`sin(time)`), not audio |
-| `weak` | some correlation, but faint |
-| `static` | never changes — not necessarily wrong (most variables in a preset should be) |
+| Verdict      | Meaning                                                                      |
+| ------------ | ---------------------------------------------------------------------------- |
+| `reactive`   | measurably correlated with audio — the number you want                       |
+| `autonomous` | moves, but on its own clock (`sin(time)`), not audio                         |
+| `weak`       | some correlation, but faint                                                  |
+| `static`     | never changes — not necessarily wrong (most variables in a preset should be) |
 
 For `zoom`, `rot`, and `wave_r` in the vortex, you should see `reactive`. The waveform's own deviation (`mainWave.deviation`) reads `reactive` too: the tool measures what your eyes judged in Lesson 1, with a number attached. Write, measure, and adjust the coupling strength until the verdict says reactive. The [contributing guide](../../CONTRIBUTING.md#contributing-presets) asks for this check before a preset is submitted; `bun run lab:visual` adds pixel-level checks, but only for presets already in the catalog.
 
 ## Lesson 6 · Harmonic vs. percussive separation
 
-Standard MilkDrop gives you three frequency bands: `bass`, `mid`, and `treb`. But frequency doesn't tell you *what kind* of sound is playing. A sustained low synth drone and a punchy kick drum both register as `bass`; a sustained chord and a snare crack both light up `mid`. If visuals only react to raw frequency bands, sustained low notes keep the stage constantly shaking and wash out the impact when a drum actually lands.
+Standard MilkDrop gives you three frequency bands: `bass`, `mid`, and `treb`. But frequency doesn't tell you _what kind_ of sound is playing. A sustained low synth drone and a punchy kick drum both register as `bass`; a sustained chord and a snare crack both light up `mid`. If visuals only react to raw frequency bands, sustained low notes keep the stage constantly shaking and wash out the impact when a drum actually lands.
 
 Stims computes real-time Harmonic/Percussive Source Separation (HPSS) in its audio pipeline, splitting the incoming sound into sustained tones and transient hits. These are exposed to preset equations as first-class registers:
 
-| Signal | What it carries |
-|---|---|
-| `percussive` | Transient and broadband spectral energy (drums, plucks, clicks), scaled like `bass` |
-| `harmonic` | Sustained tonal energy (pads, vocals, organ notes), scaled like `bass` |
-| `percussive_low` | Low-end transients (kick drum thumps, 20–250 Hz) |
-| `percussive_mid` | Mid-range transients (snare cracks, claps, 250–4000 Hz) |
-| `percussive_high` | High-frequency transients (hi-hats, cymbals, above 4 kHz) |
-| `percussive_ratio` | The share of total energy that is percussive (0..1, neutral 0.5 in silence) |
+| Signal             | What it carries                                                                     |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| `percussive`       | Transient and broadband spectral energy (drums, plucks, clicks), scaled like `bass` |
+| `harmonic`         | Sustained tonal energy (pads, vocals, organ notes), scaled like `bass`              |
+| `percussive_low`   | Low-end transients (kick drum thumps, 20–250 Hz)                                    |
+| `percussive_mid`   | Mid-range transients (snare cracks, claps, 250–4000 Hz)                             |
+| `percussive_high`  | High-frequency transients (hi-hats, cymbals, above 4 kHz)                           |
+| `percussive_ratio` | The share of total energy that is percussive (0..1, neutral 0.5 in silence)         |
 
 Notice the difference between `percussive` and `bass`: `bass` stays high as long as low frequencies rumble, but `percussive` peaks sharply at the onset of a strike and drops back down even while the low note continues ringing.
 
@@ -143,13 +141,13 @@ per_frame_7=rot = 0.01 + above(percussive_ratio, 0.65)*0.03*percussive;
 Everything above is standard MilkDrop, portable to Winamp, projectM, and Butterchurn. Stims also feeds presets what the person watching is doing — where the pointer is, how hard it is being dragged, pinch and twist, and a set of key pulses — plus device motion. Every name is in the [reference](reference.md#signals-read-only-inputs), completed and hover-documented in the editor:
 
 
-| Family | Names | What it carries |
-|---|---|---|
-| Pointer | `input_x` `input_y` `input_dx` `input_dy` `input_speed` `input_pressed` `input_count` | position (-1..1), per-frame movement, and whether anything is held |
-| Hover | `hover_active` `hover_x` `hover_y` | a mouse over the stage that is *not* pressing |
-| Force | `drag_intensity` `drag_angle` `wheel_delta` `wheel_accum` | how hard, which way, and the scroll wheel |
-| Gesture | `gesture_scale` `gesture_rotation` `gesture_translate_x` `gesture_translate_y` | pinch and twist — `=`/`-` and `,`/`.` on a keyboard |
-| Keys | `action_remix` `action_accent` `action_mode_next` `action_mode_previous` `action_quick_look_1..3` | R, Enter, X, Q/Z, 1/2/3 as pulses that decay over ~220ms |
+| Family  | Names                                                                                             | What it carries                                                    |
+| ------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Pointer | `input_x` `input_y` `input_dx` `input_dy` `input_speed` `input_pressed` `input_count`             | position (-1..1), per-frame movement, and whether anything is held |
+| Hover   | `hover_active` `hover_x` `hover_y`                                                                | a mouse over the stage that is _not_ pressing                      |
+| Force   | `drag_intensity` `drag_angle` `wheel_delta` `wheel_accum`                                         | how hard, which way, and the scroll wheel                          |
+| Gesture | `gesture_scale` `gesture_rotation` `gesture_translate_x` `gesture_translate_y`                    | pinch and twist — `=`/`-` and `,`/`.` on a keyboard                |
+| Keys    | `action_remix` `action_accent` `action_mode_next` `action_mode_previous` `action_quick_look_1..3` | R, Enter, X, Q/Z, 1/2/3 as pulses that decay over ~220ms           |
 
 The keys reach the preset only while the stage has focus — click the visuals first. Shift plus an arrow key steers the pointer without a mouse.
 

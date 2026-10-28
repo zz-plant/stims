@@ -470,7 +470,11 @@ describe('editor panel colour groups and value-source chips', () => {
       radiusRow?.querySelector('.stims-editor__mod') ? 'modulation' : 'none',
     ).toBe('none');
     expect(
-      radiusRow?.querySelector('[aria-label^="MIDI-learn"]') ? 'learn' : 'none',
+      radiusRow?.querySelector(
+        '[aria-label^="Map "][aria-label$="to a MIDI control"]',
+      )
+        ? 'learn'
+        : 'none',
     ).toBe('none');
 
     // Switching it on rewrites the shape's own line.

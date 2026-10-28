@@ -227,8 +227,11 @@ export class TexturesPane {
     const uploadBtn = document.createElement('button');
     uploadBtn.type = 'button';
     uploadBtn.className = 'stims-editor__texture-btn';
-    uploadBtn.textContent = 'Upload image…';
-    uploadBtn.title = 'Upload a custom PNG/JPEG image for this slot';
+    // The file is read in this browser and never leaves it; "Upload" read
+    // as a transfer somewhere.
+    uploadBtn.textContent = 'Use an image from this device…';
+    uploadBtn.title =
+      'Pick a PNG or JPEG for this slot; it stays in this browser';
     uploadBtn.addEventListener('click', () => {
       fileInput.click();
     });
@@ -238,8 +241,8 @@ export class TexturesPane {
       const resetBtn = document.createElement('button');
       resetBtn.type = 'button';
       resetBtn.className = 'stims-editor__texture-btn';
-      resetBtn.textContent = 'Reset';
-      resetBtn.title = 'Reset to default texture';
+      resetBtn.textContent = 'Remove image';
+      resetBtn.title = "Go back to the preset's own texture for this slot";
       resetBtn.addEventListener('click', () => {
         resetTextureSlotOverride(binding.name);
       });

@@ -101,12 +101,31 @@ export function CapturePanel() {
     };
   }, [engine, ui.stageRef]);
 
+  // Closing the panel mid-recording (the menu's Record item again, Escape,
+  // another panel) used to stop the recorder and drop what it held: only the
+  // Stop button downloaded. A recording is never thrown away, so leaving
+  // saves it the way Stop does.
+  const presetRef = useRef(preset);
+  presetRef.current = preset;
+  const announceRef = useRef(ui.setStatusMessage);
+  announceRef.current = ui.setStatusMessage;
   useEffect(
     () => () => {
       const exporter = exporterRef.current;
-      if (exporter?.getRecordingStatus()) {
-        void exporter.stopRecording().catch(() => {});
-      }
+      if (!exporter?.getRecordingStatus()) return;
+      const format = presetRef.current;
+      const announce = announceRef.current;
+      void exporter
+        .stopRecording()
+        .then((blob) => {
+          if (!blob) return;
+          exporter.downloadVideo(blob, getFilename(format, blob.type));
+          noteGrowthEvent('video-saved');
+          announce('Recording stopped and saved to your downloads.');
+        })
+        .catch(() => {
+          announce('Recording stopped but could not be saved.');
+        });
     },
     [],
   );
@@ -174,25 +193,26 @@ export function CapturePanel() {
     setStatus('Finishing video…');
     try {
       const blob = await exporter.stopRecording();
-      if (!blob) {
+      if (blob) {
+        exporter.downloadVideo(blob, getFilename(preset, blob.type));
+        setStatus('Video saved to your downloads.');
+        setSaved(true);
+        noteGrowthEvent('video-saved');
+      } else {
         setStatus('No video frames were captured. Try recording again.');
-        return;
       }
-      exporter.downloadVideo(blob, getFilename(preset, blob.type));
-      setStatus('Video saved to your downloads.');
-      setSaved(true);
-      noteGrowthEvent('video-saved');
     } catch (error) {
       setStatus(
         error instanceof Error
           ? `Recording could not be saved: ${error.message}`
           : 'Recording could not be saved. Try again.',
       );
-    } finally {
-      // Always clear the recording flag so a failure can't wedge the Stop
-      // button into a permanently "Finishing video…" state.
-      setRecording(false);
     }
+    // Always clear the recording flag so a failure can't wedge the Stop
+    // button into a permanently "Finishing video…" state. Runs after the
+    // catch rather than in a `finally` clause — React Compiler cannot lower
+    // try/finally yet, and one unparsable function skips the whole file.
+    setRecording(false);
   }, [preset]);
 
   return (

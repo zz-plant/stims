@@ -100,10 +100,13 @@ export interface WorkspaceContextValue {
     clear: () => void;
     move: (presetId: string, direction: -1 | 1) => void;
     popNext: () => string | null;
+    replaceQueue: (newIds: string[]) => void;
   };
 
   handleImport: (files: FileList | File[] | null) => Promise<void>;
   handleShowCurrentLink: () => Promise<void>;
+  /** Copies an `<iframe>` for the preset on stage; resolves true once copied. */
+  handleCopyEmbedCode: () => Promise<boolean>;
   updatePanel: (panel: PanelState) => void;
 }
 
@@ -192,6 +195,7 @@ export function coarseEngineSnapshotEqual(
     prev.tempoBpm === snap.tempoBpm &&
     prev.shaderExecution === snap.shaderExecution &&
     prev.appliedShaderExecution === snap.appliedShaderExecution &&
+    prev.draftUnsaved === snap.draftUnsaved &&
     prev.autoplay === snap.autoplay &&
     prev.transitionMode === snap.transitionMode &&
     prev.blendDuration === snap.blendDuration
@@ -383,6 +387,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       presetQueue,
       handleImport: shellOrchestration.handleImport,
       handleShowCurrentLink: shellOrchestration.handleShowCurrentLink,
+      handleCopyEmbedCode: shellOrchestration.handleCopyEmbedCode,
       updatePanel: shellOrchestration.updatePanel,
     }),
     [
@@ -420,6 +425,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       presetQueue,
       shellOrchestration.handleImport,
       shellOrchestration.handleShowCurrentLink,
+      shellOrchestration.handleCopyEmbedCode,
       shellOrchestration.updatePanel,
     ],
   );

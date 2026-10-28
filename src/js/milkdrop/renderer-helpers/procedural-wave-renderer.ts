@@ -90,12 +90,13 @@ function getProceduralWaveRenderCount(wave: MilkdropProceduralWaveVisual) {
 function buildProceduralWaveSampleT(
   sourceLength: number,
   closed: boolean,
-): number[] {
+): Float32Array {
   const renderCount = sourceLength + (closed ? 1 : 0);
-  const values = new Array<number>(renderCount);
+  const values = new Float32Array(renderCount);
   const maxIndex = Math.max(1, sourceLength - 1);
+  const invMaxIndex = 1 / maxIndex;
   for (let index = 0; index < renderCount; index += 1) {
-    values[index] = closed && index === sourceLength ? 0 : index / maxIndex;
+    values[index] = closed && index === sourceLength ? 0 : index * invMaxIndex;
   }
   return values;
 }
@@ -119,19 +120,28 @@ function buildProceduralWaveAttributeValues(
   values: ArrayLike<number>,
   closed: boolean,
   offset = 0,
-) {
-  const sampleT = buildProceduralWaveSampleT(values.length, closed);
+  precomputedSampleT?: ArrayLike<number>,
+): Float32Array {
+  const sampleT =
+    precomputedSampleT ?? buildProceduralWaveSampleT(values.length, closed);
+  const len = sampleT.length;
+  const result = new Float32Array(len);
   // MilkDrop wraps offset reads modulo the buffer (waveL[(i + 32) % len]),
   // so shifted lookups wrap instead of clamping onto the last sample.
-  return sampleT.map((t) => {
-    const shifted = t + offset;
-    return sampleScalarValueAt(values, shifted - Math.floor(shifted));
-  });
+  for (let i = 0; i < len; i += 1) {
+    const val = sampleT[i] ?? 0;
+    const shifted = val + offset;
+    result[i] = sampleScalarValueAt(values, shifted - Math.floor(shifted));
+  }
+  return result;
 }
 
-function buildProceduralWaveParity(sourceLength: number, closed: boolean) {
+function buildProceduralWaveParity(
+  sourceLength: number,
+  closed: boolean,
+): Float32Array {
   const renderCount = sourceLength + (closed ? 1 : 0);
-  const values = new Array<number>(renderCount);
+  const values = new Float32Array(renderCount);
   for (let index = 0; index < renderCount; index += 1) {
     values[index] = index % 2 === 0 ? 0 : 1;
   }
@@ -188,9 +198,36 @@ function setOrUpdateVectorAttribute(
     targetArray = new Float32Array(requiredLength);
   }
 
-  for (let i = 0; i < length; i += 1) {
-    for (let c = 0; c < itemSize; c += 1) {
-      targetArray[i * itemSize + c] = columns[c]?.[i] ?? 0;
+  if (itemSize === 4) {
+    const col0 = columns[0] ?? [];
+    const col1 = columns[1] ?? [];
+    const col2 = columns[2] ?? [];
+    const col3 = columns[3] ?? [];
+    let outIdx = 0;
+    for (let i = 0; i < length; i += 1) {
+      targetArray[outIdx] = col0[i] ?? 0;
+      targetArray[outIdx + 1] = col1[i] ?? 0;
+      targetArray[outIdx + 2] = col2[i] ?? 0;
+      targetArray[outIdx + 3] = col3[i] ?? 0;
+      outIdx += 4;
+    }
+  } else if (itemSize === 3) {
+    const col0 = columns[0] ?? [];
+    const col1 = columns[1] ?? [];
+    const col2 = columns[2] ?? [];
+    let outIdx = 0;
+    for (let i = 0; i < length; i += 1) {
+      targetArray[outIdx] = col0[i] ?? 0;
+      targetArray[outIdx + 1] = col1[i] ?? 0;
+      targetArray[outIdx + 2] = col2[i] ?? 0;
+      outIdx += 3;
+    }
+  } else {
+    for (let i = 0; i < length; i += 1) {
+      const base = i * itemSize;
+      for (let c = 0; c < itemSize; c += 1) {
+        targetArray[base + c] = columns[c]?.[i] ?? 0;
+      }
     }
   }
 
@@ -288,40 +325,44 @@ function fillProceduralWaveAttributes(
   next: Line,
   wave: MilkdropProceduralWaveVisual,
 ) {
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleT',
-    buildProceduralWaveSampleT(wave.samples.length, wave.closed),
-  );
+  const sampleT = buildProceduralWaveSampleT(wave.samples.length, wave.closed);
+  setOrUpdateScalarAttribute(next.geometry, 'sampleT', sampleT);
   const sampleDataChannels = [
-    buildProceduralWaveAttributeValues(wave.samples, wave.closed),
+    buildProceduralWaveAttributeValues(wave.samples, wave.closed, 0, sampleT),
     buildProceduralWaveAttributeValues(
       wave.samples,
       wave.closed,
       PROJECTM_STEREO_OFFSET,
+      sampleT,
     ),
     buildProceduralWaveAttributeValues(
       wave.samples,
       wave.closed,
       PROJECTM_STEREO_OFFSET * 2,
+      sampleT,
     ),
     buildProceduralWaveAttributeValues(
       wave.samples,
       wave.closed,
       PROJECTM_STEREO_OFFSET * 3,
+      sampleT,
     ),
   ];
   setOrUpdateVectorAttribute(next.geometry, 'sampleData', sampleDataChannels);
+  const velocitySampleT =
+    wave.velocities.length === wave.samples.length ? sampleT : undefined;
   const velocityChannel = buildProceduralWaveAttributeValues(
     wave.velocities,
     wave.closed,
+    0,
+    velocitySampleT,
   );
   setOrUpdateVectorAttribute(next.geometry, 'sampleMisc', [
     buildProceduralWaveParity(wave.samples.length, wave.closed),
     velocityChannel,
     velocityChannel,
   ]);
-  return { sampleDataChannels, velocityChannel };
+  return { sampleDataChannels, velocityChannel, sampleT };
 }
 
 export function syncProceduralWaveObject(

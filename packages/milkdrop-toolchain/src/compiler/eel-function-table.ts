@@ -629,8 +629,9 @@ export const EEL_FUNCTIONS: Record<string, EelFunctionSpec> = {
       }
       return `(rng() * (${a[0]}))`;
     },
-    wgslVm: () => 'rand()',
-    // The field path has no per-vertex RNG state; a hash of (seed, time)
+    wgslVm: (a) =>
+      a[0] === '1.0f' ? 'rand()' : `(rand() * max(0.0f, ${a[0]}))`,
+    // The field path has no per-vertex RNG state; a hash of (scale, time)
     // stands in.
     wgslField: (a) => `milkdropRand(${a[0]}, signalTimeValue)`,
   },
@@ -645,6 +646,7 @@ export const EEL_FUNCTIONS: Record<string, EelFunctionSpec> = {
       return `Math.floor(rng() * (${a[0]}))`;
     },
     wgslVm: (a) => `floor(rand() * max(0.0f, ${a[0]}))`,
+    wgslField: (a) => `milkdropRandInt(${a[0]}, signalTimeValue)`,
   },
   megabuf: {
     defaults: [0],

@@ -20,6 +20,10 @@
  * module stays free of React and the engine graph.
  */
 
+import {
+  applyPerformanceFrame,
+  markPerformanceMutation,
+} from '../core/performance-revision.ts';
 import { parseURLParams } from '../core/url-params.ts';
 import { getAgentTelemetry } from './agent-bridge.ts';
 import {
@@ -247,6 +251,7 @@ export function getCps(): number | null {
  * lands those and lists the rest in `superseded`.
  */
 export function ramp(request: RampRequest): Promise<RampResult> {
+  markPerformanceMutation();
   const { setTarget } = requireDeps();
   const curve = request.curve ?? 'sine';
   const ease = EASE[curve] ?? EASE.sine;
@@ -599,6 +604,7 @@ export async function runMacro(
   name: string,
   overrides?: { speed?: number },
 ): Promise<MacroRunResult> {
+  markPerformanceMutation();
   const macro = macros.get(name);
   if (!macro) {
     throw new Error(
@@ -611,6 +617,7 @@ export async function runMacro(
   let stepsRun = 0;
 
   for (const step of macro.steps) {
+    if (!('waitMs' in step)) markPerformanceMutation();
     if ('ramp' in step) {
       await ramp({ ...step.ramp, durationMs: step.ramp.durationMs / speed });
     } else if ('set' in step) {
@@ -672,6 +679,7 @@ export async function recallScene(
   name: string,
   options?: { durationMs?: number; curve?: RampCurve },
 ): Promise<RampResult & { modulators: number }> {
+  markPerformanceMutation();
   const scene = scenes.get(name);
   if (!scene) {
     throw new Error(
@@ -691,6 +699,108 @@ export async function recallScene(
   });
 
   return { ...result, modulators: scene.modulators.length };
+}
+
+export interface AutoSceneSwitchResult {
+  chosenScene: string | null;
+  applied: boolean;
+  confidence: number;
+  reason?: string;
+}
+
+/**
+ * Uses Clef Omni to choose and transition to a performance scene matching the music.
+ */
+export async function autoSwitchScene(options?: {
+  audio?: string;
+  durationMs?: number;
+  apply?: boolean;
+  endpoint?: string;
+  signal?: AbortSignal;
+}): Promise<AutoSceneSwitchResult> {
+  const currentScenes = listScenes();
+  if (currentScenes.length < 2) {
+    return {
+      chosenScene: null,
+      applied: false,
+      confidence: 0,
+      reason: 'Save at least two scenes to enable scene switching.',
+    };
+  }
+
+  const candidateScenes = currentScenes.slice(0, 12);
+  const sceneOptions = candidateScenes.map((s, idx) => ({
+    id: `scene${idx}`,
+    description: s.description || s.name,
+  }));
+
+  let audioDataUrl = options?.audio;
+  if (!audioDataUrl) {
+    const { createSyntheticAudioClip } = await import(
+      '../core/services/audio-clip.ts'
+    );
+    audioDataUrl = createSyntheticAudioClip({ durationMs: 1000 });
+  }
+
+  const { requestDecision } = await import(
+    '../core/services/decision-client.ts'
+  );
+  const { chosenOption } = await import('../core/decision-model.ts');
+
+  const request = {
+    task: 'scene-choice' as const,
+    state: {
+      scenes: sceneOptions,
+    },
+    audio: [audioDataUrl],
+  };
+
+  const result = await requestDecision(request, {
+    signal: options?.signal,
+    endpoint: options?.endpoint,
+  });
+
+  const answer = result.answers.scene;
+  const confidence = answer && answer.type === 'choice' ? answer.confidence : 0;
+  const selected = chosenOption(result, 'scene');
+
+  if (!selected || selected === 'hold') {
+    return {
+      chosenScene: null,
+      applied: false,
+      confidence,
+      reason: 'Clef Omni chose to retain the current scene.',
+    };
+  }
+
+  const matchIdx = candidateScenes.findIndex(
+    (_s, idx) => `scene${idx}` === selected,
+  );
+  if (matchIdx < 0) {
+    return {
+      chosenScene: null,
+      applied: false,
+      confidence,
+      reason: 'Model chose an unknown scene.',
+    };
+  }
+
+  const chosen = candidateScenes[matchIdx];
+  const shouldApply = options?.apply ?? true;
+  let applied = false;
+
+  if (shouldApply) {
+    await recallScene(chosen.name, {
+      durationMs: options?.durationMs ?? 4000,
+    });
+    applied = true;
+  }
+
+  return {
+    chosenScene: chosen.name,
+    applied,
+    confidence,
+  };
 }
 
 // ── installation ─────────────────────────────────────────────────────────
@@ -721,6 +831,7 @@ export interface LivePerformanceApi {
   recallScene: typeof recallScene;
   listScenes: typeof listScenes;
   deleteScene: typeof deleteScene;
+  autoSwitchScene: typeof autoSwitchScene;
 }
 
 declare global {
@@ -766,20 +877,26 @@ let consoleApiAnnounced = false;
  * unpublish its successor.
  */
 export function installLivePerformance(next: LivePerformanceDeps): () => void {
-  deps = next;
+  deps = {
+    ...next,
+    setTarget: (target, value) =>
+      applyPerformanceFrame(() => next.setTarget(target, value)),
+  };
+  const installedDeps = deps;
   restore();
 
   // Modulators read the position map as their centre and write only through
   // setTarget, so a ramp can move the resting value while modulation
   // continues around it.
   const uninstallModulation = installModulation({
-    setTarget: next.setTarget,
+    setTarget: deps.setTarget,
     getCenter: (target) => positions.get(target),
     getCps,
   });
 
   const api: LivePerformanceApi = {
     setControl: (target, value) => {
+      markPerformanceMutation();
       positions.set(target, value);
       next.setTarget(target, value);
     },
@@ -793,9 +910,18 @@ export function installLivePerformance(next: LivePerformanceDeps): () => void {
     ramp,
     getPositions,
     listen,
-    bind: bindModulator,
-    unbind: unbindModulator,
-    unbindAll: unbindAllModulators,
+    bind: (spec) => {
+      markPerformanceMutation();
+      return bindModulator(spec);
+    },
+    unbind: (selector) => {
+      markPerformanceMutation();
+      return unbindModulator(selector);
+    },
+    unbindAll: () => {
+      markPerformanceMutation();
+      return unbindAllModulators();
+    },
     listModulators,
     getModulationHealth,
     defineMacro,
@@ -806,6 +932,7 @@ export function installLivePerformance(next: LivePerformanceDeps): () => void {
     recallScene,
     listScenes,
     deleteScene,
+    autoSwitchScene,
   };
 
   window.__stims_live = api;
@@ -817,8 +944,6 @@ export function installLivePerformance(next: LivePerformanceDeps): () => void {
     if (window.__stims_live === api) {
       window.__stims_live = undefined;
     }
-    if (deps === next) {
-      deps = null;
-    }
+    if (deps === installedDeps) deps = null;
   };
 }

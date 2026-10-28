@@ -183,16 +183,16 @@ describe('Inspect tab: reactivity and frame stepping', () => {
     panel.dispose();
   });
 
-  test('Freeze holds the stage and enables Step, which asks for one frame', () => {
+  test('Pause stage holds the stage and enables Step, which asks for one frame', () => {
     const { panel, onSetStageFrozen, onStepFrame } = mount(true);
     const step = button(panel, /Step/u);
     expect(step?.disabled).toBe(true);
-    button(panel, /^Freeze$/u)?.click();
+    button(panel, /^Pause stage$/u)?.click();
     expect(onSetStageFrozen).toHaveBeenLastCalledWith(true);
     expect(step?.disabled).toBe(false);
     step?.click();
     expect(onStepFrame).toHaveBeenCalledTimes(1);
-    button(panel, /Unfreeze/u)?.click();
+    button(panel, /^Resume stage$/u)?.click();
     expect(onSetStageFrozen).toHaveBeenLastCalledWith(false);
     expect(step?.disabled).toBe(true);
     panel.dispose();
@@ -200,7 +200,7 @@ describe('Inspect tab: reactivity and frame stepping', () => {
 
   test('a stepped frame shows at once instead of waiting out the repaint throttle', () => {
     const { panel } = mount(true);
-    button(panel, /^Freeze$/u)?.click();
+    button(panel, /^Pause stage$/u)?.click();
     publishVariables({ q1: 1 });
     publishVariables({ q1: 2 });
     const value = panel.element.querySelector(
@@ -210,9 +210,9 @@ describe('Inspect tab: reactivity and frame stepping', () => {
     panel.dispose();
   });
 
-  test('without live audio Freeze says why instead of pretending', () => {
+  test('without live audio Pause stage says why instead of pretending', () => {
     const { panel } = mount(false);
-    button(panel, /^Freeze$/u)?.click();
+    button(panel, /^Pause stage$/u)?.click();
     expect(button(panel, /Step/u)?.disabled).toBe(true);
     expect(
       panel.element.querySelector('.stims-editor__inspect-note')?.textContent,
@@ -223,7 +223,7 @@ describe('Inspect tab: reactivity and frame stepping', () => {
   test('a hold from elsewhere (Space, the dock) is reflected', () => {
     const { panel } = mount(true);
     panel.setStageFrozen(true);
-    expect(button(panel, /Unfreeze/u)).toBeDefined();
+    expect(button(panel, /^Resume stage$/u)).toBeDefined();
     expect(button(panel, /Step/u)?.disabled).toBe(false);
     panel.dispose();
   });

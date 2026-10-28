@@ -736,7 +736,7 @@ async function createRendererHandle(
       // clear the facade's tracked callback — we need that callback intact
       // so recovery can resume rendering once the context is restored.
       activeRenderer.setAnimationLoop?.(null);
-      rememberRendererFallback('WebGL context lost — waiting for restore.', {
+      rememberRendererFallback('WebGL context lost: waiting for restore.', {
         backend: 'webgl',
       });
       // A DOM event (rather than a return value or callback param) so this

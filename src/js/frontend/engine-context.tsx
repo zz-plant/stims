@@ -72,6 +72,7 @@ export interface EngineContextValue extends ForwardedEngineActions {
   handleAudioStart: (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
     deviceId?: string,
+    presetOverride?: string | null,
   ) => Promise<AudioStartOutcome>;
   handleAudioStop: () => void;
   /** Holds or releases the stage without ending the session (Space). */

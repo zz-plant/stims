@@ -8,14 +8,14 @@ For end-user flows, see the [user guide](./USER_GUIDE.md). The [docs index](./RE
 
 ### Documentation & Commands (Worker + Stdio)
 
-| Tool | Input | Output |
-|------|-------|--------|
-| `list_docs` | none | Quick-start, runtime, and repo layout pointers from README.md |
-| `read_doc_section` | `file` (enum), optional `heading` | Markdown file or section content |
-| `search_docs` | `query`, optional `file`, optional `limit` | Matching sections with excerpts |
-| `dev_commands` | optional `scope` (setup/dev/build/test/lint) | Relevant commands from README.md |
-| `list_agent_capabilities` | optional `kind` (`skill`) | Available agent skills |
-| `read_agent_capability` | `kind` (`skill`), `name` | Full skill instructions |
+| Tool                      | Input                                        | Output                                                        |
+| ------------------------- | -------------------------------------------- | ------------------------------------------------------------- |
+| `list_docs`               | none                                         | Quick-start, runtime, and repo layout pointers from README.md |
+| `read_doc_section`        | `file` (enum), optional `heading`            | Markdown file or section content                              |
+| `search_docs`             | `query`, optional `file`, optional `limit`   | Matching sections with excerpts                               |
+| `dev_commands`            | optional `scope` (setup/dev/build/test/lint) | Relevant commands from README.md                              |
+| `list_agent_capabilities` | optional `kind` (`skill`)                    | Available agent skills                                        |
+| `read_agent_capability`   | `kind` (`skill`), `name`                     | Full skill instructions                                       |
 
 The repo's former workflow files were folded into the skills in October 2026. Both tools still accept `kind: "workflow"` and answer it with a pointer to the skill that replaced each workflow.
 
@@ -23,14 +23,14 @@ The repo's former workflow files were folded into the skills in October 2026. Bo
 
 All tools fetch the live catalog from `https://toil.fyi/milkdrop-presets/catalog.json` — no local server needed.
 
-| Tool | Input | Output |
-|------|-------|--------|
-| `list_presets` | optional `filter`, `limit` (1-50) | Preset summaries (id, title, author, tags, fidelity, certification) |
-| `search_presets` | `query`, optional `limit` | Matching presets with matched field (title/author/tags) |
-| `get_preset_info` | `presetId` | Full preset metadata (file path, tags, certification, supports) |
-| `describe_preset` | `presetId` | Human-readable description — style, collections, fidelity, launch URL |
-| `open_preset_url` | `presetId`, optional `baseUrl` | URL to load the preset in agent mode |
-| `get_audio_reactivity_guide` | optional `presetId` | How presets read `bass`/`mid`/`treb`, `_att` and `vol`, and the `lab:dataflow` / `lab:reactivity` commands that check a preset. With `presetId`: that preset's audio reach and measured reactivity from the catalog |
+| Tool                         | Input                             | Output                                                                                                                                                                                                              |
+| ---------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_presets`               | optional `filter`, `limit` (1-50) | Preset summaries (id, title, author, tags, fidelity, certification)                                                                                                                                                 |
+| `search_presets`             | `query`, optional `limit`         | Matching presets with matched field (title/author/tags)                                                                                                                                                             |
+| `get_preset_info`            | `presetId`                        | Full preset metadata (file path, tags, certification, supports)                                                                                                                                                     |
+| `describe_preset`            | `presetId`                        | Human-readable description — style, collections, fidelity, launch URL                                                                                                                                               |
+| `open_preset_url`            | `presetId`, optional `baseUrl`    | URL to load the preset in agent mode                                                                                                                                                                                |
+| `get_audio_reactivity_guide` | optional `presetId`               | How presets read `bass`/`mid`/`treb`, `_att` and `vol`, and the `lab:dataflow` / `lab:reactivity` commands that check a preset. With `presetId`: that preset's audio reach and measured reactivity from the catalog |
 
 ### Agent Session (Stdio-only, requires Playwright)
 
@@ -41,27 +41,28 @@ These tools manage a persistent headless browser session so you can interact wit
 2. Use session tools to inspect, capture, tweak, and switch
 3. `session_close` when done
 
-| Tool | Input | Output |
-|------|-------|--------|
-| `start_agent_session` | optional `presetId`, `headless` | Session ID, once the agent API reports the preset on stage (the visualizer opens in a persistent browser; a load that never gets there fails instead of returning a session) |
-| `session_get_state` | `sessionId` | Current state from the page's `__stims_agent.getState()`: preset id, title and author, engine state, audio energy (0-1), FPS, backend, shader execution, last page error, canvas size |
-| `session_capture_frame` | `sessionId`, optional `waitMs` | Path to captured screenshot |
-| `session_describe_frame` | `sessionId`, optional `waitMs` | Preset id, title and author, shader execution, image metrics (brightness, colourfulness, near-black) and the screenshot path |
-| `session_switch_preset` | `sessionId`, `presetId`, optional `waitMs` (budget, default 15000) | Confirmation once the new preset is on stage. Switches with `select-preset`, not a reload, so a running pattern, modulators and MIDI bindings carry over; an unknown id fails with close matches |
-| `session_tweak` | `sessionId`, `tweak` (natural language), optional `amount` | Resolves the tweak against real field values, applies it in one commit, reports `from → to` per field plus diagnostics |
-| `session_apply_source` | `sessionId`, `source` (.milk code) | Applies source, **waits for the compile**, returns diagnostics with line numbers and whether the stage fell back |
-| `session_editor_state` | `sessionId` | Read-only: preset, error/warning counts, per-line diagnostics, dirty flag, fallback flag |
-| `session_set_fields` | `sessionId`, `fields` (name → value) | Sets several fields in ONE compile; returns the same diagnostics as `session_apply_source` |
-| `session_get_preset_source` | `presetId` or `sessionId` | Raw .milk source code from disk |
-| `session_get_inspector_values` | `sessionId`, optional `filter` | Live numeric field values from the compiled IR (no panel needs to be open) |
-| `session_midi_set` | `sessionId`, `target`, `value` | Sets a field (zoom, warp, q1, any preset variable) as the virtual "Claude (MCP)" MIDI device, and says so when nothing was on stage to receive it |
-| `session_midi_cc` | `sessionId`, `cc` (0-127), `value` (0-127) | Sends a raw CC value, resolved through the Claude device's current mapping; reports the target it drove, or that the CC is unmapped |
-| `session_midi_bindings` | `sessionId` | CC→target mappings for every known device, keyed by device id |
-| `session_midi_devices` | `sessionId` | Known MIDI devices (physical + the virtual Claude channel) with connect state |
-| `session_compare` | `sessionId`, optional `settleMs`, `label` | Before/after screenshot pair |
-| `session_watch` | `sessionId`, optional `durationMs`, `intervalMs` | Timelapse frames + state snapshots over time |
-| `session_vibe` | `vibe` (natural language description), optional `durationMs` | Searches the preset catalog by keyword relevance, returns screenshots of top 3 matches |
-| `session_close` | `sessionId` | Releases browser resources |
+| Tool                           | Input                                                                                                     | Output                                                                                                                                                                                           |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `start_agent_session`          | optional `presetId`, `headless`                                                                           | Session ID, once the agent API reports the preset on stage (the visualizer opens in a persistent browser; a load that never gets there fails instead of returning a session)                     |
+| `session_get_state`            | `sessionId`                                                                                               | Current state from the page's `__stims_agent.getState()`: preset id, title and author, engine state, audio energy (0-1), FPS, backend, shader execution, last page error, canvas size            |
+| `session_capture_frame`        | `sessionId`, optional `waitMs`                                                                            | Path to captured screenshot                                                                                                                                                                      |
+| `session_describe_frame`       | `sessionId`, optional `waitMs`                                                                            | Preset id, title and author, shader execution, image metrics (brightness, colourfulness, near-black) and the screenshot path                                                                     |
+| `session_switch_preset`        | `sessionId`, `presetId`, optional `waitMs` (budget, default 15000)                                        | Confirmation once the new preset is on stage. Switches with `select-preset`, not a reload, so a running pattern, modulators and MIDI bindings carry over; an unknown id fails with close matches |
+| `session_tweak`                | `sessionId`, `tweak` (natural language), optional `amount`                                                | Resolves the tweak against real field values, applies it in one commit, reports `from → to` per field plus diagnostics                                                                           |
+| `session_apply_source`         | `sessionId`, `source` (.milk code)                                                                        | Applies source, **waits for the compile**, returns diagnostics with line numbers and whether the stage fell back                                                                                 |
+| `session_editor_state`         | `sessionId`                                                                                               | Read-only: preset, error/warning counts, per-line diagnostics, dirty flag, fallback flag                                                                                                         |
+| `session_set_fields`           | `sessionId`, `fields` (name → value)                                                                      | Sets several fields in ONE compile; returns the same diagnostics as `session_apply_source`                                                                                                       |
+| `session_get_preset_source`    | `presetId` or `sessionId`                                                                                 | Raw .milk source code from disk                                                                                                                                                                  |
+| `session_get_inspector_values` | `sessionId`, optional `filter`                                                                            | Live numeric field values from the compiled IR (no panel needs to be open)                                                                                                                       |
+| `session_midi_set`             | `sessionId`, `target`, `value`                                                                            | Sets a field (zoom, warp, q1, any preset variable) as the virtual "Claude (MCP)" MIDI device, and says so when nothing was on stage to receive it                                                |
+| `session_midi_cc`              | `sessionId`, `cc` (0-127), `value` (0-127)                                                                | Sends a raw CC value, resolved through the Claude device's current mapping; reports the target it drove, or that the CC is unmapped                                                              |
+| `session_midi_bindings`        | `sessionId`                                                                                               | CC→target mappings for every known device, keyed by device id                                                                                                                                    |
+| `session_midi_devices`         | `sessionId`                                                                                               | Known MIDI devices (physical + the virtual Claude channel) with connect state                                                                                                                    |
+| `session_compare`              | `sessionId`, optional `settleMs`, `label`                                                                 | Before/after screenshot pair                                                                                                                                                                     |
+| `session_watch`                | `sessionId`, optional `durationMs`, `intervalMs`                                                          | Timelapse frames + state snapshots over time                                                                                                                                                     |
+| `session_vibe`                 | `vibe` (natural language description), optional `durationMs`                                              | Searches the preset catalog by keyword relevance, returns screenshots of top 3 matches                                                                                                           |
+| `session_decide`               | `sessionId`, fixed `task`, optional `prompt`, `candidates`, `audioFile`, `videoFile`, `endpoint`, `apply` | Typed visual/audio judgment, suggestion, application status; explicit media upload to configured service                                                                                         |
+| `session_close`                | `sessionId`                                                                                               | Releases browser resources                                                                                                                                                                       |
 
 **Natural language tweaks supported by `session_tweak`:**
 - Colors: "more blue", "more red", "more green", "warmer", "cooler"
@@ -96,7 +97,6 @@ diagnostics:
 ```
 
 Rules of thumb:
-
 - Prefer `session_set_fields` over several `session_midi_set` calls. Separate
   calls can interleave inside one compile window; a grouped call is one commit.
 - Call `session_editor_state` after an edit you did not make through these
@@ -107,23 +107,23 @@ Rules of thumb:
 ### Live performance (Stdio-only, requires Playwright)
 
 These turn the session from something you inspect into something you play. The
-rest of the session tools make *step* changes; these add the audio half, give
+rest of the session tools make _step_ changes; these add the audio half, give
 gestures duration, let movement continue on its own, and let you hear the
 result before deciding the next move.
 
-| Tool | Input | Output |
-|------|-------|--------|
-| `session_play_pattern` | `sessionId`, `code` (Strudel), optional `cps` | Plays a live-coded pattern as the session audio and drives the visuals with it. Calling it again replaces the running pattern — that is the live-coding loop |
-| `session_hush` | `sessionId` | Stops all patterns (audio only; the visualizer keeps rendering) |
-| `session_ramp` | `sessionId`, `targets` (map), `durationMs`, optional `curve`, `from` | Glides targets to new values over time, as one gesture. Returns when the gesture lands, so chained calls sequence a performance. A later ramp that takes over all its targets ends it early, and the reply names the targets it lost |
-| `session_bind` | `sessionId`, `target`, `depth`, `kind` (lfo/audio), + shape/rate/band options | Binds a target to continuous modulation — an LFO or the audio itself |
-| `session_unbind` | `sessionId`, optional `id`, `target` | Removes modulators and returns the target to its resting value |
-| `session_macro` | `sessionId`, `action` (define/run/list/delete), `name`, `steps`, `speed` | A named, saved sequence of the same verbs you perform by hand |
-| `session_scene` | `sessionId`, `action` (save/recall/list/delete), `name`, `durationMs`, `curve` | A named snapshot of every position plus active modulators; recall ramps into it |
-| `session_listen` | `sessionId`, optional `durationMs`, `intervalMs`, `includeSamples` | Measures the live signal — RMS, bass/mid/treble, coarse tempo, fps/backend |
+| Tool                   | Input                                                                          | Output                                                                                                                                                                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `session_play_pattern` | `sessionId`, `code` (Strudel), optional `cps`                                  | Plays a live-coded pattern as the session audio and drives the visuals with it. Calling it again replaces the running pattern — that is the live-coding loop                                                                         |
+| `session_hush`         | `sessionId`                                                                    | Stops all patterns (audio only; the visualizer keeps rendering)                                                                                                                                                                      |
+| `session_ramp`         | `sessionId`, `targets` (map), `durationMs`, optional `curve`, `from`           | Glides targets to new values over time, as one gesture. Returns when the gesture lands, so chained calls sequence a performance. A later ramp that takes over all its targets ends it early, and the reply names the targets it lost |
+| `session_bind`         | `sessionId`, `target`, `depth`, `kind` (lfo/audio), + shape/rate/band options  | Binds a target to continuous modulation — an LFO or the audio itself                                                                                                                                                                 |
+| `session_unbind`       | `sessionId`, optional `id`, `target`                                           | Removes modulators and returns the target to its resting value                                                                                                                                                                       |
+| `session_macro`        | `sessionId`, `action` (define/run/list/delete), `name`, `steps`, `speed`       | A named, saved sequence of the same verbs you perform by hand                                                                                                                                                                        |
+| `session_scene`        | `sessionId`, `action` (save/recall/list/delete), `name`, `durationMs`, `curve` | A named snapshot of every position plus active modulators; recall ramps into it                                                                                                                                                      |
+| `session_listen`       | `sessionId`, optional `durationMs`, `intervalMs`, `includeSamples`             | Measures the live signal — RMS, bass/mid/treble, coarse tempo, fps/backend                                                                                                                                                           |
 
 **Modulation composes with gestures rather than fighting them.** A modulator is
-an *offset*, not an override — each frame the target is set to
+an _offset_, not an override — each frame the target is set to
 
 ```
 centre + Σ(depth × shaped source)
@@ -145,11 +145,10 @@ localStorage so they outlive a reload. Macro steps are the same verbs as the
 live API (`ramp`, `set`, `waitMs`, `pattern`, `hush`, `bind`, `unbind`), so
 anything performed by hand can be recorded without translation. Scenes capture
 every target the runtime has driven plus the modulators running at the time,
-and restore the modulators *before* the ramp so the movement is already going
+and restore the modulators _before_ the ramp so the movement is already going
 as the parameters arrive.
 
 **Why these exist:**
-
 - **Audio was unreachable.** Strudel lived only in `StrudelLabPanel` behind
   `?strudel=1`, so an agent could drive the visuals but could not play a note.
 - **`session_midi_set` is a jump cut.** It posts one value and returns.
@@ -206,11 +205,11 @@ duration in the macro, so one definition covers the half-time version.
 
 ### Automation (Stdio-only)
 
-| Tool | Input | Output |
-|------|-------|--------|
-| `run_quality_gate` | optional `scope`, `timeoutMs` | Structured pass/fail output |
-| `capture_preset` | `presetId`, optional `duration` | Opens visualizer with preset, returns screenshot, whether audio started, and any console errors |
-| `preview_gallery` | optional `query`, `count` (1-6), `duration` | Screenshots of multiple presets in sequence |
+| Tool               | Input                                       | Output                                                                                          |
+| ------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `run_quality_gate` | optional `scope`, `timeoutMs`               | Structured pass/fail output                                                                     |
+| `capture_preset`   | `presetId`, optional `duration`             | Opens visualizer with preset, returns screenshot, whether audio started, and any console errors |
+| `preview_gallery`  | optional `query`, `count` (1-6), `duration` | Screenshots of multiple presets in sequence                                                     |
 
 ### Compiler inspection (Stdio-only)
 
@@ -219,9 +218,9 @@ expression, the shader failed to lower, or the per-pixel block fell off the GPU
 path. These read the intermediate stages directly, so the cause is a lookup
 rather than a guess. Neither needs a browser.
 
-| Tool | Input | Output |
-|------|-------|--------|
-| `inspect_eel_ast` | `source` (EEL), optional `startLine` | Parsed AST statement tree (assignments, `loop`/`while` bodies, expressions) plus parser diagnostics |
+| Tool                     | Input                                      | Output                                                                                                                                                           |
+| ------------------------ | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `inspect_eel_ast`        | `source` (EEL), optional `startLine`       | Parsed AST statement tree (assignments, `loop`/`while` bodies, expressions) plus parser diagnostics                                                              |
 | `inspect_preset_lowerer` | `presetId` or `filePath`, optional `stage` | `summary` (default): shader lowering, GPU field lowering, diagnostics. `glsl` / `wgsl`: generated shader source. `uniforms`: shader controls and custom samplers |
 
 Note that `inspect_preset_lowerer`'s `lowered to GPU field: no` is common and is
@@ -232,16 +231,19 @@ per-pixel block cannot be lowered.
 ## Agent Workflow Examples
 
 ### Browse and learn about presets:
+
 ```
 list_presets → search_presets("ambient") → describe_preset("best-match") → open_preset_url
 ```
 
 ### See what a preset looks like:
+
 ```
 start_agent_session(presetId="shifter-snakeskin") → session_capture_frame → session_close
 ```
 
 ### Vibe coding loop (describe → see → tweak → compare):
+
 ```
 start_agent_session → session_vibe("dark purple storm")
 → session_get_preset_source("best-match")
@@ -253,6 +255,7 @@ start_agent_session → session_vibe("dark purple storm")
 ```
 
 ### Inspect and modify a running visualizer:
+
 ```
 start_agent_session → session_get_state
 → session_get_inspector_values(filter="wave")
@@ -263,6 +266,7 @@ start_agent_session → session_get_state
 ```
 
 ### Edit preset code and confirm it compiled:
+
 ```
 start_agent_session → session_get_preset_source
 → session_apply_source(<edited .milk>)      # returns diagnostics, not a guess
@@ -271,10 +275,11 @@ start_agent_session → session_get_preset_source
 → session_capture_frame → session_close
 ```
 Do not move on from `session_apply_source` without reading its output. When it
-reports `NOT RENDERING YOUR SOURCE`, the picture on screen is the *previous*
+reports `NOT RENDERING YOUR SOURCE`, the picture on screen is the _previous_
 preset and a screenshot will look perfectly healthy.
 
 ### Perform live as a virtual MIDI device:
+
 ```
 start_agent_session(headless=false) → session_midi_bindings (see what's mapped)
 → session_midi_set("warp", 1.4) → session_midi_set("zoom", 1.05)
@@ -290,10 +295,18 @@ both drive the engine through the same live-binding pipeline.
 bun run mcp
 ```
 
-The server connects over stdio. MCP clients should launch this command from the repo root.
+The server connects over stdio. Claude Code starts it from the repository's `.mcp.json` once the `stims` server is approved; other MCP clients should launch this command from the repo root.
+
+Session tools drive a browser the server launches. To act on the tab a person already has open on `bun run dev`, use the [live channel](./agents/browser-automation.md#on-the-tab-you-are-watching-the-live-channel) instead.
 
 ## Worker Deployment (Alternative Transport)
 
 The Cloudflare Worker at `scripts/mcp-worker.ts` serves the Worker-compatible tools (documentation + preset catalog) over HTTP/SSE and WebSocket. It does not support session tools or automation.
 
 See `wrangler.mcp.jsonc` for configuration.
+
+## Optional decision models
+
+`session_decide` is stdio-only and uses `STIMS_DECISION_ENDPOINT` or an explicit endpoint. Visual tasks capture one reduced stage JPEG unless a video is supplied. Sound tasks require an explicit local WAV/MP3 or WebM/MP4 clip with sound; the tool opens no microphone and records no session audio. Passing a file authorizes sending that file to the configured service.
+
+The default is a suggestion. `apply: true` can select only an accepted preset from the supplied shortlist or a saved scene offered to the model. New source, preset, control, or scene changes during inference invalidate application. Scene recall uses the local four-second ramp; a superseded ramp is reported as unapplied. Make occasional phrase-level choices, then let local DSP and ramps drive frames. Question keys, request examples, and evidence limits are in [Decision models](./DECISION_MODELS.md), also available through `read_doc_section`.

@@ -206,6 +206,13 @@ export const MILKDROP_TEXSIZE_NOISE_GLSL =
 export const MILKDROP_TEXSIZE_SUBSTITUTE_GLSL =
   'vec4(640.0, 640.0, 0.0015625, 0.0015625)';
 
+const SIGNAL_NAME_ALIAS_PATTERN = new RegExp(
+  `\\b(?:${Object.keys(MILKDROP_SIGNAL_NAME_ALIASES)
+    .sort((a, b) => b.length - a.length)
+    .join('|')})\\b`,
+  'giu',
+);
+
 /**
  * Builds the `\bname\b → signal*` replacement chain the raw-text normalizer
  * applies. `\b` word boundaries keep `bass` from matching inside `bass_att`,
@@ -213,18 +220,10 @@ export const MILKDROP_TEXSIZE_SUBSTITUTE_GLSL =
  * more specific alias wins when a name is a prefix of another.
  */
 export function buildMilkdropSignalNameReplacements(text: string): string {
-  let result = text;
-  const aliases = Object.keys(MILKDROP_SIGNAL_NAME_ALIASES).sort(
-    (a, b) => b.length - a.length,
+  return text.replace(
+    SIGNAL_NAME_ALIAS_PATTERN,
+    (match) => MILKDROP_SIGNAL_NAME_ALIASES[match.toLowerCase()] ?? match,
   );
-  for (const alias of aliases) {
-    const replacement = MILKDROP_SIGNAL_NAME_ALIASES[alias];
-    if (!replacement) {
-      continue;
-    }
-    result = result.replace(new RegExp(`\\b${alias}\\b`, 'giu'), replacement);
-  }
-  return result;
 }
 
 export function normalizeShaderSyntax(value: string) {
@@ -295,14 +294,18 @@ export function resolveShaderExpressionIdentifiers(
 
 export function toMilkdropExpression(
   node: MilkdropShaderExpressionNode,
+  depth = 0,
 ): MilkdropExpressionNode | null {
+  if (depth > 200) {
+    return null;
+  }
   switch (node.type) {
     case 'literal':
       return { type: 'literal', value: node.value };
     case 'identifier':
       return { type: 'identifier', name: node.name.toLowerCase() };
     case 'unary': {
-      const operand = toMilkdropExpression(node.operand);
+      const operand = toMilkdropExpression(node.operand, depth + 1);
       if (!operand) {
         return null;
       }
@@ -313,8 +316,8 @@ export function toMilkdropExpression(
       };
     }
     case 'binary': {
-      const left = toMilkdropExpression(node.left);
-      const right = toMilkdropExpression(node.right);
+      const left = toMilkdropExpression(node.left, depth + 1);
+      const right = toMilkdropExpression(node.right, depth + 1);
       if (!left || !right) {
         return null;
       }
@@ -337,7 +340,7 @@ export function toMilkdropExpression(
         return null;
       }
       const args = node.args
-        .map((arg) => toMilkdropExpression(arg))
+        .map((arg) => toMilkdropExpression(arg, depth + 1))
         .filter((arg): arg is MilkdropExpressionNode => arg !== null);
       if (args.length !== node.args.length) {
         return null;
@@ -359,7 +362,8 @@ export function toMilkdropExpression(
           else if (prop === 'z' || prop === 'b' || prop === 'p') index = 2;
           else if (prop === 'w' || prop === 'a' || prop === 'q') index = 3;
           if (index >= 0 && index < node.object.args.length) {
-            return toMilkdropExpression(node.object.args[index]);
+            const arg = node.object.args[index];
+            return arg ? toMilkdropExpression(arg, depth + 1) : null;
           }
         }
       }
@@ -1034,53 +1038,62 @@ export function isUnsupportedVolumeSampleSource(
 }
 
 export function hasUnsupportedVolumeSample(
-  node: MilkdropShaderExpressionNode | null,
+  root: MilkdropShaderExpressionNode | null,
 ): boolean {
-  if (!node) {
+  if (!root) {
     return false;
   }
 
-  switch (node.type) {
-    case 'literal':
-    case 'identifier':
-      return false;
-    case 'unary':
-      return hasUnsupportedVolumeSample(node.operand);
-    case 'binary':
-      return (
-        hasUnsupportedVolumeSample(node.left) ||
-        hasUnsupportedVolumeSample(node.right)
-      );
-    case 'member':
-      return hasUnsupportedVolumeSample(node.object);
-    case 'index':
-      return (
-        hasUnsupportedVolumeSample(node.object) ||
-        hasUnsupportedVolumeSample(node.index)
-      );
-    case 'call': {
-      const callName = normalizeShaderCallName(node.name);
-      if (callName === 'samplenoisevolume') {
-        // Native shader bodies rewrite texture(sampler_noisevol*, vec3) to
-        // the sampleNoiseVolume atlas-slice helper; it is supported volume
-        // sampling, never an unsupported-volume construct.
-        return false;
-      }
-      if (callName === 'tex3d') {
-        const samplerArg = node.args[0];
-        const source =
-          samplerArg?.type === 'identifier'
-            ? normalizeShaderSamplerName(samplerArg.name)
-            : 'main';
-        if (!source || isUnsupportedVolumeSampleSource(source)) {
-          return true;
+  const stack: MilkdropShaderExpressionNode[] = [root];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node) break;
+    switch (node.type) {
+      case 'literal':
+      case 'identifier':
+        break;
+      case 'unary':
+        stack.push(node.operand);
+        break;
+      case 'binary':
+        stack.push(node.left, node.right);
+        break;
+      case 'member':
+        stack.push(node.object);
+        break;
+      case 'index':
+        stack.push(node.object, node.index);
+        break;
+      case 'call': {
+        const callName = normalizeShaderCallName(node.name);
+        if (callName === 'samplenoisevolume') {
+          // Native shader bodies rewrite texture(sampler_noisevol*, vec3) to
+          // the sampleNoiseVolume atlas-slice helper; it is supported volume
+          // sampling, never an unsupported-volume construct.
+          break;
         }
+        if (callName === 'tex3d') {
+          const samplerArg = node.args[0];
+          const source =
+            samplerArg?.type === 'identifier'
+              ? normalizeShaderSamplerName(samplerArg.name)
+              : 'main';
+          if (!source || isUnsupportedVolumeSampleSource(source)) {
+            return true;
+          }
+        }
+        for (let i = node.args.length - 1; i >= 0; i--) {
+          const arg = node.args[i];
+          if (arg) stack.push(arg);
+        }
+        break;
       }
-      return node.args.some((arg) => hasUnsupportedVolumeSample(arg));
+      default:
+        break;
     }
-    default:
-      return false;
   }
+
+  return false;
 }
 
 export function extractScaledShaderSampleExpression(

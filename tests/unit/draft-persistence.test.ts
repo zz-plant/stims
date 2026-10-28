@@ -1,6 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 import {
   createDraftPersistence,
+  createDraftSaveStatus,
   createOriginalSourceResolver,
   dropRedundantDraft,
 } from '../../src/js/milkdrop/draft-persistence.ts';
@@ -105,5 +106,75 @@ describe('draft persistence', () => {
   test('compares as preset code, not as bytes', () => {
     expect(samePresetSource('a=1\r\nb=2  \n', 'a=1\nb=2')).toBe(true);
     expect(samePresetSource('a=1\nb=2', 'a=1\nb=3')).toBe(false);
+  });
+});
+
+describe('draft save status', () => {
+  const deferred = () => {
+    let resolve!: () => void;
+    let reject!: (error: unknown) => void;
+    const promise = new Promise<void>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+
+  const harness = () => {
+    const writes: ReturnType<typeof deferred>[] = [];
+    const unsaved: boolean[] = [];
+    const failures: unknown[] = [];
+    const status = createDraftSaveStatus({
+      persist: () => {
+        const write = deferred();
+        writes.push(write);
+        return write.promise;
+      },
+      onUnsavedChange: (value) => unsaved.push(value),
+      onFailure: (error) => failures.push(error),
+    });
+    return { status, writes, unsaved, failures };
+  };
+
+  test('an edit is unsaved until its write lands', async () => {
+    const { status, writes, unsaved } = harness();
+    const saving = status.save('p', 'zoom=2');
+    expect(unsaved).toEqual([true]);
+    writes[0].resolve();
+    await saving;
+    expect(unsaved).toEqual([true, false]);
+  });
+
+  test('a failed write keeps the edit unsaved and is reported once', async () => {
+    // Blocked or full IndexedDB: the edit exists only in this tab, so the
+    // shell must keep warning before the page is left.
+    const { status, writes, unsaved, failures } = harness();
+    const first = status.save('p', 'zoom=2');
+    writes[0].reject(new Error('QuotaExceededError'));
+    await first;
+    const second = status.save('p', 'zoom=3');
+    writes[1].reject(new Error('QuotaExceededError'));
+    await second;
+    expect(unsaved).toEqual([true]);
+    expect(failures).toHaveLength(1);
+  });
+
+  test('an older write landing late does not mark a newer edit saved', async () => {
+    const { status, writes, unsaved } = harness();
+    const older = status.save('p', 'zoom=2');
+    const newer = status.save('p', 'zoom=3');
+    writes[0].resolve();
+    await older;
+    expect(unsaved).toEqual([true]);
+    writes[1].resolve();
+    await newer;
+    expect(unsaved).toEqual([true, false]);
+  });
+
+  test('a preset load clears the pending state', () => {
+    const { status, unsaved } = harness();
+    void status.save('p', 'zoom=2');
+    status.reset();
+    expect(unsaved).toEqual([true, false]);
   });
 });

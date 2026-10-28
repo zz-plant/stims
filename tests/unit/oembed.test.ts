@@ -53,7 +53,7 @@ describe('oEmbed provider', () => {
       'https://toil.fyi/api/og-preset?id=martin-wtf-track',
     );
     expect(body.html).toContain(
-      'src="https://toil.fyi/?preset=martin-wtf-track&amp;embed=true"',
+      'src="https://toil.fyi/?embed=true&amp;preset=martin-wtf-track"',
     );
     expect(body.html).toContain('title="&quot;wtf&quot; track by martin"');
   });

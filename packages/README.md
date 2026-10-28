@@ -7,12 +7,12 @@ imports them; this directory is the only copy of their code. Each also has a
 read-only mirror repository, github.com/zz-plant/<name>, and a site with a
 live demo.
 
-| Package | What it is | Test suite |
-| --- | --- | --- |
-| [`eel-conformance`](./eel-conformance) | Executable specification of EEL2, the MilkDrop preset expression language: 82 portable JSON cases, a schema, a runner contract and a harness. | `packages/eel-conformance/tests/` |
-| [`flash-guard`](./flash-guard) | WCAG 2.3.1 flash and red-flash analysis for frame sequences, plus a sampling-based live governor that reduces detected flashing. | `packages/flash-guard/tests/` |
+| Package                                      | What it is                                                                                                                                                     | Test suite                           |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| [`eel-conformance`](./eel-conformance)       | Executable specification of EEL2, the MilkDrop preset expression language: 82 portable JSON cases, a schema, a runner contract and a harness.                  | `packages/eel-conformance/tests/`    |
+| [`flash-guard`](./flash-guard)               | WCAG 2.3.1 flash and red-flash analysis for frame sequences, plus a sampling-based live governor that reduces detected flashing.                               | `packages/flash-guard/tests/`        |
 | [`milkdrop-toolchain`](./milkdrop-toolchain) | Parser, EEL2 interpreter and JIT, IR, HLSL analysis with GLSL emission, EEL-to-WGSL, formatter, MilkDrop 2 exporter and dataflow analysis for `.milk` presets. | `packages/milkdrop-toolchain/tests/` |
-| [`audio-reactive`](./audio-reactive) | AudioWorklet FFT with harmonic/percussive separation, per-band beat tracking, spectral features, reactivity metrics and packet interpolation. | `packages/audio-reactive/tests/` |
+| [`audio-reactive`](./audio-reactive)         | AudioWorklet FFT with harmonic/percussive separation, per-band beat tracking, spectral features, reactivity metrics and packet interpolation.                  | `packages/audio-reactive/tests/`     |
 
 ## Working on them
 
@@ -45,7 +45,7 @@ only dev dependencies):
 ```bash
 bun run check:packages            # typecheck + test every package
 bun --cwd packages/flash-guard test
-bun --cwd packages/flash-guard run build   # emits dist/ (gitignored)
+bun --cwd=packages/flash-guard run build   # emits dist/ (gitignored)
 ```
 
 Run `bun test` from inside a package directory, not the root: each package has
@@ -54,12 +54,12 @@ loaded.
 
 ## Mirrors
 
-| Package | Mirror |
-| --- | --- |
-| `eel-conformance` | [zz-plant/eel-conformance](https://github.com/zz-plant/eel-conformance) |
-| `flash-guard` | [zz-plant/flash-guard](https://github.com/zz-plant/flash-guard) |
+| Package              | Mirror                                                                        |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `eel-conformance`    | [zz-plant/eel-conformance](https://github.com/zz-plant/eel-conformance)       |
+| `flash-guard`        | [zz-plant/flash-guard](https://github.com/zz-plant/flash-guard)               |
 | `milkdrop-toolchain` | [zz-plant/milkdrop-toolchain](https://github.com/zz-plant/milkdrop-toolchain) |
-| `audio-reactive` | [zz-plant/audio-reactive](https://github.com/zz-plant/audio-reactive) |
+| `audio-reactive`     | [zz-plant/audio-reactive](https://github.com/zz-plant/audio-reactive)         |
 
 Each mirror holds only its package directory, with the history of every
 commit that touched it. They are read-only: issues are off, Actions are off,
@@ -123,8 +123,8 @@ share one stylesheet (`site/styles.css`, kept identical in each package) and
 need no build tooling beyond Bun.
 
 ```bash
-bun --cwd packages/flash-guard run site:build     # one site, into packages/flash-guard/_site/
-bun --cwd packages/flash-guard run site:preview   # ...served on http://localhost:8787
+bun --cwd=packages/flash-guard run site:build     # one site, into packages/flash-guard/_site/
+bun --cwd=packages/flash-guard run site:preview   # ...served on http://localhost:8787
 bun run site:packages                             # all four plus an index, into ./_site/
 bun run site:packages -- --serve                  # ...served on http://localhost:8788
 ```

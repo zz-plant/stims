@@ -42,7 +42,7 @@
   background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
   border-left: 1px solid var(--ctl-panel-line, rgba(255, 255, 255, 0.08));
   box-shadow: -16px 0 48px rgba(0, 0, 0, 0.3);
-  animation: slide-in-right var(--spring-enter) both;
+  animation: slide-in-right var(--motion-enter) both;
 }
 
 .panel[data-exiting="true"] {
@@ -79,18 +79,79 @@
     border-left: none;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    animation: slide-up var(--spring-enter) both;
+    animation: slide-up var(--motion-enter) both;
   }
 
   .panel[data-exiting="true"] {
     animation: slide-down 0.2s ease forwards;
   }
 
-  /* The editor sheet is always full height. Sized to its content, the
-     sheet's height was never definite, so the code view's percentage height
-     fell back to the whole document and its scroller never scrolled. */
+  /* The editor sheet's height must be definite: sized to its content, the
+     code view's percentage height fell back to the whole document and its
+     scroller never scrolled. 92dvh unless the block below shortens it. */
   .panel[data-stage-anchored="true"] {
-    height: 92dvh;
+    height: var(--stage-tool-height, 92dvh);
+  }
+}
+
+/* A phone held upright shares the screen between the editor and the stage.
+   At 92dvh the sheet left the top 70px of a 390x844 phone, so an edit could
+   not be watched while it ran. Here it takes the height the editor's floors
+   need (editor-panel.css: the first-edit guide, eight lines of code, the
+   Tune dock's tab row and a few lines of its pane, measured at 390px wide)
+   and no more, so a taller phone gives the extra to the stage. A shorter
+   viewport, such as Safari's with its toolbars showing, still leaves the
+   stage a quarter of the screen and scrolls the editor host instead. Below
+   600px tall (landscape, the smallest phones) the sheet keeps 92dvh, where a
+   quarter of the screen would leave the code below the sheet's fold. */
+@media (max-width: 767px) and (min-height: 600px) {
+  :global(#stims-main) {
+    --stage-tool-height: min(76dvh, 40rem);
+  }
+
+  /* The sheet's own chrome gives back 30px: the header keeps the grabber
+     and a 44px close button, the body keeps its sides and the safe area. */
+  .panel[data-stage-anchored="true"] .header {
+    padding-top: 16px;
+    padding-bottom: 6px;
+  }
+
+  .panel[data-stage-anchored="true"] .body {
+    padding-top: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  /* The stage's render root rides up by half the sheet, which puts the
+     middle of the visual in the middle of the strip above it. A transform
+     rather than a smaller stage: the canvas keeps its size, so the renderer
+     does not resize and restart the feedback the visitor is about to edit.
+     Half the sheet also keeps the canvas's lower edge below the sheet's top
+     edge throughout the slide in either direction, so no bare frame shows
+     between them. SidePanel.tsx sets data-stage-lifted while the sheet is
+     up and drops it as the exit starts. The warp-centre gizmo's layer rides
+     with the canvas: it sits beside the render root, not in it, so left
+     behind its handle stayed under the sheet and a drag mapped onto the
+     unlifted frame. */
+  :global(
+    #stims-main[data-stage-lifted="true"]
+      :is(.stims-shell__stage-root, .stims-stage-gizmo)
+  ) {
+    transform: translateY(calc(var(--stage-tool-height) / -2));
+  }
+
+  :global(
+    html:not([data-agent-mode="true"])
+      :is(.stims-shell__stage-root, .stims-stage-gizmo)
+  ) {
+    transition: transform var(--motion-exit);
+  }
+
+  :global(
+    html:not([data-agent-mode="true"])
+      #stims-main[data-stage-lifted="true"]
+      :is(.stims-shell__stage-root, .stims-stage-gizmo)
+  ) {
+    transition: transform var(--motion-enter);
   }
 }
 
@@ -242,8 +303,11 @@
 /* Stage-anchored (editor) seam: the panel/stage split is resizable on
    desktop. Width comes from --stage-tool-width, set inline on the shell root
    by the seam handlers; the transport dock derives its inset from the same
-   variable so it re-centers over the visible stage. */
-.seam {
+   variable so it re-centers over the visible stage. The hint goes with it:
+   left to its inline default, the "← →" sat above the phone sheet's header
+   and pushed the header 24px down. */
+.seam,
+.seamHint {
   display: none;
 }
 

@@ -5,14 +5,19 @@
  */
 
 import type { SemanticDiscoveryRoute } from '../../../functions/discover-slugs.ts';
-import type { AudioSource, PanelState } from '../core/url-params.ts';
+import {
+  ALL_PANEL_IDS,
+  type AudioSource,
+  type PanelState,
+  type RoutedPanelId,
+} from '../core/url-params.ts';
 import type { VisualFidelityTier } from '../milkdrop/catalog-store-analysis.ts';
 import type {
   MilkdropPresetLineageRef,
   MilkdropVisualCertification,
 } from '../milkdrop/types.ts';
 
-export type { AudioSource, PanelState };
+export { ALL_PANEL_IDS, type AudioSource, type PanelState, type RoutedPanelId };
 
 /**
  * What starting an audio source did. `ok` is true only when the requested
@@ -45,6 +50,8 @@ export type SessionRouteState = {
   /** Video carried by a shared link, so the recipient lands on the same track. */
   youtubeVideoId?: string | null;
   youtubeStartSeconds?: number | null;
+  /** Encoded shared preset set from ?set= */
+  sharedSet?: string | null;
   /** Semantic landing context retained while Browse shows its real filter. */
   discovery?: SemanticDiscoveryRoute;
 };

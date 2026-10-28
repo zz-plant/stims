@@ -16,6 +16,7 @@ import {
   getActiveAccessibilityPreference,
   setAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
+import { buildEmbedIframe, buildEmbedUrl } from '../core/embed-snippet.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import {
   closeProjectorWindow,
@@ -25,13 +26,17 @@ import {
 } from '../core/services/projector-window-service.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { MilkdropPresetLineageRef } from '../milkdrop/types.ts';
-import { shareOrCopyLink } from '../utils/media/share-link.ts';
+import {
+  copyTextToClipboard,
+  shareOrCopyLink,
+} from '../utils/media/share-link.ts';
 import type {
   AudioSource,
   PanelState,
   PresetCatalogEntry,
   SessionRouteState,
 } from './contracts.ts';
+import { getPanelTitle } from './panel-registry.ts';
 import type { QueuedCrossfadeResult } from './performance-hardware-controls.ts';
 import {
   leaveSyncSession,
@@ -54,6 +59,79 @@ export function togglePanel(surface: PanelSurface, panel: PanelState): void {
 }
 
 /**
+ * What a panel verb does from where the visitor is. `togglePanel` closes the
+ * panel that is already open, and a label that kept saying "Browse presets"
+ * while it closed Browse left the outcome to a checkmark.
+ */
+const PANEL_OPEN_LABELS: Partial<Record<Exclude<PanelState, null>, string>> = {
+  finder: 'Find presets that match the music or picture',
+};
+const PANEL_CLOSE_LABELS: Partial<Record<Exclude<PanelState, null>, string>> = {
+  browse: 'Close Browse',
+  finder: 'Close the finder',
+  synthesize: 'Close Generate with AI',
+  refine: 'Close Refine with AI',
+  editor: 'Close the editor',
+  settings: 'Close Settings',
+};
+
+export function panelToggleLabel(
+  panel: Exclude<PanelState, null>,
+  open: boolean,
+): string {
+  if (open) return PANEL_CLOSE_LABELS[panel] ?? `Close ${getPanelTitle(panel)}`;
+  return PANEL_OPEN_LABELS[panel] ?? getPanelTitle(panel);
+}
+
+/**
+ * Pause holds the picture. Whether the sound stops too depends on the
+ * source: a file or YouTube track pauses with it, while a microphone, a
+ * shared tab or the demo loop keeps sounding. The label says which.
+ */
+export function soundStopsOnPause(source: AudioSource | null): boolean {
+  return source === 'file' || source === 'youtube';
+}
+
+export function playbackToggleLabel(
+  source: AudioSource | null,
+  paused: boolean,
+): string {
+  if (soundStopsOnPause(source)) return paused ? 'Resume' : 'Pause';
+  return paused ? 'Resume visuals' : 'Pause visuals';
+}
+
+export const SOUND_KEEPS_PLAYING = 'Sound keeps playing.';
+
+const CAPTURE_FORMAT_KEY = 'stims:capture-format';
+
+/** True once a recording format was chosen: Record then starts at once. */
+export function hasRememberedCaptureFormat(): boolean {
+  try {
+    return Boolean(localStorage.getItem(CAPTURE_FORMAT_KEY));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * One item opens the form, starts a recording, or closes the panel, which
+ * also ends the recording and saves it. Each case gets its own words.
+ */
+export function recordMenuLabel({
+  panelOpen,
+  recording,
+}: {
+  panelOpen: boolean;
+  recording: boolean;
+}): string {
+  if (recording) return 'Stop recording and save';
+  if (panelOpen) return 'Close the recording panel';
+  return hasRememberedCaptureFormat()
+    ? 'Start recording video'
+    : 'Record video…';
+}
+
+/**
  * Record video: repeat use starts recording immediately with the
  * remembered format (CapturePanel's mount effect consumes the flag);
  * first-ever use (no stored format) just opens the form.
@@ -64,7 +142,7 @@ export function openRecordPanel(surface: PanelSurface): void {
     return;
   }
   try {
-    if (localStorage.getItem('stims:capture-format')) {
+    if (hasRememberedCaptureFormat()) {
       sessionStorage.setItem('stims:capture-autostart', '1');
     }
   } catch {
@@ -96,7 +174,11 @@ export function setTransition(
   if (mode === 'blend') {
     engine.setBlendDuration(seconds);
   }
-  announce(`Transition: ${describeTransition(mode, seconds)}`);
+  // The choice is persisted (runtime-preferences), so a tap mid-set changes
+  // the default Settings shows; say so rather than let it look temporary.
+  announce(
+    `Transition: ${describeTransition(mode, seconds)}. Saved as your default.`,
+  );
 }
 
 export function startAudioSource(
@@ -245,6 +327,106 @@ export function codeForLocalShare(
     : source;
 }
 
+/**
+ * What an embed of the playing preset would show.
+ *
+ * The frame names the preset by id and plays it as the catalog has it. It
+ * does not carry a draft: a `#code=` arrival opens the editor sheet, which
+ * would cover the stage of a chromeless embed, and a page that pastes a
+ * snippet keeps it long after the draft has moved on. A preset made or
+ * imported here has an id no other browser can load, so it has no embed.
+ */
+export type EmbedCodeState = 'none' | 'ready' | 'without-edits' | 'local';
+
+export function embedCodeState(
+  entry: Pick<PresetCatalogEntry, 'bundledFile'> | null | undefined,
+  dirty: boolean,
+): EmbedCodeState {
+  if (!entry) return 'none';
+  if (!entry.bundledFile) return 'local';
+  return dirty ? 'without-edits' : 'ready';
+}
+
+/** The palette row and the dock button's accessible name. */
+export function copyEmbedCodeLabel(state: EmbedCodeState): string {
+  if (state === 'without-edits') {
+    return 'Copy embed code (without your unsaved edits)';
+  }
+  if (state === 'local') return 'Copy embed code (catalog presets only)';
+  return 'Copy embed code';
+}
+
+/** Said beside the control before it is pressed, when the embed would not
+ * show what is on stage. */
+export function embedCodeNote(state: EmbedCodeState): string | null {
+  if (state === 'without-edits') {
+    return 'Embed plays this preset without your unsaved edits.';
+  }
+  if (state === 'local') {
+    return 'This preset lives only in your browser, so it has no embed.';
+  }
+  return null;
+}
+
+/**
+ * Put an `<iframe>` for the playing preset on the clipboard, for pasting
+ * into another page's HTML. Copy only, never the native share sheet: a
+ * snippet of markup is not something to send to a messaging app.
+ */
+export async function copyEmbedCodeAction({
+  entry,
+  dirty,
+  announce,
+  origin = typeof window === 'undefined' ? '' : window.location.origin,
+  copy = copyTextToClipboard,
+}: {
+  entry: Pick<
+    PresetCatalogEntry,
+    'id' | 'title' | 'author' | 'bundledFile'
+  > | null;
+  dirty: boolean;
+  announce: (message: string) => void;
+  origin?: string;
+  /** Test seam for the clipboard. */
+  copy?: (text: string) => Promise<boolean>;
+}): Promise<boolean> {
+  const state = embedCodeState(entry, dirty);
+  if (!entry || state === 'none') {
+    announce('Nothing is playing to embed yet.');
+    return false;
+  }
+  if (state === 'local') {
+    announce(
+      'This preset lives only in your browser, so another page cannot load it. Share link carries its code instead.',
+    );
+    return false;
+  }
+
+  const { title, byline } = splitPresetDisplay(
+    entry.title || entry.id,
+    entry.author,
+  );
+  const snippet = buildEmbedIframe({
+    origin,
+    presetId: entry.id,
+    title: byline ? `${title} by ${byline} · Stims` : `${title} · Stims`,
+  });
+  if (!(await copy(snippet))) {
+    announce(
+      `Could not reach the clipboard. The embed address is ${buildEmbedUrl(origin, entry.id)}`,
+    );
+    return false;
+  }
+
+  noteGrowthEvent('embed-code-copied', entry.id);
+  announce(
+    state === 'without-edits'
+      ? `Embed code for “${title}” copied. It plays the preset without your unsaved edits.`
+      : `Embed code for “${title}” copied. Paste it into a page’s HTML.`,
+  );
+  return true;
+}
+
 /** Flip Reduce flashing and say what it now does. */
 export function toggleReduceFlashingAction(
   announce: (message: string) => void,
@@ -324,26 +506,70 @@ export function endWatchParty(announce: (message: string) => void): void {
   announce('Watch party ended — viewers keep local control.');
 }
 
+/**
+ * Whether the camera feeds the preset, for labels that must say which way a
+ * click goes. The camera module is code-split, so this mirrors its state
+ * after each toggle and re-reads it on demand (`refreshCameraInput`) to
+ * catch a camera that stopped on its own, such as an unplugged device.
+ */
+let cameraInputOn = false;
+let cameraModuleLoaded = false;
+const cameraListeners = new Set<() => void>();
+
+function setCameraInputOn(on: boolean): void {
+  if (cameraInputOn === on) return;
+  cameraInputOn = on;
+  for (const listener of cameraListeners) listener();
+}
+
+export function isCameraInputOn(): boolean {
+  return cameraInputOn;
+}
+
+export function subscribeCameraInput(listener: () => void): () => void {
+  cameraListeners.add(listener);
+  return () => {
+    cameraListeners.delete(listener);
+  };
+}
+
+export function refreshCameraInput(): void {
+  if (!cameraModuleLoaded) return;
+  void import('../core/services/camera-video-source.ts').then(
+    ({ isCameraVideoActive }) => setCameraInputOn(isCameraVideoActive()),
+  );
+}
+
+export function cameraMenuLabel(on: boolean): string {
+  return on
+    ? 'Stop using the camera'
+    : 'Use camera as video input (asks for camera access)';
+}
+
 /** Point a camera at the preset's video sampler, or turn it back off. */
 export function toggleCameraAction(announce: (message: string) => void): void {
   void (async () => {
     const {
       toggleCameraVideoSource,
+      isCameraVideoActive,
       isCameraVideoSupported,
       CameraVideoError,
     } = await import('../core/services/camera-video-source.ts');
+    cameraModuleLoaded = true;
     if (!isCameraVideoSupported()) {
       announce('This browser cannot open a camera.');
       return;
     }
     try {
       const on = await toggleCameraVideoSource();
+      setCameraInputOn(isCameraVideoActive());
       announce(
         on
           ? 'Camera on — presets that sample video now see it.'
           : 'Camera off.',
       );
     } catch (error) {
+      setCameraInputOn(isCameraVideoActive());
       announce(
         error instanceof CameraVideoError
           ? error.message
@@ -351,6 +577,25 @@ export function toggleCameraAction(announce: (message: string) => void): void {
       );
     }
   })();
+}
+
+/** Cast's two states. Casting runs through a watch party, and says so. */
+export function castMenuLabel(casting: boolean): string {
+  return casting
+    ? 'Stop casting'
+    : 'Cast to a TV or Chromecast (starts a watch party)';
+}
+
+/** The projector window may ask for screen access when a second screen is
+ * attached, which is when it tries to move itself there. */
+export function projectorMenuLabel(
+  open: boolean,
+  multipleScreens: boolean,
+): string {
+  if (open) return 'Close projector window';
+  return multipleScreens
+    ? 'Open projector window (asks to use your other screen)'
+    : 'Open projector window';
 }
 
 /**
@@ -387,7 +632,9 @@ export function presentToExternalDisplayAction(
       await display.startCast(hosted.url);
       if (display.getExternalDisplayState().mode === null) return; // Picker dismissed.
       announce(
-        'Casting. The receiver follows every preset you play, but reacts to its own audio, not this machine’s input.',
+        hosted.alreadyHosting
+          ? 'Casting your watch party. The receiver follows every preset you play, but reacts to its own audio, not this machine’s input.'
+          : 'Casting. This started a watch party, so anyone with its link can watch too. The receiver follows every preset you play, but reacts to its own audio, not this machine’s input.',
       );
     } catch {
       announce(
@@ -611,8 +858,16 @@ export async function playNearbyPreset({
       injectedPresetLook ??
       (await import('../core/services/preset-visual-vectors.ts'))
         .searchByPresetLook;
+    const minScore = injectedPresetLook
+      ? 0
+      : (await import('../core/services/preset-visual-vectors.ts'))
+          .VISUAL_MATCH_MIN_SCORE;
     const byPreset = currentPresetId
-      ? await searchByPresetLook(currentPresetId, NEARBY_SEARCH_RESULTS)
+      ? await searchByPresetLook(
+          currentPresetId,
+          NEARBY_SEARCH_RESULTS,
+          minScore,
+        )
       : null;
     if (byPreset) {
       matches = byPreset;

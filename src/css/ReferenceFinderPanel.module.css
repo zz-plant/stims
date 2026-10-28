@@ -1,0 +1,293 @@
+/* ── Reference finder (Find a preset → By reference) ───────────────────
+   Rendered inside the finder panel, so it speaks the same token vocabulary
+   (`--stims-*`, `--space-*`, `--text-*`) and the same control metrics
+   (10px 12px padding, 22px rank badge, radius-control) as By sound / By look.
+   The finder's own header and mode tabs carry the title; this panel opens
+   with a single lead line, then the controls. */
+
+.panel {
+  display: grid;
+  gap: var(--space-sm);
+  color: var(--stims-ink-strong);
+}
+
+.intro {
+  margin: 0;
+  color: var(--stims-muted);
+  font-size: var(--text-xs-plus);
+  line-height: var(--line-height-normal);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.label {
+  font-size: var(--text-xs-plus);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-stretch: var(--font-stretch-legend);
+  color: var(--stims-muted);
+}
+
+.textarea,
+.input {
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: var(--stims-radius-control);
+  background: var(--stims-control-fill);
+  color: inherit;
+  font: inherit;
+  line-height: var(--line-height-normal);
+}
+
+.textarea {
+  min-height: 56px;
+}
+
+.input {
+  min-width: 0;
+}
+
+.textarea:focus-visible,
+.input:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+.retain {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  color: var(--stims-muted);
+  font-size: var(--text-xs-plus);
+  line-height: var(--line-height-normal);
+}
+
+.retain input {
+  accent-color: var(--stims-accent);
+  margin-top: 2px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.primary,
+.secondary,
+.accept,
+.reject,
+.open {
+  flex-shrink: 0;
+  min-height: var(--touch-target-min);
+  padding: 10px 14px;
+  border-radius: var(--stims-radius-control);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.primary {
+  border: 1px solid transparent;
+  background: var(--stims-accent);
+  color: var(--stims-on-accent);
+}
+
+.secondary,
+.open {
+  border: 1px solid var(--stims-accent);
+  background: transparent;
+  color: inherit;
+}
+
+.secondary:hover:not(:disabled),
+.open:hover:not(:disabled) {
+  background: var(--stims-control-fill-hover);
+}
+
+.accept {
+  border: 1px solid var(--stims-good);
+  background: color-mix(in srgb, var(--stims-good) 12%, transparent);
+  color: inherit;
+}
+
+.accept:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--stims-good) 22%, transparent);
+}
+
+.reject {
+  border: 1px solid var(--stims-line-soft);
+  background: transparent;
+  color: inherit;
+}
+
+.reject:hover:not(:disabled) {
+  border-color: var(--stims-line-strong);
+}
+
+.primary:disabled,
+.secondary:disabled,
+.accept:disabled,
+.reject:disabled,
+.open:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.primary:focus-visible,
+.secondary:focus-visible,
+.accept:focus-visible,
+.reject:focus-visible,
+.open:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+.hint {
+  margin: 0;
+  color: var(--stims-muted);
+  font-size: var(--text-xs-plus);
+  line-height: var(--line-height-normal);
+}
+
+.status {
+  margin: 0;
+  min-height: 1.5em;
+  line-height: var(--line-height-normal);
+  color: var(--stims-muted);
+}
+
+.results {
+  display: grid;
+  gap: var(--space-sm);
+  margin: var(--space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: var(--stims-radius-control);
+  background: var(--stims-control-fill);
+}
+
+.itemMain {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.rank {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-round);
+  background: var(--stims-accent-soft);
+  color: var(--stims-accent);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.itemText {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  font-stretch: var(--font-stretch-compact);
+  color: var(--stims-ink);
+}
+
+.reason {
+  color: var(--stims-muted);
+  font-size: var(--text-xs);
+}
+
+.outcome {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  padding: 10px 12px;
+  border: 1px dashed var(--stims-line);
+  border-radius: var(--stims-radius-control);
+}
+
+.recent {
+  border: 0;
+  margin-top: var(--space-sm);
+}
+
+.recentSummary {
+  cursor: pointer;
+  color: var(--stims-muted);
+  font-size: var(--text-xs-plus);
+  font-weight: var(--font-weight-medium);
+}
+
+.recentList {
+  display: grid;
+  gap: var(--space-sm);
+  margin: var(--space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recentItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: var(--stims-radius-control);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recentItem:hover:not(:disabled) {
+  border-color: var(--stims-line-strong);
+  background: var(--stims-control-fill-hover);
+}
+
+.recentItem:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+.recentText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-xs-plus);
+}
+
+.recentBadge {
+  flex: none;
+  font-size: var(--text-2xs);
+  color: var(--stims-muted);
+}

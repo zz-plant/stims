@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, jest, test } from 'bun:test';
 import {
+  getPerformanceRevision,
+  markPerformanceMutation,
+} from '../../src/js/core/performance-revision.ts';
+import {
   installLivePerformance,
   type LivePerformanceApi,
   type LivePerformanceDeps,
@@ -98,6 +102,24 @@ describe('live performance runtime', () => {
 
     uninstall();
     expect(window.__stims_live).toBeUndefined();
+  });
+
+  test('new set-only macros invalidate decisions while continuing ramp frames do not', async () => {
+    const { live, uninstall } = harness({
+      setTarget: () => markPerformanceMutation(),
+    });
+    live.defineMacro({
+      name: 'decision-revision',
+      steps: [{ set: { zoom: 0.9 } }],
+    });
+    const before = getPerformanceRevision();
+    await live.runMacro('decision-revision');
+    expect(getPerformanceRevision()).not.toBe(before);
+    const pending = live.ramp({ targets: { zoom: 1.1 }, durationMs: 100 });
+    const started = getPerformanceRevision();
+    await settle(pending);
+    expect(getPerformanceRevision()).toBe(started);
+    uninstall();
   });
 
   test('a later install survives an earlier teardown', () => {
@@ -461,5 +483,142 @@ describe('live performance runtime', () => {
     expect(result.samples.length).toBeGreaterThan(0);
 
     uninstall();
+  });
+
+  test('autoSwitchScene requires at least two saved scenes', async () => {
+    const { live, uninstall } = harness();
+    for (const scene of live.listScenes()) {
+      live.deleteScene(scene.name);
+    }
+
+    const outcome = await live.autoSwitchScene();
+    expect(outcome.applied).toBe(false);
+    expect(outcome.chosenScene).toBeNull();
+    expect(outcome.reason).toContain('at least two scenes');
+
+    live.saveScene('only-one');
+    const outcome2 = await live.autoSwitchScene();
+    expect(outcome2.applied).toBe(false);
+    expect(outcome2.chosenScene).toBeNull();
+    expect(outcome2.reason).toContain('at least two scenes');
+
+    live.deleteScene('only-one');
+    uninstall();
+  });
+
+  test('autoSwitchScene invokes Clef Omni scene-choice and recalls chosen scene', async () => {
+    const { live, uninstall } = harness();
+    for (const scene of live.listScenes()) {
+      live.deleteScene(scene.name);
+    }
+
+    live.setControl('warp', 0.5);
+    live.saveScene('chill-ambient', 'slow flowing ambient ripples');
+    live.setControl('warp', 2.0);
+    live.saveScene('fast-drop', 'high energy fast strobe');
+
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      return new Response(
+        JSON.stringify({
+          version: 1,
+          task: 'scene-choice',
+          model: 'clef-omni',
+          disposition: 'accepted',
+          provenance: {
+            questionVersion: 'stims-clef-v1',
+            evaluatedAt: '2026-10-21T00:00:00Z',
+            inputHash: 'd'.repeat(64),
+          },
+          answers: {
+            scene: {
+              type: 'choice',
+              choice: 'scene1',
+              confidence: 0.94,
+              probabilities: { scene0: 0.03, scene1: 0.94, hold: 0.03 },
+            },
+            sufficient_evidence: { type: 'noul', noul: 0.95 },
+          },
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }) as unknown as typeof fetch;
+
+    try {
+      const outcome = await settle(
+        live.autoSwitchScene({
+          endpoint: 'https://example.com/api/decide',
+          durationMs: 50,
+        }),
+      );
+      expect(outcome.chosenScene).toBe('fast-drop');
+      expect(outcome.applied).toBe(true);
+      expect(outcome.confidence).toBe(0.94);
+      expect(live.getPositions().warp).toBe(2.0);
+    } finally {
+      globalThis.fetch = origFetch;
+      live.deleteScene('chill-ambient');
+      live.deleteScene('fast-drop');
+      uninstall();
+    }
+  });
+
+  test('autoSwitchScene holds current scene when Clef Omni chooses hold', async () => {
+    const { live, uninstall } = harness();
+    for (const scene of live.listScenes()) {
+      live.deleteScene(scene.name);
+    }
+
+    live.setControl('warp', 0.5);
+    live.saveScene('chill-ambient', 'slow flowing ambient ripples');
+    live.setControl('warp', 2.0);
+    live.saveScene('fast-drop', 'high energy fast strobe');
+
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      return new Response(
+        JSON.stringify({
+          version: 1,
+          task: 'scene-choice',
+          model: 'clef-omni',
+          disposition: 'review',
+          provenance: {
+            questionVersion: 'stims-clef-v1',
+            evaluatedAt: '2026-10-21T00:00:00Z',
+            inputHash: 'e'.repeat(64),
+          },
+          answers: {
+            scene: {
+              type: 'choice',
+              choice: 'hold',
+              confidence: 0.9,
+              probabilities: { scene0: 0.05, scene1: 0.05, hold: 0.9 },
+            },
+            sufficient_evidence: { type: 'noul', noul: 0.95 },
+          },
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }) as unknown as typeof fetch;
+
+    try {
+      const outcome = await live.autoSwitchScene({
+        endpoint: 'https://example.com/api/decide',
+      });
+      expect(outcome.chosenScene).toBeNull();
+      expect(outcome.applied).toBe(false);
+      expect(outcome.reason).toContain('retain');
+    } finally {
+      globalThis.fetch = origFetch;
+      live.deleteScene('chill-ambient');
+      live.deleteScene('fast-drop');
+      uninstall();
+    }
   });
 });

@@ -50,7 +50,7 @@ describe('minimal workspace surfaces', () => {
 
     // Booleans are switches; the renderer is one select, not a select plus a
     // duplicate "stability mode" toggle writing the same state.
-    expect(settings).toContain('label="Motion control"');
+    expect(settings).toContain('label="Steer by tilting the device"');
     expect(settings).toContain('ctl-switch');
     expect(settings).not.toContain('Stability mode');
 

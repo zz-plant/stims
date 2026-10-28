@@ -1,4 +1,5 @@
 ---
+
 name: ship-visualizer-change
 description: "Run the end-to-end flow for a visualizer change. Use when a product-facing runtime or preset update spans implementation, docs sync, validation, and PR-ready completion."
 ---
@@ -10,7 +11,6 @@ Use this skill when the task is broader than a narrow edit and should be carried
 ## Gather context
 
 Read the docs that match the changed surface:
-
 - `docs/DEVELOPMENT.md`
 - `docs/ARCHITECTURE.md`
 - `docs/MILKDROP_PRESET_RUNTIME.md`

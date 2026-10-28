@@ -4,17 +4,16 @@ The site is one Cloudflare Worker serving the built app; the MCP endpoint is an 
 
 ## Choose your deployment track
 
-| Track | Use when | Primary path |
-| --- | --- | --- |
-| **Track A (default): Site Worker via Cloudflare Workers Builds** | Nearly every release. | Cloudflare Workers Builds runs `bun run site:build:gated` and `wrangler deploy` on every push — production from `main`, preview URLs from other branches. GitHub Actions only gates merges; it does not deploy. |
-| **Track B (optional): MCP Worker transport** | You changed MCP HTTP/WebSocket transport behavior or Worker-only MCP deployment settings. | Track A flow for the site plus `bun run mcp:check` and `bun run mcp:deploy` when you need the remote MCP endpoint updated. |
+| Track                                                            | Use when                                                                                  | Primary path                                                                                                                                                                                                    |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Track A (default): Site Worker via Cloudflare Workers Builds** | Nearly every release.                                                                     | Cloudflare Workers Builds runs `bun run site:build:gated` and `wrangler deploy` on every push — production from `main`, preview URLs from other branches. GitHub Actions only gates merges; it does not deploy. |
+| **Track B (optional): MCP Worker transport**                     | You changed MCP HTTP/WebSocket transport behavior or Worker-only MCP deployment settings. | Track A flow for the site plus `bun run mcp:check` and `bun run mcp:deploy` when you need the remote MCP endpoint updated.                                                                                      |
 
 To deploy only the site, follow Track A and skip Track B.
 
 ## Track A quick path (default production flow)
 
 The site deploys as the `stims` Worker with static assets, configured in [`wrangler.site.jsonc`](../wrangler.site.jsonc). Cloudflare Workers Builds watches the GitHub repo and builds/deploys on push, so a release is:
-
 1. Run the quality gate, which includes the README claim and generated-artifact checks:
 
    ```bash
@@ -50,7 +49,6 @@ Keep the orchestration in `scripts/build-site.mjs`. Running both compilers as a 
 ### One-time Workers Builds setup
 
 Done in the Cloudflare dashboard (Workers & Pages → the `stims` Worker → Settings → Builds, or "Import a repository" if the Worker does not exist yet):
-
 1. Connect the `zz-plant/stims` GitHub repository.
 2. Build command: `bun run site:build:gated`. Deploy command: `bunx wrangler deploy --config wrangler.site.jsonc`. Non-production branch command: `bunx wrangler versions upload --config wrangler.site.jsonc`.
 
@@ -79,7 +77,6 @@ bun run build -- --reuse
 ### Artifact Layout
 
 After `bun run build`, expect the following structure:
-
 - `dist/`: HTML entry points and hashed JS/CSS assets under `dist/assets/`.
 - `dist/.vite/manifest.json`: build metadata that `--reuse` checks for.
 
@@ -88,7 +85,6 @@ When deploying to static hosting, serve the contents of `dist/` directly and kee
 ## Verify Locally
 
 Use the same scripts defined in `package.json` to validate the production output:
-
 - Preview the build with Vite’s preview server (binds to all interfaces):
 
   ```bash
@@ -106,7 +102,6 @@ Both commands expect a fresh `bun run build` and read from `dist/`.
 ## Static Hosting Expectations
 
 Any static host should point its document root to the `dist/` directory and preserve the following:
-
 - `dist/index.html` (and other HTML entry points).
 - `dist/assets/**` for hashed JS/CSS.
 
@@ -122,6 +117,71 @@ BACKFILL_TOKEN=<token> bun run previews:sync
 ```
 
 Run that after `scripts/generate-thumbnails.ts` regenerates previews; pass specific filenames to sync only what changed. The token is the `stims-embed-backfill` Worker secret. A non-Cloudflare static host would need the previews directory copied into its document root instead.
+
+### Video link previews
+
+Video publishing stores small GIF flipbooks, JPEG posters and silent MP4s in
+the existing `stims-static` R2 bucket. The Worker's `MEDIA` binding converts
+each GIF during publication. It stores the MP4 before returning a public
+link; crawler requests read the finished file from R2. The binding is configured
+per Worker in `wrangler.site.jsonc` and requires no zone settings changes.
+`VIDEO_PREVIEWS_ENABLED` enables publishing and metadata; set it to `false`
+and deploy to turn them off while retaining ordinary image sharing.
+
+Harvest the frames already rendered during thumbnail selection, then inspect
+and prepare a publication without writing to R2:
+
+```bash
+bun run generate:previews -- --ids=shifter-curlique --force --flipbooks --workers=1 --port=5277
+bun run previews:publish-video -- --ids=shifter-curlique --dry-run
+```
+
+The generated files live under ignored `output/flipbooks/`. Checkpoint timing
+is approximate: the preview holds a sampled image until the next checkpoint.
+The encoder analyzes the quantized frames across the loop boundary and refuses
+clips with detected general or red flashes. This result describes the sampled
+clip, not the preset at its normal rendering rate.
+
+To publish the reviewed assets with the existing Wrangler login:
+
+```bash
+bun run previews:publish-video -- --ids=shifter-curlique --wrangler
+```
+
+Alternatively, use the same upload credential as PNG previews:
+
+```bash
+BACKFILL_TOKEN=<token> bun run previews:publish-video -- --ids=shifter-curlique
+```
+
+The publisher uses `/api/flipbooks/` to convert and store the media, verifies
+the MP4 is available, then updates the preset's pointer through authenticated
+R2 access. The homepage uses the preset named by `HOMEPAGE_VIDEO_PRESET`.
+Preset pages with no published pointer, and legacy records without a completed
+MP4, retain their image metadata. `/api/flipbooks/<id>.mp4` supports GET, HEAD
+and byte ranges. Confirm its video plays and the page's `og:video` tag points
+at it. Test the resulting link in the intended sharing apps; metadata does
+not guarantee every app displays video. Pass `--site=https://<preview-host>`
+to the publisher to use a particular deployed version of the API.
+Batch publications wait and retry HTTP 429 responses, up to three retries per
+capture; a persistent limit stops the command without changing that preset's
+pointer. Rerunning the same batch reuses its completed videos.
+
+The stage menu's **Publish a public video link…** flow explicitly publishes four seconds
+of small frames and the current preset code to `/api/flipbooks/`. It sends no
+audio. The endpoint requires same-origin JSON and the `VIDEO_UPLOAD_LIMITER`
+and `MEDIA` bindings (three attempts per IP per minute); missing configuration fails closed.
+Requests are bounded by actual streamed bytes, frame count, dimensions, source
+size and duration. The resulting `/s/<id>` page includes an inert source payload
+so the recipient opens the published source without fetching or executing code
+from another site. It is `noindex,follow` and keeps its own sharing canonical.
+
+Successful browser publications return a deletion token. The dialog offers
+**Delete public link** while it retains that token; the HTTP equivalent is
+`DELETE /api/flipbooks/<id>` with `Authorization: Bearer <deleteToken>`. Deletion
+removes the record, GIF, MP4 and poster. Previously downloaded or CDN-cached copies
+cannot be recalled. To remove a curated preview, remove its preset pointer and
+the record and three media assets from R2 through authenticated asset management.
 
 ### Preset embeddings backfill is on-demand
 
@@ -139,7 +199,6 @@ It POSTs the Worker's authenticated backfill route until a run reports no work l
 The site previously deployed as a Cloudflare Pages project with its own Wrangler TOML config, deploy helper script, and `pages:*` package scripts. That path was removed after the `toil.fyi` custom domain moved to the `stims` Worker; the manual fallback is now `bun run site:deploy` (see the Track A quick path above).
 
 Manual deploy authentication notes:
-
 - Local interactive deploys can use `bun run cf:whoami` plus Wrangler login state.
 - Non-interactive deploys require `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
@@ -148,7 +207,6 @@ Manual deploy authentication notes:
 The MCP HTTP/WebSocket endpoint lives in [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). It has its own Wrangler config in [`wrangler.mcp.jsonc`](../wrangler.mcp.jsonc), separate from the site config in [`wrangler.site.jsonc`](../wrangler.site.jsonc).
 
 Common commands (Bun-first):
-
 - Validate the Worker deploy config before shipping:
 
   ```bash
@@ -168,7 +226,6 @@ Common commands (Bun-first):
   ```
 
 Expected artifacts and checkpoints:
-
 - Worker script bundled by Wrangler (appears as `stims-mcp` in the dashboard; `stims` is the site Worker).
 - Preview URL surfaced by `wrangler dev` for local testing and a production URL after `wrangler deploy`.
 - The compatibility date and flags live in [`wrangler.mcp.jsonc`](../wrangler.mcp.jsonc); WebSocket support depends on them.

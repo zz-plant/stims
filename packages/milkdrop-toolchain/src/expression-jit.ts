@@ -118,37 +118,57 @@ type CompileContext = {
 
 const EMPTY_CSE_ELIGIBLE: ReadonlySet<string> = new Set();
 
+type IdentifierReadInfo = {
+  identity: string;
+  read: string;
+  readKeys: readonly string[];
+};
+
+const MAX_IDENTIFIER_READ_CACHE_SIZE = 2048;
+const identifierReadCache = new Map<string, IdentifierReadInfo>();
+
 /** Read identity for one identifier node: the cache key plus the env keys
  * the emitted read observes (used by store invalidation). Shared by the
  * emitter and the per-statement eligibility counter so the two cannot
  * disagree on what counts as "the same read". */
 function identifierReadInfo(
   node: MilkdropExpressionNode & { type: 'identifier' },
-) {
+): IdentifierReadInfo {
+  const cached = identifierReadCache.get(node.name);
+  if (cached) {
+    return cached;
+  }
   const name = node.name.toLowerCase();
+  let info: IdentifierReadInfo;
   // Env-first like the interpreter: pi/e are ordinary prepopulated EEL
   // variables and preset assignments to them must stick (see expression.ts
   // identifier resolution for the rationale).
   if (name === 'pi') {
-    return { identity: 'pi', read: '(e["pi"] ?? Math.PI)', readKeys: ['pi'] };
+    info = { identity: 'pi', read: '(e["pi"] ?? Math.PI)', readKeys: ['pi'] };
+  } else if (name === 'e') {
+    info = { identity: 'e', read: '(e["e"] ?? Math.E)', readKeys: ['e'] };
+  } else {
+    const normalized = name.replace(/[^a-z0-9_]+/gu, '_');
+    const aliased = aliasMap[normalized] || normalized;
+    if (aliased !== node.name) {
+      info = {
+        identity: `${node.name}|${aliased}`,
+        read: `(e[${JSON.stringify(node.name)}] ?? e[${JSON.stringify(aliased)}] ?? 0)`,
+        readKeys: [node.name, aliased],
+      };
+    } else {
+      info = {
+        identity: node.name,
+        read: `(e[${JSON.stringify(node.name)}] ?? 0)`,
+        readKeys: [node.name],
+      };
+    }
   }
-  if (name === 'e') {
-    return { identity: 'e', read: '(e["e"] ?? Math.E)', readKeys: ['e'] };
+  if (identifierReadCache.size >= MAX_IDENTIFIER_READ_CACHE_SIZE) {
+    identifierReadCache.clear();
   }
-  const normalized = name.replace(/[^a-z0-9_]+/gu, '_');
-  const aliased = aliasMap[normalized] || normalized;
-  if (aliased !== node.name) {
-    return {
-      identity: `${node.name}|${aliased}`,
-      read: `(e[${JSON.stringify(node.name)}] ?? e[${JSON.stringify(aliased)}] ?? 0)`,
-      readKeys: [node.name, aliased],
-    };
-  }
-  return {
-    identity: node.name,
-    read: `(e[${JSON.stringify(node.name)}] ?? 0)`,
-    readKeys: [node.name],
-  };
+  identifierReadCache.set(node.name, info);
+  return info;
 }
 
 /** Drops cached reads whose value a store to `target` could have changed.
@@ -207,16 +227,23 @@ function compileBufferRead(
   context: CompileContext,
   buffer: 'mb' | 'gb',
   size: number,
+  depth = 0,
 ) {
   const index = nextTemporary(context);
-  const argument = node.args[0] ? compileNode(node.args[0], context) : '0';
+  const argument = node.args[0]
+    ? compileNode(node.args[0], context, depth + 1)
+    : '0';
   return `(${index} = Math.trunc(${argument}), (${index} >= 0 && ${index} < ${size} ? ${buffer}[${index}] : 0))`;
 }
 
 function compileNode(
   node: MilkdropExpressionNode,
   context: CompileContext,
+  depth = 0,
 ): string {
+  if (depth > 200) {
+    return '(0)';
+  }
   switch (node.type) {
     case 'literal':
       return Object.is(node.value, -0) ? '-0.0' : String(node.value);
@@ -234,7 +261,7 @@ function compileNode(
       return `(${temp} = ${info.read}, ${temp})`;
     }
     case 'unary': {
-      const x = compileNode(node.operand, context);
+      const x = compileNode(node.operand, context, depth + 1);
       return EEL_UNARY_OPERATORS[node.operator]?.jit?.(x) ?? '(0)';
     }
     case 'binary': {
@@ -244,8 +271,8 @@ function compileNode(
         // survive the operator. The left operand always runs, so its cached
         // reads may be reused on the right.
         if (node.operator === '&&' || node.operator === '||') {
-          const l = compileNode(node.left, context);
-          const r = compileNode(node.right, context);
+          const l = compileNode(node.left, context, depth + 1);
+          const r = compileNode(node.right, context, depth + 1);
           context.cse.clear();
           return (
             EEL_BINARY_OPERATORS[node.operator]?.jit?.(l, r, {
@@ -253,15 +280,15 @@ function compileNode(
             }) ?? '(0)'
           );
         }
-        const l = compileNode(node.left, context);
-        const r = compileNode(node.right, context);
+        const l = compileNode(node.left, context, depth + 1);
+        const r = compileNode(node.right, context, depth + 1);
         return (
           EEL_BINARY_OPERATORS[node.operator]?.jit?.(l, r, {
             temp: () => nextTemporary(context),
           }) ?? '(0)'
         );
       }
-      const r = compileNode(node.right, context);
+      const r = compileNode(node.right, context, depth + 1);
       {
         // Assignment nested inside an expression: lvalue = rvalue, and the
         // expression's value is the (finite-clamped) rvalue. This used to
@@ -296,7 +323,7 @@ function compileNode(
               : MILKDROP_GMEGABUF_SIZE;
           const index = nextTemporary(context);
           const indexSource = node.left.args[0]
-            ? compileNode(node.left.args[0], context)
+            ? compileNode(node.left.args[0], context, depth + 1)
             : '0';
           const bufferName = buffer === 'megabuf' ? 'mb' : 'gb';
           return `(${clamped}, ${index} = Math.trunc(${indexSource}), (${index} >= 0 && ${index} < ${size} ? ${bufferName}[${index}] = ${tempVar} : 0), ${tempVar})`;
@@ -308,10 +335,22 @@ function compileNode(
     case 'call': {
       const name = node.name.toLowerCase();
       if (name === 'megabuf') {
-        return compileBufferRead(node, context, 'mb', MILKDROP_MEGABUF_SIZE);
+        return compileBufferRead(
+          node,
+          context,
+          'mb',
+          MILKDROP_MEGABUF_SIZE,
+          depth + 1,
+        );
       }
       if (name === 'gmegabuf') {
-        return compileBufferRead(node, context, 'gb', MILKDROP_GMEGABUF_SIZE);
+        return compileBufferRead(
+          node,
+          context,
+          'gb',
+          MILKDROP_GMEGABUF_SIZE,
+          depth + 1,
+        );
       }
       if (name === 'if') {
         // Lazy branches: each branch is a conditionally-evaluated region for
@@ -319,14 +358,16 @@ function compileNode(
         // reads are reusable in either branch; the else-branch compiles from
         // the post-condition snapshot so a temp first assigned in the
         // then-branch can never reach it; nothing survives the call.
-        const cond = node.args[0] ? compileNode(node.args[0], context) : '0';
+        const cond = node.args[0]
+          ? compileNode(node.args[0], context, depth + 1)
+          : '0';
         const snapshot = new Map(context.cse);
         const thenBranch = node.args[1]
-          ? compileNode(node.args[1], context)
+          ? compileNode(node.args[1], context, depth + 1)
           : '0';
         context.cse = snapshot;
         const elseBranch = node.args[2]
-          ? compileNode(node.args[2], context)
+          ? compileNode(node.args[2], context, depth + 1)
           : '0';
         context.cse.clear();
         // Extra caller args are compiled (matching the eager path) and then
@@ -334,7 +375,7 @@ function compileNode(
         // call's.
         const extraArgs = node.args
           .slice(3)
-          .map((arg) => compileNode(arg, context));
+          .map((arg) => compileNode(arg, context, depth + 1));
         context.cse.clear();
         return (
           emitEelCallJs('if', [cond, thenBranch, elseBranch, ...extraArgs], {
@@ -346,7 +387,7 @@ function compileNode(
           }) ?? '(0)'
         );
       }
-      const args = node.args.map((arg) => compileNode(arg, context));
+      const args = node.args.map((arg) => compileNode(arg, context, depth + 1));
       const emitted = emitEelCallJs(name, args, {
         temp: () => nextTemporary(context),
         rng: context.rngMode,

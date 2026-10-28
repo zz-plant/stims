@@ -173,7 +173,7 @@ export function CreditsPanel() {
         <p>
           Stims is released under the Unlicense (public domain). Presets retain
           their original licenses. When you use, share, or remix presets, please
-          credit the original authors — you'll see their names and links
+          credit the original authors; you'll see their names and links
           throughout the app.
         </p>
       </CreditsSection>

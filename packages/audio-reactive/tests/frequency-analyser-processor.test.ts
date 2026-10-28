@@ -217,4 +217,14 @@ describe('FrequencyAnalyserProcessor', () => {
     expect(third.frequencyData).toBe(recycled);
     expect(processor.port.posted[1][0].frequencyData).not.toBe(recycled);
   });
+
+  test('buildTwiddleTable precomputes bit-reversal and trigonometric tables', async () => {
+    const { buildTwiddleTable } = await import('../src/analyser-core.ts');
+    const twiddles = buildTwiddleTable(8);
+    expect(twiddles.cos.length).toBe(4);
+    expect(twiddles.sin.length).toBe(4);
+    expect(twiddles.bitRev.length).toBe(8);
+    // 3 bits bit-reversal permutation for N=8: [0, 4, 2, 6, 1, 5, 3, 7]
+    expect(Array.from(twiddles.bitRev)).toEqual([0, 4, 2, 6, 1, 5, 3, 7]);
+  });
 });

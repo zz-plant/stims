@@ -98,10 +98,12 @@ export function makeUiValue(
       clear: noop,
       move: noop,
       popNext: () => null,
+      replaceQueue: noop,
     },
 
     handleImport: asyncNoop,
     handleShowCurrentLink: asyncNoop,
+    handleCopyEmbedCode: async () => false,
     updatePanel: noop,
     ...overrides,
   };

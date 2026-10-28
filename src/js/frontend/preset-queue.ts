@@ -96,5 +96,18 @@ export function usePersistentPresetQueue(catalog: PresetCatalogEntry[]) {
     return nextId;
   }, [presetIds]);
 
-  return { presetIds, entries, add, remove, clear, move, popNext };
+  const replaceQueue = useCallback((newIds: string[]) => {
+    setPresetIds(newIds.slice(0, MAX_QUEUE_SIZE));
+  }, []);
+
+  return {
+    presetIds,
+    entries,
+    add,
+    remove,
+    clear,
+    move,
+    popNext,
+    replaceQueue,
+  };
 }

@@ -239,12 +239,15 @@ export function setSharedGeometryBounds(
   return geometry;
 }
 
+const ZERO_VECTOR3 = new Vector3(0, 0, 0);
+const scratchBoundsCenter = new Vector3();
+
 export function setGeometryBoundsFromPositions(
   geometry: BufferGeometry,
   positions: ArrayLike<number>,
 ) {
   if (positions.length < 3) {
-    return setGeometryBoundingSphere(geometry, new Vector3(0, 0, 0), 0);
+    return setGeometryBoundingSphere(geometry, ZERO_VECTOR3, 0);
   }
 
   let minX = positions[0] ?? 0;
@@ -266,21 +269,24 @@ export function setGeometryBoundsFromPositions(
     maxZ = Math.max(maxZ, z);
   }
 
-  const center = new Vector3(
-    (minX + maxX) * 0.5,
-    (minY + maxY) * 0.5,
-    (minZ + maxZ) * 0.5,
-  );
+  const centerX = (minX + maxX) * 0.5;
+  const centerY = (minY + maxY) * 0.5;
+  const centerZ = (minZ + maxZ) * 0.5;
+  scratchBoundsCenter.set(centerX, centerY, centerZ);
   let radiusSq = 0;
 
   for (let index = 0; index < positions.length; index += 3) {
-    const dx = (positions[index] ?? 0) - center.x;
-    const dy = (positions[index + 1] ?? 0) - center.y;
-    const dz = (positions[index + 2] ?? 0) - center.z;
+    const dx = (positions[index] ?? 0) - centerX;
+    const dy = (positions[index + 1] ?? 0) - centerY;
+    const dz = (positions[index + 2] ?? 0) - centerZ;
     radiusSq = Math.max(radiusSq, dx * dx + dy * dy + dz * dz);
   }
 
-  return setGeometryBoundingSphere(geometry, center, Math.sqrt(radiusSq));
+  return setGeometryBoundingSphere(
+    geometry,
+    scratchBoundsCenter,
+    Math.sqrt(radiusSq),
+  );
 }
 
 export function markAlwaysOnscreen<
@@ -740,7 +746,7 @@ export function ensureGeometryPositions(
   }
 
   if (geometry.userData.skipDynamicBounds === true) {
-    setGeometryBoundingSphere(geometry, new Vector3(0, 0, 0), Math.SQRT2 * 2.4);
+    setGeometryBoundingSphere(geometry, ZERO_VECTOR3, Math.SQRT2 * 2.4);
     return;
   }
   setGeometryBoundsFromPositions(geometry, positions);

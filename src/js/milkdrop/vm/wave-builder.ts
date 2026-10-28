@@ -20,8 +20,6 @@ import {
   customElementShadowedSignals,
   MAIN_WAVE_FRAME_HISTORY_SIZE,
   type MutableState,
-  milkdropToSceneX,
-  milkdropToSceneY,
   reloadCustomElementSignals,
   sampleCustomWaveChannels,
   type WaveBuilderState,
@@ -381,8 +379,15 @@ export function buildCustomWaves({
     pointLocals.v7 = frameLocals.v7 ?? 0;
     pointLocals.v8 = frameLocals.v8 ?? 0;
 
+    const invSampleMax = 1 / Math.max(1, sampleCount - 1);
+    const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+    const aspectFactorX = 2 * Math.max(1, safeAspect);
+    const aspectFactorY = 2 * Math.max(1, 1 / safeAspect);
+    let writeIndex = 0;
+    let colorIndex = 0;
+
     for (let point = 0; point < sampleCount; point += 1) {
-      const sample = point / Math.max(1, sampleCount - 1);
+      const sample = point * invSampleMax;
       const waveChannels = sampleCustomWaveChannels(
         signals,
         sample,
@@ -430,14 +435,13 @@ export function buildCustomWaves({
       if (pointEnv) {
         runProgram(wave.programs.perPoint, pointEnv, pointLocals);
       }
-      const writeIndex = point * 3;
       if (positions) {
-        positions[writeIndex] = milkdropToSceneX(pointLocals.x, aspect);
-        positions[writeIndex + 1] = milkdropToSceneY(pointLocals.y, aspect);
+        positions[writeIndex] = (pointLocals.x - 0.5) * aspectFactorX;
+        positions[writeIndex + 1] = (pointLocals.y - 0.5) * aspectFactorY;
         positions[writeIndex + 2] = 0.28;
+        writeIndex += 3;
       }
       if (pointColors) {
-        const colorIndex = point * 4;
         const pointR = clamp(pointLocals.r ?? waveColor.r, 0, 1);
         const pointG = clamp(pointLocals.g ?? waveColor.g, 0, 1);
         const pointB = clamp(pointLocals.b ?? waveColor.b, 0, 1);
@@ -452,6 +456,7 @@ export function buildCustomWaves({
         pointColors[colorIndex + 1] = pointG;
         pointColors[colorIndex + 2] = pointB;
         pointColors[colorIndex + 3] = pointA;
+        colorIndex += 4;
         hasPerPointColors ||=
           pointR !== waveColor.r ||
           pointG !== waveColor.g ||

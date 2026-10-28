@@ -30,7 +30,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { gzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
 
 const DIST =
   process.argv.find((a) => a.startsWith('--dist='))?.slice('--dist='.length) ??
@@ -52,10 +52,14 @@ const MANIFEST_GZIP_BUDGETS: ReadonlyArray<{ file: string; max: number }> = [
   { file: 'milkdrop-presets/starter-catalog.json', max: 8_000 },
   { file: 'milkdrop-presets/catalog.json', max: 160_000 },
   { file: 'milkdrop-presets/search-index.json', max: 100_000 },
-  // Fetched only when Nearby, "By look" or "Like your saved" first needs it
-  // (306 KB gzip at 1,636 presets × 256 int8 values).
+  // Fetched only when Nearby, "By look" or "Like your saved" first needs it.
+  // The loader prefers the gzip twin (307 KB) and decompresses it locally;
+  // the raw binary is the fallback for engines without DecompressionStream.
   { file: 'milkdrop-presets/visual-vectors.bin', max: 360_000 },
+  { file: 'milkdrop-presets/visual-vectors.bin.gz', max: 320_000 },
   { file: 'milkdrop-presets/visual-vectors.json', max: 30_000 },
+  // Fetched on the first Browse search (19 KB gzip for 74 terms × 256 int8).
+  { file: 'milkdrop-presets/visual-terms.json', max: 30_000 },
 ];
 
 /**
@@ -242,6 +246,21 @@ function main(): boolean {
     if (gzipped > max) {
       console.error(
         `[ERROR] ${file} is ${fmt(gzipped)} gzipped, over the ${fmt(max)} budget.`,
+      );
+      ok = false;
+    }
+  }
+  // The gzip twin is a decompressed copy of the raw binary, written by the
+  // same build run; if they drift, the loader serves stale embeddings while
+  // the manifest describes new ones. Verify the twin round-trips to the raw
+  // file byte for byte.
+  const vectorsRaw = path.join(DIST, 'milkdrop-presets/visual-vectors.bin');
+  const vectorsGz = `${vectorsRaw}.gz`;
+  if (existsSync(vectorsRaw) && existsSync(vectorsGz)) {
+    const roundTrip = gunzipSync(readFileSync(vectorsGz));
+    if (!roundTrip.equals(readFileSync(vectorsRaw))) {
+      console.error(
+        '[ERROR] visual-vectors.bin.gz does not gunzip to visual-vectors.bin; regenerate the .gz in the same build run as the .bin.',
       );
       ok = false;
     }

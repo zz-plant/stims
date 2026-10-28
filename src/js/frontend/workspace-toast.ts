@@ -117,7 +117,7 @@ export function useWorkspaceToast({
       const status = (event as CustomEvent<{ status?: string }>).detail?.status;
       if (status === 'context-lost') {
         showToast(
-          'Visuals paused — the graphics connection was lost. Reconnecting…',
+          'Visuals paused: the graphics connection was lost. Reconnecting…',
           'warn',
         );
       } else if (status === 'context-restored') {
@@ -166,11 +166,21 @@ export function useWorkspaceToast({
       return;
     }
 
+    // Failures that leave the visitor without the sound they asked for need
+    // the longer, louder toast. The microphone's denial, missing hardware and
+    // busy-device messages lead with what failed, not with "Unable to", so
+    // they used to read as 4-second info notes.
     const resolvedTone =
-      fromShell && /^(Unable to|error|failed|denied|blocked)/i.test(message)
+      fromShell &&
+      (/^(Unable to|error|failed|denied|blocked)/i.test(message) ||
+        /^(Microphone (access was denied|is in use)|No (microphone|tab or|YouTube) |Screen sharing is blocked)/.test(
+          message,
+        ))
         ? 'error'
         : fromShell &&
-            /limit live mic access|Started with Demo Audio/i.test(message)
+            /limit live mic access|Started with Demo Audio|Stims reloaded the page/i.test(
+              message,
+            )
           ? 'warn'
           : 'info';
     showToast(

@@ -27,12 +27,13 @@ import type {
 } from './contracts.ts';
 import type { EngineSnapshot } from './engine/milkdrop-engine-adapter.ts';
 import { disposeActiveFileAudio } from './file-audio.ts';
+import { isPanelStageAnchored } from './panel-registry.ts';
 import {
   buildCanonicalUrl,
   buildRemixShareUrl,
   REMIX_URL_FAILED,
 } from './url-state.ts';
-import { codeForLocalShare } from './workspace-actions.ts';
+import { codeForLocalShare, copyEmbedCodeAction } from './workspace-actions.ts';
 import {
   buildStarterPresets,
   createFieldMatcher,
@@ -59,13 +60,17 @@ function buildHealedPresetRoute(
   missingRequestedPreset: boolean,
   featuredPreset: PresetCatalogEntry | null | undefined,
   audioSource: AudioSource,
+  presetOverride?: string | null,
 ): {
   nextRouteState: SessionRouteState;
   healMessage: string | null;
 } {
+  // A starter card selection calls commitRoute then immediately starts demo
+  // audio. The route state closure is still the pre-click one, so the
+  // selected id is handed in explicitly; it must win over the stale route.
   const healedPresetId = missingRequestedPreset
     ? (featuredPreset?.id ?? null)
-    : routeState.presetId;
+    : (presetOverride ?? routeState.presetId);
   const healMessage =
     missingRequestedPreset && featuredPreset
       ? `Requested preset unavailable. Starting with ${featuredPreset.title}.`
@@ -180,16 +185,22 @@ export function useWorkspaceShellOrchestration({
     });
   }, [enrichedCatalog, routeState.collectionTag, deferredSearch]);
 
+  // Id index over the catalog, rebuilt only when the catalog changes. The
+  // first entry wins on a duplicate id, as Array.find did. filteredCatalog
+  // is a subset of the same entries, so looking there first never found a
+  // different preset; it only re-ran this lookup on every search keystroke.
+  const catalogById = useMemo(() => {
+    const index = new Map<string, PresetCatalogEntry>();
+    for (const entry of enrichedCatalog) {
+      if (!index.has(entry.id)) index.set(entry.id, entry);
+    }
+    return index;
+  }, [enrichedCatalog]);
+
+  const activePresetId = engineSnapshot?.activePresetId;
   const currentPreset = useMemo(
-    () =>
-      filteredCatalog.find(
-        (entry) => entry.id === engineSnapshot?.activePresetId,
-      ) ??
-      enrichedCatalog.find(
-        (entry) => entry.id === engineSnapshot?.activePresetId,
-      ) ??
-      null,
-    [filteredCatalog, enrichedCatalog, engineSnapshot?.activePresetId],
+    () => (activePresetId ? (catalogById.get(activePresetId) ?? null) : null),
+    [catalogById, activePresetId],
   );
 
   const starterPresets = useMemo(
@@ -204,11 +215,11 @@ export function useWorkspaceShellOrchestration({
   // featured surfaces where a first impression is being made.
   const featuredPreset = useMemo(
     () =>
-      enrichedCatalog.find((entry) => entry.id === FIRST_RUN_PRESET_ID) ??
+      catalogById.get(FIRST_RUN_PRESET_ID) ??
       starterPresets[0]?.preset ??
       enrichedCatalog[0] ??
       null,
-    [starterPresets, enrichedCatalog],
+    [catalogById, starterPresets, enrichedCatalog],
   );
 
   const resolvedRequestedPreset = useMemo(
@@ -254,38 +265,54 @@ export function useWorkspaceShellOrchestration({
     routeState.presetId && !selectedPreset && !missingRequestedPreset,
   );
 
+  const collectionTags = useMemo(
+    () => getCollectionTags(enrichedCatalog),
+    [enrichedCatalog],
+  );
+  const favoritePresets = useMemo(
+    () => pickFavoritePresets(enrichedCatalog),
+    [enrichedCatalog],
+  );
+  const recentPresets = useMemo(
+    () => pickRecentPresets(enrichedCatalog),
+    [enrichedCatalog],
+  );
+
   const shellState = useMemo(
     () => ({
       catalog: enrichedCatalog,
       catalogError,
       catalogReady: catalogReady,
-      collectionTags: getCollectionTags(enrichedCatalog),
+      collectionTags,
       currentPreset,
       engineReady,
-      favoritePresets: pickFavoritePresets(enrichedCatalog),
+      favoritePresets,
       featuredPreset,
       filteredCatalog,
       audioActive,
       loadingRequestedPreset,
       missingRequestedPreset,
-      recentPresets: pickRecentPresets(enrichedCatalog),
+      recentPresets,
       runtimeReady,
       selectedPreset,
       starterPresets,
-      stageAnchoredToolOpen: routeState.panel === 'editor',
+      stageAnchoredToolOpen: isPanelStageAnchored(routeState.panel),
       updateEditorSource,
     }),
     [
       enrichedCatalog,
       catalogError,
       catalogReady,
+      collectionTags,
       currentPreset,
       engineReady,
+      favoritePresets,
       featuredPreset,
       filteredCatalog,
       audioActive,
       loadingRequestedPreset,
       missingRequestedPreset,
+      recentPresets,
       routeState.panel,
       runtimeReady,
       selectedPreset,
@@ -408,6 +435,7 @@ export function useWorkspaceShellOrchestration({
   const handleAudioStart = async (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
     deviceId?: string,
+    presetOverride?: string | null,
   ): Promise<AudioStartOutcome> => {
     if (audioStartInProgressRef.current) {
       return {
@@ -456,6 +484,7 @@ export function useWorkspaceShellOrchestration({
         shellState.missingRequestedPreset,
         shellState.featuredPreset,
         source,
+        presetOverride,
       );
 
       if (healMessage) {
@@ -530,7 +559,7 @@ export function useWorkspaceShellOrchestration({
               : '';
           const msg =
             errName === 'NotAllowedError' || errName === 'PermissionDeniedError'
-              ? 'Microphone access was denied. Check browser settings and OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).'
+              ? 'Microphone access was denied. Allow it from the address bar, or in macOS Privacy & Security / Windows Privacy Settings. Demo audio needs no permission.'
               : errName === 'NotFoundError'
                 ? 'No microphone hardware found. Please connect a microphone and try again.'
                 : errName === 'NotReadableError' ||
@@ -635,7 +664,11 @@ export function useWorkspaceShellOrchestration({
       // idle preview, which has no pause.
       return;
     }
-    setStatusMessage(applied ? 'Paused. Press Space to resume.' : 'Resumed.');
+    setStatusMessage(
+      applied
+        ? 'Visuals paused. Press Space to resume them.'
+        : 'Visuals resumed.',
+    );
   };
 
   const handleImport = async (files: FileList | File[] | null) => {
@@ -651,15 +684,19 @@ export function useWorkspaceShellOrchestration({
     }
   };
 
-  const handleShowCurrentLink = async () => {
-    // The preset on stage, not the route's: the route can trail the engine
-    // (a Remix selects its new preset in the runtime), and sharing from the
-    // route right after a Remix linked the parent instead.
+  // The preset on stage, not the route's: the route can trail the engine
+  // (a Remix selects its new preset in the runtime), and sharing from the
+  // route right after a Remix linked the parent instead.
+  const presetOnStage = () => {
     const activeId = engineSnapshot?.activePresetId ?? routeState.presetId;
-    const sharedPreset =
-      (activeId
-        ? shellState.catalog.find((entry) => entry.id === activeId)
-        : null) ?? selectedPreset;
+    return {
+      activeId,
+      entry: (activeId ? catalogById.get(activeId) : null) ?? selectedPreset,
+    };
+  };
+
+  const handleShowCurrentLink = async () => {
+    const { activeId, entry: sharedPreset } = presetOnStage();
     const currentUrl = buildCanonicalUrl(
       { ...routeState, presetId: activeId ?? null, agentMode: false },
       window.location,
@@ -738,6 +775,13 @@ export function useWorkspaceShellOrchestration({
     );
   };
 
+  const handleCopyEmbedCode = () =>
+    copyEmbedCodeAction({
+      entry: presetOnStage().entry,
+      dirty: engineSnapshot?.sessionState?.dirty ?? false,
+      announce: setStatusMessage,
+    });
+
   return {
     ...shellState,
     handleAudioStart,
@@ -748,6 +792,7 @@ export function useWorkspaceShellOrchestration({
     handlePresetSelection,
     handlePreviousPreset,
     handleShowCurrentLink,
+    handleCopyEmbedCode,
     handleShufflePreset,
     handleVisualSearch,
     updatePanel,

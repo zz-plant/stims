@@ -15,6 +15,7 @@
  * reached by scrolling the page, by Tab, or from a screen reader's headings.
  */
 import { Fragment, useId, useMemo } from 'react';
+import { resolveSemanticRoute } from '../../../functions/discover-slugs.ts';
 import {
   type PresetMetaTable,
   presetFileDirIndex,
@@ -28,6 +29,7 @@ import {
 import styles from '../../css/PresetPageDetails.module.css';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { openPresetInPlace } from './preset-link.ts';
+import { useWorkspace } from './workspace-context.tsx';
 
 /**
  * The catalog in the shape the edge reads from /preset-meta.json. First entry
@@ -73,6 +75,22 @@ export function PresetPageDetails({
   onSelectPreset: (presetId: string) => void;
 }) {
   const headingId = useId();
+  const { ui } = useWorkspace();
+  // An author's page is Browse filtered to that author. Followed as a link
+  // it reloaded the app and ended the audio, while the "More presets by"
+  // links below switch in place; open the same filtered Browse in place.
+  // A new-tab click still follows the href.
+  const openAuthor = (href: string) => {
+    const discovery = resolveSemanticRoute(href);
+    if (!discovery) return false;
+    ui.commitRoute((current) => ({
+      ...current,
+      panel: 'browse',
+      collectionTag: discovery.collectionTag ?? null,
+      discovery,
+    }));
+    return true;
+  };
   return (
     <section className={styles.root} aria-labelledby={headingId}>
       <h1 id={headingId} className={styles.title}>
@@ -86,7 +104,18 @@ export function PresetPageDetails({
               <Fragment key={credit.name}>
                 {index > 0 ? CREDIT_SEPARATOR : null}
                 {credit.href ? (
-                  <a href={credit.href}>{credit.name}</a>
+                  <a
+                    href={credit.href}
+                    onClick={(event) => {
+                      const href = credit.href;
+                      if (!href) return;
+                      openPresetInPlace(event, () => {
+                        if (!openAuthor(href)) window.location.assign(href);
+                      });
+                    }}
+                  >
+                    {credit.name}
+                  </a>
                 ) : (
                   credit.name
                 )}

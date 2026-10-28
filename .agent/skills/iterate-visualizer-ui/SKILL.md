@@ -1,4 +1,5 @@
 ---
+
 name: iterate-visualizer-ui
 description: "Iterate on visualizer UI, workspace chrome, and CSS with fast feedback loops. Use when changing frontend components, styling, layout, or animation without needing the full MilkDrop runtime."
 ---
@@ -39,11 +40,11 @@ http://localhost:5174/ui-harness.html?component=WorkspaceStagePanel
 ```
 
 **Query parameters:**
-| Param | Default | Description |
-|-------|---------|-------------|
-| `component` | none | Registered component name; an unknown name reports itself |
-| `props` | `{}` | JSON-encoded props override |
-| `grid` | none | Comma-separated viewport widths (e.g. `375,768,1024,1920`) |
+| Param       | Default | Description                                                |
+| ----------- | ------- | ---------------------------------------------------------- |
+| `component` | none    | Registered component name; an unknown name reports itself  |
+| `props`     | `{}`    | JSON-encoded props override                                |
+| `grid`      | none    | Comma-separated viewport widths (e.g. `375,768,1024,1920`) |
 
 ### 3. Edit and observe
 
@@ -58,7 +59,6 @@ http://localhost:5174/ui-harness.html?component=WorkspaceStagePanel
 Two components are registered today — check
 `COMPONENT_REGISTRY` in `src/js/frontend/ui-harness.tsx` rather than trusting
 this list, and note the page footer prints the live set:
-
 - `WorkspaceStagePanel` — the real component, wrapped with placeholder props
 - `WorkspaceToast` — the real component, with a sample warn-tone message
 
@@ -128,11 +128,11 @@ Requires the UI harness server to be running on `http://localhost:5174`.
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| Port 5174 in use | Kill other process or edit `vite.config.ui.js` |
-| Components don't update | Check browser console for HMR errors; restart `bun run dev:ui` |
-| Styles missing | Confirm `src/css/app-shell.css` is imported in `ui-harness.html` |
+| Problem                  | Solution                                                                 |
+| ------------------------ | ------------------------------------------------------------------------ |
+| Port 5174 in use         | Kill other process or edit `vite.config.ui.js`                           |
+| Components don't update  | Check browser console for HMR errors; restart `bun run dev:ui`           |
+| Styles missing           | Confirm `src/css/app-shell.css` is imported in `ui-harness.html`         |
 | Full app looks different | The harness uses mocks; always verify in `bun run dev` before committing |
 
 ## Related skills

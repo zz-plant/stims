@@ -5,7 +5,6 @@
 ## Scope
 
 This audit consolidates currently outstanding work discovered from:
-
 - quality-gate execution (`bun run check`),
 - implementation backlog tracking docs,
 - UX and SEO follow-up audits.
@@ -25,7 +24,6 @@ bun run check
 ```
 
 Status update:
-
 - ✅ The previously reported CSS duplicate-property blockers were remediated:
   1. `.toy-canvas` duplicate `width` declaration removed (`assets/css/base.css`).
   2. `.toy-canvas` duplicate `height` declarations consolidated (`assets/css/base.css`).
@@ -36,7 +34,6 @@ Status update:
 ## 2) Open implementation work (tracked backlog)
 
 From `docs/IMPLEMENTATION_STATUS.md`, notable outstanding queues include:
-
 - **Active priorities:**
   - Toy onboarding quick wins (presets / first-time hints).
   - Toy-page touch polish.
@@ -47,7 +44,6 @@ From `docs/IMPLEMENTATION_STATUS.md`, notable outstanding queues include:
 ## 3) UX friction still affecting first-session success
 
 From `docs/USER_JOURNEY_CRITIQUE.md`, the highest-impact unresolved UX themes are:
-
 - ~~competing first-step CTAs during onboarding,~~ ✅ Resolved in Jun 2026 (auto-play on load, no CTA)
 - filter-state visibility and reset-action consistency issues,
 - ~~preflight density before first interactive success.~~ ✅ Resolved in Jun 2026 (preflight panel removed)
@@ -57,7 +53,6 @@ These should remain high-priority because they directly affect activation and re
 ## 4) SEO and discoverability follow-ups still open
 
 From `docs/SEO_AUDIT.md`, the baseline is healthy, but follow-ups remain:
-
 - add persistent static links from homepage to taxonomy hubs (`/toys/`, `/tags/`, `/moods/`, `/capabilities/`),
 - add a minimal server-rendered top-toys list in homepage HTML,
 - monitor section-level indexing/impressions in Search Console/Bing Webmaster Tools,

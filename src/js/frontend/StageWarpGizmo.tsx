@@ -80,7 +80,12 @@ export function StageWarpGizmo() {
         flush();
         return;
       }
-      rafRef.current ??= window.requestAnimationFrame(flush);
+      // Written as an explicit null check: React Compiler does not yet lower
+      // the logical assignment operators, and an unparsed file is skipped
+      // whole, taking its components with it.
+      if (rafRef.current === null) {
+        rafRef.current = window.requestAnimationFrame(flush);
+      }
     },
     [flush],
   );
@@ -155,13 +160,13 @@ export function StageWarpGizmo() {
         style={{ left: `${cx * 100}%`, top: `${cy * 100}%` }}
         aria-label={
           driven
-            ? `${label}. This preset recomputes the center every frame, so dragging sets only the starting value.`
-            : `${label}. Drag, or use the arrow keys.`
+            ? `${label}. This preset recomputes the center every frame, so dragging changes only the starting value in its code.`
+            : `${label}. Drag, or use the arrow keys. Moving it edits cx and cy in the preset's code.`
         }
         title={
           driven
             ? 'The preset reassigns cx/cy every frame — this marker shows the literal value in the draft, not where the warp is centered.'
-            : 'Drag to move the warp center. Arrow keys nudge; hold Shift for coarse steps.'
+            : 'Drag to move the warp center. Arrow keys nudge; hold Shift for coarse steps. Edits cx/cy in the code.'
         }
         onPointerDown={(event) => {
           event.preventDefault();
@@ -188,8 +193,13 @@ export function StageWarpGizmo() {
           nudge(delta[0], delta[1]);
         }}
       >
+        {/* Names itself on the stage: a bare "0.50, 0.50", or "cx/cy · eq",
+            gave no hint that this is the warp center or that dragging it
+            writes to the code. */}
         <span className="stims-stage-gizmo__readout">
-          {driven ? 'cx/cy · eq' : `${cx.toFixed(2)}, ${cy.toFixed(2)}`}
+          {driven
+            ? 'Warp center · set by the code'
+            : `Warp center ${cx.toFixed(2)}, ${cy.toFixed(2)}`}
         </span>
       </button>
     </div>

@@ -33,9 +33,37 @@ function describeMissingAudio(
     return 'You shared a whole screen without audio. Re-share and check "Also share system audio", or pick a browser tab.';
   }
   if (surface === 'window') {
-    return 'You shared an application window. Window shares carry no audio — re-share and pick a browser tab or share system audio.';
+    return 'You shared an application window. Window shares carry no audio: re-share and pick a browser tab or share system audio.';
   }
   return fallbackMessage;
+}
+
+/**
+ * Why the share picker was refused. `NotAllowedError` covers three causes
+ * that need different answers: the visitor closed the picker, the page is
+ * not allowed to capture at all (a Permissions Policy, e.g. an embed without
+ * `allow="display-capture"`), or the OS refused (macOS screen-recording
+ * permission; Chrome says "Permission denied by system"). Retrying fixes
+ * only the first, so the other two are named when they can be detected and
+ * the remaining case says what happened without guessing why.
+ */
+export function describeDisplayCaptureRefusal(error: unknown): string | null {
+  if ((error as { name?: string } | null)?.name !== 'NotAllowedError') {
+    return null;
+  }
+  type FeaturePolicy = { allowsFeature(feature: string): boolean };
+  const doc = document as Document & {
+    permissionsPolicy?: FeaturePolicy;
+    featurePolicy?: FeaturePolicy;
+  };
+  const policy = doc.permissionsPolicy ?? doc.featurePolicy;
+  if (policy && !policy.allowsFeature('display-capture')) {
+    return 'Screen sharing is blocked on this page, which may be embedded in another site. Open Stims in its own tab, or use the microphone or a file.';
+  }
+  if (/\bsystem\b/i.test((error as Error).message ?? '')) {
+    return 'Screen sharing is blocked by your system. On macOS, allow your browser under Privacy & Security → Screen & System Audio Recording, then try again.';
+  }
+  return 'No tab was shared, so nothing was captured. Pick a source to try again.';
 }
 
 /**
@@ -91,7 +119,8 @@ export async function captureDisplayAudioStream({
       name !== 'InvalidStateError' &&
       name !== 'NotSupportedError'
     ) {
-      throw error;
+      const refusal = describeDisplayCaptureRefusal(error);
+      throw refusal ? new Error(refusal) : error;
     }
     stream = await request({ video: true, audio: true });
   }

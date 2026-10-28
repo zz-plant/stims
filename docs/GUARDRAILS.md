@@ -25,6 +25,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:css-scale`](#checkcss-scale) | `check:quick` | Fail on `border-radius` and `font-size` values that are not on the scale. |
 | [`check:css-tokens`](#checkcss-tokens) | `check:quick` | Fail on `var(--token)` references that resolve to nothing. |
 | [`check:dead-code`](#checkdead-code) | `check` | Report unused files, exports, and dependencies across the whole tree with knip (config: knip.jsonc). |
+| [`check:design`](#checkdesign) | `check:quick` | Fail on UI anti-patterns the token and scale checks don't model. |
 | [`check:dist-determinism`](#checkdist-determinism) | on demand | Builds a package twice from clean and fails if the two dists differ — the published tarball should be a function of the source, not of the machine that built it. Wired into publish-packages.yml ahead of npm pack, and not part of the quality gate because it pays for two full tsc runs per package. |
 | [`check:doc-references`](#checkdoc-references) | `check:quick` | Guard against docs that point at files and commands which no longer exist. |
 | [`check:duplicate-css`](#checkduplicate-css) | `check:quick` | Detect duplicate CSS keyframes and rule blocks — the "merge duplicate CSS, remove duplicate keyframes" pattern recurred multiple times in the last 400 commits (`0cc04211`, `6b39eb2f`, `1d2fa2af`). Duplicates bloat the bundle and cause maintenance drift where one copy is updated and the other is forgotten. |
@@ -276,6 +277,34 @@ so treat that section as a review aid rather than a gate.
   bun run check:dead-code -- --fix   # let knip delete unused exports/files
 
 Run it directly: `bun run check:dead-code`
+
+## check:design
+
+Fail on UI anti-patterns the token and scale checks don't model.
+
+The CSS guards above encode our own rules: values on the scale, colors on
+the tokens, layers named. They cannot see a pattern that is technically
+valid CSS and still wrong — a colored stripe on the left of a plain card,
+text rendered in a gradient, a headline sized to fill the first screen by
+itself. Those are the recurring tells of generated UI, and they arrive
+looking finished: they pass typecheck, pass biome, and read fine in the one
+state the author opened. This scan is a second opinion with a larger
+catalogue (impeccable), covering slop tells plus quality issues that only
+show up in relation to layout — overflow, contrast, line length.
+
+The rule is not "never ship a left stripe". Toasts and diagnostics here use
+exactly that stripe, because the stripe carries status. A finding is a
+question, and the answer lives next to the code: an intentional use carries
+an inline disable comment naming the rule and the design reason. A bare
+finding means the pattern arrived unexplained, and the fix is either to
+remove it or to write down why it belongs.
+
+The tool runs pinned (IMPECCABLE_VERSION) rather than as a dependency: the
+rule set is an opinion that changes with design fashion, and a floating
+latest would let a catalogue update silently change what the gate demands.
+Bump the pin deliberately, with the diff it introduces in hand.
+
+Run it directly: `bun run check:design`
 
 ## check:dist-determinism
 

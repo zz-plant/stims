@@ -193,6 +193,9 @@ export function ShortcutsDialog({
                               overrides,
                             ).join(', ')}
                             aria-label={`Shortcut keys for ${shortcut.label}`}
+                            // It takes typed key names, not a key press, and
+                            // nothing said so.
+                            placeholder="Type key names, separated by commas"
                           />
                           <button
                             type="submit"
@@ -205,10 +208,10 @@ export function ShortcutsDialog({
                         <button
                           type="button"
                           className="stims-shell__text-button"
-                          aria-label={`Edit shortcut for ${shortcut.label}`}
+                          aria-label={`Type new keys for ${shortcut.label}`}
                           onClick={() => setEditing(shortcut.id)}
                         >
-                          Edit
+                          Type new keys
                         </button>
                       )}
                     </div>

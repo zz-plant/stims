@@ -9,8 +9,10 @@
  * The strobe flips between 0.02 and 0.95 every three frames at 60 Hz: ten
  * flashes a second, more than three times the WCAG limit. The governed trace
  * is what the viewer sees once the controller's closed loop applies the
- * governor's luminance scale to the next frame, which is exactly what
- * controller.ts does with a real canvas.
+ * governor's scale to the next frame as a CSS brightness filter, which is
+ * exactly what controller.ts does with a real canvas. The filter scales
+ * sRGB-encoded values, so the governed luminance is taken through
+ * `luminanceThroughBrightness`, not multiplied by the scale.
  */
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -18,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import {
   analyzeFlashTimeline,
   createFlashGovernor,
+  luminanceThroughBrightness,
   RECOMMENDED_GRID,
 } from '../src/index.ts';
 
@@ -46,7 +49,7 @@ export function runTrace(): Trace {
     raw.push(luminance);
     // The viewer sees the frame through the mitigation already in force,
     // and the governor is told that scale rather than handed the product.
-    governed.push(luminance * scale);
+    governed.push(luminanceThroughBrightness(luminance, scale));
     tiles.fill(luminance);
     const decision = governor.sample(f * FRAME_MS, tiles, GRID, GRID, {
       viewScale: scale,

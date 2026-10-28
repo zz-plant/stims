@@ -9,11 +9,11 @@
  * closes that gap by applying the SAME WCAG 2.3.1 rule to the frames
  * actually being shown, while they are being shown.
  *
- * Feed it a luminance field per frame, and the same samples' red-flash
- * values when the source has colour; it returns how hard to hold the
- * previous frame. Temporal integration is what a strobe cannot survive, so
- * holding is both the mitigation and (once the renderer applies it) the
- * reason the next sample stops qualifying as a flash.
+ * Feed it a luminance field per frame, the same samples' red-flash values
+ * when the source has colour, and the brightness filter the frame was shown
+ * through; it returns how far to dim. Dimming is both the mitigation and
+ * (once the renderer applies it) the reason the next sample stops
+ * qualifying as a flash.
  *
  * It is deliberately a pure state machine over samples rather than anything
  * that touches a canvas: the sampling strategy differs per backend and must
@@ -38,11 +38,13 @@
  * measured flash rate; it does not certify anything as safe.
  */
 import {
+  encodeSrgb,
   FLASH_AREA_FRACTION,
   FLASH_LUMINANCE_DELTA,
   FLASHES_PER_SECOND_LIMIT,
   isFlashTransition,
   isRedFlashTransition,
+  luminanceThroughBrightness,
   peakWindowFraction,
   RED_FLASH_DELTA,
 } from './thresholds.ts';
@@ -123,9 +125,10 @@ export type FlashGovernorOptions = {
 
 export type FlashGovernorDecision = {
   /**
-   * How much of the PREVIOUS presented frame to keep, 0..1. 0 means present
-   * the new frame untouched; 0.75 means show a quarter of the new frame
-   * blended over three quarters of the last one.
+   * How far the governor dims, 0..1: the complement of `luminanceScale`.
+   * Named for the frame-blending hold it was first designed around; the
+   * solve is in brightness() terms, so blending the previous frame by this
+   * much is not what it solved for.
    */
   hold: number;
   /** General flashes counted in the trailing window, per WCAG pairing. */
@@ -136,16 +139,16 @@ export type FlashGovernorDecision = {
    */
   redFlashesInWindow: number;
   /**
-   * Equivalent mitigation expressed as a luminance multiplier, 0..1, for
-   * appliers that cannot blend against the previous frame.
+   * The mitigation as a CSS `brightness()` factor, 0..1: what
+   * `createBrightnessFilterApplier` writes, or a black scrim at alpha
+   * (1 - luminanceScale), which composites the same way.
    *
-   * Holding frame N-1 under frame N and scaling both ends of a swing are
-   * different pictures but the same WCAG arithmetic: the rule tests
-   * |dL| >= 0.1 with the darker end below 0.8, and scaling luminance by k
-   * scales every delta by k while only ever moving the darker end DOWN. So
-   * a scrim is a valid mitigation, and it is the one that works identically
-   * on WebGL and WebGPU without touching either pipeline — a black overlay
-   * at alpha (1 - luminanceScale).
+   * A factor on sRGB-encoded values, not on luminance, despite the name: the
+   * light reaching the viewer falls roughly as its 2.2-2.4th power (see
+   * `luminanceThroughBrightness`), and that is the model the governor
+   * solves against. Dimming is a valid mitigation because it shrinks every
+   * swing while only ever moving the darker end DOWN, and it works the same
+   * over WebGL and WebGPU without touching either pipeline.
    */
   luminanceScale: number;
   /** True while the governor is actively holding frames back. */
@@ -225,10 +228,11 @@ export type FlashSampleOptions = {
    */
   density?: number;
   /**
-   * The luminance scale the viewer is seeing these samples through (the
-   * canvas's whole brightness filter), 0..1. Defaults to 1.
+   * The canvas's whole brightness() factor the viewer is seeing these
+   * samples through, 0..1. Defaults to 1. Each luminance sample is taken
+   * through `luminanceThroughBrightness`, not multiplied by it.
    *
-   * Passed rather than pre-multiplied into the samples so the governor can
+   * Passed rather than pre-applied to the samples so the governor can
    * tell content from its own step. Both frames of a comparison are judged at
    * THIS frame's scale: a swing the content makes is measured as the viewer
    * now sees it, which is what lets the loop converge, while the drop the
@@ -241,7 +245,7 @@ export type FlashSampleOptions = {
    *
    * The red channel is judged at the same scale. The red-flash value is
    * linear in the sRGB channels, which a CSS brightness filter scales
-   * directly, so a scale of k scales every red swing by k.
+   * directly, so a scale of k scales every red swing by exactly k.
    */
   viewScale?: number;
   /**
@@ -252,6 +256,53 @@ export type FlashSampleOptions = {
    * the next red sample starts afresh rather than diffing across the gap.
    */
   red?: FlashRedField;
+};
+
+/**
+ * `luminanceThroughBrightness` at one scale, tabulated over luminance 0..1.
+ *
+ * While engaged the governor takes every sample through the filter each
+ * frame, 32k values at the recommended grid, and two pow() calls a value
+ * measured about 1.2 ms a frame on an M-series laptop. Interpolating between
+ * 1,025 precomputed points is within 1.4e-5 of exact.
+ */
+const VIEW_TABLE_STEPS = 1024;
+
+function fillViewTable(table: Float32Array, scale: number): void {
+  for (let j = 0; j <= VIEW_TABLE_STEPS; j += 1) {
+    table[j] = luminanceThroughBrightness(j / VIEW_TABLE_STEPS, scale);
+  }
+}
+
+function lookUpViewTable(table: Float32Array, luminance: number): number {
+  const x = Math.min(1, Math.max(0, luminance)) * VIEW_TABLE_STEPS;
+  const j = Math.min(VIEW_TABLE_STEPS - 1, Math.floor(x));
+  const low = table[j] as number;
+  return low + ((table[j + 1] as number) - low) * (x - j);
+}
+
+/**
+ * One channel's swings, for `coverage` to scale.
+ *
+ * A luminance swing does not shrink in proportion to the brightness filter,
+ * so luminance carries both ends of each swing and the filter (`base`) they
+ * were measured through, and each candidate scale takes both ends through
+ * the whole filter it implies. Scaling the swing instead read
+ * brightness(0.33) as leaving 0.31 of a 0.02-to-0.95 strobe's swing on
+ * screen when it leaves 0.08, and solved for brightness(0.086) where 0.33
+ * already meets the target.
+ *
+ * The red-flash value is linear in the channels the filter scales, so red
+ * swings scale as they are (`ends` null).
+ */
+type Swings = {
+  /** Signed swing per sample; zero excludes it. Only the sign is read when `ends` is set. */
+  field: Float32Array;
+  ends: {
+    before: Float32Array;
+    after: Float32Array | readonly number[];
+    base: number;
+  } | null;
 };
 
 const DEFAULTS = {
@@ -392,6 +443,29 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
   /** Scratch per-tile counts for the solved step, by direction. */
   let solveCounts: Float32Array | null = null;
   let solveFallingCounts: Float32Array | null = null;
+  /** The filter at the view scale, for judging each sample as seen. */
+  const viewTable = new Float32Array(VIEW_TABLE_STEPS + 1);
+  let viewTableScale = Number.NaN;
+  /**
+   * The filter at the scales `coverage` tries. Two, because a ceiling checks
+   * the same pair of scales on every repeat of a sustained strobe.
+   */
+  const scaleTables = [0, 1].map(() => ({
+    scale: Number.NaN,
+    table: new Float32Array(VIEW_TABLE_STEPS + 1),
+  }));
+  let nextScaleTable = 0;
+
+  function tableAt(scale: number): Float32Array {
+    for (const entry of scaleTables) {
+      if (entry.scale === scale) return entry.table;
+    }
+    const entry = scaleTables[nextScaleTable] as (typeof scaleTables)[number];
+    nextScaleTable = (nextScaleTable + 1) % scaleTables.length;
+    fillViewTable(entry.table, scale);
+    entry.scale = scale;
+    return entry.table;
+  }
 
   /**
    * Pre-applies a hold before any flash has been observed.
@@ -455,12 +529,13 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
   }
 
   /**
-   * The peak share of any visual field covered by samples of `field` whose
-   * swing, scaled by `scale`, reaches `target`: in `direction`, or in
-   * whichever direction covers more when `direction` is null.
+   * The peak share of any visual field covered by samples whose swing, at
+   * `scale` on top of what they were measured through, reaches `target`: in
+   * `direction`, or in whichever direction covers more when `direction` is
+   * null.
    */
   function coverage(
-    field: Float32Array,
+    swings: Swings,
     direction: boolean | null,
     target: number,
     scale: number,
@@ -468,14 +543,24 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     rows: number,
     tilePixels: number,
   ): number {
+    const { field, ends } = swings;
     const counts = solveCounts as Float32Array;
     const fallingCounts = solveFallingCounts as Float32Array;
     const tiles = tileOf as Uint32Array;
+    const total = ends ? ends.base * scale : 1;
+    const table = ends && total < 1 ? tableAt(total) : null;
     counts.fill(0);
     if (direction === null) fallingCounts.fill(0);
     for (let i = 0; i < field.length; i += 1) {
       const swing = field[i] as number;
-      if (swing === 0 || Math.abs(swing) * scale < target) continue;
+      if (swing === 0) continue;
+      let seen = ends ? swing : swing * scale;
+      if (ends && table) {
+        seen =
+          lookUpViewTable(table, ends.after[i] as number) -
+          lookUpViewTable(table, ends.before[i] as number);
+      }
+      if (Math.abs(seen) < target) continue;
       const rising = swing > 0;
       if (direction !== null && rising !== direction) continue;
       const into = direction === null && !rising ? fallingCounts : counts;
@@ -503,15 +588,15 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
    * from full brightness to 9% on the first flash it saw. On a uniform
    * strobe the two agree.
    *
-   * `field` holds the qualifying swings of one channel and `threshold` is
+   * `swings` holds the qualifying swings of one channel and `threshold` is
    * that channel's: `FLASH_LUMINANCE_DELTA` for luminance, `RED_FLASH_DELTA`
    * for the red-flash value. Scaling cannot change whether a sample is a
-   * saturated red, so the red solve is exact; for luminance it assumes every
-   * scaled swing has its darker end below 0.8, which only dimming makes
-   * truer, so the answer errs toward clamping.
+   * saturated red, so the red solve is exact. For luminance only the swing
+   * is tested, not the darker end: dimming only lowers it, so a sample that
+   * qualified stays under 0.8, and the answer errs toward clamping.
    */
   function solveScale(
-    field: Float32Array,
+    swings: Swings,
     direction: boolean | null,
     threshold: number,
     cols: number,
@@ -521,7 +606,7 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     const target = threshold * safetyMargin;
     const tilePixels = density * density;
     const under = (scale: number) =>
-      coverage(field, direction, target, scale, cols, rows, tilePixels) <
+      coverage(swings, direction, target, scale, cols, rows, tilePixels) <
       FLASH_AREA_FRACTION;
     // Coverage only grows with scale, so bisect for the largest scale that
     // stays under the area threshold. 12 steps resolve it to 1/4096. A field
@@ -549,7 +634,7 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
    * its own ceiling, so never more lenient. Anything else is solved.
    */
   function ceilingOf(
-    field: Float32Array,
+    swings: Swings,
     threshold: number,
     lowest: number,
     cols: number,
@@ -561,21 +646,31 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
       const tilePixels = density * density;
       const above = Math.min(1, lowest * (1 + 1 / 64));
       if (
-        coverage(field, null, target, lowest, cols, rows, tilePixels) <
+        coverage(swings, null, target, lowest, cols, rows, tilePixels) <
           FLASH_AREA_FRACTION &&
-        coverage(field, null, target, above, cols, rows, tilePixels) >=
+        coverage(swings, null, target, above, cols, rows, tilePixels) >=
           FLASH_AREA_FRACTION
       ) {
         return lowest;
       }
     }
-    return solveScale(field, null, threshold, cols, rows, density);
+    return solveScale(swings, null, threshold, cols, rows, density);
   }
 
   /** The lowest ceiling recorded on one channel, 1 when there is none. */
   function lowestCeiling(channel: 'general' | 'red'): number {
     let lowest = 1;
     for (const entry of ceilings) lowest = Math.min(lowest, entry[channel]);
+    return lowest;
+  }
+
+  /** The lowest ceiling, on either channel, of the last `windowMs`. */
+  function recentCeiling(nowMs: number): number {
+    let lowest = 1;
+    for (const entry of ceilings) {
+      if (nowMs - entry.time >= windowMs) continue;
+      lowest = Math.min(lowest, entry.general, entry.red);
+    }
     return lowest;
   }
 
@@ -705,11 +800,15 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     // sample is judged as the viewer sees it, and as drawn. At a view scale
     // of 1 the two are the same judgement, so the second is skipped.
     const judgeDrawn = viewScale < 1;
+    if (judgeDrawn && viewTableScale !== viewScale) {
+      fillViewTable(viewTable, viewScale);
+      viewTableScale = viewScale;
+    }
     for (let i = 0; i < count; i += 1) {
       const drawnBefore = previous[i] as number;
       const drawnAfter = samples[i] as number;
+      drawnField[i] = drawnAfter - drawnBefore;
       if (judgeDrawn) {
-        drawnField[i] = drawnAfter - drawnBefore;
         if (isFlashTransition(drawnBefore, drawnAfter)) {
           const tile = tiles[i] as number;
           if (drawnAfter > drawnBefore) {
@@ -717,8 +816,12 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
           } else drawnDown[tile] = (drawnDown[tile] as number) + 1;
         }
       }
-      const before = drawnBefore * viewScale;
-      const after = drawnAfter * viewScale;
+      const before = judgeDrawn
+        ? lookUpViewTable(viewTable, drawnBefore)
+        : drawnBefore;
+      const after = judgeDrawn
+        ? lookUpViewTable(viewTable, drawnAfter)
+        : drawnAfter;
       const qualifies = isFlashTransition(before, after);
       field[i] = qualifies ? after - before : 0;
       if (!qualifies) continue;
@@ -756,11 +859,10 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
         const drawnAfter = redField.values[i] as number;
         const beforeRed = beforeSaturated[i] === 1;
         const afterRed = Boolean(redField.saturated[i]);
+        // Only a pair that touches a saturated red can be a red flash, at
+        // any scale, so only those swings bound the ceiling.
+        drawnRedField[i] = beforeRed || afterRed ? drawnAfter - drawnBefore : 0;
         if (judgeDrawn) {
-          // Only a pair that touches a saturated red can be a red flash, at
-          // any scale, so only those swings bound the ceiling.
-          drawnRedField[i] =
-            beforeRed || afterRed ? drawnAfter - drawnBefore : 0;
           if (
             isRedFlashTransition(drawnBefore, drawnAfter, beforeRed, afterRed)
           ) {
@@ -810,25 +912,21 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     ) {
       ceilings.shift();
     }
-    // A ceiling is only ever read to release a held picture of content that
-    // is failing, so only then is it worth computing. Release starts at
-    // least `releaseDelayMs` after the clamp first engages, by which time
-    // this has recorded the content's transitions. The drawn swings are only
-    // measured under a view scale below 1, which a held picture has once the
-    // hold reaches the screen.
-    if (
-      judgeDrawn &&
-      hold > 0 &&
-      contentFailing(nowMs) &&
-      (drawnDirection !== null || drawnRedDirection !== null)
-    ) {
+    // Every field-wide transition the content makes, as drawn, records its
+    // ceiling: the solved step clamps for the strongest of the last second,
+    // and release for the strongest of the last `windowMs + releaseDelayMs`.
+    // Only field-wide transitions are solved, which calm content rarely makes.
+    if (drawnDirection !== null || drawnRedDirection !== null) {
       ceilings.push({
         time: nowMs,
         general:
           drawnDirection === null
             ? 1
             : ceilingOf(
-                drawnField,
+                {
+                  field: drawnField,
+                  ends: { before: previous, after: samples, base: 1 },
+                },
                 FLASH_LUMINANCE_DELTA,
                 lowestCeiling('general'),
                 cols,
@@ -839,7 +937,7 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
           drawnRedDirection === null
             ? 1
             : ceilingOf(
-                drawnRedSwings as Float32Array,
+                { field: drawnRedSwings as Float32Array, ends: null },
                 RED_FLASH_DELTA,
                 lowestCeiling('red'),
                 cols,
@@ -850,6 +948,9 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
     }
 
     const inWindow = Math.max(general.flashTimes.length, red.flashTimes.length);
+    // This governor's share of the filter the sample was seen through, taken
+    // before the ramp below moves it.
+    const shownScale = 1 - hold;
     if (inWindow >= engageAt) {
       // Ramp from engageAt (just starting) to limit (full strength), so the
       // response is proportionate rather than a cliff.
@@ -861,15 +962,20 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
         // A flash landed despite the clamp, so the clamp is not strong
         // enough for this content. Solve for the scale that puts the
         // transition just observed under the threshold, and compose it with
-        // whatever is already applied (the sample was measured THROUGH that).
-        // A sample that flashed on both channels takes the stricter scale.
-        const currentScale = 1 - hold;
+        // what was applied when the sample was taken (it was measured
+        // THROUGH that). Not with the ramp just applied: composing with that
+        // landed the first engagement on a full-field strobe at 0.8 of the
+        // solved scale. A sample that flashed on both channels takes the
+        // stricter scale.
         let needed = 1;
         if (flashed && direction !== null) {
           needed = Math.min(
             needed,
             solveScale(
-              field,
+              {
+                field,
+                ends: { before: previous, after: samples, base: viewScale },
+              },
               direction,
               FLASH_LUMINANCE_DELTA,
               cols,
@@ -882,7 +988,7 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
           needed = Math.min(
             needed,
             solveScale(
-              redSwings as Float32Array,
+              { field: redSwings as Float32Array, ends: null },
               redDirection,
               RED_FLASH_DELTA,
               cols,
@@ -891,9 +997,21 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
             ),
           );
         }
+        // And for the strongest transition the content made in the last
+        // second, not only the one that completed this flash. The second
+        // flash of a strobe can be its weakest: solved for a rise covering a
+        // third of a visual field, the clamp let the full-field transitions
+        // either side of it through, 5 flashes in a second on screen (a
+        // MilkDrop preset with beat transients, and the test that mimics it).
+        // A ceiling is a scale on the content as drawn; `needed` is on top of
+        // the view scale.
+        needed = Math.min(
+          needed,
+          recentCeiling(nowMs) / Math.max(viewScale, 1e-6),
+        );
         hold = Math.min(
           holdCeiling,
-          Math.max(hold + escalatePerFlash, 1 - currentScale * needed),
+          Math.max(hold + escalatePerFlash, 1 - shownScale * needed),
         );
       }
     } else if (hold > 0) {
@@ -929,10 +1047,13 @@ export type FlashGovernor = ReturnType<typeof createFlashGovernor>;
 /**
  * How hard to pre-clamp content that was already measured offline.
  *
- * Derived from the same arithmetic the solved step uses, rather than a table
- * of taste: a swing of `maxLuminanceDelta` needs scaling by
- * `FLASH_LUMINANCE_DELTA * margin / maxLuminanceDelta` to fall under the
- * threshold, and the hold is the complement of that scale.
+ * Derived from the same filter model the solved step uses, rather than a
+ * table of taste: the hold is the complement of the largest brightness()
+ * factor that takes a swing of `maxLuminanceDelta` under the margin-scaled
+ * threshold. The swing is assumed to start from black, where the filter
+ * leaves the most of it (the curve is concave). brightness(k) maps an
+ * encoded value e to k * e, so the factor is the target's sRGB encoding
+ * over the swing's.
  *
  * Only content measured ABOVE the WCAG limit (`classifyFlashRisk` = 'high')
  * is primed. 'medium' content sits under the limit by definition, so
@@ -962,6 +1083,8 @@ export function primingHoldForMeasurement(measurement: {
     // the solved step take over.
     return 0.35;
   }
-  const needed = (FLASH_LUMINANCE_DELTA * 0.8) / (delta as number);
+  const needed =
+    encodeSrgb(FLASH_LUMINANCE_DELTA * DEFAULTS.safetyMargin) /
+    encodeSrgb(Math.min(1, delta as number));
   return Math.min(0.9, Math.max(0, 1 - needed));
 }

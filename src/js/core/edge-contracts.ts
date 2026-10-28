@@ -201,6 +201,8 @@ export type TelemetryEvent = {
   audioSource?: (typeof TELEMETRY_AUDIO_SOURCES)[number];
   /** Where this page load came from, by the referrer's host only. */
   arrival?: (typeof TELEMETRY_ARRIVALS)[number];
+  /** Which control an `action:<id>` event was run from (action-telemetry.ts). */
+  surface?: (typeof TELEMETRY_SURFACES)[number];
 };
 
 const RENDERER_VALUES = ['webgpu', 'webgl2', 'webgl1', 'canvas'] as const;
@@ -226,6 +228,25 @@ export const TELEMETRY_ARRIVALS = [
   'internal',
   'other',
   'none',
+] as const;
+/**
+ * Where an action was run from. `dock` is the stage bar and its folded
+ * state, `menu` its More actions list; the rest are the panels and inputs
+ * that run actions by id.
+ */
+export const TELEMETRY_SURFACES = [
+  'dock',
+  'menu',
+  'palette',
+  'key',
+  'gesture',
+  'pad',
+  'landing',
+  'browse',
+  'editor',
+  'settings',
+  'cue',
+  'other',
 ] as const;
 
 function isOneOf<T extends string>(
@@ -290,6 +311,10 @@ export const TelemetryEventSchema = contractSchema<TelemetryEvent>((input) => {
   if (input.arrival !== undefined) {
     if (!isOneOf(TELEMETRY_ARRIVALS, input.arrival)) return null;
     result.arrival = input.arrival;
+  }
+  if (input.surface !== undefined) {
+    if (!isOneOf(TELEMETRY_SURFACES, input.surface)) return null;
+    result.surface = input.surface;
   }
   return result;
 });

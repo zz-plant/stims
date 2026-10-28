@@ -1,7 +1,31 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-10-28)
 
+0.1.1 was prepared as a documentation release but never published; its
+README changes ship here, with the code below. Minor bump: new exports,
+a new `sample()` argument and changed governor output.
+
+- The governor models the brightness filter it applies. `luminanceScale` is
+  a CSS `brightness()` factor, which browsers apply to sRGB-encoded values,
+  so the luminance a viewer sees falls roughly as its 2.2-2.4th power, not in
+  proportion. The governor took it as a luminance multiplier: it
+  overestimated the swing left on screen, counted flashes the viewer could
+  not see, and held a 0.02-to-0.95 strobe at brightness 0.069, where 0.328
+  meets the solve's target. Each luminance sample is now taken through
+  `luminanceThroughBrightness` when judged, solved and released, so expect
+  higher `luminanceScale` values for the same content. The red channel was
+  already exact: the filter scales the red-flash value by its factor.
+- The solved step composes with the filter the flash was seen through, not
+  with the engage hold applied in the same step. Composing with that landed
+  every first engagement at 0.8 of the solved scale.
+- The solved step also holds the strongest field-wide transition the content
+  made in the last `windowMs`, not only the one that completed the flash.
+  Every field-wide transition now records its ceiling, not only those made
+  while a failing strobe is held. Solved for a weak second flash alone, the
+  clamp let the stronger transitions around it through.
+- `primingHoldForMeasurement` derives the hold from the same filter model.
+- New exports: `luminanceThroughBrightness`, `encodeSrgb`, `decodeSrgb`.
 - The governor counts red flashes. `sample()` takes `red`, the same samples'
   red-flash values and saturated-red flags (`FlashRedField`), pairs and
   windows red transitions on their own channel with the offline analysis's
@@ -32,18 +56,16 @@
   `(80,0,0)` to `(100,0,0)` strobe the frames shown read 6 red flashes in
   one second, and a luminance strobe just over the limit read 4. Content at
   or under the limit undimmed is released as before.
-
-## 0.1.1
-
-Documentation only; no code changes.
-
+- Faster with the same results: the sliding-window flash count runs in
+  linear time, the area maximizer reuses one scratch summed-area table
+  and hoists its division out of the inner loop, and the sampler's
+  red-saturation test and pixel loop work on integers.
 - docs: README reflects the published package. It leads with the install command, moves the clone-and-build steps under Development, links the live demo site, and uses absolute links that resolve on npm and on the mirror, including the `demo/` page the npm package does not contain.
 
 ## 0.1.0
 
 First release as a package, extracted from
 [zz-plant/stims](https://github.com/zz-plant/stims).
-
 - Thresholds, offline analysis (`analyzeFlashEvents`, `analyzeFlashTimeline`),
   the live governor, the off-thread sampler and the risk classifier, carried
   over with their tests.

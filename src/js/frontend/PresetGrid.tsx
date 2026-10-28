@@ -23,6 +23,11 @@ import {
   quickSelectDigit,
 } from './quick-select.ts';
 
+/** What the queue is for, where nothing else on these tiles says so. */
+export const QUEUE_ADD_HINT =
+  'Add to the queue: presets lined up to play next, from the cue deck';
+export const QUEUE_REMOVE_HINT = 'Remove from the queue';
+
 /** Column sizing. Rows carry their own inline `grid-template-columns` built
  * from the count derived here, so this — not the CSS — is the single source
  * of truth for how wide a tile gets.
@@ -156,7 +161,7 @@ const GridTile = memo(function GridTile({
         {variants > 0 ? (
           <span
             className="stims-preset-grid__variants"
-            title={`${variants} near-identical variant${variants === 1 ? '' : 's'} (see list view)`}
+            title={`${variants} near-identical variant${variants === 1 ? '' : 's'}, grouped into this tile. List view shows each one.`}
           >
             +{variants}
           </span>
@@ -193,7 +198,7 @@ const GridTile = memo(function GridTile({
             ? `Remove ${entry.title} from the queue`
             : `Queue ${entry.title}`
         }
-        title={queued ? 'Remove from queue' : 'Add to queue'}
+        title={queued ? QUEUE_REMOVE_HINT : QUEUE_ADD_HINT}
         aria-pressed={queued}
         tabIndex={tabbable ? 0 : -1}
         onClick={() => onToggleQueued(entry)}
@@ -231,7 +236,7 @@ export function PresetGrid({
   onToggleFavorite,
   queuedPresetIds,
   onToggleQueued,
-  initialScrollTop = 0,
+  readInitialScrollTop,
   onScrollTopChange,
   filterEpoch = 0,
   showQuickSelectKeys,
@@ -248,8 +253,10 @@ export function PresetGrid({
   onToggleFavorite: (entry: PresetCatalogEntry) => void;
   queuedPresetIds: readonly string[];
   onToggleQueued: (entry: PresetCatalogEntry) => void;
-  /** Offset this view was left at, restored on mount. */
-  initialScrollTop?: number;
+  /** The offset this view was left at, read once on mount. A reader,
+   * not a value: the panel keeps it in module scope, and a compiled parent
+   * would hand a remounted grid the value it cached at an earlier render. */
+  readInitialScrollTop?: () => number;
   onScrollTopChange?: (top: number) => void;
   /** Bumped by the panel when filters change, so the grid returns to the
    * top in step with the list instead of holding an offset into a result
@@ -349,12 +356,13 @@ export function PresetGrid({
   // Restore where this view was left. Deferred past the commit for the same
   // reason the keyboard jumps are: a scroll event landing mid-render
   // collides with the virtualizer's flushSync and wedges it.
-  // Mount only: later `initialScrollTop` values are this component
-  // reporting its own scrolling back up, and re-applying them would fight
-  // the user mid-scroll.
+  // Mount only: later offsets are this component reporting its own
+  // scrolling back up, and re-applying them would fight the user
+  // mid-scroll.
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only restore
   useEffect(() => {
     const element = scrollRef.current;
+    const initialScrollTop = readInitialScrollTop?.() ?? 0;
     if (!element || initialScrollTop <= 0) return;
     const timer = window.setTimeout(() => {
       element.scrollTop = initialScrollTop;

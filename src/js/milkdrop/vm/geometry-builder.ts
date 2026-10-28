@@ -42,10 +42,11 @@ import {
   MAX_MOTION_VECTOR_COLUMNS,
   MAX_MOTION_VECTOR_ROWS,
   type MeshField,
-  type MeshFieldPoint,
   type MotionVectorDescriptorContext,
   type MotionVectorHistoryPoint,
   type MutableState,
+  milkdropWarpCentreX,
+  milkdropWarpCentreY,
   normalizeTransformCenter,
   normalizeTransformCenterY,
   type StaticMeshLattice,
@@ -88,12 +89,12 @@ export function shouldEnableParticleField({
 }
 
 function resolveParticleFieldDeviceProfile(
-  overrides: Partial<ParticleFieldDeviceProfile> = {},
+  overrides?: Partial<ParticleFieldDeviceProfile>,
 ): ParticleFieldDeviceProfile {
   return {
-    isMobile: overrides.isMobile ?? isMobileDevice(),
+    isMobile: overrides?.isMobile ?? isMobileDevice(),
     lowPower:
-      overrides.lowPower ?? getDevicePerformanceProfile().lowPower ?? false,
+      overrides?.lowPower ?? getDevicePerformanceProfile().lowPower ?? false,
   };
 }
 
@@ -406,6 +407,9 @@ type MeshTransformFrame = {
   scaleY: number;
   translateX: number;
   translateY: number;
+  gatherScale: number;
+  invScaleX: number;
+  invScaleY: number;
   isIdentity: boolean;
   // Per-frame BASE values of the built-in per-pixel variables, read raw off
   // `state` once per pass. Only the ones the per-pixel program WRITES are
@@ -494,8 +498,8 @@ function createMeshTransformFrame({
     : null;
   const zoom = Math.max(state.zoom ?? 1, 0);
   const zoomExponent = Math.max(state.zoomexp ?? 1, 0.0001);
-  const centerX = normalizeTransformCenter(state.cx ?? 0.5);
-  const centerY = normalizeTransformCenterY(state.cy ?? 0.5);
+  const centerX = milkdropWarpCentreX(state.cx ?? 0.5, resolvedAspectX);
+  const centerY = milkdropWarpCentreY(state.cy ?? 0.5, resolvedAspectY);
   const scaleX = state.sx ?? 1;
   const scaleY = state.sy ?? 1;
   const translateX = state.dx ?? 0;
@@ -563,6 +567,9 @@ function createMeshTransformFrame({
     scaleY,
     translateX,
     translateY,
+    gatherScale: 1 / signedZoomScale(zoom, zoomExponent),
+    invScaleX: 1 / (scaleX || 1),
+    invScaleY: 1 / (scaleY || 1),
     isIdentity,
     baseZoom,
     baseZoomExp,
@@ -720,10 +727,10 @@ function transformMeshPoint(
     // per vertex — bit-identical to the reset value they used to read.
     warp = frame.writesWarp ? local.warp : frame.warp;
     centerX = frame.writesCx
-      ? normalizeTransformCenter(local.cx ?? 0.5)
+      ? milkdropWarpCentreX(local.cx ?? 0.5, aspectX)
       : frame.centerX;
     centerY = frame.writesCy
-      ? normalizeTransformCenterY(local.cy ?? 0.5)
+      ? milkdropWarpCentreY(local.cy ?? 0.5, aspectY)
       : frame.centerY;
     scaleX = frame.writesSx ? (local.sx ?? 1) : frame.scaleX;
     scaleY = frame.writesSy ? (local.sy ?? 1) : frame.scaleY;
@@ -772,8 +779,10 @@ function transformMeshPoint(
 
   const relX = rendererX - centerX;
   const relY = rendererY - centerY;
-  const rx = relX * cosRot - relY * sinRot + centerX;
-  const ry = relX * sinRot + relY * cosRot + centerY;
+  const rotX = relX * cosRot - relY * sinRot;
+  const rotY = relX * sinRot + relY * cosRot;
+  const rx = rotX + centerX;
+  const ry = rotY + centerY;
 
   // Zoom. Skipped when it cannot change the vertex: zoomExponent === 1 folds
   // the exponent to `zoom ** 1 === zoom` (exact in IEEE), and zoom === 1 folds
@@ -794,15 +803,14 @@ function transformMeshPoint(
   let zy: number;
   if (zoomExponent === 1) {
     const zoomScale = signedZoomScale(zoom, 1);
-    zx = centerX + (rx - centerX) * zoomScale;
-    zy = centerY + (ry - centerY) * zoomScale;
+    zx = centerX + rotX * zoomScale;
+    zy = centerY + rotY * zoomScale;
   } else if (zoom === 1) {
-    zx = centerX + (rx - centerX);
-    zy = centerY + (ry - centerY);
+    zx = rx;
+    zy = ry;
   } else {
-    const zoomRadius = Math.hypot(rx - centerX, ry - centerY);
-    const radiusNormalized = clamp(zoomRadius / Math.SQRT2, 0, 1);
-    // Authored presets legitimately use extreme pairs (orbasonic ships
+    const zoomRadius = Math.sqrt(rotX * rotX + rotY * rotY);
+    const radiusNormalized = clamp(zoomRadius * Math.SQRT1_2, 0, 1); // Authored presets legitimately use extreme pairs (orbasonic ships
     // zoom=100 with zoomexp=100); unclamped, zoom^(zoomexp^(2r-1)) overflows
     // float32 at the edges and NaN-poisons the warp into a black frame.
     // MilkDrop's own math saturates instead of exploding, so bound the scale.
@@ -810,8 +818,8 @@ function transformMeshPoint(
       zoom,
       zoomExponent ** (radiusNormalized * 2 - 1),
     );
-    zx = centerX + (rx - centerX) * zoomScale;
-    zy = centerY + (ry - centerY) * zoomScale;
+    zx = centerX + rotX * zoomScale;
+    zy = centerY + rotY * zoomScale;
   }
 
   // Ripple. warp === 0 makes the whole ripple exactly zero, so skip the trig
@@ -832,9 +840,10 @@ function transformMeshPoint(
       wx = zx + ripple;
       wy = zy;
     } else {
-      const directionLength = Math.hypot(offsetX, offsetY);
-      wx = zx + (offsetX / directionLength) * ripple;
-      wy = zy + (offsetY / directionLength) * ripple;
+      const directionLength = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+      const invDir = ripple / directionLength;
+      wx = zx + offsetX * invDir;
+      wy = zy + offsetY * invDir;
     }
   }
 
@@ -859,15 +868,18 @@ function transformMeshPoint(
   // inverse of the scatter above. Drawing the scatter instead folds the grid
   // and loses coverage wherever it leaves the screen, which cost presets that
   // the uniform path already rendered correctly.
-  const gatherRelX = rendererX - centerX;
-  const gatherRelY = rendererY - centerY;
-  const gatherScale = 1 / signedZoomScale(zoom, zoomExponent);
-  const unrotX = gatherRelX * cosRot + gatherRelY * sinRot;
-  const unrotY = -gatherRelX * sinRot + gatherRelY * cosRot;
+  const gatherScale =
+    frame.writesZoom || frame.writesZoomExp
+      ? 1 / signedZoomScale(zoom, zoomExponent)
+      : frame.gatherScale;
+  const invScaleX = frame.writesSx ? 1 / (scaleX || 1) : frame.invScaleX;
+  const invScaleY = frame.writesSy ? 1 / (scaleY || 1) : frame.invScaleY;
+  const unrotX = relX * cosRot + relY * sinRot;
+  const unrotY = -relX * sinRot + relY * cosRot;
   transientGatherResult.x =
-    centerX + (unrotX * gatherScale) / (scaleX || 1) - translateX;
+    centerX + unrotX * gatherScale * invScaleX - translateX;
   transientGatherResult.y =
-    centerY + (unrotY * gatherScale) / (scaleY || 1) - translateY;
+    centerY + unrotY * gatherScale * invScaleY - translateY;
   return transformed;
 }
 
@@ -1184,11 +1196,13 @@ export function buildMeshField({
   }
 
   const latticeCache = geometryState.lattice as StaticMeshLattice;
+  const invDensityMinusOne = 1 / Math.max(1, density - 1);
   for (let row = 0; row < density; row += 1) {
+    const y = row * invDensityMinusOne * 2 - 1;
+    const rowOffset = row * density;
     for (let col = 0; col < density; col += 1) {
-      const x = (col / Math.max(1, density - 1)) * 2 - 1;
-      const y = (row / Math.max(1, density - 1)) * 2 - 1;
-      const pointIndex = row * density + col;
+      const x = col * invDensityMinusOne * 2 - 1;
+      const pointIndex = rowOffset + col;
       transientLatticeSample.milkdropX =
         latticeCache.milkdropX[pointIndex] ?? 0;
       transientLatticeSample.milkdropY =
@@ -1201,21 +1215,25 @@ export function buildMeshField({
         y,
         transientLatticeSample,
       );
-      const pointEntry: MeshFieldPoint = points[pointIndex] ?? {
-        sourceX: 0,
-        sourceY: 0,
-        x: 0,
-        y: 0,
-        warpU: 0,
-        warpV: 0,
-      };
-      pointEntry.sourceX = x;
-      pointEntry.sourceY = y;
-      pointEntry.x = point.x;
-      pointEntry.y = point.y;
-      pointEntry.warpU = transientGatherResult.x;
-      pointEntry.warpV = transientGatherResult.y;
-      points[pointIndex] = pointEntry;
+      let pointEntry = points[pointIndex];
+      if (!pointEntry) {
+        pointEntry = {
+          sourceX: x,
+          sourceY: y,
+          x: point.x,
+          y: point.y,
+          warpU: transientGatherResult.x,
+          warpV: transientGatherResult.y,
+        };
+        points[pointIndex] = pointEntry;
+      } else {
+        pointEntry.sourceX = x;
+        pointEntry.sourceY = y;
+        pointEntry.x = point.x;
+        pointEntry.y = point.y;
+        pointEntry.warpU = transientGatherResult.x;
+        pointEntry.warpV = transientGatherResult.y;
+      }
     }
   }
 
@@ -1496,14 +1514,21 @@ const PER_PIXEL_WARP_TARGETS = new Set([
  * projectM references were measured against, and swapping a mesh under them
  * moved presets that already matched (glowsticks 0.43% -> 3.4%).
  */
+const presetNeedsWarpMeshCache = new WeakMap<MilkdropCompiledPreset, boolean>();
+
 export function presetNeedsWarpMesh(preset: MilkdropCompiledPreset): boolean {
-  const statements = preset.ir.perPixelStatements;
-  if (!statements || statements.length === 0) {
-    return false;
+  const cached = presetNeedsWarpMeshCache.get(preset);
+  if (cached !== undefined) {
+    return cached;
   }
-  return statements.some((statement) =>
-    PER_PIXEL_WARP_TARGETS.has(statement.target.toLowerCase()),
-  );
+  const statements = preset.ir.perPixelStatements;
+  const result =
+    Boolean(statements && statements.length > 0) &&
+    statements!.some((statement) =>
+      PER_PIXEL_WARP_TARGETS.has(statement.target.toLowerCase()),
+    );
+  presetNeedsWarpMeshCache.set(preset, result);
+  return result;
 }
 
 export function buildWarpField(
@@ -1535,13 +1560,14 @@ export function buildWarpField(
   }
   const uvBuffer = uvs ?? new Float32Array(vertexCount * 2);
 
+  let offset = 0;
   for (let index = 0; index < vertexCount; index += 1) {
     const point = meshField.points[index];
     if (!point) {
       return null;
     }
-    positions[index * 2] = point.x;
-    positions[index * 2 + 1] = point.y;
+    positions[offset] = point.x;
+    positions[offset + 1] = point.y;
     // Renderer space is [-1,1] with y up; texture space is [0,1] with v up,
     // matching how the feedback targets are sampled elsewhere.
     //
@@ -1550,12 +1576,13 @@ export function buildWarpField(
     // and measured here: it came out worse on the one preset class this path
     // serves (87.0% vs 82.9% against the projectM reference), so the scatter
     // stands until the gather's sign and aspect conventions are pinned down.
-    uvBuffer[index * 2] = (point.sourceX + 1) * 0.5;
-    uvBuffer[index * 2 + 1] = (point.sourceY + 1) * 0.5;
+    uvBuffer[offset] = (point.sourceX + 1) * 0.5;
+    uvBuffer[offset + 1] = (point.sourceY + 1) * 0.5;
     // The gather coordinate transformMeshPoint computed for this vertex, in
     // the same [0,1] texture space as uvBuffer.
-    sampleUvs[index * 2] = ((point.warpU ?? point.sourceX) + 1) * 0.5;
-    sampleUvs[index * 2 + 1] = ((point.warpV ?? point.sourceY) + 1) * 0.5;
+    sampleUvs[offset] = ((point.warpU ?? point.sourceX) + 1) * 0.5;
+    sampleUvs[offset + 1] = ((point.warpV ?? point.sourceY) + 1) * 0.5;
+    offset += 2;
   }
 
   let indices = geometryState.warpFieldIndices;
@@ -1798,23 +1825,26 @@ export function buildMotionVectors({
         : 0;
       const baseDx = sourceDx + historyDx;
       const baseDy = sourceDy + historyDy;
-      const baseMagnitude = Math.hypot(baseDx, baseDy);
       let dx = baseDx;
       let dy = baseDy;
 
       if (hasLegacyMotionVectorControls && explicitLegacyMagnitude > 0.0001) {
-        if (baseMagnitude < 0.0001) {
+        const baseSq = baseDx * baseDx + baseDy * baseDy;
+        if (baseSq < 0.0001 * 0.0001) {
           continue;
         }
-        const normalizedX = baseDx / baseMagnitude;
-        const normalizedY = baseDy / baseMagnitude;
-        dx = normalizedX * explicitLegacyMagnitude;
-        dy = normalizedY * explicitLegacyMagnitude;
-      }
-
-      const magnitude = Math.hypot(dx, dy);
-      if (magnitude < 0.002) {
-        continue;
+        const baseMagnitude = Math.sqrt(baseSq);
+        const invMagnitude = explicitLegacyMagnitude / baseMagnitude;
+        dx = baseDx * invMagnitude;
+        dy = baseDy * invMagnitude;
+        if (explicitLegacyMagnitude < 0.002) {
+          continue;
+        }
+      } else {
+        const magSq = baseDx * baseDx + baseDy * baseDy;
+        if (magSq < 0.002 * 0.002) {
+          continue;
+        }
       }
       const vector = vectors[vectorCount] ?? {
         positions: [0, 0, 0, 0, 0, 0],

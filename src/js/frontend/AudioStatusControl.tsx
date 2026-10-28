@@ -31,7 +31,12 @@ import {
 import { pulseHaptic } from './haptics.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { UiIcon } from './UiIcon.tsx';
-import { startAudioSource, togglePanel } from './workspace-actions.ts';
+import {
+  playbackToggleLabel,
+  SOUND_KEEPS_PLAYING,
+  soundStopsOnPause,
+  startAudioSource,
+} from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
 /**
@@ -42,8 +47,14 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
  */
 const QUICK_SOURCES = [
   { source: 'demo' as const, label: 'Demo audio' },
-  { source: 'microphone' as const, label: 'Microphone' },
-  { source: 'tab' as const, label: 'Tab or system audio' },
+  {
+    source: 'microphone' as const,
+    label: 'Microphone (asks for microphone access)',
+  },
+  {
+    source: 'tab' as const,
+    label: 'Tab or system audio (asks what to share)',
+  },
 ] satisfies ReadonlyArray<{
   source: 'demo' | 'microphone' | 'tab';
   label: string;
@@ -66,8 +77,10 @@ const SOURCE_SHORT: Record<string, string> = {
   youtube: 'YT',
 };
 
+// Not the mute glyph when off: it read as a mute toggle, and this button
+// opens the sources menu.
 function iconForState(state: AudioSignalState) {
-  if (state === 'off') return 'volume-off' as const;
+  if (state === 'off') return 'music' as const;
   if (state === 'silent') return 'warning' as const;
   return 'pulse' as const;
 }
@@ -233,7 +246,10 @@ export function AudioStatusControl({
         // whole sentence, because a screen reader user gets no help from the
         // meter animation that carries half the meaning for everyone else.
         aria-label={`Audio status. ${detail}${nextStep ? ` ${nextStep}` : ''}`}
-        title={detail}
+        // Shown on hover and focus (AudioStatusControl.module.css) instead
+        // of a `title`: the visible word names a source, not what a click
+        // does, and a title never reaches a keyboard user.
+        data-hint={`${detail} Click for audio sources.`}
         onClick={() => {
           pulseHaptic(10);
           onActivity?.();
@@ -302,7 +318,14 @@ export function AudioStatusControl({
                 data-action="toggle-playback"
                 onClick={() => run(() => engine.handleTogglePlayback())}
               >
-                {engineSnapshot?.playbackPaused ? 'Resume' : 'Pause'}
+                {playbackToggleLabel(
+                  audioSource,
+                  Boolean(engineSnapshot?.playbackPaused),
+                )}
+                {!engineSnapshot?.playbackPaused &&
+                !soundStopsOnPause(audioSource) ? (
+                  <span className={styles.itemHint}>{SOUND_KEEPS_PLAYING}</span>
+                ) : null}
               </button>
               {audioSource === 'file' &&
               playlist &&
@@ -312,7 +335,9 @@ export function AudioStatusControl({
                     type="button"
                     role="menuitem"
                     className={styles.item}
-                    data-action="previous-track"
+                    // The palette's ids for the same steps, so a track change
+                    // reads as one action whichever surface ran it.
+                    data-action="prev-audio-track"
                     onClick={() => run(() => void previousFileTrack())}
                   >
                     Previous track
@@ -321,7 +346,7 @@ export function AudioStatusControl({
                     type="button"
                     role="menuitem"
                     className={styles.item}
-                    data-action="next-track"
+                    data-action="next-audio-track"
                     onClick={() => run(() => void nextFileTrack())}
                   >
                     Next track
@@ -343,26 +368,19 @@ export function AudioStatusControl({
             </>
           ) : null}
 
+          {/* Opens, never toggles: as a toggle it closed Settings when Settings
+              was already open, under a label that said it would open
+              something. */}
           <button
             type="button"
             role="menuitem"
             className={styles.item}
             data-action="open-audio-setup"
             onClick={() =>
-              run(
-                () =>
-                  togglePanel(
-                    {
-                      updatePanel: ui.updatePanel,
-                      routePanel: () => ui.routeState.panel ?? null,
-                    },
-                    'settings',
-                  ),
-                { keepFocus: false },
-              )
+              run(() => ui.updatePanel('settings'), { keepFocus: false })
             }
           >
-            Audio setup…
+            Open audio settings
           </button>
         </div>
       ) : null}

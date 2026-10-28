@@ -426,12 +426,12 @@ function rewriteRawHlslStatements(text: string): string {
   for (const [name, onlyInts] of literalOnly) {
     if (onlyInts) intNames.add(name);
   }
-  const touchesInt = (segment: string) => {
-    for (const name of intNames) {
-      if (new RegExp(`\\b${name}\\b`, 'u').test(segment)) return true;
-    }
-    return false;
-  };
+  const intNamesPattern =
+    intNames.size > 0
+      ? new RegExp(`\\b(?:${[...intNames].join('|')})\\b`, 'u')
+      : null;
+  const touchesInt = (segment: string) =>
+    intNamesPattern !== null && intNamesPattern.test(segment);
   return text
     .split(/(;)/u)
     .map((segment) => {
@@ -2145,6 +2145,13 @@ function isUnexecutableMatrixElementAssignment(
   return !LITERAL_MATRIX_INDEX_PATTERN.test(index);
 }
 
+const NON_SCALAR_SHADER_CONTROL_KEYS = new Set([
+  'tint',
+  'texture_source',
+  'texture_mode',
+  'warp_texture_source',
+]);
+
 export function extractShaderControls(
   shaderText: string | null,
   env: Record<string, number> = DEFAULT_MILKDROP_STATE,
@@ -2282,8 +2289,8 @@ export function extractShaderControls(
         // writes the per-frame control it happens to share a name with.
         applyShaderAstStatement({
           statement: parsedStatement,
-          controls: structuredClone(controls),
-          expressions: structuredClone(expressions),
+          controls: createDefaultShaderControls(),
+          expressions: createDefaultShaderControlExpressions(),
           shaderEnv,
           shaderValueEnv,
           shaderExpressionEnv,
@@ -2488,12 +2495,7 @@ export function extractShaderControls(
     const numeric = parseShaderScalar(rawValue, shaderEnv);
     if (
       !isKnownShaderScalarKey(key) &&
-      !new Set([
-        'tint',
-        'texture_source',
-        'texture_mode',
-        'warp_texture_source',
-      ]).has(key)
+      !NON_SCALAR_SHADER_CONTROL_KEYS.has(key)
     ) {
       if (numeric !== null) {
         const currentValue = shaderEnv[key] ?? 0;

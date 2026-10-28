@@ -13,11 +13,11 @@ name: Publish package
 
 on:
   push:
-    tags: ['*@[0-9]*.[0-9]*.[0-9]*']
+    tags: ["*@[0-9]*.[0-9]*.[0-9]*"]
   workflow_dispatch:
     inputs:
       package:
-        description: 'Directory under packages/ to publish'
+        description: "Directory under packages/ to publish"
         required: true
         type: choice
         options:
@@ -25,7 +25,7 @@ on:
           - flash-guard
           - milkdrop-toolchain
       dry_run:
-        description: 'Build and pack without publishing'
+        description: "Build and pack without publishing"
         required: false
         type: boolean
         default: true
@@ -49,14 +49,14 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-stims
         with:
-          checkout: 'false'
+          checkout: "false"
 
       # npm 11.5 or newer is needed for trusted publishing; Node 24 ships it.
       - name: Set up npm
         uses: actions/setup-node@v7
         with:
-          node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Resolve package and version
         id: target
@@ -88,9 +88,9 @@ jobs:
         env:
           NAME: ${{ steps.target.outputs.name }}
         run: |
-          bun --cwd "packages/$NAME" run typecheck
+          bun --cwd="packages/$NAME" run typecheck
           bun --cwd "packages/$NAME" test
-          bun --cwd "packages/$NAME" run build
+          bun --cwd="packages/$NAME" run build
 
       # The tarball should be a function of the source, not of the machine:
       # build twice from clean and fail if the two dists differ, before
