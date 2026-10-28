@@ -49,7 +49,7 @@
     <figure>
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="./docs/coverage-dark.svg">
-        <img alt="82 cases in 9 sections; solid bars are pinned cases, hatched are provisional" src="./docs/coverage-light.svg" width="716" height="304">
+        <img alt="82 cases in 9 sections, all pinned; solid bars are pinned cases, hatched would be provisional" src="./docs/coverage-light.svg" width="716" height="304">
       </picture>
       <figcaption>Generated from the corpus by <code>bun run coverage:svg</code>. Solid: pinned. Hatched: provisional.</figcaption>
     </figure>
@@ -80,7 +80,7 @@
     <p>Buffer size is part of the contract, not an implementation detail. Bounds behaviour is only defined against a declared size, and a runner that allocates a short buffer will read past its end and produce garbage where the specification requires 0.</p>
     <div class="grid">
       <div class="card"><h3>pinned</h3><p>Derived from documented MilkDrop 2.x / ns-eel behaviour. A conforming implementation must produce this value.</p></div>
-      <div class="card"><h3>provisional</h3><p>This corpus's observed behaviour, not yet confirmed against ns-eel. A question, not a requirement. Enforcing it still has value, since silent drift is worse than a known value, but check upstream before porting one.</p></div>
+      <div class="card"><h3>provisional</h3><p>This corpus's observed behaviour, not yet confirmed against ns-eel. A question, not a requirement. Enforcing it still has value, since silent drift is worse than a known value, but check upstream before porting one. The shipped corpus has none left; the status stays in the schema for the next case that needs it.</p></div>
     </div>
   </section>
 
@@ -105,11 +105,13 @@ process.exit(conforms(report) ? 0 : 1);</code></pre>
     <ul class="gotchas">
       <li><strong>Division by zero is 0</strong>, but the guard is exact zero: <code>1 / 0.0000001</code> divides normally. A tolerance guard silently zeroes results real presets depend on.</li>
       <li><strong><code>%</code> truncates both operands to integers first</strong>; float remainder is <code>mod()</code> / <code>fmod()</code>.</li>
-      <li><strong>Truthiness is <code>|v| &gt; 1e-5</code></strong>, not <code>v != 0</code>, for <code>if</code>, <code>&amp;&amp;</code>, <code>||</code>, <code>!</code> and <code>bnot</code>.</li>
+      <li><strong>Truthiness is <code>|v| &gt; 1e-5</code></strong>, not <code>v != 0</code>, for <code>if</code>, <code>&amp;&amp;</code>, <code>||</code>, <code>!</code>, <code>bnot</code> and the <code>while</code> condition. A condition that decays to <code>1e-6</code> exits the loop.</li>
       <li><strong><code>==</code> is exact; <code>equal()</code> uses the close factor.</strong> Only one of them is tolerant.</li>
       <li><strong><code>bor()</code> and <code>band()</code> are logical, not bitwise</strong>, despite the names. <code>bor(2,4)</code> is 1, not 6.</li>
       <li><strong><code>frac()</code> subtracts the floor</strong>, so <code>frac(-0.25)</code> is <code>0.75</code>.</li>
       <li><strong><code>step(edge, v)</code> takes the edge first.</strong></li>
+      <li><strong>Unary minus binds looser than <code>^</code></strong>: <code>-2 ^ 2</code> is <code>-(2^2) = -4</code>, as in ns-eel2. Modern EEL2 gives +4; an engine on that grammar fails the case by design.</li>
+      <li><strong><code>^</code> is left-associative</strong>: <code>2 ^ 3 ^ 2</code> is 64, not 512, in both references.</li>
       <li><strong><code>pi</code> and <code>e</code> are ordinary prepopulated variables</strong>, and assignments to them stick.</li>
       <li><strong>Names are case-insensitive.</strong> <code>contVol</code> and <code>contvol</code> are one variable.</li>
       <li><strong>Non-finite values are clamped to 0 at the statement boundary</strong>, so one escaped Infinity cannot poison a variable for the preset's lifetime.</li>
@@ -119,11 +121,11 @@ process.exit(conforms(report) ? 0 : 1);</code></pre>
 
   <section id="open">
     <h2>Open questions</h2>
-    <p class="sub">The provisional cases are places where the originating implementation had to pick a behaviour and the reference is unverified. Resolving them against ns-eel would be the most useful contribution.</p>
+    <p class="sub">None. The three provisional cases the corpus shipped with were resolved against the ns-eel2 source MilkDrop 2 ships and against modern EEL2 (WDL); the <a href="https://github.com/zz-plant/stims/blob/main/packages/eel-conformance/docs/ns-eel2-source-audit.md">source audit</a> records the citations, and each case's <code>note</code> names the line that decides it. The ids did not change.</p>
     <ol>
-      <li><strong><code>while</code> condition truthiness.</strong> A <code>while()</code> condition is tested against exact zero, while every other boolean context uses the close-factor threshold. If the threshold turns out to be correct, a class of presets is currently spinning to the iteration cap every frame.</li>
-      <li><strong>Unary minus versus <code>^</code>.</strong> <code>-2 ^ 2</code> parses as <code>(-2)^2 = 4</code>. Most languages that spell exponentiation as an operator bind unary minus more loosely.</li>
-      <li><strong><code>^</code> associativity.</strong> <code>2 ^ 3 ^ 2</code> parses left-associatively as 64, not the more usual 512.</li>
+      <li><strong><code>while</code> condition truthiness.</strong> The pin was wrong: <code>nseel_asm_repeatwhile</code> compares <code>|cond|</code> against the close factor, so a condition of <code>1e-6</code> never enters the body. The expected value flipped.</li>
+      <li><strong>Unary minus versus <code>^</code>.</strong> The references disagree and the pin matched the wrong one: ns-eel2 reads <code>-2 ^ 2</code> as <code>-pow(2,2) = -4</code>, WDL as +4. This corpus specifies MilkDrop 2's dialect, so -4 is the pin. No bundled preset writes <code>-a^b</code>.</li>
+      <li><strong><code>^</code> associativity.</strong> The pin was right: left-associative, 64, in both references.</li>
     </ol>
   </section>
 

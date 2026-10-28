@@ -3,7 +3,7 @@
 The corpus has moved to [`packages/eel-conformance/`](../../packages/eel-conformance/README.md),
 published to npm as `eel-conformance`, so projectM, Butterchurn and other
 MilkDrop implementations can run the same cases. Its README holds the runner
-contract, the section list, the gotchas and the open questions.
+contract, the section list, the gotchas and the open questions (all answered).
 
 What stays here:
 

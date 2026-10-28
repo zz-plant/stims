@@ -55,8 +55,15 @@ describe('corpus layout', () => {
 
   test('pinned and provisional partition the corpus', () => {
     expect(pinnedCases().length + provisionalCases().length).toBe(CASES.length);
-    expect(provisionalCases().length).toBeGreaterThan(0);
     for (const c of provisionalCases()) expect(c.status).toBe('provisional');
+    for (const c of pinnedCases()) expect(c.status ?? 'pinned').toBe('pinned');
+  });
+
+  test('every provisional question has been answered', () => {
+    // The three cases the corpus was extracted with were resolved against the
+    // ns-eel2 source (docs/ns-eel2-source-audit.md). A new provisional case
+    // is allowed, but it reopens the README's "Open questions" section.
+    expect(provisionalCases().map(qualifiedId)).toEqual([]);
   });
 
   test('every provisional case explains itself in a note', () => {

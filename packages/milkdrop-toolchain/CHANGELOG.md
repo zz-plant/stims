@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+EEL semantics aligned with the ns-eel2 source after the `eel-conformance` audit; the corpus's three provisional cases are now pinned and all three CPU tiers pass them.
+- Parser: unary `+`, `-` and `!` bind looser than `^`, so `-2 ^ 2` is `-(2^2) = -4` (ns-eel2 rewrites it to `-pow(2,2)`; modern EEL2 would give +4). `^` stays left-associative and the exponent may still carry its own sign (`2 ^ -1`). The interpreter, JIT and WGSL generators share the AST, so all tiers change together. No bundled preset writes `-a^b`, `-(a)^b` or `-f(a)^b`.
+- Interpreter and JIT: a `while()` condition is tested against the close factor (`|cond| > 1e-5`) like every other boolean context, instead of exact zero. A condition that decays to 1e-6 now exits rather than spinning to the iteration cap. All 558 `while()` statements in the bundled corpus have comparison or logical conditions, so none changes.
+
 ## 0.2.0 (2026-10-28)
 
 0.1.1 was prepared as a documentation release but never published; its

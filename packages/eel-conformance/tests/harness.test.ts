@@ -130,18 +130,23 @@ describe('runConformance', () => {
   });
 
   test('provisional failures do not count against conformance', async () => {
+    // The shipped corpus has no provisional case left, so the rule is
+    // exercised on a synthetic one the runner deliberately gets wrong.
+    const provisional: EelConformanceCase = {
+      section: 'test',
+      id: 'open-question',
+      name: 'a provisional case the engine disagrees with',
+      program: ['x = 1'],
+      expected: { x: 2 },
+      status: 'provisional',
+    };
     const report = await runConformance(
       ({ env, megabuf, gmegabuf, program }) => {
-        const specCase = CASES.find((c) => c.program === program);
-        if (specCase?.status === 'provisional') return; // leave it wrong
         oracle({ env, megabuf, gmegabuf, program, random: () => 0.5 });
       },
-      { buffers: shared },
+      { buffers: shared, cases: [...CASES, provisional] },
     );
-    const provisional = CASES.filter((c) => c.status === 'provisional');
-    expect(provisional.length).toBeGreaterThan(0);
-    expect(report.provisionalFailures).toBeGreaterThan(0);
-    expect(report.provisionalFailures).toBeLessThanOrEqual(provisional.length);
+    expect(report.provisionalFailures).toBe(1);
     expect(report.pinnedFailures).toBe(0);
     expect(conforms(report)).toBe(true);
     const text = formatReport(report);

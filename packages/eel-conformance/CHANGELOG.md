@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+The three provisional cases are resolved against the ns-eel2 source that MilkDrop 2 ships (`WACUP/vis_milk2`, `ns-eel2/`) and against modern EEL2 (`justinfrankel/WDL`); `docs/ns-eel2-source-audit.md` holds the citations. Every case is now `pinned` and the README's "Open questions" section is empty. Ids are unchanged; two expected values are not, so an implementation that passed 0.1.x may fail two cases:
+- `control-flow/while-condition-is-exact-zero`: a `while()` condition uses the close factor like every other boolean context (`nseel_asm_repeatwhile` compares `|cond|` against `g_closefact`). `n = 1e-6; while(n, n = 0; x = 1)` leaves `x` at 0 and `n` at 1e-6. Previously pinned the exact-zero reading (`x = 1`, `n = 0`).
+- `operators-arithmetic/precedence-unary-minus-over-pow`: `-2 ^ 2` is `-(2^2) = -4`, the ns-eel2 reading (its preprocessor rewrites it to `-pow(2,2)`). Modern EEL2 gives +4; the note says so. Previously pinned +4. The case also asserts `(-2) ^ 2 = 4`.
+- `operators-arithmetic/pow-left-associative`: promoted to `pinned` with the citations; 64 stays.
+- The `control-flow` section description now says the two-argument `while(cond, body)` form is a dialect extension shared with projectM and Butterchurn, not ns-eel2 syntax.
+- Tests: the corpus test asserts there is no provisional case left; the harness test exercises the provisional rule on a synthetic case.
+
 ## 0.1.1 (2026-10-28)
 
 Documentation only; no code changes.

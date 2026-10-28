@@ -7,6 +7,14 @@ proposes a disposition for each affected case. Case ids are never silently
 changed; where a pin's _value_ is wrong the case should be corrected in place
 and the correction recorded here.
 
+**Status (2026-10-28).** The three provisional questions below are closed:
+`while-condition-is-exact-zero` and `precedence-unary-minus-over-pow` were
+corrected in place and `pow-left-associative` was promoted, all three now
+`pinned` with the citations in their `note`, and the interpreter, JIT and
+parser were changed to match (milkdrop-toolchain, unreleased). The overturned pins
+in the table further down are still open and land separately, each with its
+matching engine change.
+
 ## References
 
 - **ns-eel2** — the EEL2 that MilkDrop 2 actually ships:
