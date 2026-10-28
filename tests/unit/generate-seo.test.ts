@@ -1,17 +1,29 @@
 import { describe, expect, test } from 'bun:test';
-import { existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import path, { join } from 'node:path';
 import {
   isAllowedAuthorSlug,
   isAllowedDiscoverSlug,
 } from '../../functions/discover-slugs.ts';
+import { NOINDEX } from '../../functions/shared/preset-meta.ts';
 import { PRESET_INDEX_PATH } from '../../functions/shared/site-index.ts';
 import {
   LEARN_PAGES,
   learnPagePath,
 } from '../../scripts/generate-learn-pages.ts';
 import {
+  buildOgBackdropSvg,
   buildOgSvg,
+  buildPresetMetaMap,
+  buildPresetSitemapEntries,
   buildSitemapChunk,
   buildSitemapEntries,
   formatPresetCountClaim,
@@ -19,6 +31,7 @@ import {
   layoutOgTiles,
   OG_FRAME_DIR,
   OG_FRAMES,
+  renderOgPng,
 } from '../../scripts/generate-seo.ts';
 
 describe('generate-seo sitemap routes', () => {
@@ -157,12 +170,89 @@ describe('generate-seo social cards', () => {
   });
 
   // WhatsApp and some other scrapers drop preview images much past 300KB.
-  // The committed cards are what they fetch, so the budget is read off them:
-  // rendering a card here is seconds of resvg per run, and the blank backdrop
-  // this once rendered came out at 12KB even with quantization removed.
-  test('rendered cards stay small enough for every unfurler', () => {
+  test('rendered cards stay small enough for every unfurler', async () => {
+    const svg = buildOgBackdropSvg({ frameHref: () => '' });
+    const png = await renderOgPng(svg);
+    expect(png.length).toBeLessThan(300 * 1024);
     for (const file of ['milkdrop', 'default', 'performance']) {
       expect(statSync(`public/og/${file}.png`).size).toBeLessThan(300 * 1024);
+    }
+  });
+});
+
+describe('search-landing curation', () => {
+  /** A repo root holding a three-preset catalog and landing evidence. */
+  function fixtureRoot(evidence: Record<string, Record<string, unknown>>) {
+    const root = mkdtempSync(path.join(tmpdir(), 'stims-seo-'));
+    mkdirSync(path.join(root, 'public/milkdrop-presets/previews'), {
+      recursive: true,
+    });
+    mkdirSync(path.join(root, 'src/data'), { recursive: true });
+    writeFileSync(
+      path.join(root, 'public/milkdrop-presets/catalog.json'),
+      JSON.stringify({
+        generatedAt: '2026-10-07',
+        presets: [
+          { id: 'lit', title: 'Geiss - Lit', author: 'Geiss' },
+          { id: 'blank-on-webgpu', title: 'Geiss - Dark', author: 'Geiss' },
+          { id: 'never-shown', title: 'Geiss - Gone', author: 'Geiss' },
+          { id: 'dark-on-phones', title: 'Geiss - Wide', author: 'Geiss' },
+          { id: 'unmeasured', title: 'Geiss - New', author: 'Geiss' },
+        ],
+      }),
+    );
+    writeFileSync(
+      path.join(root, 'src/data/search-landing-evidence.json'),
+      JSON.stringify({
+        measuredAt: '2026-10-07',
+        method: '',
+        presets: evidence,
+      }),
+    );
+    return root;
+  }
+
+  test('keeps presets that land blank out of the sitemap and flags them noindex', async () => {
+    const root = fixtureRoot({
+      lit: { webgpu: 0.31, webgl: 0.2 },
+      'blank-on-webgpu': { webgpu: 0.001, webgl: 0.4 },
+      'never-shown': { webgpu: 'timeout' },
+      // Lit at 1280x720, black on a phone held upright.
+      'dark-on-phones': { webgpu: 0.3, 'webgl@390x844': 0 },
+    });
+    try {
+      const entries = await buildPresetSitemapEntries(root);
+      expect(entries.map((entry) => entry.loc)).toEqual([
+        'https://toil.fyi/?preset=lit',
+        'https://toil.fyi/?preset=unmeasured',
+      ]);
+
+      const meta = await buildPresetMetaMap(root);
+      expect(meta.lit).toEqual(['Geiss - Lit', 'Geiss']);
+      expect(meta.unmeasured).toEqual(['Geiss - New', 'Geiss']);
+      expect(meta['blank-on-webgpu']).toEqual([
+        'Geiss - Dark',
+        'Geiss',
+        -1,
+        0,
+        NOINDEX,
+      ]);
+      expect(meta['never-shown']).toEqual([
+        'Geiss - Gone',
+        'Geiss',
+        -1,
+        0,
+        NOINDEX,
+      ]);
+      expect(meta['dark-on-phones']).toEqual([
+        'Geiss - Wide',
+        'Geiss',
+        -1,
+        0,
+        NOINDEX,
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 });

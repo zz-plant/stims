@@ -1,17 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://toil.fyi/?preset=eos-glowsticks-v2-03-music</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eos-glowsticks-v2-03-music.png</image:loc>
-      <image:title>Eo.S. - Glowsticks v2 03 Music | Stims</image:title>
-      <image:caption>Eo.S. - Glowsticks v2 03 Music by Eo.S., a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=rovastar-parallel-universe</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -64,17 +53,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-casino.png</image:loc>
       <image:title>Geiss - Casino | Stims</image:title>
       <image:caption>Geiss - Casino by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=shifter-snakeskin</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/shifter-snakeskin.png</image:loc>
-      <image:title>Shifter - Snakeskin | Stims</image:title>
-      <image:caption>Shifter - Snakeskin by Shifter, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -210,17 +188,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=eos-matrix-cube-c</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eos-matrix-cube-c.png</image:loc>
-      <image:title>Eo.S. - Matrix Cube C | Stims</image:title>
-      <image:caption>Eo.S. - Matrix Cube C by Eo.S., a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=eos-phat-cat-scan-nirvana</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -262,17 +229,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/eos-phat-magnetosphere-13-pulsar.png</image:loc>
       <image:title>Eo.S. + Phat - Magnetosphere 13 Pulsar | Stims</image:title>
       <image:caption>Eo.S. + Phat - Magnetosphere 13 Pulsar by Eo.S. + Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=eos-phat-vacuum-deification</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eos-phat-vacuum-deification.png</image:loc>
-      <image:title>Eo.S. + Phat - Vacuum Deification | Stims</image:title>
-      <image:caption>Eo.S. + Phat - Vacuum Deification by Eo.S. + Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -375,17 +331,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=pieturp-sunflare</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/pieturp-sunflare.png</image:loc>
-      <image:title>Pieturp - Sunflare | Stims</image:title>
-      <image:caption>Pieturp - Sunflare by Pieturp, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=rovastar-and-idiot24-7-abstract-psychaos</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -438,17 +383,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/shifter-glassworms-flare.png</image:loc>
       <image:title>Shifter - Glassworms Flare | Stims</image:title>
       <image:caption>Shifter - Glassworms Flare by Shifter, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=shifter-spectro</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/shifter-spectro.png</image:loc>
-      <image:title>Shifter - Spectro | Stims</image:title>
-      <image:caption>Shifter - Spectro by Shifter, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -518,17 +452,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=royal-mashup-197</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/royal-mashup-197.png</image:loc>
-      <image:title>$$$ Royal - Mashup (197) | Stims</image:title>
-      <image:caption>$$$ Royal - Mashup (197) by $$$ Royal, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=royal-mashup-220</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -581,17 +504,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/royal-mashup-307.png</image:loc>
       <image:title>$$$ Royal - Mashup (307) | Stims</image:title>
       <image:caption>$$$ Royal - Mashup (307) by $$$ Royal, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=royal-mashup-326</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/royal-mashup-326.png</image:loc>
-      <image:title>$$$ Royal - Mashup (326) | Stims</image:title>
-      <image:caption>$$$ Royal - Mashup (326) by $$$ Royal, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -966,17 +878,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/adamfx-2-geiss-somewhat-distort-me-3-1.png</image:loc>
       <image:title>AdamFx 2 Geiss -Somewhat Distort Me 3_1 | Stims</image:title>
       <image:caption>AdamFx 2 Geiss -Somewhat Distort Me 3_1 by AdamFX + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=adamfx-2-geiss-zylot-and-flexi-reaction-diffusion-3-overload-mix-2-eatit4-bccnj4</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/adamfx-2-geiss-zylot-and-flexi-reaction-diffusion-3-overload-mix-2-eatit4-bccnj4.png</image:loc>
-      <image:title>AdamFx 2 Geiss, Zylot and Flexi - Reaction Diffusion 3 (Overload Mix 2) EATIT4 (BCCNJ4) | Stims</image:title>
-      <image:caption>AdamFx 2 Geiss, Zylot and Flexi - Reaction Diffusion 3 (Overload Mix 2) EATIT4 (BCCNJ4) by AdamFx 2 Geiss, Zylot and Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -1629,17 +1530,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=benjam-zylot-dust-on-the-lens-light-of-the-ancient-ones-mix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/benjam-zylot-dust-on-the-lens-light-of-the-ancient-ones-mix.png</image:loc>
-      <image:title>Benjam &amp; Zylot - Dust on the Lens (Light of the Ancient Ones mix) | Stims</image:title>
-      <image:caption>Benjam &amp; Zylot - Dust on the Lens (Light of the Ancient Ones mix) by Benjam &amp; Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=benjam-and-zylot-tie-dye-supernova-sunspots-mix-praise-martin-and-flexi-forever-nz-understarted</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -1761,17 +1651,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=brainstain-boiling-mix2-redi-jedi-full-carb-mix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/brainstain-boiling-mix2-redi-jedi-full-carb-mix.png</image:loc>
-      <image:title>BrainStain- boiling-mix2(redi jedi full carb mix) | Stims</image:title>
-      <image:caption>BrainStain- boiling-mix2(redi jedi full carb mix), a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=brainstain-blackwidow</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -1780,28 +1659,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/brainstain-blackwidow.png</image:loc>
       <image:title>BrainStain-Blackwidow | Stims</image:title>
       <image:caption>BrainStain-Blackwidow, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=brainstain-projection-room-mash0000-locustration</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/brainstain-projection-room-mash0000-locustration.png</image:loc>
-      <image:title>BrainStain-projection room - mash0000 - locustration | Stims</image:title>
-      <image:caption>BrainStain-projection room - mash0000 - locustration by BrainStain-projection room, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=brainstain-re-entry</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/brainstain-re-entry.png</image:loc>
-      <image:title>BrainStain-re entry | Stims</image:title>
-      <image:caption>BrainStain-re entry, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -1890,28 +1747,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/cope-passage-mandala-mix-flexis-kaleidoscope-ap3-colonosc-roam3.png</image:loc>
       <image:title>Cope - Passage (mandala mix)[Flexis kaleidoscope] - ap3 colonosc roam3 | Stims</image:title>
       <image:caption>Cope - Passage (mandala mix)[Flexis kaleidoscope] - ap3 colonosc roam3 by Cope, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=cope-the-neverending-explosion-of-red-liquid-fire</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/cope-the-neverending-explosion-of-red-liquid-fire.png</image:loc>
-      <image:title>Cope - The Neverending Explosion of Red Liquid Fire | Stims</image:title>
-      <image:caption>Cope - The Neverending Explosion of Red Liquid Fire by Cope, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=cope-the-red</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/cope-the-red.png</image:loc>
-      <image:title>Cope - The Red | Stims</image:title>
-      <image:caption>Cope - The Red by Cope, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -2135,17 +1970,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=eo-s-phat-chasers-18-hallway</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-chasers-18-hallway.png</image:loc>
-      <image:title>Eo.S. + Phat - chasers 18 hallway | Stims</image:title>
-      <image:caption>Eo.S. + Phat - chasers 18 hallway by Eo.S. + Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=eo-s-phat-chasers-19-portal-geiss-flicker-fix</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -2179,17 +2003,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=eo-s-phat-spectrum-bubble-field</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-spectrum-bubble-field.png</image:loc>
-      <image:title>Eo.S. + Phat - spectrum bubble field | Stims</image:title>
-      <image:caption>Eo.S. + Phat - spectrum bubble field by Eo.S. + Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=eo-s-phat-the-lights-at-night-spikes</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -2198,39 +2011,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-the-lights-at-night-spikes.png</image:loc>
       <image:title>Eo.S. + Phat - the lights at night_spikes | Stims</image:title>
       <image:caption>Eo.S. + Phat - the lights at night_spikes by Eo.S. + Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=eo-s-phat-vacuum-deity-watching-you</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-vacuum-deity-watching-you.png</image:loc>
-      <image:title>Eo.S. + Phat - vacuum deity watching you | Stims</image:title>
-      <image:caption>Eo.S. + Phat - vacuum deity watching you by Eo.S. + Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=eo-s-phat-zen-prophetmind-wtf-is-it-v2-bitcore-tweak</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-zen-prophetmind-wtf-is-it-v2-bitcore-tweak.png</image:loc>
-      <image:title>Eo.S. + Phat - zen prophetmind WTF is it_v2 - Bitcore Tweak | Stims</image:title>
-      <image:caption>Eo.S. + Phat - zen prophetmind WTF is it_v2 - Bitcore Tweak by Eo.S. + Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=eo-s-phat-cubetrace-cybercity-madness-remix-mash0000-evaporating-crystal-pharma</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-cubetrace-cybercity-madness-remix-mash0000-evaporating-crystal-pharma.png</image:loc>
-      <image:title>Eo.S. + Phat cubetrace (cybercity madness remix) - mash0000 - evaporating crystal pharma | Stims</image:title>
-      <image:caption>Eo.S. + Phat cubetrace (cybercity madness remix) - mash0000 - evaporating crystal pharma by Eo.S. + Phat cubetrace, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -2564,28 +2344,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=eo-s-spark-c-phat-jester-mix-v2</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-spark-c-phat-jester-mix-v2.png</image:loc>
-      <image:title>Eo.S. - spark C_Phat_Jester_Mix_v2 | Stims</image:title>
-      <image:caption>Eo.S. - spark C_Phat_Jester_Mix_v2 by Eo.S., a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=eo-s-starburst-01</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-starburst-01.png</image:loc>
-      <image:title>Eo.S. - starburst 01 | Stims</image:title>
-      <image:caption>Eo.S. - starburst 01 by Eo.S., a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=eo-s-tumbler-demon-mix-high-fps-phat-edit</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -2649,39 +2407,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-spectrum-bubble-new-colors-wf2-chaos-theory.png</image:loc>
       <image:title>Eo.S.+Phat - spectrum bubble new colors WF2 chaos theory | Stims</image:title>
       <image:caption>Eo.S.+Phat - spectrum bubble new colors WF2 chaos theory by Eo.S.+Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=eo-s-phat-spectrum-bubble-new-colors-v2</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-spectrum-bubble-new-colors-v2.png</image:loc>
-      <image:title>Eo.S.+Phat - spectrum bubble new colors_v2 | Stims</image:title>
-      <image:caption>Eo.S.+Phat - spectrum bubble new colors_v2 by Eo.S.+Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=eo-s-phat-eater-v2</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-eater-v2.png</image:loc>
-      <image:title>Eo.S.+Phat -Eater_v2 | Stims</image:title>
-      <image:caption>Eo.S.+Phat -Eater_v2 by Eo.S. + Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=eo-s-phat-shipwreaked-v3</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-shipwreaked-v3.png</image:loc>
-      <image:title>Eo.S.+Phat -Shipwreaked_v3 | Stims</image:title>
-      <image:caption>Eo.S.+Phat -Shipwreaked_v3 by Eo.S. + Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -2751,17 +2476,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=eo-s-phat-technicolor-f-breather-e-god-cock-gaia-pussy</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-technicolor-f-breather-e-god-cock-gaia-pussy.png</image:loc>
-      <image:title>Eo.S._Phat technicolor F breather E god cock gaia pussy | Stims</image:title>
-      <image:caption>Eo.S._Phat technicolor F breather E god cock gaia pussy by Eo.S. + Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=eo-s-and-pieturp-alienspaceshipinvasion-2</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -2770,17 +2484,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-and-pieturp-alienspaceshipinvasion-2.png</image:loc>
       <image:title>Eo.s and PieturP - AlienSpaceshipInvasion 2 | Stims</image:title>
       <image:caption>Eo.s and PieturP - AlienSpaceshipInvasion 2 by Eo.s and PieturP, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=eosphat-shipwreakedv5b</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/eosphat-shipwreakedv5b.png</image:loc>
-      <image:title>Eosphat-shipwreakedv5b | Stims</image:title>
-      <image:caption>Eosphat-shipwreakedv5b, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -2825,39 +2528,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/esotic-rozzor-pixie-party-light-no-wave-invasion-mandala-chill-red-yellow-mix.png</image:loc>
       <image:title>Esotic &amp; Rozzor - Pixie Party Light ((No Wave Invasion) Mandala Chill Red Yellow Mix) | Stims</image:title>
       <image:caption>Esotic &amp; Rozzor - Pixie Party Light ((No Wave Invasion) Mandala Chill Red Yellow Mix) by Esotic &amp; Rozzor, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-geiss-demon-lord-unholy-tokamak-clot-plot</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-geiss-demon-lord-unholy-tokamak-clot-plot.png</image:loc>
-      <image:title>Flexi + Geiss + Demon Lord - unholy tokamak clot-plot | Stims</image:title>
-      <image:caption>Flexi + Geiss + Demon Lord - unholy tokamak clot-plot by Flexi + Geiss + Demon Lord, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-geiss-bipolar-vs-reaction-diffusion-mix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-geiss-bipolar-vs-reaction-diffusion-mix.png</image:loc>
-      <image:title>Flexi + Geiss - Bipolar vs. Reaction Diffusion mix | Stims</image:title>
-      <image:caption>Flexi + Geiss - Bipolar vs. Reaction Diffusion mix by Flexi + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-geiss-tokamak-mindblob-2-0</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-geiss-tokamak-mindblob-2-0.png</image:loc>
-      <image:title>Flexi + Geiss - Tokamak mindblob 2.0 | Stims</image:title>
-      <image:caption>Flexi + Geiss - Tokamak mindblob 2.0 by Flexi + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -2971,28 +2641,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=flexi-rovastar-fractopia-blame-hexcollie</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-rovastar-fractopia-blame-hexcollie.png</image:loc>
-      <image:title>Flexi + Rovastar - Fractopia [blame hexcollie] | Stims</image:title>
-      <image:caption>Flexi + Rovastar - Fractopia [blame hexcollie] by Flexi + Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-rovastar-fractopia-lovecraft</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-rovastar-fractopia-lovecraft.png</image:loc>
-      <image:title>Flexi + Rovastar - Fractopia [lovecraft] | Stims</image:title>
-      <image:caption>Flexi + Rovastar - Fractopia [lovecraft] by Flexi + Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=flexi-rovastar-landing-on-fractopia</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -3048,17 +2696,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=flexi-fishbrain-operation-fatcap-ii</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-fishbrain-operation-fatcap-ii.png</image:loc>
-      <image:title>Flexi + fiShbRaiN - operation fatcap II | Stims</image:title>
-      <image:caption>Flexi + fiShbRaiN - operation fatcap II by Flexi + fiShbRaiN, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=flexi-fishbrain-operation-fatcap-techstyle-random-mashup</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -3092,17 +2729,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=flexi-stahlregen-jelly-showoff-parade</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-stahlregen-jelly-showoff-parade.png</image:loc>
-      <image:title>Flexi + stahlregen - jelly showoff parade | Stims</image:title>
-      <image:caption>Flexi + stahlregen - jelly showoff parade by Flexi + stahlregen, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=flexi-stahlregen-jelly-space</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -3114,28 +2740,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=flexi-sto-aftermath</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-sto-aftermath.png</image:loc>
-      <image:title>Flexi + sto - aftermath | Stims</image:title>
-      <image:caption>Flexi + sto - aftermath by Flexi + sto, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-sto-learning-curve</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-sto-learning-curve.png</image:loc>
-      <image:title>Flexi + sto - learning curve  | Stims</image:title>
-      <image:caption>Flexi + sto - learning curve  by Flexi + sto, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=flexi-100-shader-fractal-origami-edit</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -3144,17 +2748,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-100-shader-fractal-origami-edit.png</image:loc>
       <image:title>Flexi - 100% shader fractal [origami edit] | Stims</image:title>
       <image:caption>Flexi - 100% shader fractal [origami edit] by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-fishies</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-fishies.png</image:loc>
-      <image:title>Flexi - Fishies! | Stims</image:title>
-      <image:caption>Flexi - Fishies! by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -3199,17 +2792,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-age-of-shading-chaos.png</image:loc>
       <image:title>Flexi - age of shading chaos | Stims</image:title>
       <image:caption>Flexi - age of shading chaos by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-alien-fader</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-alien-fader.png</image:loc>
-      <image:title>Flexi - alien fader | Stims</image:title>
-      <image:caption>Flexi - alien fader by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -3265,17 +2847,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-area-51.png</image:loc>
       <image:title>Flexi - area 51 | Stims</image:title>
       <image:caption>Flexi - area 51 by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-blame-hexcollie-twice</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-blame-hexcollie-twice.png</image:loc>
-      <image:title>Flexi - blame hexcollie twice | Stims</image:title>
-      <image:caption>Flexi - blame hexcollie twice by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -3389,39 +2960,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=flexi-hue-burst</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-hue-burst.png</image:loc>
-      <image:title>Flexi - hue burst | Stims</image:title>
-      <image:caption>Flexi - hue burst by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-impulse-drive</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-impulse-drive.png</image:loc>
-      <image:title>Flexi - impulse drive | Stims</image:title>
-      <image:caption>Flexi - impulse drive by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-infused-with-the-spiral</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-infused-with-the-spiral.png</image:loc>
-      <image:title>Flexi - infused with the spiral | Stims</image:title>
-      <image:caption>Flexi - infused with the spiral by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=flexi-intensive-shader-fractal-suksma-comp-shader-mix</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -3452,28 +2990,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-intention-focus.png</image:loc>
       <image:title>Flexi - intention focus | Stims</image:title>
       <image:caption>Flexi - intention focus by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-invisible-chains-securing-you-don-t-move-cn-bc-jelly-4</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-invisible-chains-securing-you-don-t-move-cn-bc-jelly-4.png</image:loc>
-      <image:title>Flexi - invisible chains securing you don′t move (cn bc jelly 4) | Stims</image:title>
-      <image:caption>Flexi - invisible chains securing you don′t move (cn bc jelly 4) by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-jellyfish-jam</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-jellyfish-jam.png</image:loc>
-      <image:title>Flexi - jellyfish jam | Stims</image:title>
-      <image:caption>Flexi - jellyfish jam by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -3521,17 +3037,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=flexi-learning-curve</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-learning-curve.png</image:loc>
-      <image:title>Flexi - learning curve | Stims</image:title>
-      <image:caption>Flexi - learning curve by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=flexi-meta4free-3-my-time-is-not-your-time</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -3540,17 +3045,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-meta4free-3-my-time-is-not-your-time.png</image:loc>
       <image:title>Flexi - meta4free 3 - my time is not your time | Stims</image:title>
       <image:caption>Flexi - meta4free 3 - my time is not your time by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-mindblob-2-0</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-mindblob-2-0.png</image:loc>
-      <image:title>Flexi - mindblob 2.0 | Stims</image:title>
-      <image:caption>Flexi - mindblob 2.0 by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -3672,17 +3166,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-predator-prey-spirals-geiss-laplacian-finish.png</image:loc>
       <image:title>Flexi - predator-prey-spirals [geiss′ laplacian finish] | Stims</image:title>
       <image:caption>Flexi - predator-prey-spirals [geiss′ laplacian finish] by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-predator-prey-spirals-stahlregens-gelatine-finish</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-predator-prey-spirals-stahlregens-gelatine-finish.png</image:loc>
-      <image:title>Flexi - predator-prey-spirals [stahlregens gelatine finish] | Stims</image:title>
-      <image:caption>Flexi - predator-prey-spirals [stahlregens gelatine finish] by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -3818,17 +3301,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=flexi-swimmer-fractal-template-the-freedom-of-torusland</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-swimmer-fractal-template-the-freedom-of-torusland.png</image:loc>
-      <image:title>Flexi - swimmer fractal template [the freedom of torusland] | Stims</image:title>
-      <image:caption>Flexi - swimmer fractal template [the freedom of torusland] by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=flexi-the-bouncer-and-the-crasher-random-mashup-2</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -3895,17 +3367,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=flexi-truly-soft-piece-of-software-this-is-generic-texturing-jelly</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-truly-soft-piece-of-software-this-is-generic-texturing-jelly.png</image:loc>
-      <image:title>Flexi - truly soft piece of software - this is generic texturing (Jelly)  | Stims</image:title>
-      <image:caption>Flexi - truly soft piece of software - this is generic texturing (Jelly)  by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=flexi-using-jedi-forces</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -3939,17 +3400,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=flexi-working-with-infinity</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-working-with-infinity.png</image:loc>
-      <image:title>Flexi - working with infinity | Stims</image:title>
-      <image:caption>Flexi - working with infinity by Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=flexi-bdrv-aderrasi-et-al-potion-of-resurrection-rosswell</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -3958,17 +3408,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-bdrv-aderrasi-et-al-potion-of-resurrection-rosswell.png</image:loc>
       <image:title>Flexi, BDRV, Aderrasi et al - Potion of Resurrection [rosswell] | Stims</image:title>
       <image:caption>Flexi, BDRV, Aderrasi et al - Potion of Resurrection [rosswell] by Flexi, BDRV, Aderrasi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-geiss-and-rovastar-chaos-layered-tokamak</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-geiss-and-rovastar-chaos-layered-tokamak.png</image:loc>
-      <image:title>Flexi, Geiss and Rovastar - chaos layered tokamak | Stims</image:title>
-      <image:caption>Flexi, Geiss and Rovastar - chaos layered tokamak by Flexi, Geiss and Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -3991,17 +3430,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-phat-zylot-eo-s-work-with-lines-of-code.png</image:loc>
       <image:title>Flexi, Phat, Zylot + Eo.S - work with lines of code | Stims</image:title>
       <image:caption>Flexi, Phat, Zylot + Eo.S - work with lines of code by Flexi, Phat, Zylot + Eo.S, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=flexi-rovastar-geiss-fractopia-vs-bas-relief</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-rovastar-geiss-fractopia-vs-bas-relief.png</image:loc>
-      <image:title>Flexi, Rovastar + Geiss - Fractopia vs bas relief | Stims</image:title>
-      <image:caption>Flexi, Rovastar + Geiss - Fractopia vs bas relief by Flexi, Rovastar + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -4057,17 +3485,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-martin-geiss-painterly-rogue-wave-strike.png</image:loc>
       <image:title>Flexi, martin + geiss - painterly rogue wave strike | Stims</image:title>
       <image:caption>Flexi, martin + geiss - painterly rogue wave strike by Flexi, martin + geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=fumbling-foo-flexi-martin-orb-star-forge-v16</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/fumbling-foo-flexi-martin-orb-star-forge-v16.png</image:loc>
-      <image:title>Fumbling_Foo &amp; Flexi, Martin, Orb - Star Forge v16 | Stims</image:title>
-      <image:caption>Fumbling_Foo &amp; Flexi, Martin, Orb - Star Forge v16 by Fumbling_Foo &amp; Flexi, Martin, Orb, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -4145,17 +3562,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/fvese-zoom-effects-remix-3.png</image:loc>
       <image:title>Fvese - Zoom Effects (Remix 3) | Stims</image:title>
       <image:caption>Fvese - Zoom Effects (Remix 3) by Fvese, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=fvese-butterfly</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/fvese-butterfly.png</image:loc>
-      <image:title>Fvese-butterfly | Stims</image:title>
-      <image:caption>Fvese-butterfly, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -4280,17 +3686,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-3-layers</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-3-layers.png</image:loc>
-      <image:title>Geiss - 3 layers | Stims</image:title>
-      <image:caption>Geiss - 3 layers by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-all-spark-mash0000-high-on-voltage</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -4335,39 +3730,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-artifact-6</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-6.png</image:loc>
-      <image:title>Geiss - Artifact 6 | Stims</image:title>
-      <image:caption>Geiss - Artifact 6 by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-artifact-6b</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-6b.png</image:loc>
-      <image:title>Geiss - Artifact 6b | Stims</image:title>
-      <image:caption>Geiss - Artifact 6b by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-artifact-6d</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-6d.png</image:loc>
-      <image:title>Geiss - Artifact 6d | Stims</image:title>
-      <image:caption>Geiss - Artifact 6d by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-artifact-plasma-2</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -4376,28 +3738,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-plasma-2.png</image:loc>
       <image:title>Geiss - Artifact Plasma 2 | Stims</image:title>
       <image:caption>Geiss - Artifact Plasma 2 by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-artifact-plasma</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-plasma.png</image:loc>
-      <image:title>Geiss - Artifact Plasma | Stims</image:title>
-      <image:caption>Geiss - Artifact Plasma by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-asymptote</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-asymptote.png</image:loc>
-      <image:title>Geiss - Asymptote | Stims</image:title>
-      <image:caption>Geiss - Asymptote by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -4497,17 +3837,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-bipolar-2-enhanced.png</image:loc>
       <image:title>Geiss - Bipolar 2 Enhanced | Stims</image:title>
       <image:caption>Geiss - Bipolar 2 Enhanced by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-bipolar-5</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-bipolar-5.png</image:loc>
-      <image:title>Geiss - Bipolar 5 | Stims</image:title>
-      <image:caption>Geiss - Bipolar 5 by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -5017,17 +4346,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-cruzin</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-cruzin.png</image:loc>
-      <image:title>Geiss - Cruzin′ | Stims</image:title>
-      <image:caption>Geiss - Cruzin′ by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-cycloid-1-painterly-vortex-3</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -5069,17 +4387,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-dancing-spirits-bright.png</image:loc>
       <image:title>Geiss - Dancing Spirits (Bright) | Stims</image:title>
       <image:caption>Geiss - Dancing Spirits (Bright) by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-dancing-spirits</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-dancing-spirits.png</image:loc>
-      <image:title>Geiss - Dancing Spirits | Stims</image:title>
-      <image:caption>Geiss - Dancing Spirits by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -5215,17 +4522,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-eggs</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-eggs.png</image:loc>
-      <image:title>Geiss - Eggs | Stims</image:title>
-      <image:caption>Geiss - Eggs by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-el-cubismo-2</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -5234,17 +4530,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-el-cubismo-2.png</image:loc>
       <image:title>Geiss - El Cubismo 2 | Stims</image:title>
       <image:caption>Geiss - El Cubismo 2 by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-el-cubismo</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-el-cubismo.png</image:loc>
-      <image:title>Geiss - El Cubismo | Stims</image:title>
-      <image:caption>Geiss - El Cubismo by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -5270,17 +4555,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-explosion-2</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-explosion-2.png</image:loc>
-      <image:title>Geiss - Explosion 2 | Stims</image:title>
-      <image:caption>Geiss - Explosion 2 by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-explosion-3-relief-mix</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -5289,28 +4563,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-explosion-3-relief-mix.png</image:loc>
       <image:title>Geiss - Explosion 3 (Relief Mix) | Stims</image:title>
       <image:caption>Geiss - Explosion 3 (Relief Mix) by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-explosion-3</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-explosion-3.png</image:loc>
-      <image:title>Geiss - Explosion 3 | Stims</image:title>
-      <image:caption>Geiss - Explosion 3 by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-explosion</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-explosion.png</image:loc>
-      <image:title>Geiss - Explosion | Stims</image:title>
-      <image:caption>Geiss - Explosion by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -5413,17 +4665,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-game-of-life-2</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-game-of-life-2.png</image:loc>
-      <image:title>Geiss - Game of Life 2 | Stims</image:title>
-      <image:caption>Geiss - Game of Life 2 by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-game-of-life-3</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -5443,17 +4684,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-game-of-life.png</image:loc>
       <image:title>Geiss - Game of Life | Stims</image:title>
       <image:caption>Geiss - Game of Life by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-hurricane</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-hurricane.png</image:loc>
-      <image:title>Geiss - Hurricane | Stims</image:title>
-      <image:caption>Geiss - Hurricane by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -5487,17 +4717,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-iris-storm.png</image:loc>
       <image:title>Geiss - Iris Storm | Stims</image:title>
       <image:caption>Geiss - Iris Storm by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-iris</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-iris.png</image:loc>
-      <image:title>Geiss - Iris | Stims</image:title>
-      <image:caption>Geiss - Iris by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -5567,17 +4786,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-liquid-beats-2-reverse-jelly-v3</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-liquid-beats-2-reverse-jelly-v3.png</image:loc>
-      <image:title>Geiss - Liquid Beats 2 (Reverse Jelly V3) | Stims</image:title>
-      <image:caption>Geiss - Liquid Beats 2 (Reverse Jelly V3) by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-liquid-beats-2</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -5597,17 +4805,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-liquid-beats.png</image:loc>
       <image:title>Geiss - Liquid Beats | Stims</image:title>
       <image:caption>Geiss - Liquid Beats by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-luz</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-luz.png</image:loc>
-      <image:title>Geiss - Luz | Stims</image:title>
-      <image:caption>Geiss - Luz by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -5644,17 +4841,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-mega-swirl-2</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-mega-swirl-2.png</image:loc>
-      <image:title>Geiss - Mega Swirl 2 | Stims</image:title>
-      <image:caption>Geiss - Mega Swirl 2 by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-mega-swirl-3-color-tweak</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -5663,17 +4849,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-mega-swirl-3-color-tweak.png</image:loc>
       <image:title>Geiss - Mega Swirl 3 (color tweak) | Stims</image:title>
       <image:caption>Geiss - Mega Swirl 3 (color tweak) by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-mega-swirl-3</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-mega-swirl-3.png</image:loc>
-      <image:title>Geiss - Mega Swirl 3 | Stims</image:title>
-      <image:caption>Geiss - Mega Swirl 3 by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -5897,17 +5072,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-octopus</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-octopus.png</image:loc>
-      <image:title>Geiss - Octopus | Stims</image:title>
-      <image:caption>Geiss - Octopus by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-pistons</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -6062,39 +5226,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-reaction-diffusion-4-petri-mix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-reaction-diffusion-4-petri-mix.png</image:loc>
-      <image:title>Geiss - Reaction Diffusion 4 - Petri Mix | Stims</image:title>
-      <image:caption>Geiss - Reaction Diffusion 4 - Petri Mix by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-reducto-absurdum</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-reducto-absurdum.png</image:loc>
-      <image:title>Geiss - Reducto Absurdum | Stims</image:title>
-      <image:caption>Geiss - Reducto Absurdum by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-reducto-ad-nauseum</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-reducto-ad-nauseum.png</image:loc>
-      <image:title>Geiss - Reducto Ad Nauseum | Stims</image:title>
-      <image:caption>Geiss - Reducto Ad Nauseum by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-ribbons</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -6139,17 +5270,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-rose-4-composite-remix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-rose-4-composite-remix.png</image:loc>
-      <image:title>Geiss - Rose 4 (composite remix) | Stims</image:title>
-      <image:caption>Geiss - Rose 4 (composite remix) by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-rose-4-shifted-tiles</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -6169,17 +5289,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-rose-4.png</image:loc>
       <image:title>Geiss - Rose 4 | Stims</image:title>
       <image:caption>Geiss - Rose 4 by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-rose-5-crossfire-beats-composite-remix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-rose-5-crossfire-beats-composite-remix.png</image:loc>
-      <image:title>Geiss - Rose 5 Crossfire Beats (composite remix) | Stims</image:title>
-      <image:caption>Geiss - Rose 5 Crossfire Beats (composite remix) by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -6480,17 +5589,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-tadpole-hunter</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-tadpole-hunter.png</image:loc>
-      <image:title>Geiss - Tadpole Hunter | Stims</image:title>
-      <image:caption>Geiss - Tadpole Hunter by Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-thumb-drum</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -6656,28 +5754,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=geiss-and-zylot-reaction-diffusion-3-overload-mix-2</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-and-zylot-reaction-diffusion-3-overload-mix-2.png</image:loc>
-      <image:title>Geiss and Zylot - Reaction Diffusion 3 (Overload Mix 2) | Stims</image:title>
-      <image:caption>Geiss and Zylot - Reaction Diffusion 3 (Overload Mix 2) by Geiss and Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=geiss-flexi-stahlregen-thumbdrum-tokamak-crossfiring-aftermath-jelly-mashup</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-flexi-stahlregen-thumbdrum-tokamak-crossfiring-aftermath-jelly-mashup.png</image:loc>
-      <image:title>Geiss, Flexi + Stahlregen - Thumbdrum Tokamak [crossfiring aftermath jelly mashup] | Stims</image:title>
-      <image:caption>Geiss, Flexi + Stahlregen - Thumbdrum Tokamak [crossfiring aftermath jelly mashup] by Geiss, Flexi + Stahlregen, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=geiss-nitorami-macktuesday-twitchy-paint-fact-fuct-nz</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -6700,39 +5776,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=goody-martin-crystal-palace-aqua-lumens</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/goody-martin-crystal-palace-aqua-lumens.png</image:loc>
-      <image:title>Goody + martin - crystal palace - Aqua Lumens | Stims</image:title>
-      <image:caption>Goody + martin - crystal palace - Aqua Lumens by Goody + martin, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=goody-martin-crystal-palace-ocular-anima</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/goody-martin-crystal-palace-ocular-anima.png</image:loc>
-      <image:title>Goody + martin - crystal palace - Ocular Anima | Stims</image:title>
-      <image:caption>Goody + martin - crystal palace - Ocular Anima by Goody + martin, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-darkening-mathematics</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-darkening-mathematics.png</image:loc>
-      <image:title>Goody + martin - crystal palace - Schizotoxin - The Wild Iris Bloom - Darkening mathematics | Stims</image:title>
-      <image:caption>Goody + martin - crystal palace - Schizotoxin - The Wild Iris Bloom - Darkening mathematics by Goody + martin, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-mess2-nz-i-have-no-character-and-feel-entitled-to-one</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -6741,39 +5784,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-mess2-nz-i-have-no-character-and-feel-entitled-to-one.png</image:loc>
       <image:title>Goody + martin - crystal palace - Schizotoxin - The Wild Iris Bloom - mess2 nz+ i have no character and feel entitled to one | Stims</image:title>
       <image:caption>Goody + martin - crystal palace - Schizotoxin - The Wild Iris Bloom - mess2 nz+ i have no character and feel entitled to one by Goody + martin, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom.png</image:loc>
-      <image:title>Goody + martin - crystal palace - Schizotoxin - The Wild Iris Bloom | Stims</image:title>
-      <image:caption>Goody + martin - crystal palace - Schizotoxin - The Wild Iris Bloom by Goody + martin, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=goody-acid-angel-fallen-angel</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/goody-acid-angel-fallen-angel.png</image:loc>
-      <image:title>Goody - Acid Angel - Fallen Angel | Stims</image:title>
-      <image:caption>Goody - Acid Angel - Fallen Angel by Goody, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=goody-acid-angel-revisitation</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/goody-acid-angel-revisitation.png</image:loc>
-      <image:title>Goody - Acid Angel - REvisitation | Stims</image:title>
-      <image:caption>Goody - Acid Angel - REvisitation by Goody, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -6810,17 +5820,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=goody-lsd-zoomtunnel</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/goody-lsd-zoomtunnel.png</image:loc>
-      <image:title>Goody - LSD Zoomtunnel | Stims</image:title>
-      <image:caption>Goody - LSD Zoomtunnel by Goody, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=goody-lights-in-the-sky</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -6832,17 +5831,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=goody-need-desire-remix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/goody-need-desire-remix.png</image:loc>
-      <image:title>Goody - Need - Desire remix | Stims</image:title>
-      <image:caption>Goody - Need - Desire remix by Goody, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=goody-need-gloam</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -6851,17 +5839,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/goody-need-gloam.png</image:loc>
       <image:title>Goody - Need - Gloam | Stims</image:title>
       <image:caption>Goody - Need - Gloam by Goody, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=goody-need-transcendance-remix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/goody-need-transcendance-remix.png</image:loc>
-      <image:title>Goody - Need - Transcendance remix | Stims</image:title>
-      <image:caption>Goody - Need - Transcendance remix by Goody, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -6942,17 +5919,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=greatwho-lasershow</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/greatwho-lasershow.png</image:loc>
-      <image:title>GreatWho - Lasershow | Stims</image:title>
-      <image:caption>GreatWho - Lasershow by GreatWho, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=hexcollie-beautiful</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -7005,17 +5971,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/hexcollie-meatball.png</image:loc>
       <image:title>Hexcollie - Meatball | Stims</image:title>
       <image:caption>Hexcollie - Meatball by Hexcollie, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=hexcollie-melodic-pulsing-leds-mash0000-dou-fu-qing-jin-qing-zuo-bitch</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/hexcollie-melodic-pulsing-leds-mash0000-dou-fu-qing-jin-qing-zuo-bitch.png</image:loc>
-      <image:title>Hexcollie - Melodic pulsing leds - mash0000 - dou fu, qing jin, qing zuo, bitch | Stims</image:title>
-      <image:caption>Hexcollie - Melodic pulsing leds - mash0000 - dou fu, qing jin, qing zuo, bitch by Hexcollie, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -7261,17 +6216,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=illusion-rovastar-dotty-mad-space-jelly</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/illusion-rovastar-dotty-mad-space-jelly.png</image:loc>
-      <image:title>Illusion &amp; Rovastar - Dotty Mad Space (Jelly) | Stims</image:title>
-      <image:caption>Illusion &amp; Rovastar - Dotty Mad Space (Jelly) by Illusion &amp; Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=illusion-unchained-new-strategy</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -7327,17 +6271,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=inside-a-black-whole-adamfx-2-martin-another-kind-of-groove-ati-fix-ft-raron-flexi-and-rovastar-adamfx-remix-uh-huh-6-ngorng</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/inside-a-black-whole-adamfx-2-martin-another-kind-of-groove-ati-fix-ft-raron-flexi-and-rovastar-adamfx-remix-uh-huh-6-ngorng.png</image:loc>
-      <image:title>Inside A Black Whole AdamFX 2 martin - another kind of groove (Ati Fix)Ft Raron Flexi and Rovastar (AdamFX Remix)Uh huh 6 ngorng | Stims</image:title>
-      <image:caption>Inside A Black Whole AdamFX 2 martin - another kind of groove (Ati Fix)Ft Raron Flexi and Rovastar (AdamFX Remix)Uh huh 6 ngorng by Inside A Black Whole AdamFX 2 martin, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=ishan-anuera</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -7357,17 +6290,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/jc-circular-logic-3.png</image:loc>
       <image:title>Jc - Circular Logic 3 | Stims</image:title>
       <image:caption>Jc - Circular Logic 3 by Jc, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=jc-neon-star-formation</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/jc-neon-star-formation.png</image:loc>
-      <image:title>Jc - Neon Star Formation | Stims</image:title>
-      <image:caption>Jc - Neon Star Formation by Jc, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -7437,17 +6359,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=krash-eo-s-photographic-sentinel</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/krash-eo-s-photographic-sentinel.png</image:loc>
-      <image:title>Krash + Eo.S. - Photographic Sentinel | Stims</image:title>
-      <image:caption>Krash + Eo.S. - Photographic Sentinel by Krash + Eo.S., a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=krash-geiss-martin-war-machine-stahl-s-ultimate-mash-mix</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -7467,17 +6378,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/krash-illusion-geiss-spiral-movement-reaction-diffusion-mix.png</image:loc>
       <image:title>Krash + Illusion + Geiss - Spiral Movement (Reaction Diffusion mix) | Stims</image:title>
       <image:caption>Krash + Illusion + Geiss - Spiral Movement (Reaction Diffusion mix) by Krash + Illusion + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=krash-illusion-spiral-movement</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/krash-illusion-spiral-movement.png</image:loc>
-      <image:title>Krash + Illusion - Spiral Movement | Stims</image:title>
-      <image:caption>Krash + Illusion - Spiral Movement by Krash + Illusion, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -7525,17 +6425,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=krash-digital-flame</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/krash-digital-flame.png</image:loc>
-      <image:title>Krash - Digital Flame | Stims</image:title>
-      <image:caption>Krash - Digital Flame by Krash, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=krash-snowflake-halo</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -7555,28 +6444,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/krash-swelling-spiral-2.png</image:loc>
       <image:title>Krash - Swelling Spiral 2 | Stims</image:title>
       <image:caption>Krash - Swelling Spiral 2 by Krash, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=krash-vinyl-disk</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/krash-vinyl-disk.png</image:loc>
-      <image:title>Krash - Vinyl Disk | Stims</image:title>
-      <image:caption>Krash - Vinyl Disk by Krash, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=krash-war-machine-shifting-complexity-mix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/krash-war-machine-shifting-complexity-mix.png</image:loc>
-      <image:title>Krash - War Machine (Shifting Complexity Mix) | Stims</image:title>
-      <image:caption>Krash - War Machine (Shifting Complexity Mix) by Krash, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -7712,17 +6579,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=luxxx-growing-alien-organs-i</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/luxxx-growing-alien-organs-i.png</image:loc>
-      <image:title>LuxXx - Growing Alien Organs i | Stims</image:title>
-      <image:caption>LuxXx - Growing Alien Organs i by LuxXx, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=luxxx-growing-alien-organs-ii</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -7833,28 +6689,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=luxxx-subtle-hiphopflake</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/luxxx-subtle-hiphopflake.png</image:loc>
-      <image:title>LuxXx - Subtle HipHopFlake | Stims</image:title>
-      <image:caption>LuxXx - Subtle HipHopFlake by LuxXx, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=luxxx-the-feeder-ii</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/luxxx-the-feeder-ii.png</image:loc>
-      <image:title>LuxXx - The Feeder II | Stims</image:title>
-      <image:caption>LuxXx - The Feeder II by LuxXx, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=luxxx-iwhat-happened-right-after-i-ate-that-toxic-waste-beta-ii</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -7918,28 +6752,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/martin-qbikal-surface-turbulence.png</image:loc>
       <image:title>Martin - QBikal - Surface Turbulence | Stims</image:title>
       <image:caption>Martin - QBikal - Surface Turbulence by Martin, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=martin-acid-wiring</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/martin-acid-wiring.png</image:loc>
-      <image:title>Martin - acid wiring | Stims</image:title>
-      <image:caption>Martin - acid wiring by Martin, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=martin-bombyx-mori-mix2</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/martin-bombyx-mori-mix2.png</image:loc>
-      <image:title>Martin - bombyx mori mix2 | Stims</image:title>
-      <image:caption>Martin - bombyx mori mix2 by Martin, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -8020,17 +6832,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=martin-underwater-cathedral</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/martin-underwater-cathedral.png</image:loc>
-      <image:title>Martin - underwater cathedral | Stims</image:title>
-      <image:caption>Martin - underwater cathedral by Martin, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=martin-wire-dance</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -8050,61 +6851,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/martin-n-adamfx-infusion-phat-yin-eo-s-mandala-chaser-ft-adamfx-n-martin-the-beast-mandala-chaser-fx-h.png</image:loc>
       <image:title>Martin N AdamFX Infusion = Phat+Yin+Eo.S_Mandala Chaser Ft AdamFX n Martin - The Beast Mandala Chaser FX H | Stims</image:title>
       <image:caption>Martin N AdamFX Infusion = Phat+Yin+Eo.S_Mandala Chaser Ft AdamFX n Martin - The Beast Mandala Chaser FX H by Martin + AdamFX, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=martin-anandamide-mandelbox-explorer-quantum-timepiece-remix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/martin-anandamide-mandelbox-explorer-quantum-timepiece-remix.png</image:loc>
-      <image:title>Martin+Anandamide - Mandelbox_Explorer Quantum_Timepiece_remix | Stims</image:title>
-      <image:caption>Martin+Anandamide - Mandelbox_Explorer Quantum_Timepiece_remix by Martin+Anandamide, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-2</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-2.png</image:loc>
-      <image:title>Martin, Fishbrain + Flexi - lasercutting binary trees [random mashup 2] | Stims</image:title>
-      <image:caption>Martin, Fishbrain + Flexi - lasercutting binary trees [random mashup 2] by Martin, Fishbrain + Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-3</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-3.png</image:loc>
-      <image:title>Martin, Fishbrain + Flexi - lasercutting binary trees [random mashup 3] | Stims</image:title>
-      <image:caption>Martin, Fishbrain + Flexi - lasercutting binary trees [random mashup 3] by Martin, Fishbrain + Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup.png</image:loc>
-      <image:title>Martin, Fishbrain + Flexi - lasercutting binary trees [random mashup] | Stims</image:title>
-      <image:caption>Martin, Fishbrain + Flexi - lasercutting binary trees [random mashup] by Martin, Fishbrain + Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=martin-fishbrain-flexi-lasercutting-binary-trees</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/martin-fishbrain-flexi-lasercutting-binary-trees.png</image:loc>
-      <image:title>Martin, Fishbrain + Flexi - lasercutting binary trees | Stims</image:title>
-      <image:caption>Martin, Fishbrain + Flexi - lasercutting binary trees by Martin, Fishbrain + Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -8218,17 +6964,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=orb-acid-cycle-gas-giant</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/orb-acid-cycle-gas-giant.png</image:loc>
-      <image:title>ORB - Acid Cycle Gas Giant | Stims</image:title>
-      <image:caption>ORB - Acid Cycle Gas Giant by ORB, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=orb-acid-cycle-flexi-composite</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -8284,17 +7019,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=orb-crysal-storm</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/orb-crysal-storm.png</image:loc>
-      <image:title>ORB - Crysal Storm  | Stims</image:title>
-      <image:caption>ORB - Crysal Storm  by ORB, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=orb-dark-omen</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -8325,28 +7049,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/orb-fire-and-fumes-2.png</image:loc>
       <image:title>ORB - Fire and Fumes 2 | Stims</image:title>
       <image:caption>ORB - Fire and Fumes 2 by ORB, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=orb-fireworks-sparkle</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/orb-fireworks-sparkle.png</image:loc>
-      <image:title>ORB - Fireworks Sparkle | Stims</image:title>
-      <image:caption>ORB - Fireworks Sparkle by ORB, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=orb-inferno</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/orb-inferno.png</image:loc>
-      <image:title>ORB - Inferno | Stims</image:title>
-      <image:caption>ORB - Inferno by ORB, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -8427,17 +7129,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=orb-planetary-alignment-acid-burn</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/orb-planetary-alignment-acid-burn.png</image:loc>
-      <image:title>ORB - Planetary Alignment Acid Burn | Stims</image:title>
-      <image:caption>ORB - Planetary Alignment Acid Burn by ORB, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=orb-quicksand-lab</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -8446,17 +7137,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/orb-quicksand-lab.png</image:loc>
       <image:title>ORB - Quicksand Lab | Stims</image:title>
       <image:caption>ORB - Quicksand Lab by ORB, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=orb-quicksand</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/orb-quicksand.png</image:loc>
-      <image:title>ORB - Quicksand | Stims</image:title>
-      <image:caption>ORB - Quicksand by ORB, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -8889,17 +7569,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=redi-jedi-studio-music-shimmering-love</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/redi-jedi-studio-music-shimmering-love.png</image:loc>
-      <image:title>Redi Jedi + Studio Music - Shimmering Love | Stims</image:title>
-      <image:caption>Redi Jedi + Studio Music - Shimmering Love by Redi Jedi + Studio Music, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=redi-jedi-shifter-phat-geiss-flexi-rovastar-120287116022-874-roam3</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -9021,17 +7690,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=rocke-cold-love-tei-zwaa</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/rocke-cold-love-tei-zwaa.png</image:loc>
-      <image:title>Rocke - Cold Love (Tei Zwaa) | Stims</image:title>
-      <image:caption>Rocke - Cold Love (Tei Zwaa) by Rocke, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=rocke-loz-tribute</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -9062,17 +7720,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-aderrasi-airs-of-change.png</image:loc>
       <image:title>Rovastar &amp; Aderrasi - Airs Of Change | Stims</image:title>
       <image:caption>Rovastar &amp; Aderrasi - Airs Of Change by Rovastar &amp; Aderrasi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=rovastar-che-definitly-not-for-the-epileptic-inner-perspective-of-life-mix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-che-definitly-not-for-the-epileptic-inner-perspective-of-life-mix.png</image:loc>
-      <image:title>Rovastar &amp; Che - Definitly Not For The Epileptic (Inner Perspective Of Life Mix) | Stims</image:title>
-      <image:caption>Rovastar &amp; Che - Definitly Not For The Epileptic (Inner Perspective Of Life Mix) by Rovastar &amp; Che, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -9109,28 +7756,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=rovastar-loadus-zylot-fractaldrop-spark-machine-v2-0</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-loadus-zylot-fractaldrop-spark-machine-v2-0.png</image:loc>
-      <image:title>Rovastar &amp; Loadus + Zylot - FractalDrop (Spark Machine v2.0) | Stims</image:title>
-      <image:caption>Rovastar &amp; Loadus + Zylot - FractalDrop (Spark Machine v2.0) by Rovastar &amp; Loadus + Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=rovastar-loadus-fractaldrop-active-sparks-mix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-loadus-fractaldrop-active-sparks-mix.png</image:loc>
-      <image:title>Rovastar &amp; Loadus - FractalDrop (Active Sparks Mix) | Stims</image:title>
-      <image:caption>Rovastar &amp; Loadus - FractalDrop (Active Sparks Mix) by Rovastar &amp; Loadus, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=rovastar-unchained-ambrosia-mystic-dark-heart-mix</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -9161,17 +7786,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-unchained-unified-drag-2-ghostly-vision-mix.png</image:loc>
       <image:title>Rovastar &amp; Unchained - Unified Drag 2 (Ghostly Vision Mix) | Stims</image:title>
       <image:caption>Rovastar &amp; Unchained - Unified Drag 2 (Ghostly Vision Mix) by Rovastar &amp; Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=rovastar-zylot-crystal-ball-many-visions-mix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-zylot-crystal-ball-many-visions-mix.png</image:loc>
-      <image:title>Rovastar &amp; Zylot - Crystal Ball (Many Visions Mix) | Stims</image:title>
-      <image:caption>Rovastar &amp; Zylot - Crystal Ball (Many Visions Mix) by Rovastar &amp; Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -9307,17 +7921,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=rovastar-geiss-hyperkaleidoscope-glow-2-motion-blur-jelly</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-geiss-hyperkaleidoscope-glow-2-motion-blur-jelly.png</image:loc>
-      <image:title>Rovastar + Geiss - Hyperkaleidoscope Glow 2 motion blur (Jelly) | Stims</image:title>
-      <image:caption>Rovastar + Geiss - Hyperkaleidoscope Glow 2 motion blur (Jelly) by Rovastar + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=rovastar-geiss-hyperkaleidoscope-glow-2-motion-blur</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -9414,17 +8017,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-loadus-geiss-fractaldrop-relief-mix.png</image:loc>
       <image:title>Rovastar + Loadus + Geiss - FractalDrop (Relief Mix) | Stims</image:title>
       <image:caption>Rovastar + Loadus + Geiss - FractalDrop (Relief Mix) by Rovastar + Loadus + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=rovastar-loadus-geiss-fractaldrop-spinning-mix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-loadus-geiss-fractaldrop-spinning-mix.png</image:loc>
-      <image:title>Rovastar + Loadus + Geiss - FractalDrop (Spinning Mix) | Stims</image:title>
-      <image:caption>Rovastar + Loadus + Geiss - FractalDrop (Spinning Mix) by Rovastar + Loadus + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -9656,17 +8248,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-altars-of-madness-4-spirit-of-twisted-madness-mix.png</image:loc>
       <image:title>Rovastar - Altars Of Madness 4 (Spirit Of Twisted Madness Mix) | Stims</image:title>
       <image:caption>Rovastar - Altars Of Madness 4 (Spirit Of Twisted Madness Mix) by Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=rovastar-braindance-1</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-braindance-1.png</image:loc>
-      <image:title>Rovastar - Braindance 1 | Stims</image:title>
-      <image:caption>Rovastar - Braindance 1 by Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -10066,17 +8647,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=rovastar-trippy-sperm-jelly</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-trippy-sperm-jelly.png</image:loc>
-      <image:title>Rovastar - Trippy Sperm (Jelly) | Stims</image:title>
-      <image:caption>Rovastar - Trippy Sperm (Jelly) by Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=rovastar-virtual-horizons-jelly-v3</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -10118,17 +8688,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-voov-s-movement-after-dark-mix.png</image:loc>
       <image:title>Rovastar - VooV′s Movement (After Dark Mix) | Stims</image:title>
       <image:caption>Rovastar - VooV′s Movement (After Dark Mix) by Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=rovastar-voov-s-naked-movement-pincushion-mix</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/rovastar-voov-s-naked-movement-pincushion-mix.png</image:loc>
-      <image:title>Rovastar - VooV′s Naked Movement (Pincushion Mix) | Stims</image:title>
-      <image:caption>Rovastar - VooV′s Naked Movement (Pincushion Mix) by Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -10374,17 +8933,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=shreyas-carnival</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/shreyas-carnival.png</image:loc>
-      <image:title>Shreyas - Carnival | Stims</image:title>
-      <image:caption>Shreyas - Carnival by Shreyas, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=stahlregen-adamfx-flexi-geiss-dragonfly-wings-mashup-26-jack-s-playful-thumbdrum-planet-rmx-mash0000-closer-to-god-through-bacon</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -10506,17 +9054,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=stahlregen-boz-eo-s-geiss-phat-rovastar-zylot-machine-code-jelly</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-boz-eo-s-geiss-phat-rovastar-zylot-machine-code-jelly.png</image:loc>
-      <image:title>Stahlregen &amp; Boz + Eo.S + Geiss + Phat + Rovastar + Zylot - Machine Code [Jelly] | Stims</image:title>
-      <image:caption>Stahlregen &amp; Boz + Eo.S + Geiss + Phat + Rovastar + Zylot - Machine Code [Jelly] by Stahlregen &amp; Boz + Eo.S + Geiss + Phat + Rovastar + Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=stahlregen-che-geiss-illusion-unchained-shifty-jelly-v2</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -10525,17 +9062,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-che-geiss-illusion-unchained-shifty-jelly-v2.png</image:loc>
       <image:title>Stahlregen &amp; Che + Geiss + Illusion + Unchained - Shifty (Jelly V2) | Stims</image:title>
       <image:caption>Stahlregen &amp; Che + Geiss + Illusion + Unchained - Shifty (Jelly V2) by Stahlregen &amp; Che + Geiss + Illusion + Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=stahlregen-eo-s-flexi-phat-rovastar-zylot-screenspace-fractopia-rmx</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-eo-s-flexi-phat-rovastar-zylot-screenspace-fractopia-rmx.png</image:loc>
-      <image:title>Stahlregen &amp; Eo.S + Flexi + Phat + Rovastar + Zylot - Screenspace (Fractopia RMX) | Stims</image:title>
-      <image:caption>Stahlregen &amp; Eo.S + Flexi + Phat + Rovastar + Zylot - Screenspace (Fractopia RMX) by Stahlregen &amp; Eo.S + Flexi + Phat + Rovastar + Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -10638,28 +9164,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion-2</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion-2.png</image:loc>
-      <image:title>Stahlregen &amp; Geiss + TobiasWolfBoi - Space Gelatin (Color Xplosion 2) | Stims</image:title>
-      <image:caption>Stahlregen &amp; Geiss + TobiasWolfBoi - Space Gelatin (Color Xplosion 2) by Stahlregen &amp; Geiss + TobiasWolfBoi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion.png</image:loc>
-      <image:title>Stahlregen &amp; Geiss + TobiasWolfBoi - Space Gelatin (Color Xplosion) | Stims</image:title>
-      <image:caption>Stahlregen &amp; Geiss + TobiasWolfBoi - Space Gelatin (Color Xplosion) by Stahlregen &amp; Geiss + TobiasWolfBoi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=stahlregen-geiss-zylot-wall-of-glass-death-by-color-pox-filaments-rmx</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -10679,17 +9183,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-geiss-mashup-16-seizure-inducing-confetti-kaleidoscope-rmx.png</image:loc>
       <image:title>Stahlregen &amp; Geiss - MashUp 16 (Seizure-Inducing Confetti Kaleidoscope RMX) | Stims</image:title>
       <image:caption>Stahlregen &amp; Geiss - MashUp 16 (Seizure-Inducing Confetti Kaleidoscope RMX) by Stahlregen &amp; Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=stahlregen-geiss-tiger-no-5-seizure-inducing-confetti-kaleidoscope-rmx-2</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-geiss-tiger-no-5-seizure-inducing-confetti-kaleidoscope-rmx-2.png</image:loc>
-      <image:title>Stahlregen &amp; Geiss - Tiger No.5 (Seizure-Inducing Confetti Kaleidoscope RMX)_2 | Stims</image:title>
-      <image:caption>Stahlregen &amp; Geiss - Tiger No.5 (Seizure-Inducing Confetti Kaleidoscope RMX)_2 by Stahlregen &amp; Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -10814,17 +9307,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://toil.fyi/?preset=stahlregen-flexi-geiss-martin-rovastar-tides-martin-s-metallics</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-flexi-geiss-martin-rovastar-tides-martin-s-metallics.png</image:loc>
-      <image:title>Stahlregen &amp; flexi + Geiss + martin + Rovastar - Tides (martin′s metallics) | Stims</image:title>
-      <image:caption>Stahlregen &amp; flexi + Geiss + martin + Rovastar - Tides (martin′s metallics) by Stahlregen &amp; flexi + Geiss + martin + Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
     <loc>https://toil.fyi/?preset=stahlregen-flexi-dots-layered</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -10844,17 +9326,6 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-flexi-gimme-color-bubble-spinner-mix.png</image:loc>
       <image:title>Stahlregen + Flexi - gimme color (Bubble Spinner Mix) | Stims</image:title>
       <image:caption>Stahlregen + Flexi - gimme color (Bubble Spinner Mix) by Stahlregen + Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://toil.fyi/?preset=stahlregen-flexi-psychotic-flower-gelatine-burst</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-    <image:image>
-      <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-flexi-psychotic-flower-gelatine-burst.png</image:loc>
-      <image:title>Stahlregen + Flexi - psychotic flower gelatine burst | Stims</image:title>
-      <image:caption>Stahlregen + Flexi - psychotic flower gelatine burst by Stahlregen + Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -10998,6 +9469,1535 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/studio-music-and-unchained-rapid-alteration.png</image:loc>
       <image:title>Studio Music and Unchained - Rapid Alteration | Stims</image:title>
       <image:caption>Studio Music and Unchained - Rapid Alteration by Studio Music and Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=stuttler-lsd-bloom</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/stuttler-lsd-bloom.png</image:loc>
+      <image:title>Stuttler - LSD Bloom | Stims</image:title>
+      <image:caption>Stuttler - LSD Bloom by Stuttler, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=techno-sandstorm-psychodelic-highway</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/techno-sandstorm-psychodelic-highway.png</image:loc>
+      <image:title>TEcHNO &amp; SandStorm - Psychodelic Highway | Stims</image:title>
+      <image:caption>TEcHNO &amp; SandStorm - Psychodelic Highway by TEcHNO &amp; SandStorm, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=telek-city-helix-lattice</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/telek-city-helix-lattice.png</image:loc>
+      <image:title>Telek - City Helix Lattice | Stims</image:title>
+      <image:caption>Telek - City Helix Lattice by Telek, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=telek-sine-wave</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/telek-sine-wave.png</image:loc>
+      <image:title>Telek - Sine Wave | Stims</image:title>
+      <image:caption>Telek - Sine Wave by Telek, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=telek-slow-thing-spiderman-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/telek-slow-thing-spiderman-mix.png</image:loc>
+      <image:title>Telek - Slow Thing (Spiderman Mix) | Stims</image:title>
+      <image:caption>Telek - Slow Thing (Spiderman Mix) by Telek, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=tobiaswolfboi-the-pit</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/tobiaswolfboi-the-pit.png</image:loc>
+      <image:title>TobiasWolfBoi - The Pit | Stims</image:title>
+      <image:caption>TobiasWolfBoi - The Pit by TobiasWolfBoi, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=tokyo-corridor-shifter-tumbling-cubes-remix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/tokyo-corridor-shifter-tumbling-cubes-remix.png</image:loc>
+      <image:title>Tokyo corridor (shifter tumbling cubes remix) | Stims</image:title>
+      <image:caption>Tokyo corridor (shifter tumbling cubes remix), a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=tonymilkdrop-leonardo-da-vinci-s-balloon-flexi-merry-go-round-techstyle</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/tonymilkdrop-leonardo-da-vinci-s-balloon-flexi-merry-go-round-techstyle.png</image:loc>
+      <image:title>TonyMilkdrop - Leonardo Da Vinci&apos;s Balloon [Flexi - merry-go-round + techstyle] | Stims</image:title>
+      <image:caption>TonyMilkdrop - Leonardo Da Vinci&apos;s Balloon [Flexi - merry-go-round + techstyle] by TonyMilkdrop, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=tonymilkdrop-magellan-s-nebula-flexi-fancy-this-shall-not-retain</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/tonymilkdrop-magellan-s-nebula-flexi-fancy-this-shall-not-retain.png</image:loc>
+      <image:title>TonyMilkdrop - Magellan&apos;s Nebula [Flexi - fancy + $this shall not retain] | Stims</image:title>
+      <image:caption>TonyMilkdrop - Magellan&apos;s Nebula [Flexi - fancy + $this shall not retain] by TonyMilkdrop, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=tonymilkdrop-magellan-s-nebula-flexi-grind-this-shall-not-retain</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/tonymilkdrop-magellan-s-nebula-flexi-grind-this-shall-not-retain.png</image:loc>
+      <image:title>TonyMilkdrop - Magellan&apos;s Nebula [Flexi - grind + $this shall not retain] | Stims</image:title>
+      <image:caption>TonyMilkdrop - Magellan&apos;s Nebula [Flexi - grind + $this shall not retain] by TonyMilkdrop, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=tonymilkdrop-magellan-s-nebula-flexi-you-enter-first-multiverse</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/tonymilkdrop-magellan-s-nebula-flexi-you-enter-first-multiverse.png</image:loc>
+      <image:title>TonyMilkdrop - Magellan&apos;s Nebula [Flexi - you enter first + multiverse] | Stims</image:title>
+      <image:caption>TonyMilkdrop - Magellan&apos;s Nebula [Flexi - you enter first + multiverse] by TonyMilkdrop, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=tripgnosis-antimatter-streams</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/tripgnosis-antimatter-streams.png</image:loc>
+      <image:title>Tripgnosis - Antimatter Streams | Stims</image:title>
+      <image:caption>Tripgnosis - Antimatter Streams by Tripgnosis, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=tripgnosis-spunn</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/tripgnosis-spunn.png</image:loc>
+      <image:title>Tripgnosis - spunn | Stims</image:title>
+      <image:caption>Tripgnosis - spunn by Tripgnosis, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=tschoey-music-flower</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/tschoey-music-flower.png</image:loc>
+      <image:title>Tschoey - Music Flower | Stims</image:title>
+      <image:caption>Tschoey - Music Flower by Tschoey, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-rovastar-luckless</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-rovastar-luckless.png</image:loc>
+      <image:title>Unchained &amp; Rovastar - Luckless | Stims</image:title>
+      <image:caption>Unchained &amp; Rovastar - Luckless by Unchained &amp; Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-rovastar-rainbow-obscura</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-rovastar-rainbow-obscura.png</image:loc>
+      <image:title>Unchained &amp; Rovastar - Rainbow Obscura | Stims</image:title>
+      <image:caption>Unchained &amp; Rovastar - Rainbow Obscura by Unchained &amp; Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-rovastar-waves-of-waves</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-rovastar-waves-of-waves.png</image:loc>
+      <image:title>Unchained &amp; Rovastar - Waves Of Waves | Stims</image:title>
+      <image:caption>Unchained &amp; Rovastar - Waves Of Waves by Unchained &amp; Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-rovastar-wormhole-pillars-hall-of-shadows-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-rovastar-wormhole-pillars-hall-of-shadows-mix.png</image:loc>
+      <image:title>Unchained &amp; Rovastar - Wormhole Pillars (Hall of Shadows mix) | Stims</image:title>
+      <image:caption>Unchained &amp; Rovastar - Wormhole Pillars (Hall of Shadows mix) by Unchained &amp; Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-rovastar-xen-traffic</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-rovastar-xen-traffic.png</image:loc>
+      <image:title>Unchained &amp; Rovastar - Xen Traffic | Stims</image:title>
+      <image:caption>Unchained &amp; Rovastar - Xen Traffic by Unchained &amp; Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-geiss-furious-spirals-blur-and-glow-remix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-geiss-furious-spirals-blur-and-glow-remix.png</image:loc>
+      <image:title>Unchained + Geiss - Furious Spirals (Blur and Glow Remix) | Stims</image:title>
+      <image:caption>Unchained + Geiss - Furious Spirals (Blur and Glow Remix) by Unchained + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-geiss-furious-spirals-canvas-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-geiss-furious-spirals-canvas-mix.png</image:loc>
+      <image:title>Unchained + Geiss - Furious Spirals (Canvas Mix) | Stims</image:title>
+      <image:caption>Unchained + Geiss - Furious Spirals (Canvas Mix) by Unchained + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-all-you-can-eat</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-all-you-can-eat.png</image:loc>
+      <image:title>Unchained - All You Can Eat | Stims</image:title>
+      <image:caption>Unchained - All You Can Eat by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-beat-demo-demonology-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-beat-demo-demonology-mix.png</image:loc>
+      <image:title>Unchained - Beat Demo (Demonology Mix) | Stims</image:title>
+      <image:caption>Unchained - Beat Demo (Demonology Mix) by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-beat-demo-1-0</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-beat-demo-1-0.png</image:loc>
+      <image:title>Unchained - Beat Demo 1.0 | Stims</image:title>
+      <image:caption>Unchained - Beat Demo 1.0 by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-beat-demo-2-1</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-beat-demo-2-1.png</image:loc>
+      <image:title>Unchained - Beat Demo 2.1 | Stims</image:title>
+      <image:caption>Unchained - Beat Demo 2.1 by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-beat-demo-2-4</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-beat-demo-2-4.png</image:loc>
+      <image:title>Unchained - Beat Demo 2.4 | Stims</image:title>
+      <image:caption>Unchained - Beat Demo 2.4 by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-beat-demo-2-5</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-beat-demo-2-5.png</image:loc>
+      <image:title>Unchained - Beat Demo 2.5 | Stims</image:title>
+      <image:caption>Unchained - Beat Demo 2.5 by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-beyond-the-strife-nexus</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-beyond-the-strife-nexus.png</image:loc>
+      <image:title>Unchained - Beyond The Strife Nexus | Stims</image:title>
+      <image:caption>Unchained - Beyond The Strife Nexus by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-cartoon-factory</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-cartoon-factory.png</image:loc>
+      <image:title>Unchained - Cartoon Factory | Stims</image:title>
+      <image:caption>Unchained - Cartoon Factory by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-cranked-on-failure</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-cranked-on-failure.png</image:loc>
+      <image:title>Unchained - Cranked On Failure | Stims</image:title>
+      <image:caption>Unchained - Cranked On Failure by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-custom-gramatix-remix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-custom-gramatix-remix.png</image:loc>
+      <image:title>Unchained - Custom Gramatix (Remix) | Stims</image:title>
+      <image:caption>Unchained - Custom Gramatix (Remix) by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-demonology</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-demonology.png</image:loc>
+      <image:title>Unchained - Demonology | Stims</image:title>
+      <image:caption>Unchained - Demonology by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-free-to-feel-valium-remix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-free-to-feel-valium-remix.png</image:loc>
+      <image:title>Unchained - Free to Feel (Valium Remix) | Stims</image:title>
+      <image:caption>Unchained - Free to Feel (Valium Remix) by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-furious-spirals-remix-radial-blur</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-furious-spirals-remix-radial-blur.png</image:loc>
+      <image:title>Unchained - Furious Spirals (Remix) Radial Blur | Stims</image:title>
+      <image:caption>Unchained - Furious Spirals (Remix) Radial Blur by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-furious-spirals-remix-steady</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-furious-spirals-remix-steady.png</image:loc>
+      <image:title>Unchained - Furious Spirals (Remix) Steady | Stims</image:title>
+      <image:caption>Unchained - Furious Spirals (Remix) Steady by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-fuzzy-sciences</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-fuzzy-sciences.png</image:loc>
+      <image:title>Unchained - Fuzzy Sciences | Stims</image:title>
+      <image:caption>Unchained - Fuzzy Sciences by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-ghostlight-whisper</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-ghostlight-whisper.png</image:loc>
+      <image:title>Unchained - Ghostlight Whisper | Stims</image:title>
+      <image:caption>Unchained - Ghostlight Whisper by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-goofy-beat-detection</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-goofy-beat-detection.png</image:loc>
+      <image:title>Unchained - Goofy Beat Detection | Stims</image:title>
+      <image:caption>Unchained - Goofy Beat Detection by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-hard-science</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-hard-science.png</image:loc>
+      <image:title>Unchained - Hard Science | Stims</image:title>
+      <image:caption>Unchained - Hard Science by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-housed-in-a-childish-mind</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-housed-in-a-childish-mind.png</image:loc>
+      <image:title>Unchained - Housed In A Childish Mind | Stims</image:title>
+      <image:caption>Unchained - Housed In A Childish Mind by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-in-memory-of-peg</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-in-memory-of-peg.png</image:loc>
+      <image:title>Unchained - In Memory Of Peg | Stims</image:title>
+      <image:caption>Unchained - In Memory Of Peg by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-jaded-emotion</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-jaded-emotion.png</image:loc>
+      <image:title>Unchained - Jaded Emotion | Stims</image:title>
+      <image:caption>Unchained - Jaded Emotion by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-making-a-science-of-it-2</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-making-a-science-of-it-2.png</image:loc>
+      <image:title>Unchained - Making a Science of It 2 | Stims</image:title>
+      <image:caption>Unchained - Making a Science of It 2 by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-making-a-science-of-it-3</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-making-a-science-of-it-3.png</image:loc>
+      <image:title>Unchained - Making a Science of It 3 | Stims</image:title>
+      <image:caption>Unchained - Making a Science of It 3 by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-making-a-science-of-it-4</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-making-a-science-of-it-4.png</image:loc>
+      <image:title>Unchained - Making a Science of It 4 | Stims</image:title>
+      <image:caption>Unchained - Making a Science of It 4 by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-making-a-science-of-it-7</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-making-a-science-of-it-7.png</image:loc>
+      <image:title>Unchained - Making a Science of It 7 | Stims</image:title>
+      <image:caption>Unchained - Making a Science of It 7 by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-making-a-science-of-it</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-making-a-science-of-it.png</image:loc>
+      <image:title>Unchained - Making a Science of It | Stims</image:title>
+      <image:caption>Unchained - Making a Science of It by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-morat-s-final-voyage</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-morat-s-final-voyage.png</image:loc>
+      <image:title>Unchained - Morat′s Final Voyage | Stims</image:title>
+      <image:caption>Unchained - Morat′s Final Voyage by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-not-as-fun-as-it-looks</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-not-as-fun-as-it-looks.png</image:loc>
+      <image:title>Unchained - Not As Fun As It Looks | Stims</image:title>
+      <image:caption>Unchained - Not As Fun As It Looks by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-painful-plasma-multi-wave-mirrored-rage-rozzor-triangle-tweak</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-painful-plasma-multi-wave-mirrored-rage-rozzor-triangle-tweak.png</image:loc>
+      <image:title>Unchained - Painful Plasma (Multi-Wave Mirrored Rage) -- Rozzor triangle tweak | Stims</image:title>
+      <image:caption>Unchained - Painful Plasma (Multi-Wave Mirrored Rage) -- Rozzor triangle tweak by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-perverted-dialect</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-perverted-dialect.png</image:loc>
+      <image:title>Unchained - Perverted Dialect | Stims</image:title>
+      <image:caption>Unchained - Perverted Dialect by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-picture-of-exile</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-picture-of-exile.png</image:loc>
+      <image:title>Unchained - Picture Of Exile | Stims</image:title>
+      <image:caption>Unchained - Picture Of Exile by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-picture-of-poison</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-picture-of-poison.png</image:loc>
+      <image:title>Unchained - Picture Of Poison | Stims</image:title>
+      <image:caption>Unchained - Picture Of Poison by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-quine</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-quine.png</image:loc>
+      <image:title>Unchained - Quine | Stims</image:title>
+      <image:caption>Unchained - Quine by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-reawoke</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-reawoke.png</image:loc>
+      <image:title>Unchained - ReAwoke | Stims</image:title>
+      <image:caption>Unchained - ReAwoke by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-rewop</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-rewop.png</image:loc>
+      <image:title>Unchained - Rewop | Stims</image:title>
+      <image:caption>Unchained - Rewop by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-ribald-ballad</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-ribald-ballad.png</image:loc>
+      <image:title>Unchained - Ribald Ballad | Stims</image:title>
+      <image:caption>Unchained - Ribald Ballad by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-scientific-dance</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-scientific-dance.png</image:loc>
+      <image:title>Unchained - Scientific Dance | Stims</image:title>
+      <image:caption>Unchained - Scientific Dance by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-scientific-shapes-2</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-scientific-shapes-2.png</image:loc>
+      <image:title>Unchained - Scientific Shapes 2 | Stims</image:title>
+      <image:caption>Unchained - Scientific Shapes 2 by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-spinal-mixdown-2</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-spinal-mixdown-2.png</image:loc>
+      <image:title>Unchained - Spinal Mixdown 2 | Stims</image:title>
+      <image:caption>Unchained - Spinal Mixdown 2 by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-subjective-experience-of-the-manifold</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-subjective-experience-of-the-manifold.png</image:loc>
+      <image:title>Unchained - Subjective Experience Of The Manifold | Stims</image:title>
+      <image:caption>Unchained - Subjective Experience Of The Manifold by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-those-who-doubted</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-those-who-doubted.png</image:loc>
+      <image:title>Unchained - Those Who Doubted | Stims</image:title>
+      <image:caption>Unchained - Those Who Doubted by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-unclaimed-wreckage-2-hemi-sync</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-unclaimed-wreckage-2-hemi-sync.png</image:loc>
+      <image:title>Unchained - Unclaimed Wreckage 2 (Hemi-Sync) | Stims</image:title>
+      <image:caption>Unchained - Unclaimed Wreckage 2 (Hemi-Sync) by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-unclaimed-wreckage-2-sub-spinal-daemon</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-unclaimed-wreckage-2-sub-spinal-daemon.png</image:loc>
+      <image:title>Unchained - Unclaimed Wreckage 2 (Sub-Spinal Daemon) | Stims</image:title>
+      <image:caption>Unchained - Unclaimed Wreckage 2 (Sub-Spinal Daemon) by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-unified-drag-2</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-unified-drag-2.png</image:loc>
+      <image:title>Unchained - Unified Drag 2 | Stims</image:title>
+      <image:caption>Unchained - Unified Drag 2 by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-unified-drag</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-unified-drag.png</image:loc>
+      <image:title>Unchained - Unified Drag | Stims</image:title>
+      <image:caption>Unchained - Unified Drag by Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-vs-rovastar-tripmaker-floral-overload-2</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-vs-rovastar-tripmaker-floral-overload-2.png</image:loc>
+      <image:title>Unchained vs Rovastar - Tripmaker (Floral Overload 2) | Stims</image:title>
+      <image:caption>Unchained vs Rovastar - Tripmaker (Floral Overload 2) by Unchained vs Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-vs-rovastar-vs-zylot-tripmaker-trip-machine-v3</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-vs-rovastar-vs-zylot-tripmaker-trip-machine-v3.png</image:loc>
+      <image:title>Unchained vs Rovastar vs Zylot - Tripmaker (Trip Machine v3) | Stims</image:title>
+      <image:caption>Unchained vs Rovastar vs Zylot - Tripmaker (Trip Machine v3) by Unchained vs Rovastar vs Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=unchained-vs-rovastar-vs-zylot-tripmaker-trip-machine</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/unchained-vs-rovastar-vs-zylot-tripmaker-trip-machine.png</image:loc>
+      <image:title>Unchained vs Rovastar vs Zylot - Tripmaker (Trip machine) | Stims</image:title>
+      <image:caption>Unchained vs Rovastar vs Zylot - Tripmaker (Trip machine) by Unchained vs Rovastar vs Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=various-fire-and-brimstone</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/various-fire-and-brimstone.png</image:loc>
+      <image:title>Various - Fire and Brimstone | Stims</image:title>
+      <image:caption>Various - Fire and Brimstone by Various, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=various-artists-goo</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/various-artists-goo.png</image:loc>
+      <image:title>Various artists - Goo | Stims</image:title>
+      <image:caption>Various artists - Goo by Various artists, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=vovan-geiss-bass-with-flover-feedback-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/vovan-geiss-bass-with-flover-feedback-mix.png</image:loc>
+      <image:title>Vovan + Geiss - Bass With Flover (Feedback Mix) | Stims</image:title>
+      <image:caption>Vovan + Geiss - Bass With Flover (Feedback Mix) by Vovan + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=wulfson-crumple-nth-power-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/wulfson-crumple-nth-power-mix.png</image:loc>
+      <image:title>Wulfson - Crumple (Nth Power Mix) | Stims</image:title>
+      <image:caption>Wulfson - Crumple (Nth Power Mix) by Wulfson, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-idiot-face-bdrv-et-al-rmx-ketama-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-idiot-face-bdrv-et-al-rmx-ketama-mix.png</image:loc>
+      <image:title>Zylot &amp; Idiot - Face BDRV et  AL  rmx ketama mix | Stims</image:title>
+      <image:caption>Zylot &amp; Idiot - Face BDRV et  AL  rmx ketama mix by Zylot &amp; Idiot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-idiot24-7-unknown-power-source</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-idiot24-7-unknown-power-source.png</image:loc>
+      <image:title>Zylot &amp; Idiot24-7 - Unknown Power Source | Stims</image:title>
+      <image:caption>Zylot &amp; Idiot24-7 - Unknown Power Source by Zylot &amp; Idiot24-7, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-krash-snowflake-halo-ice-cube-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-krash-snowflake-halo-ice-cube-mix.png</image:loc>
+      <image:title>Zylot &amp; Krash - Snowflake Halo (Ice Cube mix) | Stims</image:title>
+      <image:caption>Zylot &amp; Krash - Snowflake Halo (Ice Cube mix) by Zylot &amp; Krash, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-rovastar-a-million-miles-from-earth-fog-of-time-mix-vessel-remix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-rovastar-a-million-miles-from-earth-fog-of-time-mix-vessel-remix.png</image:loc>
+      <image:title>Zylot &amp; Rovastar - A Million Miles From Earth (Fog Of Time Mix (Vessel reMix) ) | Stims</image:title>
+      <image:caption>Zylot &amp; Rovastar - A Million Miles From Earth (Fog Of Time Mix (Vessel reMix) ) by Zylot &amp; Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-rovastar-sully-s-trip-the-worstest-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-rovastar-sully-s-trip-the-worstest-mix.png</image:loc>
+      <image:title>Zylot &amp; Rovastar - Sully′s Trip (The Worstest Mix) | Stims</image:title>
+      <image:caption>Zylot &amp; Rovastar - Sully′s Trip (The Worstest Mix) by Zylot &amp; Rovastar, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-geiss-enlightenment</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-geiss-enlightenment.png</image:loc>
+      <image:title>Zylot + Geiss - Enlightenment | Stims</image:title>
+      <image:caption>Zylot + Geiss - Enlightenment by Zylot + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-age-of-science-seeking-truth-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-age-of-science-seeking-truth-mix.png</image:loc>
+      <image:title>Zylot - Age of Science (seeking truth mix) | Stims</image:title>
+      <image:caption>Zylot - Age of Science (seeking truth mix) by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-building-block-of-color-bitcore-tweak</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-building-block-of-color-bitcore-tweak.png</image:loc>
+      <image:title>Zylot - Building Block of color - Bitcore Tweak | Stims</image:title>
+      <image:caption>Zylot - Building Block of color - Bitcore Tweak by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-crossing-over-geiss-tweak</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-crossing-over-geiss-tweak.png</image:loc>
+      <image:title>Zylot - Crossing Over (Geiss Tweak) | Stims</image:title>
+      <image:caption>Zylot - Crossing Over (Geiss Tweak) by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-crossing-over-paint-spatter-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-crossing-over-paint-spatter-mix.png</image:loc>
+      <image:title>Zylot - Crossing Over (Paint Spatter mix) | Stims</image:title>
+      <image:caption>Zylot - Crossing Over (Paint Spatter mix) by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-funnels</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-funnels.png</image:loc>
+      <image:title>Zylot - Funnels | Stims</image:title>
+      <image:caption>Zylot - Funnels by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-in-death-there-is-life-dancing-lights-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-in-death-there-is-life-dancing-lights-mix.png</image:loc>
+      <image:title>Zylot - In death there is life (Dancing Lights mix) | Stims</image:title>
+      <image:caption>Zylot - In death there is life (Dancing Lights mix) by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-in-death-there-is-life-geiss-layered-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-in-death-there-is-life-geiss-layered-mix.png</image:loc>
+      <image:title>Zylot - In death there is life (Geiss Layered Mix) | Stims</image:title>
+      <image:caption>Zylot - In death there is life (Geiss Layered Mix) by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-in-death-there-is-life-surface-reflection-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-in-death-there-is-life-surface-reflection-mix.png</image:loc>
+      <image:title>Zylot - In death there is life (surface reflection mix) | Stims</image:title>
+      <image:caption>Zylot - In death there is life (surface reflection mix) by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-magma-crawl</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-magma-crawl.png</image:loc>
+      <image:title>Zylot - Magma Crawl | Stims</image:title>
+      <image:caption>Zylot - Magma Crawl by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-rush</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-rush.png</image:loc>
+      <image:title>Zylot - Rush | Stims</image:title>
+      <image:caption>Zylot - Rush by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-spiral-hypnotic-phat-double-spiral-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-spiral-hypnotic-phat-double-spiral-mix.png</image:loc>
+      <image:title>Zylot - Spiral (Hypnotic)_Phat_Double_Spiral_Mix | Stims</image:title>
+      <image:caption>Zylot - Spiral (Hypnotic)_Phat_Double_Spiral_Mix by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=zylot-star-ornament</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/zylot-star-ornament.png</image:loc>
+      <image:title>Zylot - Star Ornament | Stims</image:title>
+      <image:caption>Zylot - Star Ornament by Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=ishan-drug-addict-jelly-v3</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/ishan-drug-addict-jelly-v3.png</image:loc>
+      <image:title>[Ishan] - Drug Addict (Jelly V3) | Stims</image:title>
+      <image:caption>[Ishan] - Drug Addict (Jelly V3) by [Ishan], a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=aderrasi-wanderer-in-curved-space-mash0000-faclempt-kibitzing-meshuggana-schmaltz-geiss-color-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/aderrasi-wanderer-in-curved-space-mash0000-faclempt-kibitzing-meshuggana-schmaltz-geiss-color-mix.png</image:loc>
+      <image:title>_Aderrasi - Wanderer in Curved Space - mash0000 - faclempt kibitzing meshuggana schmaltz (Geiss color mix) | Stims</image:title>
+      <image:caption>_Aderrasi - Wanderer in Curved Space - mash0000 - faclempt kibitzing meshuggana schmaltz (Geiss color mix) by _Aderrasi, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=aderrasi-wanderer-in-curved-space-mash0000-faclempt-kibitzing-meshuggana-schmaltz-geiss-greyscale-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/aderrasi-wanderer-in-curved-space-mash0000-faclempt-kibitzing-meshuggana-schmaltz-geiss-greyscale-mix.png</image:loc>
+      <image:title>_Aderrasi - Wanderer in Curved Space - mash0000 - faclempt kibitzing meshuggana schmaltz (Geiss greyscale mix) | Stims</image:title>
+      <image:caption>_Aderrasi - Wanderer in Curved Space - mash0000 - faclempt kibitzing meshuggana schmaltz (Geiss greyscale mix) by _Aderrasi, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=che-geiss-escape-psychedelic-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/che-geiss-escape-psychedelic-mix.png</image:loc>
+      <image:title>_Che + Geiss - Escape (Psychedelic Mix) | Stims</image:title>
+      <image:caption>_Che + Geiss - Escape (Psychedelic Mix) by _Che + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=cope-passage-geiss-emboss-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/cope-passage-geiss-emboss-mix.png</image:loc>
+      <image:title>_Cope - Passage (geiss emboss mix) | Stims</image:title>
+      <image:caption>_Cope - Passage (geiss emboss mix) by _Cope, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=eo-s-phat-spectrum-bubble-field-geiss-softened</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-phat-spectrum-bubble-field-geiss-softened.png</image:loc>
+      <image:title>_Eo.S. + Phat - spectrum bubble field - Geiss-softened | Stims</image:title>
+      <image:caption>_Eo.S. + Phat - spectrum bubble field - Geiss-softened by _Eo.S. + Phat, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=eo-s-glowsticks-v2-02-geiss-hpf</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/eo-s-glowsticks-v2-02-geiss-hpf.png</image:loc>
+      <image:title>_Eo.S. - glowsticks v2 02 - Geiss HPF | Stims</image:title>
+      <image:caption>_Eo.S. - glowsticks v2 02 - Geiss HPF by _Eo.S., a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=flexi-geiss-mindblob-where-it-s-at-now-broth-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-geiss-mindblob-where-it-s-at-now-broth-mix.png</image:loc>
+      <image:title>_Flexi + Geiss - mindblob [where it′s at now] (broth mix) | Stims</image:title>
+      <image:caption>_Flexi + Geiss - mindblob [where it′s at now] (broth mix) by _Flexi + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=flexi-geiss-mindblob-where-it-s-at-now-emboss-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-geiss-mindblob-where-it-s-at-now-emboss-mix.png</image:loc>
+      <image:title>_Flexi + Geiss - mindblob [where it′s at now] (emboss mix) | Stims</image:title>
+      <image:caption>_Flexi + Geiss - mindblob [where it′s at now] (emboss mix) by _Flexi + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=flexi-mindblob-where-it-s-at-now-2</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-mindblob-where-it-s-at-now-2.png</image:loc>
+      <image:title>_Flexi - mindblob [where it′s at now] 2 | Stims</image:title>
+      <image:caption>_Flexi - mindblob [where it′s at now] 2 by _Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=flexi-mindblob-where-it-s-at-now-3</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-mindblob-where-it-s-at-now-3.png</image:loc>
+      <image:title>_Flexi - mindblob [where it′s at now] 3 | Stims</image:title>
+      <image:caption>_Flexi - mindblob [where it′s at now] 3 by _Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=flexi-mindblob-where-it-s-at-now</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-mindblob-where-it-s-at-now.png</image:loc>
+      <image:title>_Flexi - mindblob [where it′s at now] | Stims</image:title>
+      <image:caption>_Flexi - mindblob [where it′s at now] by _Flexi, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=flexi-martin-geiss-painterly-rogue-wave-strike-color-emboss-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-martin-geiss-painterly-rogue-wave-strike-color-emboss-mix.png</image:loc>
+      <image:title>_Flexi, martin + geiss - painterly rogue wave strike (color emboss mix) | Stims</image:title>
+      <image:caption>_Flexi, martin + geiss - painterly rogue wave strike (color emboss mix) by _Flexi, martin + geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-01</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-01.png</image:loc>
+      <image:title>_Geiss - Artifact 01 | Stims</image:title>
+      <image:caption>_Geiss - Artifact 01 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-02</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-02.png</image:loc>
+      <image:title>_Geiss - Artifact 02 | Stims</image:title>
+      <image:caption>_Geiss - Artifact 02 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-03</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-03.png</image:loc>
+      <image:title>_Geiss - Artifact 03 | Stims</image:title>
+      <image:caption>_Geiss - Artifact 03 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-04</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-04.png</image:loc>
+      <image:title>_Geiss - Artifact 04 | Stims</image:title>
+      <image:caption>_Geiss - Artifact 04 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-05</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-05.png</image:loc>
+      <image:title>_Geiss - Artifact 05 | Stims</image:title>
+      <image:caption>_Geiss - Artifact 05 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-06</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-06.png</image:loc>
+      <image:title>_Geiss - Artifact 06 | Stims</image:title>
+      <image:caption>_Geiss - Artifact 06 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-07</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-07.png</image:loc>
+      <image:title>_Geiss - Artifact 07 | Stims</image:title>
+      <image:caption>_Geiss - Artifact 07 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-10</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-10.png</image:loc>
+      <image:title>_Geiss - Artifact 10 | Stims</image:title>
+      <image:caption>_Geiss - Artifact 10 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-11</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-11.png</image:loc>
+      <image:title>_Geiss - Artifact 11 | Stims</image:title>
+      <image:caption>_Geiss - Artifact 11 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-13-big-waves</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-13-big-waves.png</image:loc>
+      <image:title>_Geiss - Artifact 13 (big waves) | Stims</image:title>
+      <image:caption>_Geiss - Artifact 13 (big waves) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-14-emboss</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-14-emboss.png</image:loc>
+      <image:title>_Geiss - Artifact 14 (emboss) | Stims</image:title>
+      <image:caption>_Geiss - Artifact 14 (emboss) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-artifact-15-emboss</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-artifact-15-emboss.png</image:loc>
+      <image:title>_Geiss - Artifact 15 (emboss) | Stims</image:title>
+      <image:caption>_Geiss - Artifact 15 (emboss) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-brain-zoom-3-color-emboss-mix-2</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-brain-zoom-3-color-emboss-mix-2.png</image:loc>
+      <image:title>_Geiss - Brain Zoom 3 (Color Emboss Mix 2) | Stims</image:title>
+      <image:caption>_Geiss - Brain Zoom 3 (Color Emboss Mix 2) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-brain-zoom-3-color-emboss-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-brain-zoom-3-color-emboss-mix.png</image:loc>
+      <image:title>_Geiss - Brain Zoom 3 (Color Emboss Mix) | Stims</image:title>
+      <image:caption>_Geiss - Brain Zoom 3 (Color Emboss Mix) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-cosmic-dust-2-trails-5z</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-cosmic-dust-2-trails-5z.png</image:loc>
+      <image:title>_Geiss - Cosmic Dust 2 - Trails 5z | Stims</image:title>
+      <image:caption>_Geiss - Cosmic Dust 2 - Trails 5z by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-digitalis</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-digitalis.png</image:loc>
+      <image:title>_Geiss - Digitalis | Stims</image:title>
+      <image:caption>_Geiss - Digitalis by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-microcheckers-3-hpf</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-microcheckers-3-hpf.png</image:loc>
+      <image:title>_Geiss - MicroCheckers 3 HPF | Stims</image:title>
+      <image:caption>_Geiss - MicroCheckers 3 HPF by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-motion-blur-2-relief-mix-c</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-motion-blur-2-relief-mix-c.png</image:loc>
+      <image:title>_Geiss - Motion Blur 2 (Relief Mix) c | Stims</image:title>
+      <image:caption>_Geiss - Motion Blur 2 (Relief Mix) c by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-motion-blur-2-color-emboss</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-motion-blur-2-color-emboss.png</image:loc>
+      <image:title>_Geiss - Motion Blur 2 (color emboss) | Stims</image:title>
+      <image:caption>_Geiss - Motion Blur 2 (color emboss) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-myriad-mosaics-test</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-myriad-mosaics-test.png</image:loc>
+      <image:title>_Geiss - Myriad Mosaics --TEST-- | Stims</image:title>
+      <image:caption>_Geiss - Myriad Mosaics --TEST-- by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-reaction-diffusion-3-lichen-relief-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-reaction-diffusion-3-lichen-relief-mix.png</image:loc>
+      <image:title>_Geiss - Reaction Diffusion 3 (Lichen Relief Mix) | Stims</image:title>
+      <image:caption>_Geiss - Reaction Diffusion 3 (Lichen Relief Mix) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-reducto-absurdum-alt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-reducto-absurdum-alt.png</image:loc>
+      <image:title>_Geiss - Reducto Absurdum | Stims</image:title>
+      <image:caption>_Geiss - Reducto Absurdum by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-skin-dots-multi-layer-3-emboss</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-skin-dots-multi-layer-3-emboss.png</image:loc>
+      <image:title>_Geiss - Skin Dots Multi-layer 3 (emboss) | Stims</image:title>
+      <image:caption>_Geiss - Skin Dots Multi-layer 3 (emboss) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-smoke-trail-2</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-smoke-trail-2.png</image:loc>
+      <image:title>_Geiss - Smoke Trail 2 | Stims</image:title>
+      <image:caption>_Geiss - Smoke Trail 2 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-spiral-artifact-filament-mix-beat-dots-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-spiral-artifact-filament-mix-beat-dots-mix.png</image:loc>
+      <image:title>_Geiss - Spiral Artifact (Filament Mix) - beat dots mix | Stims</image:title>
+      <image:caption>_Geiss - Spiral Artifact (Filament Mix) - beat dots mix by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-spiral-artifact-filament-mix-rad8-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-spiral-artifact-filament-mix-rad8-mix.png</image:loc>
+      <image:title>_Geiss - Spiral Artifact (Filament Mix) - rad8 mix | Stims</image:title>
+      <image:caption>_Geiss - Spiral Artifact (Filament Mix) - rad8 mix by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-beetle-bore-color-invert-mirror-animated</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-beetle-bore-color-invert-mirror-animated.png</image:loc>
+      <image:title>_Geiss - beetle bore - color invert mirror Animated | Stims</image:title>
+      <image:caption>_Geiss - beetle bore - color invert mirror Animated by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-untitled</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-untitled.png</image:loc>
+      <image:title>_Geiss - untitled | Stims</image:title>
+      <image:caption>_Geiss - untitled by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=krash-eo-s-photographic-sentinel-alt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/krash-eo-s-photographic-sentinel-alt.png</image:loc>
+      <image:title>_Krash + Eo.S. - Photographic Sentinel | Stims</image:title>
+      <image:caption>_Krash + Eo.S. - Photographic Sentinel by _Krash + Eo.S., a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=martin-wire-dance-geiss-warp-shader-mix</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/martin-wire-dance-geiss-warp-shader-mix.png</image:loc>
+      <image:title>_Martin - wire dance (geiss warp shader mix) | Stims</image:title>
+      <image:caption>_Martin - wire dance (geiss warp shader mix) by _Martin, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=mig-004-version2</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/mig-004-version2.png</image:loc>
+      <image:title>_Mig_004_version2 | Stims</image:title>
+      <image:caption>_Mig_004_version2 by Mig, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=mig-008</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/mig-008.png</image:loc>
+      <image:title>_Mig_008 | Stims</image:title>
+      <image:caption>_Mig_008 by Mig, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=mig-009</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/mig-009.png</image:loc>
+      <image:title>_Mig_009 | Stims</image:title>
+      <image:caption>_Mig_009 by Mig, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=mig-010</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/mig-010.png</image:loc>
+      <image:title>_Mig_010 | Stims</image:title>
+      <image:caption>_Mig_010 by Mig, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=mig-014-version2</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/mig-014-version2.png</image:loc>
+      <image:title>_Mig_014_version2 | Stims</image:title>
+      <image:caption>_Mig_014_version2 by Mig, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
 </urlset>

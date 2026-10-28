@@ -1,0 +1,7154 @@
+{
+  "measuredAt": "2026-10-07",
+  "method": "Cold context, no agent mode, audio held for a gesture; keys are the backend at 1280x720 or <backend>@<viewport>; larger lit ratio (luminance > 24) of stage captures at 5s and 9s; blanks confirmed by a serial re-measure.",
+  "presets": {
+    "11": {
+      "webgpu": 0.0959,
+      "webgl": 0.1593
+    },
+    "36": {
+      "webgpu": 0.304,
+      "webgl": 0.0001
+    },
+    "86": {
+      "webgpu": 0.0069,
+      "webgl": 0.0326
+    },
+    "93": {
+      "webgpu": 0.165,
+      "webgl": 0.1004
+    },
+    "124": {
+      "webgpu": 0.0001,
+      "webgl": 0.0069
+    },
+    "158": {
+      "webgpu": 0.0061,
+      "webgl": 0.0925
+    },
+    "185": {
+      "webgpu": 0.0508,
+      "webgl": 0.1436
+    },
+    "444": {
+      "webgpu": 0.0963,
+      "webgl": 0.0713
+    },
+    "27-super-goats-have-you-ever-been-knocked-out-before-sunshine": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "27-super-goats-neon-country-frequent-flier-program": {
+      "webgpu": 0.4089,
+      "webgl": 0.9813
+    },
+    "27-super-goats-orbus-maximus": {
+      "webgpu": 0.2245,
+      "webgl": 0.4815
+    },
+    "3dragons-rovastar-cave-life-mash0000-fire-beams-smoke": {
+      "webgpu": 0.9945,
+      "webgl": 0.0851
+    },
+    "3dragons-unchained-dragon-science": {
+      "webgpu": 0.9959,
+      "webgl": 0.5042
+    },
+    "414-bowel-rebranding-pr-whore-skinned-to-the-teeth-shader-serial-killer": {
+      "webgpu": 0.1146,
+      "webgl": 0.134
+    },
+    "414-bowel-rebranding-pr-whore-skinned-to-the-teeth-shader-serial-killer-common-glut": {
+      "webgpu": 0.3378,
+      "webgl": 0.2907
+    },
+    "a-crappy-reality-you-did-well": {
+      "webgpu": 0.0008,
+      "webgl": 0.2195
+    },
+    "a-milk-art-detail-2-flexi-moebius-transformation-ft-martin-with-adamfx-b-sentensual": {
+      "webgpu": 0.9823,
+      "webgl": 0.5281
+    },
+    "a-new-wave-trend-in-milk-martin-discomix-3-ft-phat-yin-n-adamfx-a": {
+      "webgpu": 0.0145,
+      "webgl": 0.3879
+    },
+    "a-tribute-to-martin-bombyx-mori-ft-flexi-adamfx-stahlregen-krash-rovastar-hd-in-milk-t": {
+      "webgpu": 0.7696,
+      "webgl": 0.6689
+    },
+    "a-twistin-infusion-martin-shiny-tunnel-rewiredfx-ft-adamfx-infusionfx-electricpoolfx": {
+      "webgpu": 0.9967,
+      "webgl": 0.9942
+    },
+    "adam-eatit-fx-2-martin-disco-mix-lodus-geiss-ludicrous-speed-flexi-aderrasi-n-hexcollie": {
+      "webgpu": 0.771,
+      "webgl": 0.6902
+    },
+    "adam-eatit-mashup-fx-2-martin-disco-mix-lodus-geiss-ludicrous-speed-aderrasi-2-1": {
+      "webgpu": 0.005,
+      "webgl": 0.0085
+    },
+    "adam-eatit-mashup-fx-2-martin-disco-mix-lodus-geiss-ludicrous-speed-baked-ft-another-adamfx-mashup-7-1": {
+      "webgpu": 0.005,
+      "webgl": 0.011
+    },
+    "adam-eatit-mashup-fx-2-martin-disco-mix-lodus-geiss-ludicrous-speed-eos-ft-flexi-n-hexocollie-baked-santa-fucking-claus": {
+      "webgpu": 0.015,
+      "webgl": 0.0499
+    },
+    "adam-fx-2-zylot-age-of-science-fierceness-16-mash0000-gerber-full-heaving-baby": {
+      "webgpu": 1,
+      "webgl": 0.9526
+    },
+    "adam-fx-2-zylot-age-of-science-fierceness-beast2-mash0000-ethics-is-for-weiner-dogs": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "adam-fx-2-zylot-age-of-science-fierceness-beast2-mash0000-ethics-is-for-weiner-dogs-geiss-composite-mix": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "adam-fx-2-zylot-age-of-science-fierceness-starburst-5-mash0000": {
+      "webgpu": 0.9924,
+      "webgl": 0.9882
+    },
+    "adamfx-2-aderrasi-airhandler-last-breath-calm-ilusional-discontent2": {
+      "webgpu": 0.9536,
+      "webgl": 0.9735
+    },
+    "adamfx-2-geiss-mash-up-angelic-spike-living-stained-glass-chapters": {
+      "webgpu": 0.0424,
+      "webgl": 0.2325
+    },
+    "adamfx-2-geiss-mash-up-angelic-staine-glass-chapters-6": {
+      "webgpu": 0.1626,
+      "webgl": 0.7315
+    },
+    "adamfx-2-geiss-mash-up-angelic-staine-glass-chapters-6-1": {
+      "webgpu": 0.1601,
+      "webgl": 0.8114
+    },
+    "adamfx-2-geiss-mash-up-sphere-xibit-graffiti-warp-me-tydye": {
+      "webgpu": 0.9868,
+      "webgl": 0.9906
+    },
+    "adamfx-2-geiss-mash-up-sphere-xibit-graffiti-warp-me-tydye2": {
+      "webgpu": 0.2742,
+      "webgl": 0.7714
+    },
+    "adamfx-2-geiss-mash-up-sphere-xibit-graffiti-warp-me-tydye3": {
+      "webgpu": 0.9876,
+      "webgl": 0.9892
+    },
+    "adamfx-2-geiss-mash-up-sphere-xibit-graffiti-warp-me-tydye4": {
+      "webgpu": 0.9869,
+      "webgl": 0.0533
+    },
+    "adamfx-2-geiss-mash-up-sphere-xibit-graffiti-warp-me-tydye6": {
+      "webgpu": 0.9763,
+      "webgl": 0.0646
+    },
+    "adamfx-2-geiss-mash-up-sphere-xibit-graffiti-warp-me-tydye7": {
+      "webgpu": 1,
+      "webgl": 0.0126
+    },
+    "adamfx-2-geiss-somewhat-distort-me-3-1": {
+      "webgpu": 0.0536,
+      "webgl": 0.5715
+    },
+    "adamfx-2-geiss-zylot-and-flexi-reaction-diffusion-3-overload-mix-2-eatit4-bccnj4": {
+      "webgpu": 0,
+      "webgl": 0.4807
+    },
+    "adamfx-mashup-2-martin-reflections-on-black-tile-raron-n-flexi": {
+      "webgpu": 0.0188,
+      "webgl": 0.0594
+    },
+    "aderrasi-accelerator-hot-lead-transfusion": {
+      "webgpu": 1,
+      "webgl": 0.9863
+    },
+    "aderrasi-agitator": {
+      "webgpu": 0.987,
+      "webgl": 1
+    },
+    "aderrasi-airhandler-kali-mix": {
+      "webgpu": 0.1826,
+      "webgl": 0.465
+    },
+    "aderrasi-airhandler-kali-mix-painterly": {
+      "webgpu": 0.1155,
+      "webgl": 0.692
+    },
+    "aderrasi-airhandler-kali-mix-painterly-geiss-composite-mix": {
+      "webgpu": 0.0962,
+      "webgl": 0.7142
+    },
+    "aderrasi-airhandler-last-breath-calm": {
+      "webgpu": 1,
+      "webgl": 0.5175
+    },
+    "aderrasi-airhandler-last-breath-crab": {
+      "webgpu": 0.2623,
+      "webgl": 0.0962
+    },
+    "aderrasi-airhandler-last-breath-eden": {
+      "webgpu": 0.9913,
+      "webgl": 0.4635
+    },
+    "aderrasi-airhandler-principle-of-sharing": {
+      "webgpu": 0.9868,
+      "webgl": 0.3984
+    },
+    "aderrasi-bitterfeld-crystal-border-mix": {
+      "webgpu": 0.9517,
+      "webgl": 0.8132
+    },
+    "aderrasi-bow-to-gravity": {
+      "webgpu": 0.9833,
+      "webgl": 0.3479
+    },
+    "aderrasi-brakefreak-bitcore-tweak": {
+      "webgpu": 0.9794,
+      "webgl": 0.5976
+    },
+    "aderrasi-calabi-jau-space-bar": {
+      "webgpu": 0.9547,
+      "webgl": 0.9869
+    },
+    "aderrasi-can-itself-mash0000-rotating-piss-clams": {
+      "webgpu": 0.6209,
+      "webgl": 1
+    },
+    "aderrasi-causeway-of-dreams-point-mix": {
+      "webgpu": 0.5903,
+      "webgl": 0.6087
+    },
+    "aderrasi-chromatic-abyss-refined-abyss-mix": {
+      "webgpu": 0.0052,
+      "webgl": 0.2155
+    },
+    "aderrasi-contortion-escher-s-tunnel-mix": {
+      "webgpu": 0.8653,
+      "webgl": 0.3726
+    },
+    "aderrasi-contortion-wide-twist-mix": {
+      "webgpu": 0.9491,
+      "webgl": 0.4665
+    },
+    "aderrasi-curse-of-the-mirror-emu": {
+      "webgpu": 0.9896,
+      "webgl": 0.0506
+    },
+    "aderrasi-ert-wary-mix": {
+      "webgpu": 0.9305,
+      "webgl": 0.1332
+    },
+    "aderrasi-flexi-airhandler-last-breath-calm-moebius-morbid-vision-edit": {
+      "webgpu": 1,
+      "webgl": 0.5797
+    },
+    "aderrasi-geiss-airhandler-kali-mix-canvas-mix": {
+      "webgpu": 0.0982,
+      "webgl": 0.6432
+    },
+    "aderrasi-geiss-airhandler-kali-mix-painterly-kaleidoscope-2": {
+      "webgpu": 0.0199,
+      "webgl": 0.1943
+    },
+    "aderrasi-geiss-airhandler-kali-mix-painterly-tendrils-colorfast": {
+      "webgpu": 0.2081,
+      "webgl": 0.9168
+    },
+    "aderrasi-geiss-airhandler-painterly-relief-mix": {
+      "webgpu": 0.1601,
+      "webgl": 0.8779
+    },
+    "aderrasi-geiss-airhandler-square-mix": {
+      "webgpu": 0.4814,
+      "webgl": 0.7456
+    },
+    "aderrasi-ghast-entity": {
+      "webgpu": 0.0312,
+      "webgl": 0.735
+    },
+    "aderrasi-ghast-full-circle-mix": {
+      "webgpu": 0.2332,
+      "webgl": 0.5776
+    },
+    "aderrasi-ghast-quarter-past-ghast-mix": {
+      "webgpu": 0.2911,
+      "webgl": 0.5964
+    },
+    "aderrasi-hackproof-mash0000-stare-at-tv-static-remote-viewing-technique": {
+      "webgpu": 0.9975,
+      "webgl": 1
+    },
+    "aderrasi-halls-of-centrifuge": {
+      "webgpu": 0.9969,
+      "webgl": 0.9835
+    },
+    "aderrasi-hard-drink-half-infinitea": {
+      "webgpu": 0.9947,
+      "webgl": 0.8286
+    },
+    "aderrasi-horvath-s-holistic-abyss": {
+      "webgpu": 0.1081,
+      "webgl": 0.8533
+    },
+    "aderrasi-kevlar-abyss": {
+      "webgpu": 0.9868,
+      "webgl": 0.1477
+    },
+    "aderrasi-kevlar-ore-deposit": {
+      "webgpu": 0.9683,
+      "webgl": 0.574
+    },
+    "aderrasi-kevlar-tunnel": {
+      "webgpu": 0.9869,
+      "webgl": 0.4074
+    },
+    "aderrasi-madness-teaches-us-to-fly": {
+      "webgpu": 0.9992,
+      "webgl": 0.6438
+    },
+    "aderrasi-mother-of-pearl-mash0000-how-to-piss-off-your-eyes": {
+      "webgpu": 0.0103,
+      "webgl": 0.5647
+    },
+    "aderrasi-party-mutant": {
+      "webgpu": 0.7077,
+      "webgl": 0.3086
+    },
+    "aderrasi-potion-of-spirits": {
+      "webgpu": 1,
+      "webgl": 0.1175
+    },
+    "aderrasi-roaming-star-himalaya-brach-office-mash0000-creaming-the-summit": {
+      "webgpu": 0.0918,
+      "webgl": 0.078
+    },
+    "aderrasi-see": {
+      "webgpu": 0.7244,
+      "webgl": 0.8662
+    },
+    "aderrasi-songflower-hybrid-plant-neohm-s-internet-ghosts-remix": {
+      "webgpu": 0.3826,
+      "webgl": 0.093
+    },
+    "aderrasi-songflower-moss-posy": {
+      "webgpu": 0.9264,
+      "webgl": 0.0614
+    },
+    "aderrasi-storm-of-the-eye-thunder-mash0000-quasi-pseudo-meta-concentrics": {
+      "webgpu": 0.3678,
+      "webgl": 0.6261
+    },
+    "aderrasi-the-lurker-twin-mix-bitcore-tweak": {
+      "webgpu": 0.8691,
+      "webgl": 0.3142
+    },
+    "aderrasi-tool-of-construction-mash0000-use-the-toilet-to-construct-parliment": {
+      "webgpu": 0.0626,
+      "webgl": 0.2621
+    },
+    "aderrasi-variants-of-eternity": {
+      "webgpu": 0.0489,
+      "webgl": 0.3539
+    },
+    "aderrasi-veil-of-steel-steel-storm-mash0000-bob-ross-finally-loses-it": {
+      "webgpu": 0.5723,
+      "webgl": 0.9854
+    },
+    "aderrasi-visitor": {
+      "webgpu": 0.4342,
+      "webgl": 0.7076
+    },
+    "aderrasi-wanderer-in-curved-space-mash0000-faclempt-kibitzing-meshuggana-schmaltz-geiss-color-mix": {
+      "webgpu": 1,
+      "webgl": 0.0063
+    },
+    "aderrasi-wanderer-in-curved-space-mash0000-faclempt-kibitzing-meshuggana-schmaltz-geiss-greyscale-mix": {
+      "webgpu": 1,
+      "webgl": 0.0063
+    },
+    "aderrasi-what-cannot-be": {
+      "webgpu": 0.1727,
+      "webgl": 0.9044
+    },
+    "amandio-c-feeling-well-3": {
+      "webgpu": 0.0151,
+      "webgl": 0.0622
+    },
+    "amandio-c-flashy-thing": {
+      "webgpu": 0.0001,
+      "webgl": 0.03
+    },
+    "amandio-c-fume": {
+      "webgpu": 0,
+      "webgl": 0.9413
+    },
+    "amandio-c-martin-edit-trick-with-cubes": {
+      "webgpu": 0.8898,
+      "webgl": 0.8924
+    },
+    "amandio-c-new-life": {
+      "webgpu": 0.9961,
+      "webgl": 0.428
+    },
+    "amandio-c-new-life-a": {
+      "webgpu": 0.9976,
+      "webgl": 0.4061
+    },
+    "amandio-c-odd-star": {
+      "webgpu": 0.0017,
+      "webgl": 0.0114
+    },
+    "amandio-c-polar-value-shader-pimped": {
+      "webgpu": 0.0255,
+      "webgl": 0.0358
+    },
+    "amandio-c-pole-shf-fab-candiria-pull-ap5-made-to-believe-i-don-t-matter": {
+      "webgpu": 0.1082,
+      "webgl": 0.6995
+    },
+    "amandio-c-pole-shf-fab-candiria-pull-ap5-selectro-electronic-afield-asquid": {
+      "webgpu": 0.1009,
+      "webgl": 0.7436
+    },
+    "amandio-c-salty-beats-spiral": {
+      "webgpu": 0.0118,
+      "webgl": 0.0415
+    },
+    "an-adamfx-n-martin-infusion-2-flexi-why-the-sky-looks-diffrent-today-adamfx-n-martin-infusion-tack-tile-disfunction-b": {
+      "webgpu": 0.0253,
+      "webgl": 0.9822
+    },
+    "anandamide-i-don-t-want-to-go-back-to-earth": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "anandamide-pastels-n-cream": {
+      "webgpu": 0.8954,
+      "webgl": 0.912
+    },
+    "anandmide-shifter-fractical-dancer-mtm-mix-stahlregen-s-geiss-chaos-tile-edit-2": {
+      "webgpu": 0.9366,
+      "webgl": 0.9436
+    },
+    "anandmide-shifter-fractical-dancer-mtm-mix-stahlregen-s-geiss-chaos-tile-edit-random-color": {
+      "webgpu": 0.0397,
+      "webgl": 0.0387
+    },
+    "baked-chinese-fingerbang-cao-ni-ma-pieturp-colors-bitcore-speed-tweak": {
+      "webgpu": 0.9864,
+      "webgl": 0.9137
+    },
+    "baked-mushroom-rainbows-acid-storm": {
+      "webgpu": 0.3355,
+      "webgl": 0.9589
+    },
+    "baked-river-of-illusion-dillusion-bubble": {
+      "webgpu": 0.9863,
+      "webgl": 0.9788
+    },
+    "baked-river-of-illusion-infected-acid-mix": {
+      "webgpu": 0.9869,
+      "webgl": 0.953
+    },
+    "bdrv-al-aderrasi-oracle-bdrv-et-al-rmx-a": {
+      "webgpu": 1,
+      "webgl": 0.7797
+    },
+    "bdrv-al-eo-s-phat-intergalactic-conquest-flag2b": {
+      "webgpu": 0,
+      "webgl": 0.0055
+    },
+    "bdrv-al-eo-s-phat-intergalactic-fuzzball": {
+      "webgpu": 0,
+      "webgl": 0.0023
+    },
+    "bdrv-al-eo-s-phat-intergalactic-wtf2": {
+      "webgpu": 0.4265,
+      "webgl": 0.7677
+    },
+    "bdrv-al-eo-s-phat-licence-to-druel2a": {
+      "webgpu": 0.4333,
+      "webgl": 0.0841
+    },
+    "bdrv-al-eo-s-sarc-gbdrv2-mx-phat-redeye-fractalview-v2": {
+      "webgpu": 0.9496,
+      "webgl": 0.3333
+    },
+    "bdrv-al-phat-and-eo-s-shapes-are-cool-slow-colour-melting-edit-bdrv-et-al-rmxmix32": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "bdrv-al-shifter-feathers-angel-wings-phat-remix4-bdrv-et-al-rmx-ii": {
+      "webgpu": 0.9868,
+      "webgl": 0.392
+    },
+    "bdrv-al-shifter-feathers-angel-wings-phat-remix4-bdrv-et-al-rmxmix-bdrv-et-al5": {
+      "webgpu": 0.9875,
+      "webgl": 0.9728
+    },
+    "bdrv-al-telek-spirality": {
+      "webgpu": 1,
+      "webgl": 0.982
+    },
+    "bdrv-al-zylot-pinwheelw": {
+      "webgpu": 0.0207,
+      "webgl": 0.0008
+    },
+    "bdrv-eo-s-pulsecube-bdrv-et-al-rmxmixx": {
+      "webgpu": 0.0855,
+      "webgl": 0.0583
+    },
+    "bdrv-eo-s-redi-jedi-frequency-analysis-glowsticks-glow-o-scope-male-left-handed-complements-milkdrop-beta-ver2-bdrv-et-al-rmx2": {
+      "webgpu": 1,
+      "webgl": 0.7061
+    },
+    "bdrv-et-al-eo-s-phat-sentinel-linearitybdrv-et-al-bdrv-plagiarising-shifter3": {
+      "webgpu": 0.3873,
+      "webgl": 0.1053
+    },
+    "bdrv-et-al-shifter-tumbling-cubic-juno-vibe2": {
+      "webgpu": 0.9868,
+      "webgl": 0.0101
+    },
+    "bdrv-flexi-martin-ultramix-380-shiny-tunnel-derivative-mix": {
+      "webgpu": 0.9777,
+      "webgl": 0.5114
+    },
+    "bdrv-ultramix2-43": {
+      "webgpu": 0.9869,
+      "webgl": 0.701
+    },
+    "benjam-and-zylot-tie-dye-supernova-sunspots-mix-flx-mrt-maybe-go-to-the-beach-drizzle": {
+      "webgpu": 0.2133,
+      "webgl": 1
+    },
+    "benjam-and-zylot-tie-dye-supernova-sunspots-mix-praise-martin-and-flexi-forever-nz-understarted": {
+      "webgpu": 0.9874,
+      "webgl": 1
+    },
+    "benjam-zylot-dust-on-the-lens-light-of-the-ancient-ones-mix": {
+      "webgpu": 0,
+      "webgl": 0.0048
+    },
+    "benski-atom-smasher": {
+      "webgpu": 0.2549,
+      "webgl": 0.3766
+    },
+    "best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-another-flexi-fishbrain-swelling-spiral-work-with-lines-deamon-lord-eos-23": {
+      "webgpu": 0.9884,
+      "webgl": 0.977
+    },
+    "beta106-mash0000-defocused-bandwidth-pulsating-log": {
+      "webgpu": 0.9984,
+      "webgl": 1
+    },
+    "beta106-river-of-illusion-dillusion-bubble": {
+      "webgpu": 0.985,
+      "webgl": 0.9799
+    },
+    "beta106-s-phat-sentinel-linearity-b-nz-mbinistre-ov-mbajiq": {
+      "webgpu": 0.0425,
+      "webgl": 0.8981
+    },
+    "beta106ain-roto-mix3": {
+      "webgpu": 0.0012,
+      "webgl": 0.0039
+    },
+    "beta106at-shape-mash0000-hulk-spirit-cum": {
+      "webgpu": 0,
+      "webgl": 0.1478
+    },
+    "beta106at-shape-mash0001-so-sue-me-if-i-voted-against-anti-rape": {
+      "webgpu": 0,
+      "webgl": 0.0247
+    },
+    "beta106i-airhandler-last-breath-crab-handler": {
+      "webgpu": 0.6539,
+      "webgl": 0.1667
+    },
+    "beta106i-airhandler-radial-dreamers-mash0000-unload-stones-into-black-market-torture-houses": {
+      "webgpu": 1,
+      "webgl": 0.9595
+    },
+    "beta106i-brilliance-space-time-breaking-mash0000-it-s-2009-and-you-haven-t-replaced-your-analog-tv-with-digital": {
+      "webgpu": 0.2633,
+      "webgl": 0.6358
+    },
+    "beta106i-burning-form-seething-mass-mash0000-fire-paint-easter-egg-internals": {
+      "webgpu": 0.7092,
+      "webgl": 0.9895
+    },
+    "beta106i-have-at-you-spin-strike-mash0000-more-the-game-of-death-jesus-conway": {
+      "webgpu": 0.001,
+      "webgl": 0.17
+    },
+    "beta106i-inhuman-emotion-regret-mash0000-genetic-mutant-incubators-in-the-hands-of-toddlers": {
+      "webgpu": 0.9633,
+      "webgl": 0.9969
+    },
+    "beta106i-it-s-the-sun-brotherhood-of-tears-mash0000-vascular-chemical-allergy": {
+      "webgpu": 1,
+      "webgl": 0.1229
+    },
+    "beta106i-oversizer-modernist-lane-mash0000-noone-ever-helps-you-unless-you-have-something-for-them": {
+      "webgpu": 0.2266,
+      "webgl": 0.7532
+    },
+    "beta106i-potion-of-ink": {
+      "webgpu": 0.7365,
+      "webgl": 0.3257
+    },
+    "beta106i-potion-of-ink-mrt-cope-n777": {
+      "webgpu": 0.7428,
+      "webgl": 0.7533
+    },
+    "beta106i-songflower-orchid-field-mash0000-too-drunk-and-high-at-club": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "beta106i-straight-tropical-coal-hypnotricks-stable-mix": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "beta106i-transfrontation-crocodile-star": {
+      "webgpu": 0.9868,
+      "webgl": 0.0397
+    },
+    "beta106rd-does-not-bend-like-that-mash0000-symmetric-combustion-monks-not-included": {
+      "webgpu": 0.987,
+      "webgl": 0.9992
+    },
+    "bmelgren-geiss-godhead-canvas-mix": {
+      "webgpu": 0.9868,
+      "webgl": 0.9877
+    },
+    "bmelgren-krash-rainbow-orb-peacock-centred-journey-mix-2": {
+      "webgpu": 0.2547,
+      "webgl": 0.2452
+    },
+    "bmelgren-krash-rainbow-orb-peacock-lonely-signal-gone-mad-mix": {
+      "webgpu": 0.999,
+      "webgl": 0.2491
+    },
+    "bmelgren-pentultimate-nerual-slipstream-tweak-2": {
+      "webgpu": 0.538,
+      "webgl": 0.6723
+    },
+    "bmelgren-rovastar-schisathing-2-mash0000-schrodinger-s-dog-massage": {
+      "webgpu": 0.3821,
+      "webgl": 0.9056
+    },
+    "bmelgren-rovastar-schisathing-6-mash0001-hellraiser-s-molten-consciousness": {
+      "webgpu": 0.0183,
+      "webgl": 0.0428
+    },
+    "bmelgren-unchained-effort-remix-the-city-of-glass-that-i-live-in-the-coldness-from-my-brother-s-skin-nz": {
+      "webgpu": 0.988,
+      "webgl": 0.9929
+    },
+    "boz-flip-d-moshun-mash0000-forced-to-exist-freely": {
+      "webgpu": 0.9869,
+      "webgl": 0.9874
+    },
+    "brainstain-blackwidow": {
+      "webgpu": 0.5104,
+      "webgl": 0.2188
+    },
+    "brainstain-boiling-mix2-redi-jedi-full-carb-mix": {
+      "webgpu": 0.0001,
+      "webgl": 0.0016
+    },
+    "brainstain-projection-room-mash0000-locustration": {
+      "webgpu": 1,
+      "webgl": 0
+    },
+    "brainstain-re-entry": {
+      "webgpu": 0,
+      "webgl": 0.0003
+    },
+    "by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar": {
+      "webgpu": 0.9892,
+      "webgl": 0.9823
+    },
+    "by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar-orb-mstress-mash0000-prismatic-spectral-haze-filter": {
+      "webgpu": 0.8758,
+      "webgl": 0.9122
+    },
+    "che-escape": {
+      "webgpu": 0.9749,
+      "webgl": 0.3338
+    },
+    "che-geiss-escape-psychedelic-mix": {
+      "webgpu": 0.5468,
+      "webgl": 0.3818
+    },
+    "che-terracarbon-stream": {
+      "webgpu": 0.9914,
+      "webgl": 0.8554
+    },
+    "cope-27-super-goats-orbus-maximus-breach-the-egg-mix": {
+      "webgpu": 0.0671,
+      "webgl": 0.3038
+    },
+    "cope-alternative-energy-antimatter-mod-1-4z": {
+      "webgpu": 0.0061,
+      "webgl": 0.0977
+    },
+    "cope-cartune-extrusion-machine-fixed": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "cope-digital-sea": {
+      "webgpu": 0.9966,
+      "webgl": 0.0245
+    },
+    "cope-ferrofluid": {
+      "webgpu": 1,
+      "webgl": 0.9647
+    },
+    "cope-ferrofluid-flexis-minor-remix": {
+      "webgpu": 1,
+      "webgl": 0.965
+    },
+    "cope-flexi-cartune-extrusion-machine-mix-inside-the-hive": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "cope-flexi-cartune-extrusion-machine-mix-mr-understatement": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "cope-flexi-cartune-extrusion-machine-mix-spiral-out": {
+      "webgpu": 0.9869,
+      "webgl": 0.064
+    },
+    "cope-flexi-colorful-marble-ghost-mix-rand-wave-4-nz": {
+      "webgpu": 0.9827,
+      "webgl": 0.2264
+    },
+    "cope-flexi-martin-cartune-reinventing-the-scene": {
+      "webgpu": 0.1139,
+      "webgl": 0.872
+    },
+    "cope-flexi-mother-of-whirl-composition-from-fractopia": {
+      "webgpu": 0.0239,
+      "webgl": 1
+    },
+    "cope-flexi-mother-of-whirl-composition-from-fractopia-roam3-nz": {
+      "webgpu": 0.0226,
+      "webgl": 1
+    },
+    "cope-flexi-mother-of-whirl-no-fnords-were-hurt": {
+      "webgpu": 0.0083,
+      "webgl": 0.9772
+    },
+    "cope-geiss-stahlregen-cartune-bending-gelatine-mix": {
+      "webgpu": 0,
+      "webgl": 0.0032
+    },
+    "cope-keanu-reeves-is-a-bad-actor": {
+      "webgpu": 0.0128,
+      "webgl": 0.0243
+    },
+    "cope-martin-flexi-cartune": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "cope-martin-flexi-the-slickery-of-alternative-varnish": {
+      "webgpu": 0.9869,
+      "webgl": 0.9978
+    },
+    "cope-martin-mother-of-pearl": {
+      "webgpu": 0.0224,
+      "webgl": 1
+    },
+    "cope-matrixcode7": {
+      "webgpu": 0.076,
+      "webgl": 0.0417
+    },
+    "cope-passage-geiss-emboss-mix": {
+      "webgpu": 0.9864,
+      "webgl": 0.9664
+    },
+    "cope-passage-mandala-mix": {
+      "webgpu": 0.9947,
+      "webgl": 0.9903
+    },
+    "cope-passage-mandala-mix-flexis-kaleidoscope-ap3-colonosc-roam3": {
+      "webgpu": 0.5393,
+      "webgl": 0.7724
+    },
+    "cope-soar-v2-0": {
+      "webgpu": 0.0067,
+      "webgl": 0.1854
+    },
+    "cope-strange-attractor-flexis-let-it-grow-mix-jelly-5-56-volume-noise-zoom-in": {
+      "webgpu": 0.1988,
+      "webgl": 0.8224
+    },
+    "cope-strange-attractor-flexis-let-it-grow-mix-stahlregens-jelly-after-burner": {
+      "webgpu": 0.2033,
+      "webgl": 0.8538
+    },
+    "cope-the-drain-to-heaven": {
+      "webgpu": 0.0116,
+      "webgl": 1
+    },
+    "cope-the-neverending-explosion-of-red-liquid-fire": {
+      "webgpu": 0,
+      "webgl": 0.0005
+    },
+    "cope-the-red": {
+      "webgpu": 0,
+      "webgl": 0.0007
+    },
+    "cope-wip-strange-attractor-2": {
+      "webgpu": 0.964,
+      "webgl": 0.9907
+    },
+    "custom1": {
+      "webgpu": 0,
+      "webgl": 0.2082
+    },
+    "dbleja-hovering-over-mars": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "dbleja-hovering-over-pluto": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "dbleja-inside-the-tree-blue-mix": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "demonld-toxic-water-diffusion-threx-angela-vs-debi-brown-nice": {
+      "webgpu": 0.6593,
+      "webgl": 0.848
+    },
+    "drasla-simplespectrogram-3": {
+      "webgpu": 0.9868,
+      "webgl": 0.9869
+    },
+    "drugsincombat-reactive-molecule-v-05a": {
+      "webgpu": 0.9608,
+      "webgl": 0.9153
+    },
+    "ech0-liquid-firesticks-i": {
+      "webgpu": 0.9871,
+      "webgl": 0.9875
+    },
+    "ech0-purp-trip-of-purpose": {
+      "webgpu": 0.0111,
+      "webgl": 0.0941
+    },
+    "empr-random-changing-polyevolution": {
+      "webgpu": 0.9842,
+      "webgl": 0.7752
+    },
+    "eo-s-and-pieturp-alienspaceshipinvasion-2": {
+      "webgpu": 0.012,
+      "webgl": 0.0304
+    },
+    "eo-s-and-zylot-skylight-stained-glass-majesty-mix": {
+      "webgpu": 0.6705,
+      "webgl": 0.693
+    },
+    "eo-s-angels-of-decay": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "eo-s-apocalypse-f2": {
+      "webgpu": 0.3576,
+      "webgl": 0.687
+    },
+    "eo-s-dark-side-of-the-moon-plus-a-few-more-hits-and-a-pill": {
+      "webgpu": 0.7115,
+      "webgl": 0.7532
+    },
+    "eo-s-flexi-glowsticks-v2-05-and-proton-lights-krash-s-beat-code-phat-remix02b-illumination-stahl-s-mix": {
+      "webgpu": 0.9872,
+      "webgl": 0.9999
+    },
+    "eo-s-gases-beyond": {
+      "webgpu": 0.8674,
+      "webgl": 0.9106
+    },
+    "eo-s-geiss-glowsticks-v2-02-relief-mix": {
+      "webgpu": 0.0773,
+      "webgl": 0.2203
+    },
+    "eo-s-geiss-glowsticks-v2-03-music-shifter-edit-b-psychedelic-mix": {
+      "webgpu": 0.93,
+      "webgl": 0.8667
+    },
+    "eo-s-geiss-glowsticks-v2-03-music-shifter-edit-b-water-mix": {
+      "webgpu": 0.9869,
+      "webgl": 0.9396
+    },
+    "eo-s-geiss-sarc-c-phats-zoom-mix-reflecto": {
+      "webgpu": 0.0805,
+      "webgl": 0.0782
+    },
+    "eo-s-glowsticks-v2-02": {
+      "webgpu": 0.0076,
+      "webgl": 0.1276
+    },
+    "eo-s-glowsticks-v2-02-geiss-hpf": {
+      "webgpu": 0.0304,
+      "webgl": 0.1384
+    },
+    "eo-s-glowsticks-v2-03-music": {
+      "webgpu": 0.0004,
+      "webgl": 0.0458
+    },
+    "eo-s-glowsticks-v2-03-music-shifter-edit-b": {
+      "webgpu": 0.3438,
+      "webgl": 0.9715
+    },
+    "eo-s-glowsticks-v2-03-music-shifter-edit-b-jelly-v2": {
+      "webgpu": 1,
+      "webgl": 0.9879
+    },
+    "eo-s-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2i2-feat-flexi-phat": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "eo-s-glowsticks-v2-05-and-proton-lights-krash-s-beat-code": {
+      "webgpu": 0.0083,
+      "webgl": 0.0621
+    },
+    "eo-s-glowsticks-v2-05-and-proton-lights-krash-s-beat-code-phat-remix02b": {
+      "webgpu": 0.2749,
+      "webgl": 0.6378
+    },
+    "eo-s-glowsticks-v2-05-and-proton-lights-krash-s-beat-code-phat-remix03-madhatter-v2": {
+      "webgpu": 0.3983,
+      "webgl": 0.7043
+    },
+    "eo-s-glowsticks-v2-05-and-proton-lights-krash-s-beat-code-phat-remix07": {
+      "webgpu": 0.0061,
+      "webgl": 0.1561
+    },
+    "eo-s-glowsticks-v2-05-and-proton-lights-krash-s-beat-code-phat-remix07-recursive-demons": {
+      "webgpu": 0.0073,
+      "webgl": 0.1595
+    },
+    "eo-s-heater-core-c-phat-s-class-sparks-mix": {
+      "webgpu": 0.9802,
+      "webgl": 0.0979
+    },
+    "eo-s-heater-core-c-phat-s-class-sparks-mix-mash0000-flaring-colored-zebra-gum": {
+      "webgpu": 1,
+      "webgl": 0.2792
+    },
+    "eo-s-multisphere-01-b-phat-ra-mix": {
+      "webgpu": 0.5007,
+      "webgl": 0.7516
+    },
+    "eo-s-multisphere-01-b-phat-ra-mix-geiss-flicker-fix": {
+      "webgpu": 0.5837,
+      "webgl": 0.588
+    },
+    "eo-s-nematodes-e-daemon": {
+      "webgpu": 0.0551,
+      "webgl": 0.1076
+    },
+    "eo-s-phat-arm-upgrades-transformer": {
+      "webgpu": 0.0583,
+      "webgl": 0.0629
+    },
+    "eo-s-phat-cat-scan-nirvana-flux": {
+      "webgpu": 0.9856,
+      "webgl": 0.987
+    },
+    "eo-s-phat-chasers-11-sentinel-c": {
+      "webgpu": 0.1246,
+      "webgl": 0.2015
+    },
+    "eo-s-phat-chasers-11-sentinel-c-jelly-v2": {
+      "webgpu": 0.0251,
+      "webgl": 0.0762
+    },
+    "eo-s-phat-chasers-11-sentinel-c-jelly-v4-x": {
+      "webgpu": 0,
+      "webgl": 0.0607
+    },
+    "eo-s-phat-chasers-11-sentinel-c-poltergeist-mix-response-daemon": {
+      "webgpu": 0.3764,
+      "webgl": 0.6156
+    },
+    "eo-s-phat-chasers-11-sentinel-c-poltergeist-mix-response-daemon-geiss-flicker-fix": {
+      "webgpu": 0.1446,
+      "webgl": 0.2335
+    },
+    "eo-s-phat-chasers-12-sentinel-daemon-mash0000-multi-band-time-distortion-aurora-granules": {
+      "webgpu": 0.6812,
+      "webgl": 0.75
+    },
+    "eo-s-phat-chasers-14-sentinel-616": {
+      "webgpu": 0.1374,
+      "webgl": 0.3199
+    },
+    "eo-s-phat-chasers-15-sentinels-male-and-female": {
+      "webgpu": 0.0733,
+      "webgl": 0.0822
+    },
+    "eo-s-phat-chasers-18-hallway": {
+      "webgpu": 0.0042,
+      "webgl": 0.1068
+    },
+    "eo-s-phat-chasers-19-portal": {
+      "webgpu": 0.9992,
+      "webgl": 0.999
+    },
+    "eo-s-phat-chasers-19-portal-geiss-flicker-fix": {
+      "webgpu": 0.0348,
+      "webgl": 0.197
+    },
+    "eo-s-phat-cool-bug": {
+      "webgpu": 0.096,
+      "webgl": 0.0669
+    },
+    "eo-s-phat-cool-bug-v2-krash-s-beat-detection": {
+      "webgpu": 0.0765,
+      "webgl": 0.0827
+    },
+    "eo-s-phat-cubetrace-cybercity-madness-remix-mash0000-evaporating-crystal-pharma": {
+      "webgpu": 0,
+      "webgl": 0.0052
+    },
+    "eo-s-phat-cubetrace-v2": {
+      "webgpu": 0.0334,
+      "webgl": 0.0368
+    },
+    "eo-s-phat-detached-centerpoint": {
+      "webgpu": 0.9885,
+      "webgl": 0.0977
+    },
+    "eo-s-phat-eater-v2": {
+      "webgpu": 0,
+      "webgl": 0.0073
+    },
+    "eo-s-phat-emergent-factors": {
+      "webgpu": 0.9184,
+      "webgl": 0.012
+    },
+    "eo-s-phat-emergent-factors-bitcore-tweak": {
+      "webgpu": 0.9304,
+      "webgl": 0.0203
+    },
+    "eo-s-phat-flare-dig-mix": {
+      "webgpu": 0.4201,
+      "webgl": 0.6558
+    },
+    "eo-s-phat-fractical-dancer-light-in-the-distance": {
+      "webgpu": 0.0246,
+      "webgl": 0.0462
+    },
+    "eo-s-phat-fractical-dancer-v2d": {
+      "webgpu": 0.1412,
+      "webgl": 0.1161
+    },
+    "eo-s-phat-geiss-chasers-15-sentinels-male-and-female-dementia-mix": {
+      "webgpu": 0.2068,
+      "webgl": 0.2202
+    },
+    "eo-s-phat-last-of-it-s-kind-sinking": {
+      "webgpu": 0.6957,
+      "webgl": 0.0827
+    },
+    "eo-s-phat-shipwreaked-v3": {
+      "webgpu": 0,
+      "webgl": 0.0001
+    },
+    "eo-s-phat-speak-with-the-orb-rotation-mix-time-mod": {
+      "webgpu": 0.71,
+      "webgl": 0.7161
+    },
+    "eo-s-phat-spectrum-bubble-field": {
+      "webgpu": 0.0008,
+      "webgl": 0.0015
+    },
+    "eo-s-phat-spectrum-bubble-field-geiss-softened": {
+      "webgpu": 0.4028,
+      "webgl": 0.3965
+    },
+    "eo-s-phat-spectrum-bubble-new-colors-v2": {
+      "webgpu": 0.9665,
+      "webgl": 0
+    },
+    "eo-s-phat-spectrum-bubble-new-colors-wf2-chaos-theory": {
+      "webgpu": 0.0781,
+      "webgl": 0.077
+    },
+    "eo-s-phat-technicolor-f-breather-e-god-cock-gaia-pussy": {
+      "webgpu": 0.0007,
+      "webgl": 0.6162
+    },
+    "eo-s-phat-the-lights-at-night-spikes": {
+      "webgpu": 0.2251,
+      "webgl": 0.1074
+    },
+    "eo-s-phat-trail-of-darkness": {
+      "webgpu": 0.7081,
+      "webgl": 0.0737
+    },
+    "eo-s-phat-vacuum-deity-watching-you": {
+      "webgpu": 0,
+      "webgl": 0.0802
+    },
+    "eo-s-phat-zen-prophetmind-wtf-is-it-v2-bitcore-tweak": {
+      "webgpu": 0,
+      "webgl": 0.0552
+    },
+    "eo-s-pointfield-01-complex": {
+      "webgpu": 0.1243,
+      "webgl": 0.2842
+    },
+    "eo-s-pointfield-04-arcs-demon-phat-edit-v3": {
+      "webgpu": 0.9539,
+      "webgl": 0.5452
+    },
+    "eo-s-pointfield-09-the-gases-beyond-85c": {
+      "webgpu": 0.8682,
+      "webgl": 0.9116
+    },
+    "eo-s-pulsecube-f-demon-mash0000-yakuza-gut-cake": {
+      "webgpu": 0.4232,
+      "webgl": 0.429
+    },
+    "eo-s-repeater-08-rave-on-a-lot-of-acid-and-some-k": {
+      "webgpu": 0.0062,
+      "webgl": 0.129
+    },
+    "eo-s-repeater-13-definitive": {
+      "webgpu": 0.0293,
+      "webgl": 0.1407
+    },
+    "eo-s-repeater-13-definitive-fast": {
+      "webgpu": 0.0057,
+      "webgl": 0.1266
+    },
+    "eo-s-repeater-15-kaleidoscope-b": {
+      "webgpu": 0.006,
+      "webgl": 0.3972
+    },
+    "eo-s-sarc-c-phats-zoom-mix": {
+      "webgpu": 0.0577,
+      "webgl": 0.0779
+    },
+    "eo-s-skylight-a1-music-warp-switch": {
+      "webgpu": 0.5426,
+      "webgl": 0.5112
+    },
+    "eo-s-spark-c-phat-jester-mix-v2": {
+      "webgpu": 0,
+      "webgl": 0.0164
+    },
+    "eo-s-starburst-01": {
+      "webgpu": 0,
+      "webgl": 0.0792
+    },
+    "eo-s-tumbler-demon-mix-high-fps-phat-edit": {
+      "webgpu": 0.1828,
+      "webgl": 0.0274
+    },
+    "eo-s-zylot-skylight-stained-glass-majesty-mix": {
+      "webgpu": 0.5207,
+      "webgl": 0.6932
+    },
+    "eo-s-zylot-skylight-stained-glass-majesty-mix-alt": {
+      "webgpu": 0.1706,
+      "webgl": 0.2982
+    },
+    "eos-apocalypse": {
+      "webgpu": 0.3763,
+      "webgl": 0.1822
+    },
+    "eos-dark-side-of-the-moon-clean-mix": {
+      "webgpu": 0.5041,
+      "webgl": 0.4844
+    },
+    "eos-ether": {
+      "webgpu": 0.1013,
+      "webgl": 0.6766
+    },
+    "eos-ether-posession-phat-edit-v3": {
+      "webgpu": 0.1057,
+      "webgl": 0.0225
+    },
+    "eos-glowsticks-v2-03-music": {
+      "webgpu": 0.0004,
+      "webgl": 0.1281
+    },
+    "eos-heater-core-c": {
+      "webgpu": 0.1926,
+      "webgl": 0.0075
+    },
+    "eos-matrix-cube-c": {
+      "webgpu": 0.0013,
+      "webgl": 0.0021
+    },
+    "eos-phat-cat-scan-nirvana": {
+      "webgpu": 0.9867,
+      "webgl": 0.9869
+    },
+    "eos-phat-cubetrace-v2": {
+      "webgpu": 0.1698,
+      "webgl": 0.2547
+    },
+    "eos-phat-dark-heart": {
+      "webgpu": 0.8509,
+      "webgl": 0.3839
+    },
+    "eos-phat-linear-clouds-v2": {
+      "webgpu": 0.9827,
+      "webgl": 0.9728
+    },
+    "eos-phat-magnetosphere-13-pulsar": {
+      "webgpu": 0.9868,
+      "webgl": 0.9868
+    },
+    "eos-phat-vacuum-deification": {
+      "webgpu": 0,
+      "webgl": 0.0993
+    },
+    "eos-quasar": {
+      "webgpu": 0.0086,
+      "webgl": 0.0068
+    },
+    "eos-starburst-05-phasing": {
+      "webgpu": 0.0117,
+      "webgl": 0.1215
+    },
+    "eosphat-shipwreakedv5b": {
+      "webgpu": 0,
+      "webgl": 0.059
+    },
+    "esotic-rozzer-hippie-hypnotizer": {
+      "webgpu": 1,
+      "webgl": 0.9995
+    },
+    "esotic-rozzer-now-and-later": {
+      "webgpu": 0.9869,
+      "webgl": 0.988
+    },
+    "esotic-rozzer-the-dark-side-of-my-moon": {
+      "webgpu": 1,
+      "webgl": 0.9928
+    },
+    "esotic-rozzor-pixie-party-light-no-wave-invasion-mandala-chill-red-yellow-mix": {
+      "webgpu": 1,
+      "webgl": 0.8061
+    },
+    "evet-flexi-rainbox-splash-poolz": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "evet-proteus-core-element-5": {
+      "webgpu": 0.0742,
+      "webgl": 0.2428
+    },
+    "evet-responsive-acid-iris": {
+      "webgpu": 1,
+      "webgl": 0.0398
+    },
+    "evet-rgb-singularity": {
+      "webgpu": 0.9964,
+      "webgl": 0.0486
+    },
+    "fed-slowfast-1-1": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "fed-slowfast-1-1-geiss-composite-remix": {
+      "webgpu": 1,
+      "webgl": 0.998
+    },
+    "felix-capacitor": {
+      "webgpu": 0.9884,
+      "webgl": 0.9613
+    },
+    "fishbrain-a-quiet-death": {
+      "webgpu": 0.089,
+      "webgl": 0.1911
+    },
+    "fishbrain-breakfast-cruiser": {
+      "webgpu": 0.2633,
+      "webgl": 0.6037
+    },
+    "fishbrain-crystal-glasses": {
+      "webgpu": 0.0765,
+      "webgl": 0.1334
+    },
+    "fishbrain-eo-s-phat-starburst-totem-pole": {
+      "webgpu": 0.183,
+      "webgl": 0.2421
+    },
+    "fishbrain-flexi-stitchcraft": {
+      "webgpu": 0.9867,
+      "webgl": 0.9871
+    },
+    "fishbrain-flexi-witchcraft-2-0": {
+      "webgpu": 0.9868,
+      "webgl": 0.9868
+    },
+    "fishbrain-flexi-witchcraft-2-0-mash0000-no-one-cares-about-mi-the-note-major-third": {
+      "webgpu": 0.0032,
+      "webgl": 0.0735
+    },
+    "fishbrain-flexi-witchcraft-graffitti-attack": {
+      "webgpu": 0.0845,
+      "webgl": 0.8201
+    },
+    "fishbrain-flexi-witchcraft-graffitti-attack-mashmash": {
+      "webgpu": 0.8232,
+      "webgl": 0.9574
+    },
+    "fishbrain-flexi-witchcraft-unleashed": {
+      "webgpu": 0.9873,
+      "webgl": 0.99
+    },
+    "fishbrain-flexi-witchcraft-unleashed-00-the-template": {
+      "webgpu": 0.018,
+      "webgl": 0.0249
+    },
+    "fishbrain-gandalf-does-it-best-bccn-jelly-v4": {
+      "webgpu": 0.0079,
+      "webgl": 0.0887
+    },
+    "fishbrain-geiss-flexi-witchcraft-grow-mix-moebius-remix": {
+      "webgpu": 0.1341,
+      "webgl": 0.3461
+    },
+    "fishbrain-geiss-stahlregen-orb-witchcraft-yabm-tiled": {
+      "webgpu": 0.9869,
+      "webgl": 0.903
+    },
+    "fishbrain-geiss-the-adventures-of-prismo-jenkins-tile-mix": {
+      "webgpu": 0.9869,
+      "webgl": 0.2059
+    },
+    "fishbrain-geiss-the-adventures-of-prismo-jenkins-water-mix": {
+      "webgpu": 0.9999,
+      "webgl": 0.5973
+    },
+    "fishbrain-geiss-witchcraft-glow-mix": {
+      "webgpu": 0,
+      "webgl": 0.04
+    },
+    "fishbrain-geiss-witchcraft-grow-mix": {
+      "webgpu": 0.1385,
+      "webgl": 0.6189
+    },
+    "fishbrain-geiss-witchcraft-grow-mix-2": {
+      "webgpu": 0,
+      "webgl": 0.6938
+    },
+    "fishbrain-geiss-witchcraft-grow-mix-3": {
+      "webgpu": 0,
+      "webgl": 0.1423
+    },
+    "fishbrain-geiss-witchcraft-grow-mix-3c-finally-mirrored-mash0000-rituals-on-water-skin": {
+      "webgpu": 0.9845,
+      "webgl": 0.0028
+    },
+    "fishbrain-geiss-witchcraft-stahl-s-mirror-crossfire-mix": {
+      "webgpu": 0,
+      "webgl": 0.3613
+    },
+    "fishbrain-jade-nicotine": {
+      "webgpu": 0.1943,
+      "webgl": 0.1807
+    },
+    "fishbrain-lost-in-the-bottle": {
+      "webgpu": 0.9869,
+      "webgl": 0.9869
+    },
+    "fishbrain-one-step-beyond-jelly-remix": {
+      "webgpu": 0.9091,
+      "webgl": 0.5793
+    },
+    "fishbrain-psychotic-meltdown": {
+      "webgpu": 0.6128,
+      "webgl": 0.8354
+    },
+    "fishbrain-soft-porn": {
+      "webgpu": 0.0994,
+      "webgl": 0.2367
+    },
+    "fishbrain-the-adventures-of-prismo-jenkins": {
+      "webgpu": 0.9878,
+      "webgl": 0.7564
+    },
+    "fishbrain-the-dark-side-of-the-moon": {
+      "webgpu": 0.9848,
+      "webgl": 0.768
+    },
+    "fishbrain-the-machine-that-conquered-the-world-domination-remix": {
+      "webgpu": 0.0654,
+      "webgl": 0.1361
+    },
+    "fishbrain-toffee-cream-and-icing-sugar": {
+      "webgpu": 0.0193,
+      "webgl": 0.737
+    },
+    "fishbrain-when-robots-take-over-the-world": {
+      "webgpu": 0.9874,
+      "webgl": 0.9972
+    },
+    "fishbrain-white-scream-firefly": {
+      "webgpu": 0.0468,
+      "webgl": 0.1074
+    },
+    "fishbrain-witchcraft": {
+      "webgpu": 0,
+      "webgl": 0.0545
+    },
+    "fishbrain-witchcraft-necromancer-remix-phat-edit-v3": {
+      "webgpu": 0,
+      "webgl": 0.0051
+    },
+    "flexi-100-shader-fractal-origami-edit": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "flexi-3d-mosaic-glass-test-mash0000-9d-tuscan-slop-ram": {
+      "webgpu": 0.9885,
+      "webgl": 0.5896
+    },
+    "flexi-adamfx-hexcollie-moebius-morbid-vision-crack": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "flexi-age-of-shading-chaos": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "flexi-alien-canvas": {
+      "webgpu": 0.9664,
+      "webgl": 0.8574
+    },
+    "flexi-alien-canvas-001": {
+      "webgpu": 0.9669,
+      "webgl": 0.6867
+    },
+    "flexi-alien-canvas-learning": {
+      "webgpu": 0.3898,
+      "webgl": 0.5097
+    },
+    "flexi-alien-canvas-random-mashup": {
+      "webgpu": 0.2746,
+      "webgl": 0.3366
+    },
+    "flexi-alien-fader": {
+      "webgpu": 0.0001,
+      "webgl": 0.9993
+    },
+    "flexi-alien-fish-pond": {
+      "webgpu": 0.9999,
+      "webgl": 0.9941
+    },
+    "flexi-alien-web-bouncer": {
+      "webgpu": 0.8008,
+      "webgl": 0.914
+    },
+    "flexi-alien-web-bouncer-26": {
+      "webgpu": 0.3419,
+      "webgl": 0.2528
+    },
+    "flexi-alien-web-bouncer-edit-for-hexcollie": {
+      "webgpu": 0.8366,
+      "webgl": 0.9252
+    },
+    "flexi-alien-web-bouncer-edit-for-hexcollie-random-mashup": {
+      "webgpu": 0.2398,
+      "webgl": 0.9924
+    },
+    "flexi-amandio-c-organic": {
+      "webgpu": 0.9884,
+      "webgl": 0.9944
+    },
+    "flexi-amandio-c-organic-random-mashup": {
+      "webgpu": 0.9865,
+      "webgl": 0.99
+    },
+    "flexi-amandio-c-organic-random-mashup-2": {
+      "webgpu": 0.9861,
+      "webgl": 0.9803
+    },
+    "flexi-amandio-c-organic12-3d-2": {
+      "webgpu": 0.1487,
+      "webgl": 0.7188
+    },
+    "flexi-amandio-c-organic12-3d-2-alt": {
+      "webgpu": 0.0966,
+      "webgl": 0.4643
+    },
+    "flexi-amandio-c-organic12-3d3": {
+      "webgpu": 0.3416,
+      "webgl": 0.3898
+    },
+    "flexi-amandio-c-organic12-3d4": {
+      "webgpu": 0.1761,
+      "webgl": 0.4164
+    },
+    "flexi-amandio-c-organic12-3d4-2": {
+      "webgpu": 0.7307,
+      "webgl": 0.7831
+    },
+    "flexi-amandio-c-organic4-columns": {
+      "webgpu": 0.1588,
+      "webgl": 0.0931
+    },
+    "flexi-amandio-c-piercing-05-kopie-2-kopie": {
+      "webgpu": 0.9875,
+      "webgl": 1
+    },
+    "flexi-area-51": {
+      "webgpu": 0.7562,
+      "webgl": 0.9963
+    },
+    "flexi-area-51-reaction-diffusion-on-lotka-volterra-vertex-warp-alien-edge-glow-kaleidoscope-version": {
+      "webgpu": 0.5999,
+      "webgl": 1
+    },
+    "flexi-bdrv-acid-etching-jelly-v5-5": {
+      "webgpu": 0.0001,
+      "webgl": 0.5503
+    },
+    "flexi-bdrv-aderrasi-et-al-potion-of-resurrection-rosswell": {
+      "webgpu": 0.815,
+      "webgl": 0.9813
+    },
+    "flexi-bdrv-va-ultramix-148-fucking-infinity-mix": {
+      "webgpu": 0.997,
+      "webgl": 0.992
+    },
+    "flexi-bdrv-what-to-do-phat-edit": {
+      "webgpu": 0.9925,
+      "webgl": 1
+    },
+    "flexi-black-holes-sucking-fractals-for-breakfast": {
+      "webgpu": 0.3738,
+      "webgl": 0
+    },
+    "flexi-blame-hexcollie-twice": {
+      "webgpu": 0,
+      "webgl": 0.007
+    },
+    "flexi-blame-moebius": {
+      "webgpu": 0,
+      "webgl": 0.5393
+    },
+    "flexi-borderline-imagery": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "flexi-bouncing-balls-double-mindblob-gastrointestinal-mix": {
+      "webgpu": 0.9611,
+      "webgl": 0.9728
+    },
+    "flexi-bouncing-balls-double-mindblob-neon-mix": {
+      "webgpu": 1,
+      "webgl": 0.0133
+    },
+    "flexi-bouncing-balls-grafitti-mix": {
+      "webgpu": 0.0752,
+      "webgl": 0.9937
+    },
+    "flexi-bouncing-balls-illumination-mix": {
+      "webgpu": 0.0342,
+      "webgl": 0.4599
+    },
+    "flexi-bouncing-balls-neon-mix": {
+      "webgpu": 1,
+      "webgl": 0.0205
+    },
+    "flexi-braggadocio": {
+      "webgpu": 0.4718,
+      "webgl": 0.4846
+    },
+    "flexi-can-t-think-of-mosaic-cages": {
+      "webgpu": 0,
+      "webgl": 0.1176
+    },
+    "flexi-cell-tissue": {
+      "webgpu": 0.9273,
+      "webgl": 0.819
+    },
+    "flexi-color-strike": {
+      "webgpu": 0.9184,
+      "webgl": 0.9834
+    },
+    "flexi-cope-i-blew-you-a-soap-bubble-now-what-feel-the-projection-you-are-connected-to-it-all-nz": {
+      "webgpu": 0.3661,
+      "webgl": 0.63
+    },
+    "flexi-cope-i-blew-you-a-soap-bubble-now-what-feel-the-projection-you-are-connected-to-it-all-nz-wrepwrimindloss-w8": {
+      "webgpu": 0.8887,
+      "webgl": 0.9767
+    },
+    "flexi-crank-prototype": {
+      "webgpu": 0.4537,
+      "webgl": 0.2753
+    },
+    "flexi-crush-ice-72": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "flexi-dawn-has-broken": {
+      "webgpu": 0.6075,
+      "webgl": 0.3228
+    },
+    "flexi-dimensions-projection-and-abstraction": {
+      "webgpu": 0.899,
+      "webgl": 0.3166
+    },
+    "flexi-disruptor": {
+      "webgpu": 0.0265,
+      "webgl": 0.9868
+    },
+    "flexi-evolution-3-mash0000-orbiting-satellite-coral-reef-time-lapse": {
+      "webgpu": 0.2041,
+      "webgl": 0.3524
+    },
+    "flexi-fishbrain-geiss-martin-tokamak-witchery": {
+      "webgpu": 0.006,
+      "webgl": 0.8341
+    },
+    "flexi-fishbrain-geiss-unchained-others-plaidcraft": {
+      "webgpu": 0.9869,
+      "webgl": 0.9876
+    },
+    "flexi-fishbrain-martin-witchery": {
+      "webgpu": 0.006,
+      "webgl": 0.8732
+    },
+    "flexi-fishbrain-neon-mindblob-grafitti": {
+      "webgpu": 1,
+      "webgl": 0.0112
+    },
+    "flexi-fishbrain-operation-fatcap-ii": {
+      "webgpu": 0.0617,
+      "webgl": 0.0007
+    },
+    "flexi-fishbrain-operation-fatcap-techstyle": {
+      "webgpu": 0.0896,
+      "webgl": 0.6171
+    },
+    "flexi-fishbrain-operation-fatcap-techstyle-random-mashup": {
+      "webgpu": 0.0074,
+      "webgl": 1
+    },
+    "flexi-fishbrain-stahlregen-witchcraft-jelly5-5": {
+      "webgpu": 0.0794,
+      "webgl": 0.7813
+    },
+    "flexi-fishbrain-warpcraft": {
+      "webgpu": 0,
+      "webgl": 0.9806
+    },
+    "flexi-fishbrain-warpcraft-random-mashup": {
+      "webgpu": 0,
+      "webgl": 0.4951
+    },
+    "flexi-fishbrain-warpcraft-random-mashup-2": {
+      "webgpu": 0.1541,
+      "webgl": 0.999
+    },
+    "flexi-fishbrain-warpcraft-random-mashup-3": {
+      "webgpu": 0,
+      "webgl": 0.6231
+    },
+    "flexi-fishbrain-warpcraft-random-mashup-4": {
+      "webgpu": 0.7615,
+      "webgl": 0.9785
+    },
+    "flexi-fishbrain-warpcraft-random-mashup-5": {
+      "webgpu": 0.9869,
+      "webgl": 0.9711
+    },
+    "flexi-fishbrain-witchcraft-complex-terraforming": {
+      "webgpu": 0.0639,
+      "webgl": 0.4731
+    },
+    "flexi-fishbrain-witchcraft-complex-terraforming-fiddling-twists-in-the-fabric-of-space": {
+      "webgpu": 0.0357,
+      "webgl": 0.4737
+    },
+    "flexi-fishies": {
+      "webgpu": 0.0004,
+      "webgl": 0.0084
+    },
+    "flexi-flow": {
+      "webgpu": 0.2043,
+      "webgl": 0.2781
+    },
+    "flexi-fractal-descent": {
+      "webgpu": 0.0005,
+      "webgl": 0.0006
+    },
+    "flexi-fractal-jellyfish-moebius-mix": {
+      "webgpu": 0.3494,
+      "webgl": 0.312
+    },
+    "flexi-fractal-seafood": {
+      "webgpu": 0.2133,
+      "webgl": 0.2643
+    },
+    "flexi-geiss-and-rovastar-chaos-layered-sinewsed-tokamak-2": {
+      "webgpu": 0,
+      "webgl": 0.0007
+    },
+    "flexi-geiss-and-rovastar-chaos-layered-tokamak": {
+      "webgpu": 0,
+      "webgl": 0.0002
+    },
+    "flexi-geiss-antagonizing-beat-detection-codes": {
+      "webgpu": 0.1358,
+      "webgl": 0.5212
+    },
+    "flexi-geiss-bipolar-vs-reaction-diffusion": {
+      "webgpu": 0,
+      "webgl": 0.9025
+    },
+    "flexi-geiss-bipolar-vs-reaction-diffusion-mix": {
+      "webgpu": 0,
+      "webgl": 0.8688
+    },
+    "flexi-geiss-demon-lord-unholy-tokamak-clot-plot": {
+      "webgpu": 0.9873,
+      "webgl": 0.0043
+    },
+    "flexi-geiss-infused-with-the-spiral-heavy-oil-mix-nz-rapery": {
+      "webgpu": 0.0005,
+      "webgl": 0.0033
+    },
+    "flexi-geiss-mindblob-where-it-s-at-now-broth-mix": {
+      "webgpu": 0.9807,
+      "webgl": 0.9222
+    },
+    "flexi-geiss-mindblob-where-it-s-at-now-emboss-mix": {
+      "webgpu": 0.985,
+      "webgl": 0.9195
+    },
+    "flexi-geiss-pogo-cubes-on-tokamak-matter": {
+      "webgpu": 0.4103,
+      "webgl": 0.0212
+    },
+    "flexi-geiss-pogo-cubes-on-tokamak-matter-bccn-jelly-v4": {
+      "webgpu": 0.0054,
+      "webgl": 0.0034
+    },
+    "flexi-geiss-pogo-cubes-on-tokamak-matter-jelly-5-55": {
+      "webgpu": 0.0497,
+      "webgl": 0.0102
+    },
+    "flexi-geiss-pogo-cubes-on-tokamak-matter-mind-over-matter-remix": {
+      "webgpu": 0.2458,
+      "webgl": 0.4769
+    },
+    "flexi-geiss-pogo-cubes-on-tokamak-matter-mind-over-matter-remix-2": {
+      "webgpu": 0.2881,
+      "webgl": 0.4827
+    },
+    "flexi-geiss-pogo-cubes-vs-tokamak-vs-game-of-life-stahls-jelly-4-5-finish": {
+      "webgpu": 0.2032,
+      "webgl": 0.0887
+    },
+    "flexi-geiss-redi-jedi-stahlregen-thumbdrum-tokamak-crossfiring-aftermath-mashup": {
+      "webgpu": 0,
+      "webgl": 0.6011
+    },
+    "flexi-geiss-relief-2-anim-remix": {
+      "webgpu": 0.9869,
+      "webgl": 0.9869
+    },
+    "flexi-geiss-stahlregen-tokamak-jelly-infusion": {
+      "webgpu": 0.9869,
+      "webgl": 0.9869
+    },
+    "flexi-geiss-the-deep-diver-s-manifesto-metaphorfree": {
+      "webgpu": 0.1999,
+      "webgl": 1
+    },
+    "flexi-geiss-tokamak-fallout-repellor": {
+      "webgpu": 0.9869,
+      "webgl": 0.9869
+    },
+    "flexi-geiss-tokamak-mindblob-2-0": {
+      "webgpu": 0.9869,
+      "webgl": 0.0034
+    },
+    "flexi-gimme-color": {
+      "webgpu": 0.3663,
+      "webgl": 0.3628
+    },
+    "flexi-gimme-color-bc-cn-jelly-4": {
+      "webgpu": 0.0117,
+      "webgl": 0.0195
+    },
+    "flexi-gold-plated-maelstrom-of-chaos": {
+      "webgpu": 0.1668,
+      "webgl": 0.7034
+    },
+    "flexi-gold-plated-maelstrom-of-chaos-mirrorized": {
+      "webgpu": 0.0594,
+      "webgl": 0.8549
+    },
+    "flexi-goody-the-prayerwheel-misplaced-prayers": {
+      "webgpu": 0,
+      "webgl": 0.0402
+    },
+    "flexi-gravitational-chaos": {
+      "webgpu": 0.0415,
+      "webgl": 0.1176
+    },
+    "flexi-hue-burst": {
+      "webgpu": 0.0364,
+      "webgl": 0.0004
+    },
+    "flexi-hue-tube": {
+      "webgpu": 0.2079,
+      "webgl": 0.122
+    },
+    "flexi-hyperspaceflight-bn-cn-jelly-4": {
+      "webgpu": 0,
+      "webgl": 0.0319
+    },
+    "flexi-impulse-drive": {
+      "webgpu": 0,
+      "webgl": 0.0092
+    },
+    "flexi-infused-with-the-spiral": {
+      "webgpu": 0,
+      "webgl": 0.0143
+    },
+    "flexi-infused-with-the-spiral-bc-cn-jelly-v4": {
+      "webgpu": 0,
+      "webgl": 0.0035
+    },
+    "flexi-infused-with-the-spiral-jelly-4-x-cn": {
+      "webgpu": 0,
+      "webgl": 0.0077
+    },
+    "flexi-intensive-shader-fractal": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "flexi-intensive-shader-fractal-suksma-comp-shader-mix": {
+      "webgpu": 0.0134,
+      "webgl": 0.9834
+    },
+    "flexi-intention-focus": {
+      "webgpu": 0.9988,
+      "webgl": 0.9342
+    },
+    "flexi-inter-state": {
+      "webgpu": 0.9868,
+      "webgl": 0.0236
+    },
+    "flexi-invisible-chains-securing-you-don-t-move-cn-bc-jelly-4": {
+      "webgpu": 0,
+      "webgl": 0.0001
+    },
+    "flexi-jelly-fish-mandala": {
+      "webgpu": 0,
+      "webgl": 0.0097
+    },
+    "flexi-jellyfish-jam": {
+      "webgpu": 0.146,
+      "webgl": 0.0035
+    },
+    "flexi-julia-fractal": {
+      "webgpu": 0.7323,
+      "webgl": 0.6787
+    },
+    "flexi-julia-island-output-stage": {
+      "webgpu": 0.2786,
+      "webgl": 0.2176
+    },
+    "flexi-julia-set-illuminating-example": {
+      "webgpu": 0.055,
+      "webgl": 0.865
+    },
+    "flexi-julia-set-illuminating-example-parameter-play": {
+      "webgpu": 0.9212,
+      "webgl": 0.9864
+    },
+    "flexi-julia-set-shader-example": {
+      "webgpu": 0.6697,
+      "webgl": 0.9603
+    },
+    "flexi-julia-set-shader-example-2": {
+      "webgpu": 0.9875,
+      "webgl": 0.3514
+    },
+    "flexi-julia-set-shader-example-2-geiss-sharpen-mix": {
+      "webgpu": 0.9881,
+      "webgl": 0.3291
+    },
+    "flexi-julia-set-shader-neocortex-wiretapping": {
+      "webgpu": 0.9904,
+      "webgl": 0.9909
+    },
+    "flexi-julia-vs-sierpinski": {
+      "webgpu": 0.9868,
+      "webgl": 0.9868
+    },
+    "flexi-julian-affairs-bc-cn-jelly-v4": {
+      "webgpu": 0.0025,
+      "webgl": 0.294
+    },
+    "flexi-julian-affairs-remix": {
+      "webgpu": 0.9848,
+      "webgl": 0.186
+    },
+    "flexi-kaleidoscope-template": {
+      "webgpu": 0.0446,
+      "webgl": 0.9964
+    },
+    "flexi-kaleidoscope-template-commented-composite-shader": {
+      "webgpu": 0.0649,
+      "webgl": 0.997
+    },
+    "flexi-layered": {
+      "webgpu": 0.0312,
+      "webgl": 0.0301
+    },
+    "flexi-layered-boz-buckwild": {
+      "webgpu": 0.045,
+      "webgl": 0.03
+    },
+    "flexi-learning-curve": {
+      "webgpu": 0,
+      "webgl": 0.7729
+    },
+    "flexi-lollipop-overkill-bccn-jelly-v4": {
+      "webgpu": 0.0556,
+      "webgl": 0.9244
+    },
+    "flexi-lorenz-attractor": {
+      "webgpu": 0.0002,
+      "webgl": 0.0171
+    },
+    "flexi-lorenz-chaser-accidental-shader-lock-mashup-ripples": {
+      "webgpu": 0,
+      "webgl": 0.9925
+    },
+    "flexi-lorenz-chaser-accidental-shader-lock-mashup-ripples-2-nz-discombobule-lose": {
+      "webgpu": 0.4229,
+      "webgl": 1
+    },
+    "flexi-lorenz-chaser-jelly-v3": {
+      "webgpu": 0,
+      "webgl": 0.0012
+    },
+    "flexi-lorenz-chaser-stahl-s-rainbow-multiply-mix-2-jelly-v2": {
+      "webgpu": 0,
+      "webgl": 0.0001
+    },
+    "flexi-martin-astral-projection": {
+      "webgpu": 0.1014,
+      "webgl": 0.1843
+    },
+    "flexi-martin-cascading-decay-swing": {
+      "webgpu": 0.6093,
+      "webgl": 0.9966
+    },
+    "flexi-martin-dive": {
+      "webgpu": 0.42,
+      "webgl": 0.9998
+    },
+    "flexi-martin-geiss-dedicated-to-the-sherwin-maxawow": {
+      "webgpu": 1,
+      "webgl": 0.9811
+    },
+    "flexi-martin-geiss-painterly-rogue-wave-strike": {
+      "webgpu": 0.9857,
+      "webgl": 0.987
+    },
+    "flexi-martin-geiss-painterly-rogue-wave-strike-color-emboss-mix": {
+      "webgpu": 0.7856,
+      "webgl": 0.7797
+    },
+    "flexi-martin-phat-zylot-eo-s-one-way-trip-trap-proof-of-concept-epileptic-zoom-tunnel-edit": {
+      "webgpu": 0.9798,
+      "webgl": 0.689
+    },
+    "flexi-martin-predator-prey-system-versus-fruitmachine": {
+      "webgpu": 0.9813,
+      "webgl": 0.953
+    },
+    "flexi-martin-tunnel-of-supraschismatika": {
+      "webgpu": 0.9826,
+      "webgl": 0.9809
+    },
+    "flexi-meta4free": {
+      "webgpu": 0.9947,
+      "webgl": 1
+    },
+    "flexi-meta4free-3-my-time-is-not-your-time": {
+      "webgpu": 0.9406,
+      "webgl": 0.9045
+    },
+    "flexi-milkcore": {
+      "webgpu": 0.9813,
+      "webgl": 0.9871
+    },
+    "flexi-milkcore-martin-s-ripple-on-water-insertion": {
+      "webgpu": 0.9678,
+      "webgl": 0.9958
+    },
+    "flexi-mindblob": {
+      "webgpu": 0.9875,
+      "webgl": 0.0042
+    },
+    "flexi-mindblob-2-0": {
+      "webgpu": 0.9869,
+      "webgl": 0.0037
+    },
+    "flexi-mindblob-2-0-bc-cn-jelly-4": {
+      "webgpu": 0.9868,
+      "webgl": 0
+    },
+    "flexi-mindblob-mix": {
+      "webgpu": 0.9868,
+      "webgl": 0.0299
+    },
+    "flexi-mindblob-mix-random-mashup": {
+      "webgpu": 0.3935,
+      "webgl": 1
+    },
+    "flexi-mindblob-shiny-mix": {
+      "webgpu": 0.0189,
+      "webgl": 0.048
+    },
+    "flexi-mindblob-where-it-s-at-now": {
+      "webgpu": 0.9868,
+      "webgl": 0.9872
+    },
+    "flexi-mindblob-where-it-s-at-now-2": {
+      "webgpu": 0.9869,
+      "webgl": 0.9868
+    },
+    "flexi-mindblob-where-it-s-at-now-3": {
+      "webgpu": 0.9868,
+      "webgl": 0.9861
+    },
+    "flexi-moebius-transformation-random-texture-mix": {
+      "webgpu": 0.8875,
+      "webgl": 0.8042
+    },
+    "flexi-molten-neon-fire-spirit": {
+      "webgpu": 0.064,
+      "webgl": 0.0848
+    },
+    "flexi-mom-why-the-sky-looks-different-today": {
+      "webgpu": 0.0003,
+      "webgl": 1
+    },
+    "flexi-motion-blurred-moebius-fractal-early-alpha-version": {
+      "webgpu": 0.9955,
+      "webgl": 0.997
+    },
+    "flexi-multiverse": {
+      "webgpu": 0.113,
+      "webgl": 0.1159
+    },
+    "flexi-multiverse-random-mashup": {
+      "webgpu": 0.1373,
+      "webgl": 0.4867
+    },
+    "flexi-never-expected-to-play-the-game-on-this-level": {
+      "webgpu": 0.993,
+      "webgl": 0.9828
+    },
+    "flexi-nitorami-beat-explorer-cn-bc-jelly-4": {
+      "webgpu": 0,
+      "webgl": 0.2193
+    },
+    "flexi-oldschool-tree": {
+      "webgpu": 0.0204,
+      "webgl": 0.0936
+    },
+    "flexi-patternton-district-of-media-capitol-of-the-united-abstractions-of-fractopia": {
+      "webgpu": 0.9791,
+      "webgl": 0.0013
+    },
+    "flexi-phat-fractal-star-child-restless": {
+      "webgpu": 0.058,
+      "webgl": 0.9877
+    },
+    "flexi-phat-zylot-eo-s-work-with-lines-of-code": {
+      "webgpu": 1,
+      "webgl": 0.0265
+    },
+    "flexi-piercing": {
+      "webgpu": 0.9868,
+      "webgl": 0.0242
+    },
+    "flexi-predator-prey-seminar-paper-visualization-05-mathematical-biology-concepts-reaction-diffusion-on-predator-prey-spirals": {
+      "webgpu": 0.003,
+      "webgl": 0.0193
+    },
+    "flexi-predator-prey-spirals": {
+      "webgpu": 0.9868,
+      "webgl": 0.9876
+    },
+    "flexi-predator-prey-spirals-geiss-laplacian-finish": {
+      "webgpu": 0.0202,
+      "webgl": 0.4617
+    },
+    "flexi-predator-prey-spirals-stahlregens-gelatine-finish": {
+      "webgpu": 0,
+      "webgl": 0.3869
+    },
+    "flexi-psychenapping": {
+      "webgpu": 0.5629,
+      "webgl": 0.918
+    },
+    "flexi-psycho-wondermilk-s0s": {
+      "webgpu": 0.4589,
+      "webgl": 0.0357
+    },
+    "flexi-reality-tunnel": {
+      "webgpu": 0.2082,
+      "webgl": 0.1216
+    },
+    "flexi-romanesco-fantasies": {
+      "webgpu": 0.9868,
+      "webgl": 0.987
+    },
+    "flexi-romanesco-fantasies-motion-blurred": {
+      "webgpu": 0.9868,
+      "webgl": 0.9869
+    },
+    "flexi-rovastar-fractopia-blame-hexcollie": {
+      "webgpu": 0,
+      "webgl": 0.0046
+    },
+    "flexi-rovastar-fractopia-lovecraft": {
+      "webgpu": 0,
+      "webgl": 0.05
+    },
+    "flexi-rovastar-geiss-fractopia-vs-bas-relief": {
+      "webgpu": 0,
+      "webgl": 0.0949
+    },
+    "flexi-rovastar-landing-on-fractopia": {
+      "webgpu": 0.1126,
+      "webgl": 0.1249
+    },
+    "flexi-science-fraction": {
+      "webgpu": 0.0926,
+      "webgl": 0.0852
+    },
+    "flexi-self-lubricating": {
+      "webgpu": 0.7425,
+      "webgl": 0.9936
+    },
+    "flexi-self-similarity-7": {
+      "webgpu": 0.0199,
+      "webgl": 0.027
+    },
+    "flexi-shifter-sublimal-spaceship": {
+      "webgpu": 1,
+      "webgl": 0.0182
+    },
+    "flexi-smashing-fractals-2-0": {
+      "webgpu": 0.0054,
+      "webgl": 0.0284
+    },
+    "flexi-smashing-fractals-acid-etching-mix": {
+      "webgpu": 0.0091,
+      "webgl": 0.0422
+    },
+    "flexi-smashing-fractals-geiss-bas-relief-finish": {
+      "webgpu": 0.0639,
+      "webgl": 0.1067
+    },
+    "flexi-smouldering": {
+      "webgpu": 0.0252,
+      "webgl": 0.9882
+    },
+    "flexi-splatter-effects-17-the-wave-a-google-love-story-written-in-decay-roam3-2": {
+      "webgpu": 0.49,
+      "webgl": 0.3805
+    },
+    "flexi-stahlregen-a-car-crash-you-can-t-defocus-2": {
+      "webgpu": 0.1074,
+      "webgl": 0.3246
+    },
+    "flexi-stahlregen-geiss-tobias-wolfboi-space-gelatine-burst-mash0000-chromatidal-pool-mirror-blasphemy": {
+      "webgpu": 0,
+      "webgl": 0.173
+    },
+    "flexi-stahlregen-gimme-color-spinner-mix": {
+      "webgpu": 0.3566,
+      "webgl": 0.3601
+    },
+    "flexi-stahlregen-gimme-color-spinner-mix-v2": {
+      "webgpu": 0.3487,
+      "webgl": 0.4073
+    },
+    "flexi-stahlregen-jelly-showoff-parade": {
+      "webgpu": 1,
+      "webgl": 0.001
+    },
+    "flexi-stahlregen-jelly-space": {
+      "webgpu": 0.0211,
+      "webgl": 0.0168
+    },
+    "flexi-stahlregen-jelly-spin-off": {
+      "webgpu": 0.9868,
+      "webgl": 0.7442
+    },
+    "flexi-stahlregen-jelly-strike": {
+      "webgpu": 0.8992,
+      "webgl": 0.975
+    },
+    "flexi-stahlregen-jewelry-tiles": {
+      "webgpu": 1,
+      "webgl": 0.0281
+    },
+    "flexi-stahlregen-julian-tiles-3-mirror-mode-eo-s-spiral-chaos": {
+      "webgpu": 0.637,
+      "webgl": 0.5731
+    },
+    "flexi-stahlregen-julian-tiles-mirror-mode-eo-s": {
+      "webgpu": 0.6003,
+      "webgl": 0.6754
+    },
+    "flexi-stahlregen-martin-indoctrinutrition": {
+      "webgpu": 0.8502,
+      "webgl": 0.776
+    },
+    "flexi-stahlregen-nitorami-shifter-shader-authoring-motivation-set": {
+      "webgpu": 0.2988,
+      "webgl": 0.9743
+    },
+    "flexi-stahlregen-organic-canvas": {
+      "webgpu": 0,
+      "webgl": 0.8934
+    },
+    "flexi-stahlregen-stupid-visualization-test-bc-cn-jelly-4": {
+      "webgpu": 0.3326,
+      "webgl": 0.5013
+    },
+    "flexi-sto-aftermath": {
+      "webgpu": 0,
+      "webgl": 0.3236
+    },
+    "flexi-sto-learning-curve": {
+      "webgpu": 0,
+      "webgl": 0.3824
+    },
+    "flexi-strangely-dynamic-world": {
+      "webgpu": 0.3237,
+      "webgl": 0.7361
+    },
+    "flexi-supersonic": {
+      "webgpu": 0.6266,
+      "webgl": 0.5801
+    },
+    "flexi-swimmer-fractal-template-the-freedom-of-torusland": {
+      "webgpu": 0.0036,
+      "webgl": 0.0101
+    },
+    "flexi-swing-out-on-the-spiral": {
+      "webgpu": 0.1212,
+      "webgl": 1
+    },
+    "flexi-target-practice": {
+      "webgpu": 0.0034,
+      "webgl": 0.0131
+    },
+    "flexi-the-bouncer-and-the-crasher": {
+      "webgpu": 0.9912,
+      "webgl": 0.9357
+    },
+    "flexi-the-bouncer-and-the-crasher-random-mashup": {
+      "webgpu": 0.8123,
+      "webgl": 0.9293
+    },
+    "flexi-the-bouncer-and-the-crasher-random-mashup-2": {
+      "webgpu": 0.9912,
+      "webgl": 0.9787
+    },
+    "flexi-the-bouncer-and-the-crasher-random-mashup-3": {
+      "webgpu": 0.9894,
+      "webgl": 0.9981
+    },
+    "flexi-the-bouncer-and-the-crasher-random-mashup-4": {
+      "webgpu": 0.9898,
+      "webgl": 0.6729
+    },
+    "flexi-the-distant-point-between": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "flexi-the-distant-point-between-derivative": {
+      "webgpu": 0.9812,
+      "webgl": 0.0232
+    },
+    "flexi-the-prayerwheel": {
+      "webgpu": 0,
+      "webgl": 0.1084
+    },
+    "flexi-trickster-zenarchy": {
+      "webgpu": 0,
+      "webgl": 0.0468
+    },
+    "flexi-truly-soft-piece-of-software-this-is-generic-texturing-jelly": {
+      "webgpu": 0,
+      "webgl": 0
+    },
+    "flexi-undercurrents-2-bccn-jelly-v4": {
+      "webgpu": 0,
+      "webgl": 0.2875
+    },
+    "flexi-undercurrents-3-geiss-bipolar-1-mix-jelly-5-5": {
+      "webgpu": 0.0823,
+      "webgl": 0.8286
+    },
+    "flexi-undercurrents-3-psychodelic-mix-mash0001-planck-based-dematerializer": {
+      "webgpu": 0.9792,
+      "webgl": 0.8955
+    },
+    "flexi-using-jedi-forces": {
+      "webgpu": 0.0215,
+      "webgl": 0.1822
+    },
+    "flexi-what-is-the-matrix": {
+      "webgpu": 0.9889,
+      "webgl": 0.0273
+    },
+    "flexi-what-to-do-with-the-inside-of-a-torus-easily-customizable-moebius-spiral-template": {
+      "webgpu": 0,
+      "webgl": 0.1505
+    },
+    "flexi-when-monopolies-were-the-future-simple-warp-non-reactive-moebius": {
+      "webgpu": 0.9234,
+      "webgl": 0.2343
+    },
+    "flexi-why-random-mashups-should-be-forbidden": {
+      "webgpu": 0,
+      "webgl": 0.8525
+    },
+    "flexi-why-random-mashups-should-be-forbidden-meta": {
+      "webgpu": 0.9868,
+      "webgl": 0.0347
+    },
+    "flexi-wild-at-range": {
+      "webgpu": 0.2865,
+      "webgl": 0.131
+    },
+    "flexi-working-with-infinity": {
+      "webgpu": 0.9868,
+      "webgl": 0
+    },
+    "fumbling-foo-flexi-martin-orb-star-forge-v16": {
+      "webgpu": 0.9868,
+      "webgl": 0.0025
+    },
+    "fumbling-foo-flexi-martin-orb-unchained-star-nova-v7b": {
+      "webgpu": 1,
+      "webgl": 0.1737
+    },
+    "future-ligh-show-adamfx-2-martin-flexi-lodus-geiss-ludicrous-speed-baked-hexocollie-eos-suksma-adamfx-ft-che-fishbrain-bmelgren-4": {
+      "webgpu": 0.0667,
+      "webgl": 0.0764
+    },
+    "fvese-butterfly": {
+      "webgpu": 0.0175,
+      "webgl": 0.0024
+    },
+    "fvese-rebirth-progression-rot-mix": {
+      "webgpu": 0.0145,
+      "webgl": 0.0637
+    },
+    "fvese-snowflake-like-2": {
+      "webgpu": 1,
+      "webgl": 0.0063
+    },
+    "fvese-the-tunnel-final-stage-mix": {
+      "webgpu": 0.3432,
+      "webgl": 0.3565
+    },
+    "fvese-zoom-effects-remix-2": {
+      "webgpu": 0.0571,
+      "webgl": 0.1803
+    },
+    "fvese-zoom-effects-remix-3": {
+      "webgpu": 0.0861,
+      "webgl": 0.8088
+    },
+    "geiss-3-layers": {
+      "webgpu": 0.0001,
+      "webgl": 0.5772
+    },
+    "geiss-3-layers-e": {
+      "webgpu": 0.3191,
+      "webgl": 0.9891
+    },
+    "geiss-3-layers-g": {
+      "webgpu": 0.2646,
+      "webgl": 0.9901
+    },
+    "geiss-3-layers-minefield-mix": {
+      "webgpu": 0.0099,
+      "webgl": 0.9574
+    },
+    "geiss-3-layers-planar-mix": {
+      "webgpu": 0.4233,
+      "webgl": 0.9825
+    },
+    "geiss-3-layers-rayleigh-scattering-mix": {
+      "webgpu": 0.1883,
+      "webgl": 0.9153
+    },
+    "geiss-3-layers-tunnel-mix": {
+      "webgpu": 0.0111,
+      "webgl": 0.3146
+    },
+    "geiss-all-spark": {
+      "webgpu": 0.8599,
+      "webgl": 0.9906
+    },
+    "geiss-all-spark-mash0000-high-on-voltage": {
+      "webgpu": 0.353,
+      "webgl": 0.9998
+    },
+    "geiss-all-spark-polar": {
+      "webgpu": 0.438,
+      "webgl": 0.9834
+    },
+    "geiss-all-spark-sinews": {
+      "webgpu": 0.3289,
+      "webgl": 0.9844
+    },
+    "geiss-and-zylot-reaction-diffusion-3-overload-mix-2": {
+      "webgpu": 0,
+      "webgl": 0.8763
+    },
+    "geiss-artifact-01": {
+      "webgpu": 0.9872,
+      "webgl": 0.9294
+    },
+    "geiss-artifact-02": {
+      "webgpu": 0.9869,
+      "webgl": 0.9282
+    },
+    "geiss-artifact-03": {
+      "webgpu": 0.9869,
+      "webgl": 0.8698
+    },
+    "geiss-artifact-04": {
+      "webgpu": 0.9868,
+      "webgl": 0.8652
+    },
+    "geiss-artifact-05": {
+      "webgpu": 0.3251,
+      "webgl": 0.6177
+    },
+    "geiss-artifact-06": {
+      "webgpu": 0.9869,
+      "webgl": 0.862
+    },
+    "geiss-artifact-07": {
+      "webgpu": 0.9851,
+      "webgl": 0.7328
+    },
+    "geiss-artifact-08": {
+      "webgpu": 0.0003,
+      "webgl": 0.2569
+    },
+    "geiss-artifact-09": {
+      "webgpu": 0.0003,
+      "webgl": 0.4591
+    },
+    "geiss-artifact-10": {
+      "webgpu": 1,
+      "webgl": 0.7792
+    },
+    "geiss-artifact-11": {
+      "webgpu": 1,
+      "webgl": 0.8423
+    },
+    "geiss-artifact-12": {
+      "webgpu": 0,
+      "webgl": 0.8467
+    },
+    "geiss-artifact-13-big-waves": {
+      "webgpu": 0.9875,
+      "webgl": 0.7825
+    },
+    "geiss-artifact-14-emboss": {
+      "webgpu": 0.9871,
+      "webgl": 0.9838
+    },
+    "geiss-artifact-15-emboss": {
+      "webgpu": 1,
+      "webgl": 0.8847
+    },
+    "geiss-artifact-6": {
+      "webgpu": 0.0043,
+      "webgl": 0.9151
+    },
+    "geiss-artifact-6b": {
+      "webgpu": 0.0005,
+      "webgl": 0.5883
+    },
+    "geiss-artifact-6d": {
+      "webgpu": 0,
+      "webgl": 0.7843
+    },
+    "geiss-artifact-plasma": {
+      "webgpu": 0.0033,
+      "webgl": 0.9986
+    },
+    "geiss-artifact-plasma-2": {
+      "webgpu": 0.0056,
+      "webgl": 0.9994
+    },
+    "geiss-asymptote": {
+      "webgpu": 0.0008,
+      "webgl": 0.0062
+    },
+    "geiss-aurora": {
+      "webgpu": 0.0353,
+      "webgl": 0.2529
+    },
+    "geiss-aurora-2": {
+      "webgpu": 0.029,
+      "webgl": 0.3696
+    },
+    "geiss-aurora-industrialis": {
+      "webgpu": 0.4351,
+      "webgl": 0.8126
+    },
+    "geiss-bas-relief": {
+      "webgpu": 0.3807,
+      "webgl": 0.7585
+    },
+    "geiss-bas-relief-mash0000-restructure-society-one-sheep-at-a-time": {
+      "webgpu": 0.9875,
+      "webgl": 0.4916
+    },
+    "geiss-bass-zoom": {
+      "webgpu": 1,
+      "webgl": 0.9872
+    },
+    "geiss-beat-dots-2": {
+      "webgpu": 0.6666,
+      "webgl": 0.8394
+    },
+    "geiss-beetle-bore-color-invert-mirror-animated": {
+      "webgpu": 0.9732,
+      "webgl": 1
+    },
+    "geiss-beetle-bore-color-invert-mirror-x": {
+      "webgpu": 0.9648,
+      "webgl": 1
+    },
+    "geiss-bipolar-1": {
+      "webgpu": 0.2535,
+      "webgl": 0.9863
+    },
+    "geiss-bipolar-2-enhanced": {
+      "webgpu": 0.011,
+      "webgl": 0.3102
+    },
+    "geiss-bipolar-5": {
+      "webgpu": 0,
+      "webgl": 0.5164
+    },
+    "geiss-bipolar-x": {
+      "webgpu": 0.1371,
+      "webgl": 0.8103
+    },
+    "geiss-blur-mix-3": {
+      "webgpu": 0.2221,
+      "webgl": 0.4856
+    },
+    "geiss-brain-zoom": {
+      "webgpu": 0.8783,
+      "webgl": 0.9062
+    },
+    "geiss-brain-zoom-3": {
+      "webgpu": 0.9686,
+      "webgl": 0.7862
+    },
+    "geiss-brain-zoom-3-color-emboss-mix": {
+      "webgpu": 0.8097,
+      "webgl": 0.9262
+    },
+    "geiss-brain-zoom-3-color-emboss-mix-2": {
+      "webgpu": 0.8504,
+      "webgl": 0.8803
+    },
+    "geiss-brain-zoom-3-random-texture-mix": {
+      "webgpu": 0.9508,
+      "webgl": 0.7987
+    },
+    "geiss-brain-zoom-4": {
+      "webgpu": 0.9666,
+      "webgl": 0.8531
+    },
+    "geiss-cartographie": {
+      "webgpu": 1,
+      "webgl": 0.9352
+    },
+    "geiss-casino": {
+      "webgpu": 0.7477,
+      "webgl": 0.8013
+    },
+    "geiss-cauldron-painterly": {
+      "webgpu": 0.3808,
+      "webgl": 0.8956
+    },
+    "geiss-cauldron-painterly-2": {
+      "webgpu": 0.4791,
+      "webgl": 0.8821
+    },
+    "geiss-cauldron-painterly-2-saturation-remix": {
+      "webgpu": 0.3905,
+      "webgl": 0.8766
+    },
+    "geiss-cauldron-painterly-3": {
+      "webgpu": 0.4532,
+      "webgl": 0.8755
+    },
+    "geiss-cauldron-painterly-3-saturation-remix": {
+      "webgpu": 0.3175,
+      "webgl": 0.927
+    },
+    "geiss-cauldron-painterly-4": {
+      "webgpu": 0.2876,
+      "webgl": 0.9263
+    },
+    "geiss-cauldron-painterly-4-saturation-remix": {
+      "webgpu": 0.3823,
+      "webgl": 0.9523
+    },
+    "geiss-cauldron-painterly-5": {
+      "webgpu": 0.1499,
+      "webgl": 0.81
+    },
+    "geiss-cauldron-painterly-5-saturation-remix": {
+      "webgpu": 0.0457,
+      "webgl": 0.8898
+    },
+    "geiss-cauldron-painterly-saturation-remix": {
+      "webgpu": 0.4534,
+      "webgl": 0.91
+    },
+    "geiss-cauldron-tendrils": {
+      "webgpu": 0.3778,
+      "webgl": 0.9504
+    },
+    "geiss-cauldron-tendrils-saturation-remix": {
+      "webgpu": 0.6144,
+      "webgl": 0.9446
+    },
+    "geiss-cepia-dither": {
+      "webgpu": 0.0937,
+      "webgl": 0.9404
+    },
+    "geiss-chromatexture-paint-in-2": {
+      "webgpu": 0.9938,
+      "webgl": 0.5947
+    },
+    "geiss-chrome": {
+      "webgpu": 0.9908,
+      "webgl": 0.4199
+    },
+    "geiss-color-pox-acid-impression-mix": {
+      "webgpu": 0.5698,
+      "webgl": 0.9856
+    },
+    "geiss-color-pox-acid-impression-mix-color-saturation-remix": {
+      "webgpu": 0.6129,
+      "webgl": 0.9498
+    },
+    "geiss-color-pox-measles-mix": {
+      "webgpu": 0.1625,
+      "webgl": 0.6942
+    },
+    "geiss-color-pox-van-gogh-mix": {
+      "webgpu": 0.459,
+      "webgl": 0.9805
+    },
+    "geiss-color-pox-van-gogh-mix-color-saturation-remix": {
+      "webgpu": 0.4462,
+      "webgl": 0.978
+    },
+    "geiss-confetti": {
+      "webgpu": 0.6387,
+      "webgl": 0.8106
+    },
+    "geiss-confetti-color-saturation-boosted": {
+      "webgpu": 0.6487,
+      "webgl": 0.7999
+    },
+    "geiss-confetti-kaleidoscope-mix": {
+      "webgpu": 0.3999,
+      "webgl": 0.9787
+    },
+    "geiss-confetti-kaleidoscope-mix-2": {
+      "webgpu": 0.0003,
+      "webgl": 0.0887
+    },
+    "geiss-confetti-kaleidoscope-mix-alt": {
+      "webgpu": 0.0001,
+      "webgl": 0.0979
+    },
+    "geiss-confetti-kaleidoscope-mix-color-saturation-boosted": {
+      "webgpu": 0.6808,
+      "webgl": 0.9622
+    },
+    "geiss-constant-velocity-angular-blur": {
+      "webgpu": 0.1699,
+      "webgl": 0.4845
+    },
+    "geiss-constant-velocity-glow": {
+      "webgpu": 0.0823,
+      "webgl": 0.7263
+    },
+    "geiss-cosmic-dust-2": {
+      "webgpu": 0.5304,
+      "webgl": 0.9908
+    },
+    "geiss-cosmic-dust-2-cloud-journey": {
+      "webgpu": 0.9911,
+      "webgl": 0.5288
+    },
+    "geiss-cosmic-dust-2-game-of-life-mix": {
+      "webgpu": 0.4429,
+      "webgl": 0.3115
+    },
+    "geiss-cosmic-dust-2-laplacian-mix": {
+      "webgpu": 0.3352,
+      "webgl": 0.5868
+    },
+    "geiss-cosmic-dust-2-quasistatic-noise-desat-trails": {
+      "webgpu": 0.2691,
+      "webgl": 0.8874
+    },
+    "geiss-cosmic-dust-2-quasistatic-noise-desat-trails-2": {
+      "webgpu": 0.5069,
+      "webgl": 0.9333
+    },
+    "geiss-cosmic-dust-2-quasistatic-noise-dual-pane-window": {
+      "webgpu": 0.05,
+      "webgl": 0.9495
+    },
+    "geiss-cosmic-dust-2-quasistatic-noise-grow-mix": {
+      "webgpu": 0.0988,
+      "webgl": 0.9574
+    },
+    "geiss-cosmic-dust-2-reverse-jelly-v3": {
+      "webgpu": 0.9807,
+      "webgl": 0.7554
+    },
+    "geiss-cosmic-dust-2-reverse-jelly-v3-brighter": {
+      "webgpu": 0.9868,
+      "webgl": 0.7213
+    },
+    "geiss-cosmic-dust-2-static-noise": {
+      "webgpu": 0.1025,
+      "webgl": 0.8647
+    },
+    "geiss-cosmic-dust-2-tiny-reaction-diffusion-mix": {
+      "webgpu": 0.2249,
+      "webgl": 0.7165
+    },
+    "geiss-cosmic-dust-2-trails-5b": {
+      "webgpu": 0.8613,
+      "webgl": 0.9666
+    },
+    "geiss-cosmic-dust-2-trails-5z": {
+      "webgpu": 0.9472,
+      "webgl": 0.9458
+    },
+    "geiss-cosmic-dust-2-trails-7": {
+      "webgpu": 0.7757,
+      "webgl": 1
+    },
+    "geiss-cruzin": {
+      "webgpu": 0.0018,
+      "webgl": 0.0093
+    },
+    "geiss-cycloid-1-painterly": {
+      "webgpu": 0.4244,
+      "webgl": 0.999
+    },
+    "geiss-cycloid-1-painterly-vortex": {
+      "webgpu": 0.9231,
+      "webgl": 0.9999
+    },
+    "geiss-cycloid-1-painterly-vortex-3": {
+      "webgpu": 0.2718,
+      "webgl": 0.9969
+    },
+    "geiss-dancing-spirits": {
+      "webgpu": 0,
+      "webgl": 0.8291
+    },
+    "geiss-dancing-spirits-bright": {
+      "webgpu": 0.4445,
+      "webgl": 0.6018
+    },
+    "geiss-de-la-moutard-1": {
+      "webgpu": 0.2141,
+      "webgl": 0.7047
+    },
+    "geiss-desert-rose-2": {
+      "webgpu": 0.9131,
+      "webgl": 0.8192
+    },
+    "geiss-desert-rose-2-alt": {
+      "webgpu": 0.0171,
+      "webgl": 0.3296
+    },
+    "geiss-desert-rose-4": {
+      "webgpu": 0.4501,
+      "webgl": 0.9237
+    },
+    "geiss-desert-rose-grow-mix": {
+      "webgpu": 0.4608,
+      "webgl": 0.9457
+    },
+    "geiss-diffuser-gold-mix": {
+      "webgpu": 0.4487,
+      "webgl": 0.4051
+    },
+    "geiss-diffuser-red-mix": {
+      "webgpu": 0.9556,
+      "webgl": 0.7245
+    },
+    "geiss-digitalis": {
+      "webgpu": 0.9869,
+      "webgl": 0.9457
+    },
+    "geiss-digitunnel": {
+      "webgpu": 0.0374,
+      "webgl": 0.4844
+    },
+    "geiss-downward-spiral-color-invert-mirror-x": {
+      "webgpu": 0.1424,
+      "webgl": 0.2226
+    },
+    "geiss-drop-shadow-1": {
+      "webgpu": 0.9759,
+      "webgl": 0.8712
+    },
+    "geiss-drop-shadow-2": {
+      "webgpu": 0.9735,
+      "webgl": 0.7807
+    },
+    "geiss-dynamic-swirls-2-max-invert": {
+      "webgpu": 0.6593,
+      "webgl": 0.9919
+    },
+    "geiss-dynamic-swirls-2-max-invert-crazytiles": {
+      "webgpu": 0.3116,
+      "webgl": 0.7602
+    },
+    "geiss-eggs": {
+      "webgpu": 0.0026,
+      "webgl": 0.011
+    },
+    "geiss-el-cubismo": {
+      "webgpu": 0.0025,
+      "webgl": 0.0102
+    },
+    "geiss-el-cubismo-2": {
+      "webgpu": 0.9539,
+      "webgl": 0.9997
+    },
+    "geiss-electric-storm-half-digital-2": {
+      "webgpu": 0.2854,
+      "webgl": 0.1918
+    },
+    "geiss-electric-storm-half-digital-2-fiesta-mix": {
+      "webgpu": 0.3763,
+      "webgl": 0.6782
+    },
+    "geiss-experimental-aderrasi-kevlar-ore-deposit-geiss-core-stripe-mix": {
+      "webgpu": 0.8164,
+      "webgl": 0.8835
+    },
+    "geiss-experimental-lsb-bass-cubes": {
+      "webgpu": 0.2559,
+      "webgl": 0.7373
+    },
+    "geiss-experimental-spiral-artifact-filament-mix-scallop-mix": {
+      "webgpu": 0.9824,
+      "webgl": 0.9982
+    },
+    "geiss-experimental-spiral-artifact-filament-mix-voronoi-circles-mix": {
+      "webgpu": 0.99,
+      "webgl": 0.9993
+    },
+    "geiss-experimental-wavefronts": {
+      "webgpu": 0.1763,
+      "webgl": 0.8249
+    },
+    "geiss-explosion": {
+      "webgpu": 0,
+      "webgl": 0.0188
+    },
+    "geiss-explosion-2": {
+      "webgpu": 0.0001,
+      "webgl": 0.2675
+    },
+    "geiss-explosion-3": {
+      "webgpu": 0,
+      "webgl": 0.0759
+    },
+    "geiss-explosion-3-relief-mix": {
+      "webgpu": 0.6914,
+      "webgl": 0.9813
+    },
+    "geiss-explosion-mod-1": {
+      "webgpu": 0,
+      "webgl": 0.258
+    },
+    "geiss-explosion-mod-2b": {
+      "webgpu": 0,
+      "webgl": 0.8735
+    },
+    "geiss-feedback-2": {
+      "webgpu": 0.0278,
+      "webgl": 0.0564
+    },
+    "geiss-flexi-lorenz-chaser-accidental-shader-lock-mashup-ripples-emboss": {
+      "webgpu": 0.9869,
+      "webgl": 0.8865
+    },
+    "geiss-flexi-martin-disconnected": {
+      "webgpu": 0.5757,
+      "webgl": 0.7628
+    },
+    "geiss-flexi-stahlregen-thumbdrum-tokamak-crossfiring-aftermath-jelly-mashup": {
+      "webgpu": 0,
+      "webgl": 0.8238
+    },
+    "geiss-flotsam-mash0000-unfathomably-advanced-yet-psychotic-aliens-churn-my-mental-insides": {
+      "webgpu": 0.0732,
+      "webgl": 0.2562
+    },
+    "geiss-flotsam-mash0000-unfathomably-advanced-yet-psychotic-aliens-churn-my-mental-insides-2": {
+      "webgpu": 1,
+      "webgl": 0.964
+    },
+    "geiss-flower": {
+      "webgpu": 0.9869,
+      "webgl": 0.9752
+    },
+    "geiss-flower-blossom": {
+      "webgpu": 0.9834,
+      "webgl": 0.9706
+    },
+    "geiss-fog-tunnel": {
+      "webgpu": 0.1086,
+      "webgl": 0.3102
+    },
+    "geiss-fog-zone": {
+      "webgpu": 0.4205,
+      "webgl": 0.9874
+    },
+    "geiss-four-kinds-of-amphetamines": {
+      "webgpu": 0.489,
+      "webgl": 0.9869
+    },
+    "geiss-four-kinds-of-amphetamines-color-sat-boosted": {
+      "webgpu": 0.1827,
+      "webgl": 0.987
+    },
+    "geiss-fractal-relief": {
+      "webgpu": 0.3454,
+      "webgl": 0.6732
+    },
+    "geiss-game-of-life": {
+      "webgpu": 0.1997,
+      "webgl": 0.9657
+    },
+    "geiss-game-of-life-2": {
+      "webgpu": 0,
+      "webgl": 0.9364
+    },
+    "geiss-game-of-life-3": {
+      "webgpu": 0.1481,
+      "webgl": 0.9403
+    },
+    "geiss-happy-drops": {
+      "webgpu": 0.0301,
+      "webgl": 0.5275
+    },
+    "geiss-hurricane": {
+      "webgpu": 0.0008,
+      "webgl": 0.0047
+    },
+    "geiss-hyperion-lsb-mix": {
+      "webgpu": 0.0487,
+      "webgl": 0.395
+    },
+    "geiss-inkblot": {
+      "webgpu": 0.9861,
+      "webgl": 0.765
+    },
+    "geiss-iris": {
+      "webgpu": 0.0002,
+      "webgl": 0.0052
+    },
+    "geiss-iris-storm": {
+      "webgpu": 0.1002,
+      "webgl": 0.2533
+    },
+    "geiss-julia-fractal-2": {
+      "webgpu": 0.5684,
+      "webgl": 0.987
+    },
+    "geiss-julia-fractal-3": {
+      "webgpu": 0.4779,
+      "webgl": 0.9684
+    },
+    "geiss-julia-fractal-3-square-mix": {
+      "webgpu": 0.4185,
+      "webgl": 0.9938
+    },
+    "geiss-kaleidoscope-1": {
+      "webgpu": 0.0492,
+      "webgl": 0.3749
+    },
+    "geiss-kaleidoscope-1-alt": {
+      "webgpu": 0.0051,
+      "webgl": 0.3822
+    },
+    "geiss-lightning": {
+      "webgpu": 0.0248,
+      "webgl": 0.2035
+    },
+    "geiss-liquid-beats": {
+      "webgpu": 0.7992,
+      "webgl": 0.4881
+    },
+    "geiss-liquid-beats-2": {
+      "webgpu": 0.0706,
+      "webgl": 0.5361
+    },
+    "geiss-liquid-beats-2-reverse-jelly-v3": {
+      "webgpu": 0.001,
+      "webgl": 0.2047
+    },
+    "geiss-liquid-beats-janky-ripple-warp-reflecto": {
+      "webgpu": 0.3426,
+      "webgl": 0.9727
+    },
+    "geiss-liquid-beats-jelly-v4-5": {
+      "webgpu": 0,
+      "webgl": 0.3426
+    },
+    "geiss-luz": {
+      "webgpu": 0.001,
+      "webgl": 0.0073
+    },
+    "geiss-martin-mandelbox-explorer-high-speed-demo-version-fire-mix": {
+      "webgpu": 0.0951,
+      "webgl": 1
+    },
+    "geiss-mash-up-1": {
+      "webgpu": 0.2533,
+      "webgl": 0.7925
+    },
+    "geiss-mash-up-3": {
+      "webgpu": 0.9967,
+      "webgl": 0.9531
+    },
+    "geiss-mash-up-4": {
+      "webgpu": 0.9707,
+      "webgl": 0.6008
+    },
+    "geiss-mega-swirl-2": {
+      "webgpu": 0.0048,
+      "webgl": 0.0101
+    },
+    "geiss-mega-swirl-3": {
+      "webgpu": 0,
+      "webgl": 0.0038
+    },
+    "geiss-mega-swirl-3-color-tweak": {
+      "webgpu": 0.0159,
+      "webgl": 0.6849
+    },
+    "geiss-microcheckers-2": {
+      "webgpu": 0.5951,
+      "webgl": 0.8825
+    },
+    "geiss-microcheckers-3": {
+      "webgpu": 0.8272,
+      "webgl": 0.9605
+    },
+    "geiss-microcheckers-3-hpf": {
+      "webgpu": 0.7637,
+      "webgl": 0.9248
+    },
+    "geiss-microcheckers-5": {
+      "webgpu": 0.2069,
+      "webgl": 0.5899
+    },
+    "geiss-microcheckers-5-brighter": {
+      "webgpu": 0.1571,
+      "webgl": 0.8396
+    },
+    "geiss-mosaic": {
+      "webgpu": 0.0101,
+      "webgl": 0.2832
+    },
+    "geiss-mosaic-octopus": {
+      "webgpu": 0.2039,
+      "webgl": 0.6121
+    },
+    "geiss-mosaic-octopus-7": {
+      "webgpu": 0.015,
+      "webgl": 0.3652
+    },
+    "geiss-motion-blur": {
+      "webgpu": 0.6525,
+      "webgl": 0.4452
+    },
+    "geiss-motion-blur-2": {
+      "webgpu": 0.1308,
+      "webgl": 0.5904
+    },
+    "geiss-motion-blur-2-color-emboss": {
+      "webgpu": 0.9869,
+      "webgl": 0.9334
+    },
+    "geiss-motion-blur-2-color-sat-boost": {
+      "webgpu": 0.6992,
+      "webgl": 0.4055
+    },
+    "geiss-motion-blur-2-jelly-v3": {
+      "webgpu": 0.1979,
+      "webgl": 0.3943
+    },
+    "geiss-motion-blur-2-relief-mix": {
+      "webgpu": 0.9868,
+      "webgl": 0.9012
+    },
+    "geiss-motion-blur-2-relief-mix-2": {
+      "webgpu": 0.9869,
+      "webgl": 0.931
+    },
+    "geiss-motion-blur-2-relief-mix-c": {
+      "webgpu": 0.2001,
+      "webgl": 0.6467
+    },
+    "geiss-motion-blur-2-reverse-jelly-v3": {
+      "webgpu": 0.052,
+      "webgl": 0.0968
+    },
+    "geiss-motion-blur-2-stahl-s-neon-jelly-2-rmx": {
+      "webgpu": 0.0174,
+      "webgl": 0.2426
+    },
+    "geiss-mstress-cleaning-a-path-painterly-crossfire-crisp-emboss-mix": {
+      "webgpu": 0.9869,
+      "webgl": 0.9788
+    },
+    "geiss-myriad-mosaics": {
+      "webgpu": 0.1563,
+      "webgl": 0.8705
+    },
+    "geiss-myriad-mosaics-test": {
+      "webgpu": 0.7764,
+      "webgl": 0.9982
+    },
+    "geiss-myriad-spirals": {
+      "webgpu": 0.2432,
+      "webgl": 0.5366
+    },
+    "geiss-myriad-spirals-relief-mix": {
+      "webgpu": 0.6167,
+      "webgl": 0.873
+    },
+    "geiss-neutron-radial-blur-2": {
+      "webgpu": 0.3806,
+      "webgl": 0.5191
+    },
+    "geiss-neutron-radial-blur-2-firestorm-mix": {
+      "webgpu": 0.5936,
+      "webgl": 0.4436
+    },
+    "geiss-nitorami-macktuesday-twitchy-paint-fact-fuct-nz": {
+      "webgpu": 0.8319,
+      "webgl": 0.9868
+    },
+    "geiss-octopus": {
+      "webgpu": 0.0008,
+      "webgl": 0.009
+    },
+    "geiss-pistons": {
+      "webgpu": 0.472,
+      "webgl": 0.5698
+    },
+    "geiss-planar-travel": {
+      "webgpu": 0.2446,
+      "webgl": 0.9351
+    },
+    "geiss-planet-1": {
+      "webgpu": 0.7584,
+      "webgl": 0.8279
+    },
+    "geiss-plasma": {
+      "webgpu": 0.3269,
+      "webgl": 0.9869
+    },
+    "geiss-plasma-2": {
+      "webgpu": 0.4015,
+      "webgl": 0.9773
+    },
+    "geiss-reaction-diffusion-2": {
+      "webgpu": 0.044,
+      "webgl": 0.6937
+    },
+    "geiss-reaction-diffusion-3": {
+      "webgpu": 0.3449,
+      "webgl": 0.7477
+    },
+    "geiss-reaction-diffusion-3-lichen-mix": {
+      "webgpu": 1,
+      "webgl": 0.9872
+    },
+    "geiss-reaction-diffusion-3-lichen-relief-mix": {
+      "webgpu": 0.9835,
+      "webgl": 0.9599
+    },
+    "geiss-reaction-diffusion-3-rippling-leopard-skin": {
+      "webgpu": 1,
+      "webgl": 0.637
+    },
+    "geiss-reaction-diffusion-4-petri-mix": {
+      "webgpu": 0,
+      "webgl": 0.9349
+    },
+    "geiss-reaction-diffusion-puddle-mix": {
+      "webgpu": 0.0307,
+      "webgl": 0.8767
+    },
+    "geiss-reaction-diffusion-relief-mix": {
+      "webgpu": 0.1154,
+      "webgl": 0.6113
+    },
+    "geiss-reaction-diffusion-relief-mix-alt": {
+      "webgpu": 0.1119,
+      "webgl": 0.6107
+    },
+    "geiss-reaction-diffusion-royal-crown-mix": {
+      "webgpu": 0.9708,
+      "webgl": 0.6057
+    },
+    "geiss-reaction-diffusion-shifting-sphere-mix": {
+      "webgpu": 0.5991,
+      "webgl": 0.9619
+    },
+    "geiss-reaction-diffusion-simple-squamous-mix": {
+      "webgpu": 0.3331,
+      "webgl": 0.0451
+    },
+    "geiss-reaction-diffusion-squamous-flow-mix": {
+      "webgpu": 0.1056,
+      "webgl": 0.0114
+    },
+    "geiss-reducto-absurdum": {
+      "webgpu": 0.0012,
+      "webgl": 0.0067
+    },
+    "geiss-reducto-absurdum-alt": {
+      "webgpu": 0.9166,
+      "webgl": 0.9874
+    },
+    "geiss-reducto-ad-nauseum": {
+      "webgpu": 0.0017,
+      "webgl": 0.0174
+    },
+    "geiss-ribbons": {
+      "webgpu": 0.4789,
+      "webgl": 0.5861
+    },
+    "geiss-rose-3": {
+      "webgpu": 0.7291,
+      "webgl": 0.9359
+    },
+    "geiss-rose-4": {
+      "webgpu": 0.4104,
+      "webgl": 0.8389
+    },
+    "geiss-rose-4-bccn-jelly-v4": {
+      "webgpu": 0.0332,
+      "webgl": 0.5434
+    },
+    "geiss-rose-4-composite-remix": {
+      "webgpu": 0,
+      "webgl": 0.9006
+    },
+    "geiss-rose-4-lsb-mix": {
+      "webgpu": 0.0168,
+      "webgl": 0.8922
+    },
+    "geiss-rose-4-shifted-tiles": {
+      "webgpu": 0.4222,
+      "webgl": 0.7865
+    },
+    "geiss-rose-5-crossfire-beats": {
+      "webgpu": 0.0082,
+      "webgl": 0.7979
+    },
+    "geiss-rose-5-crossfire-beats-composite-remix": {
+      "webgpu": 0,
+      "webgl": 0.4751
+    },
+    "geiss-rose-5-crossfire-beats-mash0000-ill-gotten-slobber-catcher": {
+      "webgpu": 0.0167,
+      "webgl": 0.6455
+    },
+    "geiss-rovastar-julia-fractal-vectrip-mix": {
+      "webgpu": 0.1694,
+      "webgl": 0.5084
+    },
+    "geiss-rovastar-notions-of-tonality-2": {
+      "webgpu": 0.9993,
+      "webgl": 0.9848
+    },
+    "geiss-rovastar-the-chaos-of-colours-sprouting-dimentia-mix": {
+      "webgpu": 0.9916,
+      "webgl": 1
+    },
+    "geiss-rovastar-tokamak-naked-intrusion-mix": {
+      "webgpu": 0.08,
+      "webgl": 0.6136
+    },
+    "geiss-sinews-1": {
+      "webgpu": 0.9982,
+      "webgl": 0.8422
+    },
+    "geiss-skin-dots-10": {
+      "webgpu": 0.0335,
+      "webgl": 0.6643
+    },
+    "geiss-skin-dots-10b": {
+      "webgpu": 0.0353,
+      "webgl": 0.6669
+    },
+    "geiss-skin-dots-10c": {
+      "webgpu": 0.0333,
+      "webgl": 0.6361
+    },
+    "geiss-skin-dots-11-crossfire-composite": {
+      "webgpu": 0.0651,
+      "webgl": 0.8105
+    },
+    "geiss-skin-dots-11b": {
+      "webgpu": 0.011,
+      "webgl": 0.3966
+    },
+    "geiss-skin-dots-3": {
+      "webgpu": 0.2066,
+      "webgl": 0.802
+    },
+    "geiss-skin-dots-6": {
+      "webgpu": 0.0424,
+      "webgl": 0.322
+    },
+    "geiss-skin-dots-8b": {
+      "webgpu": 0.1049,
+      "webgl": 0.4236
+    },
+    "geiss-skin-dots-9": {
+      "webgpu": 0.0233,
+      "webgl": 0.4545
+    },
+    "geiss-skin-dots-multi-layer-1": {
+      "webgpu": 0.0976,
+      "webgl": 0.9515
+    },
+    "geiss-skin-dots-multi-layer-3": {
+      "webgpu": 0.0926,
+      "webgl": 0.8711
+    },
+    "geiss-skin-dots-multi-layer-3-alt": {
+      "webgpu": 0.0319,
+      "webgl": 0.7116
+    },
+    "geiss-skin-dots-multi-layer-3-emboss": {
+      "webgpu": 0.9869,
+      "webgl": 0.8648
+    },
+    "geiss-skin-dots-multi-layer-3-mashup-2": {
+      "webgpu": 0,
+      "webgl": 0.3945
+    },
+    "geiss-skin-dots-multi-layer-3-pig-fuck-jembe-acid-wretch-dildonic": {
+      "webgpu": 1,
+      "webgl": 0.802
+    },
+    "geiss-smoke-rings": {
+      "webgpu": 0.3618,
+      "webgl": 0.9852
+    },
+    "geiss-smoke-trail": {
+      "webgpu": 0.9868,
+      "webgl": 0.9984
+    },
+    "geiss-smoke-trail-2": {
+      "webgpu": 0.983,
+      "webgl": 0.9995
+    },
+    "geiss-soft": {
+      "webgpu": 0.5421,
+      "webgl": 0.8715
+    },
+    "geiss-sound-and-the-fury": {
+      "webgpu": 0.2485,
+      "webgl": 0.9871
+    },
+    "geiss-sound-and-the-fury-jelly-v3": {
+      "webgpu": 0.2392,
+      "webgl": 0.9747
+    },
+    "geiss-spiral-artifact": {
+      "webgpu": 0.0106,
+      "webgl": 0.0985
+    },
+    "geiss-spiral-artifact-filament-mix": {
+      "webgpu": 0.8984,
+      "webgl": 0.8605
+    },
+    "geiss-spiral-artifact-filament-mix-beat-dots-mix": {
+      "webgpu": 0.9984,
+      "webgl": 1
+    },
+    "geiss-spiral-artifact-filament-mix-rad8-mix": {
+      "webgpu": 0.9415,
+      "webgl": 0.4789
+    },
+    "geiss-starfish-2": {
+      "webgpu": 0.9799,
+      "webgl": 0.9843
+    },
+    "geiss-sunsets": {
+      "webgpu": 0.9869,
+      "webgl": 0.9905
+    },
+    "geiss-swirlie-1": {
+      "webgpu": 0.9586,
+      "webgl": 0.9598
+    },
+    "geiss-swirlie-2": {
+      "webgpu": 0.7224,
+      "webgl": 0.988
+    },
+    "geiss-swirlie-4": {
+      "webgpu": 0.9936,
+      "webgl": 0.9956
+    },
+    "geiss-tadpole-hunter": {
+      "webgpu": 0.1523,
+      "webgl": 0
+    },
+    "geiss-thumb-drum": {
+      "webgpu": 0.9875,
+      "webgl": 0.9937
+    },
+    "geiss-tokamak-plus-2": {
+      "webgpu": 0.1399,
+      "webgl": 0.8962
+    },
+    "geiss-tokamak-plus-3": {
+      "webgpu": 0.6158,
+      "webgl": 0.8836
+    },
+    "geiss-tokamak-plus-4": {
+      "webgpu": 0.9432,
+      "webgl": 0.9509
+    },
+    "geiss-tokamak-plus-painterly": {
+      "webgpu": 0.0721,
+      "webgl": 0.6185
+    },
+    "geiss-trampoline": {
+      "webgpu": 0.9728,
+      "webgl": 0.2874
+    },
+    "geiss-two-pointed-pulsagon": {
+      "webgpu": 0.9589,
+      "webgl": 0.9869
+    },
+    "geiss-two-pointed-pulsagon-mash0000-bubonic-super-fluid-centrifuge": {
+      "webgpu": 0.0779,
+      "webgl": 0.7976
+    },
+    "geiss-untitled": {
+      "webgpu": 0.9865,
+      "webgl": 0.91
+    },
+    "geiss-virus-2": {
+      "webgpu": 0.9133,
+      "webgl": 0.9028
+    },
+    "geiss-virus-broth": {
+      "webgpu": 0.8569,
+      "webgl": 0.9819
+    },
+    "geiss-vortex-1": {
+      "webgpu": 0.9869,
+      "webgl": 0.3019
+    },
+    "geiss-vortex-1-color-sat-boosted": {
+      "webgpu": 0.2011,
+      "webgl": 0.9901
+    },
+    "geiss-vortex-2-painterly": {
+      "webgpu": 0.543,
+      "webgl": 0.9949
+    },
+    "geiss-waterfall": {
+      "webgpu": 0.5404,
+      "webgl": 0.8434
+    },
+    "goody-acid-angel-fallen-angel": {
+      "webgpu": 0.0002,
+      "webgl": 0
+    },
+    "goody-acid-angel-revisitation": {
+      "webgpu": 0.0085,
+      "webgl": 0
+    },
+    "goody-aurora-totalis": {
+      "webgpu": 0.9869,
+      "webgl": 1
+    },
+    "goody-clouded-reason-revisited": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "goody-ego-decontructor": {
+      "webgpu": 0.8025,
+      "webgl": 0.0541
+    },
+    "goody-eo-s-martin-nematodes-jelly-v3": {
+      "webgpu": 0,
+      "webgl": 0.0029
+    },
+    "goody-eo-s-martin-nematodes-reverse-jelly-v3": {
+      "webgpu": 0,
+      "webgl": 0.0028
+    },
+    "goody-flexi-irdu-lili": {
+      "webgpu": 0.9869,
+      "webgl": 0.9805
+    },
+    "goody-lights-in-the-sky": {
+      "webgpu": 0.0061,
+      "webgl": 0.0517
+    },
+    "goody-lsd-zoomtunnel": {
+      "webgpu": 0,
+      "webgl": 0.0026
+    },
+    "goody-martin-crystal-palace-aqua-lumens": {
+      "webgpu": 0,
+      "webgl": 0.1986
+    },
+    "goody-martin-crystal-palace-ocular-anima": {
+      "webgpu": 0,
+      "webgl": 0.0093
+    },
+    "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom": {
+      "webgpu": 0,
+      "webgl": 0.0833
+    },
+    "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-16-iterations": {
+      "webgpu": 0,
+      "webgl": 0.1029
+    },
+    "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-darkening-mathematics": {
+      "webgpu": 0,
+      "webgl": 0.4822
+    },
+    "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-mess2-nz-i-have-no-character-and-feel-entitled-to-one": {
+      "webgpu": 0.1519,
+      "webgl": 0.0857
+    },
+    "goody-need": {
+      "webgpu": 0.0285,
+      "webgl": 0.8669
+    },
+    "goody-need-desire-remix": {
+      "webgpu": 0,
+      "webgl": 0
+    },
+    "goody-need-gloam": {
+      "webgpu": 0.0178,
+      "webgl": 0.1983
+    },
+    "goody-need-transcendance-remix": {
+      "webgpu": 1,
+      "webgl": 0.0024
+    },
+    "goody-shadowharlequin-red-blue-chase-megatrip-geiss-aurora-2-v22-2222-v2-shader": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "goody-shadowharlequin-red-blue-chase-megatrip-geiss-aurora-2-v22-2222-v2-shader-fixed": {
+      "webgpu": 0.9952,
+      "webgl": 1
+    },
+    "goody-sonic-infection": {
+      "webgpu": 0.9502,
+      "webgl": 0.0378
+    },
+    "goody-the-thing-that-lives-between": {
+      "webgpu": 0.0143,
+      "webgl": 0.9454
+    },
+    "goody-the-wild-vort": {
+      "webgpu": 0.4558,
+      "webgl": 0.4194
+    },
+    "goody-unstable-sonic-reactor-final": {
+      "webgpu": 0.1129,
+      "webgl": 0.2859
+    },
+    "goody-vertigo": {
+      "webgpu": 0.6335,
+      "webgl": 0.9693
+    },
+    "goody-vertigo-revisited": {
+      "webgpu": 0.6251,
+      "webgl": 0.8633
+    },
+    "greatwho-lasershow": {
+      "webgpu": 0.0065,
+      "webgl": 0.0036
+    },
+    "had-to-cum-that-jaben": {
+      "webgpu": 0.2796,
+      "webgl": 0.038
+    },
+    "hexcollie-1-goody-3-stahlregen-3-fed-1-2nd-collaboration-ps2-0-8": {
+      "webgpu": 0.0922,
+      "webgl": 0.7374
+    },
+    "hexcollie-aderassi-bdrv-adamfx-n-flexi-it-s-a-start": {
+      "webgpu": 0.7527,
+      "webgl": 0.1819
+    },
+    "hexcollie-alex2": {
+      "webgpu": 0.9869,
+      "webgl": 0.7387
+    },
+    "hexcollie-bdrv-geiss-flexi-n-aderrasi-slime-slide-mash0000-holster-your-salad-shot": {
+      "webgpu": 0.7752,
+      "webgl": 0.7903
+    },
+    "hexcollie-bdrv-n-unchained-the-hive": {
+      "webgpu": 0.9896,
+      "webgl": 0.9138
+    },
+    "hexcollie-beautiful": {
+      "webgpu": 0.0825,
+      "webgl": 0.4463
+    },
+    "hexcollie-cell-division": {
+      "webgpu": 0.0422,
+      "webgl": 0.1563
+    },
+    "hexcollie-fishbrain-flexi-n-eo-s-synthetic-peacock-visions": {
+      "webgpu": 0.9867,
+      "webgl": 0.0455
+    },
+    "hexcollie-flexi-orb-eo-s-n-danone-pineal-massage-5-minute-composite-quickshot": {
+      "webgpu": 1,
+      "webgl": 0.1256
+    },
+    "hexcollie-geiss-flexi-yin-n-phat-pinwheel": {
+      "webgpu": 0.2982,
+      "webgl": 0.5189
+    },
+    "hexcollie-hedgehog-dreams3-mash0000-she-dream-of-bitter-pups-and-wagon-cloister": {
+      "webgpu": 0.1025,
+      "webgl": 0.9975
+    },
+    "hexcollie-jacked-on-way-too-much-caffeine": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "hexcollie-meatball": {
+      "webgpu": 1,
+      "webgl": 0.818
+    },
+    "hexcollie-melodic-pulsing-leds-mash0000-dou-fu-qing-jin-qing-zuo-bitch": {
+      "webgpu": 0.0012,
+      "webgl": 0.3529
+    },
+    "hexcollie-nautalisk-mash0000-but-officer-my-fingerprint-always-changes": {
+      "webgpu": 0.02,
+      "webgl": 0.9722
+    },
+    "hexcollie-personal-mashup3-flexi-s-portal-mix": {
+      "webgpu": 0.9869,
+      "webgl": 0.9489
+    },
+    "hexcollie-personal-mashup3-flexis-portal-mix": {
+      "webgpu": 0.2046,
+      "webgl": 0.8768
+    },
+    "hexcollie-wings": {
+      "webgpu": 0.9956,
+      "webgl": 0.7207
+    },
+    "high-altitude-basket-unraveling-singh-grooves-nitrogen-argon-nz": {
+      "webgpu": 0.051,
+      "webgl": 0.3673
+    },
+    "idiot-9-7-02": {
+      "webgpu": 0.5905,
+      "webgl": 0.0069
+    },
+    "idiot-9-7-02-remix-2": {
+      "webgpu": 0.6705,
+      "webgl": 0.0059
+    },
+    "idiot-marphets-surreal-dream-hypnotic-spiral-mix": {
+      "webgpu": 0.9868,
+      "webgl": 0.8797
+    },
+    "idiot-spectrum": {
+      "webgpu": 0.1098,
+      "webgl": 0.3672
+    },
+    "idiot-star-of-annon": {
+      "webgpu": 0.9889,
+      "webgl": 0.8899
+    },
+    "idiot-subnormal-trance-remix": {
+      "webgpu": 0.9385,
+      "webgl": 0.9447
+    },
+    "idiot-tentacle-dreams": {
+      "webgpu": 0.0384,
+      "webgl": 0.17
+    },
+    "idiot-what-is": {
+      "webgpu": 0.6569,
+      "webgl": 0.7899
+    },
+    "idiot-when-i-get-bored": {
+      "webgpu": 0.8581,
+      "webgl": 0.0094
+    },
+    "idiot24-7-ascending-to-heaven-2": {
+      "webgpu": 0.3143,
+      "webgl": 0.7118
+    },
+    "illusion-boz-hot-air-balloon": {
+      "webgpu": 0.9869,
+      "webgl": 0.1042
+    },
+    "illusion-boz-lord-of-stars-1": {
+      "webgpu": 0.0176,
+      "webgl": 0.0465
+    },
+    "illusion-dance-of-the-planets": {
+      "webgpu": 0.6497,
+      "webgl": 0.7456
+    },
+    "illusion-heavenly-eye-radial-blur": {
+      "webgpu": 0.2472,
+      "webgl": 0.1104
+    },
+    "illusion-rovastar-clouded-bottle": {
+      "webgpu": 0.9869,
+      "webgl": 0.9869
+    },
+    "illusion-rovastar-dotty-mad-space-jelly": {
+      "webgpu": 0,
+      "webgl": 0.1131
+    },
+    "illusion-unchained-new-strategy": {
+      "webgpu": 0.9933,
+      "webgl": 0.9968
+    },
+    "imus-and-rovastar-the-shroomery-psilobellum": {
+      "webgpu": 0.6359,
+      "webgl": 0.2961
+    },
+    "infused-by-flexi-with-adamfx-2-stahlregen-aderrasi-eo-s-geiss-unchained-zylot-slowflowers-ft-martin-adamfxremix-7": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "inside-a-black-whole-adamfx-2-martin-another-kind-of-groove-ati-fix-ft-raron-flexi-and-rovastar-adamfx-remix-uh-huh-22": {
+      "webgpu": 0.9902,
+      "webgl": 0.9497
+    },
+    "inside-a-black-whole-adamfx-2-martin-another-kind-of-groove-ati-fix-ft-raron-flexi-and-rovastar-adamfx-remix-uh-huh-6-ngorng": {
+      "webgpu": 0.0008,
+      "webgl": 0.4319
+    },
+    "ishan-anuera": {
+      "webgpu": 0.2947,
+      "webgl": 0.8512
+    },
+    "ishan-drug-addict-jelly-v3": {
+      "webgpu": 0.0756,
+      "webgl": 0.152
+    },
+    "jc-circular-logic-3": {
+      "webgpu": 0.9951,
+      "webgl": 0.9869
+    },
+    "jc-neon-star-formation": {
+      "webgpu": 0,
+      "webgl": 0.0272
+    },
+    "jim-geiss-bass-zoom-symmetry-mash0000-the-god-damn-pen-is-rrrroyal-blue": {
+      "webgpu": 0.6094,
+      "webgl": 0.7344
+    },
+    "krash-aenema-tweak-4": {
+      "webgpu": 0.9884,
+      "webgl": 0.7851
+    },
+    "krash-digital-flame": {
+      "webgpu": 0.0008,
+      "webgl": 0.0059
+    },
+    "krash-eo-s-photographic-sentinel": {
+      "webgpu": 0.0045,
+      "webgl": 0.021
+    },
+    "krash-eo-s-photographic-sentinel-alt": {
+      "webgpu": 0.2466,
+      "webgl": 0.3957
+    },
+    "krash-geiss-martin-war-machine-stahl-s-ultimate-mash-mix": {
+      "webgpu": 0.2266,
+      "webgl": 0.837
+    },
+    "krash-illusion-geiss-spiral-movement-reaction-diffusion-mix": {
+      "webgpu": 0.9869,
+      "webgl": 0.9896
+    },
+    "krash-illusion-spiral-movement": {
+      "webgpu": 0.0003,
+      "webgl": 0.0053
+    },
+    "krash-interwoven-nightmare-weft-phats-i-wana-fuck-some-candy-kids-mash0000-elevator-to-the-drugged-up-runaway-penthouse": {
+      "webgpu": 0.8936,
+      "webgl": 0.4334
+    },
+    "krash-interwoven-nightmare-weft-phats-maybe-ill-go-to-a-party": {
+      "webgpu": 0.0052,
+      "webgl": 0.8091
+    },
+    "krash-rovastar-a-million-miles-from-earth-ripple-mix": {
+      "webgpu": 0.9859,
+      "webgl": 0.913
+    },
+    "krash-rovastar-cerebral-demons-phat-eo-s-killer-death-bunny-remix": {
+      "webgpu": 0.4249,
+      "webgl": 0.9299
+    },
+    "krash-rovastar-cerebral-demons-phat-eo-s-moire-remix": {
+      "webgpu": 0.9486,
+      "webgl": 0.949
+    },
+    "krash-rovastar-cerebral-demons-phat-eo-s-stars-remix": {
+      "webgpu": 0.9763,
+      "webgl": 0.4105
+    },
+    "krash-rovastar-cerebral-demons-stars": {
+      "webgpu": 0.9619,
+      "webgl": 0.872
+    },
+    "krash-rovastar-rainbow-orb": {
+      "webgpu": 0.2727,
+      "webgl": 0.8545
+    },
+    "krash-rovastar-rainbow-orb-2-peacock-bmelgren-s-compelling-vision": {
+      "webgpu": 0.9869,
+      "webgl": 0.1095
+    },
+    "krash-rovastar-the-devil-is-in-the-details": {
+      "webgpu": 0.9529,
+      "webgl": 0.9427
+    },
+    "krash-snowflake-halo": {
+      "webgpu": 0.9868,
+      "webgl": 0.0125
+    },
+    "krash-swelling-spiral-2": {
+      "webgpu": 0.6181,
+      "webgl": 0.857
+    },
+    "krash-techno-rhythmic-mantas-painterly": {
+      "webgpu": 0.626,
+      "webgl": 0.8682
+    },
+    "krash-vinyl-disk": {
+      "webgpu": 0,
+      "webgl": 0.005
+    },
+    "krash-war-machine-shifting-complexity-mix": {
+      "webgpu": 0.0008,
+      "webgl": 0.007
+    },
+    "lit-claw-explorers-grid-i-don-t-have-either-a-belfry-or-bats-bitch": {
+      "webgpu": 0.6039,
+      "webgl": 0.7548
+    },
+    "lux-life-s-game-1": {
+      "webgpu": 0.9017,
+      "webgl": 0.9286
+    },
+    "luxxx-ain-t-life-a-motherfucker-iv": {
+      "webgpu": 0.0599,
+      "webgl": 0.271
+    },
+    "luxxx-chillflower-blurface-ib": {
+      "webgpu": 0.9323,
+      "webgl": 0.9718
+    },
+    "luxxx-circling-the-drain-1a": {
+      "webgpu": 0.492,
+      "webgl": 0.4346
+    },
+    "luxxx-circling-the-drain-1b": {
+      "webgpu": 0.385,
+      "webgl": 0.4897
+    },
+    "luxxx-do-drive-and-drug-copy": {
+      "webgpu": 0.9868,
+      "webgl": 0.9791
+    },
+    "luxxx-fractal-overlord-overclock-ii": {
+      "webgpu": 0.02,
+      "webgl": 0.0434
+    },
+    "luxxx-fuck-your-code-ii": {
+      "webgpu": 0.0308,
+      "webgl": 0.057
+    },
+    "luxxx-god-is-in-the-radio-v-6": {
+      "webgpu": 0.9869,
+      "webgl": 0.9846
+    },
+    "luxxx-grindface-225-mg-dose": {
+      "webgpu": 0.2635,
+      "webgl": 0.8632
+    },
+    "luxxx-growing-alien-organs-i": {
+      "webgpu": 0.0004,
+      "webgl": 0.5168
+    },
+    "luxxx-growing-alien-organs-ii": {
+      "webgpu": 0.1092,
+      "webgl": 0.7854
+    },
+    "luxxx-growing-alien-organs-iii-pizen": {
+      "webgpu": 0.9996,
+      "webgl": 1
+    },
+    "luxxx-hurty-soul-i": {
+      "webgpu": 0.7675,
+      "webgl": 0.907
+    },
+    "luxxx-iwhat-happened-right-after-i-ate-that-toxic-waste-beta-ii": {
+      "webgpu": 0.9859,
+      "webgl": 0.9831
+    },
+    "luxxx-liquid-amma-amma-bee": {
+      "webgpu": 0.0053,
+      "webgl": 0.0119
+    },
+    "luxxx-makes-me-cry-five-makes-me-cry-so-lick-my-tears-and-get-real-high": {
+      "webgpu": 0.0189,
+      "webgl": 0.1037
+    },
+    "luxxx-melt-ur-face-i": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "luxxx-melt-ur-face-i-b": {
+      "webgpu": 0.9999,
+      "webgl": 1
+    },
+    "luxxx-melt-ur-maker-i": {
+      "webgpu": 0.6605,
+      "webgl": 0.9456
+    },
+    "luxxx-rapeplay-v3-the-war-within-all-of-us": {
+      "webgpu": 0.1443,
+      "webgl": 0.4099
+    },
+    "luxxx-stickflower-ii": {
+      "webgpu": 0.0135,
+      "webgl": 0.534
+    },
+    "luxxx-stickverse-ii": {
+      "webgpu": 1,
+      "webgl": 0.2487
+    },
+    "luxxx-subtle-hiphopflake": {
+      "webgpu": 0,
+      "webgl": 0.0343
+    },
+    "luxxx-the-feeder-ii": {
+      "webgpu": 0.0039,
+      "webgl": 0.1175
+    },
+    "martin-acid-wiring": {
+      "webgpu": 0,
+      "webgl": 0.2101
+    },
+    "martin-adrift-on-a-dead-planet-lard-mix": {
+      "webgpu": 0.9868,
+      "webgl": 0
+    },
+    "martin-adrift-on-a-dead-planet-lite": {
+      "webgpu": 0.0001,
+      "webgl": 0.0035
+    },
+    "martin-alien-grand-theft-water": {
+      "webgpu": 0.0178,
+      "webgl": 0.5609
+    },
+    "martin-amandio-c-a-different-view-of-the-green-machine": {
+      "webgpu": 0.7318,
+      "webgl": 0.7922
+    },
+    "martin-anandamide-mandelbox-explorer-quantum-timepiece-remix": {
+      "webgpu": 0.0019,
+      "webgl": 0.9868
+    },
+    "martin-angel-flight": {
+      "webgpu": 0.0204,
+      "webgl": 0.0458
+    },
+    "martin-another-kind-of-groove": {
+      "webgpu": 0.0836,
+      "webgl": 0.3021
+    },
+    "martin-another-kind-of-groove-ati-fix": {
+      "webgpu": 0.0392,
+      "webgl": 0.6701
+    },
+    "martin-attack-of-the-beast": {
+      "webgpu": 0.0142,
+      "webgl": 0.014
+    },
+    "martin-axon3": {
+      "webgpu": 0.1043,
+      "webgl": 0.0597
+    },
+    "martin-baby-one-more-time": {
+      "webgpu": 0.6491,
+      "webgl": 0.586
+    },
+    "martin-basal-ganglion": {
+      "webgpu": 0.0004,
+      "webgl": 0.0295
+    },
+    "martin-blue-mountains": {
+      "webgpu": 0.4725,
+      "webgl": 0.439
+    },
+    "martin-bombyx-mori": {
+      "webgpu": 0.0241,
+      "webgl": 0.1896
+    },
+    "martin-bombyx-mori-flexi-s-logarithmic-edit": {
+      "webgpu": 0.0218,
+      "webgl": 0.1993
+    },
+    "martin-bombyx-mori-mix2": {
+      "webgpu": 0.001,
+      "webgl": 0.0638
+    },
+    "martin-bring-up-the-big-guns": {
+      "webgpu": 0.0378,
+      "webgl": 0.0714
+    },
+    "martin-butterflies": {
+      "webgpu": 0.1599,
+      "webgl": 0.413
+    },
+    "martin-carpet-weaver": {
+      "webgpu": 0.118,
+      "webgl": 0.0593
+    },
+    "martin-castle-in-the-air": {
+      "webgpu": 0,
+      "webgl": 0.9916
+    },
+    "martin-chain-breaker": {
+      "webgpu": 0.3822,
+      "webgl": 0.3972
+    },
+    "martin-chain-breaker-xxx": {
+      "webgpu": 0.3777,
+      "webgl": 0.3969
+    },
+    "martin-charisma": {
+      "webgpu": 0.6272,
+      "webgl": 0.5386
+    },
+    "martin-cherry-brain-2": {
+      "webgpu": 0.0112,
+      "webgl": 0.0356
+    },
+    "martin-cherry-brain-wall-mod": {
+      "webgpu": 0.0534,
+      "webgl": 0.0026
+    },
+    "martin-city-of-shadows": {
+      "webgpu": 0,
+      "webgl": 0.6829
+    },
+    "martin-coloured-metal": {
+      "webgpu": 0.9687,
+      "webgl": 0.8954
+    },
+    "martin-cool-morning": {
+      "webgpu": 0.4965,
+      "webgl": 0.5272
+    },
+    "martin-cope-laser-dome": {
+      "webgpu": 0,
+      "webgl": 0.0084
+    },
+    "martin-crystal-alley": {
+      "webgpu": 0.4878,
+      "webgl": 0.9695
+    },
+    "martin-crystal-palace": {
+      "webgpu": 0,
+      "webgl": 0.4857
+    },
+    "martin-crystal-palace-nz": {
+      "webgpu": 0,
+      "webgl": 0.5408
+    },
+    "martin-dark-galaxy": {
+      "webgpu": 0,
+      "webgl": 0.0793
+    },
+    "martin-deep-blue": {
+      "webgpu": 0.1186,
+      "webgl": 0.1389
+    },
+    "martin-diabolo": {
+      "webgpu": 0.505,
+      "webgl": 0.5038
+    },
+    "martin-diamond-cutter": {
+      "webgpu": 0.1516,
+      "webgl": 0.1365
+    },
+    "martin-disco-mix-1": {
+      "webgpu": 0.0013,
+      "webgl": 0.265
+    },
+    "martin-disco-mix-2": {
+      "webgpu": 0.0077,
+      "webgl": 0.0216
+    },
+    "martin-disco-mix-2a": {
+      "webgpu": 0.0134,
+      "webgl": 0.0175
+    },
+    "martin-disco-mix-3-fast": {
+      "webgpu": 0.0164,
+      "webgl": 0.3839
+    },
+    "martin-disco-mix-4": {
+      "webgpu": 0,
+      "webgl": 0.0082
+    },
+    "martin-disco-mix-5": {
+      "webgpu": 0,
+      "webgl": 0.0014
+    },
+    "martin-disco-mix-6": {
+      "webgpu": 0.0234,
+      "webgl": 0.0322
+    },
+    "martin-dont-drink-and-drive-police-mix": {
+      "webgpu": 0.002,
+      "webgl": 0.9855
+    },
+    "martin-dune-racer": {
+      "webgpu": 0.8608,
+      "webgl": 0.857
+    },
+    "martin-electric-pool": {
+      "webgpu": 0.6216,
+      "webgl": 0.6495
+    },
+    "martin-elusive-impressions-mix1": {
+      "webgpu": 0,
+      "webgl": 0.1819
+    },
+    "martin-elusive-impressions-mix2": {
+      "webgpu": 0,
+      "webgl": 0.4394
+    },
+    "martin-elusive-impressions-mix2-flacc-mess-proph-nz-2": {
+      "webgpu": 0,
+      "webgl": 0.241
+    },
+    "martin-extreme-heat": {
+      "webgpu": 0.0229,
+      "webgl": 0.0176
+    },
+    "martin-first-try": {
+      "webgpu": 0.0261,
+      "webgl": 0.0167
+    },
+    "martin-fishbrain-flexi-lasercutting-binary-trees": {
+      "webgpu": 0.0959,
+      "webgl": 0
+    },
+    "martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup": {
+      "webgpu": 0.0957,
+      "webgl": 0
+    },
+    "martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-2": {
+      "webgpu": 0.1032,
+      "webgl": 0
+    },
+    "martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-3": {
+      "webgpu": 0.1023,
+      "webgl": 0
+    },
+    "martin-fishbrain-flexi-mandelbox-explorer-v1-eo-s-optimize-bipolar-witchcraft-mix": {
+      "webgpu": 0.0013,
+      "webgl": 0.9869
+    },
+    "martin-flexi-bombyx-mori-mix2-in-the-beehive": {
+      "webgpu": 0,
+      "webgl": 0.0742
+    },
+    "martin-flexi-diamond-cutter-prismaticvortex-com-camille-i-wish-i-wish-i-wish-i-was-constrained": {
+      "webgpu": 0.9854,
+      "webgl": 0.9404
+    },
+    "martin-flexi-fishbrain-sto-enterstate": {
+      "webgpu": 0.1018,
+      "webgl": 0.0188
+    },
+    "martin-flexi-fishbrain-sto-enterstate-random-mashup": {
+      "webgpu": 0.101,
+      "webgl": 0.0201
+    },
+    "martin-flexi-fishbrain-sto-enterstate-random-mashup-2": {
+      "webgpu": 0.1001,
+      "webgl": 0.0222
+    },
+    "martin-flexi-fishbrain-sto-enterstate-random-mashup-3": {
+      "webgpu": 0.0996,
+      "webgl": 0.0226
+    },
+    "martin-flexi-laser-dome-bipolar-focus-intent": {
+      "webgpu": 0,
+      "webgl": 0.0454
+    },
+    "martin-flexi-mandelbox-explorer-high-speed-oversustained-bipolar": {
+      "webgpu": 0.1001,
+      "webgl": 0.0259
+    },
+    "martin-flexi-mandelbox-stepper-mix-kinetic-triangles-gossip-matrix": {
+      "webgpu": 0.0035,
+      "webgl": 0.0051
+    },
+    "martin-flexi-sto-traumflug": {
+      "webgpu": 0.0998,
+      "webgl": 0.0209
+    },
+    "martin-flexis-swarm-in-martins-pond-not-yet-a-boid-implementation": {
+      "webgpu": 0.9889,
+      "webgl": 0.9875
+    },
+    "martin-foggy-notion": {
+      "webgpu": 0.9745,
+      "webgl": 0.9816
+    },
+    "martin-frosty-caves-2": {
+      "webgpu": 0,
+      "webgl": 0.4838
+    },
+    "martin-fruit-machine": {
+      "webgpu": 0.9839,
+      "webgl": 0.9512
+    },
+    "martin-gate-to-moria": {
+      "webgpu": 0.1473,
+      "webgl": 0.1433
+    },
+    "martin-geiss-psychotic-roulette": {
+      "webgpu": 0.0138,
+      "webgl": 0.0058
+    },
+    "martin-gentle-happiness-2a": {
+      "webgpu": 0.0126,
+      "webgl": 0.3267
+    },
+    "martin-ghost-city": {
+      "webgpu": 0.9868,
+      "webgl": 0.9205
+    },
+    "martin-girlie-affairs": {
+      "webgpu": 0.023,
+      "webgl": 0.9821
+    },
+    "martin-glass-corridor": {
+      "webgpu": 0.5928,
+      "webgl": 0.7399
+    },
+    "martin-glassball-dance": {
+      "webgpu": 0.0533,
+      "webgl": 0.1838
+    },
+    "martin-golden-mirror": {
+      "webgpu": 0.0185,
+      "webgl": 0.0169
+    },
+    "martin-hardcore-mix-1": {
+      "webgpu": 0,
+      "webgl": 0.0154
+    },
+    "martin-hardcore-mix-2": {
+      "webgpu": 0.0175,
+      "webgl": 0.8816
+    },
+    "martin-ice-flames": {
+      "webgpu": 0.082,
+      "webgl": 0.0546
+    },
+    "martin-infinity": {
+      "webgpu": 0.1045,
+      "webgl": 0.4145
+    },
+    "martin-infinity-2008": {
+      "webgpu": 0.1009,
+      "webgl": 0.4745
+    },
+    "martin-infinity-2010-update": {
+      "webgpu": 0.0911,
+      "webgl": 0.3547
+    },
+    "martin-into-the-fireworks": {
+      "webgpu": 0.9999,
+      "webgl": 0.0201
+    },
+    "martin-invasion": {
+      "webgpu": 0.1069,
+      "webgl": 0.091
+    },
+    "martin-jellyfish-dance": {
+      "webgpu": 0.0003,
+      "webgl": 0.3329
+    },
+    "martin-journey-into-space": {
+      "webgpu": 0.1127,
+      "webgl": 0.987
+    },
+    "martin-liquid-arrows": {
+      "webgpu": 0.5184,
+      "webgl": 0.5131
+    },
+    "martin-liquid-gold": {
+      "webgpu": 0,
+      "webgl": 0.0923
+    },
+    "martin-lock-and-release": {
+      "webgpu": 0.1758,
+      "webgl": 0.1472
+    },
+    "martin-lock-and-release-ss": {
+      "webgpu": 0,
+      "webgl": 0.0004
+    },
+    "martin-ludicrous-speed": {
+      "webgpu": 0.0131,
+      "webgl": 0.4433
+    },
+    "martin-mandelbox-explorer-high-speed-demo-flexi-s-complex-polynomial-version": {
+      "webgpu": 0.0951,
+      "webgl": 0.9999
+    },
+    "martin-mandelbox-explorer-high-speed-demo-version": {
+      "webgpu": 0.0951,
+      "webgl": 1
+    },
+    "martin-mandelbox-explorer-high-speed-demo-version-flexi-s-diffuse-wave": {
+      "webgpu": 0.101,
+      "webgl": 1
+    },
+    "martin-mandelbox-explorer-high-speed-demo-version-flexi-s-diffuse-wave-random-mashup": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "martin-mandelbox-stepper": {
+      "webgpu": 0,
+      "webgl": 0.5257
+    },
+    "martin-mandelbulb-slideshow": {
+      "webgpu": 0,
+      "webgl": 0.2864
+    },
+    "martin-moonlight-splash": {
+      "webgpu": 0.3765,
+      "webgl": 0.4935
+    },
+    "martin-move-this-body": {
+      "webgpu": 0.012,
+      "webgl": 0.0147
+    },
+    "martin-mucus-cervix": {
+      "webgpu": 0.2945,
+      "webgl": 0.3531
+    },
+    "martin-musicogenic-epilepsy": {
+      "webgpu": 0.0334,
+      "webgl": 0.6879
+    },
+    "martin-n-adamfx-infusion-phat-yin-eo-s-mandala-chaser-ft-adamfx-n-martin-the-beast-mandala-chaser-fx-h": {
+      "webgpu": 0.9704,
+      "webgl": 1
+    },
+    "martin-neon-space-ps2": {
+      "webgpu": 0.0006,
+      "webgl": 0.0473
+    },
+    "martin-neon-space-ps2-ati-fix": {
+      "webgpu": 0.0006,
+      "webgl": 0.0493
+    },
+    "martin-neon-space-ps3": {
+      "webgpu": 0,
+      "webgl": 0.0832
+    },
+    "martin-night-cathedral": {
+      "webgpu": 0,
+      "webgl": 0.4823
+    },
+    "martin-night-in-the-forest": {
+      "webgpu": 0.2899,
+      "webgl": 0.3574
+    },
+    "martin-on-silent-paths": {
+      "webgpu": 0,
+      "webgl": 0.6616
+    },
+    "martin-orbit-trap-playground": {
+      "webgpu": 0.431,
+      "webgl": 0.5788
+    },
+    "martin-organic-light": {
+      "webgpu": 0.0134,
+      "webgl": 0.0173
+    },
+    "martin-pendulum-in-brass-ps3": {
+      "webgpu": 0.013,
+      "webgl": 0.0147
+    },
+    "martin-purple-pulsator": {
+      "webgpu": 0,
+      "webgl": 0.0075
+    },
+    "martin-qbikal-surface-turbulence": {
+      "webgpu": 0.5094,
+      "webgl": 0.5167
+    },
+    "martin-qbikal-surface-turbulence-ii": {
+      "webgpu": 0.0085,
+      "webgl": 0.3765
+    },
+    "martin-qbikal-surface-turbulence-iib": {
+      "webgpu": 0.0208,
+      "webgl": 0.4558
+    },
+    "martin-quantum-accelerator": {
+      "webgpu": 0.0634,
+      "webgl": 0.0799
+    },
+    "martin-reflections-on-black-tiles": {
+      "webgpu": 0.0021,
+      "webgl": 0.0104
+    },
+    "martin-resonant-twister": {
+      "webgpu": 0.4323,
+      "webgl": 0.3857
+    },
+    "martin-resonant-twister-steel-spring": {
+      "webgpu": 0.0002,
+      "webgl": 0.7972
+    },
+    "martin-rogue-wave-ps2": {
+      "webgpu": 0.2901,
+      "webgl": 0.2899
+    },
+    "martin-rogue-wave-ps3": {
+      "webgpu": 0.3087,
+      "webgl": 0.316
+    },
+    "martin-royal-waterfall": {
+      "webgpu": 0.7188,
+      "webgl": 0.8977
+    },
+    "martin-satellite-view": {
+      "webgpu": 0.313,
+      "webgl": 0.389
+    },
+    "martin-shadow-harlequins-shape-code-fata-morgana": {
+      "webgpu": 0.2796,
+      "webgl": 0.2632
+    },
+    "martin-shifter-armorial-bearings-of-robotopia": {
+      "webgpu": 0.057,
+      "webgl": 0.0568
+    },
+    "martin-silversmith": {
+      "webgpu": 0,
+      "webgl": 0.8625
+    },
+    "martin-skywards": {
+      "webgpu": 0.0071,
+      "webgl": 0.019
+    },
+    "martin-soma-in-pink": {
+      "webgpu": 0.0638,
+      "webgl": 0.0596
+    },
+    "martin-soma-in-pink-ati-fix": {
+      "webgpu": 0.0668,
+      "webgl": 0.0555
+    },
+    "martin-sparky-caleidoscope": {
+      "webgpu": 0,
+      "webgl": 0.0661
+    },
+    "martin-sphery-tales": {
+      "webgpu": 0.5126,
+      "webgl": 0.5226
+    },
+    "martin-sphery-tales-slow-version": {
+      "webgpu": 0,
+      "webgl": 0.5214
+    },
+    "martin-stahlregen-martin-in-da-mash-1": {
+      "webgpu": 0.0174,
+      "webgl": 0.3754
+    },
+    "martin-stahlregen-martin-in-da-mash-10-infinity-mix": {
+      "webgpu": 0.0196,
+      "webgl": 0.6462
+    },
+    "martin-stahlregen-martin-in-da-mash-11": {
+      "webgpu": 0,
+      "webgl": 0.5742
+    },
+    "martin-stahlregen-martin-in-da-mash-12": {
+      "webgpu": 0,
+      "webgl": 0.0683
+    },
+    "martin-stahlregen-martin-in-da-mash-12a": {
+      "webgpu": 0,
+      "webgl": 0.0749
+    },
+    "martin-stahlregen-martin-in-da-mash-14": {
+      "webgpu": 0.0923,
+      "webgl": 0.3199
+    },
+    "martin-stahlregen-martin-in-da-mash-16": {
+      "webgpu": 0.0071,
+      "webgl": 0.0195
+    },
+    "martin-stahlregen-martin-in-da-mash-18": {
+      "webgpu": 0.0124,
+      "webgl": 0.1921
+    },
+    "martin-stahlregen-martin-in-da-mash-3": {
+      "webgpu": 0.9358,
+      "webgl": 0.9859
+    },
+    "martin-stahlregen-martin-in-da-mash-7": {
+      "webgpu": 0.9533,
+      "webgl": 0.9175
+    },
+    "martin-starfield-sectors": {
+      "webgpu": 0.1257,
+      "webgl": 0.5764
+    },
+    "martin-starfield-sectors-ati-fix": {
+      "webgpu": 0.1527,
+      "webgl": 0.5765
+    },
+    "martin-stormy-sea": {
+      "webgpu": 0.0087,
+      "webgl": 0.0121
+    },
+    "martin-stormy-sea-2009": {
+      "webgpu": 0.007,
+      "webgl": 0.0031
+    },
+    "martin-stormy-sea-2010-update": {
+      "webgpu": 0.0767,
+      "webgl": 0.0128
+    },
+    "martin-suksma-fed-goody-and-others-blarfff-zebra-puke-mash-up-by-stahlregen": {
+      "webgpu": 0.8932,
+      "webgl": 0.6678
+    },
+    "martin-sunset-over-the-river": {
+      "webgpu": 0.2132,
+      "webgl": 0.3006
+    },
+    "martin-test": {
+      "webgpu": 0.4458,
+      "webgl": 0.0031
+    },
+    "martin-the-beast": {
+      "webgpu": 0.0076,
+      "webgl": 0.0057
+    },
+    "martin-the-bridge-of-khazad-dum": {
+      "webgpu": 0.6406,
+      "webgl": 0.7478
+    },
+    "martin-the-dome-ps2": {
+      "webgpu": 0.0181,
+      "webgl": 0.071
+    },
+    "martin-the-dome-ps3": {
+      "webgpu": 0,
+      "webgl": 0.2495
+    },
+    "martin-the-forge-of-isengard": {
+      "webgpu": 0.0227,
+      "webgl": 0.1201
+    },
+    "martin-the-forge-of-isengard-flexi-s-moebius-transformation-vs-logarithmic-spiral-mix": {
+      "webgpu": 0,
+      "webgl": 0.0207
+    },
+    "martin-thinking-about-you": {
+      "webgpu": 0.7858,
+      "webgl": 0.401
+    },
+    "martin-this-beautiful-planet": {
+      "webgpu": 0.9869,
+      "webgl": 0.987
+    },
+    "martin-tiling-the-tube": {
+      "webgpu": 0.9812,
+      "webgl": 0.9516
+    },
+    "martin-time-machine": {
+      "webgpu": 0.8735,
+      "webgl": 0.2556
+    },
+    "martin-timeless": {
+      "webgpu": 0.1517,
+      "webgl": 0.1949
+    },
+    "martin-tunnel-race": {
+      "webgpu": 0,
+      "webgl": 0.2786
+    },
+    "martin-underwater-cathedral": {
+      "webgpu": 0.0028,
+      "webgl": 0.2035
+    },
+    "martin-unholy-amulet": {
+      "webgpu": 1,
+      "webgl": 0.9997
+    },
+    "martin-unholy-amulet-2": {
+      "webgpu": 1,
+      "webgl": 0.9998
+    },
+    "martin-violet-flash": {
+      "webgpu": 0.6762,
+      "webgl": 0.7492
+    },
+    "martin-volcano": {
+      "webgpu": 0.4979,
+      "webgl": 0.4271
+    },
+    "martin-wire-dance": {
+      "webgpu": 0.6293,
+      "webgl": 0.6173
+    },
+    "martin-wire-dance-geiss-warp-shader-mix": {
+      "webgpu": 0.6317,
+      "webgl": 0.6205
+    },
+    "martin-witchcraft-reloaded": {
+      "webgpu": 0.0205,
+      "webgl": 0.1158
+    },
+    "massive-crack-hit-maggot-trace": {
+      "webgpu": 0.9869,
+      "webgl": 0.9436
+    },
+    "menstruating-in-reverse-in-reverse-time-max-out-crap-roam3-nz": {
+      "webgpu": 0.0101,
+      "webgl": 0.0029
+    },
+    "mig-004": {
+      "webgpu": 0.0015,
+      "webgl": 0.7397
+    },
+    "mig-004-version2": {
+      "webgpu": 0.006,
+      "webgl": 0.416
+    },
+    "mig-008": {
+      "webgpu": 0.0853,
+      "webgl": 0.3767
+    },
+    "mig-009": {
+      "webgpu": 0.0777,
+      "webgl": 0.7394
+    },
+    "mig-010": {
+      "webgpu": 0.4687,
+      "webgl": 0.7555
+    },
+    "mig-014-version2": {
+      "webgpu": 0.015,
+      "webgl": 0.8498
+    },
+    "mig-017": {
+      "webgpu": 0.196,
+      "webgl": 0.7919
+    },
+    "mig-022-version2": {
+      "webgpu": 0.0496,
+      "webgl": 0.0505
+    },
+    "mig-022version3": {
+      "webgpu": 0.1504,
+      "webgl": 0.0995
+    },
+    "mig-024-version2": {
+      "webgpu": 0.1011,
+      "webgl": 0.8051
+    },
+    "mig-025": {
+      "webgpu": 0.0361,
+      "webgl": 0.3429
+    },
+    "mig-028": {
+      "webgpu": 0.2468,
+      "webgl": 0.8003
+    },
+    "mig-031": {
+      "webgpu": 0.0061,
+      "webgl": 0.4852
+    },
+    "mig-032-version3": {
+      "webgpu": 0.2047,
+      "webgl": 0.3796
+    },
+    "mig-036-version3": {
+      "webgpu": 0.0409,
+      "webgl": 0.1773
+    },
+    "mig-036-version5": {
+      "webgpu": 0.0426,
+      "webgl": 0.0764
+    },
+    "mig-036version3": {
+      "webgpu": 0.1384,
+      "webgl": 0.2981
+    },
+    "mig-039": {
+      "webgpu": 0.5385,
+      "webgl": 0.6691
+    },
+    "mig-049": {
+      "webgpu": 0.1741,
+      "webgl": 0.1639
+    },
+    "mig-049version3": {
+      "webgpu": 0.9997,
+      "webgl": 1
+    },
+    "mig-056": {
+      "webgpu": 0.0835,
+      "webgl": 0.2399
+    },
+    "mig-057": {
+      "webgpu": 0.8808,
+      "webgl": 0.9873
+    },
+    "mig-059": {
+      "webgpu": 1,
+      "webgl": 0.9486
+    },
+    "mig-061": {
+      "webgpu": 0.1084,
+      "webgl": 0.8495
+    },
+    "mig-068": {
+      "webgpu": 0.6966,
+      "webgl": 0.6713
+    },
+    "mig-079": {
+      "webgpu": 0.7842,
+      "webgl": 0.7834
+    },
+    "mig-082-version2": {
+      "webgpu": 0.5481,
+      "webgl": 0.4804
+    },
+    "mig-085": {
+      "webgpu": 0.1023,
+      "webgl": 0.5102
+    },
+    "mig-091": {
+      "webgpu": 0.0233,
+      "webgl": 0.8168
+    },
+    "mig-091b": {
+      "webgpu": 0.0159,
+      "webgl": 0.8571
+    },
+    "mig-095": {
+      "webgpu": 0.3892,
+      "webgl": 0.9061
+    },
+    "mig-101": {
+      "webgpu": 0.0169,
+      "webgl": 0.0387
+    },
+    "mig-120": {
+      "webgpu": 0.0476,
+      "webgl": 0.3322
+    },
+    "mig-145": {
+      "webgpu": 0.3318,
+      "webgl": 0.8189
+    },
+    "mig-146": {
+      "webgpu": 0.4525,
+      "webgl": 0.8869
+    },
+    "mig-171-version2": {
+      "webgpu": 0.0154,
+      "webgl": 0.0845
+    },
+    "mig-177": {
+      "webgpu": 0.2565,
+      "webgl": 0.4863
+    },
+    "mig-197": {
+      "webgpu": 0.6841,
+      "webgl": 0.8468
+    },
+    "mig-197b": {
+      "webgpu": 0.2874,
+      "webgl": 0.5222
+    },
+    "mig-199": {
+      "webgpu": 0.0878,
+      "webgl": 0.5253
+    },
+    "mig-208": {
+      "webgpu": 0,
+      "webgl": 0.0961
+    },
+    "mig-211": {
+      "webgpu": 0.9784,
+      "webgl": 0.8685
+    },
+    "mig-304": {
+      "webgpu": 0.1151,
+      "webgl": 0.5605
+    },
+    "mig-304-geiss-remix": {
+      "webgpu": 0.0945,
+      "webgl": 0.9078
+    },
+    "mig-304-geiss-remix-2": {
+      "webgpu": 0.441,
+      "webgl": 0.9125
+    },
+    "mig-304-geiss-remix-3": {
+      "webgpu": 0.9873,
+      "webgl": 0.9878
+    },
+    "mig-304-geiss-remix-3b": {
+      "webgpu": 0.987,
+      "webgl": 0.987
+    },
+    "mig-colorful1": {
+      "webgpu": 0.1538,
+      "webgl": 0.5297
+    },
+    "mig-colorful9": {
+      "webgpu": 0.1779,
+      "webgl": 0.7874
+    },
+    "mig-oscilloscope-010": {
+      "webgpu": 0.5672,
+      "webgl": 0.5081
+    },
+    "mig-oscilloscope002": {
+      "webgpu": 0.0389,
+      "webgl": 0.1482
+    },
+    "mig-oscilloscope003-v2": {
+      "webgpu": 0.091,
+      "webgl": 0.3323
+    },
+    "mig-oscilloscope005": {
+      "webgpu": 0.0106,
+      "webgl": 0.308
+    },
+    "mig-oscilloscope008": {
+      "webgpu": 0.0764,
+      "webgl": 0.3171
+    },
+    "mig-oscilloscope021": {
+      "webgpu": 0.092,
+      "webgl": 0.6317
+    },
+    "mig-oscilloscope022": {
+      "webgpu": 0.5126,
+      "webgl": 0.9928
+    },
+    "mig-oscilloscope022-b": {
+      "webgpu": 0.986,
+      "webgl": 0.9915
+    },
+    "milk-artist-at-our-best-fed-slowfast-ft-adamfx-n-martin-hd-cosmofx": {
+      "webgpu": 0.9992,
+      "webgl": 0.9859
+    },
+    "milk-king-to-the-extreemfx-flexi-divine-struggle-ft-adamfx-n-martin-picasso-in-milk-molten-meltdown-e": {
+      "webgpu": 0.9986,
+      "webgl": 0.9957
+    },
+    "mstress-acoustic-nerve-impulses": {
+      "webgpu": 0.1055,
+      "webgl": 0.214
+    },
+    "mstress-acoustic-nerve-impulses-primary-colors-of-sound-mix": {
+      "webgpu": 0.0605,
+      "webgl": 0.0829
+    },
+    "mstress-cleaning-a-path-painterly-crossfire": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "mstress-scattered-gravity-smoked-mix": {
+      "webgpu": 0,
+      "webgl": 0.0137
+    },
+    "mstress-zylot-acid-ufo": {
+      "webgpu": 0.0434,
+      "webgl": 0.091
+    },
+    "new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2-amazing-masup": {
+      "webgpu": 0.408,
+      "webgl": 0.9544
+    },
+    "new-adam-master-mashup-fx-2-zylot-in-death-there-is-life-dancing-lights-mix-tumbling-cubes-3d": {
+      "webgpu": 1,
+      "webgl": 0.9381
+    },
+    "new-creation-sensation-adamfx-flexi-amandio-c-n-martin-star-to-another-world-ft-hexocollie-n-shadow-harlequin-n-geiss-b": {
+      "webgpu": 0.9977,
+      "webgl": 0.9562
+    },
+    "new-milktrend-trend-setters-amandio-c-flexi-ft-adamfx-n-stahlregen-martin-ufoz-identified": {
+      "webgpu": 0.994,
+      "webgl": 0.9302
+    },
+    "nighthawk-eye-of-gawd-phat-spiral-edit-v2": {
+      "webgpu": 0.9619,
+      "webgl": 0.9363
+    },
+    "niko-radiative-bunchess-i-m-gonna-break-my-rusty-cage-and-run-the-fuck-grunge-isn-t-the-source-of-anarchy": {
+      "webgpu": 0.9056,
+      "webgl": 0.9869
+    },
+    "nil-did-you-speak-with-the-orb": {
+      "webgpu": 0.0503,
+      "webgl": 0.6654
+    },
+    "nil-vortex-of-vortices": {
+      "webgpu": 0.9869,
+      "webgl": 0.6929
+    },
+    "no-good-rnz": {
+      "webgpu": 0.9798,
+      "webgl": 0.9868
+    },
+    "orb-acid-cycle": {
+      "webgpu": 0.691,
+      "webgl": 0.7354
+    },
+    "orb-acid-cycle-flexi-composite": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "orb-acid-cycle-gas-giant": {
+      "webgpu": 0,
+      "webgl": 1
+    },
+    "orb-acid-in-my-eyes": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "orb-acid-lamp": {
+      "webgpu": 0.7728,
+      "webgl": 0.8835
+    },
+    "orb-acid-sunrise": {
+      "webgpu": 0.0195,
+      "webgl": 0.914
+    },
+    "orb-blue-emotion": {
+      "webgpu": 0.9649,
+      "webgl": 0.9445
+    },
+    "orb-cloud-scope": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "orb-crysal-storm": {
+      "webgpu": 0,
+      "webgl": 0.3676
+    },
+    "orb-dark-omen": {
+      "webgpu": 0.4383,
+      "webgl": 0.6157
+    },
+    "orb-depth-charge-2": {
+      "webgpu": 0.9869,
+      "webgl": 0.9859
+    },
+    "orb-fire-and-fumes-2": {
+      "webgpu": 0.365,
+      "webgl": 0.3822
+    },
+    "orb-fireworks-fusion": {
+      "webgpu": 0,
+      "webgl": 0.9964
+    },
+    "orb-fireworks-sparkle": {
+      "webgpu": 0,
+      "webgl": 0.7029
+    },
+    "orb-inferno": {
+      "webgpu": 0,
+      "webgl": 0.0875
+    },
+    "orb-kalidescope": {
+      "webgpu": 1,
+      "webgl": 0.815
+    },
+    "orb-lava-lamp": {
+      "webgpu": 0.7739,
+      "webgl": 0.7895
+    },
+    "orb-liquid-fire": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "orb-magma-pool": {
+      "webgpu": 0.6959,
+      "webgl": 0.0986
+    },
+    "orb-mega-spectrum": {
+      "webgpu": 0.0653,
+      "webgl": 0.0138
+    },
+    "orb-nova-sunrise": {
+      "webgpu": 0.9882,
+      "webgl": 0.9867
+    },
+    "orb-pastel-primer": {
+      "webgpu": 0.1937,
+      "webgl": 0.2233
+    },
+    "orb-planetary-alignment-acid-burn": {
+      "webgpu": 0.0001,
+      "webgl": 0.1832
+    },
+    "orb-quicksand": {
+      "webgpu": 0,
+      "webgl": 0.3348
+    },
+    "orb-quicksand-lab": {
+      "webgpu": 0.5539,
+      "webgl": 0.6135
+    },
+    "orb-radiation": {
+      "webgpu": 1,
+      "webgl": 0.7373
+    },
+    "orb-sandblade": {
+      "webgpu": 0.0233,
+      "webgl": 0.0725
+    },
+    "orb-saturns-rings": {
+      "webgpu": 0.1023,
+      "webgl": 0.1353
+    },
+    "orb-slippery-snakes": {
+      "webgpu": 0.1452,
+      "webgl": 0.2202
+    },
+    "orb-solar-radiation": {
+      "webgpu": 0.045,
+      "webgl": 0.0568
+    },
+    "orb-solar-sail": {
+      "webgpu": 0.2326,
+      "webgl": 0.2327
+    },
+    "orb-starfish": {
+      "webgpu": 0.0289,
+      "webgl": 0.2588
+    },
+    "orb-supernova-meltdown": {
+      "webgpu": 0.2284,
+      "webgl": 0.2309
+    },
+    "orb-toxic-goo": {
+      "webgpu": 0.0029,
+      "webgl": 0.6623
+    },
+    "orb-waaa": {
+      "webgpu": 0.4475,
+      "webgl": 0.5385
+    },
+    "orbasonic": {
+      "webgpu": 0.9875,
+      "webgl": 1
+    },
+    "phat-2c-b6": {
+      "webgpu": 1,
+      "webgl": 0.78
+    },
+    "phat-bluelight-condition-yin-and-eo-s-waveforms-more-flash-mix": {
+      "webgpu": 0.7199,
+      "webgl": 0.5987
+    },
+    "phat-closeincounetersv5-plus-some-fucking-shaders-somebody-worked-hard-on-within-reach-of-absolute-hate": {
+      "webgpu": 0.8942,
+      "webgl": 0.9359
+    },
+    "phat-eo-s-2ct2v5": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "phat-eo-s-2ct2v6": {
+      "webgpu": 0.9095,
+      "webgl": 0.9068
+    },
+    "phat-eo-s-bass-responce-red-movements-disorienting-nebula3": {
+      "webgpu": 0.9869,
+      "webgl": 0.987
+    },
+    "phat-eo-s-bass-responce-red-spiral": {
+      "webgpu": 0.9691,
+      "webgl": 0.9764
+    },
+    "phat-eo-s-bright-addi-colours-spiral-7-mash0000-denegrating-our-elders-through-wholesome-hard-work": {
+      "webgpu": 0.9792,
+      "webgl": 0.9572
+    },
+    "phat-eo-s-data-swimmer": {
+      "webgpu": 0.9998,
+      "webgl": 0.9965
+    },
+    "phat-eo-s-eyes-spiral-mix": {
+      "webgpu": 0.526,
+      "webgl": 0.5703
+    },
+    "phat-eo-s-follow-me": {
+      "webgpu": 0.8668,
+      "webgl": 0.9851
+    },
+    "phat-eo-s-just-more-trash": {
+      "webgpu": 0.9952,
+      "webgl": 0.4024
+    },
+    "phat-eo-s-our-own-personal-demon": {
+      "webgpu": 0.9884,
+      "webgl": 0.4488
+    },
+    "phat-eo-s-peoplewhoeatacid-phatcoloursv2": {
+      "webgpu": 1,
+      "webgl": 0.8792
+    },
+    "phat-eo-s-rainbow-bubble-mid3-f-me-dood": {
+      "webgpu": 0.9784,
+      "webgl": 0.501
+    },
+    "phat-eo-s-rainbow-bubble-mid3-f-me-dood-alt": {
+      "webgpu": 0.9593,
+      "webgl": 0.3656
+    },
+    "phat-eo-s-rainbow-bubble-mid3-fuck-me-dood": {
+      "webgpu": 0.9825,
+      "webgl": 0.3747
+    },
+    "phat-eo-s-single-cel-angel-birth": {
+      "webgpu": 0.0292,
+      "webgl": 0.0183
+    },
+    "phat-eo-s-single-cel-angel-birthpoints": {
+      "webgpu": 0.0118,
+      "webgl": 0.0565
+    },
+    "phat-eo-s-swim-waveform-mix": {
+      "webgpu": 0.9012,
+      "webgl": 0.9065
+    },
+    "phat-eo-s-tesellatingfractal-mix": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "phat-eo-s-tesellatingfractal-mix3": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "phat-fishbrain-eo-s-mandala-chasers-remix": {
+      "webgpu": 0.9869,
+      "webgl": 0.6897
+    },
+    "phat-it-sjustnumbers": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "phat-it-sjustnumbers-remix3": {
+      "webgpu": 1,
+      "webgl": 0.9869
+    },
+    "phat-remix-eo-s-zion-square-mix": {
+      "webgpu": 0.9865,
+      "webgl": 0.9961
+    },
+    "phat-ripplenebula-update-mash0000-the-colors-of-autumn-invoke-dumpster-dives": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "phat-ripplenebula99h-eo-s-mod-mod6": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "phat-rovastar-eo-s-square-faces-v2": {
+      "webgpu": 0.9782,
+      "webgl": 0.7584
+    },
+    "phat-rovastar-eos-square-faces-v2": {
+      "webgpu": 0.9512,
+      "webgl": 0.5912
+    },
+    "phat-rovastar-what-does-your-soul-look-like9": {
+      "webgpu": 0.6721,
+      "webgl": 0.0446
+    },
+    "phat-rovastar-what-does-your-soul-look-like9m": {
+      "webgpu": 0.8926,
+      "webgl": 0.3894
+    },
+    "phat-zylot-eo-s-krash-i-hope-someone-will-see-this-triping-v2b": {
+      "webgpu": 0.9824,
+      "webgl": 0.8776
+    },
+    "phat-zylot-eo-s-rainbow-bubble-mid3-f-me-dood-flash": {
+      "webgpu": 0.991,
+      "webgl": 0.529
+    },
+    "phat-zylot-eo-s-rainbow-bubble-mid3-fuck-me-dood-flash": {
+      "webgpu": 0.985,
+      "webgl": 0.5259
+    },
+    "phat-zylot-eo-s-rainbow-bubble-mid3-starpoints-spirals-ve-bitcore-tweak": {
+      "webgpu": 0.9955,
+      "webgl": 0.7371
+    },
+    "phat-zylot-eo-s-spiral-faces-v2": {
+      "webgpu": 0.9944,
+      "webgl": 0.9999
+    },
+    "phat-zylot-eo-s-spiral-movements-beatle": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "phat-zylot-eo-s-spiral-movements-beatle-square-mix": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "phat-zylot-eo-s-square-faces-v2-alt-colours": {
+      "webgpu": 0.6367,
+      "webgl": 0.3887
+    },
+    "phat-zylot-eo-s-strate-lines": {
+      "webgpu": 0.7624,
+      "webgl": 0.9085
+    },
+    "phat-zylot-eo-s-trippy-rotation-v2-sector-mix-alt-colours": {
+      "webgpu": 0.9415,
+      "webgl": 0.7492
+    },
+    "phat-zylot-eo-s-trippy-rotation-weird-boxs-mix": {
+      "webgpu": 0.9867,
+      "webgl": 0.163
+    },
+    "phat-zylot-eo-s-work-with-lines": {
+      "webgpu": 0.3318,
+      "webgl": 0.6265
+    },
+    "phat-zylot-eo-s-work-with-lines-alt": {
+      "webgpu": 0.1321,
+      "webgl": 0.4949
+    },
+    "phat-zylot-eos-trippy-rotation": {
+      "webgpu": 0.5626,
+      "webgl": 0.7082
+    },
+    "pieturp-it-might-be-evil-phat-remix": {
+      "webgpu": 0.3465,
+      "webgl": 0.4024
+    },
+    "pieturp-sunflare": {
+      "webgpu": 0,
+      "webgl": 0.0271
+    },
+    "pieturp-triptrap-getting-concrete-visions-through-a-diafragma-version": {
+      "webgpu": 0.2882,
+      "webgl": 0.4677
+    },
+    "pieturp-triptrap-ultimate-trip-mix": {
+      "webgpu": 0.9875,
+      "webgl": 0.9926
+    },
+    "pork-blouse-lafertion": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "random-mash-up-round-47": {
+      "webgpu": 0.0103,
+      "webgl": 0.051
+    },
+    "raron-a-grayish-blob-mash0000-pungent-gastric-automata-cloud-fumes": {
+      "webgpu": 0.0303,
+      "webgl": 0.0491
+    },
+    "raron-flexi-milkdrop-fibers-on-fire": {
+      "webgpu": 0.6169,
+      "webgl": 0.791
+    },
+    "raron-fourth-state-of-milkdrop-2": {
+      "webgpu": 0.0105,
+      "webgl": 0.123
+    },
+    "rce-ordinary-flexi-far-away-distance-custom-beat-detection-bipolar-colour-ghost-mix": {
+      "webgpu": 0,
+      "webgl": 0.0326
+    },
+    "redi-jedi-acid-on-a-window-pane": {
+      "webgpu": 0.9852,
+      "webgl": 0.0274
+    },
+    "redi-jedi-i-dont-think-those-were-portabello-mushrooms": {
+      "webgpu": 0.9904,
+      "webgl": 0.3269
+    },
+    "redi-jedi-off-the-fadar": {
+      "webgpu": 0.986,
+      "webgl": 0.3461
+    },
+    "redi-jedi-off-the-fadar-no-sweeps-or-bleeps-but-alotta-creeps": {
+      "webgpu": 0.6898,
+      "webgl": 0.5631
+    },
+    "redi-jedi-pladman-is-no-more": {
+      "webgpu": 1,
+      "webgl": 0.544
+    },
+    "redi-jedi-shifter-phat-geiss-flexi-rovastar-120287116022-874-roam3": {
+      "webgpu": 1,
+      "webgl": 0.1338
+    },
+    "redi-jedi-studio-music-shimmering-love": {
+      "webgpu": 0,
+      "webgl": 0.0095
+    },
+    "rediculator-qrem-glob": {
+      "webgpu": 0.9525,
+      "webgl": 0.1991
+    },
+    "reenen-geiss-soft-triple-feedback": {
+      "webgpu": 0.0598,
+      "webgl": 0.0732
+    },
+    "reenen-geiss-triple-feedback-phat-edit": {
+      "webgpu": 0.237,
+      "webgl": 0.3654
+    },
+    "reenen-phoenix": {
+      "webgpu": 0.1806,
+      "webgl": 0.6272
+    },
+    "reenen-telek-slow-shift-matrix-bb4-5-dynamic-beat-mix": {
+      "webgpu": 0.9836,
+      "webgl": 0.1612
+    },
+    "rocke-answer-42-new-mix-1-mash0000-slash-and-char-p-jungle": {
+      "webgpu": 1,
+      "webgl": 0.0103
+    },
+    "rocke-cold-love-tei-zwaa": {
+      "webgpu": 0.0039,
+      "webgl": 0.0618
+    },
+    "rocke-loz-tribute": {
+      "webgpu": 0.9959,
+      "webgl": 0.7769
+    },
+    "rocke-personal-comet": {
+      "webgpu": 0.9935,
+      "webgl": 0.7743
+    },
+    "rovastar-a-million-miles-from-earth-wormhole-mix": {
+      "webgpu": 0.9857,
+      "webgl": 0.694
+    },
+    "rovastar-aderrasi-airs-of-change": {
+      "webgpu": 0.8572,
+      "webgl": 0.7794
+    },
+    "rovastar-altars-of-harlequin-s-madness": {
+      "webgpu": 0.9881,
+      "webgl": 0.3058
+    },
+    "rovastar-altars-of-harlequin-s-madness-dark-disorder-mix": {
+      "webgpu": 0.1613,
+      "webgl": 0.1509
+    },
+    "rovastar-altars-of-madness-4-spirit-of-twisted-madness-mix": {
+      "webgpu": 0.9885,
+      "webgl": 0.4659
+    },
+    "rovastar-altarsofmadness-forgottenrea": {
+      "webgpu": 0.9152,
+      "webgl": 0.901
+    },
+    "rovastar-and-idiot24-7-abstract-psychaos": {
+      "webgpu": 0.9868,
+      "webgl": 1
+    },
+    "rovastar-braindance-1": {
+      "webgpu": 0.002,
+      "webgl": 0.0044
+    },
+    "rovastar-cerebral-parasites-attack-mix": {
+      "webgpu": 0.9887,
+      "webgl": 0.1323
+    },
+    "rovastar-che-asylum-animations": {
+      "webgpu": 0.5788,
+      "webgl": 0.5507
+    },
+    "rovastar-che-definitly-not-for-the-epileptic-inner-perspective-of-life-mix": {
+      "webgpu": 0.0034,
+      "webgl": 0.0027
+    },
+    "rovastar-cosmic-echoes-2": {
+      "webgpu": 0.2922,
+      "webgl": 0.2372
+    },
+    "rovastar-dark-ritual-star-of-destiny-denied-mix": {
+      "webgpu": 0.6677,
+      "webgl": 0.9868
+    },
+    "rovastar-dark-ritual-star-of-destiny-mix": {
+      "webgpu": 0.4151,
+      "webgl": 1
+    },
+    "rovastar-demon-sunflower-double-resistance-mix": {
+      "webgpu": 0.9223,
+      "webgl": 0.8467
+    },
+    "rovastar-destiny-star-starbrust-mix": {
+      "webgpu": 0.0473,
+      "webgl": 0.2596
+    },
+    "rovastar-explosive-minds": {
+      "webgpu": 0.984,
+      "webgl": 0.987
+    },
+    "rovastar-eye-on-reality-mega-3-mix": {
+      "webgpu": 0.6143,
+      "webgl": 0.6739
+    },
+    "rovastar-flexi-hurricane-nightmare-moebius-mix": {
+      "webgpu": 0.1705,
+      "webgl": 0.9354
+    },
+    "rovastar-flexi-loadus-geiss-tone-mapped-fractaldrop-4-moebius-edit": {
+      "webgpu": 0.747,
+      "webgl": 0.7915
+    },
+    "rovastar-fractopia-fantic-dancing-lights-mix": {
+      "webgpu": 0.0102,
+      "webgl": 0.0139
+    },
+    "rovastar-fractopia-galaxy-swirl-mix": {
+      "webgpu": 0.2116,
+      "webgl": 0.2543
+    },
+    "rovastar-fractopia-upspoken-mix": {
+      "webgpu": 0.9443,
+      "webgl": 0.4428
+    },
+    "rovastar-fractopia-upspoken-mix-phat-speak-when-spoken-2": {
+      "webgpu": 0.0193,
+      "webgl": 0.0182
+    },
+    "rovastar-fvese-mosaic-waves": {
+      "webgpu": 0.583,
+      "webgl": 0.5459
+    },
+    "rovastar-fvese-paranormal-static": {
+      "webgpu": 0.9471,
+      "webgl": 0.1574
+    },
+    "rovastar-geiss-approach-vectrip-mix-painterly": {
+      "webgpu": 0.1287,
+      "webgl": 0.5699
+    },
+    "rovastar-geiss-bipolar-2-vectrip-mix": {
+      "webgpu": 0.055,
+      "webgl": 0.9861
+    },
+    "rovastar-geiss-braindance-1-reverse-jelly-v3": {
+      "webgpu": 0.9845,
+      "webgl": 0.7716
+    },
+    "rovastar-geiss-dynamic-swirls-3-voyage-of-twisted-souls-mix": {
+      "webgpu": 1,
+      "webgl": 0.9571
+    },
+    "rovastar-geiss-hurricane-nightmare": {
+      "webgpu": 0.221,
+      "webgl": 0.978
+    },
+    "rovastar-geiss-hurricane-nightmare-gold-chrome-mix": {
+      "webgpu": 0.9868,
+      "webgl": 0.913
+    },
+    "rovastar-geiss-hurricane-nightmare-posterize-mix": {
+      "webgpu": 0.0919,
+      "webgl": 0.9354
+    },
+    "rovastar-geiss-hurricane-nightmare-relief-mix": {
+      "webgpu": 0.9869,
+      "webgl": 0.9323
+    },
+    "rovastar-geiss-hyperkaleidoscope-glow-2-motion-blur": {
+      "webgpu": 1,
+      "webgl": 0.9985
+    },
+    "rovastar-geiss-hyperkaleidoscope-glow-2-motion-blur-jelly": {
+      "webgpu": 0,
+      "webgl": 0.0327
+    },
+    "rovastar-geiss-hyperkaleidoscope-glow-2-multitonal": {
+      "webgpu": 0.5421,
+      "webgl": 0.6977
+    },
+    "rovastar-geiss-hyperspace-kaleidoscope": {
+      "webgpu": 0.5573,
+      "webgl": 0.7799
+    },
+    "rovastar-geiss-snapshot-of-space-lsb-mix": {
+      "webgpu": 0.793,
+      "webgl": 0.9383
+    },
+    "rovastar-geiss-tripmaker-square-tiles-remix": {
+      "webgpu": 0.96,
+      "webgl": 0.6605
+    },
+    "rovastar-geiss-tripmaker-tiles": {
+      "webgpu": 0.9812,
+      "webgl": 0.5875
+    },
+    "rovastar-halcyon-dreams-3": {
+      "webgpu": 0.9869,
+      "webgl": 0.9885
+    },
+    "rovastar-hallucinogenic-pyramids-beat-time-mix": {
+      "webgpu": 0.0107,
+      "webgl": 0.0204
+    },
+    "rovastar-harlequin-s-dynamic-fractal-3": {
+      "webgpu": 0.3697,
+      "webgl": 0.1674
+    },
+    "rovastar-harlequin-s-fractal-encounter": {
+      "webgpu": 0.1449,
+      "webgl": 0.2354
+    },
+    "rovastar-harlequin-s-fractal-encounter-cancer-of-saints": {
+      "webgpu": 0.9997,
+      "webgl": 0.9966
+    },
+    "rovastar-harlequin-s-jester-s-dual-delight-chaotic-nightmare-mix": {
+      "webgpu": 1,
+      "webgl": 0.093
+    },
+    "rovastar-harlequin-s-liquid-dragon": {
+      "webgpu": 0.9902,
+      "webgl": 0.3014
+    },
+    "rovastar-harlequins-liquid-dragon": {
+      "webgpu": 0.9973,
+      "webgl": 0.4984
+    },
+    "rovastar-hyperspace": {
+      "webgpu": 0.2376,
+      "webgl": 0.7819
+    },
+    "rovastar-hyperspace-hyper-speed-mix": {
+      "webgpu": 0.9886,
+      "webgl": 0.9874
+    },
+    "rovastar-idiot24-7-balk-acid": {
+      "webgpu": 0.9699,
+      "webgl": 0.9629
+    },
+    "rovastar-idiot24-7-marphet-s-shrine": {
+      "webgpu": 0.9869,
+      "webgl": 0.9132
+    },
+    "rovastar-inner-thoughts-distant-memories-mix": {
+      "webgpu": 0.3638,
+      "webgl": 0.9868
+    },
+    "rovastar-inner-thoughts-frantic-thoughts-mix": {
+      "webgpu": 0.3635,
+      "webgl": 1
+    },
+    "rovastar-jester-s-calling-2": {
+      "webgpu": 0.0126,
+      "webgl": 0.0165
+    },
+    "rovastar-jester-s-surreal-tornado": {
+      "webgpu": 0.9843,
+      "webgl": 0.827
+    },
+    "rovastar-jester-s-surreal-tornado-further-vortex-mix": {
+      "webgpu": 0.9758,
+      "webgl": 0.7143
+    },
+    "rovastar-krash-rainbow-deflection": {
+      "webgpu": 0.0147,
+      "webgl": 0.7106
+    },
+    "rovastar-labfunk": {
+      "webgpu": 0.0075,
+      "webgl": 0.0057
+    },
+    "rovastar-loadus-fractaldrop-active-sparks-mix": {
+      "webgpu": 0,
+      "webgl": 0.1584
+    },
+    "rovastar-loadus-fractaldrop-active-sparks-mix-steady": {
+      "webgpu": 0.6282,
+      "webgl": 0.8945
+    },
+    "rovastar-loadus-geiss-fractaldrop-atmospheric-mix": {
+      "webgpu": 0.4828,
+      "webgl": 0.7436
+    },
+    "rovastar-loadus-geiss-fractaldrop-cauliflower-mix": {
+      "webgpu": 0.4414,
+      "webgl": 0.8505
+    },
+    "rovastar-loadus-geiss-fractaldrop-insanity-mix": {
+      "webgpu": 0.8752,
+      "webgl": 0.865
+    },
+    "rovastar-loadus-geiss-fractaldrop-psychedelic-mix": {
+      "webgpu": 0.8744,
+      "webgl": 0.9497
+    },
+    "rovastar-loadus-geiss-fractaldrop-relief-mix": {
+      "webgpu": 0.9792,
+      "webgl": 0.8911
+    },
+    "rovastar-loadus-geiss-fractaldrop-spinning-mix": {
+      "webgpu": 0,
+      "webgl": 0.9209
+    },
+    "rovastar-loadus-geiss-fractaldrop-tone-mapped-mix": {
+      "webgpu": 0.3662,
+      "webgl": 0.6358
+    },
+    "rovastar-loadus-geiss-fractaldrop-triple-mix": {
+      "webgpu": 0.8454,
+      "webgl": 0.9786
+    },
+    "rovastar-loadus-geiss-tone-mapped-fractaldrop": {
+      "webgpu": 0.3793,
+      "webgl": 0.643
+    },
+    "rovastar-loadus-geiss-tone-mapped-fractaldrop-4": {
+      "webgpu": 0.538,
+      "webgl": 0.681
+    },
+    "rovastar-loadus-geiss-tone-mapped-fractaldrop-7b": {
+      "webgpu": 0.9317,
+      "webgl": 0.8583
+    },
+    "rovastar-loadus-geiss-tone-mapped-fractaldrop-7c": {
+      "webgpu": 1,
+      "webgl": 0.9996
+    },
+    "rovastar-loadus-geiss-tone-mapped-fractaldrop-7d": {
+      "webgpu": 0.9535,
+      "webgl": 0.8495
+    },
+    "rovastar-loadus-zylot-fractaldrop-spark-machine-v2-0": {
+      "webgpu": 0,
+      "webgl": 0.5069
+    },
+    "rovastar-mosaics-of-ages": {
+      "webgpu": 1,
+      "webgl": 0.9885
+    },
+    "rovastar-oozing-resistance": {
+      "webgpu": 0.6649,
+      "webgl": 0.7041
+    },
+    "rovastar-parallel-universe": {
+      "webgpu": 0.9556,
+      "webgl": 0.9797
+    },
+    "rovastar-ritual-halostar": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "rovastar-rocke-sugar-spun-sister": {
+      "webgpu": 0.0528,
+      "webgl": 0.9691
+    },
+    "rovastar-rocke-sugar-spun-sister-painterly": {
+      "webgpu": 0.9119,
+      "webgl": 0.9887
+    },
+    "rovastar-snapshot-of-space": {
+      "webgpu": 0.4971,
+      "webgl": 0.9004
+    },
+    "rovastar-solarized-space": {
+      "webgpu": 1,
+      "webgl": 0.9997
+    },
+    "rovastar-starquake-sunquake-md2-mix": {
+      "webgpu": 0.8443,
+      "webgl": 0.9999
+    },
+    "rovastar-starquake-sunquake-mix": {
+      "webgpu": 0.9869,
+      "webgl": 0.9869
+    },
+    "rovastar-studiomusic-morecherish": {
+      "webgpu": 0.9872,
+      "webgl": 0.9985
+    },
+    "rovastar-sunflower-passion": {
+      "webgpu": 0.0985,
+      "webgl": 0.1934
+    },
+    "rovastar-sunflower-passion-simple-mix": {
+      "webgpu": 1,
+      "webgl": 0.9916
+    },
+    "rovastar-sunflower-passion-simple-mix-phat-eo-s-werid-angle-mix": {
+      "webgpu": 0.9986,
+      "webgl": 1
+    },
+    "rovastar-telek-altars-of-madness-rolling-oceans-mix": {
+      "webgpu": 0.9918,
+      "webgl": 0.9885
+    },
+    "rovastar-torrid-tales": {
+      "webgpu": 0.9967,
+      "webgl": 1
+    },
+    "rovastar-tripmaker": {
+      "webgpu": 1,
+      "webgl": 0.9719
+    },
+    "rovastar-tripmaker-space-trip-mix": {
+      "webgpu": 0.0604,
+      "webgl": 0.2746
+    },
+    "rovastar-trippy-sperm-jelly": {
+      "webgpu": 0,
+      "webgl": 0.1006
+    },
+    "rovastar-unchained-ambrosia-mystic-dark-heart-mix": {
+      "webgpu": 0.8703,
+      "webgl": 0.905
+    },
+    "rovastar-unchained-demonology-vampire-soul-mix": {
+      "webgpu": 0.888,
+      "webgl": 0.8029
+    },
+    "rovastar-unchained-life-after-pie-remix": {
+      "webgpu": 0.4236,
+      "webgl": 0.4885
+    },
+    "rovastar-unchained-oddball-world": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "rovastar-unchained-unified-drag-2-ghostly-vision-mix": {
+      "webgpu": 1,
+      "webgl": 0.7522
+    },
+    "rovastar-unchained-voodoo-chess-magnet-everglow-mix": {
+      "webgpu": 0.1694,
+      "webgl": 0.302
+    },
+    "rovastar-unchained-xen-traffic": {
+      "webgpu": 1,
+      "webgl": 0.9078
+    },
+    "rovastar-virtual-horizons-jelly-v3": {
+      "webgpu": 0.0247,
+      "webgl": 0.2163
+    },
+    "rovastar-voov-s-light-pattern": {
+      "webgpu": 0.0689,
+      "webgl": 0.0751
+    },
+    "rovastar-voov-s-movement-after-dark-mix": {
+      "webgpu": 0.3909,
+      "webgl": 0.147
+    },
+    "rovastar-voov-s-movement-after-dark-mix-painterly": {
+      "webgpu": 0.0782,
+      "webgl": 0.5996
+    },
+    "rovastar-voov-s-naked-movement-pincushion-mix": {
+      "webgpu": 0,
+      "webgl": 0.2352
+    },
+    "rovastar-voov-s-organic-light": {
+      "webgpu": 0.0688,
+      "webgl": 0.0743
+    },
+    "rovastar-xtal": {
+      "webgpu": 0.9869,
+      "webgl": 0.2142
+    },
+    "rovastar-zylot-crystal-ball-many-visions-mix": {
+      "webgpu": 0,
+      "webgl": 0.1342
+    },
+    "rovastar-zylot-narell-s-fever": {
+      "webgpu": 0.04,
+      "webgl": 0.0458
+    },
+    "rovastar-zylot-urza-s-revenge": {
+      "webgpu": 0.9867,
+      "webgl": 0.804
+    },
+    "royal-mashup-160": {
+      "webgpu": 0.0316,
+      "webgl": 0.6787
+    },
+    "royal-mashup-169": {
+      "webgpu": 0.7573,
+      "webgl": 0.9904
+    },
+    "royal-mashup-177": {
+      "webgpu": 0.0183,
+      "webgl": 0.0763
+    },
+    "royal-mashup-197": {
+      "webgpu": 0.0027,
+      "webgl": 0.0551
+    },
+    "royal-mashup-220": {
+      "webgpu": 0.9991,
+      "webgl": 0.9907
+    },
+    "royal-mashup-222": {
+      "webgpu": 1,
+      "webgl": 0.9994
+    },
+    "royal-mashup-253": {
+      "webgpu": 0.7994,
+      "webgl": 0.1008
+    },
+    "royal-mashup-273": {
+      "webgpu": 0.9201,
+      "webgl": 0.5019
+    },
+    "royal-mashup-307": {
+      "webgpu": 0.2852,
+      "webgl": 0.2471
+    },
+    "royal-mashup-326": {
+      "webgpu": 0.002,
+      "webgl": 0.0102
+    },
+    "royal-mashup-337": {
+      "webgpu": 0.7716,
+      "webgl": 0.6856
+    },
+    "royal-mashup-383": {
+      "webgpu": 0.9863,
+      "webgl": 1
+    },
+    "royal-mashup-431": {
+      "webgpu": 0.0821,
+      "webgl": 0.9947
+    },
+    "royal-mashup-441": {
+      "webgpu": 0.984,
+      "webgl": 0.0137
+    },
+    "rozzor-aderrasi-canon": {
+      "webgpu": 1,
+      "webgl": 0.9485
+    },
+    "rozzor-che-inside-the-house-of-nil": {
+      "webgpu": 0.987,
+      "webgl": 0.9872
+    },
+    "rozzor-esotic-pixie-party-light-with-liquid-refreshment-mix": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive": {
+      "webgpu": 0.9994,
+      "webgl": 0.7662
+    },
+    "rozzor-esotic-ppl-nwi-mandala-chill-color-reactive-texture-tweaked": {
+      "webgpu": 1,
+      "webgl": 0.7743
+    },
+    "rozzor-idiot-any-other-deep-rising": {
+      "webgpu": 0.6995,
+      "webgl": 0.1375
+    },
+    "rozzor-learning-curve-invert-tweak": {
+      "webgpu": 0.998,
+      "webgl": 1
+    },
+    "rozzor-rovastar-shame-turns-into-change": {
+      "webgpu": 0.7997,
+      "webgl": 0.9846
+    },
+    "rozzor-shreyas-deeper-aesthetics": {
+      "webgpu": 0.9921,
+      "webgl": 1
+    },
+    "rozzor-studiomusic-vertigyny-geiss-shape-mod": {
+      "webgpu": 0.9956,
+      "webgl": 0.7994
+    },
+    "rozzor-unchained-crescat-scientia-vita-excolatur": {
+      "webgpu": 0.993,
+      "webgl": 0.7542
+    },
+    "rozzor-unchained-painful-plasma-multi-wave-mirrored-rage-triangle-tweak": {
+      "webgpu": 0.9868,
+      "webgl": 0.9586
+    },
+    "rozzor-unchained-scientifically-shapely": {
+      "webgpu": 0.9996,
+      "webgl": 0.9735
+    },
+    "sawtooth-grin-roam": {
+      "webgpu": 0.0327,
+      "webgl": 0.0418
+    },
+    "schglasmia-danqueer": {
+      "webgpu": 0.9834,
+      "webgl": 1
+    },
+    "sckephthaeck-nz": {
+      "webgpu": 0.999,
+      "webgl": 0.9954
+    },
+    "sexually-repressed-americans-mess-roam": {
+      "webgpu": 0.429,
+      "webgl": 0.2412
+    },
+    "shadow-harlequin-babylon-warp-drive-resurrection-call-flexi-s-insertion-of-martin-s-ripple-on-water-shader": {
+      "webgpu": 0.4915,
+      "webgl": 0.8022
+    },
+    "shadowharlequin-cope-alternative-energy-antimatter-mod-1-rave-dreams": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "shadowharlequin-fitting-butterfly-v4-loadus-geiss-fractaldrop-22-v2v2v2v2newcolorsv2v2-22v2-newv222v2-bennett": {
+      "webgpu": 0.9874,
+      "webgl": 1
+    },
+    "shadowharlequin-loadus-fishbrain-geiss-fitting-butterfly-v-many-times-2": {
+      "webgpu": 0.7178,
+      "webgl": 0.755
+    },
+    "shadowharlequin-mashup-satin-sunburst-neon-tokyo-megamix-v1": {
+      "webgpu": 0.7907,
+      "webgl": 0.9813
+    },
+    "shadowharlequin-tunneling-glitch-mix-geiss-3-layers": {
+      "webgpu": 0.771,
+      "webgl": 0.9868
+    },
+    "shifter-a-thousand-monkeys-phat-edit-subliminal-mix": {
+      "webgpu": 0.0303,
+      "webgl": 0.0315
+    },
+    "shifter-aderrasi-airhandler-sadako": {
+      "webgpu": 0.1003,
+      "webgl": 0.059
+    },
+    "shifter-brain-coral": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "shifter-brain-coral-left-brained": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "shifter-brain-coral-non-inverted": {
+      "webgpu": 0.009,
+      "webgl": 0.9954
+    },
+    "shifter-cellular-phat-yak-infusion-v2": {
+      "webgpu": 0.3695,
+      "webgl": 0.4186
+    },
+    "shifter-curlique": {
+      "webgpu": 0.9524,
+      "webgl": 0.9474
+    },
+    "shifter-dark-tides-bdrv-mix": {
+      "webgpu": 0.0413,
+      "webgl": 0.4467
+    },
+    "shifter-dark-tides-bdrv-mix-2": {
+      "webgpu": 0,
+      "webgl": 0.5944
+    },
+    "shifter-dark-tides-bdrv-mix-2c": {
+      "webgpu": 0.3723,
+      "webgl": 0.5956
+    },
+    "shifter-dark-tides-eo-s-phat-whisps-of-doom-mix": {
+      "webgpu": 0.9869,
+      "webgl": 0.1116
+    },
+    "shifter-digi": {
+      "webgpu": 0.0001,
+      "webgl": 0.0032
+    },
+    "shifter-eo-s-phat-blob": {
+      "webgpu": 0.8083,
+      "webgl": 0.3954
+    },
+    "shifter-eo-s-phat-fractical-dancer-inside-the-neural-net": {
+      "webgpu": 0.3953,
+      "webgl": 0.8758
+    },
+    "shifter-eo-s-phat-fractical-dancer-shattered-mind": {
+      "webgpu": 0.5044,
+      "webgl": 0.1352
+    },
+    "shifter-escape-the-worm-eo-s-phat-5362": {
+      "webgpu": 0.5259,
+      "webgl": 0.2729
+    },
+    "shifter-escape-the-worm-eo-s-phat-before-it-eats-your-brain-mix-v2": {
+      "webgpu": 0.8494,
+      "webgl": 0.2702
+    },
+    "shifter-feathers-angel-wings": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "shifter-feathers-angel-wings-phat-remix-relief-2": {
+      "webgpu": 0.9956,
+      "webgl": 0.9948
+    },
+    "shifter-fractal-grinder": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "shifter-geiss-molten-glass-crystal-glass-mix": {
+      "webgpu": 0.0334,
+      "webgl": 0.0269
+    },
+    "shifter-geiss-molten-glass-wrap": {
+      "webgpu": 0.0238,
+      "webgl": 0.0311
+    },
+    "shifter-geiss-neon-pulse-glow-mix": {
+      "webgpu": 0.9867,
+      "webgl": 0.9803
+    },
+    "shifter-glassworms-flare": {
+      "webgpu": 0.9875,
+      "webgl": 1
+    },
+    "shifter-lattice": {
+      "webgpu": 0.9995,
+      "webgl": 0.998
+    },
+    "shifter-lattice-eclipse-phat-eo-s-more-color-mix-v2": {
+      "webgpu": 0.8413,
+      "webgl": 0.9124
+    },
+    "shifter-lazerspecs-phat-edit": {
+      "webgpu": 0.9926,
+      "webgl": 0.9995
+    },
+    "shifter-liquid-circuitry": {
+      "webgpu": 0,
+      "webgl": 0
+    },
+    "shifter-mandala": {
+      "webgpu": 0.01,
+      "webgl": 0.0032
+    },
+    "shifter-molten-glass": {
+      "webgpu": 0.0221,
+      "webgl": 0.0335
+    },
+    "shifter-morphid": {
+      "webgpu": 0.9869,
+      "webgl": 0.6746
+    },
+    "shifter-neon-pulse-reactive": {
+      "webgpu": 0.0008,
+      "webgl": 0.0059
+    },
+    "shifter-robotopia": {
+      "webgpu": 0.003,
+      "webgl": 0.0065
+    },
+    "shifter-snakeskin": {
+      "webgpu": 0,
+      "webgl": 0.0196
+    },
+    "shifter-spectro": {
+      "webgpu": 0,
+      "webgl": 0.7792
+    },
+    "shifter-spills-blender-krash-beatdetect-mash0000-here-comb-your-hair-with-this-planet": {
+      "webgpu": 0.0953,
+      "webgl": 0.8441
+    },
+    "shifter-spincycle-c": {
+      "webgpu": 0.0056,
+      "webgl": 0.6271
+    },
+    "shifter-spincycle-remix-love-at-home-electroplasmic-pissbowel-roam3": {
+      "webgpu": 0.7793,
+      "webgl": 0.5223
+    },
+    "shifter-swarm": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "shifter-tadpole-evolution-static-mix": {
+      "webgpu": 0.2174,
+      "webgl": 0.1253
+    },
+    "shifter-tumbling-cubes": {
+      "webgpu": 0.0004,
+      "webgl": 0.0391
+    },
+    "shifter-tumbling-cubes-endless-radial-blur": {
+      "webgpu": 0.0003,
+      "webgl": 0.0803
+    },
+    "shifter-tumbling-cubes-ripples": {
+      "webgpu": 0.0023,
+      "webgl": 0.9869
+    },
+    "shifter-tumbling-cubes-ripples-eo-s-remix1": {
+      "webgpu": 0,
+      "webgl": 0.1449
+    },
+    "shifter-tumbling-cubes-ripples-phat-parallel-planes-mix": {
+      "webgpu": 0.7182,
+      "webgl": 0.9964
+    },
+    "shifter-urchin-mod": {
+      "webgpu": 0,
+      "webgl": 0.0103
+    },
+    "shreyas-carnival": {
+      "webgpu": 0.0004,
+      "webgl": 0.0438
+    },
+    "skipper-skipper-kiss-me-hard-if-it-weren-t-for-you-wonderful-role-playing-people-parts-of-my-solipsistic-overmind-i-d-be-ungrateful": {
+      "webgpu": 0.7935,
+      "webgl": 0.0669
+    },
+    "skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-nz": {
+      "webgpu": 0.7173,
+      "webgl": 0.8691
+    },
+    "skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-tgfmn": {
+      "webgpu": 0.7121,
+      "webgl": 1
+    },
+    "stahlregen-adamfx-eo-s-flexi-geiss-phat-rovastar-zylot-fractopia-kaleidoscope": {
+      "webgpu": 0.9861,
+      "webgl": 0.0141
+    },
+    "stahlregen-adamfx-eo-s-flexi-geiss-phat-rovastar-zylot-fractopia-kaleidoscope-mashup-32-rmx": {
+      "webgpu": 0.9847,
+      "webgl": 0.0877
+    },
+    "stahlregen-adamfx-flexi-geiss-dragonfly-wings-mashup-26-jack-s-playful-thumbdrum-planet-rmx-mash0000-closer-to-god-through-bacon": {
+      "webgpu": 0.9819,
+      "webgl": 0.8725
+    },
+    "stahlregen-aderrasi-eo-s-geiss-fishbrain-prickly-abyss": {
+      "webgpu": 0.0786,
+      "webgl": 0.0645
+    },
+    "stahlregen-aderrasi-flexi-rovastar-fractal-twist-a-feat-hexcollie": {
+      "webgpu": 0.9051,
+      "webgl": 0.8084
+    },
+    "stahlregen-aderrasi-flexi-rovastar-fractal-twist-b": {
+      "webgpu": 0.9785,
+      "webgl": 0.9293
+    },
+    "stahlregen-aderrasi-flexi-rovastar-fractal-twist-g": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "stahlregen-aderrasi-flexi-rovastar-telek-fractal-twist-a-feat-hexcollie": {
+      "webgpu": 0.8213,
+      "webgl": 0.8122
+    },
+    "stahlregen-aderrasi-martin-rocke-rovastar-charmed-spun-sugar": {
+      "webgpu": 0.9869,
+      "webgl": 0.945
+    },
+    "stahlregen-baked-geiss-krash-washing-machine-v2": {
+      "webgpu": 0.5439,
+      "webgl": 0.0168
+    },
+    "stahlregen-bdrv-fishbrain-flexi-geiss-shifter-starcraft-distorted": {
+      "webgpu": 0.4515,
+      "webgl": 0.5319
+    },
+    "stahlregen-bdrv-fishbrain-flexi-geiss-shifter-starcraft-hyperion-rmx-v3": {
+      "webgpu": 0.1954,
+      "webgl": 0.5039
+    },
+    "stahlregen-benski-fvese-geiss-rovastar-voyager-spark-call-jester-s-smashing-atoms-rmx-1": {
+      "webgpu": 0.1744,
+      "webgl": 0.675
+    },
+    "stahlregen-bmelgren-geiss-krash-pieturp-techno-zylot-mashup-4": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "stahlregen-boz-eo-s-geiss-phat-rovastar-zylot-machine-code-jelly": {
+      "webgpu": 0,
+      "webgl": 0.1487
+    },
+    "stahlregen-boz-eo-s-geiss-phat-rovastar-zylot-machine-code-relief-block-mix": {
+      "webgpu": 0.202,
+      "webgl": 0.8021
+    },
+    "stahlregen-che-geiss-illusion-unchained-shifty-jelly-v2": {
+      "webgpu": 0.0105,
+      "webgl": 0.1745
+    },
+    "stahlregen-dots-pixels-blocky-jelly-v2": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "stahlregen-dots-pixels-blocky-reverse-jelly-v3": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "stahlregen-eo-s-flexi-phat-rovastar-zylot-screenspace-fractopia-rmx": {
+      "webgpu": 0.9879,
+      "webgl": 0.0001
+    },
+    "stahlregen-eo-s-geiss-orb-phat-fruitsticks-flexi-tex-shader": {
+      "webgpu": 0.4095,
+      "webgl": 0.6402
+    },
+    "stahlregen-esotic-idiot24-7-rozzer-zylot-digital-heartbeat-reverse-jelly-v3": {
+      "webgpu": 0.92,
+      "webgl": 0.8413
+    },
+    "stahlregen-fishbrain-flexi-geiss-shifter-stonecraft-beetle-relief-mix": {
+      "webgpu": 0.0936,
+      "webgl": 0.8513
+    },
+    "stahlregen-fishbrain-flexi-geiss-shifter-stonecraft-beetle-relief-mix-reverse-jelly-2c": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "stahlregen-fishbrain-flexi-geiss-the-machine-that-conquered-the-aether": {
+      "webgpu": 0.9881,
+      "webgl": 0.9871
+    },
+    "stahlregen-fishbrain-geiss-martin-flowercraft": {
+      "webgpu": 0.9926,
+      "webgl": 0.9946
+    },
+    "stahlregen-flexi-dots-layered": {
+      "webgpu": 0.9866,
+      "webgl": 0.7815
+    },
+    "stahlregen-flexi-geiss-liquidity-dynamic-swirls": {
+      "webgpu": 0.9879,
+      "webgl": 0.9919
+    },
+    "stahlregen-flexi-geiss-martin-rovastar-tides-martin-s-metallics": {
+      "webgpu": 0,
+      "webgl": 0.6434
+    },
+    "stahlregen-flexi-geiss-rovastar-shifter-even-more-fractals-for-hexcollie-mashup-25-mash0000-engage-the-mind-in-dissolving-crusts": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "stahlregen-flexi-geiss-rovastar-shifter-even-more-fractals-for-hexcollie-reflecto-fcukup": {
+      "webgpu": 0.919,
+      "webgl": 0.7787
+    },
+    "stahlregen-flexi-geiss-rovastar-shifter-fractal-feedback-for-hexcollie": {
+      "webgpu": 0.958,
+      "webgl": 0.987
+    },
+    "stahlregen-flexi-geiss-rovastar-unchained-blurred-echoes-reflecto-fucukp": {
+      "webgpu": 0.0161,
+      "webgl": 0.0069
+    },
+    "stahlregen-flexi-geiss-tiger-no-5-mashup-16-random-texture-flow-inf-fin-bnd": {
+      "webgpu": 1,
+      "webgl": 0.0457
+    },
+    "stahlregen-flexi-geiss-tiger-no-5-random-texture-flow": {
+      "webgpu": 0.9918,
+      "webgl": 0.9859
+    },
+    "stahlregen-flexi-gimme-color-bubble-spinner-mix": {
+      "webgpu": 0.3618,
+      "webgl": 0.3478
+    },
+    "stahlregen-flexi-psychotic-flower-gelatine-burst": {
+      "webgpu": 0,
+      "webgl": 0
+    },
+    "stahlregen-geiss-eo-s-martin-rovastar-halcyon-jelly-skin": {
+      "webgpu": 0.0987,
+      "webgl": 0.9654
+    },
+    "stahlregen-geiss-martin-ouboros-metal-finish-2": {
+      "webgpu": 0.1727,
+      "webgl": 0.2653
+    },
+    "stahlregen-geiss-mashup-16-seizure-inducing-confetti-kaleidoscope-rmx": {
+      "webgpu": 0.0103,
+      "webgl": 0.1485
+    },
+    "stahlregen-geiss-old-school-baby-flower-v2-1": {
+      "webgpu": 0.9892,
+      "webgl": 0.9968
+    },
+    "stahlregen-geiss-old-school-baby-flower-v2-1-lack-of-torture-torture-mess": {
+      "webgpu": 0.9786,
+      "webgl": 0.4845
+    },
+    "stahlregen-geiss-phat-studiomusic-rovastar-cataracts-jelly-v2": {
+      "webgpu": 0.9802,
+      "webgl": 1
+    },
+    "stahlregen-geiss-rovastar-fields-of-flowers-distorted": {
+      "webgpu": 0.0532,
+      "webgl": 0.2331
+    },
+    "stahlregen-geiss-rovastar-fields-of-flowers-mashup-9-space-flower-rmx-mash0001-pack-em-in-we-got-a-long-haul-flashlight": {
+      "webgpu": 0.1636,
+      "webgl": 0.6923
+    },
+    "stahlregen-geiss-rovastar-illusion-krash-rozzor-cyclopean-shift-eyeless-mix": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "stahlregen-geiss-shifter-babylon": {
+      "webgpu": 0.8674,
+      "webgl": 0.9484
+    },
+    "stahlregen-geiss-tiger-no-5-seizure-inducing-confetti-kaleidoscope-rmx-2": {
+      "webgpu": 0.0002,
+      "webgl": 0.2578
+    },
+    "stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion": {
+      "webgpu": 0,
+      "webgl": 0.5207
+    },
+    "stahlregen-geiss-tobiaswolfboi-space-gelatin-color-xplosion-2": {
+      "webgpu": 0,
+      "webgl": 0.1868
+    },
+    "stahlregen-geiss-zylot-wall-of-glass-death-by-color-pox-filaments-rmx": {
+      "webgpu": 0.898,
+      "webgl": 0.991
+    },
+    "stahlregen-martin-others-psychedelic-metal-flower": {
+      "webgpu": 0.7029,
+      "webgl": 0.1086
+    },
+    "stahlregen-old-school-baby-spiral-ornament": {
+      "webgpu": 0.9127,
+      "webgl": 0.9866
+    },
+    "stahlregen-old-school-baby-spiral-ornament-1": {
+      "webgpu": 0.9158,
+      "webgl": 0.9866
+    },
+    "stahlregen-old-school-baby-spiral-ornament-2": {
+      "webgpu": 0.9155,
+      "webgl": 0.9866
+    },
+    "stahlregen-spiral-beats-fluctuating-flowers": {
+      "webgpu": 0.9596,
+      "webgl": 0.6821
+    },
+    "stahlregen-spiral-hundertwasser-2-painterly": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "stahlregen-unchained-psychedelic-flower-kung-fu-corrupt": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "studio-music-and-unchained-rapid-alteration": {
+      "webgpu": 0.9869,
+      "webgl": 0.2991
+    },
+    "studio-music-cherished-desires": {
+      "webgpu": 0.9871,
+      "webgl": 0.9972
+    },
+    "studio-music-personification": {
+      "webgpu": 0.9868,
+      "webgl": 0.9874
+    },
+    "studio-music-unchained-phat-and-e-o-s-how-it-feel-s-to-be-alive": {
+      "webgpu": 0.9885,
+      "webgl": 0.9692
+    },
+    "stuttler-lsd-bloom": {
+      "webgpu": 0.9866,
+      "webgl": 0.954
+    },
+    "suksma-aderassi-geiss-the-sick-assumptions-you-make-about-my-car-shifter-s-esc-shader-nz": {
+      "webgpu": 0.9856,
+      "webgl": 0.5449
+    },
+    "suksma-aderassi-orb-hexcollie-status-quo-burial-at-sea": {
+      "webgpu": 0.8883,
+      "webgl": 0.6467
+    },
+    "suksma-aderrasi-martin-raron-geiss-are-you-mad-at-me": {
+      "webgpu": 0.122,
+      "webgl": 0.25
+    },
+    "suksma-blatantic-emissarial-crotch": {
+      "webgpu": 0.502,
+      "webgl": 0.2808
+    },
+    "suksma-bubble-gum-pop-gore": {
+      "webgpu": 0.7706,
+      "webgl": 0.8072
+    },
+    "suksma-creepy-children-steal-your-identity": {
+      "webgpu": 0.3568,
+      "webgl": 0.7206
+    },
+    "suksma-ctp-log-smell": {
+      "webgpu": 0,
+      "webgl": 0.0556
+    },
+    "suksma-dinner-stalk-the-stalker-with-satanic-telepathy-j4": {
+      "webgpu": 0,
+      "webgl": 0.125
+    },
+    "suksma-diploautomatic-autoimmunity-vs-passivematic-aggpressive-float-dev": {
+      "webgpu": 0,
+      "webgl": 0.1071
+    },
+    "suksma-eternal-pain-and-misery-is-a-small-price-to-pay-for-being-able-to-say-i-destroyed-you-masticate-my-bowels-like-you-re-bored": {
+      "webgpu": 0.9889,
+      "webgl": 0.7255
+    },
+    "suksma-feign-shoulder-concern-when-i-should-be-executed-everything-is-eternally-shrinking": {
+      "webgpu": 0.0043,
+      "webgl": 0.0002
+    },
+    "suksma-fishbrain-white-sceam-firefly-mash0000-liquid-oxygen-jet-fuel-and-maybe-some-plutonium-too": {
+      "webgpu": 0.0199,
+      "webgl": 0.9737
+    },
+    "suksma-flexi-full-tilt-fsaa-demo-dither-color-tweak": {
+      "webgpu": 0.0217,
+      "webgl": 0.0071
+    },
+    "suksma-flexi-lorenz-chaser-heretical-tribal-necklace": {
+      "webgpu": 0.1476,
+      "webgl": 0.1426
+    },
+    "suksma-gaeomaentaec-log-smell-2-steaming-wienies2": {
+      "webgpu": 0,
+      "webgl": 0
+    },
+    "suksma-greaezequescent-red-eyed-black-goatz": {
+      "webgpu": 1,
+      "webgl": 0.9999
+    },
+    "suksma-heretical-crosscut-playpen": {
+      "webgpu": 0.0066,
+      "webgl": 0.3602
+    },
+    "suksma-in-madness-i-purposely-convince-myself-of-all-your-lies-then-slice-you-open-and-eat-your-lungs-only-nz": {
+      "webgpu": 0,
+      "webgl": 0.4216
+    },
+    "suksma-more-pathetic-attempts-justifying-my-ignominious-end-waning-anti-tunneled": {
+      "webgpu": 0.9804,
+      "webgl": 0.968
+    },
+    "suksma-nip-tuck": {
+      "webgpu": 0.3618,
+      "webgl": 0.5906
+    },
+    "suksma-penattrition": {
+      "webgpu": 0.9925,
+      "webgl": 1
+    },
+    "suksma-question-authority-take-what-you-want-be-a-nihilist": {
+      "webgpu": 0.9857,
+      "webgl": 0.9854
+    },
+    "suksma-raron-satanizer-kissing-chickens-multi-beak-mash0002": {
+      "webgpu": 0.0258,
+      "webgl": 0.04
+    },
+    "suksma-redi-unchained-adamfx-nobility-obscured-through-isolation": {
+      "webgpu": 0.1166,
+      "webgl": 0.022
+    },
+    "suksma-rovastar-sunflower-passion-enlightment-mix-phat-edit-flexi-und-martin-shaders-circumflex-in-character-classes-in-regular-expression": {
+      "webgpu": 0.124,
+      "webgl": 0.4103
+    },
+    "suksma-rovaster-eos-phat-gastly-geiss-stahlgren-copper-mine-shaft-fall": {
+      "webgpu": 0.2316,
+      "webgl": 0.1775
+    },
+    "suksma-sick-star-bloat": {
+      "webgpu": 0.8521,
+      "webgl": 0.9975
+    },
+    "suksma-squasm-minor-plot-frugal-koonut-kalifee": {
+      "webgpu": 0.2097,
+      "webgl": 0.1324
+    },
+    "suksma-sun-pod-gambit-couch-nz-2-satangastriq": {
+      "webgpu": 0.0002,
+      "webgl": 1
+    },
+    "suksma-tech-support-for-the-dead": {
+      "webgpu": 0.6084,
+      "webgl": 0.6164
+    },
+    "suksma-the-placebo-unlicensed-rip-off-whore": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "suksma-uninitialized-variabowl-hydroponic-chronic": {
+      "webgpu": 0.9975,
+      "webgl": 0.0018
+    },
+    "suksma-vector-exp-1-couldn-t-not": {
+      "webgpu": 0,
+      "webgl": 0.9935
+    },
+    "suksma-water-cooled-red-uranium-vs-dotes-freeenergynow-net": {
+      "webgpu": 0.7122,
+      "webgl": 0.9714
+    },
+    "suksma-yin-100-through-the-ether-bitcore-tweak-mash0000-dmt-eye-rub-spher-nz": {
+      "webgpu": 0.9994,
+      "webgl": 0.795
+    },
+    "tag-cradle-of-life-remix-of-yin-315": {
+      "webgpu": 0,
+      "webgl": 0
+    },
+    "techno-sandstorm-psychodelic-highway": {
+      "webgpu": 0.987,
+      "webgl": 0.9874
+    },
+    "telek-city-helix-lattice": {
+      "webgpu": 0.3914,
+      "webgl": 0.9816
+    },
+    "telek-sine-wave": {
+      "webgpu": 0.9869,
+      "webgl": 0.9692
+    },
+    "telek-slow-thing-spiderman-mix": {
+      "webgpu": 0.9589,
+      "webgl": 0.9253
+    },
+    "tobiaswolfboi-the-pit": {
+      "webgpu": 0.9869,
+      "webgl": 0.1382
+    },
+    "tokyo-corridor-shifter-tumbling-cubes-remix": {
+      "webgpu": 0.0151,
+      "webgl": 0.9865
+    },
+    "tonymilkdrop-leonardo-da-vinci-s-balloon-flexi-merry-go-round-techstyle": {
+      "webgpu": 0.984,
+      "webgl": 0.9845
+    },
+    "tonymilkdrop-magellan-s-nebula-flexi-fancy-this-shall-not-retain": {
+      "webgpu": 0.7819,
+      "webgl": 0.3057
+    },
+    "tonymilkdrop-magellan-s-nebula-flexi-grind-this-shall-not-retain": {
+      "webgpu": 0.9866,
+      "webgl": 0.9711
+    },
+    "tonymilkdrop-magellan-s-nebula-flexi-you-enter-first-multiverse": {
+      "webgpu": 0.6534,
+      "webgl": 0.012
+    },
+    "tripgnosis-antimatter-streams": {
+      "webgpu": 0.115,
+      "webgl": 0.4166
+    },
+    "tripgnosis-negative-photon-burn": {
+      "webgpu": 0.0004,
+      "webgl": 0.4475
+    },
+    "tripgnosis-spunn": {
+      "webgpu": 0.0403,
+      "webgl": 0.2661
+    },
+    "tschoey-music-flower": {
+      "webgpu": 0.0155,
+      "webgl": 0.0545
+    },
+    "unchained-all-you-can-eat": {
+      "webgpu": 1,
+      "webgl": 0.9393
+    },
+    "unchained-beat-demo-1-0": {
+      "webgpu": 0.9928,
+      "webgl": 0.9875
+    },
+    "unchained-beat-demo-2-1": {
+      "webgpu": 0.9989,
+      "webgl": 0.9876
+    },
+    "unchained-beat-demo-2-4": {
+      "webgpu": 0.7906,
+      "webgl": 0.7575
+    },
+    "unchained-beat-demo-2-5": {
+      "webgpu": 0.9869,
+      "webgl": 0.8471
+    },
+    "unchained-beat-demo-demonology-mix": {
+      "webgpu": 0.9923,
+      "webgl": 0.5739
+    },
+    "unchained-beyond-the-strife-nexus": {
+      "webgpu": 0.9869,
+      "webgl": 0.9554
+    },
+    "unchained-cartoon-factory": {
+      "webgpu": 1,
+      "webgl": 0.0057
+    },
+    "unchained-cranked-on-failure": {
+      "webgpu": 0.9875,
+      "webgl": 0.9837
+    },
+    "unchained-custom-gramatix-remix": {
+      "webgpu": 0.8719,
+      "webgl": 0.1998
+    },
+    "unchained-demonology": {
+      "webgpu": 0.9868,
+      "webgl": 0.7055
+    },
+    "unchained-free-to-feel-valium-remix": {
+      "webgpu": 0.9912,
+      "webgl": 0.8903
+    },
+    "unchained-furious-spirals-remix-radial-blur": {
+      "webgpu": 0.9869,
+      "webgl": 0.9869
+    },
+    "unchained-furious-spirals-remix-steady": {
+      "webgpu": 0.9989,
+      "webgl": 0.9665
+    },
+    "unchained-fuzzy-sciences": {
+      "webgpu": 0.1104,
+      "webgl": 0.1895
+    },
+    "unchained-geiss-furious-spirals-blur-and-glow-remix": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "unchained-geiss-furious-spirals-canvas-mix": {
+      "webgpu": 0.9875,
+      "webgl": 0.9875
+    },
+    "unchained-ghostlight-whisper": {
+      "webgpu": 0.969,
+      "webgl": 0.4602
+    },
+    "unchained-goofy-beat-detection": {
+      "webgpu": 0.9871,
+      "webgl": 0.9869
+    },
+    "unchained-hard-science": {
+      "webgpu": 0.9339,
+      "webgl": 0.2978
+    },
+    "unchained-housed-in-a-childish-mind": {
+      "webgpu": 0.9868,
+      "webgl": 0.6813
+    },
+    "unchained-in-memory-of-peg": {
+      "webgpu": 0.9975,
+      "webgl": 0.9982
+    },
+    "unchained-jaded-emotion": {
+      "webgpu": 0.4918,
+      "webgl": 0.4954
+    },
+    "unchained-making-a-science-of-it": {
+      "webgpu": 0.9869,
+      "webgl": 0.8243
+    },
+    "unchained-making-a-science-of-it-2": {
+      "webgpu": 0.9836,
+      "webgl": 0.2947
+    },
+    "unchained-making-a-science-of-it-3": {
+      "webgpu": 0.9873,
+      "webgl": 0.8832
+    },
+    "unchained-making-a-science-of-it-4": {
+      "webgpu": 0.9835,
+      "webgl": 0.7154
+    },
+    "unchained-making-a-science-of-it-7": {
+      "webgpu": 0.9649,
+      "webgl": 0.87
+    },
+    "unchained-morat-s-final-voyage": {
+      "webgpu": 0.9834,
+      "webgl": 0.9768
+    },
+    "unchained-not-as-fun-as-it-looks": {
+      "webgpu": 0.0698,
+      "webgl": 0.078
+    },
+    "unchained-painful-plasma-multi-wave-mirrored-rage-rozzor-triangle-tweak": {
+      "webgpu": 1,
+      "webgl": 0.8765
+    },
+    "unchained-perverted-dialect": {
+      "webgpu": 0.161,
+      "webgl": 0.5521
+    },
+    "unchained-picture-of-exile": {
+      "webgpu": 0.9553,
+      "webgl": 0.9449
+    },
+    "unchained-picture-of-poison": {
+      "webgpu": 0.9869,
+      "webgl": 0.9729
+    },
+    "unchained-quine": {
+      "webgpu": 0.9869,
+      "webgl": 0.0949
+    },
+    "unchained-reawoke": {
+      "webgpu": 0.0366,
+      "webgl": 0.0336
+    },
+    "unchained-rewop": {
+      "webgpu": 0.804,
+      "webgl": 0.1816
+    },
+    "unchained-ribald-ballad": {
+      "webgpu": 0.9883,
+      "webgl": 0.9957
+    },
+    "unchained-rovastar-luckless": {
+      "webgpu": 0.9874,
+      "webgl": 0.9662
+    },
+    "unchained-rovastar-rainbow-obscura": {
+      "webgpu": 0.1644,
+      "webgl": 0.9015
+    },
+    "unchained-rovastar-waves-of-waves": {
+      "webgpu": 0.9869,
+      "webgl": 0.2162
+    },
+    "unchained-rovastar-wormhole-pillars-hall-of-shadows-mix": {
+      "webgpu": 0.9567,
+      "webgl": 0.5015
+    },
+    "unchained-rovastar-xen-traffic": {
+      "webgpu": 1,
+      "webgl": 0.901
+    },
+    "unchained-scientific-dance": {
+      "webgpu": 0.9813,
+      "webgl": 0.5174
+    },
+    "unchained-scientific-shapes-2": {
+      "webgpu": 0.7361,
+      "webgl": 0.5814
+    },
+    "unchained-spinal-mixdown-2": {
+      "webgpu": 0.9812,
+      "webgl": 0.912
+    },
+    "unchained-subjective-experience-of-the-manifold": {
+      "webgpu": 0.9869,
+      "webgl": 0.2923
+    },
+    "unchained-those-who-doubted": {
+      "webgpu": 0.9844,
+      "webgl": 0.8649
+    },
+    "unchained-unclaimed-wreckage-2-hemi-sync": {
+      "webgpu": 0.8736,
+      "webgl": 0.9201
+    },
+    "unchained-unclaimed-wreckage-2-sub-spinal-daemon": {
+      "webgpu": 0.9161,
+      "webgl": 0.5228
+    },
+    "unchained-unified-drag": {
+      "webgpu": 0.9918,
+      "webgl": 0.9737
+    },
+    "unchained-unified-drag-2": {
+      "webgpu": 0.9935,
+      "webgl": 0.903
+    },
+    "unchained-vs-rovastar-tripmaker-floral-overload-2": {
+      "webgpu": 0.9869,
+      "webgl": 0.0322
+    },
+    "unchained-vs-rovastar-vs-zylot-tripmaker-trip-machine": {
+      "webgpu": 0.9998,
+      "webgl": 0.9869
+    },
+    "unchained-vs-rovastar-vs-zylot-tripmaker-trip-machine-v3": {
+      "webgpu": 0.5958,
+      "webgl": 0.1909
+    },
+    "undulate-harque-calm-ling": {
+      "webgpu": 0.7593,
+      "webgl": 0.9982
+    },
+    "valhala-core": {
+      "webgpu": 0.5439,
+      "webgl": 0.0044
+    },
+    "various-artists-1200774354134-mash0000-what-the-writer-s-guild-is-doing-with-the-extra-money": {
+      "webgpu": 0,
+      "webgl": 0.0004
+    },
+    "various-artists-goo": {
+      "webgpu": 1,
+      "webgl": 0.9999
+    },
+    "various-fire-and-brimstone": {
+      "webgpu": 1,
+      "webgl": 0.0612
+    },
+    "vovan-geiss-bass-with-flover-feedback-mix": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "vovan-geiss-bass-with-flover-feedback-mix-2": {
+      "webgpu": 0,
+      "webgl": 1
+    },
+    "vovan-geiss-bass-with-flover-feedback-mix-2b": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "vovan-geiss-bass-with-flover-feedback-mix-3": {
+      "webgpu": 1,
+      "webgl": 1
+    },
+    "vovan-geiss-bass-with-flover-feedback-mix-orig": {
+      "webgpu": 0,
+      "webgl": 1
+    },
+    "wulfson-crumple-nth-power-mix": {
+      "webgpu": 0.9871,
+      "webgl": 0.4409
+    },
+    "yin-030-dance-with-the-ocean": {
+      "webgpu": 0,
+      "webgl": 0.6385
+    },
+    "yin-051-van-gogh-s-nightmare-in-depth-bitcore-tweak": {
+      "webgpu": 0.988,
+      "webgl": 0.9901
+    },
+    "yin-100-through-the-ether-bitcore-tweak": {
+      "webgpu": 0.9864,
+      "webgl": 0.9815
+    },
+    "yin-102-through-the-ether-the-separation-bitcore-tweak": {
+      "webgpu": 0.9869,
+      "webgl": 0.9346
+    },
+    "yin-140-ohm-to-the-stars": {
+      "webgpu": 0.5276,
+      "webgl": 0.7319
+    },
+    "yin-160-controversial": {
+      "webgpu": 0.9481,
+      "webgl": 0.0059
+    },
+    "yin-190-temporal-fluctuations": {
+      "webgpu": 0.8235,
+      "webgl": 0.0316
+    },
+    "yin-191-temporal-singularities": {
+      "webgpu": 0.5861,
+      "webgl": 0.0135
+    },
+    "yin-250-artificial-poles-of-the-continuum": {
+      "webgpu": 0.0062,
+      "webgl": 0.0215
+    },
+    "yin-250-artificial-poles-of-the-continuum-phat-s-orbit-mix": {
+      "webgpu": 0.0708,
+      "webgl": 0.1204
+    },
+    "yin-253-artificial-poles-of-the-continuum-remix-3": {
+      "webgpu": 0.0333,
+      "webgl": 0.0895
+    },
+    "yin-280-coming-home": {
+      "webgpu": 0.0217,
+      "webgl": 0.0748
+    },
+    "yin-290-sonic-brainstorm": {
+      "webgpu": 0.1232,
+      "webgl": 0.2559
+    },
+    "yin-293-sonic-brainstorm-inner-state-group-experience-mix": {
+      "webgpu": 0.0806,
+      "webgl": 0.3014
+    },
+    "yin-300-daydreamer": {
+      "webgpu": 0.7521,
+      "webgl": 0.9228
+    },
+    "yin-302-daydreamer-remix-2": {
+      "webgpu": 0.9049,
+      "webgl": 0.8629
+    },
+    "yin-311-ocean-of-light-bouncing-off-mix": {
+      "webgpu": 0.012,
+      "webgl": 0.2264
+    },
+    "yin-315-ocean-of-light-yo-im-peakin-yo-eo-s-phat": {
+      "webgpu": 0.9869,
+      "webgl": 0.986
+    },
+    "yin-385-magic-ride-distance-based-hue": {
+      "webgpu": 0.0319,
+      "webgl": 0.0482
+    },
+    "yin-geiss-240-electric-universe-bkg-mix": {
+      "webgpu": 0.7216,
+      "webgl": 0.3793
+    },
+    "zylot-age-of-science-seeking-truth-mix": {
+      "webgpu": 0.988,
+      "webgl": 0.9896
+    },
+    "zylot-block-of-sound-abstract-architecture-mix": {
+      "webgpu": 0.0029,
+      "webgl": 0.0053
+    },
+    "zylot-building-block-of-color-bitcore-tweak": {
+      "webgpu": 0.6637,
+      "webgl": 0.0946
+    },
+    "zylot-crosshair-dimension-light-of-ages": {
+      "webgpu": 0.0032,
+      "webgl": 0.005
+    },
+    "zylot-crossing-over-geiss-tweak": {
+      "webgpu": 0.0169,
+      "webgl": 0.2388
+    },
+    "zylot-crossing-over-paint-spatter-mix": {
+      "webgpu": 0.1674,
+      "webgl": 0.3291
+    },
+    "zylot-digiscape-advanced-processor": {
+      "webgpu": 0.0023,
+      "webgl": 0.011
+    },
+    "zylot-flight-of-harrier-white-world-mix": {
+      "webgpu": 0.0006,
+      "webgl": 0.0064
+    },
+    "zylot-funnels": {
+      "webgpu": 0.9138,
+      "webgl": 0.7244
+    },
+    "zylot-geiss-enlightenment": {
+      "webgpu": 0.1442,
+      "webgl": 0.5421
+    },
+    "zylot-heaven-bloom-nz": {
+      "webgpu": 0.0016,
+      "webgl": 0
+    },
+    "zylot-idiot-face-bdrv-et-al-rmx-ketama-mix": {
+      "webgpu": 0.2502,
+      "webgl": 0.4126
+    },
+    "zylot-idiot24-7-unknown-power-source": {
+      "webgpu": 0.6412,
+      "webgl": 0.2587
+    },
+    "zylot-in-death-there-is-life-dancing-lights-mix": {
+      "webgpu": 0.0068,
+      "webgl": 0.7838
+    },
+    "zylot-in-death-there-is-life-geiss-layered-mix": {
+      "webgpu": 0.0244,
+      "webgl": 0.2194
+    },
+    "zylot-in-death-there-is-life-geiss-layered-mix-jelly": {
+      "webgpu": 0,
+      "webgl": 0.6345
+    },
+    "zylot-in-death-there-is-life-surface-reflection-mix": {
+      "webgpu": 0.1767,
+      "webgl": 0.7629
+    },
+    "zylot-krash-snowflake-halo-ice-cube-mix": {
+      "webgpu": 0.9869,
+      "webgl": 0.0124
+    },
+    "zylot-light-of-the-path": {
+      "webgpu": 0.001,
+      "webgl": 0.0056
+    },
+    "zylot-magma-crawl": {
+      "webgpu": 1,
+      "webgl": 0.7695
+    },
+    "zylot-paint-spill-music-reactive-paint-mix": {
+      "webgpu": 0.0039,
+      "webgl": 0.9927
+    },
+    "zylot-rovastar-a-million-miles-from-earth-fog-of-time-mix-vessel-remix": {
+      "webgpu": 0.6012,
+      "webgl": 0.6313
+    },
+    "zylot-rovastar-sully-s-trip-the-worstest-mix": {
+      "webgpu": 0.9687,
+      "webgl": 0.9031
+    },
+    "zylot-rush": {
+      "webgpu": 0.7861,
+      "webgl": 0.7631
+    },
+    "zylot-spiral-hypnotic-phat-double-spiral-mix": {
+      "webgpu": 0.7425,
+      "webgl": 0.5662
+    },
+    "zylot-star-ornament": {
+      "webgpu": 0.04,
+      "webgl": 0.1571
+    },
+    "zylot-true-visionary": {
+      "webgpu": 0.0001,
+      "webgl": 0.002
+    },
+    "zylot-true-visionary-final-mix": {
+      "webgpu": 0.0007,
+      "webgl": 0.0016
+    }
+  }
+}
