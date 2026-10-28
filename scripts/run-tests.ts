@@ -9,7 +9,8 @@
  * `--timeout <ms>` sets bun's default per-test timeout for every pass (tests
  * that pass their own timeout keep it), and `--junit-dir <dir>` also writes
  * one junit report per pass into that directory; each report carries every
- * test's duration.
+ * test's duration. `--cost-dir <dir>` preloads scripts/test-cost-recorder.ts,
+ * which logs each test's CPU time there (see that file).
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -153,6 +154,17 @@ function flagValue(flag: string): string | undefined {
 // test:budget lowers this to find tests leaning on bun's 5s default.
 const TIMEOUT_MS = flagValue('--timeout');
 const JUNIT_DIR = flagValue('--junit-dir');
+const COST_DIR = flagValue('--cost-dir');
+const COST_RECORDER = path.resolve(
+  import.meta.dirname,
+  'test-cost-recorder.ts',
+);
+// The recorder reads its directory from bun test's environment. Bun.spawn
+// passes the environment the process started with, not later writes to
+// process.env, so the variable goes to each spawn explicitly.
+const COST_ENV = COST_DIR
+  ? { ...process.env, STIMS_TEST_COST_DIR: path.resolve(COST_DIR) }
+  : undefined;
 /** One report per bun invocation: the serial pass runs one per file. */
 let junitReports = 0;
 const nextJunitReport = () => {
@@ -190,7 +202,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     // Read at command-build time (see NO_BAIL); consumed here so it is not
     // mistaken for a test file path.
     if (arg === '--no-bail') continue;
-    if (arg === '--timeout' || arg === '--junit-dir') {
+    if (arg === '--timeout' || arg === '--junit-dir' || arg === '--cost-dir') {
       index += 1;
       continue;
     }
@@ -254,6 +266,7 @@ function buildBunTestCmd({
     'bun',
     'test',
     '--preload=./tests/setup.ts',
+    ...(COST_DIR ? [`--preload=${COST_RECORDER}`] : []),
     ...(watch ? ['--watch'] : []),
     ...(changed ? ['--changed'] : []),
     ...(bailEnabled ? ['--bail'] : []),
@@ -286,6 +299,7 @@ async function runBunTest(options: {
   const proc = Bun.spawn({
     cmd: buildBunTestCmd(options),
     cwd: process.cwd(),
+    env: COST_ENV,
     stdin: 'inherit',
     stdout: 'inherit',
     stderr: 'inherit',
@@ -371,6 +385,7 @@ async function runSerialCategory(files: string[]): Promise<number> {
               maxConcurrency: 1,
             }),
             cwd: process.cwd(),
+            env: COST_ENV,
             stdin: 'ignore',
             stdout: 'pipe',
             stderr: 'pipe',
