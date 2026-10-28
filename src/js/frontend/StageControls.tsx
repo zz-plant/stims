@@ -388,6 +388,7 @@ export function StageControls({
   const energyRef = useRef<HTMLSpanElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const foldedEditRef = useRef<HTMLButtonElement>(null);
 
   // Toasts render above every overlay, so they have to know when something
   // occupies the bottom of the screen and move out of its way. Sheets publish
@@ -496,14 +497,24 @@ export function StageControls({
 
   useEffect(() => {
     let activityFrame: number | null = null;
-    const handlePointerMove = () => {
-      if (activityFrame !== null) return;
+    // Not from the folded dock's Edit chip. Bringing the bar back marks the
+    // chip inert, so a tap's pointerdown (or the focus it moves) arrived
+    // first and dropped the click it was for: the editor stayed shut and a
+    // second tap landed on the bar's previous-preset button underneath. The
+    // chip's own click signals the activity once the editor is opening.
+    const fromFoldedEdit = (event: Event) =>
+      event.target instanceof Node &&
+      Boolean(foldedEditRef.current?.contains(event.target));
+    const handlePointerMove = (event: PointerEvent) => {
+      if (activityFrame !== null || fromFoldedEdit(event)) return;
       activityFrame = requestAnimationFrame(() => {
         activityFrame = null;
         signalActivity();
       });
     };
-    const handleActivity = () => signalActivity();
+    const handleActivity = (event: Event) => {
+      if (!fromFoldedEdit(event)) signalActivity();
+    };
     document.addEventListener('pointermove', handlePointerMove, {
       passive: true,
     });
@@ -995,7 +1006,9 @@ export function StageControls({
               a setting first-time visitors could not decode as "2.5s", which
               lives in the menu's Transition row now. The label stays: an
               icon alone would not say that the visual is code you can edit,
-              which is the claim the landing page makes. */}
+              which is the claim the landing page makes. Phones keep the
+              pencil and drop the word, which the folded dock's Edit chip
+              carries there: with the word, the preset title had 46px. */}
           {panel !== 'editor' ? (
             <button
               type="button"
@@ -1016,7 +1029,7 @@ export function StageControls({
                 name="pencil"
                 className="stims-icon-slot stims-icon-slot--sm"
               />
-              Edit
+              <span className={styles.editLabel}>Edit</span>
             </button>
           ) : null}
 
@@ -1326,9 +1339,10 @@ export function StageControls({
             stage would most need to find it (docs/PRODUCT_MOMENTS.md,
             "Open one up"). A second Edit, shown only in the folded state,
             keeps the promise's action in the tree and on the screen. Phones
-            drop it with the bar's own Edit: the editor sheet covers the
-            stage there, and that finding is still open. */}
+            keep it too: the editor sheet there leaves the middle of the
+            stage in view above it, so the edit can be watched as it runs. */}
         <button
+          ref={foldedEditRef}
           type="button"
           className={styles.foldedEdit}
           data-action="open-editor"

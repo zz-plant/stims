@@ -15,6 +15,11 @@
  *   4. The stage shows it within a bounded number of engine frames, and the
  *      demo audio and the preset are still running.
  *
+ * A second test walks the same moment on a phone held upright (390x844),
+ * where the editor is a bottom sheet: the folded dock's Edit chip opens it,
+ * the middle of the stage stays in view above the sheet, and the edit lands
+ * on stage there.
+ *
  * WebGL, so CI's SwiftShader runner can run it. Every wait on the stage is
  * counted in engine frames, never wall-clock time: a slow machine renders
  * fewer frames during the same debounce and compile, so a frame bound is
@@ -626,4 +631,170 @@ requiredBrowserTest(
   // rendering at the worst moment. Each step fails at its own deadline with a
   // message naming it; this backstop only exists so the first real error wins.
   { timeout: 1_110_000 },
+);
+
+/**
+ * A phone held upright, the context policy 2 in docs/PRODUCT_MOMENTS.md
+ * measures beside 1280x720. Below 768px wide the editor is a bottom sheet;
+ * at 92dvh it left the top 70px of the stage, so an edit could not be
+ * watched while it ran.
+ */
+const PHONE_VIEWPORT = { width: 390, height: 844 };
+
+/**
+ * Stage left above the sheet. 204px measured on the first open, where the
+ * old 92dvh sheet left 68px. The bound sits under the measurement so a
+ * different font's line metrics cannot fail it, and far above the old 68px.
+ */
+const MIN_PHONE_STAGE_PX = 180;
+
+requiredBrowserTest(
+  'open one up on a phone: the folded dock opens the editor, and the edit shows above the sheet',
+  async () => {
+    const browser = await withDeadline(
+      chromium.launch({ headless: HEADLESS, args: WEBGL_RENDERER_ARGS }),
+      LAUNCH_TIMEOUT_MS,
+      'launching Chromium',
+    );
+    const ctx = await browser.newContext({
+      viewport: PHONE_VIEWPORT,
+      deviceScaleFactor: 1,
+      isMobile: true,
+      hasTouch: true,
+    });
+    const page = await ctx.newPage();
+    page.on('pageerror', (error) => {
+      console.log(`[OPEN ONE UP PHONE PAGE ERROR] ${error.message}`);
+    });
+
+    try {
+      await page.goto(
+        `${SERVER_URL}/?agent=true&renderer=webgl&lockQualityStep=6`,
+        { waitUntil: 'domcontentloaded', timeout: LIVE_TIMEOUT_MS },
+      );
+      const playDemo = page.locator(
+        '.stims-shell__launch-cta[data-demo-audio-btn]',
+      );
+      await playDemo.waitFor({
+        state: 'attached',
+        timeout: HOME_CHUNK_TIMEOUT_MS,
+      });
+      await playDemo.tap({ timeout: CLICK_TIMEOUT_MS });
+      await waitForAgentState(
+        page,
+        (state) =>
+          agentPredicates.engineLive()(state) &&
+          agentPredicates.presetIs(FIRST_RUN_PRESET_ID)(state) &&
+          state.audioSource === 'demo',
+        LIVE_TIMEOUT_MS,
+      );
+
+      // A visitor watching the stage sees the folded dock: the bar folds
+      // after a few idle seconds and leaves the Edit chip beside Controls.
+      // A tap's pointerdown used to bring the bar back and make the chip
+      // inert before its click arrived, so the tap opened nothing.
+      const foldedEdit = page.locator(
+        'button[data-action="open-editor"][data-visible="true"]',
+      );
+      await foldedEdit.waitFor({
+        state: 'visible',
+        timeout: CLICK_TIMEOUT_MS,
+      });
+      await foldedEdit.tap({ timeout: CLICK_TIMEOUT_MS });
+      await waitForAgentState(
+        page,
+        (state) => state.panel === 'editor',
+        EDITOR_TIMEOUT_MS,
+      );
+      await page
+        .locator('.stims-editor__code .cm-content')
+        .waitFor({ timeout: EDITOR_TIMEOUT_MS });
+      // The first open names Tab and Esc in a note over the editor for a few
+      // seconds; the layout below is the one the visitor edits in after it.
+      await page
+        .locator('[role="dialog"] [data-anchor="panel"]')
+        .waitFor({ state: 'detached', timeout: EDITOR_TIMEOUT_MS });
+
+      const sheet = await bounded(
+        page.evaluate(() => {
+          const panel = document
+            .querySelector('[role="dialog"][data-stage-anchored="true"]')
+            ?.getBoundingClientRect();
+          const stage = document
+            .querySelector('.stims-shell__stage-root')
+            ?.getBoundingClientRect();
+          const code = document
+            .querySelector('.stims-editor__code')
+            ?.getBoundingClientRect();
+          const sheetTop = panel?.top ?? 0;
+          return {
+            sheetTop,
+            stageMiddle: stage ? stage.top + stage.height / 2 : Number.NaN,
+            codeOnScreen: Boolean(
+              code && code.top >= sheetTop && code.bottom <= window.innerHeight,
+            ),
+          };
+        }),
+        'measuring the editor sheet',
+      );
+      expect(
+        sheet.sheetTop,
+        'stage left above the sheet at 390x844',
+      ).toBeGreaterThanOrEqual(MIN_PHONE_STAGE_PX);
+      // The middle of the frame, where a preset's zoom and rotation centre,
+      // is in that strip rather than under the sheet.
+      expect(sheet.stageMiddle, 'the stage middle').toBeGreaterThan(0);
+      expect(sheet.stageMiddle, 'the stage middle').toBeLessThan(
+        sheet.sheetTop,
+      );
+      expect(sheet.codeOnScreen, 'the code inside the sheet').toBe(true);
+      const room = await readEditorRoom(page);
+      expect(room.codeLines, 'lines of code at 390x844').toBeGreaterThanOrEqual(
+        MIN_CODE_LINES,
+      );
+      expect(room.tuneOnScreen, 'the Tune tab at 390x844').toBe(true);
+
+      const baseline = await bounded(captureAgentStats(page));
+      expect(baseline).not.toBeNull();
+      if (!baseline) return;
+      expect(showsEdit(baseline), 'the stage before the edit').toBe(false);
+
+      await page
+        .locator('.stims-editor .cm-content')
+        .tap({ timeout: CLICK_TIMEOUT_MS });
+      await page.keyboard.press('ControlOrMeta+End');
+      await page.keyboard.press('Enter');
+      await page.keyboard.insertText(EDIT_LINE);
+
+      const typedAt = await frameCount(page);
+      let stats = await bounded(captureAgentStats(page));
+      while (!(stats && showsEdit(stats))) {
+        const elapsed = (await frameCount(page)) - typedAt;
+        if (elapsed > EDIT_FRAME_BUDGET) {
+          throw new Error(
+            `The edit was not on stage ${elapsed} frames after it was typed ` +
+              `(budget ${EDIT_FRAME_BUDGET}). Last histogram: ${JSON.stringify(stats?.histogram)}`,
+          );
+        }
+        await waitForFrames(page, 4);
+        stats = await bounded(captureAgentStats(page));
+      }
+
+      const after = await bounded(getAgentState(page));
+      expect(after.presetId).toBe(FIRST_RUN_PRESET_ID);
+      expect(after.audioSource).toBe('demo');
+      expect(after.panel).toBe('editor');
+      expect(after.lastError).toBeNull();
+    } catch (error) {
+      await writeAgentFailureArtifact(page, 'open-one-up-phone');
+      throw error;
+    } finally {
+      await closeQuietly(ctx, browser);
+    }
+  },
+  // Every bound reached in sequence: launch 60 + goto 60 + home chunk 90 +
+  // tap 30 + live 60 + fold 30 + chip tap 30 + panel 60 + code 60 + note 60
+  // + 3 page reads 45 + code tap 30 + edit frames 60 + failure dump 30 +
+  // teardown 30 = 735s; the backstop lets the first real error win.
+  { timeout: 780_000 },
 );

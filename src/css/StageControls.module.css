@@ -117,11 +117,26 @@
   outline-offset: 2px;
 }
 
-/* Phones drop it from the bar, as they drop save and full screen (see the
-   480px block below): every 44px control there comes out of the title,
-   which is the one thing the bar exists to show, and with Edit in the row it
-   read "Cere…". "Edit preset code" stays one tap away in the menu. */
+/* Phones keep Edit on the bar as a pencil in its ring. Every 44px there
+   comes out of the title, the one thing the bar exists to show: with the
+   word as well, a 390px phone left the title 46px and cut "Curlique" short.
+   The folded dock's chip says "Edit" in words, and the button's accessible
+   name says what it does. Narrower than a 375px phone the pencil goes too:
+   at 360px it left the title 42px, short of "Curlique"; the folded chip and
+   the menu still open the editor there. */
 @media (max-width: 480px) {
+  .editEntry {
+    justify-content: center;
+    width: 44px;
+    padding: 0;
+  }
+
+  .editLabel {
+    display: none;
+  }
+}
+
+@media (max-width: 374px) {
   .editEntry {
     display: none;
   }
@@ -696,15 +711,6 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Phones drop the bar's own Edit below 480px (the editor sheet covers the
-   stage there); the folded chip follows it rather than advertising harder
-   into the same open problem. */
-@media (max-width: 480px) {
-  .foldedEdit {
-    display: none;
-  }
-}
-
 .foldedEdit:focus-visible {
   outline: 2px solid var(--stims-accent);
   outline-offset: 2px;
@@ -760,6 +766,14 @@
     opacity 0.25s ease 0.15s,
     transform var(--motion-enter) 0.15s,
     visibility 0s linear 0.15s;
+}
+
+/* Beside the Edit chip on a phone, the handle gives up width so the pair
+   stays on screen: at its full 280px the two ran 15px past a 360px screen. */
+@media (max-width: 480px) {
+  .handle {
+    min-width: min(280px, calc(100vw - 112px));
+  }
 }
 
 .handle[data-visible="true"]:hover {
