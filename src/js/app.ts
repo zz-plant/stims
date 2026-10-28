@@ -79,13 +79,15 @@ async function startPostPaintServices() {
         installRendererTelemetryPersistence(),
     ),
     import('./core/agent-api.ts').then(({ initAgentAPI }) => initAgentAPI()),
-    import('./utils/browser/gamepad-navigation.ts').then(
-      ({ initGamepadNavigation }) =>
-        // Keyboard-as-remote only where the keyboard *is* a remote. On a
-        // desktop the shell owns the arrow keys (preset navigation) and
-        // Backspace (previous preset); see the option's doc for what
-        // happened when this layer handled them too.
-        initGamepadNavigation({ keyboardNavigation: isSmartTvDevice() }),
+    import('gamepad-navigation').then(({ initGamepadNavigation }) =>
+      // Keyboard-as-remote only where the keyboard *is* a remote. On a
+      // desktop the shell owns the arrow keys (preset navigation) and
+      // Backspace (previous preset); see the option's doc for what
+      // happened when this layer handled them too.
+      initGamepadNavigation({
+        keyboardNavigation: isSmartTvDevice(),
+        focusStorageKey: 'stims:last-focus',
+      }),
     ),
     // Dev server only: vite replaces import.meta.hot with undefined in a
     // build, which drops this branch and the chunk it imports.

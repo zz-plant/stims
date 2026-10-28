@@ -1,42 +1,67 @@
 /**
- * Gamepad Navigation Controller — implements directional D-pad and analog stick focus navigation,
- * repeat timers, and button mappings across DOM interactive elements for full controller support.
+ * Focus navigation for gamepads and TV remotes over an ordinary DOM.
+ *
+ * `initGamepadNavigation` polls the first connected gamepad on an animation
+ * frame while one is connected (nothing runs without a pad, or in a hidden
+ * tab) and turns it into focus: the D-pad and left stick move focus to the
+ * nearest focusable element in that direction, measured from the centres of
+ * the elements' bounding boxes and falling back to document order at an edge;
+ * A activates the focused element; B dispatches an `Escape` keydown so a
+ * dialog or panel can close; the bumpers step focus in document order. A
+ * focused range input is adjusted by its `step` instead of being left. Focus
+ * is restored from `sessionStorage` on the next load, and the `body` carries
+ * `gamepad-active` while a pad is in use, for a visible focus ring.
+ *
+ * With `keyboardNavigation` the same mapping applies to the keyboard, which
+ * is how TV remotes arrive: Tizen and webOS send key events, not Gamepad API
+ * input, and name their keys differently, so the legacy key codes are mapped
+ * too.
  */
 
-type GamepadNavigationOptions = {
+export type GamepadNavigationOptions = {
+  /** Which elements focus can land on. Defaults to `DEFAULT_FOCUSABLE_SELECTOR`. */
   focusableSelector?: string;
+  /** Class set on `body` while a controller is in use. Default `gamepad-active`. */
   activeClass?: string;
+  /** Stick deflection, 0 to 1, that counts as a direction. Default 0.55. */
   axisThreshold?: number;
+  /** Delay before a held direction repeats. Default 220 ms. */
   initialRepeatDelayMs?: number;
+  /** Interval between repeats of a held direction. Default 120 ms. */
   repeatIntervalMs?: number;
+  /** Remember the focused element in `sessionStorage` and restore it on load. Default true. */
   restoreFocus?: boolean;
+  /** `sessionStorage` key prefix for the remembered focus; the page path is appended. */
   focusStorageKey?: string;
   /**
    * Treat the keyboard as a D-pad: arrows move focus, Enter/OK activates,
    * Backspace/Escape go back. That is how TV remotes arrive (Tizen and webOS
    * send key events, not Gamepad API input), and it is wrong everywhere
-   * else. On a desktop the same handler ran on every page: each arrow press
-   * that the shell used to change preset also walked DOM focus one element
-   * along (from the stage, which is not in the focusable list, that meant
-   * element zero — the skip link, which then sat visible at the top of the
-   * stage), and every Backspace re-dispatched a synthetic Escape that closed
-   * whatever panel was open. Off unless the caller says the device is a
-   * leanback one; a real gamepad is polled separately and needs none of it.
+   * else. In the app this was extracted from, the same handler ran on every
+   * page: each arrow press that the app used to change preset also walked
+   * DOM focus one element along (from a stage element outside the focusable
+   * list, that meant element zero, a skip link, which then sat visible over
+   * the picture), and every Backspace re-dispatched a synthetic Escape that
+   * closed whatever panel was open. Off unless the caller says the device
+   * is a leanback one; a real gamepad is polled separately and needs none
+   * of it.
    */
   keyboardNavigation?: boolean;
 };
 
-type FocusDirection = 'next' | 'prev' | 'up' | 'down' | 'left' | 'right';
+export type FocusDirection = 'next' | 'prev' | 'up' | 'down' | 'left' | 'right';
 
 type StoredFocusState = {
   selector: string | null;
   index: number;
 };
 
-// `details > summary` is the only toggle of a disclosure ("Audio help",
-// Synthesize's "Advanced"); without it those sections cannot be opened from a
-// controller or a TV remote.
-const DEFAULT_FOCUSABLE_SELECTOR =
+/**
+ * The focusable elements, as the browser's own Tab order sees them. The
+ * `details > summary` entry is the only toggle of a disclosure; without it
+ * those sections cannot be opened from a controller or a TV remote.
+ */
+export const DEFAULT_FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), details > summary:first-of-type, [tabindex]:not([tabindex="-1"])';
 
 const DEFAULT_OPTIONS: Required<GamepadNavigationOptions> = {
@@ -46,7 +71,7 @@ const DEFAULT_OPTIONS: Required<GamepadNavigationOptions> = {
   initialRepeatDelayMs: 220,
   repeatIntervalMs: 120,
   restoreFocus: true,
-  focusStorageKey: 'stims:last-focus',
+  focusStorageKey: 'gamepad-navigation:last-focus',
   keyboardNavigation: false,
 };
 

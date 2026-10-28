@@ -1,4 +1,10 @@
 import {
+  type CanvasVideoExporter,
+  type CanvasVideoExporterSupport,
+  EXPORT_PRESETS,
+  type ExportPresetTarget,
+} from 'canvas-video-exporter';
+import {
   useCallback,
   useEffect,
   useRef,
@@ -11,12 +17,7 @@ import {
   subscribeToAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
-import {
-  CanvasVideoExporter,
-  type CanvasVideoExporterSupport,
-  EXPORT_PRESETS,
-  type ExportPresetTarget,
-} from '../utils/media/canvas-video-exporter.ts';
+import { createStageVideoExporter } from './engine/stage-video-exporter.ts';
 import { RepositorySupport } from './RepositorySupport.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -81,12 +82,11 @@ export function CapturePanel() {
       // unrelated workspace context value changed identity.
       return;
     }
-    const exporter = new CanvasVideoExporter(
+    const exporter = createStageVideoExporter({
       canvas,
-      undefined,
-      engine.getVideoExportRuntime(),
-      () => ui.stageRef.current,
-    );
+      runtime: engine.getVideoExportRuntime(),
+      getStage: () => ui.stageRef.current,
+    });
     exporterRef.current = exporter;
     setSupport(exporter.getSupport());
     return () => {

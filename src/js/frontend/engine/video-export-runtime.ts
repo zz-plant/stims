@@ -1,5 +1,5 @@
+import type { CanvasVideoExportRuntime } from 'canvas-video-exporter';
 import { Vector2 } from 'three';
-import type { CanvasVideoExportRuntime } from '../../utils/media/canvas-video-exporter.ts';
 
 type ExportRenderer = {
   getPixelRatio(): number;
