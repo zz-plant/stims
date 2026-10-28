@@ -91,6 +91,25 @@ describe('milkdrop expression', () => {
       expect(evaluate('2^10')).toBe(1024);
     });
 
+    test('unary minus binds looser than ^, as in ns-eel2', () => {
+      // ns-eel2 rewrites `-2^2` to `-pow(2,2)`: the sign applies to the
+      // whole power. Modern EEL2 would give +4; the corpus pins MilkDrop 2
+      // (eel-conformance operators-arithmetic/precedence-unary-minus-over-pow).
+      expect(evaluate('-2^2')).toBe(-4);
+      expect(evaluate('(-2)^2')).toBe(4);
+      expect(evaluate('2 * -3^2')).toBe(-18);
+      expect(evaluate('1 - 2^2')).toBe(-3);
+      // The exponent keeps its own sign.
+      expect(evaluate('2^-1')).toBe(0.5);
+      expect(evaluate('-2^-2')).toBe(-0.25);
+    });
+
+    test('^ is left-associative', () => {
+      expect(evaluate('2^3^2')).toBe(64);
+      expect(evaluate('2^(3^2)')).toBe(512);
+      expect(evaluate('-2^3^2')).toBe(-64);
+    });
+
     test('division by zero yields 0, not Infinity', () => {
       expect(evaluate('1/0')).toBe(0);
       expect(evaluate('0/0')).toBe(0);

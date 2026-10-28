@@ -8,7 +8,7 @@ Demo: the [corpus browser](https://zz-plant.github.io/stims/eel-conformance/) re
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/zz-plant/stims/main/packages/eel-conformance/docs/coverage-dark.svg">
-  <img alt="82 cases in 9 sections: operators-arithmetic 17 (2 provisional), operators-logical 7, truthiness 7, functions-math 12, functions-utility 14, variables 6, buffers 10, control-flow 6 (1 provisional), random 3" src="https://raw.githubusercontent.com/zz-plant/stims/main/packages/eel-conformance/docs/coverage-light.svg">
+  <img alt="82 cases in 9 sections, all pinned: operators-arithmetic 17, operators-logical 7, truthiness 7, functions-math 12, functions-utility 14, variables 6, buffers 10, control-flow 6, random 3" src="https://raw.githubusercontent.com/zz-plant/stims/main/packages/eel-conformance/docs/coverage-light.svg">
 </picture>
 
 ## What is in the box
@@ -23,17 +23,17 @@ Demo: the [corpus browser](https://zz-plant.github.io/stims/eel-conformance/) re
 ```
 $ eel-conformance sections
 section               cases  provisional  description
-operators-arithmetic  17     2            Arithmetic operators, their zero-guards, and precedence.
+operators-arithmetic  17     -            Arithmetic operators, their zero-guards, and precedence.
 operators-logical     7      -            Bitwise operators, comparisons, and the logical operators that are NOT bitwise despite their names.
 truthiness            7      -            The close-factor truthiness threshold: a value is true when its magnitude EXCEEDS 1e-5.
 functions-math        12     -            Transcendental and root functions, and the domain guards that keep them finite.
 functions-utility     14     -            Rounding, clamping, interpolation, and the default arguments that fill omitted parameters.
 variables             6      -            Variable initialisation, assignment as an expression, overwritable constants, and the finite clamp at the statement boundary.
 buffers               10     -            megabuf and gmegabuf guest memory: indexing, truncation, bounds, and separation. Both buffers hold 1048576 f32 slots and start zero-filled.
-control-flow          6      1            loop() and while() statements, their iteration cap, and the condition rule that differs from every other boolean context.
+control-flow          6      -            loop() and while() statements and their iteration cap. The two-argument while(cond, body) form is a dialect extension shared with projectM and Butterchurn; ns-eel2 registers while with one argument, so the same programs read while(exec2(body, cond)) there.
 random                3      -            rand() and randint() under the fixed conformance RNG, which returns exactly 0.5 for every call (see README, Runner contract).
 
-82 cases in 9 sections, 3 provisional
+82 cases in 9 sections, 0 provisional
 ```
 
 A case looks like this:
@@ -63,7 +63,7 @@ Buffer size is part of the contract, not an implementation detail. Bounds behavi
 
 Each case is `pinned` (the default) or `provisional`.
 - **pinned**: derived from documented MilkDrop 2.x / ns-eel behaviour. A conforming implementation must produce this value.
-- **provisional**: this corpus's _observed_ behaviour, not yet confirmed against ns-eel. A provisional case is a question, not a requirement. Enforcing it still has value, since silent drift is worse than a wrong-but-known value, but do not port one into another implementation without checking upstream first.
+- **provisional**: this corpus's _observed_ behaviour, not yet confirmed against ns-eel. A provisional case is a question, not a requirement. Enforcing it still has value, since silent drift is worse than a wrong-but-known value, but do not port one into another implementation without checking upstream first. The shipped corpus has none left: the three it was extracted with were resolved against the ns-eel2 source (see [Open questions](#open-questions)), and the status stays in the schema for the next case that needs it.
 
 ## Install
 
@@ -102,11 +102,13 @@ Sections, in file order: arithmetic operators and precedence; bitwise and logica
 Rules that most often catch a new implementation:
 - **Division by zero is 0**, but the guard is _exact zero_: `1 / 0.0000001` divides normally and yields ten million. A tolerance guard here silently zeroes results real presets depend on.
 - **`%` truncates both operands to integers first**; float remainder is `mod()` / `fmod()`. They are different operators, not spellings of one.
-- **Truthiness is `|v| > 1e-5`**, not `v != 0`, for `if`, `&&`, `||`, `!` and `bnot`. But see the open question about `while` below.
+- **Truthiness is `|v| > 1e-5`**, not `v != 0`, for `if`, `&&`, `||`, `!`, `bnot` and the `while` condition. A `while` condition that decays to `1e-6` exits; ns-eel2's loop stub compares `|cond|` against the same close factor every other boolean context uses.
 - **`==` is exact; `equal()` uses the close factor.** Only one of them is tolerant.
 - **`bor()` and `band()` are logical, not bitwise**, despite the names. The bitwise operators are `|` and `&`. `bor(2,4)` is 1, not 6.
 - **`frac()` subtracts the floor**, so `frac(-0.25)` is `0.75`. Using `trunc` instead diverges on every negative input.
 - **`step(edge, v)` takes the edge first.**
+- **Unary minus binds looser than `^`**: `-2 ^ 2` is `-(2^2) = -4`, as in ns-eel2, whose preprocessor rewrites it to `-pow(2,2)`. Modern EEL2 (WDL) gives +4; an engine built on that grammar fails this case by design.
+- **`^` is left-associative**: `2 ^ 3 ^ 2` is `(2^3)^2 = 64`, not 512, in both references.
 - **`pi` and `e` are ordinary prepopulated variables**, and assignments to them stick. Around 74 presets in the Butterchurn corpus overwrite one.
 - **Names are case-insensitive.** `contVol` and `contvol` are one variable.
 - **Non-finite values are clamped to 0 at the statement boundary.** Expression state persists across frames, so one escaped Infinity would poison a variable for the preset's lifetime.
@@ -114,10 +116,12 @@ Rules that most often catch a new implementation:
 
 ## Open questions
 
-The three provisional cases are places where the originating implementation had to pick a behaviour and the reference is unverified. Resolving them against ns-eel would be the most useful contribution to this specification.
-1. **`while` condition truthiness** (`control-flow/while-condition-is-exact-zero`). A `while()` condition is tested against exact zero, while every other boolean context uses the `|v| > 1e-5` threshold. A condition decaying to `1e-6` therefore keeps looping instead of exiting. If the close-factor rule turns out to be correct, a class of presets is currently spinning to the iteration cap (2,097,152) every frame.
-2. **Unary minus versus `^`** (`operators-arithmetic/precedence-unary-minus-over-pow`). `-2 ^ 2` parses as `(-2)^2 = 4`, not `-(2^2) = -4`. Most languages that spell exponentiation as an operator bind unary minus more loosely. No Butterchurn-corpus preset appears to depend on it.
-3. **`^` associativity** (`operators-arithmetic/pow-left-associative`). `2 ^ 3 ^ 2` parses left-associatively as 64, not the more usual right-associative 512.
+None. The corpus shipped with three provisional cases, and [`docs/ns-eel2-source-audit.md`](https://github.com/zz-plant/stims/blob/main/packages/eel-conformance/docs/ns-eel2-source-audit.md) resolved each against the ns-eel2 source that MilkDrop 2 ships and against modern EEL2 (WDL). The ids are unchanged; each case's `note` cites the deciding source.
+1. **`while` condition truthiness** (`control-flow/while-condition-is-exact-zero`): the pin was wrong. `nseel_asm_repeatwhile` compares `|cond|` against the close factor, so `while(n, …)` with `n = 1e-6` never enters its body. The expected value flipped from `x = 1` to `x = 0`.
+2. **Unary minus versus `^`** (`operators-arithmetic/precedence-unary-minus-over-pow`): the references disagree, and the pin matched the wrong one. ns-eel2 reads `-2 ^ 2` as `-pow(2,2) = -4`; WDL reads it as `+4`. This corpus specifies MilkDrop 2's dialect, so the expected value flipped to -4. No bundled preset writes `-a^b`.
+3. **`^` associativity** (`operators-arithmetic/pow-left-associative`): the pin was right. Both references are left-associative; 64 stays.
+
+The audit also found eight _pinned_ cases that document this implementation rather than the references (`==` tolerance, `int()`, `sqrt` and `log` of out-of-domain inputs, overflow clamps, negative buffer indices, `pi`/`e`, `mod()`). Those are listed in the audit's "Overturned pins" table and are corrected separately, each with its matching engine change.
 
 ## Contributing a case
 

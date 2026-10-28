@@ -3,6 +3,7 @@ import type { MilkdropProgramBlock } from '../src/common-types.ts';
 import {
   advanceEelRng,
   type EelRngCell,
+  MILKDROP_EEL_CLOSE_FACTOR,
 } from '../src/compiler/eel-function-table.ts';
 import { compileMilkdropPresetSource } from '../src/compiler.ts';
 import {
@@ -83,7 +84,8 @@ function executeStatement(
               helpers,
             )
           : 1;
-        if (!cond) {
+        // Close-factor truthiness, as ns-eel2's repeatwhile stub does.
+        if (!(Math.abs(cond) > MILKDROP_EEL_CLOSE_FACTOR)) {
           break;
         }
         guard.value += 1;
@@ -595,6 +597,26 @@ describe('compiled milkdrop programs', () => {
     );
     // The large version must still terminate (guard cap), not hang.
     expect(() => runCompiled(block, makeScopes(false))).not.toThrow();
+  });
+
+  test('while() tests its condition against the close factor, not exact zero', () => {
+    // ns-eel2's repeatwhile stub compares |cond| with g_closefact (1e-5), so a
+    // condition that has decayed to 1e-6 is already false: the body never
+    // runs. Until the corpus was corrected both tiers spun on exact zero.
+    const block = blockFromSource([
+      'n = 0.000001;',
+      'while(n, n = 0; q1 = 1;);',
+      'm = 0.5;',
+      'while(m, m = m * 0.001; q2 = q2 + 1;);',
+    ]);
+
+    const compiled = runCompiled(block, makeScopes(false));
+    const interpreted = runInterpreted(block, makeScopes(false));
+
+    expectSameScopes(compiled, interpreted);
+    expect(compiled.registers.q1).toBe(0);
+    // 0.5 -> 5e-4 -> 5e-7: two iterations, then the threshold stops it.
+    expect(compiled.registers.q2).toBe(2);
   });
 
   test('an infinite while(1, ...) is broken by the iteration cap', () => {

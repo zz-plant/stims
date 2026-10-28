@@ -407,8 +407,9 @@ class ExpressionParser {
   private parseBinaryLoop<Op extends MilkdropBinaryOperator>(
     parseNext: () => MilkdropExpressionNode,
     operators: readonly Op[],
+    parseFirst: () => MilkdropExpressionNode = parseNext,
   ): MilkdropExpressionNode {
-    let node = parseNext();
+    let node = parseFirst();
     let depthEntered = 0;
     try {
       while (true) {
@@ -463,13 +464,17 @@ class ExpressionParser {
   }
 
   private parseFactor(): MilkdropExpressionNode {
-    return this.parseBinaryLoop(() => this.parsePower(), ['*', '/', '%']);
+    return this.parseBinaryLoop(() => this.parseUnary(), ['*', '/', '%']);
   }
 
-  private parsePower(): MilkdropExpressionNode {
-    return this.parseBinaryLoop(() => this.parseUnary(), ['^']);
-  }
-
+  /**
+   * Prefix operators bind LOOSER than `^`: `-2 ^ 2` is `-(2 ^ 2)` = -4.
+   * That is ns-eel2's reading (its preprocessor rewrites `-2^2` to
+   * `-pow(2,2)` and the bison table applies UMINUS to the whole call), which
+   * is what MilkDrop 2 ships; modern EEL2 (WDL) binds the sign tighter and
+   * gives +4. The corpus pins the MilkDrop 2 dialect:
+   * eel-conformance `operators-arithmetic/precedence-unary-minus-over-pow`.
+   */
   private parseUnary(): MilkdropExpressionNode {
     const operator = this.matchOperator('+', '-', '!');
     if (operator) {
@@ -481,6 +486,40 @@ class ExpressionParser {
           type: 'unary',
           operator: operator as '+' | '-' | '!',
           operand: this.parseUnary(),
+        };
+      } finally {
+        this.leaveDepth();
+      }
+    }
+    return this.parsePower();
+  }
+
+  /**
+   * `^` is left-associative (`2 ^ 3 ^ 2` is `(2 ^ 3) ^ 2` = 64 in both
+   * references; eel-conformance `operators-arithmetic/pow-left-associative`).
+   * The base is a primary, so a leading sign belongs to the whole power; the
+   * exponent may carry its own sign (`2 ^ -1`) but never another `^`, or the
+   * chain would re-associate to the right.
+   */
+  private parsePower(): MilkdropExpressionNode {
+    return this.parseBinaryLoop(
+      () => this.parseExponent(),
+      ['^'],
+      () => this.parsePrimary(),
+    );
+  }
+
+  private parseExponent(): MilkdropExpressionNode {
+    const operator = this.matchOperator('+', '-', '!');
+    if (operator) {
+      if (!this.enterDepth()) {
+        return { type: 'literal', value: 0 };
+      }
+      try {
+        return {
+          type: 'unary',
+          operator: operator as '+' | '-' | '!',
+          operand: this.parseExponent(),
         };
       } finally {
         this.leaveDepth();

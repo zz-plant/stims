@@ -101,19 +101,22 @@
     },
     {
       "id": "precedence-unary-minus-over-pow",
-      "name": "unary minus binds TIGHTER than ^",
-      "program": ["x = -2 ^ 2"],
-      "expected": { "x": 4 },
-      "status": "provisional",
-      "note": "PROVISIONAL. Reads as (-2)^2 = 4, not -(2^2) = -4. Most languages that spell pow as an operator bind unary minus looser. Confirm against ns-eel before relying on this; corpus impact appears to be nil (no bundled preset writes -a^b)."
+      "name": "unary minus binds LOOSER than ^: -2 ^ 2 is -(2^2)",
+      "program": ["x = -2 ^ 2", "y = (-2) ^ 2"],
+      "expected": {
+        "x": -4,
+        "y": 4
+      },
+      "note": "Pinned by the ns-eel2 source. preprocessCode (nseel-compiler.c) rewrites `x = -2^2` to `_set(x, -pow(2,2))`, and the bison table (nseel-caltab.c) then applies UMINUS to the whole pow() call: -4. Modern EEL2 disagrees: WDL's eel2.y puts unary_expr inside pow_expr's operand (`pow_expr: pow_expr '^' unary_expr`), so -2^2 is +4 there. This corpus specifies MilkDrop 2's dialect, so the ns-eel2 reading is the pin; an engine that follows WDL will fail this case by design. No bundled preset writes -a^b, -(a)^b or -f(a)^b, so the correction changed no preset. Until 2026-10-28 this case was provisional and pinned +4."
     },
     {
       "id": "pow-left-associative",
       "name": "^ is LEFT-associative",
       "program": ["x = 2 ^ 3 ^ 2"],
-      "expected": { "x": 64 },
-      "status": "provisional",
-      "note": "PROVISIONAL. Reads as (2^3)^2 = 64, not 2^(3^2) = 512. Exponentiation is right-associative in most languages. Confirm against ns-eel."
+      "expected": {
+        "x": 64
+      },
+      "note": "Pinned by both references. ns-eel2's preprocessCode rewrites `2^3^2` to `pow(pow(2,3),2)` (verified by running the extracted preprocessor), and modern EEL2's grammar is left-recursive (`pow_expr: pow_expr '^' unary_expr`, WDL eel2.y). (2^3)^2 = 64, not the right-associative 512 most languages would give. Provisional until 2026-10-28; the value did not change."
     }
   ]
 }

@@ -12,10 +12,12 @@
  * wrong; that is how the case-insensitivity bug survived until this corpus
  * was written.
  *
- * Cases marked `provisional` record what this implementation does without
- * confirming it against ns-eel. They are still enforced — drifting from them
- * unnoticed would be worse — but README.md lists them as open questions, and
- * changing one is a platform-semantics decision, not a test fix.
+ * A case marked `provisional` records what this implementation does without
+ * confirming it against ns-eel. It is still enforced — drifting from it
+ * unnoticed would be worse — but changing one is a platform-semantics
+ * decision, not a test fix. The shipped corpus has none left: the three it
+ * started with were resolved against the ns-eel2 source
+ * (packages/eel-conformance/docs/ns-eel2-source-audit.md) and pinned.
  */
 import { describe, expect, test } from 'bun:test';
 import {

@@ -25,6 +25,7 @@ import {
   EEL_UNARY_OPERATORS,
   type EelRngCell,
   emitEelCallJs,
+  MILKDROP_EEL_CLOSE_FACTOR,
 } from './compiler/eel-function-table.ts';
 import {
   evaluateMilkdropExpression,
@@ -518,10 +519,16 @@ function compileStatementSource(
         `for (${indexVar} = 0; ${indexVar} < ${countVar} && _g < _gl; ${indexVar} += 1, _g += 1) {`,
       );
     } else {
+      // The condition is boolified like every other EEL boolean context:
+      // ns-eel2's repeatwhile stub compares |cond| against the close factor,
+      // so a condition that decays to 1e-6 exits instead of spinning to the
+      // cap (eel-conformance control-flow/while-condition-is-exact-zero).
       const cond = statement.control.condition
         ? compileNode(statement.control.condition, context)
         : '1';
-      body.push(`while ((${cond}) !== 0 && _g < _gl) { _g += 1;`);
+      body.push(
+        `while (Math.abs(${cond}) > ${MILKDROP_EEL_CLOSE_FACTOR} && _g < _gl) { _g += 1;`,
+      );
     }
 
     for (const inner of innerBody) {
@@ -730,7 +737,8 @@ function buildInterpretedProgram(
                     helpers,
                   )
                 : 1;
-              if (condition === 0) break;
+              // Close-factor truthiness, same as the JIT path above.
+              if (!(Math.abs(condition) > MILKDROP_EEL_CLOSE_FACTOR)) break;
               guard += 1;
               run(body);
             }

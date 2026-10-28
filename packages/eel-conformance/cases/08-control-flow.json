@@ -1,7 +1,7 @@
 {
   "$schema": "../schema.json",
   "section": "control-flow",
-  "description": "loop() and while() statements, their iteration cap, and the condition rule that differs from every other boolean context.",
+  "description": "loop() and while() statements and their iteration cap. The two-argument while(cond, body) form is a dialect extension shared with projectM and Butterchurn; ns-eel2 registers while with one argument, so the same programs read while(exec2(body, cond)) there.",
   "cases": [
     {
       "id": "loop-runs-count-times",
@@ -35,11 +35,13 @@
     },
     {
       "id": "while-condition-is-exact-zero",
-      "name": "a while() condition tests EXACT zero, not the close-factor threshold",
+      "name": "a while() condition uses the close-factor threshold, like every other boolean context",
       "program": ["n = 0.000001", "while(n, n = 0; x = 1)"],
-      "expected": { "n": 0, "x": 1 },
-      "status": "provisional",
-      "note": "PROVISIONAL, and the sharpest open question in this spec. Every other boolean context in EEL (if, &&, ||, !, bnot) treats |v| <= 1e-5 as false; while() does not, so a condition decaying to 1e-6 keeps looping here but would exit under the close-factor rule. Both CPU tiers agree, so the tier-differential fuzzers cannot see it. Confirm against ns-eel. If the close-factor rule is correct, x would be 0 and a class of presets currently spins to the iteration cap every frame."
+      "expected": {
+        "n": 0.000001,
+        "x": 0
+      },
+      "note": "Pinned by the ns-eel2 source: nseel_asm_repeatwhile (asm-nseel-x86-gcc.c) evaluates the condition, takes fabs, and fcomp's it against [g_closefact] (NSEEL_CLOSEFACTOR = 0.00001, ns-eel-int.h:56), so the body runs only while |cond| is at least the close factor. Modern EEL2 boolifies the same way (nseel_asm_fptobool / EEL_BC_FPTOBOOL: fabs(v) >= NSEEL_CLOSEFACTOR). A condition of 1e-6 is therefore false before the first iteration: the body never runs, x stays 0 and n keeps its 1e-6. The id names the question this case once asked (it was provisional, pinning exact zero) and is kept stable; the value was corrected on 2026-10-28."
     }
   ]
 }
