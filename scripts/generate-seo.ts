@@ -821,11 +821,12 @@ ${entries
 `;
 }
 
+// lastmod is a YYYY-MM-DD string, so lexicographic order is time order.
 const latestLastmod = (entries: SitemapEntry[]) =>
-  entries.reduce(
-    (latest, entry) => (entry.lastmod > latest ? entry.lastmod : latest),
-    entries[0]?.lastmod ?? formatDate(new Date()),
-  ) ?? formatDate(new Date());
+  entries
+    .map((entry) => entry.lastmod)
+    .sort()
+    .at(-1) ?? formatDate(new Date());
 
 export function buildSitemapIndex(
   entries: SitemapEntry[],

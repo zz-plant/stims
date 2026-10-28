@@ -37,11 +37,11 @@ import {
 } from '../core/accessibility-preferences.ts';
 import { describeHiddenTabFreezeRisk } from '../core/live-performance-mode.ts';
 import { setMotionPreference } from '../core/motion-preferences.ts';
-import { installActionClickTelemetry } from '../core/services/action-telemetry.ts';
 import {
   installRoomInputLock,
   isRoomModeRequested,
 } from '../core/room-mode.ts';
+import { installActionClickTelemetry } from '../core/services/action-telemetry.ts';
 import {
   buildAudioProfile,
   pickAudioMatch,
