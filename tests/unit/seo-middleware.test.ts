@@ -19,6 +19,7 @@ import {
   type PresetMetaTable,
 } from '../../functions/shared/preset-meta.ts';
 import { SITE_INDEX_SECTIONS } from '../../functions/shared/site-index.ts';
+import { buildEmbedUrl } from '../../src/js/core/embed-snippet.ts';
 
 // The edge middleware is the only thing standing between 1,787 preset URLs
 // and a collapsed root canonical — and until now it had zero test coverage,
@@ -538,6 +539,22 @@ describe('embedded player framing', () => {
       'frame-ancestors *',
     );
     expect(ordinary.headers.get('x-frame-options')).toBe('SAMEORIGIN');
+  });
+
+  test('the address in the workspace’s embed code is one it lets a page frame', async () => {
+    // The snippet is built in the client and the framing rule lives here;
+    // a renamed or reordered flag on either side would hand visitors an
+    // iframe production refuses to fill.
+    const embedded = await onRequest(
+      makeContext(buildEmbedUrl('https://toil.fyi', 'test-preset'), {
+        'test-preset': ['Test Preset', 'Test Author'],
+      }),
+    );
+
+    expect(embedded.headers.get('x-frame-options')).toBeNull();
+    expect(embedded.headers.get('content-security-policy')).toContain(
+      'frame-ancestors *',
+    );
   });
 });
 

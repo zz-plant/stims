@@ -20,6 +20,10 @@ import {
 } from '../core/services/external-display-service.ts';
 import { getProjectorState } from '../core/services/projector-window-service.ts';
 import { isRecordingActive } from '../core/services/recording-state.ts';
+import {
+  stageUtilityMode,
+  toggleBlackout,
+} from '../core/services/stage-utilities.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
   setThemePreference,
@@ -46,6 +50,8 @@ import {
 import {
   cameraMenuLabel,
   castMenuLabel,
+  copyEmbedCodeLabel,
+  embedCodeState,
   endWatchParty,
   isCameraInputOn,
   nearbyPresetRequest,
@@ -65,6 +71,7 @@ import {
   toggleProjectorAction,
   toggleReduceFlashingAction,
 } from './workspace-actions.ts';
+import { findActivePresetEntry } from './workspace-helpers.ts';
 
 /**
  * Rows whose effect depends on state (a toggle, a panel that closes when it
@@ -410,6 +417,28 @@ export function buildPaletteActions(
       run: () => void uiRef.current.handleShowCurrentLink(),
     },
     {
+      id: 'copy-embed-code',
+      group: 'Share',
+      // Names the one way the frame differs from the stage before it is
+      // copied: it plays the preset as the catalog has it, never the draft.
+      get label() {
+        const engine = engineBridgeRef.current;
+        return copyEmbedCodeLabel(
+          embedCodeState(
+            findActivePresetEntry(
+              engineSnapshotRef.current?.activePresetId,
+              engine,
+            ) ??
+              engine.selectedPreset ??
+              engine.featuredPreset,
+            editorDirty,
+          ),
+        );
+      },
+      keywords: ['embed', 'iframe', 'html', 'website', 'blog', 'snippet'],
+      run: () => void uiRef.current.handleCopyEmbedCode(),
+    },
+    {
       id: 'watch-party',
       group: 'Share',
       label: hostingWatchParty
@@ -466,6 +495,23 @@ export function buildPaletteActions(
       keywords: ['bpm', 'phase', 'tap', 'sync'],
       run: () => nudgeTempoAction(1, uiRef.current.setStatusMessage),
     },
+    // The D key's blackout, as a row: it was the one live cut with no
+    // command, so a MIDI pad (which runs palette ids) could not reach it.
+    ...(liveMode
+      ? [
+          {
+            id: 'toggle-blackout',
+            group: 'Perform',
+            get label() {
+              return stageUtilityMode() === 'blackout'
+                ? 'End the blackout'
+                : 'Black out the picture';
+            },
+            keywords: ['blackout', 'dark', 'cut', 'break', 'vj'],
+            run: () => toggleBlackout(),
+          } satisfies CommandAction,
+        ]
+      : []),
     {
       id: 'queue-add',
       group: 'Queue',
@@ -633,6 +679,10 @@ export function buildPaletteActions(
       group: 'Playback',
       label: 'Pick the next scene with AI (Clef Omni)',
       keywords: ['vj', 'scene', 'switch', 'clef', 'omni', 'transition'],
+      // Scenes are saved only through the live-coding console API
+      // (__stims_live.saveScene), so for everyone else this row could only
+      // ever answer "save at least two scenes".
+      isAvailable: () => (window.__stims_live?.listScenes().length ?? 0) >= 2,
       run: () => {
         const live = window.__stims_live;
         if (!live) {

@@ -6,6 +6,7 @@ import {
   TELEMETRY_AUDIO_SOURCES,
   TELEMETRY_DEVICES,
   TELEMETRY_ORIENTATIONS,
+  TELEMETRY_SURFACES,
   type TelemetryEvent,
 } from '../../src/js/core/edge-contracts.ts';
 
@@ -74,6 +75,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
           known(TELEMETRY_DEVICES, data.device),
           known(TELEMETRY_AUDIO_SOURCES, data.audioSource),
           known(TELEMETRY_ARRIVALS, data.arrival),
+          known(TELEMETRY_SURFACES, data.surface),
         ],
         doubles: [
           data.fps || 0,

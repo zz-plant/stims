@@ -67,18 +67,11 @@ function SwitchRow({
   hint,
   checked,
   onChange,
-  describedById,
 }: {
   label: string;
   hint?: string;
   checked: boolean;
   onChange: (next: boolean) => void;
-  /**
-   * A note elsewhere on the panel that qualifies what this switch promises.
-   * Sighted users read it as an adjacent paragraph; without this it is not
-   * announced anywhere near the control it is about.
-   */
-  describedById?: string;
 }) {
   return (
     <label className="ctl-row">
@@ -90,7 +83,6 @@ function SwitchRow({
         type="checkbox"
         role="switch"
         aria-checked={checked}
-        aria-describedby={describedById}
         className="ctl-switch"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
@@ -207,25 +199,19 @@ function AccessibilitySection({
           setAccessibilityPreference({ highContrast });
         }}
       />
-      {/* The stage-comfort controls, gathered and labelled by what they
-          actually promise. They were previously interleaved with the chrome
-          settings above, which put a hard limit and a best-effort mitigation
-          side by side with nothing distinguishing them. */}
-      <p className="ctl-row__hint" id="comfort-note">
-        Brightness is a hard ceiling: it applies over every preset, on either
-        renderer. Motion scales the camera (zoom, spin, drift) and leaves the
-        audio reaction alone. Reduce flashing is a mitigation, not a guarantee:
-        it filters the presets that have been measured and dims strobing as it
-        is detected.
-      </p>
+      {/* The stage-comfort controls, gathered after the chrome settings
+          above. Each hint says what its control promises, so a hard limit
+          (brightness) and a best-effort mitigation (flashing) read
+          differently. A shared paragraph used to say this for all three and
+          repeated half of each row's own hint. */}
       <div className="ctl-row">
         <span className="ctl-row__text">
           <label className="ctl-row__label" htmlFor="a11y-stage-brightness">
             Stage brightness
           </label>
-          <span className="ctl-row__hint">
-            The lowest setting is 30% — dark enough to rest against, still
-            bright enough to see.
+          <span className="ctl-row__hint" id="a11y-stage-brightness-hint">
+            A hard ceiling over every preset. The lowest, 30%, is dark enough to
+            rest against.
           </span>
         </span>
         <input
@@ -235,7 +221,7 @@ function AccessibilitySection({
           max={1}
           step={0.05}
           value={prefs.stageBrightness}
-          aria-describedby="comfort-note"
+          aria-describedby="a11y-stage-brightness-hint"
           aria-valuetext={`${Math.round(prefs.stageBrightness * 100)} percent`}
           onChange={(event) => {
             const stageBrightness = clampStageBrightness(
@@ -251,8 +237,9 @@ function AccessibilitySection({
           <label className="ctl-row__label" htmlFor="a11y-motion-scale">
             Motion
           </label>
-          <span className="ctl-row__hint">
-            At 0% the picture holds still and the waveforms keep dancing.
+          <span className="ctl-row__hint" id="a11y-motion-scale-hint">
+            Scales zoom, spin and drift. At 0% the picture holds still while the
+            waveforms keep dancing.
           </span>
         </span>
         <input
@@ -262,7 +249,7 @@ function AccessibilitySection({
           max={1}
           step={0.05}
           value={prefs.motionScale}
-          aria-describedby="comfort-note"
+          aria-describedby="a11y-motion-scale-hint"
           aria-valuetext={`${Math.round(prefs.motionScale * 100)} percent`}
           onChange={(event) => {
             const motionScale = clampMotionScale(Number(event.target.value));
@@ -282,8 +269,7 @@ function AccessibilitySection({
       />
       <SwitchRow
         label="Reduce flashing"
-        hint="Hides presets measured above the WCAG flash threshold. Presets that haven't been measured stay in the list, without a label."
-        describedById="comfort-note"
+        hint="Hides presets measured above the WCAG flash threshold and dims strobing as it happens. A mitigation, not a guarantee: unmeasured presets stay in the list."
         checked={prefs.reduceFlashing}
         onChange={(reduceFlashing) => {
           setPrefs((p) => ({ ...p, reduceFlashing }));
@@ -701,7 +687,10 @@ export function SettingsSheetPanel({
   };
 
   return (
-    <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
+    <div
+      className="stims-shell__sheet-panel stims-shell__sheet-panel--settings"
+      data-telemetry-surface="settings"
+    >
       <div
         className="ctl-tabs"
         role="tablist"

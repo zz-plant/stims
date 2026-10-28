@@ -33,7 +33,7 @@ import {
   buildRemixShareUrl,
   REMIX_URL_FAILED,
 } from './url-state.ts';
-import { codeForLocalShare } from './workspace-actions.ts';
+import { codeForLocalShare, copyEmbedCodeAction } from './workspace-actions.ts';
 import {
   buildStarterPresets,
   createFieldMatcher,
@@ -684,13 +684,19 @@ export function useWorkspaceShellOrchestration({
     }
   };
 
-  const handleShowCurrentLink = async () => {
-    // The preset on stage, not the route's: the route can trail the engine
-    // (a Remix selects its new preset in the runtime), and sharing from the
-    // route right after a Remix linked the parent instead.
+  // The preset on stage, not the route's: the route can trail the engine
+  // (a Remix selects its new preset in the runtime), and sharing from the
+  // route right after a Remix linked the parent instead.
+  const presetOnStage = () => {
     const activeId = engineSnapshot?.activePresetId ?? routeState.presetId;
-    const sharedPreset =
-      (activeId ? catalogById.get(activeId) : null) ?? selectedPreset;
+    return {
+      activeId,
+      entry: (activeId ? catalogById.get(activeId) : null) ?? selectedPreset,
+    };
+  };
+
+  const handleShowCurrentLink = async () => {
+    const { activeId, entry: sharedPreset } = presetOnStage();
     const currentUrl = buildCanonicalUrl(
       { ...routeState, presetId: activeId ?? null, agentMode: false },
       window.location,
@@ -769,6 +775,13 @@ export function useWorkspaceShellOrchestration({
     );
   };
 
+  const handleCopyEmbedCode = () =>
+    copyEmbedCodeAction({
+      entry: presetOnStage().entry,
+      dirty: engineSnapshot?.sessionState?.dirty ?? false,
+      announce: setStatusMessage,
+    });
+
   return {
     ...shellState,
     handleAudioStart,
@@ -779,6 +792,7 @@ export function useWorkspaceShellOrchestration({
     handlePresetSelection,
     handlePreviousPreset,
     handleShowCurrentLink,
+    handleCopyEmbedCode,
     handleShufflePreset,
     handleVisualSearch,
     updatePanel,

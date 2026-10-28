@@ -37,6 +37,7 @@ export type GrowthTelemetryEvent =
   | 'share-copied'
   | 'share-cancelled'
   | 'share-unavailable'
+  | 'embed-code-copied'
   | 'landing'
   | 'embed-landing'
   | 'discovery-landing'

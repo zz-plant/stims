@@ -616,6 +616,40 @@
   outline-offset: 1px;
 }
 
+/* ── A row with a companion (Share link + Embed) ──────────────────────
+   The row's own item keeps its full hit area; the companion is one of the
+   flat options the radio rows use, sized to its word. */
+.menuRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.menuRow > .menuItem {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.menuCompanion {
+  flex: 0 0 auto;
+  margin-right: 4px;
+  padding: 5px 10px;
+}
+
+.menuCompanion[aria-disabled="true"] {
+  color: var(--ctl-ink-3);
+  border-style: dashed;
+}
+
+/* Lined up under the row's label, past the icon slot. */
+.menuNote {
+  display: block;
+  padding: 0 10px 6px 34px;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--ctl-ink-3);
+}
+
 .menuSep {
   height: 1px;
   margin: 4px 6px;
@@ -886,6 +920,10 @@
 
   .menuOption {
     padding: 10px 6px;
+  }
+
+  .menuCompanion {
+    padding: 10px 12px;
   }
 }
 

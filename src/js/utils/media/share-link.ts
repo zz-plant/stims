@@ -111,22 +111,35 @@ export async function shareOrCopyLink(
     }
   }
 
+  return (await copyTextToClipboard(url, { doc, navigator: nav }))
+    ? 'copied'
+    : 'unavailable';
+}
+
+/**
+ * The async clipboard, then the `execCommand` fallback for browsers that
+ * deny it (an insecure origin, an iframe without the permission). Resolves
+ * false when neither took the text.
+ */
+export async function copyTextToClipboard(
+  text: string,
+  {
+    doc = document,
+    navigator: nav = navigator as ShareNavigator,
+  }: { doc?: Document; navigator?: ShareNavigator } = {},
+): Promise<boolean> {
   try {
     if (nav.clipboard?.writeText) {
-      await nav.clipboard.writeText(url);
-      return 'copied';
+      await nav.clipboard.writeText(text);
+      return true;
     }
   } catch (_error) {
     // Fall through to legacy copy.
   }
 
   try {
-    if (tryLegacyCopy(url, doc)) {
-      return 'copied';
-    }
+    return tryLegacyCopy(text, doc);
   } catch (_error) {
-    // Fall through to unavailable.
+    return false;
   }
-
-  return 'unavailable';
 }

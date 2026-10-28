@@ -545,6 +545,7 @@ export function BrowseSheetPanel({
   return (
     <div
       className="stims-shell__sheet-panel stims-shell__sheet-panel--browse"
+      data-telemetry-surface="browse"
       data-filter-active={String(hasFilter)}
       // Scopes the bounded-flex-column layout the virtualized list needs
       // (see chrome.css's [data-fill="true"] rules) to list view only.
@@ -833,7 +834,7 @@ export function BrowseSheetPanel({
             <span>
               {`Reduce flashing is hiding ${flashHiddenCount.toLocaleString()} preset${
                 flashHiddenCount === 1 ? '' : 's'
-              }. Turning it off shows them and stops the stage dimming flashes.`}
+              }. Turning it off also stops the stage dimming flashes.`}
             </span>
             {/* This switches the saved setting off everywhere, live dimming
                 included. It used to read "Show them", which sounded like a

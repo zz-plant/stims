@@ -4,6 +4,11 @@
 // Enables native interactive embeds in Notion, Medium, Discord, Reddit, Ghost, and Slack.
 
 import type { OEmbedResponse } from '../../src/js/core/edge-contracts.ts';
+import {
+  buildEmbedIframe,
+  EMBED_HEIGHT,
+  EMBED_WIDTH,
+} from '../../src/js/core/embed-snippet.ts';
 import { loadPresetMeta } from '../shared/preset-meta.ts';
 import { presentTitle } from '../shared/preset-title.ts';
 
@@ -11,17 +16,6 @@ interface EventContext {
   request: Request;
   env?: { ASSETS?: { fetch: (request: Request) => Promise<Response> } };
 }
-
-// Preset titles come from the MilkDrop corpus and carry raw quotes and angle
-// brackets ('martin - "wtf" track'); they must be escaped before landing in
-// the iframe's HTML attribute, or the embed HTML breaks — and a hostile
-// title becomes an injection vector in every embedding page.
-const escapeHtmlAttribute = (value: string) =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 
 // parseInt('abc') is NaN, and Math.max/min pass it straight through — a
 // garbage maxwidth used to emit width="NaN" into embed HTML.
@@ -104,20 +98,16 @@ export async function onRequest(context: EventContext): Promise<Response> {
 
   const embedWidth = clampEmbedDimension(
     requestUrl.searchParams.get('maxwidth'),
-    800,
+    EMBED_WIDTH,
     320,
     1280,
   );
   const embedHeight = clampEmbedDimension(
     requestUrl.searchParams.get('maxheight'),
-    450,
+    EMBED_HEIGHT,
     240,
     720,
   );
-
-  const iframeSrc = presetId
-    ? `${requestUrl.origin}/?preset=${encodeURIComponent(presetId)}&embed=true`
-    : `${requestUrl.origin}/?embed=true`;
 
   const ogImageUrl = presetId
     ? `${requestUrl.origin}/api/og-preset?id=${encodeURIComponent(presetId)}`
@@ -137,7 +127,13 @@ export async function onRequest(context: EventContext): Promise<Response> {
     thumbnail_url: ogImageUrl,
     thumbnail_width: 1200,
     thumbnail_height: 630,
-    html: `<iframe src="${escapeHtmlAttribute(iframeSrc)}" width="${embedWidth}" height="${embedHeight}" style="border:0;border-radius:12px;overflow:hidden;" allow="autoplay; microphone; display-capture" allowfullscreen title="${escapeHtmlAttribute(`${title}${authorCredit}`)}"></iframe>`,
+    html: buildEmbedIframe({
+      origin: requestUrl.origin,
+      presetId,
+      title: `${title}${authorCredit}`,
+      width: embedWidth,
+      height: embedHeight,
+    }),
     width: embedWidth,
     height: embedHeight,
   } satisfies OEmbedResponse;

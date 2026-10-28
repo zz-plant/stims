@@ -37,6 +37,7 @@ import {
 } from '../core/accessibility-preferences.ts';
 import { describeHiddenTabFreezeRisk } from '../core/live-performance-mode.ts';
 import { setMotionPreference } from '../core/motion-preferences.ts';
+import { installActionClickTelemetry } from '../core/services/action-telemetry.ts';
 import {
   buildAudioProfile,
   pickAudioMatch,
@@ -1269,24 +1270,14 @@ function StimsWorkspaceAppShell() {
     };
   }, [engineSnapshot?.audioActive, engineSnapshot?.audioSource]);
 
-  useEffect(() => {
-    const handleOpenShortcuts = () => setShowShortcuts(true);
-    window.addEventListener('stims:shortcuts:open', handleOpenShortcuts);
-    return () =>
-      window.removeEventListener('stims:shortcuts:open', handleOpenShortcuts);
-  }, []);
-
-  useEffect(() => {
-    const handleOpenCredits = () => setShowCredits(true);
-    window.addEventListener('stims:credits:open', handleOpenCredits);
-    return () =>
-      window.removeEventListener('stims:credits:open', handleOpenCredits);
-  }, []);
-
   // Paints the stored choice and keeps painting it: preference changes from
   // Settings or the palette, and — when the choice is "system" — OS theme
   // flips, without a reload.
   useEffect(() => startThemeSync(), []);
+
+  // Every click on a control with a data-action, with the surface it sat
+  // on; the palette, keys, gestures and pads note their own runs.
+  useEffect(() => installActionClickTelemetry(), []);
 
   useEffect(() => {
     applyAccessibility(getActiveAccessibilityPreference());
@@ -1405,6 +1396,8 @@ function StimsWorkspaceAppShell() {
         liveMode={liveMode}
         onToggleFullscreen={handleToggleFullscreen}
         onOpenPalette={() => setPaletteOpen(true)}
+        onOpenShortcuts={() => setShowShortcuts(true)}
+        onOpenSets={() => setShowManageSets(true)}
       />
       {presetPage ? (
         <PresetPageDetails

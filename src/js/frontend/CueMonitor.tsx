@@ -200,7 +200,11 @@ export function CueMonitor() {
     // Nor while the Perform card is still up in the other corner.
     if (!showsHint) return null;
     return (
-      <aside className={styles.cue} aria-label="Up next">
+      <aside
+        className={styles.cue}
+        aria-label="Up next"
+        data-telemetry-surface="cue"
+      >
         <div className={styles.header}>
           <span className={styles.label}>Up next</span>
           {/* Words, not a ×: this hides the hint for good, where a × reads
@@ -236,7 +240,11 @@ export function CueMonitor() {
         : '';
 
   return (
-    <aside className={styles.cue} aria-label="Up next">
+    <aside
+      className={styles.cue}
+      aria-label="Up next"
+      data-telemetry-surface="cue"
+    >
       <div className={styles.header}>
         <span className={styles.label}>
           {fading ? 'Crossfading' : arming ? 'Getting ready' : 'Up next'}
