@@ -11,6 +11,7 @@ Start with [the app](https://toil.fyi), the [user guide](./USER_GUIDE.md), or [c
 | Look up functions and signals             | [Language reference](./authoring/reference.md), generated from the compiler    |
 | Work with equations and shaders           | [MilkDrop coding guide](./MILKDROP_CODING_GUIDE.md)                            |
 | Adjust sensory controls                   | [Accessibility guide](./guides/accessibility.md)                               |
+| Run an unattended screen or sensory room  | [Sensory room setup](./guides/sensory-room.md)                                 |
 | Capture a visual in OBS                   | [OBS setup](./OBS.md)                                                          |
 | Share the project                         | [Launch material](./LAUNCH.md), [package launch drafts](./PACKAGE_LAUNCHES.md) |
 | Understand project credits                | [Lineage and credits](./LINEAGE_AND_CREDITS.md)                                |

@@ -39,6 +39,10 @@ import { describeHiddenTabFreezeRisk } from '../core/live-performance-mode.ts';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import { installActionClickTelemetry } from '../core/services/action-telemetry.ts';
 import {
+  installRoomInputLock,
+  isRoomModeRequested,
+} from '../core/room-mode.ts';
+import {
   buildAudioProfile,
   pickAudioMatch,
   searchByAudioProfile,
@@ -408,6 +412,10 @@ function StimsWorkspaceAppShell() {
   >([]);
 
   const liveMode = engine.audioActive;
+  // `?room=1`: a screen nobody operates (core/room-mode.ts). Cached after the
+  // first read; it cannot change without a navigation.
+  const roomMode = isRoomModeRequested();
+  useEffect(() => (roomMode ? installRoomInputLock() : undefined), [roomMode]);
   // The playing preset's page: its name is the document's h1 and the section
   // under the stage. Embeds are chromeless and get neither. Keyed on the
   // selection, which is what the URL names, rather than on what the engine
@@ -418,14 +426,14 @@ function StimsWorkspaceAppShell() {
   // (engine-route-publish.ts).
   const presetPage = usePresetPageContent(
     engine.catalog,
-    liveMode && !ui.routeState.previewMode
+    liveMode && !ui.routeState.previewMode && !roomMode
       ? (engine.selectedPreset?.id ?? null)
       : null,
   );
   // A hub page's list, until a preset page takes the space under the stage.
   const collectionPage = useCollectionPageContent(
     engine.catalog,
-    presetPage || ui.routeState.previewMode
+    presetPage || ui.routeState.previewMode || roomMode
       ? null
       : (ui.routeState.discovery ?? null),
   );
@@ -692,7 +700,9 @@ function StimsWorkspaceAppShell() {
   ]);
 
   useStageGesture({
-    enabled: liveMode,
+    // A room's stage changes only by autoplay: a hand on a touch screen
+    // should not swap the preset or open Browse.
+    enabled: liveMode && !roomMode,
     stageRef: ui.stageRef,
     handleShufflePreset: engine.handleShufflePreset,
     handlePreviousPreset: engine.handlePreviousPreset,
@@ -1064,10 +1074,12 @@ function StimsWorkspaceAppShell() {
   useEffect(() => {
     return connectWakeLock(() => {
       return (
-        isFullscreen || (liveMode && (engineSnapshot?.audioActive ?? false))
+        roomMode ||
+        isFullscreen ||
+        (liveMode && (engineSnapshot?.audioActive ?? false))
       );
     });
-  }, [isFullscreen, liveMode, engineSnapshot?.audioActive]);
+  }, [roomMode, isFullscreen, liveMode, engineSnapshot?.audioActive]);
 
   const audioLiveSinceRef = useRef<number | null>(null);
   useEffect(() => {
@@ -1176,6 +1188,8 @@ function StimsWorkspaceAppShell() {
     const presetTitle = activeCompiled?.title;
     const source = currentAudioSource;
     if (!presetId || !presetTitle || !engineSnapshot?.audioActive) return;
+    // A room display's session is not this computer's visitor's to resume.
+    if (roomMode) return;
     // 'file' sources can't be resumed — there's no persisted handle to reopen.
     if (
       source !== 'demo' &&
@@ -1187,6 +1201,7 @@ function StimsWorkspaceAppShell() {
     }
     saveLastSession({ presetId, presetTitle, source });
   }, [
+    roomMode,
     engineSnapshot?.sessionState?.activeCompiled,
     engineSnapshot?.audioActive,
     currentAudioSource,
@@ -1368,6 +1383,7 @@ function StimsWorkspaceAppShell() {
       data-mode={liveMode ? 'live' : 'home'}
       data-active-preset-id={engineSnapshot?.activePresetId ?? undefined}
       data-preview={ui.routeState.previewMode ? 'true' : undefined}
+      data-room={roomMode ? 'true' : undefined}
       data-sheet-open={
         ui.routeState.panel && !stageAnchoredToolOpen ? 'true' : undefined
       }
@@ -1412,7 +1428,7 @@ function StimsWorkspaceAppShell() {
       ) : null}
       {/* On the dark ground the shell paints in every theme, as the details
           above are. Embeds are chromeless and get none. */}
-      {ui.routeState.previewMode ? null : <SiteIndexFooter />}
+      {ui.routeState.previewMode || roomMode ? null : <SiteIndexFooter />}
 
       {ui.routeState.previewMode ? (
         <a

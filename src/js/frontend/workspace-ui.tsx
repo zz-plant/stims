@@ -1,4 +1,5 @@
 import { type ReactNode, useSyncExternalStore } from 'react';
+import { isRoomModeRequested } from '../core/room-mode.ts';
 import {
   getStageOverlayPreference,
   subscribeToStageOverlayPreference,
@@ -61,6 +62,11 @@ export function WorkspaceStagePanel({
   );
   const strudelLabEnabled = strudelFlag || strudelLabPref;
   const _audioSource = engineSnapshot?.audioSource ?? ui.routeState.audioSource;
+  const stageReady = liveMode && !missingRequestedPreset;
+  // A room display (core/room-mode.ts) shows the picture and nothing else:
+  // no controls to reach for, no names over the visuals, no notices.
+  const roomMode = isRoomModeRequested();
+  const stageChrome = stageReady && !roomMode;
 
   return (
     <section
@@ -75,7 +81,7 @@ export function WorkspaceStagePanel({
         liveMode={liveMode}
         transitionPhase={presetTransition.phase}
       >
-        {liveMode && !missingRequestedPreset ? (
+        {stageChrome ? (
           <StageControls
             isFullscreen={isFullscreen}
             onToggleFullscreen={onToggleFullscreen}
@@ -86,13 +92,13 @@ export function WorkspaceStagePanel({
         ) : null}
         {/* Only while the editor is open — it renders its own null otherwise.
             The handle is the one thing on this layer that takes the pointer. */}
-        {liveMode && !missingRequestedPreset ? <StageWarpGizmo /> : null}
+        {stageChrome ? <StageWarpGizmo /> : null}
         {/* Both render themselves away when empty. Their one-time empty-state
             hints wait for a returning visitor on a wide screen — a first
             session stays free of stage chrome. */}
-        {liveMode && !missingRequestedPreset ? <CueMonitor /> : null}
-        {liveMode && !missingRequestedPreset ? <PerformSurface /> : null}
-        {liveMode && !missingRequestedPreset ? <PresetTitleCard /> : null}
+        {stageChrome ? <CueMonitor /> : null}
+        {stageChrome ? <PerformSurface /> : null}
+        {stageChrome ? <PresetTitleCard /> : null}
         {/* inert: the hero is pointer-events:none in live mode but its
             buttons stay in the tab order and accessibility tree without it.
             Also inert whenever a panel is open — on the home screen the hero
@@ -132,13 +138,11 @@ export function WorkspaceStagePanel({
             </div>
           </div>
         ) : null}
-        <FlashProtectionNotice />
+        {roomMode ? null : <FlashProtectionNotice />}
         {/* The D/Y stage utilities. Live mode only: there is nothing to cut
             on the launch page, and unmounting with the session releases any
             latched blackout. */}
-        {liveMode && !missingRequestedPreset ? (
-          <StageUtilitiesOverlay stageRef={ui.stageRef} />
-        ) : null}
+        {stageReady ? <StageUtilitiesOverlay stageRef={ui.stageRef} /> : null}
         <WorkspaceToast toast={ui.toast} />
         {strudelLabEnabled ? <StrudelLabPanel /> : null}
       </StimsStageFrame>

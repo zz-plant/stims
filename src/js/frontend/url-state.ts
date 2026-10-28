@@ -38,7 +38,10 @@ export function readSessionRouteStateFromSearch(
     presetId: parsed.routing.presetId,
     collectionTag: parsed.routing.collectionTag,
     panel: parsed.routing.panel as PanelState,
-    audioSource: parsed.routing.audioSource as AudioSource | null,
+    // A room link with no source still has to open onto a moving stage, not
+    // the launch page: nobody is there to press Play.
+    audioSource: (parsed.routing.audioSource ??
+      (parsed.room.enabled ? 'demo' : null)) as AudioSource | null,
     agentMode: parsed.routing.agentMode,
     previewMode: parsed.routing.previewMode,
     invalidExperienceSlug: parsed.routing.invalidExperienceSlug,

@@ -15,6 +15,7 @@ import {
   type SemanticDiscoveryRoute,
   semanticRouteHeading,
 } from '../../../functions/discover-slugs.ts';
+import { isRoomModeRequested } from '../core/room-mode.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import type { ResumableAudioSource } from '../core/state/last-session-store.ts';
 import { getLastSession } from '../core/state/last-session-store.ts';
@@ -101,7 +102,12 @@ export function NewHomePage({
   arrival?: LaunchArrival;
 } = {}) {
   const { ui, engine } = useWorkspace();
-  const [lastSession] = useState(() => getLastSession());
+  // A room display (core/room-mode.ts) opens onto its own visuals: a past
+  // visit on the room's computer must not turn it into a "Welcome back"
+  // page waiting for someone to press Resume.
+  const [lastSession] = useState(() =>
+    isRoomModeRequested() ? null : getLastSession(),
+  );
   const appliedResumeRef = useRef(false);
   const autoStartedRef = useRef(false);
   // The engine mount for a deep link waits on this (workspace-hooks.ts), so

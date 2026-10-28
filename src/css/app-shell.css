@@ -35,6 +35,11 @@ html:has(.stims-shell:is([data-mode="live"], [data-preview="true"])) {
   scrollbar-gutter: auto;
 }
 
+/* Nothing sits under a room display's stage, so nothing scrolls it away. */
+html:has(.stims-shell[data-room="true"]) {
+  overflow: hidden;
+}
+
 body[data-page="workspace"] {
   height: auto;
   min-height: 100%;
@@ -108,6 +113,29 @@ body[data-page="workspace"] {
   :scope[data-preview="true"] .stims-shell__frame-header,
   :scope[data-preview="true"] .stims-shell__stage-hero,
   :scope[data-preview="true"] .stims-shell__toast {
+    display: none;
+  }
+
+  /* A room display (`?room=1`, core/room-mode.ts) is the picture alone,
+     edge to edge, with no pointer drawn over it. Nobody in the room is
+     meant to aim at anything. */
+  :scope[data-room="true"] {
+    cursor: none;
+  }
+
+  :scope[data-room="true"] * {
+    cursor: none;
+  }
+
+  /* The canvas steers the preset under a dragged pointer or finger. A room's
+     picture answers the sound only. A click still reaches the document,
+     which is what lets the browser start the audio. */
+  :scope[data-room="true"] canvas {
+    pointer-events: none;
+  }
+
+  :scope[data-room="true"] .stims-shell__frame-chrome,
+  :scope[data-room="true"] .stims-shell__frame-header {
     display: none;
   }
 
