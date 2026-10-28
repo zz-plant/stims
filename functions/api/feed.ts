@@ -1,43 +1,11 @@
 // Cloudflare Pages Function: Dynamic JSON Feed 1.1 & RSS API for Stims Presets
 // Serves GET /api/feed
 
+import { loadPresetMeta, presetIndexing } from '../shared/preset-meta.ts';
+
 interface EventContext {
   request: Request;
   env?: { ASSETS?: { fetch: (request: Request) => Promise<Response> } };
-}
-
-type PresetMeta = Record<string, [title: string, author: string]>;
-
-let presetMetaPromise: Promise<PresetMeta | null> | null = null;
-
-function loadPresetMeta(
-  context: EventContext,
-  origin: string,
-): Promise<PresetMeta | null> {
-  presetMetaPromise ??= (async () => {
-    const assets = context.env?.ASSETS;
-    if (!assets) return null;
-    try {
-      const response = await assets.fetch(
-        new Request(new URL('/preset-meta.json', origin).toString()),
-      );
-      if (!response.ok) return null;
-      return (await response.json()) as PresetMeta;
-    } catch {
-      return null;
-    }
-  })().then(
-    (val) => {
-      if (val === null) presetMetaPromise = null;
-      return val;
-    },
-    () => {
-      presetMetaPromise = null;
-      return null;
-    },
-  );
-
-  return presetMetaPromise;
 }
 
 export async function onRequest(context: EventContext): Promise<Response> {
@@ -58,8 +26,12 @@ export async function onRequest(context: EventContext): Promise<Response> {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  const presetMeta = await loadPresetMeta(context, url.origin);
-  const entries = presetMeta ? Object.entries(presetMeta).slice(0, 50) : [];
+  const presetMeta = await loadPresetMeta(context.env?.ASSETS, url.origin);
+  const entries = presetMeta
+    ? Object.entries(presetMeta)
+        .filter(([, entry]) => presetIndexing(entry).kind === 'index')
+        .slice(0, 50)
+    : [];
 
   const items = entries.map(([id, [title, author]]) => {
     const authorCredit = author ? ` by ${author}` : '';

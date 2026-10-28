@@ -48,6 +48,7 @@ import {
   PRESET_INDEX_OUT_FILE,
   renderPresetIndexPage,
 } from './preset-index-page.ts';
+import { readBlankLandingIds } from './search-landing-evidence.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -344,7 +345,7 @@ export const buildOgSvg = ({
  * no preview frame. Blurred past recognition on purpose — it must read as
  * "Stims", never as a picture of the preset named on top of it.
  */
-const buildOgBackdropSvg = ({
+export const buildOgBackdropSvg = ({
   frameHref = relativeOgFrameHref,
 }: {
   frameHref?: OgFrameHref;
@@ -411,7 +412,7 @@ async function loadInlineFrameHref(rootDir: string): Promise<OgFrameHref> {
  * Mono — the renderer and fonts the dynamic preset card uses at the edge, so
  * the static and dynamic cards set type identically.
  */
-async function renderOgPng(
+export async function renderOgPng(
   svg: string,
   rootDir = repoRoot,
   { width = ogWidth }: { width?: number } = {},
@@ -866,6 +867,23 @@ type PresetCatalogEntry = {
 const isNamedAuthor = (author?: string) =>
   Boolean(author) && author !== 'Unknown';
 
+/** The root catalog's presets, once each (15 ids ship twice). */
+export async function readUniqueCatalogPresets(rootDir = repoRoot) {
+  const seen = new Set<string>();
+  const catalogRaw = await readFile(
+    path.join(rootDir, PRESET_CATALOG_PATH),
+    'utf8',
+  );
+  const catalog = JSON.parse(catalogRaw) as {
+    presets?: PresetCatalogEntry[];
+  };
+  return (catalog.presets ?? []).filter((preset) => {
+    if (seen.has(preset.id)) return false;
+    seen.add(preset.id);
+    return true;
+  });
+}
+
 /**
  * The tag on the vendored projectM test presets ("000 Empty", "001 Line"):
  * fixtures for the engine, not presets anyone searches for.
@@ -993,6 +1011,7 @@ export async function buildPresetMetaMap(
     .sort()
     .map((name) => path.join(libraryDir, name, 'catalog.json'));
 
+  const blankLandings = readBlankLandingIds(rootDir);
   const topicFilters = DISCOVER_ROUTES.map(discoveryRouteFilter);
   const primaryByName = new Map<string, string>();
   const meta: PresetMetaTable = {};
@@ -1018,7 +1037,9 @@ export async function buildPresetMetaMap(
         if (matches(preset)) topics |= 1 << bit;
       });
       let indexing = '';
-      if (
+      if (blankLandings.has(preset.id)) {
+        indexing = NOINDEX;
+      } else if (
         preset.tags?.includes(PROJECTM_FIXTURE_TAG) ||
         isNamelessPresetTitle(preset.title)
       ) {
