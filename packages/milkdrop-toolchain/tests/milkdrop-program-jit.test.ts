@@ -5,11 +5,16 @@ import {
   type EelRngCell,
 } from '../src/compiler/eel-function-table.ts';
 import { compileMilkdropPresetSource } from '../src/compiler.ts';
-import { evaluateMilkdropExpression } from '../src/expression.ts';
 import {
+  evaluateMilkdropExpression,
+  parseMilkdropStatement,
+} from '../src/expression.ts';
+import {
+  __setJitAvailableForTests,
   compileMilkdropProgram,
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,
+  type MilkdropLoopBudget,
 } from '../src/expression-jit.ts';
 
 type Scope = Record<string, number>;
@@ -619,4 +624,79 @@ describe('compiled milkdrop programs', () => {
     expect(compiled.registers.q1).toBe(12);
     expect(compiled.registers.q2).toBe(3);
   });
+});
+
+/** A block parsed fresh on every call. compileMilkdropPresetSource caches by
+ * source and compileMilkdropProgram memoises per block, so a block from
+ * blockFromSource would hand the interpreter tier the JIT's function. */
+function parsedBlock(lines: string[]): MilkdropProgramBlock {
+  const statements = lines.map((line, index) => {
+    const parsed = parseMilkdropStatement(line, index + 1);
+    if (!parsed.value) throw new Error(`failed to parse: ${line}`);
+    return parsed.value;
+  });
+  return { statements, sourceLines: lines };
+}
+
+describe('shared loop budget', () => {
+  // The VM hands one budget to every call in a frame, so a loop in a
+  // per-pixel or per-point program cannot run the per-call cap once per
+  // vertex. Both tiers keep the contract: the CSP interpreter is the same
+  // engine for a page that forbids `new Function`.
+  for (const jit of [true, false]) {
+    const tier = jit ? 'JIT' : 'interpreter';
+
+    function runWithBudget(
+      block: MilkdropProgramBlock,
+      scopes: RunResult,
+      budget: MilkdropLoopBudget | null,
+    ) {
+      __setJitAvailableForTests(jit);
+      try {
+        compileMilkdropProgram(block)(
+          scopes.env,
+          scopes.state,
+          scopes.registers,
+          scopes.locals,
+          scopes.megabuf,
+          scopes.gmegabuf,
+          makeRandom(),
+          budget,
+        );
+      } finally {
+        __setJitAvailableForTests(null);
+      }
+    }
+
+    test(`${tier}: calls sharing a budget stop when it runs out`, () => {
+      const block = parsedBlock(['while(1, q1 = q1 + 1;);']);
+      const scopes = makeScopes(false);
+      const budget = { remaining: 1000 };
+      for (let call = 0; call < 5; call += 1) {
+        runWithBudget(block, scopes, budget);
+      }
+      expect(scopes.registers.q1).toBe(1000);
+      expect(budget.remaining).toBe(0);
+    });
+
+    test(`${tier}: a budget is charged only for iterations run`, () => {
+      const block = parsedBlock(['loop(10, q1 = q1 + 1;);']);
+      const scopes = makeScopes(false);
+      const budget = { remaining: 25 };
+      for (let call = 0; call < 4; call += 1) {
+        runWithBudget(block, scopes, budget);
+      }
+      // 10 + 10 + the 5 left, then nothing.
+      expect(scopes.registers.q1).toBe(25);
+      expect(budget.remaining).toBe(0);
+    });
+
+    test(`${tier}: without a budget each call keeps the per-call cap`, () => {
+      const block = parsedBlock(['while(1, q1 = q1 + 1;);']);
+      const scopes = makeScopes(false);
+      runWithBudget(block, scopes, null);
+      runWithBudget(block, scopes, null);
+      expect(scopes.registers.q1).toBe(2 * 2_097_152);
+    });
+  }
 });

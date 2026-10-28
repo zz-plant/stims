@@ -80,6 +80,18 @@ export type MilkdropProgramOptions = {
  * cell (inline mode). */
 export type MilkdropProgramRng = (() => number) | EelRngCell;
 
+/**
+ * Loop iterations a host lets several program calls share.
+ *
+ * The per-call cap alone bounds one call, but per-pixel and per-point
+ * programs run once per mesh vertex or wave sample, so a `while(1)` there
+ * costs the cap times the element count every frame: seconds of main-thread
+ * work. A host passes the same cell to every call in a frame; each call runs
+ * at most `remaining` iterations (and never more than the per-call cap), then
+ * subtracts what it ran. Omitted, a call is bounded by the per-call cap only.
+ */
+export type MilkdropLoopBudget = { remaining: number };
+
 export type MilkdropProgramFn = (
   env: Record<string, number>,
   state: Record<string, number>,
@@ -88,6 +100,7 @@ export type MilkdropProgramFn = (
   megabuf: Float32Array,
   gmegabuf: Float32Array,
   rng: MilkdropProgramRng,
+  loopBudget?: MilkdropLoopBudget | null,
 ) => void;
 
 const NO_OP: MilkdropProgramFn = () => {};
@@ -502,15 +515,13 @@ function compileStatementSource(
         `${countVar} = Math.min(${MILKDROP_LOOP_ITERATION_CAP}, Math.max(0, Math.trunc(${count}) || 0));`,
       );
       body.push(
-        `for (${indexVar} = 0; ${indexVar} < ${countVar} && _g < ${MILKDROP_LOOP_ITERATION_CAP}; ${indexVar} += 1, _g += 1) {`,
+        `for (${indexVar} = 0; ${indexVar} < ${countVar} && _g < _gl; ${indexVar} += 1, _g += 1) {`,
       );
     } else {
       const cond = statement.control.condition
         ? compileNode(statement.control.condition, context)
         : '1';
-      body.push(
-        `while ((${cond}) !== 0 && _g < ${MILKDROP_LOOP_ITERATION_CAP}) { _g += 1;`,
-      );
+      body.push(`while ((${cond}) !== 0 && _g < _gl) { _g += 1;`);
     }
 
     for (const inner of innerBody) {
@@ -569,8 +580,15 @@ function compileProgramSource(
   }
 
   const declarations = ['_v', ...context.temporaries];
+  // `_g` counts this call's iterations across every loop in it; `_gl` is its
+  // limit, the per-call cap or the shared budget's remainder if smaller.
+  let loopEpilogue = '';
   if (blockUsesControlFlow(block)) {
-    declarations.push('_g = 0');
+    declarations.push(
+      '_g = 0',
+      `_gl = lb == null ? ${MILKDROP_LOOP_ITERATION_CAP} : Math.min(${MILKDROP_LOOP_ITERATION_CAP}, lb.remaining)`,
+    );
+    loopEpilogue = 'if (lb != null) { lb.remaining -= _g; }';
   }
   // Inline RNG: one cell load on entry, one store on exit, so the whole
   // program advances the shared state without a call per draw. Programs that
@@ -582,7 +600,7 @@ function compileProgramSource(
     rngPrologue = `${EEL_RNG_JIT_STATE} = rng.s;`;
     rngEpilogue = `rng.s = ${EEL_RNG_JIT_STATE};`;
   }
-  return `"use strict"; var ${declarations.join(', ')}; ${rngPrologue} ${body.join('\n')} ${rngEpilogue}`;
+  return `"use strict"; var ${declarations.join(', ')}; ${rngPrologue} ${body.join('\n')} ${rngEpilogue} ${loopEpilogue}`;
 }
 
 const compiledPrograms = new WeakMap<
@@ -633,7 +651,7 @@ function buildInterpretedProgram(
   rngMode: MilkdropProgramRngMode,
 ): MilkdropProgramFn {
   const inlineRng = rngMode === 'inline';
-  return (e, s, r, l, mb, gb, rng) => {
+  return (e, s, r, l, mb, gb, rng, lb) => {
     const mirroredEnv = new Proxy(e, {
       set(target, property, value) {
         if (typeof property === 'string') {
@@ -675,6 +693,10 @@ function buildInterpretedProgram(
       },
     };
     let guard = 0;
+    const guardLimit =
+      lb == null
+        ? MILKDROP_LOOP_ITERATION_CAP
+        : Math.min(MILKDROP_LOOP_ITERATION_CAP, lb.remaining);
     const run = (statements: readonly MilkdropCompiledStatement[]) => {
       for (const statement of statements) {
         if (!statement) continue;
@@ -694,13 +716,13 @@ function buildInterpretedProgram(
             );
             for (
               let index = 0;
-              index < count && guard < MILKDROP_LOOP_ITERATION_CAP;
+              index < count && guard < guardLimit;
               index += 1, guard += 1
             ) {
               run(body);
             }
           } else {
-            while (guard < MILKDROP_LOOP_ITERATION_CAP) {
+            while (guard < guardLimit) {
               const condition = statement.control.condition
                 ? evaluateMilkdropExpression(
                     statement.control.condition,
@@ -747,6 +769,7 @@ function buildInterpretedProgram(
       }
     };
     run(block.statements);
+    if (lb != null) lb.remaining -= guard;
   };
 }
 
@@ -778,6 +801,7 @@ export function compileMilkdropProgram(
             'mb',
             'gb',
             'rng',
+            'lb',
             compileProgramSource(block, options.rng),
           ) as MilkdropProgramFn)
         : buildInterpretedProgram(block, options.rng);
