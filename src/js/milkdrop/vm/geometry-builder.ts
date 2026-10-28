@@ -45,6 +45,8 @@ import {
   type MotionVectorDescriptorContext,
   type MotionVectorHistoryPoint,
   type MutableState,
+  milkdropWarpCentreX,
+  milkdropWarpCentreY,
   normalizeTransformCenter,
   normalizeTransformCenterY,
   type StaticMeshLattice,
@@ -496,8 +498,8 @@ function createMeshTransformFrame({
     : null;
   const zoom = Math.max(state.zoom ?? 1, 0);
   const zoomExponent = Math.max(state.zoomexp ?? 1, 0.0001);
-  const centerX = normalizeTransformCenter(state.cx ?? 0.5);
-  const centerY = normalizeTransformCenterY(state.cy ?? 0.5);
+  const centerX = milkdropWarpCentreX(state.cx ?? 0.5, resolvedAspectX);
+  const centerY = milkdropWarpCentreY(state.cy ?? 0.5, resolvedAspectY);
   const scaleX = state.sx ?? 1;
   const scaleY = state.sy ?? 1;
   const translateX = state.dx ?? 0;
@@ -725,10 +727,10 @@ function transformMeshPoint(
     // per vertex — bit-identical to the reset value they used to read.
     warp = frame.writesWarp ? local.warp : frame.warp;
     centerX = frame.writesCx
-      ? normalizeTransformCenter(local.cx ?? 0.5)
+      ? milkdropWarpCentreX(local.cx ?? 0.5, aspectX)
       : frame.centerX;
     centerY = frame.writesCy
-      ? normalizeTransformCenterY(local.cy ?? 0.5)
+      ? milkdropWarpCentreY(local.cy ?? 0.5, aspectY)
       : frame.centerY;
     scaleX = frame.writesSx ? (local.sx ?? 1) : frame.scaleX;
     scaleY = frame.writesSy ? (local.sy ?? 1) : frame.scaleY;
@@ -808,8 +810,7 @@ function transformMeshPoint(
     zy = ry;
   } else {
     const zoomRadius = Math.sqrt(rotX * rotX + rotY * rotY);
-    const radiusNormalized = clamp(zoomRadius * Math.SQRT1_2, 0, 1);
-    // Authored presets legitimately use extreme pairs (orbasonic ships
+    const radiusNormalized = clamp(zoomRadius * Math.SQRT1_2, 0, 1); // Authored presets legitimately use extreme pairs (orbasonic ships
     // zoom=100 with zoomexp=100); unclamped, zoom^(zoomexp^(2r-1)) overflows
     // float32 at the edges and NaN-poisons the warp into a black frame.
     // MilkDrop's own math saturates instead of exploding, so bound the scale.

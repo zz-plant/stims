@@ -270,6 +270,32 @@ export function milkdropToSceneY(value: number, aspect: number) {
   return (value - 0.5) * 2 * Math.max(1, 1 / safe);
 }
 
+/**
+ * MilkDrop's warp centre `cx` in the CPU mesh's renderer space ([-1,1], x
+ * right). cx lives where the per-pixel `x` does — MilkDrop's aspect-squeezed
+ * [0,1] space — so this is the exact inverse of the mesh's `x` seeding and a
+ * preset writing `cx = x` centres on its own pixel. On a portrait screen
+ * (aspectX = W/H < 1) the visible frame spans only cx 0.5 +/- aspectX/2;
+ * butterchurn's runPixelEquations and the WebGPU warp (warp-sample-transform.ts)
+ * place it the same way. Linear everywhere: a cx outside [0,1] is an
+ * off-screen centre, not a renderer-space coordinate.
+ */
+export function milkdropWarpCentreX(cx: number, aspectX: number) {
+  return ((cx - 0.5) * 2) / aspectX;
+}
+
+/** {@link milkdropWarpCentreX} for `cy`, which is y-down; the renderer is y-up. */
+export function milkdropWarpCentreY(cy: number, aspectY: number) {
+  return -((cy - 0.5) * 2) / aspectY;
+}
+
+/**
+ * The procedural field's centre convention: no aspect, and values outside
+ * [0,1] passed through. Mirrors milkdropNormalizeTransformCenterX in
+ * webgpu-procedural-materials.ts, which feeds the WebGPU mesh overlay and
+ * motion-vector field — not the feedback warp, whose centre is
+ * {@link milkdropWarpCentreX}.
+ */
 export function normalizeTransformCenter(value: number) {
   if (value >= 0 && value <= 1) {
     return value * 2 - 1;
