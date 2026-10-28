@@ -726,10 +726,15 @@ requiredBrowserTest(
           const code = document
             .querySelector('.stims-editor__code')
             ?.getBoundingClientRect();
+          const gizmo = document
+            .querySelector('.stims-stage-gizmo')
+            ?.getBoundingClientRect();
           const sheetTop = panel?.top ?? 0;
           return {
             sheetTop,
             stageMiddle: stage ? stage.top + stage.height / 2 : Number.NaN,
+            stageTop: stage?.top ?? Number.NaN,
+            gizmoTop: gizmo?.top ?? Number.NaN,
             codeOnScreen: Boolean(
               code && code.top >= sheetTop && code.bottom <= window.innerHeight,
             ),
@@ -746,6 +751,12 @@ requiredBrowserTest(
       expect(sheet.stageMiddle, 'the stage middle').toBeGreaterThan(0);
       expect(sheet.stageMiddle, 'the stage middle').toBeLessThan(
         sheet.sheetTop,
+      );
+      // The warp-centre handle maps pointer positions over its own layer,
+      // so that layer has to ride up with the canvas it steers.
+      expect(sheet.gizmoTop, 'the warp-centre layer').toBeCloseTo(
+        sheet.stageTop,
+        0,
       );
       expect(sheet.codeOnScreen, 'the code inside the sheet').toBe(true);
       const room = await readEditorRoom(page);

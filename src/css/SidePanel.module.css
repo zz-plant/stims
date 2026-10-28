@@ -128,19 +128,28 @@
      Half the sheet also keeps the canvas's lower edge below the sheet's top
      edge throughout the slide in either direction, so no bare frame shows
      between them. SidePanel.tsx sets data-stage-lifted while the sheet is
-     up and drops it as the exit starts. */
-  :global(#stims-main[data-stage-lifted="true"] .stims-shell__stage-root) {
+     up and drops it as the exit starts. The warp-centre gizmo's layer rides
+     with the canvas: it sits beside the render root, not in it, so left
+     behind its handle stayed under the sheet and a drag mapped onto the
+     unlifted frame. */
+  :global(
+    #stims-main[data-stage-lifted="true"]
+      :is(.stims-shell__stage-root, .stims-stage-gizmo)
+  ) {
     transform: translateY(calc(var(--stage-tool-height) / -2));
   }
 
-  :global(html:not([data-agent-mode="true"]) .stims-shell__stage-root) {
+  :global(
+    html:not([data-agent-mode="true"])
+      :is(.stims-shell__stage-root, .stims-stage-gizmo)
+  ) {
     transition: transform var(--motion-exit);
   }
 
   :global(
     html:not([data-agent-mode="true"])
       #stims-main[data-stage-lifted="true"]
-      .stims-shell__stage-root
+      :is(.stims-shell__stage-root, .stims-stage-gizmo)
   ) {
     transition: transform var(--motion-enter);
   }
