@@ -90,7 +90,7 @@ const HINTS: HelpHintDef[] = [
     // router. Taught at the first keystroke that makes the claim true.
     id: 'editor-dirty-link',
     message:
-      'Your draft is already in the address bar. Share link sends it exactly as it is here.',
+      'Your draft is already in the address bar. Copy link sends it exactly as it is here.',
     autoHideMs: 7000,
     anchor: 'panel',
   },

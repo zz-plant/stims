@@ -22,7 +22,7 @@ Submission URL: https://toil.fyi/
 
 First comment:
 
-> Stims runs original .milk presets in a browser. Press Play demo, then Edit this visual: the editor shows the equations and which audio signals reach each control. Add a slow spin appends one rotation equation; you can undo it or change the code while playback continues. Copy link to this edit puts the source in the URL, so a remix does not need an account or server-side storage.
+> Stims runs original .milk presets in a browser. Press Play demo, then Edit this visual: the editor shows the equations and which audio signals reach each control. Add a slow spin appends one rotation equation; you can undo it or change the code while playback continues. Copy link puts the edited source in the URL, so a remix does not need an account or server-side storage.
 >
 > WebGL2 is the baseline; WebGPU is an optional path. Compiling a preset is not proof that it matches MilkDrop visually. The README links both the compiler corpus tests and the much smaller set of measured comparisons against native projectM.
 >

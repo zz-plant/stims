@@ -14,7 +14,7 @@ To be featured in the credited showcase, each submission must include all of the
 1. **Title**: The title of your remix (e.g. `Cerebral Demons (Gentle Spin Mix)`).
 2. **Creator handle & link**: Your preferred name or handle, and an optional link to your profile, portfolio, or social presence (e.g. GitHub username or personal website).
 3. **Working remix link or `.milk` source**:
-   - A shareable Stims URL generated with **Copy link to this edit** (carrying `#code=` or `?preset=...`), or
+   - A shareable Stims URL generated with the editor's **Copy link** (carrying `#code=` or `?preset=...`), or
    - An exported `.milk` file attachment containing the full preset source.
 4. **Lineage and original author provenance**:
    - The original preset name and author handle from the bundled catalog (e.g., `Krash & Rovastar — Cerebral Demons`).

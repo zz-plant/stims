@@ -5,7 +5,7 @@
 
 import { isolateHistory, redo, undo } from '@codemirror/commands';
 import type { EditorState } from '@codemirror/state';
-import type { EditorView } from '@codemirror/view';
+import { EditorView } from '@codemirror/view';
 import {
   computeMidiGutterInfo,
   findMilkdropEquationLine,
@@ -62,7 +62,16 @@ import { clearRenderIsolation } from '../render-isolation.ts';
 import { parseSlotName, slotControls } from '../slot-controls.ts';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { subscribeVariables } from '../variable-probe.ts';
-import { createEditorView, setMidiGutterInfo } from './editor-codemirror.ts';
+import {
+  audioSourcesByLine,
+  type FieldAudio,
+  formatAudioSources,
+} from './editor-audio-sources.ts';
+import {
+  createEditorView,
+  setAudioSourcesReader,
+  setMidiGutterInfo,
+} from './editor-codemirror.ts';
 import { computeAstDiagnostics, mergeDiagnostics } from './editor-parser';
 import {
   type AssignedVariable,
@@ -211,6 +220,13 @@ function audioReaching(
   return reached.length > 0 ? [...new Set(reached.flat())].sort() : null;
 }
 
+/** The inline sources' tooltip: `zoom follows bass, mid, treb`. */
+function describeAudioSources(fields: FieldAudio[]): string {
+  return `${fields
+    .map(({ field, audio }) => `${field} follows ${audio.join(', ')}`)
+    .join('; ')}, through the equations on stage.`;
+}
+
 export class EditorPanel {
   readonly element: HTMLElement;
 
@@ -227,15 +243,18 @@ export class EditorPanel {
   private actionNoticeTimer: number | undefined;
   private readonly stateEl: HTMLElement;
   private readonly stateLabel: HTMLElement;
+  /** What the state line says to a screen reader; see renderSessionState. */
+  private readonly stateAnnouncement: HTMLElement;
   private readonly safetyFlag: HTMLElement;
   private readonly stage: HTMLElement;
   private readonly problems: HTMLElement;
+  private readonly problemsToggle: HTMLButtonElement;
   private readonly problemsCount: HTMLElement;
   private readonly problemsBody: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly deleteButton: HTMLButtonElement;
-  /** Relabelled per compile: what the link carries depends on `state.dirty`. */
-  private readonly shareLinkItem: HTMLButtonElement;
+  /** Renamed per compile: what the link carries depends on `state.dirty`. */
+  private readonly shareLinkButton: HTMLButtonElement;
   private readonly editor: EditorView;
   private readonly clearEditorDebounce: () => void;
   private readonly resetEditorHistory: () => void;
@@ -360,6 +379,15 @@ export class EditorPanel {
     signature: string;
     dataflow: PresetDataflow;
   } | null = null;
+  /** The dataflow the code's inline sources were last read from. */
+  private audioSourcesDataflow: PresetDataflow | null = null;
+  /** A preset just loaded: once its sources are known, scroll the code to
+   * the first line that has some, unless the visitor got there first. */
+  private revealAudioSourcesPending = false;
+  private revealObserver: ResizeObserver | null = null;
+  /** The note's last content, so an unchanged note is not rewritten: it is
+   * a live region, and a rewrite can be read out again. */
+  private noteKey = '';
   /** Whether the Tune pane is on screen: its tab selected, the dock open. */
   private tuneVisible = true;
   /** Faders whose tick follows the frame, keyed to the name the VM keeps
@@ -417,11 +445,21 @@ export class EditorPanel {
     this.stateEl = document.createElement('span');
     this.stateEl.className = 'stims-editor__state';
     this.stateEl.dataset.state = 'synced';
+    // A live region, so a compile error is heard as well as seen: "Holding
+    // last good frame" was never announced. It speaks from its own text, not
+    // the visible label, which flips to "Queued" at every pause in typing.
+    this.stateEl.setAttribute('role', 'status');
+    this.stateEl.setAttribute('aria-atomic', 'true');
     const stateDot = document.createElement('span');
     stateDot.className = 'stims-editor__dot';
+    stateDot.setAttribute('aria-hidden', 'true');
     this.stateLabel = document.createElement('span');
     this.stateLabel.textContent = 'Synced';
-    this.stateEl.append(stateDot, this.stateLabel);
+    this.stateLabel.setAttribute('aria-hidden', 'true');
+    this.stateAnnouncement = document.createElement('span');
+    this.stateAnnouncement.className = 'stims-editor__sr-only';
+    this.stateAnnouncement.textContent = 'Synced';
+    this.stateEl.append(stateDot, this.stateLabel, this.stateAnnouncement);
 
     const flags = document.createElement('div');
     flags.className = 'stims-editor__flags';
@@ -443,8 +481,10 @@ export class EditorPanel {
 
     // ── Toolbar ───────────────────────────────────────────────────
     // One primary action, one destructive-free secondary, undo/redo as a
-    // single segmented control, and everything preset-level behind an
-    // overflow menu. The old row gave nine buttons identical weight.
+    // single segmented control, the share link, and everything else behind an
+    // overflow menu. The old row gave nine buttons identical weight. It wraps
+    // rather than overflows: at 1280x720 it ran 58px past the panel and the
+    // menu, with Remix, Download and Import in it, sat off screen.
     const toolbar = document.createElement('div');
     toolbar.className = 'stims-editor__toolbar';
 
@@ -462,8 +502,10 @@ export class EditorPanel {
     // Back to the preset as shipped (or as saved, for one you made). This
     // used to reset to the *active* source, which with edits applied as you
     // type was the edit itself — so it did nothing, and an edited preset had
-    // no way back. Undoable like any other edit.
-    const revertButton = this.createButton('Revert to original', {
+    // no way back. Undoable like any other edit. "Revert" on the button, as
+    // the notes above the code call it; the full name keeps the destination,
+    // and the shorter label keeps the toolbar to one row in the desktop rail.
+    const revertButton = this.createButton('Revert', {
       title:
         'Put back the preset as shipped, or as you last saved it if it is yours. Cmd/Ctrl+Z undoes it.',
       ariaLabel: 'Revert to original',
@@ -496,9 +538,6 @@ export class EditorPanel {
         },
       }),
     );
-
-    const spacer = document.createElement('div');
-    spacer.className = 'stims-editor__spacer';
 
     const menuWrap = document.createElement('div');
     menuWrap.className = 'stims-editor__menu-wrap';
@@ -603,12 +642,21 @@ export class EditorPanel {
       },
     });
     this.deleteButton.hidden = true;
-    // Sits with Export because they answer the same question — "how do I get
-    // this out of here" — and a link is the answer people reach for first.
-    this.shareLinkItem = menuItem('Copy link to this preset', () =>
-      this.callbacks.onCopyShareLink(),
+    // A navigation aid, not a preset action, so it leads the menu on its own.
+    // It was a toolbar button, which pushed the menu off the panel.
+    const jumpItem = menuItem('Jump to variable…', () =>
+      this.openVariableJump(),
     );
-    this.shareLinkItem.dataset.action = 'editor-copy-share-link';
+    jumpItem.dataset.action = 'editor-jump-variable';
+    jumpItem.title = 'Find a variable and move the cursor to it';
+    jumpItem.setAttribute('aria-keyshortcuts', 'Control+J Meta+J');
+    const jumpShortcut = document.createElement('span');
+    jumpShortcut.className = 'stims-editor__shortcut';
+    jumpShortcut.textContent = '⌘/Ctrl+J';
+    jumpShortcut.setAttribute('aria-hidden', 'true');
+    jumpItem.append(jumpShortcut);
+    const jumpSeparator = document.createElement('div');
+    jumpSeparator.className = 'stims-editor__menu-sep';
     // "Remix" leads because the authoring lessons teach it by that name.
     const remixItem = menuItem('Remix: save a copy and edit it', () =>
       this.callbacks.onDuplicatePreset(),
@@ -621,13 +669,14 @@ export class EditorPanel {
     exportItem.title =
       'Downloads the version on stage as a MilkDrop 2 .milk file';
     menu.append(
+      jumpItem,
+      jumpSeparator,
       remixItem,
       menuItem('Keep this as A, to compare', () => this.snapshotSlotA()),
       menuItem('Keep this as B, to compare', () => this.snapshotSlotB()),
       menuItem('Stop comparing A and B', () => this.forgetSnapshots()),
       menuItem('Import preset files…', () => this.callbacks.onRequestImport()),
       exportItem,
-      this.shareLinkItem,
       menuSeparator,
       this.deleteButton,
     );
@@ -663,25 +712,29 @@ export class EditorPanel {
     this.abButton.dataset.action = 'ab-toggle';
     this.abButton.setAttribute('aria-pressed', 'false');
 
-    const jumpButton = this.createButton('Jump to variable', {
-      title: 'Find a variable and move the cursor to it (Cmd/Ctrl+J)',
-      ariaLabel: 'Jump to variable (Cmd/Ctrl+J)',
-      onClick: () => this.openVariableJump(),
+    // "Copy link" everywhere it is named: here, in the first-edit guide and
+    // in the hint the first edit raises. It was a menu item, "Copy link to
+    // this edit", that the guide sent people to "the editor toolbar" for.
+    this.shareLinkButton = this.createButton('Copy link', {
+      title:
+        'Copies a link to this preset. Edit anything and the link carries your draft too.',
+      ariaLabel: 'Copy link to this preset',
+      onClick: () => this.callbacks.onCopyShareLink(),
     });
-    jumpButton.dataset.action = 'editor-jump-variable';
+    this.shareLinkButton.dataset.action = 'editor-copy-share-link';
 
     toolbar.append(
       applyButton,
       revertButton,
       this.abButton,
       undoRedo,
-      jumpButton,
-      spacer,
+      this.shareLinkButton,
       menuWrap,
     );
 
     this.note = document.createElement('div');
     this.note.className = 'stims-editor__note';
+    this.note.setAttribute('role', 'status');
     this.note.textContent = '';
     this.note.hidden = true;
 
@@ -734,9 +787,10 @@ export class EditorPanel {
       isChangeSuppressed: () => this.suppressEditorChange,
       onQuickFixDiagnostic: (diagnostic) =>
         this.applyQuickFixForDiagnostic(diagnostic),
-      // Escape out of the code lands on the primary action rather than
-      // dropping focus on <body>.
-      onEscapeBlur: () => applyButton.focus(),
+      // Escape out of the code lands on the control after it, as Tab would
+      // anywhere else. It used to land on Apply, above the code, so the next
+      // Tab went straight back in and indented the preset.
+      onEscapeBlur: () => this.problemsToggle.focus(),
       onJumpToVariable: () => this.openVariableJump(),
       onToggleAbSnapshot: () => void this.toggleAbSnapshot(),
     });
@@ -750,6 +804,12 @@ export class EditorPanel {
     this.flushEditorDocChange = editorViewState.flushDocChange;
     this.setEditorDiagnostics = editorViewState.setDiagnostics;
 
+    // Clicking or tabbing into the code before the sources arrive means the
+    // visitor has a place in it already; the reveal would move them off it.
+    editorHost.addEventListener('focusin', () => {
+      this.revealAudioSourcesPending = false;
+    });
+
     this.stage.append(this.note, editorHost);
 
     // ── Problems strip ────────────────────────────────────────────
@@ -762,6 +822,7 @@ export class EditorPanel {
     const problemsHead = document.createElement('div');
     problemsHead.className = 'stims-editor__problems-head';
     const problemsToggle = document.createElement('button');
+    this.problemsToggle = problemsToggle;
     problemsToggle.type = 'button';
     problemsToggle.className = 'stims-editor__problems-toggle';
     problemsToggle.setAttribute('aria-expanded', 'true');
@@ -1646,6 +1707,7 @@ export class EditorPanel {
       this.clearEditorDebounce();
     }
     if (presetLoaded) {
+      this.revealAudioSourcesPending = true;
       // A/B slots hold whole buffers. Carried across a switch, toggling
       // pasted the previous preset's code into this one.
       this.clearSnapshots();
@@ -1688,6 +1750,9 @@ export class EditorPanel {
         },
       });
       this.suppressEditorChange = false;
+      // Replacing the whole buffer deleted every tag; read them again even
+      // when the compile on stage is the one they came from.
+      this.audioSourcesDataflow = null;
     }
     if (nextSource === this.editor.state.doc.toString()) {
       this.hasBufferedEdits = false;
@@ -1737,23 +1802,30 @@ export class EditorPanel {
     // is saved per preset in this browser (draft-persistence.ts) and comes
     // back on the next load; text with errors is not, so the stage and the
     // saved copy both hold the last version that ran.
+    // The note is a live region, so it changes only when its message does:
+    // once a draft is live, a pause in typing leaves it saying so instead of
+    // flipping to "Queued" and back, which the state line already shows.
     const baseStatus = hasErrors
       ? 'Fix the errors below. Until then the stage and your saved draft keep the last version that ran; Revert restores the original.'
-      : this.hasBufferedEdits
-        ? 'Queued — Cmd/Ctrl+Enter punches it in now.'
-        : state.dirty
-          ? 'Draft is live on stage and saved in this browser. Revert restores the original.'
+      : state.dirty
+        ? 'Draft is live on stage and saved in this browser. Revert restores the original.'
+        : this.hasBufferedEdits
+          ? 'Queued — Cmd/Ctrl+Enter punches it in now.'
           : '';
 
-    if (hasErrors) {
-      this.note.innerHTML = `${renderIconSvg('warning', {
-        className: 'stims-editor__note-icon',
-      })}<span>${escapeHtml(baseStatus)}</span>`;
-    } else {
-      this.note.textContent = baseStatus;
+    const noteKey = `${hasErrors}|${shouldShowStatus}|${baseStatus}`;
+    if (noteKey !== this.noteKey) {
+      this.noteKey = noteKey;
+      if (hasErrors) {
+        this.note.innerHTML = `${renderIconSvg('warning', {
+          className: 'stims-editor__note-icon',
+        })}<span>${escapeHtml(baseStatus)}</span>`;
+      } else {
+        this.note.textContent = baseStatus;
+      }
+      this.note.hidden = !shouldShowStatus;
+      this.note.classList.toggle('stims-editor__note--error', hasErrors);
     }
-    this.note.hidden = !shouldShowStatus;
-    this.note.classList.toggle('stims-editor__note--error', hasErrors);
 
     // The dot answers "is what I see on stage what I typed?" — the only
     // question the old four badges were collectively trying to answer.
@@ -1766,10 +1838,11 @@ export class EditorPanel {
           : 'synced';
     // Says out loud that the draft rides along, at the one moment the claim
     // is checkable: the reader has unsaved edits in front of them.
-    this.shareLinkItem.textContent = state.dirty
-      ? 'Copy link to this edit'
-      : 'Copy link to this preset';
-    this.shareLinkItem.title = state.dirty
+    this.shareLinkButton.setAttribute(
+      'aria-label',
+      state.dirty ? 'Copy link to this edit' : 'Copy link to this preset',
+    );
+    this.shareLinkButton.title = state.dirty
       ? 'Copies a link carrying your unsaved source, so it opens in their editor exactly as it is here.'
       : 'Copies a link to this preset. Edit anything and the link carries your draft too.';
 
@@ -1781,8 +1854,23 @@ export class EditorPanel {
         : state.dirty
           ? 'Draft live'
           : 'Synced';
+    // Heard: an error count that changes, and the draft going live or back
+    // to the original. Not heard: "Queued", at every pause in typing.
+    const announcement = hasErrors
+      ? `Holding last good frame: ${errors.length} ${
+          errors.length === 1 ? 'error' : 'errors'
+        }`
+      : this.hasBufferedEdits
+        ? this.stateAnnouncement.textContent
+        : state.dirty
+          ? 'Draft live'
+          : 'Synced';
+    if (announcement !== this.stateAnnouncement.textContent) {
+      this.stateAnnouncement.textContent = announcement;
+    }
 
     this.updateControlDataflow(state.activeCompiled);
+    this.paintAudioSources();
     this.compatPane.update(state);
     this.shaderPane.update(state);
     this.texturesPane.update(state);
@@ -1921,6 +2009,74 @@ export class EditorPanel {
       signature,
       dataflow: analyzePresetDataflow(compiled.ir),
     };
+  }
+
+  /** Puts the driving sounds on the code's lines, from the same dataflow the
+   * Tune chips read, and on a fresh preset scrolls the first of them into
+   * view: the code opens on line 1, and the first-run preset's equations
+   * start at line 208. */
+  private paintAudioSources(): void {
+    const dataflow = this.controlDataflow?.dataflow ?? null;
+    if (dataflow !== this.audioSourcesDataflow) {
+      this.audioSourcesDataflow = dataflow;
+      this.editor.dispatch({
+        effects: setAudioSourcesReader.of(
+          dataflow
+            ? (doc) =>
+                audioSourcesByLine(doc, dataflow).map(({ line, fields }) => ({
+                  line,
+                  text: formatAudioSources(fields),
+                  title: describeAudioSources(fields),
+                }))
+            : null,
+        ),
+      });
+    }
+    if (!this.revealAudioSourcesPending || !dataflow) return;
+    const first = audioSourcesByLine(
+      this.editor.state.doc.toString(),
+      dataflow,
+    )[0];
+    if (!first) {
+      this.revealAudioSourcesPending = false;
+      return;
+    }
+    const scroller = this.editor.scrollDOM;
+    const reveal = () => {
+      // The visitor may have clicked into the code, or a preset load may
+      // have replaced it, while this waited for layout.
+      if (
+        !this.revealAudioSourcesPending ||
+        first.line > this.editor.state.doc.lines
+      )
+        return;
+      this.revealAudioSourcesPending = false;
+      this.editor.dispatch({
+        effects: EditorView.scrollIntoView(
+          this.editor.state.doc.line(first.line).from,
+          { y: 'start' },
+        ),
+      });
+    };
+    // The first compile can arrive before the panel has its height: the code
+    // is then as tall as the document, there is nothing to scroll, and an
+    // immediate scroll was lost. Wait until the code scrolls.
+    if (
+      scroller.scrollHeight > scroller.clientHeight ||
+      typeof ResizeObserver === 'undefined'
+    ) {
+      reveal();
+      return;
+    }
+    this.revealObserver?.disconnect();
+    const observer = new ResizeObserver(() => {
+      if (scroller.scrollHeight <= scroller.clientHeight) return;
+      observer.disconnect();
+      this.revealObserver = null;
+      reveal();
+    });
+    this.revealObserver = observer;
+    observer.observe(scroller);
   }
 
   private refreshMidiGutter(): void {
@@ -2144,6 +2300,8 @@ export class EditorPanel {
     this.disposeMidiListener = null;
     this.disposeMenuDismiss?.();
     this.disposeMenuDismiss = null;
+    this.revealObserver?.disconnect();
+    this.revealObserver = null;
     window.clearTimeout(this.abNoticeTimer);
     window.clearTimeout(this.actionNoticeTimer);
     // Solo and Mute hide parts of the live picture; closing the editor
