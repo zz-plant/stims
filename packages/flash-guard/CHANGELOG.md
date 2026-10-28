@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-10-28)
+
+0.1.1 was prepared as a documentation release but never published; its
+README changes ship here, with the code below. Minor bump: new exports,
+a new `sample()` argument and changed governor output.
 
 - The governor models the brightness filter it applies. `luminanceScale` is
   a CSS `brightness()` factor, which browsers apply to sRGB-encoded values,
@@ -52,10 +56,10 @@
   `(80,0,0)` to `(100,0,0)` strobe the frames shown read 6 red flashes in
   one second, and a luminance strobe just over the limit read 4. Content at
   or under the limit undimmed is released as before.
-
-## 0.1.1
-
-Documentation only; no code changes.
+- Faster with the same results: the sliding-window flash count runs in
+  linear time, the area maximizer reuses one scratch summed-area table
+  and hoists its division out of the inner loop, and the sampler's
+  red-saturation test and pixel loop work on integers.
 - docs: README reflects the published package. It leads with the install command, moves the clone-and-build steps under Development, links the live demo site, and uses absolute links that resolve on npm and on the mirror, including the `demo/` page the npm package does not contain.
 
 ## 0.1.0
