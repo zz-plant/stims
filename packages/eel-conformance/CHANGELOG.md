@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.1
+## 0.1.1 (2026-10-28)
 
 Documentation only; no code changes.
 - docs: README reflects the published package. It leads with the install command, moves the clone-and-build steps under Development, links the corpus browser, and uses absolute links that resolve on npm and on the mirror.
