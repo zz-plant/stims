@@ -1,23 +1,36 @@
 /**
- * Records a live visualizer canvas, natively resized for 4K, 9:16 and 1:1.
+ * Records a canvas to video with `MediaRecorder`, at output presets.
  *
- * Frames are recorded from a presented copy of the stage
- * (`createPresentedStageCanvas`, stage-presentation.ts), never from the stage
- * canvas itself: the flash governor's dimming and the D blackout and Y flash
- * are not canvas pixels, and a recording carries them. It leaves out the
- * visitor's brightness ceiling (`readRecordedStagePresentation` says why).
- * The copy paints in the render loop's frame-drawn notification, which the
- * loop keeps sending from a background timer while a recording runs in a
- * hidden tab (animation-loop.ts), so the copy needs no clock of its own.
- * A native format copies at the size the renderer was given; any other crops
- * the stage to fill its frame.
+ * Three ways the frames reach the encoder, chosen per recording:
+ *
+ * - **Native.** For the 4K, 9:16 and 1:1 presets, when a
+ *   `CanvasVideoExportRuntime` is given, the host renderer is asked to draw
+ *   at the preset's size for the duration (`beginNativeCapture`) and the
+ *   source canvas itself is captured. A 4K export is only ever native: a
+ *   Full HD canvas scaled up is not 4K.
+ * - **Copied.** For any other preset, or without a runtime, a copy of the
+ *   source cropped to fill the preset's size is painted every frame
+ *   (`createCanvasFrameCopy`) and that copy is captured.
+ * - **Yours.** `hooks.createFrames` replaces both: the app this was
+ *   extracted from paints its copy from the render loop's own frame
+ *   notification and bakes in the dimming its stage shows over the canvas.
+ *
+ * The runtime's audio stream, when it has one, is cloned onto the recording.
+ * `hooks.onRecordingChange` reports when a recording starts and ends, for a
+ * host that must keep rendering while one runs in a hidden tab.
  */
-import { setRecordingActive } from '../../core/services/recording-state.ts';
 import {
-  createPresentedStageCanvas,
-  type PresentedStageCanvas,
-  readRecordedStagePresentation,
-} from '../../core/services/stage-presentation.ts';
+  createCanvasFrameCopy,
+  type FrameSubscription,
+  type RecordableFrames,
+} from './frame-copy.ts';
+
+export {
+  createCanvasFrameCopy,
+  type FrameSubscription,
+  type RecordableFrames,
+  subscribeToAnimationFrames,
+} from './frame-copy.ts';
 
 export type ExportPresetTarget =
   | 'spotify-canvas'
@@ -33,6 +46,7 @@ export interface CanvasVideoExporterOptions {
   mimeType?: string;
   videoBitsPerSecond?: number;
   fps?: number;
+  /** Set false to record a cropped copy even where a native capture could run. */
   native?: boolean;
 }
 
@@ -43,6 +57,7 @@ export interface PresetDimensions {
   aspectRatio: string;
 }
 
+/** The browser capabilities the exporter uses; replace them under test. */
 export interface CanvasVideoExporterEnvironment {
   mediaRecorderAvailable: boolean;
   isMimeTypeSupported(mimeType: string): boolean;
@@ -58,12 +73,36 @@ export type NativeCanvasCaptureStartResult =
   | { ok: true; restore(): void }
   | { ok: false; reason: string };
 
+/** What the host renderer can do for a recording. */
 export interface CanvasVideoExportRuntime {
+  /**
+   * Draw at this size until `restore` is called. Return `ok: false` with a
+   * reason when the backend cannot, and the recording is refused with it.
+   */
   beginNativeCapture(dimensions: {
     width: number;
     height: number;
   }): NativeCanvasCaptureStartResult;
+  /** Audio to record alongside the picture, or null for a silent file. */
   getAudioStream(): MediaStream | null;
+}
+
+export interface CanvasVideoExporterHooks {
+  /**
+   * The canvas the recording is encoded from. `size` is set for a copied
+   * recording and absent for a native one, where the source is drawn at the
+   * preset's size already. Return null when no copy can be made. Defaults to
+   * `createCanvasFrameCopy` of the source when `size` is set, and the source
+   * canvas itself otherwise.
+   */
+  createFrames?: (options: {
+    size?: { width: number; height: number };
+    createCanvas: () => HTMLCanvasElement;
+  }) => RecordableFrames | null;
+  /** When the default copy paints. See `createCanvasFrameCopy`. */
+  subscribeToFrames?: FrameSubscription;
+  /** Called with true when a recording starts and false when it ends. */
+  onRecordingChange?: (active: boolean) => void;
 }
 
 export type CanvasVideoExporterSupport =
@@ -119,14 +158,15 @@ export const EXPORT_PRESETS: Record<ExportPresetTarget, PresetDimensions> = {
   },
 };
 
-const MIME_TYPE_CANDIDATES = [
+/** Tried in order when no `mimeType` is requested. */
+export const MIME_TYPE_CANDIDATES = [
   'video/webm;codecs=vp9',
   'video/webm;codecs=vp8',
   'video/webm',
   'video/mp4',
 ] as const;
 
-function createBrowserEnvironment(): CanvasVideoExporterEnvironment {
+export function createBrowserEnvironment(): CanvasVideoExporterEnvironment {
   return {
     mediaRecorderAvailable: typeof MediaRecorder !== 'undefined',
     isMimeTypeSupported: (mimeType) =>
@@ -147,11 +187,11 @@ export class CanvasVideoExporter {
   private readonly canvas: HTMLCanvasElement;
   private readonly environment: CanvasVideoExporterEnvironment;
   private readonly runtime: CanvasVideoExportRuntime | null;
-  private readonly getStage: () => HTMLElement | null;
+  private readonly hooks: CanvasVideoExporterHooks;
   private mediaRecorder: MediaRecorder | null = null;
   private recordingStream: MediaStream | null = null;
   private recordedChunks: Blob[] = [];
-  private frames: PresentedStageCanvas | null = null;
+  private frames: RecordableFrames | null = null;
   private restoreNativeCapture: (() => void) | null = null;
   private isRecording = false;
 
@@ -159,13 +199,12 @@ export class CanvasVideoExporter {
     canvas: HTMLCanvasElement,
     environment: CanvasVideoExporterEnvironment = createBrowserEnvironment(),
     runtime: CanvasVideoExportRuntime | null = null,
-    /** The element the stage's luminance filter is written on. */
-    getStage: () => HTMLElement | null = () => null,
+    hooks: CanvasVideoExporterHooks = {},
   ) {
     this.canvas = canvas;
     this.environment = environment;
     this.runtime = runtime;
-    this.getStage = getStage;
+    this.hooks = hooks;
   }
 
   static getSupportedMimeTypes(): string[] {
@@ -234,7 +273,7 @@ export class CanvasVideoExporter {
         return {
           ok: false,
           reason:
-            'Native video export is unavailable because the visualizer renderer is not ready.',
+            'Native video export is unavailable because the renderer is not ready.',
         };
       }
       const result = this.runtime.beginNativeCapture({
@@ -249,20 +288,17 @@ export class CanvasVideoExporter {
       return {
         ok: false,
         reason:
-          'Native 4K export is unavailable because the visualizer renderer is not ready.',
+          'Native 4K export is unavailable because the renderer is not ready.',
       };
     }
 
-    // A native format copies at whatever size the renderer was just given;
-    // any other crops the stage to fill its own frame.
-    const frames = createPresentedStageCanvas({
-      getCanvas: () => this.canvas,
-      presentation: () => readRecordedStagePresentation(this.getStage()),
-      size: nativeCapture
+    // A native format captures at whatever size the renderer was just given;
+    // any other crops the source to fill its own frame.
+    const frames = this.createFrames(
+      nativeCapture
         ? undefined
         : { width: preset.width, height: preset.height },
-      createCanvas: () => this.environment.createCanvas(),
-    });
+    );
     if (!frames || typeof frames.canvas.captureStream !== 'function') {
       frames?.dispose();
       this.restoreNativeRenderer();
@@ -304,11 +340,10 @@ export class CanvasVideoExporter {
       };
       recorder.start(100);
       this.isRecording = true;
-      setRecordingActive(true);
+      this.hooks.onRecordingChange?.(true);
       return { ok: true, mimeType: support.mimeType };
     } catch (error) {
       this.isRecording = false;
-      setRecordingActive(false);
       unownedAudioTracks.forEach((track) => track.stop());
       stopStream(this.recordingStream);
       this.recordingStream = null;
@@ -328,7 +363,7 @@ export class CanvasVideoExporter {
   async stopRecording(): Promise<Blob | null> {
     if (!this.isRecording || !this.mediaRecorder) return null;
     this.isRecording = false;
-    setRecordingActive(false);
+    this.hooks.onRecordingChange?.(false);
 
     const recorder = this.mediaRecorder;
     return new Promise((resolve) => {
@@ -358,6 +393,24 @@ export class CanvasVideoExporter {
     });
   }
 
+  private createFrames(
+    size: { width: number; height: number } | undefined,
+  ): RecordableFrames | null {
+    const createCanvas = () => this.environment.createCanvas();
+    if (this.hooks.createFrames) {
+      return this.hooks.createFrames({ size, createCanvas });
+    }
+    if (!size) {
+      return { canvas: this.canvas, dispose: () => {} };
+    }
+    return createCanvasFrameCopy({
+      getCanvas: () => this.canvas,
+      size,
+      createCanvas,
+      subscribe: this.hooks.subscribeToFrames,
+    });
+  }
+
   private releaseFrames() {
     this.frames?.dispose();
     this.frames = null;
@@ -369,7 +422,7 @@ export class CanvasVideoExporter {
     restore?.();
   }
 
-  downloadVideo(blob: Blob, filename = 'stims-visualizer-export.webm'): void {
+  downloadVideo(blob: Blob, filename = 'canvas-recording.webm'): void {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       return;
     }

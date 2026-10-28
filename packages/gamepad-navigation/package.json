@@ -1,0 +1,64 @@
+{
+  "name": "gamepad-navigation",
+  "version": "0.1.0",
+  "description": "D-pad, analog-stick and TV-remote focus navigation for DOM interfaces: directional focus by geometry, repeat timers, button mappings, range-input stepping and focus restore. Pure TypeScript, no dependencies.",
+  "license": "Unlicense",
+  "type": "module",
+  "homepage": "https://github.com/zz-plant/stims/tree/main/packages/gamepad-navigation#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zz-plant/stims.git",
+    "directory": "packages/gamepad-navigation"
+  },
+  "bugs": {
+    "url": "https://github.com/zz-plant/stims/issues"
+  },
+  "keywords": [
+    "gamepad",
+    "gamepad-api",
+    "controller",
+    "d-pad",
+    "spatial-navigation",
+    "focus",
+    "focus-management",
+    "tv",
+    "leanback",
+    "remote",
+    "tizen",
+    "webos",
+    "accessibility",
+    "a11y"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "stims-source": "./src/index.ts",
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "src"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "bun test",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build",
+    "site:build": "bun run scripts/build-site.ts",
+    "site:preview": "bun run scripts/build-site.ts && bunx serve _site -l 8787"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "happy-dom": "21.0.4",
+    "typescript": "^7.0.2"
+  }
+}

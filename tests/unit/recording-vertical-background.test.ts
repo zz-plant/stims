@@ -1,4 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from 'bun:test';
+import {
+  type CanvasVideoExporterEnvironment,
+  type CanvasVideoExportRuntime,
+  EXPORT_PRESETS,
+} from 'canvas-video-exporter';
 import { isHiddenTabSuspendingFrames } from '../../src/js/core/hidden-tab-policy.ts';
 import { resetLivePerformanceModeForTests } from '../../src/js/core/live-performance-mode.ts';
 import { getPowerSavingFrameCapHz } from '../../src/js/core/power-state.ts';
@@ -8,12 +13,7 @@ import {
   resetRecordingActiveForTests,
   setRecordingActive,
 } from '../../src/js/core/services/recording-state.ts';
-import {
-  CanvasVideoExporter,
-  type CanvasVideoExporterEnvironment,
-  type CanvasVideoExportRuntime,
-  EXPORT_PRESETS,
-} from '../../src/js/utils/media/canvas-video-exporter.ts';
+import { createStageVideoExporter } from '../../src/js/frontend/engine/stage-video-exporter.ts';
 import { greyCanvas, greyCanvasFactory } from '../grey-canvas.ts';
 
 describe('Recording Background & Vertical/Square Export', () => {
@@ -122,7 +122,11 @@ describe('Recording Background & Vertical/Square Export', () => {
           }) as unknown as MediaStream,
       };
 
-      const exporter = new CanvasVideoExporter(sourceCanvas, env, runtime);
+      const exporter = createStageVideoExporter({
+        canvas: sourceCanvas,
+        environment: env,
+        runtime,
+      });
 
       const result = exporter.startRecording({ preset: 'spotify-canvas' });
       expect(result.ok).toBe(true);
@@ -179,7 +183,11 @@ describe('Recording Background & Vertical/Square Export', () => {
           }) as unknown as MediaStream,
       };
 
-      const exporter = new CanvasVideoExporter(sourceCanvas, env, runtime);
+      const exporter = createStageVideoExporter({
+        canvas: sourceCanvas,
+        environment: env,
+        runtime,
+      });
 
       const result = exporter.startRecording({ preset: 'square-post' });
       expect(result.ok).toBe(true);

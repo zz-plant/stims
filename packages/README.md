@@ -13,12 +13,15 @@ live demo.
 | [`flash-guard`](./flash-guard)               | WCAG 2.3.1 flash and red-flash analysis for frame sequences, plus a sampling-based live governor that reduces detected flashing.                               | `packages/flash-guard/tests/`        |
 | [`milkdrop-toolchain`](./milkdrop-toolchain) | Parser, EEL2 interpreter and JIT, IR, HLSL analysis with GLSL emission, EEL-to-WGSL, formatter, MilkDrop 2 exporter and dataflow analysis for `.milk` presets. | `packages/milkdrop-toolchain/tests/` |
 | [`audio-reactive`](./audio-reactive)         | AudioWorklet FFT with harmonic/percussive separation, per-band beat tracking, spectral features, reactivity metrics and packet interpolation.                  | `packages/audio-reactive/tests/`     |
+| [`gamepad-navigation`](./gamepad-navigation) | D-pad, analog-stick and TV-remote focus navigation over a DOM: directional focus by geometry, repeat timers, button mappings, range stepping, focus restore. | `packages/gamepad-navigation/tests/` |
+| [`canvas-video-exporter`](./canvas-video-exporter) | Canvas-to-video recording with `MediaRecorder` at output presets (Spotify Canvas, 9:16 Shorts, square, Full HD, 4K): cropped copies, native renderer resizing, audio. | `packages/canvas-video-exporter/tests/` |
 
 ## Working on them
 
 They are Bun workspaces (`"workspaces": ["packages/*"]` in the root
 `package.json`), linked into `node_modules`, and the app depends on them as
 `workspace:*`. It imports them by name: `audio-reactive`, `flash-guard`, and
+`gamepad-navigation`, `canvas-video-exporter`, and
 `milkdrop-toolchain/src/<module>.ts` for the toolchain's internal seams (the
 `src/*` export), which is how the renderer and editor reach the IR, the GLSL
 emitter and the WGSL generator.
@@ -60,6 +63,8 @@ loaded.
 | `flash-guard`        | [zz-plant/flash-guard](https://github.com/zz-plant/flash-guard)               |
 | `milkdrop-toolchain` | [zz-plant/milkdrop-toolchain](https://github.com/zz-plant/milkdrop-toolchain) |
 | `audio-reactive`     | [zz-plant/audio-reactive](https://github.com/zz-plant/audio-reactive)         |
+| `gamepad-navigation` | [zz-plant/gamepad-navigation](https://github.com/zz-plant/gamepad-navigation) |
+| `canvas-video-exporter` | [zz-plant/canvas-video-exporter](https://github.com/zz-plant/canvas-video-exporter) |
 
 Each mirror holds only its package directory, with the history of every
 commit that touched it. They are read-only: issues are off, Actions are off,
@@ -79,7 +84,7 @@ git push https://github.com/zz-plant/flash-guard.git split/flash-guard:refs/head
 ```
 
 The workflow needs a `PACKAGES_MIRROR_TOKEN` repository secret: a
-fine-grained personal access token with "Contents: Read and write" on the four
+fine-grained personal access token with "Contents: Read and write" on the six
 mirror repositories. Until it exists the workflow warns and stops, and the
 mirrors stay at the state they were last pushed in.
 
@@ -105,6 +110,10 @@ others cover most of it and its tuning follows Stims. It stays a workspace
 package, and its mirror stays read-only. See
 [package launch drafts](../docs/PACKAGE_LAUNCHES.md) and
 [release issue #1410](https://github.com/zz-plant/stims/issues/1410).
+`gamepad-navigation` and `canvas-video-exporter` were added on 2026-10-28,
+both marked published (their names were free on npm that day) and neither
+published yet: each needs the first `npm publish` by hand, and a mirror
+repository created before the mirror workflow can push to it.
 The versions in each `package.json` are the source of truth. The workflow
 refuses a tag whose version does not match.
 
@@ -118,14 +127,17 @@ npm only with a release.
 Every package has a static site under `site/` with a working demo on the
 real library: a corpus browser for `eel-conformance`, an in-browser video
 flash checker and the live governor for `flash-guard`, a compile playground
-for `milkdrop-toolchain`, and a live worklet demo for `audio-reactive`. They
+for `milkdrop-toolchain`, a live worklet demo for `audio-reactive`, a page of
+plain controls driven by a connected pad or the arrow keys for
+`gamepad-navigation`, and a canvas recorded to a video you can play back for
+`canvas-video-exporter`. They
 share one stylesheet (`site/styles.css`, kept identical in each package) and
 need no build tooling beyond Bun.
 
 ```bash
 bun --cwd=packages/flash-guard run site:build     # one site, into packages/flash-guard/_site/
 bun --cwd=packages/flash-guard run site:preview   # ...served on http://localhost:8787
-bun run site:packages                             # all four plus an index, into ./_site/
+bun run site:packages                             # all of them plus an index, into ./_site/
 bun run site:packages -- --serve                  # ...served on http://localhost:8788
 ```
 
@@ -141,7 +153,11 @@ layer: `src/js/core/services/flash-safety.ts` binds `flash-guard`'s controller
 to the Reduce flashing preference, the render loop's frame notification and
 the stage's brightness filter; `src/js/milkdrop/types.ts` adds the catalog,
 renderer and runtime types to the toolchain's; `spec/eel-conformance/`
-re-exports the corpus for the three-tier conformance run.
+re-exports the corpus for the three-tier conformance run;
+`src/js/frontend/engine/stage-video-exporter.ts` hands
+`canvas-video-exporter` the presented stage copy and the recording flag;
+`src/js/app.ts` turns `gamepad-navigation`'s keyboard layer on only for
+smart-TV devices.
 
 Tests follow the code. Each package's suite lives in its `tests/` and runs in
 the full gate (`bun run check:packages`); `tests/` keeps only what needs the

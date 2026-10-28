@@ -1,7 +1,7 @@
 /**
  * A gamepad as a performance surface.
  *
- * `utils/browser/gamepad-navigation.ts` already reads gamepads, but only to
+ * The `gamepad-navigation` package already reads gamepads, but only to
  * move focus and activate buttons — it drives the UI, never a preset value.
  * This turns sticks, triggers, and buttons into bindable controls.
  *

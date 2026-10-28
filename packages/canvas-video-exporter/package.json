@@ -1,0 +1,64 @@
+{
+  "name": "canvas-video-exporter",
+  "version": "0.1.0",
+  "description": "Record a canvas to video with MediaRecorder at output presets (Spotify Canvas, TikTok and Shorts 9:16, square, Full HD, 4K): cropped copies for any size, native renderer resizing where the host can, audio track composition. Pure TypeScript, no dependencies.",
+  "license": "Unlicense",
+  "type": "module",
+  "homepage": "https://github.com/zz-plant/stims/tree/main/packages/canvas-video-exporter#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zz-plant/stims.git",
+    "directory": "packages/canvas-video-exporter"
+  },
+  "bugs": {
+    "url": "https://github.com/zz-plant/stims/issues"
+  },
+  "keywords": [
+    "canvas",
+    "video",
+    "recording",
+    "mediarecorder",
+    "capturestream",
+    "webm",
+    "export",
+    "spotify-canvas",
+    "shorts",
+    "tiktok",
+    "9:16",
+    "4k",
+    "webgl",
+    "webgpu",
+    "visualizer"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "stims-source": "./src/index.ts",
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "src"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "bun test",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build",
+    "site:build": "bun run scripts/build-site.ts",
+    "site:preview": "bun run scripts/build-site.ts && bunx serve _site -l 8787"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "typescript": "^7.0.2"
+  }
+}

@@ -113,7 +113,7 @@ Stem-oriented runtime identifiers were retired: the reserved zero-filled fields 
 ## 6. Browser audio-video recording — beta, browser proof pending
 
 - [`src/js/frontend/CapturePanel.tsx`](../src/js/frontend/CapturePanel.tsx) exposes landscape and portrait recording targets.
-- [`src/js/utils/media/canvas-video-exporter.ts`](../src/js/utils/media/canvas-video-exporter.ts) records with `MediaRecorder`, can compose a cloned active audio track, and uses a native renderer-resize contract for the 4K target.
+- The [`canvas-video-exporter`](../packages/canvas-video-exporter) package records with `MediaRecorder`, can compose a cloned active audio track, and uses a native renderer-resize contract for the 4K target; [`src/js/frontend/engine/stage-video-exporter.ts`](../src/js/frontend/engine/stage-video-exporter.ts) binds it to the presented stage copy and the recording flag.
 - [`src/js/frontend/engine/video-export-runtime.ts`](../src/js/frontend/engine/video-export-runtime.ts) switches renderer, camera, and MilkDrop targets to the requested native dimensions and restores the session afterward.
 
 The implementation still depends on browser codec and allocation support. Unit coverage proves lifecycle and track composition; it does not yet prove encoded resolution, synchronization, frame pacing, or sustained 4K output in supported browsers.

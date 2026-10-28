@@ -8,6 +8,8 @@ _Current release status: actively developed. Latest release: **v1.5.0**._
 
 ### Changed
 
+- Gamepad and TV-remote focus navigation and canvas video recording are two more standalone packages, `gamepad-navigation` and `canvas-video-exporter` under `packages/`, each with its own tests and demo site, and the app imports them by name. The recorder's two app ties, the presented stage copy it records from and the recording flag, are hooks it is handed by `src/js/frontend/engine/stage-video-exporter.ts`; outside Stims it records a cropped copy painted on animation frames. Behaviour in the app is unchanged.
+
 - The toolchain is on Bun 1.4.4 (`.bun-version`, `mise.toml`, `packageManager`, `engines.bun`). Workers Builds reads its Bun version from `packageManager`, so production builds move too; Cloudflare's build images reject the compromised eMudhra intermediates, and Bun releases before 1.4.4 still trust them.
 
 ### Planned — studio first, parity as a floor

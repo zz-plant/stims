@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>canvas-video-exporter</title>
+<meta name="description" content="Record a canvas to video with MediaRecorder at output presets: Spotify Canvas, 9:16 Shorts, square, Full HD and 4K. Record the demo canvas here and play the file back; nothing is uploaded.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23b35c44'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./styles.css">
+<style>
+  .two { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; align-items: start; }
+  @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+  #stage { width: 100%; background: #000; border-radius: var(--radius); display: block; }
+  #playback { width: 100%; max-height: 420px; background: #000; border-radius: var(--radius); display: block; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin: 10px 0; }
+  .readout dl.kv dd { font-family: var(--mono); }
+  .rec { color: var(--bad); font-weight: 600; }
+  .caveat { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./">canvas-video-exporter <small>canvas to video, at the sizes platforms want</small></a>
+    <nav>
+      <a href="#record">Record</a>
+      <a href="#how">How frames reach the file</a>
+      <a href="#presets">Presets</a>
+      <a href="#api">API</a>
+      <a href="https://github.com/zz-plant/stims/tree/main/packages/canvas-video-exporter">GitHub</a>
+      <a href="https://www.npmjs.com/package/canvas-video-exporter">npm</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <h1>Record any canvas to a video file, cropped or natively rendered to the size you need.</h1>
+    <p class="lead">One class around <code>canvas.captureStream</code> and <code>MediaRecorder</code>: pick a preset, start, stop, get a Blob. A 9:16 or square preset is recorded from a copy cropped to fill the frame, or, when your renderer can draw at that size for the duration, from the renderer itself. 4K is only ever native. An audio stream is cloned onto the file. Pure TypeScript, no dependencies.</p>
+    <div class="row">
+      <span class="install"><span>npm install canvas-video-exporter</span><button type="button" class="btn" data-copy="npm install canvas-video-exporter">copy</button></span>
+      <a class="btn primary" href="#record">Record the demo</a>
+    </div>
+  </div>
+
+  <section id="record">
+    <h2>Record</h2>
+    <p class="sub">The canvas on the left is a 2D animation at 960x540. Choose a preset and record a few seconds: the file plays back on the right, in your browser. Nothing leaves the page.</p>
+    <div class="controls">
+      <label>Preset <select id="preset"></select></label>
+      <label>Seconds <input id="seconds" type="range" min="1" max="10" step="1" value="3"> <span id="secondsOut">3</span></label>
+      <button id="start" type="button" class="btn primary">Record</button>
+      <span id="status" class="muted">-</span>
+    </div>
+    <div class="two">
+      <div>
+        <canvas id="stage" width="960" height="540"></canvas>
+        <p class="caveat">Drawn with a 2D context, so the default animation-frame copy reads it back fine. A WebGPU canvas, or WebGL without <code>preserveDrawingBuffer</code>, needs <code>subscribeToFrames</code> from the render loop; see the README.</p>
+      </div>
+      <div>
+        <video id="playback" controls playsinline hidden></video>
+        <dl class="kv readout">
+          <dt>support</dt><dd id="support">-</dd>
+          <dt>recorded size</dt><dd id="size">-</dd>
+          <dt>file</dt><dd id="file">-</dd>
+          <dt>download</dt><dd><a id="download" href="#" hidden>save the file</a></dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2>How frames reach the file</h2>
+    <div class="grid">
+      <div class="card"><h3>Native</h3><p>For 4K, 9:16 and 1:1 with a <code>CanvasVideoExportRuntime</code>, the host renderer is asked to draw at the preset size (<code>beginNativeCapture</code>) and the source canvas itself is captured. Restored when the recording stops, or at once if the recorder cannot start.</p></div>
+      <div class="card"><h3>Copied</h3><p>Otherwise a copy cropped to fill the preset size is painted every frame (<code>createCanvasFrameCopy</code>) and captured. The copy is sized before the first frame, so a capture never starts at 300x150.</p></div>
+      <div class="card"><h3>Yours</h3><p><code>createFrames</code> replaces both. Stims paints its copy from the render loop's frame notification with the dimming its stage shows over the canvas baked in.</p></div>
+      <div class="card"><h3>4K is only native</h3><p>A Full HD canvas scaled up is not 4K, so without a runtime the 4K preset is refused with a reason rather than upscaled.</p></div>
+      <div class="card"><h3>Audio</h3><p>The runtime's audio stream, when it has one, is cloned track by track onto the recording; the clones are what gets stopped, never the originals.</p></div>
+      <div class="card"><h3>Hidden tabs</h3><p><code>onRecordingChange</code> reports start and end, for a host that throttles rendering in a hidden tab and must keep going while a recording runs.</p></div>
+    </div>
+  </section>
+
+  <section id="presets">
+    <h2>Presets</h2>
+    <table>
+      <thead><tr><th>Preset</th><th>Size</th><th>Aspect</th><th>Capture</th></tr></thead>
+      <tbody id="preset-table"></tbody>
+    </table>
+  </section>
+
+  <section id="api">
+    <h2>API at a glance</h2>
+    <table>
+      <tbody>
+        <tr><td><code>new CanvasVideoExporter(canvas, environment?, runtime?, hooks?)</code></td><td>The recorder. <code>getSupport()</code>, <code>startRecording(options)</code>, <code>stopRecording()</code>, <code>downloadVideo(blob, filename)</code>, <code>getRecordingStatus()</code>.</td></tr>
+        <tr><td><code>EXPORT_PRESETS</code></td><td>The table above, as data.</td></tr>
+        <tr><td><code>createCanvasFrameCopy({ getCanvas, size, subscribe })</code></td><td>The cropped copy, for a capture of your own.</td></tr>
+        <tr><td><code>CanvasVideoExportRuntime</code></td><td>What a renderer implements for native capture and audio.</td></tr>
+        <tr><td><code>CanvasVideoExporterEnvironment</code>, <code>createBrowserEnvironment()</code></td><td>The browser capabilities, replaceable under test.</td></tr>
+      </tbody>
+    </table>
+    <p>Hooks, options and the measurements behind them are in the <a href="https://github.com/zz-plant/stims/tree/main/packages/canvas-video-exporter#readme">README</a>.</p>
+  </section>
+
+  <footer>
+    <p>Extracted from <a href="https://github.com/zz-plant/stims">zz-plant/stims</a>, where it is the Record panel at <a href="https://toil.fyi">toil.fyi</a>. Sibling packages: <a href="../milkdrop-toolchain/">milkdrop-toolchain</a>, <a href="../flash-guard/">flash-guard</a>, <a href="../audio-reactive/">audio-reactive</a>, <a href="../eel-conformance/">eel-conformance</a>, <a href="../gamepad-navigation/">gamepad-navigation</a>. Public domain (Unlicense).</p>
+  </footer>
+</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

@@ -24,6 +24,8 @@ on:
           - eel-conformance
           - flash-guard
           - milkdrop-toolchain
+          - gamepad-navigation
+          - canvas-video-exporter
       dry_run:
         description: "Build and pack without publishing"
         required: false

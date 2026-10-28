@@ -32,8 +32,11 @@ export type PackageManifestEntry = {
 export const PACKAGE_MANIFEST: readonly PackageManifestEntry[] = [
   // Held 2026-10-13: Meyda and others cover most of it, and its tuning follows Stims.
   { name: 'audio-reactive', role: 'standalone', published: false },
+  // Both names were free on npm on 2026-10-07 and again on 2026-10-28.
+  { name: 'canvas-video-exporter', role: 'standalone', published: true },
   { name: 'eel-conformance', role: 'standalone', published: true },
   { name: 'flash-guard', role: 'standalone', published: true },
+  { name: 'gamepad-navigation', role: 'standalone', published: true },
   { name: 'milkdrop-toolchain', role: 'standalone', published: true },
 ];
 
