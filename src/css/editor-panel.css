@@ -113,6 +113,21 @@ html.light .stims-editor {
   border: 0;
 }
 
+/* Holds the first-edit guide and the panel. The panel's own regions decide
+   what scrolls; the host scrolls only when the viewport is too short for the
+   code's and the dock's minimum heights, and the guide scrolls away with it.
+   It lived in preset-finder.css, which loads with the preset finder, so until
+   a visitor opened the finder the host took its content's height and the
+   panel clipped the dock instead of scrolling it. */
+.stims-shell__editor-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 /* Shared micro-label: uppercase, tracked, dim. The console's only
    label voice, so sections read as instrument legends rather than headings. */
 .stims-editor__legend {
