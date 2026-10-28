@@ -11,6 +11,7 @@ import { runAgentAction, waitForAgentState } from './agent-api.ts';
 import { hasChromium, requiredBrowserTest } from './browser-availability.ts';
 import { closeQuietly } from './deadline.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
+import { openDockMenu } from './dock.ts';
 import { HEADLESS, WEBGL_RENDERER_ARGS } from './webgl-launch.ts';
 
 const TEST_PORT = 5297;
@@ -71,9 +72,7 @@ requiredBrowserTest(
         60_000,
       );
 
-      await app
-        .getByRole('button', { name: 'More actions', exact: true })
-        .click({ timeout: 30_000 });
+      await openDockMenu(app);
       await app
         .getByRole('menuitem', { name: 'Copy embed code', exact: true })
         .click();

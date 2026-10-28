@@ -8,6 +8,24 @@ import { browserTest } from '../test-helpers.ts';
 const repoRoot = new URL('../..', import.meta.url).pathname;
 
 /**
+ * A port nothing is listening on. The lab refuses a port held by another
+ * checkout's server (the refusal is the point — it would measure someone
+ * else's code), so the test cannot hardcode one: any fixed number will
+ * eventually collide with whatever else this machine runs.
+ */
+async function freePort(): Promise<number> {
+  const probe = Bun.serve({
+    hostname: '127.0.0.1',
+    port: 0,
+    fetch: () => new Response(),
+  });
+  const port = probe.port;
+  await probe.stop(true);
+  if (port === undefined) throw new Error('the OS assigned no port');
+  return port;
+}
+
+/**
  * The WebGL renderer string reported by the page. GitHub runners have no GPU,
  * so Chromium falls back to SwiftShader (and on other machines llvmpipe or
  * Mesa's software path), which renders one to two frames a second.
@@ -42,7 +60,7 @@ describe('preset flash-risk lab', () => {
         repoRoot,
         presetId: 'adamfx-2-geiss-mash-up-sphere-xibit-graffiti-warp-me-tydye3',
         outputDir,
-        port: 5199,
+        port: await freePort(),
         durationMs: 2000,
         headless: true,
       });

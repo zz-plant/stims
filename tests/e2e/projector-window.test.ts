@@ -10,11 +10,12 @@
  * than black.
  */
 import { afterAll, beforeAll, expect } from 'bun:test';
-import { chromium, type Page } from 'playwright';
+import { chromium } from 'playwright';
 import { runAgentAction, waitForAgentState } from './agent-api.ts';
 import { hasChromium, requiredBrowserTest } from './browser-availability.ts';
 import { closeQuietly } from './deadline.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
+import { openDockMenu } from './dock.ts';
 import { HEADLESS, SOFTWARE_RENDERER_ARGS } from './webgl-launch.ts';
 
 const TEST_PORT = 5204;
@@ -34,22 +35,6 @@ afterAll(async () => {
   devServer = null;
   await server?.stop();
 });
-
-/**
- * Opens the dock's More actions menu. The dock folds away after a few idle
- * seconds, and while folded its buttons leave the accessibility tree, so the
- * pointer goes over the stage first, the way a visitor brings it back.
- */
-async function openDockMenu(page: Page) {
-  const box = await page.locator('.stims-shell__stage-frame').boundingBox();
-  if (!box) throw new Error('the stage has no box to point at');
-  await page.mouse.move(box.x + box.width / 3, box.y + box.height / 3);
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page
-    .locator('[aria-label="More actions"]:not([inert]):visible')
-    .first()
-    .click({ timeout: 15000 });
-}
 
 requiredBrowserTest(
   'the dock opens a projector that plays the stage, and closes it',
