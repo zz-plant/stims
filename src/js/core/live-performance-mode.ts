@@ -33,6 +33,8 @@
  * must not depend on React state having propagated.
  */
 
+import { isRoomModeRequested } from './room-mode.ts';
+
 const STORAGE_KEY = 'stims:live-performance-mode';
 const ATTRIBUTE = 'livePerformance';
 
@@ -62,7 +64,12 @@ function hydrate() {
     // Private-mode storage denial is not a reason to fail to start.
     enabled = false;
   }
-  applyToDocument();
+  // A room display is a show nobody is running: the same three defaults are
+  // wrong for it. Turned on for the visit, not saved.
+  if (isRoomModeRequested()) enabled = true;
+  // Only ever adds the attribute: hydration runs on the first per-frame read
+  // and must not clear one another chunk or a test set first.
+  if (enabled) applyToDocument();
 }
 
 /**
@@ -73,10 +80,13 @@ function hydrate() {
  * sees the same answer.
  */
 export function isLivePerformanceModeActive(): boolean {
+  // The attribute is written by hydration. Without this a saved mode (or a
+  // room link) stayed dormant after a reload until something else, such as
+  // opening Settings, happened to hydrate the module.
+  hydrate();
   if (typeof document !== 'undefined' && document.documentElement) {
     return document.documentElement.dataset[ATTRIBUTE] === 'true';
   }
-  hydrate();
   return enabled;
 }
 

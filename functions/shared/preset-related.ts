@@ -18,7 +18,7 @@ import {
   creditedHandles,
   resolveHandleKey,
 } from '../../src/js/milkdrop/preset-handles.ts';
-import type { PresetMetaTable } from './preset-meta.ts';
+import { type PresetMetaTable, presetIndexing } from './preset-meta.ts';
 
 /** Handles past this many in a long chain get no group of their own. */
 export const MAX_RELATED_GROUPS = 3;
@@ -38,6 +38,7 @@ function indexByHandle(table: PresetMetaTable): Map<string, string[]> {
   if (!index) {
     index = new Map();
     for (const id of Object.keys(table).sort()) {
+      if (presetIndexing(table[id]).kind !== 'index') continue;
       for (const handle of creditedHandles(table[id]?.[1])) {
         const key = resolveHandleKey(handle);
         const list = index.get(key);

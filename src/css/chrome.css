@@ -200,6 +200,13 @@ html.light .stims-shell {
     line-height: 1.5;
   }
 
+  /* A URL printed for copying by hand breaks anywhere rather than widening
+     the panel. */
+  .ctl-readout--wrap {
+    overflow-wrap: anywhere;
+    user-select: all;
+  }
+
   /* ── Switch ────────────────────────────────────────────────────── */
   .ctl-switch {
     appearance: none;

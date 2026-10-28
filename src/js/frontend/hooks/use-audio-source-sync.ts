@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { isRoomModeRequested } from '../../core/room-mode.ts';
 import type { SessionRouteState } from '../contracts.ts';
 import type {
   EngineSnapshot,
@@ -6,6 +7,20 @@ import type {
 } from '../engine/milkdrop-engine-adapter.ts';
 
 const GESTURE_EVENTS = ['pointerdown', 'touchstart', 'keydown'] as const;
+
+/**
+ * Sources a link may start without a click. The demo track needs no
+ * permission. The microphone does, so only a room link (core/room-mode.ts)
+ * asks for it: a room display restarts unattended, and once the browser has
+ * granted the room's microphone the request succeeds with no prompt.
+ */
+function startsFromLink(
+  source: SessionRouteState['audioSource'],
+): source is 'demo' | 'microphone' {
+  return (
+    source === 'demo' || (source === 'microphone' && isRoomModeRequested())
+  );
+}
 
 export function useAudioSourceSync({
   engineRef,
@@ -67,7 +82,7 @@ export function useAudioSourceSync({
   useEffect(() => {
     if (
       !engineRef.current?.isMounted() ||
-      routeState.audioSource !== 'demo' ||
+      !startsFromLink(routeState.audioSource) ||
       !engineSnapshot?.runtimeReady ||
       engineSnapshot?.audioActive
     ) {
@@ -81,11 +96,16 @@ export function useAudioSourceSync({
     if (attemptedSource === routeState.audioSource) {
       return;
     }
-    setAttemptedSource(routeState.audioSource);
+    const source = routeState.audioSource;
+    setAttemptedSource(source);
 
-    void engineRef.current.setAudioSource({ source: 'demo' }).catch((error) => {
+    void engineRef.current.setAudioSource({ source }).catch((error) => {
       setStatusMessage(
-        error instanceof Error ? error.message : 'Unable to start demo audio.',
+        error instanceof Error
+          ? error.message
+          : source === 'demo'
+            ? 'Unable to start demo audio.'
+            : 'Unable to start the microphone.',
       );
       armGestureRetry();
     });

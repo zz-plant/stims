@@ -50,6 +50,7 @@ import {
   type PadActionChoice,
   PerformanceHardwareSection,
 } from './PerformanceHardwareSection.tsx';
+import { RoomDisplaySection } from './RoomDisplaySection.tsx';
 import { SyncSessionSection } from './SyncSessionSection.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
@@ -813,6 +814,8 @@ export function SettingsSheetPanel({
               </div>
             ) : null}
           </section>
+
+          <RoomDisplaySection />
 
           <SyncSessionSection />
         </div>

@@ -513,6 +513,35 @@ describe('/?preset=<id> middleware', () => {
     expect(body).toContain('&lt;script&gt;');
   });
 
+  test('withholds a preset measured to land blank from search, and only that', async () => {
+    const meta = {
+      'geiss-lit': ['Geiss - Lit', 'Geiss'],
+      'geiss-blank': ['Geiss - Blank', 'Geiss', undefined, undefined, NOINDEX],
+      'geiss-other': ['Geiss - Other', 'Geiss'],
+    };
+
+    await onRequest(makeContext('https://toil.fyi/?preset=geiss-blank', meta));
+    expect(applyHandlers('meta[name="robots"]').attributes.get('content')).toBe(
+      'noindex,follow',
+    );
+    // The page still works and still links onward, to offered siblings only.
+    const blankBody = applyHandlers(NOSCRIPT_FALLBACK_SELECTOR).appended.join(
+      '',
+    );
+    expect(blankBody).toContain('href="/?preset=geiss-lit"');
+
+    recordedHandlers = [];
+    __resetPresetMetaForTest();
+    await onRequest(makeContext('https://toil.fyi/?preset=geiss-lit', meta));
+    expect(applyHandlers('meta[name="robots"]').attributes.get('content')).toBe(
+      'index,follow',
+    );
+    // No offered page sends a crawler to the withheld one.
+    const litBody = applyHandlers(NOSCRIPT_FALLBACK_SELECTOR).appended.join('');
+    expect(litBody).toContain('href="/?preset=geiss-other"');
+    expect(litBody).not.toContain('geiss-blank');
+  });
+
   test('leaves unknown preset ids with the default metadata', async () => {
     await onRequest(
       makeContext('https://toil.fyi/?preset=unknown-id', {

@@ -147,6 +147,7 @@
     "lab:preset-map": "bun run scripts/preset-lab-map.ts",
     "lab:profile": "bun run scripts/preset-lab-profile.ts",
     "lab:reactivity": "bun run scripts/preset-lab-reactivity.ts",
+    "lab:search-landing": "bun run scripts/preset-lab-search-landing.ts",
     "lab:remix-pairs": "bun run scripts/preset-lab-remix-pairs.ts",
     "lab:replay": "bun run scripts/preset-lab-replay.ts",
     "lab:visual": "bun run scripts/preset-lab-visual.ts",
