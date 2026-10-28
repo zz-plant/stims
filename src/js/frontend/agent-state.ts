@@ -9,7 +9,8 @@
  *   → run() resolves after the next post-commit notification, and
  *   waitFor(predicate) replaces sleep-and-repoll loops entirely.
  * - Labels change; ids don't → run(id, params) executes command-palette
- *   actions plus targeted verbs (select-preset, set-field) by stable id.
+ *   actions plus targeted verbs (select-preset, set-field, edit-source) by
+ *   stable id.
  * - "Is anything actually rendering?" needs pixels → captureStats() reuses
  *   the visual-search frame-stats readback (on demand only: reading back a
  *   WebGPU canvas can stall the main thread — never call it per-frame).
@@ -33,7 +34,7 @@ import {
 } from '../core/services/visual-embedding.ts';
 import type { MilkdropAppliedShaderExecution } from '../milkdrop/runtime-types.ts';
 import { subscribeVariables } from '../milkdrop/variable-probe.ts';
-import type { AgentTelemetry } from './agent-bridge.ts';
+import type { AgentEditorState, AgentTelemetry } from './agent-bridge.ts';
 import type { CommandAction } from './command-palette-registry.ts';
 
 const STATUS_LOG_LIMIT = 20;
@@ -429,6 +430,12 @@ export interface AgentRunResult {
    * changed nothing observable.
    */
   events?: AgentEvent[];
+  /**
+   * `edit-source` only: the editor once the edit compiled. `ok: true` means
+   * the buffer took the text; `errorCount > 0` means it did not compile and
+   * the stage kept the last good version.
+   */
+  editor?: AgentEditorState;
 }
 
 /** One entry of `listActions()`. Targeted verbs carry `params`. */
@@ -459,6 +466,16 @@ export const AGENT_VERBS: readonly AgentActionInfo[] = [
     params: {
       key: 'string: a built-in, q1–q32, or user variable name. Not validated against the preset: ok means it was written, not that the preset reads it.',
       value: 'number (finite). Requires engineReady.',
+    },
+  },
+  {
+    id: 'edit-source',
+    label: 'Edit the preset code the way typing in the editor does',
+    params: {
+      source:
+        'string: the whole new preset source. Give this or append. Requires engineReady.',
+      append:
+        'string: text added on a new line at the end of the current source. The edit marks the session dirty and is saved as a draft like a typed one; the result carries editor {dirty, errorCount, …}.',
     },
   },
   {
@@ -556,7 +573,8 @@ export interface AgentGlobal {
   /**
    * Run a command-palette action — or a targeted verb — by stable id.
    * Targeted verbs: 'select-preset' {id}, 'set-field' {key, value},
-   * 'crossfade' {position}, 'pin-parameter' {field},
+   * 'edit-source' {source} or {append}, 'crossfade' {position},
+   * 'pin-parameter' {field},
    * 'unpin-parameter' {field}.
    * Resolves after the next state commit (or a 1s settle window).
    */
@@ -623,6 +641,14 @@ export interface AgentStateProviders {
   /** Ids in the loaded catalog, for did-you-mean suggestions. */
   getPresetIds: () => readonly string[];
   setField: (key: string, value: number) => void;
+  /** The editor buffer's current text; null before the engine mounts. */
+  getEditorSource: () => string | null;
+  /**
+   * Commit source to the editor session — the path a typed edit takes, so it
+   * marks the session dirty and saves a draft — and resolve once it compiled.
+   * Rejects when a newer edit or preset load superseded it.
+   */
+  applyEditorSource: (source: string) => Promise<AgentEditorState | null>;
   /** Moves a hand-driven crossfade, 0 (outgoing) to 1 (incoming). */
   setCrossfade: (position: number) => void;
   /** Pin/unpin a parameter on the performance surface. Returns false for a
@@ -657,6 +683,59 @@ export function installAgentStateGlobal(
       tempo: {
         bpm: providers.getTempoBpm?.() ?? null,
         source: getManualTempoSource() ?? 'audio',
+      },
+    };
+  };
+
+  const editSource = async (
+    params?: Record<string, unknown>,
+  ): Promise<{ failure: AgentRunResult } | { editor: AgentEditorState }> => {
+    const source = params?.source;
+    const append = params?.append;
+    if (
+      (typeof source === 'string') === (typeof append === 'string') ||
+      (typeof append === 'string' && !append)
+    ) {
+      return {
+        failure: {
+          ok: false,
+          error:
+            'edit-source requires exactly one of params.source (the whole preset, string) or params.append (non-empty string).',
+        },
+      };
+    }
+    const current = providers.getSnapshot().engineReady
+      ? providers.getEditorSource()
+      : null;
+    if (current === null) {
+      return {
+        failure: {
+          ok: false,
+          error:
+            'edit-source cannot run yet: the engine has not mounted (engineReady is false). Call waitFor((s) => s.engineReady) first.',
+        },
+      };
+    }
+    const next =
+      typeof source === 'string'
+        ? source
+        : `${current}${current.endsWith('\n') ? '' : '\n'}${append}`;
+    try {
+      const editor = await providers.applyEditorSource(next);
+      if (editor) return { editor };
+    } catch {
+      return {
+        failure: {
+          ok: false,
+          error:
+            'edit-source was superseded: a newer edit or a preset load replaced the source before it compiled.',
+        },
+      };
+    }
+    return {
+      failure: {
+        ok: false,
+        error: 'edit-source: the editor session is not available.',
       },
     };
   };
@@ -775,7 +854,7 @@ export function installAgentStateGlobal(
           suggestions.length > 0
             ? ` Did you mean ${suggestions.map((s) => `"${s}"`).join(', ')}?`
             : ''
-        } listActions() returns every palette action and the targeted verbs (select-preset, set-field, crossfade, pin-parameter, unpin-parameter).`,
+        } listActions() returns every palette action and the targeted verbs (${AGENT_VERBS.map((verb) => verb.id).join(', ')}).`,
         ...(suggestions.length > 0 ? { suggestions } : {}),
       };
     }
@@ -807,6 +886,27 @@ export function installAgentStateGlobal(
     getEvents: (sinceSeq = 0) => events.filter((e) => e.seq > sinceSeq),
     run: async (actionId, params) => {
       const seqBefore = eventSeq;
+      if (actionId === 'edit-source') {
+        // The compile can outlast the settle window, so a commit that landed
+        // while it ran counts, and the window opens only once it is done.
+        let committedDuringEdit = false;
+        const noteCommit = () => {
+          committedDuringEdit = true;
+        };
+        commitListeners.add(noteCommit);
+        const edited = await editSource(params).finally(() =>
+          commitListeners.delete(noteCommit),
+        );
+        if ('failure' in edited) return edited.failure;
+        const settled =
+          committedDuringEdit || (await nextCommit(RUN_SETTLE_TIMEOUT_MS));
+        return {
+          ok: true,
+          settled,
+          events: events.filter((event) => event.seq > seqBefore),
+          editor: edited.editor,
+        };
+      }
       const settlePromise = nextCommit(RUN_SETTLE_TIMEOUT_MS);
       const failure = runAction(actionId, params);
       if (failure) return failure;

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gamepad-navigation</title>
+<meta name="description" content="D-pad, analog-stick and TV-remote focus navigation for DOM interfaces. Try it with a connected controller, or with the arrow keys as a remote.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%233b6ea5'/%3E%3Cpath d='M13 7h6v6h6v6h-6v6h-6v-6H7v-6h6z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./styles.css">
+<style>
+  .pad { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 12px 0; }
+  .pad .btn { min-height: 48px; }
+  .pad .wide { grid-column: span 2; }
+  .pad label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  .pad input[type="range"], .pad select, .pad input[type="text"] { width: 100%; }
+  body.gamepad-active :focus { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .readout dl.kv dd { font-family: var(--mono); }
+  .state { display: inline-block; min-width: 1.5em; }
+  details.pad-details { grid-column: span 2; }
+  @media (max-width: 640px) { .pad { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./">gamepad-navigation <small>focus navigation for controllers and TV remotes</small></a>
+    <nav>
+      <a href="#try">Try it</a>
+      <a href="#mapping">Mapping</a>
+      <a href="#api">API</a>
+      <a href="https://github.com/zz-plant/stims/tree/main/packages/gamepad-navigation">GitHub</a>
+      <a href="https://www.npmjs.com/package/gamepad-navigation">npm</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <h1>Move focus with a D-pad, a stick or a remote, over the DOM you already have.</h1>
+    <p class="lead">One call polls the connected gamepad and turns it into focus: directions go to the nearest focusable element by geometry, A activates, B sends Escape, the bumpers step in document order, and a focused slider is nudged by its step. The keyboard can be treated as a TV remote, with Tizen and webOS key codes mapped, where that is what the keyboard is. Pure TypeScript, no dependencies.</p>
+    <div class="row">
+      <span class="install"><span>npm install gamepad-navigation</span><button type="button" class="btn" data-copy="npm install gamepad-navigation">copy</button></span>
+      <a class="btn primary" href="#try">Try it</a>
+    </div>
+  </div>
+
+  <section id="try">
+    <h2>Try it</h2>
+    <p class="sub">The controls below are plain HTML. <code>initGamepadNavigation</code> is running on this page from the built library. Connect a controller and press a button, or turn on the keyboard layer and use the arrow keys, Enter and Backspace.</p>
+    <div class="controls">
+      <label><input id="keyboard" type="checkbox"> Treat the keyboard as a remote</label>
+      <span id="pad-state" class="muted">No gamepad connected.</span>
+    </div>
+    <div class="pad" id="pad">
+      <button type="button" class="btn" id="b-play">Play</button>
+      <button type="button" class="btn" id="b-next">Next</button>
+      <button type="button" class="btn" id="b-prev">Previous</button>
+      <button type="button" class="btn" id="b-fav">Favourite</button>
+      <label class="wide">Volume <input id="volume" type="range" min="0" max="100" step="5" value="40"></label>
+      <label class="wide">Quality <select id="quality"><option>Auto</option><option>High</option><option>Low</option></select></label>
+      <label class="wide">Search <input id="search" type="text" placeholder="Arrows move the caret here, not focus"></label>
+      <details class="pad-details"><summary>Advanced</summary><p class="muted">A disclosure opened by A or Enter on its summary.</p></details>
+      <a class="btn" href="#api" id="a-docs">Read the API</a>
+      <button type="button" class="btn" id="b-dialog">Open a dialog</button>
+    </div>
+    <dialog id="dialog">
+      <p>Focus stays inside an open dialog. B or Backspace closes it.</p>
+      <div class="row"><button type="button" class="btn" id="d-ok">OK</button><button type="button" class="btn" id="d-cancel">Cancel</button></div>
+    </dialog>
+    <div class="readout">
+      <dl class="kv">
+        <dt>focused</dt><dd id="focused">-</dd>
+        <dt>last event</dt><dd id="event">-</dd>
+        <dt>body.gamepad-active</dt><dd id="active" class="state">no</dd>
+        <dt>volume</dt><dd id="volume-out">40</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="mapping">
+    <h2>Mapping</h2>
+    <table>
+      <thead><tr><th>Input</th><th>Does</th></tr></thead>
+      <tbody>
+        <tr><td>D-pad, left stick past <code>axisThreshold</code></td><td>Focus the nearest focusable element in that direction. Candidates are scored by distance along the axis plus 0.35 of the distance across it; none in that direction, and focus wraps in document order.</td></tr>
+        <tr><td>Left or right on a focused range input</td><td>Add or subtract its <code>step</code>, clamped to <code>min</code> and <code>max</code>, and dispatch <code>input</code>.</td></tr>
+        <tr><td>Held direction</td><td>Repeats after <code>initialRepeatDelayMs</code>, then every <code>repeatIntervalMs</code>.</td></tr>
+        <tr><td>A (button 0)</td><td>Click the focused element; with nothing focused, focus the first one.</td></tr>
+        <tr><td>B (button 1)</td><td>Dispatch an <code>Escape</code> keydown on the document.</td></tr>
+        <tr><td>LB, RB (buttons 4, 5)</td><td>Previous and next in document order.</td></tr>
+        <tr><td>Open <code>dialog</code> or <code>[role=dialog][aria-modal]</code></td><td>Bounds every move; focus does not leave it.</td></tr>
+        <tr><td>Text input focused</td><td>Directions are left to the caret; only Escape is handled from the keyboard.</td></tr>
+        <tr><td>Keyboard, with <code>keyboardNavigation</code></td><td>Arrows move, Enter/OK/Select activate, Backspace/Escape/Back/Exit go back, including the legacy Tizen and webOS key codes (10009, 461, 23).</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="api">
+    <h2>API at a glance</h2>
+    <table>
+      <tbody>
+        <tr><td><code>initGamepadNavigation(options?)</code></td><td>Installs the listeners and returns the function that removes them.</td></tr>
+        <tr><td><code>shouldHandleBackKey(event)</code>, <code>shouldHandleEnterLikeKey(event)</code></td><td>The remote key classifiers, for a handler of your own.</td></tr>
+        <tr><td><code>shouldDispatchEscapeFallback(originKey)</code></td><td>Whether a back key should re-dispatch Escape (not when it already was one).</td></tr>
+        <tr><td><code>DEFAULT_FOCUSABLE_SELECTOR</code></td><td>The default focusable set, the browser's Tab order plus <code>details &gt; summary</code>.</td></tr>
+      </tbody>
+    </table>
+    <p>Options and the measurements behind them are in the <a href="https://github.com/zz-plant/stims/tree/main/packages/gamepad-navigation#readme">README</a>.</p>
+  </section>
+
+  <footer>
+    <p>Extracted from <a href="https://github.com/zz-plant/stims">zz-plant/stims</a>, where it drives <a href="https://toil.fyi">toil.fyi</a> from a couch. Sibling packages: <a href="../milkdrop-toolchain/">milkdrop-toolchain</a>, <a href="../flash-guard/">flash-guard</a>, <a href="../audio-reactive/">audio-reactive</a>, <a href="../eel-conformance/">eel-conformance</a>, <a href="../canvas-video-exporter/">canvas-video-exporter</a>. Public domain (Unlicense).</p>
+  </footer>
+</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

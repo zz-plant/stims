@@ -25,7 +25,7 @@
 
 import { test } from 'bun:test';
 import { existsSync } from 'node:fs';
-import { chromium } from 'playwright';
+import { type BrowserType, chromium } from 'playwright';
 import { HEADLESS_ENVIRONMENT } from './headless-environment.ts';
 
 export const chromiumExecutablePath = chromium.executablePath();
@@ -33,22 +33,33 @@ export const hasChromium = existsSync(chromiumExecutablePath);
 
 const isCi = Boolean(process.env.CI);
 
-const MISSING_BROWSER_REASON =
-  `Playwright's Chromium is not installed at ${chromiumExecutablePath}.\n` +
-  'This suite cannot verify anything without it, and a skipped run must not ' +
-  'be mistaken for a passing one.\n' +
-  'If the image already ships a different build — as cloud agent containers ' +
-  'do — run `bun run setup:browsers` to link it into the layout this ' +
-  'Playwright expects. Otherwise install it with ' +
-  '`bunx playwright install chromium`.';
+/** Whether Playwright's own build of `browser` is installed. */
+export function hasBrowser(browser: BrowserType): boolean {
+  return existsSync(browser.executablePath());
+}
 
-let warned = false;
+function missingBrowserReason(browser: BrowserType): string {
+  const name = browser.name();
+  return (
+    `Playwright's ${name} is not installed at ${browser.executablePath()}.\n` +
+    'This suite cannot verify anything without it, and a skipped run must not ' +
+    'be mistaken for a passing one.\n' +
+    (name === 'chromium'
+      ? 'If the image already ships a different build — as cloud agent ' +
+        'containers do — run `bun run setup:browsers` to link it into the ' +
+        'layout this Playwright expects. Otherwise install it with '
+      : 'Install it with ') +
+    `\`bunx playwright install ${name}\`.`
+  );
+}
 
-function warnOnce() {
-  if (warned) return;
-  warned = true;
+const warned = new Set<string>();
+
+function warnOnce(browser: BrowserType) {
+  if (warned.has(browser.name())) return;
+  warned.add(browser.name());
   console.warn(
-    `\n[e2e] SKIPPING browser tests — no Chromium.\n${MISSING_BROWSER_REASON}\n`,
+    `\n[e2e] SKIPPING browser tests — no ${browser.name()}.\n${missingBrowserReason(browser)}\n`,
   );
 }
 
@@ -65,17 +76,30 @@ export function requiredBrowserTest(
   body: () => void | Promise<void>,
   options?: TestOptions,
 ) {
-  if (hasChromium) {
+  return requiredBrowserTestOn(chromium, name, body, options);
+}
+
+/**
+ * `requiredBrowserTest` for a browser other than Chromium (the cross-browser
+ * smoke runs on Playwright's `firefox` and `webkit`).
+ */
+export function requiredBrowserTestOn(
+  browser: BrowserType,
+  name: string,
+  body: () => void | Promise<void>,
+  options?: TestOptions,
+) {
+  if (hasBrowser(browser)) {
     return test(name, body, options);
   }
   if (isCi) {
     return test(name, () => {
       throw new Error(
-        `Cannot run "${name}" — no browser available.\n${MISSING_BROWSER_REASON}`,
+        `Cannot run "${name}" — no browser available.\n${missingBrowserReason(browser)}`,
       );
     });
   }
-  warnOnce();
+  warnOnce(browser);
   return test.skip(name, body, options);
 }
 

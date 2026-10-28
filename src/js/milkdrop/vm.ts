@@ -21,6 +21,7 @@ import {
   compileMilkdropProgram,
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,
+  type MilkdropLoopBudget,
   type MilkdropProgramOptions,
 } from 'milkdrop-toolchain/src/expression-jit.ts';
 import { normalizeProgramAssignmentTarget } from 'milkdrop-toolchain/src/field-normalization.ts';
@@ -105,6 +106,15 @@ function resolveGlobalBuffer(preset: MilkdropCompiledPreset) {
 const VM_PROGRAM_OPTIONS: MilkdropProgramOptions = { rng: 'inline' };
 
 /**
+ * Loop iterations one frame's programs may run between them: per-frame,
+ * every per-pixel vertex, every wave sample and shape instance. Each call is
+ * also held to the toolchain's per-call cap. Without a shared budget a
+ * `while(1)` in per-pixel code ran that cap once per mesh vertex, which is
+ * seconds of main-thread work every frame from one opened link.
+ */
+const FRAME_LOOP_ITERATION_BUDGET = 2_097_152;
+
+/**
  * Fields that close over their own VM instance — the variables proxy and the
  * callbacks bound for the frame builders. handOffRunningPreset swaps every
  * other field between two VMs; these must stay put, or one VM's frame would
@@ -154,6 +164,15 @@ class MilkdropPresetVM implements MilkdropVM {
    * one sequence. Swapped wholesale by hand-off, like every other field.
    */
   private randomCell: EelRngCell = { s: 1 };
+  /**
+   * Shared by every program call in a frame (see FRAME_LOOP_ITERATION_BUDGET)
+   * and refilled when a step starts. The init programs run once per preset,
+   * so reset() lifts the shared limit for them and only the per-call cap
+   * applies there, as before.
+   */
+  private readonly loopBudget: MilkdropLoopBudget = {
+    remaining: Number.POSITIVE_INFINITY,
+  };
   private readonly megabuf = new Float32Array(MILKDROP_MEGABUF_SIZE);
   private gmegabuf: Float32Array = EMPTY_BUFFER;
   private detailScale = 1;
@@ -565,6 +584,7 @@ class MilkdropPresetVM implements MilkdropVM {
     this.presetProgress = 0;
 
     const zeroSignals = defaultSignalEnv();
+    this.loopBudget.remaining = Number.POSITIVE_INFINITY;
     this.runProgram(this.preset.ir.programs.init, this.createEnv(zeroSignals));
 
     // MilkDrop reloads every built-in per-frame variable before running
@@ -802,6 +822,7 @@ class MilkdropPresetVM implements MilkdropVM {
       this.megabuf,
       this.gmegabuf,
       this.randomCell,
+      this.loopBudget,
     );
   }
 
@@ -870,6 +891,7 @@ class MilkdropPresetVM implements MilkdropVM {
   async stepAsync(
     signals: MilkdropRuntimeSignals,
   ): Promise<MilkdropFrameState> {
+    this.loopBudget.remaining = FRAME_LOOP_ITERATION_BUDGET;
     this.advancePresetClock(signals.time);
     this.restorePerFrameBaseValues();
 
@@ -899,6 +921,7 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState {
+    this.loopBudget.remaining = FRAME_LOOP_ITERATION_BUDGET;
     this.advancePresetClock(signals.time);
     this.restorePerFrameBaseValues();
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));

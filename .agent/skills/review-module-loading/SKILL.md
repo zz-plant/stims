@@ -6,7 +6,7 @@ description: "Review changes to app boot, lazy module loading, catalog resolutio
 
 # Review App Boot and Module Loading
 
-Use this skill when reviewing or authoring changes to [`src/js/app.ts`](../../../src/js/app.ts), [`src/js/frontend/load-status.ts`](../../../src/js/frontend/load-status.ts), [`src/js/frontend/use-lazy-factory.ts`](../../../src/js/frontend/use-lazy-factory.ts), `src/js/milkdrop/catalog-store*.ts`, [`index.html`](../../../index.html), or [`src/js/utils/browser/gamepad-navigation.ts`](../../../src/js/utils/browser/gamepad-navigation.ts).
+Use this skill when reviewing or authoring changes to [`src/js/app.ts`](../../../src/js/app.ts), [`src/js/frontend/load-status.ts`](../../../src/js/frontend/load-status.ts), [`src/js/frontend/use-lazy-factory.ts`](../../../src/js/frontend/use-lazy-factory.ts), `src/js/milkdrop/catalog-store*.ts`, [`index.html`](../../../index.html), or [`packages/gamepad-navigation/src/index.ts`](../../../packages/gamepad-navigation/src/index.ts).
 
 ## Why this exists
 

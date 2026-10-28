@@ -1,0 +1,7 @@
+# Bun reads the bunfig.toml of the working directory, so running `bun test`
+# here does not load the repository root's test preload (fake WebGPU, the
+# app's state resets). The only setup is a happy-dom window: the library
+# moves DOM focus, so its tests need a document.
+[test]
+root = "./tests"
+preload = ["./tests/setup.ts"]

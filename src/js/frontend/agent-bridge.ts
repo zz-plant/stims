@@ -1,6 +1,8 @@
 // Agent Bridge & Telemetry System for toil.fyi
 // Handles iframe postMessage communication & quantitative telemetry reporting
 
+import { parseURLParams } from '../core/url-params.ts';
+
 /**
  * Adaptive-quality diagnostics, surfaced so on-device QA can see *why* the
  * renderer picked a resolution. Without this the only visible symptom of a
@@ -302,23 +304,42 @@ type ReplyTarget = {
   postMessage: (message: unknown, targetOrigin: string) => void;
 };
 
+// Public embeds delegate visual controls, not device access, clipboard writes,
+// or session sharing. New palette actions stay private until reviewed here.
+const EMBED_ACTIONS: readonly string[] = [
+  'next-preset',
+  'previous-preset',
+  'select-preset',
+  'set-field',
+  'crossfade',
+  'pin-parameter',
+  'unpin-parameter',
+  'toggle-preset-lock',
+  'toggle-autoplay',
+  'toggle-transition-mode',
+  'transition-cut',
+  'transition-1s',
+  'transition-2.5s',
+  'transition-5s',
+  'toggle-blackout',
+];
+
 /**
- * Replies go to whoever sent the command: an embedding page, or a script
- * posting to this window itself (which is how Playwright and `bun run ctl`
- * talk to it, and which never heard back while replies only went to the
- * parent). A sender-less event falls back to the parent frame.
+ * Same-origin tools retain the full API. An external page receives only the
+ * embed capabilities, and only as the direct parent of an explicit embed.
+ * Opener, sibling, sender-less and opaque-origin messages have no authority.
  */
 function replyTargetOf(event: MessageEvent): ReplyTarget | null {
   const source = event.source as Partial<ReplyTarget> | null;
-  if (source && typeof source.postMessage === 'function') {
-    return source as ReplyTarget;
-  }
+  if (!source || typeof source.postMessage !== 'function') return null;
+  if (!event.origin || event.origin === 'null') return null;
+  if (event.origin === window.location.origin) return source as ReplyTarget;
   if (
-    typeof window !== 'undefined' &&
-    window.parent &&
-    window.parent !== window
+    window.parent !== window &&
+    event.source === window.parent &&
+    parseURLParams().routing.previewMode
   ) {
-    return window.parent;
+    return source as ReplyTarget;
   }
   return null;
 }
@@ -365,13 +386,15 @@ export function initAgentBridge(callbacks?: AgentBridgeCallbacks): () => void {
     }
 
     const target = replyTargetOf(event);
+    if (!target) return;
+    const externalEmbed = event.origin !== window.location.origin;
     const rawRequestId: unknown = (event.data as { requestId?: unknown })
       .requestId;
     const requestId = isRequestId(rawRequestId) ? rawRequestId : undefined;
     const send = (payload: Record<string, unknown>) => {
       target?.postMessage(
         requestId === undefined ? payload : { ...payload, requestId },
-        '*',
+        event.origin,
       );
     };
     const reply = (
@@ -550,6 +573,14 @@ export function initAgentBridge(callbacks?: AgentBridgeCallbacks): () => void {
             Array.isArray(params))
         ) {
           refuse('run', 'params must be an object when given.', { id });
+          break;
+        }
+        if (externalEmbed && !EMBED_ACTIONS.includes(id)) {
+          refuse(
+            'run',
+            'This action is not available to embedding pages. Use toil:set_audio for demo or microphone audio; other device and sharing controls require the viewer.',
+            { id },
+          );
           break;
         }
         const runAction = callbacks?.runAction;

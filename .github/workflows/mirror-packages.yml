@@ -11,7 +11,7 @@ name: Mirror packages
 #
 # Pushing to another repository needs a token: a PACKAGES_MIRROR_TOKEN secret
 # holding a fine-grained personal access token with "Contents: Read and
-# write" on the four mirror repositories. Without it the job says so and
+# write" on the six mirror repositories. Without it the job says so and
 # stops; nothing else depends on it.
 
 on:
@@ -39,6 +39,8 @@ jobs:
           - flash-guard
           - milkdrop-toolchain
           - audio-reactive
+          - gamepad-navigation
+          - canvas-video-exporter
     steps:
       - name: Checkout
         uses: actions/checkout@v7

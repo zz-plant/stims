@@ -40,6 +40,7 @@ function makeProviders(overrides: Partial<AgentCoreSnapshot> = {}) {
   const calls = {
     selectPreset: [] as string[],
     setField: [] as Array<[string, number]>,
+    applyEditorSource: [] as string[],
   };
   const providers: AgentStateProviders = {
     getSnapshot: () => ({ ...CORE, ...overrides }),
@@ -59,6 +60,23 @@ function makeProviders(overrides: Partial<AgentCoreSnapshot> = {}) {
           : null,
     getPresetIds: () => CATALOG,
     setField: (key, value) => calls.setField.push([key, value]),
+    getEditorSource: () => 'zoom=1\nrot=0',
+    applyEditorSource: async (source) => {
+      calls.applyEditorSource.push(source);
+      if (source.includes('superseded')) throw new Error('superseded');
+      const errorCount = source.includes('((') ? 1 : 0;
+      return {
+        presetId: 'preset-a',
+        title: 'Preset A',
+        dirty: true,
+        errorCount,
+        warningCount: 0,
+        diagnostics: [],
+        renderingFallback: errorCount > 0,
+        renderedTitle: 'Preset A',
+        sourceLength: source.length,
+      };
+    },
     setCrossfade: () => {},
     pinParameter: () => true,
     unpinParameter: () => true,
@@ -132,6 +150,54 @@ describe('run(): honest results for the targeted verbs', () => {
     const result = await agent.run('set-field', { key: 'q7', value: 0.5 });
     expect(result.ok).toBe(true);
     expect(calls.setField).toEqual([['q7', 0.5]]);
+  });
+});
+
+describe('run(): edit-source', () => {
+  test('append adds a line to the current buffer and returns the editor state', async () => {
+    const { agent, calls } = install();
+    const result = await agent.run('edit-source', { append: 'zoom=1.2' });
+    expect(result.ok).toBe(true);
+    expect(calls.applyEditorSource).toEqual(['zoom=1\nrot=0\nzoom=1.2']);
+    expect(result.editor).toMatchObject({ dirty: true, errorCount: 0 });
+  });
+
+  test('source replaces the buffer, and a compile error is reported, not hidden', async () => {
+    const { agent, calls } = install();
+    const result = await agent.run('edit-source', { source: 'zoom=((' });
+    expect(result.ok).toBe(true);
+    expect(calls.applyEditorSource).toEqual(['zoom=((']);
+    expect(result.editor?.errorCount).toBe(1);
+  });
+
+  test('needs exactly one of source and append', async () => {
+    const { agent, calls } = install();
+    for (const params of [
+      {},
+      { source: 'a', append: 'b' },
+      { append: '' },
+      { source: 3 },
+    ]) {
+      const result = await agent.run('edit-source', params);
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('exactly one');
+    }
+    expect(calls.applyEditorSource).toEqual([]);
+  });
+
+  test('before the engine mounts it fails instead of editing nothing', async () => {
+    const { agent, calls } = install({ engineReady: false });
+    const result = await agent.run('edit-source', { append: 'zoom=1.2' });
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('engineReady');
+    expect(calls.applyEditorSource).toEqual([]);
+  });
+
+  test('a superseded edit is a failure, not a clean compile', async () => {
+    const { agent } = install();
+    const result = await agent.run('edit-source', { source: 'superseded' });
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('superseded');
   });
 });
 
@@ -265,6 +331,7 @@ describe('listActions()', () => {
     for (const verb of [
       'select-preset',
       'set-field',
+      'edit-source',
       'crossfade',
       'pin-parameter',
       'unpin-parameter',
@@ -279,6 +346,9 @@ describe('listActions()', () => {
     );
     expect(list.find((a) => a.id === 'set-field')?.params).toHaveProperty(
       'value',
+    );
+    expect(list.find((a) => a.id === 'edit-source')?.params).toHaveProperty(
+      'append',
     );
   });
 });

@@ -64,6 +64,11 @@
       }
     },
     {
+      "includes": ["packages/*/site/**"],
+      "formatter": { "enabled": false },
+      "linter": { "enabled": false }
+    },
+    {
       "includes": ["performance/index.html"],
       "formatter": {
         "enabled": false

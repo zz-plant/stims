@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { deflateSync } from 'fflate';
 import {
   buildCanonicalUrl,
   buildPresetCodeHash,
@@ -431,4 +432,35 @@ describe('frontend url state', () => {
     expect(decodePresetCodeFromHash('#code=%2Fw%3D%3D')).toBe('ÿ');
     expect(decodePresetCodeFromHash('#code=%%%')).toBeNull();
   });
+
+  test('refuses a compressed link that inflates past the source cap', () => {
+    // 2 MiB of one byte deflates to about 2 KB: well inside the link budget,
+    // so only the cap on decoded size stops it.
+    const hash = compressedHash(new Uint8Array(2 << 20).fill(65));
+    expect(hash.length).toBeLessThan(MAX_REMIX_URL_LENGTH);
+    expect(decodePresetCodeFromHash(hash)).toBeNull();
+  });
+
+  test('refuses a compressed link longer than any link the app writes', () => {
+    // Under the source cap once decoded, so only the input-length check
+    // stops it: that check is what bounds inflate time, which keeps growing
+    // with input after the output buffer is full.
+    const bytes = new TextEncoder().encode(incompressibleDraft(3000));
+    expect(bytes.length).toBeLessThan(1 << 20);
+    const hash = compressedHash(bytes);
+    expect(hash.length).toBeGreaterThan(MAX_REMIX_URL_LENGTH);
+    expect(decodePresetCodeFromHash(hash)).toBeNull();
+  });
 });
+
+/** A `#code=z1~` hash for raw bytes, bypassing the builder's budget. */
+function compressedHash(bytes: Uint8Array): string {
+  const compressed = deflateSync(bytes);
+  let binary = '';
+  for (const byte of compressed) binary += String.fromCharCode(byte);
+  const base64Url = btoa(binary)
+    .replace(/\+/gu, '-')
+    .replace(/\//gu, '_')
+    .replace(/=+$/u, '');
+  return `#code=${encodeURIComponent(`z1~${base64Url}`)}`;
+}

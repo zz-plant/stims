@@ -1,5 +1,6 @@
-import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
+import { deflateSync, strFromU8, strToU8 } from 'fflate';
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
+import { boundedInflate } from '../utils/bounded-inflate.ts';
 
 export const PRESET_SETS_STORAGE_KEY = 'stims:preset-sets:v1';
 export const MAX_PRESETS_PER_SET = 50;
@@ -138,22 +139,11 @@ export function encodePresetSetPayload(
 }
 
 /**
- * Inflates DEFLATE data with a hard cap on decoded size, enforced during
- * decompression rather than after. `set` comes from an untrusted shared URL,
- * and a high-ratio DEFLATE payload can expand far past MAX_DECODED_SET_BYTES
- * before a post-inflation length check runs. fflate's `out` option writes into
- * a caller-provided buffer and never grows it, so the full expanded form is
- * never allocated: output past the cap is truncated to the cap, and the
- * returned length exceeding the cap is how truncation is detected.
+ * Longest compressed set payload accepted. Deflate adds at most a few bytes of
+ * block framing to input it cannot shrink, so a set that decodes within
+ * MAX_DECODED_SET_BYTES never encodes longer than this.
  */
-function boundedInflate(
-  bytes: Uint8Array,
-  maxBytes: number,
-): Uint8Array | null {
-  const cap = new Uint8Array(maxBytes + 1);
-  const decompressed = inflateSync(bytes, { out: cap });
-  return decompressed.length > maxBytes ? null : decompressed;
-}
+const MAX_ENCODED_SET_BYTES = MAX_DECODED_SET_BYTES + 64;
 
 export function decodePresetSetPayload(raw: string): PresetSetDecodeResult {
   if (!raw || typeof raw !== 'string') {
@@ -167,13 +157,13 @@ export function decodePresetSetPayload(raw: string): PresetSetDecodeResult {
   try {
     const base64 = base64UrlToBase64(payloadStr);
     const bytes = base64ToBytes(base64);
-    // Bound during decompression, not after: `set` comes from an untrusted
-    // shared URL, and a high-ratio DEFLATE payload can expand far past
-    // MAX_DECODED_SET_BYTES before a post-inflation length check runs. The
-    // streaming inflater reports chunks as it goes, so we stop accumulating
-    // (and reject) the moment the decoded size passes the cap instead of
-    // materialising the whole inflated output first.
-    const decompressed = boundedInflate(bytes, MAX_DECODED_SET_BYTES);
+    // `set` comes from an untrusted shared URL, and a high-ratio DEFLATE
+    // payload expands far past MAX_DECODED_SET_BYTES: both the input length
+    // and the decoded size are bounded before any of it is materialised.
+    const decompressed = boundedInflate(bytes, {
+      maxInputBytes: MAX_ENCODED_SET_BYTES,
+      maxOutputBytes: MAX_DECODED_SET_BYTES,
+    });
     if (decompressed === null) {
       return { ok: false, error: 'Preset set payload exceeds size limit' };
     }

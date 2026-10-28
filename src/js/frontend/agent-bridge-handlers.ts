@@ -305,8 +305,8 @@ export function buildAgentBridgeCallbacks({
             reason: `CC ${cc} drove nothing: it is not mapped on the "Claude (MCP)" device, or that device is turned off. Map it with MIDI learn, or send toil:midi_set with a field name.`,
           };
     },
-    // The agent API's own runner, so an embedding page gets every palette
-    // action and verb, with its unknown-id suggestions, without a second list.
+    // The agent API's own runner. The message bridge restricts external
+    // embed callers to reviewed visual actions before reaching this callback.
     // `success` means the action ran; `settled` and `events` say what changed.
     runAction: async (id, params) => {
       const agent =
