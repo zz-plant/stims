@@ -1,6 +1,6 @@
 {
   "name": "milkdrop-toolchain",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Parse, compile, analyze, format and export MilkDrop .milk presets in TypeScript: EEL2 interpreter and JIT, IR, HLSL shader analysis, GLSL and WGSL generation.",
   "keywords": [
     "milkdrop",

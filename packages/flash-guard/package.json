@@ -1,6 +1,6 @@
 {
   "name": "flash-guard",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "WCAG 2.3.1 flash and red-flash analysis for frame sequences, plus a live governor that holds a canvas under the threshold while it is being shown. Pure TypeScript, no dependencies.",
   "license": "Unlicense",
   "type": "module",
