@@ -55,7 +55,7 @@ Certification targets, reference images, and measured results are separate recor
 ## Plans and design studies
 
 These documents describe priorities, proposed behavior, or an investigation at a particular revision. Consult source code and tests for what runs today.
-- [Roadmap](./ROADMAP.md) and [product moments](./PRODUCT_MOMENTS.md)
+- [Roadmap](./ROADMAP.md) and [product moments](./PRODUCT_MOMENTS.md); [the product record](../PRODUCT.md) (users, positioning, evidence) that design work starts from
 - [Generative AI proposals](./GENERATIVE_AI_USE_CASES.md)
 - [Learning-loop specification](./LEARNING_LOOPS_SPEC.md): planned retrieval, remix, repair, teaching, performance, and feedback contracts
 
