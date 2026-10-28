@@ -697,6 +697,6 @@ describe('shared loop budget', () => {
       runWithBudget(block, scopes, null);
       runWithBudget(block, scopes, null);
       expect(scopes.registers.q1).toBe(2 * 2_097_152);
-    });
+    }, 30000); // Bun's 5s default under load; the assertion measures counts, not time. // This deliberately executes 4M iterations. The interpreter can exceed
   }
 });

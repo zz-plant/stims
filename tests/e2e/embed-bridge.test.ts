@@ -133,3 +133,65 @@ requiredBrowserTest(
   },
   { timeout: 180000 },
 );
+
+requiredBrowserTest(
+  'an external embed parent gets visual controls and cannot dispatch device actions',
+  async () => {
+    // A real second loopback server gives Chromium both the origin and
+    // address-space metadata needed for its private-network access policy.
+    const parentServer = Bun.serve({
+      hostname: '127.0.0.1',
+      port: 0,
+      fetch: () =>
+        new Response(
+          `<iframe id="stims-embed" allow="autoplay" src="${SERVER_URL}/?embed=true&agent=true&renderer=webgl"></iframe>`,
+          { headers: { 'Content-Type': 'text/html' } },
+        ),
+    });
+    const browser = await chromium.launch({
+      headless: HEADLESS,
+      args: [...SOFTWARE_RENDERER_ARGS, AUTOPLAY_ARG],
+    });
+    try {
+      const page = await browser.newPage();
+      const failures: string[] = [];
+      page.on('pageerror', (error) => failures.push(error.message));
+      page.on('requestfailed', (request) =>
+        failures.push(`${request.url()}: ${request.failure()?.errorText}`),
+      );
+      page.on('console', (message) => {
+        if (message.type() === 'error') failures.push(message.text());
+      });
+      await page.goto(parentServer.url.href);
+      const app = page.frames().find((frame) => frame !== page.mainFrame());
+      if (!app) throw new Error('The embed frame did not load.');
+      await app
+        .waitForFunction(() => Boolean(window.__STIMS_AGENT_BRIDGE__), null, {
+          timeout: 30000,
+        })
+        .catch((error) => {
+          throw new Error(`${error.message}\n${failures.join('\n')}`);
+        });
+      const send = (message: Record<string, unknown>) =>
+        sendToil(page, message, { embedded: true, timeoutMs: 30000 });
+
+      for (const id of ['toggle-camera', 'audio-tab', 'watch-party']) {
+        expect(await send({ type: 'toil:run', id })).toMatchObject({
+          action: 'run',
+          id,
+          success: false,
+        });
+      }
+      expect(
+        await send({ type: 'toil:load_preset', presetId: 'geiss-casino' }),
+      ).toMatchObject({ action: 'load_preset', success: true });
+      expect(await send({ type: 'toil:run', id: 'next-preset' })).toMatchObject(
+        { action: 'run', id: 'next-preset', success: true },
+      );
+    } finally {
+      await closeQuietly(browser);
+      await parentServer.stop(true);
+    }
+  },
+  { timeout: 180000 },
+);

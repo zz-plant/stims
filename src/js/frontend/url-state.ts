@@ -251,6 +251,12 @@ export function decodePresetCodeFromHash(
   const params = new URLSearchParams(hash);
   const codeParam = params.get('code');
   if (!codeParam) return null;
+  // The hash is attacker-controlled and runs through atob on the first
+  // render. buildRemixShareUrl never writes one past the sharing budget, so
+  // a longer payload did not come from this app; refusing it here bounds
+  // every decode path's work before it decodes a byte. The slack over the
+  // budget covers percent-escaping of the hash by the browser.
+  if (codeParam.length > MAX_REMIX_URL_LENGTH * 3) return null;
 
   try {
     return decodeBase64ToText(decodeURIComponent(codeParam));

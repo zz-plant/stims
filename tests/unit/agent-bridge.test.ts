@@ -26,7 +26,18 @@ import { mutatePresetStyle } from '../../src/js/milkdrop/preset-mutations.ts';
 import type { MilkdropEditorSessionState } from '../../src/js/milkdrop/runtime-types.ts';
 import { makeEngineValue, makePresetEntry } from '../frontend-harness.tsx';
 
+function withPageOrigin() {
+  const originalLocation = window.location.href;
+  beforeEach(() => {
+    window.location.href = 'https://toil.fyi/';
+  });
+  afterEach(() => {
+    window.location.href = originalLocation;
+  });
+}
+
 describe('agent bridge & telemetry', () => {
+  withPageOrigin();
   test('updates and reads agent telemetry snapshot', () => {
     updateAgentTelemetry({
       fps: 60,
@@ -59,6 +70,8 @@ describe('agent bridge & telemetry', () => {
       (window as unknown as { MessageEvent: typeof MessageEvent })
         .MessageEvent || MessageEvent;
     const event = new EventClass('message', {
+      origin: window.location.origin,
+      source: window,
       data: {
         type: 'toil:load_preset',
         presetId: 'shifter-snakeskin',
@@ -184,6 +197,7 @@ describe('agent bridge & telemetry', () => {
  * both still answered success.
  */
 describe('agent bridge replies report what actually happened', () => {
+  withPageOrigin();
   type Reply = Record<string, unknown>;
   const parentDescriptor = Object.getOwnPropertyDescriptor(window, 'parent');
   const originalFetch = globalThis.fetch;
@@ -247,7 +261,13 @@ describe('agent bridge replies report what actually happened', () => {
   });
 
   const post = (data: Record<string, unknown>) => {
-    window.dispatchEvent(new window.MessageEvent('message', { data }));
+    window.dispatchEvent(
+      new window.MessageEvent('message', {
+        data,
+        origin: window.location.origin,
+        source: window.parent,
+      }),
+    );
   };
 
   const replyTo = (action: string): Promise<Reply> => {
@@ -870,6 +890,7 @@ describe('agent bridge replies report what actually happened', () => {
     window.dispatchEvent(
       new window.MessageEvent('message', {
         data: { type: 'toil:spin_faster', requestId: 'r1' },
+        origin: window.location.origin,
         source: sender as unknown as Window,
       }),
     );
@@ -1043,5 +1064,132 @@ describe('agent bridge replies report what actually happened', () => {
         reason: 'Unknown message type "toil:spin_faster".',
       },
     ]);
+  });
+});
+
+describe('agent bridge sender boundary', () => {
+  withPageOrigin();
+  const parentDescriptor = Object.getOwnPropertyDescriptor(window, 'parent');
+  let cleanup: (() => void) | undefined;
+  let replies: Array<{ message: Record<string, unknown>; origin: string }>;
+  let ran: string[];
+  let parent: Window;
+
+  beforeEach(() => {
+    replies = [];
+    ran = [];
+    parent = {
+      postMessage: (message: Record<string, unknown>, origin: string) => {
+        replies.push({ message, origin });
+      },
+    } as unknown as Window;
+    Object.defineProperty(window, 'parent', {
+      configurable: true,
+      value: parent,
+    });
+    cleanup = initAgentBridge({
+      runAction: async (id) => {
+        ran.push(id);
+        return { success: true };
+      },
+      onSetAudio: async (source) => {
+        ran.push(source);
+        return { success: true };
+      },
+    });
+  });
+
+  afterEach(() => {
+    cleanup?.();
+    if (parentDescriptor)
+      Object.defineProperty(window, 'parent', parentDescriptor);
+  });
+
+  const post = (
+    data: Record<string, unknown>,
+    source: Window | null = parent,
+    origin = 'https://embedding.example',
+  ) => {
+    window.dispatchEvent(
+      new window.MessageEvent('message', { data, source, origin }),
+    );
+  };
+
+  test('an unrelated window or opener cannot control even an embed', async () => {
+    window.location.href = 'https://toil.fyi/?embed=true';
+    const stranger = { postMessage: () => {} } as unknown as Window;
+    post({ type: 'toil:run', id: 'next-preset' }, stranger);
+    await Promise.resolve();
+    expect(ran).toEqual([]);
+    expect(replies).toEqual([]);
+  });
+
+  test('an external parent cannot control the full workspace', async () => {
+    post({ type: 'toil:run', id: 'next-preset' });
+    await Promise.resolve();
+    expect(ran).toEqual([]);
+    expect(replies).toEqual([]);
+  });
+
+  test('the direct embed parent may run visual actions with origin-bound replies', async () => {
+    window.location.href = 'https://toil.fyi/?embed=true';
+    post({ type: 'toil:run', id: 'next-preset', requestId: 'visual-1' });
+    await Promise.resolve();
+    expect(ran).toEqual(['next-preset']);
+    expect(replies).toEqual([
+      {
+        message: expect.objectContaining({
+          success: true,
+          requestId: 'visual-1',
+        }),
+        origin: 'https://embedding.example',
+      },
+    ]);
+  });
+
+  test('the embed parent cannot invoke device, sharing, or newly added palette actions', async () => {
+    window.location.href = 'https://toil.fyi/?embed=true';
+    for (const id of [
+      'toggle-camera',
+      'audio-tab',
+      'audio-microphone',
+      'watch-party',
+      'future-device-action',
+    ]) {
+      post({ type: 'toil:run', id });
+    }
+    await Promise.resolve();
+    expect(ran).toEqual([]);
+    expect(replies).toHaveLength(5);
+    expect(replies.every(({ message }) => message.success === false)).toBe(
+      true,
+    );
+  });
+
+  test('the explicit embed audio protocol still supports microphone permission', async () => {
+    window.location.href = 'https://toil.fyi/?embed=true';
+    post({ type: 'toil:set_audio', source: 'microphone' });
+    await Promise.resolve();
+    expect(ran).toEqual(['microphone']);
+    expect(replies[0]?.message.success).toBe(true);
+  });
+
+  test('same-window tools retain the full action API', async () => {
+    post(
+      { type: 'toil:run', id: 'toggle-camera' },
+      window,
+      window.location.origin,
+    );
+    await Promise.resolve();
+    expect(ran).toEqual(['toggle-camera']);
+  });
+
+  test('sender-less and opaque-origin messages cannot reach callbacks', async () => {
+    window.location.href = 'https://toil.fyi/?embed=true';
+    post({ type: 'toil:run', id: 'next-preset' }, null);
+    post({ type: 'toil:run', id: 'next-preset' }, parent, 'null');
+    await Promise.resolve();
+    expect(ran).toEqual([]);
+    expect(replies).toEqual([]);
   });
 });
