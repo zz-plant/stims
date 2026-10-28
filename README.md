@@ -36,7 +36,7 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 </div>
 
 - **Play** a 1,787-preset catalog of the originals, curated picks first. Presets stay `.milk` files: there is no conversion step, and export gives you `.milk` back.
-- **Edit while it plays**, as MilkDrop 2 let you. The source opens in an editor with completions and compiler diagnostics; `zoom`, `warp`, `rot` and `decay` are sliders. When an equation drives one, the slider names the audio that reaches it (`eq · bass`), read from the code.
+- **Edit while it plays**, as MilkDrop 2 let you. The source opens in an editor with completions and compiler diagnostics; `zoom`, `warp`, `rot` and `decay` are sliders. When an equation drives one, the slider and the code that sets it name the audio that reaches it (`eq · bass`, `zoom=… ← bass`), read from the equations.
 - **Point it at anything:** a browser tab, a YouTube link, your microphone, a local file, or the built-in demo loop.
 - **Send a link.** The address bar is the session, and whoever opens it needs nothing installed: every bundled preset's code fits in the link — edits and remix lineage included — and one click turns the sound on.
 - **Perform with it.** WebMIDI learn maps knobs and faders to controls (mappings persist per device), a cue monitor crossfades between two running presets, and a chromeless projector window mirrors the stage to a second display.

@@ -25,7 +25,7 @@ A moving stage does not prove that external audio reached it. Check the audio st
 ## Edit a preset
 
 1. Choose **Edit this visual** to open the studio.
-2. On a first edit, use **Add a slow spin**, or change the source directly.
+2. On a first edit, use **Add a slow spin**, or change the source directly. The code opens at the first line whose field follows the audio, and each such line ends with the sounds that drive it (`zoom=… ← bass, mid, treb`). Press Esc to leave the code; Tab inside it indents.
 3. Use the tabs under the code:
    - **Tune**: sliders, switches and colours for each field. A field the equations recompute names the audio that reaches it.
    - **Outline**: the preset's parts with their line ranges, and solo or mute for each wave, shape and layer.

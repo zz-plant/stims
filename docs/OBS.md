@@ -31,7 +31,7 @@ Use this path when you need the browser's file picker, microphone permissions, o
 4. In OBS, capture that browser window or display using the capture source available on your operating system. Crop browser chrome if it is still visible. Avoid capturing a display that contains the OBS preview itself. For a capture with no controls in it, open **Projector window** from the dock's menu and capture that window instead. It mirrors the stage while you keep working in the main window, which has to stay visible: a minimised window gets no frames.
 5. Configure the stream's audio in OBS separately. Check its meters and a recorded playback; hearing Stims locally does not establish that the recording contains sound. Route each intended track once to avoid doubled audio.
 
-To show a remix, copy **Copy link to this edit** from the preset actions, then open that full URL in the capture browser. It carries the edited source. A local audio file is not carried by the URL, so select the file again on another machine.
+To show a remix, press **Copy link** above the code in the editor, then open that full URL in the capture browser. It carries the edited source. A local audio file is not carried by the URL, so select the file again on another machine.
 
 ## Troubleshooting and evidence
 
