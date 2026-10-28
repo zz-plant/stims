@@ -93,7 +93,9 @@ describe('Workspace shell UI simplification regression', () => {
     // The name rides in data-hint (shown on hover and focus) with the
     // current keyboard shortcut appended through withHint().
     expect(stageControlsSource).toContain("withHint('Play a random preset'");
-    expect(uiSource).toContain('liveMode && !missingRequestedPreset ?');
+    expect(uiSource).toContain(
+      'const stageReady = liveMode && !missingRequestedPreset;',
+    );
     expect(homeSource).toContain('Browse presets');
     // The four source cards each keep one short line of copy saying what the
     // source is. The wording changed when the cards were rebuilt around a

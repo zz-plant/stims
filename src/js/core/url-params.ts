@@ -76,6 +76,26 @@ export interface PerformanceURLParams {
   powerSaver: string | null;
 }
 
+/**
+ * `?room=1` turns this visit into an unattended room display; see
+ * core/room-mode.ts for what it changes.
+ */
+export interface RoomURLParams {
+  enabled: boolean;
+  /** `?dwell=` seconds each preset stays up, raw; room-mode clamps it. */
+  dwellSeconds: number | null;
+}
+
+/**
+ * Comfort settings a link can ask for, raw: `?brightness=` (stage brightness
+ * ceiling) and `?motion=` (motion scale), both 0–1. A link can only lower
+ * them; accessibility-preferences applies the floor and the minimum.
+ */
+export interface ComfortURLParams {
+  stageBrightness: number | null;
+  motionScale: number | null;
+}
+
 export interface MockAudioURLParams {
   type: string | null;
   frequency: number | null;
@@ -125,6 +145,8 @@ export interface ParsedURLParams {
    * ignored, so no link can strobe someone who chose the setting.
    */
   reduceFlashing: boolean;
+  room: RoomURLParams;
+  comfort: ComfortURLParams;
   performance: PerformanceURLParams;
   audioMock: MockAudioURLParams;
   /**
@@ -360,6 +382,14 @@ export function parseURLParams(
     corpus: get('corpus')?.trim() || null,
     seed: parseNumberParam(get('seed')),
     reduceFlashing: parseBoolParam(get('reduceFlashing')) === true,
+    room: {
+      enabled: parseBoolParam(get('room')) === true,
+      dwellSeconds: parseNumberParam(get('dwell')),
+    },
+    comfort: {
+      stageBrightness: parseNumberParam(get('brightness')),
+      motionScale: parseNumberParam(get('motion')),
+    },
     performance: {
       maxPixelRatio: parseNumberParam(get('maxPixelRatio')),
       particleBudget: parseNumberParam(get('particleBudget')),

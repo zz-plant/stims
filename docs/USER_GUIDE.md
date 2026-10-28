@@ -69,6 +69,8 @@ Stims renders with WebGPU in browsers where it is stable (recent Chrome, Edge, O
 
 Reduce flashing and motion controls can reduce exposure, but they do not certify a preset or display as safe for every viewer. See [sensory controls](./guides/accessibility.md) for their scope.
 
+To leave Stims running on a screen nobody operates, such as a sensory room, a waiting area or a projector, build a room link in Settings → Playback and audio → Room display. [Sensory room setup](./guides/sensory-room.md) covers what it changes and how to start it with the computer.
+
 ## Keyboard shortcuts
 
 Press `?`, or choose **More actions → Shortcuts and gestures** on a touch screen, for the full list of keys and stage gestures; most keys can also be rebound there. Cmd+K (Ctrl+K on Windows and Linux) opens the command palette, which reaches every action, including those without a key.

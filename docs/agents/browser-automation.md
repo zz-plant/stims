@@ -293,6 +293,13 @@ copy and may change; ids must not.
   reacting; use an oscillator only when you want that steady input
   (`src/js/core/audio-handler.ts`).
 - `?lockQualityStep=` — pin adaptive quality for reproducible frames.
+- `?room=1` — room display (`src/js/core/room-mode.ts`): autoplay every
+  `?dwell=` seconds (default 180) with an 8 s blend, Reduce flashing, live
+  performance behaviour and a wake lock for the visit, no stage chrome or
+  cursor, and a key lock that also swallows synthetic `keydown` events, so
+  drive a room page through `__stims_agent.run()` rather than key presses.
+  `?brightness=` and `?motion=` (0–1) lower the comfort settings for one visit,
+  with or without it. None of these save anything.
 - `window.__STIMS_AGENT_RENDER_FRAMES__` (agent mode) — synchronously
   render N frames with synthetic time/audio, for capture harnesses.
 - `window.__stims_live` — performance API (ramp, listen, pattern

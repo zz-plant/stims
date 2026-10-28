@@ -1,15 +1,22 @@
+import {
+  getRoomDwellSeconds,
+  isRoomModeRequested,
+} from '../../core/room-mode.ts';
 import type { MilkdropFrameState, MilkdropPostVisual } from '../types.ts';
 
 /**
  * How long autoplay keeps a preset up before arming the advance: the blend
- * plus six seconds of the settled preset, and never under 30 s.
+ * plus six seconds of the settled preset, and never under 30 s — or under
+ * the room's dwell when the page was opened as a room display
+ * (core/room-mode.ts).
  *
  * This is also the span MilkDrop's `progress` variable ramps over (the VM's
  * preset clock), so a preset that fades or sequences on `progress` reaches 1
  * as its slot ends — whether or not autoplay is on to end it.
  */
 export function autoAdvanceDwellSeconds(blendDurationSeconds: number) {
-  return Math.max(30, blendDurationSeconds + 6);
+  const floor = isRoomModeRequested() ? getRoomDwellSeconds() : 30;
+  return Math.max(floor, blendDurationSeconds + 6);
 }
 
 export function shouldAutoAdvancePreset({
