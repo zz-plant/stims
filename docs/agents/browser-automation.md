@@ -68,8 +68,10 @@ read-immediately-after-write.
     (`run('nxt-preset')` → `Did you mean "next-preset"?`);
   - `select-preset` fails with the preset id unknown, or while the catalog has
     not loaded (`waitFor((s) => s.catalogSize > 0)` first);
-  - `set-field` fails for a non-finite value or before the engine mounts
-    (`waitFor((s) => s.engineReady)` first).
+  - `set-field` and `edit-source` fail before the engine mounts
+    (`waitFor((s) => s.engineReady)` first); `set-field` also fails for a
+    non-finite value, and `edit-source` when a newer edit or preset load
+    superseded it.
 
   `ok: true` means the action was applied, not that it had the effect you
   hoped for: `settled` only says a state commit followed. So an `ok: true`
@@ -92,6 +94,17 @@ read-immediately-after-write.
     (e.g. `{key: 'zoom', value: 1.02}`), same path as MIDI. The key is **not**
     validated: a built-in, `q1`–`q32` or user variable name is written whether
     or not the active preset reads it, so `ok: true` means "written".
+  - `run('edit-source', { source })` or `run('edit-source', { append })` —
+    change the preset code the way typing in the editor does. The text goes
+    to the editor session through the same commit a typed edit takes, so the
+    session turns dirty, the edit is saved as this preset's draft, and the
+    leave-page guard sees it. `set-field` does none of that: it writes the
+    running VM only. `append` adds a line to the current buffer. The result
+    carries `editor` (`{dirty, errorCount, warningCount, diagnostics,
+    renderingFallback, …}`) once the source compiled; `ok: true` with
+    `errorCount > 0` means the buffer holds the text but the stage kept the
+    last good version. The editor panel need not be open, which matters in
+    the Claude browser pane, where typing closes it.
   - `run('crossfade', { position })`, `run('pin-parameter', { field })`,
     `run('unpin-parameter', { field })`.
 
@@ -109,8 +122,9 @@ bun run ctl -- --step-timeout 90000 \
 ```
 
 - `--run <id>[=<json params>]` runs a palette action or targeted verb, in the
-  order given with `--wait-for`. `select-preset` waits for the catalog and
-  `set-field` for the engine first, the two preconditions `run()` rejects.
+  order given with `--wait-for`. `select-preset` waits for the catalog, and
+  `set-field` and `edit-source` for the engine first, the preconditions
+  `run()` rejects.
 - `--wait-for '<expr>'` waits (push-based, no sleeping) until a JS expression
   over the state `s` is true.
 - `--post '<json>'` sends one `toil:*` message (the iframe protocol in

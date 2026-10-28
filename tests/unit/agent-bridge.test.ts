@@ -985,6 +985,8 @@ describe('agent bridge replies report what actually happened', () => {
         pinParameter: () => false,
         unpinParameter: () => false,
         getStageCanvas: () => null,
+        getEditorSource: () => null,
+        applyEditorSource: async () => null,
       });
     };
 
