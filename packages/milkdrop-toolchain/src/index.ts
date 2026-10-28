@@ -101,6 +101,7 @@ export {
   walkMilkdropExpression,
 } from './expression.ts';
 export type {
+  MilkdropLoopBudget,
   MilkdropProgramFn,
   MilkdropProgramOptions,
   MilkdropProgramRng,

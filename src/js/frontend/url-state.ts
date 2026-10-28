@@ -1,8 +1,9 @@
-import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
+import { deflateSync, strFromU8, strToU8 } from 'fflate';
 import { embedLineageFields } from 'milkdrop-toolchain/src/preset-lineage-fields.ts';
 import { resolveSemanticRoute } from '../../../functions/discover-slugs.ts';
 import { normalizeCollectionTag, parseURLParams } from '../core/url-params.ts';
 import type { MilkdropPresetLineageRef } from '../milkdrop/types.ts';
+import { boundedInflate } from '../utils/bounded-inflate.ts';
 import type {
   AudioSource,
   PanelState,
@@ -250,6 +251,12 @@ export function decodePresetCodeFromHash(
   const params = new URLSearchParams(hash);
   const codeParam = params.get('code');
   if (!codeParam) return null;
+  // The hash is attacker-controlled and runs through atob on the first
+  // render. buildRemixShareUrl never writes one past the sharing budget, so
+  // a longer payload did not come from this app; refusing it here bounds
+  // every decode path's work before it decodes a byte. The slack over the
+  // budget covers percent-escaping of the hash by the browser.
+  if (codeParam.length > MAX_REMIX_URL_LENGTH * 3) return null;
 
   try {
     return decodeBase64ToText(decodeURIComponent(codeParam));
@@ -291,6 +298,13 @@ const PRESET_CODE_UTF8_PREFIX = 'u1~';
 const PRESET_CODE_COMPRESSED_PREFIX = 'z1~';
 
 /**
+ * Largest source a compressed link may decode to: about 28x the largest
+ * bundled preset (37.5 KB), and far above what fits in a link's budget at
+ * any compression ratio preset text reaches.
+ */
+const MAX_SHARED_PRESET_SOURCE_BYTES = 1 << 20;
+
+/**
  * Base64 for arbitrary bytes, chunked: `btoa` takes a Latin-1 byte string,
  * and a large payload would otherwise hit the argument limit of a single
  * spread call.
@@ -330,7 +344,18 @@ function decodeBase64ToText(payload: string): string {
       base64UrlToBase64(payload.slice(PRESET_CODE_COMPRESSED_PREFIX.length)),
     );
     const bytes = Uint8Array.from(compressed, (c) => c.charCodeAt(0));
-    return strFromU8(inflateSync(bytes));
+    // This runs on the first render of the page, and a hostile payload
+    // inflates to ~1000x its length. buildRemixShareUrl never writes a
+    // compressed link past the sharing budget, so a longer one did not come
+    // from this app.
+    const inflated = boundedInflate(bytes, {
+      maxInputBytes: MAX_REMIX_URL_LENGTH,
+      maxOutputBytes: MAX_SHARED_PRESET_SOURCE_BYTES,
+    });
+    if (!inflated) {
+      throw new Error('compressed preset payload exceeds the size limit');
+    }
+    return strFromU8(inflated);
   }
   if (!payload.startsWith(PRESET_CODE_UTF8_PREFIX)) {
     return atob(payload);
