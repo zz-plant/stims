@@ -186,5 +186,37 @@ describe('preset-sets (#1412)', () => {
         expect(result.error).toContain('exceeds size limit');
       }
     });
+
+    test('rejects a payload longer than any set can encode to', () => {
+      // A valid set behind 1000 empty stored blocks (5 bytes each): it
+      // decodes to well under the cap, so only the input-length check
+      // refuses it — the check that bounds inflate time, which grows with
+      // input even once the output buffer is full.
+      const json = new TextEncoder().encode(
+        JSON.stringify({ v: 1, title: 'Padded', presets: ['a'] }),
+      );
+      const emptyStoredBlock = [0x00, 0x00, 0x00, 0xff, 0xff];
+      const finalStoredBlock = [
+        0x01,
+        json.length & 0xff,
+        json.length >> 8,
+        ~json.length & 0xff,
+        (~json.length >> 8) & 0xff,
+        ...json,
+      ];
+      const compressed = new Uint8Array([
+        ...Array.from({ length: 1000 }, () => emptyStoredBlock).flat(),
+        ...finalStoredBlock,
+      ]);
+      const base64 = btoa(String.fromCharCode(...compressed))
+        .replace(/\+/gu, '-')
+        .replace(/\//gu, '_')
+        .replace(/=+$/u, '');
+      const result = decodePresetSetPayload(`${SET_PAYLOAD_PREFIX}${base64}`);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toContain('exceeds size limit');
+      }
+    });
   });
 });
