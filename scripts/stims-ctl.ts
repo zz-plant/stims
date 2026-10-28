@@ -35,9 +35,10 @@
  *                              window.__stims_agent.run (repeatable, in order),
  *                              e.g. --run next-preset
  *                                   --run 'select-preset={"id":"martin-skywards"}'
- *                              select-preset waits for the catalog and set-field
- *                              for the engine first (the API rejects them until
- *                              then). The JSON summary's `steps` has each result,
+ *                              select-preset waits for the catalog, set-field
+ *                              and edit-source for the engine first (the API
+ *                              rejects them until then). The JSON summary's
+ *                              `steps` has each result,
  *                              including the events the action caused.
  *   --wait-for <expr>          Wait until a JS expression over the agent state
  *                              `s` is true, e.g. --wait-for 's.catalogSize > 0'
@@ -427,7 +428,7 @@ async function executeStep(
           .waitFor((s) => s.catalogSize > 0, timeoutMs)
           .catch(() => {});
       }
-      if (id === 'set-field') {
+      if (id === 'set-field' || id === 'edit-source') {
         await agent.waitFor((s) => s.engineReady, timeoutMs).catch(() => {});
       }
       const result = await agent.run(id, params);

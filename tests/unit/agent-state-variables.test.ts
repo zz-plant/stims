@@ -33,6 +33,8 @@ describe('__stims_agent variables', () => {
       pinParameter: () => false,
       unpinParameter: () => false,
       getStageCanvas: () => null,
+      getEditorSource: () => null,
+      applyEditorSource: async () => null,
     });
     return (window as unknown as { __stims_agent: AgentGlobal }).__stims_agent;
   };

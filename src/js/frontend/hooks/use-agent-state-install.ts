@@ -9,7 +9,7 @@
  */
 import { type RefObject, useCallback, useEffect, useRef } from 'react';
 import { resolvePresetId } from '../../milkdrop/preset-id-resolution.ts';
-import { getAgentTelemetry } from '../agent-bridge.ts';
+import { getAgentTelemetry, toAgentEditorState } from '../agent-bridge.ts';
 import {
   type AgentCoreSnapshot,
   installAgentStateGlobal,
@@ -112,6 +112,16 @@ export function useAgentStateInstall({
         ),
       setField: (key, value) =>
         engineBridgeRef.current.updateFieldLive(key, value),
+      getEditorSource: () =>
+        engineBridgeRef.current.getEditorSessionState()?.source ?? null,
+      // The awaited twin of the editor's own commit (updateEditorSource):
+      // both hand the text to the editor session, whose change the runtime
+      // turns into a draft save, so an agent edit is saved like a typed one.
+      applyEditorSource: async (source) => {
+        const state =
+          await engineBridgeRef.current.applyEditorSourceAwaited(source);
+        return state ? toAgentEditorState(state) : null;
+      },
       setCrossfade: (position) =>
         engineBridgeRef.current.setCrossfade(position),
       pinParameter: (field) => pinTarget(field),
@@ -128,6 +138,8 @@ export function useAgentStateInstall({
     uiRef.current.stageRef.current?.querySelector,
     engineSnapshotRef,
     engineBridgeRef.current.handlePresetSelection,
+    engineBridgeRef.current.getEditorSessionState,
+    engineBridgeRef.current.applyEditorSourceAwaited,
   ]);
 
   useEffect(() => {
