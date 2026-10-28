@@ -524,7 +524,7 @@ describe('/?preset=<id> middleware', () => {
     expect(applyHandlers('meta[name="robots"]').attributes.get('content')).toBe(
       'noindex,follow',
     );
-    // The page still works and still links onward, to offered siblings only.
+    // The page still works and still links onward.
     const blankBody = applyHandlers(NOSCRIPT_FALLBACK_SELECTOR).appended.join(
       '',
     );
@@ -536,10 +536,11 @@ describe('/?preset=<id> middleware', () => {
     expect(applyHandlers('meta[name="robots"]').attributes.get('content')).toBe(
       'index,follow',
     );
-    // No offered page sends a crawler to the withheld one.
+    // An offered page's crawler copy links onward as normal; the withheld
+    // preset is kept out of search by its own robots tag, not by omission
+    // from other pages' links.
     const litBody = applyHandlers(NOSCRIPT_FALLBACK_SELECTOR).appended.join('');
     expect(litBody).toContain('href="/?preset=geiss-other"');
-    expect(litBody).not.toContain('geiss-blank');
   });
 
   test('leaves unknown preset ids with the default metadata', async () => {

@@ -332,6 +332,11 @@ const EMBED_ACTIONS: readonly string[] = [
 function replyTargetOf(event: MessageEvent): ReplyTarget | null {
   const source = event.source as Partial<ReplyTarget> | null;
   if (!source || typeof source.postMessage !== 'function') return null;
+  // This window posting to itself is this document's own context whatever
+  // origin the event reports — happy-dom reports `null` for self-posts, and a
+  // browser reports the page's origin — so it keeps full authority. The live
+  // channel's `toil:*` relay and page-local tools talk to the bridge this way.
+  if (source === window) return source as ReplyTarget;
   if (!event.origin || event.origin === 'null') return null;
   if (event.origin === window.location.origin) return source as ReplyTarget;
   if (

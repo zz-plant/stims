@@ -1,3 +1,13 @@
+/**
+ * URL <-> session-state: the single place that encodes the visualizer's
+ * shareable state into the address bar and decodes it back.
+ *
+ * Owns: the `#` fragment payload (deflated, bounded on inflate), the preset
+ * lineage ref, the session-route keys in the search string, and canonical
+ * link creation for shared/embedded pages. Deliberately leaves the audio
+ * source's permission flow, panel DOM, and the runtime's live state to the
+ * modules that own those; this module only round-trips what a URL can carry.
+ */
 import { deflateSync, strFromU8, strToU8 } from 'fflate';
 import { embedLineageFields } from 'milkdrop-toolchain/src/preset-lineage-fields.ts';
 import { resolveSemanticRoute } from '../../../functions/discover-slugs.ts';

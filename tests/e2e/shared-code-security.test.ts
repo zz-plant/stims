@@ -14,7 +14,7 @@ import { closeQuietly } from './deadline.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
 import { HEADLESS, SOFTWARE_RENDERER_ARGS } from './webgl-launch.ts';
 
-const TEST_PORT = 5212;
+const TEST_PORT = 5298;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
 let devServer: DevServerHandle | null = null;
 
