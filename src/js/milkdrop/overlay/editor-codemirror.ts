@@ -47,13 +47,10 @@ import {
   StateField,
   Transaction,
 } from '@codemirror/state';
-import {
-  oneDarkHighlightStyle,
-  oneDarkTheme,
-} from '@codemirror/theme-one-dark';
-import type { KeyBinding } from '@codemirror/view';
+import type { DecorationSet, KeyBinding } from '@codemirror/view';
 import {
   crosshairCursor,
+  Decoration,
   EditorView,
   GutterMarker,
   gutter,
@@ -64,6 +61,7 @@ import {
   keymap,
   lineNumbers,
   rectangularSelection,
+  WidgetType,
 } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
 import {
@@ -189,6 +187,80 @@ function midiGutterExtension() {
     }),
   ];
 }
+
+// ── Driving sounds, at the end of the lines that set a field ─────
+// The panel hands over a reader built from the dataflow of the compile on
+// stage, and again whenever that compile changes or the buffer is reloaded.
+// Between those the tags describe the compile on stage, so they follow their
+// lines through edits rather than being re-read against text that has not
+// run: re-reading after deleting `zoom = zoom + bass` moved its tag onto the
+// `zoom = 1` above it. A deleted line takes its tag with it. The tag is
+// aria-hidden: the code's accessible text stays the code, and the Tune chips
+// carry the same list in their names.
+export type AudioSourcesReader = (
+  doc: string,
+) => Array<{ line: number; text: string; title: string }>;
+
+export const setAudioSourcesReader =
+  StateEffect.define<AudioSourcesReader | null>();
+
+class AudioSourcesWidget extends WidgetType {
+  constructor(
+    private readonly text: string,
+    private readonly title: string,
+  ) {
+    super();
+  }
+
+  eq(other: AudioSourcesWidget): boolean {
+    return other.text === this.text && other.title === this.title;
+  }
+
+  toDOM(): HTMLElement {
+    const span = document.createElement('span');
+    span.className = 'cm-audio-sources';
+    span.textContent = this.text;
+    span.title = this.title;
+    span.setAttribute('aria-hidden', 'true');
+    return span;
+  }
+}
+
+function audioSourceDecorations(
+  state: EditorState,
+  reader: AudioSourcesReader | null,
+): DecorationSet {
+  if (!reader) return Decoration.none;
+  const ranges = reader(state.doc.toString())
+    .filter(({ line }) => line >= 1 && line <= state.doc.lines)
+    .map(({ line, text, title }) =>
+      Decoration.widget({
+        widget: new AudioSourcesWidget(text, title),
+        side: 1,
+      }).range(state.doc.line(line).to),
+    );
+  return Decoration.set(ranges, true);
+}
+
+const audioSourcesField = StateField.define<{
+  reader: AudioSourcesReader | null;
+  decorations: DecorationSet;
+}>({
+  create: () => ({ reader: null, decorations: Decoration.none }),
+  update(value, tr) {
+    let reader: AudioSourcesReader | null | undefined;
+    for (const effect of tr.effects) {
+      if (effect.is(setAudioSourcesReader)) reader = effect.value;
+    }
+    if (reader !== undefined) {
+      return { reader, decorations: audioSourceDecorations(tr.state, reader) };
+    }
+    if (!tr.docChanged) return value;
+    return { ...value, decorations: value.decorations.map(tr.changes) };
+  },
+  provide: (field) =>
+    EditorView.decorations.from(field, (value) => value.decorations),
+});
 
 // Multi-argument functions get a snippet template so accepting the
 // completion drops in placeholder args the user can Tab through, instead of
@@ -328,31 +400,32 @@ const milkdropHoverTooltip = hoverTooltip((view, pos) => {
   };
 });
 
-// oneDark bundles both chrome colors and token colors into a single
-// Extension; we only want its token colors for dark mode, and swap in an
-// equivalent light-mode HighlightStyle when the app theme flips, using the
-// same lezer tags the milkdrop StreamLanguage tokens resolve to (see
-// editor-language.ts): heading, comment, keyword, atom, variableName
-// (registers) / variableName.standard (the legacy "builtin" token, used for
-// pi/e), number, operator, propertyName.
-const milkdropLightHighlightStyle = HighlightStyle.define([
-  { tag: tags.heading, color: '#0f766e', fontWeight: 'bold' },
-  { tag: tags.comment, color: '#64748b', fontStyle: 'italic' },
-  { tag: tags.keyword, color: '#9333ea' },
-  { tag: tags.atom, color: '#0891b2' },
-  { tag: tags.variableName, color: '#b45309' },
-  { tag: tags.standard(tags.variableName), color: '#be185d' },
-  { tag: tags.number, color: '#059669' },
-  { tag: tags.operator, color: '#475569' },
-  { tag: tags.propertyName, color: '#1d4ed8' },
+// Token and chrome colours are the panel's CSS custom properties
+// (--ed-tok-*, --ed-code-* in editor-panel.css), which html.light redefines,
+// so the code well follows the app theme with the rest of the panel and one
+// highlight style serves both. The well used to stay dark in light chrome
+// while the light token palette painted on it, at 1.9-2.6:1. The tags are
+// the ones the milkdrop StreamLanguage tokens resolve to (editor-language.ts).
+const milkdropHighlightStyle = HighlightStyle.define([
+  { tag: tags.heading, color: 'var(--ed-tok-heading)', fontWeight: 'bold' },
+  { tag: tags.comment, color: 'var(--ed-tok-comment)', fontStyle: 'italic' },
+  { tag: tags.meta, color: 'var(--ed-tok-comment)' },
+  { tag: tags.keyword, color: 'var(--ed-tok-keyword)' },
+  { tag: tags.atom, color: 'var(--ed-tok-atom)' },
+  { tag: tags.variableName, color: 'var(--ed-tok-variable)' },
+  { tag: tags.standard(tags.variableName), color: 'var(--ed-tok-builtin)' },
+  { tag: tags.number, color: 'var(--ed-tok-number)' },
+  { tag: tags.operator, color: 'var(--ed-tok-operator)' },
+  { tag: tags.propertyName, color: 'var(--ed-tok-property)' },
+  { tag: tags.string, color: 'var(--ed-tok-string)' },
+  { tag: tags.typeName, color: 'var(--ed-tok-type)' },
 ]);
 
 function createEditorTheme() {
   return EditorView.theme({
     '&': {
-      color: '#eff6ff',
-      background:
-        'linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(8, 47, 73, 0.68))',
+      color: 'var(--ed-code-ink)',
+      backgroundColor: 'transparent',
       // Martian Mono runs ~8% wider per character than the mono it replaced,
       // with a taller x-height; one step down keeps the same columns per line
       // and the same apparent size.
@@ -363,32 +436,89 @@ function createEditorTheme() {
       lineHeight: '1.6',
     },
     '.cm-gutters': {
-      backgroundColor: 'rgba(8, 47, 73, 0.42)',
-      color: 'rgba(125, 211, 252, 0.65)',
-      borderRight: '1px solid rgba(125, 211, 252, 0.14)',
+      backgroundColor: 'transparent',
+      color: 'var(--ed-code-gutter-ink)',
+      borderRight: '1px solid var(--ed-code-edge)',
     },
     '.cm-activeLine': {
-      backgroundColor: 'rgba(34, 211, 238, 0.08)',
+      backgroundColor: 'var(--ed-code-active)',
     },
     '.cm-activeLineGutter': {
-      backgroundColor: 'rgba(34, 211, 238, 0.12)',
+      backgroundColor: 'var(--ed-code-active)',
+      color: 'var(--ed-code-ink)',
     },
     '.cm-content': {
-      caretColor: '#67e8f9',
+      caretColor: 'var(--ed-code-caret)',
     },
-    '&.cm-focused .cm-cursor': {
-      borderLeftColor: '#67e8f9',
+    '.cm-cursor, .cm-dropCursor': {
+      borderLeftColor: 'var(--ed-code-caret)',
     },
+    // The well draws the focus ring (editor-panel.css): an outline here sat
+    // under the fade at the bottom edge.
     '&.cm-focused': {
-      outline: '2px solid rgba(34, 211, 238, 0.4)',
-      outlineOffset: '-2px',
+      outline: 'none',
     },
-    '&.cm-focused .cm-selectionBackground, ::selection': {
-      backgroundColor: 'rgba(34, 211, 238, 0.22)',
+    '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection':
+      {
+        backgroundColor: 'var(--ed-code-selection)',
+      },
+    '.cm-selectionMatch': {
+      backgroundColor: 'var(--ed-code-match)',
+    },
+    '.cm-searchMatch': {
+      backgroundColor: 'var(--ed-code-match)',
+      outline: '1px solid var(--ed-code-edge-strong)',
+    },
+    '.cm-searchMatch.cm-searchMatch-selected': {
+      backgroundColor: 'var(--ed-code-selection)',
+    },
+    '&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket': {
+      backgroundColor: 'var(--ed-code-match)',
+      outline: '1px solid var(--ed-code-edge-strong)',
+    },
+    '.cm-foldPlaceholder': {
+      backgroundColor: 'transparent',
+      border: '1px solid var(--ed-code-edge-strong)',
+      color: 'var(--ed-code-gutter-ink)',
+    },
+    '.cm-panels': {
+      backgroundColor: 'var(--ed-code-raised)',
+      color: 'var(--ed-code-ink)',
+    },
+    '.cm-panels.cm-panels-top': {
+      borderBottom: '1px solid var(--ed-code-edge-strong)',
+    },
+    '.cm-panels.cm-panels-bottom': {
+      borderTop: '1px solid var(--ed-code-edge-strong)',
+    },
+    '.cm-tooltip': {
+      border: '1px solid var(--ed-code-edge-strong)',
+      backgroundColor: 'var(--ed-code-raised)',
+      color: 'var(--ed-code-ink)',
+    },
+    '.cm-tooltip .cm-tooltip-arrow:before': {
+      borderTopColor: 'transparent',
+      borderBottomColor: 'transparent',
+    },
+    '.cm-tooltip .cm-tooltip-arrow:after': {
+      borderTopColor: 'var(--ed-code-raised)',
+      borderBottomColor: 'var(--ed-code-raised)',
+    },
+    '.cm-tooltip-autocomplete > ul > li[aria-selected]': {
+      backgroundColor: 'var(--ed-code-selection)',
+      color: 'var(--ed-code-ink)',
     },
     '.cm-quickfix-action': {
-      backgroundColor: 'rgba(34, 211, 238, 0.16)',
-      color: '#67e8f9',
+      backgroundColor: 'color-mix(in srgb, var(--stims-cool) 16%, transparent)',
+      color: 'var(--stims-cool)',
+    },
+    // The sounds the equations feed into this line's field; the warm colour
+    // the Tune chips use for "the equations own this value".
+    '.cm-audio-sources': {
+      marginLeft: '1.5ch',
+      color: 'var(--ed-code-sources)',
+      whiteSpace: 'nowrap',
+      cursor: 'default',
     },
     '.cm-milkdrop-hover-doc': {
       maxWidth: '280px',
@@ -401,7 +531,7 @@ function createEditorTheme() {
       fontSize: '0.7rem',
       textTransform: 'uppercase',
       letterSpacing: '0.04em',
-      opacity: 0.65,
+      color: 'var(--ed-code-gutter-ink)',
     },
     '.cm-midi-gutter': {
       width: '14px',
@@ -415,10 +545,10 @@ function createEditorTheme() {
       cursor: 'default',
     },
     '.cm-midi-gutter-marker--live': {
-      color: '#4ade80',
+      color: 'var(--stims-good)',
     },
     '.cm-midi-gutter-marker--shadowed': {
-      color: 'rgba(148, 163, 184, 0.55)',
+      color: 'var(--ed-code-gutter-ink)',
     },
   });
 }
@@ -461,18 +591,16 @@ export function createEditorView({
   // paint.
   let pendingVisitorEdit = false;
   let view: EditorView;
-  const syntaxThemeCompartment = new Compartment();
+  // Colours come from CSS (see the highlight style above); this only tells
+  // CodeMirror's base theme which of its light/dark defaults to fall back on
+  // for the parts it still draws itself (lint markers and tooltips).
+  const darkThemeCompartment = new Compartment();
   // Undo history lives in its own compartment so a preset load can start it
   // over (see resetHistory below).
   const historyCompartment = new Compartment();
   // Read-only while A/B shows the original: it is there to look at, and an
   // edit made to it would have no slot to belong to.
   const readOnlyCompartment = new Compartment();
-  const syntaxHighlightStyleForTheme = (theme: 'light' | 'dark') =>
-    syntaxHighlighting(
-      theme === 'light' ? milkdropLightHighlightStyle : oneDarkHighlightStyle,
-    );
-
   const flushDocChange = () => {
     if (isChangeSuppressed()) {
       return true;
@@ -515,9 +643,12 @@ export function createEditorView({
         historyCompartment.of(history()),
         readOnlyCompartment.of(EditorState.readOnly.of(false)),
         createMilkdropLanguage(),
-        oneDarkTheme,
-        syntaxThemeCompartment.of(syntaxHighlightStyleForTheme(resolveTheme())),
+        darkThemeCompartment.of(
+          EditorView.darkTheme.of(resolveTheme() === 'dark'),
+        ),
+        syntaxHighlighting(milkdropHighlightStyle),
         createEditorTheme(),
+        audioSourcesField,
         bracketMatching(),
         closeBrackets(),
         autocompletion({
@@ -637,8 +768,8 @@ export function createEditorView({
   // palette, and CodeMirror needs the one actually being painted.
   const unsubscribeTheme = subscribeToThemePreference((preference) => {
     view.dispatch({
-      effects: syntaxThemeCompartment.reconfigure(
-        syntaxHighlightStyleForTheme(resolveTheme(preference)),
+      effects: darkThemeCompartment.reconfigure(
+        EditorView.darkTheme.of(resolveTheme(preference) === 'dark'),
       ),
     });
   });

@@ -166,11 +166,15 @@ describe('EditorPanel class integration', () => {
       dirty: false,
     };
 
+    // One visible name, wherever the guide and hints point at it; what the
+    // link carries is in the accessible name, which starts with that name.
     panel.setSessionState(base);
-    expect(item?.textContent).toBe('Copy link to this preset');
+    expect(item?.textContent).toBe('Copy link');
+    expect(item?.getAttribute('aria-label')).toBe('Copy link to this preset');
 
     panel.setSessionState({ ...base, dirty: true });
-    expect(item?.textContent).toBe('Copy link to this edit');
+    expect(item?.textContent).toBe('Copy link');
+    expect(item?.getAttribute('aria-label')).toBe('Copy link to this edit');
 
     item?.click();
     expect(callbacks.onCopyShareLink).toHaveBeenCalled();

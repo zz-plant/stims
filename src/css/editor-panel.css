@@ -33,10 +33,43 @@
   /* The tab row and the first few lines of the open pane. */
   --ed-dock-floor: 6rem;
 
+  /* The code well, in both themes: editor-codemirror.ts paints the code and
+     its chrome from these, so the well follows the app theme. Every token
+     colour and the line numbers clear 4.5:1 on the well and on the active
+     line. One flat colour: the fade under the last line dissolves into it. */
+  --ed-code-bg: #0d151c;
+  --ed-code-raised: #18232d;
+  --ed-code-ink: #dbe4ec;
+  --ed-code-gutter-ink: #8494a3;
+  --ed-code-edge: rgba(255, 255, 255, 0.07);
+  --ed-code-edge-strong: rgba(255, 255, 255, 0.18);
+  --ed-code-active: rgba(119, 201, 255, 0.06);
+  --ed-code-selection: rgba(119, 201, 255, 0.24);
+  --ed-code-match: rgba(119, 201, 255, 0.14);
+  --ed-code-caret: var(--stims-cool);
+  /* The Tune chips' "equations own this" colour. */
+  --ed-code-sources: var(--stims-warn);
+  --ed-tok-heading: #ff9e7a;
+  --ed-tok-comment: #8d9aa8;
+  --ed-tok-keyword: #d4a5f5;
+  --ed-tok-atom: #f2b67a;
+  --ed-tok-variable: #e9c77f;
+  --ed-tok-builtin: #f49ab8;
+  --ed-tok-number: #93d9a6;
+  --ed-tok-operator: #9fb4c8;
+  --ed-tok-property: #86c5ff;
+  --ed-tok-string: #b6dd8c;
+  --ed-tok-type: #7fd3d0;
+
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  /* Nothing in the panel may widen the editor host: a toolbar that ran past
+     the rail let focusing its last button scroll the whole host sideways.
+     Clip, not hidden, so focus cannot scroll it either; and here rather than
+     on the host, whose overflow-y: auto would turn clip into hidden. */
+  overflow-x: clip;
   color: var(--stims-ink);
   font-size: 0.8125rem;
 }
@@ -45,6 +78,39 @@
    light ink rather than the dark-theme's near-black. */
 html.light .stims-editor {
   --ed-on-accent: #fffaf0;
+
+  --ed-code-bg: #f4efe4;
+  --ed-code-raised: #fffaf0;
+  --ed-code-ink: #1f2a31;
+  --ed-code-gutter-ink: #56626c;
+  --ed-code-edge: var(--stims-line-soft);
+  --ed-code-edge-strong: var(--stims-line);
+  --ed-code-active: rgba(35, 48, 56, 0.05);
+  --ed-code-selection: rgba(13, 99, 129, 0.18);
+  --ed-code-match: rgba(13, 99, 129, 0.1);
+  --ed-tok-heading: #a44723;
+  --ed-tok-comment: #56626c;
+  --ed-tok-keyword: #7a2db3;
+  --ed-tok-atom: #0b6180;
+  --ed-tok-variable: #8a4600;
+  --ed-tok-builtin: #a3154e;
+  --ed-tok-number: #11704a;
+  --ed-tok-operator: #465460;
+  --ed-tok-property: #1f4fad;
+  --ed-tok-string: #3f6a12;
+  --ed-tok-type: #0d6a66;
+}
+
+.stims-editor__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Shared micro-label: uppercase, tracked, dim. The console's only
@@ -155,6 +221,7 @@ html.light .stims-editor {
 
 .stims-editor__toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 8px 0;
@@ -245,14 +312,12 @@ html.light .stims-editor {
   color: var(--stims-ink);
 }
 
-.stims-editor__spacer {
-  flex: 1;
-}
-
 /* ── Overflow menu ────────────────────────────────────────────────── */
 
 .stims-editor__menu-wrap {
   position: relative;
+  /* Right-aligned on whichever row the toolbar wraps it onto. */
+  margin-left: auto;
 }
 
 .stims-editor__menu {
@@ -353,29 +418,41 @@ html.light .stims-editor {
 }
 
 .stims-editor__code {
+  position: relative;
   flex: 1;
   min-height: var(--ed-code-floor);
   overflow: hidden;
   /* Its size comes from the layout, never from the document: without this
      a 300-line preset would make the stage's minimum 300 lines tall. */
   contain: size;
-  /* Reads as an inset well rather than a rectangle pasted into the panel. The
-     code surface stays dark in light chrome for the same reason the preset
-     grid does — it is content, not chrome — so it gets the same treatment as
-     that well: rounded, with a hairline top highlight for the inset edge. */
+  /* An inset well in the theme's own colours. It stayed dark in the light
+     theme, under a light token palette that measured 1.9-2.6:1 on it. */
+  border: 1px solid var(--ed-code-edge);
   border-radius: var(--radius-lg);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  /* The region's height rarely lands on a line boundary, so the last visible
-     line was sliced horizontally through its x-height — which reads as broken
-     rendering rather than as "there is more below". Dissolving the final line
-     says the same thing without the guillotine. 22px is a little over one line
-     at the editor's type size, so exactly one line is ever in the fade. */
-  -webkit-mask-image: linear-gradient(
-    180deg,
-    #000 calc(100% - 22px),
-    transparent 100%
-  );
-  mask-image: linear-gradient(180deg, #000 calc(100% - 22px), transparent 100%);
+  background: var(--ed-code-bg);
+}
+
+/* The region's height rarely lands on a line boundary, so the last visible
+   line was sliced horizontally through its x-height — which reads as broken
+   rendering rather than as "there is more below". Dissolving the final line
+   says the same thing without the guillotine. 22px is a little over one line
+   at the editor's type size, so exactly one line is ever in the fade. It
+   fades into the well, not out of it: a mask let the panel show through, so
+   in the light theme the last line ran into the cream around it. */
+.stims-editor__code::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 22px;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: linear-gradient(180deg, transparent, var(--ed-code-bg));
+  pointer-events: none;
+}
+
+/* Drawn on the well, above the fade, rather than on CodeMirror's root. */
+.stims-editor__code:focus-within {
+  outline: 2px solid color-mix(in srgb, var(--ed-focus) 70%, transparent);
+  outline-offset: -1px;
 }
 
 .stims-editor__code .cm-editor {
@@ -1195,10 +1272,15 @@ html.light .stims-editor {
 }
 
 /* A hand-written equation is not something to edit through three widgets,
-   so the row disables itself rather than pretending. */
+   so the row disables itself rather than pretending. Its controls dim; the
+   label that says why stays at full strength (under the row's 0.75 opacity
+   it measured 3.9:1). */
 .stims-editor__mod[data-state="custom"] {
   border-left-color: var(--stims-warn);
-  opacity: 0.75;
+}
+
+.stims-editor__mod[data-state="custom"] :is(select, button, input) {
+  opacity: 0.6;
 }
 
 .stims-editor__mod-select {
@@ -1507,14 +1589,6 @@ html.light .stims-editor {
 @media (max-width: 767px) {
   .stims-editor__dock {
     flex-basis: 200px;
-  }
-
-  .stims-editor__toolbar {
-    flex-wrap: wrap;
-  }
-
-  .stims-editor__spacer {
-    display: none;
   }
 }
 

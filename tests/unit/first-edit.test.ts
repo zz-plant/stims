@@ -91,7 +91,7 @@ describe('first edit guide card', () => {
       // The instruction line yields to the result line; the button turned
       // into its own undo.
       expect(card?.textContent).toContain(
-        'Spin added. Try changing 0.02, or copy a remix link from the editor toolbar.',
+        'Spin added. Try changing 0.02, or press Copy link above the code to share it.',
       );
       expect(buttonWithText(rendered, 'Remove the spin')).not.toBeNull();
     } finally {
