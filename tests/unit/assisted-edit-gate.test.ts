@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { computeSourceDiff } from '../../src/js/milkdrop/overlay/source-diff.ts';
-import { probePresetReactivity } from '../../src/js/milkdrop/reactivity-probe.ts';
+import {
+  probePresetReactivity,
+  probePresetReactivityIsolated,
+} from '../../src/js/milkdrop/reactivity-probe.ts';
 
 const root = path.resolve(import.meta.dir, '../..');
 
@@ -175,5 +178,40 @@ describe('generated-preset reactivity probe', () => {
     const result = probePresetReactivity(compiled);
     expect(result.verdict).toBe('static');
     expect(result.respondingVariables).toEqual([]);
+  });
+
+  test('the isolated probe answers a static source without a worker', async () => {
+    const compiled = compileMilkdropPresetSource(
+      ['[preset00]', 'fDecay=0.98', 'per_frame_1=zoom=1.0;'].join('\n'),
+      { id: 'probe-isolated-static' },
+    );
+
+    await expect(
+      probePresetReactivityIsolated(compiled, { verify: true }),
+    ).resolves.toMatchObject({ verdict: 'static', score: 0 });
+  });
+
+  test('the isolated probe falls back to the sync pass when workers are unavailable', async () => {
+    const compiled = compileMilkdropPresetSource(
+      [
+        '[preset00]',
+        'fDecay=0.98',
+        'per_frame_1=zoom=1.0+bass*0.08;',
+        'per_frame_2=rot=rot+treb*0.02;',
+      ].join('\n'),
+      { id: 'probe-isolated-fallback' },
+    );
+
+    const originalWorker = (globalThis as { Worker?: unknown }).Worker;
+    try {
+      (globalThis as { Worker?: unknown }).Worker = undefined;
+      const result = await probePresetReactivityIsolated(compiled, {
+        verify: true,
+      });
+      expect(result.verdict).toBe('reactive');
+      expect(result.respondingVariables.length).toBeGreaterThan(0);
+    } finally {
+      (globalThis as { Worker?: unknown }).Worker = originalWorker;
+    }
   });
 });

@@ -156,7 +156,9 @@ function sweepPreset(
     };
   }
 
-  const vm = createMilkdropVM(compiled);
+  const vm = createMilkdropVM(compiled, undefined, {
+    frameDeadlineMs: Number.POSITIVE_INFINITY,
+  });
   const tracker = createMilkdropSignalTracker();
   const frequencyData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
   const waveformData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);

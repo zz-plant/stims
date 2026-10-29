@@ -85,10 +85,17 @@ export function runTrace(
   options: ReplayVmOptions = {},
 ): FrameCapture[] {
   const compiled = compileMilkdropPresetSource(raw, { id: presetId });
-  const vm = createMilkdropVM(compiled, {
-    ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-    ...options.webgpuFlags,
-  });
+  const vm = createMilkdropVM(
+    compiled,
+    {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      ...options.webgpuFlags,
+    },
+    // Replay is a measurement of the VM, not a live frame. A wall-clock
+    // ceiling would truncate a slow host's frames and report divergence that
+    // the equations never produced.
+    { frameDeadlineMs: Number.POSITIVE_INFINITY },
+  );
   vm.setRenderBackend(options.backend ?? 'webgl');
   const readSignals = createFrameSignalReader();
   const frames: FrameCapture[] = [];
@@ -497,7 +504,9 @@ async function runGpuTrace(
           const compiled = compilerModule.compileMilkdropPresetSource(raw, {
             id: presetId,
           });
-          const vm = vmModule.createMilkdropVM(compiled);
+          const vm = vmModule.createMilkdropVM(compiled, undefined, {
+            frameDeadlineMs: Number.POSITIVE_INFINITY,
+          });
           vm.setWebGpuOptimizationFlags({
             ...flagsModule.DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
             ...(webgpuFlags ?? null),

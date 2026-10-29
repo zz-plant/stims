@@ -310,7 +310,9 @@ function runScenario({
   trackedVariables: readonly string[];
 }): ScenarioTrace {
   const compiled = compileMilkdropPresetSource(raw, { id: presetId });
-  const vm = createMilkdropVM(compiled);
+  const vm = createMilkdropVM(compiled, undefined, {
+    frameDeadlineMs: Number.POSITIVE_INFINITY,
+  });
   const tracker = createMilkdropSignalTracker();
   const frequencyData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
   const waveformData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
@@ -369,7 +371,9 @@ function resolveTrackedVariables(
     return [...requested];
   }
   const compiled = compileMilkdropPresetSource(raw, { id: presetId });
-  const vm = createMilkdropVM(compiled);
+  const vm = createMilkdropVM(compiled, undefined, {
+    frameDeadlineMs: Number.POSITIVE_INFINITY,
+  });
   const snapshot = vm.getStateSnapshot();
   return DEFAULT_TRACKED_VARIABLES.filter((variable) => variable in snapshot);
 }

@@ -8,6 +8,7 @@ _Current release status: actively developed. Latest release: **v1.5.0**._
 
 ### Changed
 
+- Preset equations now run under a hard wall-clock ceiling as well as the shared iteration budget. A step that has spent 50 ms stops its loops and skips the remaining per-vertex and per-sample calls; init programs get 500 ms instead of an unlimited shared budget. `getExecutionBudgetExceeded()` reports a truncated step. Compilation, shader work and geometry still have their own costs, and the live render path still runs on the main thread; the generated-preset reactivity probe now compiles and steps untrusted source in a terminable worker with a timeout.
 - Gamepad and TV-remote focus navigation and canvas video recording are two more standalone packages, `gamepad-navigation` and `canvas-video-exporter` under `packages/`, each with its own tests and demo site, and the app imports them by name. The recorder's two app ties, the presented stage copy it records from and the recording flag, are hooks it is handed by `src/js/frontend/engine/stage-video-exporter.ts`; outside Stims it records a cropped copy painted on animation frames. Behaviour in the app is unchanged.
 
 - The toolchain is on Bun 1.4.4 (`.bun-version`, `mise.toml`, `packageManager`, `engines.bun`). Workers Builds reads its Bun version from `packageManager`, so production builds move too; Cloudflare's build images reject the compromised eMudhra intermediates, and Bun releases before 1.4.4 still trust them.

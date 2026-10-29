@@ -119,10 +119,16 @@ function runMesh(
   for (const [key, value] of Object.entries(overrides)) {
     preset.ir.numericFields[key] = value;
   }
-  const vm = createMilkdropVM(preset, {
-    ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-    gpuComputeVM: false,
-  });
+  const vm = createMilkdropVM(
+    preset,
+    {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      gpuComputeVM: false,
+    },
+    // Lab measurements are of the VM itself; a wall-clock ceiling would
+    // truncate a slow host's frames and change the numbers.
+    { frameDeadlineMs: Number.POSITIVE_INFINITY },
+  );
   const tracker = createMilkdropSignalTracker();
   const frequencyData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
   const waveformData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);

@@ -627,6 +627,13 @@ export interface MilkdropVM {
   setField(key: string, value: number): void;
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState;
   stepAsync?(signals: MilkdropRuntimeSignals): Promise<MilkdropFrameState>;
+  /**
+   * True when the last step or preset init stopped at the hard wall-clock
+   * deadline instead of finishing. The frame is truncated, not corrupt; the
+   * caller can use this to log, lower quality, or stop re-selecting a preset
+   * that cannot complete inside the budget.
+   */
+  getExecutionBudgetExceeded?(): boolean;
   getStateSnapshot(): Record<string, number>;
 }
 

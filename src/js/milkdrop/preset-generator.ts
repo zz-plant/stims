@@ -6,7 +6,7 @@
 import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
 import { buildGeneratePrompt } from './preset-prompt.ts';
 import {
-  probePresetReactivity,
+  probePresetReactivityIsolated,
   type ReactivityProbeResult,
 } from './reactivity-probe.ts';
 import {
@@ -547,7 +547,9 @@ export async function generatePresetTournament(
       stash.push({ index, status: 'unsalvageable', error, source: milkSource });
       continue;
     }
-    const probe = probePresetReactivity(salvaged.compiled, { verify: true });
+    const probe = await probePresetReactivityIsolated(salvaged.compiled, {
+      verify: true,
+    });
     const score = scoreGenerationCandidate(
       salvaged.compiled,
       probe,
@@ -585,7 +587,7 @@ export async function generatePresetTournament(
       );
       return {
         winner,
-        probe: probePresetReactivity(winner, { verify: true }),
+        probe: await probePresetReactivityIsolated(winner, { verify: true }),
         attempted,
         survivors: 0,
         usedFallback: true,

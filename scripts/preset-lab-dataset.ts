@@ -383,7 +383,9 @@ export function runPresetForDataset(
   } catch (error) {
     return empty('compile-error', (error as Error).message.slice(0, 200));
   }
-  const vm = createMilkdropVM(compiled);
+  const vm = createMilkdropVM(compiled, undefined, {
+    frameDeadlineMs: Number.POSITIVE_INFINITY,
+  });
   const readSignals = createFrameSignalReader();
 
   let columns: string[] | null = variables === 'all' ? null : [...variables];

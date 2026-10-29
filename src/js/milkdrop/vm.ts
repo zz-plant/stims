@@ -115,6 +115,38 @@ const VM_PROGRAM_OPTIONS: MilkdropProgramOptions = { rng: 'inline' };
 const FRAME_LOOP_ITERATION_BUDGET = 2_097_152;
 
 /**
+ * Wall-clock ceiling for one frame's equation execution.
+ *
+ * The iteration budget bounds a `while(1)` that does almost nothing; it does
+ * not bound a loop whose body is expensive, nor the sum of per-vertex calls
+ * that each stay under the cap. This is the hard half: once a step has spent
+ * this long, its loops stop and every later program call in the frame is
+ * skipped, so a hostile or merely pathological preset cannot hold the main
+ * thread for seconds. The value is a ceiling, not a target — the heaviest
+ * bundled preset measures about 4.5 ms of simulation on reference hardware,
+ * and adaptive quality acts long before 50 ms.
+ */
+const FRAME_EXECUTION_DEADLINE_MS = 50;
+
+/**
+ * Wall-clock ceiling for a preset's init programs, which run once per load
+ * rather than per frame. Larger than the frame ceiling because a legitimate
+ * init may build a table, but still finite: the old code lifted the shared
+ * iteration limit for init and relied on the per-call cap alone.
+ */
+const INIT_EXECUTION_DEADLINE_MS = 500;
+
+/**
+ * Overrides for the wall-clock ceilings. The defaults are the production
+ * values; tests pass a negative deadline to prove a step stops without
+ * waiting on the clock.
+ */
+export type MilkdropVMExecutionOptions = {
+  frameDeadlineMs?: number;
+  initDeadlineMs?: number;
+};
+
+/**
  * Fields that close over their own VM instance — the variables proxy and the
  * callbacks bound for the frame builders. handOffRunningPreset swaps every
  * other field between two VMs; these must stay put, or one VM's frame would
@@ -124,6 +156,11 @@ const FRAME_LOOP_ITERATION_BUDGET = 2_097_152;
 const INSTANCE_BOUND_FIELDS: ReadonlySet<string> = new Set([
   'variablesProxy',
   'frameCallbacks',
+  // Host settings, like detailScale: the new VM is constructed with the
+  // production defaults and must not inherit a test's or a caller's override
+  // through the wholesale state swap.
+  'frameDeadlineMs',
+  'initDeadlineMs',
 ]);
 
 class MilkdropPresetVM implements MilkdropVM {
@@ -167,12 +204,18 @@ class MilkdropPresetVM implements MilkdropVM {
   /**
    * Shared by every program call in a frame (see FRAME_LOOP_ITERATION_BUDGET)
    * and refilled when a step starts. The init programs run once per preset,
-   * so reset() lifts the shared limit for them and only the per-call cap
-   * applies there, as before.
+   * so reset() lifts the shared iteration limit for them and relies on the
+   * init wall-clock deadline (see INIT_EXECUTION_DEADLINE_MS).
    */
   private readonly loopBudget: MilkdropLoopBudget = {
     remaining: Number.POSITIVE_INFINITY,
   };
+  /** Absolute `Date.now()` deadline for the step in progress, or null. */
+  private executionDeadlineMs: number | null = null;
+  /** True when the last step stopped at the wall-clock deadline. */
+  private executionBudgetExceeded = false;
+  private readonly frameDeadlineMs: number;
+  private readonly initDeadlineMs: number;
   private readonly megabuf = new Float32Array(MILKDROP_MEGABUF_SIZE);
   private gmegabuf: Float32Array = EMPTY_BUFFER;
   private detailScale = 1;
@@ -347,9 +390,14 @@ class MilkdropPresetVM implements MilkdropVM {
   constructor(
     preset: MilkdropCompiledPreset,
     webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags = DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+    executionOptions: MilkdropVMExecutionOptions = {},
   ) {
     this.preset = preset;
     this.webgpuOptimizationFlags = { ...webgpuOptimizationFlags };
+    this.frameDeadlineMs =
+      executionOptions.frameDeadlineMs ?? FRAME_EXECUTION_DEADLINE_MS;
+    this.initDeadlineMs =
+      executionOptions.initDeadlineMs ?? INIT_EXECUTION_DEADLINE_MS;
     this.reset();
   }
 
@@ -585,6 +633,7 @@ class MilkdropPresetVM implements MilkdropVM {
 
     const zeroSignals = defaultSignalEnv();
     this.loopBudget.remaining = Number.POSITIVE_INFINITY;
+    this.beginExecutionDeadline(this.initDeadlineMs);
     this.runProgram(this.preset.ir.programs.init, this.createEnv(zeroSignals));
 
     // MilkDrop reloads every built-in per-frame variable before running
@@ -661,6 +710,7 @@ class MilkdropPresetVM implements MilkdropVM {
       }
       this.shapeState.customShapeBaseFields[index] = baseSnapshot;
     });
+    this.endExecutionDeadline();
   }
 
   /**
@@ -809,11 +859,53 @@ class MilkdropPresetVM implements MilkdropVM {
     return env;
   }
 
+  /**
+   * Starts the wall-clock window for a step or a preset's init programs.
+   * `remaining` is refilled separately by the caller (frames share an
+   * iteration budget; init lifts it). The deadline is absolute, so nested
+   * program calls all compare against the same instant.
+   */
+  private beginExecutionDeadline(durationMs: number): void {
+    this.executionDeadlineMs = Date.now() + durationMs;
+    this.executionBudgetExceeded = false;
+    this.loopBudget.deadlineMs = this.executionDeadlineMs;
+    this.loopBudget.deadlineExceeded = false;
+  }
+
+  private endExecutionDeadline(): void {
+    if (this.loopBudget.deadlineExceeded) {
+      this.executionBudgetExceeded = true;
+    }
+    this.executionDeadlineMs = null;
+    this.loopBudget.deadlineMs = null;
+    this.loopBudget.deadlineExceeded = false;
+  }
+
+  /**
+   * True when the last step or init stopped at its wall-clock deadline.
+   * The frame is still renderable — it is truncated, not corrupt — but the
+   * caller can tell a complete step from one that ran out of time.
+   */
+  getExecutionBudgetExceeded(): boolean {
+    return this.executionBudgetExceeded;
+  }
+
   private runProgram(
     block: MilkdropCompiledPreset['ir']['programs']['init'],
     env: MutableState,
     locals: MutableState | null = null,
   ) {
+    // Once the step's deadline has passed, skip the remaining per-vertex and
+    // per-sample calls. The loop guard stops work inside a call; this stops
+    // the frame from paying for thousands of calls that can no longer finish.
+    if (
+      this.executionDeadlineMs !== null &&
+      Date.now() >= this.executionDeadlineMs
+    ) {
+      this.executionBudgetExceeded = true;
+      this.loopBudget.deadlineExceeded = true;
+      return;
+    }
     compileMilkdropProgram(block, VM_PROGRAM_OPTIONS)(
       env as Record<string, number>,
       this.state as Record<string, number>,
@@ -892,6 +984,7 @@ class MilkdropPresetVM implements MilkdropVM {
     signals: MilkdropRuntimeSignals,
   ): Promise<MilkdropFrameState> {
     this.loopBudget.remaining = FRAME_LOOP_ITERATION_BUDGET;
+    this.beginExecutionDeadline(this.frameDeadlineMs);
     this.advancePresetClock(signals.time);
     this.restorePerFrameBaseValues();
 
@@ -917,16 +1010,21 @@ class MilkdropPresetVM implements MilkdropVM {
         this.createEnv(signals),
       );
     }
-    return this.buildFrame(signals);
+    const frame = this.buildFrame(signals);
+    this.endExecutionDeadline();
+    return frame;
   }
 
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState {
     this.loopBudget.remaining = FRAME_LOOP_ITERATION_BUDGET;
+    this.beginExecutionDeadline(this.frameDeadlineMs);
     this.advancePresetClock(signals.time);
     this.restorePerFrameBaseValues();
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));
 
-    return this.buildFrame(signals);
+    const frame = this.buildFrame(signals);
+    this.endExecutionDeadline();
+    return frame;
   }
 
   private buildFrame(signals: MilkdropRuntimeSignals): MilkdropFrameState {
@@ -1064,6 +1162,11 @@ class MilkdropPresetVM implements MilkdropVM {
 export function createMilkdropVM(
   preset: MilkdropCompiledPreset,
   webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags = DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+  executionOptions: MilkdropVMExecutionOptions = {},
 ) {
-  return new MilkdropPresetVM(preset, webgpuOptimizationFlags);
+  return new MilkdropPresetVM(
+    preset,
+    webgpuOptimizationFlags,
+    executionOptions,
+  );
 }
