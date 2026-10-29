@@ -117,8 +117,13 @@ function fillAudioFrame(
 function runPass(
   preset: MilkdropCompiledPreset,
   withAudio: boolean,
+  frameDeadlineMs?: number,
 ): Map<string, number[]> {
-  const vm = createMilkdropVM(preset);
+  const vm = createMilkdropVM(
+    preset,
+    undefined,
+    frameDeadlineMs === undefined ? {} : { frameDeadlineMs },
+  );
   const tracker = createMilkdropSignalTracker();
   const frequencyData = new Uint8Array(SPECTRUM_BINS);
   const waveformData = new Uint8Array(SPECTRUM_BINS);
@@ -168,7 +173,7 @@ function relativeDivergence(silent: number[], audio: number[]): number {
 
 export function probePresetReactivity(
   preset: MilkdropCompiledPreset,
-  options: { verify?: boolean } = {},
+  options: { verify?: boolean; frameDeadlineMs?: number } = {},
 ): ReactivityProbeResult {
   try {
     if (!presetEquationsReferenceAudio(preset.source.raw)) {
@@ -178,8 +183,8 @@ export function probePresetReactivity(
       return { verdict: 'reactive', score: 0, respondingVariables: [] };
     }
 
-    const silentSeries = runPass(preset, false);
-    const audioSeries = runPass(preset, true);
+    const silentSeries = runPass(preset, false, options.frameDeadlineMs);
+    const audioSeries = runPass(preset, true, options.frameDeadlineMs);
 
     let score = 0;
     const respondingVariables: string[] = [];
@@ -198,5 +203,99 @@ export function probePresetReactivity(
   } catch {
     // The probe is advisory; a VM failure must never block generation.
     return { verdict: 'unknown', score: 0, respondingVariables: [] };
+  }
+}
+
+/**
+ * Default wall-clock ceiling for the isolated probe. Two timelines of 60
+ * frames on a cheap preset take a few milliseconds; a generated preset that
+ * needs longer than this is not worth waiting on.
+ */
+const REACTIVITY_PROBE_TIMEOUT_MS = 2000;
+
+/**
+ * Per-frame ceiling when the probe has to run synchronously (no worker). The
+ * probe is advisory, so a truncated frame is acceptable; 150 frames times two
+ * passes times the production 50 ms would otherwise be a fifteen-second stall
+ * from a hostile source.
+ */
+const FALLBACK_FRAME_DEADLINE_MS = 10;
+
+/**
+ * Runs the probe in a terminable worker when the platform has one.
+ *
+ * The worker compiles and steps the source itself, so parsing, compilation and
+ * execution all happen off the main thread. A source with an expensive loop
+ * cannot hold the tab: the timeout terminates the worker and the probe
+ * reports `unknown`. Falls back to the synchronous path where workers are
+ * unavailable (tests, non-browser tools) or fail to start.
+ */
+export async function probePresetReactivityIsolated(
+  preset: MilkdropCompiledPreset,
+  options: { verify?: boolean; timeoutMs?: number } = {},
+): Promise<ReactivityProbeResult> {
+  // The static scan is microseconds and needs no execution; keep it on the
+  // caller's thread so the common "does this source mention audio" case does
+  // not pay for a worker round trip.
+  if (!presetEquationsReferenceAudio(preset.source.raw)) {
+    return { verdict: 'static', score: 0, respondingVariables: [] };
+  }
+  if (!options.verify) {
+    return { verdict: 'reactive', score: 0, respondingVariables: [] };
+  }
+  const fallback = () =>
+    probePresetReactivity(preset, {
+      ...options,
+      frameDeadlineMs: FALLBACK_FRAME_DEADLINE_MS,
+    });
+  if (typeof Worker === 'undefined') {
+    return fallback();
+  }
+
+  let worker: Worker;
+  try {
+    worker = new Worker(
+      new URL('./reactivity-probe-worker.ts', import.meta.url),
+      { type: 'module' },
+    );
+  } catch {
+    return fallback();
+  }
+
+  const timeoutMs = options.timeoutMs ?? REACTIVITY_PROBE_TIMEOUT_MS;
+  try {
+    return await new Promise<ReactivityProbeResult>((resolve) => {
+      let settled = false;
+      const finish = (result: ReactivityProbeResult) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        worker.terminate();
+        resolve(result);
+      };
+      const timer = setTimeout(() => {
+        finish({ verdict: 'unknown', score: 0, respondingVariables: [] });
+      }, timeoutMs);
+      worker.onmessage = (event: MessageEvent) => {
+        const reply = event.data as
+          | { ok: true; result: ReactivityProbeResult }
+          | { ok: false; error: string };
+        finish(
+          reply.ok
+            ? reply.result
+            : { verdict: 'unknown', score: 0, respondingVariables: [] },
+        );
+      };
+      worker.onerror = () => {
+        finish({ verdict: 'unknown', score: 0, respondingVariables: [] });
+      };
+      worker.postMessage({
+        source: preset.source,
+        verify: options.verify ?? false,
+      });
+    });
+  } catch {
+    worker.terminate();
+    return fallback();
   }
 }

@@ -82,7 +82,8 @@ export type MilkdropProgramOptions = {
 export type MilkdropProgramRng = (() => number) | EelRngCell;
 
 /**
- * Loop iterations a host lets several program calls share.
+ * Loop iterations a host lets several program calls share, plus an optional
+ * wall-clock ceiling for the whole step.
  *
  * The per-call cap alone bounds one call, but per-pixel and per-point
  * programs run once per mesh vertex or wave sample, so a `while(1)` there
@@ -90,8 +91,20 @@ export type MilkdropProgramRng = (() => number) | EelRngCell;
  * work. A host passes the same cell to every call in a frame; each call runs
  * at most `remaining` iterations (and never more than the per-call cap), then
  * subtracts what it ran. Omitted, a call is bounded by the per-call cap only.
+ *
+ * `remaining` counts iterations, not cost: 2,097,152 passes through a large
+ * body can still take seconds. `deadlineMs` is the hard half. When set, loops
+ * check it periodically (more often for larger bodies) and a host checks it
+ * before each call, so a step stops once wall-clock time is up even if the
+ * iteration budget is not spent. The timebase is `Date.now()`.
+ * `deadlineExceeded` is set when either tier stopped at the deadline, which
+ * lets the host tell a truncated frame from a complete one.
  */
-export type MilkdropLoopBudget = { remaining: number };
+export type MilkdropLoopBudget = {
+  remaining: number;
+  deadlineMs?: number | null;
+  deadlineExceeded?: boolean;
+};
 
 export type MilkdropProgramFn = (
   env: Record<string, number>,
@@ -128,6 +141,8 @@ type CompileContext = {
   /** Identities read at least twice in the current statement — only those
    * pay for the extra temp; single-read identifiers emit exactly as before. */
   cseEligible: ReadonlySet<string>;
+  /** Iterations between wall-clock deadline checks (see deadlineGuard). */
+  deadlineInterval: number;
 };
 
 const EMPTY_CSE_ELIGIBLE: ReadonlySet<string> = new Set();
@@ -485,6 +500,58 @@ function compileStore(
 
 const MILKDROP_LOOP_ITERATION_CAP = 2_097_152;
 
+/**
+ * Loop-body guard for the hard wall-clock deadline.
+ *
+ * `_g` counts iterations for the whole call and is already shared by nested
+ * loops, so testing it against the interval costs one bitwise and per
+ * iteration and reads the clock only every `interval`. `_dx` is the shared
+ * stop flag: a nested loop that trips it also ends its parents. A `break`
+ * alone would only leave the innermost loop running the rest of its body.
+ *
+ * The interval shrinks for large bodies. A fixed 1024 iterations is cheap on
+ * a four-statement loop but can mean a hundred thousand statements between
+ * clock reads on a generated preset, which is the stall this guard exists to
+ * prevent. `deadlineCheckInterval` keeps the work between checks to roughly
+ * one window of statements.
+ */
+function deadlineGuard(interval: number): string {
+  return `if ((_g & ${interval - 1}) === 0 && _dl !== 0 && Date.now() >= _dl) { _dx = 1; break; }`;
+}
+
+const MILKDROP_DEADLINE_STATEMENT_WINDOW = 4096;
+const MILKDROP_DEADLINE_MAX_INTERVAL = 1024;
+
+/** Total statements in a block, nested control-flow bodies included. */
+function countProgramStatements(block: MilkdropProgramBlock): number {
+  let count = 0;
+  const stack: MilkdropCompiledStatement[] = [...block.statements];
+  while (stack.length > 0) {
+    const statement = stack.pop();
+    if (!statement) continue;
+    count += 1;
+    if (statement.control) {
+      for (const inner of statement.control.body) {
+        stack.push(inner);
+      }
+    }
+  }
+  return count;
+}
+
+/**
+ * Iterations between wall-clock checks: small for tiny bodies (the clock read
+ * dominates otherwise) and 1 for bodies large enough that one pass is already
+ * the budget. Rounded down to a power of two so the emitted `&` is exactly
+ * `guard % interval`; a non-power-of-two mask would check on the wrong passes.
+ */
+function deadlineCheckInterval(block: MilkdropProgramBlock): number {
+  const statements = Math.max(1, countProgramStatements(block));
+  const raw = Math.floor(MILKDROP_DEADLINE_STATEMENT_WINDOW / statements);
+  const clamped = Math.min(MILKDROP_DEADLINE_MAX_INTERVAL, Math.max(1, raw));
+  return 2 ** Math.floor(Math.log2(clamped));
+}
+
 /** True when a block contains any `loop`/`while` control statement. Any nested
  * loop is reachable only through an outer control statement, so a top-level
  * scan is sufficient and the guard counter is only declared when needed. */
@@ -516,8 +583,9 @@ function compileStatementSource(
         `${countVar} = Math.min(${MILKDROP_LOOP_ITERATION_CAP}, Math.max(0, Math.trunc(${count}) || 0));`,
       );
       body.push(
-        `for (${indexVar} = 0; ${indexVar} < ${countVar} && _g < _gl; ${indexVar} += 1, _g += 1) {`,
+        `for (${indexVar} = 0; ${indexVar} < ${countVar} && _g < _gl && _dx === 0; ${indexVar} += 1, _g += 1) {`,
       );
+      body.push(deadlineGuard(context.deadlineInterval));
     } else {
       // The condition is boolified like every other EEL boolean context:
       // ns-eel2's repeatwhile stub compares |cond| against the close factor,
@@ -527,8 +595,9 @@ function compileStatementSource(
         ? compileNode(statement.control.condition, context)
         : '1';
       body.push(
-        `while (Math.abs(${cond}) > ${MILKDROP_EEL_CLOSE_FACTOR} && _g < _gl) { _g += 1;`,
+        `while (Math.abs(${cond}) > ${MILKDROP_EEL_CLOSE_FACTOR} && _g < _gl && _dx === 0) { _g += 1;`,
       );
+      body.push(deadlineGuard(context.deadlineInterval));
     }
 
     for (const inner of innerBody) {
@@ -576,6 +645,7 @@ function compileProgramSource(
     randomUsed: false,
     cse: new Map(),
     cseEligible: EMPTY_CSE_ELIGIBLE,
+    deadlineInterval: deadlineCheckInterval(block),
   };
   const body: string[] = [];
 
@@ -589,13 +659,18 @@ function compileProgramSource(
   const declarations = ['_v', ...context.temporaries];
   // `_g` counts this call's iterations across every loop in it; `_gl` is its
   // limit, the per-call cap or the shared budget's remainder if smaller.
+  // `_dl` is the wall-clock deadline (0 = none) and `_dx` the shared stop flag
+  // a deadline trip sets so nested loops unwind together.
   let loopEpilogue = '';
   if (blockUsesControlFlow(block)) {
     declarations.push(
       '_g = 0',
       `_gl = lb == null ? ${MILKDROP_LOOP_ITERATION_CAP} : Math.min(${MILKDROP_LOOP_ITERATION_CAP}, lb.remaining)`,
+      '_dx = 0',
+      '_dl = lb == null ? 0 : (lb.deadlineMs ?? 0)',
     );
-    loopEpilogue = 'if (lb != null) { lb.remaining -= _g; }';
+    loopEpilogue =
+      'if (lb != null) { lb.remaining -= _g; if (_dx !== 0) { lb.deadlineExceeded = true; } }';
   }
   // Inline RNG: one cell load on entry, one store on exit, so the whole
   // program advances the shared state without a call per draw. Programs that
@@ -704,9 +779,19 @@ function buildInterpretedProgram(
       lb == null
         ? MILKDROP_LOOP_ITERATION_CAP
         : Math.min(MILKDROP_LOOP_ITERATION_CAP, lb.remaining);
+    // Same hard wall-clock contract as the JIT tier: check every interval
+    // iterations, and let a nested loop's trip stop every parent.
+    const deadline = lb?.deadlineMs ?? 0;
+    const deadlineInterval = deadlineCheckInterval(block);
+    let deadlineExceeded = false;
+    const deadlineReached = () =>
+      deadline !== 0 && (guard & (deadlineInterval - 1)) === 0
+        ? Date.now() >= deadline
+        : false;
     const run = (statements: readonly MilkdropCompiledStatement[]) => {
       for (const statement of statements) {
         if (!statement) continue;
+        if (deadlineExceeded) return;
         if (statement.control) {
           const { kind, body } = statement.control;
           if (kind === 'loop') {
@@ -726,10 +811,18 @@ function buildInterpretedProgram(
               index < count && guard < guardLimit;
               index += 1, guard += 1
             ) {
+              if (deadlineReached()) {
+                deadlineExceeded = true;
+                break;
+              }
               run(body);
             }
           } else {
             while (guard < guardLimit) {
+              if (deadlineReached()) {
+                deadlineExceeded = true;
+                break;
+              }
               const condition = statement.control.condition
                 ? evaluateMilkdropExpression(
                     statement.control.condition,
@@ -777,7 +870,10 @@ function buildInterpretedProgram(
       }
     };
     run(block.statements);
-    if (lb != null) lb.remaining -= guard;
+    if (lb != null) {
+      lb.remaining -= guard;
+      if (deadlineExceeded) lb.deadlineExceeded = true;
+    }
   };
 }
 

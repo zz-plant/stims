@@ -9,6 +9,33 @@
 
 Use this runtime when changing the shipped MilkDrop experience instead of re-introducing a separate visualizer stack.
 
+## Execution limits
+
+Preset equations are untrusted code: they arrive in share links, generated
+presets and imported files. Two limits apply, and they bound different things.
+
+- **Iterations.** `FRAME_LOOP_ITERATION_BUDGET` (`src/js/milkdrop/vm.ts`)
+  gives one frame's programs 2,097,152 loop passes between them. The JIT and
+  the CSP interpreter both charge the shared `MilkdropLoopBudget`, so a
+  `while(1)` in per-pixel code cannot run the per-call cap once per vertex.
+- **Wall-clock time.** `FRAME_EXECUTION_DEADLINE_MS` is the hard half. Loops
+  check the deadline periodically (more often for large bodies), and the VM
+  checks it before every program call, so once a step has spent its window the
+  remaining per-vertex and per-sample calls are skipped. `step()` and
+  `stepAsync()` reset the window each frame; `reset()` gives init programs
+  `INIT_EXECUTION_DEADLINE_MS` instead of lifting the limit. `getExecutionBudgetExceeded()`
+  reports a truncated step.
+
+The ceilings are protection, not targets. They stop a hostile or pathological
+preset from holding the main thread for seconds; they do not make every
+operation bounded. Compilation, GPU shader work and the geometry built after
+the programs run have their own costs and are not covered by the deadline.
+Full isolation of the live render path would need a terminable worker, and
+that path is synchronous, so it remains a separate design. The one execution
+surface that does run in a terminable worker today is the generated-preset
+reactivity probe (`probePresetReactivityIsolated`): it compiles and steps the
+untrusted source in a worker and terminates it on a timeout.
+
 ## Signal contract for preset authors
 
 Preset equations can read the existing audio/time globals plus these shared interaction signals:

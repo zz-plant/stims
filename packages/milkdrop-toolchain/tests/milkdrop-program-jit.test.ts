@@ -720,5 +720,19 @@ describe('shared loop budget', () => {
       runWithBudget(block, scopes, null);
       expect(scopes.registers.q1).toBe(2 * 2_097_152);
     }, 30000); // Bun's 5s default under load; the assertion measures counts, not time. // This deliberately executes 4M iterations. The interpreter can exceed
+
+    test(`${tier}: an expired deadline stops the loop and marks the budget`, () => {
+      const block = parsedBlock(['loop(1000000, q1 = q1 + 1;);']);
+      const scopes = makeScopes(false);
+      const budget: MilkdropLoopBudget = {
+        remaining: 2_097_152,
+        deadlineMs: Date.now() - 1,
+      };
+      runWithBudget(block, scopes, budget);
+      expect(scopes.registers.q1).toBe(0);
+      expect(budget.deadlineExceeded).toBe(true);
+      // The iteration budget is untouched: the loop never ran.
+      expect(budget.remaining).toBe(2_097_152);
+    });
   }
 });
