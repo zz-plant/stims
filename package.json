@@ -110,6 +110,7 @@
     "format:changed": "bun run scripts/format-changed.ts",
     "format:check": "bun run scripts/run-biome.ts format",
     "generate:all": "bun run --parallel generate:previews && bun run generate:descriptions",
+    "generate:agent-skills": "bun run scripts/generate-agent-skills.ts",
     "generate:clips": "bun run scripts/generate-readme-clips.ts",
     "generate:descriptions": "bun run scripts/build-preset-descriptions.ts",
     "generate:first-run-evidence": "bun run scripts/generate-first-run-evidence.ts",

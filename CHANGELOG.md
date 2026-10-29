@@ -6,6 +6,10 @@ _Current release status: actively developed. Latest release: **v1.5.0**._
 
 ## [Unreleased]
 
+### Added
+
+- Agent-readiness surfaces on toil.fyi: robots.txt now carries Content-Signal usage preferences (search and ai-input allowed, ai-train not declared as allowed) in every crawler group; every `/learn/` page has a markdown sibling served for its `.md` URL and for `Accept: text/markdown` with `Content-Location` and `Vary: Accept`; HTML responses advertise the machine-readable surfaces (llms.txt, sitemap, OpenAPI, api-catalog, MCP card, skills index) in a Link header; and the new `/.well-known/api-catalog` (RFC 9727 linkset), `/.well-known/mcp/server-card.json` (states no MCP endpoint is hosted on this origin, replacing a card that pointed at a dead `/mcp`), `/auth.md` (no authentication required), and `/.well-known/agent-skills/` index two SKILL.md files for driving and embedding the visualizer. `check:seo` guards all of it.
+
 ### Changed
 
 - Gamepad and TV-remote focus navigation and canvas video recording are two more standalone packages, `gamepad-navigation` and `canvas-video-exporter` under `packages/`, each with its own tests and demo site, and the app imports them by name. The recorder's two app ties, the presented stage copy it records from and the recording flag, are hooks it is handed by `src/js/frontend/engine/stage-video-exporter.ts`; outside Stims it records a cropped copy painted on animation frames. Behaviour in the app is unchanged.
