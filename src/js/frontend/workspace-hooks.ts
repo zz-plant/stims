@@ -28,7 +28,7 @@ import {
 } from '../core/settings-panel.ts';
 import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
 import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
-import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
+import { scheduleOnFirstIntent } from '../utils/browser/idle-task.ts';
 import { recordStatusMessage } from './agent-state.ts';
 import type { LaunchIntent, SessionRouteState } from './contracts.ts';
 import { createForwardedEngineActions } from './engine/engine-forwarding.ts';
@@ -481,13 +481,13 @@ export function useWorkspaceSessionState({
     // on them. Paying for the renderer boot up front (WebGPU probe + device
     // request, shader compile, first-run preset compile, first frames) used to
     // sit on the initial-load critical path as a ~2.5s main-thread block on
-    // mid-range hardware. Let the shell paint and the page settle first, then
-    // boot during idle budget. A deep-linked preset or audio source is a real
-    // intent and still mounts immediately.
+    // mid-range hardware. Let the static field paint and the page respond
+    // first; boot on the visitor's first intent gesture or after a short grace
+    // period, whichever comes first. A deep-linked preset or audio source is
+    // real intent and still mounts immediately.
     if (!routeState.presetId && !routeState.audioSource) {
-      return scheduleIdleTask(mountEngine, {
-        idleTimeout: 2500,
-        fallbackDelay: 800,
+      return scheduleOnFirstIntent(mountEngine, {
+        fallbackDelay: 3000,
       });
     }
 

@@ -24,6 +24,78 @@ export function scheduleIdleTask(
 }
 
 /**
+ * The gestures that count as a visitor asking the page to do something.
+ * `pointermove` is deliberately absent: a cursor already over the window can
+ * emit one on load, which would defeat the deferral for everyone.
+ */
+const FIRST_INTENT_EVENTS = [
+  'pointerdown',
+  'keydown',
+  'scroll',
+  'wheel',
+  'touchstart',
+] as const;
+
+/**
+ * Run a decorative effect on the first sign of visitor intent, or after a
+ * fixed grace period if no one interacts.
+ *
+ * The decorative attract render is the heaviest thing a bare landing boots:
+ * the engine chunks, a GPU context, a preset compile and the first frames.
+ * Deferring it to `requestIdleCallback` helped, but an idle callback fires as
+ * soon as the browser is briefly idle — often well inside the load window on
+ * a fast machine — so the work still lands on the critical path. A plain
+ * grace period keeps the static field until the visitor shows intent (a
+ * click, key, scroll, wheel or touch) or the period ends. Deep links and
+ * audio arrivals do not use it; they are real intent already.
+ */
+export function scheduleOnFirstIntent(
+  callback: () => void,
+  options?: {
+    /** Grace period in ms when nobody interacts. */
+    fallbackDelay?: number;
+    events?: readonly string[];
+  },
+): () => void {
+  if (typeof window === 'undefined') {
+    return scheduleIdleTask(callback, {
+      idleTimeout: options?.fallbackDelay,
+      fallbackDelay: options?.fallbackDelay,
+    });
+  }
+  const events = options?.events ?? FIRST_INTENT_EVENTS;
+  let done = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const cleanup = () => {
+    for (const event of events) {
+      window.removeEventListener(event, run, true);
+    }
+    if (timer !== null) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  };
+  const run = () => {
+    if (done) return;
+    done = true;
+    cleanup();
+    callback();
+  };
+  for (const event of events) {
+    window.addEventListener(event, run, {
+      capture: true,
+      once: true,
+      passive: true,
+    });
+  }
+  timer = setTimeout(run, options?.fallbackDelay ?? 3000);
+  return () => {
+    done = true;
+    cleanup();
+  };
+}
+
+/**
  * Schedule a non-critical effect to run during browser idle time, where the
  * effect returns its own disposal. Cancelling before the task runs, or after
  * it ran, both invoke that disposal exactly once — the shape React effect
