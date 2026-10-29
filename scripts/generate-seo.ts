@@ -1072,21 +1072,34 @@ export const chunkSitemapEntries = (
   );
 
 export function buildRobotsTxt(baseUrl = DEFAULT_BASE_URL) {
+  // Content-Signal (contentsignals.org) declares, per crawler group, how
+  // automated systems may use the content: search indexing (search), grounding
+  // AI answers on fetched pages (ai-input), and model training (ai-train).
+  // Signals are advisory — they are not enforced the way Allow/Disallow is —
+  // so every group that names a bot repeats them. Policy matches the default
+  // of Cloudflare's managed robots.txt: search and AI answers welcome,
+  // training not declared as allowed.
+  const contentSignal = 'Content-Signal: search=yes, ai-input=yes, ai-train=no';
   return [
     'User-agent: *',
     'Allow: /',
+    contentSignal,
     '',
     'User-agent: GPTBot',
     'Allow: /',
+    contentSignal,
     '',
     'User-agent: PerplexityBot',
     'Allow: /',
+    contentSignal,
     '',
     'User-agent: ClaudeBot',
     'Allow: /',
+    contentSignal,
     '',
     'User-agent: Google-Extended',
     'Allow: /',
+    contentSignal,
     '',
     `Sitemap: ${baseUrl}/sitemap.xml`,
     '',

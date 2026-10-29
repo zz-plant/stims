@@ -6,6 +6,10 @@ _Current release status: actively developed. Latest release: **v1.5.0**._
 
 ## [Unreleased]
 
+### Added
+
+- Agent-readiness surfaces on toil.fyi: robots.txt now carries Content-Signal usage preferences (search and ai-input allowed, ai-train not declared as allowed) in every crawler group; every `/learn/` page has a markdown sibling served for its `.md` URL and for `Accept: text/markdown` with `Content-Location` and `Vary: Accept`; HTML responses advertise the machine-readable surfaces (llms.txt, sitemap, OpenAPI, api-catalog, MCP card, skills index) in a Link header; and the new `/.well-known/api-catalog` (RFC 9727 linkset), `/.well-known/mcp/server-card.json` (states no MCP endpoint is hosted on this origin, replacing a card that pointed at a dead `/mcp`), `/auth.md` (no authentication required), and `/.well-known/agent-skills/` index two SKILL.md files for driving and embedding the visualizer. `check:seo` guards all of it.
+
 ### Changed
 
 - Preset equations now run under a hard wall-clock ceiling as well as the shared iteration budget. A step that has spent 50 ms stops its loops and skips the remaining per-vertex and per-sample calls; init programs get 500 ms instead of an unlimited shared budget. `getExecutionBudgetExceeded()` reports a truncated step. Compilation, shader work and geometry still have their own costs, and the live render path still runs on the main thread; the generated-preset reactivity probe now compiles and steps untrusted source in a terminable worker with a timeout.

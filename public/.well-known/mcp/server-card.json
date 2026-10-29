@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "name": "Stims (toil.fyi)",
+  "description": "MilkDrop preset visualizer with a live editor and an open HTTP API. The MCP server ships with the open-source repository; toil.fyi hosts the visualizer and the HTTP APIs, not the MCP endpoint.",
+  "endpoint": null,
+  "transports": [
+    {
+      "type": "stdio",
+      "availability": "clone https://github.com/zz-plant/stims and run `bun run mcp`; full tool set including headless browser session control"
+    },
+    {
+      "type": "http",
+      "availability": "not hosted on toil.fyi; deploy scripts/mcp-worker.ts from the repository with wrangler.mcp.jsonc"
+    }
+  ],
+  "documentation": [
+    "https://toil.fyi/llms-full.txt",
+    "https://github.com/zz-plant/stims/blob/main/docs/MCP_SERVER.md"
+  ]
+}

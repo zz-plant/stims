@@ -13,9 +13,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
+import { DISCOVERY_LINK_HEADER } from '../functions/_middleware.ts';
+import { buildAgentSkillsIndex } from './generate-agent-skills.ts';
 import {
   findStaleLearnFiles,
   LEARN_PAGES,
+  learnMarkdownPath,
   learnPageOutFile,
   learnPagePath,
 } from './generate-learn-pages.ts';
@@ -379,6 +382,17 @@ export async function runSeoChecks(rootDir = repoRoot) {
   });
 
   results.push({
+    name: 'robots.txt declares Content-Signal usage preferences',
+    passed:
+      (
+        String(robots).match(
+          /Content-Signal: search=yes, ai-input=yes, ai-train=no/gu,
+        ) ?? []
+      ).length === 5,
+    details: `${GENERATED_ROBOTS_PATH} — one Content-Signal line per crawler group`,
+  });
+
+  results.push({
     name: 'Sitemap index contains sitemap-1.xml location',
     passed: sitemapIndex.includes(
       `<loc>${DEFAULT_BASE_URL}/sitemap-1.xml</loc>`,
@@ -503,6 +517,7 @@ export async function runSeoChecks(rootDir = repoRoot) {
   });
 
   await pushLearnPageChecks(rootDir, String(sitemapChunk), results);
+  await pushAgentDiscoveryChecks(rootDir, results);
 
   return results;
 }
@@ -561,6 +576,11 @@ async function pushLearnPageChecks(
         : 'robots',
       jsonLdOk ? null : 'json-ld',
       sitemapChunk.includes(`<loc>${url}</loc>`) ? null : 'sitemap entry',
+      html.includes(
+        `<link rel="alternate" type="text/markdown" href="${DEFAULT_BASE_URL}${learnMarkdownPath(page)}"`,
+      )
+        ? null
+        : 'markdown alternate link',
       brokenLinks.length === 0
         ? null
         : `broken links ${brokenLinks.join(', ')}`,
@@ -571,6 +591,83 @@ async function pushLearnPageChecks(
       details: problems.length > 0 ? problems.join('; ') : file,
     });
   }
+}
+
+/**
+ * The surfaces agents discover without reading HTML: the Agent Skills index,
+ * the MCP server card, the no-authentication statement, and the Link header
+ * block that public/_headers stamps on the preset index pages (the only HTML
+ * that skips the worker, so its discovery links cannot come from middleware).
+ */
+async function pushAgentDiscoveryChecks(
+  rootDir: string,
+  results: CheckResult[],
+) {
+  let skillsIndex: string | null = null;
+  try {
+    skillsIndex = buildAgentSkillsIndex();
+  } catch (error) {
+    results.push({
+      name: 'Agent Skills index matches generate:agent-skills',
+      passed: false,
+      details: String(error),
+    });
+  }
+  if (skillsIndex !== null) {
+    const shipped = await fs
+      .readFile(
+        path.join(rootDir, 'public/.well-known/agent-skills/index.json'),
+        'utf8',
+      )
+      .catch(() => null);
+    results.push({
+      name: 'Agent Skills index matches generate:agent-skills',
+      passed: shipped === skillsIndex,
+      details:
+        shipped === skillsIndex
+          ? 'index.json'
+          : 'stale — run bun run generate:agent-skills',
+    });
+  }
+
+  const serverCard = await fs
+    .readFile(
+      path.join(rootDir, 'public/.well-known/mcp/server-card.json'),
+      'utf8',
+    )
+    .then((text) => JSON.parse(text) as { endpoint?: unknown; name?: string })
+    .catch(() => null);
+  results.push({
+    name: 'MCP server card states no hosted endpoint',
+    passed:
+      serverCard !== null &&
+      serverCard.endpoint === null &&
+      serverCard.name === 'Stims (toil.fyi)',
+    details:
+      'public/.well-known/mcp/server-card.json — the MCP server is not hosted on this origin',
+  });
+
+  const authMd = await fs
+    .readFile(path.join(rootDir, 'public/auth.md'), 'utf8')
+    .catch(() => '');
+  results.push({
+    name: 'auth.md states that no authentication is required',
+    passed: authMd.includes('has no authentication'),
+    details: 'public/auth.md',
+  });
+
+  const headersText = await fs
+    .readFile(path.join(rootDir, 'public/_headers'), 'utf8')
+    .catch(() => '');
+  const presetsSection =
+    headersText.split(/^\/presets\/\*\n/mu)[1]?.split(/\n(?=\S)/mu)[0] ?? '';
+  const headerLink = /^ {2}Link: (.+)$/mu.exec(presetsSection)?.[1]?.trim();
+  results.push({
+    name: '_headers preset Link block matches the middleware discovery links',
+    passed: headerLink === DISCOVERY_LINK_HEADER,
+    details:
+      'public/_headers — the /presets/* pages skip the worker, so their Link header is stamped here',
+  });
 }
 
 async function main() {

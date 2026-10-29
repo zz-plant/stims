@@ -7,20 +7,32 @@
  * preset", "milkdrop online", "butterchurn alternative" — had nothing on the
  * site to rank. This renders them to static HTML under public/learn/, with
  * unique titles, canonicals, TechArticle/FAQ/Breadcrumb JSON-LD, and a
- * footer that links every discover hub and author page from real HTML.
+ * footer that links every discover hub and author page from real HTML. Each
+ * page also gets a markdown sibling (`/learn/<slug>.md`, `/learn.md` for the
+ * hub) with the same rewritten links and a frontmatter block naming the
+ * canonical HTML URL; the worker serves it for `Accept: text/markdown`.
  *
  *   bun run generate:learn            # write public/learn/**
  *   bun run generate:learn -- --check # fail if the files are stale
  *
- * Pages are plain static HTML (no app shell, no JavaScript), served straight
- * from assets. Edit the markdown under docs/authoring/ or docs/learn/, never
- * the output.
+ * Pages are plain static HTML (no app shell, no JavaScript). Edit the
+ * markdown under docs/authoring/ or docs/learn/, never the output.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked, type Tokens } from 'marked';
+import {
+  LEARN_OUTPUT_DIR,
+  LEARN_PAGES,
+  type LearnPage,
+  learnMarkdownOutFile,
+  learnMarkdownPath,
+  learnPageBySource,
+  learnPageOutFile,
+  learnPagePath,
+} from '../functions/shared/learn-pages.ts';
 import { siteIndexHtml } from '../functions/shared/site-index.ts';
 
 const repoRoot = path.resolve(
@@ -30,144 +42,19 @@ const repoRoot = path.resolve(
 const BASE_URL = 'https://toil.fyi';
 const GITHUB_BLOB = 'https://github.com/zz-plant/stims/blob/main';
 const GITHUB_TREE = 'https://github.com/zz-plant/stims/tree/main';
-export const LEARN_OUTPUT_DIR = 'public/learn';
 
-export type LearnPage = {
-  /** '' is the /learn/ hub. */
-  slug: string;
-  /** Repo-relative markdown source. */
-  source: string;
-  /** Text before " | Stims" in <title>; written for the query, not the file. */
-  seoTitle: string;
-  description: string;
-  kind: 'hub' | 'track' | 'landing';
-  /** Derive FAQPage JSON-LD from the `## FAQ` section. */
-  faq?: boolean;
+export type { LearnPage };
+// The page list and URL mapping live in functions/shared/learn-pages.ts so
+// the worker middleware can map /learn* request paths without importing this
+// script, which needs node:fs. Re-exported for the checks that already
+// import them from here.
+export {
+  LEARN_PAGES,
+  learnMarkdownOutFile,
+  learnMarkdownPath,
+  learnPageOutFile,
+  learnPagePath,
 };
-
-export const LEARN_PAGES: readonly LearnPage[] = [
-  {
-    slug: '',
-    source: 'docs/authoring/README.md',
-    seoTitle: 'Learn to Write MilkDrop Presets — Free Course',
-    description:
-      'A free course in writing MilkDrop presets, from remixing with sliders to shaders. Every example runs live in your browser with nothing to install.',
-    kind: 'hub',
-  },
-  {
-    slug: 'milkdrop-online',
-    source: 'docs/learn/milkdrop-online.md',
-    seoTitle: 'MilkDrop Online — Play and Edit Presets in Your Browser',
-    description:
-      'Run MilkDrop presets in your browser with nothing to install. Watch, play your own music, edit the equations, and import or export .milk files.',
-    kind: 'landing',
-    faq: true,
-  },
-  {
-    slug: 'milkdrop-vs-butterchurn-projectm',
-    source: 'docs/learn/milkdrop-vs-butterchurn-projectm.md',
-    seoTitle: 'Stims vs Butterchurn vs projectM',
-    description:
-      'How Stims, Butterchurn, and projectM differ (browser app, embeddable renderer, and native library) and which one fits what you want to do.',
-    kind: 'landing',
-    faq: true,
-  },
-  {
-    slug: 'play',
-    source: 'docs/authoring/00-play.md',
-    seoTitle: 'Remix a MilkDrop Preset With No Code — Track 0',
-    description:
-      'Fifteen minutes, no code: find a MilkDrop preset you love, drag its live sliders, remix it with credit preserved, and share it as a link.',
-    kind: 'track',
-  },
-  {
-    slug: 'how-milkdrop-thinks',
-    source: 'docs/authoring/01-how-milkdrop-thinks.md',
-    seoTitle: 'How MilkDrop Works: Feedback, Pipeline, Decay — Track 1',
-    description:
-      'The mental model behind every MilkDrop preset: the feedback loop, the per-frame and per-pixel pipeline, and what decay and time really do.',
-    kind: 'track',
-  },
-  {
-    slug: 'motion',
-    source: 'docs/authoring/02-motion.md',
-    seoTitle: 'MilkDrop Motion: zoom, rot, dx, sx, warp — Track 2',
-    description:
-      'Control how a MilkDrop preset moves with zoom, rot, dx/dy, sx/sy, and warp, plus a line-by-line dissection of a Geiss classic.',
-    kind: 'track',
-  },
-  {
-    slug: 'listening',
-    source: 'docs/authoring/03-listening.md',
-    seoTitle: 'Audio-Reactive MilkDrop: Bass, Beats, Smoothing — Track 3',
-    description:
-      'Make a MilkDrop preset react to music: audio bands, smoothing, beat detection without a beat detector, and measuring how reactive it really is.',
-    kind: 'track',
-  },
-  {
-    slug: 'warp-fields',
-    source: 'docs/authoring/04-warp-fields.md',
-    seoTitle: 'MilkDrop Per-Pixel Warp Fields — Track 4',
-    description:
-      'Per-pixel equations in MilkDrop: rad and ang, tunnels, ripples, and other warp fields that change with position across the screen.',
-    kind: 'track',
-  },
-  {
-    slug: 'waves-and-shapes',
-    source: 'docs/authoring/05-waves-and-shapes.md',
-    seoTitle: 'MilkDrop Custom Waves and Shapes — Track 5',
-    description:
-      'Draw with MilkDrop custom waves and custom shapes, and pass values from per-frame equations into them with the q-variable bridge.',
-    kind: 'track',
-  },
-  {
-    slug: 'shaders',
-    source: 'docs/authoring/06-shaders.md',
-    seoTitle: 'MilkDrop Warp and Composite Shaders — Track 6',
-    description:
-      'Write MilkDrop warp and composite shaders, the pair used by most of the catalog, with runnable examples and notes on what browsers support.',
-    kind: 'track',
-  },
-  {
-    slug: 'taste',
-    source: 'docs/authoring/07-taste.md',
-    seoTitle: 'MilkDrop Masterworks Dissected — Track 7',
-    description:
-      'Five celebrated MilkDrop presets taken apart: reaction-diffusion, tempo tracking, hand-rolled HSL, and more, to learn what makes them good.',
-    kind: 'track',
-  },
-  {
-    slug: 'shipping',
-    source: 'docs/authoring/08-shipping.md',
-    seoTitle: 'Publishing MilkDrop Presets and Engine Compatibility — Track 8',
-    description:
-      'What works in MilkDrop, projectM, Butterchurn, and Stims: a cross-engine compatibility matrix, performance advice, and how to publish your preset.',
-    kind: 'track',
-  },
-  {
-    slug: 'technique-glossary',
-    source: 'docs/authoring/09-technique-glossary.md',
-    seoTitle: 'MilkDrop Technique Glossary',
-    description:
-      'The named techniques of MilkDrop presets, like Jelly, Relief, and Painterly, counted across the shipped catalog with examples.',
-    kind: 'track',
-  },
-  {
-    slug: 'reference',
-    source: 'docs/authoring/reference.md',
-    seoTitle: 'MilkDrop Language Reference',
-    description:
-      'Reference for the MilkDrop preset language as Stims implements it: variables, functions, signals, and the fields a preset can set.',
-    kind: 'track',
-  },
-];
-
-const pageBySource = new Map(LEARN_PAGES.map((page) => [page.source, page]));
-
-export const learnPagePath = (page: LearnPage) =>
-  page.slug ? `/learn/${page.slug}/` : '/learn/';
-export const learnPageOutFile = (page: LearnPage) =>
-  `${LEARN_OUTPUT_DIR}/${page.slug ? `${page.slug}/` : ''}index.html`;
 
 const escapeHtml = (value: string) =>
   value
@@ -207,7 +94,7 @@ export function rewriteLearnHref(href: string, sourceFile: string): string {
     path.posix.join(path.posix.dirname(sourceFile), pathPart),
   );
   const suffix = hash ? `#${hash}` : '';
-  const page = pageBySource.get(resolved);
+  const page = learnPageBySource.get(resolved);
   if (page) return `${learnPagePath(page)}${suffix}`;
   const isDir = pathPart.endsWith('/');
   return `${isDir ? GITHUB_TREE : GITHUB_BLOB}/${resolved.replace(/\/$/u, '')}${suffix}`;
@@ -374,6 +261,8 @@ export type StaticPage = {
   main: string;
   /** Rules this page adds to the shared stylesheet. */
   extraStyle?: string;
+  /** A markdown sibling, advertised as rel="alternate" in <head>. */
+  alternateMarkdown?: { href: string; title: string };
 };
 
 /**
@@ -392,7 +281,7 @@ export function renderStaticPage(page: StaticPage): string {
 <meta name="robots" content="index,follow" />
 <meta name="theme-color" content="#0b0f1a" />
 <link rel="canonical" href="${page.url}" />
-<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+${page.alternateMarkdown ? `<link rel="alternate" type="text/markdown" href="${escapeHtml(page.alternateMarkdown.href)}" title="${escapeHtml(page.alternateMarkdown.title)}" />\n` : ''}<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -534,6 +423,10 @@ export function renderLearnPage(page: LearnPage): string {
     url,
     ogType: 'article',
     jsonLd,
+    alternateMarkdown: {
+      href: `${BASE_URL}${learnMarkdownPath(page)}`,
+      title: `${page.seoTitle} — Markdown source`,
+    },
     main: `<article>
 ${body}
 ${tryIt}
@@ -542,11 +435,44 @@ ${pager}`,
   });
 }
 
+/**
+ * The markdown sibling an agent fetches at `/learn/<slug>.md` (or
+ * `Accept: text/markdown`): the same source the HTML renders from, with every
+ * relative link rewritten the way renderLearnMarkdown rewrites them, and a
+ * frontmatter block naming the canonical HTML URL and the repo source. No
+ * `updated` date — the sources carry none, and inventing one would drift.
+ */
+export function renderLearnMarkdownSource(page: LearnPage): string {
+  const markdown = fs.readFileSync(path.join(repoRoot, page.source), 'utf8');
+  const rewritten = markdown.replace(
+    /(!?)\[([^\]]*)\]\(\s*([^)\s]+)(\s+"[^"]*")?\s*\)/gu,
+    (whole, bang: string, text: string, href: string, title?: string) => {
+      if (/^(?:[a-z][a-z0-9+.-]*:|\/|#)/iu.test(href)) return whole;
+      return `${bang}[${text}](${rewriteLearnHref(href, page.source)}${title ?? ''})`;
+    },
+  );
+  const frontmatter = [
+    '---',
+    `title: ${JSON.stringify(page.seoTitle)}`,
+    `description: ${JSON.stringify(page.description)}`,
+    `url: ${BASE_URL}${learnPagePath(page)}`,
+    `source: ${GITHUB_BLOB}/${page.source}`,
+    `license: ${GITHUB_BLOB}/LICENSE`,
+    '---',
+    '',
+  ].join('\n');
+  return `${frontmatter}\n${rewritten}`;
+}
+
 /** Every generated file: repo-relative path → contents. */
 export function buildLearnArtifacts(): Map<string, string> {
-  return new Map(
+  const artifacts = new Map(
     LEARN_PAGES.map((page) => [learnPageOutFile(page), renderLearnPage(page)]),
   );
+  for (const page of LEARN_PAGES) {
+    artifacts.set(learnMarkdownOutFile(page), renderLearnMarkdownSource(page));
+  }
+  return artifacts;
 }
 
 /** Repo-relative output files that are missing or differ from a fresh build. */
@@ -570,7 +496,9 @@ function main() {
       );
       process.exit(1);
     }
-    console.log(`✔ ${LEARN_PAGES.length} learn pages are current`);
+    console.log(
+      `✔ ${LEARN_PAGES.length} learn pages and markdown siblings are current`,
+    );
     return;
   }
   for (const [file, contents] of buildLearnArtifacts()) {
@@ -579,7 +507,7 @@ function main() {
     fs.writeFileSync(full, contents);
   }
   console.log(
-    `Wrote ${LEARN_PAGES.length} learn pages to ${LEARN_OUTPUT_DIR}/`,
+    `Wrote ${LEARN_PAGES.length} learn pages and markdown siblings to ${LEARN_OUTPUT_DIR}/`,
   );
 }
 
