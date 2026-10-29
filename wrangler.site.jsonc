@@ -21,8 +21,9 @@
       "!/og/*",
       // Static, prerendered guides (scripts/generate-learn-pages.ts) and the
       // preset index (scripts/preset-index-page.ts): plain HTML that needs no
-      // OG rewrite, so it skips the Worker.
-      "!/learn/*",
+      // OG rewrite. /learn/* still runs the Worker — its middleware serves the
+      // markdown siblings for `Accept: text/markdown` — but /presets/* skips
+      // it entirely.
       "!/presets/*",
       "!/textures/*",
       // Previews are served from R2 by the Worker; the rest of the preset
@@ -31,6 +32,7 @@
       "!/milkdrop-presets/*.json",
       "!/milkdrop-presets/butterchurn/*",
       "!/milkdrop-presets/libraries/*",
+      "!/auth.md",
       "!/robots.txt",
       "!/sitemap*.xml",
       "!/manifest.json",

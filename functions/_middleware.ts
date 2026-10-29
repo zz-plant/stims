@@ -1,6 +1,6 @@
 // Edge middleware for preset routes.
 //
-// Four jobs:
+// Six jobs:
 //   1. `/preset/<id>` used to 404 with an empty body even though this file
 //      already parsed that shape. It now redirects to the canonical query form.
 //   2. `/?preset=<id>` gets real per-preset <title>, description, canonical,
@@ -12,6 +12,12 @@
 //      shell plus their own metadata (there is no file behind those paths),
 //      and every preset in their collection as links inside #app.
 //   4. A retired `/discover/<slug>` redirects to the page that replaced it.
+//   5. `/learn*` requests negotiate between the static HTML pages and their
+//      generated markdown siblings: `Accept: text/markdown` answers with the
+//      .md asset, everything else with HTML.
+//   6. HTML responses carry a Link header naming the site's machine-readable
+//      surfaces (llms.txt, sitemap, OpenAPI, api-catalog, MCP card, skills
+//      index), and /learn pages name their markdown alternate.
 
 import {
   resolveSemanticRoute,
@@ -30,6 +36,11 @@ import {
   type FlipbookEnv,
   loadPresetFlipbook,
 } from './shared/flipbook-store.ts';
+import {
+  type LearnPage,
+  learnMarkdownPath,
+  learnRequestTarget,
+} from './shared/learn-pages.ts';
 import { loadPresetMeta, presetIndexing } from './shared/preset-meta.ts';
 import {
   buildPresetPageContent,
@@ -99,17 +110,137 @@ function allowExternalFraming(response: Response, enabled: boolean) {
   });
 }
 
+/**
+ * Site-wide machine-readable surfaces, advertised on every response the worker
+ * renders as HTML (and on the /learn markdown endpoints) so an agent that
+ * never parses HTML can still find them. Relations are IANA-registered except
+ * the three the discovery specs themselves define: `api-catalog` (RFC 9727),
+ * `mcp` and `agent-skills` (their respective drafts).
+ */
+const DISCOVERY_LINK_HEADER = [
+  '</llms.txt>; rel="describedby"; type="text/plain"; title="Site index for LLMs"',
+  '</sitemap.xml>; rel="sitemap"; type="application/xml"',
+  '</openapi.json>; rel="service-desc"; type="application/json"',
+  '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
+  '</.well-known/mcp/server-card.json>; rel="mcp"; type="application/json"',
+  '</.well-known/agent-skills/index.json>; rel="agent-skills"; type="application/json"',
+].join(', ');
+
+export { DISCOVERY_LINK_HEADER };
+
+function isHtml(response: Response) {
+  return response.headers.get('content-type')?.includes('text/html') ?? false;
+}
+
+/** Quote-safe text for a Link header `title=` parameter. */
+const linkTitle = (value: string) => value.replace(/["\\]/gu, '');
+
+/** Append the discovery Link header to an HTML response; pass others through. */
+function withDiscoveryLinks(response: Response): Response {
+  if (!isHtml(response)) return response;
+  const headers = new Headers(response.headers);
+  headers.append('link', DISCOVERY_LINK_HEADER);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+/**
+ * /learn/ pages exist twice: as static HTML and as markdown siblings the
+ * build writes next to them. An explicit `Accept: text/markdown` gets the
+ * markdown (RFC 9110 negotiation, `Content-Location` pointing at the .md
+ * URL); everything else gets HTML. Both carry `Vary: Accept` so caches do
+ * not mix representations, and the Link header names the other representation
+ * plus the site's machine-readable surfaces. Unknown /learn* paths keep their
+ * asset-layer answer (usually 404).
+ */
+async function handleLearnRequest(context: EventContext): Promise<Response> {
+  const { request, next } = context;
+  const url = new URL(request.url);
+  const target = learnRequestTarget(url.pathname);
+  if (!target) return next();
+
+  const wantsMarkdown =
+    target.kind === 'markdown' ||
+    ((request.headers.get('accept') ?? '').includes('text/markdown') &&
+      Boolean(context.env?.ASSETS));
+  if (wantsMarkdown) {
+    return serveLearnMarkdown(
+      context,
+      target.page,
+      url,
+      target.kind === 'markdown',
+    );
+  }
+
+  const response = await next();
+  if (!isHtml(response)) return response;
+  const headers = new Headers(response.headers);
+  headers.append('vary', 'Accept');
+  headers.append(
+    'link',
+    `${DISCOVERY_LINK_HEADER}, </${learnMarkdownPath(target.page).replace(/^\//u, '')}>; rel="alternate"; type="text/markdown"; title="${linkTitle(target.page.seoTitle)}"`,
+  );
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+/** Serve a learn page's markdown sibling from the asset store. */
+async function serveLearnMarkdown(
+  context: EventContext,
+  page: LearnPage,
+  url: URL,
+  directRequest: boolean,
+): Promise<Response> {
+  const asset = await context.env?.ASSETS?.fetch(
+    new Request(new URL(learnMarkdownPath(page), url.origin)),
+  );
+  if (!asset || !asset.ok) return context.next();
+  const headers = new Headers(asset.headers);
+  headers.set('content-type', 'text/markdown; charset=utf-8');
+  if (!directRequest) {
+    headers.set(
+      'content-location',
+      new URL(learnMarkdownPath(page), url.origin).toString(),
+    );
+  }
+  headers.append('vary', 'Accept');
+  headers.append('link', DISCOVERY_LINK_HEADER);
+  return new Response(asset.body, {
+    status: asset.status,
+    statusText: asset.statusText,
+    headers,
+  });
+}
+
 export async function onRequest(context: EventContext): Promise<Response> {
   const url = new URL(context.request.url);
-  if (url.pathname.startsWith('/s/'))
-    return renderVideoSharePage(context, url.pathname.slice(3));
+  if (url.pathname.startsWith('/s/')) {
+    return withDiscoveryLinks(
+      await renderVideoSharePage(context, url.pathname.slice(3)),
+    );
+  }
+  if (
+    url.pathname === '/learn' ||
+    url.pathname === '/learn.md' ||
+    url.pathname.startsWith('/learn/')
+  ) {
+    return handleLearnRequest(context);
+  }
   const response = await rewritePresetPage(context);
-  if (url.pathname !== '/' || !context.env) return response;
+  if (url.pathname !== '/' || !context.env) return withDiscoveryLinks(response);
   const preset =
     url.searchParams.get('preset') ?? context.env.HOMEPAGE_VIDEO_PRESET;
-  if (!preset) return response;
+  if (!preset) return withDiscoveryLinks(response);
   const clip = await loadPresetFlipbook(context.env, preset);
-  return clip ? appendVideoMetadata(response, clip, url.origin) : response;
+  return withDiscoveryLinks(
+    clip ? appendVideoMetadata(response, clip, url.origin) : response,
+  );
 }
 
 async function rewritePresetPage(context: EventContext): Promise<Response> {

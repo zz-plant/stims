@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "stims-agent-api",
+      "type": "skill-md",
+      "description": "Drive or verify the Stims visualizer running in a browser tab — load presets, read engine state, run command-palette actions by stable id, and wait for conditions, using the URL flags and the window.__stims_agent in-page API. Use for browser automation, QA, or inspecting a playing preset's equation variables.",
+      "url": "https://toil.fyi/.well-known/agent-skills/stims-agent-api/SKILL.md",
+      "digest": "sha256:e2740475207fc2d7f62e0d78a9441862096e84c8e3c7c8b971360d691594f947"
+    },
+    {
+      "name": "stims-embed",
+      "type": "skill-md",
+      "description": "Embed the Stims MilkDrop visualizer in another page and drive it over postMessage. Use when a page needs to play a specific preset, restyle what is playing, set demo or microphone audio, or receive playback telemetry from an embedded toil.fyi iframe.",
+      "url": "https://toil.fyi/.well-known/agent-skills/stims-embed/SKILL.md",
+      "digest": "sha256:e285a99b8c2497d5f5a98e8e32ae30d6a896fd7a90acf119783dba5590a1e89a"
+    }
+  ]
+}

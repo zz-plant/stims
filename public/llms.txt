@@ -20,6 +20,14 @@ The numeric coverage and model-training results above are dated measurements; se
 - **API request and response contracts**: https://github.com/zz-plant/stims/blob/main/docs/api.md
 - **Source code**: https://github.com/zz-plant/stims
 
+## Machine-readable discovery
+- **Markdown source endpoints**: each guide under /learn/ is also at its URL with a `.md` suffix (for example https://toil.fyi/learn/reference.md), and the same URL answers an `Accept: text/markdown` request with that markdown.
+- **API catalog (RFC 9727)**: https://toil.fyi/.well-known/api-catalog — a linkset naming the machine-readable resources on this host.
+- **Agent authentication**: https://toil.fyi/auth.md — there is none; every surface is public.
+- **MCP server card**: https://toil.fyi/.well-known/mcp/server-card.json — the MCP server itself is not hosted here; it runs over stdio from a repository clone (see MCP server above).
+- **Agent Skills index**: https://toil.fyi/.well-known/agent-skills/index.json — SKILL.md instructions for embedding and driving the visualizer, with sha256 digests.
+- **OpenAPI contracts**: https://toil.fyi/openapi.json — the /api/* routes below.
+
 ## Guides (static pages)
 - **Learn to write MilkDrop presets** (10-track course): https://toil.fyi/learn/
 - **MilkDrop online, in your browser**: https://toil.fyi/learn/milkdrop-online/
