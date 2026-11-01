@@ -438,6 +438,16 @@ export function ReferenceFinderPanel({
           placeholder="e.g., a slow neon tunnel with a warm palette"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
+          onKeyDown={(event) => {
+            if (
+              (event.metaKey || event.ctrlKey) &&
+              event.key === 'Enter' &&
+              !event.nativeEvent.isComposing
+            ) {
+              event.preventDefault();
+              void handleFind();
+            }
+          }}
           rows={2}
           disabled={working}
         />
@@ -514,52 +524,48 @@ export function ReferenceFinderPanel({
       ) : null}
 
       {shortlist ? (
-        <>
-          <ul className={styles.results}>
-            {shortlist.candidates.map((candidate, index) => (
-              <li key={candidate.presetId} className={styles.item}>
-                <div className={styles.itemMain}>
-                  <span
-                    className={styles.rank}
-                    role="img"
-                    aria-label={
-                      clefPickId === candidate.presetId
-                        ? `Clef's pick, rank ${index + 1}`
-                        : `Rank ${index + 1}`
-                    }
-                  >
-                    {clefPickId === candidate.presetId ? '★' : index + 1}
-                  </span>
-                  <div className={styles.itemText}>
-                    <span className={styles.title}>
-                      {candidate.entry?.title ?? candidate.presetId}
-                    </span>
-                    <span className={styles.reason}>
-                      {candidate.reason === 'text'
-                        ? 'names your reference'
-                        : candidate.reason === 'visual'
-                          ? 'looks like your reference'
-                          : 'names and looks like your reference'}
-                    </span>
-                  </div>
-                </div>
-                {/* It imports a copy into the library, plays it and opens
-                    the editor; "Open" alone read as a preview. */}
-                <button
-                  type="button"
-                  className={styles.open}
-                  title="Adds a copy to your library, plays it and opens it in the editor"
-                  onClick={() => void handleOpen(candidate)}
-                  disabled={working}
+        <ul className={styles.results}>
+          {shortlist.candidates.map((candidate, index) => (
+            <li key={candidate.presetId} className={styles.item}>
+              <div className={styles.itemMain}>
+                <span
+                  className={styles.rank}
+                  role="img"
+                  aria-label={
+                    clefPickId === candidate.presetId
+                      ? `Clef's pick, rank ${index + 1}`
+                      : `Rank ${index + 1}`
+                  }
                 >
-                  {openingId === candidate.presetId
-                    ? 'Opening…'
-                    : 'Edit a copy'}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
+                  {clefPickId === candidate.presetId ? '★' : index + 1}
+                </span>
+                <div className={styles.itemText}>
+                  <span className={styles.title}>
+                    {candidate.entry?.title ?? candidate.presetId}
+                  </span>
+                  <span className={styles.reason}>
+                    {candidate.reason === 'text'
+                      ? 'names your reference'
+                      : candidate.reason === 'visual'
+                        ? 'looks like your reference'
+                        : 'names and looks like your reference'}
+                  </span>
+                </div>
+              </div>
+              {/* It imports a copy into the library, plays it and opens
+                  the editor; "Open" alone read as a preview. */}
+              <button
+                type="button"
+                className={styles.open}
+                title="Adds a copy to your library, plays it and opens it in the editor"
+                onClick={() => void handleOpen(candidate)}
+                disabled={working}
+              >
+                {openingId === candidate.presetId ? 'Opening…' : 'Edit a copy'}
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       {currentEpisodeId && activeApplied ? (

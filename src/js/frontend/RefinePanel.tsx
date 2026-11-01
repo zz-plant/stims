@@ -189,23 +189,14 @@ export function RefinePanel() {
         or get a summary of what its equations do.
       </p>
 
-      <div
-        className="stims-shell__refine-mutations"
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '6px',
-          marginBottom: '12px',
-        }}
-      >
+      <div className="stims-shell__refine-mutations">
         {PRESET_MUTATION_STYLES.map((m) => (
           <button
             key={m.id}
             type="button"
-            className="stims-shell__refine-btn stims-shell__refine-btn--secondary"
+            className="stims-shell__refine-btn stims-shell__refine-btn--secondary stims-shell__refine-btn--chip"
             onClick={() => void handleApplyMutation(m.id)}
             disabled={state !== 'idle' || !currentSource}
-            style={{ fontSize: '0.82rem', padding: '4px 8px' }}
           >
             {m.label}
           </button>
@@ -222,6 +213,16 @@ export function RefinePanel() {
           placeholder="e.g., make it more blue, add slow rotation, increase bass reactivity"
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
+          onKeyDown={(e) => {
+            if (
+              (e.metaKey || e.ctrlKey) &&
+              e.key === 'Enter' &&
+              !e.nativeEvent.isComposing
+            ) {
+              e.preventDefault();
+              void handleRefine();
+            }
+          }}
           rows={3}
           disabled={state !== 'idle'}
         />
@@ -297,24 +298,14 @@ export function RefinePanel() {
           className="stims-shell__refine-response"
           role="status"
           aria-live="polite"
-          style={{ marginTop: '12px', fontSize: '0.88rem', lineHeight: '1.4' }}
         >
           {response}
         </div>
       )}
 
       {analysis && (
-        <div
-          className="stims-shell__refine-analysis"
-          style={{
-            marginTop: '10px',
-            padding: '10px',
-            borderRadius: '6px',
-            background: 'var(--stims-surface-subtle, rgba(255,255,255,0.05))',
-            fontSize: '0.82rem',
-          }}
-        >
-          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+        <div className="stims-shell__refine-analysis">
+          <div className="stims-shell__refine-analysis-title">
             What the equations do
           </div>
           <div>
@@ -327,7 +318,7 @@ export function RefinePanel() {
             • <b>Audio:</b> {analysis.audioReactivity.description}
           </div>
           {analysis.tags.length > 0 && (
-            <div style={{ marginTop: '6px' }}>
+            <div className="stims-shell__refine-analysis-tags">
               • <b>Tags:</b> {analysis.tags.join(', ')}
             </div>
           )}

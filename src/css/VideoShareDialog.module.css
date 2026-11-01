@@ -11,3 +11,7 @@
 .card a {
   overflow-wrap: anywhere;
 }
+
+.shareUrl {
+  overflow-wrap: anywhere;
+}

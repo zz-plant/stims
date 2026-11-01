@@ -11,7 +11,7 @@ import {
   expect,
   test,
 } from 'bun:test';
-import { createElement } from 'react';
+import { act, createElement, createRef } from 'react';
 import {
   getActiveAccessibilityPreference,
   resetAccessibilityPreferenceState,
@@ -28,13 +28,16 @@ import {
   usePresetPageContent,
 } from '../../src/js/frontend/PresetPageDetails.tsx';
 import { saveNamedSet } from '../../src/js/frontend/preset-sets.ts';
+import { ShortcutsDialog } from '../../src/js/frontend/ShortcutsDialog.tsx';
 import { getCollectionTags } from '../../src/js/frontend/workspace-helpers.ts';
+import { resetDeviceDetectCache } from '../../src/js/utils/browser/device-detect.ts';
 import {
   makePresetEntry,
   makeUiValue,
   mouseClick,
   renderWorkspace,
 } from '../frontend-harness.tsx';
+import { replaceProperty } from '../test-helpers.ts';
 
 // Browse is virtualized and mounts nothing in a viewport with no size.
 const LAYOUT_KEYS = [
@@ -189,6 +192,60 @@ describe('Browse', () => {
       rendered.dispose();
     }
   });
+
+  test('the inline search clear button clears the query and refocuses the search field', () => {
+    let query = 'glow';
+    const rendered = renderWorkspace(createElement(BrowseSheetPanel), {
+      ui: {
+        searchQuery: query,
+        setSearchQuery: (next) => {
+          query = next;
+        },
+      },
+      engine: {
+        catalog,
+        filteredCatalog: catalog,
+        collectionTags: getCollectionTags(catalog),
+      },
+    });
+    try {
+      const searchInput =
+        rendered.container.querySelector<HTMLInputElement>('#preset-search');
+      expect(searchInput?.value).toBe('glow');
+      const clearBtn = rendered.byLabel('Clear search');
+      expect(clearBtn).not.toBeNull();
+      rendered.click(clearBtn);
+      expect(searchInput?.value).toBe('');
+      expect(query).toBe('');
+      expect(document.activeElement).toBe(searchInput);
+      expect(rendered.byLabel('Clear search')).toBeNull();
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('choosing Random sort reveals a Reshuffle button beside the sort menu', () => {
+    const { rendered } = mountBrowse({ audioActive: true });
+    try {
+      expect(rendered.byLabel('Reshuffle random order')).toBeNull();
+      const sortSelect = rendered.byLabel(
+        'Sort presets',
+      ) as HTMLSelectElement | null;
+      expect(sortSelect).not.toBeNull();
+      act(() => {
+        if (sortSelect) {
+          sortSelect.value = 'random';
+          sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      const reshuffle = rendered.byLabel('Reshuffle random order');
+      expect(reshuffle).not.toBeNull();
+      rendered.click(reshuffle);
+      expect(sortSelect?.value).toBe('random');
+    } finally {
+      rendered.dispose();
+    }
+  });
 });
 
 describe('Preset sets', () => {
@@ -246,6 +303,49 @@ describe('Preset sets', () => {
       expect(full.loaded).toEqual([['glowsticks', 'tokamak']]);
     } finally {
       full.rendered.dispose();
+    }
+  });
+
+  test('opening the save-set form focuses the title field, and Escape cancels saving without closing the dialog', () => {
+    let closed = 0;
+    const rendered = renderWorkspace(
+      createElement(ManageSetsDialog, {
+        open: true,
+        onClose: () => {
+          closed += 1;
+        },
+        currentQueueIds: ['glowsticks'],
+        onLoadQueue: () => {},
+        onNotify: () => {},
+      }),
+    );
+    try {
+      const trigger = rendered.container.querySelector<HTMLButtonElement>(
+        '[data-action="save-current-queue-as-set"]',
+      );
+      expect(trigger).not.toBeNull();
+      rendered.click(trigger);
+      const input = rendered.container.querySelector<HTMLInputElement>(
+        '.stims-shell__set-form input',
+      );
+      expect(input).not.toBeNull();
+      expect(document.activeElement).toBe(input);
+
+      act(() => {
+        input?.dispatchEvent(
+          new window.KeyboardEvent('keydown', {
+            key: 'Escape',
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+      });
+      expect(closed).toBe(0);
+      expect(
+        rendered.container.querySelector('.stims-shell__set-form'),
+      ).toBeNull();
+    } finally {
+      rendered.dispose();
     }
   });
 });
@@ -342,6 +442,83 @@ describe('Audio sources', () => {
       expect(rendered.text()).toContain(
         'Your browser asks before Stims hears the microphone',
       );
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('clicking the YouTube chip reveals and focuses the YouTube link input', () => {
+    const restoreUa = replaceProperty(
+      navigator,
+      'userAgent',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+    );
+    const restoreMedia = replaceProperty(navigator, 'mediaDevices', {
+      getDisplayMedia: async () => {
+        throw new Error('not in tests');
+      },
+      enumerateDevices: async () => [],
+    });
+    resetDeviceDetectCache();
+    const rendered = renderWorkspace(
+      createElement(AudioSourcePanel, { layout: 'chips' }),
+    );
+    try {
+      const youtubeChip = buttonByText(rendered.container, 'YouTube');
+      expect(youtubeChip).not.toBeNull();
+      rendered.click(youtubeChip);
+      const input = rendered.container.querySelector<HTMLInputElement>(
+        '[data-youtube-url-input="true"]',
+      );
+      expect(input).not.toBeNull();
+      expect(document.activeElement).toBe(input);
+    } finally {
+      rendered.dispose();
+      restoreMedia();
+      restoreUa();
+      resetDeviceDetectCache();
+    }
+  });
+});
+
+describe('Shortcuts dialog', () => {
+  test('editing a shortcut focuses the input, and Escape or Cancel exits editing without closing the dialog', () => {
+    let closed = 0;
+    const shortcutsRef = createRef<HTMLDivElement>();
+    const rendered = renderWorkspace(
+      createElement(ShortcutsDialog, {
+        open: true,
+        onClose: () => {
+          closed += 1;
+        },
+        shortcutsRef,
+      }),
+    );
+    try {
+      const editBtn = rendered.container.querySelector<HTMLButtonElement>(
+        '[data-shortcut-edit]',
+      );
+      expect(editBtn).not.toBeNull();
+      rendered.click(editBtn);
+
+      const input =
+        rendered.container.querySelector<HTMLInputElement>(
+          'input[name="keys"]',
+        );
+      expect(input).not.toBeNull();
+      expect(document.activeElement).toBe(input);
+
+      act(() => {
+        input?.dispatchEvent(
+          new window.KeyboardEvent('keydown', {
+            key: 'Escape',
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+      });
+      expect(closed).toBe(0);
+      expect(rendered.container.querySelector('input[name="keys"]')).toBeNull();
     } finally {
       rendered.dispose();
     }

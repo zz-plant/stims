@@ -107,6 +107,12 @@
   gap: 12px;
 }
 
+.checkActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .slider {
   width: 100%;
   accent-color: var(--stims-accent);

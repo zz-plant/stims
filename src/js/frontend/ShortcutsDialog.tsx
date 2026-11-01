@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import {
   availableStageKeyDocs,
   availableStageSignalKeys,
@@ -33,6 +33,7 @@ export function ShortcutsDialog({
   const [overrides, setOverrides] = useState<ShortcutOverrides>({});
   const [editing, setEditing] = useState<ShortcutActionId | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const editInputRef = useRef<HTMLInputElement | null>(null);
 
   useFocusTrap({
     active: open,
@@ -47,8 +48,19 @@ export function ShortcutsDialog({
   });
 
   useEffect(() => {
-    if (open) setOverrides(readShortcutOverrides());
+    if (open) {
+      setOverrides(readShortcutOverrides());
+      setEditing(null);
+      setWarning(null);
+    }
   }, [open]);
+
+  useEffect(() => {
+    if (editing) {
+      editInputRef.current?.focus();
+      editInputRef.current?.select();
+    }
+  }, [editing]);
 
   // Escape goes through the shared stack, not this dialog's own backdrop
   // handler. The backdrop only sees keys that originate inside it, so with
@@ -66,6 +78,16 @@ export function ShortcutsDialog({
   const touchFirst = isMobileDevice();
   const stageKeys = availableStageKeyDocs();
   const signalKeys = availableStageSignalKeys();
+
+  const cancelEditing = (actionId: ShortcutActionId) => {
+    setEditing(null);
+    setWarning(null);
+    requestAnimationFrame(() => {
+      shortcutsRef.current
+        ?.querySelector<HTMLButtonElement>(`[data-shortcut-edit="${actionId}"]`)
+        ?.focus();
+    });
+  };
 
   const saveOverride = (actionId: ShortcutActionId, rawValue: string) => {
     const def = SHORTCUT_REGISTRY.find((entry) => entry.id === actionId);
@@ -112,6 +134,7 @@ export function ShortcutsDialog({
       <div
         ref={shortcutsRef}
         className="stims-shell__shortcut-card"
+        data-shell-dialog="true"
         // The dialog is the card, not the backdrop around it: the card is
         // what the focus trap fences, what takes initial focus, and what
         // `aria-modal` should be scoping.
@@ -184,10 +207,22 @@ export function ShortcutsDialog({
                               String(data.get('keys') ?? ''),
                             );
                           }}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              cancelEditing(shortcut.id);
+                            }
+                          }}
                         >
                           <input
+                            ref={editInputRef}
                             className="stims-shell__input"
                             name="keys"
+                            autoComplete="off"
+                            autoCorrect="off"
+                            autoCapitalize="off"
+                            spellCheck={false}
                             defaultValue={getShortcutKeys(
                               shortcut.id,
                               overrides,
@@ -203,11 +238,19 @@ export function ShortcutsDialog({
                           >
                             Save
                           </button>
+                          <button
+                            type="button"
+                            className="stims-shell__text-button"
+                            onClick={() => cancelEditing(shortcut.id)}
+                          >
+                            Cancel
+                          </button>
                         </form>
                       ) : (
                         <button
                           type="button"
                           className="stims-shell__text-button"
+                          data-shortcut-edit={shortcut.id}
                           aria-label={`Type new keys for ${shortcut.label}`}
                           onClick={() => setEditing(shortcut.id)}
                         >

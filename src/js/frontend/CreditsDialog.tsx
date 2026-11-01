@@ -46,6 +46,7 @@ export function CreditsDialog({
       <div
         ref={creditsRef}
         className="stims-shell__credits-card"
+        data-shell-dialog="true"
         // The dialog is the card, not the backdrop around it: the card is
         // what the focus trap fences, what takes initial focus, and what
         // `aria-modal` should be scoping.

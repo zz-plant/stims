@@ -541,7 +541,6 @@ export function PresetFinderPanel({
             <button
               type="button"
               className="stims-finder__run"
-              style={{ marginBottom: '8px' }}
               onClick={() => void matchWithClefOmni()}
               disabled={loading || matchingOmni || soundUnavailable}
               // "Clef Omni" named a model nobody had been introduced to. It
