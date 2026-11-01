@@ -3,7 +3,7 @@
 // Hashed assets (/assets/*) are immutable with 1-year Cache-Control
 // and are served from browser HTTP cache — no SW intervention needed.
 
-const CACHE_NAME = 'stims-shell-v10';
+const CACHE_NAME = 'stims-shell-v11';
 // Keep this list to what the shell needs to paint offline. The full preset
 // catalog (~1.5 MB) is deliberately absent: the app loads a 20 KB starter
 // catalog first and defers the full one to a background task, and precaching
@@ -22,9 +22,10 @@ const CORE_SHELL_ASSETS = [
 const OPTIONAL_SHELL_ASSETS = [
   '/screenshots/hero-narrow.png',
   '/screenshots/hero-wide.png',
-  '/milkdrop-presets/previews/eos-dark-side-of-the-moon-clean-mix.png',
-  '/milkdrop-presets/previews/rovastar-mosaics-of-ages.png',
-  '/milkdrop-presets/previews/geiss-bipolar-x.png',
+  '/milkdrop-presets/previews/shifter-curlique.png',
+  '/milkdrop-presets/previews/eos-glowsticks-v2-03-music.png',
+  '/milkdrop-presets/previews/geiss-casino.png',
+  '/milkdrop-presets/previews/aderrasi-potion-of-spirits.png',
 ];
 
 self.addEventListener('install', (event) => {

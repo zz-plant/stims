@@ -1263,7 +1263,7 @@ body[data-page="workspace"] {
   /* ── Curated Starter Presets Showcase ─────────────────────────── */
   .stims-shell__launch-showcase {
     width: 100%;
-    margin-top: 14px;
+    margin-top: 16px;
     display: grid;
     gap: 10px;
   }
@@ -1272,6 +1272,7 @@ body[data-page="workspace"] {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
   }
 
   .stims-shell__launch-showcase-header .stims-shell__section-label {
@@ -1281,6 +1282,15 @@ body[data-page="workspace"] {
     letter-spacing: 0.12em;
     text-transform: uppercase;
     font-stretch: var(--font-stretch-legend);
+    margin: 0;
+  }
+
+  .stims-shell__launch-showcase-hint {
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    color: var(--stims-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .stims-shell__launch-showcase-grid {
@@ -1291,6 +1301,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__launch-starter-card {
+    position: relative;
     display: grid;
     grid-template-rows: 92px auto;
     gap: 8px;
@@ -1344,6 +1355,35 @@ body[data-page="workspace"] {
     border-radius: 0;
   }
 
+  .stims-shell__launch-starter-play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(3, 5, 11, 0.4);
+    color: var(--stims-on-stage-ink-strong);
+    opacity: 0;
+    transition:
+      opacity var(--transition-fast),
+      transform var(--transition-fast);
+    transform: scale(0.85);
+    pointer-events: none;
+  }
+
+  .stims-shell__launch-starter-play svg {
+    width: 20px;
+    height: 20px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+  }
+
+  .stims-shell__launch-starter-card:hover .stims-shell__launch-starter-play,
+  .stims-shell__launch-starter-card:focus-visible
+    .stims-shell__launch-starter-play {
+    opacity: 1;
+    transform: scale(1);
+  }
+
   .stims-shell__launch-starter-info {
     display: grid;
     gap: 2px;
@@ -1372,7 +1412,7 @@ body[data-page="workspace"] {
   /* ── Live Soundflow & Equations Preview ───────────────────────── */
   .stims-shell__launch-soundflow {
     width: 100%;
-    margin-top: 14px;
+    margin-top: 16px;
     padding: 14px 16px;
     border: 1px solid var(--stims-on-stage-line);
     border-radius: var(--radius-lg);
@@ -1447,7 +1487,15 @@ body[data-page="workspace"] {
     padding: 8px 10px;
     border: 1px solid var(--stims-on-stage-line-soft);
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--stims-on-stage-control-fill);
+    transition:
+      border-color var(--transition-fast),
+      background-color var(--transition-fast);
+  }
+
+  .stims-shell__launch-soundflow-card:hover {
+    border-color: var(--stims-on-stage-line);
+    background: var(--stims-on-stage-control-fill-hover);
   }
 
   .stims-shell__launch-soundflow-band {
@@ -1459,7 +1507,7 @@ body[data-page="workspace"] {
     letter-spacing: 0.06em;
     text-transform: uppercase;
     line-height: 1;
-    background: var(--stims-on-stage-control-fill);
+    background: var(--stims-on-stage-panel);
     color: var(--stims-cool);
     border: 1px solid var(--stims-on-stage-line-soft);
   }
@@ -1705,9 +1753,21 @@ body[data-page="workspace"] {
     background: var(--stims-control-fill-hover);
   }
 
+  .stims-shell__launch-footer {
+    width: 100%;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--stims-on-stage-line-soft);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+  }
+
   .stims-shell__launch-meta {
-    margin: 6px 0 0;
-    font-size: 0.8125rem;
+    margin: 0;
+    font-size: var(--text-xs-plus);
     line-height: 1.4;
   }
 
@@ -2998,6 +3058,7 @@ body[data-page="workspace"] {
 
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch {
       margin-top: 0;
+      padding-bottom: max(34px, env(safe-area-inset-bottom, 0px));
     }
 
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
@@ -3062,7 +3123,7 @@ body[data-page="workspace"] {
       justify-items: stretch;
       overflow-y: auto;
       overscroll-behavior: contain;
-      padding: 112px 10px 18px;
+      padding: 112px 10px max(34px, env(safe-area-inset-bottom, 0px));
       scrollbar-width: thin;
     }
 

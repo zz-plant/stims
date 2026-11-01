@@ -844,6 +844,9 @@ function LaunchStarterShowcase({
         >
           Play an iconic look
         </h2>
+        <span className="stims-shell__launch-showcase-hint">
+          Instant demo playback
+        </span>
       </div>
       <div className="stims-shell__launch-showcase-grid">
         {STARTER_SHOWCASE_PRESETS.map((item) => {
@@ -855,6 +858,7 @@ function LaunchStarterShowcase({
               key={item.id}
               type="button"
               className="stims-shell__launch-starter-card"
+              aria-label={`Play ${display.title} (${item.vibe})`}
               onClick={() => onSelectPreset(item.id)}
             >
               <div className="stims-shell__launch-starter-thumb">
@@ -867,6 +871,15 @@ function LaunchStarterShowcase({
                     aria-hidden="true"
                   />
                 )}
+                <span
+                  className="stims-shell__launch-starter-play"
+                  aria-hidden="true"
+                >
+                  <UiIcon
+                    name="play"
+                    className="stims-icon-slot stims-icon-slot--sm"
+                  />
+                </span>
               </div>
               <div className="stims-shell__launch-starter-info">
                 <span className="stims-shell__launch-starter-title">
@@ -980,7 +993,7 @@ function LaunchSoundflowPreview({
  */
 function ProjectMeta() {
   return (
-    <>
+    <footer className="stims-shell__launch-footer">
       <p className="stims-shell__launch-meta">
         <a
           className="stims-shell__launch-meta-link"
@@ -999,6 +1012,6 @@ function ProjectMeta() {
       <p className="stims-shell__launch-meta stims-shell__launch-meta-note">
         Usage is counted as anonymous events — no account.
       </p>
-    </>
+    </footer>
   );
 }
