@@ -244,6 +244,7 @@ export function BrowseSheetPanel({
   const recentRailRef = useRef<HTMLUListElement | null>(null);
   const collectionChipsRef = useRef<HTMLElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const authorOptions = useMemo(() => getAuthorOptions(catalog), [catalog]);
 
@@ -556,34 +557,58 @@ export function BrowseSheetPanel({
     >
       <section className="ctl-browse-filters">
         <div className="ctl-browse-searchrow">
-          <input
-            id="preset-search"
-            className="ctl-field"
-            type="search"
-            placeholder="Search presets"
-            aria-label="Search presets"
-            spellCheck={false}
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                ui.setSearchQuery(localSearch);
-                (e.target as HTMLInputElement).blur();
-              } else if (e.key === 'Escape' && localSearch !== '') {
-                // First Escape clears the query; a second press (now that
-                // the field is already empty) falls through to bubble up
-                // to SidePanel's own Escape handler and close the panel.
-                // Without stopping propagation here, one Escape press would
-                // both wipe what you typed AND close the panel in the same
-                // keystroke.
-                e.stopPropagation();
-                setLocalSearch('');
-                ui.setSearchQuery('');
-              }
-            }}
-          />
+          <div className="ctl-browse-searchfield">
+            <input
+              ref={searchInputRef}
+              id="preset-search"
+              className="ctl-field"
+              type="search"
+              placeholder="Search presets"
+              aria-label="Search presets"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                  ui.setSearchQuery(localSearch);
+                  (e.target as HTMLInputElement).blur();
+                } else if (e.key === 'Escape' && localSearch !== '') {
+                  // First Escape clears the query; a second press (now that
+                  // the field is already empty) falls through to bubble up
+                  // to SidePanel's own Escape handler and close the panel.
+                  // Without stopping propagation here, one Escape press would
+                  // both wipe what you typed AND close the panel in the same
+                  // keystroke.
+                  e.stopPropagation();
+                  setLocalSearch('');
+                  ui.setSearchQuery('');
+                }
+              }}
+            />
+            {localSearch !== '' ? (
+              <button
+                type="button"
+                className="ctl-browse-searchclear"
+                aria-label="Clear search"
+                title="Clear search"
+                onClick={() => {
+                  setLocalSearch('');
+                  ui.setSearchQuery('');
+                  searchInputRef.current?.focus();
+                }}
+              >
+                <UiIcon
+                  name="close"
+                  className="stims-icon-slot stims-icon-slot--sm"
+                  aria-hidden="true"
+                />
+              </button>
+            ) : null}
+          </div>
           {/* Plays a random preset and closes Browse; it does not reorder
               the list (the sort menu's Random does that). */}
           <button
@@ -810,6 +835,22 @@ export function BrowseSheetPanel({
             <option value="like-saved">Like your saved</option>
             <option value="random">Random</option>
           </select>
+
+          {sortMode === 'random' ? (
+            <button
+              type="button"
+              className="ctl-btn ctl-btn--icon"
+              onClick={() => setRandomSeed(Date.now())}
+              aria-label="Reshuffle random order"
+              title="Reshuffle random order"
+            >
+              <UiIcon
+                name="refresh"
+                className="stims-icon-slot stims-icon-slot--sm"
+                aria-hidden="true"
+              />
+            </button>
+          ) : null}
 
           {/* The unit is a separate span so it can drop on narrow panels:
               this row is exactly full at ~348px and the word "presets" was

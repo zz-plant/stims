@@ -432,6 +432,8 @@ html.light {
   --stims-ink: var(--text-color);
   --stims-ink-strong: #0f172a;
   --stims-muted: #42525c;
+  --stims-ink-muted: var(--stims-muted);
+  --stims-ink-dim: var(--stims-muted);
   --stims-line: #9eabb2;
   --stims-line-strong: #667983;
   --stims-line-soft: #c2cbd0;

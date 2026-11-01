@@ -81,7 +81,8 @@ export function SharedSetDialog({
     <div className="stims-shell__credits-overlay" onClick={onClose}>
       <div
         ref={dialogRef}
-        className="stims-shell__credits-card"
+        className="stims-shell__credits-card stims-shell__credits-card--narrow"
+        data-shell-dialog="true"
         role="dialog"
         aria-modal="true"
         aria-label={`Shared Preset Set: ${payload.title}`}
@@ -92,20 +93,10 @@ export function SharedSetDialog({
             e.stopPropagation();
           }
         }}
-        style={{ maxWidth: '480px', width: '92vw' }}
       >
-        <div
-          style={{
-            padding: '4px 0 12px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-          }}
-        >
-          <h2
-            style={{ margin: '0 0 4px', fontSize: '1.25rem', fontWeight: 600 }}
-          >
-            {payload.title}
-          </h2>
-          <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.75 }}>
+        <div className="stims-shell__dialog-head stims-shell__dialog-head--bordered">
+          <h2 className="stims-shell__dialog-title">{payload.title}</h2>
+          <p className="stims-shell__dialog-subtitle">
             Shared preset set · {resolvedPresets.length}{' '}
             {resolvedPresets.length === 1 ? 'preset' : 'presets'}
             {missingCount > 0
@@ -115,87 +106,37 @@ export function SharedSetDialog({
         </div>
 
         {existingQueueCount > 0 ? (
-          <div
-            style={{
-              margin: '12px 0',
-              padding: '8px 12px',
-              borderRadius: '6px',
-              background: 'rgba(255, 180, 0, 0.12)',
-              border: '1px solid rgba(255, 180, 0, 0.3)',
-              fontSize: '0.85rem',
-            }}
-          >
+          <div className="stims-shell__set-warning">
             Loading this set will replace your current queue (
             {existingQueueCount}{' '}
             {existingQueueCount === 1 ? 'preset' : 'presets'}).
           </div>
         ) : null}
 
-        <div
-          style={{
-            maxHeight: '240px',
-            overflowY: 'auto',
-            margin: '12px 0',
-            paddingRight: '4px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '6px',
-          }}
-        >
+        <div className="stims-shell__set-list stims-shell__set-list--shared">
           {resolvedPresets.map(({ id, entry, display }, index) => (
             <div
               // biome-ignore lint/suspicious/noArrayIndexKey: preset set items may contain duplicate preset IDs in sequence
               key={`${id}-${index}`}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 8px',
-                background: 'rgba(255,255,255,0.03)',
-                borderRadius: '4px',
-                fontSize: '0.85rem',
-              }}
+              className="stims-shell__set-row stims-shell__set-row--shared"
             >
-              <span
-                style={{
-                  opacity: 0.5,
-                  fontVariantNumeric: 'tabular-nums',
-                  width: '20px',
-                }}
-              >
-                {index + 1}.
-              </span>
-              <div
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
+              <span className="stims-shell__set-index">{index + 1}.</span>
+              <div className="stims-shell__set-meta">
                 {entry && display ? (
                   <>
-                    <div
-                      style={{
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
+                    <div className="stims-shell__set-title">
                       {display.title}
                     </div>
                     {display.byline ? (
-                      <div style={{ fontSize: '0.75rem', opacity: 0.6 }}>
+                      <div className="stims-shell__set-sub">
                         {display.byline}
                       </div>
                     ) : null}
                   </>
                 ) : (
-                  <div style={{ opacity: 0.5 }}>
+                  <div className="stims-shell__set-unavailable">
                     {id}{' '}
-                    <span
-                      style={{ fontSize: '0.75rem', color: 'var(--stims-bad)' }}
-                    >
+                    <span className="stims-shell__set-unavailable-tag">
                       (unavailable)
                     </span>
                   </div>
@@ -205,14 +146,7 @@ export function SharedSetDialog({
           ))}
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            justifyContent: 'flex-end',
-            marginTop: '16px',
-          }}
-        >
+        <div className="stims-shell__dialog-footer">
           <button type="button" className="cta-button ghost" onClick={onClose}>
             Cancel
           </button>

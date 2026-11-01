@@ -520,6 +520,16 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           placeholder="e.g., deep ocean with glowing jellyfish, slow pulsing neon rings"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => {
+            if (
+              (e.metaKey || e.ctrlKey) &&
+              e.key === 'Enter' &&
+              !e.nativeEvent.isComposing
+            ) {
+              e.preventDefault();
+              void handleGenerate();
+            }
+          }}
           rows={3}
           disabled={isGenerating}
         />
@@ -714,7 +724,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
             (Clef Flash) or record a short animation clip to evaluate dynamic
             motion (Clef Omni). No audio is sent.
           </p>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div className={styles.checkActions}>
             <button
               type="button"
               className={styles.generateButton}

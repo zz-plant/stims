@@ -1400,9 +1400,51 @@ html.light .stims-shell {
     gap: 8px;
   }
 
+  .ctl-browse-searchfield {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 170px;
+    min-width: 0;
+  }
+
   .ctl-browse-searchrow .ctl-field {
     flex: 1 1 170px;
     min-width: 0;
+  }
+
+  .ctl-browse-searchfield:has(.ctl-browse-searchclear) .ctl-field {
+    padding-right: 34px;
+  }
+
+  .ctl-browse-searchclear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ctl-ink-2);
+    cursor: pointer;
+    transition:
+      background var(--ctl-ease),
+      color var(--ctl-ease);
+  }
+
+  .ctl-browse-searchclear:hover {
+    background: var(--ctl-fill-hover);
+    color: var(--ctl-ink);
+  }
+
+  .ctl-browse-searchclear:focus-visible {
+    outline: 2px solid var(--ctl-accent);
+    outline-offset: 1px;
   }
 
   /* Pushed to the row's end so that when the buttons do wrap they sit under
@@ -1696,6 +1738,13 @@ html.light .stims-shell {
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 6px;
+  }
+
+  .ctl-section .stims-shell__playlist-transport {
+    border-color: var(--ctl-line);
+    border-radius: var(--ctl-radius);
+    background: var(--ctl-fill);
+    box-shadow: none;
   }
 }
 

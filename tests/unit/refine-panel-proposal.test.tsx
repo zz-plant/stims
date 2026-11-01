@@ -86,4 +86,56 @@ describe('Refine panel proposals', () => {
       rendered.dispose();
     }
   });
+
+  test('Cmd/Ctrl+Enter in the instruction textarea submits a refinement unless IME composition is active', async () => {
+    const { rendered } = mount();
+    try {
+      const textarea = rendered.container.querySelector<HTMLTextAreaElement>(
+        '#refine-instruction',
+      );
+      expect(textarea).not.toBeNull();
+      await act(async () => {
+        if (textarea) {
+          const setter = Object.getOwnPropertyDescriptor(
+            HTMLTextAreaElement.prototype,
+            'value',
+          )?.set;
+          setter?.call(textarea, 'neon');
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+
+      // Composing Cmd+Enter must not submit
+      await act(async () => {
+        const composingEvent = new window.KeyboardEvent('keydown', {
+          key: 'Enter',
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+          isComposing: true,
+        });
+        textarea?.dispatchEvent(composingEvent);
+      });
+      expect(
+        rendered.container.querySelector('.stims-shell__refine-proposal'),
+      ).toBeNull();
+
+      // Non-composing Cmd+Enter submits and produces the fallback restyle proposal
+      await act(async () => {
+        textarea?.dispatchEvent(
+          new window.KeyboardEvent('keydown', {
+            key: 'Enter',
+            metaKey: true,
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+      });
+      expect(
+        rendered.container.querySelector('.stims-shell__refine-proposal'),
+      ).not.toBeNull();
+    } finally {
+      rendered.dispose();
+    }
+  });
 });

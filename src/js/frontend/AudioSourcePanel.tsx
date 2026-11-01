@@ -304,10 +304,16 @@ export function AudioSourcePanel({
   // unless a link is already in flight, which must stay visible to be
   // finished (paste-to-load, "Start capture", the transport).
   const [youtubeOpened, setYoutubeOpened] = useState(false);
+  const youtubeInputRef = useRef<HTMLInputElement | null>(null);
   const offersYouTube = canCaptureDisplayAudio && offers('youtube');
   const youtubeVisible =
     offersYouTube &&
     (!chips || youtubeOpened || youtubeReady || youtubeUrl.trim() !== '');
+  useEffect(() => {
+    if (chips && youtubeOpened) {
+      youtubeInputRef.current?.focus();
+    }
+  }, [chips, youtubeOpened]);
   const cardClassName = chips
     ? 'stims-shell__source-card stims-shell__source-card--chip'
     : 'stims-shell__source-card';
@@ -323,11 +329,14 @@ export function AudioSourcePanel({
       </label>
       <div className="stims-shell__youtube-row">
         <input
+          ref={youtubeInputRef}
           id={youtubeInputId}
           className="stims-shell__input"
           type="url"
           placeholder="Paste a YouTube link…"
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
           inputMode="url"
           spellCheck={false}
           data-youtube-url-input="true"
@@ -615,59 +624,6 @@ export function AudioSourcePanel({
           event.target.value = '';
         }}
       />
-      {playlist && playlist.totalTracks > 1 && !chips ? (
-        <fieldset
-          className="stims-shell__chip stims-shell__chip--media"
-          aria-label="Playlist transport"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '8px',
-            marginTop: '4px',
-            padding: '4px 8px',
-            border: 'none',
-          }}
-        >
-          <button
-            type="button"
-            className="stims-shell__chip"
-            aria-label="Previous track"
-            title="Previous track"
-            style={{ padding: '2px 8px', fontSize: '0.8rem' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              void previousFileTrack();
-            }}
-          >
-            <UiIcon
-              name="arrow-left"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-            <span>Prev track</span>
-          </button>
-          <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>
-            {playlist.currentIndex + 1} / {playlist.totalTracks}
-          </span>
-          <button
-            type="button"
-            className="stims-shell__chip"
-            aria-label="Next track"
-            title="Next track"
-            style={{ padding: '2px 8px', fontSize: '0.8rem' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              void nextFileTrack();
-            }}
-          >
-            <span>Next track</span>
-            <UiIcon
-              name="arrow-right"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-          </button>
-        </fieldset>
-      ) : null}
       {canCaptureDisplayAudio && offers('tab') ? (
         <button
           type="button"
@@ -709,6 +665,48 @@ export function AudioSourcePanel({
       ) : null}
     </div>
   );
+
+  const playlistTransport =
+    playlist && playlist.totalTracks > 1 ? (
+      <fieldset
+        className="stims-shell__playlist-transport"
+        aria-label="Playlist transport"
+      >
+        <button
+          type="button"
+          className="stims-shell__playlist-btn"
+          aria-label="Previous track"
+          title="Previous track"
+          onClick={() => {
+            void previousFileTrack();
+          }}
+        >
+          <UiIcon
+            name="arrow-left"
+            className="stims-icon-slot stims-icon-slot--sm"
+          />
+          <span>Prev track</span>
+        </button>
+        <span className="stims-shell__playlist-count">
+          {playlist.currentIndex + 1} / {playlist.totalTracks}
+        </span>
+        <button
+          type="button"
+          className="stims-shell__playlist-btn"
+          aria-label="Next track"
+          title="Next track"
+          onClick={() => {
+            void nextFileTrack();
+          }}
+        >
+          <span>Next track</span>
+          <UiIcon
+            name="arrow-right"
+            className="stims-icon-slot stims-icon-slot--sm"
+          />
+        </button>
+      </fieldset>
+    ) : null;
 
   const sourceNote = (
     <p className="stims-shell__source-note">
@@ -774,6 +772,7 @@ export function AudioSourcePanel({
       {chips ? (
         <>
           {sourceGrid}
+          {playlistTransport}
           {sourceNote}
           {youtubeBlock}
         </>
@@ -781,6 +780,7 @@ export function AudioSourcePanel({
         <>
           {youtubeBlock}
           {sourceGrid}
+          {playlistTransport}
           {sourceNote}
         </>
       )}

@@ -139,6 +139,7 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
       <div
         ref={dialogRef}
         className={`stims-shell__credits-card ${styles.card}`}
+        data-shell-dialog="true"
         role="dialog"
         aria-modal="true"
         aria-labelledby="video-share-title"
@@ -163,7 +164,7 @@ export function VideoShareDialog({ onClose }: { onClose(): void }) {
           <>
             {/* A new tab: in this one the link replaced the live session,
                 audio and any unsaved edit with the published page. */}
-            <p style={{ overflowWrap: 'anywhere' }}>
+            <p className={styles.shareUrl}>
               <a
                 href={published.url}
                 target="_blank"

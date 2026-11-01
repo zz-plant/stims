@@ -141,6 +141,21 @@ html.light [data-shell-dialog="true"] [class*="closeBtn"]:hover {
   background: #e8f0ef;
 }
 
+html.light .stims-shell__shortcut-grid kbd,
+html.light .stims-shell__shortcut-row kbd {
+  background: var(--stims-control-fill);
+  border-color: var(--stims-line-strong);
+  color: var(--stims-ink-strong);
+  box-shadow:
+    0 2px 0 rgba(35, 48, 56, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+html.light .stims-shell__shortcut-row:hover {
+  background: var(--stims-control-fill-hover);
+  border-color: var(--stims-line-soft);
+}
+
 html.light .stims-shell__toast {
   border-color: var(--stims-line-strong);
   background: #fffaf0;
