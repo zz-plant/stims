@@ -93,7 +93,7 @@ import { useFullscreen } from './hooks/useFullscreen';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useStageGesture } from './hooks/useStageGesture';
 import { LiveParameterHud } from './LiveParameterHud.tsx';
-import { reportLoadStatus } from './load-status.ts';
+import { afterLoadPhasePainted, reportLoadStatus } from './load-status.ts';
 import { dismissLoadingScreen } from './loading-screen.ts';
 import {
   PresetPageDetails,
@@ -1368,7 +1368,13 @@ function StimsWorkspaceAppShell() {
 
   useEffect(() => {
     reportLoadStatus('shell-rendered');
-    dismissLoadingScreen();
+    return afterLoadPhasePainted(
+      'launch-rendered',
+      () => {
+        dismissLoadingScreen();
+      },
+      { timeoutMs: 800 },
+    );
   }, []);
 
   // Layout flags come from the panel registry (panel-registry.ts).

@@ -404,6 +404,8 @@ describe('workspace first-fold launch hierarchy', () => {
         'stims-shell__launch-nameplate',
         'stims-shell__launch-note',
         'stims-shell__launch-sources-inline',
+        'stims-shell__launch-showcase',
+        'stims-shell__launch-footer',
       ]) {
         expect(
           rendered.container.querySelector(`.${className}`),
@@ -504,6 +506,19 @@ describe('workspace first-fold launch hierarchy', () => {
       expect(cards.length).toBe(4);
       expect(cards[0].textContent).toContain('Curlique');
       expect(cards[0].textContent).toContain('Cosmic swirl');
+      expect(cards[0].getAttribute('aria-label')).toBe(
+        'Play Curlique (Cosmic swirl)',
+      );
+      expect(
+        cards[0].querySelector('.stims-shell__launch-starter-play'),
+      ).not.toBeNull();
+      expect(
+        rendered.container.querySelector('.stims-shell__launch-showcase-hint')
+          ?.textContent,
+      ).toContain('Instant demo playback');
+      expect(
+        rendered.container.querySelector('footer.stims-shell__launch-footer'),
+      ).not.toBeNull();
 
       // Clicking a card commits the route to that preset and starts demo audio
       rendered.click(cards[0]);

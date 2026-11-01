@@ -53,7 +53,7 @@
       @keyframes stims-pulse{0%,to{opacity:.5}50%{opacity:.85}}
       @keyframes stims-bounce{0%,80%,to{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:.9}}
       @keyframes loading-breathe{0%,to{opacity:.85}50%{opacity:1}}
-      @media(max-width:767px){.stims-loading{padding:76px 14px 34px}}
+      @media(max-width:767px){.stims-loading{padding:76px 14px max(34px,env(safe-area-inset-bottom,0px))}}
       @media(prefers-reduced-motion:reduce){.stims-loading{transition:none}.stims-loading__status,.stims-loading__spinner,.stims-loading__spinner:before,.stims-loading__text,.stims-loading__dots span{animation:none}}
       .stims-loading__fallback{background:#0d121c;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:32px 40px;max-width:420px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.5);margin:20px}
       .stims-loading__fallback p{margin:0 0 24px;font-size:1rem;line-height:1.6;opacity:0.85}
@@ -64,7 +64,7 @@
     <!-- The entry module loads via the module script tag at the end of body.
          A modulepreload for /src/js/app.ts is redundant there, and Rolldown
          emits it as a data:video/mp2t link that fails every page load. -->
-    <link rel="preload" href="/milkdrop-presets/starter-catalog.json" as="fetch" crossorigin="anonymous" />
+    <link rel="preload" href="/milkdrop-presets/starter-catalog.json" as="fetch" crossorigin="anonymous" fetchpriority="high" />
     <!-- Fonts are same-origin now (src/css/fonts.css), so there is nothing to
          preconnect to. Archivo is preloaded because the wordmark that
          paints first is set in it. -->
@@ -74,6 +74,7 @@
       as="font"
       type="font/woff2"
       crossorigin
+      fetchpriority="high"
     />
     <link rel="manifest" href="/manifest.json" />
     <!-- One mark for both colour schemes. The tile carries its own dark
