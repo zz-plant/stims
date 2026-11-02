@@ -31,28 +31,52 @@ function writeAudioTextureBuffer(
 ) {
   const frequencyLength = frequencyData.length;
   const waveformLength = waveformData.length;
+  const uint32Data = new Uint32Array(
+    data.buffer,
+    data.byteOffset,
+    data.byteLength >> 2,
+  );
 
-  for (let x = 0; x < width; x += 1) {
-    const sourceIndex =
-      frequencyLength > 0 ? Math.floor((x / width) * frequencyLength) : 0;
-    const value = frequencyData[sourceIndex] ?? 0;
-    const offset = x * 4;
-    data[offset] = value;
-    data[offset + 1] = value;
-    data[offset + 2] = 0;
-    data[offset + 3] = 255;
+  // Row 0: Frequency data
+  // Byte 0: val, Byte 1: val, Byte 2: 0, Byte 3: 255
+  // Little-Endian 32-bit: (255 << 24) | (0 << 16) | (val << 8) | val = 0xff000000 | (val << 8) | val
+  if (frequencyLength === width) {
+    for (let x = 0; x < width; x += 1) {
+      const val = frequencyData[x] ?? 0;
+      uint32Data[x] = 0xff000000 | (val << 8) | val;
+    }
+  } else if (frequencyLength > 0) {
+    const step = frequencyLength / width;
+    for (let x = 0; x < width; x += 1) {
+      const val = frequencyData[(x * step) | 0] ?? 0;
+      uint32Data[x] = 0xff000000 | (val << 8) | val;
+    }
+  } else {
+    uint32Data.fill(0xff000000, 0, width);
   }
 
-  const waveformRowOffset = width * 4;
-  for (let x = 0; x < width; x += 1) {
-    const sourceIndex =
-      waveformLength > 0 ? Math.floor((x / width) * waveformLength) : 0;
-    const value = waveformData[sourceIndex] ?? 128;
-    const offset = waveformRowOffset + x * 4;
-    data[offset] = value;
-    data[offset + 1] = Math.min(255, Math.abs(value - 128) * 2);
-    data[offset + 2] = 0;
-    data[offset + 3] = 255;
+  // Row 1: Waveform data
+  // Byte 0: val, Byte 1: min(255, abs(val - 128) * 2), Byte 2: 0, Byte 3: 255
+  // Little-Endian 32-bit: 0xff000000 | (mag << 8) | val
+  if (waveformLength === width) {
+    for (let x = 0; x < width; x += 1) {
+      const val = waveformData[x] ?? 128;
+      const diff = val - 128;
+      const absDiff = diff < 0 ? -diff : diff;
+      const mag = absDiff > 127 ? 255 : absDiff << 1;
+      uint32Data[width + x] = 0xff000000 | (mag << 8) | val;
+    }
+  } else if (waveformLength > 0) {
+    const step = waveformLength / width;
+    for (let x = 0; x < width; x += 1) {
+      const val = waveformData[(x * step) | 0] ?? 128;
+      const diff = val - 128;
+      const absDiff = diff < 0 ? -diff : diff;
+      const mag = absDiff > 127 ? 255 : absDiff << 1;
+      uint32Data[width + x] = 0xff000000 | (mag << 8) | val;
+    }
+  } else {
+    uint32Data.fill(0xff000080, width, width * 2);
   }
 }
 

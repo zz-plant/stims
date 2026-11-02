@@ -165,7 +165,7 @@ describe('workspace first-fold launch hierarchy', () => {
     try {
       const { container } = rendered;
       expect(container.querySelector('details')).toBeNull();
-      expect(rendered.text()).toContain('Or play your own audio');
+      expect(rendered.text()).toContain('Connect your audio');
       expect(
         container.querySelector('.stims-shell__source-grid--chips'),
       ).not.toBeNull();
@@ -515,7 +515,7 @@ describe('workspace first-fold launch hierarchy', () => {
       expect(
         rendered.container.querySelector('.stims-shell__launch-showcase-hint')
           ?.textContent,
-      ).toContain('Instant demo playback');
+      ).toContain('Instant visualizer preview');
       expect(
         rendered.container.querySelector('footer.stims-shell__launch-footer'),
       ).not.toBeNull();

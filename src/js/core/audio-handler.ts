@@ -100,7 +100,7 @@ function applyFloatWaveformGain(
 ): Float32Array {
   const target =
     output?.length === input.length ? output : new Float32Array(input.length);
-  const effectiveGain = gain > 1 ? gain : 1;
+  const effectiveGain = Math.max(gain, 1);
   for (let i = 0; i < input.length; i += 1) {
     target[i] = clamp(input[i] * effectiveGain, -1, 1);
   }
@@ -170,6 +170,12 @@ export class FrequencyAnalyser {
   private readonly waveformAgc = createWaveformAutoGain();
   private readonly interpolator: AudioReactivityInterpolator =
     createAudioReactivityInterpolator();
+  private readonly interpolatorSample: AudioEnergySnapshot = {
+    bass: 0,
+    mid: 0,
+    treble: 0,
+    rms: 0,
+  };
   private waveformGain = 1;
   private normalizedWaveform: Uint8Array | null = null;
   private normalizedWaveformL: Uint8Array | null = null;
@@ -281,8 +287,12 @@ export class FrequencyAnalyser {
           this.energyVersion = this.dataVersion;
         }
         this.updateEnergyHistory(this.cachedEnergy);
+        this.interpolatorSample.bass = this.cachedEnergy.bass;
+        this.interpolatorSample.mid = this.cachedEnergy.mid;
+        this.interpolatorSample.treble = this.cachedEnergy.treble;
+        this.interpolatorSample.rms = this.rms;
         this.interpolator.pushSample(
-          { ...this.cachedEnergy, rms: this.rms },
+          this.interpolatorSample,
           typeof performance !== 'undefined' ? performance.now() : Date.now(),
         );
       }

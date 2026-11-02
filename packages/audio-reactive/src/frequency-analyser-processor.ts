@@ -86,6 +86,26 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private readonly beatThreshold = 0.085;
   private readonly beatMinIntervalMs = 150;
 
+  private readonly cachedEnergy = { bass: 0, mid: 0, treble: 0 };
+  private readonly cachedEnergyAverages = { bass: 0, mid: 0, treble: 0 };
+  private readonly cachedBeatDetection = {
+    isBeat: false,
+    beatIntensity: 0,
+    beatBass: false,
+    beatMid: false,
+    beatTreble: false,
+    bassBeatIntensity: 0,
+    midBeatIntensity: 0,
+    trebleBeatIntensity: 0,
+  };
+  private readonly cachedTransientMetrics = {
+    subBassEnv: 0,
+    kickTransient: 0,
+    vocalMidEnv: 0,
+    snareSnap: 0,
+  };
+  private readonly transfers: Transferable[] = [];
+
   constructor(options?: AudioWorkletNodeOptions) {
     super();
     const resolvedOptions = options ?? {};
@@ -343,11 +363,12 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
         midSum += this.energyHistoryMid[i];
         trebleSum += this.energyHistoryTreble[i];
       }
-      const energyAverages = {
-        bass: this.historyCount > 0 ? bassSum / this.historyCount : 0,
-        mid: this.historyCount > 0 ? midSum / this.historyCount : 0,
-        treble: this.historyCount > 0 ? trebleSum / this.historyCount : 0,
-      };
+      this.cachedEnergyAverages.bass =
+        this.historyCount > 0 ? bassSum / this.historyCount : 0;
+      this.cachedEnergyAverages.mid =
+        this.historyCount > 0 ? midSum / this.historyCount : 0;
+      this.cachedEnergyAverages.treble =
+        this.historyCount > 0 ? trebleSum / this.historyCount : 0;
 
       const nowMs = (typeof currentTime === 'number' ? currentTime : 0) * 1000;
       const weightedEnergy = Math.min(
@@ -404,16 +425,23 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
         this.beatIntensityTreble *= this.pmBeatDecay;
       }
 
-      const beatDetection = {
-        isBeat: pmIsBeat,
-        beatIntensity: this.pmBeatIntensity,
-        beatBass,
-        beatMid,
-        beatTreble,
-        bassBeatIntensity: this.beatIntensityBass,
-        midBeatIntensity: this.beatIntensityMid,
-        trebleBeatIntensity: this.beatIntensityTreble,
-      };
+      this.cachedBeatDetection.isBeat = pmIsBeat;
+      this.cachedBeatDetection.beatIntensity = this.pmBeatIntensity;
+      this.cachedBeatDetection.beatBass = beatBass;
+      this.cachedBeatDetection.beatMid = beatMid;
+      this.cachedBeatDetection.beatTreble = beatTreble;
+      this.cachedBeatDetection.bassBeatIntensity = this.beatIntensityBass;
+      this.cachedBeatDetection.midBeatIntensity = this.beatIntensityMid;
+      this.cachedBeatDetection.trebleBeatIntensity = this.beatIntensityTreble;
+
+      this.cachedEnergy.bass = bass;
+      this.cachedEnergy.mid = mid;
+      this.cachedEnergy.treble = treble;
+
+      this.cachedTransientMetrics.subBassEnv = subBassEnv;
+      this.cachedTransientMetrics.kickTransient = kickTransient;
+      this.cachedTransientMetrics.vocalMidEnv = vocalMidEnv;
+      this.cachedTransientMetrics.snareSnap = snareSnap;
 
       const freqTransfer = this.freqBuf.buffer as ArrayBuffer;
       const waveTransfer = this.waveBuf.buffer as ArrayBuffer;
@@ -432,18 +460,17 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
         spectralRolloff,
         stereoBalance,
         stereoWidth,
-        energy: { bass, mid, treble },
-        energyAverages,
-        beatDetection,
-        transientMetrics: {
-          subBassEnv,
-          kickTransient,
-          vocalMidEnv,
-          snareSnap,
-        },
-        harmonicPercussive: this.hpLevels ? { ...this.hpLevels } : null,
+        energy: this.cachedEnergy,
+        energyAverages: this.cachedEnergyAverages,
+        beatDetection: this.cachedBeatDetection,
+        transientMetrics: this.cachedTransientMetrics,
+        harmonicPercussive: this.hpLevels,
       };
-      const transfers = [freqTransfer, waveTransfer, timeDomainTransfer];
+
+      const transfers = this.transfers;
+      transfers.length = 0;
+      transfers.push(freqTransfer, waveTransfer, timeDomainTransfer);
+
       if (this.hasStereoInput) {
         const freqRTransfer = this.freqBufR.buffer as ArrayBuffer;
         const waveRTransfer = this.waveBufR.buffer as ArrayBuffer;

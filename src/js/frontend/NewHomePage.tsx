@@ -59,7 +59,7 @@ const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
  * starts the permission prompt or the share picker again.
  */
 const RESUME_SOURCE_NOTE: Record<ResumableAudioSource, string> = {
-  demo: 'A built-in synth loop, no permissions needed.',
+  demo: 'A built-in synth loop, no permissions needed — or connect your audio below.',
   microphone: 'Your browser asks for the microphone again.',
   tab: 'Your browser opens its screen-share picker again; tick Share audio.',
   youtube:
@@ -507,7 +507,7 @@ function Header({
           {deepLink.title}
         </Title>
         <p className="stims-shell__launch-tagline" aria-live="polite">
-          Starting with demo audio…
+          Starting visualizer…
         </p>
         {/* The artwork's box is held while the catalog resolves the
             preset. Inserted on arrival, it pushed the buttons, the note and
@@ -707,7 +707,7 @@ function Actions({
           onClick={onPlayDemo}
           {...ctaFocusProps}
         >
-          {isStarting ? 'Starting…' : 'Play demo'}
+          {isStarting ? 'Starting…' : 'Start visualizer'}
         </button>
       )}
       {/* Buttons above go disabled when the preset catalog failed to
@@ -778,7 +778,7 @@ function Actions({
           aria-busy={isStarting}
           onClick={onPlayDemo}
         >
-          Try demo audio instead, no permission needed
+          Try sample audio instead, no permission needed
         </button>
       ) : null}
     </div>
@@ -808,7 +808,7 @@ function AudioSources({ resume }: { resume: ResumeState }) {
       <AudioSourcePanel
         showHelp={false}
         layout="chips"
-        heading={resume ? 'Use a different source' : 'Or play your own audio'}
+        heading={resume ? 'Use a different source' : 'Connect your audio'}
         omitSources={resume ? ['demo', resume.session.source] : ['demo']}
       />
     </div>
@@ -842,10 +842,10 @@ function LaunchStarterShowcase({
           id="starter-showcase-heading"
           className="stims-shell__section-label"
         >
-          Play an iconic look
+          Jump into an iconic look
         </h2>
         <span className="stims-shell__launch-showcase-hint">
-          Instant demo playback
+          Instant visualizer preview
         </span>
       </div>
       <div className="stims-shell__launch-showcase-grid">

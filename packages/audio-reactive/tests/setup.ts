@@ -15,7 +15,29 @@ export class FakeMessagePort {
   readonly posted: PostedMessage[] = [];
   onmessage: ((event: MessageEvent) => void) | null = null;
   postMessage(message: unknown, transfers?: Transferable[]): void {
-    this.posted.push([message as Record<string, unknown>, transfers]);
+    const msg = message as
+      | Record<string, Record<string, unknown> | undefined>
+      | undefined;
+    const cloned =
+      msg && typeof msg === 'object'
+        ? {
+            ...msg,
+            energy: msg.energy ? { ...msg.energy } : undefined,
+            energyAverages: msg.energyAverages
+              ? { ...msg.energyAverages }
+              : undefined,
+            beatDetection: msg.beatDetection
+              ? { ...msg.beatDetection }
+              : undefined,
+            transientMetrics: msg.transientMetrics
+              ? { ...msg.transientMetrics }
+              : undefined,
+            harmonicPercussive: msg.harmonicPercussive
+              ? { ...msg.harmonicPercussive }
+              : null,
+          }
+        : message;
+    this.posted.push([cloned as Record<string, unknown>, transfers]);
   }
 }
 
