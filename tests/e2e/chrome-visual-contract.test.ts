@@ -449,6 +449,55 @@ chromeTest(
 );
 
 chromeTest(
+  'browse grid: tile caption stacks the title above its byline',
+  async () => {
+    // PresetIdentity's base metrics lived in preset-finder.css, which only
+    // loads with the lazily imported Finder panel. On the browse grid the two
+    // spans therefore shared one line and the byline ran off the end of a
+    // caption that clips — every tile read "Glowsticks v2 03 MusicEo.S.".
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true&panel=browse`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.stims-preset-grid__item', {
+        timeout: 30000,
+      });
+      const caption = await page.evaluate(() => {
+        const item = document.querySelector('.stims-preset-grid__item');
+        const identity = item?.querySelector('.stims-preset-identity');
+        const title = item?.querySelector('.stims-preset-identity__title');
+        const subtitle = item?.querySelector(
+          '.stims-preset-identity__subtitle',
+        );
+        if (!identity || !title || !subtitle) return null;
+        const style = getComputedStyle(identity);
+        return {
+          display: style.display,
+          direction: style.flexDirection,
+          titleBottom: title.getBoundingClientRect().bottom,
+          subtitleTop: subtitle.getBoundingClientRect().top,
+        };
+      });
+      expect(caption).not.toBeNull();
+      expect(caption?.display).toBe('flex');
+      expect(caption?.direction).toBe('column');
+      // Stacked, not sharing a baseline.
+      expect(caption?.subtitleTop ?? 0).toBeGreaterThanOrEqual(
+        (caption?.titleBottom ?? 0) - 1,
+      );
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
   'performance table fits a phone without clipping',
   async () => {
     // At 640px and below the table stacks. Its cells default to content-box,
