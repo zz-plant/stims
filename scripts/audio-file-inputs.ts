@@ -350,11 +350,32 @@ export async function buildAudioFileInputs(
     options.fftSize ?? MILKDROP_FFT_SIZE,
   );
   const processor = new stack.Processor({ processorOptions });
-  // Offline nothing is transferred or recycled, so every message owns fresh
-  // buffers and can be delivered after later quanta have run.
+  // Offline nothing is transferred or recycled, so clone the message metadata
+  // at postMessage time the way a real MessagePort structured-clones it, allowing
+  // messages to be delivered faithfully after later quanta have run.
   const pending: unknown[] = [];
   processor.port = {
-    postMessage: (message) => pending.push(message),
+    postMessage: (message) => {
+      const msg = message as
+        | Record<string, Record<string, unknown> | undefined>
+        | undefined;
+      pending.push({
+        ...msg,
+        energy: msg?.energy ? { ...msg.energy } : undefined,
+        energyAverages: msg?.energyAverages
+          ? { ...msg.energyAverages }
+          : undefined,
+        beatDetection: msg?.beatDetection
+          ? { ...msg.beatDetection }
+          : undefined,
+        transientMetrics: msg?.transientMetrics
+          ? { ...msg.transientMetrics }
+          : undefined,
+        harmonicPercussive: msg?.harmonicPercussive
+          ? { ...msg.harmonicPercussive }
+          : null,
+      });
+    },
     onmessage: null,
   };
   const tracker = stack.createMilkdropSignalTracker();
