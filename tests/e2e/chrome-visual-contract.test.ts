@@ -449,6 +449,49 @@ chromeTest(
 );
 
 chromeTest(
+  'performance table fits a phone without clipping',
+  async () => {
+    // At 640px and below the table stacks. Its cells default to content-box,
+    // so `width: 100%` plus 16px of side padding made every row 32px wider
+    // than the table, which clips at its rounded border.
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/performance/`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.stims-performance__table', {
+        timeout: 30000,
+      });
+      const overflow = await page.evaluate(() => {
+        const table = document.querySelector('.stims-performance__table');
+        if (!table) return null;
+        const tableWidth = table.getBoundingClientRect().width;
+        const widths = [...table.querySelectorAll('th, td')].map(
+          (cell) => cell.getBoundingClientRect().width,
+        );
+        return {
+          table: table.scrollWidth - table.clientWidth,
+          widest: Math.max(...widths),
+          tableWidth,
+        };
+      });
+      expect(overflow).not.toBeNull();
+      expect(overflow?.table).toBeLessThanOrEqual(1);
+      expect(overflow?.widest ?? 0).toBeLessThanOrEqual(
+        (overflow?.tableWidth ?? 0) + 1,
+      );
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
   'site index footer links meet the 24px touch minimum',
   async () => {
     // The footer is a dense index of 56 links 4px apart. At text height a
