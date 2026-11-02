@@ -449,6 +449,38 @@ chromeTest(
 );
 
 chromeTest(
+  'site index footer links meet the 24px touch minimum',
+  async () => {
+    // The footer is a dense index of 56 links 4px apart. At text height a
+    // near-miss opens the neighbouring collection instead, which is why
+    // WCAG 2.5.8 sets 24px as the floor.
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('footer[class*="_root_"] a', {
+        timeout: 30000,
+      });
+      const heights = await page.evaluate(() =>
+        [...document.querySelectorAll('footer[class*="_root_"] a')]
+          .slice(0, 12)
+          .map((link) => Math.round(link.getBoundingClientRect().height)),
+      );
+      expect(heights.length).toBeGreaterThan(0);
+      expect(Math.min(...heights)).toBeGreaterThanOrEqual(24);
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
   'launch hero copy stays legible over the stage in light mode',
   async () => {
     if (!hasChromium) return;

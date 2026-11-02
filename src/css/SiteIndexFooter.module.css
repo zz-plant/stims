@@ -42,6 +42,14 @@
   text-decoration: underline;
   text-decoration-color: transparent;
   text-underline-offset: 0.18em;
+  /* The rows are 4px apart, so a text-height link leaves a 21px tap target
+     and a near-miss opens the neighbouring collection. WCAG 2.5.8 asks for
+     24px; this is the minimum, not the 44px used for the stage controls,
+     because the footer is a dense index and doubling its height would bury
+     the page it belongs to. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
 }
 
 .links a:hover,
