@@ -151,30 +151,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Name + secondary line for any selectable preset control (PresetIdentity).
-   Sized here once; a surface that needs different metrics overrides in its
-   own block, as the grid tile does below. */
-.stims-preset-identity {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 2px;
-}
-
-.stims-preset-identity__title {
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  font-stretch: var(--font-stretch-compact);
-  color: var(--stims-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stims-preset-identity__subtitle {
-  font-size: var(--text-xs);
-  color: var(--stims-muted);
-}
+/* PresetIdentity's base metrics live in preset-identity.css, imported by the
+   shell: the browse grid renders the same component and its CSS loads
+   eagerly, while this file only loads with the Finder panel. */
 
 .stims-finder__run {
   display: flex;

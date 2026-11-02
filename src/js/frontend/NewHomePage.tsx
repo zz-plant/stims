@@ -642,7 +642,11 @@ function Actions({
   const [quietFocus, setQuietFocus] = useState(false);
   useEffect(() => {
     if (isEngineReady && !focusClaimedRef.current) {
-      ctaRef.current?.focus();
+      // preventScroll matters on a phone held sideways: the hero is taller
+      // than the viewport there, so a plain focus() scrolled it 161px and the
+      // page opened mid-headline, with the wordmark unreachable above. Focus
+      // is still where a keyboard visitor needs it; the scroll is not.
+      ctaRef.current?.focus({ preventScroll: true });
       setQuietFocus(true);
     }
   }, [isEngineReady]);

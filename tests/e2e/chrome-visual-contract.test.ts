@@ -449,6 +449,186 @@ chromeTest(
 );
 
 chromeTest(
+  'short landscape: the page opens at the top of the hero',
+  async () => {
+    // The CTA takes focus once the engine is ready so a keyboard visitor needs
+    // one Enter. Without preventScroll that focus scrolled the hero to the
+    // button, and on a 568x320 phone the page opened 161px down — mid-headline,
+    // with the wordmark above the scroll origin and unreachable.
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 568, height: 320 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.stims-shell__launch-nameplate', {
+        timeout: 30000,
+      });
+      await waitForAgentState(
+        page,
+        (state) => state.engineReady && state.catalogSize > 0,
+        30000,
+      );
+      await page.evaluate(() => document.fonts.ready);
+      const opening = await page.evaluate(() => {
+        const hero = document.querySelector('.stims-shell__stage-hero');
+        const nameplate = document.querySelector(
+          '.stims-shell__launch-nameplate',
+        );
+        if (!hero || !nameplate) return null;
+        return {
+          heroScrollTop: hero.scrollTop,
+          heroTop: hero.getBoundingClientRect().top,
+          nameplateTop: nameplate.getBoundingClientRect().top,
+          ctaFocused:
+            document.activeElement?.classList.contains(
+              'stims-shell__launch-cta',
+            ) ?? false,
+        };
+      });
+      expect(opening).not.toBeNull();
+      expect(opening?.heroScrollTop).toBe(0);
+      // Visible, not merely present: the nameplate must start inside the hero.
+      expect(opening?.nameplateTop ?? -1).toBeGreaterThanOrEqual(
+        (opening?.heroTop ?? 0) - 1,
+      );
+      // The focus the scroll was a side effect of still lands.
+      expect(opening?.ctaFocused).toBe(true);
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
+  'browse grid: tile caption stacks the title above its byline',
+  async () => {
+    // PresetIdentity's base metrics lived in preset-finder.css, which only
+    // loads with the lazily imported Finder panel. On the browse grid the two
+    // spans therefore shared one line and the byline ran off the end of a
+    // caption that clips — every tile read "Glowsticks v2 03 MusicEo.S.".
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true&panel=browse`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.stims-preset-grid__item', {
+        timeout: 30000,
+      });
+      const caption = await page.evaluate(() => {
+        const item = document.querySelector('.stims-preset-grid__item');
+        const identity = item?.querySelector('.stims-preset-identity');
+        const title = item?.querySelector('.stims-preset-identity__title');
+        const subtitle = item?.querySelector(
+          '.stims-preset-identity__subtitle',
+        );
+        if (!identity || !title || !subtitle) return null;
+        const style = getComputedStyle(identity);
+        return {
+          display: style.display,
+          direction: style.flexDirection,
+          titleBottom: title.getBoundingClientRect().bottom,
+          subtitleTop: subtitle.getBoundingClientRect().top,
+        };
+      });
+      expect(caption).not.toBeNull();
+      expect(caption?.display).toBe('flex');
+      expect(caption?.direction).toBe('column');
+      // Stacked, not sharing a baseline.
+      expect(caption?.subtitleTop ?? 0).toBeGreaterThanOrEqual(
+        (caption?.titleBottom ?? 0) - 1,
+      );
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
+  'performance table fits a phone without clipping',
+  async () => {
+    // At 640px and below the table stacks. Its cells default to content-box,
+    // so `width: 100%` plus 16px of side padding made every row 32px wider
+    // than the table, which clips at its rounded border.
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/performance/`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.stims-performance__table', {
+        timeout: 30000,
+      });
+      const overflow = await page.evaluate(() => {
+        const table = document.querySelector('.stims-performance__table');
+        if (!table) return null;
+        const tableWidth = table.getBoundingClientRect().width;
+        const widths = [...table.querySelectorAll('th, td')].map(
+          (cell) => cell.getBoundingClientRect().width,
+        );
+        return {
+          table: table.scrollWidth - table.clientWidth,
+          widest: Math.max(...widths),
+          tableWidth,
+        };
+      });
+      expect(overflow).not.toBeNull();
+      expect(overflow?.table).toBeLessThanOrEqual(1);
+      expect(overflow?.widest ?? 0).toBeLessThanOrEqual(
+        (overflow?.tableWidth ?? 0) + 1,
+      );
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
+  'site index footer links meet the 24px touch minimum',
+  async () => {
+    // The footer is a dense index of 56 links 4px apart. At text height a
+    // near-miss opens the neighbouring collection instead, which is why
+    // WCAG 2.5.8 sets 24px as the floor.
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('footer[class*="_root_"] a', {
+        timeout: 30000,
+      });
+      const heights = await page.evaluate(() =>
+        [...document.querySelectorAll('footer[class*="_root_"] a')]
+          .slice(0, 12)
+          .map((link) => Math.round(link.getBoundingClientRect().height)),
+      );
+      expect(heights.length).toBeGreaterThan(0);
+      expect(Math.min(...heights)).toBeGreaterThanOrEqual(24);
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
   'launch hero copy stays legible over the stage in light mode',
   async () => {
     if (!hasChromium) return;

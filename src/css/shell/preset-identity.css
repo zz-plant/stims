@@ -1,0 +1,32 @@
+/* Name + secondary line for any selectable preset control (PresetIdentity).
+   Sized here once; a surface that needs different metrics overrides in its
+   own block, as the grid tile does in preset-grid.css.
+
+   This lives in its own file because it was in preset-finder.css, which only
+   loads with the lazily imported Finder panel. PresetGrid renders the same
+   component and App imports preset-grid.css eagerly, so on the browse grid
+   the base rule never applied: the span stayed a blockified flex item and its
+   two children shared one line, which put the byline off the end of a tile
+   caption that clips. Keep this file imported by the shell (App.tsx), not by
+   a panel chunk. */
+.stims-preset-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.stims-preset-identity__title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  font-stretch: var(--font-stretch-compact);
+  color: var(--stims-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stims-preset-identity__subtitle {
+  font-size: var(--text-xs);
+  color: var(--stims-muted);
+}

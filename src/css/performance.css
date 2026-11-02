@@ -259,6 +259,11 @@ body[data-page="performance"] {
   .stims-performance__table th,
   .stims-performance__table td {
     display: block;
+    /* Cells default to content-box, so the stacked `width: 100%` below plus
+       16px of side padding made every row 32px wider than the table. The
+       table clips at its rounded border, so the overflow was invisible until
+       a label was long enough to lose its right edge. */
+    box-sizing: border-box;
   }
 
   .stims-performance__table thead {
