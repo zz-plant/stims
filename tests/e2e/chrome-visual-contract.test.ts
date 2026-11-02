@@ -449,6 +449,62 @@ chromeTest(
 );
 
 chromeTest(
+  'short landscape: the page opens at the top of the hero',
+  async () => {
+    // The CTA takes focus once the engine is ready so a keyboard visitor needs
+    // one Enter. Without preventScroll that focus scrolled the hero to the
+    // button, and on a 568x320 phone the page opened 161px down — mid-headline,
+    // with the wordmark above the scroll origin and unreachable.
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 568, height: 320 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.stims-shell__launch-nameplate', {
+        timeout: 30000,
+      });
+      await waitForAgentState(
+        page,
+        (state) => state.engineReady && state.catalogSize > 0,
+        30000,
+      );
+      await page.evaluate(() => document.fonts.ready);
+      const opening = await page.evaluate(() => {
+        const hero = document.querySelector('.stims-shell__stage-hero');
+        const nameplate = document.querySelector(
+          '.stims-shell__launch-nameplate',
+        );
+        if (!hero || !nameplate) return null;
+        return {
+          heroScrollTop: hero.scrollTop,
+          heroTop: hero.getBoundingClientRect().top,
+          nameplateTop: nameplate.getBoundingClientRect().top,
+          ctaFocused:
+            document.activeElement?.classList.contains(
+              'stims-shell__launch-cta',
+            ) ?? false,
+        };
+      });
+      expect(opening).not.toBeNull();
+      expect(opening?.heroScrollTop).toBe(0);
+      // Visible, not merely present: the nameplate must start inside the hero.
+      expect(opening?.nameplateTop ?? -1).toBeGreaterThanOrEqual(
+        (opening?.heroTop ?? 0) - 1,
+      );
+      // The focus the scroll was a side effect of still lands.
+      expect(opening?.ctaFocused).toBe(true);
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
   'browse grid: tile caption stacks the title above its byline',
   async () => {
     // PresetIdentity's base metrics lived in preset-finder.css, which only
