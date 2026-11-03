@@ -89,7 +89,6 @@ describe('edge-contracts validators', () => {
       fps: 30,
       audioLatencyMs: 12,
       presetId: 'rovastar-parallel-universe',
-      userAgent: 'test',
     };
     expect(TelemetryEventSchema.parse(event)).toEqual(event);
 
@@ -125,6 +124,36 @@ describe('edge-contracts validators', () => {
     expect(() =>
       TelemetryEventSchema.parse({ event: 'x', surface: 'toolbar' }),
     ).toThrow();
+  });
+
+  test('TelemetryEventSchema accepts only coarse OS and engine values', () => {
+    const event: TelemetryEvent = {
+      event: 'growth-audio-started',
+      os: 'android',
+      engine: 'chromium',
+      engineMajor: 117,
+      androidWebView: true,
+    };
+    expect(TelemetryEventSchema.parse(event)).toEqual(event);
+    for (const invalid of [
+      { os: 'Android 13' },
+      { engine: 'Chrome/117.0.5938.153' },
+      { engineMajor: 117.5 },
+      { engineMajor: 0 },
+      { engineMajor: 1000 },
+      { engineMajor: '117' },
+      { androidWebView: 'wv' },
+    ]) {
+      expect(() =>
+        TelemetryEventSchema.parse({ event: 'x', ...invalid }),
+      ).toThrow();
+    }
+  });
+
+  test('TelemetryEventSchema does not carry the raw user agent through', () => {
+    expect(
+      TelemetryEventSchema.parse({ event: 'x', userAgent: 'Mozilla/5.0' }),
+    ).toEqual({ event: 'x' });
   });
 
   test('SyncRoomCreateResponseSchema requires room and hostKey', () => {

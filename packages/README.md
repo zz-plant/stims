@@ -43,8 +43,9 @@ against it by `check:ci-config`; `check:no-source-seams` fails on any
 whose source of truth moved to its own repository
 (`docs/PACKAGE_PROMOTION.md`). Adding or promoting a package starts there.
 
-Each package's tests run on their own (TypeScript and `@types/bun` are the
-only dev dependencies):
+Each package's tests run on their own. TypeScript and `@types/bun` are the only
+dev dependencies, apart from `happy-dom` in `gamepad-navigation`, whose tests
+move real DOM focus:
 
 ```bash
 bun run check:packages            # typecheck + test every package
@@ -86,8 +87,8 @@ git push https://github.com/zz-plant/flash-guard.git split/flash-guard:refs/head
 ```
 
 The workflow needs a `PACKAGES_MIRROR_TOKEN` repository secret: a
-fine-grained personal access token with "Contents: Read and write" on the six
-mirror repositories. Until it exists the workflow warns and stops, and the
+fine-grained personal access token with "Contents: Read and write" on every
+repository in the table above. Until it exists the workflow warns and stops, and the
 mirrors stay at the state they were last pushed in.
 
 ## Publishing

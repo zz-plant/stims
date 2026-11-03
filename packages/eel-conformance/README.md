@@ -93,7 +93,7 @@ process.exit(conforms(report) ? 0 : 1);
 
 `runConformance` records a thrown error as an error on that case and keeps going, because the useful output is the whole table, not the first crash. `conforms` is true when every pinned case passed; provisional failures are reported separately and never count against conformance. Variable names in `env` are lower-cased, matching the language's case-insensitivity.
 
-Stims runs this corpus against the three CPU execution paths of [`milkdrop-toolchain`](https://github.com/zz-plant/stims/tree/main/packages/milkdrop-toolchain), single-statement evaluation, the CSP-fallback interpreter and the JIT, in [`tests/unit/eel-conformance-spec.test.ts`](https://github.com/zz-plant/stims/blob/main/tests/unit/eel-conformance-spec.test.ts), with [`spec/eel-conformance/reference-runner.ts`](https://github.com/zz-plant/stims/blob/main/spec/eel-conformance/reference-runner.ts) as the runner. It does not run the corpus against the toolchain's WGSL generator.
+Stims runs this corpus against the three CPU execution paths of [`milkdrop-toolchain`](https://github.com/zz-plant/stims/tree/main/packages/milkdrop-toolchain), single-statement evaluation, the CSP-fallback interpreter and the JIT, in [`tests/unit/eel-conformance-spec.test.ts`](https://github.com/zz-plant/stims/blob/main/tests/unit/eel-conformance-spec.test.ts), with [`spec/eel-conformance/reference-runner.ts`](https://github.com/zz-plant/stims/blob/main/spec/eel-conformance/reference-runner.ts) as the runner. It does not run the corpus against the toolchain's WGSL generator, which does not lower `loop` or `while` at all, so the control-flow section would fail there.
 
 ## What the corpus covers
 
@@ -102,7 +102,7 @@ Sections, in file order: arithmetic operators and precedence; bitwise and logica
 Rules that most often catch a new implementation:
 - **Division by zero is 0**, but the guard is _exact zero_: `1 / 0.0000001` divides normally and yields ten million. A tolerance guard here silently zeroes results real presets depend on.
 - **`%` truncates both operands to integers first**; float remainder is `mod()` / `fmod()`. They are different operators, not spellings of one.
-- **Truthiness is `|v| > 1e-5`**, not `v != 0`, for `if`, `&&`, `||`, `!`, `bnot` and the `while` condition. A `while` condition that decays to `1e-6` exits; ns-eel2's loop stub compares `|cond|` against the same close factor every other boolean context uses.
+- **Truthiness is `|v| > 1e-5`**, not `v != 0`, for `if`, `&&`, `||`, `!`, `bnot` and the `while` condition. A `while` condition that decays to `1e-6` exits; ns-eel2's loop stub compares `|cond|` against the same close factor every other boolean context uses. The source treats exactly `1e-5` as true (`>=`); no case pins that one value, and Stims uses `>`.
 - **`==` is exact; `equal()` uses the close factor.** Only one of them is tolerant.
 - **`bor()` and `band()` are logical, not bitwise**, despite the names. The bitwise operators are `|` and `&`. `bor(2,4)` is 1, not 6.
 - **`frac()` subtracts the floor**, so `frac(-0.25)` is `0.75`. Using `trunc` instead diverges on every negative input.

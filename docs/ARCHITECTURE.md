@@ -177,7 +177,7 @@ Primary implementation:
   - settings surface
   - canonical URL synchronization
   - focused-session state
-- [`src/css/app-shell.css`](../src/css/app-shell.css) owns the workspace presentation layer, scoped with `@scope (.stims-shell)`.
+- [`src/css/app-shell.css`](../src/css/app-shell.css) owns the workspace presentation layer, scoped with `@scope (.stims-shell)`. Engines without `@scope` (Chromium before 118) drop those blocks, so the entry loads [`css-scope-fallback.ts`](../src/js/frontend/css-scope-fallback.ts) there. It rebuilds the scoped rules as plain ones in a stylesheet kept last.
 
 ### Engine seam
 

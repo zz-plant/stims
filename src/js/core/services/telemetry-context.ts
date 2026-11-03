@@ -1,7 +1,7 @@
 /**
  * The visitor context every telemetry beacon carries: which way the screen is
- * held, what kind of device it is, which audio source is live, and what kind
- * of site the visit came from.
+ * held, what kind of device it is, which audio source is live, what kind of
+ * site the visit came from, and which OS family and browser engine it runs on.
  *
  * Until these existed the dataset could not say which moment a visitor was
  * in. The first-run preset rendered black on every phone held upright for
@@ -9,8 +9,12 @@
  * because no row recorded the screen. The fields are coarse on purpose:
  * enough to weight work by where visitors are, nothing that identifies one.
  */
-import { isMobileDevice } from '../../utils/browser/device-detect.ts';
 import {
+  getDeviceEnvironmentProfile,
+  isMobileDevice,
+} from '../../utils/browser/device-detect.ts';
+import {
+  isTelemetryEngineMajor,
   TELEMETRY_AUDIO_SOURCES,
   type TelemetryEvent,
 } from '../edge-contracts.ts';
@@ -18,7 +22,14 @@ import { resolveOptionalApiUrl } from './optional-api.ts';
 
 export type TelemetryContext = Pick<
   TelemetryEvent,
-  'orientation' | 'device' | 'audioSource' | 'arrival'
+  | 'orientation'
+  | 'device'
+  | 'audioSource'
+  | 'arrival'
+  | 'os'
+  | 'engine'
+  | 'engineMajor'
+  | 'androidWebView'
 >;
 
 /**
@@ -89,6 +100,70 @@ function readPageArrival(): TelemetryContext['arrival'] {
   return pageArrival;
 }
 
+type TelemetryEngine = Pick<
+  TelemetryEvent,
+  'engine' | 'engineMajor' | 'androidWebView'
+>;
+
+function engineWithMajor(
+  engine: NonNullable<TelemetryEvent['engine']>,
+  version: string | undefined,
+): TelemetryEngine {
+  const major = Number.parseInt(version ?? '', 10);
+  return isTelemetryEngineMajor(major)
+    ? { engine, engineMajor: major }
+    : { engine };
+}
+
+/**
+ * Which engine renders the page and its major version, read here in the
+ * browser so that only these classes are sent, never the user agent itself.
+ *
+ * Engine tokens are read and brand tokens ignored, because a browser's own
+ * version says nothing about what it can render. Samsung Internet 25 is
+ * Chromium 121, an Android WebView reads `Version/4.0` beside its real
+ * `Chrome/` token, and every browser on iOS is WebKit whatever it calls
+ * itself. An iOS browser other than Safari has no `Version/` token, and there
+ * the OS version is the WebKit version.
+ */
+export function classifyTelemetryEngine(userAgent: string): TelemetryEngine {
+  const gecko = userAgent.match(/\bFirefox\/(\d+)/);
+  if (gecko) return engineWithMajor('gecko', gecko[1]);
+
+  const chromium = userAgent.match(/\bChrom(?:e|ium)\/(\d+)/);
+  if (chromium) {
+    return {
+      ...engineWithMajor('chromium', chromium[1]),
+      ...(/\bAndroid\b.*; wv\)/.test(userAgent)
+        ? { androidWebView: true }
+        : {}),
+    };
+  }
+
+  if (userAgent.includes('AppleWebKit/')) {
+    const version =
+      userAgent.match(/\bVersion\/(\d+)/) ?? userAgent.match(/\bOS (\d+)_/);
+    return engineWithMajor('webkit', version?.[1]);
+  }
+
+  return { engine: 'other' };
+}
+
+/** Fixed for the page load, like the referrer. */
+let pageBrowser:
+  | Pick<TelemetryContext, 'os' | keyof TelemetryEngine>
+  | undefined;
+
+function readPageBrowser(): NonNullable<typeof pageBrowser> {
+  if (pageBrowser === undefined && typeof navigator !== 'undefined') {
+    pageBrowser = {
+      os: getDeviceEnvironmentProfile().platformFamily,
+      ...classifyTelemetryEngine(navigator.userAgent ?? ''),
+    };
+  }
+  return pageBrowser ?? {};
+}
+
 /** The audio source that is live now, or null when none is. */
 export function setTelemetryAudioSource(source: string | null): void {
   liveAudioSource =
@@ -147,6 +222,7 @@ export function readTelemetryContext(): TelemetryContext {
     ...viewport,
     audioSource: liveAudioSource,
     ...(arrival ? { arrival } : {}),
+    ...readPageBrowser(),
   };
 }
 
@@ -154,4 +230,5 @@ export function readTelemetryContext(): TelemetryContext {
 export function resetTelemetryContextForTests(): void {
   liveAudioSource = 'none';
   pageArrival = undefined;
+  pageBrowser = undefined;
 }

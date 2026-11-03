@@ -3,6 +3,7 @@ import {
   buildWgslExpressionString,
   compileProgramToWgsl,
 } from '../src/compiler/wgsl-generator.ts';
+import { parseMilkdropExpression } from '../src/expression.ts';
 import type {
   MilkdropCompiledStatement,
   MilkdropExpressionNode,
@@ -770,5 +771,27 @@ describe('WGSL reserved word escaping', () => {
     for (const field of fields) {
       expect(reserved.has(field)).toBe(false);
     }
+  });
+});
+
+// The conformance corpus runs on the CPU tiers only, so this is what holds the
+// WGSL output to the same reading: eel-conformance's
+// operators-arithmetic/precedence-unary-minus-over-pow and pow-left-associative.
+describe('^ precedence from parsed source', () => {
+  const wgslOf = (source: string) => {
+    const parsed = parseMilkdropExpression(source, 1);
+    expect(parsed.diagnostics).toEqual([]);
+    if (!parsed.value) throw new Error(`Expected "${source}" to parse.`);
+    return buildWgslExpressionString(parsed.value);
+  };
+
+  test('a leading sign applies to the whole power', () => {
+    expect(wgslOf('-2^2')).toBe('(-milkdropPow(2, 2))');
+    expect(wgslOf('(-2)^2')).toBe('milkdropPow((-2), 2)');
+  });
+
+  test('^ chains to the left and the exponent keeps its own sign', () => {
+    expect(wgslOf('2^3^2')).toBe('milkdropPow(milkdropPow(2, 3), 2)');
+    expect(wgslOf('2^-1')).toBe('milkdropPow(2, (-1))');
   });
 });

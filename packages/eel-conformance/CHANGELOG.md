@@ -7,6 +7,7 @@ The three provisional cases are resolved against the ns-eel2 source that MilkDro
 - `operators-arithmetic/precedence-unary-minus-over-pow`: `-2 ^ 2` is `-(2^2) = -4`, the ns-eel2 reading (its preprocessor rewrites it to `-pow(2,2)`). Modern EEL2 gives +4; the note says so. Previously pinned +4. The case also asserts `(-2) ^ 2 = 4`.
 - `operators-arithmetic/pow-left-associative`: promoted to `pinned` with the citations; 64 stays.
 - The `control-flow` section description now says the two-argument `while(cond, body)` form is a dialect extension shared with projectM and Butterchurn, not ns-eel2 syntax.
+- Each corrected note now cites the deciding source lines at a resolvable commit, and the audit's commit hash, which was missing a digit, is fixed. The audit also records two gaps: the exact `1e-5` boundary and the WGSL generator's missing loop lowering.
 - Tests: the corpus test asserts there is no provisional case left; the harness test exercises the provisional rule on a synthetic case.
 
 ## 0.1.1 (2026-10-28)

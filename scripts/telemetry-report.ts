@@ -69,9 +69,13 @@ async function resolveCredentials(): Promise<{
 }
 
 // blobs: [event, renderer, presetId, error, country,
-//         orientation, device, audioSource]  (the last three since 2026-10-06;
-//         '' on older rows and on clients that predate them)
-// doubles: [fps, audioLatencyMs, timestamp, dwellMs]
+//         orientation, device, audioSource,  (since 2026-10-06)
+//         arrival,                           (since 2026-10-07)
+//         surface,                           (since 2026-10-27)
+//         os, engine, androidWebView]        (since 2026-11-03)
+//         '' on rows and clients older than the field
+// doubles: [fps, audioLatencyMs, timestamp, dwellMs,
+//           engineMajor]  (since 2026-11-03; 0 when older or unknown)
 // indexes: [event]
 
 interface Report {
@@ -232,6 +236,32 @@ export function buildReports(days: number): Report[] {
               AND blob1 = 'growth-audio-started' AND blob7 != ''
             GROUP BY blob7, blob6, blob8 ORDER BY count DESC`,
       columns: ['device', 'orientation', 'audio', 'count'],
+    },
+    {
+      // How many visitors each platform build could reach (added 2026-11-03).
+      // Earlier rows carry '' and are left out, so a share read from this
+      // report covers only the days since the field shipped.
+      title: `Audible starts by OS and device (last ${days}d)`,
+      sql: `SELECT blob11 AS os, blob7 AS device, COUNT() AS count
+            FROM ${DATASET}
+            WHERE ${inWindow}
+              AND blob1 = 'growth-audio-started' AND blob11 != ''
+            GROUP BY blob11, blob7 ORDER BY count DESC`,
+      columns: ['os', 'device', 'count'],
+    },
+    {
+      // How far back engine support has to reach. Newest first within each
+      // engine, so Chromium before 118 is the tail of the chromium rows. A
+      // major of 0 means the user agent named none. `webview` marks an Android
+      // WebView, which updates apart from the browser beside it.
+      title: `Audible starts by engine major version (last ${days}d)`,
+      sql: `SELECT blob12 AS engine, double5 AS major, blob13 AS webview,
+                   COUNT() AS count
+            FROM ${DATASET}
+            WHERE ${inWindow}
+              AND blob1 = 'growth-audio-started' AND blob12 != ''
+            GROUP BY blob12, double5, blob13 ORDER BY engine, major DESC`,
+      columns: ['engine', 'major', 'webview', 'count'],
     },
     {
       // The "Open one up" funnel (docs/PRODUCT_MOMENTS.md): audible start,
