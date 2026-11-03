@@ -18,7 +18,8 @@ presets and imported files. Two limits apply, and they bound different things.
   gives one frame's programs 2,097,152 loop passes between them. The JIT and
   the CSP interpreter both charge the shared `MilkdropLoopBudget`, so a
   `while(1)` in per-pixel code cannot run the per-call cap once per vertex.
-- **Wall-clock time.** `FRAME_EXECUTION_DEADLINE_MS` is the hard half. Loops
+- **Wall-clock time.** `FRAME_EXECUTION_DEADLINE_MS`
+  (`src/js/milkdrop/execution-deadlines.ts`) is the hard half. Loops
   check the deadline periodically (more often for large bodies), and the VM
   checks it before every program call, so once a step has spent its window the
   remaining per-vertex and per-sample calls are skipped. `step()` and

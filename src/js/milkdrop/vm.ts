@@ -26,6 +26,7 @@ import {
 } from 'milkdrop-toolchain/src/expression-jit.ts';
 import { normalizeProgramAssignmentTarget } from 'milkdrop-toolchain/src/field-normalization.ts';
 import { presetOwnedSignalAliases } from 'milkdrop-toolchain/src/program-references.ts';
+import { defaultExecutionDeadlines } from './execution-deadlines.ts';
 import { inspectableVariableNames } from './inspectable-variables.ts';
 import { isElementHidden } from './render-isolation.ts';
 import { DEFAULT_BLEND_DURATION_SECONDS } from './runtime/first-run-preset.ts';
@@ -115,31 +116,9 @@ const VM_PROGRAM_OPTIONS: MilkdropProgramOptions = { rng: 'inline' };
 const FRAME_LOOP_ITERATION_BUDGET = 2_097_152;
 
 /**
- * Wall-clock ceiling for one frame's equation execution.
- *
- * The iteration budget bounds a `while(1)` that does almost nothing; it does
- * not bound a loop whose body is expensive, nor the sum of per-vertex calls
- * that each stay under the cap. This is the hard half: once a step has spent
- * this long, its loops stop and every later program call in the frame is
- * skipped, so a hostile or merely pathological preset cannot hold the main
- * thread for seconds. The value is a ceiling, not a target — the heaviest
- * bundled preset measures about 4.5 ms of simulation on reference hardware,
- * and adaptive quality acts long before 50 ms.
- */
-const FRAME_EXECUTION_DEADLINE_MS = 50;
-
-/**
- * Wall-clock ceiling for a preset's init programs, which run once per load
- * rather than per frame. Larger than the frame ceiling because a legitimate
- * init may build a table, but still finite: the old code lifted the shared
- * iteration limit for init and relied on the per-call cap alone.
- */
-const INIT_EXECUTION_DEADLINE_MS = 500;
-
-/**
- * Overrides for the wall-clock ceilings. The defaults are the production
- * values; tests pass a negative deadline to prove a step stops without
- * waiting on the clock.
+ * Overrides for the wall-clock ceilings. Anything left out uses
+ * defaultExecutionDeadlines(); measurement tools pass Infinity, because a
+ * reading must not depend on how busy the machine is.
  */
 export type MilkdropVMExecutionOptions = {
   frameDeadlineMs?: number;
@@ -205,7 +184,7 @@ class MilkdropPresetVM implements MilkdropVM {
    * Shared by every program call in a frame (see FRAME_LOOP_ITERATION_BUDGET)
    * and refilled when a step starts. The init programs run once per preset,
    * so reset() lifts the shared iteration limit for them and relies on the
-   * init wall-clock deadline (see INIT_EXECUTION_DEADLINE_MS).
+   * init wall-clock deadline (see execution-deadlines.ts).
    */
   private readonly loopBudget: MilkdropLoopBudget = {
     remaining: Number.POSITIVE_INFINITY,
@@ -394,10 +373,11 @@ class MilkdropPresetVM implements MilkdropVM {
   ) {
     this.preset = preset;
     this.webgpuOptimizationFlags = { ...webgpuOptimizationFlags };
+    const defaults = defaultExecutionDeadlines();
     this.frameDeadlineMs =
-      executionOptions.frameDeadlineMs ?? FRAME_EXECUTION_DEADLINE_MS;
+      executionOptions.frameDeadlineMs ?? defaults.frameDeadlineMs;
     this.initDeadlineMs =
-      executionOptions.initDeadlineMs ?? INIT_EXECUTION_DEADLINE_MS;
+      executionOptions.initDeadlineMs ?? defaults.initDeadlineMs;
     this.reset();
   }
 

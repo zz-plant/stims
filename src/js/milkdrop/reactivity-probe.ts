@@ -207,6 +207,16 @@ export function probePresetReactivity(
 }
 
 /**
+ * Overrides for the isolated probe's wall-clock limits. The worker does not
+ * share the caller's module state, so these travel with the request. Omitted,
+ * the production limits apply.
+ */
+export type ReactivityProbeTiming = {
+  timeoutMs?: number;
+  frameDeadlineMs?: number;
+};
+
+/**
  * Default wall-clock ceiling for the isolated probe. Two timelines of 60
  * frames on a cheap preset take a few milliseconds; a generated preset that
  * needs longer than this is not worth waiting on.
@@ -232,7 +242,7 @@ const FALLBACK_FRAME_DEADLINE_MS = 10;
  */
 export async function probePresetReactivityIsolated(
   preset: MilkdropCompiledPreset,
-  options: { verify?: boolean; timeoutMs?: number } = {},
+  options: { verify?: boolean } & ReactivityProbeTiming = {},
 ): Promise<ReactivityProbeResult> {
   // The static scan is microseconds and needs no execution; keep it on the
   // caller's thread so the common "does this source mention audio" case does
@@ -245,8 +255,8 @@ export async function probePresetReactivityIsolated(
   }
   const fallback = () =>
     probePresetReactivity(preset, {
-      ...options,
-      frameDeadlineMs: FALLBACK_FRAME_DEADLINE_MS,
+      verify: options.verify,
+      frameDeadlineMs: options.frameDeadlineMs ?? FALLBACK_FRAME_DEADLINE_MS,
     });
   if (typeof Worker === 'undefined') {
     return fallback();
@@ -292,6 +302,7 @@ export async function probePresetReactivityIsolated(
       worker.postMessage({
         source: preset.source,
         verify: options.verify ?? false,
+        frameDeadlineMs: options.frameDeadlineMs,
       });
     });
   } catch {

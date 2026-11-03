@@ -50,7 +50,16 @@ import { resetPresetFrameCostData } from '../src/js/core/preset-cost-signal.ts';
 import { resetSettingsPanelState } from '../src/js/core/settings-panel.ts';
 import { resetRenderPreferenceStore } from '../src/js/core/state/render-preference-store.ts';
 import { resetThemePreferenceState } from '../src/js/core/theme-preferences.ts';
+import { __setDefaultExecutionDeadlinesForTests } from '../src/js/milkdrop/execution-deadlines.ts';
 import { resetDeviceDetectCache } from '../src/js/utils/browser/device-detect.ts';
+
+// A wall-clock deadline judges the machine, not the code: under the gate's load
+// it skips per-vertex calls and a correct test sees a partial frame. Tests about
+// the deadline pass their own or script the clock.
+__setDefaultExecutionDeadlinesForTests({
+  frameDeadlineMs: Number.POSITIVE_INFINITY,
+  initDeadlineMs: Number.POSITIVE_INFINITY,
+});
 
 beforeEach(() => {
   resetRenderPreferenceStore();

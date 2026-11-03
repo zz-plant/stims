@@ -207,11 +207,53 @@ describe('generated-preset reactivity probe', () => {
       (globalThis as { Worker?: unknown }).Worker = undefined;
       const result = await probePresetReactivityIsolated(compiled, {
         verify: true,
+        frameDeadlineMs: Number.POSITIVE_INFINITY,
       });
       expect(result.verdict).toBe('reactive');
       expect(result.respondingVariables.length).toBeGreaterThan(0);
+
+      // A window that has already closed skips every program, so nothing can
+      // respond: the fallback ran under the deadline it was asked for.
+      const expired = await probePresetReactivityIsolated(compiled, {
+        verify: true,
+        frameDeadlineMs: -1,
+      });
+      expect(expired.verdict).toBe('reactive');
+      expect(expired.respondingVariables).toEqual([]);
     } finally {
       (globalThis as { Worker?: unknown }).Worker = originalWorker;
     }
   });
+
+  test('the worker runs the probe under the deadline the caller asks for', async () => {
+    const compiled = compileMilkdropPresetSource(
+      [
+        '[preset00]',
+        'fDecay=0.98',
+        'per_frame_1=zoom=1.0+bass*0.08;',
+        'per_frame_2=rot=rot+treb*0.02;',
+      ].join('\n'),
+      { id: 'probe-isolated-worker-deadline' },
+    );
+    // The worker has its own module state, so the request is the only way a
+    // deadline reaches it. A generous timeout, because a timed-out probe says
+    // `unknown` and these assertions are about a probe that ran.
+    const timeoutMs = 120_000;
+
+    const unlimited = await probePresetReactivityIsolated(compiled, {
+      verify: true,
+      timeoutMs,
+      frameDeadlineMs: Number.POSITIVE_INFINITY,
+    });
+    expect(unlimited.verdict).toBe('reactive');
+    expect(unlimited.respondingVariables.length).toBeGreaterThan(0);
+
+    const expired = await probePresetReactivityIsolated(compiled, {
+      verify: true,
+      timeoutMs,
+      frameDeadlineMs: -1,
+    });
+    expect(expired.verdict).toBe('reactive');
+    expect(expired.respondingVariables).toEqual([]);
+  }, 60_000);
 });
