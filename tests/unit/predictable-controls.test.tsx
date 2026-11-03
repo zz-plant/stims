@@ -19,6 +19,7 @@ import {
 import { saveLastSession } from '../../src/js/core/state/last-session-store.ts';
 import { AudioSourcePanel } from '../../src/js/frontend/AudioSourcePanel.tsx';
 import { BrowseSheetPanel } from '../../src/js/frontend/BrowseSheetPanel.tsx';
+import { CreditsDialog } from '../../src/js/frontend/CreditsDialog.tsx';
 import type { SessionRouteState } from '../../src/js/frontend/contracts.ts';
 import { ManageSetsDialog } from '../../src/js/frontend/ManageSetsDialog.tsx';
 import { NewHomePage } from '../../src/js/frontend/NewHomePage.tsx';
@@ -479,6 +480,53 @@ describe('Audio sources', () => {
       resetDeviceDetectCache();
     }
   });
+});
+
+describe('long help dialogs close from their header', () => {
+  // Both cards scroll; their footer Close sits below the fold, so the header
+  // × has to be the first control in the card and has to close it.
+  const dialogs = [
+    {
+      name: 'Shortcuts',
+      label: 'Close shortcuts',
+      render: (onClose: () => void) =>
+        createElement(ShortcutsDialog, {
+          open: true,
+          onClose,
+          shortcutsRef: createRef<HTMLDivElement>(),
+        }),
+    },
+    {
+      name: 'Credits',
+      label: 'Close About Stims',
+      render: (onClose: () => void) =>
+        createElement(CreditsDialog, {
+          open: true,
+          onClose,
+          creditsRef: createRef<HTMLDivElement>(),
+        }),
+    },
+  ];
+  for (const { name, label, render } of dialogs) {
+    test(`${name}: the first button in the card closes it`, () => {
+      let closed = 0;
+      const rendered = renderWorkspace(
+        render(() => {
+          closed += 1;
+        }),
+      );
+      try {
+        const first = rendered.container.querySelector<HTMLButtonElement>(
+          '[role="dialog"] button',
+        );
+        expect(first?.getAttribute('aria-label')).toBe(label);
+        rendered.click(first);
+        expect(closed).toBe(1);
+      } finally {
+        rendered.dispose();
+      }
+    });
+  }
 });
 
 describe('Shortcuts dialog', () => {

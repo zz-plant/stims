@@ -42,7 +42,7 @@ type Exceedance = {
 const KNOWN_EXCEEDANCES: Exceedance[] = [
   {
     path: 'src/css/app-shell.css',
-    limit: 4559,
+    limit: 4480,
     reason:
       'the pre-CSS-modules global stylesheet; surfaces are migrating to per-surface files under src/css/shell/ and colocated *.module.css',
   },

@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { DialogCloseButton } from './DialogCloseButton.tsx';
 import {
   useBottomOverlaySignal,
   useEscapeHandler,
@@ -14,7 +15,6 @@ import {
   type SavedPresetSet,
   saveNamedSet,
 } from './preset-sets.ts';
-import { UiIcon } from './UiIcon.tsx';
 
 export function ManageSetsDialog({
   open,
@@ -132,18 +132,10 @@ export function ManageSetsDialog({
       >
         <div className="stims-shell__dialog-head">
           <h2 className="stims-shell__dialog-title">Preset Sets</h2>
-          <button
-            type="button"
-            className="cta-button ghost stims-shell__dialog-close"
-            onClick={onClose}
-            aria-label="Close preset sets dialog"
-          >
-            <UiIcon
-              name="close"
-              className="stims-icon-slot stims-icon-slot--sm"
-              aria-hidden="true"
-            />
-          </button>
+          <DialogCloseButton
+            label="Close preset sets dialog"
+            onClose={onClose}
+          />
         </div>
 
         {isSaving ? (

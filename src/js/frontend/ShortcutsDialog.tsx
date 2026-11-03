@@ -6,6 +6,7 @@ import {
   formatStageKey,
 } from '../core/unified-input.ts';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
+import { DialogCloseButton } from './DialogCloseButton.tsx';
 import {
   useBottomOverlaySignal,
   useEscapeHandler,
@@ -162,7 +163,10 @@ export function ShortcutsDialog({
           }
         }}
       >
-        <h2>Shortcuts and gestures</h2>
+        <div className="stims-shell__dialog-head">
+          <h2>Shortcuts and gestures</h2>
+          <DialogCloseButton label="Close shortcuts" onClose={onClose} />
+        </div>
         {warning ? (
           <p className="stims-shell__meta-copy" role="alert">
             {warning}

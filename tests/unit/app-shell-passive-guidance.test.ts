@@ -39,12 +39,12 @@ describe('passive first-use guidance', () => {
     expect(app).toContain('onDismiss={() => setAudioMatch(null)}');
   });
 
-  test('the audio-match toast self-clears, pauses while held, and has no dismiss control', () => {
+  test('the audio-match toast self-clears, pauses while held, and can be dismissed while held', () => {
     // Renders the real component with fake timers instead of regex-matching
     // its effect body. The behaviour under guard: it dismisses itself after
     // its own timeout, the timer pauses while hovered or focused (a fixed
-    // deadline expires before a keyboard user can Tab to the action), and
-    // there is no dismiss button to click.
+    // deadline expires before a keyboard user can Tab to the action), and,
+    // because a held toast never expires, it carries a dismiss button.
     (
       globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true;
@@ -69,11 +69,6 @@ describe('passive first-use guidance', () => {
     render();
     const toast = container.querySelector('.stims-shell__audio-match');
     expect(toast).not.toBeNull();
-    // No dismiss affordance anywhere in the rendered output.
-    expect(container.querySelector('[aria-label="Dismiss"]')).toBeNull();
-    expect(
-      container.querySelector('.stims-shell__audio-match-close'),
-    ).toBeNull();
 
     // Held toasts do not expire... (pointerover, not pointerenter: enter
     // does not bubble, and React listens at the root and derives
@@ -94,6 +89,19 @@ describe('passive first-use guidance', () => {
       jest.advanceTimersByTime(60_000);
     });
     expect(dismissed).toBe(1);
+
+    // A held toast leaves when its dismiss button is pressed, without
+    // waiting for a timer that is paused. (The parent never cleared `match`,
+    // so the same toast is still mounted.)
+    act(() => {
+      toast?.dispatchEvent(new Event('pointerover', { bubbles: true }));
+    });
+    const dismiss = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Dismiss suggestion"]',
+    );
+    expect(dismiss).not.toBeNull();
+    act(() => dismiss?.click());
+    expect(dismissed).toBe(2);
 
     act(() => root.unmount());
     container.remove();
