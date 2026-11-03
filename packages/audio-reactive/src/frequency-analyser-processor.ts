@@ -26,6 +26,15 @@ import {
 } from './spectral-features.ts';
 
 /**
+ * The beat and transient detector constants were tuned at one update per
+ * 4096 samples of 48 kHz audio (fftSize 1024, a message every fourth window).
+ * The detectors now run on every window, and each window advances them by its
+ * own length over this, so their time constants hold in seconds whatever the
+ * fftSize, sample rate or message cadence.
+ */
+const TUNED_STEP_SECONDS = 4096 / 48_000;
+
+/**
  * Exported so offline tools (scripts/audio-file-inputs.ts) can drive the exact
  * processor the browser runs; the worklet scope itself only uses the
  * registerProcessor call below.
@@ -60,20 +69,37 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private analyseCount = 0;
   private hasStereoInput = false;
 
-  private readonly historySize = 64;
-  private readonly energyHistoryBass = new Float32Array(64);
-  private readonly energyHistoryMid = new Float32Array(64);
-  private readonly energyHistoryTreble = new Float32Array(64);
+  // Sized in the constructor to the same span of audio as 64 tuned steps.
+  private readonly historySize: number;
+  private readonly energyHistoryBass: Float32Array;
+  private readonly energyHistoryMid: Float32Array;
+  private readonly energyHistoryTreble: Float32Array;
   private historyIndex = 0;
   private historyCount = 0;
   private prevKick = 0;
   private prevTreble = 0;
 
+  // Per-window forms of the tuned per-step constants (see TUNED_STEP_SECONDS).
+  private readonly pmCoeff: number;
+  private readonly pmBeatDecay: number;
+  private readonly bassCoeff: number;
+  private readonly midCoeff: number;
+  private readonly trebleCoeff: number;
+
+  // What the windows since the last message saw, so a message reports a
+  // transient that fell in a window it did not post.
+  private peakRms = 0;
+  private peakSpectralFlux = 0;
+  private peakKickTransient = 0;
+  private peakSnareSnap = 0;
+  private sawBeat = false;
+  private sawBassBeat = false;
+  private sawMidBeat = false;
+  private sawTrebleBeat = false;
+
   private pmRunningAvg = 0;
   private pmBeatIntensity = 0;
   private pmLastBeatTime = 0;
-  private readonly pmCoeff = 0.1;
-  private readonly pmBeatDecay = 0.92;
   private beatRunningAvgBass = 0;
   private beatRunningAvgMid = 0;
   private beatRunningAvgTreble = 0;
@@ -139,6 +165,17 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
       1,
       resolvedOptions.processorOptions?.messageEvery ?? 1,
     );
+    const step = this.fftSize / this.sampleRate / TUNED_STEP_SECONDS;
+    const perWindow = (coefficient: number) => 1 - (1 - coefficient) ** step;
+    this.pmCoeff = perWindow(0.1);
+    this.pmBeatDecay = 0.92 ** step;
+    this.bassCoeff = perWindow(0.08);
+    this.midCoeff = perWindow(0.06);
+    this.trebleCoeff = perWindow(0.05);
+    this.historySize = Math.max(1, Math.round(64 / step));
+    this.energyHistoryBass = new Float32Array(this.historySize);
+    this.energyHistoryMid = new Float32Array(this.historySize);
+    this.energyHistoryTreble = new Float32Array(this.historySize);
     this.hpAnalyser = createHarmonicPercussiveAnalyser();
 
     this.port.onmessage = (event) => {
@@ -201,24 +238,158 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     const rms = Math.sqrt(sumSquares / this.fftSize);
     const zeroCrossingRate = zeroCrossings / (this.fftSize - 1);
 
-    this.analyseCount += 1;
-    const isMessageTick = this.analyseCount % this.messageEvery === 0;
-
-    // Byte-map every analyse — not just on message ticks — so the HPSS
-    // time-median history advances at full analyse cadence. The byte domain
-    // matches what the main-thread fallback consumed, keeping the two paths
-    // bit-compatible (the relative normalization washes out any scale drift).
-    // analyseBlockBytes is shared with the offline audio-file reader, so the
-    // lab's WAV spectra are the bytes this worklet would have posted.
+    // Analyse every window, not just the ones a message carries: the HPSS
+    // time-median history and the beat detectors advance at full analyse
+    // cadence, and a transient shorter than the message interval still
+    // reaches the next message. The byte domain matches what the main-thread
+    // fallback consumed, keeping the two paths bit-compatible (the relative
+    // normalization washes out any scale drift). analyseBlockBytes is shared
+    // with the offline audio-file reader, so the lab's WAV spectra are the
+    // bytes this worklet would have posted.
     analyseBlockBytes(
       this.buffer,
       this.window,
       this.twiddles,
       this.freqBuf,
       this.scratchL,
-      isMessageTick ? this.currentMagnitudes : undefined,
+      this.currentMagnitudes,
     );
-    if (this.hasStereoInput && isMessageTick) {
+
+    this.hpLevels = this.hpAnalyser.analyse(this.freqBuf, this.sampleRate);
+
+    let spectralFlux = 0;
+    for (let i = 0; i < this.frequencyBinCount; i += 1) {
+      const diff = this.currentMagnitudes[i] - this.prevMagnitudes[i];
+      if (diff > 0) {
+        spectralFlux += diff;
+      }
+    }
+    this.prevMagnitudes.set(this.currentMagnitudes);
+
+    // Off-main-thread multi-band energy calculation
+    const bass = computeBandAverage(
+      this.freqBuf,
+      this.sampleRate,
+      this.fftSize,
+      24,
+      320,
+      'bass',
+    );
+    const mid = computeBandAverage(
+      this.freqBuf,
+      this.sampleRate,
+      this.fftSize,
+      320,
+      2800,
+      'mid',
+    );
+    const treble = computeBandAverage(
+      this.freqBuf,
+      this.sampleRate,
+      this.fftSize,
+      2800,
+      12000,
+      'treble',
+    );
+    const subBass = computeBandAverage(
+      this.freqBuf,
+      this.sampleRate,
+      this.fftSize,
+      24,
+      60,
+      'bass',
+    );
+    const kick = computeBandAverage(
+      this.freqBuf,
+      this.sampleRate,
+      this.fftSize,
+      60,
+      250,
+      'bass',
+    );
+
+    // Off-thread energy envelope tracking & transient metrics
+    const kickDelta = Math.max(0, kick - this.prevKick);
+    const kickTransient = Math.min(1, kickDelta * 3.8 + kick * 0.4);
+    const snareDelta = Math.max(0, treble - this.prevTreble);
+    const snareSnap = Math.min(1, snareDelta * 4.2 + treble * 0.3);
+    this.prevKick = kick;
+    this.prevTreble = treble;
+
+    // Update off-thread energy history
+    this.energyHistoryBass[this.historyIndex] = bass;
+    this.energyHistoryMid[this.historyIndex] = mid;
+    this.energyHistoryTreble[this.historyIndex] = treble;
+    this.historyIndex = (this.historyIndex + 1) % this.historySize;
+    this.historyCount = Math.min(this.historyCount + 1, this.historySize);
+
+    const nowMs = (typeof currentTime === 'number' ? currentTime : 0) * 1000;
+    const weightedEnergy = Math.min(1, bass * 0.55 + mid * 0.3 + treble * 0.15);
+
+    this.pmRunningAvg += this.pmCoeff * (weightedEnergy - this.pmRunningAvg);
+    const pmThreshold = this.pmRunningAvg * (1 + this.beatThreshold * 3);
+    const pmIsBeat =
+      weightedEnergy > pmThreshold &&
+      nowMs - this.pmLastBeatTime > this.beatMinIntervalMs;
+    if (pmIsBeat) {
+      this.pmBeatIntensity = Math.min(1, this.pmBeatIntensity + 0.5);
+      this.pmLastBeatTime = nowMs;
+    } else {
+      this.pmBeatIntensity *= this.pmBeatDecay;
+    }
+
+    this.beatRunningAvgBass +=
+      this.bassCoeff * (bass - this.beatRunningAvgBass);
+    this.beatRunningAvgMid += this.midCoeff * (mid - this.beatRunningAvgMid);
+    this.beatRunningAvgTreble +=
+      this.trebleCoeff * (treble - this.beatRunningAvgTreble);
+
+    const beatBass =
+      bass > this.beatRunningAvgBass * (1 + this.beatThreshold * 2.5) &&
+      nowMs - this.lastBassBeatTime > this.beatMinIntervalMs;
+    const beatMid =
+      mid > this.beatRunningAvgMid * (1 + this.beatThreshold * 2.0) &&
+      nowMs - this.lastMidBeatTime > this.beatMinIntervalMs;
+    const beatTreble =
+      treble > this.beatRunningAvgTreble * (1 + this.beatThreshold * 1.8) &&
+      nowMs - this.lastTrebleBeatTime > this.beatMinIntervalMs;
+
+    if (beatBass) {
+      this.beatIntensityBass = Math.min(1, 0.35 + bass);
+      this.lastBassBeatTime = nowMs;
+    } else {
+      this.beatIntensityBass *= this.pmBeatDecay;
+    }
+    if (beatMid) {
+      this.beatIntensityMid = Math.min(1, 0.28 + mid);
+      this.lastMidBeatTime = nowMs;
+    } else {
+      this.beatIntensityMid *= this.pmBeatDecay;
+    }
+    if (beatTreble) {
+      this.beatIntensityTreble = Math.min(1, 0.22 + treble);
+      this.lastTrebleBeatTime = nowMs;
+    } else {
+      this.beatIntensityTreble *= this.pmBeatDecay;
+    }
+
+    this.peakRms = Math.max(this.peakRms, rms);
+    this.peakSpectralFlux = Math.max(this.peakSpectralFlux, spectralFlux);
+    this.peakKickTransient = Math.max(this.peakKickTransient, kickTransient);
+    this.peakSnareSnap = Math.max(this.peakSnareSnap, snareSnap);
+    this.sawBeat ||= pmIsBeat;
+    this.sawBassBeat ||= beatBass;
+    this.sawMidBeat ||= beatMid;
+    this.sawTrebleBeat ||= beatTreble;
+
+    this.analyseCount += 1;
+    if (this.analyseCount % this.messageEvery !== 0) {
+      return;
+    }
+
+    // Everything below describes the latest window, except the peak and beat
+    // fields, which cover every window since the previous message.
+    if (this.hasStereoInput) {
       analyseBlockBytes(
         this.bufferR,
         this.window,
@@ -228,286 +399,166 @@ export class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
       );
     }
 
-    this.hpLevels = this.hpAnalyser.analyse(this.freqBuf, this.sampleRate);
+    let maxMag = 0;
+    let sumMag = 0;
+    for (let i = 0; i < this.frequencyBinCount; i += 1) {
+      const magnitude = this.currentMagnitudes[i];
+      if (magnitude > maxMag) maxMag = magnitude;
+      sumMag += magnitude;
+    }
+    const meanMag = sumMag / Math.max(1, this.frequencyBinCount);
+    const spectralCrest = maxMag / (meanMag + 1e-6);
+    const spectralCentroid = computeSpectralCentroid(
+      this.currentMagnitudes,
+      this.sampleRate,
+      this.fftSize,
+    );
+    const spectralFlatness = computeSpectralFlatness(this.currentMagnitudes);
+    const spectralRolloff = computeSpectralRolloff(
+      this.currentMagnitudes,
+      this.sampleRate,
+      this.fftSize,
+    );
 
-    if (isMessageTick) {
-      let maxMag = 0;
-      let sumMag = 0;
-      let spectralFlux = 0;
-
-      for (let i = 0; i < this.frequencyBinCount; i += 1) {
-        const magnitude = this.currentMagnitudes[i];
-
-        const diff = magnitude - this.prevMagnitudes[i];
-        if (diff > 0) {
-          spectralFlux += diff;
-        }
-        this.prevMagnitudes[i] = magnitude;
-
-        if (magnitude > maxMag) maxMag = magnitude;
-        sumMag += magnitude;
-      }
-
-      const meanMag = sumMag / Math.max(1, this.frequencyBinCount);
-      const spectralCrest = maxMag / (meanMag + 1e-6);
-      const spectralCentroid = computeSpectralCentroid(
-        this.prevMagnitudes,
-        this.sampleRate,
-        this.fftSize,
-      );
-      const spectralFlatness = computeSpectralFlatness(this.prevMagnitudes);
-      const spectralRolloff = computeSpectralRolloff(
-        this.prevMagnitudes,
-        this.sampleRate,
-        this.fftSize,
-      );
-
-      let stereoBalance = 0;
-      let stereoWidth = 0;
-      if (this.hasStereoInput) {
-        let sumL = 0;
-        let sumR = 0;
-        let dotLR = 0;
-        let dotLL = 0;
-        let dotRR = 0;
-        for (let i = 0; i < this.fftSize; i += 1) {
-          const l = this.buffer[i];
-          const r = this.bufferR[i];
-          sumL += Math.abs(l);
-          sumR += Math.abs(r);
-          dotLR += l * r;
-          dotLL += l * l;
-          dotRR += r * r;
-        }
-        stereoBalance = (sumL - sumR) / (sumL + sumR + 1e-6);
-        const norm = Math.sqrt(dotLL * dotRR);
-        const corr = norm > 1e-6 ? dotLR / norm : 1;
-        stereoWidth = Math.max(0, Math.min(1, 1 - corr));
-      }
-
+    let stereoBalance = 0;
+    let stereoWidth = 0;
+    if (this.hasStereoInput) {
+      let sumL = 0;
+      let sumR = 0;
+      let dotLR = 0;
+      let dotLL = 0;
+      let dotRR = 0;
       for (let i = 0; i < this.fftSize; i += 1) {
-        const sample = this.buffer[i];
-        this.waveBuf[i] = byteFromSample(sample);
-        if (this.hasStereoInput) {
-          const sampleR = this.bufferR[i];
-          this.waveBufR[i] = byteFromSample(sampleR);
-        }
+        const l = this.buffer[i];
+        const r = this.bufferR[i];
+        sumL += Math.abs(l);
+        sumR += Math.abs(r);
+        dotLR += l * r;
+        dotLL += l * l;
+        dotRR += r * r;
       }
-      this.timeDomainBuf.set(this.buffer);
+      stereoBalance = (sumL - sumR) / (sumL + sumR + 1e-6);
+      const norm = Math.sqrt(dotLL * dotRR);
+      const corr = norm > 1e-6 ? dotLR / norm : 1;
+      stereoWidth = Math.max(0, Math.min(1, 1 - corr));
+    }
 
-      // Off-main-thread multi-band energy calculation
-      const bass = computeBandAverage(
-        this.freqBuf,
-        this.sampleRate,
-        this.fftSize,
-        24,
-        320,
-        'bass',
-      );
-      const mid = computeBandAverage(
-        this.freqBuf,
-        this.sampleRate,
-        this.fftSize,
-        320,
-        2800,
-        'mid',
-      );
-      const treble = computeBandAverage(
-        this.freqBuf,
-        this.sampleRate,
-        this.fftSize,
-        2800,
-        12000,
-        'treble',
-      );
-      const subBass = computeBandAverage(
-        this.freqBuf,
-        this.sampleRate,
-        this.fftSize,
-        24,
-        60,
-        'bass',
-      );
-      const kick = computeBandAverage(
-        this.freqBuf,
-        this.sampleRate,
-        this.fftSize,
-        60,
-        250,
-        'bass',
-      );
-
-      // Off-thread energy envelope tracking & transient metrics
-      const subBassEnv = Math.min(1, subBass * 1.35);
-      const kickDelta = Math.max(0, kick - this.prevKick);
-      const kickTransient = Math.min(1, kickDelta * 3.8 + kick * 0.4);
-      const vocalMidEnv = Math.min(1, mid * 1.2);
-      const snareDelta = Math.max(0, treble - this.prevTreble);
-      const snareSnap = Math.min(1, snareDelta * 4.2 + treble * 0.3);
-
-      this.prevKick = kick;
-      this.prevTreble = treble;
-
-      // Update off-thread energy history & averages
-      this.energyHistoryBass[this.historyIndex] = bass;
-      this.energyHistoryMid[this.historyIndex] = mid;
-      this.energyHistoryTreble[this.historyIndex] = treble;
-      this.historyIndex = (this.historyIndex + 1) % this.historySize;
-      this.historyCount = Math.min(this.historyCount + 1, this.historySize);
-
-      let bassSum = 0;
-      let midSum = 0;
-      let trebleSum = 0;
-      for (let i = 0; i < this.historyCount; i += 1) {
-        bassSum += this.energyHistoryBass[i];
-        midSum += this.energyHistoryMid[i];
-        trebleSum += this.energyHistoryTreble[i];
-      }
-      this.cachedEnergyAverages.bass =
-        this.historyCount > 0 ? bassSum / this.historyCount : 0;
-      this.cachedEnergyAverages.mid =
-        this.historyCount > 0 ? midSum / this.historyCount : 0;
-      this.cachedEnergyAverages.treble =
-        this.historyCount > 0 ? trebleSum / this.historyCount : 0;
-
-      const nowMs = (typeof currentTime === 'number' ? currentTime : 0) * 1000;
-      const weightedEnergy = Math.min(
-        1,
-        bass * 0.55 + mid * 0.3 + treble * 0.15,
-      );
-
-      this.pmRunningAvg += this.pmCoeff * (weightedEnergy - this.pmRunningAvg);
-      const pmThreshold = this.pmRunningAvg * (1 + this.beatThreshold * 3);
-      const pmIsBeat =
-        weightedEnergy > pmThreshold &&
-        nowMs - this.pmLastBeatTime > this.beatMinIntervalMs;
-      if (pmIsBeat) {
-        this.pmBeatIntensity = Math.min(1, this.pmBeatIntensity + 0.5);
-        this.pmLastBeatTime = nowMs;
-      } else {
-        this.pmBeatIntensity *= this.pmBeatDecay;
-      }
-
-      const bassCoeff = 0.08;
-      const midCoeff = 0.06;
-      const trebleCoeff = 0.05;
-      this.beatRunningAvgBass += bassCoeff * (bass - this.beatRunningAvgBass);
-      this.beatRunningAvgMid += midCoeff * (mid - this.beatRunningAvgMid);
-      this.beatRunningAvgTreble +=
-        trebleCoeff * (treble - this.beatRunningAvgTreble);
-
-      const beatBass =
-        bass > this.beatRunningAvgBass * (1 + this.beatThreshold * 2.5) &&
-        nowMs - this.lastBassBeatTime > this.beatMinIntervalMs;
-      const beatMid =
-        mid > this.beatRunningAvgMid * (1 + this.beatThreshold * 2.0) &&
-        nowMs - this.lastMidBeatTime > this.beatMinIntervalMs;
-      const beatTreble =
-        treble > this.beatRunningAvgTreble * (1 + this.beatThreshold * 1.8) &&
-        nowMs - this.lastTrebleBeatTime > this.beatMinIntervalMs;
-
-      if (beatBass) {
-        this.beatIntensityBass = Math.min(1, 0.35 + bass);
-        this.lastBassBeatTime = nowMs;
-      } else {
-        this.beatIntensityBass *= this.pmBeatDecay;
-      }
-      if (beatMid) {
-        this.beatIntensityMid = Math.min(1, 0.28 + mid);
-        this.lastMidBeatTime = nowMs;
-      } else {
-        this.beatIntensityMid *= this.pmBeatDecay;
-      }
-      if (beatTreble) {
-        this.beatIntensityTreble = Math.min(1, 0.22 + treble);
-        this.lastTrebleBeatTime = nowMs;
-      } else {
-        this.beatIntensityTreble *= this.pmBeatDecay;
-      }
-
-      this.cachedBeatDetection.isBeat = pmIsBeat;
-      this.cachedBeatDetection.beatIntensity = this.pmBeatIntensity;
-      this.cachedBeatDetection.beatBass = beatBass;
-      this.cachedBeatDetection.beatMid = beatMid;
-      this.cachedBeatDetection.beatTreble = beatTreble;
-      this.cachedBeatDetection.bassBeatIntensity = this.beatIntensityBass;
-      this.cachedBeatDetection.midBeatIntensity = this.beatIntensityMid;
-      this.cachedBeatDetection.trebleBeatIntensity = this.beatIntensityTreble;
-
-      this.cachedEnergy.bass = bass;
-      this.cachedEnergy.mid = mid;
-      this.cachedEnergy.treble = treble;
-
-      this.cachedTransientMetrics.subBassEnv = subBassEnv;
-      this.cachedTransientMetrics.kickTransient = kickTransient;
-      this.cachedTransientMetrics.vocalMidEnv = vocalMidEnv;
-      this.cachedTransientMetrics.snareSnap = snareSnap;
-
-      const freqTransfer = this.freqBuf.buffer as ArrayBuffer;
-      const waveTransfer = this.waveBuf.buffer as ArrayBuffer;
-      const timeDomainTransfer = this.timeDomainBuf.buffer as ArrayBuffer;
-
-      const payload: Record<string, unknown> = {
-        frequencyData: freqTransfer,
-        waveformData: waveTransfer,
-        timeDomainData: timeDomainTransfer,
-        rms,
-        zeroCrossingRate,
-        spectralFlux,
-        spectralCrest,
-        spectralCentroid,
-        spectralFlatness,
-        spectralRolloff,
-        stereoBalance,
-        stereoWidth,
-        energy: this.cachedEnergy,
-        energyAverages: this.cachedEnergyAverages,
-        beatDetection: this.cachedBeatDetection,
-        transientMetrics: this.cachedTransientMetrics,
-        harmonicPercussive: this.hpLevels,
-      };
-
-      const transfers = this.transfers;
-      transfers.length = 0;
-      transfers.push(freqTransfer, waveTransfer, timeDomainTransfer);
-
+    for (let i = 0; i < this.fftSize; i += 1) {
+      const sample = this.buffer[i];
+      this.waveBuf[i] = byteFromSample(sample);
       if (this.hasStereoInput) {
-        const freqRTransfer = this.freqBufR.buffer as ArrayBuffer;
-        const waveRTransfer = this.waveBufR.buffer as ArrayBuffer;
-        payload.frequencyDataL = freqTransfer;
-        payload.frequencyDataR = freqRTransfer;
-        payload.waveformDataL = waveTransfer;
-        payload.waveformDataR = waveRTransfer;
-        transfers.push(freqRTransfer, waveRTransfer);
+        const sampleR = this.bufferR[i];
+        this.waveBufR[i] = byteFromSample(sampleR);
       }
-      this.port.postMessage(payload, transfers);
+    }
+    this.timeDomainBuf.set(this.buffer);
 
-      const nextFreq = this.freeFreqBuffers.pop();
-      this.freqBuf = nextFreq
-        ? new Uint8Array(nextFreq)
+    let bassSum = 0;
+    let midSum = 0;
+    let trebleSum = 0;
+    for (let i = 0; i < this.historyCount; i += 1) {
+      bassSum += this.energyHistoryBass[i];
+      midSum += this.energyHistoryMid[i];
+      trebleSum += this.energyHistoryTreble[i];
+    }
+    this.cachedEnergyAverages.bass =
+      this.historyCount > 0 ? bassSum / this.historyCount : 0;
+    this.cachedEnergyAverages.mid =
+      this.historyCount > 0 ? midSum / this.historyCount : 0;
+    this.cachedEnergyAverages.treble =
+      this.historyCount > 0 ? trebleSum / this.historyCount : 0;
+
+    this.cachedBeatDetection.isBeat = this.sawBeat;
+    this.cachedBeatDetection.beatIntensity = this.pmBeatIntensity;
+    this.cachedBeatDetection.beatBass = this.sawBassBeat;
+    this.cachedBeatDetection.beatMid = this.sawMidBeat;
+    this.cachedBeatDetection.beatTreble = this.sawTrebleBeat;
+    this.cachedBeatDetection.bassBeatIntensity = this.beatIntensityBass;
+    this.cachedBeatDetection.midBeatIntensity = this.beatIntensityMid;
+    this.cachedBeatDetection.trebleBeatIntensity = this.beatIntensityTreble;
+
+    this.cachedEnergy.bass = bass;
+    this.cachedEnergy.mid = mid;
+    this.cachedEnergy.treble = treble;
+
+    this.cachedTransientMetrics.subBassEnv = Math.min(1, subBass * 1.35);
+    this.cachedTransientMetrics.kickTransient = this.peakKickTransient;
+    this.cachedTransientMetrics.vocalMidEnv = Math.min(1, mid * 1.2);
+    this.cachedTransientMetrics.snareSnap = this.peakSnareSnap;
+
+    const freqTransfer = this.freqBuf.buffer as ArrayBuffer;
+    const waveTransfer = this.waveBuf.buffer as ArrayBuffer;
+    const timeDomainTransfer = this.timeDomainBuf.buffer as ArrayBuffer;
+
+    const payload: Record<string, unknown> = {
+      frequencyData: freqTransfer,
+      waveformData: waveTransfer,
+      timeDomainData: timeDomainTransfer,
+      rms: this.peakRms,
+      zeroCrossingRate,
+      spectralFlux: this.peakSpectralFlux,
+      spectralCrest,
+      spectralCentroid,
+      spectralFlatness,
+      spectralRolloff,
+      stereoBalance,
+      stereoWidth,
+      energy: this.cachedEnergy,
+      energyAverages: this.cachedEnergyAverages,
+      beatDetection: this.cachedBeatDetection,
+      transientMetrics: this.cachedTransientMetrics,
+      harmonicPercussive: this.hpLevels,
+    };
+
+    this.peakRms = 0;
+    this.peakSpectralFlux = 0;
+    this.peakKickTransient = 0;
+    this.peakSnareSnap = 0;
+    this.sawBeat = false;
+    this.sawBassBeat = false;
+    this.sawMidBeat = false;
+    this.sawTrebleBeat = false;
+
+    const transfers = this.transfers;
+    transfers.length = 0;
+    transfers.push(freqTransfer, waveTransfer, timeDomainTransfer);
+
+    if (this.hasStereoInput) {
+      const freqRTransfer = this.freqBufR.buffer as ArrayBuffer;
+      const waveRTransfer = this.waveBufR.buffer as ArrayBuffer;
+      payload.frequencyDataL = freqTransfer;
+      payload.frequencyDataR = freqRTransfer;
+      payload.waveformDataL = waveTransfer;
+      payload.waveformDataR = waveRTransfer;
+      transfers.push(freqRTransfer, waveRTransfer);
+    }
+    this.port.postMessage(payload, transfers);
+
+    const nextFreq = this.freeFreqBuffers.pop();
+    this.freqBuf = nextFreq
+      ? new Uint8Array(nextFreq)
+      : new Uint8Array(this.frequencyBinCount);
+
+    const nextWave = this.freeWaveBuffers.pop();
+    this.waveBuf = nextWave
+      ? new Uint8Array(nextWave)
+      : new Uint8Array(this.fftSize);
+
+    const nextTimeDomain = this.freeTimeDomainBuffers.pop();
+    this.timeDomainBuf = nextTimeDomain
+      ? new Float32Array(nextTimeDomain)
+      : new Float32Array(this.fftSize);
+
+    if (this.hasStereoInput) {
+      const nextFreqR = this.freeFreqBuffers.pop();
+      this.freqBufR = nextFreqR
+        ? new Uint8Array(nextFreqR)
         : new Uint8Array(this.frequencyBinCount);
 
-      const nextWave = this.freeWaveBuffers.pop();
-      this.waveBuf = nextWave
-        ? new Uint8Array(nextWave)
+      const nextWaveR = this.freeWaveBuffers.pop();
+      this.waveBufR = nextWaveR
+        ? new Uint8Array(nextWaveR)
         : new Uint8Array(this.fftSize);
-
-      const nextTimeDomain = this.freeTimeDomainBuffers.pop();
-      this.timeDomainBuf = nextTimeDomain
-        ? new Float32Array(nextTimeDomain)
-        : new Float32Array(this.fftSize);
-
-      if (this.hasStereoInput) {
-        const nextFreqR = this.freeFreqBuffers.pop();
-        this.freqBufR = nextFreqR
-          ? new Uint8Array(nextFreqR)
-          : new Uint8Array(this.frequencyBinCount);
-
-        const nextWaveR = this.freeWaveBuffers.pop();
-        this.waveBufR = nextWaveR
-          ? new Uint8Array(nextWaveR)
-          : new Uint8Array(this.fftSize);
-      }
     }
   }
 

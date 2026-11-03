@@ -50,7 +50,108 @@ function feedQuanta(processor: ProcessorInstance, samples: Float32Array) {
   }
 }
 
+/** Deterministic white noise in [-amplitude, amplitude]. */
+function noise(length: number, amplitude: number, seed = 1234) {
+  let state = seed >>> 0;
+  const samples = new Float32Array(length);
+  for (let i = 0; i < length; i += 1) {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    samples[i] = (state / 4294967296) * 2 * amplitude - amplitude;
+  }
+  return samples;
+}
+
+/**
+ * feedQuanta with the worklet clock running, starting at 1 s as a live
+ * context's would be (the beat refractory period counts from a last beat at
+ * time 0).
+ */
+function feedTimed(
+  processor: ProcessorInstance,
+  samples: Float32Array,
+  sampleRate: number,
+) {
+  const scope = globalThis as unknown as { currentTime: number };
+  for (let offset = 0; offset < samples.length; offset += 128) {
+    scope.currentTime = 1 + offset / sampleRate;
+    processor.process(
+      [[samples.subarray(offset, offset + 128)]],
+      [[new Float32Array(128)]],
+    );
+  }
+  scope.currentTime = 0;
+}
+
 describe('FrequencyAnalyserProcessor', () => {
+  test('a transient between message ticks reaches the next message', () => {
+    // At messageEvery 4 a message used to describe only its own window, so
+    // a 5 ms burst in any of the other three went unseen: on a Galaxy S22,
+    // 2 of 6 bursts registered.
+    const ProcessorClass = getProcessorClass();
+    const fftSize = 1024;
+    const sampleRate = 48_000;
+    const processor = new ProcessorClass({
+      processorOptions: { fftSize, sampleRate, messageEvery: 4 },
+    });
+    // 48 windows of bed (12 messages), then one more 4-window cycle with a
+    // 5 ms burst in its second window.
+    const samples = noise(52 * fftSize, 0.005);
+    const burst = noise(240, 0.5, 99);
+    samples.set(burst, 49 * fftSize + 300);
+    feedTimed(processor, samples, sampleRate);
+
+    const posted = processor.port.posted.map(([payload]) => payload);
+    expect(posted).toHaveLength(13);
+    const [bed, next] = posted.slice(-2) as Array<Record<string, unknown>>;
+    expect(next.rms as number).toBeGreaterThan((bed.rms as number) * 10);
+    expect(next.spectralFlux as number).toBeGreaterThan(
+      (bed.spectralFlux as number) * 10,
+    );
+    expect(next.beatDetection).toMatchObject({ isBeat: true });
+    expect(bed.beatDetection).toMatchObject({ isBeat: false });
+  });
+
+  test('beat intensity decays at the same rate in seconds at any message cadence', () => {
+    // The detectors advance once per window, scaled to the window's length,
+    // so posting four times as often must not make beat_pulse fall four
+    // times as fast.
+    const fftSize = 1024;
+    const sampleRate = 48_000;
+    // The running averages start at zero, so the bed itself beats for its
+    // first ~1.5 s; the kick comes after they settle.
+    const samples = noise(200 * fftSize, 0.005);
+    const kickAt = 120 * fftSize + 100;
+    for (let i = 0; i < 0.15 * sampleRate; i += 1) {
+      const t = i / sampleRate;
+      samples[kickAt + i] +=
+        0.7 * Math.exp(-t / 0.045) * Math.sin(2 * Math.PI * 60 * t);
+    }
+    const intensityByWindow = (messageEvery: number) => {
+      const processor = new (getProcessorClass())({
+        processorOptions: { fftSize, sampleRate, messageEvery },
+      });
+      feedTimed(processor, samples, sampleRate);
+      const byWindow = new Map<number, number>();
+      processor.port.posted.forEach(([payload], index) => {
+        const beat = payload.beatDetection as { beatIntensity: number };
+        byWindow.set((index + 1) * messageEvery, beat.beatIntensity);
+      });
+      return byWindow;
+    };
+    // 48 windows (1.024 s) of bed after the first message to carry the kick.
+    const decayOverSecond = (byWindow: Map<number, number>) => {
+      const [kickWindow, peak] = [...byWindow].find(
+        ([window]) => window * fftSize > kickAt,
+      ) as [number, number];
+      return (byWindow.get(kickWindow + 48) as number) / peak;
+    };
+
+    // One tuned step (4096 samples) decays by 0.92; 48 windows are 12 steps.
+    const expected = 0.92 ** 12;
+    expect(decayOverSecond(intensityByWindow(4))).toBeCloseTo(expected, 4);
+    expect(decayOverSecond(intensityByWindow(1))).toBeCloseTo(expected, 4);
+  });
+
   test('registers under the name "frequency-analyser"', () => {
     expect(registeredProcessors.has('frequency-analyser')).toBe(true);
   });

@@ -341,11 +341,11 @@ export function createMilkdropSignalTracker(options?: {
       let update: import('audio-reactive').BeatTrackerUpdate;
       if (workletBeat) {
         // The analyser keeps returning the same verdict object until the next
-        // worklet message (every 4096 samples: ~6 frames at 44.1 kHz, ~11 at
-        // 22.05 kHz). Beats are events, as the JS tracker's are: report one
-        // on the first frame of the message that detected it, not on every
-        // frame after, or `beat` would last a sample-rate-dependent number
-        // of frames.
+        // worklet message (every 1024 samples: ~1.4 frames at 44.1 kHz, ~3
+        // at 22.05 kHz). Beats are events, as the JS tracker's are: report
+        // one on the first frame of the message that detected it, not on
+        // every frame after, or `beat` would last a sample-rate-dependent
+        // number of frames.
         const fresh = workletBeat !== lastWorkletBeat;
         lastWorkletBeat = workletBeat;
         workletBeatUpdateCache.smoothedBands.bass = bands.bass;
