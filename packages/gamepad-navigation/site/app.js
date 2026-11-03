@@ -65,7 +65,12 @@ $('b-dialog').addEventListener('click', () => {
 for (const id of ['d-ok', 'd-cancel']) {
   $(id).addEventListener('click', () => dialog.close());
 }
-dialog.addEventListener('cancel', () => log('dialog closed by Escape'));
+// B and Backspace send a synthetic Escape, which a native dialog ignores, and
+// the keyboard layer calls preventDefault() on a real one. This listener runs
+// first, on the way up to the layer's listener on window.
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && dialog.open) dialog.close();
+});
 
 const padState = () => {
   const pads = Array.from(navigator.getGamepads?.() ?? []).filter(Boolean);
