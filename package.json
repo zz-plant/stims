@@ -258,7 +258,7 @@
     "typescript": "^7.0.2",
     "vite": "8.3.5",
     "wrangler": "^4.152.0",
-    "zod": "4.6.6"
+    "zod": "4.6.7"
   },
   "engines": {
     "node": "^22",
@@ -296,6 +296,6 @@
     "@codemirror/view": "6.43.13",
     "@codemirror/state": "6.7.6",
     "@codemirror/autocomplete": "6.20.3",
-    "zod": "4.6.6"
+    "zod": "4.6.7"
   }
 }
