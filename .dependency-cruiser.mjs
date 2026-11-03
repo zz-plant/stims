@@ -17,6 +17,7 @@ const MILKDROP_SHELL_SURFACE = [
   'catalog-store-analysis',
   'catalog-types',
   'compiler-types',
+  'cookbook',
   'formatter',
   'live-tile-pool',
   'overlay/.*',

@@ -1,23 +1,39 @@
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain/src/compiler.ts';
+import { analyzeProgramReferences } from 'milkdrop-toolchain/src/program-references.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
+import { applyRecipe } from '../milkdrop/cookbook.ts';
 
 export interface SpinExample {
   before: string;
   after: string;
 }
 
-/** Append instead of replacing the author's equations; one click can undo
- * this exact edit without touching anything the visitor adds afterwards. */
+/**
+ * Adds to the author's equations rather than replacing them; one click can
+ * undo this exact edit without touching anything the visitor adds afterwards.
+ *
+ * The per-pixel program runs after the per-frame one, seeded with its `rot`,
+ * so where it writes `rot` a per-frame change may never reach the warp. Going
+ * last in the per-pixel program reaches it whatever that code does; everywhere
+ * else the per-frame line is enough, and adds no per-vertex work.
+ */
 export function addSpinExample(source: string): SpinExample {
-  const newline = source.includes('\r\n') ? '\r\n' : '\n';
-  let last = 0;
-  for (const match of source.matchAll(/^\s*per_frame_(\d+)\s*=/gimu)) {
-    last = Math.max(last, Number(match[1]));
-  }
-  const separator = source.endsWith('\n') ? '' : newline;
+  const { perPixel } = compileMilkdropPresetSource(source).ir.programs;
+  const block = analyzeProgramReferences(perPixel).writes.has('rot')
+    ? 'perPixel'
+    : 'perFrame';
   return {
     before: source,
-    after: `${source}${separator}per_frame_${last + 1}=rot=rot+0.02;${newline}`,
+    after: applyRecipe(source, { code: { [block]: ['rot=rot+0.02;'] } }).source,
   };
+}
+
+/**
+ * A warp shader that never reads `uv` samples coordinates of its own, so no
+ * `rot` can reach the picture and the guide has no spin to promise.
+ */
+export function spinCanShow(warpShader: string | null | undefined): boolean {
+  return !warpShader || /\buv\b/u.test(warpShader);
 }
 
 export function undoSpinExample(

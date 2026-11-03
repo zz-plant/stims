@@ -169,6 +169,7 @@ export function EditorSurface() {
         <FirstEditGuide
           key={engineSnapshot?.activePresetId}
           source={sessionState?.source ?? ''}
+          warpShader={sessionState?.latestCompiled?.ir.shaderText.warp}
           onChange={(source) => engine.updateEditorSource(source)}
         />
         <input
