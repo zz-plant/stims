@@ -35,6 +35,7 @@ jobs:
       fail-fast: false
       matrix:
         package:
+          - agent-ergonomics
           - eel-conformance
           - flash-guard
           - milkdrop-toolchain

@@ -94,3 +94,11 @@ bun run help --for "<symptom>"   # symptom → the script that measures it
 Purpose lines come from the docblock atop each script, so the index cannot drift from the code (`bun run check:script-docs` enforces it). Namespaces this page does not cover: `parity:`, `sweep:`, `perf:`, `bench:`, `profile:`, `catalog:`, `previews:`, `lab:`.
 
 To drive a running visualizer, use the agent API rather than DOM scraping — see [`browser-automation.md`](./browser-automation.md), plus `bun run ctl` (one-shot CLI) and `bun run mcp` (MCP server).
+
+## Shared tooling package
+
+The discovery, gate, guardrails, documentation guards and Git/PR helper scripts delegate to
+[`agent-ergonomics`](../../packages/agent-ergonomics/README.md). Repository policy lives in
+`agent-ergonomics.config.ts`: routes, gate steps, document roots, reasoned exceptions and wrapper
+names. Keep script docblocks in the wrappers; help and the generated guardrails page read them.
+`test:budget` remains local because it integrates the Stims test profiles and cost recorder.

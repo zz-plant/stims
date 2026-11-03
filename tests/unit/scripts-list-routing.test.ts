@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import config from '../../agent-ergonomics.config.ts';
 
 const ROOT = process.cwd();
 
@@ -15,18 +16,11 @@ describe('bun run help --for', () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
     scripts?: Record<string, string>;
   };
-  const source = readFileSync(join(ROOT, 'scripts/scripts-list.ts'), 'utf8');
 
   test('every curated route points at a script that exists', () => {
     // The routing table is hand-maintained and check:doc-references does not
     // cover it, so a renamed script would silently route people nowhere.
-    const table = source.slice(
-      source.indexOf('const ROUTES'),
-      source.indexOf('const forIndex'),
-    );
-    const named = [...table.matchAll(/run: \[([^\]]+)\]/gu)].flatMap((match) =>
-      [...match[1].matchAll(/'([^']+)'/gu)].map((inner) => inner[1]),
-    );
+    const named = config.help?.routes?.flatMap((route) => route.run) ?? [];
 
     expect(named.length).toBeGreaterThan(0);
     const missing = named.filter((name) => !pkg.scripts?.[name]);

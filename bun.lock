@@ -41,6 +41,7 @@
         "@types/three": "^0.186.0",
         "@vitejs/plugin-react": "6.1.2",
         "@webgpu/types": "^0.1.74",
+        "agent-ergonomics": "workspace:*",
         "butterchurn": "^2.6.7",
         "butterchurn-presets": "^2.4.7",
         "dependency-cruiser": "^18.7.0",
@@ -59,6 +60,17 @@
         "vite": "8.3.5",
         "wrangler": "^4.156.0",
         "zod": "4.6.7",
+      },
+    },
+    "packages/agent-ergonomics": {
+      "name": "agent-ergonomics",
+      "version": "0.1.0",
+      "bin": {
+        "agent-ergonomics": "./dist/cli.js",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.4.4",
+        "typescript": "^7.0.2",
       },
     },
     "packages/audio-reactive": {
@@ -661,6 +673,8 @@
     "acorn-loose": ["acorn-loose@8.5.2", "", { "dependencies": { "acorn": "^8.15.0" } }, "sha512-PPvV6g8UGMGgjrMu+n/f9E/tCSkNQ2Y97eFvuVdJfG11+xdIeDcLyNdC8SHcrHbRqkfwLASdplyR6B6sKM1U4A=="],
 
     "acorn-walk": ["acorn-walk@8.3.5", "", { "dependencies": { "acorn": "^8.11.0" } }, "sha512-HEHNfbars9v4pgpW6SO1KSPkfoS0xVOM/9UzkJltjlsHZmJasxg8aXkuZa7SMf8vKGIBhpUsPluQSqhJFCqebw=="],
+
+    "agent-ergonomics": ["agent-ergonomics@workspace:packages/agent-ergonomics"],
 
     "ansi-styles": ["ansi-styles@4.3.0", "", { "dependencies": { "color-convert": "^2.0.1" } }, "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg=="],
 

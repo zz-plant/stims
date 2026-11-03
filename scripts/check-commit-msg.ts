@@ -19,138 +19,18 @@
  *        or:   bun run scripts/check-commit-msg.ts --range <base>..<head>
  *              [--allow-long-subjects]
  */
-import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import {
+  subjectError as checkSubject,
+  resolveConfig,
+  runCli,
+} from 'agent-ergonomics';
+import stimsConfig from '../agent-ergonomics.config.ts';
 
-/**
- * Where a subject stops being scannable in a `git log --oneline` column.
- *
- * Not a correctness rule — see the note on `--allow-long-subjects`. It is here
- * so a subject that has drifted into a sentence gets noticed, which is why
- * going over it warns rather than blocks.
- */
-const SUBJECT_LENGTH_LIMIT = 72;
-
-/** Returns an error string when the subject violates a rule, else null. */
-export function subjectError(
+const config = resolveConfig(stimsConfig);
+export const subjectError = (
   subject: string,
-  { enforceLength = true }: { enforceLength?: boolean } = {},
-): string | null {
-  const BAD_SUBJECTS =
-    /^(fixes|fixed|stims|various fixes|certainly this works|hopefully works|hopefully|it works|works now|wip)$/i;
-  const HOPEFUL = /\b(certainly|hopefully)\b/i;
+  options: { enforceLength?: boolean } = {},
+) => checkSubject(subject, config.commitMsg, options);
 
-  if (BAD_SUBJECTS.test(subject) || HOPEFUL.test(subject)) {
-    return (
-      `Commit subject is non-descriptive: "${subject}"\n` +
-      '  Describe what changed and why. "certainly this works" / "fixes" / ' +
-      '"Various fixes" gave no signal and preceded repeated fix flurries.'
-    );
-  }
-
-  // Subjects git writes itself: bringing the base into a branch, and `git
-  // revert`. They say what happened, and the repo squash-merges under the
-  // PR title, so neither reaches main as-is.
-  const GIT_GENERATED =
-    /^(Merge (branch|remote-tracking branch|commit|tag) .+|Revert ".+"( \(#\d+\))?)$/;
-  if (GIT_GENERATED.test(subject)) return null;
-
-  const CONVENTIONAL =
-    /^(feat|fix|refactor|chore|docs|test|style|perf|ci|build|revert|hotfix)(\([^)]+\))?!?: .+/;
-  if (!CONVENTIONAL.test(subject)) {
-    return (
-      `Commit subject must use Conventional Commits: "${subject}"\n` +
-      '  Expected: type(scope): summary  (e.g. fix(audio): close context on unmount)'
-    );
-  }
-
-  if (enforceLength && subject.length > SUBJECT_LENGTH_LIMIT) {
-    return `Commit subject exceeds ${SUBJECT_LENGTH_LIMIT} chars (${subject.length}): "${subject}"`;
-  }
-
-  return null;
-}
-
-function subjectOf(raw: string): string {
-  const message = raw
-    .split('\n')
-    .filter((l) => !l.startsWith('#'))
-    .join('\n')
-    .trim();
-  return message.split('\n')[0] ?? '';
-}
-
-const rangeIndex = process.argv.indexOf('--range');
-// The 72-char ceiling is style, not signal: it is the one rule current
-// practice breaks routinely on otherwise-good subjects, so range mode can
-// waive it and gate only on what actually leaked — a missing Conventional
-// prefix and non-descriptive subjects. The local hook still enforces length.
-const enforceLength = !process.argv.includes('--allow-long-subjects');
-
-if (rangeIndex !== -1) {
-  const range = process.argv[rangeIndex + 1];
-  if (!range) {
-    console.error('✖ --range requires a <base>..<head> argument');
-    process.exit(1);
-  }
-
-  // Merges carry GitHub's own generated subject, which no author controls.
-  const subjects = execFileSync(
-    'git',
-    ['log', '--no-merges', '--pretty=%s', range],
-    { encoding: 'utf8' },
-  )
-    .split('\n')
-    .filter((line) => line.trim() !== '');
-
-  const failures = subjects
-    .map((subject) => ({
-      subject,
-      error: subjectError(subject, { enforceLength }),
-    }))
-    .filter((r): r is { subject: string; error: string } => r.error !== null);
-
-  for (const { error } of failures) {
-    console.error(`✖ ${error}`);
-  }
-
-  if (failures.length > 0) {
-    console.error(
-      `\n${failures.length} of ${subjects.length} commit(s) in ${range} violate the message policy.`,
-    );
-    process.exit(1);
-  }
-
-  console.log(`✔ ${subjects.length} commit subject(s) in ${range} are clean.`);
-  process.exit(0);
-}
-
-const raw = process.argv[2]
-  ? process.argv[2] === '-'
-    ? await new Response(Bun.stdin.stream()).text()
-    : readFileSync(process.argv[2], 'utf8')
-  : '';
-
-const subject = subjectOf(raw);
-// Length is style; the other two rules are signal. The docblock above already
-// records that current practice breaks the ceiling routinely on subjects that
-// are otherwise good, which is why range mode can waive it — so blocking a
-// commit locally over four characters, after the message is written and the
-// gate has run, buys nothing but a retype. Say it and move on.
-const lengthOnly =
-  subjectError(subject) !== null &&
-  subjectError(subject, { enforceLength: false }) === null;
-if (lengthOnly) {
-  console.warn(
-    `! Commit subject is ${subject.length} chars; ${SUBJECT_LENGTH_LIMIT} keeps \`git log --oneline\` scannable.`,
-  );
-  process.exit(0);
-}
-
-const error = subjectError(subject);
-if (error) {
-  console.error(`✖ ${error}`);
-  process.exit(1);
-}
-
-process.exit(0);
+if (import.meta.main)
+  process.exit(await runCli(['commit-msg', ...process.argv.slice(2)]));
