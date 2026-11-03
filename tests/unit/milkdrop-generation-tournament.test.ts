@@ -34,6 +34,15 @@ fRating=(unbalanced
 per_frame_1=zoom=1.02
 `;
 
+// The probe's 2 s worker timeout and 50 ms frame deadline judge the machine: when
+// a loaded worker takes longer than that to load the compiler, the reactive
+// candidate scores `unknown` and a salvaged one wins. These tests are about the
+// ranking, so neither limit applies. assisted-edit-gate.test.ts covers the probe.
+const UNLIMITED_PROBE = {
+  timeoutMs: 120_000,
+  frameDeadlineMs: Number.POSITIVE_INFINITY,
+};
+
 function hostedResponse(milkSource: string) {
   return Response.json({ milkSource });
 }
@@ -90,6 +99,7 @@ describe('generatePresetTournament', () => {
 
     const outcome = await generatePresetTournament('bass-reactive rings', {
       provider: { kind: 'hosted' },
+      probeTiming: UNLIMITED_PROBE,
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -110,6 +120,7 @@ describe('generatePresetTournament', () => {
 
     const outcome = await generatePresetTournament('rings', {
       provider: { kind: 'hosted' },
+      probeTiming: UNLIMITED_PROBE,
     });
 
     expect(outcome.attempted).toBe(3);
@@ -123,6 +134,7 @@ describe('generatePresetTournament', () => {
 
     const outcome = await generatePresetTournament('rings', {
       provider: { kind: 'hosted' },
+      probeTiming: UNLIMITED_PROBE,
       fallbackToTemplate: true,
     });
 
@@ -152,10 +164,40 @@ describe('generatePresetTournament', () => {
         endpoint: 'http://127.0.0.1:11434/v1',
         model: 'gemma4:26b',
       },
+      probeTiming: UNLIMITED_PROBE,
     });
 
     expect(outcome.attempted).toBe(2);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  }, 30_000);
+
+  test('every probe runs under the timing the caller passes', async () => {
+    // A worker cannot load the compiler inside 1 ms, so this probe can only
+    // answer `unknown`: the limit reached it. Both paths to a probe are covered.
+    const tooShort = { timeoutMs: 1 };
+
+    globalThis.fetch = mock(async () =>
+      hostedResponse(REACTIVE_SOURCE),
+    ) as unknown as typeof fetch;
+    const candidate = await generatePresetTournament('bass-reactive rings', {
+      provider: { kind: 'hosted' },
+      candidateCount: 1,
+      probeTiming: tooShort,
+    });
+    expect(candidate.usedFallback).toBe(false);
+    expect(candidate.probe.verdict).toBe('unknown');
+
+    globalThis.fetch = mock(async () =>
+      hostedResponse(UNSALVAGEABLE_SOURCE),
+    ) as unknown as typeof fetch;
+    const fallback = await generatePresetTournament('bass-reactive rings', {
+      provider: { kind: 'hosted' },
+      candidateCount: 1,
+      fallbackToTemplate: true,
+      probeTiming: tooShort,
+    });
+    expect(fallback.usedFallback).toBe(true);
+    expect(fallback.probe.verdict).toBe('unknown');
   }, 30_000);
 
   test('respects an explicit candidateCount override', async () => {
@@ -164,6 +206,7 @@ describe('generatePresetTournament', () => {
 
     const outcome = await generatePresetTournament('rings', {
       provider: { kind: 'hosted' },
+      probeTiming: UNLIMITED_PROBE,
       candidateCount: 1,
     });
 

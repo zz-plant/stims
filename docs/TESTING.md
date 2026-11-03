@@ -4,7 +4,7 @@ Use the root test wrapper to select profiles and isolate browser-backed files. P
 
 ## Runner and environment
 
-[Bun](https://bun.sh) runs the tests. `bunfig.toml` preloads `tests/setup.ts`, which installs happy-dom globals and simulation helpers. There is no test import map. happy-dom supplies DOM APIs; it does not provide real layout, Web Audio, WebGL, or WebGPU. Mocks establish local logic contracts, while Playwright tests establish browser behavior within their tested environment.
+[Bun](https://bun.sh) runs the tests. `bunfig.toml` preloads `tests/setup.ts`, which installs happy-dom globals and simulation helpers. It also lifts the VM's wall-clock deadlines, because a deadline judges how busy the machine is: under load it skips per-vertex calls and a correct test sees a partial frame. A test about the deadline passes its own window or scripts the clock. There is no test import map. happy-dom supplies DOM APIs; it does not provide real layout, Web Audio, WebGL, or WebGPU. Mocks establish local logic contracts, while Playwright tests establish browser behavior within their tested environment.
 
 Test files live under `tests/unit`, `tests/compat`, `tests/corpus`, or `tests/e2e`. The runner rejects uncategorized root test files so they cannot silently miss every profile. It recognizes both `.test.ts` and `.test.tsx` files. [`tests/INDEX.md`](../tests/INDEX.md) maps the directories, helpers and fixtures.
 

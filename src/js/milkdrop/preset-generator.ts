@@ -8,6 +8,7 @@ import { buildGeneratePrompt } from './preset-prompt.ts';
 import {
   probePresetReactivityIsolated,
   type ReactivityProbeResult,
+  type ReactivityProbeTiming,
 } from './reactivity-probe.ts';
 import {
   countEquationLines,
@@ -506,7 +507,10 @@ function stashTournament(entries: Array<Record<string, unknown>>): void {
  */
 export async function generatePresetTournament(
   description: string,
-  options: GeneratePresetOptions & { candidateCount?: number } = {},
+  options: GeneratePresetOptions & {
+    candidateCount?: number;
+    probeTiming?: ReactivityProbeTiming;
+  } = {},
 ): Promise<TournamentOutcome> {
   const provider = options.provider ?? {
     kind: 'hosted' as const,
@@ -549,6 +553,7 @@ export async function generatePresetTournament(
     }
     const probe = await probePresetReactivityIsolated(salvaged.compiled, {
       verify: true,
+      ...options.probeTiming,
     });
     const score = scoreGenerationCandidate(
       salvaged.compiled,
@@ -587,7 +592,10 @@ export async function generatePresetTournament(
       );
       return {
         winner,
-        probe: await probePresetReactivityIsolated(winner, { verify: true }),
+        probe: await probePresetReactivityIsolated(winner, {
+          verify: true,
+          ...options.probeTiming,
+        }),
         attempted,
         survivors: 0,
         usedFallback: true,

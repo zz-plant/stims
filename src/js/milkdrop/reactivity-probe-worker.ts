@@ -24,6 +24,7 @@ import {
 type ProbeRequest = {
   source: MilkdropPresetSource;
   verify: boolean;
+  frameDeadlineMs?: number;
 };
 
 type ProbeReply =
@@ -38,12 +39,12 @@ const workerScope = self as unknown as {
 };
 
 workerScope.onmessage = (event) => {
-  const { source, verify } = event.data;
+  const { source, verify, frameDeadlineMs } = event.data;
   try {
     const compiled = compileMilkdropPresetSource(source.raw, source);
     workerScope.postMessage({
       ok: true,
-      result: probePresetReactivity(compiled, { verify }),
+      result: probePresetReactivity(compiled, { verify, frameDeadlineMs }),
     });
   } catch (error) {
     workerScope.postMessage({
