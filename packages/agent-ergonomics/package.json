@@ -1,0 +1,63 @@
+{
+  "name": "agent-ergonomics",
+  "version": "0.1.0",
+  "description": "Repo tooling for codebases that coding agents work in: a script index generated from docblocks with symptom-to-tool routing, a quiet quality gate, a guardrails page generated from the guards, dangling-reference and source-grep guards, and git helpers for shared checkouts. One CLI, one config file.",
+  "license": "Unlicense",
+  "type": "module",
+  "homepage": "https://github.com/zz-plant/stims/tree/main/packages/agent-ergonomics#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zz-plant/stims.git",
+    "directory": "packages/agent-ergonomics"
+  },
+  "bugs": {
+    "url": "https://github.com/zz-plant/stims/issues"
+  },
+  "keywords": [
+    "agents",
+    "claude-code",
+    "codex",
+    "developer-experience",
+    "quality-gate",
+    "guardrails",
+    "docblock",
+    "monorepo",
+    "worktree",
+    "conventional-commits",
+    "bun"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "agent-ergonomics": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "stims-source": "./src/index.ts",
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "bun": ">=1.2"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "bun test",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "typescript": "^7.0.2"
+  }
+}

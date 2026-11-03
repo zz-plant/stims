@@ -4,6 +4,7 @@ import {
   beforeEach,
   describe,
   expect,
+  setDefaultTimeout,
   test,
 } from 'bun:test';
 import { spawnSync } from 'node:child_process';
@@ -17,7 +18,14 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { restartBranch } from '../../scripts/branch-restart.ts';
+import { restartBranch } from '../src/index.ts';
+
+// These tests are bound by the git processes the code under test spawns
+// (about a dozen per restart or worktree), and each costs 50-200 ms on macOS
+// before load. check:packages runs them in the gate's concurrent lane beside
+// typecheck and knip, where bun's 5 s default timed one out with nothing
+// wrong. The fixtures are already built once and copied per test.
+setDefaultTimeout(20_000);
 
 const roots: string[] = [];
 afterAll(() => {

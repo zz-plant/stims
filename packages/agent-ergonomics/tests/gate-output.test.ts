@@ -1,9 +1,18 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import {
   type GateStepResult,
-  parseOutputMode,
+  parseOutputMode as parseMode,
   printStepResult,
-} from '../../scripts/run-quality-gate.ts';
+  resolveConfig,
+} from '../src/index.ts';
+
+const gate = resolveConfig({
+  gate: { quietEnv: 'STIMS_QUIET', agentEnvs: ['CLAUDECODE'] },
+}).gate;
+const parseOutputMode = (
+  args: string[],
+  env: Record<string, string | undefined>,
+) => parseMode(args, env, gate);
 
 const step = (exitCode: number, stdout = '', stderr = ''): GateStepResult => ({
   step: { label: 'Some guard', cmd: ['true'] } as GateStepResult['step'],

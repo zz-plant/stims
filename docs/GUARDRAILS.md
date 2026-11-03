@@ -516,12 +516,13 @@ deliberately does not do.
 The rule binds on size, not on directory, because size is what makes a file
 expensive to re-derive. Below the threshold a good name usually suffices.
 
-Files that predate the guard are listed in `BACKLOG` so the rule can apply
+Files that predate the guard are listed in `moduleDocs.backlog` in
+`agent-ergonomics.config.ts` so the rule can apply
 to new and newly-grown code immediately instead of waiting on one enormous
 documentation diff. The backlog is shrink-only: the guard fails if an entry
 gains a docblock and stays listed, so progress is recorded rather than
-quietly reverted, and it fails if an entry disappears from disk. Deleting
-the last line of `BACKLOG` retires the mechanism.
+quietly reverted, and it fails if an entry disappears from disk. Emptying
+the backlog retires the mechanism.
 
 A summary is a paragraph a maintainer would write, not a restatement of the
 filename: `// audio-handler.ts — audio handler` passes a regex and teaches
@@ -807,7 +808,8 @@ the code correctly is what breaks them.
 
 The rule: assert through the module's exported behaviour instead. If the
 property really is about a file's text — an HTML artifact we ship, a config
-file, a generated header — allowlist it below with a reason. That one-line
+file, a generated header — allowlist it with a reason under
+`testSourceGreps.allowed` in `agent-ergonomics.config.ts`. That one-line
 edit with a justification is the cost this guard is trying to impose.
 
 Run it directly: `bun run check:test-source-greps`

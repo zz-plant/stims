@@ -1,5 +1,15 @@
 import { describe, expect, test } from 'bun:test';
-import { buildPrBody, validatePrBody } from '../../scripts/pr-body.ts';
+import {
+  buildPrBody as build,
+  resolveConfig,
+  type ScaffoldInput,
+  validatePrBody,
+} from '../src/index.ts';
+
+const rules = resolveConfig({
+  prBody: { docPath: /^(docs\/|README\.md$|\.claude\/)/ },
+}).prBody;
+const buildPrBody = (input: ScaffoldInput) => build(input, rules);
 
 const TEMPLATE = `<!-- header comment -->
 

@@ -9,6 +9,7 @@ live demo.
 
 | Package                                      | What it is                                                                                                                                                     | Test suite                           |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| [`agent-ergonomics`](./agent-ergonomics) | Configured script discovery, quality gates, documentation guards and Git workflow helpers for coding agents. | `packages/agent-ergonomics/tests/` |
 | [`eel-conformance`](./eel-conformance)       | Executable specification of EEL2, the MilkDrop preset expression language: 82 portable JSON cases, a schema, a runner contract and a harness.                  | `packages/eel-conformance/tests/`    |
 | [`flash-guard`](./flash-guard)               | WCAG 2.3.1 flash and red-flash analysis for frame sequences, plus a sampling-based live governor that reduces detected flashing.                               | `packages/flash-guard/tests/`        |
 | [`milkdrop-toolchain`](./milkdrop-toolchain) | Parser, EEL2 interpreter and JIT, IR, HLSL analysis with GLSL emission, EEL-to-WGSL, formatter, MilkDrop 2 exporter and dataflow analysis for `.milk` presets. | `packages/milkdrop-toolchain/tests/` |
@@ -59,6 +60,7 @@ loaded.
 
 | Package              | Mirror                                                                        |
 | -------------------- | ----------------------------------------------------------------------------- |
+| `agent-ergonomics`   | [zz-plant/agent-ergonomics](https://github.com/zz-plant/agent-ergonomics)     |
 | `eel-conformance`    | [zz-plant/eel-conformance](https://github.com/zz-plant/eel-conformance)       |
 | `flash-guard`        | [zz-plant/flash-guard](https://github.com/zz-plant/flash-guard)               |
 | `milkdrop-toolchain` | [zz-plant/milkdrop-toolchain](https://github.com/zz-plant/milkdrop-toolchain) |
@@ -124,7 +126,7 @@ npm only with a release.
 
 ## Sites
 
-Every package has a static site under `site/` with a working demo on the
+The browser libraries have a static site under `site/` with a working demo on the
 real library: a corpus browser for `eel-conformance`, an in-browser video
 flash checker and the live governor for `flash-guard`, a compile playground
 for `milkdrop-toolchain`, a live worklet demo for `audio-reactive`, a page of
@@ -162,3 +164,8 @@ smart-TV devices.
 Tests follow the code. Each package's suite lives in its `tests/` and runs in
 the full gate (`bun run check:packages`); `tests/` keeps only what needs the
 rest of the repository, such as compiling the bundled preset corpus.
+
+`agent-ergonomics` is a Bun CLI with no browser demo, so it has no site. The
+repo's help, gate, guardrails, guard and git-helper scripts are wrappers that
+call it with `agent-ergonomics.config.ts`, which holds every Stims-specific
+route, step list, doc root and allowlist.
