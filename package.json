@@ -230,7 +230,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@biomejs/biome": "^2.6.4",
-    "@cfworker/json-schema": "^4.1.1",
+    "@cfworker/json-schema": "^4.1.4",
     "@modelcontextprotocol/server": "2.4.0",
     "@playwright/test": "1.64.1",
     "@swc/core": "^1.16.20",
