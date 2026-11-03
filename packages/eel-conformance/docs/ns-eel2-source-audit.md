@@ -15,10 +15,25 @@ parser were changed to match (milkdrop-toolchain, unreleased). The overturned pi
 in the table further down are still open and land separately, each with its
 matching engine change.
 
+Two gaps surfaced while closing them:
+
+- **The exact boundary.** `testl $256` after `fcomp [g_closefact]` tests the x87
+  C0 flag, so every boolean stub (`nseel_asm_repeatwhile`, `nseel_asm_if`,
+  `nseel_asm_bnot`) treats `|v| >= 1e-5` as true. Our tiers use `|v| > 1e-5`,
+  so a value of exactly `0.00001` is true in ns-eel2 and false here. No case
+  pins that value. The "truthiness threshold" entry under "Correct as pinned"
+  holds everywhere except at that one value.
+- **WGSL has no loops.** `compileProgramToWgsl` does not lower `loop` or `while`:
+  it emits `state.__control = <head>`, drops the body, and still reports
+  `gpuExecutable: true`. So the `while` correction above has nothing to change
+  on that tier, and the control-flow section would fail there. The compute VM is
+  opt-in (`?milkdrop-webgpu-compute-vm=1`), and `bun run spec:eel` covers only the
+  CPU tiers, so neither the gate nor default playback sees it.
+
 ## References
 
 - **ns-eel2** — the EEL2 that MilkDrop 2 actually ships:
-  `WACUP/vis_milk2` @ `de9625a89e724afe23ed27b96b8e48496095b6c`, directory
+  `WACUP/vis_milk2` @ `de9625a89e724afe23ed273b96b8e48496095b6c`, directory
   `ns-eel2/`. Files cited below as `nseel-compiler.c`, `nseel-caltab.c`,
   `nseel-eval.c`, `nseel-cfunc.c`, `asm-nseel-x86-gcc.c`.
 - **modern EEL2** — `justinfrankel/WDL` @ `master`, directory `WDL/eel2/`

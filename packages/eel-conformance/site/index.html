@@ -105,7 +105,7 @@ process.exit(conforms(report) ? 0 : 1);</code></pre>
     <ul class="gotchas">
       <li><strong>Division by zero is 0</strong>, but the guard is exact zero: <code>1 / 0.0000001</code> divides normally. A tolerance guard silently zeroes results real presets depend on.</li>
       <li><strong><code>%</code> truncates both operands to integers first</strong>; float remainder is <code>mod()</code> / <code>fmod()</code>.</li>
-      <li><strong>Truthiness is <code>|v| &gt; 1e-5</code></strong>, not <code>v != 0</code>, for <code>if</code>, <code>&amp;&amp;</code>, <code>||</code>, <code>!</code>, <code>bnot</code> and the <code>while</code> condition. A condition that decays to <code>1e-6</code> exits the loop.</li>
+      <li><strong>Truthiness is <code>|v| &gt; 1e-5</code></strong>, not <code>v != 0</code>, for <code>if</code>, <code>&amp;&amp;</code>, <code>||</code>, <code>!</code>, <code>bnot</code> and the <code>while</code> condition. A condition that decays to <code>1e-6</code> exits the loop. The source treats exactly <code>1e-5</code> as true; no case pins that one value.</li>
       <li><strong><code>==</code> is exact; <code>equal()</code> uses the close factor.</strong> Only one of them is tolerant.</li>
       <li><strong><code>bor()</code> and <code>band()</code> are logical, not bitwise</strong>, despite the names. <code>bor(2,4)</code> is 1, not 6.</li>
       <li><strong><code>frac()</code> subtracts the floor</strong>, so <code>frac(-0.25)</code> is <code>0.75</code>.</li>
@@ -130,7 +130,7 @@ process.exit(conforms(report) ? 0 : 1);</code></pre>
   </section>
 
   <footer>
-    <p>Extracted from <a href="https://github.com/zz-plant/stims">zz-plant/stims</a>, the source of the visualizer at <a href="https://toil.fyi">toil.fyi</a>, where the corpus was written to pin the EEL semantics that project implements. Stims runs it against the three CPU execution paths of <a href="https://www.npmjs.com/package/milkdrop-toolchain">milkdrop-toolchain</a>, single-statement evaluation, the CSP-fallback interpreter and the JIT, in <code>tests/unit/eel-conformance-spec.test.ts</code>; it does not run the corpus against the toolchain's WGSL generator. Public domain (Unlicense).</p>
+    <p>Extracted from <a href="https://github.com/zz-plant/stims">zz-plant/stims</a>, the source of the visualizer at <a href="https://toil.fyi">toil.fyi</a>, where the corpus was written to pin the EEL semantics that project implements. Stims runs it against the three CPU execution paths of <a href="https://www.npmjs.com/package/milkdrop-toolchain">milkdrop-toolchain</a>, single-statement evaluation, the CSP-fallback interpreter and the JIT, in <code>tests/unit/eel-conformance-spec.test.ts</code>; it does not run the corpus against the toolchain's WGSL generator, which does not lower <code>loop</code> or <code>while</code>. Public domain (Unlicense).</p>
   </footer>
 </div>
 <script type="module" src="./app.js"></script>

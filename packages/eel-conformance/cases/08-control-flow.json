@@ -41,7 +41,7 @@
         "n": 0.000001,
         "x": 0
       },
-      "note": "Pinned by the ns-eel2 source: nseel_asm_repeatwhile (asm-nseel-x86-gcc.c) evaluates the condition, takes fabs, and fcomp's it against [g_closefact] (NSEEL_CLOSEFACTOR = 0.00001, ns-eel-int.h:56), so the body runs only while |cond| is at least the close factor. Modern EEL2 boolifies the same way (nseel_asm_fptobool / EEL_BC_FPTOBOOL: fabs(v) >= NSEEL_CLOSEFACTOR). A condition of 1e-6 is therefore false before the first iteration: the body never runs, x stays 0 and n keeps its 1e-6. The id names the question this case once asked (it was provisional, pinning exact zero) and is kept stable; the value was corrected on 2026-10-28."
+      "note": "Pinned by the ns-eel2 source (WACUP/vis_milk2@de9625a): asm-nseel-x86-gcc.c:866-875, in nseel_asm_repeatwhile, takes fabs of the condition, fcomp's it against [g_closefact] (NSEEL_CLOSEFACTOR = 0.00001, ns-eel-int.h:56), and leaves the loop when the x87 C0 flag says |cond| is below it (testl $256 / jnz). Modern EEL2 boolifies the same way (nseel_asm_fptobool / EEL_BC_FPTOBOOL: fabs(v) >= NSEEL_CLOSEFACTOR). A condition of 1e-6 is therefore false before the first iteration: the body never runs, x stays 0 and n keeps its 1e-6. A condition of exactly 1e-5 still loops in the source; this case does not pin that boundary. The id names the question this case once asked (it was provisional, pinning exact zero) and is kept stable; the value was corrected on 2026-10-28."
     }
   ]
 }
