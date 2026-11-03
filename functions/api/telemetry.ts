@@ -2,10 +2,13 @@
 // POST /api/telemetry
 
 import {
+  isTelemetryEngineMajor,
   TELEMETRY_ARRIVALS,
   TELEMETRY_AUDIO_SOURCES,
   TELEMETRY_DEVICES,
+  TELEMETRY_ENGINES,
   TELEMETRY_ORIENTATIONS,
+  TELEMETRY_OS_FAMILIES,
   TELEMETRY_SURFACES,
   type TelemetryEvent,
 } from '../../src/js/core/edge-contracts.ts';
@@ -76,12 +79,18 @@ export async function onRequest(context: { request: Request; env: Env }) {
           known(TELEMETRY_AUDIO_SOURCES, data.audioSource),
           known(TELEMETRY_ARRIVALS, data.arrival),
           known(TELEMETRY_SURFACES, data.surface),
+          known(TELEMETRY_OS_FAMILIES, data.os),
+          known(TELEMETRY_ENGINES, data.engine),
+          data.androidWebView === true ? 'webview' : '',
         ],
         doubles: [
           data.fps || 0,
           data.audioLatencyMs || 0,
           Date.now(),
           data.dwellMs || 0,
+          // A double so queries can compare and sort it: casting a blob fails
+          // the whole query on one value that is not a number.
+          isTelemetryEngineMajor(data.engineMajor) ? data.engineMajor : 0,
         ],
         indexes: [data.event.slice(0, 32)],
       });

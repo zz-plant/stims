@@ -193,7 +193,6 @@ export type TelemetryEvent = {
   /** Milliseconds a preset stayed on screen (preset-dwell / preset-skip). */
   dwellMs?: number;
   error?: string;
-  userAgent?: string;
   /** How the screen is held when the event fires (telemetry-context.ts). */
   orientation?: (typeof TELEMETRY_ORIENTATIONS)[number];
   device?: (typeof TELEMETRY_DEVICES)[number];
@@ -203,6 +202,14 @@ export type TelemetryEvent = {
   arrival?: (typeof TELEMETRY_ARRIVALS)[number];
   /** Which control an `action:<id>` event was run from (action-telemetry.ts). */
   surface?: (typeof TELEMETRY_SURFACES)[number];
+  /** The operating system's family, never its version. */
+  os?: (typeof TELEMETRY_OS_FAMILIES)[number];
+  /** What renders the page, whatever the browser is called. */
+  engine?: (typeof TELEMETRY_ENGINES)[number];
+  /** The engine's major version, and nothing finer. */
+  engineMajor?: number;
+  /** Set only inside an Android WebView, such as an in-app browser. */
+  androidWebView?: boolean;
 };
 
 const RENDERER_VALUES = ['webgpu', 'webgl2', 'webgl1', 'canvas'] as const;
@@ -248,6 +255,33 @@ export const TELEMETRY_SURFACES = [
   'cue',
   'other',
 ] as const;
+export const TELEMETRY_OS_FAMILIES = [
+  'android',
+  'ios',
+  'windows',
+  'macos',
+  'linux',
+  'other',
+] as const;
+export const TELEMETRY_ENGINES = [
+  'chromium',
+  'webkit',
+  'gecko',
+  'other',
+] as const;
+
+/**
+ * A whole number in a major version's range. The endpoint is public, so this
+ * also keeps a finer number from being stored in the version's place.
+ */
+export function isTelemetryEngineMajor(input: unknown): input is number {
+  return (
+    typeof input === 'number' &&
+    Number.isInteger(input) &&
+    input >= 1 &&
+    input <= 999
+  );
+}
 
 function isOneOf<T extends string>(
   values: readonly T[],
@@ -292,10 +326,6 @@ export const TelemetryEventSchema = contractSchema<TelemetryEvent>((input) => {
     if (!isString(input.error)) return null;
     result.error = input.error;
   }
-  if (input.userAgent !== undefined) {
-    if (!isString(input.userAgent)) return null;
-    result.userAgent = input.userAgent;
-  }
   if (input.orientation !== undefined) {
     if (!isOneOf(TELEMETRY_ORIENTATIONS, input.orientation)) return null;
     result.orientation = input.orientation;
@@ -315,6 +345,22 @@ export const TelemetryEventSchema = contractSchema<TelemetryEvent>((input) => {
   if (input.surface !== undefined) {
     if (!isOneOf(TELEMETRY_SURFACES, input.surface)) return null;
     result.surface = input.surface;
+  }
+  if (input.os !== undefined) {
+    if (!isOneOf(TELEMETRY_OS_FAMILIES, input.os)) return null;
+    result.os = input.os;
+  }
+  if (input.engine !== undefined) {
+    if (!isOneOf(TELEMETRY_ENGINES, input.engine)) return null;
+    result.engine = input.engine;
+  }
+  if (input.engineMajor !== undefined) {
+    if (!isTelemetryEngineMajor(input.engineMajor)) return null;
+    result.engineMajor = input.engineMajor;
+  }
+  if (input.androidWebView !== undefined) {
+    if (!isBoolean(input.androidWebView)) return null;
+    result.androidWebView = input.androidWebView;
   }
   return result;
 });
