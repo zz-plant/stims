@@ -120,34 +120,36 @@ Buttons follow the [standard gamepad layout](https://w3c.github.io/gamepad/#rema
 | Left or right, slider focused (pad only)      | Add or subtract its `step`, clamped to `min` and `max`, and dispatch `input`.                                                                        |
 | Direction held                                | First move at once, the second after `initialRepeatDelayMs`, then one every `repeatIntervalMs`.                                                      |
 | A (button 0)                                  | Click the focused element. With focus on `body`, the click lands on `body`.                                                                          |
-| B (button 1)                                  | Dispatch a synthetic `Escape` keydown on `document`.                                                                                                 |
+| B (button 1)                                  | Dispatch a synthetic `Escape` keydown on `document`, then close an open native `<dialog>`. See [Closing a native dialog](#closing-a-native-dialog).  |
 | LB, RB (buttons 4, 5)                         | Previous and next in document order.                                                                                                                 |
 | Arrow keys, with `keyboardNavigation`         | Move focus as the D-pad does.                                                                                                                        |
 | Enter, NumpadEnter, OK, Select, Return, Spacebar, with the same flag | Click the focused element. Key codes 13, 32 and 23 count when the key reads `Unidentified`.                                                          |
-| Backspace, Back, Exit, GoBack, BrowserBack, MediaBack, with the same flag | Dispatch `Escape` as B does. So do key codes 8, 27, 166, 461 (webOS) and 10009 (Tizen). A real `Escape` key is not re-dispatched.                    |
+| Backspace, Back, Exit, GoBack, BrowserBack, MediaBack, with the same flag | Dispatch `Escape` as B does. So do key codes 8, 27, 166, 461 (webOS) and 10009 (Tizen). A real `Escape` key is not re-dispatched, and on an open native `<dialog>` it is left for the browser. |
 
 ## How it picks a target
 
 - **By distance from centre to centre.** A candidate counts for a direction when it lies within 45 degrees of that axis. Its score is the distance along the axis plus 0.35 of the distance across it, and the lowest score wins.
 - **Inside the open modal.** While a `dialog[open]` or `[role="dialog"][aria-modal="true"]` exists, only elements inside it are candidates.
 - **From `DEFAULT_FOCUSABLE_SELECTOR`.** That is links, enabled form controls, `[tabindex]` other than -1, and `details > summary`, the only toggle of a disclosure.
+- **Only what is rendered.** An element is skipped when it or an ancestor is `display: none`, including `[hidden]`, or when it is hidden itself with `visibility: hidden`. Inside a closed `<details>`, it is skipped where the browser has `checkVisibility()`.
+
+## Closing a native dialog
+
+A browser ignores a synthetic Escape, so B and the back keys close an open `<dialog>` themselves: the one holding focus, or else the one bounding focus moves. Using `requestClose()`, or where that is missing, dispatching `cancel` and calling `close()`, keeps these working:
+
+- **A `cancel` listener can refuse.** Calling `preventDefault()` on it keeps the dialog open.
+- **Your own Escape listener still runs first.** Calling `preventDefault()` on that keydown keeps the dialog open, as it does for a real Escape, so a popover inside can take the press. If your listener closes the dialog itself, it closes once, and a dialog beneath stays open.
+- **`closedby="none"` stays open.** The page has said the user cannot dismiss it, so give it a button.
+
+A `[role="dialog"]` element gets the Escape keydown only, so it needs a listener of its own, which it usually has already.
 
 ## What to plan for
 
 These come from reading the code and running it in Chromium 156.
 
 - **Focus moves on init, pad or no pad.** With `restoreFocus` on, the default, and nothing focused, the call focuses the remembered element or the first focusable one. Pass `restoreFocus: false` to keep it from moving focus when it starts.
-- **A native `<dialog>` does not close on its own.** Pad B and Backspace send a synthetic Escape, which browsers do not treat as a close request. The keyboard layer also calls `preventDefault()` on a real Escape, so that does not close one either, and focus stays inside. Handle it yourself, on `document` or lower, since the layer listens on `window`:
-
-  ```ts
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && dialog.open) dialog.close();
-  });
-  ```
-
-  A `[role="dialog"]` element needs the same listener, which it usually has already.
-- **A hidden parent is not noticed.** An element is skipped when it is hidden itself, not when an ancestor is. A button inside a `display: none` container stays a candidate, and its `focus()` does nothing. When it is next in document order, RB can never get past it. It also reports a box at the origin, so left from a top-left button picked it and focus stayed put; without the hidden button, both presses moved focus. Keep hidden sections out of the DOM or narrow `focusableSelector`.
-- **Text fields keep their arrows, for some types.** Directions are left alone in `text`, `search`, `email`, `url`, `tel` and `password` inputs. A `textarea` or a `number` input loses focus on an arrow press.
+- **`inert` and a disabled `<fieldset>` are not noticed.** A button under either stays a candidate and its `focus()` does nothing, so RB cannot get past it when it is next in document order. Keep those sections out of the DOM or narrow `focusableSelector`.
+- **Text fields keep their arrows, for some types.** Directions are left alone in `text`, `search`, `email`, `url`, `tel` and `password` inputs. A `textarea` or a `number` input loses focus on an arrow press, and with `keyboardNavigation` on, Backspace in one goes back instead of deleting, which closes a native `<dialog>` around it.
 
 ## The keyboard layer
 
@@ -200,7 +202,7 @@ Extracted from [zz-plant/stims](https://github.com/zz-plant/stims):
 | `src/index.ts`                                | `src/js/utils/browser/gamepad-navigation.ts`, with the default storage key renamed                |
 | `tests/keys.test.ts`, `tests/focus.test.ts`   | `tests/unit/utils/gamepad-navigation.test.ts`, `gamepad-navigation-focus.test.ts`, plus geometry and pad tests |
 
-`bun test` runs 13 tests across 2 files.
+`bun test` runs 26 tests across 2 files.
 
 ## License
 

@@ -18,6 +18,7 @@ const globals = [
   'HTMLAnchorElement',
   'HTMLButtonElement',
   'HTMLDetailsElement',
+  'HTMLDialogElement',
   'HTMLInputElement',
   'HTMLSelectElement',
   'HTMLTextAreaElement',
