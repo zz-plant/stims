@@ -114,8 +114,6 @@ export function buildCrashTelemetryTransmitPayload(
     error: entry.message.slice(0, 256),
     renderer: entry.renderer,
     presetId: activePresetId ?? undefined,
-    userAgent:
-      typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
     ...readTelemetryContext(),
   };
 }

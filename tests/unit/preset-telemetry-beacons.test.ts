@@ -125,8 +125,10 @@ describe('noteShaderExecution', () => {
       'arrival',
       'audioSource',
       'device',
+      'engine',
       'event',
       'orientation',
+      'os',
       'presetId',
       'renderer',
     ]);
