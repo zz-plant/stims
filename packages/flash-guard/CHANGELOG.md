@@ -5,7 +5,6 @@
 0.1.1 was prepared as a documentation release but never published; its
 README changes ship here, with the code below. Minor bump: new exports,
 a new `sample()` argument and changed governor output.
-
 - The governor models the brightness filter it applies. `luminanceScale` is
   a CSS `brightness()` factor, which browsers apply to sRGB-encoded values,
   so the luminance a viewer sees falls roughly as its 2.2-2.4th power, not in
@@ -62,7 +61,7 @@ a new `sample()` argument and changed governor output.
   red-saturation test and pixel loop work on integers.
 - docs: README reflects the published package. It leads with the install command, moves the clone-and-build steps under Development, links the live demo site, and uses absolute links that resolve on npm and on the mirror, including the `demo/` page the npm package does not contain.
 
-## 0.1.0
+## 0.1.0 (2026-10-07)
 
 First release as a package, extracted from
 [zz-plant/stims](https://github.com/zz-plant/stims).
