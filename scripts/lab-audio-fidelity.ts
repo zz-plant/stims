@@ -38,7 +38,11 @@ import {
   buildHannWindow,
   buildTwiddleTable,
 } from 'audio-reactive';
-import { buildAudioFileInputs, decodeWav } from './audio-file-inputs.ts';
+import {
+  buildAudioFileInputs,
+  decodeWav,
+  liveWorkletOptions,
+} from './audio-file-inputs.ts';
 import { ensureDevServer } from './dev-server.ts';
 import type { FrameInputs } from './preset-lab-replay.ts';
 
@@ -455,9 +459,14 @@ async function main() {
     audio.sampleRate,
     (clip[0]?.length ?? 0) / audio.sampleRate,
   );
-  // The live worklet posts every 4th block at fftSize 1024 (the rule in
-  // FrequencyAnalyser.create), so messages recur every 4096 samples.
-  const messagePeriod = FFT_SIZE * 4;
+  // Messages recur every messageEvery blocks, whatever FrequencyAnalyser.create
+  // picks for this sample rate.
+  const { messageEvery } = await liveWorkletOptions(
+    audio.sampleRate,
+    clip.length,
+    FFT_SIZE,
+  );
+  const messagePeriod = FFT_SIZE * Math.max(1, Number(messageEvery) || 1);
   const calibration = calibrateLive(
     live,
     clip[0] as Float32Array,

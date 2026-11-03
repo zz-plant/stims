@@ -107,6 +107,20 @@ function applyFloatWaveformGain(
   return target;
 }
 
+/**
+ * Samples between worklet messages. A message summarises every analysis
+ * window since the previous one, so this sets latency, not what gets seen:
+ * one message per 1024 samples (~21 ms at 48 kHz) instead of 4096 brought a
+ * kick to the main thread 31 ms after its onset instead of 54 (p95 39 vs
+ * 88), for about 0.1 ms of main-thread time per message in desktop Chromium.
+ */
+const WORKLET_MESSAGE_SAMPLES = 1024;
+
+/** Windows per worklet message for an analyser of `fftSize`. */
+function resolveWorkletMessageEvery(fftSize: number): number {
+  return Math.max(1, Math.round(WORKLET_MESSAGE_SAMPLES / fftSize));
+}
+
 export function resolveAdaptiveFftSize(
   sampleRate: number,
   requestedFftSize?: number,
@@ -166,6 +180,7 @@ export class FrequencyAnalyser {
   } | null = null;
   private cachedTransientMetrics: FourBandTransientMetrics | null = null;
   private cachedBeatDetection: WorkletBeatDetection | null = null;
+  private beatDetectionRead = true;
   private cachedHarmonicPercussive: HarmonicPercussiveLevels | null = null;
   private readonly waveformAgc = createWaveformAutoGain();
   private readonly interpolator: AudioReactivityInterpolator =
@@ -303,7 +318,18 @@ export class FrequencyAnalyser {
         this.cachedTransientMetrics = transientMetrics;
       }
       if (beatDetection && typeof beatDetection.beatIntensity === 'number') {
+        // Messages can outpace frames (one per ~21 ms against a 30 fps
+        // loop). A verdict no frame has read yet hands its beats on to the
+        // next one, or a beat in it would be overwritten unseen.
+        const unread = this.beatDetectionRead ? null : this.cachedBeatDetection;
+        if (unread) {
+          beatDetection.isBeat ||= unread.isBeat;
+          beatDetection.beatBass ||= unread.beatBass;
+          beatDetection.beatMid ||= unread.beatMid;
+          beatDetection.beatTreble ||= unread.beatTreble;
+        }
         this.cachedBeatDetection = beatDetection;
+        this.beatDetectionRead = false;
       }
       if (
         harmonicPercussive &&
@@ -427,7 +453,7 @@ export class FrequencyAnalyser {
         processorOptions: {
           fftSize: this.frequencyBinCount * 2,
           sampleRate: this.sampleRate,
-          messageEvery: this.frequencyBinCount >= 512 ? 4 : 2,
+          messageEvery: resolveWorkletMessageEvery(this.frequencyBinCount * 2),
         },
       });
       this.sourceNode.connect(workletNode);
@@ -493,8 +519,7 @@ export class FrequencyAnalyser {
           processorOptions: {
             fftSize: effectiveFftSize,
             sampleRate,
-            messageEvery:
-              effectiveFftSize >= 1024 ? 4 : effectiveFftSize >= 512 ? 2 : 1,
+            messageEvery: resolveWorkletMessageEvery(effectiveFftSize),
           },
         });
         sourceNode.connect(workletNode);
@@ -641,7 +666,11 @@ export class FrequencyAnalyser {
   }
 
   getWorkletBeatDetection(): WorkletBeatDetection | null {
-    return this.workletNode ? this.cachedBeatDetection : null;
+    if (!this.workletNode) {
+      return null;
+    }
+    this.beatDetectionRead = true;
+    return this.cachedBeatDetection;
   }
 
   getHarmonicPercussiveLevels(): HarmonicPercussiveLevels | null {

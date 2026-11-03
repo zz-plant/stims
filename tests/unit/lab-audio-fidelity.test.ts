@@ -142,7 +142,8 @@ describe('buildAudioFileInputs lead-in', () => {
 
   test('a partial lead-in moves the analysis windows', async () => {
     const plain = await spectra(0);
-    const shifted = await spectra(2048);
+    // Half a window: a partial period whatever the message cadence.
+    const shifted = await spectra(512);
     const same = shifted.filter((spectrum, i) => spectrum === plain[i]);
     expect(same.length).toBeLessThan(10);
   });

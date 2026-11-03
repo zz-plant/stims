@@ -331,6 +331,72 @@ describe('Off-main-thread AudioWorklet DSP processing', () => {
     }
   });
 
+  test('a beat no frame has read yet survives the next worklet message', async () => {
+    // A message every ~21 ms outpaces a 30 fps frame loop, so two can land
+    // between frames; the second must not overwrite the first one's beat.
+    const fakeWorkletNode = {
+      port: {
+        onmessage: null as ((ev: MessageEvent) => void) | null,
+        postMessage: mock(),
+      },
+      connect: mock(),
+      disconnect: mock(),
+    };
+    const context = {
+      state: 'running',
+      sampleRate: 48000,
+      destination: {},
+      audioWorklet: { addModule: mock().mockResolvedValue(undefined) },
+      createMediaStreamSource: mock(() => ({
+        connect: mock(),
+        disconnect: mock(),
+      })),
+      createGain: mock(() => ({
+        gain: { value: 1 },
+        connect: mock(),
+        disconnect: mock(),
+      })),
+      resume: mock().mockResolvedValue(undefined),
+    } as unknown as AudioContext;
+    const stream = { getAudioTracks: () => [] } as unknown as MediaStream;
+    const verdict = (isBeat: boolean, beatIntensity: number) =>
+      ({
+        data: {
+          beatDetection: {
+            isBeat,
+            beatIntensity,
+            beatBass: isBeat,
+            beatMid: false,
+            beatTreble: false,
+            bassBeatIntensity: beatIntensity,
+            midBeatIntensity: 0,
+            trebleBeatIntensity: 0,
+          },
+        },
+      }) as MessageEvent;
+    const origWorkletNode = globalThis.AudioWorkletNode;
+    (globalThis as unknown as { AudioWorkletNode: unknown }).AudioWorkletNode =
+      mock(() => fakeWorkletNode);
+    try {
+      const analyser = await FrequencyAnalyser.create(context, stream, 1024);
+      fakeWorkletNode.port.onmessage?.(verdict(true, 0.9));
+      fakeWorkletNode.port.onmessage?.(verdict(false, 0.85));
+      expect(analyser.getWorkletBeatDetection()).toMatchObject({
+        isBeat: true,
+        beatBass: true,
+        beatIntensity: 0.85,
+      });
+      // Once a frame has seen the beat, the next verdict starts clean.
+      fakeWorkletNode.port.onmessage?.(verdict(false, 0.8));
+      expect(analyser.getWorkletBeatDetection()).toMatchObject({
+        isBeat: false,
+        beatBass: false,
+      });
+    } finally {
+      globalThis.AudioWorkletNode = origWorkletNode;
+    }
+  });
+
   test('FrequencyAnalyser falls back to AnalyserNode when AudioWorklet is unsupported or fails', async () => {
     class FallbackContext {
       state = 'running';

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `audio-reactive/worklet`: the beat and transient detectors run on every FFT block, not only the blocks a packet carries, and a packet summarises every block since the previous one: `rms`, `spectralFlux`, `kickTransient` and `snareSnap` are peaks, and the beat flags are set if any block beat. With `messageEvery` above 1, a transient between packets used to go unseen. The spectrum, waveform and other fields still describe the latest block.
+- The detector constants are now set in seconds (as tuned at one update per 4096 samples of 48 kHz audio), so `beatIntensity` decays, and the running averages adapt, at the same rate whatever `fftSize`, sample rate or `messageEvery`. At `messageEvery: 1` and fftSize 1024 this is a quarter of the old per-packet rate; `energyAverages` covers ~5.5 s instead of 64 packets.
+
 ## 0.1.0 (2026-10-07)
 
 Initial release, extracted from zz-plant/stims.

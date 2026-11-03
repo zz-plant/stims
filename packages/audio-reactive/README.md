@@ -79,7 +79,7 @@ const node = new AudioWorkletNode(context, 'frequency-analyser', {
   processorOptions: {
     fftSize, // power of two >= 2, default 1024
     sampleRate: context.sampleRate, // optional, falls back to the worklet's global
-    messageEvery: 1, // post every Nth full FFT block (default 1)
+    messageEvery: 1, // post every Nth FFT block (default 1); a packet summarises every block since the last
   },
 });
 source.connect(node); // the node's output is silence; connect it to keep it alive
@@ -92,9 +92,9 @@ node.port.onmessage = (event) => {
   const waveformData = new Uint8Array(packet.waveformData); // fftSize bytes, 128 = silence
   const timeDomainData = new Float32Array(packet.timeDomainData); // fftSize PCM samples
 
-  packet.rms; // number
+  packet.rms; // peak over the blocks since the previous packet
   packet.zeroCrossingRate; // number
-  packet.spectralFlux; // positive magnitude change since the previous packet
+  packet.spectralFlux; // peak positive magnitude change between consecutive blocks since the previous packet
   packet.spectralCrest; // max / mean magnitude
   packet.spectralCentroid; // Hz
   packet.spectralFlatness; // 0..1
@@ -102,10 +102,11 @@ node.port.onmessage = (event) => {
   packet.stereoBalance; // -1 (right) .. 1 (left), 0 for mono
   packet.stereoWidth; // 0 (correlated) .. 1 (uncorrelated), 0 for mono
   packet.energy; // { bass, mid, treble } 0..1
-  packet.energyAverages; // same keys, running mean over the last 64 packets
+  packet.energyAverages; // same keys, running mean over the last ~5.5 s
   packet.beatDetection; // { isBeat, beatIntensity, beatBass, beatMid, beatTreble,
   //                         bassBeatIntensity, midBeatIntensity, trebleBeatIntensity }
-  packet.transientMetrics; // { subBassEnv, kickTransient, vocalMidEnv, snareSnap }
+  //                         the flags are set if any block since the previous packet beat
+  packet.transientMetrics; // { subBassEnv, kickTransient, vocalMidEnv, snareSnap } (kickTransient, snareSnap: peaks)
   packet.harmonicPercussive; // { percussive, harmonic, percussiveLow, percussiveMid,
   //                             percussiveHigh, percussiveRatio } or null
 

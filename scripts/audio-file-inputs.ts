@@ -284,6 +284,26 @@ async function createOfflineAnalyser(
   }
 }
 
+/**
+ * The processorOptions the live FrequencyAnalyser gives its worklet at this
+ * sample rate (its message cadence included), read from the real create().
+ */
+export async function liveWorkletOptions(
+  sampleRate: number,
+  channelCount: number,
+  fftSize = MILKDROP_FFT_SIZE,
+): Promise<Record<string, unknown>> {
+  const stack = await loadLiveAudioStack();
+  const { analyser, processorOptions } = await createOfflineAnalyser(
+    stack,
+    sampleRate,
+    channelCount,
+    fftSize,
+  );
+  analyser.disconnect();
+  return processorOptions;
+}
+
 export type AudioFileInputOptions = {
   fps?: number;
   /** Frames to produce; defaults to the rest of the file after startSeconds. */
