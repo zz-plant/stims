@@ -595,8 +595,6 @@ export default defineConfig({
         'Reduced to declarations a rendered check cannot observe (safe-area env() math, live-mode rules needing a booted engine); the overflow and short-landscape invariants moved to chrome-visual-contract e2e as computed measurements.',
       'tests/unit/primitive-rasterization-fidelity.test.ts':
         'DEBT: greps renderer source for rasterisation constants.',
-      'tests/unit/scripts-list-routing.test.ts':
-        'Reads scripts/ to check `bun run help --for` does not route at a deleted script — a dangling-reference check over live data.',
       'tests/unit/workspace-first-fold-actions.test.tsx':
         'Renders the real NewHomePage/AudioSourcePanel through the harness; the one remaining read checks app-shell.css styles the classes the RENDERED page produces (no style engine here).',
     },

@@ -20,26 +20,7 @@
  * The default path is `<main checkout's parent>/worktrees/<repo>-<branch>`.
  * An existing local branch is checked out as it is, not reset.
  */
-import {
-  parseWorktreeArgs,
-  resolveConfig,
-  runCli,
-  type WorktreeOptions,
-  createWorktree as worktree,
-} from 'agent-ergonomics';
-import stimsConfig from '../agent-ergonomics.config.ts';
-
-export type { WorktreeResult } from 'agent-ergonomics';
-
-const config = resolveConfig(stimsConfig);
-export const parseArgs = (argv: string[]) =>
-  parseWorktreeArgs(argv, {
-    base: config.git.defaultBase,
-    remote: config.git.remote,
-    worktreesDir: config.git.worktreesDir,
-  });
-export const createWorktree = (options: WorktreeOptions, cwd = process.cwd()) =>
-  worktree(options, cwd, `${config.commands.worktreeNew} --`);
+import { runCli } from 'agent-ergonomics';
 
 if (import.meta.main)
   process.exit(await runCli(['worktree-new', ...process.argv.slice(2)]));

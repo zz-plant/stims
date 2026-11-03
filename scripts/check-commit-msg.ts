@@ -19,18 +19,7 @@
  *        or:   bun run scripts/check-commit-msg.ts --range <base>..<head>
  *              [--allow-long-subjects]
  */
-import {
-  subjectError as checkSubject,
-  resolveConfig,
-  runCli,
-} from 'agent-ergonomics';
-import stimsConfig from '../agent-ergonomics.config.ts';
-
-const config = resolveConfig(stimsConfig);
-export const subjectError = (
-  subject: string,
-  options: { enforceLength?: boolean } = {},
-) => checkSubject(subject, config.commitMsg, options);
+import { runCli } from 'agent-ergonomics';
 
 if (import.meta.main)
   process.exit(await runCli(['commit-msg', ...process.argv.slice(2)]));

@@ -31,11 +31,9 @@ import {
 import stimsConfig from '../agent-ergonomics.config.ts';
 
 export {
-  type GateStepResult,
   parseExecutionMode,
   parseMode,
   parseSkipTests,
-  printStepResult,
 } from 'agent-ergonomics';
 
 const config = resolveConfig(stimsConfig);

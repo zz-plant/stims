@@ -3,6 +3,7 @@ import {
   buildGatePlan,
   parseExecutionMode,
   parseMode,
+  parseOutputMode,
   parseSkipTests,
 } from '../../scripts/run-quality-gate.ts';
 
@@ -85,4 +86,16 @@ test('all gate plan runs the complete test suite after the concurrent lane', () 
     '--profile',
     'all',
   ]);
+});
+
+test('the Stims gate is quiet in a Claude Code session and STIMS_QUIET overrides it', () => {
+  // .claude/CLAUDE.md promises both: one line per passing step under
+  // CLAUDECODE=1, and full output back with STIMS_QUIET=0 or --verbose.
+  expect(parseOutputMode([], {})).toBe('text');
+  expect(parseOutputMode([], { CLAUDECODE: '1' })).toBe('quiet');
+  expect(parseOutputMode([], { STIMS_QUIET: '1' })).toBe('quiet');
+  expect(parseOutputMode([], { CLAUDECODE: '1', STIMS_QUIET: '0' })).toBe(
+    'text',
+  );
+  expect(parseOutputMode(['--verbose'], { CLAUDECODE: '1' })).toBe('text');
 });

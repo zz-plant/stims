@@ -60,7 +60,7 @@ loaded.
 
 | Package              | Mirror                                                                        |
 | -------------------- | ----------------------------------------------------------------------------- |
-| `agent-ergonomics` | Prepared for [zz-plant/agent-ergonomics](https://github.com/zz-plant/agent-ergonomics); mirror not created or published yet. |
+| `agent-ergonomics`   | [zz-plant/agent-ergonomics](https://github.com/zz-plant/agent-ergonomics)     |
 | `eel-conformance`    | [zz-plant/eel-conformance](https://github.com/zz-plant/eel-conformance)       |
 | `flash-guard`        | [zz-plant/flash-guard](https://github.com/zz-plant/flash-guard)               |
 | `milkdrop-toolchain` | [zz-plant/milkdrop-toolchain](https://github.com/zz-plant/milkdrop-toolchain) |
@@ -165,4 +165,7 @@ Tests follow the code. Each package's suite lives in its `tests/` and runs in
 the full gate (`bun run check:packages`); `tests/` keeps only what needs the
 rest of the repository, such as compiling the bundled preset corpus.
 
-`agent-ergonomics` is a Bun CLI and library, with no browser demo. Its name was free on npm on 2026-10-28; this checkout prepares the package and workflow entries without creating a mirror or publishing a release. The repository scripts delegate to it using `agent-ergonomics.config.ts`.
+`agent-ergonomics` is a Bun CLI with no browser demo, so it has no site. The
+repo's help, gate, guardrails, guard and git-helper scripts are wrappers that
+call it with `agent-ergonomics.config.ts`, which holds every Stims-specific
+route, step list, doc root and allowlist.

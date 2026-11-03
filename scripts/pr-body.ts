@@ -12,7 +12,8 @@
  * `--check` applies the two rules of the "Validate PR description" job in
  * .github/workflows/pr-automation.yml (not empty, and says how it was verified)
  * plus one local rule: no `TODO:` left behind. The two CI rules are mirrored
- * here, so if that workflow's patterns change, change them here too.
+ * in `validatePrBody` (packages/agent-ergonomics/src/pr-body.ts), so if that
+ * workflow's patterns change, change them there too.
  *
  * Usage:
  *   bun run pr:body                          # scaffold for HEAD vs origin/main
@@ -20,19 +21,7 @@
  *   bun run pr:body -- --footer "🤖 Generated with …"   # appended verbatim
  *   bun run pr:body -- --check body.md       # validate a finished body ('-' = stdin)
  */
-import {
-  resolveConfig,
-  runCli,
-  type ScaffoldInput,
-  buildPrBody as scaffold,
-} from 'agent-ergonomics';
-import stimsConfig from '../agent-ergonomics.config.ts';
-
-export { type ScaffoldInput, validatePrBody } from 'agent-ergonomics';
-
-const config = resolveConfig(stimsConfig);
-export const buildPrBody = (input: ScaffoldInput) =>
-  scaffold(input, config.prBody);
+import { runCli } from 'agent-ergonomics';
 
 if (import.meta.main)
   process.exit(await runCli(['pr-body', ...process.argv.slice(2)]));

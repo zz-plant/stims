@@ -144,7 +144,22 @@ test('commit and PR checks accept absolute file paths outside the repository', a
 
 test('PR scaffolding writes through the caller output sink and leaves checks unticked', async () => {
   const root = fixture();
-  const git = (...args: string[]) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', ...args], { cwd: root, stdio: 'pipe' });
+  const git = (...args: string[]) =>
+    execFileSync(
+      'git',
+      [
+        '-c',
+        'core.hooksPath=/dev/null',
+        '-c',
+        'commit.gpgsign=false',
+        '-c',
+        'user.name=Fixture',
+        '-c',
+        'user.email=fixture@example.test',
+        ...args,
+      ],
+      { cwd: root, stdio: 'pipe' },
+    );
   git('init', '-q');
   writeFileSync(join(root, 'README.md'), 'Base.');
   git('add', '.');
@@ -154,7 +169,9 @@ test('PR scaffolding writes through the caller output sink and leaves checks unt
   git('commit', '-qm', 'docs: explain the fixture');
   writeFileSync(join(root, 'agent-ergonomics.config.json'), '{}');
   const io = collectIo();
-  expect(await runCli(['pr-body', '--base', 'HEAD^'], { cwd: root, io })).toBe(0);
+  expect(await runCli(['pr-body', '--base', 'HEAD^'], { cwd: root, io })).toBe(
+    0,
+  );
   expect(io.logged.join('\n')).toContain('## Summary');
   expect(io.logged.join('\n')).not.toContain('[x]');
 });

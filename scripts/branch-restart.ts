@@ -18,17 +18,7 @@
  *   bun run branch:restart -- --base <name>     # a base other than main
  *   bun run branch:restart -- --dry-run         # print the plan, change nothing
  */
-import { parseRestartArgs, resolveConfig, runCli } from 'agent-ergonomics';
-import stimsConfig from '../agent-ergonomics.config.ts';
-
-export { type RestartResult, restartBranch } from 'agent-ergonomics';
-
-const config = resolveConfig(stimsConfig);
-export const parseArgs = (argv: string[]) =>
-  parseRestartArgs(argv, {
-    base: config.git.defaultBase,
-    remote: config.git.remote,
-  });
+import { runCli } from 'agent-ergonomics';
 
 if (import.meta.main)
   process.exit(await runCli(['branch-restart', ...process.argv.slice(2)]));

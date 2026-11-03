@@ -1,6 +1,14 @@
-import { afterAll, describe, expect, test } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from 'bun:test';
 import { spawnSync } from 'node:child_process';
 import {
+  cpSync,
   mkdirSync,
   mkdtempSync,
   realpathSync,
@@ -10,6 +18,13 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createWorktree, parseWorktreeArgs } from '../src/index.ts';
+
+// These tests are bound by the git processes the code under test spawns
+// (about a dozen per restart or worktree), and each costs 50-200 ms on macOS
+// before load. check:packages runs them in the gate's concurrent lane beside
+// typecheck and knip, where bun's 5 s default timed one out with nothing
+// wrong. The fixtures are already built once and copied per test.
+setDefaultTimeout(20_000);
 
 const parseArgs = (argv: string[]) =>
   parseWorktreeArgs(argv, {
@@ -23,6 +38,12 @@ afterAll(() => {
   for (const root of roots) rmSync(root, { recursive: true, force: true });
 });
 
+const tempRoot = () => {
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'stims-worktree-')));
+  roots.push(root);
+  return root;
+};
+
 function git(cwd: string, ...args: string[]) {
   const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
   if (result.status !== 0) {
@@ -35,26 +56,36 @@ function tryGit(cwd: string, ...args: string[]) {
   return spawnSync('git', args, { cwd, encoding: 'utf8' }).status === 0;
 }
 
-/** A bare origin with one commit on main, and a clone of it whose own hooks
- * directory is explicit, so the machine's git config cannot leak in. */
-function scenario() {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'stims-worktree-')));
-  roots.push(root);
-  const origin = join(root, 'origin.git');
-  git(root, 'init', '-q', '--bare', '-b', 'main', origin);
-  const clone = join(root, 'stims');
-  git(root, 'clone', '-q', origin, clone);
+/**
+ * A bare origin with one commit on main and a clone of it, built once. No
+ * template and a hooks path that does not exist keep the machine's hooks out.
+ * Each git process here costs 50-200 ms, so building this per test spent
+ * most of bun's 5 s default under the gate's load; each test copies it
+ * instead.
+ */
+let template: string;
+beforeAll(() => {
+  template = tempRoot();
+  const origin = join(template, 'origin.git');
+  git(template, 'init', '-q', '--bare', '--template=', '-b', 'main', origin);
+  const clone = join(template, 'stims');
+  git(template, 'clone', '-q', '--template=', origin, clone);
+  // Relative, so each test's copy fetches from its own origin.
+  git(clone, 'remote', 'set-url', 'origin', '../origin.git');
   git(clone, 'config', 'user.email', 't@example.com');
   git(clone, 'config', 'user.name', 'T');
   git(clone, 'config', 'commit.gpgsign', 'false');
-  const hooksDir = join(root, 'hooks');
-  mkdirSync(hooksDir);
-  git(clone, 'config', 'core.hooksPath', hooksDir);
+  git(clone, 'config', 'core.hooksPath', 'no-hooks');
   writeFileSync(join(clone, 'README.md'), 'base\n');
   git(clone, 'add', '-A');
   git(clone, 'commit', '-q', '-m', 'init');
   git(clone, 'push', '-q', '-u', 'origin', 'main');
-  return { root, clone, hooksDir };
+});
+
+function scenario() {
+  const root = tempRoot();
+  cpSync(template, root, { recursive: true });
+  return { root, clone: join(root, 'stims') };
 }
 
 describe('worktree:new', () => {

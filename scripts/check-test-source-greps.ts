@@ -17,7 +17,8 @@
  *
  * The rule: assert through the module's exported behaviour instead. If the
  * property really is about a file's text — an HTML artifact we ship, a config
- * file, a generated header — allowlist it below with a reason. That one-line
+ * file, a generated header — allowlist it with a reason under
+ * `testSourceGreps.allowed` in `agent-ergonomics.config.ts`. That one-line
  * edit with a justification is the cost this guard is trying to impose.
  */
 import { runCli } from 'agent-ergonomics';

@@ -30,7 +30,7 @@ export type PackageManifestEntry = {
 };
 
 export const PACKAGE_MANIFEST: readonly PackageManifestEntry[] = [
-  // The npm registry returned 404 for this name on 2026-10-28; not published yet.
+  // Free on npm on 2026-10-28 and again on 2026-11-03; not published yet.
   { name: 'agent-ergonomics', role: 'standalone', published: true },
   // Held 2026-10-13: Meyda and others cover most of it, and its tuning follows Stims.
   { name: 'audio-reactive', role: 'standalone', published: false },
