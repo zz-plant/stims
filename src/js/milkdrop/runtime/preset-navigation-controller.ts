@@ -211,6 +211,10 @@ export function createMilkdropPresetNavigationController({
         if (!(await catalogStore.getDraft(id))) {
           applyPresetPerformanceOverride(id);
           rememberLastPreset(id);
+          // The load below is the only other place that starts the dwell
+          // clock, so without this the preset a new visitor sees first never
+          // reported a view.
+          notePresetShown(id, getActiveBackend());
           trace.done('already active');
           return;
         }

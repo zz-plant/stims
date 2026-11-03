@@ -136,6 +136,21 @@ function send(presetId: string, dwellMs: number) {
   }
 }
 
+// webgl2 is the spelling the rest of the dataset uses for the WebGL path.
+function telemetryRenderer(backend?: 'webgl' | 'webgpu') {
+  if (backend === undefined) return undefined;
+  return backend === 'webgpu' ? 'webgpu' : 'webgl2';
+}
+
+/**
+ * Call when the renderer mounts or falls back. The first-run preset starts its
+ * clock when startup settles, which can be before the renderer has mounted and
+ * while the runtime still reports its default of WebGL.
+ */
+export function notePresetBackend(backend: 'webgl' | 'webgpu') {
+  activeRenderer = telemetryRenderer(backend);
+}
+
 /** Call when a preset becomes the visible one. Flushes the previous
  * preset's dwell and starts timing the new one. */
 export function notePresetShown(
@@ -150,13 +165,7 @@ export function notePresetShown(
   shownAt = now;
   framesSinceShown = 0;
   frameSpanMsSinceShown = 0;
-  // webgl2 is the spelling the rest of the dataset uses for the WebGL path.
-  activeRenderer =
-    backend === undefined
-      ? undefined
-      : backend === 'webgpu'
-        ? 'webgpu'
-        : 'webgl2';
+  activeRenderer = telemetryRenderer(backend);
   if (!pagehideInstalled && typeof window !== 'undefined') {
     pagehideInstalled = true;
     window.addEventListener('pagehide', () => {

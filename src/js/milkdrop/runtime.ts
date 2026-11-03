@@ -41,7 +41,10 @@ import type {
   AdaptiveQualityController,
   AdaptiveQualityState,
 } from '../core/services/adaptive-quality-controller.ts';
-import { noteSubstitution } from '../core/services/preset-telemetry.ts';
+import {
+  notePresetBackend,
+  noteSubstitution,
+} from '../core/services/preset-telemetry.ts';
 import { subscribeToRendererLifecycle } from '../core/services/render-service.ts';
 import {
   type QualityPreset,
@@ -957,6 +960,7 @@ export function createMilkdropExperience({
     activeCompiled: () => activeCompiled,
     setActiveBackend: (backend) => {
       activeBackend = backend;
+      notePresetBackend(backend);
     },
     setDocumentActiveBackend: (backend) => {
       if (typeof document !== 'undefined') {

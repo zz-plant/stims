@@ -84,44 +84,88 @@ interface Report {
   columns: string[];
 }
 
+/**
+ * UTC days whose rows are our own runs and not visitors. Automated browsers do
+ * not post, but a WebView shell does not read as one: the Android capture
+ * spike's runs on 2026-11-03 posted microphone starts from toil.fyi.
+ */
+export const EXCLUDED_DAYS = [
+  { from: '2026-11-03 00:00:00', to: '2026-11-04 00:00:00' },
+] as const;
+
+/**
+ * Which rows every report reads: the lookback window, less the excluded days.
+ */
+function reportWindow(days: number): string {
+  const excluded = EXCLUDED_DAYS.map(
+    ({ from, to }) =>
+      `(timestamp < toDateTime('${from}') OR timestamp >= toDateTime('${to}'))`,
+  );
+  return [`timestamp > NOW() - INTERVAL '${days}' DAY`, ...excluded].join(
+    ' AND ',
+  );
+}
+
+// A preset left on screen in a hidden tab keeps counting, so one view can read
+// 13 hours and the average says more about forgotten tabs than about anyone
+// watching. Dwell reports lead with the median and keep the average beside it.
+const DWELL_COLUMNS_SQL = `COUNT() AS views,
+                   SUM(IF(blob1 = 'preset-skip', 1, 0)) AS skips,
+                   quantileWeighted(0.5)(double4, 1) AS median_dwell_ms,
+                   quantileWeighted(0.9)(double4, 1) AS p90_dwell_ms,
+                   AVG(double4) AS avg_dwell_ms`;
+const DWELL_COLUMNS = [
+  'views',
+  'skips',
+  'median_dwell_ms',
+  'p90_dwell_ms',
+  'avg_dwell_ms',
+];
+
 /** The reports `main` prints, parameterized by the lookback window. */
 export function buildReports(days: number): Report[] {
-  const since = `NOW() - INTERVAL '${days}' DAY`;
+  const inWindow = reportWindow(days);
   return [
     {
       title: `Events by type (last ${days}d)`,
       sql: `SELECT blob1 AS event, COUNT() AS count FROM ${DATASET}
-            WHERE timestamp > ${since}
+            WHERE ${inWindow}
             GROUP BY blob1 ORDER BY count DESC LIMIT 20`,
       columns: ['event', 'count'],
     },
     {
       title: `Presets with the most errors (last ${days}d)`,
       sql: `SELECT blob3 AS presetId, blob4 AS error, COUNT() AS count FROM ${DATASET}
-            WHERE timestamp > ${since} AND blob1 = 'error' AND blob3 != ''
+            WHERE ${inWindow} AND blob1 = 'error' AND blob3 != ''
             GROUP BY blob3, blob4 ORDER BY count DESC LIMIT 20`,
       columns: ['presetId', 'error', 'count'],
     },
     {
       title: `Renderer split (last ${days}d)`,
       sql: `SELECT blob2 AS renderer, COUNT() AS count FROM ${DATASET}
-            WHERE timestamp > ${since}
+            WHERE ${inWindow}
             GROUP BY blob2 ORDER BY count DESC`,
       columns: ['renderer', 'count'],
     },
     {
-      // AE's SQL dialect has no quantile/median function, so this reports
-      // min/avg/max rather than true percentiles.
       title: `FPS range by renderer (last ${days}d)`,
       sql: `SELECT blob2 AS renderer,
                    COUNT() AS samples,
                    MIN(double1) AS min_fps,
+                   quantileWeighted(0.5)(double1, 1) AS median_fps,
                    AVG(double1) AS avg_fps,
                    MAX(double1) AS max_fps
             FROM ${DATASET}
-            WHERE timestamp > ${since} AND double1 > 0
+            WHERE ${inWindow} AND double1 > 0
             GROUP BY blob2 ORDER BY samples DESC`,
-      columns: ['renderer', 'samples', 'min_fps', 'avg_fps', 'max_fps'],
+      columns: [
+        'renderer',
+        'samples',
+        'min_fps',
+        'median_fps',
+        'avg_fps',
+        'max_fps',
+      ],
     },
     {
       // Engagement per preset: views vs quick skips and average dwell.
@@ -131,13 +175,20 @@ export function buildReports(days: number): Report[] {
       sql: `SELECT blob3 AS presetId,
                    COUNT() AS events,
                    SUM(IF(blob1 = 'preset-skip', 1, 0)) AS skips,
+                   quantileWeighted(0.5)(double4, 1) AS median_dwell_ms,
                    AVG(double4) AS avg_dwell_ms
             FROM ${DATASET}
-            WHERE timestamp > ${since}
+            WHERE ${inWindow}
               AND blob1 IN ('preset-dwell', 'preset-skip')
               AND blob3 != ''
             GROUP BY blob3 ORDER BY events DESC LIMIT 100`,
-      columns: ['presetId', 'events', 'skips', 'avg_dwell_ms'],
+      columns: [
+        'presetId',
+        'events',
+        'skips',
+        'median_dwell_ms',
+        'avg_dwell_ms',
+      ],
     },
     {
       // Substitutions (noteSubstitution, preset-telemetry.ts, added 2026-08-18):
@@ -149,14 +200,14 @@ export function buildReports(days: number): Report[] {
       // different experience than the one that was promised.
       title: `Substitutions by kind (last ${days}d)`,
       sql: `SELECT blob1 AS event, COUNT() AS count FROM ${DATASET}
-            WHERE timestamp > ${since} AND blob1 LIKE 'substitution-%'
+            WHERE ${inWindow} AND blob1 LIKE 'substitution-%'
             GROUP BY blob1 ORDER BY count DESC`,
       columns: ['event', 'count'],
     },
     {
       title: `Substitution detail, most frequent (last ${days}d)`,
       sql: `SELECT blob1 AS event, blob4 AS detail, COUNT() AS count FROM ${DATASET}
-            WHERE timestamp > ${since} AND blob1 LIKE 'substitution-%'
+            WHERE ${inWindow} AND blob1 LIKE 'substitution-%'
             GROUP BY blob1, blob4 ORDER BY count DESC LIMIT 30`,
       columns: ['event', 'detail', 'count'],
     },
@@ -169,7 +220,7 @@ export function buildReports(days: number): Report[] {
       // translated/(direct+translated+unsupported) is the approximation rate.
       title: `Shader-text execution by backend (last ${days}d)`,
       sql: `SELECT blob1 AS event, blob2 AS renderer, COUNT() AS count FROM ${DATASET}
-            WHERE timestamp > ${since} AND blob1 LIKE 'shader-exec-%'
+            WHERE ${inWindow} AND blob1 LIKE 'shader-exec-%'
             GROUP BY blob1, blob2 ORDER BY count DESC`,
       columns: ['event', 'renderer', 'count'],
     },
@@ -181,7 +232,7 @@ export function buildReports(days: number): Report[] {
       sql: `SELECT blob7 AS device, blob6 AS orientation, blob8 AS audio,
                    COUNT() AS count
             FROM ${DATASET}
-            WHERE timestamp > ${since}
+            WHERE ${inWindow}
               AND blob1 = 'growth-audio-started' AND blob7 != ''
             GROUP BY blob7, blob6, blob8 ORDER BY count DESC`,
       columns: ['device', 'orientation', 'audio', 'count'],
@@ -193,7 +244,7 @@ export function buildReports(days: number): Report[] {
       title: `Audible starts by OS and device (last ${days}d)`,
       sql: `SELECT blob11 AS os, blob7 AS device, COUNT() AS count
             FROM ${DATASET}
-            WHERE timestamp > ${since}
+            WHERE ${inWindow}
               AND blob1 = 'growth-audio-started' AND blob11 != ''
             GROUP BY blob11, blob7 ORDER BY count DESC`,
       columns: ['os', 'device', 'count'],
@@ -207,7 +258,7 @@ export function buildReports(days: number): Report[] {
       sql: `SELECT blob12 AS engine, double5 AS major, blob13 AS webview,
                    COUNT() AS count
             FROM ${DATASET}
-            WHERE timestamp > ${since}
+            WHERE ${inWindow}
               AND blob1 = 'growth-audio-started' AND blob12 != ''
             GROUP BY blob12, double5, blob13 ORDER BY engine, major DESC`,
       columns: ['engine', 'major', 'webview', 'count'],
@@ -225,7 +276,7 @@ export function buildReports(days: number): Report[] {
       title: `Open one up funnel by device (last ${days}d)`,
       sql: `SELECT blob1 AS step, blob7 AS device, COUNT() AS count
             FROM ${DATASET}
-            WHERE timestamp > ${since}
+            WHERE ${inWindow}
               AND blob1 IN (${OPEN_ONE_UP_FUNNEL_STEPS.map((step) => `'${step}'`).join(', ')})
               AND blob7 != ''
             GROUP BY blob1, blob7 ORDER BY device, count DESC`,
@@ -240,14 +291,23 @@ export function buildReports(days: number): Report[] {
       title: `Arrivals and how far they get (last ${days}d)`,
       sql: `SELECT blob9 AS arrival, blob1 AS step,
                    IF(blob3 != '', 'preset link', 'no preset') AS landing,
-                   COUNT() AS count, AVG(double4) AS avg_dwell_ms
+                   COUNT() AS count,
+                   quantileWeighted(0.5)(double4, 1) AS median_dwell_ms,
+                   AVG(double4) AS avg_dwell_ms
             FROM ${DATASET}
-            WHERE timestamp > ${since}
+            WHERE ${inWindow}
               AND blob1 IN ('growth-landing', 'growth-audio-started',
                             'preset-dwell', 'preset-skip')
               AND blob9 != ''
             GROUP BY blob9, blob1, landing ORDER BY arrival, step`,
-      columns: ['arrival', 'step', 'landing', 'count', 'avg_dwell_ms'],
+      columns: [
+        'arrival',
+        'step',
+        'landing',
+        'count',
+        'median_dwell_ms',
+        'avg_dwell_ms',
+      ],
     },
     {
       // Which actions visitors run and from where (action-telemetry.ts,
@@ -260,7 +320,7 @@ export function buildReports(days: number): Report[] {
       sql: `SELECT blob1 AS action, blob10 AS surface, blob7 AS device,
                    COUNT() AS loads
             FROM ${DATASET}
-            WHERE timestamp > ${since}
+            WHERE ${inWindow}
               AND blob1 LIKE 'action:%' AND blob10 != ''
             GROUP BY blob1, blob10, blob7 ORDER BY loads DESC LIMIT 200`,
       columns: ['action', 'surface', 'device', 'loads'],
@@ -268,25 +328,48 @@ export function buildReports(days: number): Report[] {
     {
       title: `Dwell and frame rate by screen (last ${days}d)`,
       sql: `SELECT blob7 AS device, blob6 AS orientation, blob2 AS renderer,
-                   COUNT() AS views, AVG(double4) AS avg_dwell_ms,
+                   ${DWELL_COLUMNS_SQL},
                    SUM(double1) / SUM(IF(double1 > 0, 1, 0)) AS avg_fps
             FROM ${DATASET}
-            WHERE timestamp > ${since}
+            WHERE ${inWindow}
               AND blob1 IN ('preset-dwell', 'preset-skip') AND blob7 != ''
             GROUP BY blob7, blob6, blob2 ORDER BY views DESC`,
       columns: [
         'device',
         'orientation',
         'renderer',
-        'views',
-        'avg_dwell_ms',
+        ...DWELL_COLUMNS,
         'avg_fps',
       ],
     },
     {
+      // A view is one preset on screen, not one visitor: a visitor flipping
+      // presets sends a row per flip, so a few of them can fill a row here.
+      title: `Dwell by screen and audio source (last ${days}d)`,
+      sql: `SELECT blob7 AS device, blob6 AS orientation, blob8 AS audio,
+                   ${DWELL_COLUMNS_SQL}
+            FROM ${DATASET}
+            WHERE ${inWindow}
+              AND blob1 IN ('preset-dwell', 'preset-skip') AND blob7 != ''
+            GROUP BY blob7, blob6, blob8 ORDER BY device, orientation, views DESC`,
+      columns: ['device', 'orientation', 'audio', ...DWELL_COLUMNS],
+    },
+    {
+      // `arrival` is '' on rows from before it existed, left out as above.
+      title: `Dwell by screen and arrival (last ${days}d)`,
+      sql: `SELECT blob7 AS device, blob6 AS orientation, blob9 AS arrival,
+                   ${DWELL_COLUMNS_SQL}
+            FROM ${DATASET}
+            WHERE ${inWindow}
+              AND blob1 IN ('preset-dwell', 'preset-skip') AND blob7 != ''
+              AND blob9 != ''
+            GROUP BY blob7, blob6, blob9 ORDER BY device, orientation, views DESC`,
+      columns: ['device', 'orientation', 'arrival', ...DWELL_COLUMNS],
+    },
+    {
       title: `Presets most often approximated (last ${days}d)`,
       sql: `SELECT blob3 AS presetId, blob2 AS renderer, COUNT() AS count FROM ${DATASET}
-            WHERE timestamp > ${since}
+            WHERE ${inWindow}
               AND blob1 IN ('shader-exec-translated', 'shader-exec-unsupported')
               AND blob3 != ''
             GROUP BY blob3, blob2 ORDER BY count DESC LIMIT 30`,

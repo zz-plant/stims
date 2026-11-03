@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { notePresetShown } from '../../src/js/core/services/preset-telemetry.ts';
 import type { MilkdropCatalogCoordinator } from '../../src/js/milkdrop/runtime/catalog-coordinator.ts';
 import { FIRST_RUN_PRESET_ID } from '../../src/js/milkdrop/runtime/first-run-preset.ts';
 import { createMilkdropPresetNavigationController } from '../../src/js/milkdrop/runtime/preset-navigation-controller.ts';
@@ -413,6 +414,54 @@ describe('milkdrop preset navigation controller', () => {
       // No transition either: crossfading a preset into itself is the visible
       // symptom this skip removes.
       expect(transitions).toEqual([]);
+    });
+
+    test('times the preset it reuses, so the first-run preset reports a view', async () => {
+      // Startup reaches the first-run preset through this skip, which used to
+      // bypass the only call that starts the dwell clock: production dwell
+      // rows began at a new visitor's second preset.
+      const location = Object.getOwnPropertyDescriptor(globalThis, 'location');
+      const navigator = Object.getOwnPropertyDescriptor(
+        globalThis,
+        'navigator',
+      );
+      const beacons: Promise<{ presetId: string; renderer: string }>[] = [];
+      Object.defineProperty(globalThis, 'location', {
+        configurable: true,
+        value: { hostname: 'toil.fyi', origin: 'https://toil.fyi' },
+      });
+      Object.defineProperty(globalThis, 'navigator', {
+        configurable: true,
+        value: {
+          sendBeacon: (_url: string, blob: Blob) => {
+            beacons.push(blob.text().then((text) => JSON.parse(text)));
+            return true;
+          },
+        },
+      });
+      try {
+        // The clock is module state an earlier test may have left on this id.
+        notePresetShown('sentinel-preset');
+
+        const { controller } = buildSkipHarness(null);
+        await controller.selectPreset('active-preset', {
+          skipIfAlreadyActive: true,
+        });
+        notePresetShown('next-preset', 'webgl');
+
+        expect((await Promise.all(beacons)).at(-1)).toMatchObject({
+          presetId: 'active-preset',
+          renderer: 'webgl2',
+        });
+      } finally {
+        for (const [key, value] of [
+          ['location', location],
+          ['navigator', navigator],
+        ] as const) {
+          if (value) Object.defineProperty(globalThis, key, value);
+          else Reflect.deleteProperty(globalThis, key);
+        }
+      }
     });
 
     test('still loads when an edited draft exists for that preset', async () => {
