@@ -115,6 +115,18 @@ const startApp = async () => {
     applyDeviceTierToDocument();
   }
 
+  // Chromium before 118 drops every `@scope` block, and the shell's layout
+  // lives in them. Mounting before they are back lays the shell out thousands
+  // of pixels tall, a focus call can scroll that page, and the visitor lands
+  // at the bottom once it collapses (1 of 5 cold starts on WebView 116).
+  if (!('CSSScopeRule' in globalThis)) {
+    await import('./frontend/css-scope-fallback.ts')
+      .then(({ restoreScopedRules }) => restoreScopedRules(document))
+      .catch(() => {
+        // The shell mounts without them, as it did before the fallback.
+      });
+  }
+
   const container = ensureRootContainer();
   const root = createRoot(container);
   (globalThis as StimsAppGlobals).__stimsAppDispose = () => {
