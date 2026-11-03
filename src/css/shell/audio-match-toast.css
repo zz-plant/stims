@@ -1,0 +1,105 @@
+/* ── Audio-match toast ────────────────────────────────────────────────
+   The "Suggested for this audio" card in the bottom-centre toast stack
+   (.stims-shell__toast-stack in app-shell.css). Moved out of app-shell.css
+   whole, so its rules sit exactly as they did there: outside the @scope. */
+
+/* Same surface as the contextual hint above it (ContextualHelp.module.css):
+   the two share this stack, and they used to be drawn from two systems — a
+   hard-coded near-black bar whose label and button followed the theme, which
+   in the light theme put a cream pill and a 3:1 dark-teal label on black. */
+.stims-shell__audio-match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 14px 12px;
+  border: 1px solid var(--stims-line-strong);
+  border-left: 3px solid var(--stims-cool); /* impeccable-disable-line side-tab: the stripe marks the audio-match toast's found-match status */
+  border-radius: var(--radius-lg);
+  background: var(--stims-panel-strong);
+  box-shadow: var(--stims-shadow);
+  color: var(--stims-ink);
+  font-size: 0.8125rem;
+  animation: fade-in 0.3s ease;
+}
+
+.stims-shell__audio-match .stims-shell__eyebrow {
+  margin: 0;
+  color: var(--stims-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-stretch: var(--font-stretch-legend);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The whole title block is the button: one target, not a link-styled word. */
+.stims-shell__audio-match-action {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--stims-ink-strong);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stims-shell__audio-match-title {
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-stretch: var(--font-stretch-compact);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stims-shell__audio-match-byline {
+  overflow: hidden;
+  color: var(--stims-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stims-shell__audio-match-action:hover .stims-shell__audio-match-title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.stims-shell__audio-match-action:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+.stims-shell__audio-match > :not(.stims-shell__audio-match-close) {
+  grid-column: 1;
+}
+
+/* Top-right, beside the eyebrow and title rather than under them. */
+.stims-shell__audio-match-close {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+  display: inline-grid;
+  place-items: center;
+  margin: -4px -8px 0 0;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--stims-muted);
+  cursor: pointer;
+}
+
+.stims-shell__audio-match-close:hover {
+  color: var(--stims-ink-strong);
+}
+
+.stims-shell__audio-match-close:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}

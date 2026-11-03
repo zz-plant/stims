@@ -3283,77 +3283,6 @@ body[data-page="workspace"] {
   pointer-events: auto;
 }
 
-/* Same surface as the contextual hint above it (ContextualHelp.module.css):
-   the two share this stack, and they used to be drawn from two systems — a
-   hard-coded near-black bar whose label and button followed the theme, which
-   in the light theme put a cream pill and a 3:1 dark-teal label on black. */
-.stims-shell__audio-match {
-  display: grid;
-  gap: 4px;
-  max-width: min(420px, calc(100vw - 32px));
-  padding: 10px 14px 12px;
-  border: 1px solid var(--stims-line-strong);
-  border-left: 3px solid var(--stims-cool); /* impeccable-disable-line side-tab: the stripe marks the audio-match toast's found-match status */
-  border-radius: var(--radius-lg);
-  background: var(--stims-panel-strong);
-  box-shadow: var(--stims-shadow);
-  color: var(--stims-ink);
-  font-size: 0.8125rem;
-  animation: fade-in 0.3s ease;
-}
-
-.stims-shell__audio-match .stims-shell__eyebrow {
-  margin: 0;
-  color: var(--stims-muted);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  font-stretch: var(--font-stretch-legend);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-/* The whole title block is the button: one target, not a link-styled word. */
-.stims-shell__audio-match-action {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--stims-ink-strong);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.stims-shell__audio-match-title {
-  overflow: hidden;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-stretch: var(--font-stretch-compact);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stims-shell__audio-match-byline {
-  overflow: hidden;
-  color: var(--stims-muted);
-  font-size: 0.75rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stims-shell__audio-match-action:hover .stims-shell__audio-match-title {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.stims-shell__audio-match-action:focus-visible {
-  outline: 2px solid var(--stims-accent);
-  outline-offset: 3px;
-  border-radius: var(--radius-sm);
-}
-
 /* ── MIDI performance HUD ─────────────────────────────────────────
    Glanceable while performing — the one thing the Settings dots and
    editor gutter can't be, since both live behind a closed panel. */
@@ -3656,9 +3585,13 @@ body[data-page="workspace"] {
   color: var(--stims-muted);
 }
 
-.stims-shell__dialog-close {
+/* Two classes deep to outrank the phone rule in index.css that stretches every
+   .cta-button to the full row, which squeezed the title beside it. */
+.stims-shell__dialog-head > .stims-shell__dialog-close {
   display: inline-grid;
+  flex: none;
   place-items: center;
+  width: auto;
   padding: 6px 8px;
 }
 
@@ -3878,6 +3811,17 @@ body[data-page="workspace"] {
      decoration that competes with the words. Hierarchy comes from the size
      and weight, same as the h3 below. */
   color: var(--stims-ink);
+}
+
+/* In a header row the heading shares its line with the close button, so the
+   gap below moves from the heading to the row. */
+.stims-shell__shortcut-card > .stims-shell__dialog-head,
+.stims-shell__credits-card > .stims-shell__dialog-head {
+  margin-bottom: 20px;
+}
+
+.stims-shell__dialog-head > h2 {
+  margin: 0;
 }
 
 .stims-shell__shortcut-card h3 {

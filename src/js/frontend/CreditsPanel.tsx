@@ -54,8 +54,6 @@ function CreditEntry({
 export function CreditsPanel() {
   return (
     <div className="stims-credits-panel">
-      <h2 className="stims-credits-title">About Stims</h2>
-
       <CreditsSection title="What is Stims?">
         <p>
           Stims is an independent browser visualizer descended from Ryan Geiss's

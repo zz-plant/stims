@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import '../../css/shell/audio-match-toast.css';
+import { UiIcon } from './UiIcon.tsx';
 
 // Modest bump from an earlier, uncommented 6000: this is the passive-glance
 // budget once a match has already appeared (hover/focus pauses it, so this
@@ -78,6 +80,18 @@ export function AudioMatchToast({
             {match.byline}
           </span>
         ) : null}
+      </button>
+      {/* The timer pauses while the toast is hovered or focused, so a
+          keyboard user who Tabs in to read it has no other way to send it
+          off. */}
+      <button
+        type="button"
+        className="stims-shell__audio-match-close"
+        onClick={onDismiss}
+        aria-label="Dismiss suggestion"
+        title="Dismiss suggestion"
+      >
+        <UiIcon name="close" className="stims-icon-slot stims-icon-slot--sm" />
       </button>
     </div>
   );

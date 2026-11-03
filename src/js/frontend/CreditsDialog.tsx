@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { CreditsPanel } from './CreditsPanel.tsx';
+import { DialogCloseButton } from './DialogCloseButton.tsx';
 import {
   useBottomOverlaySignal,
   useEscapeHandler,
@@ -72,6 +73,10 @@ export function CreditsDialog({
           }
         }}
       >
+        <div className="stims-shell__dialog-head">
+          <h2 className="stims-credits-title">About Stims</h2>
+          <DialogCloseButton label="Close About Stims" onClose={onClose} />
+        </div>
         <CreditsPanel />
         <button type="button" className="cta-button ghost" onClick={onClose}>
           Close
