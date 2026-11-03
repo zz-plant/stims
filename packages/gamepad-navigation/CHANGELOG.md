@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0
+## 0.1.0 (2026-10-28)
 
 First release as a package, extracted from
 [zz-plant/stims](https://github.com/zz-plant/stims).
