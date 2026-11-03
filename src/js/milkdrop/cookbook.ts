@@ -149,9 +149,13 @@ const shaderHeader = /^\s*\[\s*(?:warp_shader|comp_shader)\s*\]\s*$/iu;
  */
 export function applyRecipe(
   source: string,
-  recipe: Recipe,
+  recipe: Pick<Recipe, 'code'>,
 ): { source: string; firstLine: number } {
+  // Lines keep their `\r`; added ones follow the file so it stays uniform.
+  const cr = source.includes('\r\n') ? '\r' : '';
   const lines = source.replace(/\n$/u, '').split('\n');
+  const final = lines.length - 1;
+  if (cr && !lines[final]?.endsWith(cr)) lines[final] += cr;
   let firstLine = Number.MAX_SAFE_INTEGER;
   const insertedAt: number[] = [];
 
@@ -168,7 +172,7 @@ export function applyRecipe(
       highest = Math.max(highest, Number(match[1]));
     });
     const added = code.map(
-      (text, offset) => `${write}${highest + offset + 1}=${text}`,
+      (text, offset) => `${write}${highest + offset + 1}=${text}${cr}`,
     );
     let at = last + 1;
     if (last < 0) {

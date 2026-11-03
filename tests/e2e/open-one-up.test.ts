@@ -452,9 +452,18 @@ requiredBrowserTest(
         window.__stims_agent?.getVariables(),
       );
       expect(Math.abs(variables?.flip ?? 0)).toBe(1);
-      expect(variables?.rot, 'the restored spin equation runs').toBeCloseTo(
-        0.12,
-      );
+      // This preset's per-pixel code owns rot, so the spin is a per-pixel line
+      // the variables feed cannot show; the buffer says the draft is running.
+      expect(
+        await page.evaluate(() =>
+          window.__STIMS_AGENT_BRIDGE__?.getEditorState(),
+        ),
+      ).toMatchObject({
+        presetId,
+        sourceLength: source.length,
+        errorCount: 0,
+        renderingFallback: false,
+      });
       const stats = await captureAgentStats(page);
       expect(stats).not.toBeNull();
       expect(stats?.histogram[0]).toBeLessThan(0.95);

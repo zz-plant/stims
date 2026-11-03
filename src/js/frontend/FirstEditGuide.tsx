@@ -4,6 +4,7 @@ import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import {
   addSpinExample,
   type SpinExample,
+  spinCanShow,
   undoSpinExample,
 } from './first-edit.ts';
 
@@ -16,9 +17,12 @@ const DISMISSED_KEY = 'stims:first-edit-dismissed';
  */
 export function FirstEditGuide({
   source,
+  warpShader,
   onChange,
 }: {
   source: string;
+  /** The compiled warp shader for `source`, if it has one. */
+  warpShader?: string | null;
   onChange: (source: string) => void;
 }) {
   const [dismissed, setDismissed] = useState(
@@ -26,6 +30,7 @@ export function FirstEditGuide({
   );
   const [edit, setEdit] = useState<SpinExample | null>(null);
   if (dismissed || !source) return null;
+  if (edit === null && !spinCanShow(warpShader)) return null;
   // `source` reads as the original until the session echoes the edit back.
   // Counting that as undoable keeps the button enabled through the round
   // trip; disabling it for a frame threw keyboard focus to the page.
@@ -68,8 +73,8 @@ export function FirstEditGuide({
         </button>
       </div>
       <p hidden={edit !== null}>
-        Add <code>rot=rot+0.02;</code> to the per-frame equations and watch the
-        feedback turn.
+        Add <code>rot=rot+0.02;</code> to the equations and watch the feedback
+        turn.
       </p>
       <p role="status">
         {edit === null
