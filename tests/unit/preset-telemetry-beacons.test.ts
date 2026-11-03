@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
+  notePresetBackend,
   notePresetFrame,
   notePresetShown,
   noteShaderExecution,
@@ -164,6 +165,18 @@ describe('preset dwell beacons', () => {
     await flush();
 
     expect(beacons[0]?.body).toMatchObject({ renderer: 'webgl2', fps: 60 });
+  });
+
+  test('reports the renderer that mounted after the preset was shown', async () => {
+    await startFresh('first-run-preset', 'webgl');
+    notePresetBackend('webgpu');
+    notePresetShown('next-preset', 'webgpu');
+    await flush();
+
+    expect(beacons[0]?.body).toMatchObject({
+      presetId: 'first-run-preset',
+      renderer: 'webgpu',
+    });
   });
 
   test('counts only the frames rendered since the preset was shown', async () => {

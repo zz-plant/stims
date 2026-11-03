@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   buildReports,
+  EXCLUDED_DAYS,
   OPEN_ONE_UP_FUNNEL_STEPS,
 } from '../../scripts/telemetry-report.ts';
 
@@ -23,6 +24,46 @@ const selectedSteps = (sql: string): string[] => {
   const inList = sql.match(/blob1 IN \(([^)]+)\)/u)?.[1] ?? '';
   return inList.split(',').map((step) => step.trim().replace(/^'|'$/gu, ''));
 };
+
+describe('dwell reports', () => {
+  const dwellReport = (title: string) =>
+    buildReports(30).find((report) => report.title.startsWith(title));
+
+  // Means here are set by tabs left open overnight, so a report that loses
+  // its median says "phones 16 s, desktops 194 s" about a 2 s difference.
+  test.each([
+    ['Dwell and frame rate by screen', 'renderer'],
+    ['Dwell by screen and audio source', 'audio'],
+    ['Dwell by screen and arrival', 'arrival'],
+  ])('%s has a median per device, orientation and %s', (title, split) => {
+    const report = dwellReport(title);
+    expect(report?.sql).toContain(
+      'quantileWeighted(0.5)(double4, 1) AS median_dwell_ms',
+    );
+    expect(report?.columns).toEqual(
+      expect.arrayContaining([
+        'device',
+        'orientation',
+        split,
+        'views',
+        'median_dwell_ms',
+        'avg_dwell_ms',
+      ]),
+    );
+  });
+
+  test('every report leaves out the Android spike day', () => {
+    expect(EXCLUDED_DAYS).toContainEqual({
+      from: '2026-11-03 00:00:00',
+      to: '2026-11-04 00:00:00',
+    });
+    for (const report of buildReports(30)) {
+      expect(report.sql).toContain(
+        "(timestamp < toDateTime('2026-11-03 00:00:00') OR timestamp >= toDateTime('2026-11-04 00:00:00'))",
+      );
+    }
+  });
+});
 
 describe('open one up funnel report', () => {
   test('counts the three first-edit events, after the earlier steps', () => {
