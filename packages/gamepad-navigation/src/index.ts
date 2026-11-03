@@ -7,7 +7,8 @@
  * nearest focusable element in that direction, measured from the centres of
  * the elements' bounding boxes and falling back to document order at an edge;
  * A activates the focused element; B dispatches an `Escape` keydown so a
- * dialog or panel can close; the bumpers step focus in document order. A
+ * panel can close, and closes an open native `<dialog>`, which ignores a
+ * synthetic Escape; the bumpers step focus in document order. A
  * focused range input is adjusted by its `step` instead of being left. Focus
  * is restored from `sessionStorage` on the next load, and the `body` carries
  * `gamepad-active` while a pad is in use, for a visible focus ring.
@@ -98,6 +99,17 @@ const isInstanceOf = <T>(value: unknown, ctorName: string): value is T => {
   return Boolean(ctor && value instanceof ctor);
 };
 
+/**
+ * Whether the element has a box, which a `display: none` ancestor takes away:
+ * its `focus()` then does nothing and it reports a box at the origin.
+ * `getClientRects()` is for the older Chromium builds on TVs, which lack
+ * `checkVisibility()`; only the latter also sees a closed `<details>`.
+ */
+const isRendered = (element: HTMLElement) =>
+  typeof element.checkVisibility === 'function'
+    ? element.checkVisibility()
+    : element.getClientRects().length > 0;
+
 const isFocusable = (element: HTMLElement) => {
   if (element.hasAttribute('disabled')) return false;
   if (element.getAttribute('aria-hidden') === 'true') return false;
@@ -111,7 +123,7 @@ const isFocusable = (element: HTMLElement) => {
   }
   const style = window.getComputedStyle(element);
   if (style.display === 'none' || style.visibility === 'hidden') return false;
-  return true;
+  return isRendered(element);
 };
 
 const getActiveScope = (doc: Document) => {
@@ -119,6 +131,36 @@ const getActiveScope = (doc: Document) => {
     'dialog[open], [role="dialog"][aria-modal="true"]',
   );
   return modal ?? doc;
+};
+
+/**
+ * The native dialog a back press is for: the one holding focus, which among
+ * stacked dialogs is the top one, or else the one bounding focus moves.
+ */
+const getOpenNativeDialog = (doc: Document) => {
+  const holder = doc.activeElement?.closest<HTMLDialogElement>('dialog[open]');
+  if (holder) return holder;
+  const scope = getActiveScope(doc);
+  return isInstanceOf<HTMLDialogElement>(scope, 'HTMLDialogElement')
+    ? scope
+    : null;
+};
+
+/**
+ * Closes the dialog the way the browser's own close request does: `cancel`
+ * first, which a listener can veto. `closedby="none"` means the page takes no
+ * close request from the user, so a back press is not one either.
+ * `requestClose()` is missing from the older Chromium builds on TVs.
+ */
+const requestDialogClose = (dialog: HTMLDialogElement) => {
+  if (dialog.getAttribute('closedby') === 'none') return;
+  if (typeof dialog.requestClose === 'function') {
+    dialog.requestClose();
+    return;
+  }
+  if (dialog.dispatchEvent(new Event('cancel', { cancelable: true }))) {
+    dialog.close();
+  }
 };
 
 const getFocusableElements = (
@@ -291,12 +333,14 @@ const activateElement = (element: HTMLElement | null) => {
   }
 };
 
+/** Returns false when a listener canceled it, as a real Escape can be. */
 const dispatchEscape = (doc: Document) => {
   const event = new KeyboardEvent('keydown', {
     key: 'Escape',
     bubbles: true,
+    cancelable: true,
   });
-  doc.dispatchEvent(event);
+  return doc.dispatchEvent(event);
 };
 
 const escapeSelector = (value: string) => {
@@ -484,10 +528,12 @@ export const initGamepadNavigation = (
     }
   };
 
-  const dispatchBackAsEscape = (originKey: string = 'Escape') => {
-    if (shouldDispatchEscapeFallback(originKey)) {
-      dispatchEscape(doc);
-    }
+  const goBack = (originKey: string) => {
+    // Read before the Escape goes out: a page's own listener may close this
+    // dialog, and the one underneath is not what this press was for.
+    const dialog = getOpenNativeDialog(doc);
+    if (shouldDispatchEscapeFallback(originKey) && !dispatchEscape(doc)) return;
+    if (dialog?.open) requestDialogClose(dialog);
   };
 
   const getDirection = (pad: Gamepad): FocusDirection | null => {
@@ -572,7 +618,7 @@ export const initGamepadNavigation = (
 
     if (bPressed) {
       setActive();
-      dispatchBackAsEscape('GamepadB');
+      goBack('GamepadB');
     }
 
     if (leftBumper) {
@@ -670,7 +716,10 @@ export const initGamepadNavigation = (
 
     if (isBackKey(event)) {
       setActive();
-      dispatchBackAsEscape(event.key);
+      // The browser closes a native dialog on a real Escape, unless this
+      // keydown is canceled. Synthetic ones from goBack also stop here.
+      if (event.key === 'Escape' && getOpenNativeDialog(doc)) return;
+      goBack(event.key);
       event.preventDefault();
     }
   };

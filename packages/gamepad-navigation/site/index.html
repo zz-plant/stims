@@ -62,7 +62,7 @@
       <button type="button" class="btn" id="b-dialog">Open a dialog</button>
     </div>
     <dialog id="dialog">
-      <p>Focus stays inside an open dialog. Pad B or Backspace sends Escape, and this page's own listener closes it: a native dialog ignores a synthetic Escape.</p>
+      <p>Focus stays inside an open dialog. Pad B or Backspace closes it, and a <code>cancel</code> listener can refuse.</p>
       <div class="row"><button type="button" class="btn" id="d-ok">OK</button><button type="button" class="btn" id="d-cancel">Cancel</button></div>
     </dialog>
     <div class="readout">
@@ -84,7 +84,7 @@
         <tr><td>Left or right on a focused range input</td><td>Add or subtract its <code>step</code>, clamped to <code>min</code> and <code>max</code>, and dispatch <code>input</code>.</td></tr>
         <tr><td>Held direction</td><td>Repeats after <code>initialRepeatDelayMs</code>, then every <code>repeatIntervalMs</code>.</td></tr>
         <tr><td>A (button 0)</td><td>Click the focused element.</td></tr>
-        <tr><td>B (button 1)</td><td>Dispatch an <code>Escape</code> keydown on the document. Your listener does the closing; a native <code>dialog</code> ignores it.</td></tr>
+        <tr><td>B (button 1)</td><td>Dispatch an <code>Escape</code> keydown on the document for your listeners, then close an open native <code>dialog</code>. Calling <code>preventDefault()</code> on either that keydown or the dialog's <code>cancel</code> keeps it open.</td></tr>
         <tr><td>LB, RB (buttons 4, 5)</td><td>Previous and next in document order.</td></tr>
         <tr><td>Open <code>dialog</code> or <code>[role=dialog][aria-modal]</code></td><td>Bounds every move; focus does not leave it.</td></tr>
         <tr><td>Text input focused</td><td>In text, search, email, url, tel and password inputs, directions are left to the caret. A <code>textarea</code> or number input loses focus on an arrow.</td></tr>
