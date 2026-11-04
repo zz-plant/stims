@@ -11,13 +11,22 @@
  */
 import type { Page } from 'playwright';
 
-export async function openDockMenu(page: Page) {
+async function clickDockButton(page: Page, label: string) {
   const box = await page.locator('.stims-shell__stage-frame').boundingBox();
   if (!box) throw new Error('the stage has no box to point at');
   await page.mouse.move(box.x + box.width / 3, box.y + box.height / 3);
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page
-    .locator('[aria-label="More actions"]:not([inert]):visible')
+    .locator(`[aria-label="${label}"]:not([inert]):visible`)
     .first()
     .click({ timeout: 15_000 });
+}
+
+export async function openDockMenu(page: Page) {
+  await clickDockButton(page, 'More actions');
+}
+
+/** The bar's Share button, there from 640px; narrower, Share is in the menu. */
+export async function openDockShare(page: Page) {
+  await clickDockButton(page, 'Share');
 }
