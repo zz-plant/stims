@@ -4,6 +4,7 @@ import {
   notePresetFrame,
   notePresetShown,
   noteShaderExecution,
+  setPresetFlashGuardProbe,
 } from '../../src/js/core/services/preset-telemetry.ts';
 import {
   resetTelemetryContextForTests,
@@ -158,6 +159,71 @@ describe('preset dwell beacons', () => {
       renderer: 'webgpu',
       fps: 30,
     });
+  });
+
+  test('says why the frame rate was what it was', async () => {
+    await startFresh('attributed-preset', 'webgl');
+    setPresetFlashGuardProbe(() => ({ enabled: true, offThread: false }));
+    for (let frame = 0; frame < 60; frame += 1) {
+      notePresetFrame(25, {
+        simulationMs: frame % 2 === 0 ? 4 : 6,
+        renderMs: 3,
+        // Resolves on only some frames, and averages over just those.
+        gpuMs: frame % 10 === 0 ? 7 : undefined,
+        cadenceMs: 25,
+        qualityStep: frame < 30 ? 'full' : 'balanced',
+        renderScale: frame < 30 ? 1 : 0.96,
+      });
+    }
+    notePresetShown('next-preset', 'webgl');
+    await flush();
+
+    expect(beacons[0]?.body).toMatchObject({
+      simulationMs: 5,
+      renderMs: 3,
+      gpuMs: 7,
+      cadenceMs: 25,
+      qualityStep: 'balanced',
+      renderScale: 0.96,
+      flashGuard: 'on',
+      flashSampler: 'main',
+    });
+  });
+
+  test('leaves out what nothing measured, and starts over per preset', async () => {
+    await startFresh('first', 'webgpu');
+    setPresetFlashGuardProbe(() => ({ enabled: false, offThread: true }));
+    for (let frame = 0; frame < 60; frame += 1) {
+      notePresetFrame(1000 / 30, { simulationMs: 9, gpuMs: 9, cadenceMs: 33 });
+    }
+    notePresetShown('second', 'webgpu');
+    for (let frame = 0; frame < 60; frame += 1) {
+      notePresetFrame(1000 / 30, { simulationMs: 3 });
+    }
+    notePresetShown('third', 'webgpu');
+    await flush();
+
+    const second = beacons[1]?.body ?? {};
+    expect(second.simulationMs).toBe(3);
+    expect(second).not.toHaveProperty('gpuMs');
+    expect(second).not.toHaveProperty('cadenceMs');
+    expect(second.flashGuard).toBe('off');
+    expect(second).not.toHaveProperty('flashSampler');
+  });
+
+  test('a beacon carries nothing that could tell sessions apart', async () => {
+    await startFresh('private-preset', 'webgl');
+    for (let frame = 0; frame < 60; frame += 1) {
+      notePresetFrame(25, { simulationMs: 4, cadenceMs: 25 });
+    }
+    notePresetShown('next-preset', 'webgl');
+    await flush();
+    const keys = Object.keys(beacons[0]?.body ?? {}).map((key) =>
+      key.toLowerCase(),
+    );
+    expect(
+      keys.filter((key) => /session|visitor|user|client/u.test(key)),
+    ).toEqual([]);
   });
 
   test('spells the WebGL path webgl2, like the rest of the dataset', async () => {

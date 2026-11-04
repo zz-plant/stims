@@ -26,6 +26,32 @@ const selectedSteps = (sql: string): string[] => {
   return inList.split(',').map((step) => step.trim().replace(/^'|'$/gu, ''));
 };
 
+describe('slow-frame attribution report', () => {
+  const report = () =>
+    buildReports(30).find((candidate) =>
+      candidate.title.startsWith('Slow-frame attribution'),
+    );
+
+  test('splits rows into its states by device and renderer', () => {
+    expect(report()?.columns).toEqual([
+      'device',
+      'renderer',
+      'rows',
+      'on_target',
+      'simulation_bound',
+      'render_or_gpu_bound',
+      'unattributed',
+    ]);
+    expect(report()?.sql).toContain('GROUP BY blob7, blob2');
+  });
+
+  test('reads only rows that measured cadence', () => {
+    // Older rows and power-saver caps carry 0 and would read as on target.
+    expect(report()?.sql).toContain('double9 > 0');
+    expect(report()?.sql).toContain("blob1 = 'preset-dwell'");
+  });
+});
+
 describe('dwell reports', () => {
   const dwellReport = (title: string) =>
     buildReports(30).find((report) => report.title.startsWith(title));

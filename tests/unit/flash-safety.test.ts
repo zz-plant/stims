@@ -17,6 +17,7 @@ import {
   createFlashSafetyController,
   createStageCompositedScale,
 } from '../../src/js/core/services/flash-safety.ts';
+import { notePresetShown } from '../../src/js/core/services/preset-telemetry.ts';
 import {
   resetStageLuminance,
   setStageLuminanceChannel,
@@ -66,6 +67,56 @@ afterEach(() => {
 });
 
 describe('flash safety adapter', () => {
+  test('tells dwell telemetry its gate and where it reads pixels', async () => {
+    const beacons: string[] = [];
+    const originalLocation = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'location',
+    );
+    const originalNavigator = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'navigator',
+    );
+    Object.defineProperty(globalThis, 'location', {
+      configurable: true,
+      value: { hostname: 'toil.fyi', origin: 'https://toil.fyi' },
+    });
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        sendBeacon: (_url: string, blob: Blob) => {
+          void blob.text().then((text) => beacons.push(text));
+          return true;
+        },
+      },
+    });
+    try {
+      setAccessibilityPreference({ reduceFlashing: true });
+      strobedController();
+      notePresetShown('guarded', 'webgl');
+      notePresetShown('unguarded', 'webgl');
+      setAccessibilityPreference({ reduceFlashing: false });
+      notePresetShown('after', 'webgl');
+      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const [guarded, unguarded] = beacons.map((text) => JSON.parse(text));
+      expect(guarded).toMatchObject({
+        flashGuard: 'on',
+        flashSampler: 'main',
+      });
+      expect(unguarded.flashGuard).toBe('off');
+    } finally {
+      if (originalLocation) {
+        Object.defineProperty(globalThis, 'location', originalLocation);
+      } else {
+        delete (globalThis as { location?: unknown }).location;
+      }
+      if (originalNavigator) {
+        Object.defineProperty(globalThis, 'navigator', originalNavigator);
+      }
+    }
+  });
+
   test('dims a strobe while Reduce flashing is on', () => {
     setAccessibilityPreference({ reduceFlashing: true });
     const { controller, applied, run } = strobedController();

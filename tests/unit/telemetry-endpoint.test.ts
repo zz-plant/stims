@@ -23,6 +23,51 @@ async function post(body: Record<string, unknown>) {
 }
 
 describe('/api/telemetry', () => {
+  test('appends slow-frame attribution after the existing columns', async () => {
+    const { points } = await post({
+      event: 'preset-dwell',
+      fps: 40,
+      engineMajor: 117,
+      simulationMs: 4.5,
+      renderMs: 3,
+      gpuMs: 7,
+      cadenceMs: 25,
+      qualityStep: 'balanced',
+      renderScale: 0.96,
+      flashGuard: 'on',
+      flashSampler: 'worker',
+    });
+    expect(points[0]?.blobs?.slice(13)).toEqual(['balanced', 'on', 'worker']);
+    expect(points[0]?.doubles?.[0]).toBe(40);
+    expect(points[0]?.doubles?.[4]).toBe(117);
+    expect(points[0]?.doubles?.slice(5)).toEqual([4.5, 3, 7, 25, 0.96]);
+  });
+
+  test('an older client leaves the attribution columns empty', async () => {
+    const { response, points } = await post({
+      event: 'preset-dwell',
+      fps: 40,
+    });
+    expect(response.status).toBe(204);
+    expect(points[0]?.blobs?.slice(13)).toEqual(['', '', '']);
+    expect(points[0]?.doubles?.slice(5)).toEqual([0, 0, 0, 0, 0]);
+  });
+
+  test('an unknown or malformed value never becomes a column value', async () => {
+    const { response, points } = await post({
+      event: 'preset-dwell',
+      simulationMs: 'slow',
+      cadenceMs: -4,
+      qualityStep: 'session-1234',
+      flashGuard: 'maybe',
+      flashSampler: 'gpu',
+    });
+    expect(response.status).toBe(204);
+    expect(points[0]?.blobs?.slice(13)).toEqual(['', '', '']);
+    expect(points[0]?.doubles?.[5]).toBe(0);
+    expect(points[0]?.doubles?.[8]).toBe(0);
+  });
+
   test('appends orientation, device, audio source and arrival after the original blobs', async () => {
     const { response, points } = await post({
       event: 'preset-dwell',
@@ -49,6 +94,9 @@ describe('/api/telemetry', () => {
       '',
       '',
       '',
+      '',
+      '',
+      '',
     ]);
   });
 
@@ -65,6 +113,9 @@ describe('/api/telemetry', () => {
       'android',
       'chromium',
       'webview',
+      '',
+      '',
+      '',
     ]);
     expect(points[0]?.doubles?.[4]).toBe(117);
   });
@@ -79,7 +130,7 @@ describe('/api/telemetry', () => {
       userAgent: 'Mozilla/5.0 (Linux; Android 13; Pixel 7)',
     });
 
-    expect(points[0]?.blobs?.slice(10)).toEqual(['', '', '']);
+    expect(points[0]?.blobs?.slice(10)).toEqual(Array(6).fill(''));
     expect(points[0]?.doubles?.[4]).toBe(0);
     expect(JSON.stringify(points[0])).not.toContain('Pixel 7');
   });
@@ -112,14 +163,14 @@ describe('/api/telemetry', () => {
       surface: 'toolbar',
     });
 
-    expect(points[0]?.blobs?.slice(5)).toEqual(Array(8).fill(''));
+    expect(points[0]?.blobs?.slice(5)).toEqual(Array(11).fill(''));
   });
 
   test('keeps accepting beacons from clients that send no context', async () => {
     const { response, points } = await post({ event: 'growth-demo-started' });
 
     expect(response.status).toBe(204);
-    expect(points[0]?.blobs?.slice(5)).toEqual(Array(8).fill(''));
+    expect(points[0]?.blobs?.slice(5)).toEqual(Array(11).fill(''));
     expect(points[0]?.doubles?.[4]).toBe(0);
   });
 });

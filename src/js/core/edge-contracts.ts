@@ -210,9 +210,38 @@ export type TelemetryEvent = {
   engineMajor?: number;
   /** Set only inside an Android WebView, such as an in-app browser. */
   androidWebView?: boolean;
+  /**
+   * Why a preset ran at the rate it did (preset-dwell / preset-skip). Averages
+   * over the rendered frames of that view, in milliseconds; a field is absent
+   * when nothing measured it, such as GPU time without timestamp queries.
+   */
+  simulationMs?: number;
+  renderMs?: number;
+  gpuMs?: number;
+  /** Gap between frames. Absent under a power-saver cap, which sets the gap. */
+  cadenceMs?: number;
+  /** The adaptive quality step and render scale when the view ended. */
+  qualityStep?: (typeof TELEMETRY_QUALITY_STEPS)[number];
+  renderScale?: number;
+  /** Whether Reduce flashing was sampling the stage when the view ended. */
+  flashGuard?: (typeof TELEMETRY_FLASH_GUARD_STATES)[number];
+  /** Where it read pixels: 'main' is the slow synchronous fallback. */
+  flashSampler?: (typeof TELEMETRY_FLASH_SAMPLERS)[number];
 };
 
 const RENDERER_VALUES = ['webgpu', 'webgl2', 'webgl1', 'canvas'] as const;
+
+/** Mirrors the adaptive quality controller's steps, which are typed by it. */
+export const TELEMETRY_QUALITY_STEPS = [
+  'ultra',
+  'full',
+  'balanced',
+  'reduced',
+  'low',
+  'minimal',
+] as const;
+export const TELEMETRY_FLASH_GUARD_STATES = ['on', 'off'] as const;
+export const TELEMETRY_FLASH_SAMPLERS = ['worker', 'main'] as const;
 
 export const TELEMETRY_ORIENTATIONS = [
   'portrait',
@@ -361,6 +390,30 @@ export const TelemetryEventSchema = contractSchema<TelemetryEvent>((input) => {
   if (input.androidWebView !== undefined) {
     if (!isBoolean(input.androidWebView)) return null;
     result.androidWebView = input.androidWebView;
+  }
+  for (const field of [
+    'simulationMs',
+    'renderMs',
+    'gpuMs',
+    'cadenceMs',
+    'renderScale',
+  ] as const) {
+    if (input[field] !== undefined) {
+      if (!isNumber(input[field])) return null;
+      result[field] = input[field];
+    }
+  }
+  if (input.qualityStep !== undefined) {
+    if (!isOneOf(TELEMETRY_QUALITY_STEPS, input.qualityStep)) return null;
+    result.qualityStep = input.qualityStep;
+  }
+  if (input.flashGuard !== undefined) {
+    if (!isOneOf(TELEMETRY_FLASH_GUARD_STATES, input.flashGuard)) return null;
+    result.flashGuard = input.flashGuard;
+  }
+  if (input.flashSampler !== undefined) {
+    if (!isOneOf(TELEMETRY_FLASH_SAMPLERS, input.flashSampler)) return null;
+    result.flashSampler = input.flashSampler;
   }
   return result;
 });

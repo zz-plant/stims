@@ -7,8 +7,11 @@ import {
   TELEMETRY_AUDIO_SOURCES,
   TELEMETRY_DEVICES,
   TELEMETRY_ENGINES,
+  TELEMETRY_FLASH_GUARD_STATES,
+  TELEMETRY_FLASH_SAMPLERS,
   TELEMETRY_ORIENTATIONS,
   TELEMETRY_OS_FAMILIES,
+  TELEMETRY_QUALITY_STEPS,
   TELEMETRY_SURFACES,
   type TelemetryEvent,
 } from '../../src/js/core/edge-contracts.ts';
@@ -32,6 +35,13 @@ type TelemetryPayload = TelemetryEvent;
 /** A known value, or '' — an unknown string never becomes a column value. */
 function known(values: readonly string[], input: unknown): string {
   return typeof input === 'string' && values.includes(input) ? input : '';
+}
+
+/** A measurement, or 0: a bad value must not fail the whole write. */
+function measured(input: unknown): number {
+  return typeof input === 'number' && Number.isFinite(input) && input > 0
+    ? input
+    : 0;
 }
 
 export async function onRequest(context: { request: Request; env: Env }) {
@@ -82,6 +92,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
           known(TELEMETRY_OS_FAMILIES, data.os),
           known(TELEMETRY_ENGINES, data.engine),
           data.androidWebView === true ? 'webview' : '',
+          known(TELEMETRY_QUALITY_STEPS, data.qualityStep),
+          known(TELEMETRY_FLASH_GUARD_STATES, data.flashGuard),
+          known(TELEMETRY_FLASH_SAMPLERS, data.flashSampler),
         ],
         doubles: [
           data.fps || 0,
@@ -91,6 +104,11 @@ export async function onRequest(context: { request: Request; env: Env }) {
           // A double so queries can compare and sort it: casting a blob fails
           // the whole query on one value that is not a number.
           isTelemetryEngineMajor(data.engineMajor) ? data.engineMajor : 0,
+          measured(data.simulationMs),
+          measured(data.renderMs),
+          measured(data.gpuMs),
+          measured(data.cadenceMs),
+          measured(data.renderScale),
         ],
         indexes: [data.event.slice(0, 32)],
       });

@@ -72,10 +72,13 @@ async function resolveCredentials(): Promise<{
 //         orientation, device, audioSource,  (since 2026-10-06)
 //         arrival,                           (since 2026-10-07)
 //         surface,                           (since 2026-10-27)
-//         os, engine, androidWebView]        (since 2026-11-03)
+//         os, engine, androidWebView,        (since 2026-11-03)
+//         qualityStep, flashGuard, flashSampler]  (#1641)
 //         '' on rows and clients older than the field
 // doubles: [fps, audioLatencyMs, timestamp, dwellMs,
-//           engineMajor]  (since 2026-11-03; 0 when older or unknown)
+//           engineMajor,  (since 2026-11-03; 0 when older or unknown)
+//           simulationMs, renderMs, gpuMs, cadenceMs, renderScale]  (#1641;
+//           0 when older or unmeasured)
 // indexes: [event]
 
 interface Report {
@@ -120,6 +123,29 @@ const DWELL_COLUMNS = [
   'median_dwell_ms',
   'p90_dwell_ms',
   'avg_dwell_ms',
+];
+
+/**
+ * Rows carry no frame budget, so attribution reads them against 60 Hz, using
+ * the controller's own thresholds: a cadence over 1.12x budget is slow, and
+ * tracked work under 0.85x budget doesn't account for it. A 120 Hz device
+ * falling to 90 fps therefore reads as on target. That's the loss this report
+ * isn't for.
+ */
+const ATTRIBUTION_BUDGET_MS = 1000 / 60;
+const SLOW_CADENCE_MS = (ATTRIBUTION_BUDGET_MS * 1.12).toFixed(2);
+const TRACKED_WORK_MS = (ATTRIBUTION_BUDGET_MS * 0.85).toFixed(2);
+// GPU time overlaps the CPU's render time, so the larger of the two counts.
+const RENDER_SIDE_SQL = 'IF(double8 > double7, double8, double7)';
+const TRACKED_WORK_SQL = `(double6 + ${RENDER_SIDE_SQL})`;
+const isSlowRow = `double9 > ${SLOW_CADENCE_MS}`;
+const isUnattributed = `${isSlowRow} AND ${TRACKED_WORK_SQL} < ${TRACKED_WORK_MS}`;
+const isTrackedSlow = `${isSlowRow} AND ${TRACKED_WORK_SQL} >= ${TRACKED_WORK_MS}`;
+const SLOW_FRAME_STATE_COLUMNS = [
+  'on_target',
+  'simulation_bound',
+  'render_or_gpu_bound',
+  'unattributed',
 ];
 
 /** The reports `main` prints, parameterized by the lookback window. */
@@ -365,6 +391,44 @@ export function buildReports(days: number): Report[] {
               AND blob9 != ''
             GROUP BY blob7, blob6, blob9 ORDER BY device, orientation, views DESC`,
       columns: ['device', 'orientation', 'arrival', ...DWELL_COLUMNS],
+    },
+    {
+      // Why slow rows are slow (#1641). `unattributed` is a late frame whose
+      // tracked work doesn't explain it: compositor, flash sampling, or a
+      // display or browser cap. Filtering on double9 leaves out older rows and
+      // power-saver caps, which report no cadence. Each share is of `rows`.
+      title: `Slow-frame attribution by device and renderer (last ${days}d)`,
+      sql: `SELECT blob7 AS device, blob2 AS renderer,
+                   COUNT() AS rows,
+                   SUM(IF(double9 <= ${SLOW_CADENCE_MS}, 1, 0)) / COUNT() AS on_target,
+                   SUM(IF(${isTrackedSlow} AND double6 >= ${RENDER_SIDE_SQL}, 1, 0)) / COUNT() AS simulation_bound,
+                   SUM(IF(${isTrackedSlow} AND double6 < ${RENDER_SIDE_SQL}, 1, 0)) / COUNT() AS render_or_gpu_bound,
+                   SUM(IF(${isUnattributed}, 1, 0)) / COUNT() AS unattributed
+            FROM ${DATASET}
+            WHERE ${inWindow}
+              AND blob1 = 'preset-dwell' AND blob7 != '' AND double9 > 0
+            GROUP BY blob7, blob2 ORDER BY device, rows DESC`,
+      columns: ['device', 'renderer', 'rows', ...SLOW_FRAME_STATE_COLUMNS],
+    },
+    {
+      // Whether the unattributed rows go with Reduce flashing or its fallback.
+      title: `Slow rows by flash guard state (last ${days}d)`,
+      sql: `SELECT blob7 AS device, blob15 AS flash_guard, blob16 AS sampler,
+                   COUNT() AS rows,
+                   SUM(IF(${isSlowRow}, 1, 0)) / COUNT() AS slow,
+                   SUM(IF(${isUnattributed}, 1, 0)) / COUNT() AS unattributed
+            FROM ${DATASET}
+            WHERE ${inWindow}
+              AND blob1 = 'preset-dwell' AND blob15 != '' AND double9 > 0
+            GROUP BY blob7, blob15, blob16 ORDER BY device, rows DESC`,
+      columns: [
+        'device',
+        'flash_guard',
+        'sampler',
+        'rows',
+        'slow',
+        'unattributed',
+      ],
     },
     {
       title: `Presets most often approximated (last ${days}d)`,

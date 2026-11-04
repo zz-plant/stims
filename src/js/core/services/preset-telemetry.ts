@@ -7,6 +7,7 @@
  * One beacon per preset change (and one on pagehide), sent fire-and-forget
  * via sendBeacon so it never blocks a transition.
  */
+import type { TelemetryEvent } from '../edge-contracts.ts';
 import {
   readTelemetryContext,
   resolveTelemetryEndpoint,
@@ -93,6 +94,83 @@ let frameSpanMsSinceShown = 0;
 let activeRenderer: 'webgpu' | 'webgl2' | undefined;
 
 /**
+ * What one frame cost and what it ran at, so a dwell beacon can say why its
+ * frame rate was low and not only that it was. Each field is optional because
+ * each can go unmeasured on a given frame: GPU timestamps resolve late or not
+ * at all, and a power-saver cap withholds cadence.
+ */
+export type PresetFrameDetail = {
+  simulationMs?: number;
+  renderMs?: number;
+  gpuMs?: number;
+  cadenceMs?: number;
+  qualityStep?: TelemetryEvent['qualityStep'];
+  renderScale?: number;
+};
+
+type RunningAverage = { sum: number; count: number };
+const frameAverages = {
+  simulationMs: { sum: 0, count: 0 } as RunningAverage,
+  renderMs: { sum: 0, count: 0 } as RunningAverage,
+  gpuMs: { sum: 0, count: 0 } as RunningAverage,
+  cadenceMs: { sum: 0, count: 0 } as RunningAverage,
+};
+const FRAME_AVERAGE_FIELDS = [
+  'simulationMs',
+  'renderMs',
+  'gpuMs',
+  'cadenceMs',
+] as const;
+let lastQualityStep: TelemetryEvent['qualityStep'];
+let lastRenderScale: number | undefined;
+
+function resetFrameDetail() {
+  for (const field of FRAME_AVERAGE_FIELDS) {
+    frameAverages[field].sum = 0;
+    frameAverages[field].count = 0;
+  }
+  lastQualityStep = undefined;
+  lastRenderScale = undefined;
+}
+
+function frameDetailFields(): Partial<TelemetryEvent> {
+  const fields: Partial<TelemetryEvent> = {};
+  // Below this much rendered time the rate is noise, and so are the costs.
+  if (frameSpanMsSinceShown < MIN_FPS_SPAN_MS) return fields;
+  for (const field of FRAME_AVERAGE_FIELDS) {
+    const { sum, count } = frameAverages[field];
+    if (count > 0) fields[field] = Math.round((sum * 100) / count) / 100;
+  }
+  if (lastQualityStep !== undefined) fields.qualityStep = lastQualityStep;
+  if (lastRenderScale !== undefined) {
+    fields.renderScale = Math.round(lastRenderScale * 1000) / 1000;
+  }
+  return fields;
+}
+
+type FlashGuardProbe = () => {
+  enabled: boolean;
+  offThread: boolean;
+};
+let flashGuardProbe: FlashGuardProbe | null = null;
+
+/**
+ * Lets the flash governor report its state on dwell beacons. A probe rather
+ * than a pushed value: the visitor can toggle Reduce flashing at any time, and
+ * the sampler falls back to the main thread on its own.
+ */
+export function setPresetFlashGuardProbe(probe: FlashGuardProbe | null) {
+  flashGuardProbe = probe;
+}
+
+function flashGuardFields(): Partial<TelemetryEvent> {
+  if (!flashGuardProbe) return {};
+  const { enabled, offThread } = flashGuardProbe();
+  if (!enabled) return { flashGuard: 'off' };
+  return { flashGuard: 'on', flashSampler: offThread ? 'worker' : 'main' };
+}
+
+/**
  * Call once per rendered frame with the time since the previous one, so each
  * dwell beacon carries the frame rate the visitor actually saw on that
  * preset. Every preset-dwell row recorded fps=0 before this existed, so how
@@ -102,9 +180,19 @@ let activeRenderer: 'webgpu' | 'webgl2' | undefined;
  * hidden time out of the rate: the frame drivers stop then, and the first
  * frame after resuming reports a clamped gap.
  */
-export function notePresetFrame(deltaMs: number) {
+export function notePresetFrame(deltaMs: number, detail?: PresetFrameDetail) {
   framesSinceShown += 1;
   frameSpanMsSinceShown += deltaMs;
+  if (!detail) return;
+  for (const field of FRAME_AVERAGE_FIELDS) {
+    const value = detail[field];
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+      frameAverages[field].sum += value;
+      frameAverages[field].count += 1;
+    }
+  }
+  if (detail.qualityStep !== undefined) lastQualityStep = detail.qualityStep;
+  if (detail.renderScale !== undefined) lastRenderScale = detail.renderScale;
 }
 
 function send(presetId: string, dwellMs: number) {
@@ -121,6 +209,8 @@ function send(presetId: string, dwellMs: number) {
     dwellMs: Math.round(dwellMs),
     renderer: activeRenderer,
     fps,
+    ...frameDetailFields(),
+    ...flashGuardFields(),
     ...readTelemetryContext(),
   });
   try {
@@ -165,6 +255,7 @@ export function notePresetShown(
   shownAt = now;
   framesSinceShown = 0;
   frameSpanMsSinceShown = 0;
+  resetFrameDetail();
   activeRenderer = telemetryRenderer(backend);
   if (!pagehideInstalled && typeof window !== 'undefined') {
     pagehideInstalled = true;

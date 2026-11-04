@@ -15,6 +15,12 @@
  *   bun run lab:profile -- --preset <id> [...]   # ad-hoc presets, no gate
  *   bun run lab:profile -- --update-baseline     # rewrite baseline file
  *   bun run lab:profile -- --renderer webgl      # force backend
+ *   bun run lab:profile -- --server production   # build, then profile that
+ *
+ * The default dev server is for ranking functions and for the same-machine
+ * baseline. It doesn't describe production: the flash sampler was seen falling
+ * back to synchronous reads there, so use `--server production` for numbers
+ * about what visitors get, and see docs/RUNTIME_PERFORMANCE.md.
  *
  * With no --preset args it runs the checked-in witness presets and compares
  * average frame time against performance/frame-profile-baseline.json,
@@ -28,7 +34,7 @@ import { hostname } from 'node:os';
 import { dirname, join } from 'node:path';
 import { chromium } from 'playwright';
 import { warnIfSoftwareRendering } from './browser-launch.ts';
-import { ensureDevServer } from './dev-server.ts';
+import { ensureDevServer, ensureProductionServer } from './dev-server.ts';
 
 const DEFAULT_PORT = 5198;
 const WARMUP_MS = 4000;
@@ -216,7 +222,29 @@ async function main() {
   const presets = adHocPresets.length ? adHocPresets : WITNESS_PRESETS;
   const gated = adHocPresets.length === 0 && !updateBaseline;
 
-  const server = await ensureDevServer(port, process.cwd());
+  const serverMode = readArg(argv, '--server', 'development');
+  if (serverMode !== 'development' && serverMode !== 'production') {
+    throw new Error(
+      `--server must be development or production: ${serverMode}`,
+    );
+  }
+  if (serverMode === 'production' && (gated || updateBaseline)) {
+    // The baseline is captured on a dev server, so the two can't be compared.
+    throw new Error(
+      '--server production needs --preset: the baseline is dev-server numbers.',
+    );
+  }
+  if (serverMode === 'development') {
+    console.warn(
+      'Profiling a Vite dev server: these numbers do not describe production. ' +
+        'The flash sampler can fall back to synchronous reads here. ' +
+        'Use --server production for what visitors get.',
+    );
+  }
+  const server =
+    serverMode === 'production'
+      ? await ensureProductionServer(port, process.cwd())
+      : await ensureDevServer(port, process.cwd());
   const results: PresetProfile[] = [];
   try {
     for (const presetId of presets) {
