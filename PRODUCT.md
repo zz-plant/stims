@@ -48,7 +48,7 @@ Stims plays the original MilkDrop `.milk` presets in a browser, against any audi
 
 ## Evidence on Hand
 
-- **Clips.** Silent animated previews of the workflow and of single presets under [docs/assets/clips/](docs/assets/clips/), behind a WCAG flash gate.
+- **Clips.** Silent animated previews of the workflow and of single presets under [docs/assets/clips/](docs/assets/clips/), and two MP4s under [public/clips/](public/clips/), one with sound, all behind a WCAG flash gate.
 - **Fidelity.** Per-preset parity results against native projectM, failures included ([scoreboard](docs/MILKDROP_PROJECTM_PARITY_PLAN.md#current-scoreboard)), and a CI test that compiles the bundled Butterchurn pack on both backends.
 - **Telemetry.** Anonymous events in Cloudflare Analytics Engine, read with `bun run telemetry:report`; the funnel from audible start to first edit is in [Measuring Open one up](docs/PRODUCT_MOMENTS.md#measuring-open-one-up). Editor opens are rare so far and no clean month of first-edit data exists yet.
 - **Absent, not to be invented.** No testimonials, user quotes, customer logos, press, user counts or pricing. Most presets have not been measured for flashing, so no surface may imply the catalog is flash-safe.

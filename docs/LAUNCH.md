@@ -4,7 +4,8 @@ Prepared copy, not a record of publication. The workflow clip is a local capture
 
 ## Assets and destinations
 
-- [Full workflow video](./assets/clips/stims-workflow.mp4): Play demo → Edit this visual → Add a slow spin → copy the remix link. Silent, at recorded speed.
+- [With-sound clip](https://toil.fyi/clips/shifter-curlique-with-sound.mp4): 20 seconds of Shifter's Curlique reacting to the built-in demo loop, recorded with the app's Record panel.
+- [Full workflow video](https://toil.fyi/clips/stims-workflow.mp4): Start visualizer → Edit this visual → Add a slow spin → copy the remix link. Silent, at recorded speed.
 - [README preview](./assets/clips/stims-workflow.webp): the same capture at 1.5 times speed; faster previews break the WCAG flash limit.
 - [Try Stims](https://toil.fyi/): no account or install.
 - [Source](https://github.com/zz-plant/stims).
@@ -22,7 +23,7 @@ Submission URL: https://toil.fyi/
 
 First comment:
 
-> Stims runs original .milk presets in a browser. Press Play demo, then Edit this visual: the editor shows the equations and which audio signals reach each control. Add a slow spin adds one rotation equation; you can undo it or change the code while playback continues. Copy link puts the edited source in the URL, so a remix does not need an account or server-side storage.
+> Stims runs original .milk presets in a browser. Press Start visualizer, then Edit this visual: the editor shows the equations and which audio signals reach each control. Add a slow spin adds one rotation equation; you can undo it or change the code while playback continues. Copy link puts the edited source in the URL, so a remix does not need an account or server-side storage.
 >
 > WebGL2 is the baseline; WebGPU is an optional path. Compiling a preset is not proof that it matches MilkDrop visually. The README links both the compiler corpus tests and the much smaller set of measured comparisons against native projectM.
 >
@@ -79,8 +80,8 @@ The telemetry report already includes audible starts, editor opens, applied exam
 
 - Recording is a beta feature; the launch clip is a silent browser capture, not a claim about exported audio/video fidelity.
 - Most presets lack native projectM visual measurements and flash-risk measurements.
-- A report on October 10 in the remix thread describes a black stage after the spin example in the Codex in-app browser. A successful Chromium capture does not resolve that report or prove all browsers work. [The browser verification issue](https://github.com/zz-plant/stims/issues/1408) tracks the remaining checks; [PR #1407](https://github.com/zz-plant/stims/pull/1407) fixes a separately confirmed startup restoration race.
-- The workflow was recaptured against main's studio and sharing changes on October 10. It is local evidence; it does not prove that the deployed site has the same revision.
+- A report on October 10 in the remix thread describes a black stage after the spin example on Cerebral Demons in the Codex in-app browser. The 2026-10-27 run isolated it in Chromium and WebKit: the flash governor dims this high-flash preset until it reads as black, and the canvas itself never went dark. The original browser is still untested, and how far the governor may dim is undecided. [The browser verification issue](https://github.com/zz-plant/stims/issues/1408) tracks both; do not claim remix links work in every browser.
+- The workflow clip was recaptured on October 10, so its landing page still says Play demo where the app now says Start visualizer. Rerecording on 2026-11-04 failed the flash gate on the preview, so the clip stands until a capture passes. It is local evidence; it does not prove that the deployed site has the same revision.
 
 ## Publication record
 

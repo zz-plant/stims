@@ -10,9 +10,11 @@ The original `.milk` files by Geiss, Rovastar, Flexi, Eo.S., Martin and ~130 mor
 
 <sub>Stims lives at toil.fyi. Any WebGL2 browser; no account, no install.</sub>
 
-<a href="./docs/assets/clips/stims-workflow.mp4"><img src="./docs/assets/clips/stims-workflow.webp" alt="Play Shifter's Curlique, add a rotation equation in the live editor, and copy a link carrying the edited source" width="640"></a>
+<a href="https://toil.fyi/clips/stims-workflow.mp4"><img src="./docs/assets/clips/stims-workflow.webp" alt="Play Shifter's Curlique, add a rotation equation in the live editor, and copy a link carrying the edited source" width="640"></a>
 
-<sub>Play → edit → share. This preview is accelerated; <a href="./docs/assets/clips/stims-workflow.mp4">watch the 25-second workflow</a> at recorded speed. The capture is silent.</sub>
+**[🔊 Watch 20 seconds with sound](https://toil.fyi/clips/shifter-curlique-with-sound.mp4)**: Shifter's Curlique reacting to the built-in demo loop, recorded with the app's own Record panel.
+
+<sub>Above: play → edit → share, accelerated and silent. <a href="https://toil.fyi/clips/stims-workflow.mp4">Watch the 25-second workflow</a> at recorded speed.</sub>
 
 <table>
   <tr>
@@ -94,15 +96,19 @@ Then open `http://localhost:5173`. The git history is large: `git clone --filter
 
 ### Use the compiler without the app
 
-The compiler is a plain module, so scripts and CI can check `.milk` files the same way the live editor does:
+The compiler is on npm, so scripts and CI can check `.milk` files the same way the live editor does. It runs under Node or Bun:
 
-```ts
-// compile.ts — print the errors the editor would show
+```bash
+npm install milkdrop-toolchain
+```
+
+```js
+// compile.mjs — print the errors the editor would show
 import { readFileSync } from 'node:fs';
-import { compileMilkdropPresetSource } from './packages/milkdrop-toolchain/src/compiler.ts';
+import { compileMilkdropPresetSource } from 'milkdrop-toolchain';
 
 const { diagnostics } = compileMilkdropPresetSource(
-  readFileSync(process.argv[2] ?? '', 'utf8'),
+  readFileSync(process.argv[2], 'utf8'),
 );
 for (const d of diagnostics.filter((d) => d.severity === 'error')) {
   console.log(`${d.line ?? '?'}: ${d.message}`);
@@ -110,14 +116,14 @@ for (const d of diagnostics.filter((d) => d.severity === 'error')) {
 ```
 
 ```bash
-bun compile.ts public/milkdrop-presets/eos-glowsticks-v2-03-music.milk
+node compile.mjs your-preset.milk
 ```
 
 To learn the equation language, start with [the authoring curriculum](./docs/authoring/README.md); `bun run lab:dataflow -- --preset <id>` reports which audio signals reach each control of any catalog preset.
 
 ### Standalone packages
 
-Four parts of Stims are standalone packages under [`packages/`](./packages/README.md): the app imports them, they have no dependency on the app, and each has a read-only mirror repository, a demo site and an npm-ready build. `eel-conformance`, `flash-guard` and `milkdrop-toolchain` are on npm at 0.1.0, with 0.1.1 merged and not yet published; `audio-reactive` is not published and stays a workspace package. [Publishing](./packages/README.md#publishing) has the release state and steps.
+Four parts of Stims are standalone packages under [`packages/`](./packages/README.md): the app imports them, they have no dependency on the app, and each has a read-only mirror repository, a demo site and an npm-ready build. `eel-conformance`, `flash-guard` and `milkdrop-toolchain` are on npm at 0.1.0; later versions are merged here and not yet published. `audio-reactive` is not published and stays a workspace package. [Publishing](./packages/README.md#publishing) has the release state and steps.
 
 The corpus also does stewardship work outside this repository: butterchurn and eel-wasm both have open PRs that adopt `eel-conformance` as their engine's test suite ([butterchurn#108](https://github.com/jberg/butterchurn/pull/108), [eel-wasm#66](https://github.com/captbaritone/eel-wasm/pull/66)), and the [ns-eel2 source audit](./packages/eel-conformance/docs/ns-eel2-source-audit.md) pins what MilkDrop 2's expression language actually does, cited from the C source MilkDrop ships.
 
