@@ -279,14 +279,17 @@ export function buildReports(days: number): Report[] {
     {
       // How many visitors each platform build could reach (added 2026-11-03).
       // Earlier rows carry '' and are left out, so a share read from this
-      // report covers only the days since the field shipped.
-      title: `Audible starts by OS and device (last ${days}d)`,
-      sql: `SELECT blob11 AS os, blob7 AS device, COUNT() AS count
+      // report covers only the days since the field shipped. Android microphone
+      // starts are the source an APK would replace: the figure that reopens the
+      // 2026-11-04 APK decision (docs/PRODUCT_MOMENTS.md).
+      title: `Audible starts by OS, device and audio source (last ${days}d)`,
+      sql: `SELECT blob11 AS os, blob7 AS device, blob8 AS audio,
+                   COUNT() AS count
             FROM ${DATASET}
             WHERE ${inWindow}
               AND blob1 = 'growth-audio-started' AND blob11 != ''
-            GROUP BY blob11, blob7 ORDER BY count DESC`,
-      columns: ['os', 'device', 'count'],
+            GROUP BY blob11, blob7, blob8 ORDER BY count DESC`,
+      columns: ['os', 'device', 'audio', 'count'],
     },
     {
       // How far back engine support has to reach. Newest first within each
