@@ -3,7 +3,7 @@
  * use the `new Function` JIT, so compileMilkdropProgram falls back to an
  * interpreter-backed executor. This suite makes that a TESTED configuration
  * rather than a dead codepath: the fallback must satisfy the full platform
- * profile (spec/eel-conformance/) and match the JIT's store contract
+ * profile (packages/eel-conformance/) and match the JIT's store contract
  * (env + state/register/local mirrors, megabuf writes, control flow) on
  * seeded random programs.
  */
@@ -116,7 +116,7 @@ afterAll(() => {
 
 describe('EEL CSP interpreter-only fallback', () => {
   // The platform profile itself is no longer re-run here. The conformance
-  // corpus (spec/eel-conformance/) exercises this exact executor as its
+  // corpus (packages/eel-conformance/) exercises this exact executor as its
   // `interpreter` tier, with the buffer and environment seeding the corpus
   // needs, so a copy of the loop in this file could only drift from it.
   // What stays below is what the corpus does NOT cover: the store contract

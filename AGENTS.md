@@ -36,7 +36,7 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 ## Ergonomics notes (from the last ~500 commits)
 
 - **Hot spots**: `fix(milkdrop)` (shader/GLSL/HLSL translation, now in `packages/milkdrop-toolchain`) and `fix(webgpu)` dominate. Reproduce with `lab:replay` / `lab:nan-sweep`, fix the _class_ across the corpus (not one preset), add a fixture, and check both backends with `lab:backend-diff`.
-- **Search noise**: `.ignore` hides `public/milkdrop-presets/`, `output/`, `screenshots/`, and the parity fixtures from ripgrep. Use `rg --no-ignore <pat> <path>` to search them on purpose.
+- **Search noise**: `.ignore` hides `public/milkdrop-presets/`, `screenshots/`, and the parity fixtures from ripgrep. Use `rg --no-ignore <pat> <path>` to search them on purpose.
 - **Learn pages**: `docs/authoring/*.md` and `docs/learn/*.md` are published as static pages under `public/learn/` (toil.fyi/learn/). After editing either, run `bun run generate:learn`; `check:seo` fails on stale pages, a missing sitemap entry, or a broken `/learn/…#anchor` link.
 - **Generators**: most `generate:*` scripts take `--check`, including `generate:seo` (delegates to `check:seo`, writes nothing). Running `generate:seo` without it rewrites tracked sitemaps, icons, OG cards, route pages and the `index.html` footer. If that was unintended, run `git status --short` and `git restore` only the paths it rewrote: `git checkout -- public` also discards your own unstaged edits under `public/`, such as a preset or the catalog.
 - **Tests**: write behavioural tests that can fail (render via the workspace harness; mutate the behaviour once and watch the test go red) — see `.agent/skills/review-test-harness/SKILL.md`. Do not add source-text greps (`check:test-source-greps` blocks them).
@@ -176,10 +176,11 @@ Every guard, its tier and its rationale are in [`docs/GUARDRAILS.md`](docs/GUARD
   provenance-bound fixtures; regenerated, not hand-edited.
 - **`scratch/`, `output/`, and tool output under `screenshots/`** — measurement
   output, not source. `scratch/` and `output/` are gitignored outright.
-  `screenshots/` is not: `.gitignore` ignores each capture tool's output
-  directory there and allowlists the certified parity captures, so a new file
-  can show up as committable. Commit a screenshot only when a tracked report or
-  manifest cites it, and never with `git add -f`.
+  `screenshots/` is ignored too, except `aesthetic-audit/`,
+  `butterchurn-support-sweep/` and `parity/`, where new subdirectory files and
+  re-captures can show up as committable. Commit a screenshot only when a
+  tracked report or manifest cites it, and never with `git add -f`: a new
+  certified parity capture gets a `!` line in `.gitignore`.
 - **`docs/authoring/reference.md`** — generated from `expression.ts` /
   `builtin-docs.ts`. Edit the source, then `bun run docs:authoring-reference`.
 - **`docs/archive/` and dated `STATUS_*` docs** — historical records.

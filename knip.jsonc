@@ -30,8 +30,7 @@
         "src/**/*.{ts,tsx,js,mjs}",
         "scripts/**/*.{ts,mjs}",
         "tests/**/*.ts",
-        "functions/**/*.ts",
-        "spec/**/*.ts"
+        "functions/**/*.ts"
       ],
       "ignore": [
         // Vendored third-party code, excluded from lint and format as well.

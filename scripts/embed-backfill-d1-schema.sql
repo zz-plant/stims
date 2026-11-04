@@ -1,7 +1,7 @@
 -- D1 schema for the stims-gallery database: preset embeddings written by the
 -- embed-backfill cron (scripts/embed-backfill-worker.ts) and read by the
 -- /api/visual-search fallback when Vectorize is unavailable.
--- Initialize: wrangler d1 execute stims-gallery --file=schema/d1-presets.sql
+-- Initialize: wrangler d1 execute stims-gallery --file=scripts/embed-backfill-d1-schema.sql
 
 CREATE TABLE IF NOT EXISTS preset_embeddings (
   preset_id TEXT PRIMARY KEY,

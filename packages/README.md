@@ -155,8 +155,8 @@ The app has no copies of this code. Its adapters are the only Stims-specific
 layer: `src/js/core/services/flash-safety.ts` binds `flash-guard`'s controller
 to the Reduce flashing preference, the render loop's frame notification and
 the stage's brightness filter; `src/js/milkdrop/types.ts` adds the catalog,
-renderer and runtime types to the toolchain's; `spec/eel-conformance/`
-re-exports the corpus for the three-tier conformance run;
+renderer and runtime types to the toolchain's; `scripts/eel-conformance-reference-runner.ts`
+runs the corpus against the three CPU tiers;
 `src/js/frontend/engine/stage-video-exporter.ts` hands
 `canvas-video-exporter` the presented stage copy and the recording flag;
 `src/js/app.ts` turns `gamepad-navigation`'s keyboard layer on only for

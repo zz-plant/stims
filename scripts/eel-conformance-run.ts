@@ -1,7 +1,7 @@
 /**
  * Run the portable EEL conformance corpus against this repo's execution tiers.
  *
- * The corpus (spec/eel-conformance/) is the executable specification of
+ * The corpus (packages/eel-conformance/) is the executable specification of
  * MilkDrop EEL platform semantics; `bun run check` enforces it through
  * tests/unit/eel-conformance-spec.test.ts. This CLI is the human-facing view
  * of the same run: it prints a per-section pass/fail table, lists provisional
@@ -16,12 +16,12 @@ import {
   EEL_CONFORMANCE_BUFFER_SLOTS,
   loadEelConformanceCases,
   provisionalCases,
-} from '../spec/eel-conformance/index.ts';
+} from 'eel-conformance';
 import {
   EEL_CONFORMANCE_TIERS,
   type EelConformanceTier,
   runConformanceCase,
-} from '../spec/eel-conformance/reference-runner.ts';
+} from './eel-conformance-reference-runner.ts';
 
 const args = process.argv.slice(2);
 const verbose = args.includes('--verbose');

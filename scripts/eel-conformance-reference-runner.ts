@@ -1,8 +1,8 @@
 /**
  * Reference implementation of the EEL conformance runner contract.
  *
- * This is the worked example the README's "Runner contract" section
- * describes in prose: it shows exactly what a conforming runner must do with
+ * This is the worked example the "Runner contract" section of
+ * packages/eel-conformance/README.md describes in prose: it shows exactly what a conforming runner must do with
  * a case — seed the environment and both guest buffers, execute the program
  * as ONE block, then compare variables and buffer slots within tolerance.
  * A port to another language should be able to follow this file line for
@@ -23,6 +23,13 @@
  * the specified 0.
  */
 
+import {
+  EEL_CONFORMANCE_BUFFER_SLOTS,
+  EEL_CONFORMANCE_RANDOM_DRAW,
+  type EelConformanceCase,
+  type EelSlotMap,
+  eelConformanceTolerance,
+} from 'eel-conformance';
 import type {
   MilkdropCompiledStatement,
   MilkdropProgramBlock,
@@ -35,13 +42,6 @@ import {
   __setJitAvailableForTests,
   compileMilkdropProgram,
 } from 'milkdrop-toolchain/src/expression-jit.ts';
-import {
-  EEL_CONFORMANCE_BUFFER_SLOTS,
-  EEL_CONFORMANCE_RANDOM_DRAW,
-  type EelConformanceCase,
-  type EelSlotMap,
-  eelConformanceTolerance,
-} from './index.ts';
 
 export const EEL_CONFORMANCE_TIERS = [
   'expression',
