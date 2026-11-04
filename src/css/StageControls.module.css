@@ -124,7 +124,7 @@
    name says what it does. Narrower than a 375px phone the pencil goes too:
    at 360px it left the title 42px, short of "Curlique"; the folded chip and
    the menu still open the editor there. */
-@media (max-width: 480px) {
+@media (max-width: 639px) {
   .editEntry {
     justify-content: center;
     width: 44px;
@@ -175,16 +175,6 @@
    mute, full screen and the overflow menu, so the bar offered six equal
    affordances and no answer to "what do I press?". Bigger, brighter, and
    carrying a resting fill so they read as the bar's primary pair. */
-/* Nearby leaves the dock on phones and lives in the overflow menu instead.
-   The wandering trio is worth its slot on a desktop pill; at 375px its 44px
-   was part of what pushed the menu button off-screen, and swipe already
-   covers previous/next there. */
-@media (max-width: 480px) {
-  .navBtn[data-action="nearby-preset"] {
-    display: none;
-  }
-}
-
 .navBtn[data-primary="true"] {
   width: 38px;
   height: 38px;
@@ -616,31 +606,6 @@
   outline-offset: 1px;
 }
 
-/* ── A row with a companion (Share link + Embed) ──────────────────────
-   The row's own item keeps its full hit area; the companion is one of the
-   flat options the radio rows use, sized to its word. */
-.menuRow {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.menuRow > .menuItem {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.menuCompanion {
-  flex: 0 0 auto;
-  margin-right: 4px;
-  padding: 5px 10px;
-}
-
-.menuCompanion[aria-disabled="true"] {
-  color: var(--ctl-ink-3);
-  border-style: dashed;
-}
-
 /* Lined up under the row's label, past the icon slot. */
 .menuNote {
   display: block;
@@ -663,8 +628,27 @@
   min-width: 0;
 }
 
-/* Two columns once there is room. Below this the menu is one column and
-   scrolls, with Settings now the third group rather than the last. */
+/* Every control on the bar needs 633px, and at 481-632 the menu button was off
+   the edge of the screen. Below 640px these four leave the bar: all stay one
+   tap away in the one-column menu, and Save and full screen each have a stage
+   gesture too (press-and-hold, double-tap). At 375px, dropping them gives the
+   title about 150px. */
+@media (max-width: 639px) {
+  .pill {
+    max-width: calc(100vw - 16px);
+  }
+
+  .navBtn[data-action="nearby-preset"],
+  .navBtn[data-action="save-preset"],
+  .navBtn[data-action="open-share"],
+  .navBtn[data-action="toggle-fullscreen"] {
+    display: none;
+  }
+}
+
+/* Two columns once there is room, 640px being SINGLE_COLUMN_MENU_QUERY's edge
+   in StageControls.tsx, which gives one column its own row order. The Share
+   sheet is a short list in either layout. */
 @media (min-width: 640px) {
   .menu {
     flex-direction: row;
@@ -676,6 +660,14 @@
     flex: 1 1 0;
     min-width: 224px;
   }
+
+  .menu[data-view="share"] {
+    width: 300px;
+  }
+}
+
+.menuItem[aria-disabled="true"] {
+  color: var(--ctl-ink-3);
 }
 
 .menuLabel {
@@ -836,21 +828,6 @@
 }
 
 @media (max-width: 480px) {
-  .pill {
-    max-width: calc(100vw - 16px);
-  }
-
-  /* Measured at 375px with every control on the bar: the title button was
-     45px wide and read "K.." — the one piece of information the bar exists
-     to carry was the least legible thing on it. Save and full screen leave
-     the bar here; both stay one tap away in the menu, and each has a stage
-     gesture (press-and-hold, double-tap). Six 44px controls plus gaps leave
-     the title about 150px. */
-  .navBtn[data-action="save-preset"],
-  .navBtn[data-action="toggle-fullscreen"] {
-    display: none;
-  }
-
   /* Title over byline, the way a phone's now-playing strip sets a track and
      its artist. Side by side, the two split the ~130px line between them in
      proportion to their lengths, so a long author chain left the name
