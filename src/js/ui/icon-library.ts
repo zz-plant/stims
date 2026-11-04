@@ -24,6 +24,13 @@ const ICON_NODES = {
       },
     },
   ],
+  share: [
+    { tag: 'circle', attrs: { cx: 18, cy: 5, r: 3 } },
+    { tag: 'circle', attrs: { cx: 6, cy: 12, r: 3 } },
+    { tag: 'circle', attrs: { cx: 18, cy: 19, r: 3 } },
+    { tag: 'path', attrs: { d: 'm8.6 13.5 6.8 4' } },
+    { tag: 'path', attrs: { d: 'm15.4 6.5-6.8 4' } },
+  ],
   upload: [
     { tag: 'path', attrs: { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' } },
     { tag: 'path', attrs: { d: 'm17 8-5-5-5 5' } },

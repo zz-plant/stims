@@ -160,26 +160,20 @@ function openShareRow(
         : {},
     },
   );
-  rendered.click(rendered.byLabel('More actions'));
+  rendered.click(rendered.byLabel('Share'));
   const embed = rendered.container.querySelector<HTMLElement>(
     '[role="menu"] [data-action="copy-embed-code"]',
   );
-  const share = rendered.container.querySelector<HTMLElement>(
-    '[role="menu"] [data-action="share-link"]',
-  );
-  return { rendered, embed, share };
+  return { rendered, embed };
 }
 
 describe('the dock’s Embed control', () => {
-  test('sits on the Share link row and copies through the workspace', () => {
+  test('sits in the Share sheet and copies through the workspace', () => {
     const handleCopyEmbedCode = mock(async () => true);
-    const { rendered, embed, share } = openShareRow({ handleCopyEmbedCode });
+    const { rendered, embed } = openShareRow({ handleCopyEmbedCode });
     try {
-      expect(embed?.textContent).toBe('Embed');
       expect(embed?.getAttribute('role')).toBe('menuitem');
       expect(embed?.getAttribute('aria-label')).toBe('Copy embed code');
-      // The same row as Share link, not one more row in the menu.
-      expect(embed?.parentElement).toBe(share?.parentElement ?? null);
       expect(embed?.getAttribute('aria-describedby')).toBeNull();
 
       rendered.click(embed);
