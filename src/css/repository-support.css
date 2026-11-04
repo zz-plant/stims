@@ -70,6 +70,14 @@
   cursor: default;
 }
 
+/* On a short laptop this row pushes the editor's tabs off screen. The toolbar
+   keeps its own Copy link, so nothing is lost by leaving it out. */
+@media (max-height: 700px) {
+  .stims-editor-intro[aria-label="Share this edit"] {
+    display: none;
+  }
+}
+
 /* A mouse does not need a 44px target, and the code below needs the room. */
 @media (pointer: fine) {
   .stims-editor-intro button {
