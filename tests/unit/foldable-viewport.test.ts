@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { readFoldableViewport } from '../../src/js/utils/foldable-viewport';
+import {
+  foldLayoutOf,
+  readFoldableViewport,
+  rotatingWidensWindow,
+} from '../../src/js/utils/foldable-viewport';
 
 describe('foldable viewport progressive enhancement', () => {
   test('returns unknown posture and one segment when APIs are missing', () => {
@@ -39,5 +43,67 @@ describe('foldable viewport progressive enhancement', () => {
     });
     expect(state.posture).toBe('unknown');
     expect(state.segments).toEqual([{ x: 0, y: 0, width: 500, height: 600 }]);
+  });
+});
+
+describe('foldLayoutOf', () => {
+  const left = { x: 0, y: 0, width: 465, height: 585 };
+  const right = { x: 485, y: 0, width: 466, height: 585 };
+  const upper = { x: 0, y: 0, width: 669, height: 423 };
+  const lower = { x: 0, y: 443, width: 669, height: 424 };
+
+  test('names side-by-side segments a book and stacked ones a laptop', () => {
+    expect(foldLayoutOf([left, right])).toBe('book');
+    expect(foldLayoutOf([upper, lower])).toBe('laptop');
+  });
+
+  test('calls one segment flat, and anything it has no layout for', () => {
+    expect(foldLayoutOf([upper])).toBe('flat');
+    expect(foldLayoutOf([])).toBe('flat');
+    expect(foldLayoutOf([left, right, lower])).toBe('flat');
+  });
+});
+
+describe('rotatingWidensWindow', () => {
+  test('is true for a window filling the screen', () => {
+    expect(
+      rotatingWidensWindow({
+        innerWidth: 669,
+        innerHeight: 867,
+        screen: { width: 669, height: 951 },
+      }),
+    ).toBe(true);
+  });
+
+  test('is true when the browser reports no screen', () => {
+    expect(rotatingWidensWindow({ innerWidth: 390, innerHeight: 844 })).toBe(
+      true,
+    );
+  });
+
+  test('is false for one of two windows sharing the screen', () => {
+    expect(
+      rotatingWidensWindow({
+        innerWidth: 385,
+        innerHeight: 571,
+        screen: { width: 951, height: 669 },
+      }),
+    ).toBe(false);
+  });
+
+  test('is false on a half-folded device, which is posed on purpose', () => {
+    expect(
+      rotatingWidensWindow({
+        innerWidth: 669,
+        innerHeight: 867,
+        screen: { width: 669, height: 951 },
+        viewport: {
+          segments: [
+            { x: 0, y: 0, width: 669, height: 423 },
+            { x: 0, y: 443, width: 669, height: 424 },
+          ],
+        },
+      }),
+    ).toBe(false);
   });
 });

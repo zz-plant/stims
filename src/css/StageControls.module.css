@@ -124,7 +124,7 @@
    name says what it does. Narrower than a 375px phone the pencil goes too:
    at 360px it left the title 42px, short of "Curlique"; the folded chip and
    the menu still open the editor there. */
-@media (max-width: 639px) {
+@media (max-width: 639px), (horizontal-viewport-segments: 2) {
   .editEntry {
     justify-content: center;
     width: 44px;
@@ -633,9 +633,9 @@
    tap away in the one-column menu, and Save and full screen each have a stage
    gesture too (press-and-hold, double-tap). At 375px, dropping them gives the
    title about 150px. */
-@media (max-width: 639px) {
+@media (max-width: 639px), (horizontal-viewport-segments: 2) {
   .pill {
-    max-width: calc(100vw - 16px);
+    max-width: calc(100vw - var(--stage-tool-inset, 0px) - 16px);
   }
 
   .navBtn[data-action="nearby-preset"],
@@ -861,7 +861,7 @@
   border-color: var(--ctl-line-strong);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 480px), (horizontal-viewport-segments: 2) {
   /* Title over byline, the way a phone's now-playing strip sets a track and
      its artist. Side by side, the two split the ~130px line between them in
      proportion to their lengths, so a long author chain left the name
@@ -893,7 +893,9 @@
     grid-row: 2;
     grid-column: 2;
   }
+}
 
+@media (max-width: 480px) {
   .menu {
     right: max(8px, env(safe-area-inset-right));
     left: max(8px, env(safe-area-inset-left));
@@ -1037,5 +1039,37 @@
 
   .statusText {
     font-size: var(--text-xs, 0.75rem);
+  }
+}
+
+/* Half-folded in a book pose the dock has the left half of the screen however
+   wide the whole is, so it keeps the compact geometry and its menu stays one
+   column on that side of the hinge. */
+@media (horizontal-viewport-segments: 2) {
+  .pill {
+    padding: 3px;
+    gap: 0;
+  }
+
+  .titleBtn {
+    height: 44px;
+    padding: 0 8px;
+    max-width: none;
+    font-size: inherit;
+  }
+
+  .menu,
+  .menu[data-view="share"] {
+    flex-direction: column;
+    gap: 1px;
+    left: max(8px, env(safe-area-inset-left));
+    right: calc(var(--stage-tool-inset, 0px) + 8px);
+    width: auto;
+    min-width: auto;
+  }
+
+  .menuColumn {
+    flex: none;
+    min-width: 0;
   }
 }

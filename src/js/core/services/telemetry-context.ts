@@ -1,6 +1,6 @@
 /**
  * The visitor context every telemetry beacon carries: which way the screen is
- * held, what kind of device it is, which audio source is live, what kind of
+ * held, what kind of device it is, how a hinge divides it, which audio source is live, what kind of
  * site the visit came from, and which OS family and browser engine it runs on.
  *
  * Until these existed the dataset could not say which moment a visitor was
@@ -13,6 +13,7 @@ import {
   getDeviceEnvironmentProfile,
   isMobileDevice,
 } from '../../utils/browser/device-detect.ts';
+import { currentFoldLayout } from '../../utils/foldable-viewport.ts';
 import {
   isTelemetryEngineMajor,
   TELEMETRY_AUDIO_SOURCES,
@@ -24,6 +25,7 @@ export type TelemetryContext = Pick<
   TelemetryEvent,
   | 'orientation'
   | 'device'
+  | 'fold'
   | 'audioSource'
   | 'arrival'
   | 'os'
@@ -218,8 +220,10 @@ export function readTelemetryContext(): TelemetryContext {
           isMobileDevice(),
         );
   const arrival = readPageArrival();
+  const fold = currentFoldLayout();
   return {
     ...viewport,
+    ...(fold === 'flat' ? {} : { fold }),
     audioSource: liveAudioSource,
     ...(arrival ? { arrival } : {}),
     ...readPageBrowser(),
