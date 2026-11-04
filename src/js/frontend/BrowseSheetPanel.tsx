@@ -3,10 +3,12 @@
  * filtering, collection tabs, mood curation, live animated previews, and queue management.
  */
 
+import '../../css/shell/browse-trying.css';
 import {
   useCallback,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -90,6 +92,49 @@ const IMPORT_LABEL =
     ? 'Import a folder of presets (.milk, .txt or .zip files in it)'
     : 'Import preset files (.milk or .zip)';
 
+/**
+ * A click or tap this recent chose a card by pointer. Enter and the number
+ * keys carry no pointer press, so they keep the one-key "play it and close".
+ */
+const POINTER_CHOICE_WINDOW_MS = 1500;
+
+/** How long the panel waits after a tried preset, untouched, before folding. */
+const TRY_FOLD_MS = 5000;
+
+/**
+ * Whether the panel leaves enough stage to judge a preset by. A phone held
+ * sideways gets a sheet over nearly all of it, so a card there plays and closes.
+ */
+function browseLeavesStageInView(): boolean {
+  if (typeof window === 'undefined' || !window.matchMedia) return true;
+  return !window.matchMedia(
+    '(max-width: 767px) and (max-height: 599px), (max-height: 500px) and (pointer: coarse)',
+  ).matches;
+}
+
+/** Where a phone sheet can shrink and still leave the stage worth watching. */
+function browseSheetShrinksToTry(): boolean {
+  return Boolean(
+    window.matchMedia?.('(max-width: 767px) and (min-height: 600px)').matches,
+  );
+}
+
+/** The element inside `sheet` that scrolls `element`, if any does. */
+function scrollParentWithin(
+  element: HTMLElement,
+  sheet: Element,
+): HTMLElement | null {
+  for (
+    let parent = element.parentElement;
+    parent;
+    parent = parent.parentElement
+  ) {
+    if (/(auto|scroll)/.test(getComputedStyle(parent).overflowY)) return parent;
+    if (parent === sheet) return null;
+  }
+  return null;
+}
+
 function readSortMode(): SortMode {
   return parseBrowseSortMode(readStored('stims:browse-sort')) ?? 'curated';
 }
@@ -135,6 +180,7 @@ export function BrowseSheetPanel({
   onCollectionTagChange,
   onImport,
   onPresetChosen,
+  onTryingChange,
   sessionHistory = [],
 }: {
   onCollectionTagChange: (tag: string | null) => void;
@@ -150,6 +196,8 @@ export function BrowseSheetPanel({
    * browse panel is open and nothing has been tapped.
    */
   onPresetChosen?: (presetId: string) => void;
+  /** Whether a phone sheet has shrunk to show the stage for a tried preset. */
+  onTryingChange?: (trying: boolean) => void;
   sessionHistory?: Array<{ presetId: string; title: string; at: number }>;
 }) {
   const { ui, engine } = useWorkspace();
@@ -176,21 +224,163 @@ export function BrowseSheetPanel({
     handlePresetSelection,
     toggleFavoritePreset,
   } = engine;
-  const selectPreset = useCallback(
-    (presetId: string) => {
-      onPresetChosen?.(presetId);
-      // The first-use hint says a card plays its preset. Before any audio
-      // has started, selecting only moved the route: on a phone, or with
-      // the background preview off, the panel closed onto nothing playing.
-      // Start the demo track with the chosen preset, as the home cards do.
-      if (!audioActive) {
-        void handleAudioStart('demo', undefined, presetId);
+  const panelRootRef = useRef<HTMLDivElement | null>(null);
+  const lastPointerDownRef = useRef(Number.NEGATIVE_INFINITY);
+  const triedPresetRef = useRef<string | null>(null);
+  const foldTimerRef = useRef<number | null>(null);
+  const { commitRoute, updatePanel } = ui;
+
+  /**
+   * Whether picking a card now keeps the panel open to try another. Picking
+   * used to close it, so comparing three presets meant reopening Browse twice.
+   */
+  const staysOpenOnPick = () =>
+    audioActive &&
+    performance.now() - lastPointerDownRef.current <=
+      POINTER_CHOICE_WINDOW_MS &&
+    browseLeavesStageInView();
+
+  const cancelFold = () => {
+    if (foldTimerRef.current !== null) {
+      window.clearTimeout(foldTimerRef.current);
+      foldTimerRef.current = null;
+    }
+  };
+
+  /**
+   * Folds the panel once the visitor has stopped, so a single pick costs no
+   * extra tap to close. A mouse resting on the panel holds it open; a touch
+   * screen's sticky :hover must not, or it would never fold.
+   */
+  const scheduleFold = () => {
+    cancelFold();
+    foldTimerRef.current = window.setTimeout(() => {
+      foldTimerRef.current = null;
+      const hovering =
+        window.matchMedia?.('(hover: hover)').matches &&
+        panelRootRef.current?.matches(':hover');
+      if (hovering) {
+        scheduleFold();
         return;
       }
-      handlePresetSelection(presetId);
+      updatePanel(null);
+    }, TRY_FOLD_MS);
+  };
+
+  useEffect(
+    () => () => {
+      if (foldTimerRef.current !== null) {
+        window.clearTimeout(foldTimerRef.current);
+      }
     },
-    [audioActive, handleAudioStart, handlePresetSelection, onPresetChosen],
+    [],
   );
+
+  // The family section and the recent rail follow the preset on stage. While
+  // trying they hold still, or the card beside the one just picked would move
+  // out from under the next click.
+  const [tried, setTried] = useState(false);
+  const heldLayoutPresetRef = useRef<string | null>(null);
+  const heldRecentRef = useRef<PresetCatalogEntry[]>([]);
+
+  // Phone only: see shell/browse-trying.css.
+  const [sheetShrunk, setSheetShrunk] = useState(false);
+  const shrinkFromRef = useRef<{
+    sheetHeight: number;
+    resultsOffset: number;
+    scrollTop: number;
+  } | null>(null);
+
+  const shrinkSheetForTrying = () => {
+    if (sheetShrunk || !browseSheetShrinksToTry()) return;
+    const results = resultsRef.current;
+    const sheet = panelRootRef.current?.closest('[data-shell-dialog]');
+    if (!results || !sheet) return;
+    const sheetBox = sheet.getBoundingClientRect();
+    shrinkFromRef.current = {
+      sheetHeight: sheetBox.height,
+      resultsOffset: results.getBoundingClientRect().top - sheetBox.top,
+      scrollTop: scrollParentWithin(results, sheet)?.scrollTop ?? 0,
+    };
+    setSheetShrunk(true);
+    onTryingChange?.(true);
+  };
+
+  const growSheetBack = () => {
+    if (!sheetShrunk) return;
+    setSheetShrunk(false);
+    onTryingChange?.(false);
+    document
+      .getElementById('stims-main')
+      ?.style.removeProperty('--stage-tool-height');
+  };
+
+  // Before paint: the sheet gives up exactly what the hidden rows did, so the
+  // cards stay where they were on screen while its top edge moves down.
+  useLayoutEffect(() => {
+    const from = shrinkFromRef.current;
+    if (!sheetShrunk || !from) return;
+    shrinkFromRef.current = null;
+    const results = resultsRef.current;
+    const sheet = panelRootRef.current?.closest('[data-shell-dialog]');
+    if (!results || !sheet) return;
+    const scroller = scrollParentWithin(results, sheet);
+    if (scroller) scroller.scrollTop = from.scrollTop;
+    const givenUp =
+      from.resultsOffset -
+      (results.getBoundingClientRect().top - sheet.getBoundingClientRect().top);
+    document
+      .getElementById('stims-main')
+      ?.style.setProperty(
+        '--stage-tool-height',
+        `${Math.round(from.sheetHeight - givenUp)}px`,
+      );
+  }, [sheetShrunk]);
+
+  useEffect(
+    () => () => {
+      onTryingChange?.(false);
+      document
+        .getElementById('stims-main')
+        ?.style.removeProperty('--stage-tool-height');
+    },
+    [onTryingChange],
+  );
+
+  /** Plays the preset with the panel left open. False when it should close. */
+  const tryInPlace = (presetId: string): boolean => {
+    if (!staysOpenOnPick()) return false;
+    // The card already on stage is the one being kept.
+    if (presetId === triedPresetRef.current || presetId === currentPresetId) {
+      cancelFold();
+      updatePanel(null);
+      return true;
+    }
+    if (!tried) {
+      heldLayoutPresetRef.current = currentPresetId;
+      heldRecentRef.current = recentEntries;
+      setTried(true);
+    }
+    shrinkSheetForTrying();
+    triedPresetRef.current = presetId;
+    commitRoute((current) => ({ ...current, presetId }));
+    scheduleFold();
+    return true;
+  };
+
+  const selectPreset = (presetId: string) => {
+    onPresetChosen?.(presetId);
+    // The first-use hint says a card plays its preset. Before any audio
+    // has started, selecting only moved the route: on a phone, or with
+    // the background preview off, the panel closed onto nothing playing.
+    // Start the demo track with the chosen preset, as the home cards do.
+    if (!audioActive) {
+      void handleAudioStart('demo', undefined, presetId);
+      return;
+    }
+    if (tryInPlace(presetId)) return;
+    handlePresetSelection(presetId);
+  };
   const presetPreviews = engine.presetPreviews;
   const routeState = ui.routeState;
   const searchQuery = ui.searchQuery;
@@ -223,6 +413,7 @@ export function BrowseSheetPanel({
       void engine.handleAudioStart('demo', undefined, next.presetId);
       return;
     }
+    if (next.presetId && tryInPlace(next.presetId)) return;
     ui.commitRoute((current) => ({
       ...current,
       ...next,
@@ -543,9 +734,25 @@ export function BrowseSheetPanel({
     setFilterEpoch((epoch) => epoch + 1);
   }, [searchQuery, routeState.collectionTag, authorFilter]);
 
+  const railEntries = tried ? heldRecentRef.current : recentEntries;
+  const lineagePresetId = tried ? heldLayoutPresetRef.current : currentPresetId;
+
   return (
     <div
+      ref={panelRootRef}
+      onPointerDownCapture={() => {
+        lastPointerDownRef.current = performance.now();
+        // Still choosing: a press anywhere restarts the wait, even off a card.
+        if (foldTimerRef.current !== null) scheduleFold();
+      }}
+      onKeyDownCapture={() => {
+        if (foldTimerRef.current !== null) scheduleFold();
+      }}
+      onScrollCapture={() => {
+        if (foldTimerRef.current !== null) scheduleFold();
+      }}
       className="stims-shell__sheet-panel stims-shell__sheet-panel--browse"
+      data-trying={sheetShrunk ? 'true' : undefined}
       data-telemetry-surface="browse"
       data-filter-active={String(hasFilter)}
       // Scopes the bounded-flex-column layout the virtualized list needs
@@ -570,7 +777,10 @@ export function BrowseSheetPanel({
               spellCheck={false}
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
+              onFocus={() => {
+                setSearchFocused(true);
+                growSheetBack();
+              }}
               onBlur={() => setSearchFocused(false)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
@@ -920,7 +1130,7 @@ export function BrowseSheetPanel({
           of the panel's height — and a single tile is not a history worth
           that. Below the threshold the presets you just played are still
           the top of the "Recently opened" sort. */}
-      {!hasFilter && recentEntries.length > 1 ? (
+      {!hasFilter && railEntries.length > 1 ? (
         <section
           className="ctl-recent-rail"
           aria-label="Recently played this session"
@@ -930,7 +1140,7 @@ export function BrowseSheetPanel({
             ref={recentRailRef}
             className="ctl-scroller ctl-recent-rail__list"
           >
-            {recentEntries.map((entry) => (
+            {railEntries.map((entry) => (
               <li key={entry.id}>
                 <a
                   href={presetPageHref(entry.id)}
@@ -938,10 +1148,12 @@ export function BrowseSheetPanel({
                   title={entry.title}
                   onClick={(event) =>
                     openPresetInPlace(event, () => {
-                      runPresetPromoteTransition({
-                        sourceElement: event.currentTarget,
-                        presetId: entry.id,
-                      });
+                      if (!staysOpenOnPick()) {
+                        runPresetPromoteTransition({
+                          sourceElement: event.currentTarget,
+                          presetId: entry.id,
+                        });
+                      }
                       selectPreset(entry.id);
                     })
                   }
@@ -1027,7 +1239,7 @@ export function BrowseSheetPanel({
         {catalogReady && gridView ? (
           <PresetLineageSection
             catalog={catalog}
-            currentPresetId={currentPresetId}
+            currentPresetId={lineagePresetId}
             onSelect={selectPreset}
           />
         ) : null}
@@ -1071,6 +1283,8 @@ export function BrowseSheetPanel({
             browseScrollMemory.list = top;
           }}
           onSelect={selectPreset}
+          promotesOnClick={() => !staysOpenOnPick()}
+          lineagePresetId={lineagePresetId}
           onToggleQueued={toggleQueued}
           onToggleFavorite={handleToggleFavorite}
         />

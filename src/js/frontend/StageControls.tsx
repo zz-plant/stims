@@ -244,6 +244,13 @@ function currentStageElement(ui: {
   return ui.stageRef.current;
 }
 
+/**
+ * How long the transition a folded Next starts leaves the dock folded. A
+ * switch passes through idle between its load and its blend, so "until the
+ * transition ends" would unfold it partway; this outlasts a slow switch.
+ */
+const KEEP_FOLDED_AFTER_NEXT_MS = 10_000;
+
 export function StageControls({
   isFullscreen,
   onToggleFullscreen,
@@ -434,6 +441,8 @@ export function StageControls({
     )?.focus();
   }, []);
   const foldedEditRef = useRef<HTMLButtonElement>(null);
+  const foldedNextRef = useRef<HTMLButtonElement>(null);
+  const keepFoldedUntilRef = useRef(Number.NEGATIVE_INFINITY);
 
   // Toasts render above every overlay, so they have to know when something
   // occupies the bottom of the screen and move out of its way. Sheets publish
@@ -533,31 +542,39 @@ export function StageControls({
   // A transition is exactly the moment the user is wondering what's
   // happening, so surface the dock even if it had auto-hidden — the pill is
   // where the loading/blending state is narrated.
+  //
+  // Except after the folded dock's Next. Unfolding moved the controls under a
+  // thumb about to tap again, and at 390px wide that spot became Edit. The
+  // folded row has to stay put for the repeat tap to mean the same thing.
   useEffect(() => {
-    if (transition.phase !== 'idle') {
-      signalActivity();
-    }
+    if (transition.phase === 'idle') return;
+    if (performance.now() < keepFoldedUntilRef.current) return;
+    signalActivity();
   }, [transition.phase, signalActivity]);
 
   useEffect(() => {
     let activityFrame: number | null = null;
-    // Not from the folded dock's Edit chip. Bringing the bar back marks the
-    // chip inert, so a tap's pointerdown (or the focus it moves) arrived
-    // first and dropped the click it was for: the editor stayed shut and a
-    // second tap landed on the bar's previous-preset button underneath. The
-    // chip's own click signals the activity once the editor is opening.
-    const fromFoldedEdit = (event: Event) =>
+    // Not from the folded dock's own buttons. Bringing the bar back marks them
+    // inert, so a tap's pointerdown (or the focus it moves) arrived first and
+    // dropped the click it was for: the editor stayed shut and a second tap
+    // landed on the bar's previous-preset button underneath. The Edit chip
+    // signals the activity itself once the editor is opening; Next never does,
+    // because the bar would cover the preset it just brought up.
+    const fromFoldedButton = (event: Event) =>
       event.target instanceof Node &&
-      Boolean(foldedEditRef.current?.contains(event.target));
+      Boolean(
+        foldedEditRef.current?.contains(event.target) ||
+          foldedNextRef.current?.contains(event.target),
+      );
     const handlePointerMove = (event: PointerEvent) => {
-      if (activityFrame !== null || fromFoldedEdit(event)) return;
+      if (activityFrame !== null || fromFoldedButton(event)) return;
       activityFrame = requestAnimationFrame(() => {
         activityFrame = null;
         signalActivity();
       });
     };
     const handleActivity = (event: Event) => {
-      if (!fromFoldedEdit(event)) signalActivity();
+      if (!fromFoldedButton(event)) signalActivity();
     };
     document.addEventListener('pointermove', handlePointerMove, {
       passive: true,
@@ -1578,6 +1595,30 @@ export function StageControls({
             className="stims-icon-slot stims-icon-slot--sm"
           />
           Edit
+        </button>
+        {/* Changing the preset is the commonest thing done on a phone, and
+            the bar is folded most of the time there, so it would cost a tap
+            to unfold first. Hidden with a pointer, which unfolds by moving. */}
+        <button
+          ref={foldedNextRef}
+          type="button"
+          className={styles.foldedNext}
+          data-action="next-preset"
+          data-visible={String(!visible)}
+          aria-label="Play a random preset"
+          title={withHint('Play a random preset', 'next-preset')}
+          inert={visible || undefined}
+          onClick={() => {
+            keepFoldedUntilRef.current =
+              performance.now() + KEEP_FOLDED_AFTER_NEXT_MS;
+            pulseHaptic(10);
+            void engine.handleShufflePreset();
+          }}
+        >
+          <UiIcon
+            name="shuffle"
+            className="stims-icon-slot stims-icon-slot--sm"
+          />
         </button>
         <button
           type="button"

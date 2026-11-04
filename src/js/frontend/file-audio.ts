@@ -502,3 +502,42 @@ export async function startFileAudio(
   });
   return handle;
 }
+
+export type AudioFilePlayback =
+  | { ok: true; name: string; count: number }
+  | { ok: false; name: string; error: string };
+
+/**
+ * Starts the files this browser can play, as one playlist. Shared by the audio
+ * panel's picker and a file dropped anywhere on the page, so both say the same
+ * thing about a file that cannot play.
+ */
+export async function playAudioFiles(
+  rawFiles: File[],
+  deps: Parameters<typeof startFileAudio>[1],
+  onStarting?: (label: string) => void,
+): Promise<AudioFilePlayback> {
+  const files = rawFiles.filter(canProbablyPlay);
+  const first = files[0];
+  if (!first) {
+    const rejected = rawFiles[0];
+    return {
+      ok: false,
+      name: rejected?.name ?? 'File',
+      error: `This browser can't play ${rejected?.type || 'that file type'}.`,
+    };
+  }
+  const count = files.length;
+  onStarting?.(count > 1 ? `${first.name} (+${count - 1} more)` : first.name);
+  try {
+    const handle = await startFileAudio(files, deps);
+    return { ok: true, name: handle.name, count };
+  } catch (error) {
+    disposeActiveFileAudio();
+    return {
+      ok: false,
+      name: first.name,
+      error: error instanceof Error ? error.message : 'Could not play file.',
+    };
+  }
+}

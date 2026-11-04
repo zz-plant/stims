@@ -71,6 +71,58 @@ function elapse(ms: number) {
   });
 }
 
+describe('the folded dock', () => {
+  function foldedNext(rendered: ReturnType<typeof mount>) {
+    return rendered.container.querySelector<HTMLElement>(
+      'button[data-action="next-preset"][data-visible]',
+    ) as HTMLElement;
+  }
+
+  function mountCountingShuffles() {
+    let shuffles = 0;
+    const rendered = renderWorkspace(
+      createElement(StageControls, {
+        isFullscreen: false,
+        onToggleFullscreen: () => {},
+      }),
+      {
+        snapshot: liveSnapshot(),
+        engine: {
+          handleShufflePreset: () => {
+            shuffles += 1;
+          },
+        },
+      },
+    );
+    return { rendered, shuffles: () => shuffles };
+  }
+
+  test('its Next changes the preset without unfolding the bar', () => {
+    jest.useFakeTimers();
+    const { rendered, shuffles } = mountCountingShuffles();
+    elapse(AUTO_HIDE_MS + 50);
+    expect(bar(rendered)?.dataset.visible).toBe('false');
+
+    const next = foldedNext(rendered);
+    expect(next.dataset.visible).toBe('true');
+    act(() => {
+      next.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+      next.dispatchEvent(new window.Event('click', { bubbles: true }));
+    });
+
+    expect(shuffles()).toBe(1);
+    expect(bar(rendered)?.dataset.visible).toBe('false');
+    rendered.dispose();
+  });
+
+  test('its Next is out of reach while the bar is up', () => {
+    const { rendered } = mountCountingShuffles();
+    expect(bar(rendered)?.dataset.visible).toBe('true');
+    expect(foldedNext(rendered).hasAttribute('inert')).toBe(true);
+    rendered.dispose();
+  });
+});
+
 describe('stage dock auto-hide', () => {
   test('hides after three still seconds with nothing touching it', () => {
     jest.useFakeTimers();

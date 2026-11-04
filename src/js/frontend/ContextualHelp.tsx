@@ -56,8 +56,12 @@ const HINTS: HelpHintDef[] = [
     // Same split as first-play: "tap" is a touch verb, and this hint shows on
     // laptops too.
     message: () =>
-      isMobileDevice() ? 'Tap a card to play it.' : 'Click a card to play it.',
-    autoHideMs: 5000,
+      isMobileDevice()
+        ? 'Tap a card to play it. Keep tapping to compare.'
+        : 'Click a card to play it. Keep clicking to compare.',
+    // It sits in the flow above the cards, so leaving while someone compares
+    // them would shift the card under the next click. It goes when Browse does.
+    autoHideMs: Number.POSITIVE_INFINITY,
     anchor: 'panel',
   },
   {
@@ -128,9 +132,11 @@ export function useHelpHints() {
     });
 
     if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => {
-      setVisibleHint(null);
-    }, hint.autoHideMs);
+    hideTimer.current = Number.isFinite(hint.autoHideMs)
+      ? setTimeout(() => {
+          setVisibleHint(null);
+        }, hint.autoHideMs)
+      : null;
   }, []);
 
   const dismissHint = useCallback(() => {

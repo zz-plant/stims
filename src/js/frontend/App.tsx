@@ -80,6 +80,7 @@ import {
   getAudioEnergy,
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
+import { GlobalMediaIntake } from './GlobalMediaIntake.tsx';
 import { HudOverlay } from './HudOverlay.tsx';
 import { useAgentStateInstall } from './hooks/use-agent-state-install.ts';
 import { useMediaSession } from './hooks/use-media-session.ts';
@@ -363,6 +364,7 @@ function StimsWorkspaceAppShell() {
   );
 
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [browseTrying, setBrowseTrying] = useState(false);
   const [showManageSets, setShowManageSets] = useState(false);
   // Drives the palette's theme row label, so it names the current choice.
   const themeChoice = useSyncExternalStore(
@@ -455,7 +457,7 @@ function StimsWorkspaceAppShell() {
   const creditsRef = useRef<HTMLDivElement | null>(null);
 
   const { visibleHint, showHint, dismissHint } = useHelpHints();
-  // Read inside dismissBrowseHint below, which must keep a stable identity:
+  // Read inside effects below, which must not re-run as the hint changes:
   // it is handed to a lazy panel, and a new function each time a hint changes
   // would re-render that panel for no reason.
   const visibleHintRef = useRef(visibleHint);
@@ -941,25 +943,29 @@ function StimsWorkspaceAppShell() {
   );
 
   useEffect(() => {
-    if (ui.toast && !ui.toast.quiet && visibleHint) {
+    // Except Browse's, which stays put while cards are being compared.
+    if (
+      ui.toast &&
+      !ui.toast.quiet &&
+      visibleHint &&
+      visibleHint.id !== 'browse-open'
+    ) {
       dismissHint();
     }
   }, [ui.toast, visibleHint, dismissHint]);
 
-  // A hint that has been acted on has nothing left to say, so it goes as soon
-  // as the action lands rather than sitting out its timer. "Tap a card to play
-  // it" outliving the card you just tapped is the clearest case: the advice is
-  // now describing something you have already done.
-  //
-  // Driven by the panel reporting a real choice, not by watching which preset
-  // is playing. That weaker signal moves on its own: the engine's autoplay
-  // can advance the preset while the browse panel is open and nothing has
-  // been tapped. Since showing a hint also marks it seen for good, dismissing
-  // on that would have burned the guidance permanently, for exactly the
-  // visitors who most need it.
-  const dismissBrowseHint = useCallback(() => {
-    if (visibleHintRef.current?.id === 'browse-open') dismissHint();
-  }, [dismissHint]);
+  // The Browse hint stays for the visit: it sits in the flow above the cards,
+  // so leaving mid-comparison would move the one under the next click. Keyed to
+  // the panel closing, not to the preset changing, which the engine can also do
+  // on its own (idle autoplay on arrival) while nothing has been tapped.
+  useEffect(() => {
+    if (
+      ui.routeState.panel !== 'browse' &&
+      visibleHintRef.current?.id === 'browse-open'
+    ) {
+      dismissHint();
+    }
+  }, [ui.routeState.panel, dismissHint]);
 
   useEffect(() => {
     if (
@@ -1105,7 +1111,15 @@ function StimsWorkspaceAppShell() {
     if (audioLiveSinceRef.current === null) {
       audioLiveSinceRef.current = performance.now();
     }
-    if (showRotateHint || awaitingAudioGesture) return;
+    // Waits for Browse to close: it is about the stage, and would take Browse's
+    // own hint off screen, moving the cards below it.
+    if (
+      showRotateHint ||
+      awaitingAudioGesture ||
+      ui.routeState.panel === 'browse'
+    ) {
+      return;
+    }
     const timer = window.setTimeout(
       () => showHint('first-play'),
       Math.max(
@@ -1121,6 +1135,7 @@ function StimsWorkspaceAppShell() {
     engineSnapshot?.audioActive,
     showRotateHint,
     awaitingAudioGesture,
+    ui.routeState.panel,
     showHint,
   ]);
 
@@ -1440,6 +1455,8 @@ function StimsWorkspaceAppShell() {
         </a>
       ) : null}
 
+      {roomMode ? null : <GlobalMediaIntake />}
+
       <SidePanel
         open={ui.routeState.panel !== null}
         onClose={() => ui.updatePanel(null)}
@@ -1447,6 +1464,7 @@ function StimsWorkspaceAppShell() {
         stageAnchored={stageAnchoredToolOpen}
         fillBody={panelDescriptor?.fillBody ?? false}
         wide={panelDescriptor?.wide ?? false}
+        liftStage={ui.routeState.panel === 'browse' && browseTrying}
         onOpen={handleSidePanelOpen}
       >
         {/* Panel-anchored hints render inside the panel they describe, not in
@@ -1459,7 +1477,7 @@ function StimsWorkspaceAppShell() {
           {ui.routeState.panel === 'capture' ? <CapturePanel /> : null}
           {ui.routeState.panel === 'browse' ? (
             <BrowseSheetPanel
-              onPresetChosen={dismissBrowseHint}
+              onTryingChange={setBrowseTrying}
               sessionHistory={sessionHistory}
               onCollectionTagChange={(collectionTag) =>
                 ui.commitRoute((current) => ({ ...current, collectionTag }))

@@ -4,7 +4,7 @@ Open [toil.fyi](https://toil.fyi/) to play a MilkDrop preset, edit it while it r
 
 ## Play and choose audio
 
-The root workspace contains the stage, preset browser, editor, and settings. Select a preset in Browse to load it into the stage. Search by title, author, or tags; use collections to narrow the catalog.
+The root workspace contains the stage, preset browser, editor, and settings. Click or tap a preset in Browse to play it. The list stays open so you can compare others, then folds by itself after 5 seconds, or at once if you pick the playing preset again; Enter or a number key plays and closes. Search by title, author, or tags; use collections to narrow the catalog. On a phone, the button beside Edit on the folded controls plays a random preset, and it stays in place for repeat taps.
 
 Audio options depend on your browser:
 
@@ -12,13 +12,15 @@ Audio options depend on your browser:
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Demo                  | A built-in sample; playback may require a click because of autoplay policy                                                                                        |
 | Microphone            | Requires microphone permission and a secure context                                                                                                               |
-| Audio file            | Choose or drop one or more local files the browser can decode                                                                                                     |
+| Audio file            | Choose one or more local files the browser can decode, or drop them anywhere on the page                                                                                                     |
 | Tab or screen capture | Chrome or Edge on a desktop: choose a tab or screen and enable audio in the browser's picker. Firefox and Safari share no audio, so Stims does not offer it there |
 | YouTube               | Same browsers as tab capture: the YouTube controls feed the player's sound through a share of this tab                                                            |
 
 Every source is analysed in the browser; Stims never uploads the audio.
 
 Several files play as a playlist: each track advances to the next, and the list starts again after the last. While a playlist plays, Previous track and Next track appear in the audio panel and the dock's audio menu, and your system's media keys skip tracks.
+
+Pasting a YouTube link anywhere outside a text field loads it, and capture then starts from the panel's button. Dropping a `.milk` file anywhere opens it in the editor.
 
 A moving stage does not prove that external audio reached it. Check the audio status, then listen or change the input to confirm the intended source. If capture is unavailable or permission is denied, select demo audio or a local file.
 

@@ -7,21 +7,19 @@ import type { ClipboardEvent } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { parseYouTubeVideoReference } from '../ui/youtube-controller.ts';
 import {
-  getDeviceEnvironmentProfile,
   isInAppBrowser,
   isMobileDevice,
   openExternalBrowserIntent,
 } from '../utils/browser/device-detect.ts';
+import { displayAudioCapture } from './display-audio-capture.ts';
 import {
   AUDIO_FILE_ACCEPT,
-  canProbablyPlay,
-  disposeActiveFileAudio,
   type FilePlaylistSnapshot,
   getActiveFileAudioName,
   getActiveFilePlaylist,
   nextFileTrack,
+  playAudioFiles,
   previousFileTrack,
-  startFileAudio,
   subscribeFilePlaylist,
 } from './file-audio.ts';
 import { useTwoStepConfirm } from './hooks/use-two-step-confirm.ts';
@@ -189,42 +187,26 @@ export function AudioSourcePanel({
 
   // One handle at a time: picking a second track must tear the first one's
   // graph down, or both keep playing into the analyser at once.
-  const playFile = async (fileOrFiles: File | File[]) => {
-    const rawFiles = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
-    const files = rawFiles.filter(canProbablyPlay);
-    if (files.length === 0) {
-      const first = rawFiles[0];
-      setFileState({
-        name: first?.name ?? 'File',
-        error: `This browser can't play ${first?.type || 'that file type'}.`,
-        loading: false,
-      });
-      return;
-    }
-    const count = files.length;
-    const label =
-      count > 1 ? `${files[0].name} (+${count - 1} more)` : files[0].name;
-    setFileState({ name: label, error: null, loading: true });
-    try {
-      const handle = await startFileAudio(files, {
+  const playFile = async (files: File[]) => {
+    const result = await playAudioFiles(
+      files,
+      {
         routeState: ui.routeState,
         commitRoute: ui.commitRoute,
         startAudioSource: engine.startAudioSource,
-      });
-      setFileState({ name: handle.name, error: null, loading: false });
-      ui.setStatusMessage(
-        count > 1
-          ? `Playing ${handle.name} (1 of ${count})`
-          : `Playing ${handle.name}`,
-      );
-    } catch (error) {
-      disposeActiveFileAudio();
-      setFileState({
-        name: files[0].name,
-        error: error instanceof Error ? error.message : 'Could not play file.',
-        loading: false,
-      });
+      },
+      (name) => setFileState({ name, error: null, loading: true }),
+    );
+    if (!result.ok) {
+      setFileState({ name: result.name, error: result.error, loading: false });
+      return;
     }
+    setFileState({ name: result.name, error: null, loading: false });
+    ui.setStatusMessage(
+      result.count > 1
+        ? `Playing ${result.name} (1 of ${result.count})`
+        : `Playing ${result.name}`,
+    );
   };
 
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
@@ -248,18 +230,8 @@ export function AudioSourcePanel({
     };
   }, [mobileDevice]);
 
-  const hasDisplayCapture =
-    typeof navigator !== 'undefined' &&
-    !!navigator.mediaDevices?.getDisplayMedia &&
-    !mobileDevice;
-  // Firefox and Safari open the share picker but never hand back an audio
-  // track, so the visitor picked a tab, saw nothing react, and was told to
-  // tick a "Share tab audio" box their browser does not have. Tab and
-  // YouTube capture are offered only where a share can carry sound.
-  const displayCaptureDropsAudio =
-    hasDisplayCapture &&
-    ['firefox', 'safari'].includes(getDeviceEnvironmentProfile().browserFamily);
-  const canCaptureDisplayAudio = hasDisplayCapture && !displayCaptureDropsAudio;
+  const { displayCaptureDropsAudio, canCaptureDisplayAudio } =
+    displayAudioCapture();
 
   const handlePlayYouTube = () => {
     if (youtubeReady) {

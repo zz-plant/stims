@@ -1,0 +1,25 @@
+/*
+ * Says a file can land anywhere. It takes no pointer events, so the drag keeps
+ * reaching whatever is underneath, including a drop zone of its own.
+ */
+@scope (.stims-shell) {
+  .stims-shell__global-drop {
+    position: fixed;
+    inset: 12px;
+    z-index: var(--z-modal-backdrop);
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    border: 2px dashed var(--stims-accent);
+    border-radius: var(--radius-lg);
+  }
+
+  .stims-shell__global-drop p {
+    margin: 0;
+    padding: 10px 18px;
+    border-radius: var(--radius-lg);
+    background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+    color: var(--stims-ink);
+    font-weight: 600;
+  }
+}

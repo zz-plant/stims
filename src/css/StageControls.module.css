@@ -742,6 +742,40 @@
   outline-offset: 2px;
 }
 
+/* Next on the folded dock, for touch. It shares the Edit chip's surface so the
+   three read as one row, and the handle gives up its width to fit it. */
+.foldedNext {
+  display: none;
+}
+
+@media (max-width: 767px), (pointer: coarse) {
+  .foldedNext {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-lg);
+    background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+    color: var(--stims-ink);
+    border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+  }
+
+  .foldedNext:focus-visible {
+    outline: 2px solid var(--stims-accent);
+    outline-offset: 2px;
+  }
+
+  .foldedDock .handle {
+    min-width: 0;
+    flex: 1 1 auto;
+    white-space: nowrap;
+  }
+}
+
 /* Reveal handle (when bar is hidden) */
 .handle {
   display: inline-flex;
