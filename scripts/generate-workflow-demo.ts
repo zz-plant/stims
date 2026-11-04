@@ -3,12 +3,12 @@
  * Requires ffmpeg and Playwright Chromium. Run against a local dev server:
  * bun scripts/generate-workflow-demo.ts [--origin=http://127.0.0.1:5173]
  * Raw capture and browser evidence stay in output/playwright/workflow-demo;
- * the silent MP4 and accelerated animated WebP are generated into
- * docs/assets/clips. --preview-only re-encodes the WebP from the committed
+ * the silent MP4 is generated into public/clips and the accelerated animated
+ * WebP into docs/assets/clips. --preview-only re-encodes the WebP from the committed
  * MP4 without recording.
  */
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { chromium } from 'playwright';
 import { decodePresetCodeFromHash } from '../src/js/frontend/url-state.ts';
 import { writeAnimatedWebp } from './animated-webp.ts';
@@ -19,7 +19,8 @@ const OUTPUT = 'output/playwright/workflow-demo';
 const ASSETS = 'docs/assets/clips';
 const VIEWPORT = { width: 1280, height: 720 };
 const MIN_CLIP_SECONDS = 25;
-const MP4 = join(ASSETS, 'stims-workflow.mp4');
+// Served from the site: GitHub will not play an MP4 this size from a repo link.
+const MP4 = 'public/clips/stims-workflow.mp4';
 const PREVIEW = join(ASSETS, 'stims-workflow.webp');
 /**
  * The README preview plays the recording this many times faster. Speeding up
@@ -69,6 +70,7 @@ if (!['localhost', '127.0.0.1'].includes(origin.hostname)) {
 const server = await ensureDevServer(Number(origin.port || 80));
 mkdirSync(OUTPUT, { recursive: true });
 mkdirSync(ASSETS, { recursive: true });
+mkdirSync(dirname(MP4), { recursive: true });
 const browser = await chromium.launch({
   channel: 'chromium',
   headless: true,
@@ -94,14 +96,18 @@ try {
   await page.goto(`${origin.origin}/?agent=true&renderer=webgl`, {
     waitUntil: 'domcontentloaded',
   });
-  await page.getByRole('button', { name: 'Play demo', exact: true }).waitFor();
+  await page
+    .getByRole('button', { name: 'Start visualizer', exact: true })
+    .waitFor();
   previousClipboard = await page
     .evaluate(() => navigator.clipboard.readText())
     .catch(() => null);
   const start = (Date.now() - recordedAt) / 1000;
   await page.screenshot({ path: join(OUTPUT, '01-launch.png') });
   await page.waitForTimeout(2500);
-  await page.getByRole('button', { name: 'Play demo', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Start visualizer', exact: true })
+    .click();
   await page.waitForFunction(
     () => (window.__STIMS_AGENT_TELEMETRY__?.audioEnergy ?? 0) > 0,
     undefined,
@@ -135,10 +141,8 @@ try {
   await page.screenshot({ path: join(OUTPUT, '04-spin.png') });
   await page.waitForTimeout(4000);
   await page
-    .getByRole('button', { name: 'Preset actions', exact: true })
-    .click();
-  await page
-    .getByRole('menuitem', { name: 'Copy link to this edit', exact: true })
+    .getByRole('button', { name: 'Copy link', exact: true })
+    .first()
     .click();
   await page.getByRole('link', { name: 'Star Stims on GitHub' }).waitFor();
   const copied = await page.evaluate(() => navigator.clipboard.readText());

@@ -24,7 +24,7 @@ Test files fan out across `bun test --parallel` workers sized to your CPU count;
 
 ## Main scripts
 
-To regenerate the README's Play → Edit → Share clip, start `bun run dev`, then run `bun scripts/generate-workflow-demo.ts`. It records the real UI, verifies the copied URL preserves the edited source, and writes a silent MP4 and an accelerated animated WebP under `docs/assets/clips/`; `--preview-only` re-encodes the WebP from the committed MP4 without recording. Browser evidence and raw recordings remain in `output/playwright/workflow-demo/`. Review the generated media before publishing it; [launch material](./LAUNCH.md) contains copy and measurement commands.
+To regenerate the README's Play → Edit → Share clip, start `bun run dev`, then run `bun scripts/generate-workflow-demo.ts`. It records the real UI, verifies the copied URL preserves the edited source, and writes a silent MP4 under `public/clips/` and an accelerated animated WebP under `docs/assets/clips/`; `--preview-only` re-encodes the WebP from the committed MP4 without recording. Browser evidence and raw recordings remain in `output/playwright/workflow-demo/`. Review the generated media before publishing it; [launch material](./LAUNCH.md) contains copy and measurement commands. `bun scripts/generate-sound-clip.ts` records the with-sound clip through the Record panel, also into `public/clips/`, because GitHub downloads an MP4 this size from a repository link instead of playing it. Both go through the same flash gate.
 
 | Task                                               | Command                                           |
 | -------------------------------------------------- | ------------------------------------------------- |
