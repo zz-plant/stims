@@ -123,7 +123,7 @@ html.light .stims-editor {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
 }
 
@@ -168,6 +168,14 @@ html.light .stims-editor {
   font-size: 0.75rem;
   line-height: 1.4;
   color: var(--ctl-ink-3);
+}
+
+/* The shell's global input rule sets 44px, so a mouse needs the extra class
+   to get the room back: this row sits above the code. */
+@media (pointer: fine) {
+  .stims-editor-describe .stims-editor-describe__input {
+    min-height: 32px;
+  }
 }
 
 @media (pointer: coarse) {

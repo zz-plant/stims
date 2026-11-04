@@ -254,20 +254,29 @@ requiredBrowserTest(
       const id = await tile.getAttribute('data-preset-id');
       const top = (await tile.boundingBox())?.y;
       await step(() => tile.tap());
-      await waitForPresetOtherThan(page, before);
-      await expect(browseDialog(page).isVisible()).resolves.toBe(true);
 
       // The sheet has shrunk to show the stage, with the card left in place.
-      const panelTop = await browseDialog(page).evaluate(
-        (panel) => panel.getBoundingClientRect().top,
+      // Measured in one page call straight after the tap: the sheet folds a
+      // fixed time after the pick, and a preset that loads slowly on a busy
+      // runner can take longer than that.
+      const shrunk = await page.waitForFunction(
+        (cardId) => {
+          const panel = document.querySelector('[role="dialog"]');
+          const card = panel?.querySelector(`a[data-preset-id="${cardId}"]`);
+          if (!panel || !card) return null;
+          const panelTop = panel.getBoundingClientRect().top;
+          return panelTop > 150
+            ? { panelTop, cardTop: card.getBoundingClientRect().y }
+            : null;
+        },
+        id,
+        { timeout: 15000 },
       );
-      expect(panelTop).toBeGreaterThan(150);
-      const moved = await browseDialog(page)
-        .locator(`a[data-preset-id="${id}"]`)
-        .boundingBox();
+      const { cardTop } = (await shrunk.jsonValue()) as { cardTop: number };
       // A few pixels are a card's own hover and press styling.
-      expect(Math.abs((moved?.y ?? 0) - (top ?? 0))).toBeLessThan(6);
+      expect(Math.abs(cardTop - (top ?? 0))).toBeLessThan(6);
 
+      await waitForPresetOtherThan(page, before);
       await browseDialog(page).waitFor({ state: 'detached', timeout: 15000 });
       expect(count()).toBe(2);
     });

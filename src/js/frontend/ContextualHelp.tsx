@@ -82,8 +82,7 @@ const HINTS: HelpHintDef[] = [
     id: 'editor-open',
     // The Esc half is not trivia: Tab indents inside the code, so it is the
     // one place in the app Tab does not walk you out of, and nothing said so.
-    message:
-      'This is the preset’s source code. Edits show up in the visuals live. Tab indents; Esc steps out.',
+    message: 'Edits run live. Tab indents; Esc steps out.',
     autoHideMs: 6000,
     anchor: 'panel',
   },
