@@ -89,8 +89,14 @@
   /* The editor sheet's height must be definite: sized to its content, the
      code view's percentage height fell back to the whole document and its
      scroller never scrolled. 92dvh unless the block below shortens it. */
-  .panel[data-stage-anchored="true"] {
+  .panel[data-stage-anchored="true"],
+  .panel[data-lift-stage="true"] {
     height: var(--stage-tool-height, 92dvh);
+  }
+
+  /* The strip above the sheet is there to judge the preset by. */
+  .backdrop[data-lift-stage="true"] {
+    background: transparent;
   }
 }
 

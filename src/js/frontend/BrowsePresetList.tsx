@@ -57,6 +57,8 @@ export function BrowsePresetList({
   readInitialScrollTop,
   onScrollTopChange,
   onSelect,
+  promotesOnClick,
+  lineagePresetId,
   onToggleQueued,
   onToggleFavorite,
 }: {
@@ -76,6 +78,10 @@ export function BrowsePresetList({
   readInitialScrollTop: () => number;
   onScrollTopChange: (top: number) => void;
   onSelect: (presetId: string) => void;
+  /** Whether a click flies the tile to the stage: not when the panel stays. */
+  promotesOnClick?: () => boolean;
+  /** The preset whose family is listed, which holds still while trying. */
+  lineagePresetId?: string | null;
   onToggleQueued: (entry: PresetCatalogEntry) => void;
   onToggleFavorite: (entry: PresetCatalogEntry) => void;
 }) {
@@ -262,7 +268,9 @@ export function BrowsePresetList({
       <div ref={lineageWrapperRef}>
         <PresetLineageSection
           catalog={catalog}
-          currentPresetId={currentPresetId}
+          currentPresetId={
+            lineagePresetId === undefined ? currentPresetId : lineagePresetId
+          }
           onSelect={onSelect}
         />
       </div>
@@ -323,10 +331,12 @@ export function BrowsePresetList({
                 onClick={(event) =>
                   openPresetInPlace(event, () => {
                     setRovingIndex(virtualRow.index);
-                    runPresetPromoteTransition({
-                      sourceElement: event.currentTarget,
-                      presetId: entry.id,
-                    });
+                    if (promotesOnClick?.() ?? true) {
+                      runPresetPromoteTransition({
+                        sourceElement: event.currentTarget,
+                        presetId: entry.id,
+                      });
+                    }
                     onSelect(entry.id);
                   })
                 }
