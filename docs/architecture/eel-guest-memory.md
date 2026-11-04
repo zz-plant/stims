@@ -2,7 +2,7 @@
 
 Status: compute-VM increment landing 2026-08-18/19; field-path increment designed, not yet implemented.
 Part of the EEL consolidation program (presets = ROM corpus, EEL = guest ISA); sibling of the
-platform-profile spec (`spec/eel-conformance/`) and the declarative op table
+platform-profile spec (`packages/eel-conformance/`) and the declarative op table
 (`packages/milkdrop-toolchain/src/compiler/eel-function-table.ts`).
 
 ## The model
@@ -121,7 +121,7 @@ Planned shape:
 
 ## Invariants (enforced by tests)
 
-- `spec/eel-conformance/` — the portable platform profile, covering scalar semantics AND
+- `packages/eel-conformance/` — the portable platform profile, covering scalar semantics AND
   buffer semantics (indexing, truncation, bounds, megabuf/gmegabuf separation) in
   `cases/07-buffers.json`. Run with `bun run spec:eel`; enforced by
   `tests/unit/eel-conformance-spec.test.ts` across all three tiers.

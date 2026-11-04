@@ -15,7 +15,7 @@
  * exactly when its entry has a `wgslField` renderer.
  *
  * The reference semantics are the interpreter's, pinned by the portable
- * conformance corpus in spec/eel-conformance/ (run: `bun run spec:eel`); the JIT and both WGSL dialects
+ * conformance corpus in packages/eel-conformance/ (run: `bun run spec:eel`); the JIT and both WGSL dialects
  * must match it (tests/unit/eel-tier-differential.test.ts,
  * gpu-field-tier-differential.test.ts). The two WGSL dialects stay separate
  * renderers on purpose — the compute VM emits `f`-suffixed literals and

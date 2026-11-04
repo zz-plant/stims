@@ -26,8 +26,8 @@ generic PR rules: it covers conventions and traps specific to Stims.
   open PR red at once (#1359), so run `bun audit --audit-level=high` before
   pushing a dependency change, and when an unrelated PR fails only that step,
   look for an advisory published since main last went green.
-- `screenshots/` is not gitignored as a whole: capture tools' output
-  directories are, and certified parity captures are allowlisted. Stage by
+- `screenshots/` is gitignored except its three evidence directories
+  (`aesthetic-audit/`, `butterchurn-support-sweep/`, `parity/`). Stage by
   explicit path and leave new screenshots out unless a tracked report cites
   them.
 - New tests must be able to fail: revert the change, watch the test go red.

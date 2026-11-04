@@ -302,7 +302,7 @@ the shifter-glassworms-flare profile attributes ~68% of non-idle JavaScript to
   draws through the same cell, so the two tiers interleave on one sequence.
   The conformance contract is unchanged: `compileMilkdropProgram` keeps a
   `'closure'` mode whose `rng` argument is a host-supplied draw callable, and
-  `spec/eel-conformance/` runs that tier (the corpus pins every draw to a
+  `bun run spec:eel` runs that tier (the corpus pins every draw to a
   fixed 0.5, which only a callable can reproduce).
 - **Repeated-read caching.** Identifiers read two or more times within one
   statement — the `x = if(x, x, ...)` idiom that dominates this preset's

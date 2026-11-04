@@ -23,11 +23,11 @@ import { describe, expect, test } from 'bun:test';
 import {
   type EelConformanceCase,
   loadEelConformanceCases,
-} from '../../spec/eel-conformance/index.ts';
+} from 'eel-conformance';
 import {
   EEL_CONFORMANCE_TIERS,
   runConformanceCase,
-} from '../../spec/eel-conformance/reference-runner.ts';
+} from '../../scripts/eel-conformance-reference-runner.ts';
 
 const CASES = loadEelConformanceCases();
 

@@ -178,7 +178,7 @@ async function main() {
     return;
   }
   const files: SeamFile[] = [];
-  for (const dir of ['src', 'scripts', 'functions', 'tests', 'spec']) {
+  for (const dir of ['src', 'scripts', 'functions', 'tests']) {
     const full = join(ROOT, dir);
     if (statSync(full, { throwIfNoEntry: false })?.isDirectory()) {
       collectCodeFiles(full, files);
