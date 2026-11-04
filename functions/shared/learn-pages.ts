@@ -55,6 +55,14 @@ export const LEARN_PAGES: readonly LearnPage[] = [
     faq: true,
   },
   {
+    slug: 'sensory-room',
+    source: 'docs/guides/sensory-room.md',
+    seoTitle: 'Run Audio-Reactive Visuals in a Sensory Room',
+    description:
+      'Turn a screen or projector into a visual display nobody has to operate: slow preset changes, Reduce flashing on, and capped brightness and motion, from one link.',
+    kind: 'landing',
+  },
+  {
     slug: 'play',
     source: 'docs/authoring/00-play.md',
     seoTitle: 'Remix a MilkDrop Preset With No Code — Track 0',

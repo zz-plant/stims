@@ -227,6 +227,7 @@ export function PerformanceHardwareSection({
         <button
           type="button"
           className="ctl-btn"
+          data-action="midi-connect"
           disabled={!webMidiService.isSupported() || midiConnected}
           onClick={() => void connectMidi()}
         >
@@ -281,6 +282,7 @@ export function PerformanceHardwareSection({
             <button
               type="button"
               className="ctl-btn"
+              data-action="midi-map-knob"
               disabled={!midiConnected}
               onClick={() => webMidiService.armGlobalLearn()}
             >
@@ -333,6 +335,7 @@ export function PerformanceHardwareSection({
               <button
                 type="button"
                 className="ctl-btn"
+                data-action="midi-map-pad"
                 disabled={!padAction}
                 onClick={startPadLearn}
               >

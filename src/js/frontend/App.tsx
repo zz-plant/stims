@@ -1147,16 +1147,6 @@ function StimsWorkspaceAppShell() {
     }
   }, [ui.routeState.panel, showHint]);
 
-  // Said at the first keystroke, because that is the moment the claim becomes
-  // checkable: there is now a draft, and the URL already holds it. Guarded on
-  // `visibleHint` like the interaction hint — showing one marks it seen, so
-  // stacking would silently burn whichever lost.
-  useEffect(() => {
-    if (!editorDirty || visibleHint) return;
-    if (ui.routeState.panel !== 'editor') return;
-    showHint('editor-dirty-link');
-  }, [editorDirty, visibleHint, ui.routeState.panel, showHint]);
-
   // NOTE: temporal-memory frame recording was removed here deliberately.
   // It sampled the live stage canvas (2D drawImage + getImageData) on every
   // preset switch; reading back a WebGPU canvas that way stalled the main

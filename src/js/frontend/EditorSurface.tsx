@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import '../../css/editor-panel.css';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import type { MilkdropEditorSessionState } from '../milkdrop/types.ts';
+import { EditorDescribeChange } from './EditorDescribeChange.tsx';
+import { EditorShareOffer } from './EditorShareOffer.tsx';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { FirstEditGuide } from './FirstEditGuide.tsx';
 import {
@@ -60,6 +62,30 @@ export function EditorSurface() {
   const sessionStateRef = useRef(sessionState);
   sessionStateRef.current = sessionState;
 
+  // Reads the session through refs rather than closing over the render's
+  // values: the panel gets this once, on mount, and a captured source would
+  // freeze at whatever was on screen then.
+  const copyShareLink = () => {
+    const activeId = sessionStateRef.current?.activeCompiled?.source.id ?? null;
+    const entry = engineRef.current.catalog.find(
+      (candidate) => candidate.id === activeId,
+    );
+    void copyRemixLinkAction({
+      source: sessionStateRef.current?.source ?? '',
+      dirty: sessionStateRef.current?.dirty ?? false,
+      // Bundled presets are the ones anyone can load by id.
+      local: Boolean(entry && !entry.bundledFile),
+      title: entry?.title,
+      // A remixed draft keeps crediting the preset it came from when
+      // the link is shared (see url-state.ts's lineage contract).
+      derivedFrom: entry?.derivedFrom,
+      announce: (message) => uiRef.current.setStatusMessage(message),
+      onSuccess: () => setShared(true),
+    });
+  };
+  const copyShareLinkRef = useRef(copyShareLink);
+  copyShareLinkRef.current = copyShareLink;
+
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
@@ -102,28 +128,7 @@ export function EditorSurface() {
         onRequestImport: () => {
           importInputRef.current?.click();
         },
-        // Reads the session through refs rather than closing over the render's
-        // values: this callback is handed to the panel once, on mount, and a
-        // captured source would freeze at whatever was on screen then.
-        onCopyShareLink: () => {
-          const activeId =
-            sessionStateRef.current?.activeCompiled?.source.id ?? null;
-          const entry = engineRef.current.catalog.find(
-            (candidate) => candidate.id === activeId,
-          );
-          void copyRemixLinkAction({
-            source: sessionStateRef.current?.source ?? '',
-            dirty: sessionStateRef.current?.dirty ?? false,
-            // Bundled presets are the ones anyone can load by id.
-            local: Boolean(entry && !entry.bundledFile),
-            title: entry?.title,
-            // A remixed draft keeps crediting the preset it came from when
-            // the link is shared (see url-state.ts's lineage contract).
-            derivedFrom: entry?.derivedFrom,
-            announce: (message) => uiRef.current.setStatusMessage(message),
-            onSuccess: () => setShared(true),
-          });
-        },
+        onCopyShareLink: () => copyShareLinkRef.current(),
       });
       panelRef.current = panel;
       host.appendChild(panel.element);
@@ -166,6 +171,16 @@ export function EditorSurface() {
         className="stims-shell__editor-host"
         data-telemetry-surface="editor"
       >
+        <EditorShareOffer
+          session={sessionState}
+          shared={shared}
+          onCopyLink={copyShareLink}
+        />
+        <EditorDescribeChange
+          key={`describe-${engineSnapshot?.activePresetId}`}
+          source={sessionState?.source ?? ''}
+          onChange={(source) => engine.updateEditorSource(source)}
+        />
         <FirstEditGuide
           key={engineSnapshot?.activePresetId}
           source={sessionState?.source ?? ''}

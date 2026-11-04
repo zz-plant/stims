@@ -236,9 +236,7 @@ describe('first edit guide card', () => {
       const card = rendered.byLabel('Try one edit');
       // The instruction line yields to the result line; the button turned
       // into its own undo.
-      expect(card?.textContent).toContain(
-        'Spin added. Try changing 0.02, or press Copy link above the code to share it.',
-      );
+      expect(card?.textContent).toContain('Spin added. Try changing 0.02.');
       expect(buttonWithText(rendered, 'Remove the spin')).not.toBeNull();
     } finally {
       rendered.dispose();

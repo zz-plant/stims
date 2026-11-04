@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://toil.fyi/</loc>
-    <lastmod>2026-10-17</lastmod>
+    <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -13,7 +13,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/performance/</loc>
-    <lastmod>2026-10-17</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -64,6 +64,17 @@
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Stims vs Butterchurn vs projectM | Stims</image:title>
       <image:caption>How Stims, Butterchurn, and projectM differ (browser app, embeddable renderer, and native library) and which one fits what you want to do.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/learn/sensory-room/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Run Audio-Reactive Visuals in a Sensory Room | Stims</image:title>
+      <image:caption>Turn a screen or projector into a visual display nobody has to operate: slow preset changes, Reduce flashing on, and capped brightness and motion, from one link.</image:caption>
     </image:image>
   </url>
   <url>
