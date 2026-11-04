@@ -119,6 +119,64 @@ html.light .stims-editor {
    It lived in preset-finder.css, which loads with the preset finder, so until
    a visitor opened the finder the host took its content's height and the
    panel clipped the dock instead of scrolling it. */
+.stims-editor-describe {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+}
+
+.stims-editor-describe__row {
+  display: flex;
+  gap: 6px;
+}
+
+.stims-editor-describe__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.stims-editor-describe__submit {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+  border-radius: var(--radius-sm, 6px);
+  background: var(--ctl-fill, rgba(255, 255, 255, 0.05));
+  color: inherit;
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.stims-editor-describe__submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.stims-editor-describe__note {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--ctl-ink-3);
+}
+
+@media (pointer: coarse) {
+  .stims-editor-describe__input,
+  .stims-editor-describe__submit {
+    min-height: 44px;
+  }
+}
+
 .stims-shell__editor-host {
   display: flex;
   flex-direction: column;

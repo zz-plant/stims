@@ -299,7 +299,7 @@ requiredBrowserTest(
       // ── A/B against the original. ──
       const abToggle = page.locator('.stims-editor [data-action="ab-toggle"]');
       await abToggle.click({ timeout: CLICK_TIMEOUT_MS });
-      await abToggle.filter({ hasText: 'Original' }).waitFor({
+      await abToggle.filter({ hasText: 'Back to your edit' }).waitFor({
         timeout: EDITOR_TIMEOUT_MS,
       });
       await waitOnStage(
@@ -310,7 +310,7 @@ requiredBrowserTest(
       );
 
       await abToggle.click({ timeout: CLICK_TIMEOUT_MS });
-      await abToggle.filter({ hasText: 'Your edit' }).waitFor({
+      await abToggle.filter({ hasText: 'Show original' }).waitFor({
         timeout: EDITOR_TIMEOUT_MS,
       });
       await waitOnStage(
@@ -360,7 +360,7 @@ requiredBrowserTest(
 
       // The share link is the same draft. The clipboard needs the granted
       // permissions above; a headless browser may refuse it, in which case
-      // the address bar — the surface the hint promises — is the check.
+      // the address bar is the check.
       const clipboardUrl = await page
         .evaluate(() => navigator.clipboard.readText().catch(() => null))
         .catch(() => null);

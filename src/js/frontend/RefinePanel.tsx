@@ -2,18 +2,15 @@ import {
   analyzePresetMath,
   type PresetMathAnalysis,
 } from 'milkdrop-toolchain/src/preset-math-analyzer.ts';
-import { useCallback, useMemo, useState } from 'react';
-import {
-  computeSourceDiff,
-  samePresetSource,
-} from '../milkdrop/overlay/source-diff.ts';
+import { useCallback, useState } from 'react';
 import {
   mutatePresetStyle,
   PRESET_MUTATION_STYLES,
   type PresetMutationStyle,
 } from '../milkdrop/preset-mutations.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
-import { refinePresetSource, restyleLabel } from './preset-refine.ts';
+import { ProposalReview, usePresetProposal } from './preset-proposal.tsx';
+import { restyleLabel } from './preset-refine.ts';
 import { useWorkspace } from './workspace-context.tsx';
 
 export function RefinePanel() {
@@ -21,63 +18,31 @@ export function RefinePanel() {
   const [state, setState] = useState<'idle' | 'refining' | 'explaining'>(
     'idle',
   );
-  const [response, setResponse] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<PresetMathAnalysis | null>(null);
-  // A restyle or AI edit is shown as a diff first and applied only on
-  // Apply. It used to replace the running preset directly, with no way to
-  // see what changed and nothing to undo it with, and the result was saved
-  // as the preset's draft.
-  const [proposal, setProposal] = useState<{
-    label: string;
-    base: string;
-    next: string;
-    applied: string;
-  } | null>(null);
   const { engine, ui } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
   const currentSource = engineSnapshot?.currentSource ?? '';
-
-  // Only state setters inside, so one identity serves every render.
-  const propose = useCallback(
-    (label: string, base: string, next: string, applied: string) => {
-      setAnalysis(null);
-      if (samePresetSource(base, next)) {
-        setProposal(null);
-        setResponse(`${label} would not change this preset.`);
-        return;
-      }
-      setResponse(null);
-      setProposal({ label, base, next, applied });
-    },
-    [],
-  );
-
-  const applyProposal = () => {
-    if (!proposal) return;
-    // The diff was computed against `base`; applying it over anything else
-    // (an edit made meanwhile, another preset) would discard that.
-    if (!samePresetSource(proposal.base, currentSource)) {
-      setProposal(null);
-      setResponse(
-        `${proposal.label}: the preset changed while this was open, so nothing was applied. Run it again.`,
-      );
-      return;
-    }
-    engine.updateEditorSource(proposal.next);
-    setResponse(proposal.applied);
-    setProposal(null);
-  };
-
-  const proposalDiff = useMemo(
-    () => (proposal ? computeSourceDiff(proposal.base, proposal.next) : []),
-    [proposal],
-  );
+  const {
+    proposal,
+    response,
+    setResponse,
+    propose,
+    apply,
+    discard,
+    describeChange,
+  } = usePresetProposal({
+    currentSource,
+    applySource: (source) => engine.updateEditorSource(source),
+    surface: 'other',
+    aiUnavailableNote: 'The restyle buttons above still work.',
+  });
 
   const handleApplyMutation = useCallback(
     async (style: PresetMutationStyle) => {
       if (!currentSource) return;
       setState('refining');
       const label = restyleLabel(style);
+      setAnalysis(null);
       ui.setStatusMessage(`Applying ${label}…`);
       try {
         const mutatedSource = mutatePresetStyle(currentSource, style);
@@ -93,51 +58,18 @@ export function RefinePanel() {
       setState('idle');
       ui.setStatusMessage(null);
     },
-    [currentSource, propose, ui],
+    [currentSource, propose, setResponse, ui],
   );
 
-  const handleRefine = useCallback(async () => {
+  const handleRefine = async () => {
     if (!instruction.trim() || !currentSource) return;
     setState('refining');
+    setAnalysis(null);
     ui.setStatusMessage('Refining preset…');
-    // The attempt runs as an inner function so its early returns end the
-    // attempt instead of the handler: cleanup below must run on every path,
-    // which a `finally` clause did before React Compiler made try/finally a
-    // whole-file bailout.
-    const attempt = async () => {
-      const refinement = await refinePresetSource(
-        currentSource,
-        instruction.trim(),
-      );
-      if (refinement.method === 'none') {
-        setResponse(
-          `AI is unavailable (${refinement.aiError}). The restyle buttons above still work.`,
-        );
-        return;
-      }
-      // The fallback is named in the proposal's own heading: it used to look
-      // like the AI's answer until after Apply, and the note said "applied"
-      // about a change still waiting for review.
-      propose(
-        refinement.method === 'ai'
-          ? 'AI refinement'
-          : `${refinement.label} restyle, not from AI`,
-        currentSource,
-        refinement.milkSource,
-        refinement.method === 'ai'
-          ? `Refined: ${refinement.title || 'untitled preset'}`
-          : `AI is unavailable, so this is the ${refinement.label} restyle, made in this browser. Review it before applying.`,
-      );
-    };
-    try {
-      await attempt();
-    } catch (err) {
-      const error = err as Error;
-      setResponse(`Could not apply the change: ${error.message}`);
-    }
+    await describeChange(instruction.trim());
     setState('idle');
     ui.setStatusMessage(null);
-  }, [currentSource, instruction, propose, ui]);
+  };
 
   const handleExplain = useCallback(async () => {
     if (!currentSource) return;
@@ -180,7 +112,7 @@ export function RefinePanel() {
     // the finally did, and the file stays React Compiler-parseable.
     setState('idle');
     ui.setStatusMessage(null);
-  }, [currentSource, ui]);
+  }, [currentSource, setResponse, ui]);
 
   return (
     <div className="stims-shell__refine-panel">
@@ -248,49 +180,11 @@ export function RefinePanel() {
       </div>
 
       {proposal ? (
-        <section
-          className="stims-shell__refine-proposal"
-          aria-label={`${proposal.label}: proposed change`}
-        >
-          <p className="stims-shell__refine-proposal-head">
-            {proposal.label} — review the change
-          </p>
-          <pre className="stims-shell__refine-diff">
-            {proposalDiff.map((line, index) => (
-              <span
-                // biome-ignore lint/suspicious/noArrayIndexKey: diff rows are positional and re-rendered whole
-                key={index}
-                className={`stims-shell__refine-diff-line stims-shell__refine-diff-line--${line.kind}`}
-              >
-                {line.kind === 'add'
-                  ? '+ '
-                  : line.kind === 'del'
-                    ? '- '
-                    : line.kind === 'gap'
-                      ? '\u22EF '
-                      : '  '}
-                {line.text}
-                {'\n'}
-              </span>
-            ))}
-          </pre>
-          <div className="stims-shell__refine-actions">
-            <button
-              type="button"
-              className="stims-shell__refine-btn"
-              onClick={applyProposal}
-            >
-              Apply
-            </button>
-            <button
-              type="button"
-              className="stims-shell__refine-btn stims-shell__refine-btn--secondary"
-              onClick={() => setProposal(null)}
-            >
-              Discard
-            </button>
-          </div>
-        </section>
+        <ProposalReview
+          proposal={proposal}
+          onApply={apply}
+          onDiscard={discard}
+        />
       ) : null}
 
       {response && (

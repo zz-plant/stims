@@ -45,6 +45,8 @@ Compare with the original (Cmd/Ctrl+Shift+B) shows your edit against the preset 
 
 An edit that compiles is saved as that preset's draft in this browser, and the preset opens with it next time; the status line says so when it does, and Revert in the editor returns to the original. Text with errors is not saved: the draft keeps the last version that ran, and the browser asks before you leave the page.
 
+To change a preset without writing the code, describe the change in the field above the editor and press **Ask AI**. It sends the preset's code to the AI model and shows the result as a diff; nothing changes until you press **Apply**. After an edit that compiles, **Copy link** above the code copies a link that carries it.
+
 Use the editor's export controls to keep a `.milk` file. A file gives you a portable backup of the source independent of local browser storage.
 
 Share produces a remix URL containing the source. It can carry original-author and remix-lineage metadata; that metadata is attribution, not independent verification of authorship. Depending on the browser, Share opens a native share sheet or copies the link. Open the link in a fresh tab to confirm the recipient sees the intended edit.

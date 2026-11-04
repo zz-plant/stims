@@ -164,12 +164,24 @@ export function RoomDisplaySection() {
         <button
           type="button"
           className="ctl-btn"
+          data-action="room-link-copy"
           onClick={() => void handleCopy()}
         >
           {copied ? 'Copied' : 'Copy room link'}
         </button>
-        <a className="ctl-btn ctl-btn--quiet" href={url}>
+        <a
+          className="ctl-btn ctl-btn--quiet"
+          data-action="room-link-open"
+          href={url}
+        >
           Open it here
+        </a>
+        <a
+          className="ctl-btn ctl-btn--quiet"
+          data-action="room-guide"
+          href="/learn/sensory-room/"
+        >
+          Setup guide
         </a>
       </div>
     </section>
