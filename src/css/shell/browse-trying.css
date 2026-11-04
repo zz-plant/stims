@@ -1,0 +1,18 @@
+/*
+ * Trying presets in Browse on a phone. What sits above the cards gives way, so
+ * the sheet can shrink to show the stage without moving the card under the
+ * thumb. BrowseSheetPanel sizes the sheet by exactly what these rows gave up.
+ */
+@scope (.stims-shell) {
+  @media (max-width: 767px) and (min-height: 600px) {
+    .stims-shell__sheet-panel--browse[data-trying="true"] {
+      .ctl-browse-filters > :not(.ctl-browse-searchrow),
+      .ctl-browse-searchrow .ctl-viewtoggle,
+      .ctl-recent-rail,
+      .ctl-keyboard-hint,
+      .ctl-lineage {
+        display: none;
+      }
+    }
+  }
+}

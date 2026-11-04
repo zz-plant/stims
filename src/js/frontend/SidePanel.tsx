@@ -74,6 +74,12 @@ type SidePanelProps = {
   // 560px rail. Browse wants this: a catalog of visual programs read three
   // tiles across is a filing cabinet, not a gallery.
   wide?: boolean;
+  /**
+   * Keeps the stage in view above a phone sheet that stays modal, as the
+   * editor's sheet does for an anchored tool: Browse while a tapped card is
+   * playing, which has to show what it did.
+   */
+  liftStage?: boolean;
 };
 
 export function SidePanel({
@@ -85,6 +91,7 @@ export function SidePanel({
   stageAnchored = false,
   fillBody = false,
   wide = false,
+  liftStage = false,
 }: SidePanelProps) {
   const [exiting, setExiting] = useState(false);
   const closeTimerRef = useRef<number | null>(null);
@@ -244,14 +251,14 @@ export function SidePanel({
   // until then the sheet would slide off a band of bare frame under the
   // lifted canvas.
   useEffect(() => {
-    if (!stageAnchored || !isActive) return;
+    if ((!stageAnchored && !liftStage) || !isActive) return;
     const root = document.getElementById('stims-main');
     if (!root) return;
     root.dataset.stageLifted = 'true';
     return () => {
       delete root.dataset.stageLifted;
     };
-  }, [stageAnchored, isActive]);
+  }, [stageAnchored, liftStage, isActive]);
 
   useEffect(() => {
     if (!stageAnchored) return;
@@ -377,6 +384,7 @@ export function SidePanel({
         <div
           className={styles.backdrop}
           data-exiting={String(exiting)}
+          data-lift-stage={liftStage ? 'true' : undefined}
           onClick={startClose}
           aria-hidden="true"
         />
@@ -387,6 +395,7 @@ export function SidePanel({
         data-exiting={String(exiting)}
         data-stage-anchored={stageAnchored ? 'true' : undefined}
         data-wide={wide ? 'true' : undefined}
+        data-lift-stage={liftStage ? 'true' : undefined}
         role="dialog"
         aria-modal={stageAnchored ? undefined : 'true'}
         aria-label={title}
