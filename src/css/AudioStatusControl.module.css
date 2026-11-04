@@ -271,7 +271,7 @@
    the state colour and the icon still read at a glance, the accessible name
    carries the whole sentence, and SilentAudioNotice already prints the
    "tap for sound" case on the stage itself. */
-@media (max-width: 480px) {
+@media (max-width: 639px) {
   .trigger {
     padding: 0 6px;
     gap: 3px;

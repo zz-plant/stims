@@ -492,6 +492,7 @@ describe('stage dock says what each control will do', () => {
     expect(item('toggle-camera')?.getAttribute('aria-label')).toBe(
       'Use camera as video input (asks for camera access)',
     );
+    rendered.click(item('open-share'));
     const publish = [
       ...rendered.container.querySelectorAll<HTMLElement>(
         '[role="menu"] [role^="menuitem"]',
@@ -529,12 +530,16 @@ describe('stage dock says what each control will do', () => {
     );
     try {
       const item = openMenu(rendered);
-      expect(item('open-record')?.getAttribute('aria-label')).toBe(
-        'Close the recording panel',
-      );
+      // Not one of ≡'s own rows until there is a take to stop.
+      expect(item('open-record')).toBeNull();
       act(() => setRecordingActive(true));
       expect(item('open-record')?.getAttribute('aria-label')).toBe(
         'Stop recording and save',
+      );
+      act(() => setRecordingActive(false));
+      rendered.click(item('open-share'));
+      expect(item('open-record')?.getAttribute('aria-label')).toBe(
+        'Close the recording panel',
       );
     } finally {
       act(() => resetRecordingActiveForTests());
@@ -559,10 +564,10 @@ describe('stage dock menu reaches what had no visible route', () => {
     const rendered = mount();
     const [, second] = menuActions(rendered);
     expect(second?.slice(0, 4)).toEqual([
+      'open-share',
       'open-generate',
       'open-refine',
       'open-editor',
-      'open-record',
     ]);
     expect(second?.indexOf('open-editor')).toBeLessThan(
       second?.indexOf('open-settings') ?? -1,
@@ -595,6 +600,134 @@ describe('stage dock menu reaches what had no visible route', () => {
     expect(onOpenShortcuts).toHaveBeenCalledTimes(1);
     rendered.click(item('queue-manage-sets'));
     expect(onOpenSets).toHaveBeenCalledTimes(1);
+    rendered.dispose();
+  });
+});
+
+describe('stage dock Share sheet', () => {
+  const actions = (rendered: ReturnType<typeof mount>) =>
+    [
+      ...rendered.container.querySelectorAll<HTMLElement>(
+        '[role="menu"] [data-action]',
+      ),
+    ].map((item) => item.dataset.action);
+
+  test('the bar button opens only the ways to share, and closes them again', () => {
+    const rendered = mount();
+    const share = rendered.byLabel('Share');
+    rendered.click(share);
+    expect(actions(rendered)).toEqual([
+      'share-link',
+      'copy-embed-code',
+      'open-record',
+      'watch-party',
+    ]);
+    expect(share?.getAttribute('aria-expanded')).toBe('true');
+    expect(
+      rendered.byLabel('More actions')?.getAttribute('aria-expanded'),
+    ).toBe('false');
+    rendered.click(share);
+    expect(rendered.container.querySelector('[role="menu"]')).toBeNull();
+    rendered.dispose();
+  });
+
+  test('≡ reaches the sheet without closing, and the sheet leads back', () => {
+    const rendered = mount();
+    rendered.click(rendered.byLabel('More actions'));
+    expect(actions(rendered)).not.toContain('share-link');
+    rendered.click(
+      rendered.container.querySelector(
+        '[role="menu"] [data-action="open-share"]',
+      ),
+    );
+    expect(actions(rendered)).toContain('share-link');
+    expect(actions(rendered)).not.toContain('open-settings');
+
+    const back = [
+      ...rendered.container.querySelectorAll<HTMLElement>(
+        '[role="menu"] button',
+      ),
+    ].find((button) => button.textContent === 'All actions');
+    rendered.click(back);
+    expect(actions(rendered)).toContain('open-settings');
+    rendered.dispose();
+  });
+
+  test('a real press on Share closes the open sheet rather than reopening it', () => {
+    const rendered = mount();
+    const share = rendered.byLabel('Share');
+    rendered.click(share);
+    // A real press reaches the document listener before the click does. If
+    // that counted Share as outside the menu, the click would reopen it.
+    act(() => {
+      share?.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+    });
+    rendered.click(share);
+    expect(rendered.container.querySelector('[role="menu"]')).toBeNull();
+    rendered.dispose();
+  });
+
+  test('running a share row closes the sheet and hands focus to what opened it', () => {
+    const handleShowCurrentLink = jest.fn(async () => {});
+    const rendered = renderWorkspace(
+      createElement(StageControls, {
+        isFullscreen: false,
+        onToggleFullscreen: () => {},
+      }),
+      { snapshot: liveSnapshot(), ui: { handleShowCurrentLink } },
+    );
+    const share = rendered.byLabel('Share');
+    rendered.click(share);
+    rendered.click(
+      rendered.container.querySelector(
+        '[role="menu"] [data-action="share-link"]',
+      ),
+    );
+    expect(handleShowCurrentLink).toHaveBeenCalledTimes(1);
+    expect(rendered.container.querySelector('[role="menu"]')).toBeNull();
+    expect(document.activeElement).toBe(share);
+    rendered.dispose();
+  });
+});
+
+describe('stage dock menu in one column', () => {
+  const realMatchMedia = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+  });
+
+  test('puts Create, Settings and Reduce flashing ahead of the live controls', () => {
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('max-width: 639px'),
+    })) as unknown as typeof window.matchMedia;
+    const rendered = mount();
+    rendered.click(rendered.byLabel('More actions'));
+    const menu = rendered.container.querySelector('[role="menu"]');
+    expect(menu?.children.length).toBe(1);
+    const order = [
+      ...(menu?.querySelectorAll<HTMLElement>('[data-action]') ?? []),
+    ].map((item) => item.dataset.action ?? '');
+    const at = (action: string) => {
+      expect(order).toContain(action);
+      return order.indexOf(action);
+    };
+    expect(at('queue-add')).toBeLessThan(at('open-share'));
+    expect(at('open-editor')).toBeLessThan(at('open-settings'));
+    expect(at('toggle-reduce-flashing')).toBeLessThan(at('audio-demo'));
+    expect(at('audio-demo')).toBeLessThan(at('toggle-fullscreen'));
+    expect(at('toggle-fullscreen')).toBeLessThan(at('transition-cut'));
+    expect(at('transition-cut')).toBeLessThan(at('perform-pin'));
+    rendered.dispose();
+  });
+
+  test('the two-column order is what a wider window keeps', () => {
+    window.matchMedia = ((_query: string) => ({
+      matches: false,
+    })) as unknown as typeof window.matchMedia;
+    const rendered = mount();
+    rendered.click(rendered.byLabel('More actions'));
+    const menu = rendered.container.querySelector('[role="menu"]');
+    expect(menu?.children.length).toBe(2);
     rendered.dispose();
   });
 });

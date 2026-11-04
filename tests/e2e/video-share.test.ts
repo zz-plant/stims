@@ -146,7 +146,7 @@ requiredBrowserTest(
       console.info('video-share: sender draft is running');
       await page.keyboard.press('Escape');
       await page
-        .getByRole('button', { name: 'More actions', exact: true })
+        .getByRole('button', { name: 'Share', exact: true })
         .click({ timeout: 30_000 });
       await page
         .getByRole('menuitem', {
@@ -231,6 +231,9 @@ requiredBrowserTest(
       ).toBe('video/mp4');
       await dialog
         .getByRole('button', { name: 'Delete public link', exact: true })
+        .click();
+      await dialog
+        .getByRole('button', { name: 'Delete it for everyone', exact: true })
         .click();
       await dialog.getByRole('status').filter({ hasText: 'deleted' }).waitFor();
       expect(objects.size).toBe(0);

@@ -63,7 +63,7 @@ These are settled. Apply them without asking; change them here, with a reason, w
 - **Claim.** Portable state: [roadmap principle 5](./ROADMAP.md#product-principles).
 - **Correct.** The visitor lands on the sender's preset and settings, and an embedding page gets a `toil:status` reply to every message.
 - **Instruments.** `tests/e2e/embed-bridge.test.ts` and `bun run ctl -- --embed`; `tests/e2e/embed-snippet.test.ts` pastes the dock's copied embed code into a host page and checks that the frame plays the preset.
-- **The way in.** Embed beside Share link in ≡ More actions, and the palette's `copy-embed-code`, copy an `<iframe>` for the playing preset (`src/js/core/embed-snippet.ts`, shared with the oEmbed provider). Each copy sends `growth-embed-code-copied`.
+- **The way in.** Copy embed code in the Share sheet, and the palette's `copy-embed-code`, copy an `<iframe>` for the playing preset (`src/js/core/embed-snippet.ts`, shared with the oEmbed provider). Each copy sends `growth-embed-code-copied`.
 - **Telemetry, 30 days.** 613 embed landings and 35 discovery landings. All 613 embed landings came from one country between 09-09 and 09-16 and stopped: that is our own capture run, not an audience. #1377 keeps such runs out.
 - **Search arrivals.** Most arrivals from search land here too, on one of the sitemap's `?preset=` pages, with no sender and the demo audio held until a tap. Every beacon now records the visit's `arrival` class (search, assistant, social, internal, other or none, from the referrer's host only), and each page load sends one `landing` event. The "Arrivals and how far they get" report in `telemetry:report` splits landings, audible starts and preset views by that class.
 
