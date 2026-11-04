@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, jest, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, jest, test } from 'bun:test';
 import { act, createElement } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import {
+  getActiveAccessibilityPreference,
   resetAccessibilityPreferenceState,
   setAccessibilityPreference,
 } from '../../src/js/core/accessibility-preferences.ts';
@@ -15,6 +16,7 @@ import type {
   SessionRouteState,
 } from '../../src/js/frontend/contracts.ts';
 import { FlashProtectionNotice } from '../../src/js/frontend/FlashProtectionNotice.tsx';
+import { SettingsSheetPanel } from '../../src/js/frontend/SettingsSheetPanel.tsx';
 import { useWorkspaceShellOrchestration } from '../../src/js/frontend/workspace-shell-hooks.ts';
 import { makePresetEntry, renderWorkspace } from '../frontend-harness.tsx';
 
@@ -110,7 +112,9 @@ describe('Reduce flashing reaches every way a preset gets picked', () => {
 describe('the stage notice', () => {
   test('appears while the governor dims the stage', () => {
     const stage = document.createElement('div');
-    const rendered = renderWorkspace(<FlashProtectionNotice />);
+    const rendered = renderWorkspace(
+      <FlashProtectionNotice onOpenSetting={() => {}} />,
+    );
     try {
       expect(rendered.text()).toBe('');
       act(() => setStageLuminanceChannel(stage, 'governor', 0.6));
@@ -122,6 +126,134 @@ describe('the stage notice', () => {
       });
     } finally {
       act(() => resetStageLuminance(stage));
+      rendered.dispose();
+    }
+  });
+
+  test('its button asks for the setting and leaves protection on', () => {
+    const stage = document.createElement('div');
+    setAccessibilityPreference({ reduceFlashing: true });
+    const onOpenSetting = jest.fn();
+    const rendered = renderWorkspace(
+      <FlashProtectionNotice onOpenSetting={onOpenSetting} />,
+    );
+    try {
+      act(() => setStageLuminanceChannel(stage, 'governor', 0.6));
+      rendered.click(rendered.container.querySelector('button'));
+      expect(onOpenSetting).toHaveBeenCalledTimes(1);
+      expect(getActiveAccessibilityPreference().reduceFlashing).toBe(true);
+    } finally {
+      act(() => resetStageLuminance(stage));
+      rendered.dispose();
+    }
+  });
+
+  test('it stays while focused after the dimming ends, then leaves', () => {
+    const stage = document.createElement('div');
+    const pending = new Map<number, () => void>();
+    let nextTimer = 1;
+    const setTimeoutSpy = jest.spyOn(window, 'setTimeout').mockImplementation(((
+      callback: () => void,
+    ) => {
+      const id = nextTimer++;
+      pending.set(id, callback);
+      return id;
+    }) as unknown as typeof window.setTimeout);
+    const clearTimeoutSpy = jest
+      .spyOn(window, 'clearTimeout')
+      .mockImplementation(((id: number) => {
+        pending.delete(id);
+      }) as unknown as typeof window.clearTimeout);
+    const fireTimers = () =>
+      act(() => {
+        const callbacks = [...pending.values()];
+        pending.clear();
+        for (const callback of callbacks) callback();
+      });
+    const rendered = renderWorkspace(
+      <FlashProtectionNotice onOpenSetting={() => {}} />,
+    );
+    try {
+      act(() => setStageLuminanceChannel(stage, 'governor', 0.6));
+      const button = rendered.container.querySelector('button');
+      act(() => button?.focus());
+      act(() => setStageLuminanceChannel(stage, 'governor', 1));
+      fireTimers();
+      expect(rendered.text()).toContain('Dimming flashes');
+
+      act(() => button?.blur());
+      fireTimers();
+      expect(rendered.text()).toBe('');
+    } finally {
+      setTimeoutSpy.mockRestore();
+      clearTimeoutSpy.mockRestore();
+      act(() => resetStageLuminance(stage));
+      rendered.dispose();
+    }
+  });
+});
+
+describe('Settings opened from the stage notice', () => {
+  // The panel builds links from the page's origin, so it needs a real one.
+  const originalLocation = Object.getOwnPropertyDescriptor(window, 'location');
+  beforeEach(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: new URL('https://toil.fyi/'),
+    });
+  });
+  afterEach(() => {
+    if (originalLocation) {
+      Object.defineProperty(window, 'location', originalLocation);
+    }
+  });
+
+  const settingsProps = {
+    onCompatibilityModeChange: () => {},
+    onMotionPreferenceChange: () => {},
+    onOpenShortcuts: () => {},
+    onOpenCredits: () => {},
+  };
+
+  test('lands on the Reduce flashing switch', async () => {
+    const onRevealed = jest.fn();
+    const rendered = renderWorkspace(
+      <SettingsSheetPanel
+        {...settingsProps}
+        revealReduceFlashing
+        onReduceFlashingRevealed={onRevealed}
+      />,
+    );
+    try {
+      expect(
+        rendered.container.querySelector('[role="tab"][aria-selected="true"]')
+          ?.textContent,
+      ).toBe('Appearance and device');
+      await act(
+        () =>
+          new Promise<void>((resolve) =>
+            requestAnimationFrame(() => resolve()),
+          ),
+      );
+      const focused = document.activeElement as HTMLElement;
+      expect(focused.getAttribute('role')).toBe('switch');
+      expect(focused.closest('label')?.textContent).toContain(
+        'Reduce flashing',
+      );
+      expect(onRevealed).toHaveBeenCalledTimes(1);
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('opens on its usual tab otherwise', () => {
+    const rendered = renderWorkspace(<SettingsSheetPanel {...settingsProps} />);
+    try {
+      expect(
+        rendered.container.querySelector('[role="tab"][aria-selected="true"]')
+          ?.textContent,
+      ).toBe('Playback and audio');
+    } finally {
       rendered.dispose();
     }
   });

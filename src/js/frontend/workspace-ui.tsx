@@ -38,6 +38,7 @@ export function WorkspaceStagePanel({
   onOpenPalette,
   onOpenShortcuts,
   onOpenSets,
+  onOpenFlashSetting,
 }: {
   isFullscreen: boolean;
   launchPanel: ReactNode;
@@ -46,6 +47,7 @@ export function WorkspaceStagePanel({
   onOpenPalette?: () => void;
   onOpenShortcuts?: () => void;
   onOpenSets?: () => void;
+  onOpenFlashSetting?: () => void;
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -138,7 +140,9 @@ export function WorkspaceStagePanel({
             </div>
           </div>
         ) : null}
-        {roomMode ? null : <FlashProtectionNotice />}
+        {roomMode ? null : (
+          <FlashProtectionNotice onOpenSetting={onOpenFlashSetting} />
+        )}
         {/* The D/Y stage utilities. Live mode only: there is nothing to cut
             on the launch page, and unmounting with the session releases any
             latched blackout. */}

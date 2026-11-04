@@ -363,6 +363,11 @@ function StimsWorkspaceAppShell() {
   );
 
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [revealReduceFlashing, setRevealReduceFlashing] = useState(false);
+  const clearRevealReduceFlashing = useCallback(
+    () => setRevealReduceFlashing(false),
+    [],
+  );
   const [showManageSets, setShowManageSets] = useState(false);
   // Drives the palette's theme row label, so it names the current choice.
   const themeChoice = useSyncExternalStore(
@@ -1411,6 +1416,10 @@ function StimsWorkspaceAppShell() {
         onOpenPalette={() => setPaletteOpen(true)}
         onOpenShortcuts={() => setShowShortcuts(true)}
         onOpenSets={() => setShowManageSets(true)}
+        onOpenFlashSetting={() => {
+          setRevealReduceFlashing(true);
+          ui.updatePanel('settings');
+        }}
       />
       {presetPage ? (
         <PresetPageDetails
@@ -1485,6 +1494,8 @@ function StimsWorkspaceAppShell() {
               onOpenShortcuts={() => setShowShortcuts(true)}
               onOpenCredits={() => setShowCredits(true)}
               padActions={paletteActions}
+              revealReduceFlashing={revealReduceFlashing}
+              onReduceFlashingRevealed={clearRevealReduceFlashing}
             />
           ) : null}
           {ui.routeState.panel === 'refine' ? <RefinePanel /> : null}

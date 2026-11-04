@@ -3,7 +3,12 @@
  * rendering resolution, accessibility options, audio buffers, and hardware telemetry.
  */
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import {
   applyAccessibility,
   clampMotionScale,
@@ -63,12 +68,16 @@ function describeQualityNumbers(preset: QualityPreset): string {
   return getQualityImpactSummary(preset).replace(/^What changes:\s*/u, '');
 }
 
+const REDUCE_FLASHING_SWITCH_ID = 'setting-reduce-flashing';
+
 function SwitchRow({
+  id,
   label,
   hint,
   checked,
   onChange,
 }: {
+  id?: string;
   label: string;
   hint?: string;
   checked: boolean;
@@ -81,6 +90,7 @@ function SwitchRow({
         {hint ? <span className="ctl-row__hint">{hint}</span> : null}
       </span>
       <input
+        id={id}
         type="checkbox"
         role="switch"
         aria-checked={checked}
@@ -269,6 +279,7 @@ function AccessibilitySection({
         }}
       />
       <SwitchRow
+        id={REDUCE_FLASHING_SWITCH_ID}
         label="Reduce flashing"
         hint="Hides presets measured above the WCAG flash threshold and dims strobing as it happens. A mitigation, not a guarantee: unmeasured presets stay in the list."
         checked={prefs.reduceFlashing}
@@ -604,6 +615,8 @@ export function SettingsSheetPanel({
   installAvailable = false,
   onInstallApp,
   padActions,
+  revealReduceFlashing = false,
+  onReduceFlashingRevealed,
 }: {
   onCompatibilityModeChange: (enabled: boolean) => void;
   onMotionPreferenceChange: (enabled: boolean) => void;
@@ -618,6 +631,9 @@ export function SettingsSheetPanel({
   onInstallApp?: () => void;
   /** Commands the hardware tab can map to a pad: the palette's own list. */
   padActions?: readonly PadActionChoice[];
+  /** Opened from the stage's "Dimming flashes" notice: go to that switch. */
+  revealReduceFlashing?: boolean;
+  onReduceFlashingRevealed?: () => void;
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -663,6 +679,21 @@ export function SettingsSheetPanel({
   const [activeTab, setActiveTab] = useState<
     'playback' | 'hardware' | 'graphics' | 'accessibility'
   >('playback');
+
+  useLayoutEffect(() => {
+    if (revealReduceFlashing) setActiveTab('accessibility');
+  }, [revealReduceFlashing]);
+  useEffect(() => {
+    if (!revealReduceFlashing || activeTab !== 'accessibility') return;
+    // A frame later, or the panel's own opening focus lands after this one.
+    const frame = requestAnimationFrame(() => {
+      document
+        .getElementById(REDUCE_FLASHING_SWITCH_ID)
+        ?.focus({ focusVisible: true } as FocusOptions);
+      onReduceFlashingRevealed?.();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [revealReduceFlashing, activeTab, onReduceFlashingRevealed]);
 
   // The tablist role promises arrow-key movement; without it the tabs are
   // Tab+Enter only and the roving tabIndex below would strand focus.
