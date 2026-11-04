@@ -81,6 +81,7 @@ does not silently erase an otherwise valid trial.
   samples, tiny per-frame programs took microseconds on CPU and milliseconds
   through the GPU round trip, so `gpuComputeVM` remains disabled by default.
   That result does not rule out GPU execution for parallel per-vertex work.
+  [Re-measured 2026-11-04](#2026-11-04-webgpu-platform-features-1541).
 
 Evidence boundary: production browser checks on this host resolved real WebGPU
 timestamps and kept native WebGPU active. Even at 4K and 6K, the sampled GPU
@@ -125,6 +126,11 @@ blend buffers are the idea on file, after item 1 shows what remains.
 ## Deliberate boundaries
 
 Each of these was measured or reasoned through and left as is. Re-open one only with the evidence it names.
+- **Queue-write speedups need no adoption; linear canvas colour spaces and
+  transient colour targets stay out.** See
+  [the 2026-11-04 decisions](#2026-11-04-webgpu-platform-features-1541). Re-open
+  transient attachments for a depth-using pass only once removing depth has been
+  tried, and wide gamut only after an eye check on a P3 display.
 - **WebGPU render bundles stay off.** The 2026-10-11 hardware A/B below
   found no cadence effect. Re-evaluate only with a component-level profile
   showing CPU submission time that cadence sampling cannot see.
@@ -344,6 +350,215 @@ claim: this preset, this hardware, one quality step; the microbench on
 presets that reference nearly all built-ins read ±1% (noise), as expected —
 their per-vertex loops are unchanged.
 
+## 2026-11-04 WebGPU platform features (#1541)
+
+Each item in [#1541](https://github.com/zz-plant/stims/issues/1541) gets a decision
+here, and none adopts a feature or changes the renderer. The depth prototype
+described below has not been run.
+
+| Feature | Decision | Reason |
+| --- | --- | --- |
+| Faster `writeBuffer`/`writeTexture` (Chrome 144) | Nothing to adopt; close | Queue writes take under 1% of a frame on the default path |
+| Transient attachments (Chrome 146) | No colour target qualifies; depth only, after trying no depth at all | Transient textures cannot be sampled |
+| `srgb-linear` / `display-p3-linear` (Chrome 155–156) | Do not adopt | Accurate output changes nothing visible; a linear canvas changes every preset's brightness |
+| Subgroup size control (Chrome 151) | Not adopted | Only serves `gpuComputeVM`, which stays off (see the table below) |
+
+### Upload measurement
+
+Host: Apple M1 Max, adapter `apple` / `metal-3`, not a fallback adapter, page
+cross-origin isolated (timer resolution 5 µs). Times were taken 2026-11-04
+between 07:07 and 07:28, with each run starting only once the 1-minute load
+average was under 6. Five runs per build, alternating builds; the figures are
+the median across runs of each run's median and p95.
+
+| Build | Load at start | Load at end |
+| --- | --- | --- |
+| Chromium 149.0.7827.55 (full browser, new headless) | 4.96–5.39 | 4.21–6.99 |
+| Chromium 156.0.8078.4 (full browser, new headless) | 4.21–5.60 | 4.45–7.68 |
+| Chromium 156.0.8078.4 (Playwright's default headless shell) | 4.34–5.66 | 4.96–12.16 |
+
+The shell runs are the control: their results match the full 156 browser, so the
+differences below come from the Chromium version, not the headless mode.
+
+**There is no before.** Every browser here is past Chrome 144, and so is the
+2026-08-22 run: its Playwright 1.62.1 installs Chromium 151. Its load was not
+recorded. These numbers cannot show what the Chrome 144 change itself did, which
+Chrome describes as ["up to 2X"](https://developer.chrome.com/blog/new-in-webgpu-144#faster_writebuffer_and_writetexture)
+depending on data size. They show how much of a frame is left for it to affect.
+
+**The default render path.** The real WebGPU renderer at 1280×720, step 0, demo
+audio, 8 windows of 120 frames in each of 5 runs:
+
+| Preset | Build | Writes per frame | Bytes per frame | Write time, ms per frame (p50 / p95) | Cadence, ms (p50 / p95) |
+| --- | --- | --- | --- | --- | --- |
+| `eos-apocalypse` | 149 | 45.9 | 282 KB | 0.039 / 0.048 | 8.46 / 10.50 |
+| `eos-apocalypse` | 156 | 45.6 | 282 KB | 0.133 / 0.143 | 16.67 / 22.93 |
+| `shifter-curlique` | 149 | 17.9 | 125 KB | 0.018 / 0.025 | 8.34 / 13.58 |
+| `shifter-curlique` | 156 | 16.8 | 125 KB | 0.073 / 0.086 | 16.67 / 20.97 |
+
+That is at most 0.8% of a 16.7 ms frame. Neither preset made a `writeTexture`
+call while measured. A 2× change to this cost is under 0.07 ms a frame, which
+cadence sampling cannot see. These are call-site costs: the GPU
+process does the rest of the copy later. Cadence sits on the vsync floor, and
+the 149 build ran its `requestAnimationFrame` at 120 Hz where 156 ran at 60 Hz,
+so the cadence columns are not a comparison of frame work.
+
+**The compute VM round trip.** `syncState` + dispatch + readback, 200 iterations
+per run. Off by default.
+
+| Program (compiled statements) | CPU JIT µs | GPU ms, 2026-08-22 | GPU ms, 149 (p50 / p95) | GPU ms, 156 (p50 / p95) | GPU ms, 156 shell (p50 / p95) | `syncState` µs, 149 → 156 (p50 / p95) |
+| --- | --- | --- | --- | --- | --- | --- |
+| `cotc-eos-phat-fractical-dancer-light-in-the-distance` (13) | 0.08 | 0.9 | 0.86 / 1.96 | 0.88 / 2.01 | 0.81 / 1.82 | 5 / 15 → 5 / 15 |
+| `flexi-geiss-infused-with-the-spiral-heavy-oil-mix-nz-rapery` (49) | 0.23 | 1.1 | 0.84 / 1.48 | 0.84 / 1.44 | 0.78 / 1.29 | 5 / 10 → 5 / 10 |
+| `flexi-amandio-c-organic-random-mashup` (111) | 0.75 | 0.9 | 0.83 / 1.19 | 0.80 / 1.22 | 0.75 / 1.09 | 0 / 10 → 0 / 5 |
+| `flexi-alien-fish-pond` (21, guest memory) | 0.08 | 8.0 | **6.30 / 7.60** | **3.05 / 3.55** | 3.01 / 3.62 | **3035 / 3220 → 245 / 280** |
+| `cotc-va-ultramix2-208-1` (10) | 0.05 | – | 0.77 / 1.10 | 0.73 / 1.01 | 0.72 / 0.95 | 0 / 5 → 0 / 10 |
+| `cotc-flexi-bdrv-ultramix-05-alien-complex-mix-not-roaring-at-all` (27) | 0.12 | – | 0.76 / 0.94 | 0.77 / 1.00 | 0.71 / 1.11 | 0 / 5 → 0 / 5 |
+| `cotc-the-ng-flexi-bdrv-ultramix-05-alien-complex-mix-underground` (27) | 0.14 | – | 0.82 / 1.71 | 0.76 / 1.13 | 0.71 / 0.89 | 5 / 10 → 0 / 5 |
+
+Without guest memory the round trip is 0.7–0.9 ms on every build and `syncState`
+is at the timer's resolution, so the wait for the GPU is the whole cost. Run-to-run
+medians overlap (690–1000 µs). The guest-memory program is the one real move: it
+halves from 149 to 156 (run medians 5930–6380 µs against 2960–3520 µs), and it
+is still about 38,000× the CPU JIT. `gpuComputeVM` stays off.
+
+**Bare queue writes.** In µs per write, with the call alone and the call plus
+`onSubmittedWorkDone`:
+
+| Write | 149 call (p50 / p95) | 149 done (p50 / p95) | 156 call (p50 / p95) | 156 done (p50 / p95) |
+| --- | --- | --- | --- | --- |
+| `writeBuffer` 256 B | 0.12 / 0.20 | 0.94 / 5.08 | 0.23 / 0.33 | 1.11 / 1.82 |
+| `writeBuffer` 4 KiB | 0.21 / 0.74 | 1.91 / 311 | 1.50 / 2.15 | 2.87 / 43.4 |
+| `writeBuffer` 64 KiB | 1.72 / 6.88 | 15.3 / 68.4 | 21.6 / 26.4 | 28.3 / 64.1 |
+| `writeBuffer` 1 MiB | 25 / 35 | 220 / 1130 | 343 / 381 | 524 / 870 |
+| `writeBuffer` 4 MiB | 1460 / 1600 | 3005 / 6155 | 115 / 175 | 835 / 4935 |
+| `writeTexture` 4 KiB | 0.70 / 0.88 | 7.32 / 20.6 | 2.11 / 2.38 | 10.8 / 22.3 |
+| `writeTexture` 4 MiB | 1445 / 1570 | 2825 / 6125 | 120 / 195 | 1390 / 30090 |
+
+So the write path did change between these builds, and not in one direction. On
+156, writes up to 1 MiB cost 2–14× more at the call and 1.2–2.4× more to complete,
+while 4 MiB writes cost about 13× less at the call and 3.6× less to complete. The
+live write time rises in the same direction (live writes average 6–7 KB), and two
+4 MiB writes predict the `syncState` figures for the guest-memory program (2920 µs
+and 230 µs).
+
+**Verdict: the first item can be closed.** The move is real and reproducible on
+the path that does not run by default. On the path that does, the whole cost is
+at most 0.8% of a frame on either build, so no write-path change can be felt.
+
+### Transient attachments
+
+**No colour feedback target can be transient.** A transient texture's usage must
+be
+[exactly `TRANSIENT_ATTACHMENT | RENDER_ATTACHMENT`](https://github.com/gpuweb/gpuweb/blob/main/proposals/transient-attachments.md),
+its pass must clear and discard, and its contents are gone when the pass ends.
+Both 149 and 156 reject a transient texture that is also sampled, and a transient
+colour attachment that stores. Every colour intermediate on the WebGPU path
+(`feedback-manager-webgpu-tsl.ts`) is read by a later pass:
+
+| Target | Read by |
+| --- | --- |
+| `sceneTarget` | The feedback blend and composite, as the fresh geometry |
+| `targets[0]`, `targets[1]` | The next frame's warp (`previousTex`) and the composite (`internalTex`) |
+| `displayTargets[0]`, `displayTargets[1]` | The present pass (`currentTex`) and the afterimage (`displayHistoryTex`) |
+| `blurTarget` | The vertical blur pass and the `blur1`–`blur3` samplers |
+| `savedFrameTargets` | The preset-switch dissolve |
+
+**The candidate is the depth attachment of `displayTargets`.** Every feedback
+target also carries a `depth24plus` texture, because `createFeedbackRenderTarget`
+leaves `depthBuffer` at three's default. All of them clear and store it each pass:
+
+| Preset | Render passes per frame | Depth textures alive | About (at 4 bytes a texel) |
+| --- | --- | --- | --- |
+| `eos-apocalypse` | 3 at 1280×720, plus present | 5 at 1280×720 | 18 MB |
+| `shifter-curlique` | 2 at 2000×1125 and 1 at 1280×720, plus present | 4 at 2000×1125 and 1 at 1280×720 | 40 MB |
+
+The display target is the one to try first: it runs every frame, draws one
+fullscreen quad (`compositeScene`), and is never fed back, so a mistake would last
+one frame instead of compounding in the loop.
+
+**Try removing the depth first.** A pass that draws one fullscreen quad has no use
+for depth, so `depthBuffer: false` on that target frees the memory on every GPU,
+with no capability check and no new usage flag. A transient attachment only earns
+its place on a pass that still needs depth after that. Which pass that is has not
+been traced: `eos-apocalypse` builds 4 depth-writing pipelines and 8 that only test
+depth, and geometry materials such as `renderer-segment-batching.ts` test without
+writing.
+
+**What adoption would take, for a pass that keeps depth:**
+
+- **three.** r186 sets `TRANSIENT_ATTACHMENT` only for a multisampled target with
+  `storeMultisampledDepthBuffer === false`. These targets are single-sampled, and
+  three gives their depth a sampled usage and a store op. This needs an upstream
+  change or an override. Chrome
+  [149–150 also requires](https://developer.chrome.com/blog/new-in-webgpu-149-150#stricter_validation_for_transient_attachments)
+  empty `viewFormats` and a view that keeps the texture's usage.
+- **Capability check.** `GPUTextureUsage.TRANSIENT_ATTACHMENT !== undefined`, the
+  test three and Chrome's sample both use, per device rather than per version.
+  Keep it behind a new off-by-default key in `webgpu-optimization-flags.ts`, with
+  an ordinary depth texture as the fallback.
+- **Parity proof that frames do not change.** Run `bun run parity:noise -- --preset <id>
+  --repeats 5 --write` for the noise band, then `bun run parity:capture` and
+  `bun run parity:diff -- --preset <id>` on the certified presets with the flag off
+  and on. Then `bun run lab:backend-diff -- --sample 24`, once plain and once with
+  `--query <flag>=1`. Both must stay inside the noise band. A difference smaller
+  than a preset's same-backend noise is invisible to `lab:backend-diff`, so measure
+  that noise rather than assuming it.
+- **Benefit measurement.** JavaScript cannot read GPU memory, so a before/after
+  needs device tooling on a tile-based phone (the S22 loop) as well as frame times.
+
+### `srgb-linear` and `display-p3-linear`
+
+**What the corpus's colours are.** MilkDrop's values are display-referred:
+`output-conversion-passthrough.ts` exists so that a preset's numbers reach the
+screen without tone mapping or an encode, and the feedback loop's decay and
+blending are defined on those same numbers. A preset's 1.0 means "the display's
+full value", not a light level. Three outputs follow from that:
+
+| Choice | What changes on a P3 display |
+| --- | --- |
+| Accurate: treat the numbers as sRGB and convert | Nothing. The browser already does this for today's sRGB canvas. |
+| Reinterpret: treat the numbers as P3 | Saturated colours get more saturated, in every preset. Greys stay put. A preset's pure red becomes P3 red. This looks vivid, but it is a new look rather than accuracy. |
+| Linear canvas: `srgb-linear` or `display-p3-linear` | Every preset brightens, because display-referred numbers are read as light. The earlier output encode took `geiss-game-of-life` from about 14 to about 49 mean luminance. Cancelling it in the present pass gets the same picture back for double the canvas memory (`rgba16float`). Moving the feedback loop itself into linear would change every preset's trails. |
+
+So colour-accurate output buys nothing here, and the only visible option is an art
+direction call. A linear canvas also needs extended-range values the corpus was
+never authored for: values above 1 would stop clipping, unlike the reference
+renderers. That range was not measured.
+
+**The linear spaces are not on by default in the browsers tested.** Chrome lists
+them [under 155–156](https://developer.chrome.com/blog/new-in-webgpu-155-156#srgb-linear-and),
+but 156.0.8078.4 and 149.0.7827.55 both throw a `TypeError` on `configure()`, and
+both accept them with `--enable-experimental-web-platform-features`. Re-run the
+probe on stable before relying on them. three r186 also passes no `colorSpace` to
+`context.configure()`, so using them means changing three or configuring around it.
+
+**The existing flag does not do what it says on WebGPU.** `core/wide-gamut.ts`
+(`localStorage` key `stims:wide-gamut`, no UI sets it) is meant to widen output.
+Because three leaves the WebGPU canvas `srgb`, the present pass applies the
+sRGB-to-P3 matrix to a canvas that is still sRGB, which narrows the picture. Known
+colours through the comp shader, read back at the canvas centre on 156 with the
+flag forced on and `(color-gamut: p3)` stubbed, since headless reports `false`:
+
+| Comp shader `ret` | Flag off (both backends) | Flag on, WebGPU | Flag on, WebGL (`display-p3`) |
+| --- | --- | --- | --- |
+| 1, 0, 0 | 241, 0, 0 | **178, 0, 0** | 242, 0, 0 (clipped) |
+| 0, 1, 0 | 0, 241, 0 | **56, 241, 29** | 0, 241, 0 (clipped) |
+| 0, 0, 1 | 0, 0, 241 | **4, 0, 218** | 0, 0, 241 (clipped) |
+| 1, 0, 1 | 255, 0, 255 | **192, 0, 226** | 255, 0, 255 (clipped) |
+| 0.5, 0.5, 0.5 | 180, 180, 180 | 178, 180, 182 | 180, 180, 180 |
+| 0.6, 0.2, 0.2 | 197, 114, 114 | 174, 109, 113 | 211, 109, 112 |
+
+WebGL reinterprets, so a dull red gains saturation. The screenshot is sRGB, so
+colours outside it clip there and how they look on a P3 panel has not been checked
+by eye. WebGPU, the judged backend, loses saturation and shifts hue instead, so the
+flag makes the two backends disagree.
+
+**Before any wide-gamut work:** decide by eye on a P3 display whether the
+reinterpreted look is wanted, since the parity captures are sRGB and cannot judge
+it. Re-run `lab:flash-audit` too, because P3 red has a higher luminance coefficient
+than sRGB red (0.2289 against 0.2126) and the flash limits are calibrated on sRGB.
+
 ## Reproduce a tier
 
 The runner builds and serves production output by default. Run the same preset
@@ -368,6 +583,16 @@ bun run perf:certification-corpus -- \
 Change only `--cpu-throttle` and the output directory when sweeping resource
 tiers. Generated reports belong under `screenshots/` and are measurement
 artifacts, not source files to commit.
+
+To repeat the upload measurement on a chosen browser build, with the load average
+and adapter recorded in the output:
+
+```bash
+bun run lab:vm-tier-bench -- \
+  --executable <path-to-browser> \
+  --live eos-apocalypse,shifter-curlique \
+  --json ./output/vm-tier-bench.json
+```
 
 ## Regression coverage
 
