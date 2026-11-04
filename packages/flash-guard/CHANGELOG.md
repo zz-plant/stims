@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- `createFlashController` judges in the sampler's worker when it can. At 6x
+  CPU throttle, conversion and judging on the main thread took about 9ms per
+  capture and held 60fps down to 40-50 on presets with 8ms of frame work. The
+  decisions are unchanged. `sampler.judging` is the new interface; a custom
+  sampler without it keeps judging on the main thread.
+- The worker entry point now imports the governor, so `flash-guard/worker` is
+  no longer a single file. Bundlers follow the imports; load it as a module.
+- A main thread blocked for over a second no longer costs the session its
+  worker. The sampler used to take the reply still queued behind that frame
+  for a lost worker, and read synchronously from then on. It now waits to see
+  the capture stay unanswered, and if a worker is lost, tries again after 30s,
+  doubling to at most 5 minutes.
+- New `onOffThreadChange` sampler option reports those moves.
+
 ## 0.2.0 (2026-10-28)
 
 0.1.1 was prepared as a documentation release but never published; its

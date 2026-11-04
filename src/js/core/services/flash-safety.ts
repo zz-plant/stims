@@ -2,7 +2,7 @@
  * Ties the flash governor (the `flash-guard` package) to the Stims stage.
  *
  * The package owns the WCAG decision, the sampler and the loop that connects
- * them; this module supplies the three things only the app knows:
+ * them; this module supplies the four things only the app knows:
  *
  * - When to sample. Frames come from the render loops' frame-drawn
  *   notification (`core/frame-drawn.ts`), in the same task as the draw. Read
@@ -14,6 +14,9 @@
  *   which already means "do not hand me strobing content" for the catalog.
  *   Clamping live output is the runtime half of the same promise, and the
  *   preference defaults on unless the visitor has saved an opt-out.
+ * - Who hears about the fallback. A sampler that gives up on its worker reads
+ *   on the main thread, the most expensive path on the devices likeliest to
+ *   reach it, and nothing on screen would say so.
  * - Where the mitigation goes. The stage's CSS brightness filter is shared
  *   with the visitor's comfort ceiling, so the governor writes its channel
  *   through `stage-luminance.ts` and reads the composed scale back for its
@@ -30,7 +33,10 @@ import {
   subscribeToAccessibilityPreference,
 } from '../accessibility-preferences.ts';
 import { subscribeToFrameDrawn } from '../frame-drawn.ts';
-import { setPresetFlashGuardProbe } from './preset-telemetry.ts';
+import {
+  noteSubstitution,
+  setPresetFlashGuardProbe,
+} from './preset-telemetry.ts';
 import {
   setStageLuminanceChannel,
   stageLuminanceScale,
@@ -48,7 +54,13 @@ export function createFlashSafetyController(
   const isEnabled =
     options.isEnabled ??
     (() => getActiveAccessibilityPreference().reduceFlashing);
-  const sampler = options.sampler ?? createFlashSampler();
+  const sampler =
+    options.sampler ??
+    createFlashSampler({
+      onOffThreadChange: (offThread) => {
+        if (!offThread) noteSubstitution('flash-sampler-main-thread', '');
+      },
+    });
   const controller = createFlashController({
     subscribeToFrames: subscribeToFrameDrawn,
     ...options,

@@ -22,6 +22,7 @@ import {
   resetStageLuminance,
   setStageLuminanceChannel,
 } from '../../src/js/core/services/stage-luminance.ts';
+import { resetTelemetryContextForTests } from '../../src/js/core/services/telemetry-context.ts';
 
 const FRAME_MS = 1000 / 60;
 
@@ -175,5 +176,83 @@ describe('flash safety adapter', () => {
     expect(composited()).toBeCloseTo(0.5 * 0.25, 5);
 
     resetStageLuminance(stage);
+  });
+});
+
+describe('the sampler giving up on its worker', () => {
+  class ErroringWorker {
+    static current: ErroringWorker | null = null;
+    onmessage: unknown = null;
+    onerror: (() => void) | null = null;
+    constructor() {
+      ErroringWorker.current = this;
+    }
+    postMessage() {}
+    terminate() {}
+  }
+
+  const saved = {
+    Worker: globalThis.Worker,
+    OffscreenCanvas: globalThis.OffscreenCanvas,
+    createImageBitmap: globalThis.createImageBitmap,
+    location: Object.getOwnPropertyDescriptor(globalThis, 'location'),
+    navigator: Object.getOwnPropertyDescriptor(globalThis, 'navigator'),
+  };
+  let beacons: Promise<string>[] = [];
+
+  beforeEach(() => {
+    beacons = [];
+    resetTelemetryContextForTests();
+    Object.assign(globalThis, {
+      Worker: ErroringWorker,
+      OffscreenCanvas: class {},
+      createImageBitmap: async () => ({ close() {} }),
+    });
+    // Local hosts never post; production's does.
+    Object.defineProperty(globalThis, 'location', {
+      configurable: true,
+      value: { hostname: 'toil.fyi', origin: 'https://toil.fyi' },
+    });
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        sendBeacon: (_url: string, blob: Blob) => {
+          beacons.push(blob.text());
+          return true;
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    Object.assign(globalThis, {
+      Worker: saved.Worker,
+      OffscreenCanvas: saved.OffscreenCanvas,
+      createImageBitmap: saved.createImageBitmap,
+    });
+    for (const key of ['location', 'navigator'] as const) {
+      const descriptor = saved[key];
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else Reflect.deleteProperty(globalThis, key);
+    }
+    resetTelemetryContextForTests();
+  });
+
+  test('reports the move to the main thread, once', async () => {
+    const controller = createFlashSafetyController({
+      canvas: { width: 640, height: 360 } as HTMLCanvasElement,
+      applyLuminanceScale: () => {},
+      isEnabled: () => true,
+      subscribeToFrames: () => () => {},
+    });
+    controller.tick(0);
+    ErroringWorker.current?.onerror?.();
+    ErroringWorker.current?.onerror?.();
+
+    const events = (await Promise.all(beacons)).map(
+      (text) => JSON.parse(text).event,
+    );
+    expect(events).toEqual(['substitution-flash-sampler-main-thread']);
+    controller.stop();
   });
 });

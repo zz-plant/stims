@@ -52,6 +52,7 @@ export {
   createFlashSampler,
   createMainThreadFlashReader,
   type FlashGridCallback,
+  type FlashOffThreadJudge,
   type FlashSampler,
   type FlashSamplerOptions,
   MAX_CAPTURES_IN_FLIGHT,

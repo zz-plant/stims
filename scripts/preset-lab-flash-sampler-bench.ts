@@ -26,9 +26,31 @@
  *
  *   bun run lab:flash-sampler-bench
  *   bun run lab:flash-sampler-bench -- --iterations 200 --renderer webgl
+ *
+ * `--delivered` answers a different question: how many frames does the
+ * sampler cost, as the display counts them? Main-thread microseconds cannot
+ * say, because a capture can hold the GPU or the compositor back after it
+ * returns. It serves a production build (the Vite dev server can fall back
+ * to synchronous reads, which production does not), throttles the CPU, and
+ * walks the live guard through its stages in an A-B-B-A order so warm-up
+ * cannot flatter whichever stage runs last:
+ *
+ *   off       Reduce flashing off
+ *   capture   createImageBitmap only; the bitmap is closed unread
+ *   judge     the worker reads and judges; the dimming filter is not written
+ *   full      the live guard
+ *
+ * It also prints the main-thread time per reply and how long the worker takes
+ * from receiving a snapshot to answering. CDP's throttle slows the page's main
+ * thread, not the worker, so that latency is a floor for a slow device.
+ *
+ *   bun run lab:flash-sampler-bench -- --delivered
+ *   bun run lab:flash-sampler-bench -- --delivered --throttle 6 \
+ *     --renderer webgpu --preset martin-journey-into-space
  */
 import { chromium } from 'playwright';
 import { ensureDevServer } from './dev-server.ts';
+import { runDeliveredFrameBench } from './flash-sampler-delivered.ts';
 
 const PORT = Number(process.env.FLASH_BENCH_PORT ?? 5201);
 const args = process.argv.slice(2);
@@ -41,6 +63,11 @@ const ITERATIONS = inline
     : 120;
 const rendererIdx = args.indexOf('--renderer');
 const RENDERER = rendererIdx >= 0 ? args[rendererIdx + 1] : null;
+
+if (args.includes('--delivered')) {
+  await runDeliveredFrameBench(args);
+  process.exit(0);
+}
 
 const server = await ensureDevServer(PORT, process.cwd());
 // channel 'chromium': the default headless shell has no usable WebGPU and
