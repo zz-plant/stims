@@ -92,6 +92,32 @@ describe('setTelemetryAudioSource', () => {
   });
 });
 
+describe('readTelemetryContext fold', () => {
+  const target = window as unknown as { viewport?: unknown };
+  const original = target.viewport;
+
+  afterEach(() => {
+    target.viewport = original;
+  });
+
+  test('says nothing on a flat screen', () => {
+    target.viewport = {
+      segments: [{ x: 0, y: 0, width: 390, height: 844 }],
+    };
+    expect(readTelemetryContext()).not.toHaveProperty('fold');
+  });
+
+  test('reports the hinge dividing the window when it fires', () => {
+    target.viewport = {
+      segments: [
+        { x: 0, y: 0, width: 465, height: 585 },
+        { x: 485, y: 0, width: 466, height: 585 },
+      ],
+    };
+    expect(readTelemetryContext().fold).toBe('book');
+  });
+});
+
 describe('classifyTelemetryArrival', () => {
   const own = 'https://toil.fyi';
 

@@ -403,3 +403,132 @@
 :global(html[data-agent-mode="true"]) .backdrop {
   animation: none;
 }
+
+/* Half-folded with the hinge across the screen (laptop pose), at any width:
+   the stage owns the upper half (app-shell.css) and every panel the lower one,
+   so nothing covers the visual and nothing sits on the hinge. The stage has no
+   reason to ride up: it already fits the space above the panel. */
+@media (vertical-viewport-segments: 2) {
+  .backdrop {
+    background: transparent;
+  }
+
+  .panel,
+  .panel[data-stage-anchored="true"],
+  .panel[data-lift-stage="true"],
+  .panel[data-wide="true"] {
+    top: env(viewport-segment-top 0 1);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    animation: slide-up var(--motion-enter) both;
+  }
+
+  .panel[data-exiting="true"] {
+    animation: slide-down 0.2s ease forwards;
+  }
+
+  .panel[data-stage-anchored="true"] .seam,
+  .seamHint {
+    display: none;
+  }
+
+  .header {
+    touch-action: none;
+    padding-top: 22px;
+  }
+
+  .grabber {
+    display: block;
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: var(--radius-round);
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  :global(
+    #stims-main[data-stage-lifted="true"]
+      :is(.stims-shell__stage-root, .stims-stage-gizmo)
+  ) {
+    transform: none;
+  }
+}
+
+/* Half-folded with the hinge down the screen (book pose), at any width: every
+   panel takes the right half. The width is the hinge's, so the resize seam has
+   nothing to do. While a panel keeps the stage in view, the canvas moves left
+   by half that width to centre the visual in the half still showing, without
+   resizing and restarting its feedback. */
+@media (horizontal-viewport-segments: 2) {
+  .backdrop {
+    background: transparent;
+  }
+
+  .panel,
+  .panel[data-stage-anchored="true"],
+  .panel[data-lift-stage="true"],
+  .panel[data-wide="true"] {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: env(viewport-segment-left 1 0);
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    border-top: none;
+    border-left: 1px solid var(--ctl-panel-line, rgba(255, 255, 255, 0.08));
+    border-radius: 0;
+    animation: slide-in-right var(--motion-enter) both;
+  }
+
+  .panel[data-exiting="true"] {
+    animation: slide-out-right 0.2s ease forwards;
+  }
+
+  .panel[data-stage-anchored="true"] .seam,
+  .seamHint {
+    display: none;
+  }
+
+  .header {
+    touch-action: auto;
+    padding-top: 14px;
+  }
+
+  .grabber {
+    display: none;
+  }
+
+  :global(
+    #stims-main[data-stage-lifted="true"]
+      :is(.stims-shell__stage-root, .stims-stage-gizmo)
+  ) {
+    transform: translateX(calc(env(viewport-segment-width 1 0) / -2));
+  }
+
+  :global(
+    html:not([data-agent-mode="true"])
+      :is(.stims-shell__stage-root, .stims-stage-gizmo)
+  ) {
+    transition: transform var(--motion-exit);
+  }
+
+  :global(
+    html:not([data-agent-mode="true"])
+      #stims-main[data-stage-lifted="true"]
+      :is(.stims-shell__stage-root, .stims-stage-gizmo)
+  ) {
+    transition: transform var(--motion-enter);
+  }
+}

@@ -1,0 +1,37 @@
+/*
+ * The shell on a half-folded screen. Each rule keys on the browser reporting a
+ * hinge, never on width, so every other device skips this file entirely. The
+ * panels' half of these layouts is in SidePanel.module.css, and
+ * docs/guides/FOLDABLE_WEB.md describes the whole.
+ */
+@scope (.stims-shell) {
+  /* The hinge runs down the screen (book pose). The dock stays in the left
+     half, panel or no panel, so no button lands on the hinge. */
+  @media (horizontal-viewport-segments: 2) {
+    :scope,
+    :scope[data-stage-tool-open="true"] {
+      --stage-tool-inset: calc(100vw - env(viewport-segment-width 0 0));
+    }
+
+    .stims-shell__toast-stack {
+      right: calc(var(--stage-tool-inset, 0px) + 16px);
+    }
+  }
+
+  /* The hinge runs across the screen (laptop pose). The upper half is propped
+     up to be watched, so the visual lives there, at that half's shape, and the
+     lower half is for the hands. Only the hinge moving resizes the canvas:
+     opening a panel below it does not. The panel fills the lower half at any
+     width, which leaves the dock nothing to clear. */
+  @media (vertical-viewport-segments: 2) {
+    :scope[data-stage-tool-open="true"] {
+      --stage-tool-inset: 0px;
+    }
+
+    .stims-shell__stage-frame[data-mode="live"]
+      :is(.stims-shell__stage-root, .stims-stage-gizmo) {
+      inset: 0 0 auto;
+      height: env(viewport-segment-height 0 0);
+    }
+  }
+}

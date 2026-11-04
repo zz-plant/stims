@@ -37,7 +37,8 @@ export const responsiveScenarios: readonly ResponsiveScenario[] = [
 ] as const;
 
 /** Use inside Playwright tests: await page.setViewportSize(scenario.viewport).
- * This does not emulate the Device Posture or Viewport Segments APIs.
+ * This does not emulate the Device Posture or Viewport Segments APIs; see
+ * setHinge in tests/e2e/foldable-layout.test.ts for that.
  */
 export function findResponsiveScenario(name: string): ResponsiveScenario {
   const scenario = responsiveScenarios.find(

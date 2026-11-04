@@ -27,6 +27,7 @@ import {
 } from '../core/services/preset-visual-vectors.ts';
 import { readStored, writeStored } from '../core/state/browser-storage.ts';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
+import { currentFoldLayout } from '../utils/foldable-viewport.ts';
 import { BrowsePresetList } from './BrowsePresetList.tsx';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
@@ -107,6 +108,8 @@ const TRY_FOLD_MS = 5000;
  */
 function browseLeavesStageInView(): boolean {
   if (typeof window === 'undefined' || !window.matchMedia) return true;
+  // The hinge gives the stage its own half of the screen.
+  if (currentFoldLayout() !== 'flat') return true;
   return !window.matchMedia(
     '(max-width: 767px) and (max-height: 599px), (max-height: 500px) and (pointer: coarse)',
   ).matches;
@@ -114,6 +117,7 @@ function browseLeavesStageInView(): boolean {
 
 /** Where a phone sheet can shrink and still leave the stage worth watching. */
 function browseSheetShrinksToTry(): boolean {
+  if (currentFoldLayout() !== 'flat') return false;
   return Boolean(
     window.matchMedia?.('(max-width: 767px) and (min-height: 600px)').matches,
   );

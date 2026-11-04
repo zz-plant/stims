@@ -28,6 +28,7 @@ import '../../css/shell/preset-identity.css';
 import '../../css/shell/preset-grid.css';
 import '../../css/shell-theme.css';
 import '../../css/shell-launch.css';
+import '../../css/shell/fold-layout.css';
 import '../../css/chrome.css';
 // The stage watch HUD toggles from the command palette and is meant to run
 // with the editor closed, so its styles cannot wait for the editor chunk.
@@ -62,6 +63,7 @@ import {
 import { parseURLParams } from '../core/url-params.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { deferToIdle } from '../utils/browser/idle-task.ts';
+import { rotatingWidensWindow } from '../utils/foldable-viewport.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import { initAgentBridge, updateAgentTelemetry } from './agent-bridge.ts';
 import { buildAgentBridgeCallbacks } from './agent-bridge-handlers.ts';
@@ -1042,7 +1044,7 @@ function StimsWorkspaceAppShell() {
         window.clearTimeout(hideTimer);
         hideTimer = null;
       }
-      if (!liveMode || !media.matches) {
+      if (!liveMode || !media.matches || !rotatingWidensWindow(window)) {
         setShowRotateHint(false);
         return;
       }

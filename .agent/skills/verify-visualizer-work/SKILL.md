@@ -35,6 +35,7 @@ commits.
 | Boot, renderer, backend fallback, audio start | `tests/e2e/agent-boot-smoke.test.ts` (boots and animates on each backend) and `tests/e2e/e2e-engine-mount.test.ts` (WebGL mount and preset switch); `tests/e2e/webgpu-engine-mount.test.ts` runs only on a machine with a real GPU |
 | Preset switches and blends                    | `tests/e2e/feedback-continuity.test.ts`, `tests/e2e/preset-crossfade.test.ts`                                                                                                                                                      |
 | Shell chrome, landing, routes                 | `tests/e2e/chrome-visual-contract.test.ts`, `tests/e2e/landing-route.test.ts`, `tests/e2e/open-one-up.test.ts`, `tests/e2e/studio-loop.test.ts`                                                                                    |
+| Fold layouts, half-folded screens             | `tests/e2e/foldable-layout.test.ts` |
 | iframe `postMessage` protocol                 | `tests/e2e/embed-bridge.test.ts`                                                                                                                                                                                                   |
 
 Run one browser file with `bun run test tests/e2e/<file>.test.ts`, or every
