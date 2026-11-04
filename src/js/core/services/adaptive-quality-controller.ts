@@ -7,6 +7,7 @@ import {
   getDisplayRefreshRate,
   getHardwareSignals,
 } from '../device-profile.ts';
+import type { TELEMETRY_QUALITY_STEPS } from '../edge-contracts.ts';
 import type {
   RendererBackend,
   WebGPUCapabilitySummary,
@@ -36,6 +37,8 @@ export type AdaptiveQualityMultipliers = {
   feedbackResolutionMultiplier: number;
 };
 
+export type QualityStepId = (typeof TELEMETRY_QUALITY_STEPS)[number];
+
 export type AdaptiveQualityState = AdaptiveQualityMultipliers & {
   enabled: boolean;
   backend: RendererBackend;
@@ -44,6 +47,7 @@ export type AdaptiveQualityState = AdaptiveQualityMultipliers & {
   profile: string;
   frameBudgetMs: number;
   qualityStep: number;
+  qualityStepId: QualityStepId;
   qualityStepCount: number;
   /** Continuous GPU-only resolution trim within the discrete quality step. */
   gpuResolutionMultiplier: number;
@@ -112,7 +116,7 @@ type AdaptiveQualityControllerOptions = {
 };
 
 type QualityStep = AdaptiveQualityMultipliers & {
-  id: string;
+  id: QualityStepId;
 };
 
 const QUALITY_STEPS: readonly QualityStep[] = [
@@ -185,6 +189,34 @@ const ROLLING_WINDOW_MS = 5000;
  * small dead band between "recovering" and "degrading".
  */
 const CADENCE_AT_TARGET_RATIO = 1.05;
+/**
+ * A cadence gap: frames arrive late while the work the runtime times is well
+ * under budget, so something it does not time is taking the frame. Lowering
+ * quality may not help a cost that does not scale with it (a capped display,
+ * or work elsewhere in the page), so the controller tries one step and keeps
+ * it only if cadence measurably improves.
+ *
+ * The evidence is indirect, so it has to last longer than the 12 samples that
+ * direct pressure needs, and a preset switch starts the count again.
+ */
+const CADENCE_GAP_TRIAL_SAMPLES = 60;
+/** Long enough for the EMA to forget the previous step (0.82^45 is ~0.01%). */
+const CADENCE_TRIAL_SETTLE_SAMPLES = 45;
+/** The trial step has to cut the frame gap by this much to be kept. */
+const CADENCE_TRIAL_REQUIRED_RATIO = 0.95;
+/**
+ * Samples before trying again after a step that did not help, doubling up to
+ * the maximum. A device capped below its refresh rate fails every trial, and
+ * each one costs it a second or two of lower quality for nothing.
+ */
+const CADENCE_TRIAL_HOLD_OFF_SAMPLES = 1800;
+const CADENCE_TRIAL_MAX_HOLD_OFF_SAMPLES = 14400;
+/**
+ * Samples a kept step is protected from recovery. Its better cadence reads as
+ * headroom, which would otherwise restore quality, reopen the gap and start
+ * another trial, on repeat.
+ */
+const CADENCE_TRIAL_KEEP_SAMPLES = 1800;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -400,6 +432,7 @@ function buildState({
     profile,
     frameBudgetMs,
     qualityStep,
+    qualityStepId: step.id,
     qualityStepCount: QUALITY_STEPS.length,
     gpuResolutionMultiplier,
     averageFrameMs,
@@ -504,6 +537,16 @@ export function createAdaptiveQualityController({
    */
   let switchPreDegradeFromStep: number | null = null;
   let consecutiveRollingOverBudget = 0;
+  let consecutiveCadenceGap = 0;
+  let cadenceTrial: {
+    fromStep: number;
+    trialStep: number;
+    baselineCadenceMs: number;
+    samples: number;
+  } | null = null;
+  let cadenceTrialHoldOff = 0;
+  let nextCadenceTrialHoldOff = CADENCE_TRIAL_HOLD_OFF_SAMPLES;
+  let cadenceTrialKeep = 0;
   let adaptation: AdaptiveQualityState['adaptation'] = 'steady';
   const rollingWindowSize = Math.max(
     30,
@@ -572,6 +615,28 @@ export function createAdaptiveQualityController({
       getMinimumGpuResolutionMultiplier(),
       1,
     );
+  }
+
+  /** Forgets an unjudged trial and its evidence, leaving the step as it is. */
+  function dropCadenceTrial() {
+    cadenceTrial = null;
+    consecutiveCadenceGap = 0;
+  }
+
+  function endCadenceTrialWithoutGain(fromStep: number, reason: string) {
+    moveQualityStepPreservingResolution(fromStep);
+    dropCadenceTrial();
+    cadenceTrialHoldOff = nextCadenceTrialHoldOff;
+    nextCadenceTrialHoldOff = Math.min(
+      nextCadenceTrialHoldOff * 2,
+      CADENCE_TRIAL_MAX_HOLD_OFF_SAMPLES,
+    );
+    adaptation = 'recovering';
+    consecutiveOverBudget = 0;
+    consecutiveUnderBudget = 0;
+    resetRollingWindowAfterStepChange();
+    state = { ...state, reasons: [...heuristic.reasons, reason] };
+    return publish();
   }
 
   function resetRollingWindowAfterStepChange() {
@@ -702,6 +767,7 @@ export function createAdaptiveQualityController({
       // time a performer asks for this, the controller has already found a
       // step the machine sustains, and that is the one to hold.
       livePerformanceStepLock = locked ? qualityStep : null;
+      dropCadenceTrial();
       // A live-performance hold and a configured benchmark lock are
       // independent reasons to freeze adaptation. Releasing the stage hold
       // must reveal the configured lock again instead of silently turning a
@@ -731,6 +797,8 @@ export function createAdaptiveQualityController({
       // An explicit set overrides whatever the switch pre-payment was tracking;
       // holding a stale level would suppress the next switch's pre-pay.
       switchPreDegradeFromStep = null;
+      dropCadenceTrial();
+      cadenceTrialKeep = 0;
       adaptation = 'steady';
       consecutiveOverBudget = 0;
       consecutiveUnderBudget = 0;
@@ -888,6 +956,93 @@ export function createAdaptiveQualityController({
         consecutiveUnderBudget = Math.max(0, consecutiveUnderBudget - 1);
       }
 
+      cadenceTrialHoldOff = Math.max(0, cadenceTrialHoldOff - 1);
+      cadenceTrialKeep = Math.max(0, cadenceTrialKeep - 1);
+      const measuredCadence =
+        typeof cadenceMs === 'number' &&
+        Number.isFinite(cadenceMs) &&
+        cadenceMs > 0;
+
+      // Pressure the runtime can see moved the step, so that takes over.
+      if (cadenceTrial && qualityStep !== cadenceTrial.trialStep) {
+        dropCadenceTrial();
+      }
+      if (cadenceTrial) {
+        if (!measuredCadence) {
+          // A power-saver cap began, so the trial can no longer be judged.
+          return endCadenceTrialWithoutGain(
+            cadenceTrial.fromStep,
+            'Frame cadence stopped being measured during a quality trial; restored the previous step.',
+          );
+        }
+        cadenceTrial.samples += 1;
+        if (cadenceTrial.samples >= CADENCE_TRIAL_SETTLE_SAMPLES) {
+          const { baselineCadenceMs, fromStep } = cadenceTrial;
+          const currentCadenceMs = averageCadenceMs ?? baselineCadenceMs;
+          if (
+            currentCadenceMs >
+            baselineCadenceMs * CADENCE_TRIAL_REQUIRED_RATIO
+          ) {
+            return endCadenceTrialWithoutGain(
+              fromStep,
+              `A quality trial left frame cadence at ${currentCadenceMs.toFixed(1)}ms from ${baselineCadenceMs.toFixed(1)}ms; restored the previous step.`,
+            );
+          }
+          dropCadenceTrial();
+          cadenceTrialKeep = CADENCE_TRIAL_KEEP_SAMPLES;
+          nextCadenceTrialHoldOff = CADENCE_TRIAL_HOLD_OFF_SAMPLES;
+          state = {
+            ...state,
+            reasons: [
+              ...heuristic.reasons,
+              `A quality trial improved frame cadence to ${currentCadenceMs.toFixed(1)}ms from ${baselineCadenceMs.toFixed(1)}ms; keeping ${QUALITY_STEPS[qualityStep].id}.`,
+            ],
+          };
+          return publish();
+        }
+      } else {
+        const hasCadenceGap =
+          measuredCadence &&
+          averageCadenceMs !== null &&
+          averageCadenceMs > heuristic.frameBudgetMs * 1.12 &&
+          !renderPressure &&
+          !gpuPressure &&
+          !framePressure &&
+          !cadencePressure;
+        consecutiveCadenceGap = hasCadenceGap ? consecutiveCadenceGap + 1 : 0;
+        if (
+          stepLock === null &&
+          averageCadenceMs !== null &&
+          consecutiveCadenceGap >= CADENCE_GAP_TRIAL_SAMPLES &&
+          cadenceTrialHoldOff === 0 &&
+          qualityStep < QUALITY_STEPS.length - 1
+        ) {
+          const fromStep = qualityStep;
+          moveQualityStepPreservingResolution(fromStep + 1);
+          cadenceTrial = {
+            fromStep,
+            trialStep: qualityStep,
+            baselineCadenceMs: averageCadenceMs,
+            samples: 0,
+          };
+          consecutiveCadenceGap = 0;
+          adaptation = 'degraded';
+          consecutiveOverBudget = 0;
+          consecutiveUnderBudget = 0;
+          resetRollingWindowAfterStepChange();
+          state = {
+            ...state,
+            reasons: [
+              ...heuristic.reasons,
+              `Frame cadence (${averageCadenceMs.toFixed(1)}ms) missed the ${heuristic.frameBudgetMs.toFixed(1)}ms budget with tracked work under it; trying ${QUALITY_STEPS[qualityStep].id}.`,
+            ],
+          };
+          return publish();
+        }
+      }
+      // A trial or a kept step is judged on its own terms, not on headroom.
+      const recoveryAllowed = cadenceTrial === null && cadenceTrialKeep === 0;
+
       const minimumGpuResolutionMultiplier =
         getMinimumGpuResolutionMultiplier();
       if (
@@ -955,6 +1110,7 @@ export function createAdaptiveQualityController({
 
       if (
         stepLock === null &&
+        recoveryAllowed &&
         consecutiveGpuHeadroom >= GPU_RESOLUTION_RECOVER_SAMPLES &&
         gpuResolutionMultiplier < 0.999
       ) {
@@ -987,6 +1143,7 @@ export function createAdaptiveQualityController({
 
       if (
         stepLock === null &&
+        recoveryAllowed &&
         consecutiveUnderBudget >= RECOVER_THRESHOLD_SAMPLES &&
         qualityStep > heuristic.initialStep
       ) {
@@ -1015,6 +1172,7 @@ export function createAdaptiveQualityController({
 
       if (
         stepLock === null &&
+        recoveryAllowed &&
         consecutiveUnderBudget >= ENHANCE_THRESHOLD_SAMPLES &&
         qualityStep > heuristic.floorStep &&
         (heuristic.profile === 'high-end' || heuristic.profile === 'enhanced')
@@ -1060,6 +1218,8 @@ export function createAdaptiveQualityController({
       consecutiveOverBudget = 0;
       consecutiveUnderBudget = 0;
       resetRollingWindowAfterStepChange();
+      // The trial's baseline was another preset's cadence, so it can't be judged.
+      dropCadenceTrial();
 
       const constrainedProfile =
         heuristic.profile !== 'high-end' && heuristic.profile !== 'enhanced';

@@ -11,6 +11,7 @@ import {
   shouldRenderMilkdropPostprocessing,
 } from '../../core/postprocessing.ts';
 import { getPowerSavingFrameCapHz } from '../../core/power-state.ts';
+import type { AdaptiveQualityState } from '../../core/services/adaptive-quality-controller.ts';
 import { isMilkdropCapturedVideoReady } from '../../core/services/captured-video-texture.ts';
 import { createGpuRenderTimingSampler } from '../../core/services/gpu-render-timing.ts';
 import { notePresetFrame } from '../../core/services/preset-telemetry.ts';
@@ -197,7 +198,7 @@ export function createMilkdropExperienceFrameLoop({
         simulationMs: number;
         renderMs: number;
       };
-    }) => void;
+    }) => Pick<AdaptiveQualityState, 'qualityStepId' | 'renderScaleMultiplier'>;
   } | null;
   lowQualityPostOverride: {
     shaderEnabled: boolean;
@@ -568,27 +569,35 @@ export function createMilkdropExperienceFrameLoop({
           disposePostprocessingPipeline();
         }
         const frameEndAt = performance.now();
+        const simulationMs = renderStartAt - frameStartAt;
+        const renderMs = frameEndAt - renderStartAt;
         performanceTracker.recordFrame({
           frameMs: frameEndAt - frameStartAt,
-          simulationMs: renderStartAt - frameStartAt,
-          renderMs: frameEndAt - renderStartAt,
+          simulationMs,
+          renderMs,
         });
-        notePresetFrame(frame.deltaMs);
-        getAdaptiveQualityController()?.recordFrame({
+        const gpuMs = gpuRenderTimingSampler.sample(runtime.toy.renderer);
+        // Cadence is evidence the GPU is falling behind only when nothing is
+        // deliberately slowing it down. Under a power-saver cap the wider
+        // gap between frames is the whole point, and reporting it would read
+        // as pressure and walk quality down for a problem that isn't there.
+        // `frameMs` and the phase timings still measure real work, so genuine
+        // overload is still caught.
+        const cadenceMs =
+          getPowerSavingFrameCapHz() === null ? frame.deltaMs : undefined;
+        const qualityState = getAdaptiveQualityController()?.recordFrame({
           frameMs: frameEndAt - frameStartAt,
-          // Cadence is evidence the GPU is falling behind only when nothing is
-          // deliberately slowing it down. Under a power-saver cap the wider
-          // gap between frames is the whole point, and reporting it would read
-          // as pressure and walk quality down for a problem that isn't there.
-          // `frameMs` and the phase timings still measure real work, so genuine
-          // overload is still caught.
-          cadenceMs:
-            getPowerSavingFrameCapHz() === null ? frame.deltaMs : undefined,
-          gpuMs: gpuRenderTimingSampler.sample(runtime.toy.renderer),
-          phases: {
-            simulationMs: renderStartAt - frameStartAt,
-            renderMs: frameEndAt - renderStartAt,
-          },
+          cadenceMs,
+          gpuMs,
+          phases: { simulationMs, renderMs },
+        });
+        notePresetFrame(frame.deltaMs, {
+          simulationMs,
+          renderMs,
+          gpuMs,
+          cadenceMs,
+          qualityStep: qualityState?.qualityStepId,
+          renderScale: qualityState?.renderScaleMultiplier,
         });
         consecutiveFrameFailures = 0;
       } catch (error) {

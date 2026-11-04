@@ -21,6 +21,7 @@
  */
 import {
   createFlashController,
+  createFlashSampler,
   type FlashController,
   type FlashControllerOptions,
 } from 'flash-guard';
@@ -29,6 +30,7 @@ import {
   subscribeToAccessibilityPreference,
 } from '../accessibility-preferences.ts';
 import { subscribeToFrameDrawn } from '../frame-drawn.ts';
+import { setPresetFlashGuardProbe } from './preset-telemetry.ts';
 import {
   setStageLuminanceChannel,
   stageLuminanceScale,
@@ -46,11 +48,17 @@ export function createFlashSafetyController(
   const isEnabled =
     options.isEnabled ??
     (() => getActiveAccessibilityPreference().reduceFlashing);
+  const sampler = options.sampler ?? createFlashSampler();
   const controller = createFlashController({
     subscribeToFrames: subscribeToFrameDrawn,
     ...options,
+    sampler,
     isEnabled,
   });
+  setPresetFlashGuardProbe(() => ({
+    enabled: isEnabled(),
+    offThread: sampler.offThread,
+  }));
 
   // A preference change should take effect now, not on the next strobe.
   const unsubscribe = subscribeToAccessibilityPreference(() => {

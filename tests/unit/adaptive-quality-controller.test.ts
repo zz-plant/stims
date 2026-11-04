@@ -545,7 +545,7 @@ describe('createAdaptiveQualityController', () => {
     expect(['steady', 'recovering']).toContain(recovered.adaptation);
   });
 
-  test('degrades when presentation cadence misses budget despite cheap CPU work', () => {
+  test('tracks a missed presentation cadence despite cheap CPU work', () => {
     const controller = createAdaptiveQualityController({
       backend: 'webgl',
       capabilities: null,
@@ -560,9 +560,127 @@ describe('createAdaptiveQualityController', () => {
     }
 
     const state = controller.getState();
-    expect(state.qualityStep).toBeGreaterThan(0);
     expect(state.averageFrameMs).toBeCloseTo(5, 6);
     expect(state.averageCadenceMs).toBeCloseTo(28, 6);
+  });
+
+  describe('cadence gap trial', () => {
+    // 40 fps with 8 ms of tracked work: the shape #1640 measured, where the
+    // lost time is outside anything the runtime times.
+    const gap = { frameMs: 8, cadenceMs: 25, phases: { renderMs: 3 } };
+    const onTarget = { frameMs: 8, cadenceMs: 16.67, phases: { renderMs: 3 } };
+    type Sample = typeof gap;
+    const record = (
+      controller: ReturnType<typeof createAdaptiveQualityController>,
+      sample: Sample,
+      count: number,
+    ) => {
+      for (let index = 0; index < count; index += 1) {
+        controller.recordFrame(sample);
+      }
+      return controller.getState();
+    };
+    const webglController = () =>
+      createAdaptiveQualityController({ backend: 'webgl', capabilities: null });
+    // Warmup (24) plus the evidence the trial needs (60).
+    const SAMPLES_TO_TRIAL = 90;
+    // Long enough for the trial to settle and be judged.
+    const SAMPLES_TO_VERDICT = 50;
+
+    test('takes one step on a gap that direct pressure cannot see', () => {
+      const controller = webglController();
+      const startStep = controller.getState().qualityStep;
+      const state = record(controller, gap, SAMPLES_TO_TRIAL);
+      expect(state.qualityStep).toBe(startStep + 1);
+      expect(state.adaptation).toBe('degraded');
+      expect(state.reasons.join(' ')).toContain('trying');
+    });
+
+    test('rolls the step back and holds off when cadence does not improve', () => {
+      const controller = webglController();
+      const startStep = controller.getState().qualityStep;
+      record(controller, gap, SAMPLES_TO_TRIAL);
+      const judged = record(controller, gap, SAMPLES_TO_VERDICT);
+      expect(judged.qualityStep).toBe(startStep);
+      expect(judged.reasons.join(' ')).toContain('restored the previous step');
+      // Well past the 60 samples of evidence, the hold-off still applies.
+      expect(record(controller, gap, 1000).qualityStep).toBe(startStep);
+    });
+
+    test('tries again once the hold-off ends, then waits longer', () => {
+      const controller = webglController();
+      const startStep = controller.getState().qualityStep;
+      record(controller, gap, SAMPLES_TO_TRIAL + SAMPLES_TO_VERDICT);
+      expect(record(controller, gap, 1800).qualityStep).toBe(startStep + 1);
+      record(controller, gap, SAMPLES_TO_VERDICT);
+      expect(controller.getState().qualityStep).toBe(startStep);
+      // The first hold-off was 1800 samples; the second is twice that.
+      expect(record(controller, gap, 1900).qualityStep).toBe(startStep);
+      expect(record(controller, gap, 1700).qualityStep).toBe(startStep + 1);
+    });
+
+    test('keeps the step when cadence improves, and does not recover straight back', () => {
+      const controller = webglController();
+      const startStep = controller.getState().qualityStep;
+      record(controller, gap, SAMPLES_TO_TRIAL);
+      const kept = record(controller, onTarget, SAMPLES_TO_VERDICT);
+      expect(kept.qualityStep).toBe(startStep + 1);
+      expect(kept.reasons.join(' ')).toContain('keeping');
+      // On-target frames read as headroom, which would otherwise restore the
+      // step, reopen the gap and start another trial.
+      expect(record(controller, onTarget, 500).qualityStep).toBe(startStep + 1);
+      expect(record(controller, onTarget, 1500).qualityStep).toBe(startStep);
+    });
+
+    test('a preset switch drops the evidence and the unjudged trial', () => {
+      const controller = webglController();
+      record(controller, gap, 24 + 50);
+      controller.notePresetApplied();
+      const switched = controller.getState().qualityStep;
+      // 50 + 30 samples would have met the 60 if the count had carried over.
+      expect(record(controller, gap, 30).qualityStep).toBe(switched);
+      // The next trial is cut short by a switch, and reaches no verdict.
+      expect(record(controller, gap, 40).qualityStep).toBe(switched + 1);
+      controller.notePresetApplied();
+      expect(
+        record(controller, gap, SAMPLES_TO_VERDICT).reasons.join(' '),
+      ).not.toContain('restored the previous step');
+    });
+
+    test('a locked step is never trialled', () => {
+      const controller = createAdaptiveQualityController({
+        backend: 'webgl',
+        capabilities: null,
+        lockedQualityStep: 1,
+      });
+      expect(record(controller, gap, 400).qualityStep).toBe(1);
+    });
+
+    test('a power-saver cap, which withholds cadence, never starts a trial', () => {
+      const controller = webglController();
+      const startStep = controller.getState().qualityStep;
+      record(controller, gap, 30);
+      const capped = { frameMs: 8, phases: { renderMs: 3 } } as Sample;
+      expect(record(controller, capped, 300).qualityStep).toBe(startStep);
+    });
+
+    test('a cap that begins mid-trial restores the step', () => {
+      const controller = webglController();
+      const startStep = controller.getState().qualityStep;
+      record(controller, gap, SAMPLES_TO_TRIAL);
+      const capped = { frameMs: 8, phases: { renderMs: 3 } } as Sample;
+      expect(record(controller, capped, 1).qualityStep).toBe(startStep);
+    });
+
+    test('tracked pressure during a trial takes over from it', () => {
+      const controller = webglController();
+      const startStep = controller.getState().qualityStep;
+      record(controller, gap, SAMPLES_TO_TRIAL);
+      const heavy = { frameMs: 30, cadenceMs: 30, phases: { renderMs: 28 } };
+      const state = record(controller, heavy, 20);
+      expect(state.qualityStep).toBeGreaterThan(startStep + 1);
+      expect(state.reasons.join(' ')).not.toContain('restored');
+    });
   });
 
   test('recovers when presenting exactly at the display cadence', () => {

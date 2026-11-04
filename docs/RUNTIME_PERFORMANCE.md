@@ -22,6 +22,36 @@ Delivered FPS is the user-visible result, but it is capped by the display and
 can be distorted by scheduler stalls. Average frame work is the better signal
 when a fast tier is already display-capped. Both must be reported.
 
+Production beacons carry the same split (#1641). Each `preset-dwell` row has
+average simulation, render, GPU and cadence milliseconds, the quality step and
+render scale when the view ended, and the flash guard's state and where it read
+pixels. They carry no session or visitor id. `bun run telemetry:report` sorts
+rows into on target, simulation-bound, render or GPU-bound, and unattributed.
+Unattributed means cadence over 1.12x a 60 Hz budget with tracked work under
+0.85x of it, so the time went somewhere the runtime doesn't time.
+
+### Unattributed cadence and the quality controller
+
+Unattributed loss reads as no pressure, because lowering quality can't fix a
+cost that doesn't scale with it. After 60 samples of it the controller takes one
+trial step and judges it 45 samples later. It keeps the step if cadence improved
+by at least 5%, and protects it from recovery for 1,800 samples, so its own
+headroom doesn't undo it. Otherwise it restores the step and holds off for 1,800
+samples, doubling up to 14,400 after each failed trial. A preset switch drops an
+unjudged trial, and a locked step is never trialled.
+
+### When `lab:profile` numbers can be trusted
+
+`bun run lab:profile` runs on a Vite dev server by default and warns that it
+does. Use those numbers to rank functions and to compare against the same
+machine's checked-in baseline. They don't describe production: a dev run of one
+preset made 1,030 synchronous flash-sampler reads in 20 s, where production made
+none (#1640).
+
+For what visitors get, use `bun run lab:profile -- --server production --preset
+<id>`. It builds first, and function names in the profile are minified. It
+refuses the baseline, which holds dev-server numbers.
+
 ## Fixed-tier comparison contract
 
 Before/after comparisons must hold these inputs constant:
