@@ -24,7 +24,7 @@ An optional body explains the problem and resulting behavior. Reference an issue
 
 ## Enforcement
 
-`lefthook.yml` runs `scripts/check-commit-msg.ts` from the `commit-msg` hook, and `bun install` installs the hooks through the postinstall script. CI runs the same checker over the PR's commits:
+`lefthook.yml` runs `scripts/check-commit-msg.ts` from the `commit-msg` hook. `bun install` installs the hooks through the postinstall script, and `bun run check` or `check:quick` reinstalls them if they have gone missing. CI runs the same checker over the PR's commits:
 
 ```bash
 bun run check:commit-msg -- --range origin/main..HEAD --allow-long-subjects

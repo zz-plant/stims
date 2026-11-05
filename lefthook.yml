@@ -1,4 +1,5 @@
-# Git hooks, installed by `lefthook install` from scripts/postinstall.mjs.
+# Git hooks, installed by `lefthook install` from scripts/postinstall.mjs. The
+# quality gate reinstalls them if they go missing (scripts/git-hooks-install.ts).
 # Both hooks delegate to repo scripts so the gate logic stays in one place:
 #   pre-commit → .githooks/pre-commit (format:changed --staged, check:quick,
 #                strict cache bounds)

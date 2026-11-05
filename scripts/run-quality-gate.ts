@@ -19,6 +19,8 @@
  * `--no-tests` drops the test suite from any mode, leaving the checks. It
  * exists for CI, which runs the suite as its own parallel job; locally,
  * `bun run check` should stay the single command that runs everything.
+ *
+ * Every mode first puts back any missing git hooks (see git-hooks-install.ts).
  */
 import {
   type GateExecutionMode,
@@ -29,6 +31,7 @@ import {
   runCli,
 } from 'agent-ergonomics';
 import stimsConfig from '../agent-ergonomics.config.ts';
+import { restoreGitHooks } from './git-hooks-install.ts';
 
 export {
   parseExecutionMode,
@@ -47,5 +50,7 @@ export const parseOutputMode = (
   env: Record<string, string | undefined> = process.env,
 ) => outputMode(argv, env, config.gate);
 
-if (import.meta.main)
+if (import.meta.main) {
+  restoreGitHooks();
   process.exit(await runCli(['gate', ...process.argv.slice(2)]));
+}

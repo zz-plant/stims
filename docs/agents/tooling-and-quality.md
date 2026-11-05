@@ -62,6 +62,8 @@ bun run format     # format
 
 `check:quick` runs its independent steps in parallel; add `-- --serial` when debugging one. Inside a Claude Code session the gate prints one line per passing step (`--verbose` or `STIMS_QUIET=0` restores full output), and a failing step always prints in full. Every guard and its tier is listed in [`docs/GUARDRAILS.md`](../GUARDRAILS.md); test profiles and CI coverage are in [Testing](../TESTING.md).
 
+Git runs no hooks and says nothing when its hooks directory is empty, so `check` and `check:quick` first reinstall any missing hook and print one `[hooks]` line (skipped under `CI` or `LEFTHOOK=0`). If `check:dead-code` reports `Unused devDependencies: lefthook`, knip found no hook script at `git rev-parse --git-path hooks`: run `bun install` and read why it could not write there. Do not add lefthook to `ignoreDependencies`, because that finding is the visible sign that commits are running unchecked.
+
 `bun run verify --changed` (also `agent:verify`) reads the diff and runs only the guards, tests and regenerations those files can break.
 
 ## Task-specific checks
