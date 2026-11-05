@@ -1971,7 +1971,7 @@ body[data-page="workspace"] {
     flex-direction: row;
     align-items: center;
     gap: 8px;
-    min-height: 40px;
+    min-height: max(40px, var(--ctl-size-md));
     padding: 8px 14px;
     border-radius: 999px;
   }

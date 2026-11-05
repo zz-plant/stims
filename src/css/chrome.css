@@ -37,6 +37,20 @@
   --ctl-radius: var(--radius-md);
   --ctl-radius-lg: var(--radius-lg);
   --ctl-ease: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Control sizes. Two steps: chips and toggles are compact, buttons and
+     selects are standard. With a mouse they stay dense; on a touch screen
+     both rise to the 44px target in tokens.css, which these controls used
+     to miss (chips measured 34px, selects 38px on a phone). */
+  --ctl-size-sm: 32px;
+  --ctl-size-md: 38px;
+}
+
+@media (pointer: coarse) {
+  .stims-shell {
+    --ctl-size-sm: var(--touch-target-min);
+    --ctl-size-md: var(--touch-target-min);
+  }
 }
 
 html.light .stims-shell {
@@ -331,7 +345,7 @@ html.light .stims-shell {
   .ctl-midi-learn-input {
     flex: 1;
     min-width: 0;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 12px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--ctl-radius);
@@ -413,7 +427,7 @@ html.light .stims-shell {
   .ctl-select {
     appearance: none;
     width: 100%;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 32px 8px 11px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--ctl-radius);
@@ -454,7 +468,7 @@ html.light .stims-shell {
   .ctl-field {
     width: 100%;
     min-width: 0;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 12px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--ctl-radius);
@@ -503,7 +517,7 @@ html.light .stims-shell {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 13px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--ctl-radius);
@@ -543,8 +557,8 @@ html.light .stims-shell {
 
   .ctl-btn--icon {
     flex-shrink: 0;
-    width: 38px;
-    min-width: 38px;
+    width: var(--ctl-size-md);
+    min-width: var(--ctl-size-md);
     padding: 0;
   }
 
@@ -646,7 +660,7 @@ html.light .stims-shell {
 
   .ctl-chip {
     flex-shrink: 0;
-    min-height: 32px;
+    min-height: var(--ctl-size-sm);
     padding: 6px 12px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--radius-round);
@@ -1447,6 +1461,26 @@ html.light .stims-shell {
     outline-offset: 1px;
   }
 
+  @media (pointer: coarse) {
+    /* The clear button stays a 26px mark inside the field; on touch its hit
+       area grows to the 44px target, the way the grid's star does
+       (shell/preset-grid.css). The field's right padding already keeps
+       text out from under it. */
+    .ctl-browse-searchclear::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: var(--touch-target-min);
+      height: var(--touch-target-min);
+      transform: translate(-50%, -50%);
+    }
+
+    .ctl-viewtoggle__btn {
+      width: var(--touch-target-min);
+    }
+  }
+
   /* Pushed to the row's end so that when the buttons do wrap they sit under
      the field's right edge instead of drifting to the left margin. */
   .ctl-browse-searchrow .ctl-viewtoggle {
@@ -1503,7 +1537,7 @@ html.light .stims-shell {
   }
 
   .ctl-browse-applied .ctl-btn {
-    min-height: 30px;
+    min-height: var(--ctl-size-sm);
     padding: 4px 9px;
   }
 
@@ -1544,7 +1578,7 @@ html.light .stims-shell {
   .ctl-section .stims-shell__input {
     width: 100%;
     min-width: 0;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 12px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--ctl-radius);
@@ -1573,7 +1607,7 @@ html.light .stims-shell {
 
   .ctl-section .cta-button {
     flex-shrink: 0;
-    min-height: 38px;
+    min-height: var(--ctl-size-md);
     padding: 8px 14px;
     border: 1px solid transparent;
     border-radius: var(--ctl-radius);
@@ -1711,7 +1745,7 @@ html.light .stims-shell {
   }
 
   .ctl-section .stims-shell__chip {
-    min-height: 30px;
+    min-height: var(--ctl-size-sm);
     padding: 5px 10px;
     border: 1px solid var(--ctl-line);
     border-radius: var(--radius-round);
