@@ -312,9 +312,6 @@ export function renderStaticPage(page: StaticPage): string {
 <link rel="canonical" href="${page.url}" />
 ${page.alternateMarkdown ? `<link rel="alternate" type="text/markdown" href="${escapeHtml(page.alternateMarkdown.href)}" title="${escapeHtml(page.alternateMarkdown.title)}" />\n` : ''}<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <meta property="og:site_name" content="Stims" />
 <meta property="og:type" content="${page.ogType}" />
 <meta property="og:title" content="${escapeHtml(page.title)}" />
