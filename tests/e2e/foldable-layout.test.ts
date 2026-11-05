@@ -332,16 +332,41 @@ requiredBrowserTest(
   TEST_TIMEOUT,
 );
 
+const ROTATE_HINT = '.stims-shell__rotate-hint';
 const rotateHint = (page: Page) =>
-  page.locator('.stims-shell__rotate-hint', { hasText: 'Rotate your phone' });
+  page.locator(ROTATE_HINT, { hasText: 'Rotate your phone' });
+
+type HintWindow = Window & { __rotateHintSeen?: boolean };
+
+/**
+ * Notes a rotate hint arriving at any point from here on. The hint leaves
+ * 4200 ms after it comes, and `goLive` can return later than that on a slow
+ * runner, so looking at the page afterwards cannot tell "never shown" from
+ * "already gone".
+ */
+const watchForRotateHint = (page: Page) =>
+  page.evaluate((selector) => {
+    const record = window as unknown as HintWindow;
+    record.__rotateHintSeen = false;
+    new MutationObserver((_, observer) => {
+      if (document.querySelector(selector)) {
+        record.__rotateHintSeen = true;
+        observer.disconnect();
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  }, ROTATE_HINT);
 
 requiredBrowserTest(
   'the rotate hint shows for a window filling the screen',
   async () => {
     const page = await openPhone(LAPTOP_VIEWPORT);
     try {
-      await goLive(page);
-      await rotateHint(page).waitFor({ state: 'visible', timeout: 30000 });
+      // Together, not one after the other: the hint can come and go before
+      // `goLive` returns (see watchForRotateHint).
+      await Promise.all([
+        rotateHint(page).waitFor({ state: 'visible', timeout: 60000 }),
+        goLive(page),
+      ]);
     } finally {
       await page.context().close();
     }
@@ -359,8 +384,13 @@ requiredBrowserTest(
       },
     );
     try {
+      await watchForRotateHint(page);
       await goLive(page);
-      expect(await rotateHint(page).count()).toBe(0);
+      expect(
+        await page.evaluate(
+          () => (window as unknown as HintWindow).__rotateHintSeen,
+        ),
+      ).toBe(false);
     } finally {
       await page.context().close();
     }
