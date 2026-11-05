@@ -147,8 +147,8 @@ body[data-page="performance"] {
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
   transition:
     transform var(--motion-enter),
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    box-shadow var(--transition-base),
+    border-color var(--transition-base);
 }
 
 .stims-performance__button:active {

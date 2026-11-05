@@ -316,7 +316,7 @@
    same moment. */
 .stims-shell__stage-hero[data-behind-panel] {
   opacity: 0.32;
-  transition: opacity 200ms ease;
+  transition: opacity var(--transition-slow);
 }
 
 @media (prefers-reduced-motion: reduce) {

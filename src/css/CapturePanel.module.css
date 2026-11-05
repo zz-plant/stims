@@ -43,10 +43,10 @@
   background: var(--stims-panel-strong);
   cursor: pointer;
   transition:
-    border-color 0.18s ease,
-    background 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+    border-color var(--transition-base),
+    background var(--transition-base),
+    box-shadow var(--transition-base),
+    transform var(--transition-slow);
 }
 
 .format:hover {
@@ -96,9 +96,9 @@
   font-weight: 700;
   cursor: pointer;
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    opacity 0.15s ease;
+    transform var(--transition-slow),
+    box-shadow var(--transition-base),
+    opacity var(--transition-slow);
 }
 
 .startButton {

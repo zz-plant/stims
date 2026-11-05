@@ -254,9 +254,9 @@
   cursor: pointer;
   flex-shrink: 0;
   transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
+    background var(--transition-base),
+    color var(--transition-base),
+    border-color var(--transition-base);
 }
 
 .closeBtn:hover {
@@ -342,7 +342,7 @@
     left: 5px;
     width: 2px;
     background: transparent;
-    transition: background 0.15s ease;
+    transition: background var(--transition-base);
   }
 
   .seam:hover::after,
@@ -377,8 +377,8 @@
     opacity: 0;
     transform: translateY(-50%) translateX(-4px);
     transition:
-      opacity 140ms ease,
-      transform 140ms ease;
+      opacity var(--transition-slow),
+      transform var(--transition-slow);
     pointer-events: none;
   }
 

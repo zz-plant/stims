@@ -124,8 +124,8 @@
   text-align: left;
   cursor: pointer;
   transition:
-    border-color 150ms ease,
-    background 150ms ease;
+    border-color var(--transition-base),
+    background var(--transition-base);
 }
 
 .stims-finder__result:hover {
