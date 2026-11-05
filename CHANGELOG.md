@@ -57,6 +57,8 @@ _Latest release: **v1.5.0**._
 
 ### Fixed
 
+- A returning visitor who followed a preset link saw a "Welcome back" card for their last session while the linked preset started behind it, and Resume played the linked preset. The page now names the linked preset.
+- The `/learn/` pages, `/presets/` and `/performance/` no longer load a Google Fonts stylesheet for two typefaces they do not use.
 - The editor's rows above the code pushed the Tune tab and its first chip off screen at 1280×720, 390×844 and 1366×657. The first-visit hint is one sentence shorter, the describe field returns to its intended 32px under a mouse, and the share row gives way below 700px tall, where the toolbar still has Copy link.
 - Six controls did something other than what they said. Closing the capture panel during a recording threw the video away; it is now saved. The editor's Clear snapshots dropped your edit while A/B showed the original; it is now Stop comparing A and B, and it restores the edit. Variations asked for three AI presets and showed one. Solo and Mute in the Outline kept parts hidden after the editor closed. A Browse card clicked before any audio started changed the route and nothing else; it now starts the demo with that preset. Browse's Show them turned Reduce flashing off everywhere; it now reads Turn off Reduce flashing (#1579).
 - Editing on a phone held upright keeps the stage in view. The editor sheet is `min(76dvh, 40rem)` instead of 92dvh and the stage lifts by half the sheet's height, so at 390×844 204px of stage shows above the sheet (it was 68px), with the code and the Tune tab on screen. The stage is moved rather than resized, so its feedback carries on. The folded dock's Edit chip shows on phones again and opens the editor on the first tap (#1586).
