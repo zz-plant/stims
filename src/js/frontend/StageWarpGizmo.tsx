@@ -5,6 +5,7 @@ import {
 } from 'milkdrop-toolchain/src/formatter.ts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEngineSnapshot } from './engine-context.tsx';
+import { useLatestRef } from './hooks/use-latest-ref.ts';
 import { useWorkspace } from './workspace-context.tsx';
 
 /**
@@ -31,8 +32,7 @@ export function StageWarpGizmo() {
   // the newest source it has seen rather than the one captured at mousedown —
   // otherwise a fast drag replays a stale buffer and drops any edit the code
   // pane committed mid-gesture.
-  const sourceRef = useRef(source);
-  sourceRef.current = source;
+  const sourceRef = useLatestRef(source);
 
   const cx = source === null ? 0.5 : (readMilkdropField(source, 'cx') ?? 0.5);
   const cy = source === null ? 0.5 : (readMilkdropField(source, 'cy') ?? 0.5);
@@ -45,6 +45,7 @@ export function StageWarpGizmo() {
   const pendingRef = useRef<{ cx: number; cy: number } | null>(null);
   const rafRef = useRef<number | null>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: sourceRef is stable, but React Compiler must see it listed to keep this memo (#1540)
   const flush = useCallback(() => {
     rafRef.current = null;
     const pending = pendingRef.current;
@@ -59,7 +60,7 @@ export function StageWarpGizmo() {
       sourceRef.current = next;
       engine.updateEditorSource(next);
     }
-  }, [engine]);
+  }, [engine, sourceRef]);
 
   const writeFromPointer = useCallback(
     (clientX: number, clientY: number, immediate = false) => {
@@ -126,6 +127,7 @@ export function StageWarpGizmo() {
     };
   }, [dragging, writeFromPointer]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: sourceRef is stable, but React Compiler must see it listed to keep this memo (#1540)
   const nudge = useCallback(
     (dx: number, dy: number) => {
       const current = sourceRef.current;
@@ -139,7 +141,7 @@ export function StageWarpGizmo() {
         engine.updateEditorSource(next);
       }
     },
-    [cx, cy, engine],
+    [cx, cy, engine, sourceRef],
   );
 
   if (ui.routeState.panel !== 'editor' || source === null) {

@@ -13,6 +13,12 @@
       },
       "correctness": {
         "noUnusedVariables": "warn",
+        "useExhaustiveDependencies": {
+          "level": "error",
+          "options": {
+            "hooks": [{ "name": "useLatestRef", "stableResult": true }]
+          }
+        },
         "noInvalidGridAreas": "off"
       },
       "suspicious": {

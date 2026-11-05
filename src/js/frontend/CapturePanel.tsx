@@ -18,6 +18,7 @@ import {
 } from '../core/accessibility-preferences.ts';
 import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { createStageVideoExporter } from './engine/stage-video-exporter.ts';
+import { useLatestRef } from './hooks/use-latest-ref.ts';
 import { RepositorySupport } from './RepositorySupport.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -105,10 +106,8 @@ export function CapturePanel() {
   // another panel) used to stop the recorder and drop what it held: only the
   // Stop button downloaded. A recording is never thrown away, so leaving
   // saves it the way Stop does.
-  const presetRef = useRef(preset);
-  presetRef.current = preset;
-  const announceRef = useRef(ui.setStatusMessage);
-  announceRef.current = ui.setStatusMessage;
+  const presetRef = useLatestRef(preset);
+  const announceRef = useLatestRef(ui.setStatusMessage);
   useEffect(
     () => () => {
       const exporter = exporterRef.current;
