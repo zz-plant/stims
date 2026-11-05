@@ -11,9 +11,6 @@
 <link rel="alternate" type="text/markdown" href="https://toil.fyi/learn/warp-fields.md" title="MilkDrop Per-Pixel Warp Fields — Track 4 — Markdown source" />
 <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <meta property="og:site_name" content="Stims" />
 <meta property="og:type" content="article" />
 <meta property="og:title" content="MilkDrop Per-Pixel Warp Fields — Track 4 | Stims" />
@@ -33,6 +30,7 @@
   "@graph": [
     {
       "@type": "TechArticle",
+      "@id": "https://toil.fyi/learn/warp-fields/#page",
       "headline": "Track 4 — Warp fields",
       "name": "MilkDrop Per-Pixel Warp Fields — Track 4",
       "description": "Per-pixel equations in MilkDrop: rad and ang, tunnels, ripples, and other warp fields that change with position across the screen.",
@@ -40,15 +38,44 @@
       "mainEntityOfPage": "https://toil.fyi/learn/warp-fields/",
       "inLanguage": "en",
       "image": "https://toil.fyi/og/milkdrop.png",
-      "isPartOf": {
-        "@type": "WebSite",
+      "about": {
+        "@type": "SoftwareApplication",
+        "name": "MilkDrop",
+        "sameAs": [
+          "https://en.wikipedia.org/wiki/MilkDrop",
+          "https://www.wikidata.org/wiki/Q4044271"
+        ]
+      },
+      "isPartOf": [
+        {
+          "@type": "WebSite",
+          "@id": "https://toil.fyi/#website",
+          "name": "Stims",
+          "url": "https://toil.fyi/"
+        },
+        {
+          "@id": "https://toil.fyi/learn/#course"
+        }
+      ],
+      "author": {
+        "@type": "Organization",
+        "@id": "https://toil.fyi/#organization",
         "name": "Stims",
-        "url": "https://toil.fyi/"
+        "url": "https://toil.fyi/",
+        "logo": "https://toil.fyi/icons/icon-512.png",
+        "sameAs": [
+          "https://github.com/zz-plant/stims"
+        ]
       },
       "publisher": {
         "@type": "Organization",
+        "@id": "https://toil.fyi/#organization",
         "name": "Stims",
-        "url": "https://toil.fyi/"
+        "url": "https://toil.fyi/",
+        "logo": "https://toil.fyi/icons/icon-512.png",
+        "sameAs": [
+          "https://github.com/zz-plant/stims"
+        ]
       }
     },
     {
@@ -82,7 +109,7 @@
 <body>
 <header class="site-header">
 <a class="brand" href="/">Stims</a>
-<nav class="links" aria-label="Site"><a href="/learn/">Learn</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/learn/milkdrop-vs-butterchurn-projectm/">Compare</a><a href="/performance/">Compatibility</a></nav>
+<nav class="links" aria-label="Site"><a href="/learn/">Learn</a><a href="/presets/">Presets</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/learn/milkdrop-vs-butterchurn-projectm/">Compare</a><a href="/performance/">Compatibility</a></nav>
 <a class="nav-cta" href="/">Open Stims</a>
 </header>
 <main>

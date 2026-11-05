@@ -34,6 +34,14 @@ import {
   learnPagePath,
 } from '../functions/shared/learn-pages.ts';
 import { siteIndexHtml } from '../functions/shared/site-index.ts';
+import {
+  breadcrumbList,
+  type JsonLdNode,
+  MILKDROP_ENTITY,
+  organizationNode,
+  serializeJsonLd,
+  websiteNode,
+} from '../functions/shared/structured-data.ts';
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -174,6 +182,26 @@ export function extractFaq(html: string): Array<{ q: string; a: string }> {
   });
 }
 
+/**
+ * The named techniques in the table under `## The glossary`: each row's bold
+ * term and its last column, from rendered HTML.
+ */
+export function extractDefinedTerms(
+  html: string,
+): Array<{ name: string; description: string }> {
+  const start = html.search(/<h2 id="the-glossary">/u);
+  if (start < 0) return [];
+  const body = html.slice(start).match(/<tbody>([\s\S]*?)<\/tbody>/u)?.[1];
+  return [...(body ?? '').matchAll(/<tr>([\s\S]*?)<\/tr>/gu)].flatMap((row) => {
+    const cells = [...(row[1] ?? '').matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gu)];
+    const term = cells[0]?.[1]?.match(/<strong>(.*?)<\/strong>/u)?.[1];
+    const meaning = cells.at(-1)?.[1];
+    if (!term || !meaning) return [];
+    const description = stripTags(meaning).replace(/\s+/gu, ' ').trim();
+    return [{ name: stripTags(term).trim(), description }];
+  });
+}
+
 const STYLE = `
 @font-face{font-family:Archivo;font-style:normal;font-weight:100 900;font-stretch:62% 125%;font-display:swap;src:url(/fonts/archivo-latin-var.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:"Martian Mono";font-style:normal;font-weight:400 700;font-display:swap;src:url(/fonts/martian-mono-latin-875.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
@@ -239,6 +267,7 @@ summary{cursor:pointer;color:var(--muted)}
 
 const NAV_LINKS: Array<[string, string]> = [
   ['/learn/', 'Learn'],
+  ['/presets/', 'Presets'],
   ['/learn/milkdrop-online/', 'MilkDrop online'],
   ['/learn/milkdrop-vs-butterchurn-projectm/', 'Compare'],
   ['/performance/', 'Compatibility'],
@@ -283,9 +312,6 @@ export function renderStaticPage(page: StaticPage): string {
 <link rel="canonical" href="${page.url}" />
 ${page.alternateMarkdown ? `<link rel="alternate" type="text/markdown" href="${escapeHtml(page.alternateMarkdown.href)}" title="${escapeHtml(page.alternateMarkdown.title)}" />\n` : ''}<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <meta property="og:site_name" content="Stims" />
 <meta property="og:type" content="${page.ogType}" />
 <meta property="og:title" content="${escapeHtml(page.title)}" />
@@ -322,6 +348,36 @@ ${siteIndexHtml()}
 /** Ordered pages that get previous/next links: the hub, then the tracks. */
 const PAGER_ORDER = LEARN_PAGES.filter((page) => page.kind !== 'landing');
 
+const COURSE_ID = `${BASE_URL}/learn/#course`;
+const COURSE_TRACKS = LEARN_PAGES.filter((page) => page.kind === 'track');
+
+/** The curriculum as a course: what the hub is about, and what tracks join. */
+function courseNode(description: string): JsonLdNode {
+  return {
+    '@type': 'Course',
+    '@id': COURSE_ID,
+    name: 'Learn to write MilkDrop presets',
+    description,
+    url: `${BASE_URL}/learn/`,
+    inLanguage: 'en',
+    isAccessibleForFree: true,
+    about: MILKDROP_ENTITY,
+    provider: organizationNode(BASE_URL),
+    hasCourseInstance: { '@type': 'CourseInstance', courseMode: 'Online' },
+    offers: {
+      '@type': 'Offer',
+      category: 'Free',
+      price: 0,
+      priceCurrency: 'USD',
+    },
+    hasPart: COURSE_TRACKS.map((track) => ({
+      '@type': 'TechArticle',
+      name: track.seoTitle,
+      url: `${BASE_URL}${learnPagePath(track)}`,
+    })),
+  };
+}
+
 export function renderLearnPage(page: LearnPage): string {
   const markdown = fs.readFileSync(path.join(repoRoot, page.source), 'utf8');
   const { html, h1, headings } = renderLearnMarkdown(markdown, page.source);
@@ -334,9 +390,11 @@ export function renderLearnPage(page: LearnPage): string {
     ...(page.slug === '' ? [] : [{ name: 'Learn', url: `${BASE_URL}/learn/` }]),
     { name: h1 || page.seoTitle, url },
   ];
-  const graph: Array<Record<string, unknown>> = [
+  const about = page.about ?? [MILKDROP_ENTITY];
+  const graph: JsonLdNode[] = [
     {
       '@type': page.kind === 'track' ? 'TechArticle' : 'WebPage',
+      '@id': `${url}#page`,
       headline: h1 || page.seoTitle,
       name: page.seoTitle,
       description: page.description,
@@ -344,23 +402,31 @@ export function renderLearnPage(page: LearnPage): string {
       mainEntityOfPage: url,
       inLanguage: 'en',
       image,
-      isPartOf: { '@type': 'WebSite', name: 'Stims', url: `${BASE_URL}/` },
-      publisher: {
-        '@type': 'Organization',
-        name: 'Stims',
-        url: `${BASE_URL}/`,
-      },
+      about: about.length === 1 ? about[0] : about,
+      isPartOf:
+        page.kind === 'track'
+          ? [websiteNode(BASE_URL), { '@id': COURSE_ID }]
+          : websiteNode(BASE_URL),
+      ...(page.kind === 'track' ? { author: organizationNode(BASE_URL) } : {}),
+      publisher: organizationNode(BASE_URL),
     },
-    {
-      '@type': 'BreadcrumbList',
-      itemListElement: breadcrumbs.map((crumb, index) => ({
-        '@type': 'ListItem',
-        position: index + 1,
-        name: crumb.name,
-        item: crumb.url,
-      })),
-    },
+    breadcrumbList(breadcrumbs),
   ];
+  if (page.kind === 'hub') graph.push(courseNode(page.description));
+  if (page.glossary) {
+    const termSetId = `${url}#terms`;
+    graph.push({
+      '@type': 'DefinedTermSet',
+      '@id': termSetId,
+      name: page.seoTitle,
+      url,
+      hasDefinedTerm: extractDefinedTerms(html).map((term) => ({
+        '@type': 'DefinedTerm',
+        ...term,
+        inDefinedTermSet: { '@id': termSetId },
+      })),
+    });
+  }
   if (page.faq) {
     const faq = extractFaq(html);
     if (faq.length > 0) {
@@ -374,11 +440,10 @@ export function renderLearnPage(page: LearnPage): string {
       });
     }
   }
-  const jsonLd = JSON.stringify(
+  const jsonLd = serializeJsonLd(
     { '@context': 'https://schema.org', '@graph': graph },
-    null,
     2,
-  ).replace(/</gu, '\\u003c');
+  );
 
   const h2s = headings.filter((heading) => heading.depth === 2);
   const toc =

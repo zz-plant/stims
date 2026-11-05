@@ -12,6 +12,14 @@
  * site to rank.
  */
 
+import {
+  BUTTERCHURN_ENTITY,
+  type JsonLdNode,
+  MILKDROP_ENTITY,
+  MUSIC_VISUALIZATION_ENTITY,
+  PROJECTM_ENTITY,
+} from './structured-data.ts';
+
 export const LEARN_OUTPUT_DIR = 'public/learn';
 
 export type LearnPage = {
@@ -25,6 +33,10 @@ export type LearnPage = {
   kind: 'hub' | 'track' | 'landing';
   /** Derive FAQPage JSON-LD from the `## FAQ` section. */
   faq?: boolean;
+  /** Derive DefinedTermSet JSON-LD from the table under `## The glossary`. */
+  glossary?: boolean;
+  /** What the page is about, in JSON-LD; MilkDrop unless it says otherwise. */
+  about?: readonly JsonLdNode[];
 };
 
 export const LEARN_PAGES: readonly LearnPage[] = [
@@ -44,6 +56,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
       'Run MilkDrop presets in your browser with nothing to install. Watch, play your own music, edit the equations, and import or export .milk files.',
     kind: 'landing',
     faq: true,
+    about: [MILKDROP_ENTITY, MUSIC_VISUALIZATION_ENTITY],
   },
   {
     slug: 'milkdrop-vs-butterchurn-projectm',
@@ -53,6 +66,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
       'How Stims, Butterchurn, and projectM differ (browser app, embeddable renderer, and native library) and which one fits what you want to do.',
     kind: 'landing',
     faq: true,
+    about: [MILKDROP_ENTITY, BUTTERCHURN_ENTITY, PROJECTM_ENTITY],
   },
   {
     slug: 'sensory-room',
@@ -61,6 +75,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
     description:
       'Turn a screen or projector into a visual display nobody has to operate: slow preset changes, Reduce flashing on, and capped brightness and motion, from one link.',
     kind: 'landing',
+    about: [MUSIC_VISUALIZATION_ENTITY],
   },
   {
     slug: 'play',
@@ -141,6 +156,7 @@ export const LEARN_PAGES: readonly LearnPage[] = [
     description:
       'The named techniques of MilkDrop presets, like Jelly, Relief, and Painterly, counted across the shipped catalog with examples.',
     kind: 'track',
+    glossary: true,
   },
   {
     slug: 'reference',

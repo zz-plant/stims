@@ -1,7 +1,8 @@
 /**
  * The page a `?preset=` URL stands for, set below the stage: the playing
- * preset's name as the document's one h1, its author, its .milk file, and
- * more presets by that author. The site index follows it (SiteIndexFooter).
+ * preset's name as the document's one h1, its author, its .milk file, the
+ * topic hubs that list it, and more presets by that author. The site index
+ * follows it (SiteIndexFooter).
  *
  * Search engines render this page and skip <noscript>, which is the only
  * place the edge middleware could put this content. Without this section
@@ -24,12 +25,14 @@ import {
   buildPresetPageContent,
   CREDIT_SEPARATOR,
   PRESET_DOWNLOAD_LABEL,
+  PRESET_TOPICS_HEADING,
   type PresetPageContent,
 } from '../../../functions/shared/preset-page.ts';
 import styles from '../../css/PresetPageDetails.module.css';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { openPresetInPlace } from './preset-link.ts';
 import { useWorkspace } from './workspace-context.tsx';
+import { presetTopicMask } from './workspace-helpers.ts';
 
 /**
  * The catalog in the shape the edge reads from /preset-meta.json. First entry
@@ -61,10 +64,15 @@ export function usePresetPageContent(
     () => (active ? presetMetaTableFromCatalog(catalog) : null),
     [active, catalog],
   );
-  return useMemo(
-    () => (table && presetId ? buildPresetPageContent(table, presetId) : null),
-    [table, presetId],
-  );
+  return useMemo(() => {
+    if (!table || !presetId) return null;
+    const entry = catalog.find((preset) => preset.id === presetId);
+    return buildPresetPageContent(
+      table,
+      presetId,
+      entry ? presetTopicMask(entry) : 0,
+    );
+  }, [catalog, table, presetId]);
 }
 
 export function PresetPageDetails({
@@ -76,11 +84,11 @@ export function PresetPageDetails({
 }) {
   const headingId = useId();
   const { ui } = useWorkspace();
-  // An author's page is Browse filtered to that author. Followed as a link
+  // An author's or topic's page is Browse filtered to it. Followed as a link
   // it reloaded the app and ended the audio, while the "More presets by"
   // links below switch in place; open the same filtered Browse in place.
   // A new-tab click still follows the href.
-  const openAuthor = (href: string) => {
+  const openHub = (href: string) => {
     const discovery = resolveSemanticRoute(href);
     if (!discovery) return false;
     ui.commitRoute((current) => ({
@@ -110,7 +118,7 @@ export function PresetPageDetails({
                       const href = credit.href;
                       if (!href) return;
                       openPresetInPlace(event, () => {
-                        if (!openAuthor(href)) window.location.assign(href);
+                        if (!openHub(href)) window.location.assign(href);
                       });
                     }}
                   >
@@ -133,6 +141,29 @@ export function PresetPageDetails({
             {PRESET_DOWNLOAD_LABEL}
           </a>
         </p>
+      ) : null}
+      {content.topics.length > 0 ? (
+        <>
+          <h2 className={styles.heading}>{PRESET_TOPICS_HEADING}</h2>
+          <ul className={styles.related}>
+            {content.topics.map((topic) => (
+              <li key={topic.slug}>
+                <a
+                  href={topic.href}
+                  onClick={(event) =>
+                    openPresetInPlace(event, () => {
+                      if (!openHub(topic.href)) {
+                        window.location.assign(topic.href);
+                      }
+                    })
+                  }
+                >
+                  {topic.heading}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
       ) : null}
       {content.related.map((group) => (
         <Fragment key={group.author}>

@@ -10,9 +10,6 @@
 <link rel="canonical" href="https://toil.fyi/presets/" />
 <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <meta property="og:site_name" content="Stims" />
 <meta property="og:type" content="website" />
 <meta property="og:title" content="MilkDrop Presets, A–Z | Stims" />
@@ -32,14 +29,28 @@
   "@graph": [
     {
       "@type": "CollectionPage",
+      "@id": "https://toil.fyi/presets/#page",
       "name": "MilkDrop presets",
       "description": "2,200 MilkDrop presets on Stims, by collection, by author and A–Z. Each one plays in your browser, and its page links the .milk file.",
       "url": "https://toil.fyi/presets/",
       "inLanguage": "en",
+      "about": {
+        "@type": "SoftwareApplication",
+        "name": "MilkDrop",
+        "sameAs": [
+          "https://en.wikipedia.org/wiki/MilkDrop",
+          "https://www.wikidata.org/wiki/Q4044271"
+        ]
+      },
       "isPartOf": {
         "@type": "WebSite",
+        "@id": "https://toil.fyi/#website",
         "name": "Stims",
         "url": "https://toil.fyi/"
+      },
+      "mainEntity": {
+        "@type": "ItemList",
+        "numberOfItems": 2200
       }
     },
     {
@@ -67,7 +78,7 @@
 <body>
 <header class="site-header">
 <a class="brand" href="/">Stims</a>
-<nav class="links" aria-label="Site"><a href="/learn/">Learn</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/learn/milkdrop-vs-butterchurn-projectm/">Compare</a><a href="/performance/">Compatibility</a></nav>
+<nav class="links" aria-label="Site"><a href="/learn/">Learn</a><a href="/presets/">Presets</a><a href="/learn/milkdrop-online/">MilkDrop online</a><a href="/learn/milkdrop-vs-butterchurn-projectm/">Compare</a><a href="/performance/">Compatibility</a></nav>
 <a class="nav-cta" href="/">Open Stims</a>
 </header>
 <main>

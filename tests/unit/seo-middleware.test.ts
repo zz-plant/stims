@@ -328,6 +328,112 @@ describe('/author/<slug> middleware', () => {
   });
 });
 
+/** The JSON-LD graph the middleware appended to <head>, by node type. */
+function appendedGraph(): Record<string, Record<string, unknown>> {
+  const script = applyHandlers('head')
+    .appended.join('')
+    .match(/<script type="application\/ld\+json">(.*?)<\/script>/su)?.[1];
+  const nodes = JSON.parse(script ?? '{}')['@graph'] as Array<
+    Record<string, unknown>
+  >;
+  return Object.fromEntries(nodes.map((node) => [node['@type'], node]));
+}
+
+const crumbUrls = (node: Record<string, unknown> | undefined) =>
+  ((node?.itemListElement ?? []) as Array<{ item: string }>).map(
+    (crumb) => crumb.item,
+  );
+
+describe('structured data the edge writes', () => {
+  const META = {
+    pair: ['Stahlregen + Geiss - Pair', 'Stahlregen + Geiss', 0, 0b101],
+    nobody: ['Nobody', ''],
+  };
+
+  test('a preset page credits each hand and crumbs through /presets/', async () => {
+    await onRequest(makeContext('https://toil.fyi/?preset=pair', META));
+
+    const graph = appendedGraph();
+    const artwork = graph.VisualArtwork as {
+      artist: unknown[];
+      genre: unknown;
+    };
+    expect(artwork.artist).toEqual([
+      {
+        '@type': 'Person',
+        name: 'Stahlregen',
+        '@id': 'https://toil.fyi/author/stahlregen#person',
+        url: 'https://toil.fyi/author/stahlregen',
+      },
+      {
+        '@type': 'Person',
+        name: 'Geiss',
+        '@id': 'https://toil.fyi/author/geiss#person',
+        url: 'https://toil.fyi/author/geiss',
+      },
+    ]);
+    expect(artwork.genre).toEqual(['Audio-Reactive', 'Fractal']);
+    expect(crumbUrls(graph.BreadcrumbList)).toEqual([
+      'https://toil.fyi/',
+      'https://toil.fyi/presets/',
+      'https://toil.fyi/?preset=pair',
+    ]);
+  });
+
+  test('a preset page links its topic hubs and names them in its description', async () => {
+    await onRequest(makeContext('https://toil.fyi/?preset=pair', META));
+
+    const crawlerCopy = applyHandlers(NOSCRIPT_FALLBACK_SELECTOR).appended.join(
+      '',
+    );
+    expect(crawlerCopy).toContain(
+      '<a href="/discover/fractal">Fractal Music Visualizers</a>',
+    );
+    expect(crawlerCopy).toContain(
+      '<a href="/discover/audio-reactive">Audio-Reactive Music Visualizers</a>',
+    );
+    expect(
+      applyHandlers('meta[name="description"]').attributes.get('content'),
+    ).toContain('a MilkDrop preset in the Fractal collection.');
+  });
+
+  test('a preset with no topics or credit claims neither', async () => {
+    await onRequest(makeContext('https://toil.fyi/?preset=nobody', META));
+
+    const artwork = appendedGraph().VisualArtwork;
+    expect(artwork).not.toHaveProperty('artist');
+    expect(artwork).not.toHaveProperty('genre');
+    expect(
+      applyHandlers('meta[name="description"]').attributes.get('content'),
+    ).toStartWith('Nobody — a MilkDrop preset. It reacts');
+    expect(
+      applyHandlers(NOSCRIPT_FALLBACK_SELECTOR).appended.join(''),
+    ).not.toContain('/discover/');
+  });
+
+  test('an author page shares its person with the presets that credit them', async () => {
+    await onRequest(makeContext('https://toil.fyi/author/geiss', META));
+
+    const graph = appendedGraph();
+    const page = graph.CollectionPage as {
+      about: { '@id': string };
+      isPartOf: { '@id': string };
+      mainEntity: { numberOfItems: number; itemListElement: { url: string }[] };
+    };
+    expect(page.about['@id']).toBe('https://toil.fyi/author/geiss#person');
+    expect(page.isPartOf['@id']).toBe('https://toil.fyi/#website');
+    expect(page.mainEntity.numberOfItems).toBe(1);
+    expect(page.mainEntity.itemListElement[0]?.url).toBe(
+      'https://toil.fyi/?preset=pair',
+    );
+    expect(crumbUrls(graph.BreadcrumbList)).toEqual([
+      'https://toil.fyi/',
+      'https://toil.fyi/presets/',
+      'https://toil.fyi/author/geiss',
+    ]);
+  });
+});
+
 describe('/?preset=<id> middleware', () => {
   test('sets a per-preset canonical and title for a known preset', async () => {
     await onRequest(

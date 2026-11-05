@@ -573,6 +573,74 @@ describe('workspace first-fold launch hierarchy', () => {
   });
 });
 
+describe('a returning visitor who follows a preset link', () => {
+  function renderLinkArrival(linkedId: string) {
+    const previous = makePresetEntry({
+      id: 'rovastar-parallel-universe',
+      title: 'Rovastar - Parallel Universe',
+      author: 'Rovastar',
+    });
+    const linked = makePresetEntry({
+      id: 'eos-phat-cubetrace',
+      title: 'Eo.S. + Phat - Cubetrace',
+      author: 'Eo.S. + Phat',
+    });
+    saveLastSession({
+      presetId: previous.id,
+      presetTitle: previous.title,
+      source: 'demo',
+    });
+    const rendered = renderWorkspace(
+      <NewHomePage
+        arrival={{
+          presetId: linkedId,
+          audio: null,
+          rendererFallbackReload: false,
+        }}
+      />,
+      { engine: { catalog: [previous, linked] } },
+    );
+    return {
+      ...rendered,
+      dispose: () => {
+        rendered.dispose();
+        localStorage.removeItem(LAST_SESSION_KEY);
+      },
+    };
+  }
+
+  test('sees the linked preset, not their last session', () => {
+    const rendered = renderLinkArrival('eos-phat-cubetrace');
+    try {
+      const text = rendered.text();
+      expect(text).not.toContain('Welcome back');
+      expect(text).not.toContain('Parallel Universe');
+      expect(text).toContain('Cubetrace');
+      expect(
+        rendered.container
+          .querySelector('[data-variant]')
+          ?.getAttribute('data-variant'),
+      ).toBe('deep-link');
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('sees the same page when the link names their last preset', () => {
+    const rendered = renderLinkArrival('rovastar-parallel-universe');
+    try {
+      expect(rendered.text()).not.toContain('Welcome back');
+      expect(
+        rendered.container
+          .querySelector('[data-variant]')
+          ?.getAttribute('data-variant'),
+      ).toBe('deep-link');
+    } finally {
+      rendered.dispose();
+    }
+  });
+});
+
 describe('launch page after the WebGL fallback reload', () => {
   // The fallback reloads the session's own URL, `?preset=…&audio=…`, which is
   // exactly what a copied link looks like. The same arrival is rendered both

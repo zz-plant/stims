@@ -285,6 +285,10 @@ export function NewHomePage({
   // the card should show. The entry can still be null while the catalog
   // loads (or for a stale id); the card then carries the prettified slug
   // and no artwork rather than reverting to the generic pitch.
+  //
+  // Any other `?preset=` link also outranks the last session. It starts the
+  // preset it names, so a "Welcome back" card would describe a different
+  // preset from the one starting behind it, and Resume would play the link's.
   const resume: ResumeState =
     sharedArrival.kind === 'offer' && deepLinkPresetId
       ? {
@@ -304,7 +308,7 @@ export function NewHomePage({
               origin: 'renderer-fallback',
             }
           : null
-        : lastSession && resumeEntry
+        : lastSession && resumeEntry && !deepLinkPresetId
           ? {
               session: lastSession,
               entry: resumeEntry,

@@ -8,6 +8,7 @@ import {
   presetMetaTableFromCatalog,
   usePresetPageContent,
 } from '../../src/js/frontend/PresetPageDetails.tsx';
+import { presetTopicMask } from '../../src/js/frontend/workspace-helpers.ts';
 import {
   makePresetEntry,
   mouseClick,
@@ -64,6 +65,19 @@ function Harness({
   ) : null;
 }
 
+function TopicHarness({
+  catalog,
+  presetId,
+}: {
+  catalog: PresetCatalogEntry[];
+  presetId: string;
+}) {
+  const content = usePresetPageContent(catalog, presetId);
+  return content ? (
+    <PresetPageDetails content={content} onSelectPreset={() => {}} />
+  ) : null;
+}
+
 function renderDetails(presetId: string, onSelect: (id: string) => void) {
   return renderWorkspace(<Harness presetId={presetId} onSelect={onSelect} />);
 }
@@ -96,6 +110,43 @@ describe('preset page details', () => {
       expect(container.querySelector('h2')?.textContent).toBe(
         'More presets by Geiss',
       );
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('links the topic hubs that list the preset, matching the edge table', () => {
+    const entry = makePresetEntry({
+      id: 'tagged',
+      title: 'Tagged',
+      author: 'Unknown',
+      tags: ['collection:hall-of-fame'],
+    });
+    const mask = presetTopicMask(entry);
+    const rendered = renderWorkspace(
+      <TopicHarness catalog={[entry]} presetId="tagged" />,
+    );
+    try {
+      const { container } = rendered;
+      const link = container.querySelector('a[href="/discover/hall-of-fame"]');
+      expect(link?.textContent).toBe('Hall of Fame Music Visualizers');
+      expect(container.querySelector('h2')?.textContent).toBe('Collections');
+      const fromEdgeTable = buildPresetPageContent(
+        { tagged: ['Tagged', '', -1, mask] },
+        'tagged',
+      );
+      expect(
+        [...container.querySelectorAll('a')].map((a) => a.getAttribute('href')),
+      ).toEqual(fromEdgeTable?.topics.map((topic) => topic.href) ?? []);
+    } finally {
+      rendered.dispose();
+    }
+  });
+
+  test('a preset no hub lists has no collections heading', () => {
+    const rendered = renderDetails('nobody', () => {});
+    try {
+      expect(rendered.container.querySelector('h2')).toBeNull();
     } finally {
       rendered.dispose();
     }

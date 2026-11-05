@@ -22,6 +22,12 @@ import {
   type PresetMetaTable,
 } from '../functions/shared/preset-meta.ts';
 import { PRESET_INDEX_PATH } from '../functions/shared/site-index.ts';
+import {
+  breadcrumbList,
+  MILKDROP_ENTITY,
+  serializeJsonLd,
+  websiteNode,
+} from '../functions/shared/structured-data.ts';
 import { renderStaticPage } from './generate-learn-pages.ts';
 
 export const PRESET_INDEX_OUT_FILE = 'public/presets/index.html';
@@ -66,35 +72,29 @@ export function renderPresetIndexPage(
       )
       .join('')}</ul>`;
 
-  const jsonLd = JSON.stringify(
+  const jsonLd = serializeJsonLd(
     {
       '@context': 'https://schema.org',
       '@graph': [
         {
           '@type': 'CollectionPage',
+          '@id': `${url}#page`,
           name: 'MilkDrop presets',
           description,
           url,
           inLanguage: 'en',
-          isPartOf: { '@type': 'WebSite', name: 'Stims', url: `${baseUrl}/` },
+          about: MILKDROP_ENTITY,
+          isPartOf: websiteNode(baseUrl),
+          mainEntity: { '@type': 'ItemList', numberOfItems: content.count },
         },
-        {
-          '@type': 'BreadcrumbList',
-          itemListElement: [
-            {
-              '@type': 'ListItem',
-              position: 1,
-              name: 'Stims',
-              item: `${baseUrl}/`,
-            },
-            { '@type': 'ListItem', position: 2, name: 'Presets', item: url },
-          ],
-        },
+        breadcrumbList([
+          { name: 'Stims', url: `${baseUrl}/` },
+          { name: 'Presets', url },
+        ]),
       ],
     },
-    null,
     2,
-  ).replace(/</gu, '\\u003c');
+  );
 
   return renderStaticPage({
     title,
