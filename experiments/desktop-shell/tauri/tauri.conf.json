@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Stims Tauri Spike",
+  "version": "0.0.0",
+  "identifier": "fyi.toil.stims.spike.tauri",
+  "build": { "frontendDist": "frontend" },
+  "app": { "windows": [], "security": { "csp": null } },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg"],
+    "icon": ["icons/icon.icns", "icons/icon.png"],
+    "macOS": { "minimumSystemVersion": "14.4", "signingIdentity": "-" }
+  }
+}

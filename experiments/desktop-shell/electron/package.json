@@ -1,0 +1,36 @@
+{
+  "name": "stims-desktop-shell-electron",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Spike: the smallest Electron shell around an unmodified local Stims.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac dmg --arm64 -c.mac.identity=null"
+  },
+  "build": {
+    "appId": "fyi.toil.stims.spike.electron",
+    "productName": "Stims Electron Spike",
+    "files": [
+      "main.js",
+      "preload.js",
+      "!**/node_modules/**"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.music"
+    }
+  },
+  "devDependencies": {
+    "electron": "45.2.2",
+    "electron-builder": "26.18.0"
+  },
+  "trustedDependencies": [
+    "electron"
+  ]
+}

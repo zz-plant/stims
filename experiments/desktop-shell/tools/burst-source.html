@@ -1,0 +1,37 @@
+<!doctype html>
+<title>SpikeBurstSource</title>
+<script>
+  // Plays tone bursts from a browser tab for the tab-capture baseline. Each
+  // burst's presentation time is read from the output timestamp and sent to
+  // the collector, so the tab-capture run lines up with the native-source runs.
+  window.runBursts = async (count = 40, interval = 0.5, amp = 0.01) => {
+    const context = new AudioContext({ latencyHint: 'interactive' });
+    await context.resume();
+    const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * 0.02), context.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = amp * Math.sin((2 * Math.PI * 1000 * i) / context.sampleRate);
+    }
+    const shell = window.__STIMS_SPIKE__.shell;
+    const collector = window.__STIMS_SPIKE__.collector;
+    const post = (body) =>
+      fetch(`${collector}/report`, {
+        method: 'POST',
+        headers: { 'content-type': 'text/plain' },
+        body: JSON.stringify({ shell, ...body }),
+      });
+    await post({ kind: 'device', baseLatency: context.baseLatency, outputLatency: context.outputLatency, rate: context.sampleRate });
+    for (let i = 0; i < count; i++) {
+      const at = context.currentTime + interval;
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+      source.connect(context.destination);
+      source.start(at);
+      const stamp = context.getOutputTimestamp();
+      const speakerAt = performance.timeOrigin + stamp.performanceTime + (at - stamp.contextTime) * 1000;
+      post({ kind: 'burst', index: i, presentedAt: speakerAt - context.outputLatency * 1000, speakerAt });
+      await new Promise((resolve) => setTimeout(resolve, interval * 1000));
+    }
+    return { count, baseLatency: context.baseLatency, outputLatency: context.outputLatency };
+  };
+</script>
