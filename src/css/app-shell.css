@@ -332,6 +332,19 @@ body[data-page="workspace"] {
     .cta-button svg[data-icon="spinner"] {
       animation: none;
     }
+
+    .cta-button,
+    .cta-button:hover:not(:disabled),
+    .cta-button:active:not(:disabled) {
+      transform: none;
+    }
+  }
+
+  /* A phone gives each action the full row, as index.css used to. */
+  @media (max-width: 520px) {
+    .cta-button {
+      width: 100%;
+    }
   }
 
   /* Toast animations with spring physics */
@@ -2775,11 +2788,29 @@ body[data-page="workspace"] {
     bottom: auto;
   }
 
+  /* The one definition of the button. index.css used to stack ten more on
+     top of this (lime primary, four radii, Martian Mono uppercase), and since
+     it loads deferred, a dialog's buttons painted in Archivo and then jumped
+     to mono caps once it arrived. Same face and case as the launch CTA. */
   .cta-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: var(--touch-target-min);
+    max-width: 100%;
     min-height: 46px;
     border-radius: var(--radius-lg);
     padding: 0.82rem 1.05rem;
-    letter-spacing: 0.05em;
+    color: var(--text-color);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    touch-action: manipulation;
+    overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: linear-gradient(
       180deg,
@@ -2842,7 +2873,6 @@ body[data-page="workspace"] {
     border-color: rgba(148, 163, 184, 0.18);
     box-shadow: none;
     font-size: 0.875rem;
-    letter-spacing: 0.04em;
     color: rgba(226, 232, 240, 0.7);
     transition:
       color 0.15s ease,
@@ -2866,17 +2896,6 @@ body[data-page="workspace"] {
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
-  }
-
-  .cta-button.primary:disabled,
-  .cta-button.primary[disabled] {
-    background: linear-gradient(
-      135deg,
-      rgba(232, 245, 200, 0.4),
-      rgba(159, 217, 139, 0.4)
-    );
-    border-color: var(--stims-white-12);
-    color: rgba(16, 22, 16, 0.5);
   }
 
   /* Collapse launch hero to single column at tablet widths */
