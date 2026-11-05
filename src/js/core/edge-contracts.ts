@@ -196,6 +196,8 @@ export type TelemetryEvent = {
   /** How the screen is held when the event fires (telemetry-context.ts). */
   orientation?: (typeof TELEMETRY_ORIENTATIONS)[number];
   device?: (typeof TELEMETRY_DEVICES)[number];
+  /** How a hinge divides the window; absent unless the browser reports one. */
+  fold?: (typeof TELEMETRY_FOLDS)[number];
   /** The audio source that is live, or 'none'. */
   audioSource?: (typeof TELEMETRY_AUDIO_SOURCES)[number];
   /** Where this page load came from, by the referrer's host only. */
@@ -249,6 +251,7 @@ export const TELEMETRY_ORIENTATIONS = [
   'square',
 ] as const;
 export const TELEMETRY_DEVICES = ['phone', 'tablet', 'desktop'] as const;
+export const TELEMETRY_FOLDS = ['book', 'laptop'] as const;
 export const TELEMETRY_AUDIO_SOURCES = [
   'none',
   'demo',
@@ -362,6 +365,10 @@ export const TelemetryEventSchema = contractSchema<TelemetryEvent>((input) => {
   if (input.device !== undefined) {
     if (!isOneOf(TELEMETRY_DEVICES, input.device)) return null;
     result.device = input.device;
+  }
+  if (input.fold !== undefined) {
+    if (!isOneOf(TELEMETRY_FOLDS, input.fold)) return null;
+    result.fold = input.fold;
   }
   if (input.audioSource !== undefined) {
     if (!isOneOf(TELEMETRY_AUDIO_SOURCES, input.audioSource)) return null;

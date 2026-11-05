@@ -343,6 +343,11 @@ html {
       color-mix(in srgb, var(--bg-color-secondary) 88%, #071112) 54%,
       #050a0b 100%
     );
+  /* The gradients above carry no colour of their own, and on a light system
+     they run cream behind a black stage. Safari fills the space beside its
+     side controls on iPhone Duo's outer display with the page's background
+     colour, so name the stage's. */
+  background-color: #05070c;
 }
 
 .control-panel,

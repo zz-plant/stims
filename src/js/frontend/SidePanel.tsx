@@ -20,14 +20,23 @@ import {
   removeStored,
   writeStored,
 } from '../core/state/browser-storage.ts';
+import { currentFoldLayout } from '../utils/foldable-viewport.ts';
 import { useEscapeHandler } from './hooks/use-escape-handler.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import { UiIcon } from './UiIcon.tsx';
 
-const isMobileSheet = () =>
-  typeof window !== 'undefined' &&
-  (window.matchMedia('(max-width: 767px)').matches ||
-    window.matchMedia('(max-height: 500px) and (pointer: coarse)').matches);
+const isMobileSheet = () => {
+  if (typeof window === 'undefined') return false;
+  // A half-folded screen decides by its hinge, not its width: the panel rises
+  // from the lower half of a laptop pose, and is a side rail in a book pose
+  // however narrow the window (SidePanel.module.css).
+  const fold = currentFoldLayout();
+  if (fold !== 'flat') return fold === 'laptop';
+  return (
+    window.matchMedia('(max-width: 767px)').matches ||
+    window.matchMedia('(max-height: 500px) and (pointer: coarse)').matches
+  );
+};
 
 /* Stage-anchored seam: the editor/stage split is user-resizable on desktop.
    The chosen width feeds --stage-tool-width on the shell root, which sizes

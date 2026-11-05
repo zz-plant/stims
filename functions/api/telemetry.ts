@@ -9,6 +9,7 @@ import {
   TELEMETRY_ENGINES,
   TELEMETRY_FLASH_GUARD_STATES,
   TELEMETRY_FLASH_SAMPLERS,
+  TELEMETRY_FOLDS,
   TELEMETRY_ORIENTATIONS,
   TELEMETRY_OS_FAMILIES,
   TELEMETRY_QUALITY_STEPS,
@@ -95,6 +96,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
           known(TELEMETRY_QUALITY_STEPS, data.qualityStep),
           known(TELEMETRY_FLASH_GUARD_STATES, data.flashGuard),
           known(TELEMETRY_FLASH_SAMPLERS, data.flashSampler),
+          known(TELEMETRY_FOLDS, data.fold),
         ],
         doubles: [
           data.fps || 0,

@@ -155,6 +155,7 @@ describe('audible starts by OS and engine', () => {
         body: JSON.stringify({
           event: 'growth-audio-started',
           device: 'phone',
+          audioSource: 'microphone',
           os: 'android',
           engine: 'chromium',
           engineMajor: 117,
@@ -183,11 +184,15 @@ describe('audible starts by OS and engine', () => {
     return values?.[Number(match[2]) - 1];
   };
 
-  test('the OS report reads the slots the Worker writes OS and device to', async () => {
+  test('the OS report reads the slots the Worker writes OS, device and audio source to', async () => {
     const { sql } = report('Audible starts by OS');
     const point = await writtenPoint();
     expect(readColumn(sql, 'os', point)).toBe('android');
     expect(readColumn(sql, 'device', point)).toBe('phone');
+    // Android microphone starts are what reopens the APK decision, so the
+    // split has to reach the printed rows, not only the selected columns.
+    expect(readColumn(sql, 'audio', point)).toBe('microphone');
+    expect(sql).toContain('GROUP BY blob11, blob7, blob8');
   });
 
   test('the engine report reads the slots the Worker writes the engine to', async () => {

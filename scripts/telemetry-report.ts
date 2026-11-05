@@ -73,7 +73,8 @@ async function resolveCredentials(): Promise<{
 //         arrival,                           (since 2026-10-07)
 //         surface,                           (since 2026-10-27)
 //         os, engine, androidWebView,        (since 2026-11-03)
-//         qualityStep, flashGuard, flashSampler]  (#1641)
+//         qualityStep, flashGuard, flashSampler,  (#1641)
+//         fold]                              (since 2026-11-04)
 //         '' on rows and clients older than the field
 // doubles: [fps, audioLatencyMs, timestamp, dwellMs,
 //           engineMajor,  (since 2026-11-03; 0 when older or unknown)
@@ -251,6 +252,18 @@ export function buildReports(days: number): Report[] {
       columns: ['event', 'renderer', 'count'],
     },
     {
+      // Sessions on a half-folded screen, the one state a hinge can be seen
+      // in: a foldable held flat reports one segment, like any other device.
+      // Sizes the audience for docs/guides/FOLDABLE_WEB.md's layouts.
+      title: `Audible starts on a half-folded screen (last ${days}d)`,
+      sql: `SELECT blob17 AS fold, blob7 AS device, COUNT() AS count
+            FROM ${DATASET}
+            WHERE ${inWindow}
+              AND blob1 = 'growth-audio-started' AND blob17 != ''
+            GROUP BY blob17, blob7 ORDER BY count DESC`,
+      columns: ['fold', 'device', 'count'],
+    },
+    {
       // Which moment visitors are in (docs/PRODUCT_MOMENTS.md). An audible
       // start is the session proxy, so this is sessions by screen and source.
       // Rows before 2026-10-06 carry '' for all three and are left out.
@@ -266,14 +279,17 @@ export function buildReports(days: number): Report[] {
     {
       // How many visitors each platform build could reach (added 2026-11-03).
       // Earlier rows carry '' and are left out, so a share read from this
-      // report covers only the days since the field shipped.
-      title: `Audible starts by OS and device (last ${days}d)`,
-      sql: `SELECT blob11 AS os, blob7 AS device, COUNT() AS count
+      // report covers only the days since the field shipped. Android microphone
+      // starts are the source an APK would replace: the figure that reopens the
+      // 2026-11-04 APK decision (docs/PRODUCT_MOMENTS.md).
+      title: `Audible starts by OS, device and audio source (last ${days}d)`,
+      sql: `SELECT blob11 AS os, blob7 AS device, blob8 AS audio,
+                   COUNT() AS count
             FROM ${DATASET}
             WHERE ${inWindow}
               AND blob1 = 'growth-audio-started' AND blob11 != ''
-            GROUP BY blob11, blob7 ORDER BY count DESC`,
-      columns: ['os', 'device', 'count'],
+            GROUP BY blob11, blob7, blob8 ORDER BY count DESC`,
+      columns: ['os', 'device', 'audio', 'count'],
     },
     {
       // How far back engine support has to reach. Newest first within each

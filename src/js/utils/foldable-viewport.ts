@@ -15,11 +15,17 @@ export type FoldableViewport = Readonly<{
   width: number;
   height: number;
 }>;
+/**
+ * How a hinge divides this window: `book` puts the two halves side by side,
+ * `laptop` stacks them. `flat` is everything else, including every browser
+ * without the API and a window that sits wholly on one side of the hinge.
+ */
+export type FoldLayout = 'flat' | 'book' | 'laptop';
 
 type WindowLike = {
   innerWidth: number;
   innerHeight: number;
-  viewport?: { segments?: ArrayLike<Segment> };
+  viewport?: { segments?: ArrayLike<Segment> | null };
   /* Partial<Navigator> keeps the real `window` assignable — a bare
      `{ devicePosture? }` shares no property with `Navigator`, so the
      weak-type check rejects it — while fakes with only devicePosture
@@ -56,24 +62,44 @@ export function readFoldableViewport(source: WindowLike): FoldableViewport {
   };
 }
 
-/** Subscribe to physical and window changes without replacing application state.
- * Applications should observe their own content with ResizeObserver as needed.
+/**
+ * Keyed on segments rather than posture, matching the `*-viewport-segments`
+ * media queries the stylesheets use: only two segments give a layout two
+ * places to put things.
  */
-export function observeFoldableViewport(
-  source: Window & typeof globalThis,
-  listener: (state: FoldableViewport) => void,
-): () => void {
-  const notify = () => listener(readFoldableViewport(source));
-  const posture = (
-    source.navigator as Navigator & {
-      devicePosture?: EventTarget;
-    }
-  ).devicePosture;
-  source.addEventListener('resize', notify);
-  posture?.addEventListener('change', notify);
-  notify();
-  return () => {
-    source.removeEventListener('resize', notify);
-    posture?.removeEventListener('change', notify);
-  };
+export function foldLayoutOf(segments: readonly Segment[]): FoldLayout {
+  if (segments.length !== 2) return 'flat';
+  const [first, second] = segments as readonly [Segment, Segment];
+  if (first.y === second.y) return 'book';
+  if (first.x === second.x) return 'laptop';
+  return 'flat';
+}
+
+/** This window's fold layout right now; `flat` wherever there is no window. */
+export function currentFoldLayout(): FoldLayout {
+  if (typeof window === 'undefined') return 'flat';
+  return foldLayoutOf(readFoldableViewport(window).segments);
+}
+
+type ScreenWindowLike = WindowLike & {
+  screen?: { width: number; height: number };
+};
+
+/** Below this share of the screen's short side, the window is one of several. */
+const SHARED_WINDOW_SHORT_SIDE = 0.85;
+
+/**
+ * Whether turning the device would give this window a wider stage. A window
+ * sharing the screen stays narrow however the device is held, and a half-folded
+ * device is posed on purpose, so neither should be told to rotate.
+ */
+export function rotatingWidensWindow(source: ScreenWindowLike): boolean {
+  if (foldLayoutOf(readFoldableViewport(source).segments) !== 'flat') {
+    return false;
+  }
+  const screen = source.screen;
+  if (!screen) return true;
+  const windowShortSide = Math.min(source.innerWidth, source.innerHeight);
+  const screenShortSide = Math.min(screen.width, screen.height);
+  return windowShortSide >= screenShortSide * SHARED_WINDOW_SHORT_SIDE;
 }

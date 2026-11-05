@@ -35,4 +35,13 @@
       gap: 6px;
     }
   }
+
+  /* A short window drops the decorative trace, which is what kept Start
+     visualizer off the first screen at 594x368 (iPhone Duo's outer display
+     held sideways with Safari's bar showing). */
+  @media (orientation: landscape) and (max-height: 420px) {
+    .stims-shell__launch-trace {
+      display: none;
+    }
+  }
 }

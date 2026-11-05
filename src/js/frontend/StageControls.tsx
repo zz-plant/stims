@@ -126,7 +126,8 @@ type MenuItem = {
 type MenuView = 'all' | 'share';
 
 /** Below this the menu is one column; matches StageControls.module.css. */
-const SINGLE_COLUMN_MENU_QUERY = '(max-width: 639px)';
+const SINGLE_COLUMN_MENU_QUERY =
+  '(max-width: 639px), (horizontal-viewport-segments: 2)';
 
 const VideoShareDialog = lazy(() =>
   import('./VideoShareDialog.tsx').then((module) => ({
