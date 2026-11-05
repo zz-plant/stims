@@ -44,8 +44,13 @@ export function LiveParameterHud() {
     ...webMidiService.getEnabledTargets(),
   ]);
   const [modulatedTargets, setModulatedTargets] = useState<string[]>([]);
+  // CC values land in the ref as they arrive; the 100ms tick copies them
+  // into state, and render reads only the copy, so React Compiler can
+  // compile this component (#1540).
   const valuesRef = useRef<Map<string, number>>(new Map());
-  const [, forceTick] = useState(0);
+  const [values, setValues] = useState<ReadonlyMap<string, number>>(
+    () => new Map(),
+  );
   const pendingTickRef = useRef<number | null>(null);
 
   useEffect(
@@ -84,19 +89,19 @@ export function LiveParameterHud() {
         ) {
           return;
         }
-        const values = valuesRef.current;
-        if (!values.has(target) && values.size >= MAX_TRACKED_TARGETS) {
+        const tracked = valuesRef.current;
+        if (!tracked.has(target) && tracked.size >= MAX_TRACKED_TARGETS) {
           // Oldest insertion first — Map preserves insertion order, and a
           // target that has not been touched since the cap was reached is
           // the least interesting one to keep.
-          const oldest = values.keys().next().value;
-          if (oldest !== undefined) values.delete(oldest);
+          const oldest = tracked.keys().next().value;
+          if (oldest !== undefined) tracked.delete(oldest);
         }
-        values.set(target, normalized);
+        tracked.set(target, normalized);
         if (pendingTickRef.current !== null) return;
         pendingTickRef.current = window.setTimeout(() => {
           pendingTickRef.current = null;
-          forceTick((n) => n + 1);
+          setValues(new Map(valuesRef.current));
         }, 100);
       },
     );
@@ -125,7 +130,7 @@ export function LiveParameterHud() {
           midiBound: midiSet.has(target),
           runtimeModulated: modulatedSet.has(target),
         });
-        const value = valuesRef.current.get(target);
+        const value = values.get(target);
         return (
           <span
             key={target}

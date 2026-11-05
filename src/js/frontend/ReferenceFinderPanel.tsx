@@ -207,7 +207,10 @@ export function ReferenceFinderPanel({
         }
         // Episode created when the proposal is shown; the outcome is
         // unreviewed until the user acts.
-        sessionIdRef.current ??= newSessionId();
+        // Spelled out because the React Compiler cannot lower `??=` yet (#1540).
+        if (sessionIdRef.current === null) {
+          sessionIdRef.current = newSessionId();
+        }
         const imageArtifactId =
           imageFile && retainImage ? `ref-${Date.now()}` : undefined;
         const imageDataUrl =
